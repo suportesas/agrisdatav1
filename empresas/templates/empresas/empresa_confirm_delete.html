@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Excluir Empresa | ERP Agrícola{% endblock %}
+{% block page_title %}Confirmação de Exclusão{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+  <div class="card shadow border-0 rounded-4">
+    <div class="card-body text-center py-5">
+      <div class="mb-4">
+        <i class="bi bi-exclamation-triangle-fill text-danger" style="font-size: 3rem;"></i>
+      </div>
+      <h3 class="fw-bold text-danger mb-3">Tem certeza que deseja excluir esta empresa?</h3>
+      <p class="text-muted mb-4">
+        Esta ação não pode ser desfeita. Todos os dados vinculados à empresa
+        <strong class="text-dark">{{ empresa.nome_fantasia }}</strong> serão removidos permanentemente.
+      </p>
+
+      <form method="post" class="d-flex justify-content-center gap-3">
+        {% csrf_token %}
+        <a href="{% url 'empresas:empresa_list' %}" class="btn btn-secondary px-4">
+          <i class="bi bi-arrow-left-circle"></i> Cancelar
+        </a>
+        <button type="submit" class="btn btn-danger px-4">
+          <i class="bi bi-trash"></i> Confirmar Exclusão
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

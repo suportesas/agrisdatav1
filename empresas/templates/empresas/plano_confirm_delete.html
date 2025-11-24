@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Excluir Plano | ERP Agrícola{% endblock %}
+{% block page_title %}Confirmação de Exclusão{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+  <div class="card shadow border-0 rounded-4" style="max-width: 600px; margin: 0 auto;">
+    <div class="card-body text-center py-5 px-4">
+      <!-- Ícone de Aviso -->
+      <div class="mb-4">
+        <i class="bi bi-exclamation-triangle-fill text-danger" style="font-size: 4rem;"></i>
+      </div>
+
+      <!-- Título -->
+      <h3 class="fw-bold text-danger mb-3">Tem certeza?</h3>
+
+      <!-- Informações do Plano -->
+      <div class="mb-4">
+        <div class="d-inline-block p-3 bg-light rounded-3">
+          <span style="font-size: 2rem;">{{ plano.icone }}</span>
+          <h5 class="mb-0 mt-2">{{ plano.nome }}</h5>
+          <p class="text-muted mb-0">
+            <small>R$ {{ plano.valor_mensal|floatformat:2 }}/mês</small>
+          </p>
+        </div>
+      </div>
+
+      <!-- Mensagem de Aviso -->
+      <p class="text-muted mb-4">
+        Esta ação <strong class="text-danger">não pode ser desfeita</strong>. 
+        O plano será removido permanentemente do sistema.
+      </p>
+
+      <!-- Detalhes do Plano -->
+      <div class="alert alert-info text-start mb-4">
+        <h6 class="fw-bold mb-2">📋 Detalhes do Plano:</h6>
+        <ul class="mb-0 ps-3">
+          <li>{{ plano.limite_fazendas }} fazendas</li>
+          <li>{{ plano.limite_usuarios }} usuários</li>
+          <li>{{ plano.limite_talhoes }} talhões</li>
+          <li>{{ plano.limite_produtos }} produtos</li>
+        </ul>
+      </div>
+
+      <!-- Formulário de Confirmação -->
+      <form method="post" class="d-flex justify-content-center gap-3">
+        {% csrf_token %}
+        <a href="{% url 'empresas:plano_list' %}" class="btn btn-secondary px-4">
+          <i class="bi bi-arrow-left-circle"></i> Cancelar
+        </a>
+        <button type="submit" class="btn btn-danger px-4">
+          <i class="bi bi-trash"></i> Sim, Excluir Plano
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

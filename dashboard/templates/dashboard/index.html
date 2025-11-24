@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Dashboard | ERP Agrícola{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+  <div class="dashboard-cards">
+    <div class="dashboard-card card-blue">
+      <div class="card-left">
+        <h5>Produtores</h5>
+        <h2>45</h2>
+      </div>
+      <div class="card-icon"><i class="bi bi-people-fill"></i></div>
+    </div>
+
+    <div class="dashboard-card card-green">
+      <div class="card-left">
+        <h5>Produtos</h5>
+        <h2>128</h2>
+      </div>
+      <div class="card-icon"><i class="bi bi-box-seam"></i></div>
+    </div>
+
+    <div class="dashboard-card card-yellow">
+      <div class="card-left">
+        <h5>Empréstimos</h5>
+        <h2>32</h2>
+      </div>
+      <div class="card-icon"><i class="bi bi-arrow-left-right"></i></div>
+    </div>
+
+    <div class="dashboard-card card-red">
+      <div class="card-left">
+        <h5>Saldo</h5>
+        <h2>R$ 57.200</h2>
+      </div>
+      <div class="card-icon"><i class="bi bi-currency-dollar"></i></div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,44 @@
+<div class="card shadow-sm border-0 rounded-4">
+  <div class="card-body table-responsive">
+    <table class="table align-middle table-hover">
+      <thead class="table-light">
+        <tr>
+          <th>Nome</th>
+          <th>CNPJ</th>
+          <th>Usuários</th>
+          <th>Logins (7 dias)</th>
+          <th>Status</th>
+          <th class="text-center">Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for e in empresas %}
+        <tr>
+          <td>{{ e.nome }}</td>
+          <td>{{ e.cnpj|default:"—" }}</td>
+          <td>{{ e.total_usuarios }}</td>
+          <td>{{ e.logins_recentes }}</td>
+          <td>
+            {% if e.bloqueada %}
+              <span class="badge bg-danger">Bloqueada</span>
+            {% elif e.bloqueada_ate and e.bloqueada_ate < now %}
+              <span class="badge bg-warning text-dark">Expirada</span>
+            {% else %}
+              <span class="badge bg-success">Ativa</span>
+            {% endif %}
+          </td>
+          <td class="text-center">
+            {% if e.bloqueada %}
+              <a href="{% url 'painel_clientes:desbloquear_empresa' e.id %}" class="btn btn-sm btn-outline-success">Desbloquear</a>
+            {% else %}
+              <a href="{% url 'painel_clientes:bloquear_empresa' e.id %}" class="btn btn-sm btn-outline-danger">Bloquear</a>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="text-center text-muted">Nenhuma empresa encontrada.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>

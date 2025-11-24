@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+  <div class="card p-4 shadow-sm">
+    <h4>Meu Perfil</h4>
+    <p><strong>Usuário:</strong> {{ user.username }}</p>
+    <p><strong>Tipo:</strong> {{ user.get_tipo_display }}</p>
+    <p><strong>Email:</strong> {{ user.email }}</p>
+    <p><strong>Telefone:</strong> {{ user.telefone }}</p>
+    <!--<p><strong>Limite de Crédito:</strong> R$ {{ user.limite_credito }}</p>-->
+  </div>
+</div>
+{% endblock %}

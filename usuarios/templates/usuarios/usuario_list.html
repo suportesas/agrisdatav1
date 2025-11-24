@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Usuários | ERP Agrícola{% endblock %}
+{% block page_title %}Gerenciamento de Usuários{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+    <h4 class="fw-bold text-secondary">Usuários Cadastrados</h4>
+    <a href="{% url 'usuarios:usuario_create' %}" class="btn btn-primary">
+      <i class="bi bi-plus-circle"></i> Novo Usuário
+    </a>
+  </div>
+
+  <!-- Filtros -->
+  <form id="filtroForm" method="get" class="card p-3 mb-4 shadow-sm border-0 rounded-4 bg-light">
+    <div class="row g-2 align-items-center">
+      <div class="col-md-4">
+        <input type="text" id="buscaInput" name="q" value="{{ request.GET.q|default:'' }}" class="form-control"
+          placeholder="Buscar por nome, e-mail ou telefone...">
+      </div>
+      <div class="col-md-3">
+        <select id="tipoSelect" name="tipo" class="form-select">
+          <option value="">-- Tipo de Usuário --</option>
+          <option value="ADMIN" {% if request.GET.tipo == "ADMIN" %}selected{% endif %}>Administrador</option>
+          <option value="FUNC" {% if request.GET.tipo == "FUNC" %}selected{% endif %}>Funcionário</option>
+          <option value="PROD" {% if request.GET.tipo == "PROD" %}selected{% endif %}>Produtor</option>
+        </select>
+      </div>
+    </div>
+  </form>
+
+  <!-- Container da tabela -->
+  <div id="tabelaUsuarios">
+    {% include 'usuarios/_usuario_table.html' %}
+  </div>
+</div>
+
+<!-- Script AJAX -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const filtroForm = document.getElementById('filtroForm');
+  const buscaInput = document.getElementById('buscaInput');
+  const tipoSelect = document.getElementById('tipoSelect');
+  const tabelaContainer = document.getElementById('tabelaUsuarios');
+
+  function atualizarTabela() {
+    const params = new URLSearchParams(new FormData(filtroForm));
+    fetch(`/usuarios/buscar/?${params.toString()}`, {
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(response => response.json())
+    .then(data => {
+      tabelaContainer.innerHTML = data.html;
+    })
+    .catch(error => console.error('Erro na busca:', error));
+  }
+
+  buscaInput.addEventListener('keyup', () => atualizarTabela());
+  tipoSelect.addEventListener('change', () => atualizarTabela());
+});
+</script>
+{% endblock %}

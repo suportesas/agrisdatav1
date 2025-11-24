@@ -1,0 +1,325 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ action }} Plano | ERP Agrícola{% endblock %}
+{% block page_title %}{{ action }} Plano{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <div class="card shadow-sm border-0 rounded-4">
+    <div class="card-body p-4">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="fw-bold text-secondary mb-0">
+          {% if plano %}
+            <i class="bi bi-pencil-square"></i> Editar Plano: {{ plano.nome }}
+          {% else %}
+            <i class="bi bi-plus-circle"></i> Novo Plano
+          {% endif %}
+        </h4>
+        {% if total_empresas %}
+        <span class="badge bg-info">
+          {{ total_empresas }} empresa{{ total_empresas|pluralize }} usando este plano
+        </span>
+        {% endif %}
+      </div>
+
+      <form method="post" novalidate>
+        {% csrf_token %}
+
+        <!-- SEÇÃO: Informações Básicas -->
+        <div class="row g-3 mb-4">
+          <div class="col-12">
+            <h5 class="text-primary border-bottom pb-2">
+              <i class="bi bi-info-circle"></i> Informações Básicas
+            </h5>
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Código do Plano</label>
+            {{ form.codigo }}
+            {% if form.codigo.errors %}
+              <div class="text-danger small">{{ form.codigo.errors|join:", " }}</div>
+            {% endif %}
+            <small class="text-muted">Identificador único</small>
+          </div>
+
+          <div class="col-md-5">
+            <label class="form-label fw-semibold">Nome do Plano</label>
+            {{ form.nome }}
+            {% if form.nome.errors %}
+              <div class="text-danger small">{{ form.nome.errors|join:", " }}</div>
+            {% endif %}
+          </div>
+
+          <div class="col-md-2">
+            <label class="form-label fw-semibold">Ícone</label>
+            {{ form.icone }}
+            <small class="text-muted">Ex: 🌱 🌾 🚜</small>
+          </div>
+
+          <div class="col-md-2">
+            <label class="form-label fw-semibold">Ordem</label>
+            {{ form.ordem }}
+            <small class="text-muted">Ordem de exibição</small>
+          </div>
+
+          <div class="col-md-12">
+            <label class="form-label fw-semibold">Descrição</label>
+            {{ form.descricao }}
+            <small class="text-muted">Descrição detalhada do plano</small>
+          </div>
+
+          <div class="col-md-2">
+            <div class="form-check mt-4">
+              {{ form.ativo }}
+              <label class="form-check-label fw-semibold" for="id_ativo">
+                Plano Ativo
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- SEÇÃO: Valores e Preços -->
+        <div class="row g-3 mb-4">
+          <div class="col-12">
+            <h5 class="text-success border-bottom pb-2">
+              <i class="bi bi-currency-dollar"></i> Valores e Preços
+            </h5>
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Valor Mensal (R$)</label>
+            <div class="input-group">
+              <span class="input-group-text">R$</span>
+              {{ form.valor_mensal }}
+            </div>
+            {% if form.valor_mensal.errors %}
+              <div class="text-danger small">{{ form.valor_mensal.errors|join:", " }}</div>
+            {% endif %}
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Valor Anual (R$)</label>
+            <div class="input-group">
+              <span class="input-group-text">R$</span>
+              {{ form.valor_anual }}
+            </div>
+            <small class="text-muted">Deixe vazio para calcular automaticamente</small>
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Desconto Anual (%)</label>
+            <div class="input-group">
+              {{ form.desconto_anual }}
+              <span class="input-group-text">%</span>
+            </div>
+            <small class="text-muted">Ex: 16.67% = 2 meses grátis</small>
+          </div>
+
+          <!-- Preview de Economia -->
+          <div class="col-12">
+            <div class="alert alert-info">
+              <strong>💡 Dica:</strong> 
+              Com <strong id="desconto-preview">16.67</strong>% de desconto anual, 
+              o cliente paga 10 meses e ganha 2 meses grátis!
+            </div>
+          </div>
+        </div>
+
+        <!-- SEÇÃO: Limites de Recursos -->
+        <div class="row g-3 mb-4">
+          <div class="col-12">
+            <h5 class="text-warning border-bottom pb-2">
+              <i class="bi bi-speedometer2"></i> Limites de Recursos
+            </h5>
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">
+              <i class="bi bi-geo-alt-fill text-primary"></i> Fazendas
+            </label>
+            {{ form.limite_fazendas }}
+            <small class="text-muted">999 = ilimitado</small>
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">
+              <i class="bi bi-people-fill text-success"></i> Usuários
+            </label>
+            {{ form.limite_usuarios }}
+            <small class="text-muted">999 = ilimitado</small>
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">
+              <i class="bi bi-grid-fill text-warning"></i> Talhões
+            </label>
+            {{ form.limite_talhoes }}
+            <small class="text-muted">999 = ilimitado</small>
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">
+              <i class="bi bi-box-seam-fill text-info"></i> Produtos
+            </label>
+            {{ form.limite_produtos }}
+            <small class="text-muted">999 = ilimitado</small>
+          </div>
+        </div>
+
+        <!-- SEÇÃO: Funcionalidades Extras -->
+        <div class="row g-3 mb-4">
+          <div class="col-12">
+            <h5 class="text-info border-bottom pb-2">
+              <i class="bi bi-star-fill"></i> Funcionalidades Extras
+            </h5>
+          </div>
+
+          <div class="col-md-3">
+            <div class="form-check">
+              {{ form.acesso_relatorios_avancados }}
+              <label class="form-check-label" for="id_acesso_relatorios_avancados">
+                <i class="bi bi-graph-up text-primary"></i> Relatórios Avançados
+              </label>
+            </div>
+          </div>
+
+          <div class="col-md-3">
+            <div class="form-check">
+              {{ form.acesso_api }}
+              <label class="form-check-label" for="id_acesso_api">
+                <i class="bi bi-code-slash text-success"></i> Acesso à API
+              </label>
+            </div>
+          </div>
+
+          <div class="col-md-3">
+            <div class="form-check">
+              {{ form.acesso_app_mobile }}
+              <label class="form-check-label" for="id_acesso_app_mobile">
+                <i class="bi bi-phone text-info"></i> App Mobile
+              </label>
+            </div>
+          </div>
+
+          <div class="col-md-3">
+            <div class="form-check">
+              {{ form.acesso_suporte_prioritario }}
+              <label class="form-check-label" for="id_acesso_suporte_prioritario">
+                <i class="bi bi-headset text-warning"></i> Suporte Prioritário
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Preview do Plano -->
+        <div class="row mb-4">
+          <div class="col-12">
+            <div class="card bg-light">
+              <div class="card-body">
+                <h6 class="fw-bold mb-3">👀 Preview do Plano</h6>
+                <div class="row">
+                  <div class="col-md-6">
+                    <p class="mb-1">
+                      <strong id="preview-icone">{{ form.icone.value|default:"🌱" }}</strong>
+                      <strong id="preview-nome">{{ form.nome.value|default:"Nome do Plano" }}</strong>
+                    </p>
+                    <p class="text-muted mb-0">
+                      <span id="preview-mensal">R$ {{ form.valor_mensal.value|default:"0.00" }}</span>/mês
+                    </p>
+                  </div>
+                  <div class="col-md-6 text-end">
+                    <small class="text-muted">
+                      <span id="preview-fazendas">{{ form.limite_fazendas.value|default:"0" }}</span> fazendas • 
+                      <span id="preview-usuarios">{{ form.limite_usuarios.value|default:"0" }}</span> usuários • 
+                      <span id="preview-talhoes">{{ form.limite_talhoes.value|default:"0" }}</span> talhões
+                    </small>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Aviso sobre Empresas Afetadas -->
+        {% if plano and total_empresas > 0 %}
+        <div class="alert alert-warning">
+          <i class="bi bi-exclamation-triangle-fill"></i>
+          <strong>Atenção!</strong> 
+          Ao salvar, {{ total_empresas }} empresa{{ total_empresas|pluralize }} 
+          que usa{{ total_empresas|pluralize:"m,m" }} este plano 
+          {{ total_empresas|pluralize:"terá,terão" }} os limites atualizados automaticamente.
+        </div>
+        {% endif %}
+
+        <!-- Botões -->
+        <div class="d-flex justify-content-between gap-3">
+          <a href="{% url 'empresas:plano_list' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Voltar
+          </a>
+          <button type="submit" class="btn btn-success px-5">
+            <i class="bi bi-check-circle"></i> Salvar Plano
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Adiciona classes aos campos
+  document.querySelectorAll('input:not([type="checkbox"]), select, textarea').forEach(el => {
+    if (!el.classList.contains('form-control') && !el.classList.contains('form-select')) {
+      el.classList.add(el.tagName === 'SELECT' ? 'form-select' : 'form-control');
+    }
+  });
+
+  // Preview dinâmico
+  const updatePreview = () => {
+    document.getElementById('preview-nome').textContent = 
+      document.getElementById('id_nome').value || 'Nome do Plano';
+    
+    document.getElementById('preview-icone').textContent = 
+      document.getElementById('id_icone').value || '🌱';
+    
+    document.getElementById('preview-mensal').textContent = 
+      'R$ ' + (document.getElementById('id_valor_mensal').value || '0.00');
+    
+    document.getElementById('preview-fazendas').textContent = 
+      document.getElementById('id_limite_fazendas').value || '0';
+    
+    document.getElementById('preview-usuarios').textContent = 
+      document.getElementById('id_limite_usuarios').value || '0';
+    
+    document.getElementById('preview-talhoes').textContent = 
+      document.getElementById('id_limite_talhoes').value || '0';
+    
+    document.getElementById('desconto-preview').textContent = 
+      document.getElementById('id_desconto_anual').value || '0';
+  };
+
+  // Atualiza preview ao digitar
+  ['id_nome', 'id_icone', 'id_valor_mensal', 'id_limite_fazendas', 
+   'id_limite_usuarios', 'id_limite_talhoes', 'id_desconto_anual'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('input', updatePreview);
+  });
+});
+</script>
+
+<style>
+  .form-control, .form-select {
+    border-radius: 8px;
+  }
+  .form-check-input {
+    width: 1.3em;
+    height: 1.3em;
+    margin-top: 0.2em;
+  }
+  .input-group-text {
+    background-color: #e9ecef;
+    border: 1px solid #ced4da;
+  }
+</style>
+{% endblock %}

@@ -1,0 +1,37 @@
+minha_empresa.html{% extends 'base.html' %}
+{% block title %}Minha Empresa | ERP Agrícola{% endblock %}
+{% block page_title %}Informações da Minha Empresa{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <div class="card shadow-sm border-0 rounded-4">
+    <div class="card-header bg-success text-white">
+      <h5 class="mb-0"><i class="bi bi-building"></i> {{ empresa.nome }}</h5>
+    </div>
+    <div class="card-body">
+      <dl class="row mb-0">
+        <dt class="col-sm-3">CNPJ</dt>
+        <dd class="col-sm-9">{{ empresa.cnpj|default:"—" }}</dd>
+
+        <dt class="col-sm-3">Email</dt>
+        <dd class="col-sm-9">{{ empresa.email|default:"—" }}</dd>
+
+        <dt class="col-sm-3">Telefone</dt>
+        <dd class="col-sm-9">{{ empresa.telefone|default:"—" }}</dd>
+
+        <dt class="col-sm-3">Endereço</dt>
+        <dd class="col-sm-9">{{ empresa.endereco|default:"—" }}</dd>
+
+        <dt class="col-sm-3">Cidade</dt>
+        <dd class="col-sm-9">{{ empresa.cidade|default:"—" }}</dd>
+
+        <dt class="col-sm-3">UF</dt>
+        <dd class="col-sm-9">{{ empresa.uf|default:"—" }}</dd>
+
+        <dt class="col-sm-3">Data de Cadastro</dt>
+        <dd class="col-sm-9">{{ empresa.data_criacao|date:"d/m/Y" }}</dd>
+      </dl>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Painel de Empresas | ERP Agrícola{% endblock %}
+{% block page_title %}Controle de Empresas (Proprietário do Sistema){% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="fw-bold text-secondary">Empresas Clientes</h4>
+  </div>
+
+  <!-- Filtros -->
+  <form id="filtroForm" method="get" class="card p-3 mb-4 shadow-sm border-0 rounded-4 bg-light">
+    <div class="row g-2 align-items-center">
+      <div class="col-md-4">
+        <input type="text" id="buscaInput" name="q" value="{{ request.GET.q|default:'' }}" class="form-control"
+          placeholder="Buscar por nome ou CNPJ...">
+      </div>
+      <div class="col-md-3">
+        <select id="statusSelect" name="status" class="form-select">
+          <option value="">-- Status --</option>
+          <option value="ativas" {% if request.GET.status == "ativas" %}selected{% endif %}>Ativas</option>
+          <option value="bloqueadas" {% if request.GET.status == "bloqueadas" %}selected{% endif %}>Bloqueadas</option>
+          <option value="expiradas" {% if request.GET.status == "expiradas" %}selected{% endif %}>Expiradas</option>
+        </select>
+      </div>
+    </div>
+  </form>
+
+  <!-- Tabela -->
+  <div id="tabelaEmpresas">
+    {% include 'empresas/_empresa_table.html' %}
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const form = document.getElementById('filtroForm');
+  const busca = document.getElementById('buscaInput');
+  const status = document.getElementById('statusSelect');
+  const tabela = document.getElementById('tabelaEmpresas');
+
+  function atualizarTabela() {
+    const params = new URLSearchParams(new FormData(form));
+    fetch(`?${params.toString()}`, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+      .then(res => res.json())
+      .then(data => { tabela.innerHTML = data.html; })
+      .catch(err => console.error('Erro na busca:', err));
+  }
+
+  busca.addEventListener('keyup', atualizarTabela);
+  status.addEventListener('change', atualizarTabela);
+});
+</script>
+{% endblock %}

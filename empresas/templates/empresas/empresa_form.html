@@ -1,0 +1,221 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ empresa|default_if_none:"Nova Empresa" }} | ERP Agrícola{% endblock %}
+{% block page_title %}{{ empresa|default_if_none:"Nova Empresa" }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <div class="card shadow-sm border-0 rounded-4">
+    <div class="card-body p-4">
+      <h4 class="mb-4 fw-bold text-secondary">
+        {% if empresa %}
+          <i class="bi bi-pencil"></i> Editar Empresa
+        {% else %}
+          <i class="bi bi-building"></i> Nova Empresa
+        {% endif %}
+      </h4>
+
+      <form method="post" novalidate>
+        {% csrf_token %}
+        
+        <!-- SEÇÃO: Dados Básicos -->
+        <div class="row g-3 mb-4">
+          <div class="col-12">
+            <h5 class="text-primary border-bottom pb-2">📋 Dados Básicos</h5>
+          </div>
+          
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Nome</label>
+            {{ form.nome }}
+            {% if form.nome.errors %}
+              <div class="text-danger small">{{ form.nome.errors|join:", " }}</div>
+            {% endif %}
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">CNPJ</label>
+            {{ form.cnpj }}
+            {% if form.cnpj.errors %}
+              <div class="text-danger small">{{ form.cnpj.errors|join:", " }}</div>
+            {% endif %}
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Telefone</label>
+            {{ form.telefone }}
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">E-mail</label>
+            {{ form.email }}
+          </div>
+
+          <div class="col-md-8">
+            <label class="form-label fw-semibold">Endereço</label>
+            {{ form.endereco }}
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Cidade</label>
+            {{ form.cidade }}
+          </div>
+
+          <div class="col-md-2">
+            <label class="form-label fw-semibold">UF</label>
+            {{ form.uf }}
+          </div>
+        </div>
+
+        <!-- SEÇÃO: Plano e Assinatura -->
+        <div class="row g-3 mb-4">
+          <div class="col-12">
+            <h5 class="text-success border-bottom pb-2">📦 Plano e Assinatura</h5>
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Plano Contratado</label>
+            {{ form.plano }}
+            {% if form.plano.errors %}
+              <div class="text-danger small">{{ form.plano.errors|join:", " }}</div>
+            {% endif %}
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Valor Mensalidade (R$)</label>
+            {{ form.valor_mensalidade }}
+          </div>
+
+          <div class="col-md-2">
+            <label class="form-label fw-semibold">Dia Vencimento</label>
+            {{ form.dia_vencimento }}
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Data de Expiração</label>
+            {{ form.data_expiracao }}
+          </div>
+        </div>
+
+        <!-- SEÇÃO: Status -->
+        <div class="row g-3 mb-4">
+          <div class="col-12">
+            <h5 class="text-warning border-bottom pb-2">⚙️ Status e Controle</h5>
+          </div>
+
+          <div class="col-md-3">
+            <div class="form-check mt-4">
+              {{ form.ativa }}
+              <label class="form-check-label fw-semibold" for="id_ativa">
+                Empresa Ativa
+              </label>
+            </div>
+          </div>
+
+          <div class="col-md-3">
+            <div class="form-check mt-4">
+              {{ form.bloqueada }}
+              <label class="form-check-label fw-semibold" for="id_bloqueada">
+                Bloqueada
+              </label>
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Bloqueada até</label>
+            {{ form.bloqueada_ate }}
+            <small class="text-muted">Deixe em branco para bloqueio permanente</small>
+          </div>
+
+          <div class="col-md-12">
+            <label class="form-label fw-semibold">Motivo do Bloqueio</label>
+            {{ form.motivo_bloqueio }}
+          </div>
+        </div>
+
+        <!-- Botões -->
+        <div class="mt-4 d-flex justify-content-between">
+          <a href="{% url 'empresas:empresa_list' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Voltar
+          </a>
+          <button type="submit" class="btn btn-success px-5">
+            <i class="bi bi-check-circle"></i> Salvar Empresa
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Card informativo sobre o plano (se estiver editando) -->
+  {% if empresa and empresa.plano %}
+  <div class="card shadow-sm border-0 rounded-4 mt-4">
+    <div class="card-body">
+      <h5 class="text-secondary mb-3">
+        📊 Limites do Plano {{ empresa.get_plano_display }}
+      </h5>
+      <div class="row">
+        <div class="col-md-3">
+          <div class="text-center p-3 bg-light rounded">
+            <h3 class="text-primary mb-0">{{ empresa.limite_fazendas }}</h3>
+            <small class="text-muted">Fazendas</small>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="text-center p-3 bg-light rounded">
+            <h3 class="text-success mb-0">{{ empresa.limite_usuarios }}</h3>
+            <small class="text-muted">Usuários</small>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="text-center p-3 bg-light rounded">
+            <h3 class="text-warning mb-0">{{ empresa.limite_talhoes }}</h3>
+            <small class="text-muted">Talhões</small>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="text-center p-3 bg-light rounded">
+            <h3 class="text-info mb-0">{{ empresa.limite_produtos }}</h3>
+            <small class="text-muted">Produtos</small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    // Adiciona classe form-control em todos os inputs
+    document.querySelectorAll('input:not([type="checkbox"]), select, textarea').forEach(el => {
+      if (!el.classList.contains('form-control') && !el.classList.contains('form-select')) {
+        if (el.tagName === 'SELECT') {
+          el.classList.add('form-select');
+        } else {
+          el.classList.add('form-control');
+        }
+      }
+    });
+
+    // Quando mudar o plano, atualiza informações
+    const planoSelect = document.getElementById('id_plano');
+    if (planoSelect) {
+      planoSelect.addEventListener('change', function() {
+        // Aqui você pode adicionar AJAX para buscar valores do plano
+        console.log('Plano selecionado:', this.value);
+      });
+    }
+  });
+</script>
+
+<style>
+  .form-control, .form-select {
+    border-radius: 8px;
+  }
+  .form-check-input {
+    width: 1.5em;
+    height: 1.5em;
+    margin-top: 0.15em;
+  }
+</style>
+{% endblock %}

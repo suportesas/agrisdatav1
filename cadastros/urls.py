@@ -51,4 +51,11 @@ urlpatterns = [
     path('funcionarios/<int:pk>/', views.funcionario_detail, name='funcionario_detail'),
     path('funcionarios/<int:pk>/editar/', views.funcionario_update, name='funcionario_update'),
     path('funcionarios/<int:pk>/excluir/', views.funcionario_delete, name='funcionario_delete'),
+    
+    # ==================== CULTURAS ====================
+    path('culturas/', views.cultura_list, name='cultura_list'),
+    path('culturas/nova/', views.cultura_create, name='cultura_create'),
+    path('culturas/<int:pk>/', views.cultura_detail, name='cultura_detail'),
+    path('culturas/<int:pk>/editar/', views.cultura_update, name='cultura_update'),
+    path('culturas/<int:pk>/excluir/', views.cultura_delete, name='cultura_delete'),
 ]

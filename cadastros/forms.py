@@ -674,3 +674,153 @@ class FuncionarioForm(forms.ModelForm):
             funcionario.save()
         
         return funcionario
+
+
+
+"""
+ADICIONE ESTE CÓDIGO NO FINAL DO ARQUIVO cadastros/forms.py
+"""
+
+from .models import Cultura
+
+
+class CulturaForm(forms.ModelForm):
+    """Formulário de cadastro de culturas"""
+    
+    class Meta:
+        model = Cultura
+        fields = [
+            'nome', 'nome_cientifico', 'tipo', 'variedade', 'codigo_interno',
+            'ciclo_cultivo', 'dias_colheita', 
+            'espacamento_linhas', 'espacamento_plantas', 'densidade_plantio',
+            'temperatura_ideal_min', 'temperatura_ideal_max', 'necessidade_agua',
+            'unidade_medida', 'produtividade_esperada', 'preco_medio', 'mercado_destino',
+            'irrigacao_necessaria', 'tipo_irrigacao', 
+            'adubacao_recomendada', 'controle_pragas',
+            'certificacao_organica', 'certificacao_exportacao',
+            'imagem', 'observacoes', 'ativa'
+        ]
+        widgets = {
+            'nome': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ex: Melão, Melancia, Milho'
+            }),
+            'nome_cientifico': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Nome científico'
+            }),
+            'tipo': forms.Select(attrs={'class': 'form-select'}),
+            'variedade': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ex: Amarelo, Pele de Sapo'
+            }),
+            'codigo_interno': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Código interno'
+            }),
+            'ciclo_cultivo': forms.Select(attrs={'class': 'form-select'}),
+            'dias_colheita': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': 1
+            }),
+            'espacamento_linhas': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.01',
+                'placeholder': 'Em metros'
+            }),
+            'espacamento_plantas': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.01',
+                'placeholder': 'Em metros'
+            }),
+            'densidade_plantio': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Plantas por hectare'
+            }),
+            'temperatura_ideal_min': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.1',
+                'placeholder': '°C'
+            }),
+            'temperatura_ideal_max': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.1',
+                'placeholder': '°C'
+            }),
+            'necessidade_agua': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ex: 400-600mm ou Alta, Média, Baixa'
+            }),
+            'unidade_medida': forms.Select(attrs={'class': 'form-select'}),
+            'produtividade_esperada': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.01',
+                'placeholder': 'Por hectare'
+            }),
+            'preco_medio': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.01',
+                'placeholder': 'R$ por unidade'
+            }),
+            'mercado_destino': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ex: Interno, Exportação, Ambos'
+            }),
+            'tipo_irrigacao': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ex: Gotejamento, Aspersão'
+            }),
+            'adubacao_recomendada': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'Descrição da adubação recomendada'
+            }),
+            'controle_pragas': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'Principais pragas e métodos de controle'
+            }),
+            'imagem': forms.FileInput(attrs={
+                'class': 'form-control',
+                'accept': 'image/*'
+            }),
+            'observacoes': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'Informações adicionais'
+            }),
+        }
+    
+    def __init__(self, *args, **kwargs):
+        self.empresa = kwargs.pop('empresa', None)
+        self.usuario = kwargs.pop('usuario', None)
+        super().__init__(*args, **kwargs)
+    
+    def clean(self):
+        """Validações gerais"""
+        cleaned_data = super().clean()
+        
+        temp_min = cleaned_data.get('temperatura_ideal_min')
+        temp_max = cleaned_data.get('temperatura_ideal_max')
+        
+        if temp_min and temp_max and temp_min > temp_max:
+            raise ValidationError({
+                'temperatura_ideal_max': 'Temperatura máxima deve ser maior que a mínima'
+            })
+        
+        return cleaned_data
+    
+    def save(self, commit=True):
+        """Salva cultura com empresa e usuário"""
+        cultura = super().save(commit=False)
+        
+        if self.empresa:
+            cultura.empresa = self.empresa
+        
+        if self.usuario:
+            cultura.cadastrado_por = self.usuario
+        
+        if commit:
+            cultura.save()
+        
+        return cultura

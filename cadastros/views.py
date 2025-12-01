@@ -789,3 +789,174 @@ def funcionario_delete(request, pk):
     return render(request, 'cadastros/funcionario_confirm_delete.html', {
         'funcionario': funcionario
     })
+
+
+
+"""
+ADICIONE ESTE CÓDIGO NO FINAL DO ARQUIVO cadastros/views.py
+"""
+
+from .models import Cultura
+from .forms import CulturaForm
+
+
+# ==================== CULTURAS ====================
+
+@login_required
+def cultura_list(request):
+    """Lista todas as culturas da empresa"""
+    culturas = Cultura.objects.filter(
+        empresa=request.user.empresa
+    ).select_related('empresa', 'cadastrado_por')
+    
+    # Busca
+    q = request.GET.get('q', '').strip()
+    if q:
+        culturas = culturas.filter(
+            Q(nome__icontains=q) |
+            Q(variedade__icontains=q) |
+            Q(nome_cientifico__icontains=q) |
+            Q(codigo_interno__icontains=q)
+        )
+    
+    # Filtro por tipo
+    tipo = request.GET.get('tipo', '')
+    if tipo:
+        culturas = culturas.filter(tipo=tipo)
+    
+    # Filtro por status
+    status = request.GET.get('status', '')
+    if status == 'ativas':
+        culturas = culturas.filter(ativa=True)
+    elif status == 'inativas':
+        culturas = culturas.filter(ativa=False)
+    
+    # Paginação
+    paginator = Paginator(culturas, 25)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    # Informações adicionais
+    context = {
+        'page_obj': page_obj,
+        'total_culturas': culturas.count(),
+        'limite_plano': request.user.empresa.limite_produtos,
+        'pode_adicionar': culturas.filter(ativa=True).count() < request.user.empresa.limite_produtos,
+        'tipos_cultura': Cultura.TIPO_CULTURA,
+    }
+    
+    return render(request, 'cadastros/cultura_list.html', context)
+
+
+@login_required
+def cultura_detail(request, pk):
+    """Detalhes completos da cultura"""
+    cultura = get_object_or_404(
+        Cultura,
+        pk=pk,
+        empresa=request.user.empresa
+    )
+    
+    context = {
+        'cultura': cultura,
+        # 'total_plantios': cultura.get_total_plantios(),  # Implementar depois
+    }
+    
+    return render(request, 'cadastros/cultura_detail.html', context)
+
+
+@login_required
+def cultura_create(request):
+    """Cria nova cultura"""
+    # Verifica limite do plano
+    total_culturas_ativas = Cultura.objects.filter(
+        empresa=request.user.empresa,
+        ativa=True
+    ).count()
+    
+    if total_culturas_ativas >= request.user.empresa.limite_produtos:
+        messages.error(
+            request,
+            f'❌ Limite de culturas atingido! Seu plano permite apenas '
+            f'{request.user.empresa.limite_produtos} cultura(s) ativa(s). '
+            f'Faça upgrade do plano para cadastrar mais.'
+        )
+        return redirect('cadastros:cultura_list')
+    
+    if request.method == 'POST':
+        form = CulturaForm(
+            request.POST,
+            request.FILES,
+            empresa=request.user.empresa,
+            usuario=request.user
+        )
+        if form.is_valid():
+            cultura = form.save()
+            messages.success(request, f'✅ Cultura "{cultura.nome}" cadastrada com sucesso!')
+            return redirect('cadastros:cultura_detail', pk=cultura.pk)
+    else:
+        form = CulturaForm(
+            empresa=request.user.empresa,
+            usuario=request.user
+        )
+    
+    return render(request, 'cadastros/cultura_form.html', {
+        'form': form,
+        'action': 'Cadastrar'
+    })
+
+
+@login_required
+def cultura_update(request, pk):
+    """Edita cultura"""
+    cultura = get_object_or_404(Cultura, pk=pk, empresa=request.user.empresa)
+    
+    if request.method == 'POST':
+        form = CulturaForm(
+            request.POST,
+            request.FILES,
+            instance=cultura,
+            empresa=request.user.empresa,
+            usuario=request.user
+        )
+        if form.is_valid():
+            cultura = form.save()
+            messages.success(request, f'✅ Cultura "{cultura.nome}" atualizada!')
+            return redirect('cadastros:cultura_detail', pk=cultura.pk)
+    else:
+        form = CulturaForm(
+            instance=cultura,
+            empresa=request.user.empresa,
+            usuario=request.user
+        )
+    
+    return render(request, 'cadastros/cultura_form.html', {
+        'form': form,
+        'cultura': cultura,
+        'action': 'Editar'
+    })
+
+
+@login_required
+def cultura_delete(request, pk):
+    """Deleta cultura"""
+    cultura = get_object_or_404(Cultura, pk=pk, empresa=request.user.empresa)
+    
+    # Verifica se tem plantios associados (implementar depois)
+    # total_plantios = cultura.get_total_plantios()
+    # if total_plantios > 0:
+    #     messages.error(request, f'❌ Não é possível excluir! A cultura possui {total_plantios} plantio(s).')
+    #     return redirect('cadastros:cultura_detail', pk=cultura.pk)
+    
+    if request.method == 'POST':
+        nome = cultura.nome
+        
+        # Remove imagem se existir
+        if cultura.imagem:
+            cultura.imagem.delete()
+        
+        cultura.delete()
+        messages.success(request, f'🗑️ Cultura "{nome}" excluída com sucesso!')
+        return redirect('cadastros:cultura_list')
+    
+    return render(request, 'cadastros/cultura_confirm_delete.html', {'cultura': cultura})

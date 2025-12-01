@@ -40,4 +40,15 @@ urlpatterns = [
     
     # ==================== ALERTAS ====================
     path('alertas/', views.dashboard_alertas, name='dashboard_alertas'),
+    
+    # ==================== FUNÇÕES ====================
+    path('funcoes/', views.funcao_list, name='funcao_list'),
+    path('funcoes/criar-ajax/', views.funcao_create_ajax, name='funcao_create_ajax'),
+    
+    # ==================== FUNCIONÁRIOS ====================
+    path('funcionarios/', views.funcionario_list, name='funcionario_list'),
+    path('funcionarios/novo/', views.funcionario_create, name='funcionario_create'),
+    path('funcionarios/<int:pk>/', views.funcionario_detail, name='funcionario_detail'),
+    path('funcionarios/<int:pk>/editar/', views.funcionario_update, name='funcionario_update'),
+    path('funcionarios/<int:pk>/excluir/', views.funcionario_delete, name='funcionario_delete'),
 ]

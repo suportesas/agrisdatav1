@@ -1159,3 +1159,342 @@ class Funcionario(models.Model):
                 raise ValidationError({
                     'data_demissao': 'Data de demissão não pode ser anterior à admissão'
                 })
+
+
+
+# CULTURA
+
+"""
+ADICIONE ESTE CÓDIGO NO FINAL DO ARQUIVO cadastros/models.py
+(Após o modelo DocumentoFazenda)
+"""
+
+
+class Cultura(models.Model):
+    """
+    Cadastro de Culturas/Produtos Agrícolas
+    Melão, Melancia, Milho, Abóbora, etc
+    """
+    
+    TIPO_CULTURA = [
+        ('FRUTA', 'Fruta'),
+        ('HORTALICA', 'Hortaliça'),
+        ('GRAOS', 'Grãos'),
+        ('TUBEROSAS', 'Tuberosas'),
+        ('OLEAGINOSAS', 'Oleaginosas'),
+        ('OUTROS', 'Outros'),
+    ]
+    
+    CICLO_CULTURA = [
+        ('CURTO', 'Curto (até 90 dias)'),
+        ('MEDIO', 'Médio (90 a 180 dias)'),
+        ('LONGO', 'Longo (mais de 180 dias)'),
+    ]
+    
+    UNIDADE_MEDIDA = [
+        ('KG', 'Quilograma (kg)'),
+        ('TON', 'Tonelada (ton)'),
+        ('UNIDADE', 'Unidade'),
+        ('CAIXA', 'Caixa'),
+        ('SACO', 'Saco'),
+        ('DÚZIA', 'Dúzia'),
+    ]
+    
+    # Vinculação multi-tenant
+    empresa = models.ForeignKey(
+        'empresas.Empresa',
+        on_delete=models.CASCADE,
+        related_name='culturas',
+        verbose_name='Empresa'
+    )
+    
+    # Dados básicos
+    nome = models.CharField(
+        'Nome da Cultura',
+        max_length=100,
+        help_text='Ex: Melão, Melancia, Milho'
+    )
+    
+    nome_cientifico = models.CharField(
+        'Nome Científico',
+        max_length=150,
+        blank=True,
+        help_text='Nome científico da espécie'
+    )
+    
+    tipo = models.CharField(
+        'Tipo de Cultura',
+        max_length=20,
+        choices=TIPO_CULTURA,
+        default='FRUTA'
+    )
+    
+    # Variedades
+    variedade = models.CharField(
+        'Variedade',
+        max_length=100,
+        blank=True,
+        help_text='Ex: Amarelo, Pele de Sapo, Gália'
+    )
+    
+    codigo_interno = models.CharField(
+        'Código Interno',
+        max_length=20,
+        blank=True,
+        help_text='Código de identificação interno'
+    )
+    
+    # Características de plantio
+    ciclo_cultivo = models.CharField(
+        'Ciclo de Cultivo',
+        max_length=10,
+        choices=CICLO_CULTURA,
+        default='MEDIO',
+        help_text='Tempo médio até colheita'
+    )
+    
+    dias_colheita = models.IntegerField(
+        'Dias até Colheita',
+        default=90,
+        validators=[MinValueValidator(1)],
+        help_text='Dias do plantio até colheita'
+    )
+    
+    espacamento_linhas = models.DecimalField(
+        'Espaçamento entre Linhas (m)',
+        max_digits=5,
+        decimal_places=2,
+        blank=True,
+        null=True,
+        validators=[MinValueValidator(Decimal('0.01'))],
+        help_text='Distância entre linhas em metros'
+    )
+    
+    espacamento_plantas = models.DecimalField(
+        'Espaçamento entre Plantas (m)',
+        max_digits=5,
+        decimal_places=2,
+        blank=True,
+        null=True,
+        validators=[MinValueValidator(Decimal('0.01'))],
+        help_text='Distância entre plantas em metros'
+    )
+    
+    densidade_plantio = models.IntegerField(
+        'Densidade de Plantio (plantas/ha)',
+        blank=True,
+        null=True,
+        validators=[MinValueValidator(1)],
+        help_text='Quantidade de plantas por hectare'
+    )
+    
+    # Características climáticas
+    temperatura_ideal_min = models.DecimalField(
+        'Temperatura Ideal Mínima (°C)',
+        max_digits=4,
+        decimal_places=1,
+        blank=True,
+        null=True,
+        help_text='Temperatura mínima ideal'
+    )
+    
+    temperatura_ideal_max = models.DecimalField(
+        'Temperatura Ideal Máxima (°C)',
+        max_digits=4,
+        decimal_places=1,
+        blank=True,
+        null=True,
+        help_text='Temperatura máxima ideal'
+    )
+    
+    necessidade_agua = models.CharField(
+        'Necessidade de Água',
+        max_length=50,
+        blank=True,
+        help_text='Ex: 400-600mm, Alta, Média'
+    )
+    
+    # Produtividade
+    unidade_medida = models.CharField(
+        'Unidade de Medida',
+        max_length=10,
+        choices=UNIDADE_MEDIDA,
+        default='TON'
+    )
+    
+    produtividade_esperada = models.DecimalField(
+        'Produtividade Esperada (por hectare)',
+        max_digits=10,
+        decimal_places=2,
+        blank=True,
+        null=True,
+        validators=[MinValueValidator(Decimal('0.01'))],
+        help_text='Produção média por hectare'
+    )
+    
+    # Características comerciais
+    preco_medio = models.DecimalField(
+        'Preço Médio de Venda',
+        max_digits=10,
+        decimal_places=2,
+        blank=True,
+        null=True,
+        validators=[MinValueValidator(Decimal('0.01'))],
+        help_text='Preço médio no mercado'
+    )
+    
+    mercado_destino = models.CharField(
+        'Mercado de Destino',
+        max_length=100,
+        blank=True,
+        help_text='Ex: Interno, Exportação, Ambos'
+    )
+    
+    # Manejo
+    irrigacao_necessaria = models.BooleanField(
+        'Irrigação Necessária',
+        default=True
+    )
+    
+    tipo_irrigacao = models.CharField(
+        'Tipo de Irrigação',
+        max_length=100,
+        blank=True,
+        help_text='Ex: Gotejamento, Aspersão, Pivô Central'
+    )
+    
+    adubacao_recomendada = models.TextField(
+        'Adubação Recomendada',
+        blank=True,
+        help_text='Descrição da adubação recomendada'
+    )
+    
+    controle_pragas = models.TextField(
+        'Controle de Pragas e Doenças',
+        blank=True,
+        help_text='Principais pragas e métodos de controle'
+    )
+    
+    # Certificações
+    certificacao_organica = models.BooleanField(
+        'Certificação Orgânica',
+        default=False
+    )
+    
+    certificacao_exportacao = models.BooleanField(
+        'Certificação para Exportação',
+        default=False
+    )
+    
+    # Imagem
+    imagem = models.ImageField(
+        'Imagem da Cultura',
+        upload_to='culturas/imagens/%Y/%m/',
+        blank=True,
+        null=True,
+        help_text='Foto da cultura/fruto'
+    )
+    
+    # Observações
+    observacoes = models.TextField(
+        'Observações',
+        blank=True,
+        help_text='Informações adicionais sobre a cultura'
+    )
+    
+    # Status
+    ativa = models.BooleanField(
+        'Cultura Ativa',
+        default=True,
+        help_text='Define se a cultura está sendo cultivada'
+    )
+    
+    # Auditoria
+    data_cadastro = models.DateTimeField(
+        'Data de Cadastro',
+        auto_now_add=True
+    )
+    
+    data_atualizacao = models.DateTimeField(
+        'Última Atualização',
+        auto_now=True
+    )
+    
+    cadastrado_por = models.ForeignKey(
+        'usuarios.Usuario',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='culturas_cadastradas',
+        verbose_name='Cadastrado por'
+    )
+    
+    class Meta:
+        verbose_name = 'Cultura'
+        verbose_name_plural = 'Culturas'
+        ordering = ['nome', 'variedade']
+        indexes = [
+            models.Index(fields=['empresa', 'ativa']),
+            models.Index(fields=['tipo']),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=['empresa', 'nome', 'variedade'],
+                name='unique_cultura_variedade_empresa'
+            )
+        ]
+    
+    def __str__(self):
+        if self.variedade:
+            return f"{self.nome} - {self.variedade}"
+        return self.nome
+    
+    def clean(self):
+        """Validações customizadas"""
+        from django.core.exceptions import ValidationError
+        
+        # Valida temperaturas
+        if (self.temperatura_ideal_min and self.temperatura_ideal_max and 
+            self.temperatura_ideal_min > self.temperatura_ideal_max):
+            raise ValidationError({
+                'temperatura_ideal_max': 'Temperatura máxima deve ser maior que mínima'
+            })
+        
+        # Valida limite de culturas do plano (se houver)
+        if not self.pk and self.empresa:
+            total_culturas = Cultura.objects.filter(
+                empresa=self.empresa,
+                ativa=True
+            ).count()
+            
+            if hasattr(self.empresa, 'limite_produtos'):
+                if total_culturas >= self.empresa.limite_produtos:
+                    raise ValidationError(
+                        f'Limite de culturas atingido! Seu plano permite apenas '
+                        f'{self.empresa.limite_produtos} cultura(s) ativa(s).'
+                    )
+    
+    def get_ciclo_display_dias(self):
+        """Retorna ciclo em dias formatado"""
+        return f"{self.dias_colheita} dias"
+    
+    def get_densidade_calculada(self):
+        """Calcula densidade baseada em espaçamento"""
+        if self.espacamento_linhas and self.espacamento_plantas:
+            # Área por planta em m²
+            area_por_planta = float(self.espacamento_linhas) * float(self.espacamento_plantas)
+            # Plantas por hectare (10.000 m²)
+            densidade = 10000 / area_por_planta
+            return int(densidade)
+        return self.densidade_plantio
+    
+    def get_receita_estimada_ha(self):
+        """Calcula receita estimada por hectare"""
+        if self.produtividade_esperada and self.preco_medio:
+            return self.produtividade_esperada * self.preco_medio
+        return None
+    
+    def get_total_plantios(self):
+        """Retorna total de plantios desta cultura"""
+        # Será implementado quando criar o módulo de Plantio
+        return 0

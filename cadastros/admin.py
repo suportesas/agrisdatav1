@@ -1,11 +1,11 @@
 """
-Admin do módulo Fazendas
+Admin do módulo Fazendas e Culturas
 """
 
 from django.contrib import admin
 from .models import (
     Fazenda, EnderecoFazenda, ContatoFazenda,
-    ContaBancariaFazenda, DocumentoFazenda
+    ContaBancariaFazenda, DocumentoFazenda, Cultura
 )
 
 
@@ -124,3 +124,57 @@ class DocumentoFazendaAdmin(admin.ModelAdmin):
             return '⚠️ Vencendo'
         return '✅ Válido'
     esta_vencido.short_description = 'Status'
+
+
+@admin.register(Cultura)
+class CulturaAdmin(admin.ModelAdmin):
+    """Admin de Culturas"""
+    list_display = [
+        'nome', 'variedade', 'tipo', 'ciclo_cultivo', 
+        'dias_colheita', 'produtividade_esperada', 'ativa', 'empresa'
+    ]
+    list_filter = ['ativa', 'tipo', 'ciclo_cultivo', 'empresa']
+    search_fields = ['nome', 'variedade', 'nome_cientifico', 'codigo_interno']
+    readonly_fields = ['data_cadastro', 'data_atualizacao', 'cadastrado_por']
+    
+    fieldsets = (
+        ('Informações Básicas', {
+            'fields': ('empresa', 'nome', 'nome_cientifico', 'tipo', 'variedade', 'codigo_interno', 'ativa')
+        }),
+        ('Características de Plantio', {
+            'fields': ('ciclo_cultivo', 'dias_colheita', 'espacamento_linhas', 'espacamento_plantas', 'densidade_plantio')
+        }),
+        ('Condições Climáticas', {
+            'fields': ('temperatura_ideal_min', 'temperatura_ideal_max', 'necessidade_agua')
+        }),
+        ('Produtividade e Comercialização', {
+            'fields': ('unidade_medida', 'produtividade_esperada', 'preco_medio', 'mercado_destino')
+        }),
+        ('Manejo', {
+            'fields': ('irrigacao_necessaria', 'tipo_irrigacao', 'adubacao_recomendada', 'controle_pragas'),
+            'classes': ('collapse',)
+        }),
+        ('Certificações', {
+            'fields': ('certificacao_organica', 'certificacao_exportacao'),
+        }),
+        ('Mídia', {
+            'fields': ('imagem',),
+        }),
+        ('Observações', {
+            'fields': ('observacoes',),
+            'classes': ('collapse',)
+        }),
+        ('Auditoria', {
+            'fields': ('cadastrado_por', 'data_cadastro', 'data_atualizacao'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    def get_queryset(self, request):
+        """Filtra por empresa se não for superusuário"""
+        qs = super().get_queryset(request)
+        if request.user.is_superuser:
+            return qs
+        if hasattr(request.user, 'empresa') and request.user.empresa:
+            return qs.filter(empresa=request.user.empresa)
+        return qs.none()

@@ -762,3 +762,400 @@ class DocumentoFazenda(models.Model):
     def get_nome_arquivo(self):
         """Retorna apenas o nome do arquivo sem o caminho"""
         return os.path.basename(self.arquivo.name)
+
+
+
+        """
+ADICIONE ESTES MODELOS AO FINAL DO ARQUIVO cadastros/models.py
+(Após o modelo DocumentoFazenda)
+"""
+
+class FuncaoFuncionario(models.Model):
+    """
+    Funções/Cargos dos funcionários
+    Ex: Tratorista, Colhedor, Supervisor, etc.
+    """
+    
+    empresa = models.ForeignKey(
+        'empresas.Empresa',
+        on_delete=models.CASCADE,
+        related_name='funcoes_funcionarios',
+        verbose_name='Empresa'
+    )
+    
+    nome = models.CharField(
+        'Nome da Função',
+        max_length=100,
+        help_text='Ex: Tratorista, Colhedor, Supervisor'
+    )
+    
+    descricao = models.TextField(
+        'Descrição',
+        blank=True,
+        help_text='Descrição das atividades da função'
+    )
+    
+    salario_base = models.DecimalField(
+        'Salário Base (R$)',
+        max_digits=10,
+        decimal_places=2,
+        blank=True,
+        null=True,
+        validators=[MinValueValidator(Decimal('0.00'))],
+        help_text='Salário base sugerido para a função'
+    )
+    
+    ativa = models.BooleanField(
+        'Função Ativa',
+        default=True
+    )
+    
+    data_criacao = models.DateTimeField(
+        'Data de Criação',
+        auto_now_add=True
+    )
+    
+    class Meta:
+        verbose_name = 'Função de Funcionário'
+        verbose_name_plural = 'Funções de Funcionários'
+        ordering = ['nome']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['empresa', 'nome'],
+                name='unique_funcao_por_empresa'
+            )
+        ]
+    
+    def __str__(self):
+        return self.nome
+    
+    def get_total_funcionarios(self):
+        """Retorna total de funcionários nesta função"""
+        return self.funcionarios.filter(ativo=True).count()
+
+
+class Funcionario(models.Model):
+    """
+    Cadastro de Funcionários da fazenda
+    """
+    
+    TIPO_CONTRATO = [
+        ('CLT', 'CLT'),
+        ('TEMPORARIO', 'Temporário'),
+        ('DIARISTA', 'Diarista'),
+        ('AUTONOMO', 'Autônomo'),
+        ('TERCEIRIZADO', 'Terceirizado'),
+    ]
+    
+    ESTADO_CIVIL = [
+        ('SOLTEIRO', 'Solteiro(a)'),
+        ('CASADO', 'Casado(a)'),
+        ('DIVORCIADO', 'Divorciado(a)'),
+        ('VIUVO', 'Viúvo(a)'),
+        ('UNIAO_ESTAVEL', 'União Estável'),
+    ]
+    
+    GENERO = [
+        ('M', 'Masculino'),
+        ('F', 'Feminino'),
+        ('OUTRO', 'Outro'),
+    ]
+    
+    # Empresa e Fazenda
+    empresa = models.ForeignKey(
+        'empresas.Empresa',
+        on_delete=models.CASCADE,
+        related_name='funcionarios',
+        verbose_name='Empresa'
+    )
+    
+    fazenda = models.ForeignKey(
+        Fazenda,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='funcionarios',
+        verbose_name='Fazenda',
+        help_text='Fazenda principal onde trabalha'
+    )
+    
+    # Dados Pessoais
+    nome_completo = models.CharField(
+        'Nome Completo',
+        max_length=200
+    )
+    
+    cpf = models.CharField(
+        'CPF',
+        max_length=14,
+        unique=True,
+        help_text='Formato: 000.000.000-00'
+    )
+    
+    rg = models.CharField(
+        'RG',
+        max_length=20,
+        blank=True
+    )
+    
+    data_nascimento = models.DateField(
+        'Data de Nascimento',
+        blank=True,
+        null=True
+    )
+    
+    genero = models.CharField(
+        'Gênero',
+        max_length=10,
+        choices=GENERO,
+        blank=True
+    )
+    
+    estado_civil = models.CharField(
+        'Estado Civil',
+        max_length=20,
+        choices=ESTADO_CIVIL,
+        blank=True
+    )
+    
+    # Contato
+    telefone = models.CharField(
+        'Telefone',
+        max_length=20,
+        blank=True
+    )
+    
+    celular = models.CharField(
+        'Celular',
+        max_length=20,
+        blank=True
+    )
+    
+    email = models.EmailField(
+        'E-mail',
+        blank=True
+    )
+    
+    # Endereço
+    cep = models.CharField(
+        'CEP',
+        max_length=9,
+        blank=True
+    )
+    
+    endereco = models.CharField(
+        'Endereço',
+        max_length=200,
+        blank=True
+    )
+    
+    numero = models.CharField(
+        'Número',
+        max_length=10,
+        blank=True
+    )
+    
+    complemento = models.CharField(
+        'Complemento',
+        max_length=100,
+        blank=True
+    )
+    
+    bairro = models.CharField(
+        'Bairro',
+        max_length=100,
+        blank=True
+    )
+    
+    cidade = models.CharField(
+        'Cidade',
+        max_length=100,
+        blank=True
+    )
+    
+    uf = models.CharField(
+        'UF',
+        max_length=2,
+        blank=True
+    )
+    
+    # Dados Profissionais
+    funcao = models.ForeignKey(
+        FuncaoFuncionario,
+        on_delete=models.PROTECT,
+        related_name='funcionarios',
+        verbose_name='Função/Cargo'
+    )
+    
+    tipo_contrato = models.CharField(
+        'Tipo de Contrato',
+        max_length=20,
+        choices=TIPO_CONTRATO,
+        default='CLT'
+    )
+    
+    data_admissao = models.DateField(
+        'Data de Admissão'
+    )
+    
+    data_demissao = models.DateField(
+        'Data de Demissão',
+        blank=True,
+        null=True
+    )
+    
+    salario = models.DecimalField(
+        'Salário (R$)',
+        max_digits=10,
+        decimal_places=2,
+        validators=[MinValueValidator(Decimal('0.00'))]
+    )
+    
+    # Documentos Trabalhistas
+    ctps = models.CharField(
+        'CTPS',
+        max_length=20,
+        blank=True,
+        help_text='Carteira de Trabalho'
+    )
+    
+    pis = models.CharField(
+        'PIS/PASEP',
+        max_length=20,
+        blank=True
+    )
+    
+    # Dados Bancários
+    banco = models.CharField(
+        'Banco',
+        max_length=100,
+        blank=True
+    )
+    
+    agencia = models.CharField(
+        'Agência',
+        max_length=10,
+        blank=True
+    )
+    
+    conta = models.CharField(
+        'Conta',
+        max_length=20,
+        blank=True
+    )
+    
+    # Contato de Emergência
+    contato_emergencia_nome = models.CharField(
+        'Nome Contato Emergência',
+        max_length=200,
+        blank=True
+    )
+    
+    contato_emergencia_telefone = models.CharField(
+        'Telefone Emergência',
+        max_length=20,
+        blank=True
+    )
+    
+    contato_emergencia_parentesco = models.CharField(
+        'Parentesco',
+        max_length=50,
+        blank=True,
+        help_text='Ex: Mãe, Pai, Esposo(a), Irmão(ã)'
+    )
+    
+    # Observações
+    observacoes = models.TextField(
+        'Observações',
+        blank=True
+    )
+    
+    # Foto
+    foto = models.ImageField(
+        'Foto',
+        upload_to='funcionarios/fotos/%Y/%m/',
+        blank=True,
+        null=True,
+        help_text='Foto do funcionário'
+    )
+    
+    # Status
+    ativo = models.BooleanField(
+        'Funcionário Ativo',
+        default=True
+    )
+    
+    # Auditoria
+    data_cadastro = models.DateTimeField(
+        'Data de Cadastro',
+        auto_now_add=True
+    )
+    
+    cadastrado_por = models.ForeignKey(
+        'usuarios.Usuario',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='funcionarios_cadastrados',
+        verbose_name='Cadastrado por'
+    )
+    
+    class Meta:
+        verbose_name = 'Funcionário'
+        verbose_name_plural = 'Funcionários'
+        ordering = ['nome_completo']
+        indexes = [
+            models.Index(fields=['empresa', 'ativo']),
+            models.Index(fields=['cpf']),
+            models.Index(fields=['fazenda']),
+        ]
+    
+    def __str__(self):
+        return f"{self.nome_completo} - {self.funcao}"
+    
+    def get_cpf_formatado(self):
+        """Retorna CPF formatado"""
+        import re
+        cpf = re.sub(r'\D', '', self.cpf)
+        if len(cpf) == 11:
+            return f"{cpf[:3]}.{cpf[3:6]}.{cpf[6:9]}-{cpf[9:]}"
+        return self.cpf
+    
+    def get_idade(self):
+        """Calcula idade do funcionário"""
+        if self.data_nascimento:
+            from datetime import date
+            hoje = date.today()
+            idade = hoje.year - self.data_nascimento.year
+            if (hoje.month, hoje.day) < (self.data_nascimento.month, self.data_nascimento.day):
+                idade -= 1
+            return idade
+        return None
+    
+    def get_tempo_servico(self):
+        """Calcula tempo de serviço"""
+        from datetime import date
+        if self.data_admissao:
+            data_final = self.data_demissao or date.today()
+            dias = (data_final - self.data_admissao).days
+            anos = dias // 365
+            meses = (dias % 365) // 30
+            return f"{anos} ano(s) e {meses} mês(es)"
+        return None
+    
+    def clean(self):
+        """Validações"""
+        from django.core.exceptions import ValidationError
+        
+        # Valida CPF
+        import re
+        cpf_limpo = re.sub(r'\D', '', self.cpf)
+        if len(cpf_limpo) != 11:
+            raise ValidationError({'cpf': 'CPF deve ter 11 dígitos'})
+        
+        # Valida data de demissão
+        if self.data_demissao and self.data_admissao:
+            if self.data_demissao < self.data_admissao:
+                raise ValidationError({
+                    'data_demissao': 'Data de demissão não pode ser anterior à admissão'
+                })

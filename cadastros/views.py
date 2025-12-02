@@ -12,6 +12,8 @@ from django.core.paginator import Paginator
 from django.utils import timezone
 import requests
 import json
+from .models import Funcionario, FuncaoFuncionario
+from .forms import FuncionarioForm, FuncaoFuncionarioForm
 
 from .models import (
     Fazenda, EnderecoFazenda, ContatoFazenda,
@@ -593,3 +595,197 @@ def dashboard_alertas(request):
     }
     
     return render(request, 'cadastros/dashboard_alertas.html', context)
+
+
+
+
+"""
+ADICIONE ESTAS VIEWS AO FINAL DO ARQUIVO cadastros/views.py
+"""
+
+
+
+
+# ==================== FUNÇÕES ====================
+
+@login_required
+def funcao_list(request):
+    """Lista funções de funcionários"""
+    funcoes = FuncaoFuncionario.objects.filter(empresa=request.user.empresa)
+    
+    q = request.GET.get('q', '').strip()
+    if q:
+        funcoes = funcoes.filter(nome__icontains=q)
+    
+    return render(request, 'cadastros/funcao_list.html', {'funcoes': funcoes})
+
+
+@login_required
+def funcao_create_ajax(request):
+    """Cria função via AJAX (para modal)"""
+    if request.method == 'POST':
+        form = FuncaoFuncionarioForm(request.POST)
+        if form.is_valid():
+            funcao = form.save(commit=False)
+            funcao.empresa = request.user.empresa
+            funcao.save()
+            
+            return JsonResponse({
+                'sucesso': True,
+                'id': funcao.id,
+                'nome': funcao.nome,
+                'mensagem': f'Função "{funcao.nome}" criada com sucesso!'
+            })
+        else:
+            return JsonResponse({
+                'sucesso': False,
+                'erros': form.errors
+            }, status=400)
+    
+    return JsonResponse({'erro': 'Método não permitido'}, status=405)
+
+
+# ==================== FUNCIONÁRIOS ====================
+
+@login_required
+def funcionario_list(request):
+    """Lista funcionários"""
+    funcionarios = Funcionario.objects.filter(
+        empresa=request.user.empresa
+    ).select_related('funcao', 'fazenda')
+    
+    # Busca
+    q = request.GET.get('q', '').strip()
+    if q:
+        funcionarios = funcionarios.filter(
+            Q(nome_completo__icontains=q) |
+            Q(cpf__icontains=q) |
+            Q(funcao__nome__icontains=q)
+        )
+    
+    # Filtros
+    status = request.GET.get('status', '')
+    if status == 'ativos':
+        funcionarios = funcionarios.filter(ativo=True)
+    elif status == 'inativos':
+        funcionarios = funcionarios.filter(ativo=False)
+    
+    fazenda_id = request.GET.get('fazenda', '')
+    if fazenda_id:
+        funcionarios = funcionarios.filter(fazenda_id=fazenda_id)
+    
+    funcao_id = request.GET.get('funcao', '')
+    if funcao_id:
+        funcionarios = funcionarios.filter(funcao_id=funcao_id)
+    
+    # Paginação
+    paginator = Paginator(funcionarios, 25)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    # Para filtros
+    fazendas = Fazenda.objects.filter(empresa=request.user.empresa, ativa=True)
+    funcoes = FuncaoFuncionario.objects.filter(empresa=request.user.empresa, ativa=True)
+    
+    context = {
+        'page_obj': page_obj,
+        'fazendas': fazendas,
+        'funcoes': funcoes,
+        'total_funcionarios': funcionarios.count(),
+    }
+    
+    return render(request, 'cadastros/funcionario_list.html', context)
+
+
+@login_required
+def funcionario_detail(request, pk):
+    """Detalhes do funcionário"""
+    funcionario = get_object_or_404(
+        Funcionario,
+        pk=pk,
+        empresa=request.user.empresa
+    )
+    
+    return render(request, 'cadastros/funcionario_detail.html', {
+        'funcionario': funcionario
+    })
+
+
+@login_required
+def funcionario_create(request):
+    """Cria funcionário"""
+    if request.method == 'POST':
+        form = FuncionarioForm(
+            request.POST,
+            request.FILES,
+            empresa=request.user.empresa,
+            usuario=request.user
+        )
+        if form.is_valid():
+            funcionario = form.save()
+            messages.success(request, f'✅ Funcionário "{funcionario.nome_completo}" cadastrado!')
+            return redirect('cadastros:funcionario_detail', pk=funcionario.pk)
+    else:
+        form = FuncionarioForm(
+            empresa=request.user.empresa,
+            usuario=request.user
+        )
+    
+    # Para o modal de nova função
+    form_funcao = FuncaoFuncionarioForm()
+    
+    return render(request, 'cadastros/funcionario_form.html', {
+        'form': form,
+        'form_funcao': form_funcao,
+        'action': 'Cadastrar'
+    })
+
+
+@login_required
+def funcionario_update(request, pk):
+    """Edita funcionário"""
+    funcionario = get_object_or_404(Funcionario, pk=pk, empresa=request.user.empresa)
+    
+    if request.method == 'POST':
+        form = FuncionarioForm(
+            request.POST,
+            request.FILES,
+            instance=funcionario,
+            empresa=request.user.empresa,
+            usuario=request.user
+        )
+        if form.is_valid():
+            funcionario = form.save()
+            messages.success(request, f'✅ Funcionário "{funcionario.nome_completo}" atualizado!')
+            return redirect('cadastros:funcionario_detail', pk=funcionario.pk)
+    else:
+        form = FuncionarioForm(
+            instance=funcionario,
+            empresa=request.user.empresa,
+            usuario=request.user
+        )
+    
+    form_funcao = FuncaoFuncionarioForm()
+    
+    return render(request, 'cadastros/funcionario_form.html', {
+        'form': form,
+        'form_funcao': form_funcao,
+        'funcionario': funcionario,
+        'action': 'Editar'
+    })
+
+
+@login_required
+def funcionario_delete(request, pk):
+    """Deleta funcionário"""
+    funcionario = get_object_or_404(Funcionario, pk=pk, empresa=request.user.empresa)
+    
+    if request.method == 'POST':
+        nome = funcionario.nome_completo
+        funcionario.delete()
+        messages.success(request, f'🗑️ Funcionário "{nome}" excluído!')
+        return redirect('cadastros:funcionario_list')
+    
+    return render(request, 'cadastros/funcionario_confirm_delete.html', {
+        'funcionario': funcionario
+    })

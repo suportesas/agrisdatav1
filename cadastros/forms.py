@@ -7,8 +7,10 @@ from django import forms
 from django.core.exceptions import ValidationError
 from .models import (
     Fazenda, EnderecoFazenda, ContatoFazenda,
-    ContaBancariaFazenda, DocumentoFazenda
+    ContaBancariaFazenda, DocumentoFazenda,
 )
+
+from .models import Funcionario, FuncaoFuncionario
 import re
 
 
@@ -458,3 +460,217 @@ class BuscarCEPForm(forms.Form):
             raise ValidationError('CEP deve ter 8 dígitos')
         
         return cep_limpo
+    
+
+
+
+    """
+ADICIONE ESTES FORMS AO FINAL DO ARQUIVO cadastros/forms.py
+"""
+
+
+
+
+class FuncaoFuncionarioForm(forms.ModelForm):
+    """Formulário para cadastro rápido de função"""
+    
+    class Meta:
+        model = FuncaoFuncionario
+        fields = ['nome', 'descricao', 'salario_base', 'ativa']
+        widgets = {
+            'nome': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ex: Tratorista, Colhedor, Supervisor'
+            }),
+            'descricao': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 2,
+                'placeholder': 'Descrição das atividades'
+            }),
+            'salario_base': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.01',
+                'placeholder': '0.00'
+            }),
+        }
+
+
+class FuncionarioForm(forms.ModelForm):
+    """Formulário completo de funcionário"""
+    
+    # Campo extra para buscar CEP
+    buscar_cep_funcionario = forms.BooleanField(
+        required=False,
+        initial=False,
+        label='Buscar CEP'
+    )
+    
+    class Meta:
+        model = Funcionario
+        fields = [
+            'fazenda', 'nome_completo', 'cpf', 'rg',
+            'data_nascimento', 'genero', 'estado_civil',
+            'telefone', 'celular', 'email',
+            'cep', 'endereco', 'numero', 'complemento',
+            'bairro', 'cidade', 'uf',
+            'funcao', 'tipo_contrato', 'data_admissao', 'data_demissao',
+            'salario', 'ctps', 'pis',
+            'banco', 'agencia', 'conta',
+            'contato_emergencia_nome', 'contato_emergencia_telefone',
+            'contato_emergencia_parentesco',
+            'observacoes', 'foto', 'ativo'
+        ]
+        widgets = {
+            'fazenda': forms.Select(attrs={'class': 'form-select'}),
+            'nome_completo': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Nome completo do funcionário'
+            }),
+            'cpf': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': '000.000.000-00',
+                'data-mask': 'cpf'
+            }),
+            'rg': forms.TextInput(attrs={
+                'class': 'form-control'
+            }),
+            'data_nascimento': forms.DateInput(attrs={
+                'class': 'form-control',
+                'type': 'date'
+            }),
+            'genero': forms.Select(attrs={'class': 'form-select'}),
+            'estado_civil': forms.Select(attrs={'class': 'form-select'}),
+            'telefone': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': '(00) 0000-0000'
+            }),
+            'celular': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': '(00) 00000-0000'
+            }),
+            'email': forms.EmailInput(attrs={
+                'class': 'form-control'
+            }),
+            'cep': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': '00000-000'
+            }),
+            'endereco': forms.TextInput(attrs={
+                'class': 'form-control'
+            }),
+            'numero': forms.TextInput(attrs={
+                'class': 'form-control'
+            }),
+            'complemento': forms.TextInput(attrs={
+                'class': 'form-control'
+            }),
+            'bairro': forms.TextInput(attrs={
+                'class': 'form-control'
+            }),
+            'cidade': forms.TextInput(attrs={
+                'class': 'form-control'
+            }),
+            'uf': forms.TextInput(attrs={
+                'class': 'form-control',
+                'maxlength': 2
+            }),
+            'funcao': forms.Select(attrs={
+                'class': 'form-select',
+                'id': 'id_funcao'
+            }),
+            'tipo_contrato': forms.Select(attrs={'class': 'form-select'}),
+            'data_admissao': forms.DateInput(attrs={
+                'class': 'form-control',
+                'type': 'date'
+            }),
+            'data_demissao': forms.DateInput(attrs={
+                'class': 'form-control',
+                'type': 'date'
+            }),
+            'salario': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.01'
+            }),
+            'ctps': forms.TextInput(attrs={
+                'class': 'form-control'
+            }),
+            'pis': forms.TextInput(attrs={
+                'class': 'form-control'
+            }),
+            'banco': forms.TextInput(attrs={
+                'class': 'form-control'
+            }),
+            'agencia': forms.TextInput(attrs={
+                'class': 'form-control'
+            }),
+            'conta': forms.TextInput(attrs={
+                'class': 'form-control'
+            }),
+            'contato_emergencia_nome': forms.TextInput(attrs={
+                'class': 'form-control'
+            }),
+            'contato_emergencia_telefone': forms.TextInput(attrs={
+                'class': 'form-control'
+            }),
+            'contato_emergencia_parentesco': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ex: Mãe, Pai, Esposo(a)'
+            }),
+            'observacoes': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3
+            }),
+            'foto': forms.FileInput(attrs={
+                'class': 'form-control',
+                'accept': 'image/*'
+            }),
+        }
+    
+    def __init__(self, *args, **kwargs):
+        self.empresa = kwargs.pop('empresa', None)
+        self.usuario = kwargs.pop('usuario', None)
+        super().__init__(*args, **kwargs)
+        
+        # Filtra fazendas e funções por empresa
+        if self.empresa:
+            self.fields['fazenda'].queryset = Fazenda.objects.filter(
+                empresa=self.empresa,
+                ativa=True
+            )
+            self.fields['funcao'].queryset = FuncaoFuncionario.objects.filter(
+                empresa=self.empresa,
+                ativa=True
+            )
+    
+    def clean_cpf(self):
+        """Valida CPF"""
+        cpf = self.cleaned_data.get('cpf', '')
+        cpf_limpo = re.sub(r'\D', '', cpf)
+        
+        if len(cpf_limpo) != 11:
+            raise ValidationError('CPF deve ter 11 dígitos')
+        
+        # Verifica duplicidade
+        qs = Funcionario.objects.filter(cpf=cpf_limpo)
+        if self.instance.pk:
+            qs = qs.exclude(pk=self.instance.pk)
+        
+        if qs.exists():
+            raise ValidationError('Este CPF já está cadastrado')
+        
+        return cpf_limpo
+    
+    def save(self, commit=True):
+        """Salva funcionário"""
+        funcionario = super().save(commit=False)
+        
+        if self.empresa:
+            funcionario.empresa = self.empresa
+        
+        if self.usuario:
+            funcionario.cadastrado_por = self.usuario
+        
+        if commit:
+            funcionario.save()
+        
+        return funcionario

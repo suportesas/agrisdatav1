@@ -4,38 +4,496 @@
 {% block title %}Dashboard | ERP Agrícola{% endblock %}
 
 {% block content %}
+<style>
+  .dashboard-container {
+    padding: 2rem;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  .page-header {
+    margin-bottom: 2rem;
+  }
+
+  .page-header h1 {
+    font-size: 2rem;
+    color: #2c3e50;
+    margin-bottom: 0.5rem;
+  }
+
+  .page-header p {
+    color: #7f8c8d;
+    font-size: 0.95rem;
+  }
+
+  /* Cards de Estatísticas */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .stat-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+  }
+
+  .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: var(--card-color);
+  }
+
+  .stat-card.blue { --card-color: #3498db; }
+  .stat-card.green { --card-color: #27ae60; }
+  .stat-card.yellow { --card-color: #f39c12; }
+  .stat-card.red { --card-color: #e74c3c; }
+
+  .stat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+  }
+
+  .stat-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: white;
+    background: var(--card-color);
+  }
+
+  .stat-card.blue .stat-icon { background: linear-gradient(135deg, #3498db, #2980b9); }
+  .stat-card.green .stat-icon { background: linear-gradient(135deg, #27ae60, #229954); }
+  .stat-card.yellow .stat-icon { background: linear-gradient(135deg, #f39c12, #e67e22); }
+  .stat-card.red .stat-icon { background: linear-gradient(135deg, #e74c3c, #c0392b); }
+
+  .stat-content h5 {
+    font-size: 0.85rem;
+    color: #7f8c8d;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .stat-content h2 {
+    font-size: 2rem;
+    color: #2c3e50;
+    margin: 0;
+    font-weight: 700;
+  }
+
+  .stat-footer {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #ecf0f1;
+  }
+
+  .stat-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  .stat-badge.positive {
+    background: #d4edda;
+    color: #155724;
+  }
+
+  .stat-badge.negative {
+    background: #f8d7da;
+    color: #721c24;
+  }
+
+  .stat-text {
+    font-size: 0.8rem;
+    color: #95a5a6;
+  }
+
+  /* Gráficos */
+  .charts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .chart-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  }
+
+  .chart-header {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #ecf0f1;
+  }
+
+  .chart-header h3 {
+    font-size: 1.2rem;
+    color: #2c3e50;
+    margin: 0;
+  }
+
+  .chart-header p {
+    font-size: 0.85rem;
+    color: #95a5a6;
+    margin: 0.25rem 0 0 0;
+  }
+
+  .chart-placeholder {
+    height: 300px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 8px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Gráfico de Barras Simulado */
+  .bar-chart {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-around;
+    height: 90%;
+    padding: 1rem;
+    gap: 0.5rem;
+  }
+
+  .bar {
+    flex: 1;
+    background: linear-gradient(to top, var(--bar-color), var(--bar-color-light));
+    border-radius: 8px 8px 0 0;
+    position: relative;
+    transition: transform 0.3s ease;
+    min-width: 40px;
+  }
+
+  .bar:hover {
+    transform: scale(1.05);
+  }
+
+  .bar-label {
+    position: absolute;
+    bottom: -25px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.75rem;
+    color: #7f8c8d;
+    white-space: nowrap;
+  }
+
+  .bar-value {
+    position: absolute;
+    top: -25px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #2c3e50;
+  }
+
+  /* Tabela de Atividades Recentes */
+  .activity-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  }
+
+  .activity-item {
+    display: flex;
+    align-items: center;
+    padding: 1rem;
+    border-bottom: 1px solid #ecf0f1;
+    transition: background 0.2s ease;
+  }
+
+  .activity-item:last-child {
+    border-bottom: none;
+  }
+
+  .activity-item:hover {
+    background: #f8f9fa;
+  }
+
+  .activity-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 1rem;
+    font-size: 1.2rem;
+  }
+
+  .activity-icon.blue { background: #e3f2fd; color: #2196f3; }
+  .activity-icon.green { background: #e8f5e9; color: #4caf50; }
+  .activity-icon.orange { background: #fff3e0; color: #ff9800; }
+
+  .activity-content {
+    flex: 1;
+  }
+
+  .activity-title {
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 0.25rem;
+  }
+
+  .activity-time {
+    font-size: 0.8rem;
+    color: #95a5a6;
+  }
+
+  /* Responsividade */
+  @media (max-width: 768px) {
+    .dashboard-container {
+      padding: 1rem;
+    }
+
+    .stats-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .charts-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .stat-content h2 {
+      font-size: 1.5rem;
+    }
+
+    .page-header h1 {
+      font-size: 1.5rem;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .stat-card {
+      padding: 1rem;
+    }
+
+    .chart-card {
+      padding: 1rem;
+    }
+
+    .bar-chart {
+      padding: 0.5rem;
+    }
+  }
+</style>
+
 <div class="dashboard-container">
-  <div class="dashboard-cards">
-    <div class="dashboard-card card-blue">
-      <div class="card-left">
-        <h5>Produtores</h5>
-        <h2>45</h2>
+  <!-- Cabeçalho -->
+  <div class="page-header">
+    <h1>Dashboard</h1>
+    <p>Visão geral do sistema ERP Agrícola</p>
+  </div>
+
+  <!-- Cards de Estatísticas -->
+  <div class="stats-grid">
+    <div class="stat-card blue">
+      <div class="stat-header">
+        <div class="stat-content">
+          <h5>Produtores</h5>
+          <h2>45</h2>
+        </div>
+        <div class="stat-icon">
+          <i class="bi bi-people-fill"></i>
+        </div>
       </div>
-      <div class="card-icon"><i class="bi bi-people-fill"></i></div>
+      <div class="stat-footer">
+        <span class="stat-badge positive">+12%</span>
+        <span class="stat-text">vs. mês anterior</span>
+      </div>
     </div>
 
-    <div class="dashboard-card card-green">
-      <div class="card-left">
-        <h5>Produtos</h5>
-        <h2>128</h2>
+    <div class="stat-card green">
+      <div class="stat-header">
+        <div class="stat-content">
+          <h5>Produtos</h5>
+          <h2>128</h2>
+        </div>
+        <div class="stat-icon">
+          <i class="bi bi-box-seam"></i>
+        </div>
       </div>
-      <div class="card-icon"><i class="bi bi-box-seam"></i></div>
+      <div class="stat-footer">
+        <span class="stat-badge positive">+8%</span>
+        <span class="stat-text">vs. mês anterior</span>
+      </div>
     </div>
 
-    <div class="dashboard-card card-yellow">
-      <div class="card-left">
-        <h5>Empréstimos</h5>
-        <h2>32</h2>
+    <div class="stat-card yellow">
+      <div class="stat-header">
+        <div class="stat-content">
+          <h5>Empréstimos</h5>
+          <h2>32</h2>
+        </div>
+        <div class="stat-icon">
+          <i class="bi bi-arrow-left-right"></i>
+        </div>
       </div>
-      <div class="card-icon"><i class="bi bi-arrow-left-right"></i></div>
+      <div class="stat-footer">
+        <span class="stat-badge negative">-3%</span>
+        <span class="stat-text">vs. mês anterior</span>
+      </div>
     </div>
 
-    <div class="dashboard-card card-red">
-      <div class="card-left">
-        <h5>Saldo</h5>
-        <h2>R$ 57.200</h2>
+    <div class="stat-card red">
+      <div class="stat-header">
+        <div class="stat-content">
+          <h5>Saldo</h5>
+          <h2>R$ 57.200</h2>
+        </div>
+        <div class="stat-icon">
+          <i class="bi bi-currency-dollar"></i>
+        </div>
       </div>
-      <div class="card-icon"><i class="bi bi-currency-dollar"></i></div>
+      <div class="stat-footer">
+        <span class="stat-badge positive">+15%</span>
+        <span class="stat-text">vs. mês anterior</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Gráficos -->
+  <div class="charts-grid">
+    <div class="chart-card">
+      <div class="chart-header">
+        <h3>Produção Mensal</h3>
+        <p>Últimos 6 meses</p>
+      </div>
+      <div class="chart-placeholder">
+        <div class="bar-chart">
+          <div class="bar" style="height: 60%; --bar-color: #3498db; --bar-color-light: #5dade2;">
+            <span class="bar-value">120</span>
+            <span class="bar-label">Jan</span>
+          </div>
+          <div class="bar" style="height: 75%; --bar-color: #3498db; --bar-color-light: #5dade2;">
+            <span class="bar-value">150</span>
+            <span class="bar-label">Fev</span>
+          </div>
+          <div class="bar" style="height: 85%; --bar-color: #3498db; --bar-color-light: #5dade2;">
+            <span class="bar-value">170</span>
+            <span class="bar-label">Mar</span>
+          </div>
+          <div class="bar" style="height: 70%; --bar-color: #3498db; --bar-color-light: #5dade2;">
+            <span class="bar-value">140</span>
+            <span class="bar-label">Abr</span>
+          </div>
+          <div class="bar" style="height: 90%; --bar-color: #3498db; --bar-color-light: #5dade2;">
+            <span class="bar-value">180</span>
+            <span class="bar-label">Mai</span>
+          </div>
+          <div class="bar" style="height: 95%; --bar-color: #27ae60; --bar-color-light: #52be80;">
+            <span class="bar-value">190</span>
+            <span class="bar-label">Jun</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-header">
+        <h3>Empréstimos por Status</h3>
+        <p>Distribuição atual</p>
+      </div>
+      <div class="chart-placeholder">
+        <div class="bar-chart">
+          <div class="bar" style="height: 80%; --bar-color: #27ae60; --bar-color-light: #52be80;">
+            <span class="bar-value">18</span>
+            <span class="bar-label">Ativos</span>
+          </div>
+          <div class="bar" style="height: 45%; --bar-color: #f39c12; --bar-color-light: #f8c471;">
+            <span class="bar-value">10</span>
+            <span class="bar-label">Pendentes</span>
+          </div>
+          <div class="bar" style="height: 20%; --bar-color: #e74c3c; --bar-color-light: #ec7063;">
+            <span class="bar-value">4</span>
+            <span class="bar-label">Atrasados</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Atividades Recentes -->
+  <div class="activity-card">
+    <div class="chart-header">
+      <h3>Atividades Recentes</h3>
+      <p>Últimas movimentações do sistema</p>
+    </div>
+    
+    <div class="activity-item">
+      <div class="activity-icon blue">
+        <i class="bi bi-person-plus"></i>
+      </div>
+      <div class="activity-content">
+        <div class="activity-title">Novo produtor cadastrado</div>
+        <div class="activity-time">João Silva - há 2 horas</div>
+      </div>
+    </div>
+
+    <div class="activity-item">
+      <div class="activity-icon green">
+        <i class="bi bi-check-circle"></i>
+      </div>
+      <div class="activity-content">
+        <div class="activity-title">Empréstimo aprovado</div>
+        <div class="activity-time">Maria Santos - R$ 5.000,00 - há 4 horas</div>
+      </div>
+    </div>
+
+    <div class="activity-item">
+      <div class="activity-icon orange">
+        <i class="bi bi-box-seam"></i>
+      </div>
+      <div class="activity-content">
+        <div class="activity-title">Novo produto adicionado</div>
+        <div class="activity-time">Milho Premium - há 6 horas</div>
+      </div>
+    </div>
+
+    <div class="activity-item">
+      <div class="activity-icon green">
+        <i class="bi bi-cash-coin"></i>
+      </div>
+      <div class="activity-content">
+        <div class="activity-title">Pagamento recebido</div>
+        <div class="activity-time">Pedro Oliveira - R$ 2.500,00 - há 1 dia</div>
+      </div>
     </div>
   </div>
 </div>

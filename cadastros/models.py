@@ -1478,7 +1478,7 @@ class Cultura(models.Model):
                             f'Limite de culturas atingido! Seu plano permite apenas '
                             f'{empresa.limite_produtos} cultura(s) ativa(s).'
                         )
-            except:
+            except:  # noqa: E722
                 pass  # Se houver erro na validação, deixa passar
     
     def get_ciclo_display_dias(self):

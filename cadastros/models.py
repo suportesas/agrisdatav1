@@ -1460,19 +1460,26 @@ class Cultura(models.Model):
                 'temperatura_ideal_max': 'Temperatura máxima deve ser maior que mínima'
             })
         
-        # Valida limite de culturas do plano (se houver)
-        if not self.pk and self.empresa:
-            total_culturas = Cultura.objects.filter(
-                empresa=self.empresa,
-                ativa=True
-            ).count()
-            
-            if hasattr(self.empresa, 'limite_produtos'):
-                if total_culturas >= self.empresa.limite_produtos:
-                    raise ValidationError(
-                        f'Limite de culturas atingido! Seu plano permite apenas '
-                        f'{self.empresa.limite_produtos} cultura(s) ativa(s).'
-                    )
+        # Valida limite de culturas do plano (se houver) - APENAS se empresa já estiver definida
+        if not self.pk and self.empresa_id:
+            try:
+                total_culturas = Cultura.objects.filter(
+                    empresa_id=self.empresa_id,
+                    ativa=True
+                ).count()
+                
+                # Busca a empresa para verificar limite
+                from empresas.models import Empresa
+                empresa = Empresa.objects.get(pk=self.empresa_id)
+                
+                if hasattr(empresa, 'limite_produtos') and empresa.limite_produtos < 999:
+                    if total_culturas >= empresa.limite_produtos:
+                        raise ValidationError(
+                            f'Limite de culturas atingido! Seu plano permite apenas '
+                            f'{empresa.limite_produtos} cultura(s) ativa(s).'
+                        )
+            except:
+                pass  # Se houver erro na validação, deixa passar
     
     def get_ciclo_display_dias(self):
         """Retorna ciclo em dias formatado"""

@@ -169,13 +169,6 @@ class Plano(models.Model):
     def __str__(self):
         return f"{self.icone} {self.nome}"
     
-    # 💡 Sugestão: Adicione validação de limites
-    def clean(self):
-        if self.limite_usuarios < self.get_total_usuarios():
-            raise ValidationError(
-                f'Não pode reduzir limite. Já existem {self.get_total_usuarios()} usuários.'
-        )
-    
     def save(self, *args, **kwargs):
         """Calcula valor anual automaticamente se não informado"""
         if not self.valor_anual and self.valor_mensal:
@@ -200,6 +193,10 @@ class Plano(models.Model):
     def get_total_empresas(self):
         """Retorna total de empresas usando este plano"""
         return self.empresas.filter(ativa=True).count()
+    
+    def clean(self):
+        """Validações do Plano - removido validação incorreta"""
+        pass
 
 
 class Empresa(models.Model):
@@ -273,7 +270,6 @@ class Empresa(models.Model):
         help_text='Plano de assinatura ativo',
         null=True,  # ✅ Permite null temporariamente para migração
         blank=True
-        
     )
     
     # Limites (herdados do plano, mas podem ser customizados)
@@ -297,8 +293,6 @@ class Empresa(models.Model):
         'Limite de Produtos',
         default=50
     )
-
-  
     
     # Recursos (herdados do plano)
     acesso_relatorios_avancados = models.BooleanField(
@@ -491,6 +485,4 @@ class Empresa(models.Model):
             if len(cnpj) == 14:
                 return f"{cnpj[:2]}.{cnpj[2:5]}.{cnpj[5:8]}/{cnpj[8:12]}-{cnpj[12:]}"
         return self.cnpj
-    
-
-    
+        

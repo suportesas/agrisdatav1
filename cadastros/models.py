@@ -1186,8 +1186,8 @@ class Cultura(models.Model):
     ]
     
     CICLO_CULTURA = [
-        ('CURTO', 'Curto (até 90 dias)'),
-        ('MEDIO', 'Médio (90 a 180 dias)'),
+        ('CURTO', 'Curto (até 100 dias)'),
+        ('MEDIO', 'Médio (100 a 180 dias)'),
         ('LONGO', 'Longo (mais de 180 dias)'),
     ]
     

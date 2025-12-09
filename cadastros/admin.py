@@ -7,7 +7,7 @@ from .models import (
     Fazenda, EnderecoFazenda, ContatoFazenda,
     ContaBancariaFazenda, DocumentoFazenda, Cultura
 )
-
+from .models import Area, Talhao, HistoricoTalhao
 
 class EnderecoFazendaInline(admin.TabularInline):
     """Inline para endereços"""
@@ -178,3 +178,27 @@ class CulturaAdmin(admin.ModelAdmin):
         if hasattr(request.user, 'empresa') and request.user.empresa:
             return qs.filter(empresa=request.user.empresa)
         return qs.none()
+    
+
+
+
+
+    
+
+@admin.register(Area)
+class AreaAdmin(admin.ModelAdmin):
+    list_display = ['nome', 'fazenda', 'tipo_area', 'area_total', 'status', 'ativa']
+    list_filter = ['tipo_area', 'status', 'ativa']
+    search_fields = ['nome', 'fazenda__nome']
+
+@admin.register(Talhao)
+class TalhaoAdmin(admin.ModelAdmin):
+    list_display = ['codigo', 'nome', 'area', 'fazenda', 'status', 'cultura_atual', 'ativo']
+    list_filter = ['status', 'ativo']
+    search_fields = ['codigo', 'nome', 'fazenda__nome']
+
+@admin.register(HistoricoTalhao)
+class HistoricoTalhaoAdmin(admin.ModelAdmin):
+    list_display = ['talhao', 'cultura', 'data_plantio', 'data_colheita', 'producao_real']
+    list_filter = ['data_plantio']
+    search_fields = ['talhao__nome', 'cultura__nome']

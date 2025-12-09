@@ -14,6 +14,8 @@ from .models import Funcionario, FuncaoFuncionario
 import re
 
 
+from .models import Area, Talhao, HistoricoTalhao,  Cultura
+
 class FazendaForm(forms.ModelForm):
     """Formulário principal de cadastro de fazenda"""
     
@@ -824,3 +826,306 @@ class CulturaForm(forms.ModelForm):
             cultura.save()
         
         return cultura
+
+
+
+
+
+"""
+ADICIONE ESTES FORMS AO ARQUIVO cadastros/forms.py
+Forms com isolamento Multi-Tenant
+"""
+
+
+
+
+class AreaForm(forms.ModelForm):
+    """
+    Formulário para criar/editar áreas
+    🔒 FILTRA FAZENDAS PELA EMPRESA DO USUÁRIO
+    """
+    
+    class Meta:
+        model = Area
+        fields = [
+            'fazenda', 'nome', 'codigo_interno', 'tipo_area',
+            'area_total', 'area_plantavel',
+            'latitude', 'longitude',
+            'tipo_solo', 'ph_solo', 'topografia',
+            'possui_irrigacao', 'tipo_irrigacao',
+            'status', 'ativa', 'observacoes'
+        ]
+        widgets = {
+            'fazenda': forms.Select(attrs={'class': 'form-select'}),
+            'nome': forms.TextInput(attrs={'class': 'form-control'}),
+            'codigo_interno': forms.TextInput(attrs={'class': 'form-control'}),
+            'tipo_area': forms.Select(attrs={'class': 'form-select'}),
+            'area_total': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.0001',
+                'min': '0'
+            }),
+            'area_plantavel': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.0001',
+                'min': '0'
+            }),
+            'latitude': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.0000001'
+            }),
+            'longitude': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.0000001'
+            }),
+            'tipo_solo': forms.TextInput(attrs={'class': 'form-control'}),
+            'ph_solo': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.01',
+                'min': '0',
+                'max': '14'
+            }),
+            'topografia': forms.Select(attrs={'class': 'form-select'}),
+            'tipo_irrigacao': forms.Select(attrs={'class': 'form-select'}),
+            'status': forms.Select(attrs={'class': 'form-select'}),
+            'observacoes': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3
+            }),
+        }
+    
+    def __init__(self, *args, **kwargs):
+        # Recebe o usuário logado
+        self.user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        
+        # 🔒 FILTRO CRÍTICO: Apenas fazendas da empresa do usuário
+        if self.user and self.user.empresa:
+            self.fields['fazenda'].queryset = Fazenda.objects.filter(
+                empresa=self.user.empresa,
+                ativa=True
+            ).order_by('nome')
+        else:
+            self.fields['fazenda'].queryset = Fazenda.objects.none()
+        
+        # Torna campos condicionais
+        if not self.instance.pk or not self.instance.possui_irrigacao:
+            self.fields['tipo_irrigacao'].required = False
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        area_total = cleaned_data.get('area_total')
+        area_plantavel = cleaned_data.get('area_plantavel')
+        possui_irrigacao = cleaned_data.get('possui_irrigacao')
+        tipo_irrigacao = cleaned_data.get('tipo_irrigacao')
+        
+        # Valida área plantável
+        if area_plantavel and area_total:
+            if area_plantavel > area_total:
+                raise forms.ValidationError({
+                    'area_plantavel': 'Área plantável não pode ser maior que área total'
+                })
+        
+        # Valida irrigação
+        if tipo_irrigacao and not possui_irrigacao:
+            raise forms.ValidationError({
+                'tipo_irrigacao': 'Marque "Possui Irrigação" antes de informar o tipo'
+            })
+        
+        return cleaned_data
+
+
+class TalhaoForm(forms.ModelForm):
+    """
+    Formulário para criar/editar talhões
+    🔒 FILTRA ÁREAS E FAZENDAS PELA EMPRESA
+    """
+    
+    class Meta:
+        model = Talhao
+        fields = [
+            'fazenda', 'area', 'nome', 'codigo', 'area_tamanho',
+            'latitude', 'longitude',
+            'declividade', 'exposicao_solar',
+            'status', 'pronto_para_plantio', 'ativo',
+            'observacoes'
+        ]
+        widgets = {
+            'fazenda': forms.Select(attrs={
+                'class': 'form-select',
+                'onchange': 'carregarAreas(this.value)'
+            }),
+            'area': forms.Select(attrs={'class': 'form-select'}),
+            'nome': forms.TextInput(attrs={'class': 'form-control'}),
+            'codigo': forms.TextInput(attrs={'class': 'form-control'}),
+            'area_tamanho': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.0001',
+                'min': '0',
+                'name': 'area'  # Para compatibilidade com model
+            }),
+            'latitude': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.0000001'
+            }),
+            'longitude': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.0000001'
+            }),
+            'declividade': forms.Select(attrs={'class': 'form-select'}),
+            'exposicao_solar': forms.Select(attrs={'class': 'form-select'}),
+            'status': forms.Select(attrs={'class': 'form-select'}),
+            'observacoes': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3
+            }),
+        }
+    
+    # Campo customizado para não conflitar com Model.area (relacionamento)
+    area_tamanho = forms.DecimalField(
+        label='Área (ha)',
+        max_digits=10,
+        decimal_places=4,
+        min_value=0.0001,
+        widget=forms.NumberInput(attrs={
+            'class': 'form-control',
+            'step': '0.0001'
+        })
+    )
+    
+    def __init__(self, *args, **kwargs):
+        # Recebe o usuário logado
+        self.user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        
+        # 🔒 FILTRO: Apenas fazendas da empresa
+        if self.user and self.user.empresa:
+            self.fields['fazenda'].queryset = Fazenda.objects.filter(
+                empresa=self.user.empresa,
+                ativa=True
+            ).order_by('nome')
+            
+            # 🔒 FILTRO: Apenas áreas da empresa
+            self.fields['area'].queryset = Area.objects.filter(
+                empresa=self.user.empresa,
+                ativa=True
+            ).select_related('fazenda').order_by('fazenda__nome', 'nome')
+        else:
+            self.fields['fazenda'].queryset = Fazenda.objects.none()
+            self.fields['area'].queryset = Area.objects.none()
+        
+        # Se editando, popula área atual
+        if self.instance.pk:
+            self.fields['area_tamanho'].initial = self.instance.area
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        area = cleaned_data.get('area')
+        fazenda = cleaned_data.get('fazenda')
+        area_tamanho = cleaned_data.get('area_tamanho')
+        
+        # 🔒 VALIDAÇÃO: Área pertence à fazenda e empresa
+        if area and fazenda:
+            if area.fazenda != fazenda:
+                raise forms.ValidationError({
+                    'area': 'A área selecionada não pertence à fazenda escolhida'
+                })
+            
+            # 🔒 Valida empresa
+            if self.user and self.user.empresa:
+                if area.empresa != self.user.empresa:
+                    raise forms.ValidationError({
+                        'area': 'Você não tem permissão para usar esta área'
+                    })
+        
+        # Valida se área disponível é suficiente
+        if area and area_tamanho:
+            area_disponivel = area.get_area_disponivel()
+            
+            # Se editando, considera a área atual do talhão
+            if self.instance.pk:
+                area_disponivel += self.instance.area
+            
+            if area_tamanho > area_disponivel:
+                raise forms.ValidationError({
+                    'area_tamanho': f'Área disponível insuficiente. Disponível: {area_disponivel} ha'
+                })
+        
+        return cleaned_data
+    
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        
+        # Transfere valor do campo customizado para o campo real
+        instance.area = self.cleaned_data['area_tamanho']
+        
+        if commit:
+            instance.save()
+        
+        return instance
+
+
+class HistoricoTalhaoForm(forms.ModelForm):
+    """Formulário para registrar histórico de cultivo"""
+    
+    class Meta:
+        model = HistoricoTalhao
+        fields = [
+            'talhao', 'cultura', 'variedade',
+            'data_plantio', 'data_colheita',
+            'producao_estimada', 'producao_real',
+            'custo_total',
+            'observacoes', 'problemas_enfrentados'
+        ]
+        widgets = {
+            'talhao': forms.Select(attrs={'class': 'form-select'}),
+            'cultura': forms.Select(attrs={'class': 'form-select'}),
+            'variedade': forms.TextInput(attrs={'class': 'form-control'}),
+            'data_plantio': forms.DateInput(attrs={
+                'class': 'form-control',
+                'type': 'date'
+            }),
+            'data_colheita': forms.DateInput(attrs={
+                'class': 'form-control',
+                'type': 'date'
+            }),
+            'producao_estimada': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.01'
+            }),
+            'producao_real': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.01'
+            }),
+            'custo_total': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.01'
+            }),
+            'observacoes': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3
+            }),
+            'problemas_enfrentados': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3
+            }),
+        }
+    
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        
+        # 🔒 FILTRO: Apenas talhões e culturas da empresa
+        if self.user and self.user.empresa:
+            self.fields['talhao'].queryset = Talhao.objects.filter(
+                empresa=self.user.empresa,
+                ativo=True
+            ).select_related('fazenda', 'area')
+            
+            self.fields['cultura'].queryset = Cultura.objects.filter(
+                empresa=self.user.empresa,
+                ativa=True
+            ).order_by('nome')
+        else:
+            self.fields['talhao'].queryset = Talhao.objects.none()
+            self.fields['cultura'].queryset = Cultura.objects.none()

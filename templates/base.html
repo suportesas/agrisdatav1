@@ -1,6 +1,6 @@
 {% load static %}
 
-{% if not user.is_authenticated and request.resolver_match.url_name != 'login' %}
+{% if not user.is_authenticated and request.resolver_match and request.resolver_match.url_name != 'login' %}
   <script>window.location.href = "{% url 'login' %}";</script>
 {% endif %}
 
@@ -14,324 +14,7 @@
   <!-- Bootstrap e ícones -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
-
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    body {
-      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-      background-color: #f5f6fa;
-      overflow-x: hidden;
-    }
-
-    /* ===== SIDEBAR ===== */
-    .sidebar {
-      position: fixed;
-      top: 0;
-      left: 0;
-      height: 100vh;
-      width: 260px;
-      background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
-      color: white;
-      z-index: 1000;
-      transition: all 0.3s ease;
-      overflow-y: auto;
-      overflow-x: hidden;
-      box-shadow: 4px 0 10px rgba(0, 0, 0, 0.1);
-    }
-
-    .sidebar::-webkit-scrollbar {
-      width: 6px;
-    }
-
-    .sidebar::-webkit-scrollbar-thumb {
-      background: rgba(255, 255, 255, 0.2);
-      border-radius: 10px;
-    }
-
-    /* Header do Sidebar */
-    .sidebar-header {
-      padding: 20px;
-      text-align: center;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-      background: rgba(0, 0, 0, 0.2);
-    }
-
-    .sidebar-header h5 {
-      margin: 0;
-      font-weight: 600;
-      font-size: 1.3rem;
-      color: #fff;
-    }
-
-    .sidebar-header .user-info {
-      margin-top: 8px;
-      font-size: 0.85rem;
-      color: #cbd5e1;
-    }
-
-    /* Menu Items */
-    .sidebar-menu {
-      list-style: none;
-      padding: 10px 0;
-      margin: 0;
-    }
-
-    .menu-item {
-      margin: 2px 8px;
-    }
-
-    .menu-link {
-      display: flex;
-      align-items: center;
-      padding: 12px 16px;
-      color: #cbd5e1;
-      text-decoration: none;
-      border-radius: 8px;
-      transition: all 0.2s ease;
-      cursor: pointer;
-      font-size: 0.95rem;
-    }
-
-    .menu-link:hover {
-      background: rgba(255, 255, 255, 0.1);
-      color: #fff;
-      transform: translateX(4px);
-    }
-
-    .menu-link.active {
-      background: linear-gradient(135deg, #3b82f6, #2563eb);
-      color: #fff;
-      font-weight: 500;
-    }
-
-    .menu-link i {
-      width: 24px;
-      font-size: 1.1rem;
-      margin-right: 12px;
-    }
-
-    /* Submenu */
-    .submenu {
-      list-style: none;
-      max-height: 0;
-      overflow: hidden;
-      transition: max-height 0.3s ease;
-      padding-left: 0;
-      margin: 0;
-    }
-
-    .submenu.show {
-      max-height: 500px;
-    }
-
-    .submenu-item {
-      margin: 2px 8px 2px 20px;
-    }
-
-    .submenu-link {
-      display: flex;
-      align-items: center;
-      padding: 10px 16px;
-      color: #94a3b8;
-      text-decoration: none;
-      border-radius: 6px;
-      transition: all 0.2s ease;
-      font-size: 0.9rem;
-      padding-left: 44px;
-      position: relative;
-    }
-
-    .submenu-link::before {
-      content: '';
-      position: absolute;
-      left: 24px;
-      width: 6px;
-      height: 6px;
-      background: #64748b;
-      border-radius: 50%;
-    }
-
-    .submenu-link:hover {
-      background: rgba(255, 255, 255, 0.08);
-      color: #fff;
-      padding-left: 48px;
-    }
-
-    .submenu-link.active {
-      background: rgba(59, 130, 246, 0.2);
-      color: #60a5fa;
-      font-weight: 500;
-    }
-
-    .submenu-link.active::before {
-      background: #60a5fa;
-    }
-
-    /* Ícone de expand/collapse */
-    .menu-link .expand-icon {
-      margin-left: auto;
-      transition: transform 0.3s ease;
-      font-size: 0.8rem;
-    }
-
-    .menu-link.expanded .expand-icon {
-      transform: rotate(180deg);
-    }
-
-    /* Separador */
-    .menu-separator {
-      height: 1px;
-      background: rgba(255, 255, 255, 0.1);
-      margin: 12px 16px;
-    }
-
-    /* Label de Seção */
-    .menu-label {
-      padding: 16px 16px 8px;
-      font-size: 0.75rem;
-      font-weight: 600;
-      color: #64748b;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    /* ===== SIDEBAR COLLAPSED ===== */
-    .sidebar.collapsed {
-      width: 70px;
-    }
-
-    .sidebar.collapsed .sidebar-header h5,
-    .sidebar.collapsed .user-info,
-    .sidebar.collapsed .menu-link span,
-    .sidebar.collapsed .expand-icon,
-    .sidebar.collapsed .menu-label {
-      display: none;
-    }
-
-    .sidebar.collapsed .menu-link {
-      justify-content: center;
-      padding: 12px;
-    }
-
-    .sidebar.collapsed .menu-link i {
-      margin: 0;
-    }
-
-    .sidebar.collapsed .submenu {
-      display: none;
-    }
-
-    /* ===== OVERLAY (MOBILE) ===== */
-    .overlay {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.5);
-      z-index: 999;
-      opacity: 0;
-      transition: opacity 0.3s ease;
-    }
-
-    .overlay.active {
-      display: block;
-      opacity: 1;
-    }
-
-    /* ===== MAIN CONTENT ===== */
-    .main-content {
-      margin-left: 260px;
-      transition: margin-left 0.3s ease;
-      min-height: 100vh;
-    }
-
-    .sidebar.collapsed ~ .main-content {
-      margin-left: 70px;
-    }
-
-    /* ===== NAVBAR ===== */
-    .navbar-custom {
-      background: #fff;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-      padding: 16px 24px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      position: sticky;
-      top: 0;
-      z-index: 998;
-    }
-
-    .menu-toggle {
-      background: none;
-      border: none;
-      font-size: 1.5rem;
-      color: #1e293b;
-      cursor: pointer;
-      padding: 8px;
-      border-radius: 8px;
-      transition: all 0.2s ease;
-    }
-
-    .menu-toggle:hover {
-      background: #f1f5f9;
-    }
-
-    .navbar-custom h5 {
-      margin: 0;
-      font-size: 1.25rem;
-      font-weight: 600;
-      color: #1e293b;
-    }
-
-    .user-badge {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .user-badge span {
-      color: #64748b;
-      font-size: 0.9rem;
-    }
-
-    /* ===== RESPONSIVE ===== */
-    @media (max-width: 992px) {
-      .sidebar {
-        transform: translateX(-100%);
-      }
-
-      .sidebar.active {
-        transform: translateX(0);
-      }
-
-      .main-content {
-        margin-left: 0 !important;
-      }
-    }
-
-    /* ===== CONTENT AREA ===== */
-    main {
-      padding: 24px;
-    }
-
-    /* Badge de notificação */
-    .badge-notify {
-      background: #ef4444;
-      color: white;
-      font-size: 0.7rem;
-      padding: 2px 6px;
-      border-radius: 10px;
-      margin-left: auto;
-    }
-  </style>
+  <link rel="stylesheet" href="{% static 'css/base.css' %}">
   
   {% block extra_css %}{% endblock %}
 </head>
@@ -540,11 +223,11 @@
     {% if user.is_authenticated %}
     <nav class="navbar-custom">
       <div class="d-flex align-items-center gap-3">
-        <button id="menuToggle" class="menu-toggle">
-          <i class="bi bi-list"></i>
-        </button>
-        <h5>{% block page_title %}Painel de Controle{% endblock %}</h5>
-      </div>
+          <button id="menuToggle" class="menu-toggle" aria-controls="sidebar" aria-expanded="false" aria-label="Alternar menu">
+            <i class="bi bi-list"></i>
+          </button>
+          <h5>{% block page_title %}Painel de Controle{% endblock %}</h5>
+        </div>
       <div class="user-badge">
         <span>👤 {{ request.user.username }}</span>
         <a href="{% url 'logout' %}" class="btn btn-outline-danger btn-sm">
@@ -560,7 +243,7 @@
         {% for message in messages %}
           <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
             {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
           </div>
         {% endfor %}
       {% endif %}
@@ -571,43 +254,61 @@
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
   <script>
-    // Toggle Sidebar
+    // Toggle Sidebar and accessibility updates
     document.addEventListener("DOMContentLoaded", function() {
       const menuToggle = document.getElementById("menuToggle");
       const sidebar = document.getElementById("sidebar");
       const overlay = document.getElementById("overlay");
 
+      const updateAria = () => {
+        if (!menuToggle || !sidebar) return;
+        const expanded = sidebar.classList.contains('active') || !sidebar.classList.contains('collapsed');
+        menuToggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+      };
+
       if (menuToggle) {
         menuToggle.addEventListener("click", () => {
+          if (!sidebar) return;
           if (window.innerWidth <= 992) {
             sidebar.classList.toggle("active");
-            overlay.classList.toggle("active");
+            if (overlay) overlay.classList.toggle("active");
           } else {
             sidebar.classList.toggle("collapsed");
           }
+          updateAria();
         });
       }
 
       if (overlay) {
         overlay.addEventListener("click", () => {
-          sidebar.classList.remove("active");
+          if (sidebar) sidebar.classList.remove("active");
           overlay.classList.remove("active");
+          updateAria();
         });
       }
 
-      // Highlight active menu
-      const currentPath = window.location.pathname;
+      // Highlight active menu — compare normalized pathnames
+      const currentPath = window.location.pathname.replace(/\/$/, '');
       document.querySelectorAll('.menu-link, .submenu-link').forEach(link => {
-        if (link.getAttribute('href') === currentPath) {
-          link.classList.add('active');
-          // Expand parent submenu if exists
-          const parentSubmenu = link.closest('.submenu');
-          if (parentSubmenu) {
-            parentSubmenu.classList.add('show');
-            parentSubmenu.previousElementSibling.classList.add('expanded');
+        try {
+          const href = link.getAttribute('href');
+          if (!href || href === '#') return;
+          const linkPath = new URL(link.href, window.location.origin).pathname.replace(/\/$/, '');
+          if (linkPath === currentPath) {
+            link.classList.add('active');
+            const parentSubmenu = link.closest('.submenu');
+            if (parentSubmenu) {
+              parentSubmenu.classList.add('show');
+              if (parentSubmenu.previousElementSibling) parentSubmenu.previousElementSibling.classList.add('expanded');
+            }
           }
+        } catch (e) {
+          // ignore malformed/anchor links
         }
       });
+
+      // Ensure aria state initial
+      updateAria();
     });
 
     // Toggle Submenu

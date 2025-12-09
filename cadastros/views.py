@@ -7,11 +7,10 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
-from django.db.models import Q, Count
+from django.db.models import Q, Count, Sum, Avg
 from django.core.paginator import Paginator
 from django.utils import timezone
 import requests
-import json
 from .models import Funcionario, FuncaoFuncionario
 from .forms import FuncionarioForm, FuncaoFuncionarioForm
 
@@ -22,8 +21,12 @@ from .models import (
 from .forms import (
     FazendaForm, EnderecoFazendaForm, ContatoFazendaForm,
     ContaBancariaFazendaForm, DocumentoFazendaForm,
-    BuscarCNPJForm, BuscarCEPForm
 )
+
+from .models import Area, Talhao, Cultura
+from .forms import AreaForm, TalhaoForm, CulturaForm
+
+
 
 
 # ==================== FAZENDAS ====================
@@ -268,7 +271,7 @@ def buscar_cnpj(request):
             else:
                 return JsonResponse({'erro': 'Erro ao consultar API'}, status=500)
                 
-        except requests.Timeout:
+        except requests.exceptions.Timeout:
             return JsonResponse({'erro': 'Timeout na consulta'}, status=500)
         except Exception as e:
             return JsonResponse({'erro': str(e)}, status=500)
@@ -311,7 +314,7 @@ def buscar_cep(request):
             else:
                 return JsonResponse({'erro': 'Erro ao consultar API'}, status=500)
                 
-        except requests.Timeout:
+        except requests.exceptions.Timeout:
             return JsonResponse({'erro': 'Timeout na consulta'}, status=500)
         except Exception as e:
             return JsonResponse({'erro': str(e)}, status=500)
@@ -796,8 +799,7 @@ def funcionario_delete(request, pk):
 ADICIONE ESTE CÓDIGO NO FINAL DO ARQUIVO cadastros/views.py
 """
 
-from .models import Cultura
-from .forms import CulturaForm
+
 
 
 # ==================== CULTURAS ====================
@@ -960,3 +962,436 @@ def cultura_delete(request, pk):
         return redirect('cadastros:cultura_list')
     
     return render(request, 'cadastros/cultura_confirm_delete.html', {'cultura': cultura})
+
+
+
+
+
+    """
+ADICIONE ESTAS VIEWS AO ARQUIVO cadastros/views.py
+Views para Áreas e Talhões com isolamento Multi-Tenant
+"""
+
+
+
+
+# ============================================
+# VIEWS DE ÁREA
+# ============================================
+
+@login_required
+def area_list(request):
+    """
+    Lista áreas da empresa do usuário logado
+    🔒 FILTRO AUTOMÁTICO POR EMPRESA
+    """
+    empresa = request.user.empresa
+    
+    if not empresa:
+        messages.warning(request, 'Você não está vinculado a nenhuma empresa.')
+        return redirect('dashboard:index')
+    
+    # 🔒 Filtra apenas áreas da empresa do usuário
+    areas = Area.objects.da_empresa(empresa).select_related(
+        'fazenda', 'cadastrado_por'
+    ).prefetch_related('talhoes')
+    
+    # Busca
+    q = request.GET.get('q', '').strip()
+    if q:
+        areas = areas.filter(
+            Q(nome__icontains=q) |
+            Q(codigo_interno__icontains=q) |
+            Q(fazenda__nome__icontains=q)
+        )
+    
+    # Filtro por fazenda
+    fazenda_id = request.GET.get('fazenda')
+    if fazenda_id:
+        areas = areas.filter(fazenda_id=fazenda_id)
+    
+    # Filtro por tipo
+    tipo = request.GET.get('tipo')
+    if tipo:
+        areas = areas.filter(tipo_area=tipo)
+    
+    # Filtro por status
+    status = request.GET.get('status')
+    if status:
+        areas = areas.filter(status=status)
+    
+    # Adiciona estatísticas
+    for area in areas:
+        area.total_talhoes = area.talhoes.filter(ativo=True).count()
+        area.area_disponivel = area.get_area_disponivel()
+        area.percentual_uso = area.get_percentual_uso()
+    
+    # 🔒 Fazendas da empresa para filtro
+    fazendas = Fazenda.objects.filter(
+        empresa=empresa, 
+        ativa=True
+    ).order_by('nome')
+    
+    context = {
+        'areas': areas,
+        'fazendas': fazendas,
+        'total_areas': areas.count(),
+    }
+    
+    return render(request, 'cadastros/area_list.html', context)
+
+
+@login_required
+def area_create(request):
+    """
+    Cria nova área
+    🔒 VINCULA AUTOMATICAMENTE À EMPRESA DO USUÁRIO
+    """
+    empresa = request.user.empresa
+    
+    if not empresa:
+        messages.error(request, 'Você não está vinculado a nenhuma empresa.')
+        return redirect('dashboard:index')
+    
+    if request.method == 'POST':
+        form = AreaForm(request.POST, user=request.user)
+        if form.is_valid():
+            area = form.save(commit=False)
+            area.empresa = empresa  # 🔒 Vincula à empresa
+            area.cadastrado_por = request.user
+            area.save()
+            
+            messages.success(
+                request, 
+                f'✅ Área "{area.nome}" cadastrada com sucesso!'
+            )
+            return redirect('cadastros:area_list')
+    else:
+        form = AreaForm(user=request.user)
+    
+    return render(request, 'cadastros/area_form.html', {
+        'form': form,
+        'title': 'Nova Área'
+    })
+
+
+@login_required
+def area_update(request, pk):
+    """
+    Edita área existente
+    🔒 VERIFICA SE PERTENCE À EMPRESA DO USUÁRIO
+    """
+    empresa = request.user.empresa
+    
+    # 🔒 Busca apenas se pertencer à empresa
+    area = get_object_or_404(
+        Area.objects.da_empresa(empresa),
+        pk=pk
+    )
+    
+    if request.method == 'POST':
+        form = AreaForm(request.POST, instance=area, user=request.user)
+        if form.is_valid():
+            area = form.save()
+            messages.success(request, f'✅ Área "{area.nome}" atualizada!')
+            return redirect('cadastros:area_list')
+    else:
+        form = AreaForm(instance=area, user=request.user)
+    
+    return render(request, 'cadastros/area_form.html', {
+        'form': form,
+        'area': area,
+        'title': f'Editar Área: {area.nome}'
+    })
+
+
+@login_required
+def area_delete(request, pk):
+    """
+    Exclui área
+    🔒 VERIFICA PERMISSÃO E VALIDA EXCLUSÃO
+    """
+    empresa = request.user.empresa
+    
+    # 🔒 Busca apenas se pertencer à empresa
+    area = get_object_or_404(
+        Area.objects.da_empresa(empresa),
+        pk=pk
+    )
+    
+    # Verifica se tem talhões vinculados
+    total_talhoes = area.talhoes.filter(ativo=True).count()
+    
+    if total_talhoes > 0:
+        messages.error(
+            request,
+            f'❌ Não é possível excluir! A área possui {total_talhoes} talhão(ões) ativo(s).'
+        )
+        return redirect('cadastros:area_list')
+    
+    if request.method == 'POST':
+        nome = area.nome
+        area.delete()
+        messages.success(request, f'🗑️ Área "{nome}" excluída com sucesso!')
+        return redirect('cadastros:area_list')
+    
+    return render(request, 'cadastros/area_confirm_delete.html', {
+        'area': area
+    })
+
+
+@login_required
+def area_detail(request, pk):
+    """
+    Detalhes da área com talhões
+    🔒 ACESSO APENAS PARA EMPRESA DONA
+    """
+    empresa = request.user.empresa
+    
+    # 🔒 Busca apenas se pertencer à empresa
+    area = get_object_or_404(
+        Area.objects.da_empresa(empresa).select_related('fazenda'),
+        pk=pk
+    )
+    
+    # Talhões da área
+    talhoes = area.talhoes.filter(ativo=True).select_related('cultura_atual')
+    
+    # Estatísticas
+    stats = {
+        'total_talhoes': talhoes.count(),
+        'area_ocupada': talhoes.aggregate(Sum('area'))['area__sum'] or 0,
+        'area_disponivel': area.get_area_disponivel(),
+        'percentual_uso': area.get_percentual_uso(),
+        'talhoes_plantados': talhoes.filter(status='PLANTADO').count(),
+        'talhoes_disponiveis': talhoes.filter(status='DISPONIVEL').count(),
+    }
+    
+    return render(request, 'cadastros/area_detail.html', {
+        'area': area,
+        'talhoes': talhoes,
+        'stats': stats
+    })
+
+
+# ============================================
+# VIEWS DE TALHÃO
+# ============================================
+
+@login_required
+def talhao_list(request):
+    """
+    Lista talhões da empresa
+    🔒 FILTRO AUTOMÁTICO POR EMPRESA
+    """
+    empresa = request.user.empresa
+    
+    if not empresa:
+        messages.warning(request, 'Você não está vinculado a nenhuma empresa.')
+        return redirect('dashboard:index')
+    
+    # 🔒 Filtra apenas talhões da empresa
+    talhoes = Talhao.objects.da_empresa(empresa).select_related(
+        'fazenda', 'area', 'cultura_atual'
+    )
+    
+    # Busca
+    q = request.GET.get('q', '').strip()
+    if q:
+        talhoes = talhoes.filter(
+            Q(nome__icontains=q) |
+            Q(codigo__icontains=q) |
+            Q(fazenda__nome__icontains=q)
+        )
+    
+    # Filtros
+    fazenda_id = request.GET.get('fazenda')
+    if fazenda_id:
+        talhoes = talhoes.filter(fazenda_id=fazenda_id)
+    
+    area_id = request.GET.get('area')
+    if area_id:
+        talhoes = talhoes.filter(area_id=area_id)
+    
+    status = request.GET.get('status')
+    if status:
+        talhoes = talhoes.filter(status=status)
+    
+    # Estatísticas
+    stats = {
+        'total': talhoes.count(),
+        'plantados': talhoes.filter(status='PLANTADO').count(),
+        'disponiveis': talhoes.filter(status='DISPONIVEL').count(),
+        'area_total': talhoes.aggregate(Sum('area'))['area__sum'] or 0,
+    }
+    
+    # 🔒 Dados para filtros (apenas da empresa)
+    fazendas = Fazenda.objects.filter(empresa=empresa, ativa=True).order_by('nome')
+    areas = Area.objects.da_empresa(empresa).filter(ativa=True).order_by('nome')
+    
+    context = {
+        'talhoes': talhoes,
+        'fazendas': fazendas,
+        'areas': areas,
+        'stats': stats,
+    }
+    
+    return render(request, 'cadastros/talhao_list.html', context)
+
+
+@login_required
+def talhao_create(request):
+    """
+    Cria novo talhão
+    🔒 VINCULA AUTOMATICAMENTE À EMPRESA
+    """
+    empresa = request.user.empresa
+    
+    if not empresa:
+        messages.error(request, 'Você não está vinculado a nenhuma empresa.')
+        return redirect('dashboard:index')
+    
+    if request.method == 'POST':
+        form = TalhaoForm(request.POST, user=request.user)
+        if form.is_valid():
+            talhao = form.save(commit=False)
+            talhao.empresa = empresa  # 🔒 Vincula à empresa
+            talhao.cadastrado_por = request.user
+            talhao.save()
+            
+            messages.success(
+                request,
+                f'✅ Talhão "{talhao.codigo} - {talhao.nome}" cadastrado!'
+            )
+            return redirect('cadastros:talhao_list')
+    else:
+        form = TalhaoForm(user=request.user)
+    
+    return render(request, 'cadastros/talhao_form.html', {
+        'form': form,
+        'title': 'Novo Talhão'
+    })
+
+
+@login_required
+def talhao_update(request, pk):
+    """
+    Edita talhão
+    🔒 VERIFICA PERMISSÃO
+    """
+    empresa = request.user.empresa
+    
+    # 🔒 Busca apenas se pertencer à empresa
+    talhao = get_object_or_404(
+        Talhao.objects.da_empresa(empresa),
+        pk=pk
+    )
+    
+    if request.method == 'POST':
+        form = TalhaoForm(request.POST, instance=talhao, user=request.user)
+        if form.is_valid():
+            talhao = form.save()
+            messages.success(request, f'✅ Talhão "{talhao.codigo}" atualizado!')
+            return redirect('cadastros:talhao_list')
+    else:
+        form = TalhaoForm(instance=talhao, user=request.user)
+    
+    return render(request, 'cadastros/talhao_form.html', {
+        'form': form,
+        'talhao': talhao,
+        'title': f'Editar Talhão: {talhao.codigo}'
+    })
+
+
+@login_required
+def talhao_delete(request, pk):
+    """
+    Exclui talhão
+    🔒 VERIFICA PERMISSÃO
+    """
+    empresa = request.user.empresa
+    
+    # 🔒 Busca apenas se pertencer à empresa
+    talhao = get_object_or_404(
+        Talhao.objects.da_empresa(empresa),
+        pk=pk
+    )
+    
+    # Verifica se está em uso
+    if talhao.status == 'PLANTADO':
+        messages.error(
+            request,
+            '❌ Não é possível excluir talhão com cultivo ativo!'
+        )
+        return redirect('cadastros:talhao_list')
+    
+    if request.method == 'POST':
+        codigo = talhao.codigo
+        talhao.delete()
+        messages.success(request, f'🗑️ Talhão "{codigo}" excluído!')
+        return redirect('cadastros:talhao_list')
+    
+    return render(request, 'cadastros/talhao_confirm_delete.html', {
+        'talhao': talhao
+    })
+
+
+@login_required
+def talhao_detail(request, pk):
+    """
+    Detalhes do talhão com histórico
+    🔒 ACESSO APENAS PARA EMPRESA DONA
+    """
+    empresa = request.user.empresa
+    
+    # 🔒 Busca apenas se pertencer à empresa
+    talhao = get_object_or_404(
+        Talhao.objects.da_empresa(empresa).select_related(
+            'fazenda', 'area', 'cultura_atual'
+        ),
+        pk=pk
+    )
+    
+    # Histórico de cultivos
+    historico = talhao.historico.all().order_by('-data_plantio')[:10]
+    
+    # Estatísticas do histórico
+    historico_stats = talhao.historico.aggregate(
+        total_safras=Count('id'),
+        producao_total=Sum('producao_real'),
+        media_produtividade=Avg('produtividade')
+    )
+    
+    return render(request, 'cadastros/talhao_detail.html', {
+        'talhao': talhao,
+        'historico': historico,
+        'historico_stats': historico_stats
+    })
+
+
+# ============================================
+# AJAX: ÁREAS POR FAZENDA
+# ============================================
+
+@login_required
+def ajax_areas_por_fazenda(request, fazenda_id):
+    """
+    Retorna áreas de uma fazenda (para select dinâmico)
+    🔒 APENAS ÁREAS DA EMPRESA DO USUÁRIO
+    """
+    empresa = request.user.empresa
+    
+    # 🔒 Valida se fazenda pertence à empresa
+    try:
+        fazenda = Fazenda.objects.get(pk=fazenda_id, empresa=empresa)
+    except Fazenda.DoesNotExist:
+        return JsonResponse({'error': 'Fazenda não encontrada'}, status=404)
+    
+    # 🔒 Busca apenas áreas da empresa
+    areas = Area.objects.filter(
+        fazenda=fazenda,
+        empresa=empresa,
+        ativa=True
+    ).values('id', 'nome', 'area_total')
+    
+    return JsonResponse(list(areas), safe=False)

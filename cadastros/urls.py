@@ -58,4 +58,24 @@ urlpatterns = [
     path('culturas/<int:pk>/', views.cultura_detail, name='cultura_detail'),
     path('culturas/<int:pk>/editar/', views.cultura_update, name='cultura_update'),
     path('culturas/<int:pk>/excluir/', views.cultura_delete, name='cultura_delete'),
+
+    
+    # ====================  Áreas ====================== 
+    path('areas/', views.area_list, name='area_list'),
+    path('areas/nova/', views.area_create, name='area_create'),
+    path('areas/<int:pk>/', views.area_detail, name='area_detail'),
+    path('areas/<int:pk>/editar/', views.area_update, name='area_update'),
+    path('areas/<int:pk>/excluir/', views.area_delete, name='area_delete'),
+    
+    # Talhões
+    path('talhoes/', views.talhao_list, name='talhao_list'),
+    path('talhoes/novo/', views.talhao_create, name='talhao_create'),
+    path('talhoes/<int:pk>/', views.talhao_detail, name='talhao_detail'),
+    path('talhoes/<int:pk>/editar/', views.talhao_update, name='talhao_update'),
+    path('talhoes/<int:pk>/excluir/', views.talhao_delete, name='talhao_delete'),
+    
+    # AJAX
+    path('ajax/areas-por-fazenda/<int:fazenda_id>/', views.ajax_areas_por_fazenda, name='ajax_areas_fazenda'),
+
+
 ]

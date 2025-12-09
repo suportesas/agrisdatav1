@@ -9,7 +9,7 @@ from django.core.exceptions import ValidationError
 from django.utils import timezone
 from decimal import Decimal
 import os
-
+from django.core.validators import  MaxValueValidator
 
 class Fazenda(models.Model):
     """
@@ -1186,8 +1186,8 @@ class Cultura(models.Model):
     ]
     
     CICLO_CULTURA = [
-        ('CURTO', 'Curto (até 100 dias)'),
-        ('MEDIO', 'Médio (100 a 180 dias)'),
+        ('CURTO', 'Curto (até 90 dias)'),
+        ('MEDIO', 'Médio (90 a 180 dias)'),
         ('LONGO', 'Longo (mais de 180 dias)'),
     ]
     
@@ -1505,3 +1505,735 @@ class Cultura(models.Model):
         """Retorna total de plantios desta cultura"""
         # Será implementado quando criar o módulo de Plantio
         return 0
+
+
+"""
+ADICIONE ESTES MODELOS AO ARQUIVO cadastros/models.py
+Logo após os modelos existentes (Fazenda, Cultura, etc.)
+"""
+
+# ============================================
+# MANAGERS CUSTOMIZADOS PARA MULTI-TENANCY
+# ============================================
+
+class EmpresaQuerySet(models.QuerySet):
+    """QuerySet customizado para filtrar por empresa (Multi-tenant)"""
+    
+    def da_empresa(self, empresa):
+        """Filtra registros da empresa especificada"""
+        if empresa:
+            return self.filter(empresa=empresa)
+        return self.none()
+    
+    def ativos(self):
+        """Retorna apenas registros ativos"""
+        return self.filter(ativo=True)
+
+
+class AreaManager(models.Manager):
+    """Manager customizado para Area"""
+    
+    def get_queryset(self):
+        return EmpresaQuerySet(self.model, using=self._db)
+    
+    def da_empresa(self, empresa):
+        """Retorna áreas da empresa"""
+        return self.get_queryset().da_empresa(empresa)
+    
+    def ativos(self):
+        """Retorna apenas áreas ativas"""
+        return self.get_queryset().ativos()
+    
+    def disponiveis(self, empresa):
+        """Retorna áreas disponíveis para uso"""
+        return self.da_empresa(empresa).filter(
+            ativo=True,
+            status__in=['DISPONIVEL', 'EM_USO']
+        )
+
+
+class TalhaoManager(models.Manager):
+    """Manager customizado para Talhao"""
+    
+    def get_queryset(self):
+        return EmpresaQuerySet(self.model, using=self._db)
+    
+    def da_empresa(self, empresa):
+        """Retorna talhões da empresa"""
+        return self.get_queryset().da_empresa(empresa)
+    
+    def ativos(self):
+        """Retorna apenas talhões ativos"""
+        return self.get_queryset().ativos()
+    
+    def disponiveis_plantio(self, empresa):
+        """Retorna talhões prontos para plantio"""
+        return self.da_empresa(empresa).filter(
+            ativo=True,
+            pronto_para_plantio=True,
+            status__in=['DISPONIVEL', 'DESCANSO']
+        )
+    
+    def em_cultivo(self, empresa):
+        """Retorna talhões com cultivo ativo"""
+        return self.da_empresa(empresa).filter(
+            ativo=True,
+            status='PLANTADO'
+        ).exclude(cultura_atual__isnull=True)
+
+
+# ============================================
+# MÓDULO: ÁREAS E TALHÕES
+# ============================================
+
+class Area(models.Model):
+    """
+    Áreas agricultáveis dentro de uma Fazenda
+    Uma fazenda pode ter múltiplas áreas (seções/setores)
+    """
+    
+    TIPO_AREA_CHOICES = [
+        ('AGRICOLA', 'Área Agrícola'),
+        ('PASTAGEM', 'Pastagem'),
+        ('RESERVA', 'Reserva Legal'),
+        ('APP', 'APP - Área de Preservação Permanente'),
+        ('INFRAESTRUTURA', 'Infraestrutura'),
+        ('OUTROS', 'Outros'),
+    ]
+    
+    STATUS_CHOICES = [
+        ('DISPONIVEL', 'Disponível'),
+        ('EM_USO', 'Em Uso'),
+        ('DESCANSO', 'Em Descanso'),
+        ('PREPARACAO', 'Em Preparação'),
+        ('INATIVA', 'Inativa'),
+    ]
+    
+    # Identificação
+    fazenda = models.ForeignKey(
+        Fazenda,
+        on_delete=models.CASCADE,
+        related_name='areas',
+        verbose_name='Fazenda'
+    )
+    
+    nome = models.CharField(
+        'Nome da Área',
+        max_length=100,
+        help_text='Ex: Setor A, Área Norte, etc.'
+    )
+    
+    codigo_interno = models.CharField(
+        'Código Interno',
+        max_length=20,
+        blank=True,
+        help_text='Código de identificação interno'
+    )
+    
+    tipo_area = models.CharField(
+        'Tipo de Área',
+        max_length=20,
+        choices=TIPO_AREA_CHOICES,
+        default='AGRICOLA'
+    )
+    
+    # Medidas
+    area_total = models.DecimalField(
+        'Área Total (ha)',
+        max_digits=10,
+        decimal_places=4,
+        validators=[MinValueValidator(Decimal('0.0001'))],
+        help_text='Área total em hectares'
+    )
+    
+    area_plantavel = models.DecimalField(
+        'Área Plantável (ha)',
+        max_digits=10,
+        decimal_places=4,
+        blank=True,
+        null=True,
+        validators=[MinValueValidator(Decimal('0'))],
+        help_text='Área efetivamente disponível para plantio'
+    )
+    
+    # Geolocalização
+    latitude = models.DecimalField(
+        'Latitude',
+        max_digits=10,
+        decimal_places=7,
+        blank=True,
+        null=True,
+        help_text='Coordenada geográfica'
+    )
+    
+    longitude = models.DecimalField(
+        'Longitude',
+        max_digits=10,
+        decimal_places=7,
+        blank=True,
+        null=True,
+        help_text='Coordenada geográfica'
+    )
+    
+    # Características do solo
+    tipo_solo = models.CharField(
+        'Tipo de Solo',
+        max_length=100,
+        blank=True,
+        help_text='Ex: Arenoso, Argiloso, etc.'
+    )
+    
+    ph_solo = models.DecimalField(
+        'pH do Solo',
+        max_digits=4,
+        decimal_places=2,
+        blank=True,
+        null=True,
+        validators=[MinValueValidator(Decimal('0')), MaxValueValidator(Decimal('14'))]
+    )
+    
+    topografia = models.CharField(
+        'Topografia',
+        max_length=50,
+        blank=True,
+        choices=[
+            ('PLANA', 'Plana'),
+            ('ONDULADA', 'Ondulada'),
+            ('MONTANHOSA', 'Montanhosa'),
+        ],
+        help_text='Relevo da área'
+    )
+    
+    # Sistema de irrigação
+    possui_irrigacao = models.BooleanField(
+        'Possui Irrigação',
+        default=False
+    )
+    
+    tipo_irrigacao = models.CharField(
+        'Tipo de Irrigação',
+        max_length=50,
+        blank=True,
+        choices=[
+            ('GOTEJAMENTO', 'Gotejamento'),
+            ('ASPERSAO', 'Aspersão'),
+            ('PIVO', 'Pivô Central'),
+            ('SULCO', 'Sulco'),
+            ('MICROASPERSAO', 'Microaspersão'),
+        ]
+    )
+    
+    # Status e controle
+    status = models.CharField(
+        'Status',
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='DISPONIVEL'
+    )
+    
+    ativa = models.BooleanField(
+        'Área Ativa',
+        default=True
+    )
+    
+    observacoes = models.TextField(
+        'Observações',
+        blank=True
+    )
+    
+    # Auditoria
+    empresa = models.ForeignKey(
+        'empresas.Empresa',
+        on_delete=models.CASCADE,
+        related_name='areas',
+        verbose_name='Empresa'
+    )
+    
+    cadastrado_por = models.ForeignKey(
+        'usuarios.Usuario',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='areas_cadastradas',
+        verbose_name='Cadastrado por'
+    )
+    
+    data_cadastro = models.DateTimeField(
+        'Data de Cadastro',
+        auto_now_add=True
+    )
+    
+    data_atualizacao = models.DateTimeField(
+        'Última Atualização',
+        auto_now=True
+    )
+    
+    class Meta:
+        verbose_name = "Área"
+        verbose_name_plural = "Áreas"
+        ordering = ['fazenda__nome', 'nome']
+        unique_together = [['fazenda', 'codigo_interno']]
+        indexes = [
+            models.Index(fields=['empresa', 'ativa']),
+            models.Index(fields=['fazenda', 'status']),
+        ]
+    
+    def __str__(self):
+        return f"{self.fazenda.nome} - {self.nome}"
+    
+    def clean(self):
+        """Validações customizadas"""
+        # Valida área plantável
+        if self.area_plantavel and self.area_plantavel > self.area_total:
+            raise ValidationError({
+                'area_plantavel': 'Área plantável não pode ser maior que área total'
+            })
+        
+        # Valida irrigação
+        if self.tipo_irrigacao and not self.possui_irrigacao:
+            raise ValidationError({
+                'tipo_irrigacao': 'Defina "Possui Irrigação" como Sim antes de informar o tipo'
+            })
+    
+    def get_area_disponivel(self):
+        """Retorna área disponível para novos talhões"""
+        area_ocupada = self.talhoes.filter(
+            ativo=True
+        ).aggregate(
+            total=models.Sum('area')
+        )['total'] or Decimal('0')
+        
+        return self.area_total - area_ocupada
+    
+    def get_percentual_uso(self):
+        """Retorna percentual de uso da área"""
+        area_ocupada = self.talhoes.filter(
+            ativo=True
+        ).aggregate(
+            total=models.Sum('area')
+        )['total'] or Decimal('0')
+        
+        if self.area_total > 0:
+            return (area_ocupada / self.area_total) * 100
+        return 0
+
+
+class Talhao(models.Model):
+    """
+    Talhões - divisões de uma Área para plantio
+    Unidade básica de cultivo e rastreabilidade
+    """
+    
+    STATUS_CHOICES = [
+        ('DISPONIVEL', 'Disponível para Plantio'),
+        ('PREPARACAO', 'Em Preparação'),
+        ('PLANTADO', 'Plantado'),
+        ('COLHEITA', 'Em Colheita'),
+        ('DESCANSO', 'Em Descanso/Pousio'),
+        ('MANUTENCAO', 'Em Manutenção'),
+    ]
+    
+    # Relacionamentos
+    area = models.ForeignKey(
+        Area,
+        on_delete=models.CASCADE,
+        related_name='talhoes',
+        verbose_name='Área'
+    )
+    
+    fazenda = models.ForeignKey(
+        Fazenda,
+        on_delete=models.CASCADE,
+        related_name='talhoes',
+        verbose_name='Fazenda',
+        help_text='Preenchido automaticamente pela área'
+    )
+    
+    # Identificação
+    nome = models.CharField(
+        'Nome do Talhão',
+        max_length=100,
+        help_text='Ex: Talhão 01, Quadra A1, etc.'
+    )
+    
+    codigo = models.CharField(
+        'Código',
+        max_length=20,
+        help_text='Código único de identificação'
+    )
+    
+    # Medidas
+    area_hac = models.DecimalField(
+        'Área (ha)',
+        max_digits=10,
+        decimal_places=4,
+        validators=[MinValueValidator(Decimal('0.0001'))],
+        help_text='Área em hectares'
+    )
+    
+    # Geolocalização (centro do talhão)
+    latitude = models.DecimalField(
+        'Latitude',
+        max_digits=10,
+        decimal_places=7,
+        blank=True,
+        null=True
+    )
+    
+    longitude = models.DecimalField(
+        'Longitude',
+        max_digits=10,
+        decimal_places=7,
+        blank=True,
+        null=True
+    )
+    
+    # Cultura atual (se houver)
+    cultura_atual = models.ForeignKey(
+        Cultura,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='talhoes_ocupados',
+        verbose_name='Cultura Atual',
+        help_text='Cultura atualmente plantada neste talhão'
+    )
+    
+    data_plantio_atual = models.DateField(
+        'Data do Plantio Atual',
+        blank=True,
+        null=True,
+        help_text='Data do plantio da cultura atual'
+    )
+    
+    previsao_colheita = models.DateField(
+        'Previsão de Colheita',
+        blank=True,
+        null=True,
+        help_text='Previsão de colheita da safra atual'
+    )
+    
+    # Status
+    status = models.CharField(
+        'Status',
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='DISPONIVEL'
+    )
+    
+    ativo = models.BooleanField(
+        'Talhão Ativo',
+        default=True,
+        help_text='Define se o talhão está disponível para uso'
+    )
+    
+    pronto_para_plantio = models.BooleanField(
+        'Pronto para Plantio',
+        default=False,
+        help_text='Define se a preparação do solo está concluída'
+    )
+    
+    # Características
+    declividade = models.CharField(
+        'Declividade',
+        max_length=50,
+        blank=True,
+        choices=[
+            ('BAIXA', 'Baixa (0-5%)'),
+            ('MEDIA', 'Média (5-15%)'),
+            ('ALTA', 'Alta (>15%)'),
+        ]
+    )
+    
+    exposicao_solar = models.CharField(
+        'Exposição Solar',
+        max_length=50,
+        blank=True,
+        choices=[
+            ('PLENA', 'Sol Pleno'),
+            ('PARCIAL', 'Parcial'),
+            ('SOMBRA', 'Sombreado'),
+        ]
+    )
+    
+    observacoes = models.TextField(
+        'Observações',
+        blank=True
+    )
+    
+    # Auditoria
+    empresa = models.ForeignKey(
+        'empresas.Empresa',
+        on_delete=models.CASCADE,
+        related_name='talhoes',
+        verbose_name='Empresa'
+    )
+    
+    cadastrado_por = models.ForeignKey(
+        'usuarios.Usuario',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='talhoes_cadastrados',
+        verbose_name='Cadastrado por'
+    )
+    
+    data_cadastro = models.DateTimeField(
+        'Data de Cadastro',
+        auto_now_add=True
+    )
+    
+    data_atualizacao = models.DateTimeField(
+        'Última Atualização',
+        auto_now=True
+    )
+    
+    class Meta:
+        verbose_name = "Talhão"
+        verbose_name_plural = "Talhões"
+        ordering = ['fazenda__nome', 'area__nome', 'codigo']
+        unique_together = [['fazenda', 'codigo']]
+        indexes = [
+            models.Index(fields=['empresa', 'ativo']),
+            models.Index(fields=['fazenda', 'status']),
+            models.Index(fields=['area', 'ativo']),
+        ]
+    
+    def __str__(self):
+        return f"{self.fazenda.nome} - {self.area.nome} - {self.nome}"
+    
+    def save(self, *args, **kwargs):
+        """Preenche fazenda automaticamente pela área"""
+        if self.area and not self.fazenda_id:
+            self.fazenda = self.area.fazenda
+        
+        # Preenche empresa
+        if self.fazenda and not self.empresa_id:
+            self.empresa = self.fazenda.empresa
+        
+        super().save(*args, **kwargs)
+    
+    def clean(self):
+        """Validações customizadas"""
+        # Valida se área pertence à fazenda
+        if self.area and self.fazenda:
+            if self.area.fazenda != self.fazenda:
+                raise ValidationError({
+                    'area': 'A área selecionada não pertence a esta fazenda'
+                })
+        
+        # Valida se código é único na fazenda
+        if self.codigo:
+            qs = Talhao.objects.filter(
+                fazenda=self.fazenda,
+                codigo=self.codigo
+            ).exclude(pk=self.pk)
+            
+            if qs.exists():
+                raise ValidationError({
+                    'codigo': f'Já existe um talhão com código "{self.codigo}" nesta fazenda'
+                })
+    
+    def pode_plantar(self):
+        """Verifica se talhão está disponível para plantio"""
+        return (
+            self.ativo and 
+            self.pronto_para_plantio and 
+            self.status in ['DISPONIVEL', 'DESCANSO']
+        )
+    
+    def iniciar_cultivo(self, cultura, data_plantio):
+        """Registra início de cultivo no talhão"""
+        self.cultura_atual = cultura
+        self.data_plantio_atual = data_plantio
+        self.status = 'PLANTADO'
+        self.pronto_para_plantio = False
+        
+        # Calcula previsão de colheita se cultura tiver ciclo
+        if cultura.dias_colheita:
+            from datetime import timedelta
+            self.previsao_colheita = data_plantio + timedelta(days=cultura.dias_colheita)
+        
+        self.save()
+    
+    def finalizar_cultivo(self):
+        """Finaliza cultivo e libera talhão"""
+        self.cultura_atual = None
+        self.data_plantio_atual = None
+        self.previsao_colheita = None
+        self.status = 'DESCANSO'
+        self.pronto_para_plantio = False
+        self.save()
+    
+    def get_dias_cultivo(self):
+        """Retorna dias desde o plantio"""
+        if self.data_plantio_atual:
+            from datetime import date
+            return (date.today() - self.data_plantio_atual).days
+        return None
+    
+    def get_dias_para_colheita(self):
+        """Retorna dias para colheita prevista"""
+        if self.previsao_colheita:
+            from datetime import date
+            dias = (self.previsao_colheita - date.today()).days
+            return dias
+        return None
+
+
+class HistoricoTalhao(models.Model):
+    """
+    Histórico de cultivos em um talhão
+    Rastreabilidade completa por safra
+    """
+    
+    talhao = models.ForeignKey(
+        Talhao,
+        on_delete=models.CASCADE,
+        related_name='historico',
+        verbose_name='Talhão'
+    )
+    
+    cultura = models.ForeignKey(
+        Cultura,
+        on_delete=models.PROTECT,
+        related_name='historico_cultivos',
+        verbose_name='Cultura'
+    )
+    
+    variedade = models.CharField(
+        'Variedade',
+        max_length=100,
+        blank=True,
+        help_text='Variedade específica plantada'
+    )
+    
+    # Datas
+    data_plantio = models.DateField(
+        'Data de Plantio',
+        db_index=True
+    )
+    
+    data_colheita = models.DateField(
+        'Data de Colheita',
+        blank=True,
+        null=True
+    )
+    
+    # Produção
+    producao_estimada = models.DecimalField(
+        'Produção Estimada (kg)',
+        max_digits=12,
+        decimal_places=2,
+        blank=True,
+        null=True
+    )
+    
+    producao_real = models.DecimalField(
+        'Produção Real (kg)',
+        max_digits=12,
+        decimal_places=2,
+        blank=True,
+        null=True,
+        help_text='Quantidade efetivamente colhida'
+    )
+    
+    produtividade = models.DecimalField(
+        'Produtividade (kg/ha)',
+        max_digits=10,
+        decimal_places=2,
+        blank=True,
+        null=True,
+        help_text='Calculado automaticamente'
+    )
+    
+    # Custos
+    custo_total = models.DecimalField(
+        'Custo Total (R$)',
+        max_digits=12,
+        decimal_places=2,
+        default=0,
+        help_text='Soma de todos os custos da safra'
+    )
+    
+    custo_por_hectare = models.DecimalField(
+        'Custo por Hectare (R$/ha)',
+        max_digits=10,
+        decimal_places=2,
+        blank=True,
+        null=True
+    )
+    
+    # Observações
+    observacoes = models.TextField(
+        'Observações',
+        blank=True,
+        help_text='Anotações sobre a safra'
+    )
+    
+    problemas_enfrentados = models.TextField(
+        'Problemas Enfrentados',
+        blank=True,
+        help_text='Pragas, doenças, clima, etc.'
+    )
+    
+    # Auditoria
+    empresa = models.ForeignKey(
+        'empresas.Empresa',
+        on_delete=models.CASCADE,
+        related_name='historico_talhoes',
+        verbose_name='Empresa'
+    )
+    
+    registrado_por = models.ForeignKey(
+        'usuarios.Usuario',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name='Registrado por'
+    )
+    
+    data_registro = models.DateTimeField(
+        'Data de Registro',
+        auto_now_add=True
+    )
+    
+    class Meta:
+        verbose_name = "Histórico de Talhão"
+        verbose_name_plural = "Históricos de Talhões"
+        ordering = ['-data_plantio']
+        indexes = [
+            models.Index(fields=['talhao', '-data_plantio']),
+            models.Index(fields=['empresa', '-data_plantio']),
+        ]
+    
+    def __str__(self):
+        return f"{self.talhao.nome} - {self.cultura.nome} ({self.data_plantio:%d/%m/%Y})"
+    
+    def save(self, *args, **kwargs):
+        """Calcula automaticamente produtividade e custos"""
+        # Calcula produtividade
+        if self.producao_real and self.talhao.area:
+            self.produtividade = self.producao_real / self.talhao.area
+        
+        # Calcula custo por hectare
+        if self.custo_total and self.talhao.area:
+            self.custo_por_hectare = self.custo_total / self.talhao.area
+        
+        # Preenche empresa
+        if not self.empresa_id and self.talhao:
+            self.empresa = self.talhao.empresa
+        
+        super().save(*args, **kwargs)
+    
+    def get_duracao_ciclo(self):
+        """Retorna duração do ciclo em dias"""
+        if self.data_colheita:
+            return (self.data_colheita - self.data_plantio).days
+        return None
+    
+    def get_eficiencia(self):
+        """Compara produção real vs estimada"""
+        if self.producao_real and self.producao_estimada and self.producao_estimada > 0:
+            return (self.producao_real / self.producao_estimada) * 100
+        return None

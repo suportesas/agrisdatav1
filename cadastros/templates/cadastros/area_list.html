@@ -47,7 +47,7 @@
             <option value="">-- Todas as Fazendas --</option>
             {% for fazenda in fazendas %}
             <option value="{{ fazenda.id }}" {% if request.GET.fazenda == fazenda.id|stringformat:"s" %}selected{% endif %}>
-              {{ fazenda.nome }}
+              {{ fazenda.nome }} - {{ fazenda.cnpj_cpf }}
             </option>
             {% endfor %}
           </select>

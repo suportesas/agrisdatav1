@@ -960,9 +960,8 @@ class TalhaoForm(forms.ModelForm):
             'codigo': forms.TextInput(attrs={'class': 'form-control'}),
             'area_tamanho': forms.NumberInput(attrs={
                 'class': 'form-control',
-                'step': '0.0001',
-                'min': '0',
-                'name': 'area'  # Para compatibilidade com model
+                'step': '0.01',
+                'placeholder': 'Ex: 1.30'
             }),
             'latitude': forms.NumberInput(attrs={
                 'class': 'form-control',
@@ -985,11 +984,13 @@ class TalhaoForm(forms.ModelForm):
     area_tamanho = forms.DecimalField(
         label='Área (ha)',
         max_digits=10,
-        decimal_places=4,
-        min_value=0.0001,
+        decimal_places=2,
+        min_value=0.01,
         widget=forms.NumberInput(attrs={
             'class': 'form-control',
-            'step': '0.0001'
+            'step': '0.01',
+            'placeholder': 'Ex: 1.30',
+            'inputmode': 'decimal'
         })
     )
     
@@ -1016,7 +1017,7 @@ class TalhaoForm(forms.ModelForm):
         
         # Se editando, popula área atual
         if self.instance.pk:
-            self.fields['area_tamanho'].initial = self.instance.area
+            self.fields['area_tamanho'].initial = self.instance.area_hac
     
     def clean(self):
         cleaned_data = super().clean()
@@ -1044,7 +1045,7 @@ class TalhaoForm(forms.ModelForm):
             
             # Se editando, considera a área atual do talhão
             if self.instance.pk:
-                area_disponivel += self.instance.area
+                area_disponivel += self.instance.area_hac
             
             if area_tamanho > area_disponivel:
                 raise forms.ValidationError({
@@ -1056,8 +1057,8 @@ class TalhaoForm(forms.ModelForm):
     def save(self, commit=True):
         instance = super().save(commit=False)
         
-        # Transfere valor do campo customizado para o campo real
-        instance.area = self.cleaned_data['area_tamanho']
+        # Transfere valor do campo customizado para o campo real (area_hac)
+        instance.area_hac = self.cleaned_data['area_tamanho']
         
         if commit:
             instance.save()

@@ -1890,7 +1890,7 @@ class Area(models.Model):
         area_ocupada = self.talhoes.filter(
             ativo=True
         ).aggregate(
-            total=models.Sum('area')
+            total=models.Sum('area_hac')
         )['total'] or Decimal('0')
         
         return self.area_total - area_ocupada
@@ -1900,7 +1900,7 @@ class Area(models.Model):
         area_ocupada = self.talhoes.filter(
             ativo=True
         ).aggregate(
-            total=models.Sum('area')
+            total=models.Sum('area_hac')
         )['total'] or Decimal('0')
         
         if self.area_total > 0:
@@ -2304,12 +2304,12 @@ class HistoricoTalhao(models.Model):
     def save(self, *args, **kwargs):
         """Calcula automaticamente produtividade e custos"""
         # Calcula produtividade
-        if self.producao_real and self.talhao.area:
-            self.produtividade = self.producao_real / self.talhao.area
+        if self.producao_real and self.talhao.area_hac:
+            self.produtividade = self.producao_real / self.talhao.area_hac
         
         # Calcula custo por hectare
-        if self.custo_total and self.talhao.area:
-            self.custo_por_hectare = self.custo_total / self.talhao.area
+        if self.custo_total and self.talhao.area_hac:
+            self.custo_por_hectare = self.custo_total / self.talhao.area_hac
         
         # Preenche empresa
         if not self.empresa_id and self.talhao:

@@ -109,7 +109,7 @@
             <option value="">-- Todas as Fazendas --</option>
             {% for fazenda in fazendas %}
             <option value="{{ fazenda.id }}" {% if request.GET.fazenda == fazenda.id|stringformat:"s" %}selected{% endif %}>
-              {{ fazenda.nome }}
+              {{ fazenda.nome }} - {{ fazenda.cnpj_cpf }}
             </option>
             {% endfor %}
           </select>
@@ -189,13 +189,13 @@
                   <strong>{{ talhao.fazenda.nome }}</strong>
                 </div>
                 <small class="text-muted">
-                  <i class="bi bi-map"></i> {{ talhao.area.nome }}
+                  <i class="bi bi-map"></i> {{ talhao.area.nome }} (Área {{ talhao.area_hac|floatformat:2 }} ha)
                 </small>
               </td>
 
               <!-- Área -->
               <td class="text-end">
-                <strong>{{ talhao.area|floatformat:2 }}</strong> ha
+                <strong>{{ talhao.area_hac|floatformat:2 }}</strong> ha
               </td>
 
               <!-- Cultura Atual -->

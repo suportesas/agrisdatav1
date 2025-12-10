@@ -1167,7 +1167,7 @@ def area_detail(request, pk):
     # Estatísticas
     stats = {
         'total_talhoes': talhoes.count(),
-        'area_ocupada': talhoes.aggregate(Sum('area'))['area__sum'] or 0,
+        'area_ocupada': talhoes.aggregate(Sum('area_hac'))['area_hac__sum'] or 0,
         'area_disponivel': area.get_area_disponivel(),
         'percentual_uso': area.get_percentual_uso(),
         'talhoes_plantados': talhoes.filter(status='PLANTADO').count(),
@@ -1198,9 +1198,14 @@ def talhao_list(request):
         return redirect('dashboard:index')
     
     # 🔒 Filtra apenas talhões da empresa
-    talhoes = Talhao.objects.da_empresa(empresa).select_related(
-        'fazenda', 'area', 'cultura_atual'
-    )
+    if hasattr(Talhao.objects, 'da_empresa'):
+        talhoes = Talhao.objects.da_empresa(empresa).select_related(
+            'fazenda', 'area', 'cultura_atual'
+        )
+    else:
+        talhoes = Talhao.objects.filter(empresa=empresa).select_related(
+            'fazenda', 'area', 'cultura_atual'
+        )
     
     # Busca
     q = request.GET.get('q', '').strip()
@@ -1229,12 +1234,15 @@ def talhao_list(request):
         'total': talhoes.count(),
         'plantados': talhoes.filter(status='PLANTADO').count(),
         'disponiveis': talhoes.filter(status='DISPONIVEL').count(),
-        'area_total': talhoes.aggregate(Sum('area'))['area__sum'] or 0,
+        'area_total': talhoes.aggregate(Sum('area_hac'))['area_hac__sum'] or 0,
     }
     
     # 🔒 Dados para filtros (apenas da empresa)
     fazendas = Fazenda.objects.filter(empresa=empresa, ativa=True).order_by('nome')
-    areas = Area.objects.da_empresa(empresa).filter(ativa=True).order_by('nome')
+    if hasattr(Area.objects, 'da_empresa'):
+        areas = Area.objects.da_empresa(empresa).filter(ativa=True).order_by('nome')
+    else:
+        areas = Area.objects.filter(empresa=empresa, ativa=True).order_by('nome')
     
     context = {
         'talhoes': talhoes,

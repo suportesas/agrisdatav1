@@ -11,6 +11,94 @@ from decimal import Decimal
 import os
 from django.core.validators import  MaxValueValidator
 
+
+"""
+COLE ESTE CÓDIGO NO INÍCIO DO ARQUIVO cadastros/models.py
+Logo APÓS os imports, ANTES de qualquer classe de modelo
+"""
+
+
+
+# ============================================
+# MANAGERS CUSTOMIZADOS PARA MULTI-TENANCY
+# ============================================
+
+class EmpresaQuerySet(models.QuerySet):
+    """QuerySet customizado para filtrar por empresa (Multi-tenant)"""
+    
+    def da_empresa(self, empresa):
+        """Filtra registros da empresa especificada"""
+        if empresa:
+            return self.filter(empresa=empresa)
+        return self.none()
+    
+    def ativos(self):
+        """Retorna apenas registros ativos"""
+        return self.filter(ativo=True)
+
+
+class AreaManager(models.Manager):
+    """Manager customizado para Area com suporte a multi-tenancy"""
+    
+    def get_queryset(self):
+        """Retorna QuerySet customizado"""
+        return EmpresaQuerySet(self.model, using=self._db)
+    
+    def da_empresa(self, empresa):
+        """Retorna áreas da empresa"""
+        return self.get_queryset().da_empresa(empresa)
+    
+    def ativos(self):
+        """Retorna apenas áreas ativas"""
+        return self.get_queryset().ativos()
+    
+    def disponiveis(self, empresa):
+        """Retorna áreas disponíveis para uso"""
+        return self.da_empresa(empresa).filter(
+            ativo=True,
+            status__in=['DISPONIVEL', 'EM_USO']
+        )
+
+
+class TalhaoManager(models.Manager):
+    """Manager customizado para Talhao com suporte a multi-tenancy"""
+    
+    def get_queryset(self):
+        """Retorna QuerySet customizado"""
+        return EmpresaQuerySet(self.model, using=self._db)
+    
+    def da_empresa(self, empresa):
+        """Retorna talhões da empresa"""
+        return self.get_queryset().da_empresa(empresa)
+    
+    def ativos(self):
+        """Retorna apenas talhões ativos"""
+        return self.get_queryset().ativos()
+    
+    def disponiveis_plantio(self, empresa):
+        """Retorna talhões prontos para plantio"""
+        return self.da_empresa(empresa).filter(
+            ativo=True,
+            pronto_para_plantio=True,
+            status__in=['DISPONIVEL', 'DESCANSO']
+        )
+    
+    def em_cultivo(self, empresa):
+        """Retorna talhões com cultivo ativo"""
+        return self.da_empresa(empresa).filter(
+            ativo=True,
+            status='PLANTADO'
+        ).exclude(cultura_atual__isnull=True)
+
+
+# ============================================
+# AGORA SUAS CLASSES DE MODELO VÊM AQUI
+# (Fazenda, Cultura, Funcionario, etc.)
+# ============================================
+
+
+
+
 class Fazenda(models.Model):
     """
     Cadastro principal de Fazendas/Propriedades Rurais
@@ -1591,6 +1679,8 @@ class Area(models.Model):
     Áreas agricultáveis dentro de uma Fazenda
     Uma fazenda pode ter múltiplas áreas (seções/setores)
     """
+    # ✅ ADICIONE ESTA LINHA LOGO APÓS AS CHOICES
+    objects = AreaManager()  # 🔥 LINHA CRÍTICA - ATIVA O MANAGER CUSTOMIZADO
     
     TIPO_AREA_CHOICES = [
         ('AGRICOLA', 'Área Agrícola'),
@@ -1823,6 +1913,7 @@ class Talhao(models.Model):
     Talhões - divisões de uma Área para plantio
     Unidade básica de cultivo e rastreabilidade
     """
+    objects = TalhaoManager()
     
     STATUS_CHOICES = [
         ('DISPONIVEL', 'Disponível para Plantio'),

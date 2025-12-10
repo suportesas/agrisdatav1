@@ -992,9 +992,16 @@ def area_list(request):
         return redirect('dashboard:index')
     
     # 🔒 Filtra apenas áreas da empresa do usuário
-    areas = Area.objects.da_empresa(empresa).select_related(
-        'fazenda', 'cadastrado_por'
-    ).prefetch_related('talhoes')
+    # Nem sempre o manager customizado pode estar disponível (erro em alguns ambientes).
+    # Usamos um fallback seguro para evitar AttributeError caso `da_empresa` não exista.
+    if hasattr(Area.objects, 'da_empresa'):
+        areas = Area.objects.da_empresa(empresa).select_related(
+            'fazenda', 'cadastrado_por'
+        ).prefetch_related('talhoes')
+    else:
+        areas = Area.objects.filter(empresa=empresa).select_related(
+            'fazenda', 'cadastrado_por'
+        ).prefetch_related('talhoes')
     
     # Busca
     q = request.GET.get('q', '').strip()

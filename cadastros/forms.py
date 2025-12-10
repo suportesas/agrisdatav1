@@ -849,7 +849,7 @@ class AreaForm(forms.ModelForm):
         model = Area
         fields = [
             'fazenda', 'nome', 'codigo_interno', 'tipo_area',
-            'area_total', 'area_plantavel',
+            'area_total', 'area_reserva', 'area_plantavel',
             'latitude', 'longitude',
             'tipo_solo', 'ph_solo', 'topografia',
             'possui_irrigacao', 'tipo_irrigacao',
@@ -862,12 +862,19 @@ class AreaForm(forms.ModelForm):
             'tipo_area': forms.Select(attrs={'class': 'form-select'}),
             'area_total': forms.NumberInput(attrs={
                 'class': 'form-control',
-                'step': '0.0001',
+                'step': '0.01',
+                'placeholder': 'Ex: 100.00'
+            }),
+            'area_reserva': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.01',
+                'placeholder': 'Ex: 15.00',
                 'min': '0'
             }),
             'area_plantavel': forms.NumberInput(attrs={
                 'class': 'form-control',
-                'step': '0.0001',
+                'step': '0.01',
+                'placeholder': 'Ex: 80.00',
                 'min': '0'
             }),
             'latitude': forms.NumberInput(attrs={

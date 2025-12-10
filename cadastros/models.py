@@ -1746,6 +1746,17 @@ class Area(models.Model):
         help_text='Área efetivamente disponível para plantio'
     )
     
+    area_reserva = models.DecimalField(
+        'Área de Reserva (ha)',
+        max_digits=10,
+        decimal_places=4,
+        blank=True,
+        null=True,
+        default=Decimal('0'),
+        validators=[MinValueValidator(Decimal('0'))],
+        help_text='Área reservada (estradas, infraestrutura, proteção ambiental, etc.)'
+    )
+    
     # Geolocalização
     latitude = models.DecimalField(
         'Latitude',
@@ -1886,25 +1897,33 @@ class Area(models.Model):
             })
     
     def get_area_disponivel(self):
-        """Retorna área disponível para novos talhões"""
+        """Retorna área disponível para novos talhões (descontando reserva)"""
+        # Calcula área para plantio (total - reserva)
+        area_para_plantio = self.area_total - (self.area_reserva or Decimal('0'))
+        
+        # Calcula área ocupada por talhões ativos
         area_ocupada = self.talhoes.filter(
             ativo=True
         ).aggregate(
             total=models.Sum('area_hac')
         )['total'] or Decimal('0')
         
-        return self.area_total - area_ocupada
+        return area_para_plantio - area_ocupada
     
     def get_percentual_uso(self):
-        """Retorna percentual de uso da área"""
+        """Retorna percentual de uso da área (considerando reserva)"""
+        # Calcula área para plantio
+        area_para_plantio = self.area_total - (self.area_reserva or Decimal('0'))
+        
+        # Calcula área ocupada
         area_ocupada = self.talhoes.filter(
             ativo=True
         ).aggregate(
             total=models.Sum('area_hac')
         )['total'] or Decimal('0')
         
-        if self.area_total > 0:
-            return (area_ocupada / self.area_total) * 100
+        if area_para_plantio > 0:
+            return (area_ocupada / area_para_plantio) * 100
         return 0
 
 

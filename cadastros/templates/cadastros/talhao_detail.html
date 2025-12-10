@@ -1,0 +1,457 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ talhao.nome }} | ERP Agrícola{% endblock %}
+
+{% block extra_css %}
+<style>
+  .info-box {
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+    border-left: 4px solid #0ea5e9;
+    padding: 20px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+  }
+  .stat-item {
+    text-align: center;
+    padding: 15px;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+  }
+  .stat-item h4 {
+    color: #0ea5e9;
+    font-size: 2rem;
+    margin-bottom: 5px;
+  }
+  .stat-item small {
+    color: #6b7280;
+    font-weight: 600;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  
+  <!-- Breadcrumb -->
+  <nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'cadastros:talhao_list' %}">Talhões</a></li>
+      <li class="breadcrumb-item active">{{ talhao.nome }}</li>
+    </ol>
+  </nav>
+
+  <!-- Header -->
+  <div class="row align-items-center mb-4">
+    <div class="col-md-8">
+      <h2 class="fw-bold mb-1">
+        <i class="bi bi-geo-alt text-info"></i> {{ talhao.nome }}
+        {% if talhao.codigo %}
+          <span class="text-muted">- {{ talhao.codigo }}</span>
+        {% endif %}
+      </h2>
+      <p class="text-muted mb-0">
+        <strong>{{ talhao.fazenda.nome }}</strong> • 
+        {% if talhao.area %}
+          Área: {{ talhao.area.nome }}
+        {% endif %}
+      </p>
+    </div>
+    <div class="col-md-4 text-end">
+      <div class="btn-group">
+        <a href="{% url 'cadastros:talhao_update' talhao.pk %}" class="btn btn-primary">
+          <i class="bi bi-pencil"></i> Editar
+        </a>
+        <a href="{% url 'cadastros:talhao_delete' talhao.pk %}" class="btn btn-outline-danger">
+          <i class="bi bi-trash"></i> Excluir
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Badges de Status -->
+  <div class="mb-4">
+    <span class="badge bg-info fs-6 me-2">
+      <i class="bi bi-tag"></i> {{ talhao.get_status_display }}
+    </span>
+    {% if talhao.pronto_para_plantio %}
+      <span class="badge bg-success fs-6 me-2">
+        <i class="bi bi-check-circle"></i> Pronto para Plantio
+      </span>
+    {% endif %}
+    {% if talhao.ativo %}
+      <span class="badge bg-success fs-6">
+        <i class="bi bi-check-circle"></i> Ativo
+      </span>
+    {% else %}
+      <span class="badge bg-secondary fs-6">
+        <i class="bi bi-x-circle"></i> Inativo
+      </span>
+    {% endif %}
+  </div>
+
+  <div class="row">
+    
+    <!-- Coluna do Mapa (se houver coordenadas) -->
+    {% if talhao.latitude and talhao.longitude %}
+    <div class="col-lg-4 mb-4">
+      <div class="card border-0 shadow-sm">
+        <div id="map" style="height: 350px; border-radius: 10px 10px 0 0;"></div>
+        <div class="card-body text-center">
+          <h5 class="mb-0">{{ talhao.nome }}</h5>
+          <p class="text-muted mb-0">{{ talhao.area.nome }} - {{ talhao.area_hac|floatformat:2 }} ha</p>
+        </div>
+      </div>
+
+      <!-- Info de Localização -->
+      <div class="card border-0 shadow-sm mt-3">
+        <div class="card-body">
+          <h6 class="text-muted mb-2">📍 Coordenadas</h6>
+          <table class="table table-borderless table-sm">
+            <tr>
+              <td class="text-muted"><strong>Latitude:</strong></td>
+              <td>{{ talhao.latitude }}</td>
+            </tr>
+            <tr>
+              <td class="text-muted"><strong>Longitude:</strong></td>
+              <td>{{ talhao.longitude }}</td>
+            </tr>
+          </table>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Coluna Principal -->
+    <div class="{% if talhao.latitude and talhao.longitude %}col-lg-8{% else %}col-lg-12{% endif %}">
+      
+      <!-- Cards de Estatísticas -->
+      <div class="row g-3 mb-4">
+        <div class="col-md-3">
+          <div class="stat-item">
+            <i class="bi bi-rulers text-info fs-3"></i>
+            <h4 class="mt-2">{{ talhao.area_hac|floatformat:2 }}</h4>
+            <small>HECTARES</small>
+          </div>
+        </div>
+
+        <div class="col-md-3">
+          <div class="stat-item">
+            <i class="bi bi-map text-success fs-3"></i>
+            <h4 class="mt-2">{{ talhao.area.nome }}</h4>
+            <small>ÁREA VINCULADA</small>
+          </div>
+        </div>
+
+        {% if talhao.cultura_atual %}
+        <div class="col-md-3">
+          <div class="stat-item">
+            <i class="bi bi-leaf text-warning fs-3"></i>
+            <h4 class="mt-2">{{ talhao.cultura_atual.nome }}</h4>
+            <small>CULTURA ATUAL</small>
+          </div>
+        </div>
+        {% endif %}
+
+        <div class="col-md-3">
+          <div class="stat-item">
+            <i class="bi bi-gear text-primary fs-3"></i>
+            <h4 class="mt-2">{{ talhao.get_status_display }}</h4>
+            <small>STATUS</small>
+          </div>
+        </div>
+      </div>
+
+      <!-- Informações Detalhadas -->
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white border-0 pt-3">
+          <ul class="nav nav-tabs card-header-tabs">
+            <li class="nav-item">
+              <a class="nav-link active" data-bs-toggle="tab" href="#geral">
+                <i class="bi bi-info-circle"></i> Geral
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" data-bs-toggle="tab" href="#localizacao">
+                <i class="bi bi-geo-alt"></i> Localização
+              </a>
+            </li>
+            {% if historico %}
+            <li class="nav-item">
+              <a class="nav-link" data-bs-toggle="tab" href="#historico">
+                <i class="bi bi-clock-history"></i> Histórico
+              </a>
+            </li>
+            {% endif %}
+          </ul>
+        </div>
+
+        <div class="tab-content p-4">
+          
+          <!-- Tab: Geral -->
+          <div class="tab-pane fade show active" id="geral">
+            <div class="row">
+              <div class="col-md-6">
+                <h6 class="fw-bold text-info mb-3">Informações Básicas</h6>
+                <table class="table table-borderless">
+                  <tr>
+                    <td class="text-muted"><strong>Nome:</strong></td>
+                    <td>{{ talhao.nome }}</td>
+                  </tr>
+                  <tr>
+                    <td class="text-muted"><strong>Código:</strong></td>
+                    <td>{{ talhao.codigo|default:"N/A" }}</td>
+                  </tr>
+                  <tr>
+                    <td class="text-muted"><strong>Área (ha):</strong></td>
+                    <td>{{ talhao.area_hac|floatformat:2 }}</td>
+                  </tr>
+                  <tr>
+                    <td class="text-muted"><strong>Fazenda:</strong></td>
+                    <td><a href="{% url 'cadastros:fazenda_detail' talhao.fazenda.pk %}">{{ talhao.fazenda.nome }}</a></td>
+                  </tr>
+                  <tr>
+                    <td class="text-muted"><strong>Área:</strong></td>
+                    <td>
+                      {% if talhao.area %}
+                        <a href="{% url 'cadastros:area_detail' talhao.area.pk %}">{{ talhao.area.nome }}</a>
+                      {% else %}
+                        N/A
+                      {% endif %}
+                    </td>
+                  </tr>
+                </table>
+              </div>
+
+              <div class="col-md-6">
+                <h6 class="fw-bold text-success mb-3">Características</h6>
+                <table class="table table-borderless">
+                  <tr>
+                    <td class="text-muted"><strong>Status:</strong></td>
+                    <td><span class="badge bg-info">{{ talhao.get_status_display }}</span></td>
+                  </tr>
+                  <tr>
+                    <td class="text-muted"><strong>Declividade:</strong></td>
+                    <td>{{ talhao.get_declividade_display|default:"N/A" }}</td>
+                  </tr>
+                  <tr>
+                    <td class="text-muted"><strong>Exposição Solar:</strong></td>
+                    <td>{{ talhao.get_exposicao_solar_display|default:"N/A" }}</td>
+                  </tr>
+                  <tr>
+                    <td class="text-muted"><strong>Pronto para Plantio:</strong></td>
+                    <td>
+                      {% if talhao.pronto_para_plantio %}
+                        <span class="badge bg-success">Sim</span>
+                      {% else %}
+                        <span class="badge bg-secondary">Não</span>
+                      {% endif %}
+                    </td>
+                  </tr>
+                </table>
+              </div>
+            </div>
+
+            {% if talhao.observacoes %}
+            <div class="mt-4">
+              <h6 class="fw-bold">Observações:</h6>
+              <p class="text-muted">{{ talhao.observacoes }}</p>
+            </div>
+            {% endif %}
+          </div>
+
+          <!-- Tab: Localização -->
+          <div class="tab-pane fade" id="localizacao">
+            <div class="row">
+              <div class="col-md-6">
+                <h6 class="fw-bold text-primary mb-3">Coordenadas GPS</h6>
+                <table class="table table-borderless">
+                  <tr>
+                    <td class="text-muted"><strong>Latitude:</strong></td>
+                    <td>{{ talhao.latitude|default:"N/A" }}</td>
+                  </tr>
+                  <tr>
+                    <td class="text-muted"><strong>Longitude:</strong></td>
+                    <td>{{ talhao.longitude|default:"N/A" }}</td>
+                  </tr>
+                </table>
+              </div>
+
+              <div class="col-md-6">
+                <h6 class="fw-bold text-success mb-3">Detalhes da Localização</h6>
+                <table class="table table-borderless">
+                  <tr>
+                    <td class="text-muted"><strong>Fazenda:</strong></td>
+                    <td>{{ talhao.fazenda.nome }}</td>
+                  </tr>
+                  <tr>
+                    <td class="text-muted"><strong>Área:</strong></td>
+                    <td>{{ talhao.area.nome|default:"N/A" }}</td>
+                  </tr>
+                </table>
+              </div>
+            </div>
+
+            {% if talhao.latitude and talhao.longitude %}
+            <div class="alert alert-info mt-3">
+              <i class="bi bi-info-circle"></i>
+              <strong>Coordenadas:</strong> 
+              {{ talhao.latitude }}, {{ talhao.longitude }}
+              <a href="https://www.google.com/maps?q={{ talhao.latitude }},{{ talhao.longitude }}" target="_blank" class="ms-2">
+                <i class="bi bi-box-arrow-up-right"></i> Abrir no Google Maps
+              </a>
+            </div>
+            {% endif %}
+          </div>
+
+          <!-- Tab: Histórico -->
+          {% if historico %}
+          <div class="tab-pane fade" id="historico">
+            <h6 class="fw-bold text-primary mb-3">Histórico de Cultivo</h6>
+            
+            {% if historico %}
+            <div class="table-responsive">
+              <table class="table table-hover">
+                <thead class="table-light">
+                  <tr>
+                    <th>Cultura</th>
+                    <th>Período</th>
+                    <th>Produção</th>
+                    <th>Produtividade</th>
+                    <th>Ação</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for hist in historico %}
+                  <tr>
+                    <td>
+                      <strong>{{ hist.cultura.nome }}</strong>
+                      {% if hist.variedade %}
+                        <br><small class="text-muted">{{ hist.variedade }}</small>
+                      {% endif %}
+                    </td>
+                    <td>
+                      <small>
+                        {{ hist.data_plantio|date:"d/m/Y" }}
+                        {% if hist.data_colheita %}
+                          a {{ hist.data_colheita|date:"d/m/Y" }}
+                        {% else %}
+                          (em andamento)
+                        {% endif %}
+                      </small>
+                    </td>
+                    <td>
+                      {% if hist.producao_real %}
+                        {{ hist.producao_real }} {{ hist.cultura.get_unidade_medida_display }}
+                      {% else %}
+                        <small class="text-muted">-</small>
+                      {% endif %}
+                    </td>
+                    <td>
+                      {% if hist.produtividade %}
+                        {{ hist.produtividade|floatformat:2 }} /ha
+                      {% else %}
+                        <small class="text-muted">-</small>
+                      {% endif %}
+                    </td>
+                    <td>
+                      <a href="#" class="btn btn-sm btn-outline-secondary">Ver</a>
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+            {% else %}
+            <p class="text-muted">Nenhum histórico de cultivo registrado.</p>
+            {% endif %}
+
+            {% if historico_stats %}
+            <div class="row mt-4">
+              <div class="col-md-4">
+                <div class="card bg-light border-0">
+                  <div class="card-body text-center">
+                    <i class="bi bi-calendar-event text-success fs-3"></i>
+                    <h5 class="mt-2 mb-0">{{ historico_stats.total_safras }}</h5>
+                    <small class="text-muted">Total de Safras</small>
+                  </div>
+                </div>
+              </div>
+              {% if historico_stats.producao_total %}
+              <div class="col-md-4">
+                <div class="card bg-light border-0">
+                  <div class="card-body text-center">
+                    <i class="bi bi-basket text-warning fs-3"></i>
+                    <h5 class="mt-2 mb-0">{{ historico_stats.producao_total|floatformat:0 }}</h5>
+                    <small class="text-muted">Produção Total</small>
+                  </div>
+                </div>
+              </div>
+              {% endif %}
+              {% if historico_stats.media_produtividade %}
+              <div class="col-md-4">
+                <div class="card bg-light border-0">
+                  <div class="card-body text-center">
+                    <i class="bi bi-graph-up text-info fs-3"></i>
+                    <h5 class="mt-2 mb-0">{{ historico_stats.media_produtividade|floatformat:2 }}</h5>
+                    <small class="text-muted">Média de Produtividade</small>
+                  </div>
+                </div>
+              </div>
+              {% endif %}
+            </div>
+            {% endif %}
+          </div>
+          {% endif %}
+
+        </div>
+      </div>
+
+      <!-- Informações de Auditoria -->
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <h6 class="fw-bold mb-3">Informações do Sistema</h6>
+          <div class="row small text-muted">
+            <div class="col-md-6">
+              <p class="mb-1"><strong>Cadastrado em:</strong> {{ talhao.data_cadastro|date:"d/m/Y H:i" }}</p>
+              {% if talhao.cadastrado_por %}
+              <p class="mb-0"><strong>Cadastrado por:</strong> {{ talhao.cadastrado_por.username }}</p>
+              {% endif %}
+            </div>
+            <div class="col-md-6">
+              <p class="mb-0"><strong>Última atualização:</strong> {{ talhao.data_atualizacao|date:"d/m/Y H:i" }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<!-- Script para carregar mapa (se houver coordenadas) -->
+{% if talhao.latitude and talhao.longitude %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const map = L.map('map').setView([{{ talhao.latitude }}, {{ talhao.longitude }}], 16);
+  
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors',
+    maxZoom: 19
+  }).addTo(map);
+
+  L.marker([{{ talhao.latitude }}, {{ talhao.longitude }}])
+    .bindPopup('<strong>{{ talhao.nome }}</strong><br>{{ talhao.area_hac|floatformat:2 }} ha')
+    .addTo(map)
+    .openPopup();
+});
+</script>
+{% endif %}
+
+{% endblock %}

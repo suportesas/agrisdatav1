@@ -98,6 +98,7 @@
               <th>Fazenda</th>
               <th class="text-center">Tipo</th>
               <th class="text-end">Área Total</th>
+              <th class="text-end">Reserva</th>
               <th class="text-end">Disponível</th>
               <th class="text-center">Uso</th>
               <th class="text-center">Talhões</th>
@@ -144,6 +145,14 @@
               <!-- Área Total -->
               <td class="text-end">
                 <strong>{{ area.area_total|floatformat:2 }}</strong> ha
+              </td>
+
+              <!-- Área de Reserva -->
+              <td class="text-end">
+                <span class="text-warning">
+                  <i class="bi bi-exclamation-triangle"></i>
+                  {{ area.area_reserva|floatformat:2 }} ha
+                </span>
               </td>
 
               <!-- Disponível -->

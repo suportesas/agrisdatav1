@@ -100,6 +100,23 @@ RF-029 Cadastro de poços e patrimônios
 RF-030 Cadastro de produtos com indicador de registro no MAPA
 RF-031 Filtro de produtos sem registro MAPA (visível apenas para administrador)
 
+### Nota de implementação: Área Agricultável
+
+O campo `area_agricultavel` da entidade `Fazenda` é um valor derivado e **é calculado automaticamente** como a soma dos campos `area_plantavel` das `Area` relacionadas (seções/setores) daquela fazenda. Isso evita divergência entre um valor manual e a soma das áreas internas.
+
+Recomenda-se a seguinte UX/fluxo:
+
+- Usuários editam `Area` para ajustar `area_total`, `area_reserva` e `area_plantavel`.
+- O sistema recalcula `Fazenda.area_agricultavel` via sinais (`post_save`/`post_delete`) nas `Area`.
+- No formulário de edição da `Fazenda`, `area_agricultavel` aparece como leitura com um tooltip explicativo.
+
+Validações adicionais aplicadas:
+
+- `AreaForm` valida que a soma das `area_plantavel` das áreas da fazenda não ultrapasse `Fazenda.area_total`.
+- `Area` possui `area_reserva` para indicar áreas não plantáveis (estradas, APP, infraestrutura).
+
+Motivação: manter consistência, reduzir suporte por dados divergentes e tornar a UI mais intuitiva.
+
 3.3 Gestão de Usuários e Segurança
 RF-750 Perfis por porte de produtor (pequeno/médio/grande)
 RF-751 Permissões granulares por módulo e ação

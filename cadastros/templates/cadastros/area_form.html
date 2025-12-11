@@ -126,7 +126,9 @@
 
           <!-- Área Plantável -->
           <div class="col-md-12">
-            <label class="form-label fw-bold">{{ form.area_plantavel.label }}</label>
+            <label class="form-label fw-bold">{{ form.area_plantavel.label }}
+              <small class="text-muted ms-2"><i class="bi bi-info-circle"></i> Valor usado para calcular a Área Agricultável da Fazenda</small>
+            </label>
             <div class="input-group">
               {{ form.area_plantavel }}
               <span class="input-group-text">ha</span>
@@ -134,7 +136,7 @@
             {% if form.area_plantavel.errors %}
               <div class="text-danger small mt-1">{{ form.area_plantavel.errors|join:", " }}</div>
             {% endif %}
-            <small class="text-muted">Área total para plantio = (Total - Reserva - Ocupação)</small>
+            <small class="text-muted">Área plantável: total disponível nesta área para plantio (Total - Reserva - Ocupação). A soma das áreas plantáveis não pode ultrapassar a Área Total da fazenda.</small>
           </div>
         </div>
 

@@ -15,6 +15,7 @@ import re
 
 
 from .models import Area, Talhao, HistoricoTalhao,  Cultura
+from decimal import Decimal
 
 class FazendaForm(forms.ModelForm):
     """Formulário principal de cadastro de fazenda"""
@@ -119,6 +120,24 @@ class FazendaForm(forms.ModelForm):
         if 'empresa' in self.fields:
             self.fields['empresa'].widget = forms.HiddenInput()
             self.fields['empresa'].required = False
+
+        # Se for edição, preenche o campo area_agricultavel a partir
+        # da soma das áreas relacionadas (area_plantavel) e exibe como
+        # leitura somente para evitar inconsistências de edição manual.
+        if self.instance and self.instance.pk:
+            try:
+                areas = self.instance.areas.all()
+                soma = sum((a.area_plantavel or Decimal('0')) for a in areas)
+            except Exception:
+                soma = Decimal('0')
+
+            # Formata inicial e marca como somente leitura
+            if 'area_agricultavel' in self.fields:
+                self.fields['area_agricultavel'].initial = soma.quantize(Decimal('0.01'))
+                self.fields['area_agricultavel'].widget.attrs.update({
+                    'readonly': True,
+                    'class': self.fields['area_agricultavel'].widget.attrs.get('class', '') + ' form-control-plaintext'
+                })
     
     def clean_cnpj_cpf(self):
         """Valida e limpa CNPJ/CPF"""
@@ -171,6 +190,15 @@ class FazendaForm(forms.ModelForm):
         
         if commit:
             try:
+                # Se for edição, sincroniza área agricultável com as áreas filhas
+                if fazenda.pk:
+                    try:
+                        areas = fazenda.areas.all()
+                        soma = sum((a.area_plantavel or Decimal('0')) for a in areas)
+                        fazenda.area_agricultavel = soma.quantize(Decimal('0.01'))
+                    except Exception:
+                        pass
+
                 fazenda.save()
             except Exception as e:
                 print(f"Erro ao salvar fazenda: {e}")
@@ -932,6 +960,26 @@ class AreaForm(forms.ModelForm):
                 raise forms.ValidationError({
                     'area_plantavel': 'Área plantável não pode ser maior que área total'
                 })
+
+        # Valida soma de área plantável da fazenda (não pode exceder área_total da fazenda)
+        fazenda = cleaned_data.get('fazenda')
+        if fazenda and area_plantavel is not None:
+            try:
+                # Soma áreas plantáveis existentes (exclui a própria instância quando editando)
+                qs = fazenda.areas.all()
+                if self.instance and self.instance.pk:
+                    qs = qs.exclude(pk=self.instance.pk)
+
+                soma_existente = sum((a.area_plantavel or 0) for a in qs)
+                total_proposto = soma_existente + float(area_plantavel)
+
+                if fazenda.area_total is not None and total_proposto > float(fazenda.area_total):
+                    raise forms.ValidationError({
+                        'area_plantavel': 'Soma das áreas plantáveis excede a Área Total da fazenda (%s ha)' % fazenda.area_total
+                    })
+            except Exception:
+                # Falha silenciosa para não bloquear salvamento por erro inesperado
+                pass
         
         # Valida irrigação
         if tipo_irrigacao and not possui_irrigacao:

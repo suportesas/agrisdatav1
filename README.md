@@ -453,3 +453,12 @@ Desenvolvido com ❤️ e apoio da IA
 ---
 
 ⭐ Se este projeto foi útil, deixe uma estrela no GitHub!
+
+## 📝 Nota rápida sobre Área Agricultável
+
+`Área Agricultável` na ficha da Fazenda é calculada automaticamente como a soma das **Áreas Plantáveis** (`area_plantavel`) das `Area` pertencentes àquela fazenda. Para alterar este valor, edite as `Area` (seções) da fazenda — o sistema sincroniza automaticamente a soma através de sinais Django.
+
+- `Fazenda.area_agricultavel` (apresentado como leitura no formulário de edição da fazenda)
+- `Area.area_total`, `Area.area_reserva`, `Area.area_plantavel` (edite por área)
+
+Esta abordagem evita inconsistência entre um total armazenado manualmente e a soma das seções. Reservas/infraestrutura devem ser informadas por `area_reserva` nas `Area`.

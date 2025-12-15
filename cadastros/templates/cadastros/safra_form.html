@@ -12,6 +12,7 @@
     </div>
     <div class="row mt-2">
       <div class="col-md-4">{{ form.ano.label_tag }} {{ form.ano }}</div>
+      <div class="col-md-4">{{ form.nome.label_tag }} {{ form.nome }}</div>
       <div class="col-md-4">{{ form.periodo_inicio.label_tag }} {{ form.periodo_inicio }}</div>
       <div class="col-md-4">{{ form.periodo_fim.label_tag }} {{ form.periodo_fim }}</div>
     </div>
@@ -24,4 +25,24 @@
     </div>
   </form>
 </div>
+<script>
+  // Auto-fill safra nome based on period: inicio.year + fim.year%100 => 2025 + 26 => 202526
+  (function(){
+    const inicio = document.getElementById('id_periodo_inicio');
+    const fim = document.getElementById('id_periodo_fim');
+    const nome = document.getElementById('id_nome');
+
+    function updateNome(){
+      if(!nome) return;
+      if(inicio && fim && inicio.value && fim.value){
+        const y1 = new Date(inicio.value).getFullYear();
+        const y2 = new Date(fim.value).getFullYear()%100;
+        nome.value = `${y1}${String(y2).padStart(2,'0')}`;
+      }
+    }
+
+    if(inicio) inicio.addEventListener('change', updateNome);
+    if(fim) fim.addEventListener('change', updateNome);
+  })();
+</script>
 {% endblock %}

@@ -34,6 +34,21 @@ class SafraCrudTest(TestCase):
         self.assertEqual(resp.status_code, 302)
         self.assertTrue(Safra.objects.filter(nome='Safra Teste').exists())
 
+    def test_create_safra_with_cross_year_period_auto_name(self):
+        url = reverse('cadastros:safra_create')
+        data = {
+            'fazenda': str(self.fazenda.pk),
+            'cultura': str(self.cultura.pk),
+            'periodo_inicio': '2025-10-01',
+            'periodo_fim': '2026-03-01',
+            'status': 'PLANEJADA'
+        }
+        resp = self.client.post(url, data)
+        self.assertEqual(resp.status_code, 302)
+        safra = Safra.objects.get()
+        self.assertEqual(safra.ano, 2025)
+        self.assertEqual(safra.nome, '202526')
+
     def test_update_safra(self):
         safra = Safra.objects.create(nome='Old', fazenda=self.fazenda, cultura=self.cultura)
         url = reverse('cadastros:safra_update', args=[safra.pk])

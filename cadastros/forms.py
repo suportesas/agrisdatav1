@@ -1164,6 +1164,21 @@ class SafraForm(forms.ModelForm):
             raise forms.ValidationError({'periodo_inicio': 'Data de início não pode ser posterior à data fim'})
 
         # Uniqueness: fazenda + cultura + ano
+        # Normalize composite year input: if user provides a composite like 202526,
+        # interpret as starting year in the first 4 digits (2025).
+        if ano and ano > 9999:
+            try:
+                ano_str = str(int(ano))
+                ano = int(ano_str[:4])
+                cleaned['ano'] = ano
+            except Exception:
+                pass
+
+        # If ano not provided, infer from periodo_inicio year when possible
+        if not ano and inicio:
+            ano = inicio.year
+            cleaned['ano'] = ano
+
         if fazenda and cultura and ano:
             qs = Safra.objects.filter(fazenda=fazenda, cultura=cultura, ano=ano)
             if self.instance and self.instance.pk:
@@ -1181,10 +1196,18 @@ class SafraForm(forms.ModelForm):
     
     def save(self, commit=True):
         instance = super().save(commit=False)
-        # Não há campo `area_tamanho` em `Safra` — apenas salva a instância.
+        # Preenche nome padrão se não foi informado, usando `periodo_inicio` e `periodo_fim`.
+        inicio = self.cleaned_data.get('periodo_inicio')
+        fim = self.cleaned_data.get('periodo_fim')
+        if not instance.nome:
+            if inicio and fim:
+                # Nome padrão: <inicio_year><fim_year_two_digits> -> 2025 + 26 => 202526
+                instance.nome = f"{inicio.year}{fim.year % 100:02d}"
+            elif inicio:
+                instance.nome = str(inicio.year)
+
         if commit:
             instance.save()
-            # garante salvar relações many-to-many
             try:
                 self.save_m2m()
             except Exception:

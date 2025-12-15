@@ -1,6 +1,11 @@
 PRD - ERP Agrícola Salutaris
 Versão 1.0 - Documento Consolidado
 
+## Release Notes
+
+- 2025-12-15 — Safra: adicionado CRUD de `Safra` (modelos `Safra`, `SafraPlan`, `SafraReal`), views, forms e templates; comparativo Planejado x Real; correção em `SafraForm.save` para remover referência a campo inexistente; adicionados testes unitários e de integração (`cadastros.tests.*`). PR: https://github.com/EMSSousa/erp_agricola/pull/3
+
+
 1. VISÃO GERAL DO PRODUTO
 1.1 Nome do Sistema
 ERP Agrícola Salutaris - Plataforma SaaS Integrada para Gestão Agroindustrial, Exportação e Compliance

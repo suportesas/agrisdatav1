@@ -73,6 +73,11 @@ urlpatterns = [
     path('talhoes/<int:pk>/', views.talhao_detail, name='talhao_detail'),
     path('talhoes/<int:pk>/editar/', views.talhao_update, name='talhao_update'),
     path('talhoes/<int:pk>/excluir/', views.talhao_delete, name='talhao_delete'),
+    # Histórico de cultivo
+    path('talhoes/<int:talhao_pk>/historico/nova/', views.historico_create, name='historico_create'),
+    path('historico/<int:pk>/editar/', views.historico_update, name='historico_update'),
+    path('historico/<int:pk>/excluir/', views.historico_delete, name='historico_delete'),
+    path('historico/<int:pk>/', views.historico_detail, name='historico_detail'),
     
     # AJAX
     path('ajax/areas-por-fazenda/<int:fazenda_id>/', views.ajax_areas_por_fazenda, name='ajax_areas_fazenda'),

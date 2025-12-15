@@ -23,8 +23,8 @@ from .forms import (
     ContaBancariaFazendaForm, DocumentoFazendaForm,
 )
 
-from .models import Area, Talhao, Cultura
-from .forms import AreaForm, TalhaoForm, CulturaForm
+from .models import Area, Talhao, Cultura, HistoricoTalhao
+from .forms import AreaForm, TalhaoForm, CulturaForm, HistoricoTalhaoForm
 
 
 
@@ -1381,6 +1381,82 @@ def talhao_detail(request, pk):
         'talhao': talhao,
         'historico': historico,
         'historico_stats': historico_stats
+    })
+
+
+@login_required
+def historico_create(request, talhao_pk):
+    """Cria um registro de histórico para um talhão (usuário da empresa)."""
+    empresa = request.user.empresa
+    talhao = get_object_or_404(Talhao.objects.da_empresa(empresa), pk=talhao_pk)
+
+    if request.method == 'POST':
+        form = HistoricoTalhaoForm(request.POST, user=request.user)
+        if form.is_valid():
+            hist = form.save(commit=False)
+            hist.talhao = talhao
+            hist.empresa = empresa
+            hist.registrado_por = request.user
+            hist.save()
+            messages.success(request, f'✅ Histórico registrado para {talhao.nome}!')
+            return redirect('cadastros:talhao_detail', pk=talhao.pk)
+    else:
+        form = HistoricoTalhaoForm(initial={'talhao': talhao}, user=request.user)
+
+    return render(request, 'cadastros/historico_form.html', {
+        'form': form,
+        'talhao': talhao,
+        'action': 'Registrar'
+    })
+
+
+@login_required
+def historico_update(request, pk):
+    """Edita um registro de histórico (pertence à mesma empresa)."""
+    empresa = request.user.empresa
+    historico = get_object_or_404(HistoricoTalhao, pk=pk, empresa=empresa)
+
+    if request.method == 'POST':
+        form = HistoricoTalhaoForm(request.POST, instance=historico, user=request.user)
+        if form.is_valid():
+            hist = form.save()
+            messages.success(request, f'✅ Histórico atualizado!')
+            return redirect('cadastros:talhao_detail', pk=hist.talhao.pk)
+    else:
+        form = HistoricoTalhaoForm(instance=historico, user=request.user)
+
+    return render(request, 'cadastros/historico_form.html', {
+        'form': form,
+        'historico': historico,
+        'action': 'Editar'
+    })
+
+
+@login_required
+def historico_delete(request, pk):
+    """Exclui um registro de histórico."""
+    empresa = request.user.empresa
+    historico = get_object_or_404(HistoricoTalhao, pk=pk, empresa=empresa)
+
+    if request.method == 'POST':
+        talhao_pk = historico.talhao.pk
+        historico.delete()
+        messages.success(request, '🗑️ Histórico excluído!')
+        return redirect('cadastros:talhao_detail', pk=talhao_pk)
+
+    return render(request, 'cadastros/historico_confirm_delete.html', {
+        'historico': historico
+    })
+
+
+@login_required
+def historico_detail(request, pk):
+    """Mostra detalhes de um registro de histórico."""
+    empresa = request.user.empresa
+    historico = get_object_or_404(HistoricoTalhao.objects.select_related('talhao', 'cultura', 'registrado_por'), pk=pk, empresa=empresa)
+
+    return render(request, 'cadastros/historico_detail.html', {
+        'historico': historico
     })
 
 

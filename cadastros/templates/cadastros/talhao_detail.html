@@ -185,6 +185,11 @@
               </a>
             </li>
             {% endif %}
+            <li class="nav-item ms-auto">
+              <a href="{% url 'cadastros:historico_create' talhao.pk %}" class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-plus-circle"></i> Registrar Histórico
+              </a>
+            </li>
           </ul>
         </div>
 
@@ -357,7 +362,8 @@
                       {% endif %}
                     </td>
                     <td>
-                      <a href="#" class="btn btn-sm btn-outline-secondary">Ver</a>
+                      <a href="{% url 'cadastros:historico_detail' hist.pk %}" class="btn btn-sm btn-outline-secondary">Ver</a>
+                      <a href="{% url 'cadastros:historico_update' hist.pk %}" class="btn btn-sm btn-outline-secondary ms-1">Editar</a>
                     </td>
                   </tr>
                   {% endfor %}

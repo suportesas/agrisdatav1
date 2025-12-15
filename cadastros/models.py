@@ -2347,3 +2347,96 @@ class HistoricoTalhao(models.Model):
         if self.producao_real and self.producao_estimada and self.producao_estimada > 0:
             return (self.producao_real / self.producao_estimada) * 100
         return None
+
+
+class Safra(models.Model):
+    """Safra agrícola por fazenda e cultura"""
+    STATUS = [
+        ('PLANEJADA', 'Planejada'),
+        ('EM_ANDAMENTO', 'Em Andamento'),
+        ('FINALIZADA', 'Finalizada'),
+    ]
+
+    nome = models.CharField('Nome da Safra', max_length=200, blank=True)
+    fazenda = models.ForeignKey(Fazenda, on_delete=models.CASCADE, related_name='safras')
+    cultura = models.ForeignKey(Cultura, on_delete=models.PROTECT, related_name='safras')
+    ano = models.IntegerField('Ano', null=True, blank=True)
+    periodo_inicio = models.DateField('Início', null=True, blank=True)
+    periodo_fim = models.DateField('Fim', null=True, blank=True)
+    talhoes = models.ManyToManyField(Talhao, related_name='safras', blank=True)
+    status = models.CharField('Status', max_length=20, choices=STATUS, default='PLANEJADA')
+
+    cadastrado_por = models.ForeignKey(
+        'usuarios.Usuario', on_delete=models.SET_NULL, null=True, blank=True
+    )
+    data_cadastro = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Safra'
+        verbose_name_plural = 'Safras'
+        ordering = ['-ano', 'nome']
+
+    def __str__(self):
+        return self.nome or f"Safra {self.ano} - {self.fazenda.nome} - {self.cultura.nome}"
+
+    def planned_production(self):
+        try:
+            return self.plano.planned_production
+        except Exception:
+            return None
+
+    def real_production(self):
+        from django.db.models import Sum
+        total = SafraReal.objects.filter(safra=self).aggregate(Sum('production'))['production__sum']
+        return total or Decimal('0')
+
+    def production_variation_percent(self):
+        planned = self.planned_production()
+        real = self.real_production()
+        if planned and planned > 0:
+            return ((real - planned) / planned) * 100
+        return None
+
+
+class SafraPlan(models.Model):
+    """Valores planejados para uma `Safra`"""
+    safra = models.OneToOneField(Safra, on_delete=models.CASCADE, related_name='plano')
+    planned_area = models.DecimalField('Área Planejada (ha)', max_digits=10, decimal_places=4, null=True, blank=True)
+    planned_plantio = models.DateField('Plantio Previsto', null=True, blank=True)
+    planned_colheita = models.DateField('Colheita Prevista', null=True, blank=True)
+    planned_production = models.DecimalField('Produção Planejada (ton)', max_digits=12, decimal_places=2, null=True, blank=True)
+
+    class Meta:
+        verbose_name = 'Planejamento de Safra'
+        verbose_name_plural = 'Planejamentos de Safra'
+
+    def __str__(self):
+        return f"Planejamento {self.safra}"
+
+
+class SafraReal(models.Model):
+    """Valores reais observados por `Safra` (opcional por `Talhao`)"""
+    SOURCE_CHOICES = [
+        ('AUTOMATIC', 'Automático'),
+        ('MANUAL', 'Manual'),
+        ('IMPORT', 'Importado'),
+    ]
+
+    safra = models.ForeignKey(Safra, on_delete=models.CASCADE, related_name='reais')
+    talhao = models.ForeignKey(Talhao, on_delete=models.SET_NULL, null=True, blank=True, related_name='reais')
+    actual_area = models.DecimalField('Área Real (ha)', max_digits=10, decimal_places=4, null=True, blank=True)
+    plantio_real = models.DateField('Plantio Real', null=True, blank=True)
+    colheita_real = models.DateField('Colheita Real', null=True, blank=True)
+    production = models.DecimalField('Produção (ton)', max_digits=12, decimal_places=2, null=True, blank=True)
+    source = models.CharField('Origem', max_length=20, choices=SOURCE_CHOICES, default='MANUAL')
+    registrado_por = models.ForeignKey('usuarios.Usuario', on_delete=models.SET_NULL, null=True, blank=True)
+    data_registro = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Valor Real de Safra'
+        verbose_name_plural = 'Valores Reais de Safra'
+
+    def __str__(self):
+        if self.talhao:
+            return f"Real {self.safra} - {self.talhao}"
+        return f"Real {self.safra}"

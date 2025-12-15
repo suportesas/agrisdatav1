@@ -7,7 +7,7 @@ from .models import (
     Fazenda, EnderecoFazenda, ContatoFazenda,
     ContaBancariaFazenda, DocumentoFazenda, Cultura
 )
-from .models import Area, Talhao, HistoricoTalhao
+from .models import Area, Talhao, HistoricoTalhao, Safra, SafraPlan, SafraReal
 
 class EnderecoFazendaInline(admin.TabularInline):
     """Inline para endereços"""
@@ -202,3 +202,23 @@ class HistoricoTalhaoAdmin(admin.ModelAdmin):
     list_display = ['talhao', 'cultura', 'data_plantio', 'data_colheita', 'producao_real']
     list_filter = ['data_plantio']
     search_fields = ['talhao__nome', 'cultura__nome']
+
+
+@admin.register(Safra)
+class SafraAdmin(admin.ModelAdmin):
+    list_display = ['nome', 'fazenda', 'cultura', 'ano', 'status']
+    list_filter = ['status', 'fazenda', 'cultura', 'ano']
+    search_fields = ['nome', 'fazenda__nome', 'cultura__nome']
+
+
+@admin.register(SafraPlan)
+class SafraPlanAdmin(admin.ModelAdmin):
+    list_display = ['safra', 'planned_production', 'planned_area', 'planned_plantio', 'planned_colheita']
+    search_fields = ['safra__nome', 'safra__fazenda__nome']
+
+
+@admin.register(SafraReal)
+class SafraRealAdmin(admin.ModelAdmin):
+    list_display = ['safra', 'talhao', 'production', 'plantio_real', 'colheita_real', 'source']
+    list_filter = ['source']
+    search_fields = ['safra__nome', 'talhao__nome']

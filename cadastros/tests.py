@@ -161,3 +161,14 @@ class HistoricoTalhaoTests(TestCase):
 
 		self.assertTrue(HistoricoTalhao.objects.filter(talhao=self.talhao, data_plantio=date.today(), cultura=self.cultura).exists())
 
+	def test_ajax_talhoes_por_fazenda(self):
+		# usuário e empresa já configurados in setUp
+		self.client.login(username='huser', password='pass')
+		url = reverse('cadastros:ajax_talhoes_fazenda', args=[self.fazenda.pk])
+		resp = self.client.get(url)
+		self.assertEqual(resp.status_code, 200)
+		data = resp.json()
+		# Deve retornar lista com pelo menos um talhão e conter campos esperados
+		self.assertIsInstance(data, list)
+		self.assertTrue(any(t['id'] == self.talhao.id for t in data))
+

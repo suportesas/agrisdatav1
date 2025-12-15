@@ -971,15 +971,41 @@ def safra_list(request):
     empresa = request.user.empresa
     if not empresa:
         messages.warning(request, 'Você não está vinculado a nenhuma empresa.')
-        return redirect('dashboard:index')
+        # Em vez de redirecionar, renderiza a lista com aviso e sem safras
+        context = {'safras': [], 'empresa_missing': True}
+        return render(request, 'cadastros/safra_list.html', context)
 
     safras = Safra.objects.filter(fazenda__empresa=empresa).select_related('fazenda', 'cultura')
 
+    # Filtros
     q = request.GET.get('q', '').strip()
+    fazenda_id = request.GET.get('fazenda')
+    cultura_id = request.GET.get('cultura')
+    ano = request.GET.get('ano')
+    status = request.GET.get('status')
+
     if q:
         safras = safras.filter(Q(nome__icontains=q) | Q(ano__icontains=q) | Q(fazenda__nome__icontains=q))
+    if fazenda_id:
+        safras = safras.filter(fazenda_id=fazenda_id)
+    if cultura_id:
+        safras = safras.filter(cultura_id=cultura_id)
+    if ano:
+        safras = safras.filter(ano=ano)
+    if status:
+        safras = safras.filter(status=status)
 
-    context = {'safras': safras}
+    # Paginação
+    paginator = Paginator(safras.order_by('-ano', 'nome'), 25)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        'safras': page_obj.object_list,
+        'page_obj': page_obj,
+        'fazendas': Fazenda.objects.filter(empresa=empresa, ativa=True).order_by('nome'),
+        'culturas': Cultura.objects.filter(empresa=empresa, ativa=True).order_by('nome'),
+    }
     return render(request, 'cadastros/safra_list.html', context)
 
 
@@ -996,7 +1022,8 @@ def safra_create(request):
     empresa = request.user.empresa
     if not empresa:
         messages.warning(request, 'Você não está vinculado a nenhuma empresa.')
-        return redirect('dashboard:index')
+        # Renderiza formulário com instrução para criar/associar empresa
+        return render(request, 'cadastros/safra_form.html', {'empresa_missing': True, 'action': 'Cadastrar'})
 
     if request.method == 'POST':
         form = SafraForm(request.POST, user=request.user)
@@ -1561,3 +1588,52 @@ def ajax_areas_por_fazenda(request, fazenda_id):
     ).values('id', 'nome', 'area_total')
     
     return JsonResponse(list(areas), safe=False)
+
+
+# ============================================
+# AJAX: TALHÕES POR FAZENDA
+# ============================================
+
+
+@login_required
+def ajax_talhoes_por_fazenda(request, fazenda_id):
+    """
+    Retorna talhões de uma fazenda (para select dinâmico)
+    🔒 APENAS TALHÕES DA EMPRESA DO USUÁRIO
+    """
+    empresa = request.user.empresa
+
+    # 🔒 Valida se fazenda pertence à empresa
+    try:
+        fazenda = Fazenda.objects.get(pk=fazenda_id, empresa=empresa)
+    except Fazenda.DoesNotExist:
+        return JsonResponse({'error': 'Fazenda não encontrada'}, status=404)
+
+    talhoes = Talhao.objects.filter(
+        fazenda=fazenda,
+        empresa=empresa,
+        ativo=True
+    ).values('id', 'nome', 'codigo', 'area_hac')
+    # Para cada talhão, informa se já está associado a uma safra não finalizada
+    talhao_ids = [t['id'] for t in talhoes]
+    safra_map = {}
+    if talhao_ids:
+        safras = Safra.objects.filter(talhoes__in=talhao_ids).exclude(status='FINALIZADA').select_related('fazenda')
+        for s in safras:
+            for t in s.talhoes.all():
+                if t.id in talhao_ids and t.id not in safra_map:
+                    safra_map[t.id] = str(s)
+
+    result = []
+    for t in talhoes:
+        tid = t['id']
+        result.append({
+            'id': tid,
+            'nome': t['nome'],
+            'codigo': t.get('codigo'),
+            'area_hac': t.get('area_hac'),
+            'in_use': tid in safra_map,
+            'in_use_by': safra_map.get(tid)
+        })
+
+    return JsonResponse(result, safe=False)

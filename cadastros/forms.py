@@ -1128,8 +1128,9 @@ class SafraForm(forms.ModelForm):
             'fazenda': forms.Select(attrs={'class': 'form-select'}),
             'cultura': forms.Select(attrs={'class': 'form-select'}),
             'ano': forms.NumberInput(attrs={'class': 'form-control'}),
-            'periodo_inicio': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'periodo_fim': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            # Use ISO format so HTML5 date inputs render the value correctly
+            'periodo_inicio': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'),
+            'periodo_fim': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'),
             'status': forms.Select(attrs={'class': 'form-select'}),
         }
 
@@ -1141,14 +1142,28 @@ class SafraForm(forms.ModelForm):
             self.fields['fazenda'].queryset = Fazenda.objects.filter(empresa=self.user.empresa, ativa=True).order_by('nome')
             self.fields['cultura'].queryset = Cultura.objects.filter(empresa=self.user.empresa, ativa=True).order_by('nome')
             self.fields['talhoes'].queryset = Talhao.objects.filter(empresa=self.user.empresa, ativo=True).order_by('fazenda__nome', 'nome')
+            # Show a richer label for talhões: name (area ha) - status
+            self.fields['talhoes'].label_from_instance = lambda obj: f"{obj.nome} ({obj.area_hac} ha) - {obj.get_status_display()}"
         else:
             self.fields['fazenda'].queryset = Fazenda.objects.none()
             self.fields['cultura'].queryset = Cultura.objects.none()
             self.fields['talhoes'].queryset = Talhao.objects.none()
 
+        # Set a sensible default for status and make it visible by default
+        if 'status' in self.fields:
+            self.fields['status'].initial = 'PLANEJADA'
+            self.fields['status'].required = True
+
         # If editing, set initial talhoes
         if self.instance and self.instance.pk:
             self.fields['talhoes'].initial = self.instance.talhoes.all()
+
+            # Ensure date inputs display with ISO format (YYYY-MM-DD) so browsers
+            # correctly populate HTML5 `type=date` fields when editing.
+            if getattr(self.instance, 'periodo_inicio', None):
+                self.fields['periodo_inicio'].initial = self.instance.periodo_inicio.strftime('%Y-%m-%d')
+            if getattr(self.instance, 'periodo_fim', None):
+                self.fields['periodo_fim'].initial = self.instance.periodo_fim.strftime('%Y-%m-%d')
 
     def clean(self):
         cleaned = super().clean()
@@ -1162,6 +1177,11 @@ class SafraForm(forms.ModelForm):
         # Period validation
         if inicio and fim and inicio > fim:
             raise forms.ValidationError({'periodo_inicio': 'Data de início não pode ser posterior à data fim'})
+
+        # Ensure period does not span more than next year: fim must be same year or next year
+        if inicio and fim:
+            if fim.year not in (inicio.year, inicio.year + 1):
+                raise forms.ValidationError({'periodo_fim': 'Período inválido: o término deve estar no mesmo ano ou no ano seguinte ao início'})
 
         # Uniqueness: fazenda + cultura + ano
         # Normalize composite year input: if user provides a composite like 202526,
@@ -1191,6 +1211,18 @@ class SafraForm(forms.ModelForm):
             for t in talhoes:
                 if t.fazenda != fazenda:
                     raise forms.ValidationError({'talhoes': 'Todos os talhões devem pertencer à fazenda selecionada'})
+
+        # Ensure talhões are not already associated to an active/planned safra
+        if talhoes:
+            conflicting = []
+            for t in talhoes:
+                qs = Safra.objects.filter(talhoes=t).exclude(status='FINALIZADA')
+                if self.instance and self.instance.pk:
+                    qs = qs.exclude(pk=self.instance.pk)
+                if qs.exists():
+                    conflicting.append(str(t))
+            if conflicting:
+                raise forms.ValidationError({'talhoes': f'Os seguintes talhões já estão associados a outra safra: {", ".join(conflicting)}'})
 
         return cleaned
     

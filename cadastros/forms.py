@@ -1181,13 +1181,15 @@ class SafraForm(forms.ModelForm):
     
     def save(self, commit=True):
         instance = super().save(commit=False)
-        
-        # Transfere valor do campo customizado para o campo real (area_hac)
-        instance.area_hac = self.cleaned_data['area_tamanho']
-        
+        # Não há campo `area_tamanho` em `Safra` — apenas salva a instância.
         if commit:
             instance.save()
-        
+            # garante salvar relações many-to-many
+            try:
+                self.save_m2m()
+            except Exception:
+                pass
+
         return instance
 
 

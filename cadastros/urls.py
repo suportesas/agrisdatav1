@@ -79,6 +79,13 @@ urlpatterns = [
     path('historico/<int:pk>/excluir/', views.historico_delete, name='historico_delete'),
     path('historico/<int:pk>/', views.historico_detail, name='historico_detail'),
     
+    # Safras
+    path('safras/', views.safra_list, name='safra_list'),
+    path('safras/nova/', views.safra_create, name='safra_create'),
+    path('safras/<int:pk>/', views.safra_detail, name='safra_detail'),
+    path('safras/<int:pk>/editar/', views.safra_update, name='safra_update'),
+    path('safras/<int:pk>/excluir/', views.safra_delete, name='safra_delete'),
+    
     # AJAX
     path('ajax/areas-por-fazenda/<int:fazenda_id>/', views.ajax_areas_por_fazenda, name='ajax_areas_fazenda'),
 

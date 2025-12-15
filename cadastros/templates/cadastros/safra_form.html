@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+  <h1>{{ action }} Safra</h1>
+  <form method="post">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    <div class="row">
+      <div class="col-md-6">{{ form.fazenda.label_tag }} {{ form.fazenda }}</div>
+      <div class="col-md-6">{{ form.cultura.label_tag }} {{ form.cultura }}</div>
+    </div>
+    <div class="row mt-2">
+      <div class="col-md-4">{{ form.ano.label_tag }} {{ form.ano }}</div>
+      <div class="col-md-4">{{ form.periodo_inicio.label_tag }} {{ form.periodo_inicio }}</div>
+      <div class="col-md-4">{{ form.periodo_fim.label_tag }} {{ form.periodo_fim }}</div>
+    </div>
+    <div class="row mt-2">
+      <div class="col-md-12">{{ form.talhoes.label_tag }} {{ form.talhoes }}</div>
+    </div>
+    <div class="mt-3">
+      <button class="btn btn-primary">{{ action }}</button>
+      <a class="btn btn-secondary" href="{% url 'cadastros:safra_list' %}">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

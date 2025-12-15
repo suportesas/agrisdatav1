@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+  <h1>{{ safra }}</h1>
+  <p><strong>Fazenda:</strong> {{ safra.fazenda.nome }} • <strong>Cultura:</strong> {{ safra.cultura.nome }}</p>
+  <p><strong>Período:</strong> {{ safra.periodo_inicio }} — {{ safra.periodo_fim }}</p>
+
+  <h3>Comparativo Planejado x Real</h3>
+  <table class="table">
+    <thead><tr><th>Métrica</th><th>Planejado</th><th>Real</th><th>Variação %</th></tr></thead>
+    <tbody>
+      <tr><td>Produção (ton)</td><td>{{ safra.planned_production|default:'-' }}</td><td>{{ safra.real_production }}</td><td>{{ safra.production_variation_percent|default:'-' }}</td></tr>
+    </tbody>
+  </table>
+
+  <h4>Talhões</h4>
+  <ul>
+    {% for t in safra.talhoes.all %}
+      <li>{{ t }}</li>
+    {% empty %}
+      <li>Nenhum talhão associado.</li>
+    {% endfor %}
+  </ul>
+
+  <a href="{% url 'cadastros:safra_update' safra.pk %}" class="btn btn-secondary">Editar</a>
+  <a href="{% url 'cadastros:safra_list' %}" class="btn btn-link">Voltar</a>
+</div>
+{% endblock %}

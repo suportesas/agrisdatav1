@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+  <h1>Safras</h1>
+  <a href="{% url 'cadastros:safra_create' %}" class="btn btn-primary mb-3">Nova Safra</a>
+  <table class="table table-striped">
+    <thead><tr><th>Nome</th><th>Fazenda</th><th>Cultura</th><th>Ano</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+      {% for s in safras %}
+        <tr>
+          <td><a href="{% url 'cadastros:safra_detail' s.pk %}">{{ s }}</a></td>
+          <td>{{ s.fazenda.nome }}</td>
+          <td>{{ s.cultura.nome }}</td>
+          <td>{{ s.ano }}</td>
+          <td>{{ s.get_status_display }}</td>
+          <td><a href="{% url 'cadastros:safra_update' s.pk %}">Editar</a> • <a href="{% url 'cadastros:safra_delete' s.pk %}">Excluir</a></td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="6">Nenhuma safra cadastrada.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+{% endblock %}

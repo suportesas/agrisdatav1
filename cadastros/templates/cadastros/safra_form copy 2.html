@@ -1,0 +1,683 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ action|default:"Nova" }} Safra | ERP Agrícola{% endblock %}
+
+{% block extra_css %}
+<style>
+  /* Layout geral */
+  .section-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    margin-bottom: 24px;
+    overflow: hidden;
+  }
+  
+  .section-header {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+    padding: 16px 24px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  
+  .section-body {
+    padding: 24px;
+  }
+
+  /* Seleção de Talhões - Estilo Visual */
+  .talhoes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+    margin-top: 20px;
+  }
+
+  .talhao-card {
+    border: 2px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 16px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    background: white;
+  }
+
+  .talhao-card:hover:not(.disabled) {
+    border-color: #10b981;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+  }
+
+  .talhao-card.selected {
+    border-color: #10b981;
+    background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+  }
+
+  .talhao-card.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: #f3f4f6;
+    border-color: #d1d5db;
+  }
+
+  .talhao-card.disabled::after {
+    content: "🔒 Em uso";
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: #ef4444;
+    color: white;
+    font-size: 11px;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-weight: 600;
+  }
+
+  .talhao-card .checkbox-icon {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 24px;
+    height: 24px;
+    border: 2px solid #d1d5db;
+    border-radius: 6px;
+    background: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+  }
+
+  .talhao-card.selected .checkbox-icon {
+    background: #10b981;
+    border-color: #10b981;
+  }
+
+  .talhao-card.selected .checkbox-icon::after {
+    content: "✓";
+    color: white;
+    font-weight: bold;
+    font-size: 16px;
+  }
+
+  .talhao-nome {
+    font-weight: 600;
+    font-size: 16px;
+    color: #1f2937;
+    margin-bottom: 8px;
+    padding-right: 32px;
+  }
+
+  .talhao-info {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .talhao-info-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: #6b7280;
+  }
+
+  .talhao-info-item i {
+    width: 16px;
+    color: #9ca3af;
+  }
+
+  .talhao-status {
+    display: inline-block;
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-weight: 600;
+    margin-top: 8px;
+  }
+
+  .status-disponivel { background: #d1fae5; color: #065f46; }
+  .status-em-uso { background: #fee2e2; color: #991b1b; }
+  .status-plantado { background: #fef3c7; color: #92400e; }
+  .status-preparacao { background: #dbeafe; color: #1e40af; }
+
+  /* Resumo da Seleção */
+  .selection-summary {
+    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+    border: 2px solid #10b981;
+    border-radius: 10px;
+    padding: 20px;
+    margin-top: 20px;
+    display: none;
+  }
+
+  .selection-summary.active {
+    display: block;
+  }
+
+  .summary-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 16px;
+    margin-top: 12px;
+  }
+
+  .stat-item {
+    text-align: center;
+  }
+
+  .stat-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: #059669;
+  }
+
+  .stat-label {
+    font-size: 13px;
+    color: #6b7280;
+    margin-top: 4px;
+  }
+
+  /* Estado vazio */
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #9ca3af;
+  }
+
+  .empty-state i {
+    font-size: 64px;
+    margin-bottom: 16px;
+    opacity: 0.5;
+  }
+
+  /* Loading state */
+  .loading-talhoes {
+    text-align: center;
+    padding: 40px;
+  }
+
+  .loading-talhoes .spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #e5e7eb;
+    border-top-color: #10b981;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  /* Filtros de Talhões */
+  .talhoes-filters {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+
+  .filter-btn {
+    padding: 8px 16px;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    background: white;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 14px;
+    font-weight: 500;
+    color: #6b7280;
+  }
+
+  .filter-btn:hover {
+    border-color: #10b981;
+    color: #10b981;
+  }
+
+  .filter-btn.active {
+    background: #10b981;
+    border-color: #10b981;
+    color: white;
+  }
+
+  .filter-btn i {
+    margin-right: 6px;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <!-- Breadcrumb -->
+  <nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'cadastros:safra_list' %}">Safras</a></li>
+      <li class="breadcrumb-item active">{{ action|default:"Nova" }} Safra</li>
+    </ol>
+  </nav>
+
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="fw-bold mb-1">
+        <i class="bi bi-{% if safra %}pencil-square{% else %}plus-circle{% endif %} text-success"></i>
+        {{ action|default:"Nova" }} Safra
+      </h2>
+      <p class="text-muted mb-0">Configure o planejamento e selecione os talhões</p>
+    </div>
+    <a href="{% url 'cadastros:safra_list' %}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left"></i> Voltar
+    </a>
+  </div>
+
+  <form method="post" id="safra-form">
+    {% csrf_token %}
+
+    <!-- Seção 1: Informações Básicas -->
+    <div class="section-card">
+      <div class="section-header">
+        <i class="bi bi-info-circle fs-5"></i>
+        <span>Informações Básicas</span>
+      </div>
+      <div class="section-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">{{ form.nome.label }} *</label>
+            {{ form.nome }}
+            {% if form.nome.errors %}
+              <div class="text-danger small">{{ form.nome.errors|striptags }}</div>
+            {% endif %}
+            <small class="text-muted">Ex: Safra 2024/25</small>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">{{ form.fazenda.label }} *</label>
+            {{ form.fazenda }}
+            {% if form.fazenda.errors %}
+              <div class="text-danger small">{{ form.fazenda.errors|striptags }}</div>
+            {% endif %}
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">{{ form.cultura.label }} *</label>
+            {{ form.cultura }}
+            {% if form.cultura.errors %}
+              <div class="text-danger small">{{ form.cultura.errors|striptags }}</div>
+            {% endif %}
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">{{ form.status.label }}</label>
+            {{ form.status }}
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">{{ form.ano.label }} *</label>
+            {{ form.ano }}
+            {% if form.ano.errors %}
+              <div class="text-danger small">{{ form.ano.errors|striptags }}</div>
+            {% endif %}
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">{{ form.periodo_inicio.label }}</label>
+            {{ form.periodo_inicio }}
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">{{ form.periodo_fim.label }}</label>
+            {{ form.periodo_fim }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Seção 2: Seleção de Talhões -->
+    <div class="section-card">
+      <div class="section-header">
+        <i class="bi bi-grid-3x3 fs-5"></i>
+        <span>Seleção de Talhões</span>
+        <span class="ms-auto" id="talhoes-counter" style="font-size: 14px; opacity: 0.9;">
+          <i class="bi bi-check-circle"></i> <span id="selected-count">0</span> selecionados
+        </span>
+      </div>
+      <div class="section-body">
+
+        <!-- Filtros -->
+        <div class="talhoes-filters" id="talhoes-filters" style="display: none;">
+          <button type="button" class="filter-btn active" data-filter="todos">
+            <i class="bi bi-grid"></i> Todos
+          </button>
+          <button type="button" class="filter-btn" data-filter="DISPONIVEL">
+            <i class="bi bi-check-circle"></i> Disponíveis
+          </button>
+          <button type="button" class="filter-btn" data-filter="PLANTADO">
+            <i class="bi bi-tree"></i> Plantados
+          </button>
+          <button type="button" class="filter-btn" data-filter="PREPARACAO">
+            <i class="bi bi-tools"></i> Em Preparação
+          </button>
+        </div>
+
+        <!-- Loading State -->
+        <div id="loading-talhoes" class="loading-talhoes" style="display: none;">
+          <div class="spinner mx-auto"></div>
+          <p class="mt-3 text-muted">Carregando talhões...</p>
+        </div>
+
+        <!-- Empty State -->
+        <div id="empty-state" class="empty-state">
+          <i class="bi bi-grid-3x3"></i>
+          <h5>Selecione uma fazenda</h5>
+          <p class="text-muted mb-0">Os talhões disponíveis aparecerão aqui</p>
+        </div>
+
+        <!-- Grid de Talhões -->
+        <div id="talhoes-grid" class="talhoes-grid" style="display: none;"></div>
+
+        <!-- Campo hidden para enviar IDs selecionados -->
+        <input type="hidden" name="talhoes" id="talhoes-input" value="">
+
+        <!-- Resumo da Seleção -->
+        <div id="selection-summary" class="selection-summary">
+          <div class="d-flex align-items-center justify-content-between mb-3">
+            <h6 class="mb-0 fw-bold text-success">
+              <i class="bi bi-check-circle-fill"></i> Resumo da Seleção
+            </h6>
+            <button type="button" class="btn btn-sm btn-outline-danger" onclick="limparSelecao()">
+              <i class="bi bi-x-circle"></i> Limpar Seleção
+            </button>
+          </div>
+          <div class="summary-stats">
+            <div class="stat-item">
+              <div class="stat-value" id="summary-count">0</div>
+              <div class="stat-label">Talhões</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-value" id="summary-area">0.00</div>
+              <div class="stat-label">Hectares</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-value" id="summary-prod">0</div>
+              <div class="stat-label">Prod. Estimada (ton)</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Ações -->
+    <div class="d-flex justify-content-between gap-3">
+      <a href="{% url 'cadastros:safra_list' %}" class="btn btn-outline-secondary btn-lg px-5">
+        <i class="bi bi-x-circle"></i> Cancelar
+      </a>
+      <button type="submit" class="btn btn-success btn-lg px-5">
+        <i class="bi bi-check-circle"></i> Salvar Safra
+      </button>
+    </div>
+
+  </form>
+
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Aplicar classes Bootstrap
+  document.querySelectorAll('input:not([type="checkbox"]), select, textarea').forEach(el => {
+    if (!el.classList.contains('form-control') && !el.classList.contains('form-select')) {
+      el.classList.add(el.tagName === 'SELECT' ? 'form-select' : 'form-control');
+    }
+  });
+
+  const fazendaSelect = document.getElementById('id_fazenda');
+  const talhoesGrid = document.getElementById('talhoes-grid');
+  const emptyState = document.getElementById('empty-state');
+  const loadingState = document.getElementById('loading-talhoes');
+  const talhoesInput = document.getElementById('talhoes-input');
+  const selectionSummary = document.getElementById('selection-summary');
+  const filters = document.getElementById('talhoes-filters');
+
+  let talhoesData = [];
+  let selectedIds = new Set();
+
+  // Carregar talhões selecionados do backend (se estiver editando)
+  {% if safra and safra.talhoes.all %}
+    selectedIds = new Set([{% for t in safra.talhoes.all %}{{ t.id }}{% if not forloop.last %},{% endif %}{% endfor %}]);
+    updateHiddenInput();
+  {% endif %}
+
+  // Listener de mudança de fazenda
+  if (fazendaSelect) {
+    fazendaSelect.addEventListener('change', function() {
+      const fazendaId = this.value;
+      if (fazendaId) {
+        carregarTalhoes(fazendaId);
+      } else {
+        showEmptyState();
+      }
+    });
+
+    // Carregar talhões se já tiver fazenda selecionada
+    if (fazendaSelect.value) {
+      carregarTalhoes(fazendaSelect.value);
+    }
+  }
+
+  // Função para carregar talhões via AJAX
+  async function carregarTalhoes(fazendaId) {
+    showLoading();
+
+    try {
+      const url = "{% url 'cadastros:ajax_talhoes_fazenda' 0 %}".replace('/0/', `/${fazendaId}/`);
+      const response = await fetch(url);
+      
+      if (!response.ok) throw new Error('Erro ao carregar talhões');
+      
+      talhoesData = await response.json();
+      renderTalhoes(talhoesData);
+      filters.style.display = 'flex';
+      
+    } catch (error) {
+      console.error('Erro:', error);
+      talhoesGrid.innerHTML = '<div class="alert alert-danger">Erro ao carregar talhões. Tente novamente.</div>';
+      talhoesGrid.style.display = 'block';
+      loadingState.style.display = 'none';
+    }
+  }
+
+  // Renderizar talhões no grid
+  function renderTalhoes(talhoes, filtro = 'todos') {
+    if (!talhoes || talhoes.length === 0) {
+      showEmptyState('Nenhum talhão cadastrado nesta fazenda');
+      return;
+    }
+
+    // Filtrar talhões
+    const talhoesFiltrados = filtro === 'todos' 
+      ? talhoes 
+      : talhoes.filter(t => t.status === filtro);
+
+    talhoesGrid.innerHTML = '';
+    
+    talhoesFiltrados.forEach(talhao => {
+      const isSelected = selectedIds.has(talhao.id);
+      const isDisabled = talhao.in_use && !isSelected;
+      
+      const card = document.createElement('div');
+      card.className = `talhao-card ${isSelected ? 'selected' : ''} ${isDisabled ? 'disabled' : ''}`;
+      card.dataset.id = talhao.id;
+      card.dataset.area = talhao.area_hac || 0;
+      
+      if (!isDisabled) {
+        card.onclick = () => toggleTalhao(talhao.id, card);
+      }
+
+      const statusClass = getStatusClass(talhao.status);
+      const culturaAtual = talhao.cultura_atual || 'Sem cultura';
+
+      card.innerHTML = `
+        <div class="checkbox-icon"></div>
+        <div class="talhao-nome">${talhao.nome}</div>
+        <div class="talhao-info">
+          <div class="talhao-info-item">
+            <i class="bi bi-hash"></i>
+            <span>${talhao.codigo || 'S/N'}</span>
+          </div>
+          <div class="talhao-info-item">
+            <i class="bi bi-rulers"></i>
+            <span>${talhao.area_hac} ha</span>
+          </div>
+          ${!isDisabled ? `
+            <div class="talhao-info-item">
+              <i class="bi bi-tree"></i>
+              <span>${culturaAtual}</span>
+            </div>
+          ` : ''}
+        </div>
+        <span class="talhao-status ${statusClass}">${getStatusLabel(talhao.status)}</span>
+      `;
+
+      talhoesGrid.appendChild(card);
+    });
+
+    talhoesGrid.style.display = 'grid';
+    emptyState.style.display = 'none';
+    loadingState.style.display = 'none';
+    
+    updateSummary();
+  }
+
+  // Toggle seleção de talhão
+  function toggleTalhao(id, card) {
+    if (selectedIds.has(id)) {
+      selectedIds.delete(id);
+      card.classList.remove('selected');
+    } else {
+      selectedIds.add(id);
+      card.classList.add('selected');
+    }
+    
+    updateHiddenInput();
+    updateSummary();
+  }
+
+  // Atualizar campo hidden com IDs selecionados
+  function updateHiddenInput() {
+    talhoesInput.value = Array.from(selectedIds).join(',');
+    document.getElementById('selected-count').textContent = selectedIds.size;
+  }
+
+  // Atualizar resumo da seleção
+  function updateSummary() {
+    const count = selectedIds.size;
+    
+    if (count === 0) {
+      selectionSummary.classList.remove('active');
+      return;
+    }
+
+    selectionSummary.classList.add('active');
+    
+    let totalArea = 0;
+    let totalProd = 0;
+
+    selectedIds.forEach(id => {
+      const card = document.querySelector(`.talhao-card[data-id="${id}"]`);
+      if (card) {
+        totalArea += parseFloat(card.dataset.area || 0);
+      }
+    });
+
+    document.getElementById('summary-count').textContent = count;
+    document.getElementById('summary-area').textContent = totalArea.toFixed(2);
+    document.getElementById('summary-prod').textContent = (totalArea * 25).toFixed(0); // Estimativa: 25 ton/ha
+  }
+
+  // Limpar seleção
+  window.limparSelecao = function() {
+    if (!confirm('Deseja realmente limpar toda a seleção?')) return;
+    
+    selectedIds.clear();
+    document.querySelectorAll('.talhao-card.selected').forEach(card => {
+      card.classList.remove('selected');
+    });
+    
+    updateHiddenInput();
+    updateSummary();
+  };
+
+  // Filtros
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      this.classList.add('active');
+      
+      const filtro = this.dataset.filter;
+      renderTalhoes(talhoesData, filtro);
+    });
+  });
+
+  // Funções auxiliares
+  function showLoading() {
+    emptyState.style.display = 'none';
+    talhoesGrid.style.display = 'none';
+    loadingState.style.display = 'block';
+    filters.style.display = 'none';
+  }
+
+  function showEmptyState(msg) {
+    emptyState.style.display = 'block';
+    talhoesGrid.style.display = 'none';
+    loadingState.style.display = 'none';
+    filters.style.display = 'none';
+    
+    if (msg) {
+      emptyState.querySelector('p').textContent = msg;
+    }
+  }
+
+  function getStatusClass(status) {
+    const classes = {
+      'DISPONIVEL': 'status-disponivel',
+      'PLANTADO': 'status-plantado',
+      'PREPARACAO': 'status-preparacao',
+    };
+    return classes[status] || 'status-disponivel';
+  }
+
+  function getStatusLabel(status) {
+    const labels = {
+      'DISPONIVEL': 'Disponível',
+      'PLANTADO': 'Plantado',
+      'PREPARACAO': 'Em Preparação',
+      'DESCANSO': 'Descanso',
+    };
+    return labels[status] || status;
+  }
+
+  // Auto-preencher nome da safra
+  const periodoInicio = document.getElementById('id_periodo_inicio');
+  const periodoFim = document.getElementById('id_periodo_fim');
+  const nomeInput = document.getElementById('id_nome');
+
+  function atualizarNomeSafra() {
+    if (periodoInicio && periodoFim && nomeInput && periodoInicio.value && periodoFim.value) {
+      const ano1 = new Date(periodoInicio.value).getFullYear();
+      const ano2 = new Date(periodoFim.value).getFullYear() % 100;
+      nomeInput.value = `Safra ${ano1}/${String(ano2).padStart(2, '0')}`;
+    }
+  }
+
+  if (periodoInicio) periodoInicio.addEventListener('change', atualizarNomeSafra);
+  if (periodoFim) periodoFim.addEventListener('change', atualizarNomeSafra);
+});
+</script>
+{% endblock %}

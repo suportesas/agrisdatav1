@@ -209,6 +209,7 @@
     border-top-color: #10b981;
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
+    margin: 0 auto;
   }
 
   @keyframes spin {
@@ -369,7 +370,7 @@
 
         <!-- Loading State -->
         <div id="loading-talhoes" class="loading-talhoes" style="display: none;">
-          <div class="spinner mx-auto"></div>
+          <div class="spinner"></div>
           <p class="mt-3 text-muted">Carregando talhões...</p>
         </div>
 
@@ -452,6 +453,7 @@ document.addEventListener('DOMContentLoaded', function() {
   {% if safra and safra.talhoes.all %}
     selectedIds = new Set([{% for t in safra.talhoes.all %}{{ t.id }}{% if not forloop.last %},{% endif %}{% endfor %}]);
     updateHiddenInput();
+    updateSummary();
   {% endif %}
 
   // Listener de mudança de fazenda
@@ -520,7 +522,7 @@ document.addEventListener('DOMContentLoaded', function() {
         card.onclick = () => toggleTalhao(talhao.id, card);
       }
 
-      const statusClass = getStatusClass(talhao.status);
+      const statusClass = getStatusClass(talhao.status || 'DISPONIVEL');
       const culturaAtual = talhao.cultura_atual || 'Sem cultura';
 
       card.innerHTML = `
@@ -533,7 +535,7 @@ document.addEventListener('DOMContentLoaded', function() {
           </div>
           <div class="talhao-info-item">
             <i class="bi bi-rulers"></i>
-            <span>${talhao.area_hac} ha</span>
+            <span>${parseFloat(talhao.area_hac || 0).toFixed(2)} ha</span>
           </div>
           ${!isDisabled ? `
             <div class="talhao-info-item">
@@ -542,7 +544,7 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
           ` : ''}
         </div>
-        <span class="talhao-status ${statusClass}">${getStatusLabel(talhao.status)}</span>
+        <span class="talhao-status ${statusClass}">${getStatusLabel(talhao.status || 'DISPONIVEL')}</span>
       `;
 
       talhoesGrid.appendChild(card);
@@ -596,9 +598,12 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     });
 
+    // Calcula produção estimada (25 ton/ha como exemplo - ajuste conforme sua cultura)
+    totalProd = totalArea * 25;
+
     document.getElementById('summary-count').textContent = count;
     document.getElementById('summary-area').textContent = totalArea.toFixed(2);
-    document.getElementById('summary-prod').textContent = (totalArea * 25).toFixed(0); // Estimativa: 25 ton/ha
+    document.getElementById('summary-prod').textContent = totalProd.toFixed(0);
   }
 
   // Limpar seleção

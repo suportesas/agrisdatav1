@@ -23,8 +23,8 @@ from .forms import (
     ContaBancariaFazendaForm, DocumentoFazendaForm,
 )
 
-from .models import Area, Talhao, Cultura, HistoricoTalhao
-from .forms import AreaForm, TalhaoForm, CulturaForm, HistoricoTalhaoForm
+from .models import Area, Talhao, Cultura, HistoricoTalhao, Safra
+from .forms import AreaForm, TalhaoForm, CulturaForm, HistoricoTalhaoForm, SafraForm
 
 
 
@@ -962,6 +962,81 @@ def cultura_delete(request, pk):
         return redirect('cadastros:cultura_list')
     
     return render(request, 'cadastros/cultura_confirm_delete.html', {'cultura': cultura})
+
+
+
+@login_required
+def safra_list(request):
+    """Lista safras da empresa do usuário"""
+    empresa = request.user.empresa
+    if not empresa:
+        messages.warning(request, 'Você não está vinculado a nenhuma empresa.')
+        return redirect('dashboard:index')
+
+    safras = Safra.objects.filter(fazenda__empresa=empresa).select_related('fazenda', 'cultura')
+
+    q = request.GET.get('q', '').strip()
+    if q:
+        safras = safras.filter(Q(nome__icontains=q) | Q(ano__icontains=q) | Q(fazenda__nome__icontains=q))
+
+    context = {'safras': safras}
+    return render(request, 'cadastros/safra_list.html', context)
+
+
+@login_required
+def safra_detail(request, pk):
+    safra = get_object_or_404(Safra, pk=pk, fazenda__empresa=request.user.empresa)
+    # Prepare comparativo
+    context = {'safra': safra}
+    return render(request, 'cadastros/safra_detail.html', context)
+
+
+@login_required
+def safra_create(request):
+    empresa = request.user.empresa
+    if not empresa:
+        messages.warning(request, 'Você não está vinculado a nenhuma empresa.')
+        return redirect('dashboard:index')
+
+    if request.method == 'POST':
+        form = SafraForm(request.POST, user=request.user)
+        if form.is_valid():
+            safra = form.save(commit=False)
+            safra.cadastrado_por = request.user
+            safra.save()
+            form.save_m2m()
+            messages.success(request, f'✅ Safra "{safra}" cadastrada com sucesso!')
+            return redirect('cadastros:safra_detail', pk=safra.pk)
+    else:
+        form = SafraForm(user=request.user)
+
+    return render(request, 'cadastros/safra_form.html', {'form': form, 'action': 'Cadastrar'})
+
+
+@login_required
+def safra_update(request, pk):
+    safra = get_object_or_404(Safra, pk=pk, fazenda__empresa=request.user.empresa)
+    if request.method == 'POST':
+        form = SafraForm(request.POST, instance=safra, user=request.user)
+        if form.is_valid():
+            safra = form.save()
+            messages.success(request, f'✅ Safra "{safra}" atualizada!')
+            return redirect('cadastros:safra_detail', pk=safra.pk)
+    else:
+        form = SafraForm(instance=safra, user=request.user)
+
+    return render(request, 'cadastros/safra_form.html', {'form': form, 'safra': safra, 'action': 'Editar'})
+
+
+@login_required
+def safra_delete(request, pk):
+    safra = get_object_or_404(Safra, pk=pk, fazenda__empresa=request.user.empresa)
+    if request.method == 'POST':
+        nome = str(safra)
+        safra.delete()
+        messages.success(request, f'🗑️ Safra "{nome}" excluída com sucesso!')
+        return redirect('cadastros:safra_list')
+    return render(request, 'cadastros/safra_confirm_delete.html', {'safra': safra})
 
 
 

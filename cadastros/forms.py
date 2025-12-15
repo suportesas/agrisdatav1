@@ -15,6 +15,7 @@ import re
 
 
 from .models import Area, Talhao, HistoricoTalhao,  Cultura
+from .models import Safra, SafraPlan, SafraReal
 from decimal import Decimal
 
 class FazendaForm(forms.ModelForm):
@@ -1108,6 +1109,75 @@ class TalhaoForm(forms.ModelForm):
                 })
         
         return cleaned_data
+
+
+
+class SafraForm(forms.ModelForm):
+    """Formulário para criar/editar `Safra` com validações de integridade"""
+    talhoes = forms.ModelMultipleChoiceField(
+        queryset=Talhao.objects.none(),
+        required=False,
+        widget=forms.SelectMultiple(attrs={'class': 'form-select'})
+    )
+
+    class Meta:
+        model = Safra
+        fields = ['nome', 'fazenda', 'cultura', 'ano', 'periodo_inicio', 'periodo_fim', 'talhoes', 'status']
+        widgets = {
+            'nome': forms.TextInput(attrs={'class': 'form-control'}),
+            'fazenda': forms.Select(attrs={'class': 'form-select'}),
+            'cultura': forms.Select(attrs={'class': 'form-select'}),
+            'ano': forms.NumberInput(attrs={'class': 'form-control'}),
+            'periodo_inicio': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'periodo_fim': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'status': forms.Select(attrs={'class': 'form-select'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+
+        if self.user and getattr(self.user, 'empresa', None):
+            self.fields['fazenda'].queryset = Fazenda.objects.filter(empresa=self.user.empresa, ativa=True).order_by('nome')
+            self.fields['cultura'].queryset = Cultura.objects.filter(empresa=self.user.empresa, ativa=True).order_by('nome')
+            self.fields['talhoes'].queryset = Talhao.objects.filter(empresa=self.user.empresa, ativo=True).order_by('fazenda__nome', 'nome')
+        else:
+            self.fields['fazenda'].queryset = Fazenda.objects.none()
+            self.fields['cultura'].queryset = Cultura.objects.none()
+            self.fields['talhoes'].queryset = Talhao.objects.none()
+
+        # If editing, set initial talhoes
+        if self.instance and self.instance.pk:
+            self.fields['talhoes'].initial = self.instance.talhoes.all()
+
+    def clean(self):
+        cleaned = super().clean()
+        inicio = cleaned.get('periodo_inicio')
+        fim = cleaned.get('periodo_fim')
+        fazenda = cleaned.get('fazenda')
+        cultura = cleaned.get('cultura')
+        ano = cleaned.get('ano')
+        talhoes = cleaned.get('talhoes')
+
+        # Period validation
+        if inicio and fim and inicio > fim:
+            raise forms.ValidationError({'periodo_inicio': 'Data de início não pode ser posterior à data fim'})
+
+        # Uniqueness: fazenda + cultura + ano
+        if fazenda and cultura and ano:
+            qs = Safra.objects.filter(fazenda=fazenda, cultura=cultura, ano=ano)
+            if self.instance and self.instance.pk:
+                qs = qs.exclude(pk=self.instance.pk)
+            if qs.exists():
+                raise forms.ValidationError('Já existe uma safra para esta fazenda, cultura e ano')
+
+        # Ensure selected talhões belong to same fazenda
+        if talhoes and fazenda:
+            for t in talhoes:
+                if t.fazenda != fazenda:
+                    raise forms.ValidationError({'talhoes': 'Todos os talhões devem pertencer à fazenda selecionada'})
+
+        return cleaned
     
     def save(self, commit=True):
         instance = super().save(commit=False)

@@ -212,8 +212,20 @@
           <div class="menu-link" onclick="toggleSubmenu(this)">
             <i class="bi bi-calendar-check"></i>
             <span>Safra</span>
-            <span class="badge-notify">Em breve</span>
+            <i class="bi bi-chevron-down expand-icon"></i>
           </div>
+          <ul class="submenu">
+            <li class="submenu-item">
+              <a href="{% url 'cadastros:safra_list' %}" class="submenu-link">
+                <span>Safras</span>
+              </a>
+            </li>
+            <li class="submenu-item">
+              <a href="{% url 'cadastros:safra_create' %}" class="submenu-link">
+                <span>Nova Safra</span>
+              </a>
+            </li>
+          </ul>
         </li>
 
         <!-- Relatórios -->

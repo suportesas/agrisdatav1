@@ -8,10 +8,8 @@ from django.contrib.auth import get_user_model
 
 User = get_user_model()
 
-@pytest.mark.django_db
-@pytest.mark.usefixtures('db')
-def test_create_historico_via_ui(page, live_server):
-    # Cria dados iniciais
+@pytest.fixture
+def e2e_data(db):
     empresa = Empresa.objects.create(nome='E2E Empresa')
     user = User.objects.create_user(username='e2euser', password='pass')
     user.empresa = empresa
@@ -21,6 +19,23 @@ def test_create_historico_via_ui(page, live_server):
     area = Area.objects.create(fazenda=fazenda, empresa=empresa, nome='Area E2E', area_total=10, area_plantavel=8)
     talhao = Talhao.objects.create(area=area, fazenda=fazenda, nome='T-e2e', codigo='E2E1', area_hac=1, empresa=empresa)
     cultura = Cultura.objects.create(empresa=empresa, nome='E2E Cultura')
+    return {
+        'empresa': empresa,
+        'user': user,
+        'fazenda': fazenda,
+        'area': area,
+        'talhao': talhao,
+        'cultura': cultura,
+    }
+
+
+@pytest.mark.usefixtures('db')
+def test_create_historico_via_ui(page, live_server, e2e_data):
+    # Dados criados no fixture `e2e_data`
+    empresa = e2e_data['empresa']
+    user = e2e_data['user']
+    talhao = e2e_data['talhao']
+    cultura = e2e_data['cultura']
 
     # Login via Django test client para obter sessionid
     client = Client()

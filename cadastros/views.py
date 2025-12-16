@@ -1012,6 +1012,8 @@ def safra_list(request):
 #                SAFRAS
 # ===================================+
 
+# cadastros/views.py
+
 @login_required
 def safra_create(request):
     empresa = request.user.empresa
@@ -1020,68 +1022,124 @@ def safra_create(request):
         return render(request, 'cadastros/safra_form.html', {'empresa_missing': True, 'action': 'Cadastrar'})
 
     if request.method == 'POST':
-        print(f"🔍 POST Data: {request.POST}")  # DEBUG
-        
-        # ✅ PEGA IDs DOS TALHÕES DO CAMPO HIDDEN
-        talhoes_ids = request.POST.get('talhoes', '').strip()
-        print(f"🔍 Talhões IDs recebidos: '{talhoes_ids}'")  # DEBUG
+        # 🔥 DEBUG
+        print("=" * 80)
+        print("📋 CRIAÇÃO DE SAFRA - DEBUG")
+        print("=" * 80)
+        print(f"POST completo: {request.POST}")
+        print(f"Talhões raw: '{request.POST.get('talhoes', '')}'")
+        print("=" * 80)
         
         form = SafraForm(request.POST, user=request.user)
         
         if form.is_valid():
-            print("✅ Form válido!")  # DEBUG
+            print("✅ Form é VÁLIDO")
             
-            safra = form.save(commit=False)
-            safra.cadastrado_por = request.user
-            safra.save()
-            
-            print(f"✅ Safra salva! ID: {safra.pk}")  # DEBUG
-            
-            # ✅ LIMPA O RELACIONAMENTO ANTES DE ADICIONAR NOVOS
-            safra.talhoes.clear()
-            
-            # ✅ ASSOCIA TALHÕES SE HOUVER
-            if talhoes_ids:
-                try:
-                    # Converte string "1,2,3" em lista [1,2,3]
-                    talhao_ids_list = [int(tid.strip()) for tid in talhoes_ids.split(',') if tid.strip()]
-                    print(f"🔍 IDs processados: {talhao_ids_list}")  # DEBUG
-                    
-                    # Busca talhões da empresa
-                    talhoes = Talhao.objects.filter(
-                        id__in=talhao_ids_list,
-                        empresa=empresa,
-                        ativo=True
-                    )
-                    
-                    print(f"🔍 Talhões encontrados: {talhoes.count()}")  # DEBUG
-                    
-                    # Valida se talhões pertencem à fazenda
-                    for talhao in talhoes:
-                        if talhao.fazenda != safra.fazenda:
-                            messages.error(request, f'❌ Talhão {talhao.codigo} não pertence à fazenda selecionada')
+            try:
+                # Salva a safra
+                safra = form.save(commit=False)
+                safra.cadastrado_por = request.user
+                safra.save()
+                
+                print(f"✅ Safra {safra.pk} salva no banco")
+                
+                # Processa talhões
+                talhoes_ids = request.POST.get('talhoes', '').strip()
+                print(f"📋 Talhões IDs do POST: '{talhoes_ids}'")
+                
+                if talhoes_ids:
+                    try:
+                        # Converte string para lista de IDs
+                        talhao_ids_list = [int(tid.strip()) for tid in talhoes_ids.split(',') if tid.strip()]
+                        print(f"📋 IDs parseados: {talhao_ids_list}")
+                        
+                        if not talhao_ids_list:
+                            print("⚠️ Lista de IDs vazia após parse")
+                        
+                        # Busca talhões
+                        talhoes = Talhao.objects.filter(
+                            id__in=talhao_ids_list,
+                            empresa=empresa,
+                            ativo=True
+                        )
+                        
+                        print(f"📋 Talhões encontrados no banco: {talhoes.count()}")
+                        for t in talhoes:
+                            print(f"  - {t.id}: {t.codigo} ({t.fazenda.nome})")
+                        
+                        # Valida fazenda
+                        invalidos = []
+                        for talhao in talhoes:
+                            if talhao.fazenda != safra.fazenda:
+                                invalidos.append(f"{talhao.codigo} (fazenda diferente)")
+                        
+                        if invalidos:
+                            print(f"❌ Talhões inválidos: {invalidos}")
+                            messages.error(request, f'❌ Talhões não pertencem à fazenda: {", ".join(invalidos)}')
                             safra.delete()
                             return render(request, 'cadastros/safra_form.html', {'form': form, 'action': 'Cadastrar'})
+                        
+                        # Valida conflitos
+                        conflitos = []
+                        for talhao in talhoes:
+                            safras_conflito = Safra.objects.filter(
+                                talhoes=talhao
+                            ).exclude(
+                                status='FINALIZADA'
+                            ).exclude(
+                                pk=safra.pk
+                            )
+                            
+                            if safras_conflito.exists():
+                                conflitos.append(f"{talhao.codigo} (em {safras_conflito.first()})")
+                        
+                        if conflitos:
+                            print(f"❌ Conflitos encontrados: {conflitos}")
+                            messages.error(request, f'❌ Talhões já estão em uso: {", ".join(conflitos)}')
+                            safra.delete()
+                            return render(request, 'cadastros/safra_form.html', {'form': form, 'action': 'Cadastrar'})
+                        
+                        # Limpa e associa
+                        safra.talhoes.clear()
+                        safra.talhoes.set(talhoes)
+                        
+                        print(f"✅ {talhoes.count()} talhões associados com sucesso")
+                        print(f"   Talhões na safra: {[t.codigo for t in safra.talhoes.all()]}")
+                        
+                    except ValueError as e:
+                        print(f"❌ Erro ao parsear IDs: {e}")
+                        messages.error(request, f'❌ IDs de talhões inválidos: {e}')
+                        safra.delete()
+                        return render(request, 'cadastros/safra_form.html', {'form': form, 'action': 'Cadastrar'})
                     
-                    # Adiciona talhões um por um
-                    for talhao in talhoes:
-                        safra.talhoes.add(talhao)
-                    
-                    print(f"✅ Talhões associados: {safra.talhoes.count()}")  # DEBUG
-                    
-                except Exception as e:
-                    print(f"❌ Erro ao processar talhões: {e}")  # DEBUG
-                    import traceback
-                    traceback.print_exc()
-                    messages.error(request, f'❌ Erro ao processar talhões: {e}')
-                    safra.delete()
-                    return render(request, 'cadastros/safra_form.html', {'form': form, 'action': 'Cadastrar'})
-            
-            messages.success(request, f'✅ Safra "{safra}" cadastrada com {safra.talhoes.count()} talhão(ões)!')
-            return redirect('cadastros:safra_detail', pk=safra.pk)
+                    except Exception as e:
+                        print(f"❌ Erro inesperado: {e}")
+                        import traceback
+                        traceback.print_exc()
+                        messages.error(request, f'❌ Erro ao processar talhões: {e}')
+                        safra.delete()
+                        return render(request, 'cadastros/safra_form.html', {'form': form, 'action': 'Cadastrar'})
+                else:
+                    print("⚠️ Nenhum talhão selecionado")
+                
+                total_talhoes = safra.talhoes.count()
+                messages.success(request, f'✅ Safra "{safra}" cadastrada com {total_talhoes} talhão(ões)!')
+                return redirect('cadastros:safra_detail', pk=safra.pk)
+                
+            except Exception as e:
+                print(f"❌ Erro ao salvar safra: {e}")
+                import traceback
+                traceback.print_exc()
+                messages.error(request, f'❌ Erro ao salvar: {e}')
+                
         else:
-            print(f"❌ Form inválido: {form.errors}")  # DEBUG
-            messages.error(request, '❌ Corrija os erros no formulário')
+            print("❌ Form INVÁLIDO")
+            print(f"Erros: {form.errors}")
+            print(f"Non-field errors: {form.non_field_errors()}")
+            for field, errors in form.errors.items():
+                print(f"  {field}: {errors}")
+            
+            messages.error(request, f'❌ Corrija os erros no formulário: {form.errors}')
     else:
         form = SafraForm(user=request.user)
 
@@ -1094,70 +1152,108 @@ def safra_update(request, pk):
     empresa = request.user.empresa
     
     if request.method == 'POST':
-        print(f"🔍 POST Data: {request.POST}")  # DEBUG
-        
-        # ✅ PEGA IDs DOS TALHÕES
-        talhoes_ids = request.POST.get('talhoes', '').strip()
-        print(f"🔍 Talhões IDs recebidos: '{talhoes_ids}'")  # DEBUG
+        # 🔥 DEBUG
+        print("=" * 80)
+        print("📋 EDIÇÃO DE SAFRA - DEBUG")
+        print("=" * 80)
+        print(f"Safra ID: {safra.pk}")
+        print(f"POST completo: {request.POST}")
+        print(f"Talhões raw: '{request.POST.get('talhoes', '')}'")
+        print("=" * 80)
         
         form = SafraForm(request.POST, instance=safra, user=request.user)
         
         if form.is_valid():
-            print("✅ Form válido!")  # DEBUG
+            print("✅ Form é VÁLIDO")
             
-            safra = form.save()
-            
-            # ✅ LIMPA RELACIONAMENTO EXISTENTE
-            safra.talhoes.clear()
-            
-            # ✅ ATUALIZA TALHÕES
-            if talhoes_ids:
-                try:
-                    talhao_ids_list = [int(tid.strip()) for tid in talhoes_ids.split(',') if tid.strip()]
-                    print(f"🔍 IDs processados: {talhao_ids_list}")  # DEBUG
-                    
-                    talhoes = Talhao.objects.filter(
-                        id__in=talhao_ids_list,
-                        empresa=empresa,
-                        ativo=True
-                    )
-                    
-                    print(f"🔍 Talhões encontrados: {talhoes.count()}")  # DEBUG
-                    
-                    # Valida fazenda
-                    for talhao in talhoes:
-                        if talhao.fazenda != safra.fazenda:
-                            messages.error(request, f'❌ Talhão {talhao.codigo} não pertence à fazenda selecionada')
+            try:
+                safra = form.save()
+                print(f"✅ Safra {safra.pk} atualizada")
+                
+                # Processa talhões
+                talhoes_ids = request.POST.get('talhoes', '').strip()
+                print(f"📋 Talhões IDs: '{talhoes_ids}'")
+                
+                # Limpa relacionamento
+                safra.talhoes.clear()
+                
+                if talhoes_ids:
+                    try:
+                        talhao_ids_list = [int(tid.strip()) for tid in talhoes_ids.split(',') if tid.strip()]
+                        print(f"📋 IDs parseados: {talhao_ids_list}")
+                        
+                        talhoes = Talhao.objects.filter(
+                            id__in=talhao_ids_list,
+                            empresa=empresa,
+                            ativo=True
+                        )
+                        
+                        print(f"📋 Talhões encontrados: {talhoes.count()}")
+                        
+                        # Valida fazenda
+                        invalidos = []
+                        for talhao in talhoes:
+                            if talhao.fazenda != safra.fazenda:
+                                invalidos.append(f"{talhao.codigo}")
+                        
+                        if invalidos:
+                            messages.error(request, f'❌ Talhões não pertencem à fazenda: {", ".join(invalidos)}')
                             return render(request, 'cadastros/safra_form.html', {
                                 'form': form, 
                                 'safra': safra, 
                                 'action': 'Editar'
                             })
-                    
-                    # Adiciona talhões
-                    for talhao in talhoes:
-                        safra.talhoes.add(talhao)
-                    
-                    print(f"✅ Talhões associados: {safra.talhoes.count()}")  # DEBUG
-                    
-                except Exception as e:
-                    print(f"❌ Erro ao processar talhões: {e}")  # DEBUG
-                    import traceback
-                    traceback.print_exc()
-                    messages.error(request, f'❌ Erro ao processar talhões: {e}')
-            
-            messages.success(request, f'✅ Safra "{safra}" atualizada com {safra.talhoes.count()} talhão(ões)!')
-            return redirect('cadastros:safra_detail', pk=safra.pk)
+                        
+                        # Valida conflitos
+                        conflitos = []
+                        for talhao in talhoes:
+                            safras_conflito = Safra.objects.filter(
+                                talhoes=talhao
+                            ).exclude(
+                                status='FINALIZADA'
+                            ).exclude(
+                                pk=safra.pk
+                            )
+                            
+                            if safras_conflito.exists():
+                                conflitos.append(f"{talhao.codigo}")
+                        
+                        if conflitos:
+                            messages.error(request, f'❌ Talhões já estão em uso: {", ".join(conflitos)}')
+                            return render(request, 'cadastros/safra_form.html', {
+                                'form': form,
+                                'safra': safra,
+                                'action': 'Editar'
+                            })
+                        
+                        safra.talhoes.set(talhoes)
+                        print(f"✅ {talhoes.count()} talhões associados")
+                        
+                    except Exception as e:
+                        print(f"❌ Erro ao processar: {e}")
+                        import traceback
+                        traceback.print_exc()
+                        messages.error(request, f'❌ Erro: {e}')
+                
+                total = safra.talhoes.count()
+                messages.success(request, f'✅ Safra atualizada com {total} talhão(ões)!')
+                return redirect('cadastros:safra_detail', pk=safra.pk)
+                
+            except Exception as e:
+                print(f"❌ Erro: {e}")
+                import traceback
+                traceback.print_exc()
+                messages.error(request, f'❌ Erro: {e}')
         else:
-            print(f"❌ Form inválido: {form.errors}")  # DEBUG
-            messages.error(request, '❌ Corrija os erros no formulário')
+            print("❌ Form INVÁLIDO")
+            print(f"Erros: {form.errors}")
+            messages.error(request, f'❌ Corrija os erros: {form.errors}')
     else:
         form = SafraForm(instance=safra, user=request.user)
 
     return render(request, 'cadastros/safra_form.html', {
         'form': form, 
-        'safra': safra, 
-        'action': 'Editar'
+        'safra': safra, 'action': 'Editar'
     })
 
 @login_required
@@ -1400,6 +1496,8 @@ def area_detail(request, pk):
 # VIEWS DE TALHÃO
 # ============================================
 
+# cadastros/views.py - Localize e SUBSTITUA a função talhao_list
+
 @login_required
 def talhao_list(request):
     """
@@ -1416,11 +1514,11 @@ def talhao_list(request):
     if hasattr(Talhao.objects, 'da_empresa'):
         talhoes = Talhao.objects.da_empresa(empresa).select_related(
             'fazenda', 'area', 'cultura_atual'
-        )
+        ).prefetch_related('safras')
     else:
         talhoes = Talhao.objects.filter(empresa=empresa).select_related(
             'fazenda', 'area', 'cultura_atual'
-        )
+        ).prefetch_related('safras')
     
     # Busca
     q = request.GET.get('q', '').strip()
@@ -1452,6 +1550,23 @@ def talhao_list(request):
         'area_total': talhoes.aggregate(Sum('area_hac'))['area_hac__sum'] or 0,
     }
     
+    # 🔥 NOVO: Adiciona informação da safra ativa para cada talhão
+    talhoes_list = list(talhoes)  # Converte para lista para poder modificar
+    for talhao in talhoes_list:
+        # Busca safra ativa (não finalizada) associada ao talhão
+        safra_ativa = talhao.safras.filter(
+            status__in=['PLANEJADA', 'EM_ANDAMENTO']
+        ).select_related('cultura').first()
+        
+        # Anexa a safra e cultura ao objeto talhão
+        talhao.safra_ativa = safra_ativa
+        if safra_ativa:
+            talhao.cultura_safra = safra_ativa.cultura
+            talhao.safra_nome = str(safra_ativa)
+        else:
+            talhao.cultura_safra = None
+            talhao.safra_nome = None
+    
     # 🔒 Dados para filtros (apenas da empresa)
     fazendas = Fazenda.objects.filter(empresa=empresa, ativa=True).order_by('nome')
     if hasattr(Area.objects, 'da_empresa'):
@@ -1460,7 +1575,7 @@ def talhao_list(request):
         areas = Area.objects.filter(empresa=empresa, ativa=True).order_by('nome')
     
     context = {
-        'talhoes': talhoes,
+        'talhoes': talhoes_list,
         'fazendas': fazendas,
         'areas': areas,
         'stats': stats,
@@ -1484,16 +1599,31 @@ def talhao_create(request):
     if request.method == 'POST':
         form = TalhaoForm(request.POST, user=request.user)
         if form.is_valid():
-            talhao = form.save(commit=False)
-            talhao.empresa = empresa  # 🔒 Vincula à empresa
-            talhao.cadastrado_por = request.user
-            talhao.save()
-            
-            messages.success(
-                request,
-                f'✅ Talhão "{talhao.codigo} - {talhao.nome}" cadastrado!'
-            )
-            return redirect('cadastros:talhao_list')
+            try:
+                talhao = form.save(commit=False)
+                talhao.empresa = empresa  # 🔒 Vincula à empresa
+                talhao.cadastrado_por = request.user
+                
+                # 🔥 GARANTIA: area_hac já foi setado pelo form.save(), mas vamos garantir
+                area_tamanho = form.cleaned_data.get('area_tamanho')
+                if area_tamanho and not talhao.area_hac:
+                    talhao.area_hac = area_tamanho
+                
+                talhao.save()
+                
+                messages.success(
+                    request,
+                    f'✅ Talhão "{talhao.codigo} - {talhao.nome}" cadastrado com {talhao.area_hac} ha!'
+                )
+                return redirect('cadastros:talhao_list')
+            except Exception as e:
+                messages.error(request, f'❌ Erro ao salvar talhão: {e}')
+                print(f"❌ Erro detalhado: {e}")
+                import traceback
+                traceback.print_exc()
+        else:
+            messages.error(request, '❌ Corrija os erros no formulário')
+            print(f"❌ Erros do form: {form.errors}")
     else:
         form = TalhaoForm(user=request.user)
     
@@ -1531,7 +1661,6 @@ def talhao_update(request, pk):
         'talhao': talhao,
         'title': f'Editar Talhão: {talhao.codigo}'
     })
-
 
 @login_required
 def talhao_delete(request, pk):

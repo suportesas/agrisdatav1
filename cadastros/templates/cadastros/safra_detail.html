@@ -239,7 +239,7 @@
             <i class="bi bi-{% if safra.status == 'PLANEJADA' %}clipboard-check{% elif safra.status == 'EM_ANDAMENTO' %}play-circle{% else %}check-circle{% endif %}"></i>
             {{ safra.get_status_display }}
           </span>
-          <span><i class="bi bi-building"></i> {{ safra.fazenda.nome }}</span>
+          <span><i class="bi bi-building"></i> {{ safra.fazenda.nome }} - {{ safra.fazenda.cnpj_cpf }}</span>
           <span><i class="bi bi-tree"></i> {{ safra.cultura.nome }}</span>
           <span><i class="bi bi-calendar3"></i> {{ safra.ano }}</span>
         </div>
@@ -486,6 +486,12 @@
             <div class="info-label">Fazenda:</div>
             <div class="info-value">{{ safra.fazenda.nome }}</div>
           </div>
+
+          <div class="info-row">
+            <div class="info-label">Documento:</div>
+            <div class="info-value">{{ safra.fazenda.cnpj_cpf }}</div>
+          </div>
+
           <div class="info-row">
             <div class="info-label">Cultura:</div>
             <div class="info-value">{{ safra.cultura.nome }}</div>

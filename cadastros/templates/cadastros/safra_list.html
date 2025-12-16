@@ -31,7 +31,7 @@
           <select name="fazenda" class="form-select border-0 bg-light">
             <option value="">Todas Fazendas</option>
             {% for f in fazendas %}
-              <option value="{{ f.pk }}" {% if request.GET.fazenda == f.pk|stringformat:'s' %}selected{% endif %}>{{ f.nome }}</option>
+              <option value="{{ f.pk }}" {% if request.GET.fazenda == f.pk|stringformat:'s' %}selected{% endif %}>{{ f.nome }}-{{ f.cnpj_cpf }}</option>
             {% endfor %}
           </select>
         </div>
@@ -70,6 +70,7 @@
             <tr>
               <th>Safra</th>
               <th>Fazenda</th>
+              <th>Documento</th>
               <th>Cultura</th>
               <th>Ano</th>
               <th>Talhões</th>
@@ -82,6 +83,7 @@
               <tr>
                 <td><a href="{% url 'cadastros:safra_detail' s.pk %}">{{ s }}</a></td>
                 <td>{{ s.fazenda.nome }}</td>
+                <td>{{ s.fazenda.cnpj_cpf }}</td>
                 <td>{{ s.cultura.nome }}</td>
                 <td>{{ s.ano }}</td>
                 <td>{{ s.talhoes.count }}</td>

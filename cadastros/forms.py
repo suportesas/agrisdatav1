@@ -997,10 +997,24 @@ class TalhaoForm(forms.ModelForm):
     🔒 FILTRA ÁREAS E FAZENDAS PELA EMPRESA
     """
     
+    # Campo customizado para não conflitar com Model.area (relacionamento)
+    area_tamanho = forms.DecimalField(
+        label='Área (ha)',
+        max_digits=10,
+        decimal_places=4,  # 🔥 CORREÇÃO: 4 casas como no modelo
+        min_value=Decimal('0.0001'),
+        widget=forms.NumberInput(attrs={
+            'class': 'form-control',
+            'step': '0.0001',
+            'placeholder': 'Ex: 1.3000',
+            'inputmode': 'decimal'
+        })
+    )
+    
     class Meta:
         model = Talhao
         fields = [
-            'fazenda', 'area', 'nome', 'codigo', 'area_tamanho',
+            'fazenda', 'area', 'nome', 'codigo',
             'latitude', 'longitude',
             'declividade', 'exposicao_solar',
             'status', 'pronto_para_plantio', 'ativo',
@@ -1014,11 +1028,6 @@ class TalhaoForm(forms.ModelForm):
             'area': forms.Select(attrs={'class': 'form-select'}),
             'nome': forms.TextInput(attrs={'class': 'form-control'}),
             'codigo': forms.TextInput(attrs={'class': 'form-control'}),
-            'area_tamanho': forms.NumberInput(attrs={
-                'class': 'form-control',
-                'step': '0.01',
-                'placeholder': 'Ex: 1.30'
-            }),
             'latitude': forms.NumberInput(attrs={
                 'class': 'form-control',
                 'step': '0.0000001'
@@ -1035,20 +1044,6 @@ class TalhaoForm(forms.ModelForm):
                 'rows': 3
             }),
         }
-    
-    # Campo customizado para não conflitar com Model.area (relacionamento)
-    area_tamanho = forms.DecimalField(
-        label='Área (ha)',
-        max_digits=10,
-        decimal_places=2,
-        min_value=0.01,
-        widget=forms.NumberInput(attrs={
-            'class': 'form-control',
-            'step': '0.01',
-            'placeholder': 'Ex: 1.30',
-            'inputmode': 'decimal'
-        })
-    )
     
     def __init__(self, *args, **kwargs):
         # Recebe o usuário logado
@@ -1072,7 +1067,7 @@ class TalhaoForm(forms.ModelForm):
             self.fields['area'].queryset = Area.objects.none()
         
         # Se editando, popula área atual
-        if self.instance.pk:
+        if self.instance.pk and self.instance.area_hac:
             self.fields['area_tamanho'].initial = self.instance.area_hac
     
     def clean(self):
@@ -1100,7 +1095,7 @@ class TalhaoForm(forms.ModelForm):
             area_disponivel = area.get_area_disponivel()
             
             # Se editando, considera a área atual do talhão
-            if self.instance.pk:
+            if self.instance.pk and self.instance.area_hac:
                 area_disponivel += self.instance.area_hac
             
             if area_tamanho > area_disponivel:
@@ -1109,26 +1104,35 @@ class TalhaoForm(forms.ModelForm):
                 })
         
         return cleaned_data
+    
+    def save(self, commit=True):
+        """🔥 CORREÇÃO: Salva area_tamanho no campo area_hac do modelo"""
+        instance = super().save(commit=False)
+        
+        # 🔥 CRÍTICO: Transfere o valor do campo customizado para o campo do modelo
+        area_tamanho = self.cleaned_data.get('area_tamanho')
+        if area_tamanho is not None:
+            instance.area_hac = area_tamanho
+        
+        if commit:
+            instance.save()
+        
+        return instance
 
 
+# cadastros/forms.py - Localize a classe SafraForm e SUBSTITUA completamente:
 
 class SafraForm(forms.ModelForm):
     """Formulário para criar/editar `Safra` com validações de integridade"""
-    talhoes = forms.ModelMultipleChoiceField(
-        queryset=Talhao.objects.none(),
-        required=False,
-        widget=forms.SelectMultiple(attrs={'class': 'form-select'})
-    )
-
+    
     class Meta:
         model = Safra
-        fields = ['nome', 'fazenda', 'cultura', 'ano', 'periodo_inicio', 'periodo_fim', 'talhoes', 'status']
+        fields = ['nome', 'fazenda', 'cultura', 'ano', 'periodo_inicio', 'periodo_fim', 'status']
         widgets = {
             'nome': forms.TextInput(attrs={'class': 'form-control'}),
             'fazenda': forms.Select(attrs={'class': 'form-select'}),
             'cultura': forms.Select(attrs={'class': 'form-select'}),
             'ano': forms.NumberInput(attrs={'class': 'form-control'}),
-            # Use ISO format so HTML5 date inputs render the value correctly
             'periodo_inicio': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'),
             'periodo_fim': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'),
             'status': forms.Select(attrs={'class': 'form-select'}),
@@ -1141,25 +1145,16 @@ class SafraForm(forms.ModelForm):
         if self.user and getattr(self.user, 'empresa', None):
             self.fields['fazenda'].queryset = Fazenda.objects.filter(empresa=self.user.empresa, ativa=True).order_by('nome')
             self.fields['cultura'].queryset = Cultura.objects.filter(empresa=self.user.empresa, ativa=True).order_by('nome')
-            self.fields['talhoes'].queryset = Talhao.objects.filter(empresa=self.user.empresa, ativo=True).order_by('fazenda__nome', 'nome')
-            # Show a richer label for talhões: name (area ha) - status
-            self.fields['talhoes'].label_from_instance = lambda obj: f"{obj.nome} ({obj.area_hac} ha) - {obj.get_status_display()}"
         else:
             self.fields['fazenda'].queryset = Fazenda.objects.none()
             self.fields['cultura'].queryset = Cultura.objects.none()
-            self.fields['talhoes'].queryset = Talhao.objects.none()
 
-        # Set a sensible default for status and make it visible by default
         if 'status' in self.fields:
             self.fields['status'].initial = 'PLANEJADA'
             self.fields['status'].required = True
 
-        # If editing, set initial talhoes
+        # Se editando, formata datas corretamente
         if self.instance and self.instance.pk:
-            self.fields['talhoes'].initial = self.instance.talhoes.all()
-
-            # Ensure date inputs display with ISO format (YYYY-MM-DD) so browsers
-            # correctly populate HTML5 `type=date` fields when editing.
             if getattr(self.instance, 'periodo_inicio', None):
                 self.fields['periodo_inicio'].initial = self.instance.periodo_inicio.strftime('%Y-%m-%d')
             if getattr(self.instance, 'periodo_fim', None):
@@ -1172,20 +1167,16 @@ class SafraForm(forms.ModelForm):
         fazenda = cleaned.get('fazenda')
         cultura = cleaned.get('cultura')
         ano = cleaned.get('ano')
-        talhoes = cleaned.get('talhoes')
 
-        # Period validation
+        # Validação de período
         if inicio and fim and inicio > fim:
             raise forms.ValidationError({'periodo_inicio': 'Data de início não pode ser posterior à data fim'})
 
-        # Ensure period does not span more than next year: fim must be same year or next year
         if inicio and fim:
             if fim.year not in (inicio.year, inicio.year + 1):
                 raise forms.ValidationError({'periodo_fim': 'Período inválido: o término deve estar no mesmo ano ou no ano seguinte ao início'})
 
-        # Uniqueness: fazenda + cultura + ano
-        # Normalize composite year input: if user provides a composite like 202526,
-        # interpret as starting year in the first 4 digits (2025).
+        # Normaliza ano composto
         if ano and ano > 9999:
             try:
                 ano_str = str(int(ano))
@@ -1194,11 +1185,12 @@ class SafraForm(forms.ModelForm):
             except Exception:
                 pass
 
-        # If ano not provided, infer from periodo_inicio year when possible
+        # Infere ano se não fornecido
         if not ano and inicio:
             ano = inicio.year
             cleaned['ano'] = ano
 
+        # Valida unicidade
         if fazenda and cultura and ano:
             qs = Safra.objects.filter(fazenda=fazenda, cultura=cultura, ano=ano)
             if self.instance and self.instance.pk:
@@ -1206,26 +1198,28 @@ class SafraForm(forms.ModelForm):
             if qs.exists():
                 raise forms.ValidationError('Já existe uma safra para esta fazenda, cultura e ano')
 
-        # Ensure selected talhões belong to same fazenda
-        if talhoes and fazenda:
-            for t in talhoes:
-                if t.fazenda != fazenda:
-                    raise forms.ValidationError({'talhoes': 'Todos os talhões devem pertencer à fazenda selecionada'})
-
-        # Ensure talhões are not already associated to an active/planned safra
-        if talhoes:
-            conflicting = []
-            for t in talhoes:
-                qs = Safra.objects.filter(talhoes=t).exclude(status='FINALIZADA')
-                if self.instance and self.instance.pk:
-                    qs = qs.exclude(pk=self.instance.pk)
-                if qs.exists():
-                    conflicting.append(str(t))
-            if conflicting:
-                raise forms.ValidationError({'talhoes': f'Os seguintes talhões já estão associados a outra safra: {", ".join(conflicting)}'})
-
         return cleaned
     
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        
+        # Preenche nome padrão se necessário
+        inicio = self.cleaned_data.get('periodo_inicio')
+        fim = self.cleaned_data.get('periodo_fim')
+        if not instance.nome:
+            if inicio and fim:
+                instance.nome = f"{inicio.year}{fim.year % 100:02d}"
+            elif inicio:
+                instance.nome = str(inicio.year)
+
+        if commit:
+            instance.save()
+
+        return instance
+
+
+
+
     def save(self, commit=True):
         instance = super().save(commit=False)
         # Preenche nome padrão se não foi informado, usando `periodo_inicio` e `periodo_fim`.

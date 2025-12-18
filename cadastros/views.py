@@ -1764,7 +1764,7 @@ def historico_update(request, pk):
         form = HistoricoTalhaoForm(request.POST, instance=historico, user=request.user)
         if form.is_valid():
             hist = form.save()
-            messages.success(request, f'✅ Histórico atualizado!')
+            messages.success(request, '✅ Histórico atualizado!')
             return redirect('cadastros:talhao_detail', pk=hist.talhao.pk)
     else:
         form = HistoricoTalhaoForm(instance=historico, user=request.user)

@@ -90,5 +90,25 @@ urlpatterns = [
     path('ajax/areas-por-fazenda/<int:fazenda_id>/', views.ajax_areas_por_fazenda, name='ajax_areas_fazenda'),
     path('ajax/talhoes-por-fazenda/<int:fazenda_id>/', views.ajax_talhoes_por_fazenda, name='ajax_talhoes_fazenda'),
 
+    # Vendedores    
+    path('vendedores/', views.vendedor_list, name='vendedor_list'),
+    path('vendedores/novo/', views.vendedor_create, name='vendedor_create'),
+    path('vendedores/<int:pk>/', views.vendedor_detail, name='vendedor_detail'),
+    path('vendedores/<int:pk>/editar/', views.vendedor_update, name='vendedor_update'),
+    path('vendedores/<int:pk>/excluir/', views.vendedor_delete, name='vendedor_delete'),
+    path('vendedores/<int:pk>/inativar/', views.vendedor_inativar, name='vendedor_inativar'),
+    path('vendedores/<int:pk>/reativar/', views.vendedor_reativar, name='vendedor_reativar'),
+    
+    # Comissões
+    path('comissoes/', views.comissao_list, name='comissao_list'),
+    path('comissoes/nova/', views.comissao_create, name='comissao_create'),
+    path('comissoes/<int:pk>/pagar/', views.comissao_pagar, name='comissao_pagar'),
+    
+    # APIs
+    path('vendedores/api/json/', views.vendedor_json, name='vendedor_json'),
+
+
+
+
 
 ]

@@ -1,0 +1,285 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ vendedor.nome_completo }} | ERP Agrícola{% endblock %}
+
+{% block extra_css %}
+<style>
+  .info-card { border-left: 4px solid #3b82f6; margin-bottom: 1rem; }
+  .stat-box { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 10px; padding: 1.5rem; }
+  .subordinado-item { padding: 0.8rem; border-bottom: 1px solid #e5e7eb; transition: background 0.2s; }
+  .subordinado-item:hover { background: #f9fafb; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <!-- Breadcrumb -->
+  <nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'cadastros:vendedor_list' %}">Vendedores</a></li>
+      <li class="breadcrumb-item active">{{ vendedor.get_nome_curto }}</li>
+    </ol>
+  </nav>
+
+  <!-- Header com Foto -->
+  <div class="card shadow-sm border-0 mb-4">
+    <div class="card-body p-4">
+      <div class="row align-items-center">
+        <div class="col-auto">
+          {% if vendedor.foto %}
+            <img src="{{ vendedor.foto.url }}" alt="{{ vendedor.nome_completo }}" 
+                 class="rounded-circle" style="width: 100px; height: 100px; object-fit: cover;">
+          {% else %}
+            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" 
+                 style="width: 100px; height: 100px; font-size: 2.5rem;">
+              {{ vendedor.nome_completo.0 }}
+            </div>
+          {% endif %}
+        </div>
+        <div class="col">
+          <h2 class="fw-bold mb-1">{{ vendedor.nome_completo }}</h2>
+          <p class="text-muted mb-2">
+            <i class="bi bi-briefcase"></i> {{ vendedor.get_tipo_mercado_display }}
+            <span class="mx-2">•</span>
+            <i class="bi bi-envelope"></i> {{ vendedor.email_corporativo }}
+            <span class="mx-2">•</span>
+            <i class="bi bi-phone"></i> {{ vendedor.telefone_principal }}
+          </p>
+          <div>
+            <span class="badge {% if vendedor.status == 'ATIVO' %}bg-success{% else %}bg-secondary{% endif %} me-2">
+              {{ vendedor.get_status_display }}
+            </span>
+            {% if vendedor.is_gerente %}
+              <span class="badge bg-warning text-dark">Gerente de Vendas</span>
+            {% endif %}
+          </div>
+        </div>
+        <div class="col-auto">
+          <a href="{% url 'cadastros:vendedor_update' vendedor.pk %}" class="btn btn-primary me-2">
+            <i class="bi bi-pencil"></i> Editar
+          </a>
+          {% if vendedor.status == 'ATIVO' %}
+            <a href="{% url 'cadastros:vendedor_inativar' vendedor.pk %}" 
+               class="btn btn-warning"
+               onclick="return confirm('Deseja inativar este vendedor?')">
+              <i class="bi bi-pause-circle"></i> Inativar
+            </a>
+          {% else %}
+            <a href="{% url 'cadastros:vendedor_reativar' vendedor.pk %}" 
+               class="btn btn-success"
+               onclick="return confirm('Deseja reativar este vendedor?')">
+              <i class="bi bi-play-circle"></i> Reativar
+            </a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <!-- Coluna Esquerda -->
+    <div class="col-md-8">
+
+      <!-- Dados Pessoais -->
+      <div class="card info-card shadow-sm border-0 mb-3">
+        <div class="card-header bg-primary text-white">
+          <h5 class="mb-0"><i class="bi bi-person"></i> Dados Pessoais</h5>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <strong>CPF:</strong> {{ vendedor.get_cpf_formatado }}
+            </div>
+            <div class="col-md-6">
+              <strong>RG:</strong> {{ vendedor.rg|default:"Não informado" }}
+            </div>
+            <div class="col-md-6">
+              <strong>Data Nascimento:</strong> {{ vendedor.data_nascimento|date:"d/m/Y"|default:"Não informado" }}
+            </div>
+            <div class="col-md-6">
+              <strong>Experiência:</strong> {{ vendedor.experiencia_anos }} ano{{ vendedor.experiencia_anos|pluralize }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dados Comerciais -->
+      <div class="card info-card shadow-sm border-0 mb-3">
+        <div class="card-header bg-success text-white">
+          <h5 class="mb-0"><i class="bi bi-cash-stack"></i> Dados Comerciais</h5>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-4">
+              <strong>Comissão Interna:</strong><br>
+              <span class="fs-4 text-success">{{ vendedor.comissao_mercado_interno }}%</span>
+            </div>
+            <div class="col-md-4">
+              <strong>Comissão Exportação:</strong><br>
+              <span class="fs-4 text-info">{{ vendedor.comissao_exportacao }}%</span>
+            </div>
+            <div class="col-md-4">
+              <strong>Comissão Fixa:</strong><br>
+              <span class="fs-4 text-primary">R$ {{ vendedor.comissao_fixa_mensal }}</span>
+            </div>
+            <div class="col-md-6">
+              <strong>Meta Mensal:</strong> R$ {{ vendedor.meta_mensal }}
+            </div>
+            <div class="col-md-6">
+              <strong>Forma Pagamento:</strong> {{ vendedor.get_forma_pagamento_comissao_display }}
+            </div>
+            {% if vendedor.regioes_atuacao %}
+            <div class="col-md-12">
+              <strong>Regiões:</strong> {{ vendedor.regioes_atuacao }}
+            </div>
+            {% endif %}
+            {% if vendedor.paises_atuacao %}
+            <div class="col-md-12">
+              <strong>Países:</strong> {{ vendedor.paises_atuacao }}
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Documentação (Exportação) -->
+      {% if vendedor.tipo_mercado == 'EXTERNO' or vendedor.tipo_mercado == 'AMBOS' %}
+      <div class="card info-card shadow-sm border-0 mb-3">
+        <div class="card-header" style="background: #8b5cf6; color: white;">
+          <h5 class="mb-0"><i class="bi bi-passport"></i> Documentação Exportação</h5>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <strong>Passaporte:</strong> {{ vendedor.passaporte_numero|default:"Não informado" }}
+            </div>
+            <div class="col-md-6">
+              <strong>Validade:</strong> 
+              {% if vendedor.passaporte_validade %}
+                {{ vendedor.passaporte_validade|date:"d/m/Y" }}
+                {% if vendedor.tem_passaporte_valido %}
+                  <span class="badge bg-success ms-2">Válido</span>
+                {% else %}
+                  <span class="badge bg-danger ms-2">Vencido</span>
+                {% endif %}
+              {% else %}
+                Não informado
+              {% endif %}
+            </div>
+            {% if vendedor.certificacoes %}
+            <div class="col-md-12">
+              <strong>Certificações:</strong><br>
+              {{ vendedor.certificacoes|linebreaks }}
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Subordinados -->
+      {% if subordinados %}
+      <div class="card info-card shadow-sm border-0 mb-3">
+        <div class="card-header bg-warning text-dark">
+          <h5 class="mb-0">
+            <i class="bi bi-people"></i> Vendedores Subordinados 
+            <span class="badge bg-dark">{{ subordinados.count }}</span>
+          </h5>
+        </div>
+        <div class="card-body p-0">
+          {% for sub in subordinados %}
+          <div class="subordinado-item">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <strong>{{ sub.nome_completo }}</strong><br>
+                <small class="text-muted">{{ sub.email_corporativo }}</small>
+              </div>
+              <a href="{% url 'cadastros:vendedor_detail' sub.pk %}" class="btn btn-sm btn-outline-primary">
+                Ver Detalhes
+              </a>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+    </div>
+
+    <!-- Coluna Direita -->
+    <div class="col-md-4">
+
+      <!-- Estatísticas de Comissão -->
+      <div class="stat-box mb-3">
+        <h6 class="mb-3">💰 Comissões</h6>
+        <div class="mb-3">
+          <small class="opacity-75">Pendentes</small>
+          <h3 class="mb-0">R$ {{ comissoes_pendentes|floatformat:2 }}</h3>
+        </div>
+        <div>
+          <small class="opacity-75">Pagas</small>
+          <h3 class="mb-0">R$ {{ comissoes_pagas|floatformat:2 }}</h3>
+        </div>
+      </div>
+
+      <!-- Info Rápida -->
+      <div class="card shadow-sm border-0 mb-3">
+        <div class="card-header bg-info text-white">
+          <h6 class="mb-0"><i class="bi bi-info-circle"></i> Informações</h6>
+        </div>
+        <div class="card-body">
+          <p class="mb-2">
+            <strong>Data Admissão:</strong><br>
+            {{ vendedor.data_admissao|date:"d/m/Y" }}
+          </p>
+          {% if vendedor.supervisor %}
+          <p class="mb-2">
+            <strong>Supervisor:</strong><br>
+            <a href="{% url 'cadastros:vendedor_detail' vendedor.supervisor.pk %}">
+              {{ vendedor.supervisor.get_nome_curto }}
+            </a>
+          </p>
+          {% endif %}
+          <p class="mb-2">
+            <strong>Autonomia:</strong><br>
+            {{ vendedor.get_nivel_autonomia_display }}
+          </p>
+          {% if vendedor.idiomas %}
+          <p class="mb-0">
+            <strong>Idiomas:</strong><br>
+            {{ vendedor.idiomas }}
+          </p>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Últimas Comissões -->
+      {% if ultimas_comissoes %}
+      <div class="card shadow-sm border-0">
+        <div class="card-header" style="background: #10b981; color: white;">
+          <h6 class="mb-0"><i class="bi bi-clock-history"></i> Últimas Comissões</h6>
+        </div>
+        <div class="card-body p-0">
+          {% for comissao in ultimas_comissoes %}
+          <div class="p-3 border-bottom">
+            <div class="d-flex justify-content-between">
+              <span>{{ comissao.referencia_mes|date:"m/Y" }}</span>
+              <span class="badge {% if comissao.status == 'PAGA' %}bg-success{% else %}bg-warning{% endif %}">
+                {{ comissao.get_status_display }}
+              </span>
+            </div>
+            <strong>R$ {{ comissao.valor_comissao|floatformat:2 }}</strong>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+    </div>
+  </div>
+
+</div>
+{% endblock %}

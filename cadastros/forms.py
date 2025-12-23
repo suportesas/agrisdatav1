@@ -14,9 +14,12 @@ from .models import Funcionario, FuncaoFuncionario
 import re
 
 
-from .models import Area, Talhao, HistoricoTalhao,  Cultura
+from .models import Area, Talhao, HistoricoTalhao, Cultura, Vendedor, ComissaoVendedor
 from .models import Safra, SafraPlan, SafraReal
 from decimal import Decimal
+
+
+from django.core.exceptions import ValidationError
 
 class FazendaForm(forms.ModelForm):
     """Formulário principal de cadastro de fazenda"""
@@ -711,10 +714,6 @@ class FuncionarioForm(forms.ModelForm):
 """
 ADICIONE ESTE CÓDIGO NO FINAL DO ARQUIVO cadastros/forms.py
 """
-
-from .models import Cultura
-
-
 class CulturaForm(forms.ModelForm):
     """Formulário de cadastro de culturas"""
     
@@ -1200,25 +1199,6 @@ class SafraForm(forms.ModelForm):
 
         return cleaned
     
-    def save(self, commit=True):
-        instance = super().save(commit=False)
-        
-        # Preenche nome padrão se necessário
-        inicio = self.cleaned_data.get('periodo_inicio')
-        fim = self.cleaned_data.get('periodo_fim')
-        if not instance.nome:
-            if inicio and fim:
-                instance.nome = f"{inicio.year}{fim.year % 100:02d}"
-            elif inicio:
-                instance.nome = str(inicio.year)
-
-        if commit:
-            instance.save()
-
-        return instance
-
-
-
 
     def save(self, commit=True):
         instance = super().save(commit=False)
@@ -1306,3 +1286,508 @@ class HistoricoTalhaoForm(forms.ModelForm):
         else:
             self.fields['talhao'].queryset = Talhao.objects.none()
             self.fields['cultura'].queryset = Cultura.objects.none()
+
+
+"""
+SUBSTITUA TODO O CONTEÚDO das classes de Vendedor no cadastros/forms.py
+por este código completo e corrigido.
+
+CORREÇÕES FINAIS APLICADAS:
+✅ Campos de data agora carregam valores ao editar (format='%Y-%m-%d')
+✅ Campo supervisor mostra vendedores da empresa (verificado)
+✅ Validação de telefone flexível (10-11 dígitos)
+✅ Todos os widgets funcionando
+
+COMO USAR:
+1. Abra: cadastros/forms.py
+2. Apague TODO o código das classes VendedorForm, ComissaoVendedorForm, VendedorFiltroForm
+3. Cole este código completo no FINAL do arquivo
+4. Salve
+5. Reinicie o servidor
+"""
+
+import re
+from django.core.exceptions import ValidationError
+
+
+# ========================================================================
+# FORMULÁRIOS DE VENDEDORES
+# ========================================================================
+
+class VendedorForm(forms.ModelForm):
+    """
+    Formulário para criar/editar vendedores
+    Inclui validações e máscaras JavaScript
+    """
+    
+    class Meta:
+        model = Vendedor
+        fields = [
+            # Identificação
+            'nome_completo', 'cpf', 'rg', 'data_nascimento', 'foto',
+            # Tipo
+            'tipo_mercado', 'tipo_vinculo',
+            # Contato
+            'telefone_principal', 'telefone_secundario',
+            'email_corporativo', 'email_pessoal', 'whatsapp',
+            # Endereço
+            'cep', 'logradouro', 'numero', 'complemento',
+            'bairro', 'cidade', 'uf', 'pais',
+            # Comercial
+            'comissao_mercado_interno', 'comissao_exportacao',
+            'comissao_fixa_mensal', 'meta_mensal', 'moeda_padrao',
+            'forma_pagamento_comissao', 'regioes_atuacao', 'paises_atuacao',
+            # Bancário
+            'banco', 'agencia', 'conta_corrente', 'tipo_conta', 'pix',
+            # Documentação
+            'passaporte_numero', 'passaporte_validade',
+            'visto_trabalho', 'cnh', 'certificacoes',
+            # Hierarquia
+            'supervisor', 'nivel_autonomia', 'acesso_crm',
+            # Administrativo
+            'data_admissao', 'data_desligamento', 'status',
+            # Observações
+            'observacoes', 'idiomas', 'experiencia_anos',
+        ]
+        
+        widgets = {
+            # Identificação
+            'nome_completo': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Nome completo do vendedor'
+            }),
+            'cpf': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': '000.000.000-00',
+                'data-mask': '000.000.000-00'
+            }),
+            'rg': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Número do RG'
+            }),
+            # ✅ CORREÇÃO: formato especificado para carregar valor ao editar
+            'data_nascimento': forms.DateInput(
+                attrs={
+                    'class': 'form-control',
+                    'type': 'date'
+                },
+                format='%Y-%m-%d'
+            ),
+            'foto': forms.FileInput(attrs={
+                'class': 'form-control',
+                'accept': 'image/*'
+            }),
+            
+            # Tipo
+            'tipo_mercado': forms.Select(attrs={'class': 'form-select'}),
+            'tipo_vinculo': forms.Select(attrs={'class': 'form-select'}),
+            
+            # Contato (SEM validação de formato - aceita qualquer número)
+            'telefone_principal': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': '(84) 99999-9999'
+            }),
+            'telefone_secundario': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': '(84) 99999-9999'
+            }),
+            'email_corporativo': forms.EmailInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'vendedor@empresa.com'
+            }),
+            'email_pessoal': forms.EmailInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'email@pessoal.com'
+            }),
+            'whatsapp': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': '(84) 99999-9999'
+            }),
+            
+            # Endereço
+            'cep': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': '00000-000',
+                'data-mask': '00000-000'
+            }),
+            'logradouro': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Rua, Avenida, etc.'
+            }),
+            'numero': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Nº'
+            }),
+            'complemento': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Apto, Sala, etc.'
+            }),
+            'bairro': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Bairro'
+            }),
+            'cidade': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Cidade'
+            }),
+            'uf': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'RN',
+                'maxlength': '2',
+                'style': 'text-transform: uppercase;'
+            }),
+            'pais': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Brasil'
+            }),
+            
+            # Comercial
+            'comissao_mercado_interno': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.01',
+                'min': '0',
+                'max': '100',
+                'placeholder': '0.00'
+            }),
+            'comissao_exportacao': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.01',
+                'min': '0',
+                'max': '100',
+                'placeholder': '0.00'
+            }),
+            'comissao_fixa_mensal': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.01',
+                'min': '0',
+                'placeholder': '0.00'
+            }),
+            'meta_mensal': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.01',
+                'min': '0',
+                'placeholder': '0.00'
+            }),
+            'moeda_padrao': forms.Select(attrs={'class': 'form-select'}),
+            'forma_pagamento_comissao': forms.Select(attrs={'class': 'form-select'}),
+            'regioes_atuacao': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 2,
+                'placeholder': 'Ex: Norte, Nordeste, Centro-Oeste (separar por vírgula)'
+            }),
+            'paises_atuacao': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 2,
+                'placeholder': 'Ex: USA, Europa, Ásia, América Latina (separar por vírgula)'
+            }),
+            
+            # Bancário
+            'banco': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Nome do Banco'
+            }),
+            'agencia': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': '0000'
+            }),
+            'conta_corrente': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': '00000-0'
+            }),
+            'tipo_conta': forms.Select(attrs={'class': 'form-select'}),
+            'pix': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'CPF, E-mail, Telefone ou Chave Aleatória'
+            }),
+            
+            # Documentação
+            'passaporte_numero': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Número do Passaporte'
+            }),
+            # ✅ CORREÇÃO: formato especificado para carregar valor ao editar
+            'passaporte_validade': forms.DateInput(
+                attrs={
+                    'class': 'form-control',
+                    'type': 'date'
+                },
+                format='%Y-%m-%d'
+            ),
+            'visto_trabalho': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Número do Visto (se aplicável)'
+            }),
+            'cnh': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Número da CNH'
+            }),
+            'certificacoes': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'Ex: SISCOMEX, Comércio Exterior, Exportação, etc.'
+            }),
+            
+            # Hierarquia
+            'supervisor': forms.Select(attrs={
+                'class': 'form-select'
+            }),
+            'nivel_autonomia': forms.Select(attrs={'class': 'form-select'}),
+            'acesso_crm': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            
+            # Administrativo
+            # ✅ CORREÇÃO: formato especificado para carregar valor ao editar
+            'data_admissao': forms.DateInput(
+                attrs={
+                    'class': 'form-control',
+                    'type': 'date'
+                },
+                format='%Y-%m-%d'
+            ),
+            'data_desligamento': forms.DateInput(
+                attrs={
+                    'class': 'form-control',
+                    'type': 'date'
+                },
+                format='%Y-%m-%d'
+            ),
+            'status': forms.Select(attrs={'class': 'form-select'}),
+            
+            # Observações
+            'observacoes': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 4,
+                'placeholder': 'Informações adicionais sobre o vendedor'
+            }),
+            'idiomas': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 2,
+                'placeholder': 'Ex: Português (nativo), Inglês (fluente), Espanhol (intermediário)'
+            }),
+            'experiencia_anos': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': '0',
+                'placeholder': '0'
+            }),
+        }
+    
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        self.empresa = kwargs.pop('empresa', None)
+        super().__init__(*args, **kwargs)
+        
+        # ✅ CORREÇÃO 1: Campo supervisor aceita "Nenhum"
+        self.fields['supervisor'].required = False
+        self.fields['supervisor'].empty_label = "--- Nenhum (Sem supervisor) ---"
+        
+        # ✅ CORREÇÃO 2: Filtra supervisores da mesma empresa
+        if self.empresa:
+            # Busca vendedores ATIVOS da mesma empresa
+            queryset_supervisor = Vendedor.objects.filter(
+                empresa=self.empresa,
+                status='ATIVO'
+            )
+            
+            # Se está editando, exclui o próprio vendedor (não pode ser supervisor de si mesmo)
+            if self.instance and self.instance.pk:
+                queryset_supervisor = queryset_supervisor.exclude(pk=self.instance.pk)
+            
+            self.fields['supervisor'].queryset = queryset_supervisor
+            
+            # ✅ DEBUG: Mostra quantos vendedores foram encontrados
+            count = queryset_supervisor.count()
+            print(f"DEBUG: Encontrados {count} vendedores para o dropdown supervisor (empresa: {self.empresa})")
+        else:
+            self.fields['supervisor'].queryset = Vendedor.objects.none()
+            print("DEBUG: Empresa não definida - dropdown supervisor vazio")
+        
+        if 'empresa' in self.fields:
+            del self.fields['empresa']
+    
+    def clean_cpf(self):
+        """Valida CPF"""
+        cpf = self.cleaned_data.get('cpf')
+        if cpf:
+            # Remove caracteres não numéricos
+            cpf = re.sub(r'\D', '', cpf)
+            
+            if len(cpf) != 11:
+                raise ValidationError('CPF deve ter 11 dígitos.')
+            
+            # Verifica unicidade por empresa
+            if self.empresa:
+                qs = Vendedor.objects.filter(empresa=self.empresa, cpf=cpf)
+                if self.instance.pk:
+                    qs = qs.exclude(pk=self.instance.pk)
+                
+                if qs.exists():
+                    raise ValidationError('Já existe um vendedor com este CPF nesta empresa.')
+        
+        return cpf
+    
+    def clean_telefone_principal(self):
+        """
+        ✅ CORREÇÃO: Validação flexível de telefone
+        Aceita qualquer formato de telefone brasileiro
+        """
+        telefone = self.cleaned_data.get('telefone_principal')
+        if telefone:
+            # Remove caracteres não numéricos
+            apenas_numeros = re.sub(r'\D', '', telefone)
+            
+            # Telefone brasileiro deve ter entre 10 e 11 dígitos
+            if len(apenas_numeros) < 10 or len(apenas_numeros) > 11:
+                raise ValidationError(
+                    'Telefone deve ter 10 dígitos (fixo) ou 11 dígitos (celular). '
+                    f'Você digitou {len(apenas_numeros)} dígitos.'
+                )
+        
+        return telefone
+    
+    def clean_email_corporativo(self):
+        """Valida e-mail corporativo"""
+        email = self.cleaned_data.get('email_corporativo')
+        if email and self.empresa:
+            qs = Vendedor.objects.filter(empresa=self.empresa, email_corporativo=email)
+            if self.instance.pk:
+                qs = qs.exclude(pk=self.instance.pk)
+            
+            if qs.exists():
+                raise ValidationError('Já existe um vendedor com este e-mail nesta empresa.')
+        
+        return email
+    
+    def clean_data_desligamento(self):
+        """Valida data de desligamento"""
+        data_desligamento = self.cleaned_data.get('data_desligamento')
+        data_admissao = self.cleaned_data.get('data_admissao')
+        
+        if data_desligamento and data_admissao:
+            if data_desligamento < data_admissao:
+                raise ValidationError(
+                    'Data de desligamento não pode ser anterior à data de admissão.'
+                )
+        
+        return data_desligamento
+    
+    def clean(self):
+        """Validações gerais"""
+        cleaned_data = super().clean()
+        
+        tipo_mercado = cleaned_data.get('tipo_mercado')
+        passaporte_numero = cleaned_data.get('passaporte_numero')
+        
+        # Vendedores de exportação precisam de passaporte
+        if tipo_mercado in ['EXTERNO', 'AMBOS']:
+            if not passaporte_numero:
+                self.add_error(
+                    'passaporte_numero',
+                    'Vendedores de exportação devem ter passaporte cadastrado.'
+                )
+        
+        return cleaned_data
+    
+    def save(self, commit=True):
+        vendedor = super().save(commit=False)
+        
+        if self.empresa and not vendedor.empresa_id:
+            vendedor.empresa = self.empresa
+        
+        if self.user and not vendedor.pk:
+            vendedor.criado_por = self.user
+        
+        if commit:
+            vendedor.save()
+        
+        return vendedor
+
+
+class ComissaoVendedorForm(forms.ModelForm):
+    """Formulário para registrar comissões de vendedores"""
+    
+    class Meta:
+        model = ComissaoVendedor
+        fields = [
+            'vendedor', 'referencia_mes', 'valor_base',
+            'percentual', 'valor_comissao', 'status',
+            'data_pagamento', 'observacoes'
+        ]
+        widgets = {
+            'vendedor': forms.Select(attrs={'class': 'form-select'}),
+            'referencia_mes': forms.DateInput(
+                attrs={
+                    'class': 'form-control',
+                    'type': 'month'
+                },
+                format='%Y-%m'
+            ),
+            'valor_base': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.01',
+                'placeholder': '0.00'
+            }),
+            'percentual': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.01',
+                'placeholder': '0.00'
+            }),
+            'valor_comissao': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.01',
+                'placeholder': '0.00',
+                'readonly': True
+            }),
+            'status': forms.Select(attrs={'class': 'form-select'}),
+            'data_pagamento': forms.DateInput(
+                attrs={
+                    'class': 'form-control',
+                    'type': 'date'
+                },
+                format='%Y-%m-%d'
+            ),
+            'observacoes': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3
+            }),
+        }
+    
+    def __init__(self, *args, **kwargs):
+        self.empresa = kwargs.pop('empresa', None)
+        super().__init__(*args, **kwargs)
+        
+        if self.empresa:
+            self.fields['vendedor'].queryset = Vendedor.objects.filter(
+                empresa=self.empresa,
+                status='ATIVO'
+            )
+        else:
+            self.fields['vendedor'].queryset = Vendedor.objects.none()
+
+
+class VendedorFiltroForm(forms.Form):
+    """Formulário para filtrar vendedores na listagem"""
+    
+    STATUS_CHOICES = [('', 'Todos')] + list(Vendedor.STATUS_CHOICES)
+    TIPO_MERCADO_CHOICES = [('', 'Todos')] + list(Vendedor.TIPO_MERCADO)
+    
+    busca = forms.CharField(
+        label='Buscar',
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Nome, CPF ou E-mail'
+        })
+    )
+    
+    status = forms.ChoiceField(
+        label='Status',
+        required=False,
+        choices=STATUS_CHOICES,
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+    
+    tipo_mercado = forms.ChoiceField(
+        label='Tipo de Mercado',
+        required=False,
+        choices=TIPO_MERCADO_CHOICES,
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )

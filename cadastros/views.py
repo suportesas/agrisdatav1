@@ -12,7 +12,7 @@ from django.core.paginator import Paginator
 from django.utils import timezone
 import requests
 from .models import Funcionario, FuncaoFuncionario
-from .forms import FuncionarioForm, FuncaoFuncionarioForm
+from .forms import ComissaoVendedorForm, FuncionarioForm, FuncaoFuncionarioForm, VendedorFiltroForm
 
 from .models import (
     Fazenda, EnderecoFazenda, ContatoFazenda,
@@ -23,8 +23,8 @@ from .forms import (
     ContaBancariaFazendaForm, DocumentoFazendaForm,
 )
 
-from .models import Area, Talhao, Cultura, HistoricoTalhao, Safra
-from .forms import AreaForm, TalhaoForm, CulturaForm, HistoricoTalhaoForm, SafraForm
+from .models import Area, Talhao, Cultura, HistoricoTalhao, Safra, Vendedor, ComissaoVendedor
+from .forms import AreaForm, TalhaoForm, CulturaForm, HistoricoTalhaoForm, SafraForm,VendedorForm
 
 
 
@@ -1879,3 +1879,346 @@ def ajax_talhoes_por_fazenda(request, fazenda_id):
         })
 
     return JsonResponse(result, safe=False)
+
+
+
+"""
+ADICIONAR ESTE CÓDIGO AO FINAL DO ARQUIVO: cadastros/views.py
+
+Certifique-se de ter os imports corretos no topo do arquivo
+"""
+
+# ========================================================================
+# VIEWS DE VENDEDORES
+# ========================================================================
+
+@login_required
+def vendedor_list(request):
+    """Lista vendedores da empresa com filtros"""
+    empresa = request.user.empresa
+    
+    if not empresa:
+        messages.error(request, '❌ Você não está vinculado a nenhuma empresa.')
+        return redirect('dashboard:index')
+    
+    filtro_form = VendedorFiltroForm(request.GET or None)
+    vendedores = Vendedor.objects.filter(empresa=empresa).select_related('supervisor', 'empresa')
+    
+    if filtro_form.is_valid():
+        busca = filtro_form.cleaned_data.get('busca')
+        status = filtro_form.cleaned_data.get('status')
+        tipo_mercado = filtro_form.cleaned_data.get('tipo_mercado')
+        
+        if busca:
+            vendedores = vendedores.filter(
+                Q(nome_completo__icontains=busca) |
+                Q(cpf__icontains=busca) |
+                Q(email_corporativo__icontains=busca)
+            )
+        
+        if status:
+            vendedores = vendedores.filter(status=status)
+        
+        if tipo_mercado:
+            vendedores = vendedores.filter(tipo_mercado=tipo_mercado)
+    
+    total_vendedores = vendedores.count()
+    total_ativos = vendedores.filter(status='ATIVO').count()
+    total_mercado_interno = vendedores.filter(tipo_mercado__in=['INTERNO', 'AMBOS']).count()
+    total_exportacao = vendedores.filter(tipo_mercado__in=['EXTERNO', 'AMBOS']).count()
+    
+    context = {
+        'vendedores': vendedores,
+        'filtro_form': filtro_form,
+        'total_vendedores': total_vendedores,
+        'total_ativos': total_ativos,
+        'total_mercado_interno': total_mercado_interno,
+        'total_exportacao': total_exportacao,
+    }
+    
+    return render(request, 'cadastros/vendedor_list.html', context)
+
+
+@login_required
+def vendedor_create(request):
+    """Cria novo vendedor"""
+    empresa = request.user.empresa
+    
+    if not empresa:
+        messages.error(request, '❌ Você não está vinculado a nenhuma empresa.')
+        return redirect('dashboard:index')
+    
+    if request.method == 'POST':
+        form = VendedorForm(request.POST, request.FILES, user=request.user, empresa=empresa)
+        if form.is_valid():
+            vendedor = form.save()
+            messages.success(request, f"✅ Vendedor '{vendedor.nome_completo}' cadastrado com sucesso!")
+            return redirect('cadastros:vendedor_list')
+        else:
+            messages.error(request, '❌ Corrija os erros no formulário.')
+    else:
+        form = VendedorForm(user=request.user, empresa=empresa)
+    
+    context = {
+        'form': form,
+        'action': 'Criar',
+        'title': 'Novo Vendedor'
+    }
+    
+    return render(request, 'cadastros/vendedor_form.html', context)
+
+
+@login_required
+def vendedor_update(request, pk):
+    """Edita vendedor existente"""
+    empresa = request.user.empresa
+    
+    if not empresa:
+        messages.error(request, '❌ Você não está vinculado a nenhuma empresa.')
+        return redirect('dashboard:index')
+    
+    vendedor = get_object_or_404(Vendedor, pk=pk, empresa=empresa)
+    
+    if request.method == 'POST':
+        form = VendedorForm(request.POST, request.FILES, instance=vendedor, user=request.user, empresa=empresa)
+        if form.is_valid():
+            vendedor = form.save()
+            messages.success(request, f"✅ Vendedor '{vendedor.nome_completo}' atualizado com sucesso!")
+            return redirect('cadastros:vendedor_list')
+        else:
+            messages.error(request, '❌ Corrija os erros no formulário.')
+    else:
+        form = VendedorForm(instance=vendedor, user=request.user, empresa=empresa)
+    
+    context = {
+        'form': form,
+        'vendedor': vendedor,
+        'action': 'Editar',
+        'title': f'Editar: {vendedor.get_nome_curto()}'
+    }
+    
+    return render(request, 'cadastros/vendedor_form.html', context)
+
+
+@login_required
+def vendedor_detail(request, pk):
+    """Exibe detalhes do vendedor"""
+    empresa = request.user.empresa
+    
+    if not empresa:
+        messages.error(request, '❌ Você não está vinculado a nenhuma empresa.')
+        return redirect('dashboard:index')
+    
+    vendedor = get_object_or_404(Vendedor.objects.select_related('supervisor', 'empresa'), pk=pk, empresa=empresa)
+    
+    subordinados = vendedor.subordinados.filter(status='ATIVO')
+    
+    comissoes_pendentes = vendedor.comissoes.filter(status='PENDENTE').aggregate(
+        total=Sum('valor_comissao')
+    )['total'] or 0
+    
+    comissoes_pagas = vendedor.comissoes.filter(status='PAGA').aggregate(
+        total=Sum('valor_comissao')
+    )['total'] or 0
+    
+    ultimas_comissoes = vendedor.comissoes.all().order_by('-referencia_mes')[:5]
+    
+    context = {
+        'vendedor': vendedor,
+        'subordinados': subordinados,
+        'comissoes_pendentes': comissoes_pendentes,
+        'comissoes_pagas': comissoes_pagas,
+        'ultimas_comissoes': ultimas_comissoes,
+    }
+    
+    return render(request, 'cadastros/vendedor_detail.html', context)
+
+
+@login_required
+def vendedor_delete(request, pk):
+    """Exclui vendedor (com confirmação)"""
+    empresa = request.user.empresa
+    
+    if not empresa:
+        messages.error(request, '❌ Você não está vinculado a nenhuma empresa.')
+        return redirect('dashboard:index')
+    
+    vendedor = get_object_or_404(Vendedor, pk=pk, empresa=empresa)
+    
+    if vendedor.subordinados.exists():
+        messages.error(
+            request,
+            f"❌ Não é possível excluir! O vendedor '{vendedor.nome_completo}' possui "
+            f"{vendedor.get_total_subordinados()} subordinado(s). Reatribua-os primeiro."
+        )
+        return redirect('cadastros:vendedor_list')
+    
+    comissoes_pendentes = vendedor.comissoes.filter(status='PENDENTE').count()
+    if comissoes_pendentes > 0:
+        messages.error(
+            request,
+            f"❌ Não é possível excluir! O vendedor possui {comissoes_pendentes} "
+            f"comissão(ões) pendente(s). Resolva-as primeiro."
+        )
+        return redirect('cadastros:vendedor_list')
+    
+    if request.method == 'POST':
+        nome = vendedor.nome_completo
+        vendedor.delete()
+        messages.success(request, f"🗑️ Vendedor '{nome}' excluído com sucesso!")
+        return redirect('cadastros:vendedor_list')
+    
+    context = {'vendedor': vendedor}
+    return render(request, 'cadastros/vendedor_confirm_delete.html', context)
+
+
+@login_required
+def vendedor_inativar(request, pk):
+    """Inativa vendedor (sem excluir)"""
+    empresa = request.user.empresa
+    
+    if not empresa:
+        messages.error(request, '❌ Você não está vinculado a nenhuma empresa.')
+        return redirect('dashboard:index')
+    
+    vendedor = get_object_or_404(Vendedor, pk=pk, empresa=empresa)
+    
+    if vendedor.status == 'ATIVO':
+        vendedor.status = 'INATIVO'
+        vendedor.data_desligamento = timezone.now().date()
+        vendedor.save()
+        messages.success(request, f"✅ Vendedor '{vendedor.nome_completo}' inativado com sucesso!")
+    else:
+        messages.warning(request, f"⚠️ Vendedor '{vendedor.nome_completo}' já está inativo.")
+    
+    return redirect('cadastros:vendedor_list')
+
+
+@login_required
+def vendedor_reativar(request, pk):
+    """Reativa vendedor"""
+    empresa = request.user.empresa
+    
+    if not empresa:
+        messages.error(request, '❌ Você não está vinculado a nenhuma empresa.')
+        return redirect('dashboard:index')
+    
+    vendedor = get_object_or_404(Vendedor, pk=pk, empresa=empresa)
+    
+    if vendedor.status == 'INATIVO':
+        vendedor.status = 'ATIVO'
+        vendedor.data_desligamento = None
+        vendedor.save()
+        messages.success(request, f"✅ Vendedor '{vendedor.nome_completo}' reativado com sucesso!")
+    else:
+        messages.warning(request, f"⚠️ Vendedor '{vendedor.nome_completo}' já está ativo.")
+    
+    return redirect('cadastros:vendedor_list')
+
+
+# ========== COMISSÕES (PREPARADO PARA MÓDULO FINANCEIRO) ==========
+
+@login_required
+def comissao_list(request):
+    """Lista comissões de vendedores"""
+    empresa = request.user.empresa
+    
+    if not empresa:
+        messages.error(request, '❌ Você não está vinculado a nenhuma empresa.')
+        return redirect('dashboard:index')
+    
+    comissoes = ComissaoVendedor.objects.filter(empresa=empresa).select_related('vendedor')
+    
+    status = request.GET.get('status')
+    vendedor_id = request.GET.get('vendedor')
+    
+    if status:
+        comissoes = comissoes.filter(status=status)
+    
+    if vendedor_id:
+        comissoes = comissoes.filter(vendedor_id=vendedor_id)
+    
+    total_pendente = comissoes.filter(status='PENDENTE').aggregate(
+        total=Sum('valor_comissao')
+    )['total'] or 0
+    
+    total_pago = comissoes.filter(status='PAGA').aggregate(
+        total=Sum('valor_comissao')
+    )['total'] or 0
+    
+    context = {
+        'comissoes': comissoes.order_by('-referencia_mes'),
+        'total_pendente': total_pendente,
+        'total_pago': total_pago,
+        'vendedores': Vendedor.objects.filter(empresa=empresa, status='ATIVO'),
+    }
+    
+    return render(request, 'cadastros/comissao_list.html', context)
+
+
+@login_required
+def comissao_create(request):
+    """Registra nova comissão"""
+    empresa = request.user.empresa
+    
+    if not empresa:
+        messages.error(request, '❌ Você não está vinculado a nenhuma empresa.')
+        return redirect('dashboard:index')
+    
+    if request.method == 'POST':
+        form = ComissaoVendedorForm(request.POST, empresa=empresa)
+        if form.is_valid():
+            comissao = form.save(commit=False)
+            comissao.empresa = empresa
+            comissao.save()
+            messages.success(request, '✅ Comissão registrada com sucesso!')
+            return redirect('cadastros:comissao_list')
+    else:
+        form = ComissaoVendedorForm(empresa=empresa)
+    
+    context = {
+        'form': form,
+        'title': 'Registrar Comissão'
+    }
+    
+    return render(request, 'cadastros/comissao_form.html', context)
+
+
+@login_required
+def comissao_pagar(request, pk):
+    """Marca comissão como paga"""
+    empresa = request.user.empresa
+    
+    if not empresa:
+        messages.error(request, '❌ Você não está vinculado a nenhuma empresa.')
+        return redirect('dashboard:index')
+    
+    comissao = get_object_or_404(ComissaoVendedor, pk=pk, empresa=empresa)
+    
+    if comissao.status == 'PENDENTE':
+        comissao.status = 'PAGA'
+        comissao.data_pagamento = timezone.now().date()
+        comissao.save()
+        messages.success(request, f"✅ Comissão de R$ {comissao.valor_comissao:.2f} paga com sucesso!")
+    else:
+        messages.warning(request, '⚠️ Esta comissão já foi paga.')
+    
+    return redirect('cadastros:comissao_list')
+
+
+# ========== APIS/AJAX ==========
+
+@login_required
+def vendedor_json(request):
+    """Retorna vendedores em JSON para uso em formulários"""
+    empresa = request.user.empresa
+    
+    if not empresa:
+        return JsonResponse({'error': 'Empresa não encontrada'}, status=400)
+    
+    vendedores = Vendedor.objects.filter(
+        empresa=empresa,
+        status='ATIVO'
+    ).values('id', 'nome_completo', 'email_corporativo', 'tipo_mercado')
+    
+    return JsonResponse(list(vendedores), safe=False)

@@ -8,6 +8,7 @@ from .models import (
     ContaBancariaFazenda, DocumentoFazenda, Cultura
 )
 from .models import Area, Talhao, HistoricoTalhao, Safra, SafraPlan, SafraReal
+from .models import Vendedor, ComissaoVendedor
 
 class EnderecoFazendaInline(admin.TabularInline):
     """Inline para endereços"""
@@ -222,3 +223,49 @@ class SafraRealAdmin(admin.ModelAdmin):
     list_display = ['safra', 'talhao', 'production', 'plantio_real', 'colheita_real', 'source']
     list_filter = ['source']
     search_fields = ['safra__nome', 'talhao__nome']
+
+
+
+
+
+@admin.register(Vendedor)
+class VendedorAdmin(admin.ModelAdmin):
+    list_display = ['nome_completo', 'empresa', 'tipo_mercado', 'status', 'data_admissao']
+    list_filter = ['empresa', 'tipo_mercado', 'status']
+    search_fields = ['nome_completo', 'cpf', 'email_corporativo']
+    readonly_fields = ['data_criacao', 'data_atualizacao']
+    
+    fieldsets = (
+        ('Identificação', {
+            'fields': ('nome_completo', 'cpf', 'rg', 'data_nascimento', 'foto')
+        }),
+        ('Empresa', {
+            'fields': ('empresa', 'usuario')
+        }),
+        ('Tipo', {
+            'fields': ('tipo_mercado', 'tipo_vinculo')
+        }),
+        ('Contato', {
+            'fields': ('telefone_principal', 'telefone_secundario', 'email_corporativo', 'email_pessoal', 'whatsapp')
+        }),
+        ('Comercial', {
+            'fields': ('comissao_mercado_interno', 'comissao_exportacao', 'comissao_fixa_mensal', 'meta_mensal')
+        }),
+        ('Hierarquia', {
+            'fields': ('supervisor', 'nivel_autonomia', 'acesso_crm')
+        }),
+        ('Status', {
+            'fields': ('status', 'data_admissao', 'data_desligamento')
+        }),
+        ('Auditoria', {
+            'fields': ('criado_por', 'data_criacao', 'data_atualizacao'),
+            'classes': ('collapse',)
+        }),
+    )
+
+@admin.register(ComissaoVendedor)
+class ComissaoVendedorAdmin(admin.ModelAdmin):
+    list_display = ['vendedor', 'referencia_mes', 'valor_comissao', 'status', 'data_pagamento']
+    list_filter = ['empresa', 'status', 'referencia_mes']
+    search_fields = ['vendedor__nome_completo']
+    readonly_fields = ['data_criacao', 'valor_comissao']

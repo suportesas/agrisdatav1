@@ -9,7 +9,8 @@ from django.core.exceptions import ValidationError
 from django.utils import timezone
 from decimal import Decimal
 import os
-from django.core.validators import  MaxValueValidator
+from django.core.validators import MaxValueValidator, RegexValidator
+import re
 
 
 """
@@ -2366,3 +2367,722 @@ class SafraReal(models.Model):
         if self.talhao:
             return f"Real {self.safra} - {self.talhao}"
         return f"Real {self.safra}"
+
+
+
+"""
+ADICIONAR ESTE CÓDIGO AO FINAL DO ARQUIVO: cadastros/models.py
+
+Copie todo o código abaixo e cole no final do seu arquivo models.py existente
+"""
+
+
+
+
+"""
+SUBSTITUA TODO O CONTEÚDO que você colou anteriormente NO FINAL do arquivo cadastros/models.py
+por este código completo e corrigido.
+
+CORREÇÕES APLICADAS:
+✅ Removida validação restritiva de telefone (telefone_validator)
+✅ Adicionado método tem_passaporte_valido()
+✅ Todos os outros métodos mantidos
+
+COMO USAR:
+1. Abra: cadastros/models.py
+2. Apague TODO o código de Vendedor que você colou antes
+3. Cole este código completo no FINAL do arquivo
+4. Salve
+5. Reinicie o servidor
+"""
+
+
+# ========================================================================
+# VENDEDORES - GESTÃO DE VENDEDORES (MERCADO INTERNO E EXPORTAÇÃO)
+# ========================================================================
+
+class VendedorQuerySet(models.QuerySet):
+    """QuerySet customizado para filtrar vendedores por empresa"""
+    
+    def da_empresa(self, empresa):
+        """Filtra vendedores da empresa especificada"""
+        if empresa:
+            return self.filter(empresa=empresa)
+        return self.none()
+    
+    def ativos(self):
+        """Retorna apenas vendedores ativos"""
+        return self.filter(status='ATIVO')
+    
+    def inativos(self):
+        """Retorna vendedores inativos"""
+        return self.filter(status='INATIVO')
+    
+    def mercado_interno(self):
+        """Vendedores que atuam no mercado interno"""
+        return self.filter(tipo_mercado__in=['INTERNO', 'AMBOS'])
+    
+    def mercado_externo(self):
+        """Vendedores que atuam em exportação"""
+        return self.filter(tipo_mercado__in=['EXTERNO', 'AMBOS'])
+
+
+class VendedorManager(models.Manager):
+    """Manager customizado para Vendedor"""
+    
+    def get_queryset(self):
+        return VendedorQuerySet(self.model, using=self._db)
+    
+    def da_empresa(self, empresa):
+        return self.get_queryset().da_empresa(empresa)
+    
+    def ativos(self):
+        return self.get_queryset().ativos()
+    
+    def mercado_interno(self):
+        return self.get_queryset().mercado_interno()
+    
+    def mercado_externo(self):
+        return self.get_queryset().mercado_externo()
+
+
+class Vendedor(models.Model):
+    """
+    Modelo de Vendedor para mercado interno e exportação
+    Sistema multi-tenant - cada empresa tem seus próprios vendedores
+    Preparado para futura integração com Portal do Vendedor
+    """
+    
+    # Tipos de mercado
+    TIPO_MERCADO = [
+        ('INTERNO', 'Mercado Interno'),
+        ('EXTERNO', 'Exportação'),
+        ('AMBOS', 'Interno + Exportação'),
+    ]
+    
+    # Tipos de vínculo
+    TIPO_VINCULO = [
+        ('CLT', 'CLT'),
+        ('AUTONOMO', 'Autônomo/Comissionado'),
+        ('PJ', 'Pessoa Jurídica (Representante)'),
+    ]
+    
+    # Status
+    STATUS_CHOICES = [
+        ('ATIVO', 'Ativo'),
+        ('INATIVO', 'Inativo'),
+        ('FERIAS', 'Férias'),
+        ('AFASTADO', 'Afastado'),
+    ]
+    
+    # Tipo de conta bancária
+    TIPO_CONTA = [
+        ('CORRENTE', 'Conta Corrente'),
+        ('POUPANCA', 'Conta Poupança'),
+    ]
+    
+    # Forma de pagamento de comissão
+    FORMA_PAGAMENTO_COMISSAO = [
+        ('MENSAL', 'Mensal'),
+        ('QUINZENAL', 'Quinzenal'),
+        ('POR_VENDA', 'Por Venda Realizada'),
+        ('TRIMESTRAL', 'Trimestral'),
+    ]
+    
+    # Moeda padrão
+    MOEDA_CHOICES = [
+        ('BRL', 'Real (BRL)'),
+        ('USD', 'Dólar (USD)'),
+        ('EUR', 'Euro (EUR)'),
+    ]
+    
+    # Nível de autonomia
+    NIVEL_AUTONOMIA = [
+        ('ILIMITADO', 'Sem Limite (Aprovação Automática)'),
+        ('ATE_50K', 'Até R$ 50.000'),
+        ('ATE_100K', 'Até R$ 100.000'),
+        ('PRECISA_APROVACAO', 'Precisa Aprovação Gerencial'),
+    ]
+    
+    # ===== RELACIONAMENTOS MULTI-TENANT =====
+    empresa = models.ForeignKey(
+        'empresas.Empresa',
+        on_delete=models.CASCADE,
+        related_name='vendedores',
+        verbose_name='Empresa',
+        help_text='Empresa à qual o vendedor pertence'
+    )
+    
+    # Preparado para futura integração com usuário
+    usuario = models.OneToOneField(
+        'usuarios.Usuario',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='vendedor_profile',
+        verbose_name='Usuário do Sistema',
+        help_text='Vincular quando vendedor tiver acesso ao Portal do Vendedor'
+    )
+    
+    # ===== IDENTIFICAÇÃO BÁSICA =====
+    nome_completo = models.CharField(
+        'Nome Completo',
+        max_length=200,
+        help_text='Nome completo do vendedor'
+    )
+    
+    cpf_validator = RegexValidator(
+        regex=r'^\d{11}$',
+        message="CPF deve conter 11 dígitos (apenas números)"
+    )
+    cpf = models.CharField(
+        'CPF',
+        max_length=14,
+        validators=[cpf_validator],
+        help_text='Formato: apenas números (será formatado automaticamente)'
+    )
+    
+    rg = models.CharField(
+        'RG',
+        max_length=20,
+        blank=True,
+        null=True,
+        help_text='Registro Geral'
+    )
+    
+    data_nascimento = models.DateField(
+        'Data de Nascimento',
+        blank=True,
+        null=True
+    )
+    
+    foto = models.ImageField(
+        'Foto',
+        upload_to='vendedores/fotos/',
+        blank=True,
+        null=True,
+        help_text='Foto do vendedor'
+    )
+    
+    # ===== TIPO DE VENDEDOR =====
+    tipo_mercado = models.CharField(
+        'Tipo de Mercado',
+        max_length=10,
+        choices=TIPO_MERCADO,
+        default='INTERNO',
+        help_text='Mercado de atuação do vendedor'
+    )
+    
+    tipo_vinculo = models.CharField(
+        'Tipo de Vínculo',
+        max_length=10,
+        choices=TIPO_VINCULO,
+        default='CLT',
+        help_text='Tipo de relação trabalhista'
+    )
+    
+    # ===== CONTATO (SEM VALIDAÇÃO RESTRITIVA) =====
+    telefone_principal = models.CharField(
+        'Telefone Principal',
+        max_length=20,
+        help_text='Telefone principal de contato'
+    )
+    
+    telefone_secundario = models.CharField(
+        'Telefone Secundário',
+        max_length=20,
+        blank=True,
+        null=True
+    )
+    
+    email_corporativo = models.EmailField(
+        'E-mail Corporativo',
+        help_text='E-mail institucional da empresa'
+    )
+    
+    email_pessoal = models.EmailField(
+        'E-mail Pessoal',
+        blank=True,
+        null=True,
+        help_text='E-mail pessoal do vendedor'
+    )
+    
+    whatsapp = models.CharField(
+        'WhatsApp Business',
+        max_length=20,
+        blank=True,
+        null=True,
+        help_text='Link direto: https://wa.me/5584999999999'
+    )
+    
+    # ===== ENDEREÇO =====
+    cep = models.CharField(
+        'CEP',
+        max_length=10,
+        blank=True,
+        null=True
+    )
+    
+    logradouro = models.CharField(
+        'Logradouro',
+        max_length=200,
+        blank=True,
+        null=True
+    )
+    
+    numero = models.CharField(
+        'Número',
+        max_length=10,
+        blank=True,
+        null=True
+    )
+    
+    complemento = models.CharField(
+        'Complemento',
+        max_length=100,
+        blank=True,
+        null=True
+    )
+    
+    bairro = models.CharField(
+        'Bairro',
+        max_length=100,
+        blank=True,
+        null=True
+    )
+    
+    cidade = models.CharField(
+        'Cidade',
+        max_length=100,
+        blank=True,
+        null=True
+    )
+    
+    uf = models.CharField(
+        'UF',
+        max_length=2,
+        blank=True,
+        null=True,
+        help_text='Sigla do estado'
+    )
+    
+    pais = models.CharField(
+        'País',
+        max_length=100,
+        default='Brasil',
+        help_text='Importante para vendedores internacionais'
+    )
+    
+    # ===== DADOS COMERCIAIS =====
+    comissao_mercado_interno = models.DecimalField(
+        'Comissão Mercado Interno (%)',
+        max_digits=5,
+        decimal_places=2,
+        default=0,
+        validators=[MinValueValidator(Decimal('0')), MaxValueValidator(Decimal('100'))],
+        help_text='Percentual padrão de comissão sobre vendas internas'
+    )
+    
+    comissao_exportacao = models.DecimalField(
+        'Comissão Exportação (%)',
+        max_digits=5,
+        decimal_places=2,
+        default=0,
+        validators=[MinValueValidator(Decimal('0')), MaxValueValidator(Decimal('100'))],
+        help_text='Percentual padrão de comissão sobre exportações'
+    )
+    
+    comissao_fixa_mensal = models.DecimalField(
+        'Comissão Fixa Mensal (R$)',
+        max_digits=10,
+        decimal_places=2,
+        default=0,
+        validators=[MinValueValidator(Decimal('0'))],
+        help_text='Valor fixo mensal (se aplicável)'
+    )
+    
+    meta_mensal = models.DecimalField(
+        'Meta Mensal',
+        max_digits=12,
+        decimal_places=2,
+        default=0,
+        validators=[MinValueValidator(Decimal('0'))],
+        help_text='Meta de vendas do mês (em R$ ou US$ conforme moeda padrão)'
+    )
+    
+    moeda_padrao = models.CharField(
+        'Moeda Padrão de Trabalho',
+        max_length=3,
+        choices=MOEDA_CHOICES,
+        default='BRL',
+        help_text='Moeda padrão para metas e comissões'
+    )
+    
+    forma_pagamento_comissao = models.CharField(
+        'Forma de Pagamento Comissão',
+        max_length=15,
+        choices=FORMA_PAGAMENTO_COMISSAO,
+        default='MENSAL',
+        help_text='Periodicidade de pagamento da comissão'
+    )
+    
+    regioes_atuacao = models.TextField(
+        'Regiões de Atuação',
+        blank=True,
+        help_text='Ex: Norte, Sul, Nordeste, etc. (separar por vírgula)'
+    )
+    
+    paises_atuacao = models.TextField(
+        'Países de Atuação',
+        blank=True,
+        help_text='Para exportação: USA, Europa, Ásia, etc. (separar por vírgula)'
+    )
+    
+    # ===== DADOS BANCÁRIOS =====
+    banco = models.CharField(
+        'Banco',
+        max_length=100,
+        blank=True,
+        null=True,
+        help_text='Nome do banco'
+    )
+    
+    agencia = models.CharField(
+        'Agência',
+        max_length=10,
+        blank=True,
+        null=True
+    )
+    
+    conta_corrente = models.CharField(
+        'Conta Corrente',
+        max_length=20,
+        blank=True,
+        null=True
+    )
+    
+    tipo_conta = models.CharField(
+        'Tipo de Conta',
+        max_length=10,
+        choices=TIPO_CONTA,
+        default='CORRENTE',
+        blank=True,
+        null=True
+    )
+    
+    pix = models.CharField(
+        'Chave PIX',
+        max_length=100,
+        blank=True,
+        null=True,
+        help_text='CPF, E-mail, Telefone ou Chave Aleatória'
+    )
+    
+    # ===== DOCUMENTAÇÃO (ESPECIAL PARA EXPORTAÇÃO) =====
+    passaporte_numero = models.CharField(
+        'Número do Passaporte',
+        max_length=20,
+        blank=True,
+        null=True
+    )
+    
+    passaporte_validade = models.DateField(
+        'Validade do Passaporte',
+        blank=True,
+        null=True
+    )
+    
+    visto_trabalho = models.CharField(
+        'Visto de Trabalho',
+        max_length=100,
+        blank=True,
+        null=True,
+        help_text='Se aplicável para viagens internacionais'
+    )
+    
+    cnh = models.CharField(
+        'CNH',
+        max_length=20,
+        blank=True,
+        null=True,
+        help_text='Carteira Nacional de Habilitação'
+    )
+    
+    certificacoes = models.TextField(
+        'Certificações',
+        blank=True,
+        help_text='SISCOMEX, Comércio Exterior, etc.'
+    )
+    
+    # ===== HIERARQUIA E GESTÃO =====
+    supervisor = models.ForeignKey(
+        'self',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='subordinados',
+        verbose_name='Supervisor/Gerente',
+        help_text='Gerente de vendas responsável'
+    )
+    
+    nivel_autonomia = models.CharField(
+        'Nível de Autonomia',
+        max_length=20,
+        choices=NIVEL_AUTONOMIA,
+        default='PRECISA_APROVACAO',
+        help_text='Define limite de aprovação de vendas'
+    )
+    
+    acesso_crm = models.BooleanField(
+        'Acesso ao CRM Completo',
+        default=False,
+        help_text='Pode visualizar todas as negociações da empresa'
+    )
+    
+    # ===== CONTROLE ADMINISTRATIVO =====
+    data_admissao = models.DateField(
+        'Data de Admissão',
+        help_text='Data de entrada na empresa'
+    )
+    
+    data_desligamento = models.DateField(
+        'Data de Desligamento',
+        blank=True,
+        null=True,
+        help_text='Data de saída da empresa (se aplicável)'
+    )
+    
+    status = models.CharField(
+        'Status',
+        max_length=10,
+        choices=STATUS_CHOICES,
+        default='ATIVO',
+        help_text='Situação atual do vendedor'
+    )
+    
+    # ===== OBSERVAÇÕES E IDIOMAS =====
+    observacoes = models.TextField(
+        'Observações Gerais',
+        blank=True,
+        help_text='Informações adicionais sobre o vendedor'
+    )
+    
+    idiomas = models.TextField(
+        'Idiomas',
+        blank=True,
+        help_text='Ex: Português, Inglês (fluente), Espanhol (intermediário)'
+    )
+    
+    experiencia_anos = models.IntegerField(
+        'Experiência (anos)',
+        default=0,
+        validators=[MinValueValidator(0)],
+        help_text='Anos de experiência em vendas'
+    )
+    
+    # ===== AUDITORIA =====
+    data_criacao = models.DateTimeField(
+        'Data de Criação',
+        auto_now_add=True
+    )
+    
+    data_atualizacao = models.DateTimeField(
+        'Última Atualização',
+        auto_now=True
+    )
+    
+    criado_por = models.ForeignKey(
+        'usuarios.Usuario',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='vendedores_criados',
+        verbose_name='Criado por'
+    )
+    
+    # Manager customizado
+    objects = VendedorManager()
+    
+    class Meta:
+        verbose_name = "Vendedor"
+        verbose_name_plural = "Vendedores"
+        ordering = ['empresa__nome', 'nome_completo']
+        indexes = [
+            models.Index(fields=['empresa', 'status']),
+            models.Index(fields=['empresa', 'tipo_mercado']),
+            models.Index(fields=['cpf']),
+            models.Index(fields=['email_corporativo']),
+        ]
+        unique_together = [
+            ['empresa', 'cpf'],
+            ['empresa', 'email_corporativo'],
+        ]
+    
+    def __str__(self):
+        return f"{self.nome_completo} - {self.empresa.nome}"
+    
+    def clean(self):
+        """Validações customizadas"""
+        if self.cpf:
+            self.cpf = re.sub(r'\D', '', self.cpf)
+            if len(self.cpf) != 11:
+                raise ValidationError({'cpf': 'CPF deve ter 11 dígitos'})
+        
+        if self.data_desligamento and self.data_admissao:
+            if self.data_desligamento < self.data_admissao:
+                raise ValidationError({
+                    'data_desligamento': 'Data de desligamento não pode ser anterior à admissão'
+                })
+    
+    def save(self, *args, **kwargs):
+        if self.cpf:
+            self.cpf = re.sub(r'\D', '', self.cpf)
+        
+        if self.data_desligamento and self.status != 'INATIVO':
+            self.status = 'INATIVO'
+        
+        super().save(*args, **kwargs)
+    
+    def get_cpf_formatado(self):
+        """Retorna CPF formatado: 000.000.000-00"""
+        if self.cpf and len(self.cpf) == 11:
+            return f"{self.cpf[:3]}.{self.cpf[3:6]}.{self.cpf[6:9]}-{self.cpf[9:]}"
+        return self.cpf
+    
+    def get_nome_curto(self):
+        """Retorna primeiro e último nome"""
+        partes = self.nome_completo.split()
+        if len(partes) > 1:
+            return f"{partes[0]} {partes[-1]}"
+        return self.nome_completo
+    
+    def get_total_subordinados(self):
+        """Retorna número de vendedores sob supervisão"""
+        return self.subordinados.filter(status='ATIVO').count()
+    
+    def is_gerente(self):
+        """Verifica se é gerente de vendas"""
+        return self.subordinados.exists()
+    
+    def pode_aprovar_venda(self, valor):
+        """Verifica se vendedor pode aprovar venda de determinado valor"""
+        if self.nivel_autonomia == 'ILIMITADO':
+            return True
+        elif self.nivel_autonomia == 'ATE_50K':
+            return valor <= 50000
+        elif self.nivel_autonomia == 'ATE_100K':
+            return valor <= 100000
+        else:
+            return False
+    
+    def tem_passaporte_valido(self):
+        """
+        ✅ MÉTODO ADICIONADO - CORREÇÃO DO PASSAPORTE
+        Verifica se o passaporte está válido (não vencido)
+        """
+        if not self.passaporte_validade:
+            return False
+        
+        from django.utils import timezone
+        hoje = timezone.now().date()
+        
+        return self.passaporte_validade >= hoje
+
+
+class ComissaoVendedor(models.Model):
+    """
+    Histórico de comissões pagas aos vendedores
+    Será totalmente implementado quando houver módulo financeiro
+    """
+    
+    STATUS_COMISSAO = [
+        ('PENDENTE', 'Pendente'),
+        ('PAGA', 'Paga'),
+        ('CANCELADA', 'Cancelada'),
+    ]
+    
+    vendedor = models.ForeignKey(
+        Vendedor,
+        on_delete=models.CASCADE,
+        related_name='comissoes',
+        verbose_name='Vendedor'
+    )
+    
+    empresa = models.ForeignKey(
+        'empresas.Empresa',
+        on_delete=models.CASCADE,
+        related_name='comissoes_vendedores',
+        verbose_name='Empresa'
+    )
+    
+    referencia_mes = models.DateField(
+        'Mês de Referência',
+        help_text='Mês ao qual a comissão se refere'
+    )
+    
+    valor_base = models.DecimalField(
+        'Valor Base (Vendas)',
+        max_digits=12,
+        decimal_places=2,
+        default=0,
+        help_text='Total de vendas que geraram a comissão'
+    )
+    
+    percentual = models.DecimalField(
+        'Percentual (%)',
+        max_digits=5,
+        decimal_places=2,
+        default=0
+    )
+    
+    valor_comissao = models.DecimalField(
+        'Valor da Comissão',
+        max_digits=10,
+        decimal_places=2,
+        default=0,
+        help_text='Valor calculado da comissão'
+    )
+    
+    status = models.CharField(
+        'Status',
+        max_length=15,
+        choices=STATUS_COMISSAO,
+        default='PENDENTE'
+    )
+    
+    data_pagamento = models.DateField(
+        'Data de Pagamento',
+        blank=True,
+        null=True
+    )
+    
+    observacoes = models.TextField(
+        'Observações',
+        blank=True
+    )
+    
+    data_criacao = models.DateTimeField(
+        'Data de Criação',
+        auto_now_add=True
+    )
+    
+    class Meta:
+        verbose_name = "Comissão de Vendedor"
+        verbose_name_plural = "Comissões de Vendedores"
+        ordering = ['-referencia_mes', 'vendedor__nome_completo']
+        indexes = [
+            models.Index(fields=['empresa', 'status']),
+            models.Index(fields=['vendedor', 'referencia_mes']),
+        ]
+    
+    def __str__(self):
+        return f"{self.vendedor.nome_completo} - {self.referencia_mes:%m/%Y} - R$ {self.valor_comissao}"
+    
+    def save(self, *args, **kwargs):
+        if self.valor_base and self.percentual:
+            self.valor_comissao = (self.valor_base * self.percentual) / 100
+        
+        if not self.empresa_id and self.vendedor_id:
+            self.empresa = self.vendedor.empresa
+        
+        super().save(*args, **kwargs)

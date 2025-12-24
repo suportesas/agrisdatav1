@@ -3086,3 +3086,581 @@ class ComissaoVendedor(models.Model):
             self.empresa = self.vendedor.empresa
         
         super().save(*args, **kwargs)
+
+
+
+"""
+========================================
+CÓDIGO PARA ADICIONAR AO cadastros/models.py
+========================================
+
+INSTRUÇÕES:
+1. Abra o arquivo cadastros/models.py
+2. Vá até o FINAL do arquivo
+3. Cole este código completo
+4. Salve o arquivo
+
+Este código adiciona:
+- CategoriaFornecedor
+- SubcategoriaFornecedor  
+- Fornecedor
+- FornecedorEndereco
+- FornecedorContato
+- FornecedorDadoBancario
+- FornecedorDocumento
+- FornecedorAvaliacao
+"""
+
+# ============================================
+# FORNECEDORES - CATEGORIAS
+# ============================================
+
+class CategoriaFornecedor(models.Model):
+    """
+    Categorias de fornecedores (Sementes, Fertilizantes, etc.)
+    Permite cadastro customizado além das categorias padrão
+    """
+    
+    empresa = models.ForeignKey(
+        'empresas.Empresa',
+        on_delete=models.CASCADE,
+        related_name='categorias_fornecedor',
+        verbose_name='Empresa',
+        null=True,
+        blank=True,
+        help_text='Deixe em branco para categorias globais do sistema'
+    )
+    
+    nome = models.CharField(
+        'Nome da Categoria',
+        max_length=100,
+        help_text='Ex: Sementes, Fertilizantes, Defensivos'
+    )
+    
+    descricao = models.TextField(
+        'Descrição',
+        blank=True,
+        help_text='Descrição detalhada da categoria'
+    )
+    
+    icone = models.CharField(
+        'Ícone',
+        max_length=50,
+        default='📦',
+        help_text='Emoji ou classe CSS do ícone'
+    )
+    
+    ativa = models.BooleanField('Ativa', default=True)
+    ordem = models.IntegerField('Ordem', default=0, help_text='Ordem de exibição')
+    data_criacao = models.DateTimeField('Data de Criação', auto_now_add=True)
+    
+    class Meta:
+        verbose_name = "Categoria de Fornecedor"
+        verbose_name_plural = "Categorias de Fornecedores"
+        ordering = ['ordem', 'nome']
+        indexes = [
+            models.Index(fields=['empresa', 'ativa']),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=['empresa', 'nome'],
+                name='unique_categoria_fornecedor_por_empresa'
+            )
+        ]
+    
+    def __str__(self):
+        return f"{self.icone} {self.nome}"
+
+
+class SubcategoriaFornecedor(models.Model):
+    """Subcategorias para classificação detalhada"""
+    
+    categoria = models.ForeignKey(
+        CategoriaFornecedor,
+        on_delete=models.CASCADE,
+        related_name='subcategorias',
+        verbose_name='Categoria'
+    )
+    
+    nome = models.CharField('Nome da Subcategoria', max_length=100)
+    ativa = models.BooleanField('Ativa', default=True)
+    
+    class Meta:
+        verbose_name = "Subcategoria"
+        verbose_name_plural = "Subcategorias"
+        ordering = ['categoria', 'nome']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['categoria', 'nome'],
+                name='unique_subcategoria_fornecedor'
+            )
+        ]
+    
+    def __str__(self):
+        return f"{self.categoria.nome} → {self.nome}"
+
+
+# ============================================
+# FORNECEDORES - CADASTRO PRINCIPAL
+# ============================================
+
+class Fornecedor(models.Model):
+    """Cadastro principal de fornecedores nacionais e internacionais"""
+    
+    TIPO_PESSOA_CHOICES = [
+        ('PF', 'Pessoa Física'),
+        ('PJ', 'Pessoa Jurídica'),
+    ]
+    
+    TIPO_FORNECEDOR_CHOICES = [
+        ('NACIONAL', 'Nacional'),
+        ('INTERNACIONAL', 'Internacional'),
+    ]
+    
+    STATUS_CHOICES = [
+        ('ATIVO', 'Ativo'),
+        ('INATIVO', 'Inativo'),
+        ('BLOQUEADO', 'Bloqueado'),
+        ('EM_ANALISE', 'Em Análise'),
+        ('PENDENTE_DOC', 'Pendente Documentação'),
+    ]
+    
+    CLASSIFICACAO_RISCO_CHOICES = [
+        ('BAIXO', 'Baixo'),
+        ('MEDIO', 'Médio'),
+        ('ALTO', 'Alto'),
+    ]
+    
+    REGIME_TRIBUTARIO_CHOICES = [
+        ('SIMPLES', 'Simples Nacional'),
+        ('PRESUMIDO', 'Lucro Presumido'),
+        ('REAL', 'Lucro Real'),
+        ('MEI', 'MEI - Microempreendedor Individual'),
+        ('OUTROS', 'Outros'),
+    ]
+    
+    # Vinculação multi-tenant
+    empresa = models.ForeignKey(
+        'empresas.Empresa',
+        on_delete=models.CASCADE,
+        related_name='fornecedores',
+        verbose_name='Empresa'
+    )
+    
+    # Identificação
+    tipo_pessoa = models.CharField('Tipo de Pessoa', max_length=2, choices=TIPO_PESSOA_CHOICES, default='PJ')
+    tipo_fornecedor = models.CharField('Tipo de Fornecedor', max_length=15, choices=TIPO_FORNECEDOR_CHOICES, default='NACIONAL')
+    cnpj_cpf = models.CharField('CNPJ/CPF', max_length=18, help_text='CNPJ (14 dígitos) ou CPF (11 dígitos)')
+    codigo_fiscal_internacional = models.CharField('Código Fiscal Internacional', max_length=50, blank=True)
+    razao_social = models.CharField('Razão Social / Nome Completo', max_length=200)
+    nome_fantasia = models.CharField('Nome Fantasia', max_length=200, blank=True)
+    
+    # Documentação
+    inscricao_estadual = models.CharField('Inscrição Estadual', max_length=20, blank=True)
+    inscricao_municipal = models.CharField('Inscrição Municipal', max_length=20, blank=True)
+    eori = models.CharField('Código EORI', max_length=20, blank=True, help_text='Para exportação/importação')
+    regime_tributario = models.CharField('Regime Tributário', max_length=15, choices=REGIME_TRIBUTARIO_CHOICES, default='SIMPLES')
+    
+    # Classificação
+    categorias = models.ManyToManyField(CategoriaFornecedor, related_name='fornecedores', verbose_name='Categorias')
+    subcategorias = models.ManyToManyField(SubcategoriaFornecedor, related_name='fornecedores', verbose_name='Subcategorias', blank=True)
+    status = models.CharField('Status', max_length=15, choices=STATUS_CHOICES, default='EM_ANALISE')
+    classificacao_risco = models.CharField('Classificação de Risco', max_length=10, choices=CLASSIFICACAO_RISCO_CHOICES, default='MEDIO')
+    score_avaliacao = models.DecimalField('Score de Avaliação', max_digits=4, decimal_places=2, default=0, 
+                                          validators=[MinValueValidator(0), MaxValueValidator(10)],
+                                          help_text='Calculado automaticamente (0-10)')
+    
+    # Homologação
+    data_homologacao = models.DateField('Data de Homologação', null=True, blank=True)
+    validade_homologacao = models.DateField('Validade da Homologação', null=True, blank=True)
+    
+    # Condições Comerciais
+    prazo_pagamento_padrao = models.IntegerField('Prazo de Pagamento Padrão (dias)', default=30, validators=[MinValueValidator(0)])
+    prazo_entrega_medio = models.IntegerField('Prazo de Entrega Médio (dias)', default=7, validators=[MinValueValidator(0)])
+    
+    # Dados Internacionais
+    pais_origem = models.CharField('País de Origem', max_length=100, blank=True, default='Brasil')
+    moeda_padrao = models.CharField('Moeda Padrão', max_length=10, default='BRL', help_text='Ex: BRL, USD, EUR')
+    incoterm_preferencial = models.CharField('Incoterm Preferencial', max_length=10, blank=True, help_text='Ex: FOB, CIF, EXW')
+    possui_certificacao_internacional = models.BooleanField('Possui Certificação Internacional', default=False)
+    
+    # Contato
+    telefone = models.CharField('Telefone', max_length=20, blank=True)
+    email = models.EmailField('E-mail', blank=True)
+    website = models.URLField('Website', blank=True)
+    
+    # Observações
+    observacoes = models.TextField('Observações', blank=True)
+    motivo_bloqueio = models.TextField('Motivo do Bloqueio', blank=True)
+    
+    # Estatísticas
+    total_comprado = models.DecimalField('Total Comprado (R$)', max_digits=15, decimal_places=2, default=0)
+    numero_pedidos = models.IntegerField('Número de Pedidos', default=0)
+    data_ultima_compra = models.DateField('Data da Última Compra', null=True, blank=True)
+    
+    # Auditoria
+    ativo = models.BooleanField('Ativo', default=True)
+    data_cadastro = models.DateTimeField('Data de Cadastro', auto_now_add=True)
+    data_atualizacao = models.DateTimeField('Última Atualização', auto_now=True)
+    cadastrado_por = models.ForeignKey('usuarios.Usuario', on_delete=models.SET_NULL, null=True, 
+                                       related_name='fornecedores_cadastrados', verbose_name='Cadastrado por')
+    
+    class Meta:
+        verbose_name = "Fornecedor"
+        verbose_name_plural = "Fornecedores"
+        ordering = ['razao_social']
+        indexes = [
+            models.Index(fields=['empresa', 'status']),
+            models.Index(fields=['empresa', 'ativo']),
+            models.Index(fields=['cnpj_cpf']),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=['empresa', 'cnpj_cpf'],
+                name='unique_fornecedor_cnpj_cpf_por_empresa'
+            )
+        ]
+    
+    def __str__(self):
+        return f"{self.razao_social} ({self.get_tipo_fornecedor_display()})"
+    
+    def clean(self):
+        import re
+        from django.core.exceptions import ValidationError
+        
+        # Valida CNPJ/CPF se nacional
+        if self.tipo_fornecedor == 'NACIONAL' and self.cnpj_cpf:
+            cnpj_cpf_limpo = re.sub(r'\D', '', self.cnpj_cpf)
+            if self.tipo_pessoa == 'PJ' and len(cnpj_cpf_limpo) != 14:
+                raise ValidationError({'cnpj_cpf': 'CNPJ deve ter 14 dígitos'})
+            if self.tipo_pessoa == 'PF' and len(cnpj_cpf_limpo) != 11:
+                raise ValidationError({'cnpj_cpf': 'CPF deve ter 11 dígitos'})
+    
+    def get_nome_exibicao(self):
+        return self.nome_fantasia if self.nome_fantasia else self.razao_social
+    
+    def calcular_score(self):
+        """Calcula score médio baseado nas avaliações"""
+        avaliacoes = self.avaliacoes.all()
+        if not avaliacoes.exists():
+            return Decimal('0.00')
+        
+        total = sum([
+            (a.nota_qualidade + a.nota_prazo_entrega + a.nota_atendimento + a.nota_preco) / 4
+            for a in avaliacoes
+        ])
+        return Decimal(total / avaliacoes.count()).quantize(Decimal('0.01'))
+    
+    def atualizar_score(self):
+        """Atualiza o score e salva"""
+        self.score_avaliacao = self.calcular_score()
+        self.save(update_fields=['score_avaliacao'])
+    
+    def get_status_documentacao(self):
+        """Retorna: COMPLETO, PENDENTE, VENCIDO"""
+        docs_obrigatorios = self.documentos.filter(obrigatorio=True)
+        if not docs_obrigatorios.exists():
+            return 'PENDENTE'
+        
+        hoje = timezone.now().date()
+        docs_vencidos = docs_obrigatorios.filter(data_validade__lt=hoje, data_validade__isnull=False)
+        if docs_vencidos.exists():
+            return 'VENCIDO'
+        
+        docs_pendentes = docs_obrigatorios.filter(arquivo='')
+        if docs_pendentes.exists():
+            return 'PENDENTE'
+        
+        return 'COMPLETO'
+    
+    def homologacao_vencida(self):
+        if not self.validade_homologacao:
+            return False
+        return self.validade_homologacao < timezone.now().date()
+    
+    def get_cnpj_cpf_formatado(self):
+        import re
+        if not self.cnpj_cpf:
+            return ''
+        numeros = re.sub(r'\D', '', self.cnpj_cpf)
+        if len(numeros) == 11:  # CPF
+            return f"{numeros[:3]}.{numeros[3:6]}.{numeros[6:9]}-{numeros[9:]}"
+        elif len(numeros) == 14:  # CNPJ
+            return f"{numeros[:2]}.{numeros[2:5]}.{numeros[5:8]}/{numeros[8:12]}-{numeros[12:]}"
+        return self.cnpj_cpf
+
+
+# ============================================
+# FORNECEDORES - ENDEREÇOS
+# ============================================
+
+class FornecedorEndereco(models.Model):
+    """Múltiplos endereços por fornecedor"""
+    
+    TIPO_CHOICES = [
+        ('COMERCIAL', 'Comercial'),
+        ('ENTREGA', 'Entrega'),
+        ('COBRANCA', 'Cobrança'),
+        ('FISCAL', 'Fiscal'),
+    ]
+    
+    fornecedor = models.ForeignKey(Fornecedor, on_delete=models.CASCADE, related_name='enderecos', verbose_name='Fornecedor')
+    tipo = models.CharField('Tipo', max_length=15, choices=TIPO_CHOICES, default='COMERCIAL')
+    cep = models.CharField('CEP', max_length=10)
+    logradouro = models.CharField('Logradouro', max_length=200)
+    numero = models.CharField('Número', max_length=20)
+    complemento = models.CharField('Complemento', max_length=100, blank=True)
+    bairro = models.CharField('Bairro', max_length=100)
+    cidade = models.CharField('Cidade', max_length=100)
+    uf = models.CharField('UF', max_length=2)
+    pais = models.CharField('País', max_length=100, default='Brasil')
+    principal = models.BooleanField('Endereço Principal', default=False)
+    ativo = models.BooleanField('Ativo', default=True)
+    
+    class Meta:
+        verbose_name = "Endereço do Fornecedor"
+        verbose_name_plural = "Endereços dos Fornecedores"
+        ordering = ['-principal', 'tipo']
+    
+    def __str__(self):
+        return f"{self.get_tipo_display()} - {self.cidade}/{self.uf}"
+    
+    def save(self, *args, **kwargs):
+        if self.principal:
+            FornecedorEndereco.objects.filter(fornecedor=self.fornecedor, tipo=self.tipo).update(principal=False)
+        super().save(*args, **kwargs)
+
+
+# ============================================
+# FORNECEDORES - CONTATOS
+# ============================================
+
+class FornecedorContato(models.Model):
+    """Múltiplos contatos por fornecedor"""
+    
+    TIPO_CHOICES = [
+        ('COMERCIAL', 'Comercial'),
+        ('FINANCEIRO', 'Financeiro'),
+        ('TECNICO', 'Técnico'),
+        ('LOGISTICA', 'Logística'),
+        ('OUTROS', 'Outros'),
+    ]
+    
+    fornecedor = models.ForeignKey(Fornecedor, on_delete=models.CASCADE, related_name='contatos', verbose_name='Fornecedor')
+    nome = models.CharField('Nome do Contato', max_length=150)
+    cargo = models.CharField('Cargo', max_length=100, blank=True)
+    departamento = models.CharField('Departamento', max_length=100, blank=True)
+    tipo = models.CharField('Tipo', max_length=15, choices=TIPO_CHOICES, default='COMERCIAL')
+    telefone = models.CharField('Telefone', max_length=20, blank=True)
+    celular = models.CharField('Celular', max_length=20, blank=True)
+    email = models.EmailField('E-mail', blank=True)
+    principal = models.BooleanField('Contato Principal', default=False)
+    recebe_cotacao = models.BooleanField('Recebe Cotação/Pedido', default=True)
+    observacoes = models.TextField('Observações', blank=True)
+    ativo = models.BooleanField('Ativo', default=True)
+    
+    class Meta:
+        verbose_name = "Contato do Fornecedor"
+        verbose_name_plural = "Contatos dos Fornecedores"
+        ordering = ['-principal', 'nome']
+    
+    def __str__(self):
+        return f"{self.nome} ({self.get_tipo_display()})"
+    
+    def save(self, *args, **kwargs):
+        if self.principal:
+            FornecedorContato.objects.filter(fornecedor=self.fornecedor).update(principal=False)
+        super().save(*args, **kwargs)
+
+
+# ============================================
+# FORNECEDORES - DADOS BANCÁRIOS
+# ============================================
+
+class FornecedorDadoBancario(models.Model):
+    """Múltiplos dados bancários por fornecedor"""
+    
+    TIPO_CONTA_CHOICES = [
+        ('CORRENTE', 'Conta Corrente'),
+        ('POUPANCA', 'Poupança'),
+        ('PAGAMENTO', 'Conta Pagamento'),
+    ]
+    
+    fornecedor = models.ForeignKey(Fornecedor, on_delete=models.CASCADE, related_name='dados_bancarios', verbose_name='Fornecedor')
+    banco_codigo = models.CharField('Código do Banco', max_length=10)
+    banco_nome = models.CharField('Nome do Banco', max_length=100)
+    agencia = models.CharField('Agência', max_length=10)
+    conta = models.CharField('Conta', max_length=20)
+    tipo_conta = models.CharField('Tipo de Conta', max_length=15, choices=TIPO_CONTA_CHOICES, default='CORRENTE')
+    pix_tipo = models.CharField('Tipo PIX', max_length=15, blank=True)
+    pix_chave = models.CharField('Chave PIX', max_length=200, blank=True)
+    swift_bic = models.CharField('SWIFT/BIC', max_length=20, blank=True)
+    iban = models.CharField('IBAN', max_length=50, blank=True)
+    principal = models.BooleanField('Conta Principal', default=False)
+    
+    class Meta:
+        verbose_name = "Dado Bancário do Fornecedor"
+        verbose_name_plural = "Dados Bancários dos Fornecedores"
+        ordering = ['-principal', 'banco_nome']
+    
+    def __str__(self):
+        return f"{self.banco_nome} - Ag: {self.agencia} Conta: {self.conta}"
+    
+    def save(self, *args, **kwargs):
+        if self.principal:
+            FornecedorDadoBancario.objects.filter(fornecedor=self.fornecedor).update(principal=False)
+        super().save(*args, **kwargs)
+
+
+# ============================================
+# FORNECEDORES - DOCUMENTOS
+# ============================================
+
+class FornecedorDocumento(models.Model):
+    """Documentos e certificados do fornecedor"""
+    
+    TIPO_CHOICES = [
+        ('CERTIFICADO', 'Certificado'),
+        ('CONTRATO', 'Contrato'),
+        ('COMPLIANCE', 'Compliance'),
+        ('AUDITORIA', 'Auditoria'),
+        ('FICHA_TECNICA', 'Ficha Técnica'),
+        ('FISPQ', 'FISPQ'),
+        ('LICENCA', 'Licença'),
+        ('ALVARA', 'Alvará'),
+        ('OUTROS', 'Outros'),
+    ]
+    
+    STATUS_CHOICES = [
+        ('VALIDO', 'Válido'),
+        ('VENCIDO', 'Vencido'),
+        ('PENDENTE', 'Pendente'),
+        ('EM_ANALISE', 'Em Análise'),
+    ]
+    
+    fornecedor = models.ForeignKey(Fornecedor, on_delete=models.CASCADE, related_name='documentos', verbose_name='Fornecedor')
+    tipo = models.CharField('Tipo', max_length=20, choices=TIPO_CHOICES, default='OUTROS')
+    titulo = models.CharField('Título', max_length=200)
+    descricao = models.TextField('Descrição', blank=True)
+    arquivo = models.FileField('Arquivo', upload_to='fornecedores/documentos/%Y/%m/', blank=True)
+    data_upload = models.DateTimeField('Data de Upload', auto_now_add=True)
+    data_validade = models.DateField('Data de Validade', null=True, blank=True)
+    obrigatorio = models.BooleanField('Obrigatório para Compra', default=False)
+    status = models.CharField('Status', max_length=15, choices=STATUS_CHOICES, default='PENDENTE')
+    observacoes = models.TextField('Observações', blank=True)
+    enviado_por = models.ForeignKey('usuarios.Usuario', on_delete=models.SET_NULL, null=True, blank=True)
+    
+    class Meta:
+        verbose_name = "Documento do Fornecedor"
+        verbose_name_plural = "Documentos dos Fornecedores"
+        ordering = ['-obrigatorio', '-data_upload']
+    
+    def __str__(self):
+        return f"{self.get_tipo_display()} - {self.titulo}"
+    
+    def save(self, *args, **kwargs):
+        # Atualiza status automaticamente
+        if self.data_validade:
+            hoje = timezone.now().date()
+            if self.data_validade < hoje:
+                self.status = 'VENCIDO'
+            elif self.arquivo:
+                self.status = 'VALIDO'
+        elif self.arquivo:
+            self.status = 'VALIDO'
+        else:
+            self.status = 'PENDENTE'
+        super().save(*args, **kwargs)
+    
+    def esta_vencido(self):
+        if not self.data_validade:
+            return False
+        return self.data_validade < timezone.now().date()
+    
+    def dias_para_vencer(self):
+        if not self.data_validade:
+            return None
+        delta = self.data_validade - timezone.now().date()
+        return delta.days
+
+
+# ============================================
+# FORNECEDORES - AVALIAÇÕES
+# ============================================
+
+class FornecedorAvaliacao(models.Model):
+    """Avaliações do fornecedor em pedidos e recebimentos"""
+    
+    TIPO_AVALIACAO_CHOICES = [
+        ('PEDIDO', 'Avaliação no Pedido'),
+        ('RECEBIMENTO', 'Avaliação no Recebimento'),
+    ]
+    
+    fornecedor = models.ForeignKey(Fornecedor, on_delete=models.CASCADE, related_name='avaliacoes', verbose_name='Fornecedor')
+    tipo_avaliacao = models.CharField('Tipo', max_length=15, choices=TIPO_AVALIACAO_CHOICES, default='PEDIDO')
+    data_avaliacao = models.DateTimeField('Data da Avaliação', auto_now_add=True)
+    
+    # Notas (0-10)
+    nota_qualidade = models.DecimalField('Nota Qualidade', max_digits=4, decimal_places=2, default=0, 
+                                         validators=[MinValueValidator(0), MaxValueValidator(10)])
+    nota_prazo_entrega = models.DecimalField('Nota Prazo Entrega', max_digits=4, decimal_places=2, default=0, 
+                                             validators=[MinValueValidator(0), MaxValueValidator(10)])
+    nota_atendimento = models.DecimalField('Nota Atendimento', max_digits=4, decimal_places=2, default=0, 
+                                           validators=[MinValueValidator(0), MaxValueValidator(10)])
+    nota_preco = models.DecimalField('Nota Preço', max_digits=4, decimal_places=2, default=0, 
+                                     validators=[MinValueValidator(0), MaxValueValidator(10)])
+    
+    # Específicos de recebimento
+    prazo_validade_ok = models.BooleanField('Prazo Validade OK', default=True)
+    embalagem_ok = models.BooleanField('Embalagem OK', default=True)
+    possui_etiqueta = models.BooleanField('Possui Etiqueta', default=True)
+    dias_pedido_entrega = models.IntegerField('Dias Pedido→Entrega', null=True, blank=True)
+    
+    # Observações
+    pontos_fortes = models.TextField('Pontos Fortes', blank=True)
+    pontos_melhoria = models.TextField('Pontos Melhoria', blank=True)
+    observacoes = models.TextField('Observações', blank=True)
+    
+    avaliado_por = models.ForeignKey('usuarios.Usuario', on_delete=models.SET_NULL, null=True, blank=True)
+    
+    class Meta:
+        verbose_name = "Avaliação do Fornecedor"
+        verbose_name_plural = "Avaliações dos Fornecedores"
+        ordering = ['-data_avaliacao']
+        indexes = [
+            models.Index(fields=['fornecedor', '-data_avaliacao']),
+        ]
+    
+    def __str__(self):
+        return f"{self.fornecedor.razao_social} - {self.get_tipo_avaliacao_display()}"
+    
+    def get_media_notas(self):
+        total = self.nota_qualidade + self.nota_prazo_entrega + self.nota_atendimento + self.nota_preco
+        return (total / 4).quantize(Decimal('0.01'))
+    
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        # Atualiza score do fornecedor
+        self.fornecedor.atualizar_score()
+
+
+"""
+========================================
+FIM DO CÓDIGO PARA ADICIONAR
+========================================
+
+PRÓXIMOS PASSOS:
+1. Executar migrações:
+   python manage.py makemigrations cadastros
+   python manage.py migrate
+
+2. Criar categorias padrão (management command ou admin)
+
+3. Criar forms.py para Fornecedores
+
+4. Criar views.py para CRUD
+
+5. Adicionar URLs
+
+6. Criar templates HTML
+"""

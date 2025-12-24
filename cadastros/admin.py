@@ -10,6 +10,12 @@ from .models import (
 from .models import Area, Talhao, HistoricoTalhao, Safra, SafraPlan, SafraReal
 from .models import Vendedor, ComissaoVendedor
 
+from .models import (
+    Fornecedor, FornecedorEndereco, FornecedorContato,
+    FornecedorDadoBancario, FornecedorDocumento, FornecedorAvaliacao,
+    CategoriaFornecedor, SubcategoriaFornecedor
+)
+
 class EnderecoFazendaInline(admin.TabularInline):
     """Inline para endereços"""
     model = EnderecoFazenda
@@ -269,3 +275,47 @@ class ComissaoVendedorAdmin(admin.ModelAdmin):
     list_filter = ['empresa', 'status', 'referencia_mes']
     search_fields = ['vendedor__nome_completo']
     readonly_fields = ['data_criacao', 'valor_comissao']
+
+
+
+
+
+
+# Inlines para Fornecedor
+class FornecedorEnderecoInline(admin.TabularInline):
+    model = FornecedorEndereco
+    extra = 1
+
+class FornecedorContatoInline(admin.TabularInline):
+    model = FornecedorContato
+    extra = 1
+
+class FornecedorDadoBancarioInline(admin.TabularInline):
+    model = FornecedorDadoBancario
+    extra = 1
+
+@admin.register(Fornecedor)
+class FornecedorAdmin(admin.ModelAdmin):
+    list_display = ['razao_social', 'tipo_fornecedor', 'status', 'score_avaliacao', 'ativo']
+    list_filter = ['status', 'tipo_fornecedor', 'classificacao_risco', 'ativo']
+    search_fields = ['razao_social', 'nome_fantasia', 'cnpj_cpf']
+    inlines = [FornecedorEnderecoInline, FornecedorContatoInline, FornecedorDadoBancarioInline]
+    filter_horizontal = ['categorias', 'subcategorias']
+
+@admin.register(CategoriaFornecedor)
+class CategoriaFornecedorAdmin(admin.ModelAdmin):
+    list_display = ['nome', 'icone', 'empresa', 'ativa', 'ordem']
+    list_filter = ['ativa', 'empresa']
+    search_fields = ['nome']
+
+@admin.register(FornecedorDocumento)
+class FornecedorDocumentoAdmin(admin.ModelAdmin):
+    list_display = ['titulo', 'fornecedor', 'tipo', 'status', 'obrigatorio', 'data_validade']
+    list_filter = ['tipo', 'status', 'obrigatorio']
+    search_fields = ['titulo', 'fornecedor__razao_social']
+
+@admin.register(FornecedorAvaliacao)
+class FornecedorAvaliacaoAdmin(admin.ModelAdmin):
+    list_display = ['fornecedor', 'tipo_avaliacao', 'get_media_notas', 'data_avaliacao']
+    list_filter = ['tipo_avaliacao', 'data_avaliacao']
+    search_fields = ['fornecedor__razao_social']

@@ -2222,3 +2222,627 @@ def vendedor_json(request):
     ).values('id', 'nome_completo', 'email_corporativo', 'tipo_mercado')
     
     return JsonResponse(list(vendedores), safe=False)
+
+
+"""
+========================================
+CÓDIGO PARA ADICIONAR AO cadastros/views.py
+========================================
+
+INSTRUÇÕES:
+1. Abra o arquivo cadastros/views.py
+2. Vá até o FINAL do arquivo
+3. Cole este código completo
+4. Salve o arquivo
+
+Este código adiciona:
+- CRUD completo de Fornecedores
+- Busca CNPJ (ReceitaWS API)
+- Busca CEP (ViaCEP API)
+- Filtros e pesquisa
+- AJAX para tabelas dinâmicas
+"""
+
+import requests
+from django.http import JsonResponse
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from django.db.models import Q, Count
+from django.template.loader import render_to_string
+
+from .models import (
+    Fornecedor, FornecedorEndereco, FornecedorContato,
+    FornecedorDadoBancario, FornecedorDocumento, FornecedorAvaliacao,
+    CategoriaFornecedor, SubcategoriaFornecedor
+)
+from .forms import (
+    FornecedorForm, FornecedorEnderecoForm, FornecedorContatoForm,
+    FornecedorDadoBancarioForm, FornecedorDocumentoForm, FornecedorAvaliacaoForm,
+    CategoriaFornecedorForm, SubcategoriaFornecedorForm
+)
+
+
+# ============================================
+# FORNECEDORES - CRUD PRINCIPAL
+# ============================================
+
+@login_required
+def fornecedor_list(request):
+    """Lista fornecedores da empresa com filtros e pesquisa"""
+    
+    empresa = request.user.empresa
+    if not empresa:
+        messages.warning(request, "Você precisa estar vinculado a uma empresa.")
+        return redirect('dashboard:index')
+    
+    # Busca e filtros
+    q = request.GET.get('q', '').strip()
+    status = request.GET.get('status', '')
+    categoria = request.GET.get('categoria', '')
+    tipo = request.GET.get('tipo', '')
+    
+    # QuerySet base
+    fornecedores = Fornecedor.objects.filter(empresa=empresa).select_related('empresa').prefetch_related('categorias')
+    
+    # Aplicar filtros
+    if q:
+        fornecedores = fornecedores.filter(
+            Q(razao_social__icontains=q) |
+            Q(nome_fantasia__icontains=q) |
+            Q(cnpj_cpf__icontains=q)
+        )
+    
+    if status:
+        fornecedores = fornecedores.filter(status=status)
+    
+    if categoria:
+        fornecedores = fornecedores.filter(categorias__id=categoria)
+    
+    if tipo:
+        fornecedores = fornecedores.filter(tipo_fornecedor=tipo)
+    
+    # Ordenação
+    fornecedores = fornecedores.order_by('-data_cadastro')
+    
+    # AJAX para tabela dinâmica
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        html = render_to_string('cadastros/fornecedor/_fornecedor_table.html', {
+            'fornecedores': fornecedores
+        }, request=request)
+        return JsonResponse({'html': html})
+    
+    # Dados para filtros
+    categorias = CategoriaFornecedor.objects.filter(
+        Q(empresa=empresa) | Q(empresa__isnull=True),
+        ativa=True
+    )
+    
+    context = {
+        'fornecedores': fornecedores,
+        'categorias': categorias,
+        'q': q,
+        'status_atual': status,
+        'categoria_atual': categoria,
+        'tipo_atual': tipo,
+    }
+    
+    return render(request, 'cadastros/fornecedor/fornecedor_list.html', context)
+
+
+@login_required
+def fornecedor_create(request):
+    """Criar novo fornecedor"""
+    
+    if request.method == 'POST':
+        form = FornecedorForm(request.POST, user=request.user)
+        if form.is_valid():
+            fornecedor = form.save()
+            messages.success(request, f"✅ Fornecedor '{fornecedor.razao_social}' cadastrado com sucesso!")
+            return redirect('cadastros:fornecedor_detail', pk=fornecedor.pk)
+        else:
+            messages.error(request, "❌ Corrija os erros no formulário.")
+    else:
+        form = FornecedorForm(user=request.user)
+    
+    return render(request, 'cadastros/fornecedor/fornecedor_form.html', {
+        'form': form,
+        'action': 'Novo',
+        'title': 'Novo Fornecedor'
+    })
+
+
+@login_required
+def fornecedor_update(request, pk):
+    """Editar fornecedor existente"""
+    
+    fornecedor = get_object_or_404(Fornecedor, pk=pk, empresa=request.user.empresa)
+    
+    if request.method == 'POST':
+        form = FornecedorForm(request.POST, instance=fornecedor, user=request.user)
+        if form.is_valid():
+            fornecedor = form.save()
+            messages.success(request, f"✅ Fornecedor '{fornecedor.razao_social}' atualizado com sucesso!")
+            return redirect('cadastros:fornecedor_detail', pk=fornecedor.pk)
+        else:
+            messages.error(request, "❌ Corrija os erros no formulário.")
+    else:
+        form = FornecedorForm(instance=fornecedor, user=request.user)
+    
+    return render(request, 'cadastros/fornecedor/fornecedor_form.html', {
+        'form': form,
+        'fornecedor': fornecedor,
+        'action': 'Editar',
+        'title': f'Editar: {fornecedor.razao_social}'
+    })
+
+
+@login_required
+def fornecedor_detail(request, pk):
+    """Visualizar detalhes do fornecedor"""
+    
+    fornecedor = get_object_or_404(
+        Fornecedor.objects.select_related('empresa', 'cadastrado_por')
+                          .prefetch_related('categorias', 'subcategorias', 'enderecos', 
+                                          'contatos', 'dados_bancarios', 'documentos', 'avaliacoes'),
+        pk=pk,
+        empresa=request.user.empresa
+    )
+    
+    # Estatísticas
+    total_avaliacoes = fornecedor.avaliacoes.count()
+    avaliacoes_recentes = fornecedor.avaliacoes.order_by('-data_avaliacao')[:5]
+    
+    # Status de documentação
+    status_docs = fornecedor.get_status_documentacao()
+    docs_obrigatorios = fornecedor.documentos.filter(obrigatorio=True)
+    docs_vencidos = docs_obrigatorios.filter(status='VENCIDO').count()
+    
+    context = {
+        'fornecedor': fornecedor,
+        'total_avaliacoes': total_avaliacoes,
+        'avaliacoes_recentes': avaliacoes_recentes,
+        'status_docs': status_docs,
+        'docs_vencidos': docs_vencidos,
+    }
+    
+    return render(request, 'cadastros/fornecedor/fornecedor_detail.html', context)
+
+
+@login_required
+def fornecedor_delete(request, pk):
+    """Excluir fornecedor"""
+    
+    fornecedor = get_object_or_404(Fornecedor, pk=pk, empresa=request.user.empresa)
+    
+    # Verifica se tem pedidos vinculados (futuro)
+    # if fornecedor.pedidos.exists():
+    #     messages.error(request, "❌ Não é possível excluir! Existem pedidos vinculados a este fornecedor.")
+    #     return redirect('cadastros:fornecedor_detail', pk=pk)
+    
+    if request.method == 'POST':
+        razao_social = fornecedor.razao_social
+        fornecedor.delete()
+        messages.success(request, f"🗑️ Fornecedor '{razao_social}' excluído com sucesso!")
+        return redirect('cadastros:fornecedor_list')
+    
+    return render(request, 'cadastros/fornecedor/fornecedor_confirm_delete.html', {
+        'fornecedor': fornecedor
+    })
+
+
+# ============================================
+# APIs AUXILIARES - BUSCA CNPJ E CEP
+# ============================================
+
+@login_required
+def buscar_cnpj(request):
+    """
+    API para buscar dados do CNPJ na ReceitaWS
+    Retorna dados para preenchimento automático do formulário
+    """
+    
+    if request.method != 'POST':
+        return JsonResponse({'sucesso': False, 'erro': 'Método não permitido'}, status=405)
+    
+    cnpj = request.POST.get('cnpj', '').strip()
+    
+    # Remove formatação
+    cnpj_limpo = cnpj.replace('.', '').replace('/', '').replace('-', '')
+    
+    if len(cnpj_limpo) != 14:
+        return JsonResponse({
+            'sucesso': False,
+            'erro': 'CNPJ deve ter 14 dígitos'
+        })
+    
+    try:
+        # Chamada à API ReceitaWS
+        url = f'https://receitaws.com.br/v1/cnpj/{cnpj_limpo}'
+        response = requests.get(url, timeout=10)
+        
+        if response.status_code != 200:
+            return JsonResponse({
+                'sucesso': False,
+                'erro': 'Erro ao consultar CNPJ. Tente novamente.'
+            })
+        
+        data = response.json()
+        
+        # Verifica se retornou erro
+        if data.get('status') == 'ERROR':
+            return JsonResponse({
+                'sucesso': False,
+                'erro': data.get('message', 'CNPJ não encontrado')
+            })
+        
+        # Extrai dados
+        dados_fornecedor = {
+            'razao_social': data.get('nome', ''),
+            'nome_fantasia': data.get('fantasia', ''),
+            'telefone': data.get('telefone', '').replace('/', '').strip(),
+            'email': data.get('email', ''),
+            'situacao': data.get('situacao', ''),
+            
+            # Dados de endereço
+            'logradouro': data.get('logradouro', ''),
+            'numero': data.get('numero', ''),
+            'complemento': data.get('complemento', ''),
+            'bairro': data.get('bairro', ''),
+            'cidade': data.get('municipio', ''),
+            'uf': data.get('uf', ''),
+            'cep': data.get('cep', '').replace('.', '').replace('-', ''),
+        }
+        
+        return JsonResponse({
+            'sucesso': True,
+            'dados': dados_fornecedor
+        })
+    
+    except requests.Timeout:
+        return JsonResponse({
+            'sucesso': False,
+            'erro': 'Tempo de consulta excedido. Tente novamente.'
+        })
+    except Exception as e:
+        return JsonResponse({
+            'sucesso': False,
+            'erro': f'Erro ao buscar CNPJ: {str(e)}'
+        })
+
+
+@login_required
+def buscar_cep(request):
+    """
+    API para buscar endereço pelo CEP usando ViaCEP
+    Retorna dados para preenchimento automático do formulário de endereço
+    """
+    
+    if request.method != 'GET':
+        return JsonResponse({'sucesso': False, 'erro': 'Método não permitido'}, status=405)
+    
+    cep = request.GET.get('cep', '').strip()
+    
+    # Remove formatação
+    cep_limpo = cep.replace('-', '').replace('.', '')
+    
+    if len(cep_limpo) != 8:
+        return JsonResponse({
+            'sucesso': False,
+            'erro': 'CEP deve ter 8 dígitos'
+        })
+    
+    try:
+        # Chamada à API ViaCEP
+        url = f'https://viacep.com.br/ws/{cep_limpo}/json/'
+        response = requests.get(url, timeout=10)
+        
+        if response.status_code != 200:
+            return JsonResponse({
+                'sucesso': False,
+                'erro': 'Erro ao consultar CEP. Tente novamente.'
+            })
+        
+        data = response.json()
+        
+        # Verifica se retornou erro
+        if data.get('erro'):
+            return JsonResponse({
+                'sucesso': False,
+                'erro': 'CEP não encontrado'
+            })
+        
+        # Extrai dados
+        dados_endereco = {
+            'logradouro': data.get('logradouro', ''),
+            'bairro': data.get('bairro', ''),
+            'cidade': data.get('localidade', ''),
+            'uf': data.get('uf', ''),
+            'complemento': data.get('complemento', ''),
+        }
+        
+        return JsonResponse({
+            'sucesso': True,
+            'dados': dados_endereco
+        })
+    
+    except requests.Timeout:
+        return JsonResponse({
+            'sucesso': False,
+            'erro': 'Tempo de consulta excedido. Tente novamente.'
+        })
+    except Exception as e:
+        return JsonResponse({
+            'sucesso': False,
+            'erro': f'Erro ao buscar CEP: {str(e)}'
+        })
+
+
+# ============================================
+# AJAX - SUBCATEGORIAS DINÂMICAS
+# ============================================
+
+@login_required
+def ajax_subcategorias_por_categoria(request):
+    """
+    Retorna subcategorias filtradas por categoria
+    Usado em formulários com seleção dinâmica
+    """
+    
+    categoria_id = request.GET.get('categoria_id')
+    
+    if not categoria_id:
+        return JsonResponse({'subcategorias': []})
+    
+    try:
+        subcategorias = SubcategoriaFornecedor.objects.filter(
+            categoria_id=categoria_id,
+            ativa=True
+        ).values('id', 'nome')
+        
+        return JsonResponse({
+            'subcategorias': list(subcategorias)
+        })
+    except Exception as e:
+        return JsonResponse({
+            'erro': str(e)
+        }, status=400)
+
+
+# ============================================
+# FORNECEDOR - ENDEREÇOS
+# ============================================
+
+@login_required
+def fornecedor_endereco_create(request, fornecedor_pk):
+    """Adicionar novo endereço ao fornecedor"""
+    
+    fornecedor = get_object_or_404(Fornecedor, pk=fornecedor_pk, empresa=request.user.empresa)
+    
+    if request.method == 'POST':
+        form = FornecedorEnderecoForm(request.POST)
+        if form.is_valid():
+            endereco = form.save(commit=False)
+            endereco.fornecedor = fornecedor
+            endereco.save()
+            messages.success(request, "✅ Endereço adicionado com sucesso!")
+            return redirect('cadastros:fornecedor_detail', pk=fornecedor.pk)
+        else:
+            messages.error(request, "❌ Corrija os erros no formulário.")
+    else:
+        form = FornecedorEnderecoForm()
+    
+    return render(request, 'cadastros/fornecedor/fornecedor_endereco_form.html', {
+        'form': form,
+        'fornecedor': fornecedor,
+        'action': 'Adicionar'
+    })
+
+
+@login_required
+def fornecedor_endereco_update(request, pk):
+    """Editar endereço do fornecedor"""
+    
+    endereco = get_object_or_404(FornecedorEndereco, pk=pk, fornecedor__empresa=request.user.empresa)
+    
+    if request.method == 'POST':
+        form = FornecedorEnderecoForm(request.POST, instance=endereco)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "✅ Endereço atualizado com sucesso!")
+            return redirect('cadastros:fornecedor_detail', pk=endereco.fornecedor.pk)
+        else:
+            messages.error(request, "❌ Corrija os erros no formulário.")
+    else:
+        form = FornecedorEnderecoForm(instance=endereco)
+    
+    return render(request, 'cadastros/fornecedor/fornecedor_endereco_form.html', {
+        'form': form,
+        'endereco': endereco,
+        'fornecedor': endereco.fornecedor,
+        'action': 'Editar'
+    })
+
+
+@login_required
+def fornecedor_endereco_delete(request, pk):
+    """Excluir endereço do fornecedor"""
+    
+    endereco = get_object_or_404(FornecedorEndereco, pk=pk, fornecedor__empresa=request.user.empresa)
+    fornecedor = endereco.fornecedor
+    
+    if request.method == 'POST':
+        endereco.delete()
+        messages.success(request, "🗑️ Endereço excluído com sucesso!")
+        return redirect('cadastros:fornecedor_detail', pk=fornecedor.pk)
+    
+    return render(request, 'cadastros/fornecedor/fornecedor_endereco_confirm_delete.html', {
+        'endereco': endereco,
+        'fornecedor': fornecedor
+    })
+
+
+# ============================================
+# FORNECEDOR - CONTATOS
+# ============================================
+
+@login_required
+def fornecedor_contato_create(request, fornecedor_pk):
+    """Adicionar novo contato ao fornecedor"""
+    
+    fornecedor = get_object_or_404(Fornecedor, pk=fornecedor_pk, empresa=request.user.empresa)
+    
+    if request.method == 'POST':
+        form = FornecedorContatoForm(request.POST)
+        if form.is_valid():
+            contato = form.save(commit=False)
+            contato.fornecedor = fornecedor
+            contato.save()
+            messages.success(request, "✅ Contato adicionado com sucesso!")
+            return redirect('cadastros:fornecedor_detail', pk=fornecedor.pk)
+        else:
+            messages.error(request, "❌ Corrija os erros no formulário.")
+    else:
+        form = FornecedorContatoForm()
+    
+    return render(request, 'cadastros/fornecedor/fornecedor_contato_form.html', {
+        'form': form,
+        'fornecedor': fornecedor,
+        'action': 'Adicionar'
+    })
+
+
+@login_required
+def fornecedor_contato_update(request, pk):
+    """Editar contato do fornecedor"""
+    
+    contato = get_object_or_404(FornecedorContato, pk=pk, fornecedor__empresa=request.user.empresa)
+    
+    if request.method == 'POST':
+        form = FornecedorContatoForm(request.POST, instance=contato)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "✅ Contato atualizado com sucesso!")
+            return redirect('cadastros:fornecedor_detail', pk=contato.fornecedor.pk)
+        else:
+            messages.error(request, "❌ Corrija os erros no formulário.")
+    else:
+        form = FornecedorContatoForm(instance=contato)
+    
+    return render(request, 'cadastros/fornecedor/fornecedor_contato_form.html', {
+        'form': form,
+        'contato': contato,
+        'fornecedor': contato.fornecedor,
+        'action': 'Editar'
+    })
+
+
+@login_required
+def fornecedor_contato_delete(request, pk):
+    """Excluir contato do fornecedor"""
+    
+    contato = get_object_or_404(FornecedorContato, pk=pk, fornecedor__empresa=request.user.empresa)
+    fornecedor = contato.fornecedor
+    
+    if request.method == 'POST':
+        contato.delete()
+        messages.success(request, "🗑️ Contato excluído com sucesso!")
+        return redirect('cadastros:fornecedor_detail', pk=fornecedor.pk)
+    
+    return render(request, 'cadastros/fornecedor/fornecedor_contato_confirm_delete.html', {
+        'contato': contato,
+        'fornecedor': fornecedor
+    })
+
+
+# ============================================
+# FORNECEDOR - DOCUMENTOS
+# ============================================
+
+@login_required
+def fornecedor_documento_create(request, fornecedor_pk):
+    """Adicionar novo documento ao fornecedor"""
+    
+    fornecedor = get_object_or_404(Fornecedor, pk=fornecedor_pk, empresa=request.user.empresa)
+    
+    if request.method == 'POST':
+        form = FornecedorDocumentoForm(request.POST, request.FILES)
+        if form.is_valid():
+            documento = form.save(commit=False)
+            documento.fornecedor = fornecedor
+            documento.enviado_por = request.user
+            documento.save()
+            messages.success(request, "✅ Documento adicionado com sucesso!")
+            return redirect('cadastros:fornecedor_detail', pk=fornecedor.pk)
+        else:
+            messages.error(request, "❌ Corrija os erros no formulário.")
+    else:
+        form = FornecedorDocumentoForm()
+    
+    return render(request, 'cadastros/fornecedor/fornecedor_documento_form.html', {
+        'form': form,
+        'fornecedor': fornecedor,
+        'action': 'Adicionar'
+    })
+
+
+@login_required
+def fornecedor_documento_delete(request, pk):
+    """Excluir documento do fornecedor"""
+    
+    documento = get_object_or_404(FornecedorDocumento, pk=pk, fornecedor__empresa=request.user.empresa)
+    fornecedor = documento.fornecedor
+    
+    if request.method == 'POST':
+        # Remove arquivo físico
+        if documento.arquivo:
+            documento.arquivo.delete()
+        documento.delete()
+        messages.success(request, "🗑️ Documento excluído com sucesso!")
+        return redirect('cadastros:fornecedor_detail', pk=fornecedor.pk)
+    
+    return render(request, 'cadastros/fornecedor/fornecedor_documento_confirm_delete.html', {
+        'documento': documento,
+        'fornecedor': fornecedor
+    })
+
+
+# ============================================
+# FORNECEDOR - AVALIAÇÕES
+# ============================================
+
+@login_required
+def fornecedor_avaliacao_create(request, fornecedor_pk):
+    """Criar nova avaliação do fornecedor"""
+    
+    fornecedor = get_object_or_404(Fornecedor, pk=fornecedor_pk, empresa=request.user.empresa)
+    
+    if request.method == 'POST':
+        form = FornecedorAvaliacaoForm(request.POST)
+        if form.is_valid():
+            avaliacao = form.save(commit=False)
+            avaliacao.fornecedor = fornecedor
+            avaliacao.avaliado_por = request.user
+            avaliacao.save()
+            messages.success(request, f"✅ Avaliação registrada! Score do fornecedor: {fornecedor.score_avaliacao}/10")
+            return redirect('cadastros:fornecedor_detail', pk=fornecedor.pk)
+        else:
+            messages.error(request, "❌ Corrija os erros no formulário.")
+    else:
+        form = FornecedorAvaliacaoForm()
+    
+    return render(request, 'cadastros/fornecedor/fornecedor_avaliacao_form.html', {
+        'form': form,
+        'fornecedor': fornecedor,
+        'action': 'Criar'
+    })
+
+
+"""
+========================================
+FIM DO CÓDIGO PARA ADICIONAR
+========================================
+
+PRÓXIMO PASSO:
+Adicionar URLs ao cadastros/urls.py
+"""

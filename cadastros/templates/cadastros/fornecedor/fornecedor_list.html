@@ -1,0 +1,308 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Fornecedores | ERP Agrícola{% endblock %}
+
+{% block extra_css %}
+<style>
+  .filter-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    margin-bottom: 1.5rem;
+  }
+  
+  .fornecedor-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    transition: all 0.3s ease;
+    margin-bottom: 1rem;
+    border-left: 4px solid #0ea5a4;
+  }
+  
+  .fornecedor-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  }
+  
+  .badge-status {
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+  
+  .badge-ativo { background: #d4edda; color: #155724; }
+  .badge-inativo { background: #f8d7da; color: #721c24; }
+  .badge-bloqueado { background: #dc3545; color: white; }
+  .badge-em-analise { background: #fff3cd; color: #856404; }
+  .badge-pendente-doc { background: #ffc107; color: #000; }
+  
+  .score-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    font-weight: 600;
+  }
+  
+  .score-high { background: #d4edda; color: #155724; }
+  .score-medium { background: #fff3cd; color: #856404; }
+  .score-low { background: #f8d7da; color: #721c24; }
+  
+  .categoria-tag {
+    display: inline-block;
+    padding: 0.25rem 0.6rem;
+    margin: 0.2rem;
+    background: #e3f2fd;
+    color: #1976d2;
+    border-radius: 12px;
+    font-size: 0.8rem;
+  }
+  
+  .empty-state {
+    text-align: center;
+    padding: 3rem;
+    color: #6c757d;
+  }
+  
+  .empty-state i {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    opacity: 0.3;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  
+  <!-- Breadcrumb -->
+  <nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
+      <li class="breadcrumb-item active">Fornecedores</li>
+    </ol>
+  </nav>
+
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="fw-bold mb-1">
+        <i class="bi bi-building text-info"></i> Fornecedores
+      </h2>
+      <p class="text-muted mb-0">Gerencie seus fornecedores de insumos agrícolas</p>
+    </div>
+    <a href="{% url 'cadastros:fornecedor_create' %}" class="btn btn-success">
+      <i class="bi bi-plus-circle"></i> Novo Fornecedor
+    </a>
+  </div>
+
+  <!-- Filtros -->
+  <div class="filter-card">
+    <form method="get" id="filterForm">
+      <div class="row g-3">
+        
+        <!-- Pesquisa -->
+        <div class="col-md-4">
+          <label class="form-label fw-semibold">
+            <i class="bi bi-search"></i> Pesquisar
+          </label>
+          <input type="text" name="q" class="form-control" 
+                 placeholder="Razão social, nome fantasia ou CNPJ" 
+                 value="{{ q }}">
+        </div>
+
+        <!-- Status -->
+        <div class="col-md-2">
+          <label class="form-label fw-semibold">Status</label>
+          <select name="status" class="form-select">
+            <option value="">Todos</option>
+            <option value="ATIVO" {% if status_atual == 'ATIVO' %}selected{% endif %}>Ativo</option>
+            <option value="INATIVO" {% if status_atual == 'INATIVO' %}selected{% endif %}>Inativo</option>
+            <option value="BLOQUEADO" {% if status_atual == 'BLOQUEADO' %}selected{% endif %}>Bloqueado</option>
+            <option value="EM_ANALISE" {% if status_atual == 'EM_ANALISE' %}selected{% endif %}>Em Análise</option>
+            <option value="PENDENTE_DOC" {% if status_atual == 'PENDENTE_DOC' %}selected{% endif %}>Pendente Doc.</option>
+          </select>
+        </div>
+
+        <!-- Categoria -->
+        <div class="col-md-3">
+          <label class="form-label fw-semibold">Categoria</label>
+          <select name="categoria" class="form-select">
+            <option value="">Todas</option>
+            {% for cat in categorias %}
+              <option value="{{ cat.id }}" {% if categoria_atual == cat.id|stringformat:"s" %}selected{% endif %}>
+                {{ cat.icone }} {{ cat.nome }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Tipo -->
+        <div class="col-md-2">
+          <label class="form-label fw-semibold">Tipo</label>
+          <select name="tipo" class="form-select">
+            <option value="">Todos</option>
+            <option value="NACIONAL" {% if tipo_atual == 'NACIONAL' %}selected{% endif %}>Nacional</option>
+            <option value="INTERNACIONAL" {% if tipo_atual == 'INTERNACIONAL' %}selected{% endif %}>Internacional</option>
+          </select>
+        </div>
+
+        <!-- Botões -->
+        <div class="col-md-1 d-flex align-items-end">
+          <button type="submit" class="btn btn-primary w-100">
+            <i class="bi bi-funnel"></i>
+          </button>
+        </div>
+
+      </div>
+    </form>
+  </div>
+
+  <!-- Lista de Fornecedores -->
+  <div id="fornecedoresList">
+    {% if fornecedores %}
+      <div class="row">
+        {% for fornecedor in fornecedores %}
+        <div class="col-12">
+          <div class="fornecedor-card">
+            <div class="row align-items-center">
+              
+              <!-- Informações Principais -->
+              <div class="col-md-5">
+                <h5 class="mb-1 fw-bold">
+                  <i class="bi bi-building-fill text-info"></i>
+                  {{ fornecedor.get_nome_exibicao }}
+                </h5>
+                <p class="text-muted mb-2 small">
+                  <strong>CNPJ/CPF:</strong> {{ fornecedor.get_cnpj_cpf_formatado }}
+                  {% if fornecedor.razao_social != fornecedor.get_nome_exibicao %}
+                    <br><em>{{ fornecedor.razao_social }}</em>
+                  {% endif %}
+                </p>
+                
+                <!-- Categorias -->
+                <div class="mb-2">
+                  {% for cat in fornecedor.categorias.all|slice:":3" %}
+                    <span class="categoria-tag">{{ cat.icone }} {{ cat.nome }}</span>
+                  {% endfor %}
+                  {% if fornecedor.categorias.count > 3 %}
+                    <span class="categoria-tag">+{{ fornecedor.categorias.count|add:"-3" }}</span>
+                  {% endif %}
+                </div>
+              </div>
+
+              <!-- Status e Score -->
+              <div class="col-md-3 text-center">
+                <!-- Status -->
+                <div class="mb-2">
+                  {% if fornecedor.status == 'ATIVO' %}
+                    <span class="badge-status badge-ativo">✓ Ativo</span>
+                  {% elif fornecedor.status == 'BLOQUEADO' %}
+                    <span class="badge-status badge-bloqueado">⛔ Bloqueado</span>
+                  {% elif fornecedor.status == 'EM_ANALISE' %}
+                    <span class="badge-status badge-em-analise">⏳ Em Análise</span>
+                  {% elif fornecedor.status == 'PENDENTE_DOC' %}
+                    <span class="badge-status badge-pendente-doc">📋 Pendente Doc.</span>
+                  {% else %}
+                    <span class="badge-status badge-inativo">⏸ Inativo</span>
+                  {% endif %}
+                </div>
+                
+                <!-- Score -->
+                {% if fornecedor.score_avaliacao > 0 %}
+                  {% if fornecedor.score_avaliacao >= 7 %}
+                    <span class="score-badge score-high">⭐ {{ fornecedor.score_avaliacao }}</span>
+                  {% elif fornecedor.score_avaliacao >= 4 %}
+                    <span class="score-badge score-medium">⚠️ {{ fornecedor.score_avaliacao }}</span>
+                  {% else %}
+                    <span class="score-badge score-low">❌ {{ fornecedor.score_avaliacao }}</span>
+                  {% endif %}
+                {% else %}
+                  <span class="text-muted small">Sem avaliações</span>
+                {% endif %}
+              </div>
+
+              <!-- Estatísticas -->
+              <div class="col-md-2 text-center">
+                <div class="mb-1">
+                  <strong class="text-success">R$ {{ fornecedor.total_comprado|floatformat:2 }}</strong>
+                  <br><small class="text-muted">Total Comprado</small>
+                </div>
+                <div>
+                  <strong>{{ fornecedor.numero_pedidos }}</strong>
+                  <br><small class="text-muted">Pedidos</small>
+                </div>
+              </div>
+
+              <!-- Ações -->
+              <div class="col-md-2 text-end">
+                <a href="{% url 'cadastros:fornecedor_detail' fornecedor.pk %}" 
+                   class="btn btn-sm btn-outline-info" title="Ver Detalhes">
+                  <i class="bi bi-eye"></i>
+                </a>
+                <a href="{% url 'cadastros:fornecedor_update' fornecedor.pk %}" 
+                   class="btn btn-sm btn-outline-primary" title="Editar">
+                  <i class="bi bi-pencil"></i>
+                </a>
+                <a href="{% url 'cadastros:fornecedor_delete' fornecedor.pk %}" 
+                   class="btn btn-sm btn-outline-danger" title="Excluir">
+                  <i class="bi bi-trash"></i>
+                </a>
+              </div>
+
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+
+      <!-- Total de Resultados -->
+      <div class="mt-3 text-center text-muted">
+        <small>Total: <strong>{{ fornecedores.count }}</strong> fornecedor{{ fornecedores.count|pluralize:"es" }}</small>
+      </div>
+
+    {% else %}
+      <!-- Estado Vazio -->
+      <div class="empty-state">
+        <i class="bi bi-inbox"></i>
+        <h4 class="text-muted">Nenhum fornecedor encontrado</h4>
+        {% if q or status_atual or categoria_atual or tipo_atual %}
+          <p>Tente ajustar os filtros de pesquisa</p>
+          <a href="{% url 'cadastros:fornecedor_list' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-counterclockwise"></i> Limpar Filtros
+          </a>
+        {% else %}
+          <p>Comece cadastrando seu primeiro fornecedor</p>
+          <a href="{% url 'cadastros:fornecedor_create' %}" class="btn btn-success">
+            <i class="bi bi-plus-circle"></i> Novo Fornecedor
+          </a>
+        {% endif %}
+      </div>
+    {% endif %}
+  </div>
+
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Auto-submit ao mudar filtros
+  const filterForm = document.getElementById('filterForm');
+  const selects = filterForm.querySelectorAll('select');
+  
+  selects.forEach(select => {
+    select.addEventListener('change', function() {
+      filterForm.submit();
+    });
+  });
+  
+  // AJAX opcional para tabela dinâmica
+  // Implementar se necessário
+});
+</script>
+{% endblock %}

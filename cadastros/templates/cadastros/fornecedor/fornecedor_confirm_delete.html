@@ -1,0 +1,192 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Excluir Fornecedor | ERP Agrícola{% endblock %}
+
+{% block extra_css %}
+<style>
+  .delete-card {
+    background: white;
+    border-radius: 12px;
+    padding: 2rem;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+    max-width: 600px;
+    margin: 0 auto;
+  }
+  
+  .warning-icon {
+    font-size: 4rem;
+    color: #dc3545;
+    margin-bottom: 1rem;
+  }
+  
+  .info-box {
+    background: #f8f9fa;
+    border-left: 4px solid #0ea5a4;
+    padding: 1rem;
+    margin: 1rem 0;
+    border-radius: 4px;
+  }
+  
+  .info-row {
+    display: flex;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #e9ecef;
+  }
+  
+  .info-row:last-child {
+    border-bottom: none;
+  }
+  
+  .info-label {
+    font-weight: 600;
+    min-width: 150px;
+    color: #6c757d;
+  }
+  
+  .info-value {
+    flex: 1;
+    color: #212529;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  
+  <!-- Breadcrumb -->
+  <nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'cadastros:fornecedor_list' %}">Fornecedores</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'cadastros:fornecedor_detail' fornecedor.pk %}">{{ fornecedor.get_nome_exibicao }}</a></li>
+      <li class="breadcrumb-item active">Excluir</li>
+    </ol>
+  </nav>
+
+  <div class="delete-card">
+    
+    <!-- Ícone de Aviso -->
+    <div class="text-center">
+      <div class="warning-icon">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+      </div>
+      <h3 class="fw-bold text-danger mb-3">Confirmar Exclusão</h3>
+      <p class="text-muted mb-4">
+        Você tem certeza que deseja excluir este fornecedor?<br>
+        <strong>Esta ação não pode ser desfeita!</strong>
+      </p>
+    </div>
+
+    <!-- Informações do Fornecedor -->
+    <div class="info-box">
+      <h5 class="fw-bold mb-3">
+        <i class="bi bi-building-fill text-info"></i>
+        Dados do Fornecedor
+      </h5>
+      
+      <div class="info-row">
+        <span class="info-label">Nome:</span>
+        <span class="info-value">{{ fornecedor.get_nome_exibicao }}</span>
+      </div>
+      
+      {% if fornecedor.razao_social != fornecedor.get_nome_exibicao %}
+      <div class="info-row">
+        <span class="info-label">Razão Social:</span>
+        <span class="info-value">{{ fornecedor.razao_social }}</span>
+      </div>
+      {% endif %}
+      
+      <div class="info-row">
+        <span class="info-label">CNPJ/CPF:</span>
+        <span class="info-value">{{ fornecedor.get_cnpj_cpf_formatado }}</span>
+      </div>
+      
+      <div class="info-row">
+        <span class="info-label">Status:</span>
+        <span class="info-value">
+          {% if fornecedor.status == 'ATIVO' %}
+            <span class="badge bg-success">✓ Ativo</span>
+          {% elif fornecedor.status == 'BLOQUEADO' %}
+            <span class="badge bg-danger">⛔ Bloqueado</span>
+          {% elif fornecedor.status == 'EM_ANALISE' %}
+            <span class="badge bg-warning">⏳ Em Análise</span>
+          {% else %}
+            <span class="badge bg-secondary">⏸ Inativo</span>
+          {% endif %}
+        </span>
+      </div>
+      
+      <div class="info-row">
+        <span class="info-label">Total Comprado:</span>
+        <span class="info-value">
+          <strong class="text-success">R$ {{ fornecedor.total_comprado|floatformat:2 }}</strong>
+        </span>
+      </div>
+      
+      <div class="info-row">
+        <span class="info-label">Pedidos:</span>
+        <span class="info-value"><strong>{{ fornecedor.numero_pedidos }}</strong></span>
+      </div>
+      
+      <div class="info-row">
+        <span class="info-label">Cadastrado em:</span>
+        <span class="info-value">{{ fornecedor.data_cadastro|date:"d/m/Y H:i" }}</span>
+      </div>
+    </div>
+
+    <!-- Dados Relacionados -->
+    {% if fornecedor.enderecos.count > 0 or fornecedor.contatos.count > 0 or fornecedor.documentos.count > 0 or fornecedor.avaliacoes.count > 0 %}
+    <div class="alert alert-warning mt-3">
+      <h6 class="fw-bold mb-2">
+        <i class="bi bi-info-circle"></i> Dados que serão excluídos junto:
+      </h6>
+      <ul class="mb-0">
+        {% if fornecedor.enderecos.count > 0 %}
+          <li><strong>{{ fornecedor.enderecos.count }}</strong> endereço{{ fornecedor.enderecos.count|pluralize }}</li>
+        {% endif %}
+        {% if fornecedor.contatos.count > 0 %}
+          <li><strong>{{ fornecedor.contatos.count }}</strong> contato{{ fornecedor.contatos.count|pluralize }}</li>
+        {% endif %}
+        {% if fornecedor.dados_bancarios.count > 0 %}
+          <li><strong>{{ fornecedor.dados_bancarios.count }}</strong> dado{{ fornecedor.dados_bancarios.count|pluralize }} bancário{{ fornecedor.dados_bancarios.count|pluralize }}</li>
+        {% endif %}
+        {% if fornecedor.documentos.count > 0 %}
+          <li><strong>{{ fornecedor.documentos.count }}</strong> documento{{ fornecedor.documentos.count|pluralize }}</li>
+        {% endif %}
+        {% if fornecedor.avaliacoes.count > 0 %}
+          <li><strong>{{ fornecedor.avaliacoes.count }}</strong> avaliação{{ fornecedor.avaliacoes.count|pluralize:"ões" }}</li>
+        {% endif %}
+      </ul>
+    </div>
+    {% endif %}
+
+    <!-- Aviso sobre Pedidos (futuro) -->
+    <!--
+    {% if fornecedor.numero_pedidos > 0 %}
+    <div class="alert alert-danger mt-3">
+      <i class="bi bi-exclamation-triangle-fill"></i>
+      <strong>Atenção!</strong> Este fornecedor possui <strong>{{ fornecedor.numero_pedidos }}</strong> pedido{{ fornecedor.numero_pedidos|pluralize }} registrado{{ fornecedor.numero_pedidos|pluralize }}.
+      A exclusão pode afetar o histórico de compras.
+    </div>
+    {% endif %}
+    -->
+
+    <!-- Formulário de Confirmação -->
+    <form method="post" class="mt-4">
+      {% csrf_token %}
+      
+      <div class="d-grid gap-2">
+        <button type="submit" class="btn btn-danger btn-lg">
+          <i class="bi bi-trash"></i> Sim, excluir fornecedor
+        </button>
+        <a href="{% url 'cadastros:fornecedor_detail' fornecedor.pk %}" class="btn btn-outline-secondary btn-lg">
+          <i class="bi bi-x-circle"></i> Cancelar
+        </a>
+      </div>
+    </form>
+
+  </div>
+
+</div>
+{% endblock %}

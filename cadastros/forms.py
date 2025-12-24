@@ -1791,3 +1791,283 @@ class VendedorFiltroForm(forms.Form):
         choices=TIPO_MERCADO_CHOICES,
         widget=forms.Select(attrs={'class': 'form-select'})
     )
+
+
+
+
+    """
+========================================
+CÓDIGO PARA ADICIONAR AO cadastros/forms.py
+========================================
+
+INSTRUÇÕES:
+1. Abra o arquivo cadastros/forms.py
+2. Vá até o FINAL do arquivo
+3. Cole este código completo
+4. Salve o arquivo
+"""
+
+# ============================================
+# FORNECEDORES - FORMULÁRIOS
+# ============================================
+
+from .models import (
+    Fornecedor, FornecedorEndereco, FornecedorContato,
+    FornecedorDadoBancario, FornecedorDocumento, FornecedorAvaliacao,
+    CategoriaFornecedor, SubcategoriaFornecedor
+)
+
+
+class FornecedorForm(forms.ModelForm):
+    """Formulário principal do fornecedor"""
+    
+    class Meta:
+        model = Fornecedor
+        fields = [
+            'tipo_pessoa', 'tipo_fornecedor', 'cnpj_cpf', 'codigo_fiscal_internacional',
+            'razao_social', 'nome_fantasia',
+            'inscricao_estadual', 'inscricao_municipal', 'eori', 'regime_tributario',
+            'categorias', 'subcategorias',
+            'status', 'classificacao_risco',
+            'data_homologacao', 'validade_homologacao',
+            'prazo_pagamento_padrao', 'prazo_entrega_medio',
+            'pais_origem', 'moeda_padrao', 'incoterm_preferencial',
+            'possui_certificacao_internacional',
+            'telefone', 'email', 'website',
+            'observacoes', 'motivo_bloqueio', 'ativo'
+        ]
+        widgets = {
+            'tipo_pessoa': forms.Select(attrs={'class': 'form-select'}),
+            'tipo_fornecedor': forms.Select(attrs={'class': 'form-select'}),
+            'cnpj_cpf': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '00.000.000/0000-00 ou 000.000.000-00'}),
+            'codigo_fiscal_internacional': forms.TextInput(attrs={'class': 'form-control'}),
+            'razao_social': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Razão Social ou Nome Completo'}),
+            'nome_fantasia': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nome Fantasia (opcional)'}),
+            'inscricao_estadual': forms.TextInput(attrs={'class': 'form-control'}),
+            'inscricao_municipal': forms.TextInput(attrs={'class': 'form-control'}),
+            'eori': forms.TextInput(attrs={'class': 'form-control'}),
+            'regime_tributario': forms.Select(attrs={'class': 'form-select'}),
+            'categorias': forms.SelectMultiple(attrs={'class': 'form-select', 'size': '5'}),
+            'subcategorias': forms.SelectMultiple(attrs={'class': 'form-select', 'size': '5'}),
+            'status': forms.Select(attrs={'class': 'form-select'}),
+            'classificacao_risco': forms.Select(attrs={'class': 'form-select'}),
+            'data_homologacao': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'validade_homologacao': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'prazo_pagamento_padrao': forms.NumberInput(attrs={'class': 'form-control', 'min': '0'}),
+            'prazo_entrega_medio': forms.NumberInput(attrs={'class': 'form-control', 'min': '0'}),
+            'pais_origem': forms.TextInput(attrs={'class': 'form-control', 'value': 'Brasil'}),
+            'moeda_padrao': forms.TextInput(attrs={'class': 'form-control', 'value': 'BRL'}),
+            'incoterm_preferencial': forms.TextInput(attrs={'class': 'form-control'}),
+            'possui_certificacao_internacional': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'telefone': forms.TextInput(attrs={'class': 'form-control'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control'}),
+            'website': forms.URLInput(attrs={'class': 'form-control'}),
+            'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'motivo_bloqueio': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+            'ativo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
+    
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        
+        if self.user and self.user.empresa:
+            from django.db.models import Q
+            self.fields['categorias'].queryset = CategoriaFornecedor.objects.filter(
+                Q(empresa=self.user.empresa) | Q(empresa__isnull=True),
+                ativa=True
+            )
+        
+        if self.instance and self.instance.pk and self.instance.categorias.exists():
+            cat_ids = self.instance.categorias.values_list('id', flat=True)
+            self.fields['subcategorias'].queryset = SubcategoriaFornecedor.objects.filter(
+                categoria_id__in=cat_ids, ativa=True
+            )
+    
+    def clean_cnpj_cpf(self):
+        import re
+        cnpj_cpf = self.cleaned_data.get('cnpj_cpf')
+        tipo_pessoa = self.cleaned_data.get('tipo_pessoa')
+        tipo_fornecedor = self.cleaned_data.get('tipo_fornecedor')
+        
+        if not cnpj_cpf:
+            raise ValidationError('CNPJ/CPF é obrigatório')
+        
+        numeros = re.sub(r'\D', '', cnpj_cpf)
+        
+        if tipo_fornecedor == 'NACIONAL':
+            if tipo_pessoa == 'PJ' and len(numeros) != 14:
+                raise ValidationError('CNPJ deve ter 14 dígitos')
+            if tipo_pessoa == 'PF' and len(numeros) != 11:
+                raise ValidationError('CPF deve ter 11 dígitos')
+        
+        qs = Fornecedor.objects.filter(empresa=self.user.empresa, cnpj_cpf=numeros)
+        if self.instance.pk:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise ValidationError('Já existe um fornecedor com este CNPJ/CPF')
+        
+        return numeros
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        status = cleaned_data.get('status')
+        motivo_bloqueio = cleaned_data.get('motivo_bloqueio')
+        
+        if status == 'BLOQUEADO' and not motivo_bloqueio:
+            raise ValidationError({'motivo_bloqueio': 'Motivo do bloqueio é obrigatório'})
+        
+        return cleaned_data
+    
+    def save(self, commit=True):
+        fornecedor = super().save(commit=False)
+        if not fornecedor.pk and self.user:
+            fornecedor.empresa = self.user.empresa
+            fornecedor.cadastrado_por = self.user
+        if commit:
+            fornecedor.save()
+            self.save_m2m()
+        return fornecedor
+
+
+class FornecedorEnderecoForm(forms.ModelForm):
+    """Formulário para endereços do fornecedor"""
+    
+    class Meta:
+        model = FornecedorEndereco
+        fields = ['tipo', 'cep', 'logradouro', 'numero', 'complemento', 'bairro', 'cidade', 'uf', 'pais', 'principal', 'ativo']
+        widgets = {
+            'tipo': forms.Select(attrs={'class': 'form-select'}),
+            'cep': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '00000-000'}),
+            'logradouro': forms.TextInput(attrs={'class': 'form-control'}),
+            'numero': forms.TextInput(attrs={'class': 'form-control'}),
+            'complemento': forms.TextInput(attrs={'class': 'form-control'}),
+            'bairro': forms.TextInput(attrs={'class': 'form-control'}),
+            'cidade': forms.TextInput(attrs={'class': 'form-control'}),
+            'uf': forms.TextInput(attrs={'class': 'form-control', 'maxlength': '2', 'style': 'text-transform: uppercase'}),
+            'pais': forms.TextInput(attrs={'class': 'form-control', 'value': 'Brasil'}),
+            'principal': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'ativo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
+
+
+class FornecedorContatoForm(forms.ModelForm):
+    """Formulário para contatos do fornecedor"""
+    
+    class Meta:
+        model = FornecedorContato
+        fields = ['nome', 'cargo', 'departamento', 'tipo', 'telefone', 'celular', 'email', 
+                 'principal', 'recebe_cotacao', 'observacoes', 'ativo']
+        widgets = {
+            'nome': forms.TextInput(attrs={'class': 'form-control'}),
+            'cargo': forms.TextInput(attrs={'class': 'form-control'}),
+            'departamento': forms.TextInput(attrs={'class': 'form-control'}),
+            'tipo': forms.Select(attrs={'class': 'form-select'}),
+            'telefone': forms.TextInput(attrs={'class': 'form-control'}),
+            'celular': forms.TextInput(attrs={'class': 'form-control'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control'}),
+            'principal': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'recebe_cotacao': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+            'ativo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
+
+
+class FornecedorDadoBancarioForm(forms.ModelForm):
+    """Formulário para dados bancários"""
+    
+    class Meta:
+        model = FornecedorDadoBancario
+        fields = ['banco_codigo', 'banco_nome', 'agencia', 'conta', 'tipo_conta',
+                 'pix_tipo', 'pix_chave', 'swift_bic', 'iban', 'principal']
+        widgets = {
+            'banco_codigo': forms.TextInput(attrs={'class': 'form-control'}),
+            'banco_nome': forms.TextInput(attrs={'class': 'form-control'}),
+            'agencia': forms.TextInput(attrs={'class': 'form-control'}),
+            'conta': forms.TextInput(attrs={'class': 'form-control'}),
+            'tipo_conta': forms.Select(attrs={'class': 'form-select'}),
+            'pix_tipo': forms.TextInput(attrs={'class': 'form-control'}),
+            'pix_chave': forms.TextInput(attrs={'class': 'form-control'}),
+            'swift_bic': forms.TextInput(attrs={'class': 'form-control'}),
+            'iban': forms.TextInput(attrs={'class': 'form-control'}),
+            'principal': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
+
+
+class FornecedorDocumentoForm(forms.ModelForm):
+    """Formulário para documentos"""
+    
+    class Meta:
+        model = FornecedorDocumento
+        fields = ['tipo', 'titulo', 'descricao', 'arquivo', 'data_validade', 'obrigatorio', 'observacoes']
+        widgets = {
+            'tipo': forms.Select(attrs={'class': 'form-select'}),
+            'titulo': forms.TextInput(attrs={'class': 'form-control'}),
+            'descricao': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+            'arquivo': forms.FileInput(attrs={'class': 'form-control'}),
+            'data_validade': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'obrigatorio': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+        }
+
+
+class FornecedorAvaliacaoForm(forms.ModelForm):
+    """Formulário para avaliações"""
+    
+    class Meta:
+        model = FornecedorAvaliacao
+        fields = [
+            'tipo_avaliacao',
+            'nota_qualidade', 'nota_prazo_entrega', 'nota_atendimento', 'nota_preco',
+            'prazo_validade_ok', 'embalagem_ok', 'possui_etiqueta', 'dias_pedido_entrega',
+            'pontos_fortes', 'pontos_melhoria', 'observacoes'
+        ]
+        widgets = {
+            'tipo_avaliacao': forms.Select(attrs={'class': 'form-select'}),
+            'nota_qualidade': forms.NumberInput(attrs={'class': 'form-control', 'min': '0', 'max': '10', 'step': '0.1'}),
+            'nota_prazo_entrega': forms.NumberInput(attrs={'class': 'form-control', 'min': '0', 'max': '10', 'step': '0.1'}),
+            'nota_atendimento': forms.NumberInput(attrs={'class': 'form-control', 'min': '0', 'max': '10', 'step': '0.1'}),
+            'nota_preco': forms.NumberInput(attrs={'class': 'form-control', 'min': '0', 'max': '10', 'step': '0.1'}),
+            'prazo_validade_ok': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'embalagem_ok': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'possui_etiqueta': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'dias_pedido_entrega': forms.NumberInput(attrs={'class': 'form-control', 'min': '0'}),
+            'pontos_fortes': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+            'pontos_melhoria': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+            'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+        }
+
+
+class CategoriaFornecedorForm(forms.ModelForm):
+    """Formulário para criar/editar categorias customizadas"""
+    
+    class Meta:
+        model = CategoriaFornecedor
+        fields = ['nome', 'descricao', 'icone', 'ordem', 'ativa']
+        widgets = {
+            'nome': forms.TextInput(attrs={'class': 'form-control'}),
+            'descricao': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+            'icone': forms.TextInput(attrs={'class': 'form-control'}),
+            'ordem': forms.NumberInput(attrs={'class': 'form-control', 'min': '0'}),
+            'ativa': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
+
+
+class SubcategoriaFornecedorForm(forms.ModelForm):
+    """Formulário para subcategorias"""
+    
+    class Meta:
+        model = SubcategoriaFornecedor
+        fields = ['categoria', 'nome', 'ativa']
+        widgets = {
+            'categoria': forms.Select(attrs={'class': 'form-select'}),
+            'nome': forms.TextInput(attrs={'class': 'form-control'}),
+            'ativa': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
+
+
+"""
+========================================
+FIM DO CÓDIGO PARA ADICIONAR AO forms.py
+========================================
+"""

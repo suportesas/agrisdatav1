@@ -279,3 +279,7 @@ LOGGING = {
 
 # Cria pasta de logs se não existir
 os.makedirs(os.path.join(BASE_DIR, 'logs'), exist_ok=True)
+
+# Procure por estas configurações:
+USE_L10N = True  # Se True, formata datas automaticamente
+DATE_INPUT_FORMATS = [...]  # Pode estar forçando formato brasileiro

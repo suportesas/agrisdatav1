@@ -200,6 +200,7 @@ def fazenda_update(request, pk):
             instance=fazenda,
             empresa=request.user.empresa,
             usuario=request.user
+            
         )
     
     return render(request, 'cadastros/fazenda_form.html', {

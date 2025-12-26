@@ -188,9 +188,14 @@
                   <i class="bi bi-geo-alt-fill text-success"></i>
                   <strong>{{ talhao.fazenda.nome }}</strong>
                 </div>
+                {% if talhao.area %}
                 <small class="text-muted">
-                  <i class="bi bi-map"></i> {{ talhao.area.nome }} (Área {{ talhao.area_hac|floatformat:2 }} ha)
+                  <i class="bi bi-map"></i> {{ talhao.area.nome }} 
+                  {% if talhao.area.area_total %}
+                    (Área {{ talhao.area.area_total|floatformat:2 }} ha)
+                  {% endif %}
                 </small>
+                {% endif %}
               </td>
 
               <!-- Área -->
@@ -198,7 +203,7 @@
                 <strong>{{ talhao.area_hac|floatformat:2 }}</strong> ha
               </td>
 
-              <!-- Cultura Atual -->
+              <!-- ✅ CULTURA ATUAL - CORRIGIDO -->
               <td>
                 {% if talhao.cultura_atual %}
                   <span class="badge bg-success">
@@ -209,6 +214,14 @@
                     Plantado em {{ talhao.data_plantio_atual|date:"d/m/Y" }}
                   </small>
                   {% endif %}
+                {% elif talhao.safra_ativa and talhao.cultura_safra %}
+                  <!-- Fallback: se houver safra ativa mas não cultura_atual -->
+                  <span class="badge bg-info">
+                    🌾 {{ talhao.cultura_safra.nome }}
+                  </span>
+                  <br><small class="text-muted">
+                    Via Safra: {{ talhao.safra_nome }}
+                  </small>
                 {% else %}
                   <span class="text-muted">—</span>
                 {% endif %}
@@ -258,7 +271,8 @@
                   <a 
                     href="{% url 'cadastros:talhao_delete' talhao.id %}" 
                     class="btn btn-outline-danger"
-                    title="Excluir">
+                    title="Excluir"
+                    onclick="return confirm('Tem certeza que deseja excluir o talhão {{ talhao.nome }}?')">
                     <i class="bi bi-trash"></i>
                   </a>
                 </div>

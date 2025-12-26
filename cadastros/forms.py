@@ -18,6 +18,7 @@ from .models import Area, Talhao, HistoricoTalhao,  Cultura
 from .models import Safra, SafraPlan, SafraReal
 from decimal import Decimal
 
+
 class FazendaForm(forms.ModelForm):
     """Formulário principal de cadastro de fazenda"""
     
@@ -129,9 +130,11 @@ class FazendaForm(forms.ModelForm):
             try:
                 areas = self.instance.areas.all()
                 soma = sum((a.area_plantavel or Decimal('0')) for a in areas)
+                # ✅ CORREÇÃO: Garante que soma seja Decimal
+                soma = Decimal(str(soma))  # Converte para Decimal explicitamente
             except Exception:
                 soma = Decimal('0')
-
+            
             # Formata inicial e marca como somente leitura
             if 'area_agricultavel' in self.fields:
                 self.fields['area_agricultavel'].initial = soma.quantize(Decimal('0.01'))
@@ -139,6 +142,7 @@ class FazendaForm(forms.ModelForm):
                     'readonly': True,
                     'class': self.fields['area_agricultavel'].widget.attrs.get('class', '') + ' form-control-plaintext'
                 })
+
     
     def clean_cnpj_cpf(self):
         """Valida e limpa CNPJ/CPF"""
@@ -565,10 +569,13 @@ class FuncionarioForm(forms.ModelForm):
             'rg': forms.TextInput(attrs={
                 'class': 'form-control'
             }),
-            'data_nascimento': forms.DateInput(attrs={
-                'class': 'form-control',
-                'type': 'date'
-            }),
+             'data_nascimento': forms.DateInput(
+                attrs={
+                    'class': 'form-control',
+                    'type': 'date'
+                },
+                format='%Y-%m-%d'  # 🔥 Adicione esta linha
+            ),
             'genero': forms.Select(attrs={'class': 'form-select'}),
             'estado_civil': forms.Select(attrs={'class': 'form-select'}),
             'telefone': forms.TextInput(attrs={
@@ -612,12 +619,16 @@ class FuncionarioForm(forms.ModelForm):
             'tipo_contrato': forms.Select(attrs={'class': 'form-select'}),
             'data_admissao': forms.DateInput(attrs={
                 'class': 'form-control',
-                'type': 'date'
-            }),
+                    'type': 'date'
+                },
+                format='%Y-%m-%d'  # 🔥 Adicione esta linha
+            ),
             'data_demissao': forms.DateInput(attrs={
-                'class': 'form-control',
-                'type': 'date'
-            }),
+                    'class': 'form-control',
+                    'type': 'date'
+                },
+                format='%Y-%m-%d'  # 🔥 Adicione esta linha
+            ),
             'salario': forms.NumberInput(attrs={
                 'class': 'form-control',
                 'step': '0.01'
@@ -657,6 +668,7 @@ class FuncionarioForm(forms.ModelForm):
             }),
         }
     
+
     def __init__(self, *args, **kwargs):
         self.empresa = kwargs.pop('empresa', None)
         self.usuario = kwargs.pop('usuario', None)
@@ -672,7 +684,20 @@ class FuncionarioForm(forms.ModelForm):
                 empresa=self.empresa,
                 ativa=True
             )
-    
+        
+        # 🔥 CORREÇÃO: Formata data_nascimento para edição
+        if self.instance and self.instance.pk:
+            # Se está editando e tem data de nascimento, formata para YYYY-MM-DD
+            if self.instance.data_nascimento:
+                self.fields['data_nascimento'].initial = self.instance.data_nascimento.strftime('%Y-%m-%d')
+            
+            # Também formata data de admissão e demissão
+            if self.instance.data_admissao:
+                self.fields['data_admissao'].initial = self.instance.data_admissao.strftime('%Y-%m-%d')
+            
+            if self.instance.data_demissao:
+                self.fields['data_demissao'].initial = self.instance.data_demissao.strftime('%Y-%m-%d')
+        
     def clean_cpf(self):
         """Valida CPF"""
         cpf = self.cleaned_data.get('cpf', '')
@@ -711,8 +736,6 @@ class FuncionarioForm(forms.ModelForm):
 """
 ADICIONE ESTE CÓDIGO NO FINAL DO ARQUIVO cadastros/forms.py
 """
-
-from .models import Cultura
 
 
 class CulturaForm(forms.ModelForm):
@@ -1218,28 +1241,6 @@ class SafraForm(forms.ModelForm):
         return instance
 
 
-
-
-    def save(self, commit=True):
-        instance = super().save(commit=False)
-        # Preenche nome padrão se não foi informado, usando `periodo_inicio` e `periodo_fim`.
-        inicio = self.cleaned_data.get('periodo_inicio')
-        fim = self.cleaned_data.get('periodo_fim')
-        if not instance.nome:
-            if inicio and fim:
-                # Nome padrão: <inicio_year><fim_year_two_digits> -> 2025 + 26 => 202526
-                instance.nome = f"{inicio.year}{fim.year % 100:02d}"
-            elif inicio:
-                instance.nome = str(inicio.year)
-
-        if commit:
-            instance.save()
-            try:
-                self.save_m2m()
-            except Exception:
-                pass
-
-        return instance
 
 
 class HistoricoTalhaoForm(forms.ModelForm):

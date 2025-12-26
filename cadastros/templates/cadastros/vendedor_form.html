@@ -1,490 +1,513 @@
-{% extends 'base.html' %}
+"""
+=============================================================================
+📝 VIEWS DE VENDEDOR - VERSÃO FINAL CONSOLIDADA
+=============================================================================
 
-{% block title %}{{ action }} Vendedor | ERP Agrícola{% endblock %}
+TODAS as views de vendedor em um único arquivo, sem duplicações.
+Inclui CRUD completo, ações rápidas, comissões e API JSON.
 
-{% block extra_css %}
-<style>
-  .section-card {
-    border-left: 4px solid #3b82f6;
-    margin-bottom: 1.5rem;
-  }
-  .quick-add-btn {
-    transition: all 0.3s ease;
-  }
-  .quick-add-btn:hover {
-    transform: scale(1.05);
-  }
-</style>
-{% endblock %}
+INSTRUÇÕES:
+1. Abra cadastros/views.py
+2. Localize TODAS as views de vendedor existentes
+3. DELETE todas elas
+4. Cole ESTE código no lugar
+5. Salve e teste
 
-{% block content %}
-<div class="container py-4">
-  
-  <!-- Breadcrumb -->
-  <nav aria-label="breadcrumb" class="mb-4">
-    <ol class="breadcrumb">
-      <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
-      <li class="breadcrumb-item"><a href="{% url 'cadastros:vendedor_list' %}">Vendedores</a></li>
-      <li class="breadcrumb-item active">{{ action }}</li>
-    </ol>
-  </nav>
+LISTA DE VIEWS INCLUÍDAS:
+- vendedor_list (listagem com filtros)
+- vendedor_create (criar)
+- vendedor_update (editar)
+- vendedor_detail (detalhes)
+- vendedor_delete (excluir)
+- vendedor_inativar (inativar)
+- vendedor_reativar (reativar)
+- vendedor_json (API JSON)
+- comissao_list (listar comissões)
+- comissao_create (criar comissão)
+- comissao_pagar (pagar comissão)
+"""
 
-  <!-- Header -->
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="fw-bold mb-0">
-      <i class="bi bi-person-badge text-primary"></i> {{ action }} Vendedor
-    </h2>
-    <a href="{% url 'cadastros:vendedor_list' %}" class="btn btn-outline-secondary">
-      <i class="bi bi-arrow-left"></i> Voltar
-    </a>
-  </div>
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from django.db.models import Q, Sum
+from django.http import JsonResponse
+from django.utils import timezone
 
-  <form method="post" enctype="multipart/form-data">
-    {% csrf_token %}
+from .models import Vendedor, ComissaoVendedor
+from .forms import VendedorForm, VendedorFiltroForm, ComissaoVendedorForm
 
-    <!-- Seção 1: Dados Pessoais -->
-    <div class="card section-card border-0 shadow-sm">
-      <div class="card-header bg-primary text-white">
-        <h5 class="mb-0"><i class="bi bi-person"></i> Dados Pessoais</h5>
-      </div>
-      <div class="card-body p-4">
-        <div class="row g-3">
-          <div class="col-md-8">
-            <label class="form-label fw-semibold">Nome Completo *</label>
-            {{ form.nome_completo }}
-            {% if form.nome_completo.errors %}
-              <div class="text-danger small">{{ form.nome_completo.errors|striptags }}</div>
-            {% endif %}
-          </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">CPF *</label>
-            {{ form.cpf }}
-            {% if form.cpf.errors %}
-              <div class="text-danger small">{{ form.cpf.errors|striptags }}</div>
-            {% endif %}
-          </div>
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">RG</label>
-            {{ form.rg }}
-          </div>
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">Data de Nascimento</label>
-            {{ form.data_nascimento }}
-          </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Foto</label>
-            {{ form.foto }}
-            <small class="text-muted d-block">JPG, PNG (máx 2MB)</small>
-          </div>
-        </div>
-      </div>
-    </div>
 
-    <!-- Seção 2: Tipo de Vendedor -->
-    <div class="card section-card border-0 shadow-sm">
-      <div class="card-header bg-success text-white">
-        <h5 class="mb-0"><i class="bi bi-briefcase"></i> Tipo de Vendedor</h5>
-      </div>
-      <div class="card-body p-4">
-        <div class="row g-3">
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Tipo de Mercado *</label>
-            {{ form.tipo_mercado }}
-            <small class="text-muted d-block">Mercado Interno, Exportação ou Ambos</small>
-            {% if form.tipo_mercado.errors %}
-              <div class="text-danger small">{{ form.tipo_mercado.errors|striptags }}</div>
-            {% endif %}
-          </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Tipo de Vínculo</label>
-            {{ form.tipo_vinculo }}
-          </div>
-        </div>
-      </div>
-    </div>
+# =============================================================================
+# CRUD DE VENDEDOR
+# =============================================================================
 
-    <!-- Seção 3: Contato -->
-    <div class="card section-card border-0 shadow-sm">
-      <div class="card-header bg-info text-white">
-        <h5 class="mb-0"><i class="bi bi-telephone"></i> Contato</h5>
-      </div>
-      <div class="card-body p-4">
-        <div class="row g-3">
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Telefone Principal *</label>
-            {{ form.telefone_principal }}
-            {% if form.telefone_principal.errors %}
-              <div class="text-danger small">{{ form.telefone_principal.errors|striptags }}</div>
-            {% endif %}
-          </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Telefone Secundário</label>
-            {{ form.telefone_secundario }}
-          </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">WhatsApp</label>
-            {{ form.whatsapp }}
-          </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">E-mail Corporativo *</label>
-            {{ form.email_corporativo }}
-            {% if form.email_corporativo.errors %}
-              <div class="text-danger small">{{ form.email_corporativo.errors|striptags }}</div>
-            {% endif %}
-          </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">E-mail Pessoal</label>
-            {{ form.email_pessoal }}
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Seção 4: Endereço -->
-    <div class="card section-card border-0 shadow-sm">
-      <div class="card-header bg-warning text-dark">
-        <h5 class="mb-0"><i class="bi bi-geo-alt"></i> Endereço</h5>
-      </div>
-      <div class="card-body p-4">
-        <div class="row g-3">
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">CEP</label>
-            <div class="input-group">
-              {{ form.cep }}
-              <button type="button" class="btn btn-primary" id="buscarCEPVend">
-                <i class="bi bi-search"></i>
-              </button>
-            </div>
-          </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Logradouro</label>
-            {{ form.logradouro }}
-          </div>
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">Número</label>
-            {{ form.numero }}
-          </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Complemento</label>
-            {{ form.complemento }}
-          </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Bairro</label>
-            {{ form.bairro }}
-          </div>
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">Cidade</label>
-            {{ form.cidade }}
-          </div>
-          <div class="col-md-1">
-            <label class="form-label fw-semibold">UF</label>
-            {{ form.uf }}
-          </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">País</label>
-            {{ form.pais }}
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Seção 5: Dados Comerciais -->
-    <div class="card section-card border-0 shadow-sm">
-      <div class="card-header" style="background: #10b981; color: white;">
-        <h5 class="mb-0"><i class="bi bi-cash-stack"></i> Dados Comerciais</h5>
-      </div>
-      <div class="card-body p-4">
-        <div class="row g-3">
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">Comissão Mercado Interno (%)</label>
-            <div class="input-group">
-              {{ form.comissao_mercado_interno }}
-              <span class="input-group-text">%</span>
-            </div>
-          </div>
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">Comissão Exportação (%)</label>
-            <div class="input-group">
-              {{ form.comissao_exportacao }}
-              <span class="input-group-text">%</span>
-            </div>
-          </div>
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">Comissão Fixa Mensal (R$)</label>
-            <div class="input-group">
-              <span class="input-group-text">R$</span>
-              {{ form.comissao_fixa_mensal }}
-            </div>
-          </div>
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">Meta Mensal</label>
-            <div class="input-group">
-              <span class="input-group-text">R$</span>
-              {{ form.meta_mensal }}
-            </div>
-          </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Moeda Padrão</label>
-            {{ form.moeda_padrao }}
-          </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Forma de Pagamento Comissão</label>
-            {{ form.forma_pagamento_comissao }}
-          </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Regiões de Atuação</label>
-            {{ form.regioes_atuacao }}
-            <small class="text-muted">Ex: Norte, Nordeste, Sul (separar por vírgula)</small>
-          </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Países de Atuação</label>
-            {{ form.paises_atuacao }}
-            <small class="text-muted">Ex: USA, Europa, Ásia (separar por vírgula)</small>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Seção 6: Dados Bancários -->
-    <div class="card section-card border-0 shadow-sm">
-      <div class="card-header" style="background: #6366f1; color: white;">
-        <h5 class="mb-0"><i class="bi bi-bank"></i> Dados Bancários</h5>
-      </div>
-      <div class="card-body p-4">
-        <div class="row g-3">
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Banco</label>
-            {{ form.banco }}
-          </div>
-          <div class="col-md-2">
-            <label class="form-label fw-semibold">Agência</label>
-            {{ form.agencia }}
-          </div>
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">Conta</label>
-            {{ form.conta_corrente }}
-          </div>
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">Tipo de Conta</label>
-            {{ form.tipo_conta }}
-          </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Chave PIX</label>
-            {{ form.pix }}
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Seção 7: Documentação (Exportação) -->
-    <div class="card section-card border-0 shadow-sm">
-      <div class="card-header" style="background: #8b5cf6; color: white;">
-        <h5 class="mb-0"><i class="bi bi-passport"></i> Documentação (Exportação)</h5>
-      </div>
-      <div class="card-body p-4">
-        <div class="row g-3">
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Número do Passaporte</label>
-            {{ form.passaporte_numero }}
-            {% if form.passaporte_numero.errors %}
-              <div class="text-danger small">{{ form.passaporte_numero.errors|striptags }}</div>
-            {% endif %}
-            <small class="text-muted d-block">Obrigatório para vendedores de exportação</small>
-          </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Validade do Passaporte</label>
-            {{ form.passaporte_validade }}
-          </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Visto de Trabalho</label>
-            {{ form.visto_trabalho }}
-          </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">CNH</label>
-            {{ form.cnh }}
-          </div>
-          <div class="col-md-8">
-            <label class="form-label fw-semibold">Certificações</label>
-            {{ form.certificacoes }}
-            <small class="text-muted d-block">Ex: SISCOMEX, Comércio Exterior, etc.</small>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Seção 8: Hierarquia e Gestão -->
-    <div class="card section-card border-0 shadow-sm">
-      <div class="card-header" style="background: #f59e0b; color: white;">
-        <h5 class="mb-0"><i class="bi bi-diagram-3"></i> Hierarquia e Gestão</h5>
-      </div>
-      <div class="card-body p-4">
-        <div class="row g-3">
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Supervisor/Gerente</label>
-            {{ form.supervisor }}
-          </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Nível de Autonomia</label>
-            {{ form.nivel_autonomia }}
-          </div>
-          <div class="col-md-4">
-            <div class="form-check form-switch mt-4">
-              {{ form.acesso_crm }}
-              <label class="form-check-label fw-semibold" for="{{ form.acesso_crm.id_for_label }}">
-                Acesso ao CRM Completo
-              </label>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Seção 9: Controle Administrativo -->
-    <div class="card section-card border-0 shadow-sm">
-      <div class="card-header bg-danger text-white">
-        <h5 class="mb-0"><i class="bi bi-calendar-check"></i> Controle Administrativo</h5>
-      </div>
-      <div class="card-body p-4">
-        <div class="row g-3">
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Data de Admissão *</label>
-            {{ form.data_admissao }}
-            {% if form.data_admissao.errors %}
-              <div class="text-danger small">{{ form.data_admissao.errors|striptags }}</div>
-            {% endif %}
-          </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Data de Desligamento</label>
-            {{ form.data_desligamento }}
-            {% if form.data_desligamento.errors %}
-              <div class="text-danger small">{{ form.data_desligamento.errors|striptags }}</div>
-            {% endif %}
-          </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Status</label>
-            {{ form.status }}
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Seção 10: Observações e Idiomas -->
-    <div class="card section-card border-0 shadow-sm">
-      <div class="card-header bg-dark text-white">
-        <h5 class="mb-0"><i class="bi bi-chat-text"></i> Observações e Idiomas</h5>
-      </div>
-      <div class="card-body p-4">
-        <div class="row g-3">
-          <div class="col-md-8">
-            <label class="form-label fw-semibold">Observações</label>
-            {{ form.observacoes }}
-          </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Experiência (anos)</label>
-            {{ form.experiencia_anos }}
-          </div>
-          <div class="col-md-12">
-            <label class="form-label fw-semibold">Idiomas</label>
-            {{ form.idiomas }}
-            <small class="text-muted d-block">Ex: Português (nativo), Inglês (fluente), Espanhol (intermediário)</small>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Botões -->
-    <div class="d-flex justify-content-between gap-3">
-      <a href="{% url 'cadastros:vendedor_list' %}" class="btn btn-outline-secondary btn-lg px-5">
-        <i class="bi bi-x-circle"></i> Cancelar
-      </a>
-      <button type="submit" class="btn btn-success btn-lg px-5">
-        <i class="bi bi-check-circle"></i> Salvar Vendedor
-      </button>
-    </div>
-
-  </form>
-
-</div>
-
-<!-- Modal Loading -->
-<div class="modal fade" id="loadingModal" data-bs-backdrop="static" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered modal-sm">
-    <div class="modal-content">
-      <div class="modal-body text-center py-4">
-        <div class="spinner-border text-primary mb-3" role="status"></div>
-        <p class="mb-0" id="loadingText">Processando...</p>
-      </div>
-    </div>
-  </div>
-</div>
-
-{% endblock %}
-
-{% block extra_js %}
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-  const loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'));
-
-  // Buscar CEP
-  const btnBuscarCEP = document.getElementById('buscarCEPVend');
-  if (btnBuscarCEP) {
-    btnBuscarCEP.addEventListener('click', function() {
-      const cep = document.getElementById('{{ form.cep.id_for_label }}').value.replace(/\D/g, '');
-      
-      if (cep.length !== 8) {
-        alert('Digite um CEP válido');
-        return;
-      }
-
-      document.getElementById('loadingText').textContent = 'Buscando CEP...';
-      loadingModal.show();
-
-      fetch('{% url "cadastros:buscar_cep" %}', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'X-CSRFToken': '{{ csrf_token }}'
-        },
-        body: `cep=${cep}`
-      })
-      .then(response => response.json())
-      .then(data => {
-        loadingModal.hide();
+@login_required
+def vendedor_list(request):
+    """
+    Lista vendedores da empresa com filtros e estatísticas
+    GET /cadastros/vendedores/
+    """
+    empresa = request.user.empresa
+    
+    if not empresa:
+        messages.error(request, '❌ Você não está vinculado a nenhuma empresa.')
+        return redirect('dashboard:index')
+    
+    # Formulário de filtros
+    filtro_form = VendedorFiltroForm(request.GET or None)
+    
+    # QuerySet base
+    vendedores = Vendedor.objects.filter(empresa=empresa).select_related('supervisor', 'empresa')
+    
+    # Aplicar filtros se o formulário for válido
+    if filtro_form.is_valid():
+        busca = filtro_form.cleaned_data.get('busca')
+        status = filtro_form.cleaned_data.get('status')
+        tipo_mercado = filtro_form.cleaned_data.get('tipo_mercado')
         
-        if (data.sucesso) {
-          const d = data.dados;
-          document.getElementById('{{ form.logradouro.id_for_label }}').value = d.logradouro || '';
-          document.getElementById('{{ form.bairro.id_for_label }}').value = d.bairro || '';
-          document.getElementById('{{ form.cidade.id_for_label }}').value = d.cidade || '';
-          document.getElementById('{{ form.uf.id_for_label }}').value = d.uf || '';
-          alert('✅ Endereço preenchido!');
-        } else {
-          alert('❌ CEP não encontrado');
-        }
-      })
-      .catch(() => {
-        loadingModal.hide();
-        alert('❌ Erro ao buscar CEP');
-      });
-    });
-  }
+        if busca:
+            vendedores = vendedores.filter(
+                Q(nome_completo__icontains=busca) |
+                Q(cpf__icontains=busca) |
+                Q(email_corporativo__icontains=busca)
+            )
+        
+        if status:
+            vendedores = vendedores.filter(status=status)
+        
+        if tipo_mercado:
+            vendedores = vendedores.filter(tipo_mercado=tipo_mercado)
+    
+    # Estatísticas para o dashboard
+    total_vendedores = vendedores.count()
+    total_ativos = vendedores.filter(status='ATIVO').count()
+    total_mercado_interno = vendedores.filter(tipo_mercado__in=['INTERNO', 'AMBOS']).count()
+    total_exportacao = vendedores.filter(tipo_mercado__in=['EXTERNO', 'AMBOS']).count()
+    
+    context = {
+        'vendedores': vendedores,
+        'filtro_form': filtro_form,
+        'total_vendedores': total_vendedores,
+        'total_ativos': total_ativos,
+        'total_mercado_interno': total_mercado_interno,
+        'total_exportacao': total_exportacao,
+    }
+    
+    return render(request, 'cadastros/vendedor_list.html', context)
 
-  // Validação dinâmica: se tipo_mercado for EXTERNO ou AMBOS, passaporte é obrigatório
-  const tipoMercado = document.getElementById('{{ form.tipo_mercado.id_for_label }}');
-  const passaporteNumero = document.getElementById('{{ form.passaporte_numero.id_for_label }}');
-  
-  if (tipoMercado && passaporteNumero) {
-    tipoMercado.addEventListener('change', function() {
-      if (this.value === 'EXTERNO' || this.value === 'AMBOS') {
-        passaporteNumero.setAttribute('required', 'required');
-        passaporteNumero.parentElement.querySelector('label').innerHTML = 
-          'Número do Passaporte <span class="text-danger">*</span>';
-      } else {
-        passaporteNumero.removeAttribute('required');
-        passaporteNumero.parentElement.querySelector('label').textContent = 'Número do Passaporte';
-      }
-    });
-  }
-});
-</script>
-{% endblock %}
+
+@login_required
+def vendedor_create(request):
+    """
+    Cria novo vendedor
+    GET/POST /cadastros/vendedores/novo/
+    """
+    empresa = request.user.empresa
+    
+    if not empresa:
+        messages.error(request, '❌ Você não está vinculado a nenhuma empresa.')
+        return redirect('dashboard:index')
+    
+    if request.method == 'POST':
+        form = VendedorForm(
+            request.POST, 
+            request.FILES, 
+            usuario=request.user,  # ✅ Parâmetro correto
+            empresa=empresa
+        )
+        if form.is_valid():
+            vendedor = form.save()
+            messages.success(request, f"✅ Vendedor '{vendedor.nome_completo}' cadastrado com sucesso!")
+            return redirect('cadastros:vendedor_list')
+        else:
+            messages.error(request, '❌ Corrija os erros no formulário.')
+    else:
+        form = VendedorForm(
+            usuario=request.user,  # ✅ Parâmetro correto
+            empresa=empresa
+        )
+    
+    context = {
+        'form': form,
+        'action': 'Criar',
+        'title': 'Novo Vendedor'
+    }
+    
+    return render(request, 'cadastros/vendedor_form.html', context)
+
+
+@login_required
+def vendedor_update(request, pk):
+    """
+    Edita vendedor existente
+    GET/POST /cadastros/vendedores/<pk>/editar/
+    """
+    empresa = request.user.empresa
+    
+    if not empresa:
+        messages.error(request, '❌ Você não está vinculado a nenhuma empresa.')
+        return redirect('dashboard:index')
+    
+    vendedor = get_object_or_404(Vendedor, pk=pk, empresa=empresa)
+    
+    if request.method == 'POST':
+        form = VendedorForm(
+            request.POST, 
+            request.FILES, 
+            instance=vendedor, 
+            usuario=request.user,  # ✅ Parâmetro correto
+            empresa=empresa
+        )
+        if form.is_valid():
+            vendedor = form.save()
+            messages.success(request, f"✅ Vendedor '{vendedor.nome_completo}' atualizado com sucesso!")
+            return redirect('cadastros:vendedor_list')
+        else:
+            messages.error(request, '❌ Corrija os erros no formulário.')
+    else:
+        form = VendedorForm(
+            instance=vendedor, 
+            usuario=request.user,  # ✅ Parâmetro correto
+            empresa=empresa
+        )
+    
+    context = {
+        'form': form,
+        'vendedor': vendedor,
+        'action': 'Editar',
+        'title': f'Editar: {vendedor.nome_completo}'
+    }
+    
+    return render(request, 'cadastros/vendedor_form.html', context)
+
+
+@login_required
+def vendedor_detail(request, pk):
+    """
+    Exibe detalhes completos do vendedor
+    GET /cadastros/vendedores/<pk>/
+    """
+    empresa = request.user.empresa
+    
+    if not empresa:
+        messages.error(request, '❌ Você não está vinculado a nenhuma empresa.')
+        return redirect('dashboard:index')
+    
+    vendedor = get_object_or_404(
+        Vendedor.objects.select_related('supervisor', 'empresa'), 
+        pk=pk, 
+        empresa=empresa
+    )
+    
+    # Busca subordinados (se for gerente)
+    subordinados = []
+    if hasattr(vendedor, 'subordinados'):
+        subordinados = vendedor.subordinados.filter(status='ATIVO')
+    
+    # Calcula totais de comissões
+    comissoes_pendentes = vendedor.comissoes.filter(status='PENDENTE').aggregate(
+        total=Sum('valor_comissao')
+    )['total'] or 0
+    
+    comissoes_pagas = vendedor.comissoes.filter(status='PAGA').aggregate(
+        total=Sum('valor_comissao')
+    )['total'] or 0
+    
+    # Últimas 5 comissões
+    ultimas_comissoes = vendedor.comissoes.all().order_by('-referencia_mes')[:5]
+    
+    context = {
+        'vendedor': vendedor,
+        'subordinados': subordinados,
+        'comissoes_pendentes': comissoes_pendentes,
+        'comissoes_pagas': comissoes_pagas,
+        'ultimas_comissoes': ultimas_comissoes,
+    }
+    
+    return render(request, 'cadastros/vendedor_detail.html', context)
+
+
+@login_required
+def vendedor_delete(request, pk):
+    """
+    Exclui vendedor (com validações de segurança)
+    GET/POST /cadastros/vendedores/<pk>/excluir/
+    """
+    empresa = request.user.empresa
+    
+    if not empresa:
+        messages.error(request, '❌ Você não está vinculado a nenhuma empresa.')
+        return redirect('dashboard:index')
+    
+    vendedor = get_object_or_404(Vendedor, pk=pk, empresa=empresa)
+    
+    # ✅ VALIDAÇÃO 1: Verifica se tem subordinados
+    if hasattr(vendedor, 'subordinados') and vendedor.subordinados.exists():
+        total_subordinados = vendedor.subordinados.count()
+        messages.error(
+            request,
+            f"❌ Não é possível excluir! O vendedor '{vendedor.nome_completo}' possui "
+            f"{total_subordinados} subordinado(s). Reatribua-os primeiro."
+        )
+        return redirect('cadastros:vendedor_list')
+    
+    # ✅ VALIDAÇÃO 2: Verifica comissões pendentes
+    comissoes_pendentes = vendedor.comissoes.filter(status='PENDENTE').count()
+    if comissoes_pendentes > 0:
+        messages.error(
+            request,
+            f"❌ Não é possível excluir! O vendedor possui {comissoes_pendentes} "
+            f"comissão(ões) pendente(s). Resolva-as primeiro."
+        )
+        return redirect('cadastros:vendedor_list')
+    
+    # Confirmação de exclusão
+    if request.method == 'POST':
+        nome = vendedor.nome_completo
+        vendedor.delete()
+        messages.success(request, f"🗑️ Vendedor '{nome}' excluído com sucesso!")
+        return redirect('cadastros:vendedor_list')
+    
+    context = {'vendedor': vendedor}
+    return render(request, 'cadastros/vendedor_confirm_delete.html', context)
+
+
+# =============================================================================
+# AÇÕES RÁPIDAS
+# =============================================================================
+
+@login_required
+def vendedor_inativar(request, pk):
+    """
+    Inativa vendedor (sem excluir do banco)
+    POST /cadastros/vendedores/<pk>/inativar/
+    """
+    empresa = request.user.empresa
+    
+    if not empresa:
+        messages.error(request, '❌ Você não está vinculado a nenhuma empresa.')
+        return redirect('dashboard:index')
+    
+    vendedor = get_object_or_404(Vendedor, pk=pk, empresa=empresa)
+    
+    if vendedor.status == 'ATIVO':
+        vendedor.status = 'INATIVO'
+        vendedor.data_desligamento = timezone.now().date()
+        vendedor.save()
+        messages.success(request, f"✅ Vendedor '{vendedor.nome_completo}' inativado com sucesso!")
+    else:
+        messages.warning(request, f"⚠️ Vendedor '{vendedor.nome_completo}' já está inativo.")
+    
+    return redirect('cadastros:vendedor_list')
+
+
+@login_required
+def vendedor_reativar(request, pk):
+    """
+    Reativa vendedor inativo
+    POST /cadastros/vendedores/<pk>/reativar/
+    """
+    empresa = request.user.empresa
+    
+    if not empresa:
+        messages.error(request, '❌ Você não está vinculado a nenhuma empresa.')
+        return redirect('dashboard:index')
+    
+    vendedor = get_object_or_404(Vendedor, pk=pk, empresa=empresa)
+    
+    if vendedor.status != 'ATIVO':
+        vendedor.status = 'ATIVO'
+        vendedor.data_desligamento = None
+        vendedor.save()
+        messages.success(request, f"✅ Vendedor '{vendedor.nome_completo}' reativado com sucesso!")
+    else:
+        messages.warning(request, f"⚠️ Vendedor '{vendedor.nome_completo}' já está ativo.")
+    
+    return redirect('cadastros:vendedor_list')
+
+
+# =============================================================================
+# API JSON
+# =============================================================================
+
+@login_required
+def vendedor_json(request):
+    """
+    API JSON para listagem de vendedores
+    Útil para autocomplete, select2, AJAX, etc
+    
+    GET /cadastros/vendedores/api/json/
+    
+    Parâmetros GET opcionais:
+    - status: ATIVO, INATIVO, FERIAS, AFASTADO
+    - tipo_mercado: INTERNO, EXTERNO, AMBOS
+    
+    Retorna:
+    {
+        "vendedores": [
+            {
+                "id": 1,
+                "nome_completo": "João Silva",
+                "email_corporativo": "joao@empresa.com",
+                "tipo_mercado": "INTERNO",
+                "telefone_principal": "(84) 99999-9999"
+            }
+        ],
+        "total": 1
+    }
+    """
+    empresa = request.user.empresa
+    
+    if not empresa:
+        return JsonResponse({'error': 'Empresa não encontrada'}, status=400)
+    
+    # Filtros opcionais via GET
+    status = request.GET.get('status', 'ATIVO')
+    tipo_mercado = request.GET.get('tipo_mercado', '')
+    
+    # QuerySet base
+    vendedores = Vendedor.objects.filter(empresa=empresa)
+    
+    # Aplica filtros
+    if status:
+        vendedores = vendedores.filter(status=status)
+    
+    if tipo_mercado:
+        vendedores = vendedores.filter(tipo_mercado=tipo_mercado)
+    
+    # Retorna apenas campos necessários
+    vendedores_data = list(vendedores.values(
+        'id', 
+        'nome_completo', 
+        'email_corporativo', 
+        'tipo_mercado',
+        'telefone_principal'
+    ))
+    
+    return JsonResponse({
+        'vendedores': vendedores_data,
+        'total': len(vendedores_data)
+    })
+
+
+# =============================================================================
+# COMISSÕES
+# =============================================================================
+
+@login_required
+def comissao_list(request):
+    """
+    Lista comissões de vendedores
+    GET /cadastros/comissoes/
+    """
+    empresa = request.user.empresa
+    
+    if not empresa:
+        messages.error(request, '❌ Você não está vinculado a nenhuma empresa.')
+        return redirect('dashboard:index')
+    
+    comissoes = ComissaoVendedor.objects.filter(
+        empresa=empresa
+    ).select_related('vendedor').order_by('-referencia_mes')
+    
+    # Filtros opcionais
+    vendedor_id = request.GET.get('vendedor')
+    status = request.GET.get('status')
+    
+    if vendedor_id:
+        comissoes = comissoes.filter(vendedor_id=vendedor_id)
+    
+    if status:
+        comissoes = comissoes.filter(status=status)
+    
+    # Estatísticas
+    total_pendente = comissoes.filter(status='PENDENTE').aggregate(
+        total=Sum('valor_comissao')
+    )['total'] or 0
+    
+    total_pago = comissoes.filter(status='PAGA').aggregate(
+        total=Sum('valor_comissao')
+    )['total'] or 0
+    
+    context = {
+        'comissoes': comissoes,
+        'total_pendente': total_pendente,
+        'total_pago': total_pago,
+        'vendedores': Vendedor.objects.filter(empresa=empresa, status='ATIVO'),
+    }
+    
+    return render(request, 'cadastros/comissao_list.html', context)
+
+
+@login_required
+def comissao_create(request):
+    """
+    Cria nova comissão para vendedor
+    GET/POST /cadastros/comissoes/nova/
+    """
+    empresa = request.user.empresa
+    
+    if not empresa:
+        messages.error(request, '❌ Você não está vinculado a nenhuma empresa.')
+        return redirect('dashboard:index')
+    
+    if request.method == 'POST':
+        form = ComissaoVendedorForm(request.POST, empresa=empresa)
+        if form.is_valid():
+            comissao = form.save()
+            messages.success(
+                request, 
+                f"✅ Comissão de R$ {comissao.valor_comissao:.2f} criada para "
+                f"{comissao.vendedor.nome_completo}!"
+            )
+            return redirect('cadastros:comissao_list')
+        else:
+            messages.error(request, '❌ Corrija os erros no formulário.')
+    else:
+        form = ComissaoVendedorForm(empresa=empresa)
+    
+    context = {
+        'form': form,
+        'title': 'Nova Comissão'
+    }
+    
+    return render(request, 'cadastros/comissao_form.html', context)
+
+
+@login_required
+def comissao_pagar(request, pk):
+    """
+    Marca comissão como paga
+    POST /cadastros/comissoes/<pk>/pagar/
+    """
+    empresa = request.user.empresa
+    
+    if not empresa:
+        messages.error(request, '❌ Você não está vinculado a nenhuma empresa.')
+        return redirect('dashboard:index')
+    
+    comissao = get_object_or_404(ComissaoVendedor, pk=pk, empresa=empresa)
+    
+    if comissao.status == 'PENDENTE':
+        comissao.status = 'PAGA'
+        comissao.data_pagamento = timezone.now().date()
+        comissao.save()
+        messages.success(
+            request, 
+            f"✅ Comissão de R$ {comissao.valor_comissao:.2f} marcada como paga!"
+        )
+    else:
+        messages.warning(request, '⚠️ Esta comissão já foi paga.')
+    
+    return redirect('cadastros:comissao_list')
+
+
+# =============================================================================
+# ✅ FIM DAS VIEWS DE VENDEDOR
+# Total de views: 11
+# - 5 CRUD (list, create, update, detail, delete)
+# - 2 Ações (inativar, reativar)
+# - 1 API (vendedor_json)
+# - 3 Comissões (list, create, pagar)
+# =============================================================================

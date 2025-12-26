@@ -52,6 +52,7 @@ urlpatterns = [
     path('funcionarios/<int:pk>/editar/', views.funcionario_update, name='funcionario_update'),
     path('funcionarios/<int:pk>/excluir/', views.funcionario_delete, name='funcionario_delete'),
     
+
     # ==================== CULTURAS ====================
     path('culturas/', views.cultura_list, name='cultura_list'),
     path('culturas/nova/', views.cultura_create, name='cultura_create'),
@@ -108,32 +109,5 @@ urlpatterns = [
     path('vendedores/api/json/', views.vendedor_json, name='vendedor_json'),
 
 
-    # FORNECEDORES - CRUD Principal
-    path('fornecedores/', views.fornecedor_list, name='fornecedor_list'),
-    path('fornecedores/novo/', views.fornecedor_create, name='fornecedor_create'),
-    path('fornecedores/<int:pk>/', views.fornecedor_detail, name='fornecedor_detail'),
-    path('fornecedores/<int:pk>/editar/', views.fornecedor_update, name='fornecedor_update'),
-    path('fornecedores/<int:pk>/deletar/', views.fornecedor_delete, name='fornecedor_delete'),
-    
-    # FORNECEDORES - APIs Auxiliares
-    path('api/buscar-cnpj/', views.buscar_cnpj, name='buscar_cnpj'),
-    path('api/buscar-cep/', views.buscar_cep, name='buscar_cep'),
-    path('api/subcategorias/', views.ajax_subcategorias_por_categoria, name='ajax_subcategorias'),
-    
-    # FORNECEDORES - Endereços
-    path('fornecedores/<int:fornecedor_pk>/enderecos/novo/', views.fornecedor_endereco_create, name='fornecedor_endereco_create'),
-    path('fornecedores/enderecos/<int:pk>/editar/', views.fornecedor_endereco_update, name='fornecedor_endereco_update'),
-    path('fornecedores/enderecos/<int:pk>/deletar/', views.fornecedor_endereco_delete, name='fornecedor_endereco_delete'),
-    
-    # FORNECEDORES - Contatos
-    path('fornecedores/<int:fornecedor_pk>/contatos/novo/', views.fornecedor_contato_create, name='fornecedor_contato_create'),
-    path('fornecedores/contatos/<int:pk>/editar/', views.fornecedor_contato_update, name='fornecedor_contato_update'),
-    path('fornecedores/contatos/<int:pk>/deletar/', views.fornecedor_contato_delete, name='fornecedor_contato_delete'),
-    
-    # FORNECEDORES - Documentos
-    path('fornecedores/<int:fornecedor_pk>/documentos/novo/', views.fornecedor_documento_create, name='fornecedor_documento_create'),
-    path('fornecedores/documentos/<int:pk>/deletar/', views.fornecedor_documento_delete, name='fornecedor_documento_delete'),
-    
-    # FORNECEDORES - Avaliações
-    path('fornecedores/<int:fornecedor_pk>/avaliacoes/nova/', views.fornecedor_avaliacao_create, name='fornecedor_avaliacao_create'),
-]
+   
+   ]

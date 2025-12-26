@@ -10,11 +10,11 @@ from .models import (
 from .models import Area, Talhao, HistoricoTalhao, Safra, SafraPlan, SafraReal
 from .models import Vendedor, ComissaoVendedor
 
-from .models import (
+"""from .models import (
     Fornecedor, FornecedorEndereco, FornecedorContato,
     FornecedorDadoBancario, FornecedorDocumento, FornecedorAvaliacao,
     CategoriaFornecedor, SubcategoriaFornecedor
-)
+)"""
 
 class EnderecoFazendaInline(admin.TabularInline):
     """Inline para endereços"""
@@ -278,8 +278,7 @@ class ComissaoVendedorAdmin(admin.ModelAdmin):
 
 
 
-
-
+"""
 
 # Inlines para Fornecedor
 class FornecedorEnderecoInline(admin.TabularInline):
@@ -319,3 +318,5 @@ class FornecedorAvaliacaoAdmin(admin.ModelAdmin):
     list_display = ['fornecedor', 'tipo_avaliacao', 'get_media_notas', 'data_avaliacao']
     list_filter = ['tipo_avaliacao', 'data_avaliacao']
     search_fields = ['fornecedor__razao_social']
+
+"""

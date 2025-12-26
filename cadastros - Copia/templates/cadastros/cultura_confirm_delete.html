@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+
+{% block title %}Excluir Cultura | ERP Agrícola{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-md-6">
+      
+      <div class="card border-0 shadow-lg">
+        <div class="card-body text-center p-5">
+          
+          <!-- Ícone de Aviso -->
+          <div class="mb-4">
+            <i class="bi bi-exclamation-triangle-fill text-danger" style="font-size: 5rem;"></i>
+          </div>
+
+          <!-- Título -->
+          <h3 class="fw-bold text-danger mb-3">Tem certeza?</h3>
+          
+          <!-- Informações da Cultura -->
+          <div class="bg-light rounded p-4 mb-4">
+            {% if cultura.imagem %}
+              <img src="{{ cultura.imagem.url }}" 
+                   class="rounded mb-3" 
+                   style="max-width: 150px; height: 150px; object-fit: cover;" 
+                   alt="{{ cultura.nome }}">
+            {% else %}
+              <i class="bi bi-flower1 text-success mb-3" style="font-size: 5rem;"></i>
+            {% endif %}
+            
+            <h5 class="fw-bold mb-2">{{ cultura.nome }}</h5>
+            
+            {% if cultura.variedade %}
+              <p class="text-muted mb-2">
+                <strong>Variedade:</strong> {{ cultura.variedade }}
+              </p>
+            {% endif %}
+            
+            <p class="text-muted mb-0">
+              <span class="badge bg-info">{{ cultura.get_tipo_display }}</span>
+              {% if cultura.certificacao_organica %}
+                <span class="badge bg-success">Orgânica</span>
+              {% endif %}
+              {% if cultura.certificacao_exportacao %}
+                <span class="badge bg-primary">Exportação</span>
+              {% endif %}
+            </p>
+          </div>
+
+          <!-- Aviso -->
+          <div class="alert alert-danger text-start mb-4">
+            <i class="bi bi-exclamation-triangle"></i>
+            <strong>Atenção!</strong> Esta ação não pode ser desfeita.
+            <hr>
+            <ul class="mb-0 ps-3">
+              <li>A cultura será removida permanentemente</li>
+              {% if cultura.imagem %}
+                <li>A imagem da cultura será excluída</li>
+              {% endif %}
+              <li>Todos os dados técnicos serão perdidos</li>
+              <!-- Quando implementar plantios:
+              <li>{{ cultura.get_total_plantios }} plantio(s) associado(s)</li>
+              -->
+            </ul>
+          </div>
+
+          <!-- Mensagem -->
+          <p class="mb-4">
+            Deseja realmente <strong class="text-danger">excluir permanentemente</strong> esta cultura?
+          </p>
+
+          <!-- Botões -->
+          <form method="post" class="d-flex gap-3 justify-content-center">
+            {% csrf_token %}
+            
+            <a href="{% url 'cadastros:cultura_detail' cultura.pk %}" class="btn btn-secondary btn-lg px-5">
+              <i class="bi bi-arrow-left"></i> Cancelar
+            </a>
+            
+            <button type="submit" class="btn btn-danger btn-lg px-5">
+              <i class="bi bi-trash"></i> Sim, Excluir
+            </button>
+          </form>
+
+        </div>
+      </div>
+
+      <!-- Informação Extra -->
+      <div class="text-center mt-3">
+        <small class="text-muted">
+          <i class="bi bi-info-circle"></i> 
+          Você pode desativar a cultura ao invés de excluí-la
+        </small>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}

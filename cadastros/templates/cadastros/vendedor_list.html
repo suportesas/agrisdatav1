@@ -1,0 +1,251 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Vendedores | ERP Agrícola{% endblock %}
+
+{% block extra_css %}
+<style>
+  .vendedor-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+    border-radius: 12px;
+    border-left: 4px solid #3b82f6;
+  }
+  .vendedor-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+  }
+  .status-badge {
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.85rem;
+  }
+  .status-ativo { background: #d4edda; color: #155724; }
+  .status-inativo { background: #f8d7da; color: #721c24; }
+  .status-ferias { background: #fff3cd; color: #856404; }
+  .status-afastado { background: #d1ecf1; color: #0c5460; }
+  .stat-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  
+  <!-- Breadcrumb -->
+  <nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
+      <li class="breadcrumb-item active">Vendedores</li>
+    </ol>
+  </nav>
+
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="fw-bold mb-1">
+        <i class="bi bi-person-badge text-primary"></i> Vendedores
+      </h2>
+      <p class="text-muted mb-0">Gestão completa de vendedores da empresa</p>
+    </div>
+    <a href="{% url 'cadastros:vendedor_create' %}" class="btn btn-success btn-lg">
+      <i class="bi bi-plus-circle"></i> Novo Vendedor
+    </a>
+  </div>
+
+  <!-- Estatísticas -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-3">
+      <div class="stat-card">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <h6 class="mb-1 opacity-75">Total de Vendedores</h6>
+            <h2 class="mb-0 fw-bold">{{ total_vendedores }}</h2>
+          </div>
+          <i class="bi bi-people fs-1 opacity-50"></i>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="stat-card" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <h6 class="mb-1 opacity-75">Vendedores Ativos</h6>
+            <h2 class="mb-0 fw-bold">{{ total_ativos }}</h2>
+          </div>
+          <i class="bi bi-check-circle fs-1 opacity-50"></i>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="stat-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <h6 class="mb-1 opacity-75">Mercado Interno</h6>
+            <h2 class="mb-0 fw-bold">{{ total_mercado_interno }}</h2>
+          </div>
+          <i class="bi bi-shop fs-1 opacity-50"></i>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="stat-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <h6 class="mb-1 opacity-75">Exportação</h6>
+            <h2 class="mb-0 fw-bold">{{ total_exportacao }}</h2>
+          </div>
+          <i class="bi bi-globe fs-1 opacity-50"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <div class="card shadow-sm border-0 rounded-4 mb-4">
+    <div class="card-body p-4">
+      <form method="get" class="row g-3 align-items-end">
+        <div class="col-md-5">
+          {{ filtro_form.busca.label_tag }}
+          {{ filtro_form.busca }}
+        </div>
+        <div class="col-md-3">
+          {{ filtro_form.status.label_tag }}
+          {{ filtro_form.status }}
+        </div>
+        <div class="col-md-3">
+          {{ filtro_form.tipo_mercado.label_tag }}
+          {{ filtro_form.tipo_mercado }}
+        </div>
+        <div class="col-md-1">
+          <button type="submit" class="btn btn-primary w-100">
+            <i class="bi bi-search"></i>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Lista de Vendedores -->
+  {% if vendedores %}
+  <div class="row g-4">
+    {% for vendedor in vendedores %}
+    <div class="col-md-6 col-lg-4">
+      <div class="card vendedor-card shadow-sm border-0 h-100">
+        <div class="card-body p-4">
+          
+          <!-- Header do Card -->
+          <div class="d-flex justify-content-between align-items-start mb-3">
+            <div class="d-flex align-items-center">
+              {% if vendedor.foto %}
+                <img src="{{ vendedor.foto.url }}" alt="{{ vendedor.nome_completo }}" 
+                     class="rounded-circle me-3" style="width: 60px; height: 60px; object-fit: cover;">
+              {% else %}
+                <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3" 
+                     style="width: 60px; height: 60px; font-size: 1.5rem;">
+                  {{ vendedor.nome_completo.0 }}
+                </div>
+              {% endif %}
+              <div>
+                <h5 class="mb-0 fw-bold">{{ vendedor.get_nome_curto }}</h5>
+                <small class="text-muted">{{ vendedor.get_cpf_formatado }}</small>
+              </div>
+            </div>
+            <span class="status-badge status-{{ vendedor.status|lower }}">
+              {{ vendedor.get_status_display }}
+            </span>
+          </div>
+
+          <!-- Informações -->
+          <div class="mb-3">
+            <p class="mb-2">
+              <i class="bi bi-briefcase text-primary"></i>
+              <strong>Tipo:</strong> {{ vendedor.get_tipo_mercado_display }}
+            </p>
+            <p class="mb-2">
+              <i class="bi bi-envelope text-primary"></i>
+              <small>{{ vendedor.email_corporativo }}</small>
+            </p>
+            <p class="mb-2">
+              <i class="bi bi-phone text-primary"></i>
+              {{ vendedor.telefone_principal }}
+            </p>
+            {% if vendedor.supervisor %}
+            <p class="mb-0">
+              <i class="bi bi-person-check text-success"></i>
+              <small>Supervisor: {{ vendedor.supervisor.get_nome_curto }}</small>
+            </p>
+            {% endif %}
+            {% if vendedor.is_gerente %}
+            <p class="mb-0 mt-2">
+              <span class="badge bg-warning text-dark">
+                <i class="bi bi-people"></i> Gerente ({{ vendedor.get_total_subordinados }} subordinados)
+              </span>
+            </p>
+            {% endif %}
+          </div>
+
+          <!-- Comissões -->
+          <div class="d-flex justify-content-between mb-3 p-3 bg-light rounded">
+            <div class="text-center">
+              <small class="text-muted d-block">Mercado Interno</small>
+              <strong class="text-success">{{ vendedor.comissao_mercado_interno }}%</strong>
+            </div>
+            <div class="text-center">
+              <small class="text-muted d-block">Exportação</small>
+              <strong class="text-info">{{ vendedor.comissao_exportacao }}%</strong>
+            </div>
+            {% if vendedor.comissao_fixa_mensal > 0 %}
+            <div class="text-center">
+              <small class="text-muted d-block">Fixa</small>
+              <strong class="text-primary">R$ {{ vendedor.comissao_fixa_mensal }}</strong>
+            </div>
+            {% endif %}
+          </div>
+
+          <!-- Ações -->
+          <div class="btn-group w-100" role="group">
+            <a href="{% url 'cadastros:vendedor_detail' vendedor.pk %}" 
+               class="btn btn-outline-primary btn-sm">
+              <i class="bi bi-eye"></i> Ver
+            </a>
+            <a href="{% url 'cadastros:vendedor_update' vendedor.pk %}" 
+               class="btn btn-outline-secondary btn-sm">
+              <i class="bi bi-pencil"></i> Editar
+            </a>
+            {% if vendedor.status == 'ATIVO' %}
+            <a href="{% url 'cadastros:vendedor_inativar' vendedor.pk %}" 
+               class="btn btn-outline-warning btn-sm"
+               onclick="return confirm('Deseja inativar este vendedor?')">
+              <i class="bi bi-pause-circle"></i>
+            </a>
+            {% else %}
+            <a href="{% url 'cadastros:vendedor_reativar' vendedor.pk %}" 
+               class="btn btn-outline-success btn-sm"
+               onclick="return confirm('Deseja reativar este vendedor?')">
+              <i class="bi bi-play-circle"></i>
+            </a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="alert alert-info text-center py-5">
+    <i class="bi bi-info-circle fs-1 d-block mb-3"></i>
+    <h5>Nenhum vendedor encontrado</h5>
+    <p class="mb-3">Cadastre seu primeiro vendedor para começar!</p>
+    <a href="{% url 'cadastros:vendedor_create' %}" class="btn btn-success">
+      <i class="bi bi-plus-circle"></i> Novo Vendedor
+    </a>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

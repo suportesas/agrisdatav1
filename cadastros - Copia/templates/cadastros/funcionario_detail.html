@@ -1,0 +1,307 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ funcionario.nome_completo }} | ERP Agrícola{% endblock %}
+
+{% block extra_css %}
+<style>
+  .profile-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 2rem;
+    border-radius: 15px 15px 0 0;
+  }
+  .foto-perfil {
+    width: 120px;
+    height: 120px;
+    object-fit: cover;
+    border-radius: 50%;
+    border: 5px solid white;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+  }
+  .info-section {
+    border-left: 4px solid #3b82f6;
+    padding-left: 1rem;
+    margin-bottom: 1.5rem;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  
+  <!-- Breadcrumb -->
+  <nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'cadastros:funcionario_list' %}">Funcionários</a></li>
+      <li class="breadcrumb-item active">{{ funcionario.nome_completo }}</li>
+    </ol>
+  </nav>
+
+  <!-- Card Principal -->
+  <div class="card border-0 shadow-lg">
+    
+    <!-- Header com Foto -->
+    <div class="profile-header">
+      <div class="row align-items-center">
+        <div class="col-auto">
+          {% if funcionario.foto %}
+            <img src="{{ funcionario.foto.url }}" alt="{{ funcionario.nome_completo }}" class="foto-perfil">
+          {% else %}
+            <div class="foto-perfil bg-white d-flex align-items-center justify-content-center">
+              <i class="bi bi-person-fill text-primary" style="font-size: 3rem;"></i>
+            </div>
+          {% endif %}
+        </div>
+        <div class="col">
+          <h2 class="fw-bold mb-1">{{ funcionario.nome_completo }}</h2>
+          <p class="mb-2">
+            <i class="bi bi-briefcase"></i> {{ funcionario.funcao.nome }} • 
+            <i class="bi bi-building"></i> {{ funcionario.fazenda.nome|default:"Sem fazenda vinculada" }}
+          </p>
+          <div class="d-flex gap-2">
+            {% if funcionario.ativo %}
+              <span class="badge bg-success">Ativo</span>
+            {% else %}
+              <span class="badge bg-danger">Inativo</span>
+            {% endif %}
+            <span class="badge bg-light text-dark">{{ funcionario.get_tipo_contrato_display }}</span>
+            {% if funcionario.get_idade %}
+              <span class="badge bg-light text-dark">{{ funcionario.get_idade }} anos</span>
+            {% endif %}
+          </div>
+        </div>
+        <div class="col-auto">
+          <div class="btn-group">
+            <a href="{% url 'cadastros:funcionario_update' funcionario.pk %}" class="btn btn-light">
+              <i class="bi bi-pencil"></i> Editar
+            </a>
+            <a href="{% url 'cadastros:funcionario_delete' funcionario.pk %}" class="btn btn-outline-light text-white">
+              <i class="bi bi-trash"></i> Excluir
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card-body p-4">
+      
+      <div class="row">
+        
+        <!-- Coluna Esquerda -->
+        <div class="col-md-6">
+          
+          <!-- Dados Pessoais -->
+          <div class="info-section">
+            <h5 class="fw-bold text-primary mb-3">
+              <i class="bi bi-person-circle"></i> Dados Pessoais
+            </h5>
+            <table class="table table-borderless table-sm">
+              <tr>
+                <td class="text-muted" width="40%"><strong>CPF:</strong></td>
+                <td>{{ funcionario.get_cpf_formatado }}</td>
+              </tr>
+              <tr>
+                <td class="text-muted"><strong>RG:</strong></td>
+                <td>{{ funcionario.rg|default:"Não informado" }}</td>
+              </tr>
+              <tr>
+                <td class="text-muted"><strong>Data de Nascimento:</strong></td>
+                <td>
+                  {% if funcionario.data_nascimento %}
+                    {{ funcionario.data_nascimento|date:"d/m/Y" }}
+                    ({{ funcionario.get_idade }} anos)
+                  {% else %}
+                    Não informada
+                  {% endif %}
+                </td>
+              </tr>
+              <tr>
+                <td class="text-muted"><strong>Gênero:</strong></td>
+                <td>{{ funcionario.get_genero_display|default:"Não informado" }}</td>
+              </tr>
+              <tr>
+                <td class="text-muted"><strong>Estado Civil:</strong></td>
+                <td>{{ funcionario.get_estado_civil_display|default:"Não informado" }}</td>
+              </tr>
+            </table>
+          </div>
+
+          <!-- Contato -->
+          <div class="info-section">
+            <h5 class="fw-bold text-success mb-3">
+              <i class="bi bi-telephone"></i> Contato
+            </h5>
+            <table class="table table-borderless table-sm">
+              <tr>
+                <td class="text-muted" width="40%"><strong>Telefone:</strong></td>
+                <td>{{ funcionario.telefone|default:"Não informado" }}</td>
+              </tr>
+              <tr>
+                <td class="text-muted"><strong>Celular:</strong></td>
+                <td>{{ funcionario.celular|default:"Não informado" }}</td>
+              </tr>
+              <tr>
+                <td class="text-muted"><strong>E-mail:</strong></td>
+                <td>{{ funcionario.email|default:"Não informado" }}</td>
+              </tr>
+            </table>
+          </div>
+
+          <!-- Endereço -->
+          <div class="info-section">
+            <h5 class="fw-bold text-info mb-3">
+              <i class="bi bi-geo-alt"></i> Endereço
+            </h5>
+            {% if funcionario.endereco %}
+              <p class="mb-1">{{ funcionario.endereco }}{% if funcionario.numero %}, {{ funcionario.numero }}{% endif %}</p>
+              {% if funcionario.complemento %}<p class="mb-1">{{ funcionario.complemento }}</p>{% endif %}
+              <p class="mb-1">{{ funcionario.bairro }}</p>
+              <p class="mb-1">{{ funcionario.cidade }}/{{ funcionario.uf }}</p>
+              <p class="mb-0">CEP: {{ funcionario.cep }}</p>
+            {% else %}
+              <p class="text-muted">Endereço não informado</p>
+            {% endif %}
+          </div>
+
+          <!-- Contato de Emergência -->
+          {% if funcionario.contato_emergencia_nome %}
+            <div class="info-section">
+              <h5 class="fw-bold text-danger mb-3">
+                <i class="bi bi-exclamation-triangle"></i> Contato de Emergência
+              </h5>
+              <table class="table table-borderless table-sm">
+                <tr>
+                  <td class="text-muted" width="40%"><strong>Nome:</strong></td>
+                  <td>{{ funcionario.contato_emergencia_nome }}</td>
+                </tr>
+                <tr>
+                  <td class="text-muted"><strong>Telefone:</strong></td>
+                  <td>{{ funcionario.contato_emergencia_telefone }}</td>
+                </tr>
+                <tr>
+                  <td class="text-muted"><strong>Parentesco:</strong></td>
+                  <td>{{ funcionario.contato_emergencia_parentesco }}</td>
+                </tr>
+              </table>
+            </div>
+          {% endif %}
+
+        </div>
+
+        <!-- Coluna Direita -->
+        <div class="col-md-6">
+          
+          <!-- Dados Profissionais -->
+          <div class="info-section">
+            <h5 class="fw-bold text-warning mb-3">
+              <i class="bi bi-briefcase"></i> Dados Profissionais
+            </h5>
+            <table class="table table-borderless table-sm">
+              <tr>
+                <td class="text-muted" width="40%"><strong>Função:</strong></td>
+                <td><span class="badge bg-primary">{{ funcionario.funcao.nome }}</span></td>
+              </tr>
+              <tr>
+                <td class="text-muted"><strong>Fazenda:</strong></td>
+                <td>{{ funcionario.fazenda.nome|default:"Não vinculada" }}</td>
+              </tr>
+              <tr>
+                <td class="text-muted"><strong>Tipo de Contrato:</strong></td>
+                <td>{{ funcionario.get_tipo_contrato_display }}</td>
+              </tr>
+              <tr>
+                <td class="text-muted"><strong>Data de Admissão:</strong></td>
+                <td>{{ funcionario.data_admissao|date:"d/m/Y" }}</td>
+              </tr>
+              {% if funcionario.data_demissao %}
+                <tr>
+                  <td class="text-muted"><strong>Data de Demissão:</strong></td>
+                  <td>{{ funcionario.data_demissao|date:"d/m/Y" }}</td>
+                </tr>
+              {% endif %}
+              <tr>
+                <td class="text-muted"><strong>Tempo de Serviço:</strong></td>
+                <td>{{ funcionario.get_tempo_servico }}</td>
+              </tr>
+              <tr>
+                <td class="text-muted"><strong>Salário:</strong></td>
+                <td><strong class="text-success">R$ {{ funcionario.salario|floatformat:2 }}</strong></td>
+              </tr>
+            </table>
+          </div>
+
+          <!-- Documentos Trabalhistas -->
+          <div class="info-section">
+            <h5 class="fw-bold text-secondary mb-3">
+              <i class="bi bi-file-text"></i> Documentos Trabalhistas
+            </h5>
+            <table class="table table-borderless table-sm">
+              <tr>
+                <td class="text-muted" width="40%"><strong>CTPS:</strong></td>
+                <td>{{ funcionario.ctps|default:"Não informada" }}</td>
+              </tr>
+              <tr>
+                <td class="text-muted"><strong>PIS/PASEP:</strong></td>
+                <td>{{ funcionario.pis|default:"Não informado" }}</td>
+              </tr>
+            </table>
+          </div>
+
+          <!-- Dados Bancários -->
+          {% if funcionario.banco %}
+            <div class="info-section">
+              <h5 class="fw-bold text-dark mb-3">
+                <i class="bi bi-bank"></i> Dados Bancários
+              </h5>
+              <table class="table table-borderless table-sm">
+                <tr>
+                  <td class="text-muted" width="40%"><strong>Banco:</strong></td>
+                  <td>{{ funcionario.banco }}</td>
+                </tr>
+                <tr>
+                  <td class="text-muted"><strong>Agência:</strong></td>
+                  <td>{{ funcionario.agencia }}</td>
+                </tr>
+                <tr>
+                  <td class="text-muted"><strong>Conta:</strong></td>
+                  <td>{{ funcionario.conta }}</td>
+                </tr>
+              </table>
+            </div>
+          {% endif %}
+
+          <!-- Observações -->
+          {% if funcionario.observacoes %}
+            <div class="info-section">
+              <h5 class="fw-bold text-muted mb-3">
+                <i class="bi bi-chat-text"></i> Observações
+              </h5>
+              <p class="text-muted">{{ funcionario.observacoes }}</p>
+            </div>
+          {% endif %}
+
+          <!-- Auditoria -->
+          <div class="info-section border-0">
+            <h6 class="text-muted mb-2">
+              <i class="bi bi-clock-history"></i> Informações de Cadastro
+            </h6>
+            <p class="small text-muted mb-1">
+              Cadastrado em: {{ funcionario.data_cadastro|date:"d/m/Y às H:i" }}
+            </p>
+            {% if funcionario.cadastrado_por %}
+              <p class="small text-muted mb-0">
+                Por: {{ funcionario.cadastrado_por.username }}
+              </p>
+            {% endif %}
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+{% endblock %}

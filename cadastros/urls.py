@@ -90,5 +90,50 @@ urlpatterns = [
     path('ajax/areas-por-fazenda/<int:fazenda_id>/', views.ajax_areas_por_fazenda, name='ajax_areas_fazenda'),
     path('ajax/talhoes-por-fazenda/<int:fazenda_id>/', views.ajax_talhoes_por_fazenda, name='ajax_talhoes_fazenda'),
 
+    # Vendedores    
+    path('vendedores/', views.vendedor_list, name='vendedor_list'),
+    path('vendedores/novo/', views.vendedor_create, name='vendedor_create'),
+    path('vendedores/<int:pk>/', views.vendedor_detail, name='vendedor_detail'),
+    path('vendedores/<int:pk>/editar/', views.vendedor_update, name='vendedor_update'),
+    path('vendedores/<int:pk>/excluir/', views.vendedor_delete, name='vendedor_delete'),
+    path('vendedores/<int:pk>/inativar/', views.vendedor_inativar, name='vendedor_inativar'),
+    path('vendedores/<int:pk>/reativar/', views.vendedor_reativar, name='vendedor_reativar'),
+    
+    # Comissões
+    path('comissoes/', views.comissao_list, name='comissao_list'),
+    path('comissoes/nova/', views.comissao_create, name='comissao_create'),
+    path('comissoes/<int:pk>/pagar/', views.comissao_pagar, name='comissao_pagar'),
+    
+    # APIs
+    path('vendedores/api/json/', views.vendedor_json, name='vendedor_json'),
 
+
+    # FORNECEDORES - CRUD Principal
+    path('fornecedores/', views.fornecedor_list, name='fornecedor_list'),
+    path('fornecedores/novo/', views.fornecedor_create, name='fornecedor_create'),
+    path('fornecedores/<int:pk>/', views.fornecedor_detail, name='fornecedor_detail'),
+    path('fornecedores/<int:pk>/editar/', views.fornecedor_update, name='fornecedor_update'),
+    path('fornecedores/<int:pk>/deletar/', views.fornecedor_delete, name='fornecedor_delete'),
+    
+    # FORNECEDORES - APIs Auxiliares
+    path('api/buscar-cnpj/', views.buscar_cnpj, name='buscar_cnpj'),
+    path('api/buscar-cep/', views.buscar_cep, name='buscar_cep'),
+    path('api/subcategorias/', views.ajax_subcategorias_por_categoria, name='ajax_subcategorias'),
+    
+    # FORNECEDORES - Endereços
+    path('fornecedores/<int:fornecedor_pk>/enderecos/novo/', views.fornecedor_endereco_create, name='fornecedor_endereco_create'),
+    path('fornecedores/enderecos/<int:pk>/editar/', views.fornecedor_endereco_update, name='fornecedor_endereco_update'),
+    path('fornecedores/enderecos/<int:pk>/deletar/', views.fornecedor_endereco_delete, name='fornecedor_endereco_delete'),
+    
+    # FORNECEDORES - Contatos
+    path('fornecedores/<int:fornecedor_pk>/contatos/novo/', views.fornecedor_contato_create, name='fornecedor_contato_create'),
+    path('fornecedores/contatos/<int:pk>/editar/', views.fornecedor_contato_update, name='fornecedor_contato_update'),
+    path('fornecedores/contatos/<int:pk>/deletar/', views.fornecedor_contato_delete, name='fornecedor_contato_delete'),
+    
+    # FORNECEDORES - Documentos
+    path('fornecedores/<int:fornecedor_pk>/documentos/novo/', views.fornecedor_documento_create, name='fornecedor_documento_create'),
+    path('fornecedores/documentos/<int:pk>/deletar/', views.fornecedor_documento_delete, name='fornecedor_documento_delete'),
+    
+    # FORNECEDORES - Avaliações
+    path('fornecedores/<int:fornecedor_pk>/avaliacoes/nova/', views.fornecedor_avaliacao_create, name='fornecedor_avaliacao_create'),
 ]

@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+
+{% block title %}Excluir Vendedor | ERP Agrícola{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-md-6">
+      
+      <div class="card shadow-lg border-0">
+        <div class="card-header bg-danger text-white text-center py-4">
+          <i class="bi bi-exclamation-triangle fs-1 d-block mb-2"></i>
+          <h4 class="mb-0">Confirmar Exclusão</h4>
+        </div>
+        <div class="card-body p-4">
+          
+          <div class="alert alert-warning">
+            <i class="bi bi-info-circle"></i>
+            <strong>Atenção!</strong> Esta ação não pode ser desfeita.
+          </div>
+
+          <p class="lead mb-4">
+            Você tem certeza que deseja excluir o vendedor:
+          </p>
+
+          <div class="bg-light p-3 rounded mb-4">
+            <div class="d-flex align-items-center mb-3">
+              {% if vendedor.foto %}
+                <img src="{{ vendedor.foto.url }}" alt="{{ vendedor.nome_completo }}" 
+                     class="rounded-circle me-3" style="width: 60px; height: 60px; object-fit: cover;">
+              {% else %}
+                <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3" 
+                     style="width: 60px; height: 60px; font-size: 1.5rem;">
+                  {{ vendedor.nome_completo.0 }}
+                </div>
+              {% endif %}
+              <div>
+                <h5 class="mb-1">{{ vendedor.nome_completo }}</h5>
+                <p class="text-muted mb-0 small">
+                  {{ vendedor.get_cpf_formatado }} | {{ vendedor.email_corporativo }}
+                </p>
+              </div>
+            </div>
+
+            <div class="row g-2">
+              <div class="col-6">
+                <strong>Tipo:</strong> {{ vendedor.get_tipo_mercado_display }}
+              </div>
+              <div class="col-6">
+                <strong>Status:</strong> {{ vendedor.get_status_display }}
+              </div>
+              <div class="col-6">
+                <strong>Admissão:</strong> {{ vendedor.data_admissao|date:"d/m/Y" }}
+              </div>
+              <div class="col-6">
+                <strong>Empresa:</strong> {{ vendedor.empresa.nome }}
+              </div>
+            </div>
+          </div>
+
+          <form method="post">
+            {% csrf_token %}
+            
+            <div class="d-grid gap-2">
+              <button type="submit" class="btn btn-danger btn-lg">
+                <i class="bi bi-trash"></i> Sim, Excluir Vendedor
+              </button>
+              <a href="{% url 'cadastros:vendedor_list' %}" class="btn btn-outline-secondary btn-lg">
+                <i class="bi bi-arrow-left"></i> Cancelar
+              </a>
+            </div>
+          </form>
+
+        </div>
+      </div>
+
+      <div class="alert alert-info mt-4">
+        <i class="bi bi-lightbulb"></i>
+        <strong>Dica:</strong> Se você não quer excluir permanentemente, considere 
+        <a href="{% url 'cadastros:vendedor_inativar' vendedor.pk %}" class="alert-link">inativar o vendedor</a>
+        ao invés de excluir.
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}

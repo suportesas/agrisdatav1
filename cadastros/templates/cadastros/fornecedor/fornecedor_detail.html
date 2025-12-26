@@ -1,0 +1,565 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ fornecedor.razao_social }} | ERP Agrícola{% endblock %}
+
+{% block extra_css %}
+<style>
+  .info-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    margin-bottom: 1.5rem;
+  }
+  
+  .section-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #495057;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #e9ecef;
+  }
+  
+  .info-row {
+    display: flex;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #f8f9fa;
+  }
+  
+  .info-row:last-child {
+    border-bottom: none;
+  }
+  
+  .info-label {
+    font-weight: 600;
+    color: #6c757d;
+    min-width: 180px;
+  }
+  
+  .info-value {
+    flex: 1;
+    color: #212529;
+  }
+  
+  .badge-status-large {
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 1rem;
+    font-weight: 600;
+  }
+  
+  .stat-box {
+    text-align: center;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(102,126,234,0.3);
+  }
+  
+  .stat-box h3 {
+    margin: 0;
+    font-size: 2rem;
+    font-weight: 700;
+  }
+  
+  .stat-box p {
+    margin: 0.5rem 0 0 0;
+    opacity: 0.9;
+  }
+  
+  .doc-item {
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+    margin-bottom: 0.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .doc-status-valido { border-left: 4px solid #28a745; }
+  .doc-status-vencido { border-left: 4px solid #dc3545; }
+  .doc-status-pendente { border-left: 4px solid #ffc107; }
+  
+  .avaliacao-card {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+  }
+  
+  .nota-badge {
+    display: inline-block;
+    padding: 0.25rem 0.6rem;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 0.9rem;
+  }
+  
+  .nota-alta { background: #d4edda; color: #155724; }
+  .nota-media { background: #fff3cd; color: #856404; }
+  .nota-baixa { background: #f8d7da; color: #721c24; }
+  
+  .tab-pane {
+    padding: 1.5rem 0;
+  }
+  
+  .categoria-tag-large {
+    display: inline-block;
+    padding: 0.4rem 0.8rem;
+    margin: 0.3rem;
+    background: #e3f2fd;
+    color: #1976d2;
+    border-radius: 15px;
+    font-size: 0.9rem;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  
+  <!-- Breadcrumb -->
+  <nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'cadastros:fornecedor_list' %}">Fornecedores</a></li>
+      <li class="breadcrumb-item active">{{ fornecedor.get_nome_exibicao }}</li>
+    </ol>
+  </nav>
+
+  <!-- Header -->
+  <div class="info-card">
+    <div class="d-flex justify-content-between align-items-start">
+      <div class="flex-grow-1">
+        <h2 class="fw-bold mb-2">
+          <i class="bi bi-building-fill text-info"></i>
+          {{ fornecedor.get_nome_exibicao }}
+        </h2>
+        <p class="text-muted mb-2">
+          <strong>CNPJ/CPF:</strong> {{ fornecedor.get_cnpj_cpf_formatado }}
+          {% if fornecedor.razao_social != fornecedor.get_nome_exibicao %}
+            | <em>{{ fornecedor.razao_social }}</em>
+          {% endif %}
+        </p>
+        
+        <!-- Categorias -->
+        <div class="mb-3">
+          {% for cat in fornecedor.categorias.all %}
+            <span class="categoria-tag-large">{{ cat.icone }} {{ cat.nome }}</span>
+          {% endfor %}
+        </div>
+        
+        <!-- Status e Score -->
+        <div class="d-flex gap-3 align-items-center">
+          {% if fornecedor.status == 'ATIVO' %}
+            <span class="badge-status-large" style="background: #d4edda; color: #155724;">✓ Ativo</span>
+          {% elif fornecedor.status == 'BLOQUEADO' %}
+            <span class="badge-status-large" style="background: #dc3545; color: white;">⛔ Bloqueado</span>
+          {% elif fornecedor.status == 'EM_ANALISE' %}
+            <span class="badge-status-large" style="background: #fff3cd; color: #856404;">⏳ Em Análise</span>
+          {% elif fornecedor.status == 'PENDENTE_DOC' %}
+            <span class="badge-status-large" style="background: #ffc107; color: #000;">📋 Pendente Doc.</span>
+          {% else %}
+            <span class="badge-status-large" style="background: #f8d7da; color: #721c24;">⏸ Inativo</span>
+          {% endif %}
+          
+          {% if fornecedor.score_avaliacao > 0 %}
+            {% if fornecedor.score_avaliacao >= 7 %}
+              <span class="badge-status-large" style="background: #d4edda; color: #155724;">⭐ Score: {{ fornecedor.score_avaliacao }}/10</span>
+            {% elif fornecedor.score_avaliacao >= 4 %}
+              <span class="badge-status-large" style="background: #fff3cd; color: #856404;">⚠️ Score: {{ fornecedor.score_avaliacao }}/10</span>
+            {% else %}
+              <span class="badge-status-large" style="background: #f8d7da; color: #721c24;">❌ Score: {{ fornecedor.score_avaliacao }}/10</span>
+            {% endif %}
+          {% endif %}
+        </div>
+      </div>
+      
+      <!-- Ações -->
+      <div class="d-flex gap-2">
+        <a href="{% url 'cadastros:fornecedor_update' fornecedor.pk %}" class="btn btn-primary">
+          <i class="bi bi-pencil"></i> Editar
+        </a>
+        <a href="{% url 'cadastros:fornecedor_delete' fornecedor.pk %}" class="btn btn-outline-danger">
+          <i class="bi bi-trash"></i> Excluir
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Estatísticas -->
+  <div class="row mb-4">
+    <div class="col-md-4">
+      <div class="stat-box" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+        <h3>R$ {{ fornecedor.total_comprado|floatformat:2 }}</h3>
+        <p>Total Comprado</p>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="stat-box" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+        <h3>{{ fornecedor.numero_pedidos }}</h3>
+        <p>Pedidos Realizados</p>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="stat-box" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+        <h3>{{ total_avaliacoes }}</h3>
+        <p>Avaliações Registradas</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabs de Informações -->
+  <ul class="nav nav-tabs mb-3" id="fornecedorTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+      <button class="nav-link active" id="info-tab" data-bs-toggle="tab" data-bs-target="#info" type="button">
+        <i class="bi bi-info-circle"></i> Informações
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="enderecos-tab" data-bs-toggle="tab" data-bs-target="#enderecos" type="button">
+        <i class="bi bi-geo-alt"></i> Endereços ({{ fornecedor.enderecos.count }})
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="contatos-tab" data-bs-toggle="tab" data-bs-target="#contatos" type="button">
+        <i class="bi bi-people"></i> Contatos ({{ fornecedor.contatos.count }})
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="documentos-tab" data-bs-toggle="tab" data-bs-target="#documentos" type="button">
+        <i class="bi bi-file-earmark-text"></i> Documentos ({{ fornecedor.documentos.count }})
+        {% if docs_vencidos > 0 %}
+          <span class="badge bg-danger">{{ docs_vencidos }}</span>
+        {% endif %}
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="avaliacoes-tab" data-bs-toggle="tab" data-bs-target="#avaliacoes" type="button">
+        <i class="bi bi-star"></i> Avaliações ({{ total_avaliacoes }})
+      </button>
+    </li>
+  </ul>
+
+  <div class="tab-content" id="fornecedorTabContent">
+    
+    <!-- Tab: Informações -->
+    <div class="tab-pane fade show active" id="info" role="tabpanel">
+      <div class="row">
+        <div class="col-md-6">
+          <div class="info-card">
+            <h5 class="section-title"><i class="bi bi-file-earmark-text"></i> Documentação</h5>
+            <div class="info-row">
+              <span class="info-label">Inscrição Estadual:</span>
+              <span class="info-value">{{ fornecedor.inscricao_estadual|default:"—" }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Inscrição Municipal:</span>
+              <span class="info-value">{{ fornecedor.inscricao_municipal|default:"—" }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Código EORI:</span>
+              <span class="info-value">{{ fornecedor.eori|default:"—" }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Regime Tributário:</span>
+              <span class="info-value">{{ fornecedor.get_regime_tributario_display }}</span>
+            </div>
+          </div>
+
+          <div class="info-card">
+            <h5 class="section-title"><i class="bi bi-cash-coin"></i> Condições Comerciais</h5>
+            <div class="info-row">
+              <span class="info-label">Prazo de Pagamento:</span>
+              <span class="info-value">{{ fornecedor.prazo_pagamento_padrao }} dias</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Prazo de Entrega:</span>
+              <span class="info-value">{{ fornecedor.prazo_entrega_medio }} dias</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Última Compra:</span>
+              <span class="info-value">{{ fornecedor.data_ultima_compra|date:"d/m/Y"|default:"—" }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <div class="info-card">
+            <h5 class="section-title"><i class="bi bi-telephone"></i> Contato</h5>
+            <div class="info-row">
+              <span class="info-label">Telefone:</span>
+              <span class="info-value">{{ fornecedor.telefone|default:"—" }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">E-mail:</span>
+              <span class="info-value">
+                {% if fornecedor.email %}
+                  <a href="mailto:{{ fornecedor.email }}">{{ fornecedor.email }}</a>
+                {% else %}—{% endif %}
+              </span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Website:</span>
+              <span class="info-value">
+                {% if fornecedor.website %}
+                  <a href="{{ fornecedor.website }}" target="_blank">{{ fornecedor.website }}</a>
+                {% else %}—{% endif %}
+              </span>
+            </div>
+          </div>
+
+          <div class="info-card">
+            <h5 class="section-title"><i class="bi bi-shield-check"></i> Homologação</h5>
+            <div class="info-row">
+              <span class="info-label">Data Homologação:</span>
+              <span class="info-value">{{ fornecedor.data_homologacao|date:"d/m/Y"|default:"—" }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Validade:</span>
+              <span class="info-value">
+                {{ fornecedor.validade_homologacao|date:"d/m/Y"|default:"—" }}
+                {% if fornecedor.homologacao_vencida %}
+                  <span class="badge bg-danger">Vencida</span>
+                {% endif %}
+              </span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Classificação Risco:</span>
+              <span class="info-value">{{ fornecedor.get_classificacao_risco_display }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {% if fornecedor.observacoes %}
+      <div class="info-card">
+        <h5 class="section-title"><i class="bi bi-chat-left-text"></i> Observações</h5>
+        <p>{{ fornecedor.observacoes|linebreaks }}</p>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Tab: Endereços -->
+    <div class="tab-pane fade" id="enderecos" role="tabpanel">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0">Endereços Cadastrados</h5>
+        <a href="{% url 'cadastros:fornecedor_endereco_create' fornecedor.pk %}" class="btn btn-success btn-sm">
+          <i class="bi bi-plus-circle"></i> Novo Endereço
+        </a>
+      </div>
+
+      {% if fornecedor.enderecos.exists %}
+        <div class="row">
+          {% for endereco in fornecedor.enderecos.all %}
+          <div class="col-md-6 mb-3">
+            <div class="info-card">
+              <div class="d-flex justify-content-between align-items-start mb-2">
+                <h6 class="fw-bold">
+                  <i class="bi bi-geo-alt-fill text-primary"></i>
+                  {{ endereco.get_tipo_display }}
+                  {% if endereco.principal %}
+                    <span class="badge bg-primary">Principal</span>
+                  {% endif %}
+                </h6>
+                <div>
+                  <a href="{% url 'cadastros:fornecedor_endereco_update' endereco.pk %}" class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-pencil"></i>
+                  </a>
+                  <a href="{% url 'cadastros:fornecedor_endereco_delete' endereco.pk %}" class="btn btn-sm btn-outline-danger">
+                    <i class="bi bi-trash"></i>
+                  </a>
+                </div>
+              </div>
+              <p class="mb-0">
+                {{ endereco.logradouro }}, {{ endereco.numero }}
+                {% if endereco.complemento %}<br>{{ endereco.complemento }}{% endif %}
+                <br>{{ endereco.bairro }}
+                <br>{{ endereco.cidade }}/{{ endereco.uf }} - CEP {{ endereco.cep }}
+                <br><strong>{{ endereco.pais }}</strong>
+              </p>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="alert alert-info">
+          <i class="bi bi-info-circle"></i> Nenhum endereço cadastrado.
+          <a href="{% url 'cadastros:fornecedor_endereco_create' fornecedor.pk %}">Adicionar primeiro endereço</a>
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Tab: Contatos -->
+    <div class="tab-pane fade" id="contatos" role="tabpanel">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0">Contatos Cadastrados</h5>
+        <a href="{% url 'cadastros:fornecedor_contato_create' fornecedor.pk %}" class="btn btn-success btn-sm">
+          <i class="bi bi-plus-circle"></i> Novo Contato
+        </a>
+      </div>
+
+      {% if fornecedor.contatos.exists %}
+        <div class="row">
+          {% for contato in fornecedor.contatos.all %}
+          <div class="col-md-6 mb-3">
+            <div class="info-card">
+              <div class="d-flex justify-content-between align-items-start mb-2">
+                <div>
+                  <h6 class="fw-bold mb-0">
+                    <i class="bi bi-person-fill text-success"></i>
+                    {{ contato.nome }}
+                    {% if contato.principal %}
+                      <span class="badge bg-success">Principal</span>
+                    {% endif %}
+                  </h6>
+                  <small class="text-muted">{{ contato.cargo }} - {{ contato.get_tipo_display }}</small>
+                </div>
+                <div>
+                  <a href="{% url 'cadastros:fornecedor_contato_update' contato.pk %}" class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-pencil"></i>
+                  </a>
+                  <a href="{% url 'cadastros:fornecedor_contato_delete' contato.pk %}" class="btn btn-sm btn-outline-danger">
+                    <i class="bi bi-trash"></i>
+                  </a>
+                </div>
+              </div>
+              <p class="mb-0">
+                {% if contato.telefone %}<i class="bi bi-telephone"></i> {{ contato.telefone }}<br>{% endif %}
+                {% if contato.celular %}<i class="bi bi-phone"></i> {{ contato.celular }}<br>{% endif %}
+                {% if contato.email %}<i class="bi bi-envelope"></i> {{ contato.email }}<br>{% endif %}
+                {% if contato.recebe_cotacao %}
+                  <span class="badge bg-info mt-1">Recebe Cotação</span>
+                {% endif %}
+              </p>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="alert alert-info">
+          <i class="bi bi-info-circle"></i> Nenhum contato cadastrado.
+          <a href="{% url 'cadastros:fornecedor_contato_create' fornecedor.pk %}">Adicionar primeiro contato</a>
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Tab: Documentos -->
+    <div class="tab-pane fade" id="documentos" role="tabpanel">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0">
+          Documentos
+          {% if status_docs == 'COMPLETO' %}
+            <span class="badge bg-success">✓ Completo</span>
+          {% elif status_docs == 'VENCIDO' %}
+            <span class="badge bg-danger">⏰ Docs Vencidos</span>
+          {% else %}
+            <span class="badge bg-warning">📋 Pendente</span>
+          {% endif %}
+        </h5>
+        <a href="{% url 'cadastros:fornecedor_documento_create' fornecedor.pk %}" class="btn btn-success btn-sm">
+          <i class="bi bi-plus-circle"></i> Novo Documento
+        </a>
+      </div>
+
+      {% if fornecedor.documentos.exists %}
+        {% for doc in fornecedor.documentos.all %}
+        <div class="doc-item doc-status-{{ doc.status|lower }}">
+          <div>
+            <h6 class="mb-1">
+              <i class="bi bi-file-earmark-pdf"></i>
+              {{ doc.titulo }}
+              {% if doc.obrigatorio %}<span class="badge bg-danger">Obrigatório</span>{% endif %}
+            </h6>
+            <small class="text-muted">
+              {{ doc.get_tipo_display }}
+              {% if doc.data_validade %} | Validade: {{ doc.data_validade|date:"d/m/Y" }}{% endif %}
+            </small>
+          </div>
+          <div>
+            {% if doc.arquivo %}
+              <a href="{{ doc.arquivo.url }}" target="_blank" class="btn btn-sm btn-outline-primary me-1">
+                <i class="bi bi-download"></i>
+              </a>
+            {% endif %}
+            <a href="{% url 'cadastros:fornecedor_documento_delete' doc.pk %}" class="btn btn-sm btn-outline-danger">
+              <i class="bi bi-trash"></i>
+            </a>
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="alert alert-info">
+          <i class="bi bi-info-circle"></i> Nenhum documento cadastrado.
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Tab: Avaliações -->
+    <div class="tab-pane fade" id="avaliacoes" role="tabpanel">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0">Histórico de Avaliações</h5>
+        <a href="{% url 'cadastros:fornecedor_avaliacao_create' fornecedor.pk %}" class="btn btn-success btn-sm">
+          <i class="bi bi-plus-circle"></i> Nova Avaliação
+        </a>
+      </div>
+
+      {% if avaliacoes_recentes %}
+        {% for av in avaliacoes_recentes %}
+        <div class="avaliacao-card">
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <div>
+              <h6 class="fw-bold mb-1">
+                {{ av.get_tipo_avaliacao_display }}
+                <span class="badge bg-secondary">{{ av.data_avaliacao|date:"d/m/Y" }}</span>
+              </h6>
+              <small class="text-muted">Por: {{ av.avaliado_por.get_full_name }}</small>
+            </div>
+            <div>
+              {% with media=av.get_media_notas %}
+                {% if media >= 7 %}
+                  <span class="nota-badge nota-alta">⭐ {{ media }}</span>
+                {% elif media >= 4 %}
+                  <span class="nota-badge nota-media">⚠️ {{ media }}</span>
+                {% else %}
+                  <span class="nota-badge nota-baixa">❌ {{ media }}</span>
+                {% endif %}
+              {% endwith %}
+            </div>
+          </div>
+          
+          <div class="row g-2 mb-2">
+            <div class="col-3">
+              <small><strong>Qualidade:</strong> {{ av.nota_qualidade }}</small>
+            </div>
+            <div class="col-3">
+              <small><strong>Prazo:</strong> {{ av.nota_prazo_entrega }}</small>
+            </div>
+            <div class="col-3">
+              <small><strong>Atendimento:</strong> {{ av.nota_atendimento }}</small>
+            </div>
+            <div class="col-3">
+              <small><strong>Preço:</strong> {{ av.nota_preco }}</small>
+            </div>
+          </div>
+          
+          {% if av.observacoes %}
+            <p class="mb-0"><em>{{ av.observacoes }}</em></p>
+          {% endif %}
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="alert alert-info">
+          <i class="bi bi-info-circle"></i> Nenhuma avaliação registrada.
+        </div>
+      {% endif %}
+    </div>
+
+  </div>
+
+</div>
+{% endblock %}

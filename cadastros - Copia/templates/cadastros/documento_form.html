@@ -1,0 +1,80 @@
+<!-- ========================================== -->
+<!-- ARQUIVO 3: documento_form.html -->
+<!-- ========================================== -->
+{% extends 'base.html' %}
+
+{% block title %}Anexar Documento | ERP Agrícola{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'cadastros:fazenda_list' %}">Fazendas</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'cadastros:fazenda_detail' fazenda.pk %}">{{ fazenda.nome }}</a></li>
+      <li class="breadcrumb-item active">Anexar Documento</li>
+    </ol>
+  </nav>
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-header bg-warning text-dark">
+      <h5 class="mb-0"><i class="bi bi-file-earmark-arrow-up"></i> Anexar Documento</h5>
+    </div>
+    <div class="card-body p-4">
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Tipo de Documento *</label>
+            {{ form.tipo }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Número do Documento</label>
+            {{ form.numero_documento }}
+          </div>
+          <div class="col-md-12">
+            <label class="form-label fw-semibold">Título/Descrição *</label>
+            {{ form.titulo }}
+          </div>
+          <div class="col-md-12">
+            <label class="form-label fw-semibold">Arquivo *</label>
+            {{ form.arquivo }}
+            <small class="text-muted d-block">PDF, JPG, PNG, DOC, XLS (máx 10MB)</small>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Data de Emissão</label>
+            {{ form.data_emissao }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Data de Validade</label>
+            {{ form.data_validade }}
+          </div>
+          <div class="col-md-6">
+            <div class="form-check form-switch mt-2">
+              {{ form.gerar_alerta_vencimento }}
+              <label class="form-check-label" for="{{ form.gerar_alerta_vencimento.id_for_label }}">
+                Gerar Alerta de Vencimento
+              </label>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Dias de Antecedência</label>
+            {{ form.dias_antecedencia_alerta }}
+          </div>
+          <div class="col-md-12">
+            <label class="form-label fw-semibold">Observações</label>
+            {{ form.observacoes }}
+          </div>
+        </div>
+        <div class="d-flex justify-content-between gap-3 mt-4">
+          <a href="{% url 'cadastros:fazenda_detail' fazenda.pk %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Cancelar
+          </a>
+          <button type="submit" class="btn btn-success">
+            <i class="bi bi-check-circle"></i> Anexar Documento
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

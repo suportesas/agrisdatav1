@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+
+{% block title %}Excluir Funcionário | ERP Agrícola{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-md-6">
+      
+      <div class="card border-0 shadow-lg">
+        <div class="card-body text-center p-5">
+          
+          <!-- Ícone de Aviso -->
+          <div class="mb-4">
+            <i class="bi bi-exclamation-triangle-fill text-danger" style="font-size: 5rem;"></i>
+          </div>
+
+          <!-- Título -->
+          <h3 class="fw-bold text-danger mb-3">Confirmar Exclusão</h3>
+          
+          <!-- Foto e Info do Funcionário -->
+          <div class="bg-light rounded p-4 mb-4">
+            {% if funcionario.foto %}
+              <img src="{{ funcionario.foto.url }}" alt="{{ funcionario.nome_completo }}" 
+                   style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; margin-bottom: 1rem;">
+            {% else %}
+              <div class="bg-primary bg-opacity-10 rounded-circle mx-auto mb-3" 
+                   style="width: 100px; height: 100px; display: flex; align-items: center; justify-content: center;">
+                <i class="bi bi-person-fill text-primary" style="font-size: 3rem;"></i>
+              </div>
+            {% endif %}
+            
+            <h5 class="fw-bold mb-2">{{ funcionario.nome_completo }}</h5>
+            <p class="text-muted mb-2">
+              <i class="bi bi-briefcase"></i> {{ funcionario.funcao.nome }}
+            </p>
+            <p class="text-muted mb-0">
+              <i class="bi bi-file-text"></i> CPF: {{ funcionario.get_cpf_formatado }}
+            </p>
+          </div>
+
+          <!-- Aviso -->
+          <div class="alert alert-warning text-start mb-4">
+            <i class="bi bi-exclamation-triangle"></i>
+            <strong>Atenção!</strong> Esta ação não pode ser desfeita.
+            <hr>
+            <ul class="mb-0 ps-3">
+              <li>Todos os dados pessoais serão removidos</li>
+              <li>O histórico de trabalho será perdido</li>
+              {% if funcionario.foto %}
+                <li>A foto será excluída permanentemente</li>
+              {% endif %}
+            </ul>
+          </div>
+
+          <!-- Informações Adicionais -->
+          <div class="row g-3 mb-4">
+            <div class="col-6">
+              <div class="bg-light rounded p-2">
+                <small class="text-muted d-block">Admissão</small>
+                <strong>{{ funcionario.data_admissao|date:"d/m/Y" }}</strong>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="bg-light rounded p-2">
+                <small class="text-muted d-block">Tempo de Serviço</small>
+                <strong>{{ funcionario.get_tempo_servico }}</strong>
+              </div>
+            </div>
+          </div>
+
+          <!-- Pergunta -->
+          <p class="mb-4">
+            Tem certeza que deseja <strong class="text-danger">excluir permanentemente</strong> este funcionário?
+          </p>
+
+          <!-- Botões -->
+          <form method="post" class="d-flex gap-3 justify-content-center">
+            {% csrf_token %}
+            
+            <a href="{% url 'cadastros:funcionario_detail' funcionario.pk %}" class="btn btn-secondary btn-lg px-5">
+              <i class="bi bi-arrow-left"></i> Cancelar
+            </a>
+            
+            <button type="submit" class="btn btn-danger btn-lg px-5">
+              <i class="bi bi-trash"></i> Sim, Excluir
+            </button>
+          </form>
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}

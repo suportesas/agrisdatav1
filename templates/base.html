@@ -138,6 +138,12 @@
               <a href="{% url 'cadastros:cultura_list' %}" class="submenu-link">
                 <span>🌱 Culturas</span>
               </a>
+
+            <li class="submenu-item">
+              <a href="{% url 'cadastros:vendedor_list' %}" class="submenu-link">
+                <span>👤 Vendedores</span>
+              </a>
+            </li>  
             </li>
             <li class="submenu-item">
               <a href="#" class="submenu-link">
@@ -145,9 +151,10 @@
               </a>
             </li>
             <li class="submenu-item">
-              <a href="#" class="submenu-link">
+              <a href="{% url 'cadastros:fornecedor_list' %}" class="submenu-link">
                 <span>🏢 Fornecedores</span>
               </a>
+            </li>
             </li>
             <li class="submenu-item">
               <a href="#" class="submenu-link">

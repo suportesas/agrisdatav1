@@ -1,0 +1,324 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }} | ERP Agrícola{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <div class="card shadow-sm border-0 rounded-4">
+    <div class="card-body p-4">
+      <h4 class="fw-bold text-secondary mb-4">
+        {% if area %}
+          <i class="bi bi-pencil-square"></i> Editar Área
+        {% else %}
+          <i class="bi bi-plus-circle"></i> Nova Área
+        {% endif %}
+      </h4>
+
+      <!-- Erros Gerais -->
+      {% if form.non_field_errors %}
+      <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        {{ form.non_field_errors }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+      {% endif %}
+
+      <form method="post" novalidate>
+        {% csrf_token %}
+
+        <!-- SEÇÃO: Identificação -->
+        <div class="row g-3 mb-4">
+          <div class="col-12">
+            <h5 class="text-primary border-bottom pb-2">
+              <i class="bi bi-info-circle"></i> Identificação
+            </h5>
+          </div>
+
+          <!-- Fazenda -->
+          <div class="col-md-6">
+            <label class="form-label fw-bold">
+              {{ form.fazenda.label }} <span class="text-danger">*</span>
+            </label>
+            {{ form.fazenda }}
+            {% if form.fazenda.errors %}
+              <div class="text-danger small mt-1">{{ form.fazenda.errors|join:", " }}</div>
+            {% endif %}
+            <small class="text-muted">Fazenda onde a área está localizada</small>
+          </div>
+
+          <!-- Nome -->
+          <div class="col-md-6">
+            <label class="form-label fw-bold">
+              {{ form.nome.label }} <span class="text-danger">*</span>
+            </label>
+            {{ form.nome }}
+            {% if form.nome.errors %}
+              <div class="text-danger small mt-1">{{ form.nome.errors|join:", " }}</div>
+            {% endif %}
+          </div>
+
+          <!-- Código Interno -->
+          <div class="col-md-4">
+            <label class="form-label fw-bold">{{ form.codigo_interno.label }}</label>
+            {{ form.codigo_interno }}
+            {% if form.codigo_interno.errors %}
+              <div class="text-danger small mt-1">{{ form.codigo_interno.errors|join:", " }}</div>
+            {% endif %}
+          </div>
+
+          <!-- Tipo de Área -->
+          <div class="col-md-4">
+            <label class="form-label fw-bold">
+              {{ form.tipo_area.label }} <span class="text-danger">*</span>
+            </label>
+            {{ form.tipo_area }}
+            {% if form.tipo_area.errors %}
+              <div class="text-danger small mt-1">{{ form.tipo_area.errors|join:", " }}</div>
+            {% endif %}
+          </div>
+
+          <!-- Status -->
+          <div class="col-md-4">
+            <label class="form-label fw-bold">{{ form.status.label }}</label>
+            {{ form.status }}
+            {% if form.status.errors %}
+              <div class="text-danger small mt-1">{{ form.status.errors|join:", " }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- SEÇÃO: Medidas -->
+        <div class="row g-3 mb-4">
+          <div class="col-12">
+            <h5 class="text-success border-bottom pb-2">
+              <i class="bi bi-rulers"></i> Medidas
+            </h5>
+          </div>
+
+          <!-- Área Total -->
+          <div class="col-md-6">
+            <label class="form-label fw-bold">
+              {{ form.area_total.label }} <span class="text-danger">*</span>
+            </label>
+            <div class="input-group">
+              {{ form.area_total }}
+              <span class="input-group-text">ha</span>
+            </div>
+            {% if form.area_total.errors %}
+              <div class="text-danger small mt-1">{{ form.area_total.errors|join:", " }}</div>
+            {% endif %}
+            <small class="text-muted">1 hectare = 10.000 m²</small>
+          </div>
+
+          <!-- Área de Reserva -->
+          <div class="col-md-6">
+            <label class="form-label fw-bold">{{ form.area_reserva.label }}</label>
+            <div class="input-group">
+              {{ form.area_reserva }}
+              <span class="input-group-text">ha</span>
+            </div>
+            {% if form.area_reserva.errors %}
+              <div class="text-danger small mt-1">{{ form.area_reserva.errors|join:", " }}</div>
+            {% endif %}
+            <small class="text-muted"><i class="bi bi-info-circle"></i> Área não disponível para plantio (estradas, infraestrutura, proteção ambiental)</small>
+          </div>
+
+          <!-- Área Plantável -->
+          <div class="col-md-12">
+            <label class="form-label fw-bold">{{ form.area_plantavel.label }}
+              <small class="text-muted ms-2"><i class="bi bi-info-circle"></i> Valor usado para calcular a Área Agricultável da Fazenda</small>
+            </label>
+            <div class="input-group">
+              {{ form.area_plantavel }}
+              <span class="input-group-text">ha</span>
+            </div>
+            {% if form.area_plantavel.errors %}
+              <div class="text-danger small mt-1">{{ form.area_plantavel.errors|join:", " }}</div>
+            {% endif %}
+            <small class="text-muted">Área plantável: total disponível nesta área para plantio (Total - Reserva - Ocupação). A soma das áreas plantáveis não pode ultrapassar a Área Total da fazenda.</small>
+          </div>
+        </div>
+
+        <!-- SEÇÃO: Geolocalização -->
+        <div class="row g-3 mb-4">
+          <div class="col-12">
+            <h5 class="text-info border-bottom pb-2">
+              <i class="bi bi-geo-alt"></i> Geolocalização
+            </h5>
+          </div>
+
+          <!-- Latitude -->
+          <div class="col-md-6">
+            <label class="form-label fw-bold">{{ form.latitude.label }}</label>
+            {{ form.latitude }}
+            {% if form.latitude.errors %}
+              <div class="text-danger small mt-1">{{ form.latitude.errors|join:", " }}</div>
+            {% endif %}
+            <small class="text-muted">Ex: -5.1234567</small>
+          </div>
+
+          <!-- Longitude -->
+          <div class="col-md-6">
+            <label class="form-label fw-bold">{{ form.longitude.label }}</label>
+            {{ form.longitude }}
+            {% if form.longitude.errors %}
+              <div class="text-danger small mt-1">{{ form.longitude.errors|join:", " }}</div>
+            {% endif %}
+            <small class="text-muted">Ex: -37.1234567</small>
+          </div>
+        </div>
+
+        <!-- SEÇÃO: Características do Solo -->
+        <div class="row g-3 mb-4">
+          <div class="col-12">
+            <h5 class="text-warning border-bottom pb-2">
+              <i class="bi bi-droplet"></i> Solo e Topografia
+            </h5>
+          </div>
+
+          <!-- Tipo de Solo -->
+          <div class="col-md-4">
+            <label class="form-label fw-bold">{{ form.tipo_solo.label }}</label>
+            {{ form.tipo_solo }}
+            {% if form.tipo_solo.errors %}
+              <div class="text-danger small mt-1">{{ form.tipo_solo.errors|join:", " }}</div>
+            {% endif %}
+          </div>
+
+          <!-- pH do Solo -->
+          <div class="col-md-4">
+            <label class="form-label fw-bold">{{ form.ph_solo.label }}</label>
+            {{ form.ph_solo }}
+            {% if form.ph_solo.errors %}
+              <div class="text-danger small mt-1">{{ form.ph_solo.errors|join:", " }}</div>
+            {% endif %}
+            <small class="text-muted">Escala de 0 a 14</small>
+          </div>
+
+          <!-- Topografia -->
+          <div class="col-md-4">
+            <label class="form-label fw-bold">{{ form.topografia.label }}</label>
+            {{ form.topografia }}
+            {% if form.topografia.errors %}
+              <div class="text-danger small mt-1">{{ form.topografia.errors|join:", " }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- SEÇÃO: Irrigação -->
+        <div class="row g-3 mb-4">
+          <div class="col-12">
+            <h5 class="text-primary border-bottom pb-2">
+              <i class="bi bi-moisture"></i> Sistema de Irrigação
+            </h5>
+          </div>
+
+          <!-- Possui Irrigação -->
+          <div class="col-md-6">
+            <div class="form-check mt-3">
+              {{ form.possui_irrigacao }}
+              <label class="form-check-label fw-bold" for="{{ form.possui_irrigacao.id_for_label }}">
+                {{ form.possui_irrigacao.label }}
+              </label>
+            </div>
+          </div>
+
+          <!-- Tipo de Irrigação -->
+          <div class="col-md-6">
+            <label class="form-label fw-bold">{{ form.tipo_irrigacao.label }}</label>
+            {{ form.tipo_irrigacao }}
+            {% if form.tipo_irrigacao.errors %}
+              <div class="text-danger small mt-1">{{ form.tipo_irrigacao.errors|join:", " }}</div>
+            {% endif %}
+            <small class="text-muted">Preencher somente se possui irrigação</small>
+          </div>
+        </div>
+
+        <!-- SEÇÃO: Observações -->
+        <div class="row g-3 mb-4">
+          <div class="col-12">
+            <h5 class="text-secondary border-bottom pb-2">
+              <i class="bi bi-chat-left-text"></i> Informações Adicionais
+            </h5>
+          </div>
+
+          <!-- Ativa -->
+          <div class="col-md-12">
+            <div class="form-check">
+              {{ form.ativa }}
+              <label class="form-check-label fw-bold" for="{{ form.ativa.id_for_label }}">
+                {{ form.ativa.label }}
+              </label>
+            </div>
+          </div>
+
+          <!-- Observações -->
+          <div class="col-md-12">
+            <label class="form-label fw-bold">{{ form.observacoes.label }}</label>
+            {{ form.observacoes }}
+            {% if form.observacoes.errors %}
+              <div class="text-danger small mt-1">{{ form.observacoes.errors|join:", " }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Botões -->
+        <div class="d-flex justify-content-between gap-3 mt-4">
+          <a href="{% url 'cadastros:area_list' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Voltar
+          </a>
+          <button type="submit" class="btn btn-success px-5">
+            <i class="bi bi-check-circle"></i> Salvar Área
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Adiciona classes aos campos
+  document.querySelectorAll('input:not([type="checkbox"]), select, textarea').forEach(el => {
+    if (!el.classList.contains('form-control') && !el.classList.contains('form-select')) {
+      el.classList.add(el.tagName === 'SELECT' ? 'form-select' : 'form-control');
+    }
+  });
+
+  // Controle do campo tipo_irrigacao
+  const possuiIrrigacao = document.getElementById('id_possui_irrigacao');
+  const tipoIrrigacao = document.getElementById('id_tipo_irrigacao');
+
+  if (possuiIrrigacao && tipoIrrigacao) {
+    function toggleTipoIrrigacao() {
+      if (possuiIrrigacao.checked) {
+        tipoIrrigacao.disabled = false;
+        tipoIrrigacao.parentElement.classList.remove('opacity-50');
+      } else {
+        tipoIrrigacao.disabled = true;
+        tipoIrrigacao.value = '';
+        tipoIrrigacao.parentElement.classList.add('opacity-50');
+      }
+    }
+
+    possuiIrrigacao.addEventListener('change', toggleTipoIrrigacao);
+    toggleTipoIrrigacao(); // Executa ao carregar
+  }
+});
+</script>
+
+<style>
+  .form-control, .form-select {
+    border-radius: 8px;
+  }
+  .form-check-input {
+    width: 1.3em;
+    height: 1.3em;
+  }
+  .input-group-text {
+    background-color: #e9ecef;
+    font-weight: 600;
+  }
+</style>
+{% endblock %}

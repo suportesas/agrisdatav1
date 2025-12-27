@@ -13,7 +13,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Quick-start development settings - unsuitable for production
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'n5!(lckgqqurwi@)m380=a^@%d6gj%m3%sn%w+mktno*9nn*+)'
+SECRET_KEY = 's_#plt(uejrjtdoh&_((ajet($=b+euzkeyn))0v0+puysf61+'
 
 #'django-insecure-lopjd&u(&g8ei6j4!vltv6b1xgd(5fxn-kz3*35l0ma!2&8#+h'
 

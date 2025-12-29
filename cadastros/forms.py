@@ -1408,11 +1408,11 @@ class VendedorForm(forms.ModelForm):
             'supervisor', 'nivel_autonomia', 'acesso_crm',
             
             # Exportação (se aplicável)
-            'passaporte_numero', 'passaporte_validade',
+            'passaporte_numero', 'passaporte_validade', 'visto_trabalho',
             'certificacoes', 'idiomas', 'regioes_atuacao', 'paises_atuacao',
             
             # Status
-            'status', 'data_admissao', 'data_desligamento', 'observacoes',
+            'status', 'data_admissao', 'data_desligamento', 'observacoes', 'experiencia_anos'
         ]
         
         widgets = {
@@ -1556,6 +1556,12 @@ class VendedorForm(forms.ModelForm):
                 'class': 'form-control',
                 'type': 'date'
             }),
+
+            'visto_trabalho': forms.TextInput(attrs={
+                'class': 'form-control', 
+                'placeholder': '12345678'
+            }),   
+
             'certificacoes': forms.Textarea(attrs={
                 'class': 'form-control',
                 'rows': 3,
@@ -1588,6 +1594,11 @@ class VendedorForm(forms.ModelForm):
                 'class': 'form-control',
                 'rows': 4,
                 'placeholder': 'Observações gerais sobre o vendedor...'
+            }),
+
+            'experiencia_anos': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': '5,10,15'
             }),
         }
     

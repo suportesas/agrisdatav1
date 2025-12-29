@@ -1076,7 +1076,10 @@ class Funcionario(models.Model):
     )
     
     data_admissao = models.DateField(
-        'Data de Admissão'
+        'Data de Admissão',
+        blank=True,
+        null=True
+        
     )
     
     data_demissao = models.DateField(

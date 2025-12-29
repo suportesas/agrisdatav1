@@ -1408,7 +1408,7 @@ class VendedorForm(forms.ModelForm):
             'supervisor', 'nivel_autonomia', 'acesso_crm',
             
             # Exportação (se aplicável)
-            'passaporte_numero', 'passaporte_validade', 'visto_trabalho',
+            'passaporte_numero', 'passaporte_validade', 'visto_trabalho', 'cnh',
             'certificacoes', 'idiomas', 'regioes_atuacao', 'paises_atuacao',
             
             # Status
@@ -1433,7 +1433,7 @@ class VendedorForm(forms.ModelForm):
             'data_nascimento': forms.DateInput(attrs={
                 'class': 'form-control',
                 'type': 'date'
-            }),
+            }, format='%Y-%m-%d'),
             'foto': forms.FileInput(attrs={'class': 'form-control'}),
             
             # Tipo
@@ -1555,12 +1555,17 @@ class VendedorForm(forms.ModelForm):
             'passaporte_validade': forms.DateInput(attrs={
                 'class': 'form-control',
                 'type': 'date'
-            }),
+            }, format='%Y-%m-%d'),
 
             'visto_trabalho': forms.TextInput(attrs={
                 'class': 'form-control', 
                 'placeholder': '12345678'
-            }),   
+            }),
+
+            'cnh': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'CNH (apenas números)'
+            }),
 
             'certificacoes': forms.Textarea(attrs={
                 'class': 'form-control',
@@ -1585,7 +1590,7 @@ class VendedorForm(forms.ModelForm):
             'data_admissao': forms.DateInput(attrs={
                 'class': 'form-control',
                 'type': 'date'
-            }),
+            }, format='%Y-%m-%d'),
             'data_desligamento': forms.DateInput(attrs={
                 'class': 'form-control',
                 'type': 'date'
@@ -1615,6 +1620,18 @@ class VendedorForm(forms.ModelForm):
             ).exclude(pk=self.instance.pk if self.instance.pk else None)
         else:
             self.fields['supervisor'].queryset = Vendedor.objects.none()
+
+        # Preenche valores de data no formato ISO para inputs tipo=date (compatível com navegador)
+        if self.instance and getattr(self.instance, 'data_nascimento', None):
+            try:
+                self.fields['data_nascimento'].initial = self.instance.data_nascimento.strftime('%Y-%m-%d')
+            except Exception:
+                pass
+        if self.instance and getattr(self.instance, 'data_admissao', None):
+            try:
+                self.fields['data_admissao'].initial = self.instance.data_admissao.strftime('%Y-%m-%d')
+            except Exception:
+                pass
         
         # Remove campo empresa (será preenchido automaticamente)
         if 'empresa' in self.fields:

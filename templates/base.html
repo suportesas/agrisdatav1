@@ -123,10 +123,15 @@
             <i class="bi bi-chevron-down expand-icon"></i>
           </div>
           <ul class="submenu">
-            <!-- ✅ FAZENDAS - CORRIGIDO -->
+            <!-- Organized: Fazendas, Fornecedores, Funcionários, Culturas, Vendedores, Produtos, Clientes, Maquinário, Área, Talhão -->
             <li class="submenu-item">
               <a href="{% url 'cadastros:fazenda_list' %}" class="submenu-link">
                 <span>🏭 Fazendas</span>
+              </a>
+            </li>
+            <li class="submenu-item">
+              <a href="{% url 'cadastros:fornecedor_list' %}" class="submenu-link">
+                <span>🤝 Fornecedores</span>
               </a>
             </li>
             <li class="submenu-item">
@@ -138,20 +143,16 @@
               <a href="{% url 'cadastros:cultura_list' %}" class="submenu-link">
                 <span>🌱 Culturas</span>
               </a>
-
+            </li>
             <li class="submenu-item">
               <a href="{% url 'cadastros:vendedor_list' %}" class="submenu-link">
                 <span>👤 Vendedores</span>
               </a>
-            </li>  
             </li>
             <li class="submenu-item">
               <a href="#" class="submenu-link">
                 <span>📦 Produtos/Insumos</span>
               </a>
-            </li>
-            
-            </li>
             </li>
             <li class="submenu-item">
               <a href="#" class="submenu-link">
@@ -163,19 +164,16 @@
                 <span>🚜 Maquinário</span>
               </a>
             </li>
-
             <li class="submenu-item">
               <a href="{% url 'cadastros:area_list' %}" class="submenu-link">
                 <span>🗺️ Área</span>
               </a>
             </li>
-
             <li class="submenu-item">
               <a href="{% url 'cadastros:talhao_list' %}" class="submenu-link">
                 <span>⏸ Talhão</span>
               </a>
             </li>
-            
           </ul>
         </li>
 

@@ -564,11 +564,62 @@ def fornecedor_documento_create(request, fornecedor_pk):
 
 
 @login_required
-def documento_delete(request, fazenda_pk, documento_pk):
-    """Remove documento"""
+def documento_update(request, fazenda_pk, documento_pk):
+    """Edita um documento da fazenda"""
     fazenda = get_object_or_404(Fazenda, pk=fazenda_pk, empresa=request.user.empresa)
     documento = get_object_or_404(DocumentoFazenda, pk=documento_pk, fazenda=fazenda)
-    
+
+    if request.method == 'POST':
+        form = DocumentoFazendaForm(request.POST, request.FILES, instance=documento)
+        if form.is_valid():
+            # Se um novo arquivo foi enviado, remove o antigo antes de salvar
+            if 'arquivo' in request.FILES and documento.arquivo:
+                documento.arquivo.delete()
+            form.save()
+            messages.success(request, '✅ Documento atualizado!')
+            return redirect('cadastros:fazenda_detail', pk=fazenda.pk)
+    else:
+        form = DocumentoFazendaForm(instance=documento)
+
+    return render(request, 'cadastros/documento_form.html', {
+        'form': form,
+        'fazenda': fazenda,
+        'documento': documento,
+        'action': 'Editar'
+    })
+
+
+@login_required
+def fornecedor_documento_update(request, fornecedor_pk, documento_pk):
+    """Edita um documento do fornecedor"""
+    fornecedor = get_object_or_404(Fornecedor, pk=fornecedor_pk, empresa=request.user.empresa)
+    documento = get_object_or_404(DocumentoFornecedor, pk=documento_pk, fornecedor=fornecedor)
+
+    if request.method == 'POST':
+        form = DocumentoFornecedorForm(request.POST, request.FILES, instance=documento)
+        if form.is_valid():
+            if 'arquivo' in request.FILES and documento.arquivo:
+                documento.arquivo.delete()
+            form.save()
+            messages.success(request, '✅ Documento atualizado!')
+            return redirect('cadastros:fornecedor_detail', pk=fornecedor.pk)
+    else:
+        form = DocumentoFornecedorForm(instance=documento)
+
+    return render(request, 'cadastros/documento_form.html', {
+        'form': form,
+        'fornecedor': fornecedor,
+        'documento': documento,
+        'action': 'Editar'
+    })
+
+
+@login_required
+def documento_delete(request, fazenda_pk, documento_pk):
+    """Remove documento da fazenda"""
+    fazenda = get_object_or_404(Fazenda, pk=fazenda_pk, empresa=request.user.empresa)
+    documento = get_object_or_404(DocumentoFazenda, pk=documento_pk, fazenda=fazenda)
+
     if request.method == 'POST':
         # Remove arquivo físico
         if documento.arquivo:
@@ -577,7 +628,7 @@ def documento_delete(request, fazenda_pk, documento_pk):
         documento.delete()
         messages.success(request, '🗑️ Documento removido!')
         return redirect('cadastros:fazenda_detail', pk=fazenda.pk)
-    
+
     return render(request, 'cadastros/documento_confirm_delete.html', {
         'fazenda': fazenda,
         'documento': documento

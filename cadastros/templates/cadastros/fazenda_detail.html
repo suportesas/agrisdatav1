@@ -498,6 +498,9 @@
                         <a href="{{ doc.arquivo.url }}" target="_blank" class="btn btn-outline-info" title="Visualizar">
                           <i class="bi bi-eye"></i>
                         </a>
+                        <a href="{% url 'cadastros:documento_update' fazenda.pk doc.pk %}" class="btn btn-outline-secondary" title="Editar">
+                          <i class="bi bi-pencil-square"></i>
+                        </a>
                         <a href="{% url 'cadastros:documento_delete' fazenda.pk doc.pk %}" class="btn btn-outline-danger">
                           <i class="bi bi-trash"></i>
                         </a>

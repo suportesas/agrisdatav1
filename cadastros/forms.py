@@ -383,7 +383,7 @@ class ContaBancariaFazendaForm(forms.ModelForm):
 
 class DocumentoFazendaForm(forms.ModelForm):
     """Formulário de upload de documentos"""
-    
+
     class Meta:
         model = DocumentoFazenda
         # Exclui campos que serão preenchidos pela view (fazenda, enviado_por)
@@ -402,32 +402,8 @@ class DocumentoFazendaForm(forms.ModelForm):
                 'class': 'form-control',
                 'accept': '.pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx'
             }),
-        }
-
-
-class DocumentoFornecedorForm(forms.ModelForm):
-    """Formulário de upload de documentos para Fornecedor"""
-
-    class Meta:
-        model = __import__('cadastros.models', fromlist=['DocumentoFornecedor']).DocumentoFornecedor
-        # Exclui campos que serão preenchidos pela view (fornecedor, enviado_por)
-        exclude = ('fornecedor', 'enviado_por')
-        widgets = {
-            'tipo': forms.Select(attrs={'class': 'form-select'}),
-            'titulo': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Descrição do documento'
-            }),
-            'numero_documento': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Nº de protocolo, registro, etc.'
-            }),
-            'arquivo': forms.FileInput(attrs={
-                'class': 'form-control',
-                'accept': '.pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx'
-            }),
-            'data_emissao': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'data_validade': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'data_emissao': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
+            'data_validade': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
             'gerar_alerta_vencimento': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'dias_antecedencia_alerta': forms.NumberInput(attrs={'class': 'form-control'}),
             'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
@@ -463,6 +439,51 @@ class DocumentoFornecedorForm(forms.ModelForm):
                 })
         
         return cleaned_data
+
+
+class DocumentoFornecedorForm(forms.ModelForm):
+    """Formulário de upload de documentos para Fornecedor"""
+
+    class Meta:
+        model = __import__('cadastros.models', fromlist=['DocumentoFornecedor']).DocumentoFornecedor
+        # Exclui campos que serão preenchidos pela view (fornecedor, enviado_por)
+        exclude = ('fornecedor', 'enviado_por')
+        widgets = {
+            'tipo': forms.Select(attrs={'class': 'form-select'}),
+            'titulo': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Descrição do documento'
+            }),
+            'numero_documento': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Nº de protocolo, registro, etc.'
+            }),
+            'arquivo': forms.FileInput(attrs={
+                'class': 'form-control',
+                'accept': '.pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx'
+            }),
+            'data_emissao': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
+            'data_validade': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
+            'gerar_alerta_vencimento': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'dias_antecedencia_alerta': forms.NumberInput(attrs={'class': 'form-control'}),
+            'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Permite não enviar 'dias_antecedencia_alerta' no POST (usa default do modelo)
+        if 'dias_antecedencia_alerta' in self.fields:
+            self.fields['dias_antecedencia_alerta'].required = False
+
+    def clean_arquivo(self):
+        """Valida tamanho do arquivo (máx 10MB)"""
+        arquivo = self.cleaned_data.get('arquivo')
+        
+        if arquivo:
+            if arquivo.size > 10 * 1024 * 1024:  # 10MB
+                raise ValidationError('Arquivo muito grande. Tamanho máximo: 10MB')
+        
+        return arquivo
 
 
 class BuscarCNPJForm(forms.Form):
@@ -768,6 +789,7 @@ class FornecedorForm(forms.ModelForm):
             'nome_fantasia': forms.TextInput(attrs={'class': 'form-control'}),
             'tipo_pessoa': forms.Select(attrs={'class': 'form-select'}),
             'cnpj_cpf': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '00.000.000/0000-00'}),
+            'inscricao_estadual': forms.TextInput(attrs={'class': 'form-control'}),
             'inscricao_municipal': forms.TextInput(attrs={'class': 'form-control'}),
             'eori': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Código EORI para exportação'}),
             'regime_tributario': forms.Select(attrs={'class': 'form-select'}),
@@ -784,7 +806,6 @@ class FornecedorForm(forms.ModelForm):
             'uf': forms.TextInput(attrs={'class': 'form-control'}),
             'pais': forms.TextInput(attrs={'class': 'form-control'}),
             'porto_preferencial': forms.TextInput(attrs={'class': 'form-control'}),
-            'website': forms.URLInput(attrs={'class': 'form-control', 'placeholder': 'https://www.fornecedor.com'}),
             'categorias': forms.SelectMultiple(attrs={'class': 'form-select'}),
             'subcategorias': forms.SelectMultiple(attrs={'class': 'form-select'}),
             'classificacao_risco': forms.Select(attrs={'class': 'form-select'}),

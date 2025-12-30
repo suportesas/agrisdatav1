@@ -37,6 +37,7 @@ urlpatterns = [
     # ==================== DOCUMENTOS ====================
     path('fazendas/<int:fazenda_pk>/documentos/novo/', views.documento_create, name='documento_create'),
     path('fazendas/<int:fazenda_pk>/documentos/<int:documento_pk>/excluir/', views.documento_delete, name='documento_delete'),
+    path('fazendas/<int:fazenda_pk>/documentos/<int:documento_pk>/editar/', views.documento_update, name='documento_update'),
     
     # ==================== ALERTAS ====================
     path('alertas/', views.dashboard_alertas, name='dashboard_alertas'),
@@ -135,5 +136,6 @@ urlpatterns = [
     # Fornecedor: documentos
     path('fornecedores/<int:fornecedor_pk>/documentos/novo/', views.fornecedor_documento_create, name='fornecedor_documento_create'),
     path('fornecedores/<int:fornecedor_pk>/documentos/<int:documento_pk>/excluir/', views.fornecedor_documento_delete, name='fornecedor_documento_delete'),
+    path('fornecedores/<int:fornecedor_pk>/documentos/<int:documento_pk>/editar/', views.fornecedor_documento_update, name='fornecedor_documento_update'),
 
    ]

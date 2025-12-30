@@ -7,6 +7,7 @@ What I changed
 - `cadastros/forms.py`: exclude `fornecedor`/`fazenda` and `enviado_por` in document forms; set `dias_antecedencia_alerta` optional in `DocumentoFornecedorForm`; make `regime_tributario` not required in `FornecedorForm`.
 - `cadastros/views.py`: cleaned up upload view (removed debug prints).
 - `cadastros/tests.py`: verified / added tests that cover document upload and fornecedor create/update flows.
+- `cadastros/signals.py` + `cadastros/models.py`: added address synchronization between `Fornecedor` and `FornecedorEndereco` (signals for `post_save`/`post_delete` and `Fornecedor.save()` propagation); added unit tests for sync behavior.
 
 Testing
 - `python manage.py test cadastros` — all tests pass (30 tests).

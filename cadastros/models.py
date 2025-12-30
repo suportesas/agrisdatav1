@@ -741,6 +741,104 @@ class DocumentoFazenda(models.Model):
         help_text='Descrição do documento'
     )
 
+    numero_documento = models.CharField(
+        'Número do Documento',
+        max_length=100,
+        blank=True,
+        help_text='Número de protocolo, registro, etc.'
+    )
+
+    arquivo = models.FileField(
+        'Arquivo',
+        upload_to='fazendas/documentos/%Y/%m/',
+        validators=[
+            FileExtensionValidator(
+                allowed_extensions=['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx', 'xls', 'xlsx']
+            )
+        ],
+        help_text='Formatos: PDF, JPG, PNG, DOC, XLS (máx 10MB)'
+    )
+    
+    # Datas
+    data_emissao = models.DateField(
+        'Data de Emissão',
+        blank=True,
+        null=True
+    )
+    
+    data_validade = models.DateField(
+        'Data de Validade',
+        blank=True,
+        null=True,
+        help_text='Deixe em branco se não houver validade'
+    )
+    
+    # Controle de alertas
+    gerar_alerta_vencimento = models.BooleanField(
+        'Gerar Alerta de Vencimento',
+        default=True,
+        help_text='Notificar quando próximo do vencimento'
+    )
+    
+    dias_antecedencia_alerta = models.IntegerField(
+        'Dias de Antecedência para Alerta',
+        default=30,
+        help_text='Quantos dias antes do vencimento alertar'
+    )
+    
+    # Observações
+    observacoes = models.TextField(
+        'Observações',
+        blank=True
+    )
+    
+    # Auditoria
+    data_upload = models.DateTimeField(
+        'Data do Upload',
+        auto_now_add=True
+    )
+    
+    enviado_por = models.ForeignKey(
+        'usuarios.Usuario', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='documentos_enviados', verbose_name='Enviado por'
+    )
+
+    class Meta:
+        verbose_name = 'Documento da Fazenda'
+        verbose_name_plural = 'Documentos das Fazendas'
+        ordering = ['-data_upload']
+    
+    def __str__(self):
+        return f"{self.get_tipo_display()} - {self.titulo}"
+    
+    def esta_vencido(self):
+        """Verifica se documento está vencido"""
+        if self.data_validade:
+            return timezone.now().date() > self.data_validade
+        return False
+    
+    def dias_para_vencimento(self):
+        """Retorna dias restantes até vencimento"""
+        if self.data_validade:
+            dias = (self.data_validade - timezone.now().date()).days
+            return dias
+        return None
+    
+    def precisa_alerta(self):
+        """Verifica se deve gerar alerta"""
+        if not self.gerar_alerta_vencimento or not self.data_validade:
+            return False
+        
+        dias_restantes = self.dias_para_vencimento()
+        if dias_restantes is not None:
+            return 0 <= dias_restantes <= self.dias_antecedencia_alerta
+        
+        return False
+    
+    def get_nome_arquivo(self):
+        """Retorna apenas o nome do arquivo sem o caminho"""
+        return os.path.basename(self.arquivo.name)
+
 
 class DocumentoFornecedor(models.Model):
     """Documentos anexados ao fornecedor (certificados, contratos, licenças)"""
@@ -756,6 +854,7 @@ class DocumentoFornecedor(models.Model):
 
     tipo = models.CharField('Tipo de Documento', max_length=30, choices=TIPO_DOCUMENTO)
     titulo = models.CharField('Título/Descrição', max_length=200, help_text='Descrição do documento')
+    numero_documento = models.CharField('Número do Documento', max_length=100, blank=True, help_text='Número de protocolo, registro, etc.')
     numero_documento = models.CharField('Número do Documento', max_length=100, blank=True, help_text='Número de protocolo, registro, etc.')
 
     arquivo = models.FileField(
@@ -810,116 +909,8 @@ class DocumentoFornecedor(models.Model):
 
     def get_nome_arquivo(self):
         return os.path.basename(self.arquivo.name)
-    
-    numero_documento = models.CharField(
-        'Número do Documento',
-        max_length=100,
-        blank=True,
-        help_text='Número de protocolo, registro, etc.'
-    )
-    
-    # Arquivo
-    arquivo = models.FileField(
-        'Arquivo',
-        upload_to='fazendas/documentos/%Y/%m/',
-        validators=[
-            FileExtensionValidator(
-                allowed_extensions=['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx', 'xls', 'xlsx']
-            )
-        ],
-        help_text='Formatos: PDF, JPG, PNG, DOC, XLS (máx 10MB)'
-    )
-    
-    # Datas
-    data_emissao = models.DateField(
-        'Data de Emissão',
-        blank=True,
-        null=True
-    )
-    
-    data_validade = models.DateField(
-        'Data de Validade',
-        blank=True,
-        null=True,
-        help_text='Deixe em branco se não houver validade'
-    )
-    
-    # Controle de alertas
-    gerar_alerta_vencimento = models.BooleanField(
-        'Gerar Alerta de Vencimento',
-        default=True,
-        help_text='Notificar quando próximo do vencimento'
-    )
-    
-    dias_antecedencia_alerta = models.IntegerField(
-        'Dias de Antecedência para Alerta',
-        default=30,
-        help_text='Quantos dias antes do vencimento alertar'
-    )
-    
-    # Observações
-    observacoes = models.TextField(
-        'Observações',
-        blank=True
-    )
-    
-    # Auditoria
-    data_upload = models.DateTimeField(
-        'Data do Upload',
-        auto_now_add=True
-    )
-    
-    enviado_por = models.ForeignKey(
-        'usuarios.Usuario',
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='documentos_enviados',
-        verbose_name='Enviado por'
-    )
-    
-    class Meta:
-        verbose_name = 'Documento da Fazenda'
-        verbose_name_plural = 'Documentos das Fazendas'
-        ordering = ['-data_upload']
-    
-    def __str__(self):
-        return f"{self.get_tipo_display()} - {self.titulo}"
-    
-    def esta_vencido(self):
-        """Verifica se documento está vencido"""
-        if self.data_validade:
-            return timezone.now().date() > self.data_validade
-        return False
-    
-    def dias_para_vencimento(self):
-        """Retorna dias restantes até vencimento"""
-        if self.data_validade:
-            dias = (self.data_validade - timezone.now().date()).days
-            return dias
-        return None
-    
-    def precisa_alerta(self):
-        """Verifica se deve gerar alerta"""
-        if not self.gerar_alerta_vencimento or not self.data_validade:
-            return False
-        
-        dias_restantes = self.dias_para_vencimento()
-        if dias_restantes is not None:
-            return 0 <= dias_restantes <= self.dias_antecedencia_alerta
-        
-        return False
-    
-    def get_nome_arquivo(self):
-        """Retorna apenas o nome do arquivo sem o caminho"""
-        return os.path.basename(self.arquivo.name)
 
 
-
-        """
-ADICIONE ESTES MODELOS AO FINAL DO ARQUIVO cadastros/models.py
-(Após o modelo DocumentoFazenda)
-"""
 
 class FuncaoFuncionario(models.Model):
     """
@@ -3285,6 +3276,52 @@ class Fornecedor(models.Model):
         if fe:
             return fe.to_dict()
         return None
+
+    def save(self, *args, **kwargs):
+        """Ao salvar o Fornecedor, se houver alterações nos campos de endereço espelhados,
+        cria/atualiza o `FornecedorEndereco` padrão para manter os dados consistentes.
+
+        Observações sobre sincronização (bidirecional):
+        - `Fornecedor.save()` cria/atualiza o `FornecedorEndereco` com `padrao=True` quando os campos
+          espelhados (`cep`, `endereco`, `numero`, etc.) mudam — isso garante que o endereço padrão
+          esteja sempre alinhado ao registro principal do fornecedor.
+        - Sinais (`cadastros.signals`) escutam `post_save` e `post_delete` em `FornecedorEndereco`:
+          quando um endereço com `padrao=True` é salvo/alterado, os campos espelhados no `Fornecedor`
+          são atualizados automaticamente; quando o endereço padrão é deletado, promovemos outro
+          endereço ou limpamos os campos espelhados.
+
+        Esse mecanismo evita divergência de dados entre `Fornecedor` e `FornecedorEndereco` e mantém
+        comportamento previsível ao criar, editar ou remover endereços."""
+        address_fields = ['cep', 'endereco', 'numero', 'complemento', 'bairro', 'cidade', 'uf', 'pais']
+        old = None
+        if self.pk:
+            try:
+                old = Fornecedor.objects.get(pk=self.pk)
+            except Fornecedor.DoesNotExist:
+                old = None
+
+        if old:
+            changed = any(((getattr(old, f) or '').strip()) != ((getattr(self, f) or '').strip()) for f in address_fields)
+        else:
+            # Nova instância: se houver qualquer campo de endereço preenchido, considera alteração
+            changed = any((getattr(self, f) or '').strip() for f in address_fields)
+
+        super().save(*args, **kwargs)
+
+        if changed:
+            defaults = {
+                'cep': self.cep or '',
+                'logradouro': self.endereco or '',
+                'numero': self.numero or '',
+                'complemento': self.complemento or '',
+                'bairro': self.bairro or '',
+                'cidade': self.cidade or '',
+                'uf': self.uf or '',
+                'pais': self.pais or ''
+            }
+            # Import dentro do método para evitar problemas de import circular em tempo de carregamento
+            from .models import FornecedorEndereco
+            FornecedorEndereco.objects.update_or_create(fornecedor=self, padrao=True, defaults=defaults)
 
     # Novos campos para as classificações e categorias do fornecedor
     inscricao_municipal = models.CharField('Inscrição Municipal', max_length=20, blank=True)

@@ -486,6 +486,45 @@ class FornecedorDocumentoTests(TestCase):
         self.assertEqual(resp.status_code, 302)
         self.assertTrue(self.fornecedor.documentos.filter(titulo='Doc Teste').exists())
 
+
+class FazendaDocumentoFormTests(TestCase):
+    def setUp(self):
+        plano = Plano.objects.create(codigo='PEQX', nome='PX', valor_mensal=1)
+        self.empresa = Empresa.objects.create(nome='EFaz', plano=plano)
+        User = get_user_model()
+        self.user = User.objects.create_user(username='userfaz', password='pass')
+        self.user.empresa = self.empresa
+        self.user.save()
+        self.client = Client()
+        self.client.login(username='userfaz', password='pass')
+        self.fazenda = Fazenda.objects.create(empresa=self.empresa, nome='Fazenda Check', cnpj_cpf='22.222.222/0001-22', area_total=5)
+        # Criar um fornecedor auxiliar para testes relacionados a fornecedor presentes aqui
+        self.fornecedor = Fornecedor.objects.create(empresa=self.empresa, nome='Faux')
+
+    def test_document_form_shows_numero_input(self):
+        url = reverse('cadastros:documento_create', args=[self.fazenda.pk])
+        resp = self.client.get(url)
+        self.assertEqual(resp.status_code, 200)
+        content = resp.content.decode('utf-8')
+        self.assertIn('Número do Documento', content)
+        self.assertIn('name="numero_documento"', content)
+
+    def test_document_form_field_types(self):
+        url = reverse('cadastros:documento_create', args=[self.fazenda.pk])
+        resp = self.client.get(url)
+        self.assertEqual(resp.status_code, 200)
+        content = resp.content.decode('utf-8')
+        # Emission/validade should be date inputs
+        self.assertIn('name="data_emissao"', content)
+        self.assertIn('type="date"', content)
+        self.assertIn('name="data_validade"', content)
+        # Dias de antecedência should be number input
+        self.assertIn('name="dias_antecedencia_alerta"', content)
+        self.assertIn('type="number"', content)
+        # Observações should be a textarea
+        self.assertIn('<textarea', content)
+        self.assertIn('name="observacoes"', content)
+
     def test_document_delete(self):
         # create a document
         from cadastros.models import DocumentoFornecedor

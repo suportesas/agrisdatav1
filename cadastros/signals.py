@@ -82,3 +82,47 @@ def talhao_post_save(sender, instance, created, **kwargs):
         except Exception:
             # Não propagar erro do sinal
             pass
+
+
+# ---------------------------------------------
+# Sincronização de endereços do Fornecedor
+# ---------------------------------------------
+from .models import FornecedorEndereco, Fornecedor
+
+
+@receiver(post_save, sender=FornecedorEndereco)
+def fornecedor_endereco_post_save(sender, instance, created, **kwargs):
+    """Quando um endereço é salvo com `padrao=True`, atualiza os campos espelhados do Fornecedor."""
+    if instance.padrao:
+        data = {
+            'cep': instance.cep or '',
+            'endereco': instance.logradouro or '',
+            'numero': instance.numero or '',
+            'complemento': instance.complemento or '',
+            'bairro': instance.bairro or '',
+            'cidade': instance.cidade or '',
+            'uf': instance.uf or '',
+            'pais': instance.pais or ''
+        }
+        qs = Fornecedor.objects.filter(pk=instance.fornecedor_id)
+        fornecedor = qs.first()
+        if fornecedor:
+            needs_update = any((getattr(fornecedor, k) or '') != v for k, v in data.items())
+            if needs_update:
+                qs.update(**data)
+
+
+@receiver(post_delete, sender=FornecedorEndereco)
+def fornecedor_endereco_post_delete(sender, instance, **kwargs):
+    """Se o endereço padrão é deletado, promove outro endereço e atualiza o fornecedor (ou limpa campos)."""
+    if instance.padrao:
+        next_fe = FornecedorEndereco.objects.filter(fornecedor=instance.fornecedor).first()
+        if next_fe:
+            # Tornar o próximo endereço como padrão (isso acionará post_save e atualizará o fornecedor)
+            next_fe.padrao = True
+            next_fe.save()
+        else:
+            # Não há mais endereços: limpa campos do fornecedor
+            Fornecedor.objects.filter(pk=instance.fornecedor_id).update(
+                cep='', endereco='', numero='', complemento='', bairro='', cidade='', uf='', pais=''
+            )

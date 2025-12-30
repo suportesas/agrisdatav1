@@ -110,4 +110,30 @@ urlpatterns = [
 
 
    
+    # Fornecedores
+    path('fornecedores/', views.fornecedor_list, name='fornecedor_list'),
+    path('fornecedores/novo/', views.fornecedor_create, name='fornecedor_create'),
+    path('fornecedores/<int:pk>/', views.fornecedor_detail, name='fornecedor_detail'),
+    path('fornecedores/<int:pk>/editar/', views.fornecedor_update, name='fornecedor_update'),
+    path('fornecedores/<int:pk>/excluir/', views.fornecedor_delete, name='fornecedor_delete'),
+
+    # Fornecedor: endereços
+    path('fornecedores/<int:fornecedor_pk>/enderecos/novo/', views.fornecedor_endereco_create, name='fornecedor_endereco_create'),
+    path('fornecedores/<int:fornecedor_pk>/enderecos/<int:endereco_pk>/editar/', views.fornecedor_endereco_update, name='fornecedor_endereco_update'),
+    path('fornecedores/<int:fornecedor_pk>/enderecos/<int:endereco_pk>/excluir/', views.fornecedor_endereco_delete, name='fornecedor_endereco_delete'),
+
+    # Fornecedor: contatos
+    path('fornecedores/<int:fornecedor_pk>/contatos/novo/', views.fornecedor_contato_create, name='fornecedor_contato_create'),
+    path('fornecedores/<int:fornecedor_pk>/contatos/<int:contato_pk>/editar/', views.fornecedor_contato_update, name='fornecedor_contato_update'),
+    path('fornecedores/<int:fornecedor_pk>/contatos/<int:contato_pk>/excluir/', views.fornecedor_contato_delete, name='fornecedor_contato_delete'),
+
+    # Fornecedor: contas bancárias
+    path('fornecedores/<int:fornecedor_pk>/contas/nova/', views.fornecedor_conta_create, name='fornecedor_conta_create'),
+    path('fornecedores/<int:fornecedor_pk>/contas/<int:conta_pk>/editar/', views.fornecedor_conta_update, name='fornecedor_conta_update'),
+    path('fornecedores/<int:fornecedor_pk>/contas/<int:conta_pk>/excluir/', views.fornecedor_conta_delete, name='fornecedor_conta_delete'),
+
+    # Fornecedor: documentos
+    path('fornecedores/<int:fornecedor_pk>/documentos/novo/', views.fornecedor_documento_create, name='fornecedor_documento_create'),
+    path('fornecedores/<int:fornecedor_pk>/documentos/<int:documento_pk>/excluir/', views.fornecedor_documento_delete, name='fornecedor_documento_delete'),
+
    ]

@@ -11,22 +11,21 @@ from django.db.models import Q, Count, Sum, Avg
 from django.core.paginator import Paginator
 from django.utils import timezone
 import requests
-from .models import Funcionario, FuncaoFuncionario
-from .forms import FuncionarioForm, FuncaoFuncionarioForm
+from .models import FornecedorEndereco, Funcionario, FuncaoFuncionario
+from .forms import FornecedorEnderecoForm, FuncionarioForm, FuncaoFuncionarioForm
 
 from .models import (
     Fazenda, EnderecoFazenda, ContatoFazenda,
-    ContaBancariaFazenda, DocumentoFazenda,
+    ContaBancariaFazenda, DocumentoFazenda, DocumentoFornecedor,
     Area, Talhao, Cultura, HistoricoTalhao, Safra,
-    Vendedor, ComissaoVendedor,
-  
+    Vendedor, ComissaoVendedor, Fornecedor, FornecedorContato, FornecedorDadoBancario,
 )
 
-from .forms import VendedorForm, VendedorFiltroForm, ComissaoVendedorForm
+from .forms import VendedorForm, VendedorFiltroForm, ComissaoVendedorForm, FornecedorForm, FornecedorContatoForm, FornecedorDadoBancarioForm
 
 from .forms import (
     FazendaForm, EnderecoFazendaForm, ContatoFazendaForm,
-    ContaBancariaFazendaForm, DocumentoFazendaForm,
+    ContaBancariaFazendaForm, DocumentoFazendaForm, DocumentoFornecedorForm,
      
     AreaForm, TalhaoForm, CulturaForm, HistoricoTalhaoForm, SafraForm,
     
@@ -147,33 +146,19 @@ def fazenda_create(request):
         return redirect('cadastros:fazenda_list')
     
     if request.method == 'POST':
-        # ✅ DEBUG: Imprime dados recebidos
-        print(f"🔍 POST data: {request.POST}")
-        print(f"🔍 Usuário: {request.user.username}")
-        print(f"🔍 Empresa: {request.user.empresa}")
-        
         form = FazendaForm(
             request.POST,
             empresa=request.user.empresa,
             usuario=request.user
         )
-        
-        # ✅ DEBUG: Verifica se form é válido
         if form.is_valid():
-            print("✅ Form é VÁLIDO")
-            print(f"🔍 Cleaned data: {form.cleaned_data}")
-            
             try:
                 fazenda = form.save()
-                print(f"✅ Fazenda salva! ID: {fazenda.pk}, Empresa: {fazenda.empresa}")
                 messages.success(request, f'✅ Fazenda "{fazenda.nome}" cadastrada com sucesso!')
                 return redirect('cadastros:fazenda_detail', pk=fazenda.pk)
             except Exception as e:
-                print(f"❌ ERRO ao salvar: {e}")
                 messages.error(request, f'❌ Erro ao salvar: {e}')
         else:
-            print("❌ Form é INVÁLIDO")
-            print(f"🔍 Erros: {form.errors}")
             messages.error(request, '❌ Corrija os erros no formulário abaixo.')
     else:
         form = FazendaForm(
@@ -552,6 +537,33 @@ def documento_create(request, fazenda_pk):
 
 
 @login_required
+def fornecedor_documento_create(request, fornecedor_pk):
+    """Adiciona documento ao fornecedor"""
+    fornecedor = get_object_or_404(Fornecedor, pk=fornecedor_pk, empresa=request.user.empresa)
+
+    if request.method == 'POST':
+        form = DocumentoFornecedorForm(request.POST, request.FILES)
+        if form.is_valid():
+            documento = form.save(commit=False)
+            documento.fornecedor = fornecedor
+            documento.enviado_por = request.user
+            documento.save()
+            messages.success(request, '✅ Documento anexado ao fornecedor!')
+            return redirect('cadastros:fornecedor_detail', pk=fornecedor.pk)
+        else:
+            # Form inválido — será re-renderizado com erros
+            pass
+    else:
+        form = DocumentoFornecedorForm()
+
+    return render(request, 'cadastros/documento_form.html', {
+        'form': form,
+        'fornecedor': fornecedor,
+        'action': 'Adicionar'
+    })
+
+
+@login_required
 def documento_delete(request, fazenda_pk, documento_pk):
     """Remove documento"""
     fazenda = get_object_or_404(Fazenda, pk=fazenda_pk, empresa=request.user.empresa)
@@ -568,6 +580,25 @@ def documento_delete(request, fazenda_pk, documento_pk):
     
     return render(request, 'cadastros/documento_confirm_delete.html', {
         'fazenda': fazenda,
+        'documento': documento
+    })
+
+
+@login_required
+def fornecedor_documento_delete(request, fornecedor_pk, documento_pk):
+    """Remove documento do fornecedor"""
+    fornecedor = get_object_or_404(Fornecedor, pk=fornecedor_pk, empresa=request.user.empresa)
+    documento = get_object_or_404(DocumentoFornecedor, pk=documento_pk, fornecedor=fornecedor)
+
+    if request.method == 'POST':
+        if documento.arquivo:
+            documento.arquivo.delete()
+        documento.delete()
+        messages.success(request, '🗑️ Documento removido!')
+        return redirect('cadastros:fornecedor_detail', pk=fornecedor.pk)
+
+    return render(request, 'cadastros/documento_confirm_delete.html', {
+        'fornecedor': fornecedor,
         'documento': documento
     })
 
@@ -1030,63 +1061,27 @@ def safra_create(request):
         return render(request, 'cadastros/safra_form.html', {'empresa_missing': True, 'action': 'Cadastrar'})
 
     if request.method == 'POST':
-        # 🔥 DEBUG
-        print("=" * 80)
-        print("📋 CRIAÇÃO DE SAFRA - DEBUG")
-        print("=" * 80)
-        print(f"POST completo: {request.POST}")
-        print(f"Talhões raw: '{request.POST.get('talhoes', '')}'")
-        print("=" * 80)
-        
         form = SafraForm(request.POST, user=request.user)
-        
         if form.is_valid():
-            print("✅ Form é VÁLIDO")
-            
             try:
-                # Salva a safra
                 safra = form.save(commit=False)
                 safra.cadastrado_por = request.user
                 safra.save()
-                
-                print(f"✅ Safra {safra.pk} salva no banco")
-                
-                # Processa talhões
                 talhoes_ids = request.POST.get('talhoes', '').strip()
-                print(f"📋 Talhões IDs do POST: '{talhoes_ids}'")
-                
                 if talhoes_ids:
                     try:
-                        # Converte string para lista de IDs
                         talhao_ids_list = [int(tid.strip()) for tid in talhoes_ids.split(',') if tid.strip()]
-                        print(f"📋 IDs parseados: {talhao_ids_list}")
-                        
-                        if not talhao_ids_list:
-                            print("⚠️ Lista de IDs vazia após parse")
-                        
-                        # Busca talhões
                         talhoes = Talhao.objects.filter(
                             id__in=talhao_ids_list,
                             empresa=empresa,
                             ativo=True
                         )
-                        
-                        print(f"📋 Talhões encontrados no banco: {talhoes.count()}")
-                        for t in talhoes:
-                            print(f"  - {t.id}: {t.codigo} ({t.fazenda.nome})")
-                        
-                        # Valida fazenda
-                        invalidos = []
-                        for talhao in talhoes:
-                            if talhao.fazenda != safra.fazenda:
-                                invalidos.append(f"{talhao.codigo} (fazenda diferente)")
-                        
+                        invalidos = [t.codigo for t in talhoes if t.fazenda != safra.fazenda]
                         if invalidos:
-                            print(f"❌ Talhões inválidos: {invalidos}")
                             messages.error(request, f'❌ Talhões não pertencem à fazenda: {", ".join(invalidos)}')
                             safra.delete()
                             return render(request, 'cadastros/safra_form.html', {'form': form, 'action': 'Cadastrar'})
-                        
+
                         # Valida conflitos
                         conflitos = []
                         for talhao in talhoes:
@@ -1097,57 +1092,38 @@ def safra_create(request):
                             ).exclude(
                                 pk=safra.pk
                             )
-                            
                             if safras_conflito.exists():
                                 conflitos.append(f"{talhao.codigo} (em {safras_conflito.first()})")
-                        
+
                         if conflitos:
-                            print(f"❌ Conflitos encontrados: {conflitos}")
                             messages.error(request, f'❌ Talhões já estão em uso: {", ".join(conflitos)}')
                             safra.delete()
                             return render(request, 'cadastros/safra_form.html', {'form': form, 'action': 'Cadastrar'})
-                        
+
                         # Limpa e associa
                         safra.talhoes.clear()
                         safra.talhoes.set(talhoes)
-                        
-                        print(f"✅ {talhoes.count()} talhões associados com sucesso")
-                        print(f"   Talhões na safra: {[t.codigo for t in safra.talhoes.all()]}")
-                        
+
                     except ValueError as e:
-                        print(f"❌ Erro ao parsear IDs: {e}")
                         messages.error(request, f'❌ IDs de talhões inválidos: {e}')
                         safra.delete()
                         return render(request, 'cadastros/safra_form.html', {'form': form, 'action': 'Cadastrar'})
-                    
                     except Exception as e:
-                        print(f"❌ Erro inesperado: {e}")
                         import traceback
                         traceback.print_exc()
                         messages.error(request, f'❌ Erro ao processar talhões: {e}')
                         safra.delete()
                         return render(request, 'cadastros/safra_form.html', {'form': form, 'action': 'Cadastrar'})
-                else:
-                    print("⚠️ Nenhum talhão selecionado")
-                
+
                 total_talhoes = safra.talhoes.count()
                 messages.success(request, f'✅ Safra "{safra}" cadastrada com {total_talhoes} talhão(ões)!')
                 return redirect('cadastros:safra_detail', pk=safra.pk)
-                
             except Exception as e:
-                print(f"❌ Erro ao salvar safra: {e}")
                 import traceback
                 traceback.print_exc()
                 messages.error(request, f'❌ Erro ao salvar: {e}')
-                
         else:
-            print("❌ Form INVÁLIDO")
-            print(f"Erros: {form.errors}")
-            print(f"Non-field errors: {form.non_field_errors()}")
-            for field, errors in form.errors.items():
-                print(f"  {field}: {errors}")
-            
-            messages.error(request, f'❌ Corrija os erros no formulário: {form.errors}')
+            messages.error(request, '❌ Corrija os erros do formulário de safra')
     else:
         form = SafraForm(user=request.user)
 
@@ -1158,60 +1134,28 @@ def safra_create(request):
 def safra_update(request, pk):
     safra = get_object_or_404(Safra, pk=pk, fazenda__empresa=request.user.empresa)
     empresa = request.user.empresa
-    
+
     if request.method == 'POST':
-        # 🔥 DEBUG
-        print("=" * 80)
-        print("📋 EDIÇÃO DE SAFRA - DEBUG")
-        print("=" * 80)
-        print(f"Safra ID: {safra.pk}")
-        print(f"POST completo: {request.POST}")
-        print(f"Talhões raw: '{request.POST.get('talhoes', '')}'")
-        print("=" * 80)
-        
         form = SafraForm(request.POST, instance=safra, user=request.user)
-        
         if form.is_valid():
-            print("✅ Form é VÁLIDO")
-            
             try:
                 safra = form.save()
-                print(f"✅ Safra {safra.pk} atualizada")
-                
-                # Processa talhões
                 talhoes_ids = request.POST.get('talhoes', '').strip()
-                print(f"📋 Talhões IDs: '{talhoes_ids}'")
-                
-                # Limpa relacionamento
                 safra.talhoes.clear()
-                
                 if talhoes_ids:
                     try:
                         talhao_ids_list = [int(tid.strip()) for tid in talhoes_ids.split(',') if tid.strip()]
-                        print(f"📋 IDs parseados: {talhao_ids_list}")
-                        
                         talhoes = Talhao.objects.filter(
                             id__in=talhao_ids_list,
                             empresa=empresa,
                             ativo=True
                         )
-                        
-                        print(f"📋 Talhões encontrados: {talhoes.count()}")
-                        
-                        # Valida fazenda
-                        invalidos = []
-                        for talhao in talhoes:
-                            if talhao.fazenda != safra.fazenda:
-                                invalidos.append(f"{talhao.codigo}")
-                        
+
+                        invalidos = [t.codigo for t in talhoes if t.fazenda != safra.fazenda]
                         if invalidos:
                             messages.error(request, f'❌ Talhões não pertencem à fazenda: {", ".join(invalidos)}')
-                            return render(request, 'cadastros/safra_form.html', {
-                                'form': form, 
-                                'safra': safra, 
-                                'action': 'Editar'
-                            })
-                        
+                            return render(request, 'cadastros/safra_form.html', {'form': form, 'safra': safra, 'action': 'Editar'})
+
                         # Valida conflitos
                         conflitos = []
                         for talhao in talhoes:
@@ -1222,46 +1166,38 @@ def safra_update(request, pk):
                             ).exclude(
                                 pk=safra.pk
                             )
-                            
                             if safras_conflito.exists():
-                                conflitos.append(f"{talhao.codigo}")
-                        
+                                conflitos.append(f"{talhao.codigo} (em {safras_conflito.first()})")
+
                         if conflitos:
                             messages.error(request, f'❌ Talhões já estão em uso: {", ".join(conflitos)}')
-                            return render(request, 'cadastros/safra_form.html', {
-                                'form': form,
-                                'safra': safra,
-                                'action': 'Editar'
-                            })
-                        
+                            return render(request, 'cadastros/safra_form.html', {'form': form, 'safra': safra, 'action': 'Editar'})
+
                         safra.talhoes.set(talhoes)
-                        print(f"✅ {talhoes.count()} talhões associados")
-                        
+                    except ValueError as e:
+                        messages.error(request, f'❌ IDs de talhões inválidos: {e}')
+                        return render(request, 'cadastros/safra_form.html', {'form': form, 'safra': safra, 'action': 'Editar'})
                     except Exception as e:
-                        print(f"❌ Erro ao processar: {e}")
                         import traceback
                         traceback.print_exc()
-                        messages.error(request, f'❌ Erro: {e}')
-                
-                total = safra.talhoes.count()
-                messages.success(request, f'✅ Safra atualizada com {total} talhão(ões)!')
+                        messages.error(request, f'❌ Erro ao processar talhões: {e}')
+                        return render(request, 'cadastros/safra_form.html', {'form': form, 'safra': safra, 'action': 'Editar'})
+
+                messages.success(request, f'✅ Safra "{safra}" atualizada com sucesso')
                 return redirect('cadastros:safra_detail', pk=safra.pk)
-                
             except Exception as e:
-                print(f"❌ Erro: {e}")
                 import traceback
                 traceback.print_exc()
-                messages.error(request, f'❌ Erro: {e}')
+                messages.error(request, f'❌ Erro ao salvar safra: {e}')
         else:
-            print("❌ Form INVÁLIDO")
-            print(f"Erros: {form.errors}")
-            messages.error(request, f'❌ Corrija os erros: {form.errors}')
+            messages.error(request, f'❌ Corrija os erros no formulário: {form.errors}')
     else:
         form = SafraForm(instance=safra, user=request.user)
 
     return render(request, 'cadastros/safra_form.html', {
-        'form': form, 
-        'safra': safra, 'action': 'Editar'
+        'form': form,
+        'safra': safra,
+        'action': 'Editar'
     })
 
 @login_required
@@ -1625,13 +1561,11 @@ def talhao_create(request):
                 )
                 return redirect('cadastros:talhao_list')
             except Exception as e:
-                messages.error(request, f'❌ Erro ao salvar talhão: {e}')
-                print(f"❌ Erro detalhado: {e}")
                 import traceback
                 traceback.print_exc()
+                messages.error(request, f'❌ Erro ao salvar talhão: {e}')
         else:
             messages.error(request, '❌ Corrija os erros no formulário')
-            print(f"❌ Erros do form: {form.errors}")
     else:
         form = TalhaoForm(user=request.user)
     
@@ -1978,6 +1912,226 @@ def vendedor_list(request):
     }
     
     return render(request, 'cadastros/vendedor_list.html', context)
+
+
+# =============================================================================
+# CRUD DE FORNECEDORES
+# =============================================================================
+
+@login_required
+def fornecedor_list(request):
+    """Lista fornecedores da empresa"""
+    empresa = request.user.empresa
+    if not empresa:
+        messages.error(request, '❌ Você não está vinculado a nenhuma empresa.')
+        return redirect('dashboard:index')
+
+    fornecedores = Fornecedor.objects.filter(empresa=empresa).order_by('nome')
+
+    # busca
+    q = request.GET.get('q', '').strip()
+    if q:
+        fornecedores = fornecedores.filter(
+            Q(nome__icontains=q) |
+            Q(nome_fantasia__icontains=q) |
+            Q(cnpj_cpf__icontains=q)
+        )
+
+    context = {
+        'fornecedores': fornecedores,
+    }
+    return render(request, 'cadastros/fornecedor/fornecedor_list.html', context)
+
+
+@login_required
+def fornecedor_detail(request, pk):
+    fornecedor = get_object_or_404(Fornecedor, pk=pk, empresa=request.user.empresa)
+    return render(request, 'cadastros/fornecedor/fornecedor_detail.html', {'fornecedor': fornecedor})
+
+
+@login_required
+def fornecedor_create(request):
+    if request.method == 'POST':
+        form = FornecedorForm(request.POST, empresa=request.user.empresa, usuario=request.user)
+        if form.is_valid():
+            fornecedor = form.save()
+            messages.success(request, f'✅ Fornecedor "{fornecedor.nome}" cadastrado!')
+            return redirect('cadastros:fornecedor_detail', pk=fornecedor.pk)
+        else:
+            messages.error(request, '❌ Corrija os erros no formulário: %s' % form.errors)
+    else:
+        form = FornecedorForm(empresa=request.user.empresa, usuario=request.user)
+
+    return render(request, 'cadastros/fornecedor/fornecedor_form.html', {'form': form, 'action': 'Cadastrar'})
+
+
+@login_required
+def fornecedor_update(request, pk):
+    fornecedor = get_object_or_404(Fornecedor, pk=pk, empresa=request.user.empresa)
+    if request.method == 'POST':
+        form = FornecedorForm(request.POST, instance=fornecedor, empresa=request.user.empresa, usuario=request.user)
+        if form.is_valid():
+            fornecedor = form.save()
+            messages.success(request, f'✅ Fornecedor "{fornecedor.nome}" atualizado!')
+            return redirect('cadastros:fornecedor_detail', pk=fornecedor.pk)
+    else:
+        form = FornecedorForm(instance=fornecedor, empresa=request.user.empresa, usuario=request.user)
+
+    return render(request, 'cadastros/fornecedor/fornecedor_form.html', {'form': form, 'action': 'Editar', 'fornecedor': fornecedor})
+
+
+@login_required
+def fornecedor_delete(request, pk):
+    fornecedor = get_object_or_404(Fornecedor, pk=pk, empresa=request.user.empresa)
+    if request.method == 'POST':
+        nome = fornecedor.nome
+        fornecedor.delete()
+        messages.success(request, f'🗑️ Fornecedor "{nome}" excluído!')
+        return redirect('cadastros:fornecedor_list')
+    return render(request, 'cadastros/fornecedor/fornecedor_confirm_delete.html', {'fornecedor': fornecedor})
+
+
+# ==================== ENDEREÇOS DO FORNECEDOR ====================
+
+@login_required
+def fornecedor_endereco_create(request, fornecedor_pk):
+    fornecedor = get_object_or_404(Fornecedor, pk=fornecedor_pk, empresa=request.user.empresa)
+    if request.method == 'POST':
+        form = FornecedorEnderecoForm(request.POST)
+        if form.is_valid():
+            endereco = form.save(commit=False)
+            endereco.fornecedor = fornecedor
+            endereco.save()
+            messages.success(request, '✅ Endereço adicionado!')
+            return redirect('cadastros:fornecedor_detail', pk=fornecedor.pk)
+        else:
+            messages.error(request, '❌ Corrija os erros no formulário: %s' % form.errors)
+    else:
+        form = FornecedorEnderecoForm()
+    return render(request, 'cadastros/endereco_form.html', {'form': form, 'fornecedor': fornecedor, 'action': 'Adicionar'})
+
+
+@login_required
+def fornecedor_endereco_update(request, fornecedor_pk, endereco_pk):
+    fornecedor = get_object_or_404(Fornecedor, pk=fornecedor_pk, empresa=request.user.empresa)
+    endereco = get_object_or_404(FornecedorEndereco, pk=endereco_pk, fornecedor=fornecedor)
+    if request.method == 'POST':
+        form = FornecedorEnderecoForm(request.POST, instance=endereco)
+        if form.is_valid():
+            form.save()
+            messages.success(request, '✅ Endereço atualizado!')
+            return redirect('cadastros:fornecedor_detail', pk=fornecedor.pk)
+        else:
+            messages.error(request, '❌ Corrija os erros no formulário: %s' % form.errors)
+    else:
+        form = FornecedorEnderecoForm(instance=endereco)
+
+    # Optional debug: visit URL with ?debug_form=1 to display raw form HTML for diagnostics
+    debug_form = request.GET.get('debug_form') == '1'
+    return render(request, 'cadastros/endereco_form.html', {'form': form, 'fornecedor': fornecedor, 'endereco': endereco, 'action': 'Editar', 'debug_form': debug_form})
+
+
+@login_required
+def fornecedor_endereco_delete(request, fornecedor_pk, endereco_pk):
+    fornecedor = get_object_or_404(Fornecedor, pk=fornecedor_pk, empresa=request.user.empresa)
+    endereco = get_object_or_404(FornecedorEndereco, pk=endereco_pk, fornecedor=fornecedor)
+    if request.method == 'POST':
+        endereco.delete()
+        messages.success(request, '🗑️ Endereço removido!')
+        return redirect('cadastros:fornecedor_detail', pk=fornecedor.pk)
+    return render(request, 'cadastros/endereco_confirm_delete.html', {'fornecedor': fornecedor, 'endereco': endereco})
+
+
+# ==================== CONTATOS DO FORNECEDOR ====================
+
+@login_required
+def fornecedor_contato_create(request, fornecedor_pk):
+    fornecedor = get_object_or_404(Fornecedor, pk=fornecedor_pk, empresa=request.user.empresa)
+    if request.method == 'POST':
+        form = FornecedorContatoForm(request.POST)
+        if form.is_valid():
+            contato = form.save(commit=False)
+            contato.fornecedor = fornecedor
+            contato.save()
+            messages.success(request, '✅ Contato adicionado!')
+            return redirect('cadastros:fornecedor_detail', pk=fornecedor.pk)
+        else:
+            messages.error(request, '❌ Corrija os erros no formulário: %s' % form.errors)
+    else:
+        form = FornecedorContatoForm()
+    return render(request, 'cadastros/contato_form.html', {'form': form, 'fornecedor': fornecedor, 'action': 'Adicionar'})
+
+
+@login_required
+def fornecedor_contato_update(request, fornecedor_pk, contato_pk):
+    fornecedor = get_object_or_404(Fornecedor, pk=fornecedor_pk, empresa=request.user.empresa)
+    contato = get_object_or_404(FornecedorContato, pk=contato_pk, fornecedor=fornecedor)
+    if request.method == 'POST':
+        form = FornecedorContatoForm(request.POST, instance=contato)
+        if form.is_valid():
+            form.save()
+            messages.success(request, '✅ Contato atualizado!')
+            return redirect('cadastros:fornecedor_detail', pk=fornecedor.pk)
+    else:
+        form = FornecedorContatoForm(instance=contato)
+    return render(request, 'cadastros/contato_form.html', {'form': form, 'fornecedor': fornecedor, 'contato': contato, 'action': 'Editar'})
+
+
+@login_required
+def fornecedor_contato_delete(request, fornecedor_pk, contato_pk):
+    fornecedor = get_object_or_404(Fornecedor, pk=fornecedor_pk, empresa=request.user.empresa)
+    contato = get_object_or_404(FornecedorContato, pk=contato_pk, fornecedor=fornecedor)
+    if request.method == 'POST':
+        contato.delete()
+        messages.success(request, '🗑️ Contato removido!')
+        return redirect('cadastros:fornecedor_detail', pk=fornecedor.pk)
+    return render(request, 'cadastros/contato_confirm_delete.html', {'fornecedor': fornecedor, 'contato': contato})
+
+
+# ==================== CONTAS BANCÁRIAS DO FORNECEDOR ====================
+
+@login_required
+def fornecedor_conta_create(request, fornecedor_pk):
+    fornecedor = get_object_or_404(Fornecedor, pk=fornecedor_pk, empresa=request.user.empresa)
+    if request.method == 'POST':
+        form = FornecedorDadoBancarioForm(request.POST)
+        if form.is_valid():
+            conta = form.save(commit=False)
+            conta.fornecedor = fornecedor
+            conta.save()
+            messages.success(request, '✅ Conta bancária adicionada!')
+            return redirect('cadastros:fornecedor_detail', pk=fornecedor.pk)
+        else:
+            messages.error(request, '❌ Corrija os erros no formulário: %s' % form.errors)
+    else:
+        form = FornecedorDadoBancarioForm()
+    return render(request, 'cadastros/conta_bancaria_form.html', {'form': form, 'fornecedor': fornecedor, 'action': 'Adicionar'})
+
+
+@login_required
+def fornecedor_conta_update(request, fornecedor_pk, conta_pk):
+    fornecedor = get_object_or_404(Fornecedor, pk=fornecedor_pk, empresa=request.user.empresa)
+    conta = get_object_or_404(FornecedorDadoBancario, pk=conta_pk, fornecedor=fornecedor)
+    if request.method == 'POST':
+        form = FornecedorDadoBancarioForm(request.POST, instance=conta)
+        if form.is_valid():
+            form.save()
+            messages.success(request, '✅ Conta bancária atualizada!')
+            return redirect('cadastros:fornecedor_detail', pk=fornecedor.pk)
+    else:
+        form = FornecedorDadoBancarioForm(instance=conta)
+    return render(request, 'cadastros/conta_bancaria_form.html', {'form': form, 'fornecedor': fornecedor, 'conta': conta, 'action': 'Editar'})
+
+
+@login_required
+def fornecedor_conta_delete(request, fornecedor_pk, conta_pk):
+    fornecedor = get_object_or_404(Fornecedor, pk=fornecedor_pk, empresa=request.user.empresa)
+    conta = get_object_or_404(FornecedorDadoBancario, pk=conta_pk, fornecedor=fornecedor)
+    if request.method == 'POST':
+        conta.delete()
+        messages.success(request, '🗑️ Conta bancária removida!')
+        return redirect('cadastros:fornecedor_detail', pk=fornecedor.pk)
+    return render(request, 'cadastros/conta_bancaria_confirm_delete.html', {'fornecedor': fornecedor, 'conta': conta})
 
 
 @login_required

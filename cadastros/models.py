@@ -740,6 +740,76 @@ class DocumentoFazenda(models.Model):
         max_length=200,
         help_text='Descrição do documento'
     )
+
+
+class DocumentoFornecedor(models.Model):
+    """Documentos anexados ao fornecedor (certificados, contratos, licenças)"""
+
+    TIPO_DOCUMENTO = DocumentoFazenda.TIPO_DOCUMENTO
+
+    fornecedor = models.ForeignKey(
+        'Fornecedor',
+        on_delete=models.CASCADE,
+        related_name='documentos',
+        verbose_name='Fornecedor'
+    )
+
+    tipo = models.CharField('Tipo de Documento', max_length=30, choices=TIPO_DOCUMENTO)
+    titulo = models.CharField('Título/Descrição', max_length=200, help_text='Descrição do documento')
+    numero_documento = models.CharField('Número do Documento', max_length=100, blank=True, help_text='Número de protocolo, registro, etc.')
+
+    arquivo = models.FileField(
+        'Arquivo',
+        upload_to='fornecedores/documentos/%Y/%m/',
+        validators=[
+            FileExtensionValidator(allowed_extensions=['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx', 'xls', 'xlsx'])
+        ],
+        help_text='Formatos: PDF, JPG, PNG, DOC, XLS (máx 10MB)'
+    )
+
+    data_emissao = models.DateField('Data de Emissão', blank=True, null=True)
+    data_validade = models.DateField('Data de Validade', blank=True, null=True, help_text='Deixe em branco se não houver validade')
+
+    gerar_alerta_vencimento = models.BooleanField('Gerar Alerta de Vencimento', default=True)
+    dias_antecedencia_alerta = models.IntegerField('Dias de Antecedência para Alerta', default=30)
+
+    observacoes = models.TextField('Observações', blank=True)
+
+    data_upload = models.DateTimeField('Data do Upload', auto_now_add=True)
+
+    enviado_por = models.ForeignKey(
+        'usuarios.Usuario', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='documentos_fornecedor_enviados', verbose_name='Enviado por'
+    )
+
+    class Meta:
+        verbose_name = 'Documento do Fornecedor'
+        verbose_name_plural = 'Documentos dos Fornecedores'
+        ordering = ['-data_upload']
+
+    def __str__(self):
+        return f"{self.get_tipo_display()} - {self.titulo}"
+
+    def esta_vencido(self):
+        if self.data_validade:
+            return timezone.now().date() > self.data_validade
+        return False
+
+    def dias_para_vencimento(self):
+        if self.data_validade:
+            return (self.data_validade - timezone.now().date()).days
+        return None
+
+    def precisa_alerta(self):
+        if not self.gerar_alerta_vencimento or not self.data_validade:
+            return False
+        dias_restantes = self.dias_para_vencimento()
+        if dias_restantes is not None:
+            return 0 <= dias_restantes <= self.dias_antecedencia_alerta
+        return False
+
+    def get_nome_arquivo(self):
+        return os.path.basename(self.arquivo.name)
     
     numero_documento = models.CharField(
         'Número do Documento',
@@ -3067,6 +3137,370 @@ class ComissaoVendedor(models.Model):
 
 """
 =============================================================================
+📝 MODELOS DE FORNECEDOR - SCAFFOLD
+=============================================================================
+
+Modelos de Fornecedor (nacional e internacional) com endereços múltiplos
+prontos para serem usados pelo módulo de Fornecedores e pelo futuro Portal
+do Fornecedor. Inclui: `Fornecedor` e `FornecedorEndereco`.
+
+Notas de design:
+- Multi-tenant via campo `empresa` (mesmo padrão dos outros modelos)
+- Identificador fiscal por empresa é único (constraint)
+- Endereços são mantidos em tabela separada (múltiplos tipos: billing/shipping)
+- Campos de portal (portal_enabled, portal_user, portal_token) para futura integração
+
+"""
+
+
+class Fornecedor(models.Model):
+    """
+    Fornecedores (Nacional / Internacional)
+    Preparado para integração com Portal do Fornecedor
+    """
+
+    TIPO_PESSOA = [
+        ('PF', 'Pessoa Física'),
+        ('PJ', 'Pessoa Jurídica'),
+    ]
+
+    empresa = models.ForeignKey(
+        'empresas.Empresa',
+        on_delete=models.CASCADE,
+        related_name='fornecedores',
+        verbose_name='Empresa'
+    )
+
+    nome = models.CharField('Nome/Razão Social', max_length=200)
+    nome_fantasia = models.CharField('Nome Fantasia', max_length=200, blank=True)
+
+    tipo_pessoa = models.CharField('Tipo de Pessoa', max_length=2, choices=TIPO_PESSOA, default='PJ')
+
+    cnpj_cpf = models.CharField('CNPJ/CPF', max_length=18, help_text='Formato: 00.000.000/0000-00 ou 000.000.000-00', blank=True)
+    inscricao_estadual = models.CharField('Inscrição Estadual', max_length=50, blank=True)
+
+    # Campos de contato básicos
+    telefone = models.CharField('Telefone', max_length=20, blank=True)
+    celular = models.CharField('Celular', max_length=20, blank=True)
+    email = models.EmailField('E-mail', blank=True)
+
+    # Campos de endereço espelhados (conveniência) — dados primários do fornecedor
+    cep = models.CharField('CEP', max_length=10, blank=True)
+    endereco = models.CharField('Endereço', max_length=200, blank=True)
+    numero = models.CharField('Número', max_length=10, blank=True)
+    complemento = models.CharField('Complemento', max_length=100, blank=True)
+    bairro = models.CharField('Bairro', max_length=100, blank=True)
+    cidade = models.CharField('Cidade', max_length=100, blank=True)
+    uf = models.CharField('UF', max_length=2, blank=True)
+    pais = models.CharField('País', max_length=100, default='Brasil')
+
+    # Comercial / exportação
+    is_exportador = models.BooleanField('Exportador', default=False)
+    moeda_padrao = models.CharField('Moeda Padrão', max_length=3, default='BRL')
+    porto_preferencial = models.CharField('Porto Preferencial', max_length=100, blank=True)
+
+    # Regime Tributário (adicionado para documentos e formulário)
+    REGIME_TRIBUTARIO = [
+        ('SIMPLES', 'Simples Nacional'),
+        ('PRESUMIDO', 'Lucro Presumido'),
+        ('REAL', 'Lucro Real'),
+        ('MEI', 'Microempreendedor Individual'),
+        ('PRODUTOR_RURAL', 'Produtor Rural (Pessoa Física)'),
+    ]
+    regime_tributario = models.CharField('Regime Tributário', max_length=20, choices=REGIME_TRIBUTARIO, default='PRODUTOR_RURAL')
+
+    # Portal readiness
+    portal_enabled = models.BooleanField('Portal Habilitado', default=False)
+    portal_user = models.OneToOneField(
+        'usuarios.Usuario',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='fornecedor_profile',
+        verbose_name='Usuário Portal'
+    )
+    portal_token = models.CharField('Token Portal/API', max_length=200, blank=True, null=True, help_text='Token temporário para integração API/Portal')
+
+    ativa = models.BooleanField('Fornecedor Ativo', default=True)
+
+    data_criacao = models.DateTimeField('Data de Criação', auto_now_add=True)
+    data_atualizacao = models.DateTimeField('Última Atualização', auto_now=True)
+
+    criado_por = models.ForeignKey(
+        'usuarios.Usuario',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='fornecedores_criados',
+        verbose_name='Criado por'
+    )
+
+    objects = models.Manager()
+
+    class Meta:
+        verbose_name = 'Fornecedor'
+        verbose_name_plural = 'Fornecedores'
+        ordering = ['nome']
+        indexes = [
+            models.Index(fields=['empresa', 'ativa']),
+            models.Index(fields=['cnpj_cpf']),
+        ]
+        constraints = [
+            models.UniqueConstraint(fields=['empresa', 'cnpj_cpf'], name='unique_fornecedor_por_empresa')
+        ]
+
+    def __str__(self):
+        return self.nome
+
+    def get_nome_exibicao(self):
+        """Retorna nome de exibição: prefere `nome_fantasia` se disponível"""
+        return self.nome_fantasia or self.nome
+
+    def get_cnpj_cpf_formatado(self):
+        """Formata CNPJ/CPF como na `Fazenda`"""
+        import re
+        doc = re.sub(r'\D', '', (self.cnpj_cpf or ''))
+        if len(doc) == 14:  # CNPJ
+            return f"{doc[:2]}.{doc[2:5]}.{doc[5:8]}/{doc[8:12]}-{doc[12:]}"
+        elif len(doc) == 11:  # CPF
+            return f"{doc[:3]}.{doc[3:6]}.{doc[6:9]}-{doc[9:]}"
+        return self.cnpj_cpf or ''
+
+    def get_primary_address(self):
+        """Retorna o endereço principal: preferencialmente o endereço espelhado no fornecedor,
+        senão busca o endereço padrão em `FornecedorEndereco` (padrao=True)."""
+        if self.endereco or self.cep:
+            return {
+                'cep': self.cep or '',
+                'logradouro': self.endereco or '',
+                'numero': self.numero or '',
+                'complemento': self.complemento or '',
+                'bairro': self.bairro or '',
+                'cidade': self.cidade or '',
+                'uf': self.uf or '',
+                'pais': self.pais or ''
+            }
+        fe = self.enderecos.filter(padrao=True).first()
+        if fe:
+            return fe.to_dict()
+        return None
+
+    # Novos campos para as classificações e categorias do fornecedor
+    inscricao_municipal = models.CharField('Inscrição Municipal', max_length=20, blank=True)
+    eori = models.CharField('Código EORI', max_length=20, blank=True, help_text='Economic Operators Registration and Identification (para exportação)')
+    categorias = models.ManyToManyField('CategoriaFornecedor', blank=True, related_name='fornecedores')
+    subcategorias = models.ManyToManyField('SubcategoriaFornecedor', blank=True, related_name='fornecedores' )
+    classificacao_risco = models.CharField('Classificação de Risco', max_length=10, choices=[('BAIXO','Baixo'), ('MEDIO','Médio'), ('ALTO','Alto')], blank=True)
+    data_homologacao = models.DateField('Data de Homologação', null=True, blank=True)
+    validade_homologacao = models.DateField('Validade da Homologação', null=True, blank=True)
+    prazo_pagamento_padrao = models.IntegerField('Prazo de Pagamento Padrão (dias)', null=True, blank=True)
+    prazo_entrega_medio = models.IntegerField('Prazo de Entrega Médio (dias)', null=True, blank=True)
+    observacoes = models.TextField('Observações Gerais', blank=True)
+
+    @property
+    def status(self):
+        """Status legível usado pelas templates (mantém compatibilidade com verificações existentes)"""
+        return 'ATIVO' if self.ativa else 'INATIVO'
+
+
+class CategoriaFornecedor(models.Model):
+    """Categorias para classificar fornecedores (ex: Insumos, Máquinas, Serviços)"""
+    nome = models.CharField('Nome', max_length=100)
+    icone = models.CharField('Ícone', max_length=50, blank=True, help_text='Emoji ou classe de ícone')
+    empresa = models.ForeignKey('empresas.Empresa', on_delete=models.CASCADE, null=True, blank=True, related_name='categorias_fornecedor', verbose_name='Empresa')
+    ativa = models.BooleanField('Categoria Ativa', default=True)
+
+    class Meta:
+        verbose_name = 'Categoria de Fornecedor'
+        verbose_name_plural = 'Categorias de Fornecedores'
+        ordering = ['nome']
+
+    def __str__(self):
+        return self.nome
+
+
+class SubcategoriaFornecedor(models.Model):
+    """Subcategorias relacionadas a uma Categoria de Fornecedor"""
+    categoria = models.ForeignKey(CategoriaFornecedor, on_delete=models.CASCADE, related_name='subcategorias')
+    nome = models.CharField('Nome', max_length=100)
+    ativa = models.BooleanField('Subcategoria Ativa', default=True)
+
+    class Meta:
+        verbose_name = 'Subcategoria de Fornecedor'
+        verbose_name_plural = 'Subcategorias de Fornecedores'
+        ordering = ['categoria__nome','nome']
+
+    def __str__(self):
+        return f"{self.categoria.nome} / {self.nome}"
+
+
+class FornecedorEndereco(models.Model):
+    """Endereços múltiplos para Fornecedor (billing, shipping, operacional)"""
+
+    TIPO_ENDERECO = [
+        ('FATURAMENTO', 'Faturamento'),
+        ('ENTREGA', 'Entrega'),
+        ('OPERACIONAL', 'Operacional'),
+    ]
+
+    fornecedor = models.ForeignKey(
+        Fornecedor,
+        on_delete=models.CASCADE,
+        related_name='enderecos',
+        verbose_name='Fornecedor'
+    )
+
+    tipo = models.CharField('Tipo', max_length=20, choices=TIPO_ENDERECO, default='ENTREGA')
+
+    cep = models.CharField('CEP', max_length=10, blank=True)
+    logradouro = models.CharField('Logradouro', max_length=200, blank=True)
+    numero = models.CharField('Número', max_length=10, blank=True)
+    complemento = models.CharField('Complemento', max_length=100, blank=True)
+    bairro = models.CharField('Bairro', max_length=100, blank=True)
+    cidade = models.CharField('Cidade', max_length=100, blank=True)
+    uf = models.CharField('UF', max_length=2, blank=True)
+    pais = models.CharField('País', max_length=100, default='Brasil')
+
+    padrao = models.BooleanField('Endereço Padrão', default=False)
+    preenchido_via_api = models.BooleanField('Preenchido via API', default=False)
+
+    data_cadastro = models.DateTimeField('Data de Cadastro', auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Endereço do Fornecedor'
+        verbose_name_plural = 'Endereços dos Fornecedores'
+        ordering = ['-padrao', 'cidade']
+        indexes = [
+            models.Index(fields=['fornecedor', 'padrao']),
+        ]
+
+    def __str__(self):
+        return f"{self.get_tipo_display()} - {self.cidade}/{self.uf} - {self.fornecedor.nome}"
+
+    def save(self, *args, **kwargs):
+        """Garante apenas um endereço padrão por fornecedor"""
+        if self.padrao:
+            FornecedorEndereco.objects.filter(fornecedor=self.fornecedor, padrao=True).update(padrao=False)
+        super().save(*args, **kwargs)
+
+    def to_dict(self):
+        return {
+            'cep': self.cep or '',
+            'logradouro': self.logradouro or '',
+            'numero': self.numero or '',
+            'complemento': self.complemento or '',
+            'bairro': self.bairro or '',
+            'cidade': self.cidade or '',
+            'uf': self.uf or '',
+            'pais': self.pais or ''
+        }
+
+
+class FornecedorContato(models.Model):
+    """Contatos para Fornecedor (múltiplos)"""
+
+    TIPO_CONTATO = [
+        ('PRINCIPAL', 'Contato Principal'),
+        ('FINANCEIRO', 'Financeiro'),
+        ('OPERACIONAL', 'Operacional'),
+        ('TECNICO', 'Técnico'),
+        ('EMERGENCIA', 'Emergência'),
+    ]
+
+    fornecedor = models.ForeignKey(
+        Fornecedor,
+        on_delete=models.CASCADE,
+        related_name='contatos',
+        verbose_name='Fornecedor'
+    )
+
+    tipo = models.CharField('Tipo de Contato', max_length=20, choices=TIPO_CONTATO, default='PRINCIPAL')
+
+    nome = models.CharField('Nome Completo', max_length=150)
+    cargo = models.CharField('Cargo/Função', max_length=100, blank=True)
+
+    telefone = models.CharField('Telefone', max_length=20, blank=True)
+    celular = models.CharField('Celular/WhatsApp', max_length=20, blank=True)
+    email = models.EmailField('E-mail', blank=True)
+
+    whatsapp = models.BooleanField('WhatsApp', default=False)
+    preferencial = models.BooleanField('Contato Preferencial', default=False)
+
+    observacoes = models.TextField('Observações', blank=True)
+
+    data_cadastro = models.DateTimeField('Data de Cadastro', auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Contato do Fornecedor'
+        verbose_name_plural = 'Contatos dos Fornecedores'
+        ordering = ['-preferencial', 'tipo', 'nome']
+
+    def __str__(self):
+        return f"{self.nome} - {self.get_tipo_display()}"
+
+
+class FornecedorDadoBancario(models.Model):
+    """Contas bancárias do fornecedor"""
+
+    TIPO_CONTA = [
+        ('CORRENTE', 'Conta Corrente'),
+        ('POUPANCA', 'Poupança'),
+        ('SALARIO', 'Conta Salário'),
+    ]
+
+    TIPO_PIX = [
+        ('CPF', 'CPF'),
+        ('CNPJ', 'CNPJ'),
+        ('EMAIL', 'E-mail'),
+        ('TELEFONE', 'Telefone'),
+        ('CHAVE_ALEATORIA', 'Chave Aleatória'),
+    ]
+
+    fornecedor = models.ForeignKey(
+        Fornecedor,
+        on_delete=models.CASCADE,
+        related_name='contas_bancarias',
+        verbose_name='Fornecedor'
+    )
+
+    banco = models.CharField('Banco', max_length=100)
+    codigo_banco = models.CharField('Código do Banco', max_length=4, blank=True)
+    agencia = models.CharField('Agência', max_length=10, blank=True)
+    agencia_digito = models.CharField('Dígito Agência', max_length=2, blank=True)
+    conta = models.CharField('Conta', max_length=20, blank=True)
+    conta_digito = models.CharField('Dígito Conta', max_length=2, blank=True)
+    tipo_conta = models.CharField('Tipo de Conta', max_length=20, choices=TIPO_CONTA, default='CORRENTE')
+
+    pix_habilitado = models.BooleanField('PIX Habilitado', default=False)
+    tipo_chave_pix = models.CharField('Tipo de Chave PIX', max_length=20, choices=TIPO_PIX, blank=True)
+    chave_pix = models.CharField('Chave PIX', max_length=100, blank=True)
+
+    swift = models.CharField('SWIFT/BIC', max_length=11, blank=True)
+    iban = models.CharField('IBAN', max_length=34, blank=True)
+
+    dados_adicionais = models.TextField('Dados Adicionais', blank=True)
+
+    conta_principal = models.BooleanField('Conta Principal', default=False)
+    ativa = models.BooleanField('Conta Ativa', default=True)
+
+    data_cadastro = models.DateTimeField('Data de Cadastro', auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Conta Bancária do Fornecedor'
+        verbose_name_plural = 'Contas Bancárias dos Fornecedores'
+        ordering = ['-conta_principal', 'banco']
+
+    def __str__(self):
+        return f"{self.banco} - {self.conta} ({self.fornecedor.nome})"
+
+    def save(self, *args, **kwargs):
+        """Garante apenas uma conta principal por fornecedor"""
+        if self.conta_principal:
+            FornecedorDadoBancario.objects.filter(fornecedor=self.fornecedor, conta_principal=True).update(conta_principal=False)
+        super().save(*args, **kwargs)
+
+
+"""
 📝 VIEWS DE FORNECEDOR - CÓDIGO COMPLETO
 =============================================================================
 

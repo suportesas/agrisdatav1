@@ -10,11 +10,7 @@ from .models import (
 from .models import Area, Talhao, HistoricoTalhao, Safra, SafraPlan, SafraReal
 from .models import Vendedor, ComissaoVendedor
 
-"""from .models import (
-    Fornecedor, FornecedorEndereco, FornecedorContato,
-    FornecedorDadoBancario, FornecedorDocumento, FornecedorAvaliacao,
-    CategoriaFornecedor, SubcategoriaFornecedor
-)"""
+from .models import Fornecedor, FornecedorEndereco, FornecedorContato, FornecedorDadoBancario
 
 class EnderecoFazendaInline(admin.TabularInline):
     """Inline para endereços"""
@@ -42,7 +38,7 @@ class DocumentoFazendaInline(admin.TabularInline):
     model = DocumentoFazenda
     extra = 0
     fields = ['tipo', 'titulo', 'data_validade', 'gerar_alerta_vencimento']
-    readonly_fields = ['data_upload']
+    readonly_fields = []
 
 
 @admin.register(Fazenda)
@@ -118,10 +114,10 @@ class ContaBancariaFazendaAdmin(admin.ModelAdmin):
 @admin.register(DocumentoFazenda)
 class DocumentoFazendaAdmin(admin.ModelAdmin):
     """Admin de Documentos"""
-    list_display = ['fazenda', 'get_tipo_display', 'titulo', 'data_validade', 'esta_vencido', 'gerar_alerta_vencimento']
-    list_filter = ['tipo', 'gerar_alerta_vencimento', 'data_validade']
+    list_display = ['fazenda', 'get_tipo_display', 'titulo']
+    list_filter = ['tipo']
     search_fields = ['fazenda__nome', 'titulo', 'numero_documento']
-    readonly_fields = ['data_upload', 'enviado_por']
+    readonly_fields = []
     
     def esta_vencido(self, obj):
         """Mostra status de vencimento"""
@@ -277,46 +273,55 @@ class ComissaoVendedorAdmin(admin.ModelAdmin):
     readonly_fields = ['data_criacao', 'valor_comissao']
 
 
-
-"""
-
-# Inlines para Fornecedor
+# Fornecedor: Admin registrations
 class FornecedorEnderecoInline(admin.TabularInline):
+    """Inline para endereços do fornecedor"""
     model = FornecedorEndereco
-    extra = 1
+    extra = 0
+    fields = ['tipo', 'cep', 'logradouro', 'numero', 'cidade', 'uf', 'padrao']
 
 class FornecedorContatoInline(admin.TabularInline):
+    """Inline para contatos do fornecedor"""
     model = FornecedorContato
-    extra = 1
+    extra = 0
+    fields = ['tipo', 'nome', 'cargo', 'telefone', 'email', 'preferencial']
 
 class FornecedorDadoBancarioInline(admin.TabularInline):
+    """Inline para contas bancárias do fornecedor"""
     model = FornecedorDadoBancario
-    extra = 1
+    extra = 0
+    fields = ['banco', 'agencia', 'conta', 'conta_digito', 'tipo_conta', 'conta_principal']
 
 @admin.register(Fornecedor)
 class FornecedorAdmin(admin.ModelAdmin):
-    list_display = ['razao_social', 'tipo_fornecedor', 'status', 'score_avaliacao', 'ativo']
-    list_filter = ['status', 'tipo_fornecedor', 'classificacao_risco', 'ativo']
-    search_fields = ['razao_social', 'nome_fantasia', 'cnpj_cpf']
+    """Admin principal de Fornecedores"""
+    list_display = ['nome', 'nome_fantasia', 'cnpj_cpf', 'telefone', 'email', 'ativa']
+    list_filter = ['ativa', 'is_exportador', 'moeda_padrao']
+    search_fields = ['nome', 'nome_fantasia', 'cnpj_cpf', 'email', 'telefone']
+    readonly_fields = ['data_criacao', 'data_atualizacao', 'criado_por']
     inlines = [FornecedorEnderecoInline, FornecedorContatoInline, FornecedorDadoBancarioInline]
-    filter_horizontal = ['categorias', 'subcategorias']
+    fieldsets = (
+        ('Identificação', {'fields': ('empresa', 'nome', 'nome_fantasia', 'tipo_pessoa', 'ativa')}),
+        ('Documentação', {'fields': ('cnpj_cpf', 'inscricao_estadual')}),
+        ('Contato / Endereço', {'fields': ('telefone', 'celular', 'email', 'cep', 'endereco', 'numero', 'complemento', 'bairro', 'cidade', 'uf', 'pais')}),
+        ('Portal', {'fields': ('portal_enabled', 'portal_user', 'portal_token', 'is_exportador', 'moeda_padrao', 'porto_preferencial')}),
+        ('Auditoria', {'fields': ('criado_por', 'data_criacao', 'data_atualizacao'), 'classes': ('collapse',)}),
+    )
 
-@admin.register(CategoriaFornecedor)
-class CategoriaFornecedorAdmin(admin.ModelAdmin):
-    list_display = ['nome', 'icone', 'empresa', 'ativa', 'ordem']
-    list_filter = ['ativa', 'empresa']
-    search_fields = ['nome']
+    def get_queryset(self, request):
+        """Filtra por empresa se não for superusuário"""
+        qs = super().get_queryset(request)
+        if request.user.is_superuser:
+            return qs
+        if hasattr(request.user, 'empresa') and request.user.empresa:
+            return qs.filter(empresa=request.user.empresa)
+        return qs.none()
 
-@admin.register(FornecedorDocumento)
-class FornecedorDocumentoAdmin(admin.ModelAdmin):
-    list_display = ['titulo', 'fornecedor', 'tipo', 'status', 'obrigatorio', 'data_validade']
-    list_filter = ['tipo', 'status', 'obrigatorio']
-    search_fields = ['titulo', 'fornecedor__razao_social']
 
-@admin.register(FornecedorAvaliacao)
-class FornecedorAvaliacaoAdmin(admin.ModelAdmin):
-    list_display = ['fornecedor', 'tipo_avaliacao', 'get_media_notas', 'data_avaliacao']
-    list_filter = ['tipo_avaliacao', 'data_avaliacao']
-    search_fields = ['fornecedor__razao_social']
-
-"""
+@admin.register(FornecedorEndereco)
+class FornecedorEnderecoAdmin(admin.ModelAdmin):
+    """Admin de Endereços do Fornecedor"""
+    list_display = ['fornecedor', 'get_tipo_display', 'cidade', 'uf', 'padrao']
+    list_filter = ['tipo', 'uf', 'padrao']
+    search_fields = ['fornecedor__nome', 'cidade', 'logradouro']
+    readonly_fields = ['data_cadastro']

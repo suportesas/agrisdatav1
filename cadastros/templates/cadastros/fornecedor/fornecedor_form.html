@@ -81,13 +81,13 @@
             {% endif %}
           </div>
 
-          <!-- Tipo de Fornecedor -->
+          <!-- Fornecedor Internacional (checkbox) -->
           <div class="col-md-3">
-            <label class="form-label fw-semibold">Tipo de Fornecedor *</label>
-            {{ form.tipo_fornecedor }}
-            {% if form.tipo_fornecedor.errors %}
-              <div class="text-danger small">{{ form.tipo_fornecedor.errors|striptags }}</div>
-            {% endif %}
+            <label class="form-label fw-semibold d-block">Fornecedor Internacional</label>
+            <div class="form-check form-switch mt-2">
+              {{ form.is_exportador }}
+              <label class="form-check-label" for="{{ form.is_exportador.id_for_label }}">Internacional</label>
+            </div>
           </div>
 
           <!-- CNPJ/CPF com busca -->
@@ -115,9 +115,9 @@
           <!-- Razão Social -->
           <div class="col-md-8">
             <label class="form-label fw-semibold">Razão Social / Nome Completo *</label>
-            {{ form.razao_social }}
-            {% if form.razao_social.errors %}
-              <div class="text-danger small">{{ form.razao_social.errors|striptags }}</div>
+            {{ form.nome }}
+            {% if form.nome.errors %}
+              <div class="text-danger small">{{ form.nome.errors|striptags }}</div>
             {% endif %}
           </div>
 
@@ -127,18 +127,12 @@
             {{ form.nome_fantasia }}
           </div>
 
-          <!-- Status -->
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">Status *</label>
-            {{ form.status }}
-          </div>
-
           <!-- Ativo -->
           <div class="col-md-3">
             <label class="form-label fw-semibold d-block">Ativo</label>
             <div class="form-check form-switch mt-2">
-              {{ form.ativo }}
-              <label class="form-check-label" for="{{ form.ativo.id_for_label }}">
+              {{ form.ativa }}
+              <label class="form-check-label" for="{{ form.ativa.id_for_label }}">
                 Fornecedor Ativo
               </label>
             </div>
@@ -328,11 +322,7 @@
             {{ form.observacoes }}
           </div>
 
-          <div class="col-md-12" id="motivoBloqueioDiv" style="display: none;">
-            <label class="form-label fw-semibold text-danger">Motivo do Bloqueio *</label>
-            {{ form.motivo_bloqueio }}
-            <small class="text-muted d-block">Obrigatório quando Status = BLOQUEADO</small>
-          </div>
+
 
         </div>
       </div>
@@ -371,23 +361,16 @@
 document.addEventListener('DOMContentLoaded', function() {
   
   // Elementos do formulário
-  const tipoFornecedorSelect = document.getElementById('{{ form.tipo_fornecedor.id_for_label }}');
-  const statusSelect = document.getElementById('{{ form.status.id_for_label }}');
+  const isExportadorCheckbox = document.getElementById('{{ form.is_exportador.id_for_label }}');
   const btnBuscarCNPJ = document.getElementById('buscarCNPJ');
   const inputCNPJ = document.getElementById('{{ form.cnpj_cpf.id_for_label }}');
   const loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'));
   
   // Mostra/oculta campos internacionais
   function toggleCamposInternacionais() {
-    const isInternacional = tipoFornecedorSelect.value === 'INTERNACIONAL';
+    const isInternacional = isExportadorCheckbox && isExportadorCheckbox.checked;
     document.getElementById('dadosInternacionaisDiv').style.display = isInternacional ? 'block' : 'none';
     document.getElementById('codigoFiscalDiv').style.display = isInternacional ? 'block' : 'none';
-  }
-  
-  // Mostra/oculta motivo do bloqueio
-  function toggleMotivoBloqueio() {
-    const isBloqueado = statusSelect.value === 'BLOQUEADO';
-    document.getElementById('motivoBloqueioDiv').style.display = isBloqueado ? 'block' : 'none';
   }
   
   // Busca automática de CNPJ
@@ -402,11 +385,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
       loadingModal.show();
 
+      const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
       fetch('{% url "cadastros:buscar_cnpj" %}', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
-          'X-CSRFToken': '{{ csrf_token }}'
+          'X-CSRFToken': csrfToken
         },
         body: `cnpj=${cnpj}`
       })
@@ -416,10 +401,15 @@ document.addEventListener('DOMContentLoaded', function() {
         
         if (data.sucesso) {
           const d = data.dados;
-          document.getElementById('{{ form.razao_social.id_for_label }}').value = d.razao_social || '';
+          document.getElementById('{{ form.nome.id_for_label }}').value = d.nome || '';
           document.getElementById('{{ form.nome_fantasia.id_for_label }}').value = d.nome_fantasia || '';
           document.getElementById('{{ form.telefone.id_for_label }}').value = d.telefone || '';
           document.getElementById('{{ form.email.id_for_label }}').value = d.email || '';
+
+          if (isExportadorCheckbox) {
+            isExportadorCheckbox.checked = d.pais && d.pais.toLowerCase() !== 'brasil';
+            toggleCamposInternacionais();
+          }
           
           alert('✅ Dados preenchidos com sucesso!');
         } else {
@@ -435,7 +425,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   // Máscara de CNPJ/CPF
-  if (inputCNPJ) {
+    if (inputCNPJ) {
     inputCNPJ.addEventListener('input', function(e) {
       let value = e.target.value.replace(/\D/g, '');
       

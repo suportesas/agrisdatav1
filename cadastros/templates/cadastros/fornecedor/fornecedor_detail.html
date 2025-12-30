@@ -155,7 +155,7 @@
         
         <!-- Status e Score -->
         <div class="d-flex gap-3 align-items-center">
-          {% if fornecedor.status == 'ATIVO' %}
+          {% if fornecedor.ativa %}
             <span class="badge-status-large" style="background: #d4edda; color: #155724;">✓ Ativo</span>
           {% elif fornecedor.status == 'BLOQUEADO' %}
             <span class="badge-status-large" style="background: #dc3545; color: white;">⛔ Bloqueado</span>
@@ -362,15 +362,15 @@
                 <h6 class="fw-bold">
                   <i class="bi bi-geo-alt-fill text-primary"></i>
                   {{ endereco.get_tipo_display }}
-                  {% if endereco.principal %}
+                  {% if endereco.padrao %}
                     <span class="badge bg-primary">Principal</span>
                   {% endif %}
                 </h6>
                 <div>
-                  <a href="{% url 'cadastros:fornecedor_endereco_update' endereco.pk %}" class="btn btn-sm btn-outline-primary">
+                  <a href="{% url 'cadastros:fornecedor_endereco_update' fornecedor.pk endereco.pk %}" class="btn btn-sm btn-outline-primary">
                     <i class="bi bi-pencil"></i>
                   </a>
-                  <a href="{% url 'cadastros:fornecedor_endereco_delete' endereco.pk %}" class="btn btn-sm btn-outline-danger">
+                  <a href="{% url 'cadastros:fornecedor_endereco_delete' fornecedor.pk endereco.pk %}" class="btn btn-sm btn-outline-danger">
                     <i class="bi bi-trash"></i>
                   </a>
                 </div>
@@ -413,17 +413,17 @@
                   <h6 class="fw-bold mb-0">
                     <i class="bi bi-person-fill text-success"></i>
                     {{ contato.nome }}
-                    {% if contato.principal %}
+                    {% if contato.preferencial %}
                       <span class="badge bg-success">Principal</span>
                     {% endif %}
                   </h6>
                   <small class="text-muted">{{ contato.cargo }} - {{ contato.get_tipo_display }}</small>
                 </div>
                 <div>
-                  <a href="{% url 'cadastros:fornecedor_contato_update' contato.pk %}" class="btn btn-sm btn-outline-primary">
+                  <a href="{% url 'cadastros:fornecedor_contato_update' fornecedor.pk contato.pk %}" class="btn btn-sm btn-outline-primary">
                     <i class="bi bi-pencil"></i>
                   </a>
-                  <a href="{% url 'cadastros:fornecedor_contato_delete' contato.pk %}" class="btn btn-sm btn-outline-danger">
+                  <a href="{% url 'cadastros:fornecedor_contato_delete' fornecedor.pk contato.pk %}" class="btn btn-sm btn-outline-danger">
                     <i class="bi bi-trash"></i>
                   </a>
                 </div>
@@ -432,8 +432,8 @@
                 {% if contato.telefone %}<i class="bi bi-telephone"></i> {{ contato.telefone }}<br>{% endif %}
                 {% if contato.celular %}<i class="bi bi-phone"></i> {{ contato.celular }}<br>{% endif %}
                 {% if contato.email %}<i class="bi bi-envelope"></i> {{ contato.email }}<br>{% endif %}
-                {% if contato.recebe_cotacao %}
-                  <span class="badge bg-info mt-1">Recebe Cotação</span>
+                {% if contato.whatsapp %}
+                  <span class="badge bg-info mt-1">WhatsApp</span>
                 {% endif %}
               </p>
             </div>
@@ -451,50 +451,71 @@
     <!-- Tab: Documentos -->
     <div class="tab-pane fade" id="documentos" role="tabpanel">
       <div class="d-flex justify-content-between align-items-center mb-3">
-        <h5 class="mb-0">
-          Documentos
-          {% if status_docs == 'COMPLETO' %}
-            <span class="badge bg-success">✓ Completo</span>
-          {% elif status_docs == 'VENCIDO' %}
-            <span class="badge bg-danger">⏰ Docs Vencidos</span>
-          {% else %}
-            <span class="badge bg-warning">📋 Pendente</span>
-          {% endif %}
-        </h5>
-        <a href="{% url 'cadastros:fornecedor_documento_create' fornecedor.pk %}" class="btn btn-success btn-sm">
-          <i class="bi bi-plus-circle"></i> Novo Documento
+        <h5 class="mb-0">Documentos Anexados</h5>
+        <a href="{% url 'cadastros:fornecedor_documento_create' fornecedor.pk %}" class="btn btn-sm btn-success">
+          <i class="bi bi-plus-circle"></i> Anexar Documento
         </a>
       </div>
 
-      {% if fornecedor.documentos.exists %}
-        {% for doc in fornecedor.documentos.all %}
-        <div class="doc-item doc-status-{{ doc.status|lower }}">
-          <div>
-            <h6 class="mb-1">
-              <i class="bi bi-file-earmark-pdf"></i>
-              {{ doc.titulo }}
-              {% if doc.obrigatorio %}<span class="badge bg-danger">Obrigatório</span>{% endif %}
-            </h6>
-            <small class="text-muted">
-              {{ doc.get_tipo_display }}
-              {% if doc.data_validade %} | Validade: {{ doc.data_validade|date:"d/m/Y" }}{% endif %}
-            </small>
-          </div>
-          <div>
-            {% if doc.arquivo %}
-              <a href="{{ doc.arquivo.url }}" target="_blank" class="btn btn-sm btn-outline-primary me-1">
-                <i class="bi bi-download"></i>
-              </a>
-            {% endif %}
-            <a href="{% url 'cadastros:fornecedor_documento_delete' doc.pk %}" class="btn btn-sm btn-outline-danger">
-              <i class="bi bi-trash"></i>
-            </a>
-          </div>
+      {% if fornecedor.documentos.all %}
+        <div class="table-responsive">
+          <table class="table table-hover">
+            <thead class="table-light">
+              <tr>
+                <th>Tipo</th>
+                <th>Título</th>
+                <th>Validade</th>
+                <th>Status</th>
+                <th class="text-center">Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for doc in fornecedor.documentos.all %}
+                <tr class="{% if doc.esta_vencido %}table-danger{% elif doc.precisa_alerta %}table-warning{% endif %}">
+                  <td><span class="badge bg-secondary">{{ doc.get_tipo_display }}</span></td>
+                  <td>
+                    <strong>{{ doc.titulo }}</strong>
+                    {% if doc.numero_documento %}
+                      <br><small class="text-muted">Nº {{ doc.numero_documento }}</small>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if doc.data_validade %}
+                      {{ doc.data_validade|date:"d/m/Y" }}
+                      {% if doc.dias_para_vencimento %}
+                        <br><small class="text-muted">({{ doc.dias_para_vencimento }} dias)</small>
+                      {% endif %}
+                    {% else %}
+                      Sem validade
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if doc.esta_vencido %}
+                      <span class="badge bg-danger">Vencido</span>
+                    {% elif doc.precisa_alerta %}
+                      <span class="badge bg-warning text-dark">Vencendo</span>
+                    {% else %}
+                      <span class="badge bg-success">Válido</span>
+                    {% endif %}
+                  </td>
+                  <td class="text-center">
+                    <div class="btn-group btn-group-sm">
+                      <a href="{{ doc.arquivo.url }}" target="_blank" class="btn btn-outline-info" title="Visualizar">
+                        <i class="bi bi-eye"></i>
+                      </a>
+                      <a href="{% url 'cadastros:fornecedor_documento_delete' fornecedor.pk doc.pk %}" class="btn btn-outline-danger">
+                        <i class="bi bi-trash"></i>
+                      </a>
+                    </div>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
         </div>
-        {% endfor %}
       {% else %}
         <div class="alert alert-info">
-          <i class="bi bi-info-circle"></i> Nenhum documento cadastrado.
+          <i class="bi bi-info-circle"></i> Nenhum documento anexado.
         </div>
       {% endif %}
     </div>
@@ -503,7 +524,7 @@
     <div class="tab-pane fade" id="avaliacoes" role="tabpanel">
       <div class="d-flex justify-content-between align-items-center mb-3">
         <h5 class="mb-0">Histórico de Avaliações</h5>
-        <a href="{% url 'cadastros:fornecedor_avaliacao_create' fornecedor.pk %}" class="btn btn-success btn-sm">
+        <a href="#" class="btn btn-success btn-sm">
           <i class="bi bi-plus-circle"></i> Nova Avaliação
         </a>
       </div>

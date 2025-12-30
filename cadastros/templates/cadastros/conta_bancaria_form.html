@@ -9,8 +9,13 @@
 <div class="container py-4">
   <nav aria-label="breadcrumb" class="mb-4">
     <ol class="breadcrumb">
-      <li class="breadcrumb-item"><a href="{% url 'cadastros:fazenda_list' %}">Fazendas</a></li>
-      <li class="breadcrumb-item"><a href="{% url 'cadastros:fazenda_detail' fazenda.pk %}">{{ fazenda.nome }}</a></li>
+      {% if fornecedor %}
+        <li class="breadcrumb-item"><a href="{% url 'cadastros:fornecedor_list' %}">Fornecedores</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'cadastros:fornecedor_detail' fornecedor.pk %}">{{ fornecedor.nome }}</a></li>
+      {% else %}
+        <li class="breadcrumb-item"><a href="{% url 'cadastros:fazenda_list' %}">Fazendas</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'cadastros:fazenda_detail' fazenda.pk %}">{{ fazenda.nome }}</a></li>
+      {% endif %}
       <li class="breadcrumb-item active">{{ action }} Conta Bancária</li>
     </ol>
   </nav>
@@ -117,9 +122,15 @@
         </div>
 
         <div class="d-flex justify-content-between gap-3 mt-4">
-          <a href="{% url 'cadastros:fazenda_detail' fazenda.pk %}" class="btn btn-outline-secondary">
-            <i class="bi bi-arrow-left"></i> Cancelar
-          </a>
+            {% if fornecedor %}
+            <a href="{% url 'cadastros:fornecedor_detail' fornecedor.pk %}" class="btn btn-outline-secondary">
+              <i class="bi bi-arrow-left"></i> Cancelar
+            </a>
+          {% else %}
+            <a href="{% url 'cadastros:fazenda_detail' fazenda.pk %}" class="btn btn-outline-secondary">
+              <i class="bi bi-arrow-left"></i> Cancelar
+            </a>
+          {% endif %}
           <button type="submit" class="btn btn-success">
             <i class="bi bi-check-circle"></i> Salvar Conta
           </button>

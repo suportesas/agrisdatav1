@@ -8,8 +8,13 @@
   <!-- Breadcrumb -->
   <nav aria-label="breadcrumb" class="mb-4">
     <ol class="breadcrumb">
-      <li class="breadcrumb-item"><a href="{% url 'cadastros:fazenda_list' %}">Fazendas</a></li>
-      <li class="breadcrumb-item"><a href="{% url 'cadastros:fazenda_detail' fazenda.pk %}">{{ fazenda.nome }}</a></li>
+      {% if fornecedor %}
+        <li class="breadcrumb-item"><a href="{% url 'cadastros:fornecedor_list' %}">Fornecedores</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'cadastros:fornecedor_detail' fornecedor.pk %}">{{ fornecedor.get_nome_exibicao }}</a></li>
+      {% else %}
+        <li class="breadcrumb-item"><a href="{% url 'cadastros:fazenda_list' %}">Fazendas</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'cadastros:fazenda_detail' fazenda.pk %}">{{ fazenda.nome }}</a></li>
+      {% endif %}
       <li class="breadcrumb-item active">{{ action }} Endereço</li>
     </ol>
   </nav>
@@ -18,13 +23,20 @@
   <div class="card border-0 shadow-sm">
     <div class="card-header bg-primary text-white">
       <h5 class="mb-0">
-        <i class="bi bi-geo-alt"></i> {{ action }} Endereço - {{ fazenda.nome }}
+        <i class="bi bi-geo-alt"></i> {{ action }} Endereço - {% if fornecedor %}{{ fornecedor.get_nome_exibicao }}{% else %}{{ fazenda.nome }}{% endif %}
       </h5>
     </div>
     <div class="card-body p-4">
       
       <form method="post">
         {% csrf_token %}
+
+        {% if debug_form %}
+          <div class="mb-3">
+            <label class="form-label fw-semibold">DEBUG: form.as_p</label>
+            <pre style="background:#f8f9fa;padding:1rem;border-radius:6px;">{{ form.as_p|escape }}</pre>
+          </div>
+        {% endif %}
 
         <div class="row g-3">
           
@@ -122,9 +134,15 @@
 
         <!-- Botões -->
         <div class="d-flex justify-content-between gap-3 mt-4">
-          <a href="{% url 'cadastros:fazenda_detail' fazenda.pk %}" class="btn btn-outline-secondary">
-            <i class="bi bi-arrow-left"></i> Cancelar
-          </a>
+          {% if fornecedor %}
+            <a href="{% url 'cadastros:fornecedor_detail' fornecedor.pk %}" class="btn btn-outline-secondary">
+              <i class="bi bi-arrow-left"></i> Cancelar
+            </a>
+          {% else %}
+            <a href="{% url 'cadastros:fazenda_detail' fazenda.pk %}" class="btn btn-outline-secondary">
+              <i class="bi bi-arrow-left"></i> Cancelar
+            </a>
+          {% endif %}
           <button type="submit" class="btn btn-success">
             <i class="bi bi-check-circle"></i> Salvar Endereço
           </button>

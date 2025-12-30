@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}{{ action }} Funcionário | ERP Agrícola{% endblock %}
 
@@ -310,6 +311,7 @@
       <div class="modal-body">
         <form id="formNovaFuncao">
           {% csrf_token %}
+          <div id="funcao-errors" aria-live="polite"></div>
           <div class="mb-3">
             <label class="form-label fw-semibold">Nome da Função *</label>
             {{ form_funcao.nome }}
@@ -360,94 +362,15 @@
 
 {% block extra_js %}
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-  const modalNovaFuncao = new bootstrap.Modal(document.getElementById('modalNovaFuncao'));
-  const loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'));
-  const selectFuncao = document.getElementById('id_funcao');
-
-  // Cadastrar nova função via AJAX
-  document.getElementById('btnSalvarFuncao').addEventListener('click', function() {
-    const form = document.getElementById('formNovaFuncao');
-    const formData = new FormData(form);
-
-    document.getElementById('loadingText').textContent = 'Salvando função...';
-    modalNovaFuncao.hide();
-    loadingModal.show();
-
-    fetch('{% url "cadastros:funcao_create_ajax" %}', {
-      method: 'POST',
-      headers: {
-        'X-CSRFToken': '{{ csrf_token }}'
-      },
-      body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-      loadingModal.hide();
-      
-      if (data.sucesso) {
-        // Adiciona nova opção no select
-        const option = new Option(data.nome, data.id, true, true);
-        selectFuncao.add(option);
-        selectFuncao.value = data.id;
-        
-        // Limpa formulário
-        form.reset();
-        
-        alert('✅ ' + data.mensagem);
-      } else {
-        alert('❌ Erro ao salvar função. Verifique os campos.');
-      }
-    })
-    .catch(error => {
-      loadingModal.hide();
-      alert('❌ Erro ao salvar função');
-    });
-  });
-
-  // Buscar CEP
-  const btnBuscarCEP = document.getElementById('buscarCEPFunc');
-  if (btnBuscarCEP) {
-    btnBuscarCEP.addEventListener('click', function() {
-      const cep = document.getElementById('{{ form.cep.id_for_label }}').value.replace(/\D/g, '');
-      
-      if (cep.length !== 8) {
-        alert('Digite um CEP válido');
-        return;
-      }
-
-      document.getElementById('loadingText').textContent = 'Buscando CEP...';
-      loadingModal.show();
-
-      fetch('{% url "cadastros:buscar_cep" %}', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'X-CSRFToken': '{{ csrf_token }}'
-        },
-        body: `cep=${cep}`
-      })
-      .then(response => response.json())
-      .then(data => {
-        loadingModal.hide();
-        
-        if (data.sucesso) {
-          const d = data.dados;
-          document.getElementById('{{ form.endereco.id_for_label }}').value = d.logradouro || '';
-          document.getElementById('{{ form.bairro.id_for_label }}').value = d.bairro || '';
-          document.getElementById('{{ form.cidade.id_for_label }}').value = d.cidade || '';
-          document.getElementById('{{ form.uf.id_for_label }}').value = d.uf || '';
-          alert('✅ Endereço preenchido!');
-        } else {
-          alert('❌ CEP não encontrado');
-        }
-      })
-      .catch(() => {
-        loadingModal.hide();
-        alert('❌ Erro ao buscar CEP');
-      });
-    });
-  }
-});
+  window._cadastros_funcionario_config = {
+    cep_selector: '#{{ form.cep.id_for_label }}',
+    endereco_selector: '#{{ form.endereco.id_for_label }}',
+    bairro_selector: '#{{ form.bairro.id_for_label }}',
+    cidade_selector: '#{{ form.cidade.id_for_label }}',
+    uf_selector: '#{{ form.uf.id_for_label }}',
+    funcao_create_url: '{% url "cadastros:funcao_create_ajax" %}',
+    buscar_cep_url: '{% url "cadastros:buscar_cep" %}'
+  };
 </script>
+<script src="{% static 'js/cadastros_funcionario.js' %}"></script>
 {% endblock %}

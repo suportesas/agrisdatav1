@@ -18,7 +18,7 @@ from .models import (
     Fazenda, EnderecoFazenda, ContatoFazenda,
     ContaBancariaFazenda, DocumentoFazenda, DocumentoFornecedor,
     Area, Talhao, Cultura, HistoricoTalhao, Safra,
-    Vendedor, ComissaoVendedor, Fornecedor, FornecedorContato, FornecedorDadoBancario,
+    Vendedor, ComissaoVendedor, Fornecedor, FornecedorContato, FornecedorDadoBancario, Porto
 )
 
 from .forms import VendedorForm, VendedorFiltroForm, ComissaoVendedorForm, FornecedorForm, FornecedorContatoForm, FornecedorDadoBancarioForm
@@ -27,7 +27,7 @@ from .forms import (
     FazendaForm, EnderecoFazendaForm, ContatoFazendaForm,
     ContaBancariaFazendaForm, DocumentoFazendaForm, DocumentoFornecedorForm,
      
-    AreaForm, TalhaoForm, CulturaForm, HistoricoTalhaoForm, SafraForm,
+    AreaForm, TalhaoForm, CulturaForm, HistoricoTalhaoForm, SafraForm, PortoForm,
     
 )
 
@@ -220,6 +220,94 @@ def fazenda_delete(request, pk):
         return redirect('cadastros:fazenda_list')
     
     return render(request, 'cadastros/fazenda_confirm_delete.html', {'fazenda': fazenda})
+
+
+# ==================== PORTOS ====================
+
+@login_required
+def porto_list(request):
+    """Lista os portos da empresa"""
+    if not request.user.empresa:
+        messages.warning(request, '⚠️ Seu usuário não está vinculado a nenhuma empresa. Entre em contato com o administrador.')
+        return redirect('dashboard:index')
+
+    portos = Porto.objects.filter(empresa=request.user.empresa)
+
+    q = request.GET.get('q', '').strip()
+    if q:
+        portos = portos.filter(
+            Q(codigo__icontains=q) | Q(nome__icontains=q) | Q(cidade__icontains=q)
+        )
+
+    paginator = Paginator(portos, 25)
+    page_obj = paginator.get_page(request.GET.get('page'))
+
+    return render(request, 'cadastros/porto_list.html', {
+        'page_obj': page_obj,
+        'total_portos': portos.count(),
+    })
+
+
+@login_required
+def porto_detail(request, pk):
+    porto = get_object_or_404(Porto, pk=pk, empresa=request.user.empresa)
+    return render(request, 'cadastros/porto_detail.html', {'porto': porto})
+
+
+@login_required
+def porto_create(request):
+    if not request.user.empresa:
+        messages.warning(request, '⚠️ Seu usuário não está vinculado a nenhuma empresa. Entre em contato com o administrador.')
+        return redirect('dashboard:index')
+
+    if request.method == 'POST':
+        form = PortoForm(request.POST, empresa=request.user.empresa)
+        if form.is_valid():
+            porto = form.save()
+            messages.success(request, f'✅ Porto "{porto.nome}" cadastrado com sucesso!')
+            return redirect('cadastros:porto_detail', pk=porto.pk)
+        else:
+            messages.error(request, '❌ Corrija os erros no formulário abaixo.')
+    else:
+        form = PortoForm(empresa=request.user.empresa)
+
+    return render(request, 'cadastros/porto_form.html', {
+        'form': form,
+        'action': 'Cadastrar'
+    })
+
+
+@login_required
+def porto_update(request, pk):
+    porto = get_object_or_404(Porto, pk=pk, empresa=request.user.empresa)
+
+    if request.method == 'POST':
+        form = PortoForm(request.POST, instance=porto, empresa=request.user.empresa)
+        if form.is_valid():
+            porto = form.save()
+            messages.success(request, f'✅ Porto "{porto.nome}" atualizado!')
+            return redirect('cadastros:porto_detail', pk=porto.pk)
+    else:
+        form = PortoForm(instance=porto, empresa=request.user.empresa)
+
+    return render(request, 'cadastros/porto_form.html', {
+        'form': form,
+        'porto': porto,
+        'action': 'Editar'
+    })
+
+
+@login_required
+def porto_delete(request, pk):
+    porto = get_object_or_404(Porto, pk=pk, empresa=request.user.empresa)
+
+    if request.method == 'POST':
+        nome = porto.nome
+        porto.delete()
+        messages.success(request, f'🗑️ Porto "{nome}" excluído com sucesso!')
+        return redirect('cadastros:porto_list')
+
+    return render(request, 'cadastros/porto_confirm_delete.html', {'porto': porto})
 
 
 # ==================== API EXTERNA - CNPJ ====================

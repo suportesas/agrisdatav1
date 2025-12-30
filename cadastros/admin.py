@@ -10,7 +10,7 @@ from .models import (
 from .models import Area, Talhao, HistoricoTalhao, Safra, SafraPlan, SafraReal
 from .models import Vendedor, ComissaoVendedor
 
-from .models import Fornecedor, FornecedorEndereco, FornecedorContato, FornecedorDadoBancario
+from .models import Fornecedor, FornecedorEndereco, FornecedorContato, FornecedorDadoBancario, Porto
 
 class EnderecoFazendaInline(admin.TabularInline):
     """Inline para endereços"""
@@ -228,6 +228,14 @@ class SafraRealAdmin(admin.ModelAdmin):
 
 
 
+
+
+@admin.register(Porto)
+class PortoAdmin(admin.ModelAdmin):
+    list_display = ['codigo', 'nome', 'pais', 'cidade', 'tipo', 'ativo', 'empresa']
+    list_filter = ['tipo', 'ativo', 'empresa']
+    search_fields = ['codigo', 'nome', 'cidade', 'pais']
+    readonly_fields = ['data_criacao', 'data_atualizacao']
 
 
 @admin.register(Vendedor)

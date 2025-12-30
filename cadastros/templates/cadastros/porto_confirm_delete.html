@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>Confirmar exclusão</h1>
+<p>Tem certeza que deseja excluir o porto <strong>{{ porto.nome }}</strong>?</p>
+<form method="post">
+  {% csrf_token %}
+  <button class="btn btn-danger" type="submit">Sim, excluir</button>
+  <a class="btn btn-secondary" href="{% url 'cadastros:porto_detail' porto.pk %}">Cancelar</a>
+</form>
+{% endblock %}

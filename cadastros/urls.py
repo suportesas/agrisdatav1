@@ -138,4 +138,11 @@ urlpatterns = [
     path('fornecedores/<int:fornecedor_pk>/documentos/<int:documento_pk>/excluir/', views.fornecedor_documento_delete, name='fornecedor_documento_delete'),
     path('fornecedores/<int:fornecedor_pk>/documentos/<int:documento_pk>/editar/', views.fornecedor_documento_update, name='fornecedor_documento_update'),
 
-   ]
+    # ==================== PORTOS ====================
+    path('portos/', views.porto_list, name='porto_list'),
+    path('portos/novo/', views.porto_create, name='porto_create'),
+    path('portos/<int:pk>/', views.porto_detail, name='porto_detail'),
+    path('portos/<int:pk>/editar/', views.porto_update, name='porto_update'),
+    path('portos/<int:pk>/excluir/', views.porto_delete, name='porto_delete'),
+
+]

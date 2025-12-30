@@ -1969,5 +1969,58 @@ class ComissaoVendedorForm(forms.ModelForm):
 
 
 # =============================================================================
+# Forms: Porto (novo cadastro multi-tenant)
+# =============================================================================
+
+class PortoForm(forms.ModelForm):
+    """Formulário para cadastro de Portos (multi-tenant por `empresa`)"""
+
+    class Meta:
+        model = __import__('cadastros.models', fromlist=['Porto']).Porto
+        # Empresa será preenchida pela view/admin
+        exclude = ('empresa',)
+        fields = ['codigo', 'nome', 'pais', 'cidade', 'tipo', 'ativo']
+        widgets = {
+            'codigo': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Código (ex: BRBEL)'}),
+            'nome': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nome do porto'}),
+            'pais': forms.TextInput(attrs={'class': 'form-control'}),
+            'cidade': forms.TextInput(attrs={'class': 'form-control'}),
+            'tipo': forms.Select(attrs={'class': 'form-select'}),
+            'ativo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        # Recebe empresa se fornecida (ex: pela view)
+        self.empresa = kwargs.pop('empresa', None)
+        super().__init__(*args, **kwargs)
+        # Torna 'codigo' obrigatório quando a empresa for conhecida
+        if self.empresa:
+            self.fields['codigo'].required = True
+
+    def clean_codigo(self):
+        codigo = self.cleaned_data.get('codigo', '')
+        # Normaliza e valida
+        codigo_limpo = codigo.strip().upper()
+        if not codigo_limpo:
+            raise ValidationError('Código do porto é obrigatório')
+        # Verifica unicidade por empresa
+        qs = __import__('cadastros.models', fromlist=['Porto']).Porto.objects.filter(codigo=codigo_limpo)
+        if self.empresa:
+            qs = qs.filter(empresa=self.empresa)
+        if self.instance.pk:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise ValidationError('Já existe um porto com este código para a mesma empresa')
+        return codigo_limpo
+
+    def save(self, commit=True):
+        porto = super().save(commit=False)
+        if self.empresa:
+            porto.empresa = self.empresa
+        if commit:
+            porto.save()
+        return porto
+
+# =============================================================================
 # ✅ FIM DO CÓDIGO - TESTADO E FUNCIONANDO
 # =============================================================================

@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>{{ porto.nome }} ({{ porto.codigo }})</h1>
+<p><strong>Cidade:</strong> {{ porto.cidade }}</p>
+<p><strong>País:</strong> {{ porto.pais }}</p>
+<p><strong>Tipo:</strong> {{ porto.get_tipo_display }}</p>
+<p><strong>Ativo:</strong> {% if porto.ativo %}Sim{% else %}Não{% endif %}</p>
+
+<a class="btn btn-primary" href="{% url 'cadastros:porto_update' porto.pk %}">Editar</a>
+<a class="btn btn-danger" href="{% url 'cadastros:porto_delete' porto.pk %}">Excluir</a>
+<a class="btn btn-secondary" href="{% url 'cadastros:porto_list' %}">Voltar</a>
+{% endblock %}

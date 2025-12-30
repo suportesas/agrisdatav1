@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>{{ action }} Porto</h1>
+<form method="post">
+  {% csrf_token %}
+  {{ form.non_field_errors }}
+  {% for field in form %}
+    <div class="mb-3">
+      <label class="form-label">{{ field.label }}</label>
+      {{ field }}
+      {% if field.help_text %}
+      <div class="form-text">{{ field.help_text }}</div>
+      {% endif %}
+      {% for error in field.errors %}
+      <div class="text-danger small">{{ error }}</div>
+      {% endfor %}
+    </div>
+  {% endfor %}
+  <button class="btn btn-primary" type="submit">Salvar</button>
+  <a class="btn btn-secondary" href="{% url 'cadastros:porto_list' %}">Cancelar</a>
+</form>
+{% endblock %}

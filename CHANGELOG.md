@@ -12,5 +12,9 @@
   - Salvar um `Fornecedor` com campos de endereço atualizados cria/atualiza o `FornecedorEndereco` padrão.
   - Atualizar/deletar o `FornecedorEndereco` padrão atualiza/limpa os campos espelhados no `Fornecedor`.
   - Inclui sinais (`post_save` / `post_delete`) e testes unitários cobrindo criação, atualização, promoção e deleção de endereços.
+- Document attachments improvements:
+  - Adicionado `Editar` para documentos de Fazenda e Fornecedor (visualizar/editar sem excluir).
+  - Form widgets updated: `Data de Emissão` e `Data de Validade` renderam valores ISO (YYYY-MM-DD) corretamente, `Dias de Antecedência` é number input, `Observações` é textarea.
+  - Tests added to verify date rendering in edit form and edit flows for documents.
 
 (Tests updated/verified: cadastros tests all pass.)

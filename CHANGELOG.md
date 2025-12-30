@@ -17,4 +17,6 @@
   - Form widgets updated: `Data de Emissão` e `Data de Validade` renderam valores ISO (YYYY-MM-DD) corretamente, `Dias de Antecedência` é number input, `Observações` é textarea.
   - Tests added to verify date rendering in edit form and edit flows for documents.
 
+- Added `Porto` model (multi-tenant) with admin registration, basic CRUD views, forms, templates and unit tests. Migration `0008_porto.py` created.
+
 (Tests updated/verified: cadastros tests all pass.)

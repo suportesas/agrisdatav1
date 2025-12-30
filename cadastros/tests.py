@@ -6,9 +6,10 @@ from django.contrib.auth import get_user_model
 from cadastros.models import Fazenda, Area
 from cadastros.models import Talhao, Cultura, HistoricoTalhao
 from django.urls import reverse
-from datetime import date
+from datetime import date, timedelta
 from empresas.models import Empresa, Plano
 from cadastros.models import FuncaoFuncionario, Fornecedor, FornecedorEndereco, FornecedorContato, FornecedorDadoBancario
+from django.utils import timezone
 
 User = get_user_model()
 
@@ -504,3 +505,52 @@ class FornecedorDocumentoTests(TestCase):
         resp = self.client.post(url, {})
         self.assertEqual(resp.status_code, 302)
         self.assertFalse(FornecedorDadoBancario.objects.filter(pk=a.pk).exists())
+
+    def test_detail_shows_website_and_document_alerts(self):
+        # website shown on detail
+        self.fornecedor.website = 'https://example.com'
+        self.fornecedor.save()
+        # create expired document
+        from cadastros.models import DocumentoFornecedor
+        past = timezone.now().date() - timedelta(days=5)
+        doc = DocumentoFornecedor.objects.create(fornecedor=self.fornecedor, tipo='OUTROS', titulo='Old Doc', arquivo='fornecedores/documentos/old.pdf', data_validade=past, gerar_alerta_vencimento=True)
+        url = reverse('cadastros:fornecedor_detail', args=[self.fornecedor.pk])
+        resp = self.client.get(url)
+        self.assertEqual(resp.status_code, 200)
+        content = resp.content.decode('utf-8')
+        self.assertIn('https://example.com', content)
+        # alert banner and badge should be present
+        self.assertIn('Atenção', content)
+        self.assertIn('Vencido', content)
+
+
+class FornecedorListFilterPaginationTests(TestCase):
+    def setUp(self):
+        plano = Plano.objects.create(codigo='PEQ', nome='P', valor_mensal=1)
+        self.empresa = Empresa.objects.create(nome='E', plano=plano)
+        User = get_user_model()
+        self.user = User.objects.create_user(username='u', password='pass')
+        self.user.empresa = self.empresa
+        self.user.save()
+        self.client = Client()
+        self.client.login(username='u', password='pass')
+        # create 15 fornecedores
+        for i in range(15):
+            cnpj = f'00.000.000/{1000+i}'
+            Fornecedor.objects.create(empresa=self.empresa, nome=f'F{i}', is_exportador=(i%2==0), cnpj_cpf=cnpj)
+
+    def test_tipo_filter_and_pagination(self):
+        url = reverse('cadastros:fornecedor_list')
+        # filter INTERNATIONAL
+        resp = self.client.get(url + '?tipo=INTERNACIONAL')
+        self.assertEqual(resp.status_code, 200)
+        # Ensure context contains only exportadores
+        fornecedores_list = resp.context['fornecedores']
+        for f in fornecedores_list:
+            self.assertTrue(f.is_exportador)
+        # pagination: default page size 10 -> total 8 or 7 matching
+        resp = self.client.get(url)
+        self.assertEqual(resp.status_code, 200)
+        content = resp.content.decode('utf-8')
+        # ensure pagination controls present when more than page size
+        self.assertIn('Próximo', content)

@@ -3198,6 +3198,7 @@ class Fornecedor(models.Model):
     is_exportador = models.BooleanField('Exportador', default=False)
     moeda_padrao = models.CharField('Moeda Padrão', max_length=3, default='BRL')
     porto_preferencial = models.CharField('Porto Preferencial', max_length=100, blank=True)
+    website = models.URLField('Website', blank=True)
 
     # Regime Tributário (adicionado para documentos e formulário)
     REGIME_TRIBUTARIO = [

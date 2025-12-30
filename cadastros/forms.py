@@ -757,7 +757,7 @@ class FornecedorForm(forms.ModelForm):
         model = Fornecedor
         fields = [
             'nome', 'nome_fantasia', 'tipo_pessoa', 'cnpj_cpf', 'inscricao_estadual', 'inscricao_municipal', 'eori', 'regime_tributario',
-            'telefone', 'celular', 'email',
+            'telefone', 'celular', 'email', 'website',
             'cep', 'endereco', 'numero', 'complemento', 'bairro', 'cidade', 'uf', 'pais',
             'is_exportador', 'moeda_padrao', 'porto_preferencial',
             'categorias', 'subcategorias', 'classificacao_risco', 'data_homologacao', 'validade_homologacao',
@@ -774,6 +774,7 @@ class FornecedorForm(forms.ModelForm):
             'telefone': forms.TextInput(attrs={'class': 'form-control'}),
             'celular': forms.TextInput(attrs={'class': 'form-control'}),
             'email': forms.EmailInput(attrs={'class': 'form-control'}),
+            'website': forms.URLInput(attrs={'class': 'form-control', 'placeholder': 'https://www.fornecedor.com'}),
             'cep': forms.TextInput(attrs={'class': 'form-control'}),
             'endereco': forms.TextInput(attrs={'class': 'form-control'}),
             'numero': forms.TextInput(attrs={'class': 'form-control'}),
@@ -783,6 +784,7 @@ class FornecedorForm(forms.ModelForm):
             'uf': forms.TextInput(attrs={'class': 'form-control'}),
             'pais': forms.TextInput(attrs={'class': 'form-control'}),
             'porto_preferencial': forms.TextInput(attrs={'class': 'form-control'}),
+            'website': forms.URLInput(attrs={'class': 'form-control', 'placeholder': 'https://www.fornecedor.com'}),
             'categorias': forms.SelectMultiple(attrs={'class': 'form-select'}),
             'subcategorias': forms.SelectMultiple(attrs={'class': 'form-select'}),
             'classificacao_risco': forms.Select(attrs={'class': 'form-select'}),

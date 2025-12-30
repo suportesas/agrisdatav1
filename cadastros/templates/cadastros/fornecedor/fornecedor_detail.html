@@ -231,6 +231,11 @@
       </button>
     </li>
     <li class="nav-item" role="presentation">
+      <button class="nav-link" id="bancos-tab" data-bs-toggle="tab" data-bs-target="#bancos" type="button">
+        <i class="bi bi-bank"></i> Bancos ({{ contas.count }})
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
       <button class="nav-link" id="documentos-tab" data-bs-toggle="tab" data-bs-target="#documentos" type="button">
         <i class="bi bi-file-earmark-text"></i> Documentos ({{ fornecedor.documentos.count }})
         {% if docs_vencidos > 0 %}
@@ -344,6 +349,13 @@
       {% endif %}
     </div>
 
+    <!-- optional alert if documents are expiring or expired -->
+    {% if docs_vencidos > 0 %}
+    <div class="alert alert-danger mt-3">
+      <i class="bi bi-exclamation-octagon"></i> Atenção: <strong>{{ docs_vencidos }}</strong> documento(s) vencido(s) ou com alerta de vencimento. Verifique os documentos na aba "Documentos".
+    </div>
+    {% endif %}
+
     <!-- Tab: Endereços -->
     <div class="tab-pane fade" id="enderecos" role="tabpanel">
       <div class="d-flex justify-content-between align-items-center mb-3">
@@ -391,6 +403,48 @@
           <i class="bi bi-info-circle"></i> Nenhum endereço cadastrado.
           <a href="{% url 'cadastros:fornecedor_endereco_create' fornecedor.pk %}">Adicionar primeiro endereço</a>
         </div>
+      {% endif %}
+    </div>
+
+    <!-- Tab: Bancos -->
+    <div class="tab-pane fade" id="bancos" role="tabpanel">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0">Contas Bancárias</h5>
+        <a href="{% url 'cadastros:fornecedor_conta_create' fornecedor.pk %}" class="btn btn-success btn-sm">
+          <i class="bi bi-plus-circle"></i> Nova Conta
+        </a>
+      </div>
+
+      {% if contas %}
+        <div class="table-responsive">
+          <table class="table table-hover">
+            <thead class="table-light">
+              <tr>
+                <th>Banco</th>
+                <th>Agência / Conta</th>
+                <th>PIX</th>
+                <th>Principal</th>
+                <th class="text-center">Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for c in contas %}
+              <tr>
+                <td>{{ c.banco }}</td>
+                <td>{{ c.agencia }} / {{ c.conta }}{% if c.agencia_digito %}-{{ c.agencia_digito }}{% endif %}{% if c.conta_digito %}-{{ c.conta_digito }}{% endif %}</td>
+                <td>{% if c.pix_habilitado %}{{ c.get_tipo_chave_pix_display }}: {{ c.chave_pix }}{% else %}—{% endif %}</td>
+                <td>{% if c.conta_principal %}<span class="badge bg-primary">Principal</span>{% else %}—{% endif %}</td>
+                <td class="text-center">
+                  <a href="{% url 'cadastros:fornecedor_conta_update' fornecedor.pk c.pk %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
+                  <a href="{% url 'cadastros:fornecedor_conta_delete' fornecedor.pk c.pk %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></a>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="alert alert-info">Nenhuma conta bancária cadastrada.</div>
       {% endif %}
     </div>
 

@@ -1928,8 +1928,12 @@ def fornecedor_list(request):
 
     fornecedores = Fornecedor.objects.filter(empresa=empresa).order_by('nome')
 
-    # busca
+    # busca e filtros
     q = request.GET.get('q', '').strip()
+    status = request.GET.get('status', '').strip()
+    categoria = request.GET.get('categoria', '').strip()
+    tipo = request.GET.get('tipo', '').strip()
+
     if q:
         fornecedores = fornecedores.filter(
             Q(nome__icontains=q) |
@@ -1937,8 +1941,44 @@ def fornecedor_list(request):
             Q(cnpj_cpf__icontains=q)
         )
 
+    if status:
+        if status == 'ATIVO':
+            fornecedores = fornecedores.filter(ativa=True)
+        elif status == 'INATIVO':
+            fornecedores = fornecedores.filter(ativa=False)
+
+    if categoria:
+        try:
+            fornecedores = fornecedores.filter(categorias__id=int(categoria))
+        except ValueError:
+            pass
+
+    if tipo:
+        if tipo == 'INTERNACIONAL':
+            fornecedores = fornecedores.filter(is_exportador=True)
+        elif tipo == 'NACIONAL':
+            fornecedores = fornecedores.filter(is_exportador=False)
+
+    # pagination
+    paginator = Paginator(fornecedores.distinct().order_by('nome'), 10)
+    page = request.GET.get('page')
+    try:
+        fornecedores_page = paginator.get_page(page)
+    except Exception:
+        fornecedores_page = paginator.get_page(1)
+
+    # categorias para o filtro
+    from .models import CategoriaFornecedor
+    categorias = CategoriaFornecedor.objects.filter(empresa=empresa) if empresa else CategoriaFornecedor.objects.all()
+
     context = {
-        'fornecedores': fornecedores,
+        'fornecedores': fornecedores_page,
+        'q': q,
+        'status_atual': status,
+        'categoria_atual': categoria,
+        'tipo_atual': tipo,
+        'categorias': categorias,
+        'paginator': paginator,
     }
     return render(request, 'cadastros/fornecedor/fornecedor_list.html', context)
 
@@ -1946,7 +1986,28 @@ def fornecedor_list(request):
 @login_required
 def fornecedor_detail(request, pk):
     fornecedor = get_object_or_404(Fornecedor, pk=pk, empresa=request.user.empresa)
-    return render(request, 'cadastros/fornecedor/fornecedor_detail.html', {'fornecedor': fornecedor})
+
+    # Documentos vencidos / em alerta
+    today = timezone.now().date()
+    docs = fornecedor.documentos.all()
+    docs_vencidos = docs.filter(data_validade__isnull=False, data_validade__lt=today).count()
+
+    # Avaliações
+    total_avaliacoes = fornecedor.avaliacoes.count() if hasattr(fornecedor, 'avaliacoes') else 0
+    avaliacoes_recentes = fornecedor.avaliacoes.order_by('-data_avaliacao')[:5] if hasattr(fornecedor, 'avaliacoes') else []
+
+    # Contas bancárias
+    contas = fornecedor.contas_bancarias.all()
+
+    context = {
+        'fornecedor': fornecedor,
+        'docs_vencidos': docs_vencidos,
+        'total_avaliacoes': total_avaliacoes,
+        'avaliacoes_recentes': avaliacoes_recentes,
+        'contas': contas,
+    }
+
+    return render(request, 'cadastros/fornecedor/fornecedor_detail.html', context)
 
 
 @login_required

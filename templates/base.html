@@ -329,7 +329,8 @@
           const href = link.getAttribute('href');
           if (!href || href === '#') return;
           const linkPath = new URL(link.href, window.location.origin).pathname.replace(/\/$/, '');
-          if (linkPath === currentPath) {
+          // Mark active links: exact match or when current path is a subpath of the link (e.g. /cadastros/portos/*)
+          if (linkPath === currentPath || currentPath.startsWith(linkPath + '/')) {
             link.classList.add('active');
             const parentSubmenu = link.closest('.submenu');
             if (parentSubmenu) {

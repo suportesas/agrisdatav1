@@ -1,10 +1,28 @@
 {% extends 'base.html' %}
+{% block title %}Excluir Porto | ERP Agrícola{% endblock %}
+
 {% block content %}
-<h1>Confirmar exclusão</h1>
-<p>Tem certeza que deseja excluir o porto <strong>{{ porto.nome }}</strong>?</p>
-<form method="post">
-  {% csrf_token %}
-  <button class="btn btn-danger" type="submit">Sim, excluir</button>
-  <a class="btn btn-secondary" href="{% url 'cadastros:porto_detail' porto.pk %}">Cancelar</a>
-</form>
+<div class="container py-4">
+  <!-- Breadcrumb -->
+  <nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'cadastros:porto_list' %}">Portos</a></li>
+      <li class="breadcrumb-item active">Excluir</li>
+    </ol>
+  </nav>
+
+  <div class="card">
+    <div class="card-body">
+      <h5 class="card-title">Confirmar exclusão</h5>
+      <p>Tem certeza que deseja excluir o porto <strong>{{ porto.nome }}</strong>?</p>
+
+      <form method="post">
+        {% csrf_token %}
+        <button class="btn btn-danger" type="submit">Sim, excluir</button>
+        <a class="btn btn-secondary" href="{% url 'cadastros:porto_detail' porto.pk %}">Cancelar</a>
+      </form>
+    </div>
+  </div>
+</div>
 {% endblock %}

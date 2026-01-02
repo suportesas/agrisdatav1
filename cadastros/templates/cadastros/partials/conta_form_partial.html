@@ -1,0 +1,70 @@
+<form id="modalForm" method="post">
+  {% csrf_token %}
+  <div class="mb-3">
+    <label class="form-label">Banco *</label>
+    {{ form.banco }}
+    {% if form.banco.errors %}<div class="text-danger small">{{ form.banco.errors|striptags }}</div>{% endif %}
+  </div>
+  <div class="row g-2">
+    <div class="col-md-4 mb-3">
+      <label class="form-label">Código Banco</label>
+      {{ form.codigo_banco }}
+    </div>
+    <div class="col-md-4 mb-3">
+      <label class="form-label">Agência</label>
+      {{ form.agencia }}
+    </div>
+    <div class="col-md-4 mb-3">
+      <label class="form-label">Dígito Agência</label>
+      {{ form.agencia_digito }}
+    </div>
+  </div>
+  <div class="row g-2">
+    <div class="col-md-6 mb-3">
+      <label class="form-label">Conta</label>
+      {{ form.conta }}
+    </div>
+    <div class="col-md-6 mb-3">
+      <label class="form-label">Dígito Conta</label>
+      {{ form.conta_digito }}
+    </div>
+  </div>
+  <div class="mb-3">
+    <label class="form-label">Tipo de Conta</label>
+    {{ form.tipo_conta }}
+  </div>
+  <div class="form-check mb-3">
+    {{ form.pix_habilitado }} <label class="form-check-label">PIX Habilitado</label>
+  </div>
+  <div class="row g-2">
+    <div class="col-md-6 mb-3">
+      <label class="form-label">Tipo Chave PIX</label>
+      {{ form.tipo_chave_pix }}
+    </div>
+    <div class="col-md-6 mb-3">
+      <label class="form-label">Chave PIX</label>
+      {{ form.chave_pix }}
+    </div>
+  </div>
+  <div class="mb-3">
+    <label class="form-label">SWIFT</label>
+    {{ form.swift }}
+  </div>
+  <div class="mb-3">
+    <label class="form-label">IBAN</label>
+    {{ form.iban }}
+  </div>
+  <div class="mb-3">
+    <label class="form-label">Dados Adicionais</label>
+    {{ form.dados_adicionais }}
+  </div>
+  <div class="form-check mb-3">
+    {{ form.conta_principal }} <label class="form-check-label">Conta Principal</label>
+  </div>
+  <div class="form-check mb-3">
+    {{ form.ativa }} <label class="form-check-label">Conta Ativa</label>
+  </div>
+  <div class="text-end">
+    <button type="submit" class="btn btn-primary">Salvar</button>
+  </div>
+</form>

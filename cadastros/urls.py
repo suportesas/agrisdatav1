@@ -108,6 +108,7 @@ urlpatterns = [
     
     # APIs
     path('vendedores/api/json/', views.vendedor_json, name='vendedor_json'),
+    path('api/vendedores-por-tipo/', views.vendedores_por_tipo, name='vendedores_por_tipo'),
 
 
    
@@ -137,6 +138,38 @@ urlpatterns = [
     path('fornecedores/<int:fornecedor_pk>/documentos/novo/', views.fornecedor_documento_create, name='fornecedor_documento_create'),
     path('fornecedores/<int:fornecedor_pk>/documentos/<int:documento_pk>/excluir/', views.fornecedor_documento_delete, name='fornecedor_documento_delete'),
     path('fornecedores/<int:fornecedor_pk>/documentos/<int:documento_pk>/editar/', views.fornecedor_documento_update, name='fornecedor_documento_update'),
+
+    # Clientes
+    path('clientes/', views.cliente_list, name='cliente_list'),
+    path('clientes/novo/', views.cliente_create, name='cliente_create'),
+    path('clientes/<int:pk>/', views.cliente_detail, name='cliente_detail'),
+    path('clientes/<int:pk>/editar/', views.cliente_update, name='cliente_update'),
+    path('clientes/<int:pk>/excluir/', views.cliente_delete, name='cliente_delete'),
+
+    # Cliente: endereços
+    path('clientes/<int:cliente_pk>/enderecos/novo/', views.cliente_endereco_create, name='cliente_endereco_create'),
+    path('clientes/<int:cliente_pk>/enderecos/<int:endereco_pk>/editar/', views.cliente_endereco_update, name='cliente_endereco_update'),
+    path('clientes/<int:cliente_pk>/enderecos/<int:endereco_pk>/excluir/', views.cliente_endereco_delete, name='cliente_endereco_delete'),
+
+    # Cliente: contatos
+    path('clientes/<int:cliente_pk>/contatos/novo/', views.cliente_contato_create, name='cliente_contato_create'),
+    path('clientes/<int:cliente_pk>/contatos/ajax/novo/', views.cliente_contato_create_ajax, name='cliente_contato_create_ajax'),
+    path('clientes/<int:cliente_pk>/contatos/<int:contato_pk>/editar/', views.cliente_contato_update, name='cliente_contato_update'),
+    path('clientes/<int:cliente_pk>/contatos/<int:contato_pk>/excluir/', views.cliente_contato_delete, name='cliente_contato_delete'),
+
+    # Cliente: contas bancárias
+    path('clientes/<int:cliente_pk>/contas/nova/', views.cliente_conta_create, name='cliente_conta_create'),
+    path('clientes/<int:cliente_pk>/contas/ajax/nova/', views.cliente_conta_create_ajax, name='cliente_conta_create_ajax'),
+    path('clientes/<int:cliente_pk>/contas/<int:conta_pk>/editar/', views.cliente_conta_update, name='cliente_conta_update'),
+    path('clientes/<int:cliente_pk>/contas/<int:conta_pk>/excluir/', views.cliente_conta_delete, name='cliente_conta_delete'),
+    path('clientes/<int:cliente_pk>/contas/<int:conta_pk>/editar/ajax/', views.cliente_conta_update_ajax, name='cliente_conta_update_ajax'),
+    path('clientes/<int:cliente_pk>/contas/<int:conta_pk>/excluir/ajax/', views.cliente_conta_delete_ajax, name='cliente_conta_delete_ajax'),
+
+    # Cliente: documentos
+    path('clientes/<int:cliente_pk>/documentos/novo/', views.cliente_documento_create, name='cliente_documento_create'),
+    path('clientes/<int:cliente_pk>/documentos/ajax/novo/', views.cliente_documento_create_ajax, name='cliente_documento_create_ajax'),
+    path('clientes/<int:cliente_pk>/documentos/<int:documento_pk>/excluir/', views.cliente_documento_delete, name='cliente_documento_delete'),
+    path('clientes/<int:cliente_pk>/documentos/<int:documento_pk>/editar/', views.cliente_documento_update, name='cliente_documento_update'),
 
     # ==================== PORTOS ====================
     path('portos/', views.porto_list, name='porto_list'),

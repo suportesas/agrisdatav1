@@ -1,0 +1,9 @@
+<form method="post" action="{% url 'cadastros:cliente_conta_delete_ajax' cliente.pk conta.pk %}">
+  {% csrf_token %}
+  <input type="hidden" name="conta_id" value="{{ conta.pk }}">
+  <div class="alert alert-warning">Tem certeza que deseja remover a conta <strong>{{ conta.banco }} - {{ conta.conta }}</strong>?</div>
+  <div class="d-flex justify-content-end">
+    <button type="button" class="btn btn-secondary me-2" data-bs-dismiss="modal">Cancelar</button>
+    <button type="submit" class="btn btn-danger">Excluir</button>
+  </div>
+</form>

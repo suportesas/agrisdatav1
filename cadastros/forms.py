@@ -10,6 +10,11 @@ from .models import (
     ContaBancariaFazenda, DocumentoFazenda,
 )
 
+# Modelos de Cliente
+from .models import (
+    Cliente, EnderecoCliente, ContatoCliente, ContaBancariaCliente, DocumentoCliente
+)
+
 from .models import Funcionario, FuncaoFuncionario
 import re
 
@@ -277,6 +282,371 @@ class EnderecoFazendaForm(forms.ModelForm):
         """Converte UF para maiúsculas"""
         uf = self.cleaned_data.get('uf', '')
         return uf.upper()
+
+    def clean(self):
+        cleaned = super().clean()
+        # If UF is missing but CEP present, try to fetch UF from ViaCEP to avoid client-side race conditions
+        if not cleaned.get('uf') and cleaned.get('cep'):
+            try:
+                import requests
+                cep = re.sub(r'\D', '', cleaned.get('cep'))
+                resp = requests.get(f'https://viacep.com.br/ws/{cep}/json/', timeout=5)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    uf = data.get('uf')
+                    if uf:
+                        cleaned['uf'] = uf.upper()
+                        self.cleaned_data['uf'] = uf.upper()
+            except Exception:
+                pass
+        return cleaned
+
+
+class ClienteForm(forms.ModelForm):
+    """Formulário de Cliente com lógica de país/UF e botão Buscar CNPJ"""
+
+    buscar_cnpj = forms.BooleanField(
+        required=False,
+        initial=False,
+        label='Buscar CNPJ',
+        help_text='Preencher automaticamente via API ReceitaWS'
+    )
+
+    class Meta:
+        model = Cliente
+        fields = [
+            'empresa', 'codigo', 'tipo_cliente', 'tipo_pessoa',
+            'razao_social', 'nome_comercial', 'cnpj_cpf',
+            'inscricao_estadual', 'inscricao_municipal', 'eori', 'regime_tributario',
+            'contribuinte_icms', 'indicador_ie',
+            'pais', 'moeda_padrao', 'porto_destino',
+            'limite_credito', 'prazo_pagamento', 'prazo_pagamento_padrao', 'forma_pagamento_padrao', 'desconto_padrao',
+            'vendedor_responsavel', 'observacoes_comerciais',
+            'acesso_portal', 'usuario_vinculado'
+        ]
+        widgets = {
+            'empresa': forms.HiddenInput(),
+            'codigo': forms.TextInput(attrs={'class': 'form-control', 'readonly': True}),
+            'tipo_cliente': forms.Select(attrs={'class': 'form-select'}),
+            'tipo_pessoa': forms.Select(attrs={'class': 'form-select'}),
+            'razao_social': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_razao_social', 'data-auto': 'true'}),
+            'nome_comercial': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_nome_comercial', 'data-auto': 'true'}),
+            'cnpj_cpf': forms.TextInput(attrs={'class': 'form-control', 'data-mask': 'cnpj-cpf', 'placeholder': '00.000.000/0000-00 ou 000.000.000-00'}),
+            'inscricao_estadual': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_inscricao_estadual'}),
+            'eori': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_eori'}),
+            'pais': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_pais'}),
+            'contato_principal_telefone': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_contato_principal_telefone', 'data-auto': 'true'}),
+            'contato_principal_email': forms.EmailInput(attrs={'class': 'form-control', 'id': 'id_contato_principal_email', 'data-auto': 'true'}),
+            'limite_credito': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'prazo_pagamento': forms.NumberInput(attrs={'class': 'form-control', 'id': 'id_prazo_pagamento'}),
+            'desconto_padrao': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'forma_pagamento_padrao': forms.Select(attrs={'class': 'form-select'}),
+            'prazo_pagamento_padrao': forms.Select(attrs={'class': 'form-select', 'id': 'id_prazo_pagamento_padrao'}),
+            'vendedor_responsavel': forms.Select(attrs={'class': 'form-select'}),
+            'porto_destino': forms.Select(attrs={'class': 'form-select'}),
+            'moeda_padrao': forms.Select(attrs={'class': 'form-select'}),
+            'observacoes_comerciais': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'acesso_portal': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'usuario_vinculado': forms.Select(attrs={'class': 'form-select'})
+        }
+
+    def __init__(self, *args, **kwargs):
+        from .models import Vendedor
+
+        self.empresa = kwargs.pop('empresa', None)
+        self.usuario = kwargs.pop('usuario', None)
+        super().__init__(*args, **kwargs)
+
+        # Limit vendedor_responsavel to vendedores da empresa and by tipo_cliente
+        if 'vendedor_responsavel' in self.fields:
+            if self.empresa:
+                qs = Vendedor.objects.filter(empresa=self.empresa)
+                # Determine tipo_cliente from POST data, initial or instance
+                tipo = None
+                if self.data and self.data.get('tipo_cliente'):
+                    tipo = self.data.get('tipo_cliente')
+                elif self.initial and self.initial.get('tipo_cliente'):
+                    tipo = self.initial.get('tipo_cliente')
+                elif getattr(self.instance, 'tipo_cliente', None):
+                    tipo = self.instance.tipo_cliente
+
+                if tipo == 'IMPORTADOR':
+                    qs = qs.filter(tipo_mercado__in=['EXTERNO', 'AMBOS'])
+                else:
+                    qs = qs.filter(tipo_mercado__in=['INTERNO', 'AMBOS'])
+
+                self.fields['vendedor_responsavel'].queryset = qs
+            else:
+                self.fields['vendedor_responsavel'].queryset = Vendedor.objects.none()
+
+        # Set choices for moeda_padrao (use Vendedor.MOEDA_CHOICES if available)
+        if 'moeda_padrao' in self.fields:
+            try:
+                choices = Vendedor.MOEDA_CHOICES
+            except Exception:
+                choices = [('BRL','BRL'), ('USD','USD'), ('EUR','EUR')]
+            # Ensure field uses Select widget and is optional
+            self.fields['moeda_padrao'].choices = choices
+            self.fields['moeda_padrao'].widget = forms.Select(attrs={'class': 'form-select'})
+            self.fields['moeda_padrao'].required = False
+
+        # Limit prazo_pagamento_padrao to presets da empresa
+        if 'prazo_pagamento_padrao' in self.fields:
+            if self.empresa:
+                from .models import PrazoPagamentoPadrao
+                self.fields['prazo_pagamento_padrao'].queryset = PrazoPagamentoPadrao.objects.filter(empresa=self.empresa, ativo=True)
+            else:
+                self.fields['prazo_pagamento_padrao'].queryset = Vendedor.objects.none()
+
+        # Hide empresa and set initial if provided
+        if self.empresa and 'empresa' in self.fields:
+            self.initial['empresa'] = self.empresa
+            self.fields['empresa'].widget = forms.HiddenInput()
+            self.fields['empresa'].required = False
+            # Ensure the instance has the empresa set so updates without the hidden input don't clear it
+            self.instance.empresa = self.empresa
+
+        # If country not provided, default to Brasil
+        if not self.initial.get('pais'):
+            self.initial['pais'] = 'Brasil'
+
+    def clean_cnpj_cpf(self):
+        cnpj_cpf = self.cleaned_data.get('cnpj_cpf', '')
+        cnpj_cpf_limpo = re.sub(r'\D', '', cnpj_cpf)
+        if len(cnpj_cpf_limpo) not in [11, 14]:
+            raise ValidationError('CNPJ/CPF inválido. Digite 11 ou 14 dígitos.')
+        # Unique por empresa
+        # Use the empresa provided in the form data or fallback to the one injected in __init__
+        empresa_aplicavel = self.cleaned_data.get('empresa') or self.empresa
+        qs = Cliente.objects.filter(empresa=empresa_aplicavel, cnpj_cpf=cnpj_cpf_limpo)
+        if self.instance.pk:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise ValidationError('Este CNPJ/CPF já está cadastrado para a empresa.')
+        return cnpj_cpf_limpo
+
+    def clean(self):
+        cleaned = super().clean()
+        pais = cleaned.get('pais', '').strip() if cleaned.get('pais') else ''
+        # For clients outside Brazil, no UF is set on client; Address forms should use UF='EX' when applicable
+        return cleaned
+
+
+class EnderecoClienteForm(forms.ModelForm):
+    """Formulário de endereço do cliente com busca por CEP"""
+
+    buscar_cep = forms.BooleanField(required=False, initial=False, label='Buscar CEP', help_text='Preencher automaticamente via ViaCEP')
+
+    class Meta:
+        model = EnderecoCliente
+        fields = ['tipo', 'cep', 'logradouro', 'numero', 'complemento', 'bairro', 'cidade', 'uf', 'pais', 'recebedor_notify', 'padrao']
+        widgets = {
+            'tipo': forms.Select(attrs={'class': 'form-select'}),
+            'cep': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '00000-000', 'data-mask': 'cep'}),
+            'logradouro': forms.TextInput(attrs={'class': 'form-control'}),
+            'numero': forms.TextInput(attrs={'class': 'form-control'}),
+            'complemento': forms.TextInput(attrs={'class': 'form-control'}),
+            'bairro': forms.TextInput(attrs={'class': 'form-control'}),
+            'cidade': forms.TextInput(attrs={'class': 'form-control'}),
+            'uf': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_endereco_uf', 'maxlength': 2}),
+            'pais': forms.TextInput(attrs={'class': 'form-control'}),
+            'recebedor_notify': forms.TextInput(attrs={'class': 'form-control'}),
+            'padrao': forms.CheckboxInput(attrs={'class': 'form-check-input'})
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def clean_cep(self):
+        cep = self.cleaned_data.get('cep', '')
+        cep_limpo = re.sub(r'\D', '', cep)
+
+        # If cep provided, try lookup early so subsequent field validation (uf, bairro, cidade)
+        # can use the fetched values and avoid 'field required' errors.
+        if cep_limpo:
+            try:
+                import requests
+                resp = requests.get(f'https://viacep.com.br/ws/{cep_limpo}/json/', timeout=5)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    # If we got a UF or address data, inject into self.data so other field
+                    # validators see them (since field-level validation runs after this)
+                    if data:
+                        try:
+                            # make a mutable copy of self.data (QueryDict)
+                            self.data = self.data.copy()
+                            if data.get('uf'):
+                                self.data['uf'] = data.get('uf').upper()
+                            if data.get('logradouro') and not self.data.get('logradouro'):
+                                self.data['logradouro'] = data.get('logradouro')
+                            if data.get('bairro') and not self.data.get('bairro'):
+                                self.data['bairro'] = data.get('bairro')
+                            if (data.get('localidade') or data.get('cidade')) and not self.data.get('cidade'):
+                                self.data['cidade'] = data.get('localidade') or data.get('cidade')
+                            if data.get('cep') and not self.data.get('cep'):
+                                self.data['cep'] = data.get('cep')
+                        except Exception:
+                            pass
+            except Exception:
+                # ignore network errors here
+                pass
+
+        return cep_limpo
+
+    def clean_uf(self):
+        uf = self.cleaned_data.get('uf', '')
+        return uf.upper()
+
+    def clean(self):
+        cleaned = super().clean()
+        pais = cleaned.get('pais', '')
+        if pais and pais.strip().lower() != 'brasil':
+            # Set UF to EX for foreign addresses
+            cleaned['uf'] = 'EX'
+            self.cleaned_data['uf'] = 'EX'
+
+        # Previously we attempted a lookup here, but we perform the ViaCEP lookup earlier in clean_cep
+        # so that field-level validators for uf/cidade/bairro see the injected values.
+        return cleaned
+
+        return cleaned
+
+
+class ContatoClienteForm(forms.ModelForm):
+    """Formulário de contato do cliente (replica campos do fornecedor)"""
+
+    class Meta:
+        model = ContatoCliente
+        fields = ['tipo', 'nome', 'cargo', 'telefone', 'celular', 'email', 'whatsapp', 'preferencial', 'observacoes']
+        widgets = {
+            'tipo': forms.Select(attrs={'class': 'form-select'}),
+            'nome': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Nome completo'
+            }),
+            'cargo': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ex: Gerente, Agrônomo'
+            }),
+            'telefone': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': '(00) 0000-0000',
+                'data-mask': 'phone'
+            }),
+            'celular': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': '(00) 00000-0000',
+                'data-mask': 'cellphone'
+            }),
+            'email': forms.EmailInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'contato@email.com'
+            }),
+            'observacoes': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 2
+            }),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # allow partial updates and optional tipo (like fornecedor form)
+        if 'tipo' in self.fields:
+            self.fields['tipo'].required = False
+        if 'whatsapp' in self.fields:
+            self.fields['whatsapp'].required = False
+        if 'observacoes' in self.fields:
+            self.fields['observacoes'].required = False
+
+
+class ContaBancariaClienteForm(forms.ModelForm):
+    """Formulário de conta bancária do cliente (fields aligned with fornecedor)"""
+
+    class Meta:
+        model = ContaBancariaCliente
+        fields = [
+            'banco', 'codigo_banco', 'agencia', 'agencia_digito', 'conta', 'conta_digito', 'tipo_conta',
+            'pix_habilitado', 'tipo_chave_pix', 'chave_pix', 'swift', 'iban', 'dados_adicionais', 'conta_principal', 'ativa'
+        ]
+        widgets = {
+            'banco': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Nome do banco'
+            }),
+            'codigo_banco': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ex: 001, 033, 104',
+                'maxlength': 4
+            }),
+            'agencia': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Número da agência'
+            }),
+            'agencia_digito': forms.TextInput(attrs={
+                'class': 'form-control',
+                'maxlength': 2
+            }),
+            'conta': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Número da conta'
+            }),
+            'conta_digito': forms.TextInput(attrs={
+                'class': 'form-control',
+                'maxlength': 2
+            }),
+            'tipo_conta': forms.Select(attrs={'class': 'form-select'}),
+            'tipo_chave_pix': forms.Select(attrs={'class': 'form-select'}),
+            'chave_pix': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Chave PIX'
+            }),
+            'swift': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Código SWIFT/BIC',
+                'maxlength': 11
+            }),
+            'iban': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'International Bank Account Number'
+            }),
+            'dados_adicionais': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'Informações adicionais para transferências internacionais'
+            }),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # make some fields optional in quick-add flows (match fornecedor form behavior)
+        optional = ['codigo_banco','agencia_digito','tipo_chave_pix','chave_pix','tipo_conta','ativa','dados_adicionais']
+        for f in optional:
+            if f in self.fields:
+                self.fields[f].required = False
+
+class DocumentoClienteForm(forms.ModelForm):
+    """Formulário de documento do cliente"""
+
+    class Meta:
+        model = DocumentoCliente
+        exclude = ('cliente', 'enviado_por')
+        widgets = {
+            'tipo': forms.Select(attrs={'class': 'form-select'}),
+            'titulo': forms.TextInput(attrs={'class': 'form-control'}),
+            'numero_documento': forms.TextInput(attrs={'class': 'form-control'}),
+            'arquivo': forms.FileInput(attrs={'class': 'form-control'}),
+            'data_emissao': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
+            'data_validade': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
+            'gerar_alerta_vencimento': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'dias_antecedencia_alerta': forms.NumberInput(attrs={'class': 'form-control'}),
+            'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 2})
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Allow omitting 'dias_antecedencia_alerta' in POST and use model default
+        if 'dias_antecedencia_alerta' in self.fields:
+            self.fields['dias_antecedencia_alerta'].required = False
 
 
 class ContatoFazendaForm(forms.ModelForm):
@@ -589,7 +959,7 @@ class FuncionarioForm(forms.ModelForm):
             'bairro', 'cidade', 'uf',
             'funcao', 'tipo_contrato', 'data_admissao', 'data_demissao',
             'salario', 'ctps', 'pis',
-            'banco', 'agencia', 'conta',
+            'banco', 'agencia', 'conta', 'tipo_conta', 'pix_habilitado', 'tipo_chave_pix', 'chave_pix',
             'contato_emergencia_nome', 'contato_emergencia_telefone',
             'contato_emergencia_parentesco',
             'observacoes', 'foto', 'ativo'
@@ -605,6 +975,7 @@ class FuncionarioForm(forms.ModelForm):
                 'placeholder': '000.000.000-00',
                 'data-mask': 'cpf'
             }),
+            'tipo_conta': forms.Select(attrs={'class': 'form-select'}),
             'rg': forms.TextInput(attrs={
                 'class': 'form-control'
             }),

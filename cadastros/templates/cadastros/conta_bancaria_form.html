@@ -12,9 +12,14 @@
       {% if fornecedor %}
         <li class="breadcrumb-item"><a href="{% url 'cadastros:fornecedor_list' %}">Fornecedores</a></li>
         <li class="breadcrumb-item"><a href="{% url 'cadastros:fornecedor_detail' fornecedor.pk %}">{{ fornecedor.nome }}</a></li>
-      {% else %}
+      {% elif cliente %}
+        <li class="breadcrumb-item"><a href="{% url 'cadastros:cliente_list' %}">Clientes</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'cadastros:cliente_detail' cliente.pk %}">{{ cliente.razao_social }}</a></li>
+      {% elif fazenda %}
         <li class="breadcrumb-item"><a href="{% url 'cadastros:fazenda_list' %}">Fazendas</a></li>
         <li class="breadcrumb-item"><a href="{% url 'cadastros:fazenda_detail' fazenda.pk %}">{{ fazenda.nome }}</a></li>
+      {% else %}
+        <li class="breadcrumb-item"><a href="{% url 'cadastros:fazenda_list' %}">Fazendas</a></li>
       {% endif %}
       <li class="breadcrumb-item active">{{ action }} Conta Bancária</li>
     </ol>
@@ -29,56 +34,33 @@
         {% csrf_token %}
         
         <!-- Seção: Dados Bancários -->
-        <h6 class="fw-bold text-primary mb-3 border-bottom pb-2">Dados Bancários Nacionais</h6>
+        <h6 class="fw-bold text-primary mb-3 border-bottom pb-2">Dados Bancários</h6>
         <div class="row g-3 mb-4">
-          <div class="col-md-6">
+          <div class="col-md-4">
             <label class="form-label fw-semibold">Banco *</label>
             {{ form.banco }}
+            {% if form.banco.errors %}
+              <div class="text-danger small">{{ form.banco.errors|striptags }}</div>
+            {% endif %}
           </div>
+
           <div class="col-md-2">
-            <label class="form-label fw-semibold">Código</label>
-            {{ form.codigo_banco }}
-          </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Tipo de Conta *</label>
-            {{ form.tipo_conta }}
-          </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Agência *</label>
+            <label class="form-label fw-semibold">Agência</label>
             {{ form.agencia }}
           </div>
-          <div class="col-md-2">
-            <label class="form-label fw-semibold">Dígito</label>
-            {{ form.agencia_digito }}
-          </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Conta *</label>
-            {{ form.conta }}
-          </div>
-          <div class="col-md-2">
-            <label class="form-label fw-semibold">Dígito *</label>
-            {{ form.conta_digito }}
-          </div>
-        </div>
 
-        <!-- Seção: PIX -->
-        <h6 class="fw-bold text-success mb-3 border-bottom pb-2">PIX</h6>
-        <div class="row g-3 mb-4">
-          <div class="col-md-4">
-            <div class="form-check form-switch mt-2">
-              {{ form.pix_habilitado }}
-              <label class="form-check-label" for="{{ form.pix_habilitado.id_for_label }}">
-                PIX Habilitado
-              </label>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Conta</label>
+            <div class="input-group">
+              {{ form.conta }}
+              <span class="input-group-text">-</span>
+              {{ form.conta_digito }}
             </div>
           </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Tipo de Chave</label>
-            {{ form.tipo_chave_pix }}
-          </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Chave PIX</label>
-            {{ form.chave_pix }}
+
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Tipo de Conta</label>
+            {{ form.tipo_conta }}
           </div>
         </div>
 
@@ -101,6 +83,23 @@
           </div>
         </div>
 
+        <!-- Seção: PIX -->
+        <div id="pix-options" class="row g-3 mt-3">
+          <div class="col-md-3">
+            <div class="form-check form-switch mt-2">
+              {{ form.pix_habilitado }} <label class="form-check-label" for="{{ form.pix_habilitado.id_for_label }}">PIX Habilitado</label>
+            </div>
+          </div>
+          <div id="tipo_chave_pix_field" class="col-md-3">
+            <label class="form-label fw-semibold">Tipo de Chave PIX</label>
+            {{ form.tipo_chave_pix }}
+          </div>
+          <div id="chave_pix_field" class="col-md-6">
+            <label class="form-label fw-semibold">Chave PIX</label>
+            {{ form.chave_pix }}
+          </div>
+        </div>
+
         <!-- Configurações -->
         <div class="row g-3">
           <div class="col-md-6">
@@ -111,23 +110,25 @@
               </label>
             </div>
           </div>
-          <div class="col-md-6">
-            <div class="form-check form-switch">
-              {{ form.ativa }}
-              <label class="form-check-label" for="{{ form.ativa.id_for_label }}">
-                Conta Ativa
-              </label>
-            </div>
-          </div>
         </div>
+
+        <script src="{% static 'js/cadastros_banking.js' %}"></script>
 
         <div class="d-flex justify-content-between gap-3 mt-4">
             {% if fornecedor %}
             <a href="{% url 'cadastros:fornecedor_detail' fornecedor.pk %}" class="btn btn-outline-secondary">
               <i class="bi bi-arrow-left"></i> Cancelar
             </a>
-          {% else %}
+          {% elif cliente %}
+            <a href="{% url 'cadastros:cliente_detail' cliente.pk %}" class="btn btn-outline-secondary">
+              <i class="bi bi-arrow-left"></i> Cancelar
+            </a>
+          {% elif fazenda %}
             <a href="{% url 'cadastros:fazenda_detail' fazenda.pk %}" class="btn btn-outline-secondary">
+              <i class="bi bi-arrow-left"></i> Cancelar
+            </a>
+          {% else %}
+            <a href="{% url 'cadastros:cliente_list' %}" class="btn btn-outline-secondary">
               <i class="bi bi-arrow-left"></i> Cancelar
             </a>
           {% endif %}

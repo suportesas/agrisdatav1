@@ -11,9 +11,14 @@
       {% if fornecedor %}
         <li class="breadcrumb-item"><a href="{% url 'cadastros:fornecedor_list' %}">Fornecedores</a></li>
         <li class="breadcrumb-item"><a href="{% url 'cadastros:fornecedor_detail' fornecedor.pk %}">{{ fornecedor.get_nome_exibicao }}</a></li>
-      {% else %}
+      {% elif cliente %}
+        <li class="breadcrumb-item"><a href="{% url 'cadastros:cliente_list' %}">Clientes</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'cadastros:cliente_detail' cliente.pk %}">{{ cliente.razao_social }}</a></li>
+      {% elif fazenda %}
         <li class="breadcrumb-item"><a href="{% url 'cadastros:fazenda_list' %}">Fazendas</a></li>
         <li class="breadcrumb-item"><a href="{% url 'cadastros:fazenda_detail' fazenda.pk %}">{{ fazenda.nome }}</a></li>
+      {% else %}
+        <li class="breadcrumb-item"><a href="{% url 'cadastros:fazenda_list' %}">Fazendas</a></li>
       {% endif %}
       <li class="breadcrumb-item active">{{ action }} Endereço</li>
     </ol>
@@ -54,7 +59,7 @@
             <label class="form-label fw-semibold">CEP *</label>
             <div class="input-group">
               {{ form.cep }}
-              <button type="button" class="btn btn-primary" id="buscarCEP">
+              <button type="button" class="btn btn-primary btn-buscar-cep">
                 <i class="bi bi-search"></i>
               </button>
             </div>
@@ -138,8 +143,16 @@
             <a href="{% url 'cadastros:fornecedor_detail' fornecedor.pk %}" class="btn btn-outline-secondary">
               <i class="bi bi-arrow-left"></i> Cancelar
             </a>
-          {% else %}
+          {% elif cliente %}
+            <a href="{% url 'cadastros:cliente_detail' cliente.pk %}" class="btn btn-outline-secondary">
+              <i class="bi bi-arrow-left"></i> Cancelar
+            </a>
+          {% elif fazenda %}
             <a href="{% url 'cadastros:fazenda_detail' fazenda.pk %}" class="btn btn-outline-secondary">
+              <i class="bi bi-arrow-left"></i> Cancelar
+            </a>
+          {% else %}
+            <a href="{% url 'cadastros:cliente_list' %}" class="btn btn-outline-secondary">
               <i class="bi bi-arrow-left"></i> Cancelar
             </a>
           {% endif %}
@@ -169,63 +182,3 @@
 
 {% endblock %}
 
-{% block extra_js %}
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-  const btnBuscarCEP = document.getElementById('buscarCEP');
-  const inputCEP = document.getElementById('{{ form.cep.id_for_label }}');
-  const loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'));
-
-  if (btnBuscarCEP) {
-    btnBuscarCEP.addEventListener('click', function() {
-      const cep = inputCEP.value.replace(/\D/g, '');
-      
-      if (cep.length !== 8) {
-        alert('Digite um CEP válido com 8 dígitos');
-        return;
-      }
-
-      loadingModal.show();
-
-      fetch('{% url "cadastros:buscar_cep" %}', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'X-CSRFToken': '{{ csrf_token }}'
-        },
-        body: `cep=${cep}`
-      })
-      .then(response => response.json())
-      .then(data => {
-        loadingModal.hide();
-        
-        if (data.sucesso) {
-          const d = data.dados;
-          document.getElementById('{{ form.logradouro.id_for_label }}').value = d.logradouro || '';
-          document.getElementById('{{ form.bairro.id_for_label }}').value = d.bairro || '';
-          document.getElementById('{{ form.cidade.id_for_label }}').value = d.cidade || '';
-          document.getElementById('{{ form.uf.id_for_label }}').value = d.uf || '';
-          
-          alert('✅ Endereço preenchido com sucesso!');
-        } else {
-          alert('❌ ' + (data.erro || 'CEP não encontrado'));
-        }
-      })
-      .catch(error => {
-        loadingModal.hide();
-        alert('❌ Erro ao buscar CEP');
-      });
-    });
-  }
-
-  // Máscara CEP
-  if (inputCEP) {
-    inputCEP.addEventListener('input', function(e) {
-      let value = e.target.value.replace(/\D/g, '');
-      value = value.replace(/^(\d{5})(\d)/, '$1-$2');
-      e.target.value = value;
-    });
-  }
-});
-</script>
-{% endblock %}

@@ -1,0 +1,183 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Clientes | ERP Agrícola{% endblock %}
+
+{% block extra_css %}
+<style>
+  .filter-card { background: white; border-radius: 12px; padding: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 1.5rem; }
+  .cliente-card { background: white; border-radius: 12px; padding: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.08); transition: all 0.3s ease; margin-bottom: 1rem; border-left: 4px solid #0d6efd; }
+  .cliente-card:hover { transform: translateY(-3px); box-shadow: 0 4px 16px rgba(0,0,0,0.12); }
+  .badge-status { padding: 0.4rem 0.8rem; border-radius: 20px; font-size: 0.85rem; font-weight: 600; }
+  .badge-ativo { background: #d4edda; color: #155724; }
+  .badge-inativo { background: #f8d7da; color: #721c24; }
+  .empty-state { text-align: center; padding: 3rem; color: #6c757d; }
+  .empty-state i { font-size: 4rem; margin-bottom: 1rem; opacity: 0.3; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
+      <li class="breadcrumb-item active">Clientes</li>
+    </ol>
+  </nav>
+
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="fw-bold mb-1"><i class="bi bi-people text-primary"></i> Clientes</h2>
+      <p class="text-muted mb-0">Gerencie seus clientes e contatos comerciais</p>
+    </div>
+    <a href="{% url 'cadastros:cliente_create' %}" class="btn btn-success"><i class="bi bi-plus-circle"></i> Novo Cliente</a>
+  </div>
+
+  <!-- Filtros -->
+  <div class="filter-card">
+    <form method="get" id="filterForm">
+      <div class="row g-3">
+        <div class="col-md-4">
+          <label class="form-label fw-semibold"><i class="bi bi-search"></i> Pesquisar</label>
+          <input type="text" name="q" class="form-control" placeholder="Nome, Razão social ou CNPJ" value="{{ q }}">
+        </div>
+
+        <div class="col-md-2">
+          <label class="form-label fw-semibold">Status</label>
+          <select name="status" class="form-select">
+            <option value="">Todos</option>
+            <option value="ATIVO" {% if status_atual == 'ATIVO' %}selected{% endif %}>Ativo</option>
+            <option value="INATIVO" {% if status_atual == 'INATIVO' %}selected{% endif %}>Inativo</option>
+          </select>
+        </div>
+
+        <div class="col-md-2">
+          <label class="form-label fw-semibold">Tipo</label>
+          <select name="tipo" class="form-select">
+            <option value="">Todos</option>
+            <option value="NACIONAL" {% if tipo_atual == 'NACIONAL' %}selected{% endif %}>Nacional</option>
+            <option value="IMPORTADOR" {% if tipo_atual == 'IMPORTADOR' %}selected{% endif %}>Importador</option>
+          </select>
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label fw-semibold">Vendedor</label>
+          <select name="vendedor" class="form-select">
+            <option value="">Todos</option>
+            {% for v in vendedores %}
+              <option value="{{ v.pk }}" {% if vendedor_atual == v.pk|stringformat:"s" %}selected{% endif %}>{{ v.nome }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-md-1 d-flex align-items-end">
+          <button type="submit" class="btn btn-primary w-100"><i class="bi bi-funnel"></i></button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <!-- Lista de Clientes -->
+  <div id="clientesList">
+    {% if clientes %}
+      <div class="row">
+        {% for cliente in clientes %}
+        <div class="col-12">
+          <div class="cliente-card">
+            <div class="row align-items-center">
+              <div class="col-md-6">
+                <h5 class="mb-1 fw-bold"><i class="bi bi-person-fill text-primary"></i> {{ cliente.nome_comercial|default:cliente.razao_social }}</h5>
+                <p class="text-muted mb-2 small"><strong>CNPJ/CPF:</strong> {{ cliente.get_cnpj_cpf_formatado }}
+                  {% if cliente.razao_social and cliente.razao_social != cliente.nome_comercial %}
+                    <br><em>{{ cliente.razao_social }}</em>
+                  {% endif %}
+                </p>
+                <div class="mb-2 text-muted small">
+                  <strong>Contato:</strong> {{ cliente.contato_principal_nome|default:'—' }}{% if cliente.contato_principal_email %} • <a href="mailto:{{ cliente.contato_principal_email }}">{{ cliente.contato_principal_email }}</a>{% endif %}
+                </div>
+              </div>
+
+              <div class="col-md-2 text-center">
+                <div class="mb-2">
+                  {% if cliente.status == 'ATIVO' %}
+                    <span class="badge-status badge-ativo">✓ Ativo</span>
+                  {% else %}
+                    <span class="badge-status badge-inativo">⏸ Inativo</span>
+                  {% endif %}
+                </div>
+                <div class="text-muted small">Tipo: {{ cliente.get_tipo_cliente_display }}</div>
+              </div>
+
+              <div class="col-md-2 text-center">
+                <div class="mb-1">
+                  <strong class="text-success">R$ {{ cliente.limite_credito|floatformat:2 }}</strong>
+                  <br><small class="text-muted">Limite</small>
+                </div>
+                <div>
+                  <strong>{{ cliente.prazo_pagamento|default:'—' }}</strong>
+                  <br><small class="text-muted">Prazo (dias)</small>
+                </div>
+              </div>
+
+              <div class="col-md-2 text-end">
+                <a href="{% url 'cadastros:cliente_detail' cliente.pk %}" class="btn btn-sm btn-outline-info" title="Ver Detalhes"><i class="bi bi-eye"></i></a>
+                <a href="{% url 'cadastros:cliente_update' cliente.pk %}" class="btn btn-sm btn-outline-primary" title="Editar"><i class="bi bi-pencil"></i></a>
+                <a href="{% url 'cadastros:cliente_delete' cliente.pk %}" class="btn btn-sm btn-outline-danger" title="Excluir"><i class="bi bi-trash"></i></a>
+              </div>
+
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+
+      <div class="mt-3 text-center text-muted"><small>Total: <strong>{{ clientes.paginator.count }}</strong> cliente{{ clientes.paginator.count|pluralize:"s" }}</small></div>
+
+      {% if clientes.has_other_pages %}
+      <nav aria-label="Page navigation">
+        <ul class="pagination justify-content-center">
+          {% if clientes.has_previous %}
+            <li class="page-item"><a class="page-link" href="?q={{ q }}&status={{ status_atual }}&tipo={{ tipo_atual }}&vendedor={{ vendedor_atual }}&page={{ clientes.previous_page_number }}">&laquo; Anterior</a></li>
+          {% else %}
+            <li class="page-item disabled"><span class="page-link">&laquo; Anterior</span></li>
+          {% endif %}
+
+          {% for p in clientes.paginator.page_range %}
+            <li class="page-item {% if p == clientes.number %}active{% endif %}"><a class="page-link" href="?q={{ q }}&status={{ status_atual }}&tipo={{ tipo_atual }}&vendedor={{ vendedor_atual }}&page={{ p }}">{{ p }}</a></li>
+          {% endfor %}
+
+          {% if clientes.has_next %}
+            <li class="page-item"><a class="page-link" href="?q={{ q }}&status={{ status_atual }}&tipo={{ tipo_atual }}&vendedor={{ vendedor_atual }}&page={{ clientes.next_page_number }}">Próximo &raquo;</a></li>
+          {% else %}
+            <li class="page-item disabled"><span class="page-link">Próximo &raquo;</span></li>
+          {% endif %}
+        </ul>
+      </nav>
+      {% endif %}
+
+    {% else %}
+      <div class="empty-state">
+        <i class="bi bi-inbox"></i>
+        <h4 class="text-muted">Nenhum cliente encontrado</h4>
+        {% if q or status_atual or tipo_atual or vendedor_atual %}
+          <p>Tente ajustar os filtros de pesquisa</p>
+          <a href="{% url 'cadastros:cliente_list' %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-counterclockwise"></i> Limpar Filtros</a>
+        {% else %}
+          <p>Comece cadastrando seu primeiro cliente</p>
+          <a href="{% url 'cadastros:cliente_create' %}" class="btn btn-success"><i class="bi bi-plus-circle"></i> Novo Cliente</a>
+        {% endif %}
+      </div>
+    {% endif %}
+  </div>
+
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const filterForm = document.getElementById('filterForm');
+  const selects = filterForm.querySelectorAll('select');
+  selects.forEach(select => select.addEventListener('change', function() { filterForm.submit(); }));
+});
+</script>
+{% endblock %}

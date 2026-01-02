@@ -3,129 +3,145 @@
 
 {% block title %}Safras | ERP Agrícola{% endblock %}
 
+{% block extra_css %}
+<style>
+  .filter-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    margin-bottom: 1.5rem;
+  }
+  .safra-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.25rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    transition: all 0.3s ease;
+    margin-bottom: 1rem;
+    border-left: 4px solid #198754; /* green */
+  }
+  .safra-card:hover { transform: translateY(-3px); box-shadow: 0 4px 16px rgba(0,0,0,0.12); }
+  .badge-status { padding: 0.4rem 0.8rem; border-radius: 20px; font-size: 0.85rem; font-weight: 600; }
+  .badge-planejada { background: #d1e7dd; color: #0f5132; }
+  .badge-andamento { background: #cfe2ff; color: #084298; }
+  .badge-finalizada { background: #e2e3e5; color: #41464b; }
+  .empty-state { text-align:center; padding:3rem; color:#6c757d; }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="container-fluid py-4">
-  <div class="row mb-3">
-    <div class="col-md-8">
+<div class="container py-4">
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
       <h2 class="fw-bold mb-1"><i class="bi bi-calendar3 text-success"></i> Safras</h2>
       <p class="text-muted mb-0">Planeje e acompanhe safras por fazenda e cultura</p>
     </div>
-    <div class="col-md-4 text-end">
-      <a href="{% url 'cadastros:safra_create' %}" class="btn btn-success btn-lg">
-        <i class="bi bi-plus-circle"></i> Nova Safra
-      </a>
-    </div>
+    <a href="{% url 'cadastros:safra_create' %}" class="btn btn-success">
+      <i class="bi bi-plus-circle"></i> Nova Safra
+    </a>
   </div>
 
-  <!-- Filtros e Busca -->
-  <div class="card border-0 shadow-sm mb-4">
-    <div class="card-body">
-      <form method="get" class="row g-2">
+  <!-- Filtros -->
+  <div class="filter-card">
+    <form method="get" id="filterForm">
+      <div class="row g-3">
         <div class="col-md-4">
-          <div class="input-group">
-            <span class="input-group-text bg-light border-0"><i class="bi bi-search"></i></span>
-            <input type="text" name="q" class="form-control border-0 bg-light" placeholder="Buscar por nome, ano ou fazenda" value="{{ request.GET.q }}">
-          </div>
+          <label class="form-label fw-semibold"><i class="bi bi-search"></i> Pesquisar</label>
+          <input type="text" name="q" class="form-control" placeholder="Nome, ano ou fazenda" value="{{ request.GET.q }}">
         </div>
         <div class="col-md-2">
-          <select name="fazenda" class="form-select border-0 bg-light">
+          <label class="form-label fw-semibold">Fazenda</label>
+          <select name="fazenda" class="form-select">
             <option value="">Todas Fazendas</option>
-            {% for f in fazendas %}
-              <option value="{{ f.pk }}" {% if request.GET.fazenda == f.pk|stringformat:'s' %}selected{% endif %}>{{ f.nome }}-{{ f.cnpj_cpf }}</option>
-            {% endfor %}
+            {% for f in fazendas %}<option value="{{ f.pk }}" {% if request.GET.fazenda == f.pk|stringformat:'s' %}selected{% endif %}>{{ f.nome }}</option>{% endfor %}
           </select>
         </div>
         <div class="col-md-2">
-          <select name="cultura" class="form-select border-0 bg-light">
+          <label class="form-label fw-semibold">Cultura</label>
+          <select name="cultura" class="form-select">
             <option value="">Todas Culturas</option>
-            {% for c in culturas %}
-              <option value="{{ c.pk }}" {% if request.GET.cultura == c.pk|stringformat:'s' %}selected{% endif %}>{{ c.nome }}</option>
-            {% endfor %}
+            {% for c in culturas %}<option value="{{ c.pk }}" {% if request.GET.cultura == c.pk|stringformat:'s' %}selected{% endif %}>{{ c.nome }}</option>{% endfor %}
           </select>
         </div>
         <div class="col-md-1">
-          <input type="number" name="ano" class="form-control border-0 bg-light" placeholder="Ano" value="{{ request.GET.ano }}">
+          <label class="form-label fw-semibold">Ano</label>
+          <input type="number" name="ano" class="form-control" placeholder="Ano" value="{{ request.GET.ano }}">
         </div>
         <div class="col-md-2">
-          <select name="status" class="form-select border-0 bg-light">
-            <option value="">Todos Status</option>
+          <label class="form-label fw-semibold">Status</label>
+          <select name="status" class="form-select">
+            <option value="">Todos</option>
             <option value="PLANEJADA" {% if request.GET.status == 'PLANEJADA' %}selected{% endif %}>Planejada</option>
             <option value="EM_ANDAMENTO" {% if request.GET.status == 'EM_ANDAMENTO' %}selected{% endif %}>Em Andamento</option>
             <option value="FINALIZADA" {% if request.GET.status == 'FINALIZADA' %}selected{% endif %}>Finalizada</option>
           </select>
         </div>
-        <div class="col-md-1 text-end">
+        <div class="col-md-1 d-flex align-items-end">
           <button class="btn btn-primary w-100"><i class="bi bi-funnel"></i></button>
         </div>
-      </form>
-    </div>
+      </div>
+    </form>
   </div>
 
-  <!-- Lista -->
-  <div class="card border-0 shadow-sm">
-    <div class="card-body">
-      <div class="table-responsive">
-        <table class="table table-hover align-middle">
-          <thead>
-            <tr>
-              <th>Safra</th>
-              <th>Fazenda</th>
-              <th>Documento</th>
-              <th>Cultura</th>
-              <th>Ano</th>
-              <th>Talhões</th>
-              <th>Status</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for s in safras %}
-              <tr>
-                <td><a href="{% url 'cadastros:safra_detail' s.pk %}">{{ s }}</a></td>
-                <td>{{ s.fazenda.nome }}</td>
-                <td>{{ s.fazenda.cnpj_cpf }}</td>
-                <td>{{ s.cultura.nome }}</td>
-                <td>{{ s.ano }}</td>
-                <td>{{ s.talhoes.count }}</td>
-                <td>
+  <!-- Lista de Safras -->
+  <div id="safrasList">
+    {% if safras %}
+      <div class="row">
+        {% for s in safras %}
+          <div class="col-12">
+            <div class="safra-card">
+              <div class="row align-items-center">
+                <div class="col-md-6">
+                  <h5 class="mb-1 fw-bold"><i class="bi bi-calendar-event text-success"></i> <a href="{% url 'cadastros:safra_detail' s.pk %}">{{ s }}</a></h5>
+                  <p class="text-muted mb-1 small"><strong>Fazenda:</strong> {{ s.fazenda.nome }} • <strong>Cultura:</strong> {{ s.cultura.nome }}</p>
+                  <p class="text-muted small">Ano: <strong>{{ s.ano }}</strong> • Talhões: <strong>{{ s.talhoes.count }}</strong></p>
+                </div>
+                <div class="col-md-3 text-center">
                   {% if s.status == 'PLANEJADA' %}
-                    <span class="badge bg-info">{{ s.get_status_display }}</span>
+                    <span class="badge-status badge-planejada">{{ s.get_status_display }}</span>
                   {% elif s.status == 'EM_ANDAMENTO' %}
-                    <span class="badge bg-primary">{{ s.get_status_display }}</span>
+                    <span class="badge-status badge-andamento">{{ s.get_status_display }}</span>
                   {% else %}
-                    <span class="badge bg-secondary">{{ s.get_status_display }}</span>
+                    <span class="badge-status badge-finalizada">{{ s.get_status_display }}</span>
                   {% endif %}
-                </td>
-                <td class="text-end">
+                </div>
+                <div class="col-md-3 text-end">
                   <a href="{% url 'cadastros:safra_update' s.pk %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></a>
                   <a href="{% url 'cadastros:safra_delete' s.pk %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></a>
-                </td>
-              </tr>
-            {% empty %}
-              <tr><td colspan="7">Nenhuma safra encontrada.</td></tr>
-            {% endfor %}
-          </tbody>
-        </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
       </div>
-
-      <!-- Paginação -->
-      {% if page_obj and page_obj.has_other_pages %}
-        <nav aria-label="paginação">
-          <ul class="pagination justify-content-center mt-3">
-            {% if page_obj.has_previous %}
-              <li class="page-item"><a class="page-link" href="?page=1{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}">Primeira</a></li>
-              <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}">Anterior</a></li>
-            {% endif %}
-            <li class="page-item active"><span class="page-link">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span></li>
-            {% if page_obj.has_next %}
-              <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}">Próxima</a></li>
-              <li class="page-item"><a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}">Última</a></li>
-            {% endif %}
-          </ul>
-        </nav>
-      {% endif %}
-    </div>
+    {% else %}
+      <div class="empty-state">
+        <i class="bi bi-calendar3"></i>
+        <h4>Nenhuma safra encontrada</h4>
+        <p class="text-muted">Crie uma nova safra para começar a planejar suas operações.</p>
+        <a href="{% url 'cadastros:safra_create' %}" class="btn btn-success">Nova Safra</a>
+      </div>
+    {% endif %}
   </div>
+
+  <!-- Paginação -->
+  {% if page_obj and page_obj.has_other_pages %}
+    <nav aria-label="paginação">
+      <ul class="pagination justify-content-center mt-3">
+        {% if page_obj.has_previous %}
+          <li class="page-item"><a class="page-link" href="?page=1{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}">Primeira</a></li>
+          <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}">Anterior</a></li>
+        {% endif %}
+        <li class="page-item active"><span class="page-link">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span></li>
+        {% if page_obj.has_next %}
+          <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}">Próxima</a></li>
+          <li class="page-item"><a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}">Última</a></li>
+        {% endif %}
+      </ul>
+    </nav>
+  {% endif %}
 
 </div>
 {% endblock %}

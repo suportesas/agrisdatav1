@@ -12,9 +12,14 @@
       {% if fornecedor %}
         <li class="breadcrumb-item"><a href="{% url 'cadastros:fornecedor_list' %}">Fornecedores</a></li>
         <li class="breadcrumb-item"><a href="{% url 'cadastros:fornecedor_detail' fornecedor.pk %}">{{ fornecedor.nome }}</a></li>
-      {% else %}
+      {% elif cliente %}
+        <li class="breadcrumb-item"><a href="{% url 'cadastros:cliente_list' %}">Clientes</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'cadastros:cliente_detail' cliente.pk %}">{{ cliente.razao_social }}</a></li>
+      {% elif fazenda %}
         <li class="breadcrumb-item"><a href="{% url 'cadastros:fazenda_list' %}">Fazendas</a></li>
         <li class="breadcrumb-item"><a href="{% url 'cadastros:fazenda_detail' fazenda.pk %}">{{ fazenda.nome }}</a></li>
+      {% else %}
+        <li class="breadcrumb-item"><a href="{% url 'cadastros:fazenda_list' %}">Fazendas</a></li>
       {% endif %}
       <li class="breadcrumb-item active">{{ action }} Contato</li>
     </ol>
@@ -27,50 +32,61 @@
     <div class="card-body p-4">
       <form method="post">
         {% csrf_token %}
+        {% if form.non_field_errors %}
+          <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+        {% endif %}
         <div class="row g-3">
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Tipo de Contato *</label>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Tipo</label>
             {{ form.tipo }}
+            {% if form.tipo.errors %}<div class="text-danger small">{{ form.tipo.errors|striptags }}</div>{% endif %}
           </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Cargo/Função</label>
-            {{ form.cargo }}
-          </div>
-          <div class="col-md-12">
+
+          <div class="col-md-8">
             <label class="form-label fw-semibold">Nome Completo *</label>
             {{ form.nome }}
+            {% if form.nome.errors %}<div class="text-danger small">{{ form.nome.errors|striptags }}</div>{% endif %}
           </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Telefone *</label>
+
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Cargo / Função</label>
+            {{ form.cargo }}
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Telefone</label>
             {{ form.telefone }}
+            {% if form.telefone.errors %}<div class="text-danger small">{{ form.telefone.errors|striptags }}</div>{% endif %}
           </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Celular/WhatsApp</label>
+
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Celular</label>
             {{ form.celular }}
+            {% if form.celular.errors %}<div class="text-danger small">{{ form.celular.errors|striptags }}</div>{% endif %}
           </div>
-          <div class="col-md-4">
+
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">WhatsApp</label>
+            {{ form.whatsapp }}
+            {% if form.whatsapp.errors %}<div class="text-danger small">{{ form.whatsapp.errors|striptags }}</div>{% endif %}
+          </div>
+
+          <div class="col-md-6">
             <label class="form-label fw-semibold">E-mail</label>
             {{ form.email }}
+            {% if form.email.errors %}<div class="text-danger small">{{ form.email.errors|striptags }}</div>{% endif %}
           </div>
+
           <div class="col-md-6">
-            <div class="form-check form-switch mt-4">
-              {{ form.whatsapp }}
-              <label class="form-check-label" for="{{ form.whatsapp.id_for_label }}">
-                Celular é WhatsApp
-              </label>
+            <div class="form-check form-switch mt-3">
+              {{ form.preferencial }} <label class="form-check-label" for="{{ form.preferencial.id_for_label }}">Contato Preferencial</label>
             </div>
           </div>
-          <div class="col-md-6">
-            <div class="form-check form-switch mt-4">
-              {{ form.preferencial }}
-              <label class="form-check-label" for="{{ form.preferencial.id_for_label }}">
-                Contato Preferencial
-              </label>
-            </div>
-          </div>
+
           <div class="col-md-12">
             <label class="form-label fw-semibold">Observações</label>
             {{ form.observacoes }}
+            {% if form.observacoes.errors %}<div class="text-danger small">{{ form.observacoes.errors|striptags }}</div>{% endif %}
           </div>
         </div>
         <div class="d-flex justify-content-between gap-3 mt-4">
@@ -78,8 +94,16 @@
             <a href="{% url 'cadastros:fornecedor_detail' fornecedor.pk %}" class="btn btn-outline-secondary">
               <i class="bi bi-arrow-left"></i> Cancelar
             </a>
-          {% else %}
+          {% elif cliente %}
+            <a href="{% url 'cadastros:cliente_detail' cliente.pk %}" class="btn btn-outline-secondary">
+              <i class="bi bi-arrow-left"></i> Cancelar
+            </a>
+          {% elif fazenda %}
             <a href="{% url 'cadastros:fazenda_detail' fazenda.pk %}" class="btn btn-outline-secondary">
+              <i class="bi bi-arrow-left"></i> Cancelar
+            </a>
+          {% else %}
+            <a href="{% url 'cadastros:cliente_list' %}" class="btn btn-outline-secondary">
               <i class="bi bi-arrow-left"></i> Cancelar
             </a>
           {% endif %}

@@ -12,9 +12,14 @@
       {% if fornecedor %}
         <li class="breadcrumb-item"><a href="{% url 'cadastros:fornecedor_list' %}">Fornecedores</a></li>
         <li class="breadcrumb-item"><a href="{% url 'cadastros:fornecedor_detail' fornecedor.pk %}">{{ fornecedor.get_nome_exibicao }}</a></li>
-      {% else %}
+      {% elif cliente %}
+        <li class="breadcrumb-item"><a href="{% url 'cadastros:cliente_list' %}">Clientes</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'cadastros:cliente_detail' cliente.pk %}">{{ cliente.razao_social }}</a></li>
+      {% elif fazenda %}
         <li class="breadcrumb-item"><a href="{% url 'cadastros:fazenda_list' %}">Fazendas</a></li>
         <li class="breadcrumb-item"><a href="{% url 'cadastros:fazenda_detail' fazenda.pk %}">{{ fazenda.nome }}</a></li>
+      {% else %}
+        <li class="breadcrumb-item"><a href="{% url 'cadastros:fazenda_list' %}">Fazendas</a></li>
       {% endif %}
       <li class="breadcrumb-item active">Anexar Documento</li>
     </ol>
@@ -75,8 +80,16 @@
             <a href="{% url 'cadastros:fornecedor_detail' fornecedor.pk %}" class="btn btn-outline-secondary">
               <i class="bi bi-arrow-left"></i> Cancelar
             </a>
-          {% else %}
+          {% elif cliente %}
+            <a href="{% url 'cadastros:cliente_detail' cliente.pk %}" class="btn btn-outline-secondary">
+              <i class="bi bi-arrow-left"></i> Cancelar
+            </a>
+          {% elif fazenda %}
             <a href="{% url 'cadastros:fazenda_detail' fazenda.pk %}" class="btn btn-outline-secondary">
+              <i class="bi bi-arrow-left"></i> Cancelar
+            </a>
+          {% else %}
+            <a href="{% url 'cadastros:cliente_list' %}" class="btn btn-outline-secondary">
               <i class="bi bi-arrow-left"></i> Cancelar
             </a>
           {% endif %}

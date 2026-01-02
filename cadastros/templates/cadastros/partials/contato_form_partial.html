@@ -1,0 +1,42 @@
+{% load static %}
+<form id="modalForm" method="post">
+  {% csrf_token %}
+  <div class="mb-3">
+    <label class="form-label">Tipo</label>
+    {{ form.tipo }}
+  </div>
+  <div class="mb-3">
+    <label class="form-label">Nome *</label>
+    {{ form.nome }}
+    {% if form.nome.errors %}<div class="text-danger small">{{ form.nome.errors|striptags }}</div>{% endif %}
+  </div>
+  <div class="mb-3">
+    <label class="form-label">Cargo</label>
+    {{ form.cargo }}
+  </div>
+  <div class="mb-3">
+    <label class="form-label">Telefone</label>
+    {{ form.telefone }}
+  </div>
+  <div class="mb-3">
+    <label class="form-label">Celular</label>
+    {{ form.celular }}
+  </div>
+  <div class="mb-3 form-check">
+    {{ form.whatsapp }} <label class="form-check-label">WhatsApp</label>
+  </div>
+  <div class="mb-3">
+    <label class="form-label">E-mail</label>
+    {{ form.email }}
+  </div>
+  <div class="form-check mb-3">
+    {{ form.preferencial }} <label class="form-check-label">Contato Preferencial</label>
+  </div>
+  <div class="mb-3">
+    <label class="form-label">Observações</label>
+    {{ form.observacoes }}
+  </div>
+  <div class="text-end">
+    <button type="submit" class="btn btn-primary">Salvar</button>
+  </div>
+</form>

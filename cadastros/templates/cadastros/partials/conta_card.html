@@ -1,0 +1,43 @@
+<div class="col-md-6" id="conta-{{ b.pk }}" data-conta-id="{{ b.pk }}">
+  <div class="card">
+    <div class="card-body">
+      <div class="d-flex justify-content-between align-items-start mb-2">
+        <h6 class="fw-bold">{{ b.banco }}</h6>
+        <div>
+          {% if b.conta_principal %}
+            <span class="badge bg-primary">Principal</span>
+          {% endif %}
+          {% if b.pix_habilitado %}
+            <span class="badge bg-success">PIX</span>
+          {% endif %}
+        </div>
+      </div>
+      <p class="mb-1 small text-muted">
+        <strong>Agência:</strong> {{ b.agencia }}{% if b.agencia_digito %}-{{ b.agencia_digito }}{% endif %} • 
+        <strong>Conta:</strong> {{ b.conta }}{% if b.conta_digito %}-{{ b.conta_digito }}{% endif %}
+      </p>
+      {% if b.swift or b.iban %}
+        <p class="mb-1 small text-success">
+          {% if b.swift %}<strong>SWIFT:</strong> {{ b.swift }}{% endif %}
+          {% if b.iban %} • <strong>IBAN:</strong> {{ b.iban }}{% endif %}
+        </p>
+      {% endif %}
+      {% if b.pix_habilitado %}
+        <p class="mb-1 small"><strong>Chave PIX ({{ b.get_tipo_chave_pix_display }}):</strong> {{ b.chave_pix }}</p>
+      {% endif %}
+      {% if b.dados_adicionais %}
+        <p class="mb-1 small text-muted">{{ b.dados_adicionais }}</p>
+      {% endif %}
+
+      <div class="d-flex gap-2 mt-3">
+        <a href="#" class="btn btn-sm btn-outline-primary btn-conta-edit" data-edit-url="{% url 'cadastros:cliente_conta_update_ajax' b.cliente.pk b.pk %}" title="Editar">
+          <i class="bi bi-pencil"></i>
+        </a>
+        <a href="#" class="btn btn-sm btn-outline-danger btn-conta-delete" data-delete-url="{% url 'cadastros:cliente_conta_delete_ajax' b.cliente.pk b.pk %}" title="Excluir">
+          <i class="bi bi-trash"></i>
+        </a>
+      </div>
+
+    </div>
+  </div>
+</div>

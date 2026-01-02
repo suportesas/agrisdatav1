@@ -118,7 +118,7 @@
             <label class="form-label fw-semibold">CEP</label>
             <div class="input-group">
               {{ form.cep }}
-              <button type="button" class="btn btn-primary" id="buscarCEPFunc">
+              <button type="button" class="btn btn-primary btn-buscar-cep" id="buscarCEPFunc">
                 <i class="bi bi-search"></i>
               </button>
             </div>
@@ -227,19 +227,39 @@
       </div>
       <div class="card-body p-4">
         <div class="row g-3">
-          <div class="col-md-4">
+          <div class="col-md-3">
             <label class="form-label fw-semibold">Banco</label>
             {{ form.banco }}
           </div>
-          <div class="col-md-4">
+          <div class="col-md-3">
             <label class="form-label fw-semibold">Agência</label>
             {{ form.agencia }}
           </div>
-          <div class="col-md-4">
+          <div class="col-md-3">
             <label class="form-label fw-semibold">Conta</label>
             {{ form.conta }}
           </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Tipo de Conta</label>
+            {{ form.tipo_conta }}
+          </div>
         </div>
+        <div id="pix-options" class="row g-3 mt-3">
+          <div class="col-md-3">
+            <div class="form-check form-switch mt-2">
+              {{ form.pix_habilitado }} <label class="form-check-label" for="{{ form.pix_habilitado.id_for_label }}">PIX Habilitado</label>
+            </div>
+          </div>
+          <div id="tipo_chave_pix_field" class="col-md-3">
+            <label class="form-label fw-semibold">Tipo de Chave PIX</label>
+            {{ form.tipo_chave_pix }}
+          </div>
+          <div id="chave_pix_field" class="col-md-6">
+            <label class="form-label fw-semibold">Chave PIX</label>
+            {{ form.chave_pix }}
+          </div>
+        </div>
+        <script src="{% static 'js/cadastros_banking.js' %}"></script>      
       </div>
     </div>
 

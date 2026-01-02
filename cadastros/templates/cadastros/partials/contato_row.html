@@ -1,0 +1,12 @@
+<tr data-id="{{ c.pk }}">
+  <td><strong>{{ c.nome }}</strong></td>
+  <td>{{ c.cargo|default:"—" }}</td>
+  <td>{{ c.telefone }}</td>
+  <td>{{ c.email|default:"—" }}</td>
+  <td class="text-center">
+    <div class="btn-group btn-group-sm">
+      <a href="{% url 'cadastros:cliente_contato_update' c.cliente.pk c.pk %}" class="btn btn-outline-primary"><i class="bi bi-pencil"></i></a>
+      <a href="{% url 'cadastros:cliente_contato_delete' c.cliente.pk c.pk %}" class="btn btn-outline-danger"><i class="bi bi-trash"></i></a>
+    </div>
+  </td>
+</tr>

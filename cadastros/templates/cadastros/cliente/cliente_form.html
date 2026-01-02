@@ -1,0 +1,204 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ action }} Cliente | ERP Agrícola{% endblock %}
+
+{% block extra_css %}
+<style>
+  .section-header {
+    background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);
+    color: white;
+    padding: 15px 20px;
+    border-radius: 10px 10px 0 0;
+    margin-bottom: 0;
+  }
+  .form-section {
+    background: white;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+    margin-bottom: 1rem;
+  }
+  .form-section-body { padding: 1.25rem; }
+  .cnpj-search-btn { transition: all 0.3s ease; }
+  .cnpj-search-btn:hover { transform: scale(1.05); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'cadastros:cliente_list' %}">Clientes</a></li>
+      <li class="breadcrumb-item active">{{ action }} Cliente</li>
+    </ol>
+  </nav>
+
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="fw-bold mb-1">
+        <i class="bi bi-{% if cliente %}pencil-square{% else %}plus-circle{% endif %} text-primary"></i>
+        {{ action }} Cliente
+      </h2>
+      {% if cliente %}
+        <p class="text-muted mb-0">Editando: <strong>{{ cliente.razao_social }}</strong></p>
+      {% else %}
+        <p class="text-muted mb-0">Preencha os dados do cliente</p>
+      {% endif %}
+    </div>
+    <a href="{% url 'cadastros:cliente_list' %}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left"></i> Voltar
+    </a>
+  </div>
+
+  <form method="post" enctype="multipart/form-data" id="clienteForm">
+    {% csrf_token %}
+
+    <!-- Seção: Documentos (mensagem de feedback para buscar CNPJ) -->
+    <div class="form-text mb-3" id="cnpjFeedback">&nbsp;</div>
+
+    <div class="form-section">
+      <div class="section-header">
+        <h5 class="mb-0">Dados Básicos</h5>
+      </div>
+      <div class="form-section-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Razão Social / Nome *</label>
+            {{ form.razao_social }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Nome Comercial</label>
+            {{ form.nome_comercial }}
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">CNPJ/CPF *</label>
+            <div class="input-group">
+              {{ form.cnpj_cpf }}
+              <button type="button" class="btn btn-primary cnpj-search-btn" id="buscarCNPJ"> <i class="bi bi-search"></i> Buscar</button>
+            </div>
+            <div id="cnpjFeedback" class="form-text mt-1 text-muted">&nbsp;</div>
+          </div>
+
+
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Tipo Cliente</label>
+            {{ form.tipo_cliente }}
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Tipo Pessoa</label>
+            {{ form.tipo_pessoa }}
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="section-header">
+        <h5 class="mb-0">Documentação Fiscal</h5>
+      </div>
+      <div class="form-section-body">
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Inscrição Estadual</label>
+            {{ form.inscricao_estadual }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Inscrição Municipal</label>
+            {{ form.inscricao_municipal }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">EORI</label>
+            {{ form.eori }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="section-header">
+        <h5 class="mb-0">Exportação / Importação</h5>
+      </div>
+      <div class="form-section-body">
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">País</label>
+            {{ form.pais }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Moeda Padrão</label>
+            {{ form.moeda_padrao }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Porto Destino</label>
+            {{ form.porto_destino }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="section-header">
+        <h5 class="mb-0">Dados Comerciais</h5>
+      </div>
+      <div class="form-section-body">
+        <div class="row g-3">
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Limite de Crédito</label>
+            {{ form.limite_credito }}
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Prazo Pagamento (dias)</label>
+            {{ form.prazo_pagamento }}
+            <div class="form-text small text-muted">Ou escolha um <strong>preset</strong> de termos</div>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Preset Prazo</label>
+            <select id="id_prazo_pagamento_padrao_select" class="form-select" name="prazo_pagamento_padrao">
+              <option value="">-- Nenhum --</option>
+              {% for p in presets %}
+                <option value="{{ p.pk }}" data-terms="{{ p.termos|escape }}">{{ p.nome }} ({{ p.termos }})</option>
+              {% endfor %}
+            </select>
+            <select id="id_prazo_pagamento_padrao_terms" class="form-select mt-2" style="display:none;"></select>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Vendedor Responsável</label>
+            {{ form.vendedor_responsavel }}
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Desconto Padrão (%)</label>
+            {{ form.desconto_padrao }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="d-flex justify-content-between gap-3 mt-4">
+      <a href="{% url 'cadastros:cliente_list' %}" class="btn btn-outline-secondary btn-lg px-5">
+        <i class="bi bi-x-circle"></i> Cancelar
+      </a>
+      <button type="submit" class="btn btn-success btn-lg px-5">
+        <i class="bi bi-check-circle"></i> Salvar Cliente
+      </button>
+    </div>
+
+  </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Mark auto-fillable fields for accessibility and visual cueing
+document.addEventListener('DOMContentLoaded', function(){
+  try {
+    const toAuto = ['id_razao_social','id_nome_comercial','id_contato_principal_telefone','id_contato_principal_email'];
+    toAuto.forEach(id => { const el = document.getElementById(id); if (el) el.setAttribute('data-auto','true'); });
+  } catch(e){}
+});
+</script>
+{% endblock %}

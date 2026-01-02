@@ -54,3 +54,6 @@ class BuscarCepTests(TestCase):
         self.assertTrue(json_data.get('sucesso'))
         self.assertIn('dados', json_data)
         self.assertEqual(json_data['dados']['cidade'], 'São Paulo')
+        # Backwards-compatibility: old clients expect top-level fields too
+        self.assertIn('logradouro', json_data)
+        self.assertEqual(json_data['logradouro'], 'Praça da Sé')

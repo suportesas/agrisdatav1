@@ -1,0 +1,37 @@
+<tr id="documento-{{ d.pk }}" class="{% if d.esta_vencido %}table-danger{% elif d.precisa_alerta %}table-warning{% endif %}">
+  <td><span class="badge bg-secondary">{{ d.get_tipo_display }}</span></td>
+  <td>
+    <strong>{{ d.titulo }}</strong>
+    {% if d.numero_documento %}<br><small class="text-muted">Nº {{ d.numero_documento }}</small>{% endif %}
+  </td>
+  <td>
+    {% if d.data_validade %}
+      {{ d.data_validade|date:"d/m/Y" }}
+      {% if d.dias_para_vencimento %}<br><small class="text-muted">({{ d.dias_para_vencimento }} dias)</small>{% endif %}
+    {% else %}
+      Sem validade
+    {% endif %}
+  </td>
+  <td>
+    {% if d.esta_vencido %}
+      <span class="badge bg-danger">Vencido</span>
+    {% elif d.precisa_alerta %}
+      <span class="badge bg-warning text-dark">Vencendo</span>
+    {% else %}
+      <span class="badge bg-success">Válido</span>
+    {% endif %}
+  </td>
+  <td class="text-center">
+    <div class="btn-group btn-group-sm">
+      <a href="{{ d.arquivo.url }}" target="_blank" class="btn btn-outline-info" title="Visualizar">
+        <i class="bi bi-eye"></i>
+      </a>
+      <a href="{% url 'cadastros:cliente_documento_update' d.cliente.pk d.pk %}" class="btn btn-outline-secondary" title="Editar">
+        <i class="bi bi-pencil-square"></i>
+      </a>
+      <a href="{% url 'cadastros:cliente_documento_delete' d.cliente.pk d.pk %}" class="btn btn-outline-danger">
+        <i class="bi bi-trash"></i>
+      </a>
+    </div>
+  </td>
+</tr>

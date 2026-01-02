@@ -1,0 +1,488 @@
+{% extends 'base.html' %}
+{% block title %}{{ cliente.razao_social }} | Cliente{% endblock %}
+
+{% block extra_css %}
+<style>
+  .info-card {
+    border-left: 4px solid #0d6efd;
+    transition: all 0.3s ease;
+  }
+  .info-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+  }
+  .tab-content {
+    background: white;
+    border-radius: 0 0 10px 10px;
+    padding: 25px;
+  }
+  .nav-tabs .nav-link {
+    color: #6c757d;
+    font-weight: 600;
+  }
+  .nav-tabs .nav-link.active {
+    color: #0d6efd;
+    border-bottom: 3px solid #0d6efd;
+  }
+  .alert-doc {
+    border-left: 4px solid #ffc107;
+  }
+  .doc-vencido {
+    border-left-color: #dc3545;
+  }
+</style>
+{% endblock %}
+
+{% block content %} 
+<div class="container py-4">
+  <nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'cadastros:cliente_list' %}">Clientes</a></li>
+      <li class="breadcrumb-item active">{{ cliente.razao_social }}</li>
+    </ol>
+  </nav>
+
+
+  {% url 'cadastros:cliente_update' cliente.pk as cliente_update_url %}
+  {% url 'cadastros:cliente_delete' cliente.pk as cliente_delete_url %}
+  {% include 'cadastros/partials/entity_header.html' with title=cliente.razao_social subtitle=cliente.nome_comercial icon="<i class='bi bi-people text-primary'></i>" edit_url=cliente_update_url delete_url=cliente_delete_url %}
+
+  <!-- Alertas de Documentos -->
+  {% if docs_vencidos or docs_vencendo %}
+    <div class="alert {% if docs_vencidos %}alert-danger doc-vencido{% else %}alert-warning alert-doc{% endif %} shadow-sm mb-4">
+      <div class="d-flex align-items-center">
+        <i class="bi bi-exclamation-triangle-fill fs-3 me-3"></i>
+        <div class="flex-grow-1">
+          <h5 class="mb-1">Atenção: Documentos Precisam de Atualização!</h5>
+          <p class="mb-0">
+            {% if docs_vencidos %}
+              <strong>{{ docs_vencidos.count }} documento(s) vencido(s)</strong>
+            {% endif %}
+            {% if docs_vencendo %}
+              {% if docs_vencidos %} • {% endif %}
+              <strong>{{ docs_vencendo|length }} documento(s) vencendo em breve</strong>
+            {% endif %}
+          </p>
+        </div>
+        <a href="#documentos" class="btn btn-light">Ver Documentos</a>
+      </div>
+    </div>
+  {% endif %}
+
+  <!-- Cards de Informações Rápidas -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-3">
+      <div class="card info-card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="bg-info bg-opacity-10 text-info rounded-circle p-3 me-3">
+              <i class="bi bi-geo-alt fs-4"></i>
+            </div>
+            <div>
+              <h6 class="text-muted mb-0 small">Endereços</h6>
+              <h4 class="mb-0 fw-bold" id="count_enderecos">{{ enderecos.count }}</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-3">
+      <div class="card info-card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="bg-success bg-opacity-10 text-success rounded-circle p-3 me-3">
+              <i class="bi bi-people fs-4"></i>
+            </div>
+            <div>
+              <h6 class="text-muted mb-0 small">Contatos</h6>
+              <h4 class="mb-0 fw-bold" id="count_contatos">{{ contatos.count }}</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-3">
+      <div class="card info-card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="bg-primary bg-opacity-10 text-primary rounded-circle p-3 me-3">
+              <i class="bi bi-bank fs-4"></i>
+            </div>
+            <div>
+              <h6 class="text-muted mb-0 small">Contas</h6>
+              <h4 class="mb-0 fw-bold" id="count_contas">{{ contas.count }}</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-3">
+      <div class="card info-card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="bg-warning bg-opacity-10 text-warning rounded-circle p-3 me-3">
+              <i class="bi bi-file-earmark fs-4"></i>
+            </div>
+            <div>
+              <h6 class="text-muted mb-0 small">Documentos</h6>
+              <h4 class="mb-0 fw-bold" id="count_documentos">{{ documentos.count }}</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabs de Conteúdo -->
+  <div class="card border-0 shadow-sm">
+    <div class="card-header bg-white border-0 pt-3">
+      <ul class="nav nav-tabs card-header-tabs" role="tablist">
+        <li class="nav-item">
+          <a class="nav-link active" data-bs-toggle="tab" href="#geral">
+            <i class="bi bi-info-circle"></i> Informações Gerais
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" data-bs-toggle="tab" href="#enderecos">
+            <i class="bi bi-geo-alt"></i> Endereços (<span id="tab_count_enderecos">{{ enderecos.count }}</span>)
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" data-bs-toggle="tab" href="#contatos">
+            <i class="bi bi-person"></i> Contatos (<span id="tab_count_contatos">{{ contatos.count }}</span>)
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" data-bs-toggle="tab" href="#bancos">
+            <i class="bi bi-bank"></i> Contas Bancárias (<span id="tab_count_contas">{{ contas.count }}</span>)
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" data-bs-toggle="tab" href="#documentos">
+            <i class="bi bi-file-earmark"></i> Documentos (<span id="tab_count_documentos">{{ documentos.count }}</span>)
+          </a>
+        </li>
+      </ul>
+    </div>
+
+    <div class="tab-content">
+      <div class="tab-pane fade show active" id="geral">
+        <div class="row">
+          <div class="col-md-6">
+            <h5 class="fw-bold mb-3 text-primary">Documentação</h5>
+            <table class="table table-borderless">
+              <tr>
+                <td class="text-muted"><strong>Tipo de Pessoa:</strong></td>
+                <td>{{ cliente.get_tipo_pessoa_display }}</td>
+              </tr>
+              <tr>
+                <td class="text-muted"><strong>CNPJ/CPF:</strong></td>
+                <td>{{ cliente.get_cnpj_cpf_formatado }}</td>
+              </tr>
+              <tr>
+                <td class="text-muted"><strong>Inscrição Estadual:</strong></td>
+                <td>{{ cliente.inscricao_estadual|default:"Não informada" }}</td>
+              </tr>
+              <tr>
+                <td class="text-muted"><strong>Inscrição Municipal:</strong></td>
+                <td>{{ cliente.inscricao_municipal|default:"Não informada" }}</td>
+              </tr>
+              <tr>
+                <td class="text-muted"><strong>Código EORI:</strong></td>
+                <td>{{ cliente.eori|default:"Não informado" }}</td>
+              </tr>
+              <tr>
+                <td class="text-muted"><strong>Regime Tributário:</strong></td>
+                <td><span class="badge bg-info">{{ cliente.get_regime_tributario_display }}</span></td>
+              </tr>
+            </table>
+          </div>
+
+          <div class="col-md-6">
+            <h5 class="fw-bold mb-3 text-success">Comerciais</h5>
+            <table class="table table-borderless">
+              <tr>
+                <td class="text-muted"><strong>Limite de Crédito:</strong></td>
+                <td>{{ cliente.limite_credito }}</td>
+              </tr>
+              <tr>
+                <td class="text-muted"><strong>Prazo de Pagamento:</strong></td>
+                <td>{{ cliente.prazo_pagamento|default:"—" }} dias</td>
+              </tr>
+              <tr>
+                <td class="text-muted"><strong>Vendedor Responsável:</strong></td>
+                <td>{{ cliente.vendedor_responsavel|default:"—" }}</td>
+              </tr>
+              <tr>
+                <td class="text-muted"><strong>País:</strong></td>
+                <td>{{ cliente.pais }}</td>
+              </tr>
+            </table>
+
+            {% if cliente.observacoes_comerciais %}
+              <h5 class="fw-bold mb-3 text-secondary mt-4">Observações</h5>
+              <p class="text-muted">{{ cliente.observacoes_comerciais }}</p>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div class="tab-pane fade" id="enderecos">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="fw-bold mb-0">Endereços Cadastrados</h5>
+          <a href="{% url 'cadastros:cliente_endereco_create' cliente.pk %}" class="btn btn-sm btn-success">
+            <i class="bi bi-plus-circle"></i> Adicionar Endereço
+          </a>
+        </div>
+
+        {% if enderecos %}
+          <div class="row g-3">
+            {% for e in enderecos %}
+              <div class="col-md-6">
+                <div class="card h-100">
+                  <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                      <h6 class="fw-bold text-primary mb-0">
+                        <i class="bi bi-geo-alt-fill"></i> {{ e.get_tipo_display }}
+                      </h6>
+                      {% if e.padrao %}
+                        <span class="badge bg-success">Padrão</span>
+                      {% endif %}
+                    </div>
+                    <p class="mb-1 small">{{ e.get_endereco_completo }}</p>
+                    <div class="d-flex gap-2 mt-3">
+                      <a href="{% url 'cadastros:cliente_endereco_update' cliente.pk e.pk %}" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-pencil"></i> Editar
+                      </a>
+                      <a href="{% url 'cadastros:cliente_endereco_delete' cliente.pk e.pk %}" class="btn btn-sm btn-outline-danger">
+                        <i class="bi bi-trash"></i>
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i> Nenhum endereço cadastrado ainda.
+          </div>
+        {% endif %}
+      </div>
+
+      <div class="tab-pane fade" id="contatos">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="fw-bold mb-0">Contatos</h5>
+          <button type="button" class="btn btn-sm btn-success btn-quick-add" data-url="{% url 'cadastros:cliente_contato_create_ajax' cliente.pk %}" data-target-list="#clienteContatosTbody">
+            <i class="bi bi-plus-circle"></i> Adicionar Contato
+          </button>
+        </div>
+
+        {% if contatos %}
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead class="table-light">
+                <tr>
+                  <th>Nome</th>
+                  <th>Cargo</th>
+                  <th>Telefone</th>
+                  <th>E-mail</th>
+                  <th class="text-center">Ações</th>
+                </tr>
+              </thead>
+              <tbody id="clienteContatosTbody">
+                {% for contato in contatos %}
+                  <tr>
+                    <td><strong>{{ contato.nome }}</strong></td>
+                    <td>{{ contato.cargo|default:"—" }}</td>
+                    <td>{{ contato.telefone }}</td>
+                    <td>{{ contato.email|default:"—" }}</td>
+                    <td class="text-center">
+                      <div class="btn-group btn-group-sm">
+                        <a href="{% url 'cadastros:cliente_contato_update' cliente.pk contato.pk %}" class="btn btn-outline-primary">
+                          <i class="bi bi-pencil"></i>
+                        </a>
+                        <a href="{% url 'cadastros:cliente_contato_delete' cliente.pk contato.pk %}" class="btn btn-outline-danger">
+                          <i class="bi bi-trash"></i>
+                        </a>
+                      </div>
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i> Nenhum contato cadastrado.
+          </div>
+        {% endif %}
+      </div>
+
+      <div class="tab-pane fade" id="bancos">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="fw-bold mb-0">Contas Bancárias</h5>
+          <button type="button" class="btn btn-sm btn-success btn-quick-add" data-url="{% url 'cadastros:cliente_conta_create_ajax' cliente.pk %}" data-target-list="#clienteContasRow">
+            <i class="bi bi-plus-circle"></i> Adicionar Conta
+          </button>
+        </div>
+
+        {% if contas %}
+          <div class="row g-3" id="clienteContasRow">
+            {% for conta in contas %}
+              {% include 'cadastros/partials/conta_card.html' with b=conta %}
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="alert alert-info">Nenhuma conta cadastrada.</div>
+        {% endif %}
+      </div>
+
+      <div class="tab-pane fade" id="documentos">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0">Documentos Anexados</h5>
+        <a href="{% url 'cadastros:cliente_documento_create' cliente.pk %}" class="btn btn-sm btn-success">
+          <i class="bi bi-plus-circle"></i> Anexar Documento
+        </a>
+      </div>
+
+      {% if documentos %}
+        <div class="table-responsive" id="clienteDocumentosRow">
+          <table class="table table-hover">
+            <thead class="table-light">
+              <tr>
+                <th>Tipo</th>
+                <th>Título</th>
+                <th>Validade</th>
+                <th>Status</th>
+                <th class="text-center">Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for doc in documentos %}
+                <tr class="{% if doc.esta_vencido %}table-danger{% elif doc.precisa_alerta %}table-warning{% endif %}">
+                  <td><span class="badge bg-secondary">{{ doc.get_tipo_display }}</span></td>
+                  <td>
+                    <strong>{{ doc.titulo }}</strong>
+                    {% if doc.numero_documento %}
+                      <br><small class="text-muted">Nº {{ doc.numero_documento }}</small>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if doc.data_validade %}
+                      {{ doc.data_validade|date:"d/m/Y" }}
+                      {% if doc.dias_para_vencimento %}
+                        <br><small class="text-muted">({{ doc.dias_para_vencimento }} dias)</small>
+                      {% endif %}
+                    {% else %}
+                      Sem validade
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if doc.esta_vencido %}
+                      <span class="badge bg-danger">Vencido</span>
+                    {% elif doc.precisa_alerta %}
+                      <span class="badge bg-warning text-dark">Vencendo</span>
+                    {% else %}
+                      <span class="badge bg-success">Válido</span>
+                    {% endif %}
+                  </td>
+                  <td class="text-center">
+                    <div class="btn-group btn-group-sm">
+                      <a href="{{ doc.arquivo.url }}" target="_blank" class="btn btn-outline-info" title="Visualizar">
+                        <i class="bi bi-eye"></i>
+                      </a>
+                      <a href="{% url 'cadastros:cliente_documento_update' cliente.pk doc.pk %}" class="btn btn-outline-secondary" title="Editar">
+                        <i class="bi bi-pencil-square"></i>
+                      </a>
+                      <a href="{% url 'cadastros:cliente_documento_delete' cliente.pk doc.pk %}" class="btn btn-outline-danger">
+                        <i class="bi bi-trash"></i>
+                      </a>
+                    </div>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="alert alert-info">
+          <i class="bi bi-info-circle"></i> Nenhum documento anexado.
+        </div>
+      {% endif %}
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Generic Quick-Add Modal -->
+  <div class="modal fade" id="quickAddModal" tabindex="-1" aria-labelledby="quickAddModalLabel" aria-hidden="true" role="dialog" aria-modal="true" data-a11y="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="quickAddModalLabel">Adicionar</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body" id="quickAddModalBody">
+          <!-- Loaded via AJAX -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Proposal Modal -->
+  <div class="modal fade" id="proposalModal" tabindex="-1" aria-labelledby="proposalModalLabel" aria-hidden="true" role="dialog" aria-modal="true" aria-describedby="proposalMessage" data-a11y="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="proposalModalLabel">Gerar Proposta</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body">
+          <p>Deseja gerar uma proposta simples para <strong>{{ cliente.razao_social }}</strong>?</p>
+          <div id="proposalMessage" class="alert d-none" role="alert"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-success" id="confirmGenerateProposal" aria-label="Confirmar geração de proposta">Gerar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  const btn = document.getElementById('quickGenerateProposal');
+  const modalEl = document.getElementById('proposalModal');
+  const proposalModal = modalEl ? new bootstrap.Modal(modalEl) : null;
+  const confirmBtn = document.getElementById('confirmGenerateProposal');
+  const proposalMsg = document.getElementById('proposalMessage');
+
+  if (btn && proposalModal) {
+    btn.addEventListener('click', function(){
+      proposalMsg.classList.add('d-none');
+      proposalMsg.classList.remove('alert-success','alert-danger');
+      proposalMsg.textContent = '';
+      proposalModal.show();
+    });
+  }
+
+  if (confirmBtn) {
+    confirmBtn.addEventListener('click', function(){
+      // Placeholder action: show success and close after 1s
+      proposalMsg.classList.remove('d-none');
+      proposalMsg.classList.add('alert-success');
+      proposalMsg.textContent = '✅ Proposta gerada (simulada). Faça o download no menu de propostas.';
+      setTimeout(()=>{ if (proposalModal) proposalModal.hide(); }, 1000);
+    });
+  }
+});
+</script>
+{% endblock %}

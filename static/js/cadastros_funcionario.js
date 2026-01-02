@@ -171,4 +171,6 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
+  // PIX behavior moved to shared file: 'static/js/cadastros_banking.js'
+
 });

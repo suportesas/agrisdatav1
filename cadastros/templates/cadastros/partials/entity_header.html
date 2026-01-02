@@ -1,0 +1,11 @@
+{% comment %} Shared header for entity detail pages (Fazenda, Cliente) {% endcomment %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h2 class="fw-bold mb-1">{% if icon %}<span class="me-2">{{ icon|safe }}</span>{% endif %}{{ title }}</h2>
+    {% if subtitle %}<small class="text-muted">{{ subtitle }}</small>{% endif %}
+  </div>
+  <div class="btn-group">
+    {% if edit_url %}<a href="{{ edit_url }}" class="btn btn-outline-secondary">Editar</a>{% endif %}
+    {% if delete_url %}<a href="{{ delete_url }}" class="btn btn-outline-danger">Excluir</a>{% endif %}
+  </div>
+</div>

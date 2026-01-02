@@ -11,6 +11,7 @@ from django.db.models import Q, Count, Sum, Avg
 from django.core.paginator import Paginator
 from django.utils import timezone
 import requests
+import re
 from .models import FornecedorEndereco, Funcionario, FuncaoFuncionario
 from .forms import FornecedorEnderecoForm, FuncionarioForm, FuncaoFuncionarioForm
 
@@ -18,7 +19,8 @@ from .models import (
     Fazenda, EnderecoFazenda, ContatoFazenda,
     ContaBancariaFazenda, DocumentoFazenda, DocumentoFornecedor,
     Area, Talhao, Cultura, HistoricoTalhao, Safra,
-    Vendedor, ComissaoVendedor, Fornecedor, FornecedorContato, FornecedorDadoBancario, Porto
+    Vendedor, ComissaoVendedor, Fornecedor, FornecedorContato, FornecedorDadoBancario, Porto,
+    Cliente, EnderecoCliente, ContatoCliente, ContaBancariaCliente, DocumentoCliente
 )
 
 from .forms import VendedorForm, VendedorFiltroForm, ComissaoVendedorForm, FornecedorForm, FornecedorContatoForm, FornecedorDadoBancarioForm
@@ -26,9 +28,11 @@ from .forms import VendedorForm, VendedorFiltroForm, ComissaoVendedorForm, Forne
 from .forms import (
     FazendaForm, EnderecoFazendaForm, ContatoFazendaForm,
     ContaBancariaFazendaForm, DocumentoFazendaForm, DocumentoFornecedorForm,
-     
-    AreaForm, TalhaoForm, CulturaForm, HistoricoTalhaoForm, SafraForm, PortoForm,
     
+    AreaForm, TalhaoForm, CulturaForm, HistoricoTalhaoForm, SafraForm, PortoForm,
+
+    # Cliente-related forms
+    ClienteForm, EnderecoClienteForm, ContatoClienteForm, ContaBancariaClienteForm, DocumentoClienteForm,
 )
 
 
@@ -390,8 +394,10 @@ def buscar_cep(request):
                     'cidade': dados.get('localidade', ''),
                     'uf': dados.get('uf', ''),
                 }
-                
-                return JsonResponse({'sucesso': True, 'dados': resultado})
+                # Return both wrapped ('dados') and flat keys for backward compatibility with older clients
+                resp_payload = {'sucesso': True, 'dados': resultado}
+                resp_payload.update(resultado)
+                return JsonResponse(resp_payload)
             else:
                 return JsonResponse({'erro': 'Erro ao consultar API'}, status=500)
                 
@@ -483,6 +489,8 @@ def contato_create(request, fazenda_pk):
             contato.save()
             messages.success(request, '✅ Contato adicionado!')
             return redirect('cadastros:fazenda_detail', pk=fazenda.pk)
+        else:
+            messages.error(request, '❌ Corrija os erros no formulário: %s' % form.errors)
     else:
         form = ContatoFazendaForm()
     
@@ -505,6 +513,8 @@ def contato_update(request, fazenda_pk, contato_pk):
             form.save()
             messages.success(request, '✅ Contato atualizado!')
             return redirect('cadastros:fazenda_detail', pk=fazenda.pk)
+        else:
+            messages.error(request, '❌ Corrija os erros no formulário: %s' % form.errors)
     else:
         form = ContatoFazendaForm(instance=contato)
     
@@ -2004,53 +2014,82 @@ def vendedor_list(request):
     Lista vendedores da empresa com filtros e estatísticas
     GET /cadastros/vendedores/
     """
-    empresa = request.user.empresa
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.debug('Entering vendedor_list')
+
+    empresa = getattr(request.user, 'empresa', None)
     
     if not empresa:
         messages.error(request, '❌ Você não está vinculado a nenhuma empresa.')
         return redirect('dashboard:index')
     
-    # Formulário de filtros
-    filtro_form = VendedorFiltroForm(request.GET or None)
-    
-    # QuerySet base
-    vendedores = Vendedor.objects.filter(empresa=empresa).select_related('supervisor', 'empresa')
-    
-    # Aplicar filtros se o formulário for válido
-    if filtro_form.is_valid():
-        busca = filtro_form.cleaned_data.get('busca')
-        status = filtro_form.cleaned_data.get('status')
-        tipo_mercado = filtro_form.cleaned_data.get('tipo_mercado')
+    try:
+        # Formulário de filtros
+        filtro_form = VendedorFiltroForm(request.GET or None)
         
-        if busca:
-            vendedores = vendedores.filter(
-                Q(nome_completo__icontains=busca) |
-                Q(cpf__icontains=busca) |
-                Q(email_corporativo__icontains=busca)
-            )
+        # QuerySet base
+        vendedores = Vendedor.objects.filter(empresa=empresa).select_related('supervisor', 'empresa')
         
-        if status:
-            vendedores = vendedores.filter(status=status)
+        # Aplicar filtros se o formulário for válido
+        if filtro_form.is_valid():
+            busca = filtro_form.cleaned_data.get('busca')
+            status = filtro_form.cleaned_data.get('status')
+            tipo_mercado = filtro_form.cleaned_data.get('tipo_mercado')
+            
+            if busca:
+                vendedores = vendedores.filter(
+                    Q(nome_completo__icontains=busca) |
+                    Q(cpf__icontains=busca) |
+                    Q(email_corporativo__icontains=busca)
+                )
+            
+            if status:
+                vendedores = vendedores.filter(status=status)
+            
+            if tipo_mercado:
+                vendedores = vendedores.filter(tipo_mercado=tipo_mercado)
         
-        if tipo_mercado:
-            vendedores = vendedores.filter(tipo_mercado=tipo_mercado)
-    
-    # Estatísticas para o dashboard
-    total_vendedores = vendedores.count()
-    total_ativos = vendedores.filter(status='ATIVO').count()
-    total_mercado_interno = vendedores.filter(tipo_mercado__in=['INTERNO', 'AMBOS']).count()
-    total_exportacao = vendedores.filter(tipo_mercado__in=['EXTERNO', 'AMBOS']).count()
-    
-    context = {
-        'vendedores': vendedores,
-        'filtro_form': filtro_form,
-        'total_vendedores': total_vendedores,
-        'total_ativos': total_ativos,
-        'total_mercado_interno': total_mercado_interno,
-        'total_exportacao': total_exportacao,
-    }
-    
-    return render(request, 'cadastros/vendedor_list.html', context)
+        # Estatísticas para o dashboard
+        total_vendedores = vendedores.count()
+        total_ativos = vendedores.filter(status='ATIVO').count()
+        total_mercado_interno = vendedores.filter(tipo_mercado__in=['INTERNO', 'AMBOS']).count()
+        total_exportacao = vendedores.filter(tipo_mercado__in=['EXTERNO', 'AMBOS']).count()
+
+        context = {
+            'vendedores': vendedores,
+            'filtro_form': filtro_form,
+            'total_vendedores': total_vendedores,
+            'total_ativos': total_ativos,
+            'total_mercado_interno': total_mercado_interno,
+            'total_exportacao': total_exportacao,
+        }
+
+        logger.debug('About to render vendedor_list with %d vendedores', total_vendedores)
+        return render(request, 'cadastros/vendedor_list.html', context)
+    except Exception as e:
+        logger.exception('Error in vendedor_list')
+        messages.error(request, 'Erro ao listar vendedores: %s' % str(e))
+        return redirect('dashboard:index')
+
+
+@login_required
+def vendedores_por_tipo(request):
+    """Retorna JSON com vendedores filtrados pelo tipo (usado em formulários de cliente)."""
+    from django.http import JsonResponse
+    tipo = request.GET.get('tipo', 'NACIONAL')
+    empresa = getattr(request.user, 'empresa', None)
+
+    if not empresa:
+        return JsonResponse({'vendedores': []})
+
+    if tipo == 'IMPORTADOR':
+        qs = Vendedor.objects.filter(empresa=empresa, tipo_mercado__in=['EXTERNO', 'AMBOS'])
+    else:
+        qs = Vendedor.objects.filter(empresa=empresa, tipo_mercado__in=['INTERNO', 'AMBOS'])
+
+    data = [{'id': v.pk, 'nome': v.nome_completo} for v in qs.order_by('nome_completo')]
+    return JsonResponse({'vendedores': data})
 
 
 # =============================================================================
@@ -2189,6 +2228,534 @@ def fornecedor_delete(request, pk):
         messages.success(request, f'🗑️ Fornecedor "{nome}" excluído!')
         return redirect('cadastros:fornecedor_list')
     return render(request, 'cadastros/fornecedor/fornecedor_confirm_delete.html', {'fornecedor': fornecedor})
+
+
+# ==================== ENDEREÇOS DO FORNECEDOR ====================
+
+
+# ==================== CLIENTES ====================
+
+@login_required
+def cliente_list(request):
+    """Lista de clientes com filtros, paginação e visão em cards (semelhante a fornecedor_list)."""
+    # Verifica empresa do usuário
+    empresa = request.user.empresa
+    if not empresa:
+        messages.warning(request, '⚠️ Seu usuário não está vinculado a nenhuma empresa. Entre em contato com o administrador.')
+        return redirect('dashboard:index')
+
+    # Filtros de busca
+    q = request.GET.get('q', '').strip()
+    status_atual = request.GET.get('status', '')
+    tipo_atual = request.GET.get('tipo', '')
+    vendedor_atual = request.GET.get('vendedor', '')
+    page = request.GET.get('page', 1)
+
+    clientes_qs = Cliente.objects.filter(empresa=empresa)
+
+    if q:
+        clientes_qs = clientes_qs.filter(
+            Q(razao_social__icontains=q) | Q(nome_comercial__icontains=q) | Q(cnpj_cpf__icontains=q)
+        )
+
+    if status_atual:
+        clientes_qs = clientes_qs.filter(status=status_atual)
+
+    if tipo_atual:
+        clientes_qs = clientes_qs.filter(tipo_cliente=tipo_atual)
+
+    if vendedor_atual:
+        clientes_qs = clientes_qs.filter(vendedor_responsavel_id=vendedor_atual)
+
+    clientes_qs = clientes_qs.order_by('razao_social')
+
+    # Paginação
+    paginator = Paginator(clientes_qs, 10)
+    try:
+        clientes = paginator.page(page)
+    except Exception:
+        clientes = paginator.page(1)
+
+    # Lista de vendedores para filtro
+    vendedores = Vendedor.objects.filter(empresa=empresa)
+
+    context = {
+        'clientes': clientes,
+        'q': q,
+        'status_atual': status_atual,
+        'tipo_atual': tipo_atual,
+        'vendedores': vendedores,
+        'vendedor_atual': vendedor_atual,
+    }
+
+    return render(request, 'cadastros/cliente/cliente_list.html', context)
+
+
+@login_required
+def cliente_detail(request, pk):
+    cliente = get_object_or_404(
+        Cliente.objects.prefetch_related('enderecos','contatos','contas_bancarias','documentos'),
+        pk=pk,
+        empresa=request.user.empresa
+    )
+    # Documentos que precisam de atenção
+    docs_vencidos = cliente.documentos.filter(
+        data_validade__lt=timezone.now().date(),
+        gerar_alerta_vencimento=True
+    )
+
+    docs_vencendo = []
+    for doc in cliente.documentos.filter(gerar_alerta_vencimento=True):
+        try:
+            if doc.precisa_alerta():
+                docs_vencendo.append(doc)
+        except AttributeError:
+            # Fallback for models missing method: calculate directly
+            if doc.data_validade and doc.gerar_alerta_vencimento:
+                dias_restantes = (doc.data_validade - timezone.now().date()).days
+                if 0 <= dias_restantes <= (doc.dias_antecedencia_alerta or 0):
+                    docs_vencendo.append(doc)
+
+    enderecos = cliente.enderecos.all()
+    contatos = cliente.contatos.all()
+    contas = cliente.contas_bancarias.all()
+    documentos = cliente.documentos.all()
+    context = {
+        'cliente': cliente,
+        'docs_vencidos': docs_vencidos,
+        'docs_vencendo': docs_vencendo,
+        'enderecos': enderecos,
+        'contatos': contatos,
+        'contas': contas,
+        'documentos': documentos,
+    }
+    return render(request, 'cadastros/cliente/cliente_detail.html', context)
+
+
+@login_required
+def cliente_create(request):
+    if request.method == 'POST':
+        form = ClienteForm(request.POST, empresa=request.user.empresa, usuario=request.user)
+        if form.is_valid():
+            cliente = form.save(commit=False)
+            cliente.empresa = request.user.empresa
+            cliente.cadastrado_por = request.user
+            cliente.save()
+            messages.success(request, f'✅ Cliente "{cliente.razao_social}" cadastrado!')
+            return redirect('cadastros:cliente_detail', pk=cliente.pk)
+        else:
+            messages.error(request, '❌ Corrija os erros no formulário: %s' % form.errors)
+    else:
+        form = ClienteForm(empresa=request.user.empresa, usuario=request.user)
+    # Also pass presets for template convenience
+    from .models import PrazoPagamentoPadrao
+    presets = PrazoPagamentoPadrao.objects.filter(empresa=request.user.empresa, ativo=True)
+    return render(request, 'cadastros/cliente/cliente_form.html', {'form': form, 'action': 'Cadastrar', 'presets': presets})
+
+
+@login_required
+def cliente_update(request, pk):
+    cliente = get_object_or_404(Cliente, pk=pk, empresa=request.user.empresa)
+    if request.method == 'POST':
+        form = ClienteForm(request.POST, instance=cliente, empresa=request.user.empresa, usuario=request.user)
+        if form.is_valid():
+            cliente = form.save(commit=False)
+            cliente.empresa = request.user.empresa
+            cliente.save()
+            messages.success(request, f'✅ Cliente "{cliente.razao_social}" atualizado!')
+            return redirect('cadastros:cliente_detail', pk=cliente.pk)
+    else:
+        form = ClienteForm(instance=cliente, empresa=request.user.empresa, usuario=request.user)
+    # Also pass presets for template convenience
+    from .models import PrazoPagamentoPadrao
+    presets = PrazoPagamentoPadrao.objects.filter(empresa=request.user.empresa, ativo=True)
+    return render(request, 'cadastros/cliente/cliente_form.html', {'form': form, 'action': 'Editar', 'cliente': cliente, 'presets': presets})
+
+
+@login_required
+def cliente_delete(request, pk):
+    cliente = get_object_or_404(Cliente, pk=pk, empresa=request.user.empresa)
+    if request.method == 'POST':
+        nome = cliente.razao_social
+        cliente.delete()
+        messages.success(request, f'🗑️ Cliente "{nome}" excluído!')
+        return redirect('cadastros:cliente_list')
+    return render(request, 'cadastros/cliente/cliente_confirm_delete.html', {'cliente': cliente})
+
+
+# ==================== ENDEREÇOS DO CLIENTE ====================
+
+@login_required
+def cliente_endereco_create(request, cliente_pk):
+    cliente = get_object_or_404(Cliente, pk=cliente_pk, empresa=request.user.empresa)
+    if request.method == 'POST':
+        # If cliente is IMPORTADOR, ensure UF is present as 'EX' before validation
+        post_data = request.POST
+        try:
+            # Make a mutable copy so we can inject ViaCEP results
+            post_data = request.POST.copy()
+            # If UF is missing but CEP present, try to lookup via ViaCEP and prefill fields
+            cep_raw = post_data.get('cep', '')
+            if cep_raw and not post_data.get('uf'):
+                try:
+                    import requests
+                    cep_digits = re.sub(r'\D', '', cep_raw)
+                    resp = requests.get(f'https://viacep.com.br/ws/{cep_digits}/json/', timeout=5)
+                    if resp.status_code == 200:
+                        data = resp.json()
+                        if data:
+                            if data.get('uf'):
+                                post_data['uf'] = data.get('uf').upper()
+                            if data.get('logradouro') and not post_data.get('logradouro'):
+                                post_data['logradouro'] = data.get('logradouro')
+                            if data.get('bairro') and not post_data.get('bairro'):
+                                post_data['bairro'] = data.get('bairro')
+                            if (data.get('localidade') or data.get('cidade')) and not post_data.get('cidade'):
+                                post_data['cidade'] = data.get('localidade') or data.get('cidade')
+                            if data.get('cep') and not post_data.get('cep'):
+                                post_data['cep'] = data.get('cep')
+                except Exception:
+                    # Ignore network issues and proceed with original POST
+                    pass
+            # If cliente is IMPORTADOR, force UF to EX
+            if getattr(cliente, 'tipo_cliente', '') == 'IMPORTADOR':
+                post_data['uf'] = 'EX'
+        except Exception:
+            post_data = request.POST
+        form = EnderecoClienteForm(post_data)
+        if form.is_valid():
+            endereco = form.save(commit=False)
+            endereco.cliente = cliente
+            # Server-side safeguard: force UF = 'EX' if cliente is IMPORTADOR
+            try:
+                if getattr(cliente, 'tipo_cliente', '') == 'IMPORTADOR':
+                    endereco.uf = 'EX'
+            except Exception:
+                pass
+            endereco.save()
+            messages.success(request, '✅ Endereço adicionado!')
+            return redirect('cadastros:cliente_detail', pk=cliente.pk)
+        else:
+            messages.error(request, '❌ Corrija os erros no formulário: %s' % form.errors)
+    else:
+        form = EnderecoClienteForm()
+    return render(request, 'cadastros/endereco_form.html', {'form': form, 'cliente': cliente, 'action': 'Adicionar'})
+
+
+@login_required
+def cliente_endereco_update(request, cliente_pk, endereco_pk):
+    cliente = get_object_or_404(Cliente, pk=cliente_pk, empresa=request.user.empresa)
+    endereco = get_object_or_404(EnderecoCliente, pk=endereco_pk, cliente=cliente)
+    if request.method == 'POST':
+        post_data = request.POST
+        try:
+            post_data = request.POST.copy()
+            # If UF is missing but CEP present, try to lookup via ViaCEP and prefill fields
+            cep_raw = post_data.get('cep', '')
+            if cep_raw and not post_data.get('uf'):
+                try:
+                    import requests
+                    cep_digits = re.sub(r'\D', '', cep_raw)
+                    resp = requests.get(f'https://viacep.com.br/ws/{cep_digits}/json/', timeout=5)
+                    if resp.status_code == 200:
+                        data = resp.json()
+                        if data:
+                            if data.get('uf'):
+                                post_data['uf'] = data.get('uf').upper()
+                            if data.get('logradouro') and not post_data.get('logradouro'):
+                                post_data['logradouro'] = data.get('logradouro')
+                            if data.get('bairro') and not post_data.get('bairro'):
+                                post_data['bairro'] = data.get('bairro')
+                            if (data.get('localidade') or data.get('cidade')) and not post_data.get('cidade'):
+                                post_data['cidade'] = data.get('localidade') or data.get('cidade')
+                            if data.get('cep') and not post_data.get('cep'):
+                                post_data['cep'] = data.get('cep')
+                except Exception:
+                    pass
+            if getattr(cliente, 'tipo_cliente', '') == 'IMPORTADOR':
+                post_data['uf'] = 'EX'
+        except Exception:
+            post_data = request.POST
+        form = EnderecoClienteForm(post_data, instance=endereco)
+        if form.is_valid():
+            endereco = form.save(commit=False)
+            try:
+                if getattr(cliente, 'tipo_cliente', '') == 'IMPORTADOR':
+                    endereco.uf = 'EX'
+            except Exception:
+                pass
+            endereco.save()
+            messages.success(request, '✅ Endereço atualizado!')
+            return redirect('cadastros:cliente_detail', pk=cliente.pk)
+        else:
+            messages.error(request, '❌ Corrija os erros no formulário: %s' % form.errors)
+    else:
+        form = EnderecoClienteForm(instance=endereco)
+    debug_form = request.GET.get('debug_form') == '1'
+    return render(request, 'cadastros/endereco_form.html', {'form': form, 'cliente': cliente, 'endereco': endereco, 'action': 'Editar', 'debug_form': debug_form})
+
+
+@login_required
+def cliente_endereco_delete(request, cliente_pk, endereco_pk):
+    cliente = get_object_or_404(Cliente, pk=cliente_pk, empresa=request.user.empresa)
+    endereco = get_object_or_404(EnderecoCliente, pk=endereco_pk, cliente=cliente)
+    if request.method == 'POST':
+        endereco.delete()
+        messages.success(request, '🗑️ Endereço removido!')
+        return redirect('cadastros:cliente_detail', pk=cliente.pk)
+    return render(request, 'cadastros/endereco_confirm_delete.html', {'cliente': cliente, 'endereco': endereco})
+
+
+# ==================== CONTATOS DO CLIENTE ====================
+
+@login_required
+def cliente_contato_create(request, cliente_pk):
+    cliente = get_object_or_404(Cliente, pk=cliente_pk, empresa=request.user.empresa)
+    if request.method == 'POST':
+        form = ContatoClienteForm(request.POST)
+        if form.is_valid():
+            contato = form.save(commit=False)
+            contato.cliente = cliente
+            contato.save()
+            messages.success(request, '✅ Contato adicionado!')
+            return redirect('cadastros:cliente_detail', pk=cliente.pk)
+        else:
+            messages.error(request, '❌ Corrija os erros no formulário: %s' % form.errors)
+    else:
+        form = ContatoClienteForm()
+    return render(request, 'cadastros/contato_form.html', {'form': form, 'cliente': cliente, 'action': 'Adicionar'})
+
+
+@login_required
+def cliente_contato_create_ajax(request, cliente_pk):
+    """AJAX endpoint to render and submit contato form inside a modal"""
+    cliente = get_object_or_404(Cliente, pk=cliente_pk, empresa=request.user.empresa)
+    from django.template.loader import render_to_string
+
+    if request.method == 'GET':
+        form = ContatoClienteForm()
+        html = render_to_string('cadastros/partials/contato_form_partial.html', {'form': form, 'cliente': cliente, 'action': 'Adicionar'}, request=request)
+        return JsonResponse({'form_html': html})
+
+    elif request.method == 'POST':
+        form = ContatoClienteForm(request.POST)
+        if form.is_valid():
+            contato = form.save(commit=False)
+            contato.cliente = cliente
+            contato.save()
+            item_html = render_to_string('cadastros/partials/contato_row.html', {'c': contato}, request=request)
+            return JsonResponse({'success': True, 'item_html': item_html})
+        else:
+            html = render_to_string('cadastros/partials/contato_form_partial.html', {'form': form, 'cliente': cliente, 'action': 'Adicionar'}, request=request)
+            return JsonResponse({'success': False, 'form_html': html}, status=400)
+
+
+@login_required
+def cliente_contato_update(request, cliente_pk, contato_pk):
+    cliente = get_object_or_404(Cliente, pk=cliente_pk, empresa=request.user.empresa)
+    contato = get_object_or_404(ContatoCliente, pk=contato_pk, cliente=cliente)
+    if request.method == 'POST':
+        form = ContatoClienteForm(request.POST, instance=contato)
+        if form.is_valid():
+            form.save()
+            messages.success(request, '✅ Contato atualizado!')
+            return redirect('cadastros:cliente_detail', pk=cliente.pk)
+        else:
+            messages.error(request, '❌ Corrija os erros no formulário: %s' % form.errors)
+    else:
+        form = ContatoClienteForm(instance=contato)
+    return render(request, 'cadastros/contato_form.html', {'form': form, 'cliente': cliente, 'contato': contato, 'action': 'Editar'})
+
+
+@login_required
+def cliente_contato_delete(request, cliente_pk, contato_pk):
+    cliente = get_object_or_404(Cliente, pk=cliente_pk, empresa=request.user.empresa)
+    contato = get_object_or_404(ContatoCliente, pk=contato_pk, cliente=cliente)
+    if request.method == 'POST':
+        contato.delete()
+        messages.success(request, '🗑️ Contato removido!')
+        return redirect('cadastros:cliente_detail', pk=cliente.pk)
+    return render(request, 'cadastros/contato_confirm_delete.html', {'cliente': cliente, 'contato': contato})
+
+
+# ==================== CONTAS BANCÁRIAS DO CLIENTE ====================
+
+@login_required
+def cliente_conta_create(request, cliente_pk):
+    cliente = get_object_or_404(Cliente, pk=cliente_pk, empresa=request.user.empresa)
+    if request.method == 'POST':
+        form = ContaBancariaClienteForm(request.POST)
+        if form.is_valid():
+            conta = form.save(commit=False)
+            conta.cliente = cliente
+            conta.save()
+            messages.success(request, '✅ Conta bancária adicionada!')
+            return redirect('cadastros:cliente_detail', pk=cliente.pk)
+        else:
+            messages.error(request, '❌ Corrija os erros no formulário: %s' % form.errors)
+    else:
+        form = ContaBancariaClienteForm()
+    return render(request, 'cadastros/conta_bancaria_form.html', {'form': form, 'cliente': cliente, 'action': 'Adicionar'})
+
+
+@login_required
+def cliente_conta_create_ajax(request, cliente_pk):
+    cliente = get_object_or_404(Cliente, pk=cliente_pk, empresa=request.user.empresa)
+    from django.template.loader import render_to_string
+
+    if request.method == 'GET':
+        form = ContaBancariaClienteForm()
+        html = render_to_string('cadastros/partials/conta_form_partial.html', {'form': form, 'cliente': cliente, 'action': 'Adicionar'}, request=request)
+        return JsonResponse({'form_html': html})
+
+    elif request.method == 'POST':
+        form = ContaBancariaClienteForm(request.POST)
+        if form.is_valid():
+            conta = form.save(commit=False)
+            conta.cliente = cliente
+            conta.save()
+            item_html = render_to_string('cadastros/partials/conta_card.html', {'b': conta}, request=request)
+            return JsonResponse({'success': True, 'item_html': item_html})
+        else:
+            html = render_to_string('cadastros/partials/conta_form_partial.html', {'form': form, 'cliente': cliente, 'action': 'Adicionar'}, request=request)
+            return JsonResponse({'success': False, 'form_html': html}, status=400)
+
+@login_required
+def cliente_conta_update(request, cliente_pk, conta_pk):
+    cliente = get_object_or_404(Cliente, pk=cliente_pk, empresa=request.user.empresa)
+    conta = get_object_or_404(ContaBancariaCliente, pk=conta_pk, cliente=cliente)
+    if request.method == 'POST':
+        form = ContaBancariaClienteForm(request.POST, instance=conta)
+        if form.is_valid():
+            form.save()
+            messages.success(request, '✅ Conta bancária atualizada!')
+            return redirect('cadastros:cliente_detail', pk=cliente.pk)
+        else:
+            messages.error(request, '❌ Corrija os erros no formulário: %s' % form.errors)
+    else:
+        form = ContaBancariaClienteForm(instance=conta)
+    return render(request, 'cadastros/conta_bancaria_form.html', {'form': form, 'cliente': cliente, 'conta': conta, 'action': 'Editar'})
+
+
+@login_required
+def cliente_conta_delete(request, cliente_pk, conta_pk):
+    cliente = get_object_or_404(Cliente, pk=cliente_pk, empresa=request.user.empresa)
+    conta = get_object_or_404(ContaBancariaCliente, pk=conta_pk, cliente=cliente)
+    if request.method == 'POST':
+        conta.delete()
+        messages.success(request, '🗑️ Conta bancária removida!')
+        return redirect('cadastros:cliente_detail', pk=cliente.pk)
+    return render(request, 'cadastros/conta_bancaria_confirm_delete.html', {'cliente': cliente, 'conta': conta})
+
+
+@login_required
+def cliente_conta_update_ajax(request, cliente_pk, conta_pk):
+    cliente = get_object_or_404(Cliente, pk=cliente_pk, empresa=request.user.empresa)
+    conta = get_object_or_404(ContaBancariaCliente, pk=conta_pk, cliente=cliente)
+    from django.template.loader import render_to_string
+
+    if request.method == 'GET':
+        form = ContaBancariaClienteForm(instance=conta)
+        html = render_to_string('cadastros/partials/conta_form_partial.html', {'form': form, 'cliente': cliente, 'conta': conta, 'action': 'Editar'}, request=request)
+        return JsonResponse({'form_html': html})
+
+    elif request.method == 'POST':
+        form = ContaBancariaClienteForm(request.POST, instance=conta)
+        if form.is_valid():
+            conta = form.save()
+            item_html = render_to_string('cadastros/partials/conta_card.html', {'b': conta}, request=request)
+            return JsonResponse({'success': True, 'item_html': item_html, 'conta_id': conta.pk})
+        else:
+            html = render_to_string('cadastros/partials/conta_form_partial.html', {'form': form, 'cliente': cliente, 'conta': conta, 'action': 'Editar'}, request=request)
+            return JsonResponse({'success': False, 'form_html': html}, status=400)
+
+
+@login_required
+def cliente_conta_delete_ajax(request, cliente_pk, conta_pk):
+    cliente = get_object_or_404(Cliente, pk=cliente_pk, empresa=request.user.empresa)
+    conta = get_object_or_404(ContaBancariaCliente, pk=conta_pk, cliente=cliente)
+    from django.template.loader import render_to_string
+
+    if request.method == 'GET':
+        html = render_to_string('cadastros/partials/conta_confirm_delete_partial.html', {'cliente': cliente, 'conta': conta}, request=request)
+        return JsonResponse({'form_html': html})
+
+    elif request.method == 'POST':
+        conta_id = conta.pk
+        conta.delete()
+        return JsonResponse({'success': True, 'conta_id': conta_id})
+
+
+# ==================== DOCUMENTOS DO CLIENTE ====================
+
+@login_required
+def cliente_documento_create(request, cliente_pk):
+    cliente = get_object_or_404(Cliente, pk=cliente_pk, empresa=request.user.empresa)
+    if request.method == 'POST':
+        form = DocumentoClienteForm(request.POST, request.FILES)
+        if form.is_valid():
+            documento = form.save(commit=False)
+            documento.cliente = cliente
+            documento.enviado_por = request.user
+            documento.save()
+            messages.success(request, '✅ Documento anexado!')
+            return redirect('cadastros:cliente_detail', pk=cliente.pk)
+        else:
+            messages.error(request, '❌ Corrija os erros no formulário: %s' % form.errors)
+    else:
+        form = DocumentoClienteForm()
+    return render(request, 'cadastros/documento_form.html', {'form': form, 'cliente': cliente, 'action': 'Adicionar'})
+
+
+@login_required
+def cliente_documento_create_ajax(request, cliente_pk):
+    cliente = get_object_or_404(Cliente, pk=cliente_pk, empresa=request.user.empresa)
+    from django.template.loader import render_to_string
+
+    if request.method == 'GET':
+        form = DocumentoClienteForm()
+        html = render_to_string('cadastros/partials/documento_form_partial.html', {'form': form, 'cliente': cliente, 'action': 'Adicionar'}, request=request)
+        return JsonResponse({'form_html': html})
+
+    elif request.method == 'POST':
+        form = DocumentoClienteForm(request.POST, request.FILES)
+        if form.is_valid():
+            documento = form.save(commit=False)
+            documento.cliente = cliente
+            documento.enviado_por = request.user
+            documento.save()
+            item_html = render_to_string('cadastros/partials/documento_card.html', {'d': documento}, request=request)
+            return JsonResponse({'success': True, 'item_html': item_html})
+        else:
+            html = render_to_string('cadastros/partials/documento_form_partial.html', {'form': form, 'cliente': cliente, 'action': 'Adicionar'}, request=request)
+            return JsonResponse({'success': False, 'form_html': html}, status=400)
+
+@login_required
+def cliente_documento_update(request, cliente_pk, documento_pk):
+    cliente = get_object_or_404(Cliente, pk=cliente_pk, empresa=request.user.empresa)
+    documento = get_object_or_404(DocumentoCliente, pk=documento_pk, cliente=cliente)
+    if request.method == 'POST':
+        form = DocumentoClienteForm(request.POST, request.FILES, instance=documento)
+        if form.is_valid():
+            form.save()
+            messages.success(request, '✅ Documento atualizado!')
+            return redirect('cadastros:cliente_detail', pk=cliente.pk)
+        else:
+            messages.error(request, '❌ Corrija os erros no formulário: %s' % form.errors)
+    else:
+        form = DocumentoClienteForm(instance=documento)
+    return render(request, 'cadastros/documento_form.html', {'form': form, 'cliente': cliente, 'documento': documento, 'action': 'Editar'})
+
+
+@login_required
+def cliente_documento_delete(request, cliente_pk, documento_pk):
+    cliente = get_object_or_404(Cliente, pk=cliente_pk, empresa=request.user.empresa)
+    documento = get_object_or_404(DocumentoCliente, pk=documento_pk, cliente=cliente)
+    if request.method == 'POST':
+        documento.delete()
+        messages.success(request, '🗑️ Documento removido!')
+        return redirect('cadastros:cliente_detail', pk=cliente.pk)
+    return render(request, 'cadastros/documento_confirm_delete.html', {'cliente': cliente, 'documento': documento})
 
 
 # ==================== ENDEREÇOS DO FORNECEDOR ====================

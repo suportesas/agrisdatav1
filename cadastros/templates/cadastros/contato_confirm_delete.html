@@ -15,8 +15,12 @@
           {% csrf_token %}
           {% if fornecedor %}
             <a href="{% url 'cadastros:fornecedor_detail' fornecedor.pk %}" class="btn btn-secondary">Cancelar</a>
-          {% else %}
+          {% elif cliente %}
+            <a href="{% url 'cadastros:cliente_detail' cliente.pk %}" class="btn btn-secondary">Cancelar</a>
+          {% elif fazenda %}
             <a href="{% url 'cadastros:fazenda_detail' fazenda.pk %}" class="btn btn-secondary">Cancelar</a>
+          {% else %}
+            <a href="{% url 'cadastros:cliente_list' %}" class="btn btn-secondary">Cancelar</a>
           {% endif %}
           <button type="submit" class="btn btn-danger">Sim, Excluir</button>
         </form>

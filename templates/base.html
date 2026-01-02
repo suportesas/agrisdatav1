@@ -143,7 +143,11 @@
               <a href="{% url 'cadastros:vendedor_list' %}" class="submenu-link">
                 <span>👤 Vendedores</span>
               </a>
-            </li>  
+            </li>
+            <li class="submenu-item">
+              <a href="{% url 'cadastros:fornecedor_list' %}" class="submenu-link">
+                <span>🤝 Fornecedores</span>
+              </a>
             </li>
             <li class="submenu-item">
               <a href="#" class="submenu-link">
@@ -151,10 +155,8 @@
               </a>
             </li>
             
-            </li>
-            </li>
             <li class="submenu-item">
-              <a href="#" class="submenu-link">
+              <a href="{% url 'cadastros:cliente_list' %}" class="submenu-link">
                 <span>👥 Clientes</span>
               </a>
             </li>
@@ -356,6 +358,41 @@
       }
     }
   </script>
+
+  <script src="{% static 'js/cadastros_cliente.js' %}"></script>
+
+  <!-- Modal Loading CNPJ (global reuse) -->
+  <div class="modal fade" id="cnpjLoadingModal" data-bs-backdrop="static" tabindex="-1" role="status" aria-live="polite" aria-labelledby="cnpjLoadingText" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+      <div class="modal-content">
+        <div class="modal-body text-center py-4">
+          <div class="spinner-border text-primary mb-3" role="status" aria-hidden="true"></div>
+          <p id="cnpjLoadingText" class="mb-0">Buscando CNPJ...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Confirmação de Auto-preenchimento -->
+  <div class="modal fade" id="cnpjConfirmModal" data-bs-backdrop="static" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="cnpjConfirmTitle" aria-describedby="cnpjConfirmNote" data-a11y="true" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="cnpjConfirmTitle">Confirmar dados importados</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body">
+          <p>Foram importados os seguintes dados. Confirme se deseja manter estas alterações:</p>
+          <ul id="cnpjConfirmList" class="list-group mb-3"></ul>
+          <div id="cnpjConfirmNote" class="form-text text-muted">Você pode cancelar para restaurar os valores anteriores.</div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="cnpjConfirmCancel" aria-label="Cancelar importação">Cancelar</button>
+          <button type="button" class="btn btn-primary" id="cnpjConfirmAccept" aria-label="Confirmar importação">Manter Alterações</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   {% block extra_js %}{% endblock %}
 </body>

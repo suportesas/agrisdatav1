@@ -11,6 +11,13 @@ import os
 from django.core.validators import MaxValueValidator, RegexValidator
 import re
 
+# Lista de UFs (inclui 'EX' para Exterior)
+UF_CHOICES = [
+    ('AC','AC'), ('AL','AL'), ('AP','AP'), ('AM','AM'), ('BA','BA'), ('CE','CE'), ('DF','DF'),
+    ('ES','ES'), ('GO','GO'), ('MA','MA'), ('MT','MT'), ('MS','MS'), ('MG','MG'), ('PA','PA'),
+    ('PB','PB'), ('PR','PR'), ('PE','PE'), ('PI','PI'), ('RJ','RJ'), ('RN','RN'), ('RS','RS'),
+    ('RO','RO'), ('RR','RR'), ('SC','SC'), ('SE','SE'), ('SP','SP'), ('TO','TO'), ('EX','Exterior'),
+]
 
 # ============================================
 # MANAGERS CUSTOMIZADOS PARA MULTI-TENANCY
@@ -410,7 +417,8 @@ class EnderecoFazenda(models.Model):
     uf = models.CharField(
         'UF',
         max_length=2,
-        help_text='Sigla do estado'
+        choices=UF_CHOICES,
+        help_text='Sigla do estado; use EX para Exterior'
     )
     
     pais = models.CharField(
@@ -508,6 +516,7 @@ class ContatoFazenda(models.Model):
     telefone = models.CharField(
         'Telefone',
         max_length=20,
+        blank=True,
         help_text='Formato: (00) 0000-0000'
     )
     
@@ -912,6 +921,389 @@ class DocumentoFornecedor(models.Model):
 
 
 
+# ==========================
+# MODELOS DE CLIENTES
+# ==========================
+
+def _normalize_doc(value):
+    """Remove tudo que não for dígito"""
+    return re.sub(r"\D", "", (value or ""))
+
+
+class Cliente(models.Model):
+    """Cadastro de Clientes multi-tenant"""
+
+    TIPO_CLIENTE = [
+        ('NACIONAL', 'Nacional'),
+        ('IMPORTADOR', 'Importador'),
+    ]
+
+    TIPO_PESSOA = [
+        ('PF', 'Pessoa Física'),
+        ('PJ', 'Pessoa Jurídica'),
+    ]
+
+    STATUS = [
+        ('ATIVO', 'Ativo'),
+        ('INATIVO', 'Inativo'),
+    ]
+
+    empresa = models.ForeignKey(
+        'empresas.Empresa', on_delete=models.CASCADE, related_name='clientes', verbose_name='Empresa'
+    )
+
+    codigo = models.CharField('Código', max_length=20, blank=True, db_index=True)
+
+    tipo_cliente = models.CharField('Tipo de Cliente', max_length=20, choices=TIPO_CLIENTE, default='NACIONAL')
+    tipo_pessoa = models.CharField('Tipo de Pessoa', max_length=2, choices=TIPO_PESSOA, default='PJ')
+
+    razao_social = models.CharField('Razão Social / Nome', max_length=250)
+    nome_comercial = models.CharField('Nome Comercial', max_length=250, blank=True)
+
+    cnpj_cpf = models.CharField('CNPJ/CPF', max_length=18, help_text='Apenas números ou formato usual')
+
+    status = models.CharField('Status', max_length=10, choices=STATUS, default='ATIVO')
+
+    # Documentação fiscal
+    inscricao_estadual = models.CharField('Inscrição Estadual', max_length=30, blank=True)
+    inscricao_municipal = models.CharField('Inscrição Municipal', max_length=30, blank=True)
+    eori = models.CharField('EORI', max_length=30, blank=True)
+    regime_tributario = models.CharField('Regime Tributário', max_length=50, blank=True)
+
+    contribuinte_icms = models.BooleanField('Contribuinte ICMS', default=False)
+    indicador_ie = models.CharField('Indicador IE', max_length=1, blank=True, help_text='1,2 ou 9')
+    inscricao_suframa = models.CharField('Inscrição SUFRAMA', max_length=50, blank=True)
+
+    # Comerciais
+    limite_credito = models.DecimalField('Limite de Crédito', max_digits=14, decimal_places=2, default=0)
+    prazo_pagamento = models.IntegerField('Prazo de Pagamento (dias)', null=True, blank=True)
+    # Link para prazos de pagamento predefinidos (ex.: 30,60,90)
+    prazo_pagamento_padrao = models.ForeignKey('PrazoPagamentoPadrao', on_delete=models.SET_NULL, null=True, blank=True, related_name='clientes')
+
+    FORMA_PGTO = [
+        ('BOLETO','Boleto'),('PIX','PIX'),('TRANSFERENCIA','Transferência'),('CARTAO','Cartão'),('CREDITO','Crédito'),('INVOICE','Invoice'),('OUTRO','Outro')
+    ]
+    forma_pagamento_padrao = models.CharField('Forma de Pagamento Padrão', max_length=20, choices=FORMA_PGTO, blank=True)
+    desconto_padrao = models.DecimalField('Desconto Padrão (%)', max_digits=5, decimal_places=2, default=0)
+
+    vendedor_responsavel = models.ForeignKey('cadastros.Vendedor', on_delete=models.SET_NULL, null=True, blank=True, related_name='clientes')
+    observacoes_comerciais = models.TextField('Observações Comerciais', blank=True)
+
+    # Exportação / Importador
+    pais = models.CharField('País', max_length=100, blank=True, default='Brasil')
+    moeda_padrao = models.CharField('Moeda Padrão', max_length=10, blank=True)
+    porto_destino = models.ForeignKey('cadastros.Porto', on_delete=models.SET_NULL, null=True, blank=True)
+    incoterm_padrao = models.CharField('Incoterm', max_length=20, blank=True)
+    idioma_preferido = models.CharField('Idioma Preferido', max_length=20, blank=True)
+    certificacoes_exigidas = models.TextField('Certificações Exigidas', blank=True)
+
+    # Contato principal (simplificado)
+    contato_principal_nome = models.CharField('Contato Principal', max_length=150, blank=True)
+    contato_principal_telefone = models.CharField('Telefone Contato', max_length=30, blank=True)
+    contato_principal_email = models.EmailField('E-mail Contato', blank=True)
+
+    # Portal
+    acesso_portal = models.BooleanField('Acesso ao Portal', default=False)
+    usuario_vinculado = models.ForeignKey('usuarios.Usuario', on_delete=models.SET_NULL, null=True, blank=True, related_name='cliente_vinculado')
+
+    # Auditoria
+    cadastrado_por = models.ForeignKey('usuarios.Usuario', on_delete=models.SET_NULL, null=True, blank=True, related_name='clientes_cadastrados')
+    data_cadastro = models.DateTimeField('Data de Cadastro', auto_now_add=True)
+    data_atualizacao = models.DateTimeField('Última Atualização', auto_now=True)
+
+    class Meta:
+        verbose_name = 'Cliente'
+        verbose_name_plural = 'Clientes'
+        ordering = ['-data_cadastro']
+        constraints = [
+            models.UniqueConstraint(fields=['empresa','cnpj_cpf'], name='unique_cnpj_cpf_por_empresa_cliente')
+        ]
+        indexes = [models.Index(fields=['empresa', 'codigo']), models.Index(fields=['cnpj_cpf'])]
+
+    def __str__(self):
+        return f"{self.codigo or ''} {self.razao_social}"
+
+    def clean(self):
+        """Validações de negócio"""
+        # Normaliza documento
+        doc = _normalize_doc(self.cnpj_cpf)
+        if not doc:
+            raise ValidationError({'cnpj_cpf':'CNPJ/CPF é obrigatório'})
+        if len(doc) not in (11,14):
+            raise ValidationError({'cnpj_cpf':'CNPJ/CPF inválido'})
+        # Atualiza campo para forma normalizada (apenas dígitos)
+        self.cnpj_cpf = doc
+
+        # Indicador IE e inscrição estadual
+        if self.contribuinte_icms:
+            if not self.inscricao_estadual:
+                raise ValidationError({'inscricao_estadual':'Inscrição Estadual é obrigatória para contribuinte ICMS'})
+            self.indicador_ie = '1'
+        else:
+            if self.tipo_pessoa == 'PF':
+                self.indicador_ie = '9'
+            else:
+                self.indicador_ie = '2'
+
+        # Regras para importador
+        if self.tipo_cliente == 'IMPORTADOR':
+            if not self.eori:
+                raise ValidationError({'eori':'EORI é obrigatório para importadores'})
+            if not self.pais:
+                raise ValidationError({'pais':'País é obrigatório para importadores'})
+            if not self.porto_destino:
+                raise ValidationError({'porto_destino':'Porto destino é obrigatório para importadores'})
+
+        # Validação de Inscrição Estadual por UF (aceita 'ISENTO' para não contribuintes)
+        from .validators import validate_inscricao_estadual
+        uf = None
+        # Se cliente for do exterior, força UF = 'EX' para pular validações estaduais
+        if self.pais and self.pais.strip().lower() != 'brasil':
+            uf = 'EX'
+        else:
+            try:
+                # Tenta inferir UF pelo endereço padrão do cliente, se existir
+                endereco_padrao = self.enderecos.filter(padrao=True).first() if hasattr(self, 'enderecos') else None
+                if endereco_padrao:
+                    uf = endereco_padrao.uf
+            except Exception:
+                uf = None
+
+        try:
+            validate_inscricao_estadual(self.inscricao_estadual, uf=uf, is_contribuinte=self.contribuinte_icms, tipo_pessoa=self.tipo_pessoa)
+        except ValidationError as e:
+            raise ValidationError({'inscricao_estadual': e.message})
+
+    def save(self, *args, **kwargs):
+        # Normaliza cnpj_cpf para dígitos
+        self.cnpj_cpf = _normalize_doc(self.cnpj_cpf)
+
+        # Gera código sequencial por empresa se não existir
+        if not self.codigo:
+            prefix = 'CLI'
+            # Use empresa_id to avoid accessing related object which may be missing
+            empresa_id = getattr(self, 'empresa_id', None)
+            if empresa_id:
+                last = Cliente.objects.filter(empresa_id=empresa_id).order_by('-id').first()
+                if last and last.codigo and last.codigo.startswith(prefix):
+                    try:
+                        num = int(last.codigo.split('-')[-1])
+                    except Exception:
+                        num = Cliente.objects.filter(empresa_id=empresa_id).count()
+                else:
+                    num = Cliente.objects.filter(empresa_id=empresa_id).count()
+            else:
+                # Fallback to global count if no empresa present
+                last = Cliente.objects.order_by('-id').first()
+                if last and last.codigo and last.codigo.startswith(prefix):
+                    try:
+                        num = int(last.codigo.split('-')[-1])
+                    except Exception:
+                        num = Cliente.objects.count()
+                else:
+                    num = Cliente.objects.count()
+            self.codigo = f"{prefix}-{(num+1):05d}"
+
+        super().save(*args, **kwargs)
+
+
+class EnderecoCliente(models.Model):
+    TIPO_ENDERECO = [
+        ('PRINCIPAL','Principal'),('FATURAMENTO','Faturamento'),('COBRANCA','Cobrança'),('ENTREGA','Entrega'),('NOTIFY','Notify')
+    ]
+
+    cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE, related_name='enderecos')
+    tipo = models.CharField('Tipo Endereço', max_length=20, choices=TIPO_ENDERECO, default='PRINCIPAL')
+    cep = models.CharField('CEP', max_length=10)
+    logradouro = models.CharField('Logradouro', max_length=200)
+    numero = models.CharField('Número', max_length=20, blank=True)
+    complemento = models.CharField('Complemento', max_length=100, blank=True)
+    bairro = models.CharField('Bairro', max_length=100)
+    cidade = models.CharField('Cidade', max_length=100)
+    uf = models.CharField('UF', max_length=2)
+    pais = models.CharField('País', max_length=100, default='Brasil')
+    recebedor_notify = models.CharField('Recebedor Notify', max_length=150, blank=True)
+    padrao = models.BooleanField('Endereço Padrão', default=False)
+
+    class Meta:
+        verbose_name = 'Endereço do Cliente'
+        verbose_name_plural = 'Endereços dos Clientes'
+        ordering = ['-padrao']
+
+    def save(self, *args, **kwargs):
+        if self.padrao:
+            EnderecoCliente.objects.filter(cliente=self.cliente, padrao=True).exclude(pk=self.pk).update(padrao=False)
+        # recebedor_notify só se tipo=NOTIFY
+        if self.tipo != 'NOTIFY':
+            self.recebedor_notify = ''
+        super().save(*args, **kwargs)
+
+    def get_endereco_completo(self):
+        """Retorna endereço formatado para exibição em listas e detalhes"""
+        numero = self.numero or 'S/N'
+        complemento = f", {self.complemento}" if self.complemento else ""
+        return (
+            f"{self.logradouro}, {numero}{complemento} - "
+            f"{self.bairro}, {self.cidade}/{self.uf} - CEP: {self.cep}"
+        )
+
+    def __str__(self):
+        return f"{self.get_tipo_display()} - {self.cidade}/{self.uf}"
+
+
+class ContatoCliente(models.Model):
+    """Contatos do Cliente (múltiplos). Replica campos do Fornecedor para consistência."""
+
+    TIPO_CONTATO = [
+        ('PRINCIPAL', 'Contato Principal'),
+        ('FINANCEIRO', 'Financeiro'),
+        ('OPERACIONAL', 'Operacional'),
+        ('TECNICO', 'Técnico'),
+        ('EMERGENCIA', 'Emergência'),
+    ]
+
+    cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE, related_name='contatos')
+    tipo = models.CharField('Tipo de Contato', max_length=20, choices=TIPO_CONTATO, default='PRINCIPAL')
+    nome = models.CharField('Nome', max_length=150)
+    cargo = models.CharField('Cargo', max_length=100, blank=True)
+    telefone = models.CharField('Telefone', max_length=30, blank=True)
+    celular = models.CharField('Celular/WhatsApp', max_length=30, blank=True)
+    email = models.EmailField('Email', blank=True)
+
+    whatsapp = models.BooleanField('WhatsApp', default=False)
+    preferencial = models.BooleanField('Contato Preferencial', default=False)
+
+    observacoes = models.TextField('Observações', blank=True)
+
+    class Meta:
+        verbose_name = 'Contato do Cliente'
+        verbose_name_plural = 'Contatos dos Clientes'
+        ordering = ['-preferencial', 'tipo', 'nome']
+
+    def save(self, *args, **kwargs):
+        if self.preferencial:
+            ContatoCliente.objects.filter(cliente=self.cliente, preferencial=True).exclude(pk=self.pk).update(preferencial=False)
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.nome} - {self.cliente}"
+
+class ContaBancariaCliente(models.Model):
+    cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE, related_name='contas_bancarias')
+    banco = models.CharField('Banco', max_length=100)
+    codigo_banco = models.CharField('Código do Banco', max_length=4, blank=True)
+    agencia = models.CharField('Agência', max_length=20, blank=True)
+    agencia_digito = models.CharField('Dígito Agência', max_length=5, blank=True)
+    conta = models.CharField('Conta', max_length=20, blank=True)
+    conta_digito = models.CharField('Dígito', max_length=5, blank=True)
+
+    TIPO_CONTA = [
+        ('CORRENTE', 'Conta Corrente'),
+        ('POUPANCA', 'Conta Poupança'),
+        ('SALARIO', 'Conta Salário'),
+    ]
+    tipo_conta = models.CharField('Tipo de Conta', max_length=20, choices=TIPO_CONTA, blank=True)
+
+    pix_habilitado = models.BooleanField('PIX Habilitado', default=False)
+    TIPO_PIX = [
+        ('CPF', 'CPF'), ('CNPJ', 'CNPJ'), ('EMAIL', 'E-mail'), ('TELEFONE', 'Telefone'), ('CHAVE_ALEATORIA', 'Chave Aleatória')
+    ]
+    tipo_chave_pix = models.CharField('Tipo de Chave PIX', max_length=20, choices=TIPO_PIX, blank=True)
+    chave_pix = models.CharField('Chave PIX', max_length=100, blank=True)
+
+    swift = models.CharField('SWIFT', max_length=20, blank=True)
+    iban = models.CharField('IBAN', max_length=34, blank=True)
+    dados_adicionais = models.TextField('Dados Adicionais', blank=True)
+
+    conta_principal = models.BooleanField('Conta Principal', default=False)
+    ativa = models.BooleanField('Conta Ativa', default=True)
+
+    class Meta:
+        verbose_name = 'Conta Bancária do Cliente'
+        verbose_name_plural = 'Contas Bancárias dos Clientes'
+        ordering = ['-conta_principal']
+
+    def save(self, *args, **kwargs):
+        if self.conta_principal:
+            ContaBancariaCliente.objects.filter(cliente=self.cliente, conta_principal=True).exclude(pk=self.pk).update(conta_principal=False)
+        super().save(*args, **kwargs)
+
+class PrazoPagamentoPadrao(models.Model):
+    """Presets de prazos de pagamento por empresa. `termos` armazena coma-separado, ex: '30,60,90'"""
+    empresa = models.ForeignKey('empresas.Empresa', on_delete=models.CASCADE, related_name='prazos_pagamento')
+    nome = models.CharField('Nome', max_length=100)
+    termos = models.CharField('Termos (dias)', max_length=200, help_text="Valores separados por vírgula, ex: '30,60,90'")
+    ativo = models.BooleanField('Ativo', default=True)
+
+    class Meta:
+        verbose_name = 'Prazo de Pagamento Padrão'
+        verbose_name_plural = 'Prazos de Pagamento Padrões'
+        ordering = ['nome']
+
+    def __str__(self):
+        return f"{self.nome} - {self.termos}"
+
+    def get_termos_list(self):
+        """Retorna lista de inteiros dos termos"""
+        return [int(x) for x in self.termos.split(',') if x.strip().isdigit()]
+
+
+    def __str__(self):
+        return f"{self.banco} - {self.conta}-{self.conta_digito}"
+
+
+class DocumentoCliente(models.Model):
+    TIPO_DOCUMENTO = DocumentoFazenda.TIPO_DOCUMENTO
+
+    cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE, related_name='documentos')
+    tipo = models.CharField('Tipo de Documento', max_length=30, choices=TIPO_DOCUMENTO)
+    titulo = models.CharField('Título/Descrição', max_length=200)
+    numero_documento = models.CharField('Número do Documento', max_length=100, blank=True)
+    arquivo = models.FileField('Arquivo', upload_to='clientes/documentos/%Y/%m/', validators=[FileExtensionValidator(allowed_extensions=['pdf','jpg','jpeg','png','doc','docx','xls','xlsx'])])
+    data_emissao = models.DateField('Data de Emissão', blank=True, null=True)
+    data_validade = models.DateField('Data de Validade', blank=True, null=True)
+
+    gerar_alerta_vencimento = models.BooleanField('Gerar Alerta de Vencimento', default=True)
+    dias_antecedencia_alerta = models.IntegerField('Dias de Antecedência', default=30)
+
+    observacoes = models.TextField('Observações', blank=True)
+    data_upload = models.DateTimeField('Data do Upload', auto_now_add=True)
+    enviado_por = models.ForeignKey('usuarios.Usuario', on_delete=models.SET_NULL, null=True, blank=True, related_name='documentos_cliente_enviados')
+
+    class Meta:
+        verbose_name = 'Documento do Cliente'
+        verbose_name_plural = 'Documentos dos Clientes'
+        ordering = ['-data_upload']
+
+    def __str__(self):
+        return f"{self.get_tipo_display()} - {self.titulo}"
+
+    def esta_vencido(self):
+        """Verifica se documento está vencido"""
+        if self.data_validade:
+            return timezone.now().date() > self.data_validade
+        return False
+
+    def dias_para_vencimento(self):
+        """Retorna dias restantes até vencimento"""
+        if self.data_validade:
+            return (self.data_validade - timezone.now().date()).days
+        return None
+
+    def precisa_alerta(self):
+        """Verifica se deve gerar alerta"""
+        if not self.gerar_alerta_vencimento or not self.data_validade:
+            return False
+        dias_restantes = self.dias_para_vencimento()
+        if dias_restantes is not None:
+            return 0 <= dias_restantes <= self.dias_antecedencia_alerta
+        return False
+
+    def get_nome_arquivo(self):
+        """Retorna apenas o nome do arquivo sem o caminho"""
+        return os.path.basename(self.arquivo.name)
+
+
 class FuncaoFuncionario(models.Model):
     """
     Funções/Cargos dos funcionários
@@ -1186,6 +1578,27 @@ class Funcionario(models.Model):
     conta = models.CharField(
         'Conta',
         max_length=20,
+        blank=True
+    )
+
+    # PIX
+    pix_habilitado = models.BooleanField('PIX Habilitado', default=False)
+    TIPO_PIX = [
+        ('CPF', 'CPF'), ('CNPJ', 'CNPJ'), ('EMAIL', 'E-mail'), ('TELEFONE', 'Telefone'), ('CHAVE_ALEATORIA', 'Chave Aleatória')
+    ]
+    tipo_chave_pix = models.CharField('Tipo de Chave PIX', max_length=20, choices=TIPO_PIX, blank=True)
+    chave_pix = models.CharField('Chave PIX', max_length=100, blank=True)
+
+    # Tipo de conta bancária (adicionado para cadastro de funcionário)
+    TIPO_CONTA = [
+        ('CORRENTE', 'Conta Corrente'),
+        ('POUPANCA', 'Conta Poupança'),
+        ('SALARIO', 'Conta Salário'),
+    ]
+    tipo_conta = models.CharField(
+        'Tipo de Conta',
+        max_length=20,
+        choices=TIPO_CONTA,
         blank=True
     )
     
@@ -3355,6 +3768,47 @@ class CategoriaFornecedor(models.Model):
 
     def __str__(self):
         return self.nome
+
+
+class Porto(models.Model):
+    """Portos / Pontos de Entrada (Marítimo, Aéreo, Terrestre)"""
+
+    TIPO_CHOICES = [
+        ('MARITIMO', 'Marítimo'),
+        ('AEREO', 'Aéreo'),
+        ('TERRESTRE', 'Terrestre'),
+    ]
+
+    empresa = models.ForeignKey(
+        'empresas.Empresa',
+        on_delete=models.CASCADE,
+        related_name='portos',
+        verbose_name='Empresa'
+    )
+
+    codigo = models.CharField('Código', max_length=10, help_text='Código IATA/UN por empresa')
+    nome = models.CharField('Nome', max_length=200)
+    pais = models.CharField('País', max_length=100)
+    cidade = models.CharField('Cidade', max_length=100)
+    tipo = models.CharField('Tipo', max_length=10, choices=TIPO_CHOICES, default='MARITIMO')
+    ativo = models.BooleanField('Ativo', default=True)
+
+    data_criacao = models.DateTimeField('Data de Criação', auto_now_add=True)
+    data_atualizacao = models.DateTimeField('Última Atualização', auto_now=True)
+
+    class Meta:
+        verbose_name = 'Porto'
+        verbose_name_plural = 'Portos'
+        ordering = ['nome']
+        indexes = [
+            models.Index(fields=['empresa', 'codigo']),
+        ]
+        constraints = [
+            models.UniqueConstraint(fields=['empresa', 'codigo'], name='unique_porto_por_empresa')
+        ]
+
+    def __str__(self):
+        return f"{self.nome} ({self.codigo})"
 
 
 class SubcategoriaFornecedor(models.Model):

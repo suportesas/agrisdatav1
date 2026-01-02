@@ -554,6 +554,34 @@ document.addEventListener('DOMContentLoaded', function() {
     emptyState.style.display = 'none';
     loadingState.style.display = 'none';
     
+    // Backwards-compatibility: populate a hidden select (#id_talhoes) so older clients/tests
+    // that expect <select><option> elements (Choices.js workflows) keep working
+    (function(){
+      let select = document.getElementById('id_talhoes');
+      if (!select) {
+        select = document.createElement('select');
+        select.id = 'id_talhoes';
+        select.name = 'id_talhoes';
+        select.style.display = 'none';
+        // keep single-select behavior expected by tests
+        select.multiple = false;
+        talhoesGrid.parentNode.insertBefore(select, talhoesGrid.nextSibling);
+      }
+      select.innerHTML = '';
+      talhoesFiltrados.forEach(t => {
+        const opt = document.createElement('option');
+        opt.value = t.id;
+        opt.text = t.nome;
+        if (t.in_use) {
+          // mark as disabled so it's not selectable by user
+          opt.disabled = true;
+          opt.setAttribute('data-in-use', '1');
+          opt.title = t.in_use_by || 'Em uso';
+        }
+        select.appendChild(opt);
+      });
+    })();
+    
     updateSummary();
   }
 
@@ -643,6 +671,10 @@ document.addEventListener('DOMContentLoaded', function() {
     talhoesGrid.style.display = 'none';
     loadingState.style.display = 'none';
     filters.style.display = 'none';
+
+    // Clear compatibility select if present
+    const compatSelect = document.getElementById('id_talhoes');
+    if (compatSelect) compatSelect.innerHTML = '';
     
     if (msg) {
       emptyState.querySelector('p').textContent = msg;

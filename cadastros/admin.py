@@ -238,6 +238,13 @@ class PortoAdmin(admin.ModelAdmin):
     readonly_fields = ['data_criacao', 'data_atualizacao']
 
 
+@admin.register(Moeda)
+class MoedaAdmin(admin.ModelAdmin):
+    list_display = ['codigo', 'nome']
+    search_fields = ['codigo', 'nome']
+    ordering = ['codigo']
+
+
 @admin.register(Vendedor)
 class VendedorAdmin(admin.ModelAdmin):
     list_display = ['nome_completo', 'empresa', 'tipo_mercado', 'status', 'data_admissao']

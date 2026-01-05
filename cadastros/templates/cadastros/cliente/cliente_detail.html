@@ -46,7 +46,13 @@
 
   {% url 'cadastros:cliente_update' cliente.pk as cliente_update_url %}
   {% url 'cadastros:cliente_delete' cliente.pk as cliente_delete_url %}
+  {% url 'cadastros:cliente_activate' cliente.pk as cliente_activate_url %}
   {% include 'cadastros/partials/entity_header.html' with title=cliente.razao_social subtitle=cliente.nome_comercial icon="<i class='bi bi-people text-primary'></i>" edit_url=cliente_update_url delete_url=cliente_delete_url %}
+  {% if cliente.status == 'INATIVO' %}
+    <div class="mt-2">
+      <form method="post" action="{{ cliente_activate_url }}" style="display:inline">{% csrf_token %}<button class="btn btn-sm btn-success">Reativar</button></form>
+    </div>
+  {% endif %}
 
   <!-- Alertas de Documentos -->
   {% if docs_vencidos or docs_vencendo %}

@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container py-4">
+  <h3>Reativar Cliente</h3>
+  <p>Deseja reativar o cliente <strong>{{ cliente.razao_social }}</strong>?</p>
+  <form method="post">
+    {% csrf_token %}
+    <a href="{% url 'cadastros:cliente_detail' cliente.pk %}" class="btn btn-secondary">Cancelar</a>
+    <button type="submit" class="btn btn-success">Reativar</button>
+  </form>
+</div>
+{% endblock %}

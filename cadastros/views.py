@@ -2374,13 +2374,27 @@ def cliente_update(request, pk):
 
 @login_required
 def cliente_delete(request, pk):
+    """Desativa o cliente ao invés de excluir para preservar histórico."""
     cliente = get_object_or_404(Cliente, pk=pk, empresa=request.user.empresa)
     if request.method == 'POST':
         nome = cliente.razao_social
-        cliente.delete()
-        messages.success(request, f'🗑️ Cliente "{nome}" excluído!')
+        cliente.status = 'INATIVO'
+        cliente.save()
+        messages.success(request, f'🗑️ Cliente "{nome}" desativado (status INATIVO)')
         return redirect('cadastros:cliente_list')
     return render(request, 'cadastros/cliente/cliente_confirm_delete.html', {'cliente': cliente})
+
+
+@login_required
+def cliente_activate(request, pk):
+    """Reativa um cliente inativo (rota POST)."""
+    cliente = get_object_or_404(Cliente, pk=pk, empresa=request.user.empresa)
+    if request.method == 'POST':
+        cliente.status = 'ATIVO'
+        cliente.save()
+        messages.success(request, f'✅ Cliente "{cliente.razao_social}" reativado!')
+        return redirect('cadastros:cliente_detail', pk=cliente.pk)
+    return render(request, 'cadastros/cliente/cliente_confirm_activate.html', {'cliente': cliente})
 
 
 # ==================== ENDEREÇOS DO CLIENTE ====================

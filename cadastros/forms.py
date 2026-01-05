@@ -155,13 +155,29 @@ class FazendaForm(forms.ModelForm):
 
     
     def clean_cnpj_cpf(self):
-        """Valida e limpa CNPJ/CPF"""
+        """Valida e limpa CNPJ/CPF (permitir vazio para IMPORTADOR)."""
         cnpj_cpf = self.cleaned_data.get('cnpj_cpf', '')
         
         # Remove caracteres especiais
         cnpj_cpf_limpo = re.sub(r'\D', '', cnpj_cpf)
+
+        # Determine tipo_cliente (prefer cleaned_data if present, else POST > initial > instance)
+        tipo = self.cleaned_data.get('tipo_cliente') if hasattr(self, 'cleaned_data') else None
+        if not tipo:
+            if self.data and self.data.get('tipo_cliente'):
+                tipo = self.data.get('tipo_cliente')
+            elif self.initial and self.initial.get('tipo_cliente'):
+                tipo = self.initial.get('tipo_cliente')
+            elif getattr(self.instance, 'tipo_cliente', None):
+                tipo = self.instance.tipo_cliente
         
-        # Valida tamanho
+        # If empty and it's an IMPORTADOR, allow (model will generate CNPJ)
+        if not cnpj_cpf_limpo:
+            if tipo == 'IMPORTADOR':
+                return ''
+            raise ValidationError('CNPJ/CPF inválido. Digite 11 ou 14 dígitos.')
+
+        # Valida tamanho quando presente
         if len(cnpj_cpf_limpo) not in [11, 14]:
             raise ValidationError('CNPJ/CPF inválido. Digite 11 ou 14 dígitos.')
         
@@ -358,6 +374,10 @@ class ClienteForm(forms.ModelForm):
         self.usuario = kwargs.pop('usuario', None)
         super().__init__(*args, **kwargs)
 
+        # Ensure cnpj_cpf is not required at HTML level (we validate per tipo_cliente)
+        if 'cnpj_cpf' in self.fields:
+            self.fields['cnpj_cpf'].required = False
+
         # Limit vendedor_responsavel to vendedores da empresa and by tipo_cliente
         if 'vendedor_responsavel' in self.fields:
             if self.empresa:
@@ -382,10 +402,16 @@ class ClienteForm(forms.ModelForm):
 
         # Set choices for moeda_padrao (use Vendedor.MOEDA_CHOICES if available)
         if 'moeda_padrao' in self.fields:
+            # Prefer currencies defined in the database (Moeda model). Fallback to Vendedor.MOEDA_CHOICES
             try:
-                choices = Vendedor.MOEDA_CHOICES
+                from .models import Moeda
+                moedas = list(Moeda.objects.all())
+                if moedas:
+                    choices = [(m.codigo, f"{m.nome} ({m.codigo})") for m in moedas]
+                else:
+                    choices = getattr(Vendedor, 'MOEDA_CHOICES', [('BRL','BRL'), ('USD','USD'), ('EUR','EUR')])
             except Exception:
-                choices = [('BRL','BRL'), ('USD','USD'), ('EUR','EUR')]
+                choices = getattr(Vendedor, 'MOEDA_CHOICES', [('BRL','BRL'), ('USD','USD'), ('EUR','EUR')])
             # Ensure field uses Select widget and is optional
             self.fields['moeda_padrao'].choices = choices
             self.fields['moeda_padrao'].widget = forms.Select(attrs={'class': 'form-select'})

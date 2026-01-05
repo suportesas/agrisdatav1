@@ -1017,6 +1017,7 @@ class Cliente(models.Model):
     idioma_preferido = models.CharField('Idioma Preferido', max_length=20, blank=True)
     certificacoes_exigidas = models.TextField('Certificações Exigidas', blank=True)
 
+
     # Contato principal (simplificado)
     contato_principal_nome = models.CharField('Contato Principal', max_length=150, blank=True)
     contato_principal_telefone = models.CharField('Telefone Contato', max_length=30, blank=True)
@@ -1135,6 +1136,20 @@ class Cliente(models.Model):
             self.codigo = f"{prefix}-{(num+1):05d}"
 
         super().save(*args, **kwargs)
+
+
+class Moeda(models.Model):
+    """Lista de moedas que podem ser gerenciadas via admin."""
+    codigo = models.CharField('Código', max_length=4, unique=True, help_text='Ex: BRL, USD, EUR')
+    nome = models.CharField('Nome', max_length=50, help_text='Nome da moeda')
+
+    class Meta:
+        verbose_name = 'Moeda'
+        verbose_name_plural = 'Moedas'
+        ordering = ['codigo']
+
+    def __str__(self):
+        return f"{self.nome} ({self.codigo})"
 
 
 class EnderecoCliente(models.Model):

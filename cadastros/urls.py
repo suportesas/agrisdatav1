@@ -145,6 +145,7 @@ urlpatterns = [
     path('clientes/<int:pk>/', views.cliente_detail, name='cliente_detail'),
     path('clientes/<int:pk>/editar/', views.cliente_update, name='cliente_update'),
     path('clientes/<int:pk>/excluir/', views.cliente_delete, name='cliente_delete'),
+    path('clientes/<int:pk>/reativar/', views.cliente_activate, name='cliente_activate'),
 
     # Cliente: endereços
     path('clientes/<int:cliente_pk>/enderecos/novo/', views.cliente_endereco_create, name='cliente_endereco_create'),

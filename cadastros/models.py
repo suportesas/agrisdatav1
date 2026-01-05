@@ -10,6 +10,8 @@ from decimal import Decimal
 import os
 from django.core.validators import MaxValueValidator, RegexValidator
 import re
+import random
+import time
 
 # Lista de UFs (inclui 'EX' para Exterior)
 UF_CHOICES = [
@@ -930,6 +932,23 @@ def _normalize_doc(value):
     return re.sub(r"\D", "", (value or ""))
 
 
+def _generate_fake_cnpj(empresa_id=None):
+    """Gera um CNPJ fictício de 14 dígitos único por empresa sempre que possível."""
+    # Prefixo 99 para evitar colisão com CNPJs reais
+    for _ in range(1000):
+        core = ''.join(str(random.randint(0,9)) for _ in range(12))
+        candidate = f"99{core}"
+        if empresa_id:
+            exists = Cliente.objects.filter(empresa_id=empresa_id, cnpj_cpf=candidate).exists()
+        else:
+            exists = Cliente.objects.filter(cnpj_cpf=candidate).exists()
+        if not exists:
+            return candidate
+    # Fallback usando timestamp para garantir um valor numérico único
+    ts = str(int(time.time()*1000))[-12:]
+    return f"99{ts}"
+
+
 class Cliente(models.Model):
     """Cadastro de Clientes multi-tenant"""
 
@@ -960,7 +979,7 @@ class Cliente(models.Model):
     razao_social = models.CharField('Razão Social / Nome', max_length=250)
     nome_comercial = models.CharField('Nome Comercial', max_length=250, blank=True)
 
-    cnpj_cpf = models.CharField('CNPJ/CPF', max_length=18, help_text='Apenas números ou formato usual')
+    cnpj_cpf = models.CharField('CNPJ/CPF', max_length=18, blank=True, help_text='Apenas números ou formato usual (Opcional para IMPORTADOR)')
 
     status = models.CharField('Status', max_length=10, choices=STATUS, default='ATIVO')
 
@@ -1028,11 +1047,14 @@ class Cliente(models.Model):
         # Normaliza documento
         doc = _normalize_doc(self.cnpj_cpf)
         if not doc:
-            raise ValidationError({'cnpj_cpf':'CNPJ/CPF é obrigatório'})
-        if len(doc) not in (11,14):
-            raise ValidationError({'cnpj_cpf':'CNPJ/CPF inválido'})
-        # Atualiza campo para forma normalizada (apenas dígitos)
-        self.cnpj_cpf = doc
+            # Permite importador sem CNPJ (será gerado no save)
+            if self.tipo_cliente != 'IMPORTADOR':
+                raise ValidationError({'cnpj_cpf':'CNPJ/CPF é obrigatório'})
+        else:
+            if len(doc) not in (11,14):
+                raise ValidationError({'cnpj_cpf':'CNPJ/CPF inválido'})
+            # Atualiza campo para forma normalizada (apenas dígitos)
+            self.cnpj_cpf = doc
 
         # Indicador IE e inscrição estadual
         if self.contribuinte_icms:
@@ -1077,6 +1099,11 @@ class Cliente(models.Model):
     def save(self, *args, **kwargs):
         # Normaliza cnpj_cpf para dígitos
         self.cnpj_cpf = _normalize_doc(self.cnpj_cpf)
+
+        # Para importador sem CNPJ informado, gera um CNPJ fictício único
+        if self.tipo_cliente == 'IMPORTADOR' and not self.cnpj_cpf:
+            empresa_id = getattr(self, 'empresa_id', None)
+            self.cnpj_cpf = _generate_fake_cnpj(empresa_id)
 
         # Gera código sequencial por empresa se não existir
         if not self.codigo:

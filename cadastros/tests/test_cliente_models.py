@@ -52,6 +52,30 @@ class ClienteModelTests(TestCase):
         c.porto_destino = self.porto
         c.full_clean()  # Now should pass
 
+    def test_importador_without_cnpj_generates_unique_cnpj(self):
+        # Importadores podem ser criados sem CNPJ e receberão um número fictício único
+        c1 = Cliente.objects.create(
+            empresa=self.empresa,
+            tipo_cliente='IMPORTADOR',
+            tipo_pessoa='PJ',
+            razao_social='Importador Sem CNPJ 1',
+            eori='E1',
+            pais='Chile',
+            porto_destino=self.porto
+        )
+        c2 = Cliente.objects.create(
+            empresa=self.empresa,
+            tipo_cliente='IMPORTADOR',
+            tipo_pessoa='PJ',
+            razao_social='Importador Sem CNPJ 2',
+            eori='E2',
+            pais='Chile',
+            porto_destino=self.porto
+        )
+        self.assertEqual(len(c1.cnpj_cpf), 14)
+        self.assertEqual(len(c2.cnpj_cpf), 14)
+        self.assertNotEqual(c1.cnpj_cpf, c2.cnpj_cpf)
+
     def test_unique_cnpj_por_empresa(self):
         Cliente.objects.create(empresa=self.empresa, razao_social='Cliente 1', cnpj_cpf='44444444444444')
         with self.assertRaises(IntegrityError):

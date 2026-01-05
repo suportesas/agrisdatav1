@@ -331,7 +331,7 @@ class ClienteForm(forms.ModelForm):
             'tipo_pessoa': forms.Select(attrs={'class': 'form-select'}),
             'razao_social': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_razao_social', 'data-auto': 'true'}),
             'nome_comercial': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_nome_comercial', 'data-auto': 'true'}),
-            'cnpj_cpf': forms.TextInput(attrs={'class': 'form-control', 'data-mask': 'cnpj-cpf', 'placeholder': '00.000.000/0000-00 ou 000.000.000-00'}),
+            'cnpj_cpf': forms.TextInput(attrs={'class': 'form-control', 'data-mask': 'cnpj-cpf', 'placeholder': '00.000.000/0000-00 ou 000.000.000-00 (Opcional para IMPORTADOR)'}),
             'inscricao_estadual': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_inscricao_estadual'}),
             'eori': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_eori'}),
             'pais': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_pais'}),

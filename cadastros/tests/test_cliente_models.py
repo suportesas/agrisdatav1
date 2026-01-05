@@ -241,3 +241,61 @@ class ClienteModelTests(TestCase):
         data['vendedor_responsavel'] = str(v_ext.pk)
         resp2 = self.client.post(reverse('cadastros:cliente_create'), data)
         self.assertEqual(resp2.status_code, 302)
+
+    def test_importador_create_view_requires_vat_and_generates_cnpj(self):
+        """Simulate create view for IMPORTADOR: VAT required; when provided, CNPJ generated if missing."""
+        from django.urls import reverse
+        from usuarios.models import Usuario
+
+        user = Usuario.objects.create_user(username='viewtest', password='pass')
+        user.empresa = self.empresa
+        user.save()
+        self.client.force_login(user)
+
+        # 1) IMPORTADOR without VAT should fail
+        data_fail = {
+            'razao_social': 'Import Fail',
+            'tipo_pessoa': 'PJ',
+            'tipo_cliente': 'IMPORTADOR',
+            'eori': 'E1',
+            'pais': 'Chile',
+            'porto_destino': str(self.porto.pk),
+            # no cnpj_cpf, no vat
+        }
+        resp = self.client.post(reverse('cadastros:cliente_create'), data_fail)
+        # Should render form with errors (not redirect)
+        self.assertNotEqual(resp.status_code, 302)
+        form = resp.context.get('form')
+        self.assertIsNotNone(form)
+        self.assertIn('vat', form.errors)
+
+        # 2) IMPORTADOR with VAT should pass and generate cnpj
+        data_ok = data_fail.copy()
+        data_ok['vat'] = 'VAT-ABC-123'
+        resp2 = self.client.post(reverse('cadastros:cliente_create'), data_ok)
+        self.assertEqual(resp2.status_code, 302)
+
+        # Verify created client
+        c = Cliente.objects.get(razao_social='Import Fail')
+        self.assertEqual(len(c.cnpj_cpf), 14)
+        self.assertEqual(c.vat, 'VAT-ABC-123')
+
+    def test_nacional_create_requires_cnpj(self):
+        from django.urls import reverse
+        from usuarios.models import Usuario
+
+        user = Usuario.objects.create_user(username='nattest', password='pass')
+        user.empresa = self.empresa
+        user.save()
+        self.client.force_login(user)
+
+        data = {
+            'razao_social': 'Nacional No CNPJ',
+            'tipo_pessoa': 'PJ',
+            'tipo_cliente': 'NACIONAL',
+            # no cnpj_cpf
+        }
+        resp = self.client.post(reverse('cadastros:cliente_create'), data)
+        self.assertNotEqual(resp.status_code, 302)
+        form = resp.context.get('form')
+        self.assertIn('cnpj_cpf', form.errors)

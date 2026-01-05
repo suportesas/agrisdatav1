@@ -316,7 +316,7 @@ class ClienteForm(forms.ModelForm):
         model = Cliente
         fields = [
             'empresa', 'codigo', 'tipo_cliente', 'tipo_pessoa',
-            'razao_social', 'nome_comercial', 'cnpj_cpf',
+            'razao_social', 'nome_comercial', 'cnpj_cpf', 'vat',
             'inscricao_estadual', 'inscricao_municipal', 'eori', 'regime_tributario',
             'contribuinte_icms', 'indicador_ie',
             'pais', 'moeda_padrao', 'porto_destino',
@@ -332,6 +332,7 @@ class ClienteForm(forms.ModelForm):
             'razao_social': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_razao_social', 'data-auto': 'true'}),
             'nome_comercial': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_nome_comercial', 'data-auto': 'true'}),
             'cnpj_cpf': forms.TextInput(attrs={'class': 'form-control', 'data-mask': 'cnpj-cpf', 'placeholder': '00.000.000/0000-00 ou 000.000.000-00 (Opcional para IMPORTADOR)'}),
+            'vat': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_vat', 'placeholder': 'VAT / Número de registro do cliente no exterior'}),
             'inscricao_estadual': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_inscricao_estadual'}),
             'eori': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_eori'}),
             'pais': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_pais'}),

@@ -987,6 +987,7 @@ class Cliente(models.Model):
     inscricao_estadual = models.CharField('Inscrição Estadual', max_length=30, blank=True)
     inscricao_municipal = models.CharField('Inscrição Municipal', max_length=30, blank=True)
     eori = models.CharField('EORI', max_length=30, blank=True)
+    vat = models.CharField('VAT/Número Registro', max_length=50, blank=True, help_text='Número de registro do cliente no exterior (VAT)')
     regime_tributario = models.CharField('Regime Tributário', max_length=50, blank=True)
 
     contribuinte_icms = models.BooleanField('Contribuinte ICMS', default=False)
@@ -1075,6 +1076,8 @@ class Cliente(models.Model):
                 raise ValidationError({'pais':'País é obrigatório para importadores'})
             if not self.porto_destino:
                 raise ValidationError({'porto_destino':'Porto destino é obrigatório para importadores'})
+            if not (self.vat or '').strip():
+                raise ValidationError({'vat':'VAT (número de registro) é obrigatório para importadores'})
 
         # Validação de Inscrição Estadual por UF (aceita 'ISENTO' para não contribuintes)
         from .validators import validate_inscricao_estadual

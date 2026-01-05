@@ -41,15 +41,23 @@ class ClienteModelTests(TestCase):
 
     def test_importador_requires_fields(self):
         c = Cliente(empresa=self.empresa, tipo_cliente='IMPORTADOR', tipo_pessoa='PJ', razao_social='Importador', cnpj_cpf='33333333333333')
+        # falta EORI -> erro
         with self.assertRaises(ValidationError):
             c.full_clean()
         c.eori = 'EORI123'
+        # falta PAIS -> erro
         with self.assertRaises(ValidationError):
             c.full_clean()
         c.pais = 'Brasil'
+        # falta PORTO -> erro
         with self.assertRaises(ValidationError):
             c.full_clean()
         c.porto_destino = self.porto
+        # falta VAT -> erro
+        with self.assertRaises(ValidationError):
+            c.full_clean()
+        c.vat = 'VAT12345'
+        # agora deve passar
         c.full_clean()  # Now should pass
 
     def test_importador_without_cnpj_generates_unique_cnpj(self):

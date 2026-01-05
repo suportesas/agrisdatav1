@@ -26,6 +26,8 @@ class ClienteFormUITests(TestCase):
         self.assertIn('data-auto="true"', content)
         # Vendedor select present
         self.assertIn('name="vendedor_responsavel"', content)
+        # VAT field present for importadores
+        self.assertIn('id="id_vat"', content)
 
     def test_cliente_detail_uses_shared_header_and_shows_ministats(self):
         # Create client and check detail page for header include and ministats

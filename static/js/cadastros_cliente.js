@@ -43,7 +43,7 @@
     const inscricao = document.getElementById('id_inscricao_estadual');
     const tipoCliente = document.getElementById('id_tipo_cliente');
     const eori = document.getElementById('id_eori');
-    const porto = document.getElementById('id_porto_destino');
+      const vat = document.getElementById('id_vat');
     const moeda = document.getElementById('id_moeda_padrao');
 
     function updateByCountry(value) {
@@ -86,8 +86,9 @@
     function updateByTipoCliente() {
       const val = tipoCliente ? tipoCliente.value : '';
       if (val === 'IMPORTADOR') {
-        // mostrar EORI, Porto e Moeda
+        // mostrar EORI, VAT, Porto e Moeda
         if (eori) showElement(eori);
+        if (vat) showElement(vat);
         if (porto) showElement(porto);
         if (moeda) showElement(moeda);
         // Importadores use UF='EX' for address fields
@@ -96,6 +97,7 @@
         });
       } else {
         if (eori) hideElement(eori);
+        if (vat) hideElement(vat);
         if (porto) hideElement(porto);
         if (moeda) hideElement(moeda);
       }

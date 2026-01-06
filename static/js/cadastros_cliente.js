@@ -782,7 +782,32 @@ window.addEventListener('error', function(e){ try { console.error('Uncaught erro
                 }
               }
             }
+            // Ensure select is enabled so it is included in POST
+            try { prazoSelect.disabled = false; } catch(e){}
           }
+
+          // Ensure vendedor selection is synchronized even if enhanced select libraries are in use
+          try {
+            const vendedorSel = document.getElementById('id_vendedor_responsavel');
+            if (vendedorSel) {
+              // If not many options, try to read from Choices/Select2 rendered text
+              if (vendedorSel.options.length <= 1) {
+                const wrapper = document.querySelector('#id_vendedor_responsavel + .choices') || document.querySelector('.select2-selection__rendered');
+                const text = (wrapper && wrapper.textContent) ? wrapper.textContent.trim() : '';
+                if (text) {
+                  for (const opt of vendedorSel.options) {
+                    if ((opt.textContent||'').trim().indexOf(text) !== -1) { opt.selected = true; vendedorSel.value = opt.value; break; }
+                  }
+                }
+              }
+              // ensure the select is enabled to be posted
+              try { vendedorSel.disabled = false; } catch(e){}
+            }
+          } catch(err) { console.warn('vendedor sync failed', err); }
+
+          // Ensure important fields are not disabled and have the expected values
+          try { const limite = document.getElementById('id_limite_credito') || document.getElementById('id_limite_credito'); if (limite) try { limite.disabled = false; } catch(e){} } catch(e){}
+          try { const prazoInput = document.getElementById('id_prazo_pagamento'); if (prazoInput) try { prazoInput.disabled = false; } catch(e){} } catch(e){}
 
           const moedaSelect = document.getElementById('id_moeda_padrao');
           if (moedaSelect) {
@@ -911,8 +936,11 @@ window.addEventListener('error', function(e){ try { console.error('Uncaught erro
                       return;
                     }
                     // Otherwise, fallback to trying to read text and possibly render
-                    const text = await resp.text();
-                    if (text && text.indexOf('<form') !== -1 && text.indexOf('name="razao_social"') !== -1) { document.open(); document.write(text); document.close(); return; }
+                    // Ensure client-side synchronization in the AJAX fallback path
+                  try { if (typeof syncFormBeforeSubmit === 'function') syncFormBeforeSubmit(); } catch(e) { console.warn('sync fallback failed', e); }
+
+                  const text = await resp.text();
+                  if (text && text.indexOf('<form') !== -1 && text.indexOf('name="razao_social"') !== -1) { document.open(); document.write(text); document.close(); return; }
                     showClientAlert('Erro ao submeter formulário', 'danger');
                     return;
                   }

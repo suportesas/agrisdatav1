@@ -55,9 +55,6 @@
   <form method="post" enctype="multipart/form-data" id="clienteForm">
     {% csrf_token %}
 
-    <!-- Seção: Documentos (mensagem de feedback para buscar CNPJ) -->
-    <div class="form-text mb-3" id="cnpjFeedback">&nbsp;</div>
-
     <div class="form-section">
       <div class="section-header">
         <h5 class="mb-0">Dados Básicos</h5>
@@ -115,6 +112,10 @@
             <label class="form-label fw-semibold">EORI</label>
             {{ form.eori }}
           </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">VAT / Número Registro (Exterior)</label>
+            {{ form.vat }}
+          </div>
         </div>
       </div>
     </div>
@@ -131,7 +132,47 @@
           </div>
           <div class="col-md-4">
             <label class="form-label fw-semibold">Moeda Padrão</label>
-            {{ form.moeda_padrao }}
+            <div class="d-flex gap-2 align-items-center">
+              <select name="moeda_padrao" id="id_moeda_padrao" class="form-select">
+                <option value="">-- Nenhum --</option>
+                {% for m in moedas %}
+                  <option value="{{ m.codigo }}" {% if selected_moeda == m.codigo %}selected{% endif %}>{{ m.nome }} ({{ m.codigo }})</option>
+                {% endfor %}
+              </select>
+              <button type="button" class="btn btn-outline-secondary btn-sm" id="addMoedaBtn">Adicionar</button>
+            </div>
+            {% if not moedas_exist %}
+              <div class="form-text small text-muted mt-1">Nenhuma moeda definida. Você pode adicioná-la aqui mesmo.</div>
+            {% endif %}
+          </div>
+
+          <!-- Modal para adicionar moeda -->
+          <div class="modal fade" id="moedaModal" tabindex="-1" aria-hidden="true" data-a11y="true">
+            <div class="modal-dialog">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h5 class="modal-title">Adicionar Moeda</h5>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                  <form id="moedaForm">
+                    <div class="mb-3">
+                      <label class="form-label">Código (ex: JPY)</label>
+                      <input type="text" class="form-control" id="moeda_codigo" maxlength="4" required>
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label">Nome</label>
+                      <input type="text" class="form-control" id="moeda_nome" required>
+                    </div>
+                    <div id="moedaFeedback" class="text-danger small"></div>
+                  </form>
+                </div>
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                  <button type="button" class="btn btn-primary" id="moedaSaveBtn">Salvar Moeda</button>
+                </div>
+              </div>
+            </div>
           </div>
           <div class="col-md-4">
             <label class="form-label fw-semibold">Porto Destino</label>
@@ -182,7 +223,7 @@
       <a href="{% url 'cadastros:cliente_list' %}" class="btn btn-outline-secondary btn-lg px-5">
         <i class="bi bi-x-circle"></i> Cancelar
       </a>
-      <button type="submit" class="btn btn-success btn-lg px-5">
+      <button type="submit" id="clienteSaveBtn" class="btn btn-success btn-lg px-5">
         <i class="bi bi-check-circle"></i> Salvar Cliente
       </button>
     </div>

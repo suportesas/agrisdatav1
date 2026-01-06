@@ -11,7 +11,16 @@ class ClienteModelTests(TestCase):
         self.empresa = Empresa.objects.create(nome='Empresa Teste')
         # Porto necessário para importador tests
         self.porto = Porto.objects.create(empresa=self.empresa, codigo='PT01', nome='Porto Teste', pais='Brasil', cidade='Salvador')
-        self.vendedor = Vendedor.objects.create(empresa=self.empresa, nome='Vendedor Teste')
+        from datetime import date
+        self.vendedor = Vendedor.objects.create(
+            empresa=self.empresa,
+            nome_completo='Vendedor Teste',
+            cpf='00000000001',
+            tipo_mercado='INTERNO',
+            telefone_principal='71999999999',
+            email_corporativo='vendedor@empresa.com',
+            data_admissao=date(2020,1,1)
+        )
 
     def test_codigo_gerado_por_empresa(self):
         c1 = Cliente.objects.create(empresa=self.empresa, razao_social='Cliente A', cnpj_cpf='00.000.000/0000-01')
@@ -279,6 +288,56 @@ class ClienteModelTests(TestCase):
         c = Cliente.objects.get(razao_social='Import Fail')
         self.assertEqual(len(c.cnpj_cpf), 14)
         self.assertEqual(c.vat, 'VAT-ABC-123')
+
+    def test_cliente_deactivate_and_reactivate(self):
+        from django.urls import reverse
+        from usuarios.models import Usuario
+        user = Usuario.objects.create_user(username='acttest', password='pass')
+        user.empresa = self.empresa
+        user.save()
+        self.client.force_login(user)
+
+        c = Cliente.objects.create(empresa=self.empresa, razao_social='To Deact', cnpj_cpf='11111111111111')
+        # Deactivate
+        resp = self.client.post(reverse('cadastros:cliente_delete', args=[c.pk]))
+        self.assertEqual(resp.status_code, 302)
+        c.refresh_from_db()
+        self.assertEqual(c.status, 'INATIVO')
+        # Reactivate
+        resp2 = self.client.post(reverse('cadastros:cliente_activate', args=[c.pk]))
+        self.assertEqual(resp2.status_code, 302)
+        c.refresh_from_db()
+        self.assertEqual(c.status, 'ATIVO')
+
+    def test_moeda_model_reflected_in_form_choices(self):
+        # Create a Moeda and ensure it appears in form choices
+        from .models import Moeda
+        Moeda.objects.create(codigo='JPY', nome='Iene')
+        from django.urls import reverse
+        from usuarios.models import Usuario
+        user = Usuario.objects.create_user(username='monet', password='pass')
+        user.empresa = self.empresa
+        user.save()
+        self.client.force_login(user)
+        resp = self.client.get(reverse('cadastros:cliente_create'))
+        self.assertEqual(resp.status_code, 200)
+        content = resp.content.decode('utf-8')
+        self.assertIn('Iene (JPY)', content)
+
+    def test_ajax_create_moeda(self):
+        from django.urls import reverse
+        from usuarios.models import Usuario
+        user = Usuario.objects.create_user(username='monajax', password='pass')
+        user.empresa = self.empresa
+        user.save()
+        self.client.force_login(user)
+        resp = self.client.post(reverse('cadastros:moeda_create_ajax'), {'codigo': 'CAD', 'nome': 'Dólar Canadense'})
+        self.assertEqual(resp.status_code, 200)
+        json = resp.json()
+        self.assertTrue(json.get('success'))
+        self.assertEqual(json['moeda']['codigo'], 'CAD')
+        from .models import Moeda
+        self.assertTrue(Moeda.objects.filter(codigo='CAD').exists())
 
     def test_nacional_create_requires_cnpj(self):
         from django.urls import reverse

@@ -147,6 +147,9 @@ urlpatterns = [
     path('clientes/<int:pk>/excluir/', views.cliente_delete, name='cliente_delete'),
     path('clientes/<int:pk>/reativar/', views.cliente_activate, name='cliente_activate'),
 
+    # AJAX endpoints
+    path('moedas/novo-ajax/', views.moeda_create_ajax, name='moeda_create_ajax'),
+
     # Cliente: endereços
     path('clientes/<int:cliente_pk>/enderecos/novo/', views.cliente_endereco_create, name='cliente_endereco_create'),
     path('clientes/<int:cliente_pk>/enderecos/<int:endereco_pk>/editar/', views.cliente_endereco_update, name='cliente_endereco_update'),

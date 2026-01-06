@@ -3,8 +3,9 @@ from decimal import Decimal
 from django.test import TestCase, Client
 from django.contrib.auth import get_user_model
 
-from cadastros.models import Fazenda, Area
+from cadastros.models import Fazenda, Area, Moeda
 from cadastros.models import Talhao, Cultura, HistoricoTalhao
+from cadastros.models import Cliente, PrazoPagamentoPadrao, Porto
 from django.urls import reverse
 from datetime import date, timedelta
 from empresas.models import Empresa, Plano
@@ -357,6 +358,7 @@ class FornecedorContatoTests(TestCase):
 
 # === Diagnostic: form validation checks ===
 class FornecedorFormValidationTests(TestCase):
+
     def setUp(self):
         plano = Plano.objects.create(codigo='PEQ', nome='P', valor_mensal=1)
         self.empresa = Empresa.objects.create(nome='E', plano=plano)
@@ -593,3 +595,159 @@ class FornecedorListFilterPaginationTests(TestCase):
         content = resp.content.decode('utf-8')
         # ensure pagination controls present when more than page size
         self.assertIn('Próximo', content)
+
+
+class MoedaAjaxTests(TestCase):
+    def setUp(self):
+        plano = Plano.objects.create(codigo='PEQ', nome='P', valor_mensal=1)
+        self.empresa = Empresa.objects.create(nome='E', plano=plano)
+        User = get_user_model()
+        self.user = User.objects.create_user(username='u', password='pass')
+        self.user.empresa = self.empresa
+        self.user.save()
+        self.client = Client()
+        self.client.login(username='u', password='pass')
+
+    def test_create_moeda_ajax_success(self):
+        url = reverse('cadastros:moeda_create_ajax')
+        data = {'codigo': 'JPY', 'nome': 'Iene'}
+        resp = self.client.post(url, data)
+        self.assertEqual(resp.status_code, 200)
+        json_data = resp.json()
+        self.assertTrue(json_data.get('success'))
+        self.assertTrue(Moeda.objects.filter(codigo='JPY').exists())
+
+class ClienteSaveFlowTests(TestCase):
+    def setUp(self):
+        plano = Plano.objects.create(codigo='PEQ', nome='P', valor_mensal=1)
+        self.empresa = Empresa.objects.create(nome='E', plano=plano)
+        User = get_user_model()
+        self.user = User.objects.create_user(username='saveuser', password='pass')
+        self.user.empresa = self.empresa
+        self.user.save()
+        self.client = Client()
+        self.client.login(username='saveuser', password='pass')
+
+    def test_edit_client_valid_post_redirect(self):
+        c = Cliente.objects.create(empresa=self.empresa, razao_social='Orig', cnpj_cpf='11111111111111')
+        url = reverse('cadastros:cliente_update', args=[c.pk])
+        data = {
+            'razao_social': 'Updated',
+            'cnpj_cpf': c.cnpj_cpf,
+            'tipo_cliente': c.tipo_cliente,
+            'tipo_pessoa': c.tipo_pessoa,
+        }
+        resp = self.client.post(url, data)
+        self.assertEqual(resp.status_code, 302)
+        c.refresh_from_db()
+        self.assertEqual(c.razao_social, 'Updated')
+
+    def test_edit_client_missing_cnpj_shows_error(self):
+        c = Cliente.objects.create(empresa=self.empresa, razao_social='Orig', cnpj_cpf='11111111111111')
+        url = reverse('cadastros:cliente_update', args=[c.pk])
+        # Post with empty cnpj for a NACIONAL client
+        data = {
+            'razao_social': 'Updated',
+            'cnpj_cpf': '',
+            'tipo_cliente': 'NACIONAL',
+            'tipo_pessoa': c.tipo_pessoa,
+        }
+        resp = self.client.post(url, data)
+        self.assertNotEqual(resp.status_code, 302)
+        form = resp.context.get('form')
+        self.assertIsNotNone(form)
+        self.assertIn('cnpj_cpf', form.errors)
+
+    def test_edit_client_importador_requires_fields(self):
+        c = Cliente.objects.create(empresa=self.empresa, razao_social='Orig', cnpj_cpf='11111111111111')
+        url = reverse('cadastros:cliente_update', args=[c.pk])
+        data = {
+            'razao_social': 'Updated Importador',
+            'cnpj_cpf': c.cnpj_cpf,
+            'tipo_cliente': 'IMPORTADOR',
+            'tipo_pessoa': c.tipo_pessoa,
+            # missing eori, vat, porto_destino
+        }
+        resp = self.client.post(url, data)
+        self.assertNotEqual(resp.status_code, 302)
+        form = resp.context.get('form')
+        self.assertIsNotNone(form)
+        # EORI is validated first; ensure it's reported
+        self.assertIn('eori', form.errors)
+
+    def test_prazo_pagamento_padrao_post_saves(self):
+        preset = PrazoPagamentoPadrao.objects.create(empresa=self.empresa, nome='30 dias', termos='30', ativo=True)
+        c = Cliente.objects.create(empresa=self.empresa, razao_social='Orig', cnpj_cpf='11111111111111')
+        url = reverse('cadastros:cliente_update', args=[c.pk])
+        data = {
+            'razao_social': 'Updated',
+            'cnpj_cpf': c.cnpj_cpf,
+            'tipo_cliente': c.tipo_cliente,
+            'tipo_pessoa': c.tipo_pessoa,
+            'prazo_pagamento_padrao': str(preset.pk),
+        }
+        resp = self.client.post(url, data)
+        self.assertEqual(resp.status_code, 302)
+        c.refresh_from_db()
+        self.assertEqual(c.prazo_pagamento_padrao, preset)
+    def test_create_moeda_ajax_validation_error(self):
+        url = reverse('cadastros:moeda_create_ajax')
+        resp = self.client.post(url, {'codigo': ''})
+        self.assertEqual(resp.status_code, 400)
+        json_data = resp.json()
+        self.assertFalse(json_data.get('success'))
+
+    def test_create_moeda_ajax_duplicate(self):
+        Moeda.objects.create(codigo='EUR', nome='Euro')
+        url = reverse('cadastros:moeda_create_ajax')
+        resp = self.client.post(url, {'codigo': 'EUR', 'nome': 'Euro'})
+        self.assertEqual(resp.status_code, 409)
+        json_data = resp.json()
+        self.assertFalse(json_data.get('success'))
+
+
+class ClienteDetailRenderTests(TestCase):
+    def setUp(self):
+        plano = Plano.objects.create(codigo='PEQ', nome='P', valor_mensal=1)
+        self.empresa = Empresa.objects.create(nome='E', plano=plano)
+        User = get_user_model()
+        self.user = User.objects.create_user(username='detailuser', password='pass')
+        self.user.empresa = self.empresa
+        self.user.save()
+        self.client = Client()
+        self.client.login(username='detailuser', password='pass')
+        # Create a porto
+        self.porto = Porto.objects.create(nome='Porto Teste', empresa=self.empresa)
+        # Create cliente with several fields populated to exercise template
+        self.cliente = Cliente.objects.create(
+            empresa=self.empresa,
+            razao_social='Cliente Teste',
+            nome_comercial='Comercial Teste',
+            cnpj_cpf='12345678901',
+            contribuinte_icms=True,
+            indicador_ie='1',
+            inscricao_suframa='SUF123',
+            eori='EORI123',
+            vat='VAT123',
+            porto_destino=self.porto,
+            pais='Brasil',
+            limite_credito=1000,
+            prazo_pagamento=30,
+        )
+        # assign cadastrado_por explicitly
+        self.cliente.cadastrado_por = self.user
+        self.cliente.save()
+
+    def test_cliente_detail_renders_added_fields(self):
+        url = reverse('cadastros:cliente_detail', args=[self.cliente.pk])
+        resp = self.client.get(url)
+        self.assertEqual(resp.status_code, 200)
+        content = resp.content.decode('utf-8')
+        # Check expected strings
+        self.assertIn('Contribuinte ICMS', content)
+        self.assertIn('Indicador IE', content)
+        self.assertIn('Inscrição SUFRAMA', content)
+        self.assertIn('VAT', content)
+        self.assertIn('Porto Destino', content)
+        self.assertIn('Cadastrado por', content)
+        self.assertIn(self.user.username, content)

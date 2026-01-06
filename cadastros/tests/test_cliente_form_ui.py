@@ -82,3 +82,28 @@ class ClienteFormUITests(TestCase):
         c.refresh_from_db()
         self.assertEqual(c.empresa, emp)
         self.assertEqual(c.razao_social, 'Updated')
+
+    def test_update_client_importador_requires_fields(self):
+        from django.urls import reverse
+        emp = Empresa.objects.create(nome='Empresa Update 2')
+        self.user.empresa = emp
+        self.user.save()
+        c = Cliente.objects.create(empresa=emp, razao_social='Original', cnpj_cpf='12345678901234')
+        url = reverse('cadastros:cliente_update', args=[c.pk])
+        # Try to update to IMPORTADOR without required import fields
+        data = {
+            'razao_social': 'Updated Importador',
+            'cnpj_cpf': c.cnpj_cpf,
+            'tipo_cliente': 'IMPORTADOR',
+            'tipo_pessoa': c.tipo_pessoa,
+            # missing eori, vat, porto_destino
+        }
+        resp = self.client.post(url, data)
+        # Should not redirect because form invalid
+        self.assertNotEqual(resp.status_code, 302)
+        form = resp.context.get('form')
+        self.assertIsNotNone(form)
+        # Expect errors for required import fields
+        self.assertIn('eori', form.errors)
+        self.assertIn('vat', form.errors)
+        self.assertIn('porto_destino', form.errors)

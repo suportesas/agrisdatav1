@@ -316,8 +316,10 @@ def porto_delete(request, pk):
 
 # ==================== API EXTERNA - CNPJ ====================
 
-@login_required
 def buscar_cnpj(request):
+    # If AJAX + not authenticated return 401 JSON instead of redirect
+    if not request.user.is_authenticated and (request.headers.get('X-Requested-With') == 'XMLHttpRequest' or 'application/json' in request.headers.get('Accept','')):
+        return JsonResponse({'erro': 'Não autorizado'}, status=401)
     """Busca dados do CNPJ via API ReceitaWS"""
     if request.method == 'POST':
         cnpj = request.POST.get('cnpj', '').replace('.', '').replace('/', '').replace('-', '')
@@ -2246,7 +2248,7 @@ def cliente_list(request):
 
     # Filtros de busca
     q = request.GET.get('q', '').strip()
-    status_atual = request.GET.get('status', '')
+    status_atual = request.GET.get('status', 'ATIVO')  # por padrão mostra apenas clientes ATIVO
     tipo_atual = request.GET.get('tipo', '')
     vendedor_atual = request.GET.get('vendedor', '')
     page = request.GET.get('page', 1)
@@ -2348,9 +2350,42 @@ def cliente_create(request):
     else:
         form = ClienteForm(empresa=request.user.empresa, usuario=request.user)
     # Also pass presets for template convenience
-    from .models import PrazoPagamentoPadrao
+    from .models import PrazoPagamentoPadrao, Moeda
     presets = PrazoPagamentoPadrao.objects.filter(empresa=request.user.empresa, ativo=True)
-    return render(request, 'cadastros/cliente/cliente_form.html', {'form': form, 'action': 'Cadastrar', 'presets': presets})
+    moedas = Moeda.objects.all()
+    # determine selected moeda from POST, initial or instance
+    selected_moeda = ''
+    if request.method == 'POST':
+        selected_moeda = request.POST.get('moeda_padrao','')
+    else:
+        selected_moeda = form.initial.get('moeda_padrao') or getattr(form.instance, 'moeda_padrao', '')
+    moedas_exist = moedas.exists()
+    return render(request, 'cadastros/cliente/cliente_form.html', {'form': form, 'action': 'Cadastrar', 'presets': presets, 'moedas_exist': moedas_exist, 'moedas': moedas, 'selected_moeda': selected_moeda})
+
+
+@login_required
+def moeda_create_ajax(request):
+    """Cria uma Moeda via AJAX (POST) e retorna JSON.
+    Permite adicionar moedas diretamente do formulário de cliente.
+    """
+    from django.http import JsonResponse
+    from .models import Moeda
+
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Invalid method'}, status=405)
+
+    codigo = (request.POST.get('codigo') or '').strip().upper()
+    nome = (request.POST.get('nome') or '').strip()
+
+    if not codigo or not nome:
+        return JsonResponse({'success': False, 'error': 'Código e nome são obrigatórios'}, status=400)
+
+    # Evitar duplicados
+    moeda, created = Moeda.objects.get_or_create(codigo=codigo, defaults={'nome': nome})
+    if not created:
+        return JsonResponse({'success': False, 'error': 'Moeda já existe'}, status=409)
+
+    return JsonResponse({'success': True, 'moeda': {'codigo': moeda.codigo, 'nome': moeda.nome}})
 
 
 @login_required
@@ -2367,9 +2402,17 @@ def cliente_update(request, pk):
     else:
         form = ClienteForm(instance=cliente, empresa=request.user.empresa, usuario=request.user)
     # Also pass presets for template convenience
-    from .models import PrazoPagamentoPadrao
+    from .models import PrazoPagamentoPadrao, Moeda
     presets = PrazoPagamentoPadrao.objects.filter(empresa=request.user.empresa, ativo=True)
-    return render(request, 'cadastros/cliente/cliente_form.html', {'form': form, 'action': 'Editar', 'cliente': cliente, 'presets': presets})
+    moedas = Moeda.objects.all()
+    # determine selected moeda from POST, initial or instance
+    selected_moeda = ''
+    if request.method == 'POST':
+        selected_moeda = request.POST.get('moeda_padrao','')
+    else:
+        selected_moeda = form.initial.get('moeda_padrao') or getattr(form.instance, 'moeda_padrao', '')
+    moedas_exist = moedas.exists()
+    return render(request, 'cadastros/cliente/cliente_form.html', {'form': form, 'action': 'Editar', 'cliente': cliente, 'presets': presets, 'moedas_exist': moedas_exist, 'moedas': moedas, 'selected_moeda': selected_moeda})
 
 
 @login_required

@@ -155,11 +155,17 @@
               </a>
             </li>
             
+            {% if request.user.is_authenticated and request.user.empresa %}
             <li class="submenu-item">
               <a href="{% url 'cadastros:cliente_list' %}" class="submenu-link">
                 <span>👥 Clientes</span>
               </a>
             </li>
+            {% else %}
+            <li class="submenu-item">
+              <a href="#" class="submenu-link disabled" title="Seu usuário não está vinculado a uma empresa"><span class="text-muted">👥 Clientes</span></a>
+            </li>
+            {% endif %}
             <li class="submenu-item">
               <a href="#" class="submenu-link">
                 <span>🚜 Maquinário</span>
@@ -284,6 +290,18 @@
           </div>
         {% endfor %}
       {% endif %}
+
+      <script>
+        // Auto-dismiss alerts after 3s and show a brief toast-like feedback
+        document.addEventListener('DOMContentLoaded', function(){
+          try {
+            document.querySelectorAll('.alert').forEach(function(a){
+              // Keep alerts visible for a short time and then dismiss automatically
+              setTimeout(function(){ try { var bs = bootstrap.Alert.getInstance(a) || new bootstrap.Alert(a); bs.close(); } catch(e){} }, 3000);
+            });
+          } catch(e){}
+        });
+      </script>
 
       {% block content %}{% endblock %}
     </main>

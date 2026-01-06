@@ -10,7 +10,7 @@ from .models import (
 from .models import Area, Talhao, HistoricoTalhao, Safra, SafraPlan, SafraReal
 from .models import Vendedor, ComissaoVendedor
 
-from .models import Fornecedor, FornecedorEndereco, FornecedorContato, FornecedorDadoBancario, Porto
+from .models import Fornecedor, FornecedorEndereco, FornecedorContato, FornecedorDadoBancario, Porto, Moeda
 
 class EnderecoFazendaInline(admin.TabularInline):
     """Inline para endereços"""

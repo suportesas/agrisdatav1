@@ -205,6 +205,22 @@
                 <td class="text-muted"><strong>Regime Tributário:</strong></td>
                 <td><span class="badge bg-info">{{ cliente.get_regime_tributario_display }}</span></td>
               </tr>
+              <tr>
+                <td class="text-muted"><strong>Contribuinte ICMS:</strong></td>
+                <td>{% if cliente.contribuinte_icms %}Sim{% else %}Não{% endif %}</td>
+              </tr>
+              <tr>
+                <td class="text-muted"><strong>Indicador IE:</strong></td>
+                <td>{{ cliente.indicador_ie|default:'—' }}</td>
+              </tr>
+              <tr>
+                <td class="text-muted"><strong>Inscrição SUFRAMA:</strong></td>
+                <td>{{ cliente.inscricao_suframa|default:'—' }}</td>
+              </tr>
+              <tr>
+                <td class="text-muted"><strong>VAT / Registro Exterior:</strong></td>
+                <td>{{ cliente.vat|default:'—' }}</td>
+              </tr>
             </table>
           </div>
 
@@ -224,6 +240,10 @@
                 <td>{{ cliente.vendedor_responsavel|default:"—" }}</td>
               </tr>
               <tr>
+                <td class="text-muted"><strong>Porto Destino:</strong></td>
+                <td>{{ cliente.porto_destino|default:"—" }}</td>
+              </tr>
+              <tr>
                 <td class="text-muted"><strong>País:</strong></td>
                 <td>{{ cliente.pais }}</td>
               </tr>
@@ -233,6 +253,12 @@
               <h5 class="fw-bold mb-3 text-secondary mt-4">Observações</h5>
               <p class="text-muted">{{ cliente.observacoes_comerciais }}</p>
             {% endif %}
+
+            <div class="mt-3 small text-muted">
+              <div><strong>Cadastrado por:</strong> {{ cliente.cadastrado_por|default:'—' }}</div>
+              <div><strong>Data de cadastro:</strong> {{ cliente.data_cadastro|date:"d/m/Y H:i" }}</div>
+              <div><strong>Última atualização:</strong> {{ cliente.data_atualizacao|date:"d/m/Y H:i" }}</div>
+            </div>
           </div>
         </div>
       </div>

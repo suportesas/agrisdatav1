@@ -425,6 +425,12 @@ class ClienteForm(forms.ModelForm):
             else:
                 self.fields['prazo_pagamento_padrao'].queryset = Vendedor.objects.none()
 
+        # Make certain numeric fields optional in the form (model has defaults)
+        if 'limite_credito' in self.fields:
+            self.fields['limite_credito'].required = False
+        if 'desconto_padrao' in self.fields:
+            self.fields['desconto_padrao'].required = False
+
         # Hide empresa and set initial if provided
         if self.empresa and 'empresa' in self.fields:
             self.initial['empresa'] = self.empresa

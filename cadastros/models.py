@@ -977,22 +977,22 @@ class Cliente(models.Model):
     tipo_pessoa = models.CharField('Tipo de Pessoa', max_length=2, choices=TIPO_PESSOA, default='PJ')
 
     razao_social = models.CharField('Razão Social / Nome', max_length=250)
-    nome_comercial = models.CharField('Nome Comercial', max_length=250, blank=True)
+    nome_comercial = models.CharField('Nome Comercial', max_length=250, blank=True, null=True)
 
-    cnpj_cpf = models.CharField('CNPJ/CPF', max_length=18, blank=True, help_text='Apenas números ou formato usual (Opcional para IMPORTADOR)')
+    cnpj_cpf = models.CharField('CNPJ/CPF', max_length=18, blank=True, null=True, help_text='Apenas números ou formato usual (Opcional para IMPORTADOR)')
 
     status = models.CharField('Status', max_length=10, choices=STATUS, default='ATIVO')
 
     # Documentação fiscal
-    inscricao_estadual = models.CharField('Inscrição Estadual', max_length=30, blank=True)
-    inscricao_municipal = models.CharField('Inscrição Municipal', max_length=30, blank=True)
-    eori = models.CharField('EORI', max_length=30, blank=True)
-    vat = models.CharField('VAT/Número Registro', max_length=50, blank=True, help_text='Número de registro do cliente no exterior (VAT)')
-    regime_tributario = models.CharField('Regime Tributário', max_length=50, blank=True)
+    inscricao_estadual = models.CharField('Inscrição Estadual', max_length=30, blank=True, null=True)
+    inscricao_municipal = models.CharField('Inscrição Municipal', max_length=30, blank=True, null=True)
+    eori = models.CharField('EORI', max_length=30, blank=True, null=True)
+    vat = models.CharField('VAT/Número Registro', max_length=50, blank=True, null=True, help_text='Número de registro do cliente no exterior (VAT)')
+    regime_tributario = models.CharField('Regime Tributário', max_length=50, blank=True, null=True)
 
     contribuinte_icms = models.BooleanField('Contribuinte ICMS', default=False)
-    indicador_ie = models.CharField('Indicador IE', max_length=1, blank=True, help_text='1,2 ou 9')
-    inscricao_suframa = models.CharField('Inscrição SUFRAMA', max_length=50, blank=True)
+    indicador_ie = models.CharField('Indicador IE', max_length=1, blank=True, null=True, help_text='1,2 ou 9')
+    inscricao_suframa = models.CharField('Inscrição SUFRAMA', max_length=50, blank=True, null=True)
 
     # Comerciais
     limite_credito = models.DecimalField('Limite de Crédito', max_digits=14, decimal_places=2, default=0)
@@ -1003,25 +1003,25 @@ class Cliente(models.Model):
     FORMA_PGTO = [
         ('BOLETO','Boleto'),('PIX','PIX'),('TRANSFERENCIA','Transferência'),('CARTAO','Cartão'),('CREDITO','Crédito'),('INVOICE','Invoice'),('OUTRO','Outro')
     ]
-    forma_pagamento_padrao = models.CharField('Forma de Pagamento Padrão', max_length=20, choices=FORMA_PGTO, blank=True)
+    forma_pagamento_padrao = models.CharField('Forma de Pagamento Padrão', max_length=20, choices=FORMA_PGTO, blank=True, null=True)
     desconto_padrao = models.DecimalField('Desconto Padrão (%)', max_digits=5, decimal_places=2, default=0)
 
     vendedor_responsavel = models.ForeignKey('cadastros.Vendedor', on_delete=models.SET_NULL, null=True, blank=True, related_name='clientes')
-    observacoes_comerciais = models.TextField('Observações Comerciais', blank=True)
+    observacoes_comerciais = models.TextField('Observações Comerciais', blank=True, null=True)
 
     # Exportação / Importador
     pais = models.CharField('País', max_length=100, blank=True, default='Brasil')
-    moeda_padrao = models.CharField('Moeda Padrão', max_length=10, blank=True)
+    moeda_padrao = models.CharField('Moeda Padrão', max_length=10, blank=True, null=True)
     porto_destino = models.ForeignKey('cadastros.Porto', on_delete=models.SET_NULL, null=True, blank=True)
-    incoterm_padrao = models.CharField('Incoterm', max_length=20, blank=True)
-    idioma_preferido = models.CharField('Idioma Preferido', max_length=20, blank=True)
-    certificacoes_exigidas = models.TextField('Certificações Exigidas', blank=True)
+    incoterm_padrao = models.CharField('Incoterm', max_length=20, blank=True, null=True)
+    idioma_preferido = models.CharField('Idioma Preferido', max_length=20, blank=True, null=True)
+    certificacoes_exigidas = models.TextField('Certificações Exigidas', blank=True, null=True)
 
 
     # Contato principal (simplificado)
-    contato_principal_nome = models.CharField('Contato Principal', max_length=150, blank=True)
-    contato_principal_telefone = models.CharField('Telefone Contato', max_length=30, blank=True)
-    contato_principal_email = models.EmailField('E-mail Contato', blank=True)
+    contato_principal_nome = models.CharField('Contato Principal', max_length=150, blank=True, null=True)
+    contato_principal_telefone = models.CharField('Telefone Contato', max_length=30, blank=True, null=True)
+    contato_principal_email = models.EmailField('E-mail Contato', blank=True, null=True)
 
     # Portal
     acesso_portal = models.BooleanField('Acesso ao Portal', default=False)
@@ -1161,8 +1161,8 @@ class EnderecoCliente(models.Model):
     tipo = models.CharField('Tipo Endereço', max_length=20, choices=TIPO_ENDERECO, default='PRINCIPAL')
     cep = models.CharField('CEP', max_length=10)
     logradouro = models.CharField('Logradouro', max_length=200)
-    numero = models.CharField('Número', max_length=20, blank=True)
-    complemento = models.CharField('Complemento', max_length=100, blank=True)
+    numero = models.CharField('Número', max_length=20, blank=True, null=True)
+    complemento = models.CharField('Complemento', max_length=100, blank=True, null=True)
     bairro = models.CharField('Bairro', max_length=100)
     cidade = models.CharField('Cidade', max_length=100)
     uf = models.CharField('UF', max_length=2)

@@ -107,3 +107,23 @@ class ClienteFormUITests(TestCase):
         self.assertIn('eori', form.errors)
         self.assertIn('vat', form.errors)
         self.assertIn('porto_destino', form.errors)
+
+    def test_preset_select_shows_selected_on_edit(self):
+        # Ensure that when editing a client with a preset, the select is pre-selected on the form
+        from django.urls import reverse
+        from cadastros.models import PrazoPagamentoPadrao
+        emp = Empresa.objects.create(nome='Empresa Preset')
+        self.user.empresa = emp
+        self.user.save()
+        preset = PrazoPagamentoPadrao.objects.create(empresa=emp, nome='30/60/90', termos='30,60,90', ativo=True)
+        c = Cliente.objects.create(empresa=emp, razao_social='Com Preset', cnpj_cpf='10101010101010', prazo_pagamento_padrao=preset, prazo_pagamento=60)
+        url = reverse('cadastros:cliente_update', args=[c.pk])
+        resp = self.client.get(url)
+        self.assertEqual(resp.status_code, 200)
+        content = resp.content.decode('utf-8')
+        # Option with preset pk should be selected
+        self.assertIn(f'<option value="{preset.pk}"', content)
+        self.assertIn('selected', content)
+        # The prazo input should reflect the client's prazo_pagamento value
+        self.assertIn('id="id_prazo_pagamento"', content)
+        self.assertIn('value="60"', content)

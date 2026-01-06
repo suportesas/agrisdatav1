@@ -1045,23 +1045,23 @@ class Cliente(models.Model):
         return f"{self.codigo or ''} {self.razao_social}"
 
     def clean(self):
-        """Validações de negócio"""
+        """Validações de negócio - mais tolerante para importadores e com avisos anexados."""
         # Normaliza documento
         doc = _normalize_doc(self.cnpj_cpf)
         if not doc:
             # Permite importador sem CNPJ (será gerado no save)
             if self.tipo_cliente != 'IMPORTADOR':
-                raise ValidationError({'cnpj_cpf':'CNPJ/CPF é obrigatório'})
+                raise ValidationError({'cnpj_cpf': 'CNPJ/CPF é obrigatório para clientes nacionais'})
         else:
-            if len(doc) not in (11,14):
-                raise ValidationError({'cnpj_cpf':'CNPJ/CPF inválido'})
+            if len(doc) not in (11, 14):
+                raise ValidationError({'cnpj_cpf': 'CNPJ/CPF inválido. Deve ter 11 (CPF) ou 14 (CNPJ) dígitos.'})
             # Atualiza campo para forma normalizada (apenas dígitos)
             self.cnpj_cpf = doc
 
         # Indicador IE e inscrição estadual
         if self.contribuinte_icms:
             if not self.inscricao_estadual:
-                raise ValidationError({'inscricao_estadual':'Inscrição Estadual é obrigatória para contribuinte ICMS'})
+                raise ValidationError({'inscricao_estadual': 'Inscrição Estadual é obrigatória para contribuinte ICMS'})
             self.indicador_ie = '1'
         else:
             if self.tipo_pessoa == 'PF':
@@ -1069,36 +1069,58 @@ class Cliente(models.Model):
             else:
                 self.indicador_ie = '2'
 
-        # Regras para importador
+        # =========================
+        # Importador: flexibilidade
+        # =========================
+        importer_warnings = []
         if self.tipo_cliente == 'IMPORTADOR':
-            if not self.eori:
-                raise ValidationError({'eori':'EORI é obrigatório para importadores'})
-            if not self.pais:
-                raise ValidationError({'pais':'País é obrigatório para importadores'})
-            if not self.porto_destino:
-                raise ValidationError({'porto_destino':'Porto destino é obrigatório para importadores'})
-            if not (self.vat or '').strip():
-                raise ValidationError({'vat':'VAT (número de registro) é obrigatório para importadores'})
+            # Define país padrão se não informado
+            if not self.pais or not self.pais.strip():
+                self.pais = 'Não informado'
 
-        # Validação de Inscrição Estadual por UF (aceita 'ISENTO' para não contribuintes)
+            if not self.eori:
+                importer_warnings.append('EORI não informado')
+            if not self.porto_destino:
+                importer_warnings.append('Porto de destino não selecionado')
+            if not (self.vat or '').strip():
+                importer_warnings.append('VAT não informado')
+
+            # Se houver avisos e não houver observações, anexa-os (append para não sobrescrever)
+            if importer_warnings:
+                note = 'Avisos importador: ' + '; '.join(importer_warnings)
+                if self.observacoes_comerciais:
+                    self.observacoes_comerciais = (self.observacoes_comerciais.rstrip() + '\n' + note) if note not in self.observacoes_comerciais else self.observacoes_comerciais
+                else:
+                    self.observacoes_comerciais = note
+
+        # ============================================================
+        # Validação de Inscrição Estadual por UF (ignora para exterior)
+        # ============================================================
         from .validators import validate_inscricao_estadual
         uf = None
+
         # Se cliente for do exterior, força UF = 'EX' para pular validações estaduais
-        if self.pais and self.pais.strip().lower() != 'brasil':
+        if self.pais and self.pais.strip().lower() not in ['brasil', '', 'não informado']:
             uf = 'EX'
         else:
             try:
-                # Tenta inferir UF pelo endereço padrão do cliente, se existir
                 endereco_padrao = self.enderecos.filter(padrao=True).first() if hasattr(self, 'enderecos') else None
                 if endereco_padrao:
                     uf = endereco_padrao.uf
             except Exception:
                 uf = None
 
-        try:
-            validate_inscricao_estadual(self.inscricao_estadual, uf=uf, is_contribuinte=self.contribuinte_icms, tipo_pessoa=self.tipo_pessoa)
-        except ValidationError as e:
-            raise ValidationError({'inscricao_estadual': e.message})
+        if self.contribuinte_icms and uf != 'EX' and self.inscricao_estadual:
+            try:
+                validate_inscricao_estadual(
+                    self.inscricao_estadual,
+                    uf=uf,
+                    is_contribuinte=self.contribuinte_icms,
+                    tipo_pessoa=self.tipo_pessoa,
+                )
+            except ValidationError as e:
+                msg = e.messages[0] if getattr(e, 'messages', None) else str(e)
+                raise ValidationError({'inscricao_estadual': msg})
 
     def save(self, *args, **kwargs):
         # Normaliza cnpj_cpf para dígitos
@@ -1108,6 +1130,18 @@ class Cliente(models.Model):
         if self.tipo_cliente == 'IMPORTADOR' and not self.cnpj_cpf:
             empresa_id = getattr(self, 'empresa_id', None)
             self.cnpj_cpf = _generate_fake_cnpj(empresa_id)
+
+        # Garantir que o indicador_ie reflita a regra do NF-e
+        if self.contribuinte_icms:
+            # Contribuinte ICMS: obriga IE e indicador = '1'
+            self.indicador_ie = '1'
+        else:
+            # Não contribuinte: PF -> 9, PJ -> 2
+            self.indicador_ie = '9' if self.tipo_pessoa == 'PF' else '2'
+
+        # Execute validações de modelo antes de salvar para evitar inconsistências
+        # (por exemplo, exigir inscrição estadual para contribuintes)
+        self.full_clean()
 
         # Gera código sequencial por empresa se não existir
         if not self.codigo:

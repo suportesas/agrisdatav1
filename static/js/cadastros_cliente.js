@@ -1,4 +1,6 @@
 // JS para o formulário de Cliente
+console.log('cadastros_cliente.js loaded');
+window.addEventListener('error', function(e){ try { console.error('Uncaught error in JS:', e.message, e.filename + ':' + e.lineno); } catch(err){} });
 // - Define UF='EX' quando país != Brasil
 // - Mostra/oculta campos (IE, EORI, Porto) conforme regras
 // - Busca CEP via endpoint configurável (default: /cadastros/api/buscar-cep/)
@@ -46,6 +48,20 @@
       ancestor = ancestor.parentElement;
     }
     if (grp) grp.style.display = ''; else el.style.display = '';
+  }
+
+  // Utility: remove any lingering modal backdrops and ensure no modal is blocking interaction
+  function cleanupModalBackdrops() {
+    try {
+      // hide any visible modals
+      document.querySelectorAll('.modal.show').forEach(m => {
+        try { const bs = bootstrap.Modal.getInstance(m) || new bootstrap.Modal(m); bs.hide(); } catch(e){ try { m.style.display = 'none'; m.setAttribute('aria-hidden','true'); } catch(err){} }
+      });
+      // remove leftover backdrops
+      document.querySelectorAll('.modal-backdrop').forEach(b => { try { b.remove(); } catch(e){} });
+      // ensure body doesn't have modal-open class
+      try { document.body.classList.remove('modal-open'); } catch(e){}
+    } catch(e){ console.error('cleanupModalBackdrops failed', e); }
   }
 
   document.addEventListener('DOMContentLoaded', function () {
@@ -226,188 +242,194 @@
     if (moedaSaveBtn) moedaSaveBtn.addEventListener('click', saveMoeda);
     if (buscarCNPJBtn) {
       // Defensive logging to help diagnose why CNPJ search may not run in some environments
-      try { buscarCNPJBtn.addEventListener('click', async () => {
-        console.debug('buscarCNPJ clicked');
-        const form = buscarCNPJBtn.closest('form');
-        if (!form) { console.error('buscarCNPJ: enclosing form not found'); showClientAlert('Erro interno: formulário não encontrado', 'danger'); return; }
-        const cnpjInput = form.querySelector('input[name="cnpj_cpf"]');
-        if (!cnpjInput) { console.error('buscarCNPJ: cnpj_cpf input not found in form'); showClientAlert('Campo CNPJ/CPF não encontrado', 'danger'); return; }
-        const cnpj = (cnpjInput.value || '').replace(/\D/g, '');
-        if (cnpj.length !== 14) { showClientAlert('Digite um CNPJ válido (14 dígitos)', 'danger'); return; }
+      try {
+        buscarCNPJBtn.addEventListener('click', async () => {
+          console.debug('buscarCNPJ clicked');
+          const form = buscarCNPJBtn.closest('form');
+          if (!form) { console.error('buscarCNPJ: enclosing form not found'); showClientAlert('Erro interno: formulário não encontrado', 'danger'); return; }
+          const cnpjInput = form.querySelector('input[name="cnpj_cpf"]');
+          if (!cnpjInput) { console.error('buscarCNPJ: cnpj_cpf input not found in form'); showClientAlert('Campo CNPJ/CPF não encontrado', 'danger'); return; }
+          const cnpj = (cnpjInput.value || '').replace(/\D/g, '');
+          if (cnpj.length !== 14) { showClientAlert('Digite um CNPJ válido (14 dígitos)', 'danger'); return; }
 
-        const csrf = getCsrfToken();
-        // prefer the generic loading modal if present, else the cnpj-specific one
-        const loadingModalElem = document.getElementById('loadingModal') || document.getElementById('cnpjLoadingModal');
-        const loadingModal = loadingModalElem ? new bootstrap.Modal(loadingModalElem) : null;
+          const csrf = getCsrfToken();
+          // prefer the generic loading modal if present, else the cnpj-specific one
+          const loadingModalElem = document.getElementById('loadingModal') || document.getElementById('cnpjLoadingModal');
+          const loadingModal = loadingModalElem ? new bootstrap.Modal(loadingModalElem) : null;
 
-        try {
-          buscarCNPJBtn.disabled = true;
-          if (loadingModal) loadingModal.show();
-
-          const resp = await fetch(cfg.buscar_cnpj_url, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-              'X-CSRFToken': csrf,
-              'Accept': 'application/json',
-              'X-Requested-With': 'XMLHttpRequest'
-            },
-            body: `cnpj=${cnpj}`
-          });
-
-          if (!resp.ok) {
-            if (loadingModal) loadingModal.hide();
-            const json = await resp.json().catch(() => ({}));
-            showClientAlert(json.erro || 'Erro ao buscar CNPJ', 'danger');
-            return;
-          }
-
-          // Parse JSON defensively: handle cases where server returns HTML or malformed JSON
-          let data = null;
           try {
-            const text = await resp.text();
-            try { data = text ? JSON.parse(text) : {}; } catch (jsonErr) {
-              console.error('buscarCNPJ: response not JSON', text);
-              if (loadingModal) loadingModal.hide();
-              showClientAlert('Resposta inválida do servidor ao buscar CNPJ', 'danger');
-              return;
-            }
-          } catch (readErr) {
-            console.error('buscarCNPJ: failed to read response text', readErr);
-            if (loadingModal) loadingModal.hide();
-            showClientAlert('Erro ao ler resposta do servidor', 'danger');
-            return;
-          }
+            buscarCNPJBtn.disabled = true;
+            if (loadingModal) loadingModal.show();
 
-          if (data && data.sucesso && data.dados) {
-            if (loadingModal) loadingModal.hide();
-            const d = data.dados;
-
-            // Keep previous values to allow revert on cancel
-            const changed = [];
-            const previous = {};
-            const map = [
-              {sel:'input[name="razao_social"]', label: 'Razão Social', val: d.nome},
-              {sel:'input[name="nome_comercial"]', label: 'Nome Comercial', val: d.nome_fantasia},
-              {sel:'input[name="cnpj_cpf"]', label: 'CNPJ', val: d.cnpj},
-              {sel:'input[name="contato_principal_telefone"]', label: 'Telefone', val: d.telefone},
-              {sel:'input[name="contato_principal_email"]', label: 'E-mail', val: d.email}
-            ];
-
-            map.forEach(item => {
-              const el = form.querySelector(item.sel);
-              if (!el) return;
-              previous[item.sel] = el.value || '';
-              if ((item.val || '') !== (el.value || '')) {
-                changed.push({sel:item.sel, label:item.label, old: previous[item.sel], new: item.val || ''});
-                el.value = item.val || '';
-                el.setAttribute('data-autofilled','1');
-                el.classList.add('border-warning');
-              }
+            const resp = await fetch(cfg.buscar_cnpj_url, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                'X-CSRFToken': csrf,
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+              },
+              body: `cnpj=${cnpj}`
             });
 
-            // Auto-toggle international fields when UF is not a known Brazilian state
+            if (!resp.ok) {
+              if (loadingModal) loadingModal.hide();
+              const json = await resp.json().catch(() => ({}));
+              showClientAlert(json.erro || 'Erro ao buscar CNPJ', 'danger');
+              return;
+            }
+
+            // Parse JSON defensively: handle cases where server returns HTML or malformed JSON
+            let data = null;
             try {
-              const ufVal = (d.uf || '').toString().trim().toUpperCase();
-              const brazilUF = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'];
-              if (ufVal && brazilUF.indexOf(ufVal) === -1) {
-                // Consider foreign -> set tipo_cliente to IMPORTADOR
-                if (typeof tipoCliente !== 'undefined' && tipoCliente) { tipoCliente.value = 'IMPORTADOR'; updateByTipoCliente(); }
+              const text = await resp.text();
+              try { data = text ? JSON.parse(text) : {}; } catch (jsonErr) {
+                console.error('buscarCNPJ: response not JSON', text);
+                if (loadingModal) loadingModal.hide();
+                showClientAlert('Resposta inválida do servidor ao buscar CNPJ', 'danger');
+                return;
               }
-              // If returned UF is present and there is a UF field, set it
-              try {
-                const ufField = form.querySelector('select[name="uf"]') || form.querySelector('input[name="uf"]');
-                if (ufField && ufVal) ufField.value = ufVal;
-              } catch(e){}
-              // If returned city/cep, fill address fields if present
-              if (form.querySelector('input[name="logradouro"]') && d.logradouro) form.querySelector('input[name="logradouro"]').value = d.logradouro;
-              if (form.querySelector('input[name="numero"]') && d.numero) form.querySelector('input[name="numero"]').value = d.numero;
-              if (form.querySelector('input[name="bairro"]') && d.bairro) form.querySelector('input[name="bairro"]').value = d.bairro;
-              if (form.querySelector('input[name="cidade"]') && d.cidade) form.querySelector('input[name="cidade"]').value = d.cidade || d.municipio;
-              if (form.querySelector('input[name="cep"]') && d.cep) form.querySelector('input[name="cep"]').value = (d.cep || '').replace(/\D/g,'');
-            } catch(e) { /* ignore gracefully */ }
-
-            // If nothing changed, hide loader, quick message and return
-            if (changed.length === 0) {
+            } catch (readErr) {
+              console.error('buscarCNPJ: failed to read response text', readErr);
               if (loadingModal) loadingModal.hide();
-              showClientAlert('Nenhuma alteração detectada', 'info');
+              showClientAlert('Erro ao ler resposta do servidor', 'danger');
               return;
             }
 
-            // Populate confirm modal list
-            const list = document.getElementById('cnpjConfirmList');
-            list.innerHTML = '';
-            changed.forEach(it => {
-              const li = document.createElement('li');
-              li.className = 'list-group-item';
-              li.innerHTML = `<strong>${it.label}:</strong> <div class="small text-muted">Antigo: ${it.old || '(vazio)'}</div><div>${it.new || '(vazio)'}</div>`;
-              list.appendChild(li);
-            });
+            if (data && data.sucesso && data.dados) {
+              if (loadingModal) loadingModal.hide();
+              const d = data.dados;
 
-            // Show modal and wire handlers
-            const confirmModalElem = document.getElementById('cnpjConfirmModal');
-            const confirmModal = confirmModalElem ? new bootstrap.Modal(confirmModalElem) : null;
-            const acceptBtn = document.getElementById('cnpjConfirmAccept');
-            const cancelBtn = document.getElementById('cnpjConfirmCancel');
+              // Keep previous values to allow revert on cancel
+              const changed = [];
+              const previous = {};
+              const map = [
+                {sel:'input[name="razao_social"]', label: 'Razão Social', val: d.nome},
+                {sel:'input[name="nome_comercial"]', label: 'Nome Comercial', val: d.nome_fantasia},
+                {sel:'input[name="cnpj_cpf"]', label: 'CNPJ', val: d.cnpj},
+                {sel:'input[name="contato_principal_telefone"]', label: 'Telefone', val: d.telefone},
+                {sel:'input[name="contato_principal_email"]', label: 'E-mail', val: d.email}
+              ];
 
-            const cleanup = ()=>{
-              // remove temporary highlight
-              map.forEach(item => { const el = form.querySelector(item.sel); if (el) el.classList.remove('border-warning'); });
-            };
-
-            let accepted = false;
-            let hiddenHandler = null;
-
-            const onAccept = ()=>{
-              accepted = true;
-              // mark fields as confirmed
-              map.forEach(item => { const el = form.querySelector(item.sel); if (el && el.getAttribute('data-autofilled') === '1') { el.setAttribute('data-confirmed','1'); el.classList.remove('border-warning'); el.classList.add('border-success'); } });
-              if (confirmModal) confirmModal.hide();
-              showClientAlert('✅ Dados preenchidos com sucesso!', 'success');
-              cleanup();
-              // remove handlers
-              acceptBtn.removeEventListener('click', onAccept);
-              cancelBtn.removeEventListener('click', onCancel);
-              if (hiddenHandler && confirmModalElem) confirmModalElem.removeEventListener('hidden.bs.modal', hiddenHandler);
-            };
-
-            const onCancel = (fromHidden=false)=>{
-              // revert values
-              changed.forEach(it=>{
-                const el = form.querySelector(it.sel);
-                if (el) { el.value = it.old; el.removeAttribute('data-autofilled'); el.classList.remove('border-warning'); }
+              map.forEach(item => {
+                const el = form.querySelector(item.sel);
+                if (!el) return;
+                previous[item.sel] = el.value || '';
+                if ((item.val || '') !== (el.value || '')) {
+                  changed.push({sel:item.sel, label:item.label, old: previous[item.sel], new: item.val || ''});
+                  el.value = item.val || '';
+                  el.setAttribute('data-autofilled','1');
+                  el.classList.add('border-warning');
+                }
               });
-              if (!fromHidden && confirmModal) confirmModal.hide();
-              showClientAlert('Alterações revertidas', 'warning');
-              cleanup();
-              acceptBtn.removeEventListener('click', onAccept);
-              cancelBtn.removeEventListener('click', onCancel);
-              if (hiddenHandler && confirmModalElem) confirmModalElem.removeEventListener('hidden.bs.modal', hiddenHandler);
-            };
 
-            if (acceptBtn && cancelBtn) {
-              acceptBtn.addEventListener('click', onAccept);
-              cancelBtn.addEventListener('click', onCancel);
-            }
+              // Auto-toggle international fields when UF is not a known Brazilian state
+              try {
+                const ufVal = (d.uf || '').toString().trim().toUpperCase();
+                const brazilUF = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'];
+                if (ufVal && brazilUF.indexOf(ufVal) === -1) {
+                  // Consider foreign -> set tipo_cliente to IMPORTADOR
+                  if (typeof tipoCliente !== 'undefined' && tipoCliente) { tipoCliente.value = 'IMPORTADOR'; updateByTipoCliente(); }
+                }
+                // If returned UF is present and there is a UF field, set it
+                try {
+                  const ufField = form.querySelector('select[name="uf"]') || form.querySelector('input[name="uf"]');
+                  if (ufField && ufVal) ufField.value = ufVal;
+                } catch(e){}
+                // If returned city/cep, fill address fields if present
+                if (form.querySelector('input[name="logradouro"]') && d.logradouro) form.querySelector('input[name="logradouro"]').value = d.logradouro;
+                if (form.querySelector('input[name="numero"]') && d.numero) form.querySelector('input[name="numero"]').value = d.numero;
+                if (form.querySelector('input[name="bairro"]') && d.bairro) form.querySelector('input[name="bairro"]').value = d.bairro;
+                if (form.querySelector('input[name="cidade"]') && d.cidade) form.querySelector('input[name="cidade"]').value = d.cidade || d.municipio;
+                if (form.querySelector('input[name="cep"]') && d.cep) form.querySelector('input[name="cep"]').value = (d.cep || '').replace(/\D/g,'');
+              } catch(e) { /* ignore gracefully */ }
 
-            if (confirmModal) {
-              hiddenHandler = function(){ if (!accepted) onCancel(true); };
-              confirmModalElem.addEventListener('hidden.bs.modal', hiddenHandler);
-              confirmModal.show();
+              // If nothing changed, hide loader, quick message and return
+              if (changed.length === 0) {
+                if (loadingModal) loadingModal.hide();
+                showClientAlert('Nenhuma alteração detectada', 'info');
+                return;
+              }
+
+              // Populate confirm modal list
+              const list = document.getElementById('cnpjConfirmList');
+              list.innerHTML = '';
+              changed.forEach(it => {
+                const li = document.createElement('li');
+                li.className = 'list-group-item';
+                li.innerHTML = `<strong>${it.label}:</strong> <div class="small text-muted">Antigo: ${it.old || '(vazio)'}</div><div>${it.new || '(vazio)'}</div>`;
+                list.appendChild(li);
+              });
+
+              // Show modal and wire handlers
+              const confirmModalElem = document.getElementById('cnpjConfirmModal');
+              const confirmModal = confirmModalElem ? new bootstrap.Modal(confirmModalElem) : null;
+              const acceptBtn = document.getElementById('cnpjConfirmAccept');
+              const cancelBtn = document.getElementById('cnpjConfirmCancel');
+
+              const cleanup = ()=>{
+                // remove temporary highlight
+                map.forEach(item => { const el = form.querySelector(item.sel); if (el) el.classList.remove('border-warning'); });
+              };
+
+              let accepted = false;
+              let hiddenHandler = null;
+
+              const onAccept = ()=>{
+                accepted = true;
+                // mark fields as confirmed
+                map.forEach(item => { const el = form.querySelector(item.sel); if (el && el.getAttribute('data-autofilled') === '1') { el.setAttribute('data-confirmed','1'); el.classList.remove('border-warning'); el.classList.add('border-success'); } });
+                // blur focused element to avoid aria-hidden warnings when modal closes
+                try { if (document.activeElement && (document.activeElement === acceptBtn || document.activeElement === cancelBtn)) document.activeElement.blur(); } catch(e){}
+                if (confirmModal) confirmModal.hide();
+                showClientAlert('✅ Dados preenchidos com sucesso!', 'success');
+                cleanup();
+                // remove handlers
+                acceptBtn.removeEventListener('click', onAccept);
+                cancelBtn.removeEventListener('click', onCancel);
+                if (hiddenHandler && confirmModalElem) confirmModalElem.removeEventListener('hidden.bs.modal', hiddenHandler);
+              };
+
+              const onCancel = (fromHidden=false)=>{
+                // revert values
+                changed.forEach(it=>{
+                  const el = form.querySelector(it.sel);
+                  if (el) { el.value = it.old; el.removeAttribute('data-autofilled'); el.classList.remove('border-warning'); }
+                });
+                // blur focused element to avoid aria-hidden warnings when modal closes
+                try { if (document.activeElement && (document.activeElement === acceptBtn || document.activeElement === cancelBtn)) document.activeElement.blur(); } catch(e){}
+                if (!fromHidden && confirmModal) confirmModal.hide();
+                showClientAlert('Alterações revertidas', 'warning');
+                cleanup();
+                acceptBtn.removeEventListener('click', onAccept);
+                cancelBtn.removeEventListener('click', onCancel);
+                if (hiddenHandler && confirmModalElem) confirmModalElem.removeEventListener('hidden.bs.modal', hiddenHandler);
+              };
+
+              if (acceptBtn && cancelBtn) {
+                acceptBtn.addEventListener('click', onAccept);
+                cancelBtn.addEventListener('click', onCancel);
+              }
+
+              if (confirmModal) {
+                hiddenHandler = function(){ if (!accepted) onCancel(true); };
+                confirmModalElem.addEventListener('hidden.bs.modal', hiddenHandler);
+                confirmModal.show();
+              }
+            } else {
+              if (loadingModal) loadingModal.hide();
+              showClientAlert(data.erro || 'CNPJ não encontrado', 'danger');
             }
-          } else {
+          } catch (err) {
+            console.error(err);
             if (loadingModal) loadingModal.hide();
-            showClientAlert(data.erro || 'CNPJ não encontrado', 'danger');
+            showClientAlert('Erro ao buscar CNPJ', 'danger');
+          } finally {
+            if (loadingModal) loadingModal.hide();
+            buscarCNPJBtn.disabled = false;
           }
-        } catch (err) {
-          console.error(err);
-          if (loadingModal) loadingModal.hide();
-          showClientAlert('Erro ao buscar CNPJ', 'danger');
-        } finally {
-          if (loadingModal) loadingModal.hide();
-          buscarCNPJBtn.disabled = false;
-        }
-      });
+        });
+      } catch (e) { console.error('buscarCNPJ binding failed', e); }
     }
     // Accessibility: ensure modals return focus and focus first interactive element on open
     document.querySelectorAll('.modal[data-a11y], .modal[data-a11y="true"]').forEach(modalEl => {
@@ -428,21 +450,7 @@
       });
     });
 
-          } else {
-            if (loadingModal) loadingModal.hide();
-            const fb = document.getElementById('cnpjFeedback');
-            if (fb) { fb.classList.remove('text-success'); fb.classList.add('text-danger'); fb.textContent = data.erro || 'CNPJ não encontrado'; }
-            else alert(data.erro || 'CNPJ não encontrado');
-          }
-        } catch (err) {
-          console.error(err);
-          if (loadingModal) loadingModal.hide();
-          alert('Erro ao buscar CNPJ');
-        } finally {
-          if (loadingModal) loadingModal.hide();
-          buscarCNPJBtn.disabled = false;
-        }
-      });
+
 
       // Add input mask for CNPJ/CPF similar to Fornecedor form
       try {
@@ -468,7 +476,6 @@
           });
         });
       } catch (maskErr) { /* ignore */ }
-    }
 
     // Presets de Prazo Pagamento: popula lista de termos e atualiza `prazo_pagamento`
     const prazoPresetSelect = document.getElementById('id_prazo_pagamento_padrao_select');
@@ -725,11 +732,35 @@
     // Setup cliente form handlers (derived from fornecedor pattern)
     function setupClienteFormHandlers() {
       const clienteForm = document.getElementById('clienteForm');
+      console.log('setupClienteFormHandlers: clienteForm present?', !!clienteForm);
       if (!clienteForm) return;
+
+      // Create a small diagnostics badge so users without console can see binding status
+      try {
+        let diag = document.getElementById('clienteJsDiag');
+        if (!diag) {
+          diag = document.createElement('div');
+          diag.id = 'clienteJsDiag';
+          diag.style.position = 'fixed';
+          diag.style.top = '8px';
+          diag.style.right = '8px';
+          diag.style.zIndex = 1051;
+          diag.style.background = '#0d6efd';
+          diag.style.color = 'white';
+          diag.style.padding = '6px 10px';
+          diag.style.borderRadius = '6px';
+          diag.style.boxShadow = '0 2px 6px rgba(0,0,0,0.12)';
+          diag.style.fontSize = '12px';
+          diag.setAttribute('aria-hidden','true');
+          document.body.appendChild(diag);
+        }
+        diag.textContent = 'JS: clienteForm present';
+      } catch(e){}
 
       // mark when submit event happens to avoid duplicate submissions
       clienteForm.addEventListener('submit', function (ev) {
         clienteForm._submitTriggered = true;
+        console.log('clienteForm submit event fired, validity=', clienteForm.checkValidity());
       }, true);
 
       // Synchronize enhanced selects (Choices/Select2) before validation
@@ -792,16 +823,28 @@
         try { console.warn('invalid field on submit', ev.target.name || ev.target.id, ev.target); } catch(e){}
       }, true);
 
-      const saveBtn = clienteForm.querySelector('button[type="submit"]');
+      let saveBtn = clienteForm.querySelector('button[type="submit"], input[type="submit"]');
+      let foundBy = 'inside-form';
+      if (!saveBtn) {
+        saveBtn = document.getElementById('clienteSaveBtn') || document.querySelector('#clienteSaveBtn');
+        if (saveBtn) foundBy = 'by-id';
+      }
+      console.log('setupClienteFormHandlers: saveBtn present?', !!saveBtn, 'foundBy', foundBy);
+      try { const diag = document.getElementById('clienteJsDiag'); if (diag) diag.textContent = 'JS: form present; saveBtn present: ' + (!!saveBtn) + ' (' + foundBy + ')'; } catch(e){}
       if (saveBtn) {
+        console.log('setupClienteFormHandlers: binding saveBtn click (foundBy=' + foundBy + ')');
+        try { const diag = document.getElementById('clienteJsDiag'); if (diag) diag.textContent = 'JS: bindings attached'; } catch(e){}
         saveBtn.addEventListener('click', function (ev) {
+          console.log('saveBtn click handler invoked');
           try {
-            if (clienteForm._submitting) return; // already submitting
+            // ensure no modal/backdrop is blocking interaction
+            cleanupModalBackdrops();
+            if (clienteForm._submitting) { console.log('already submitting'); return; } // already submitting
             clienteForm._submitting = true;
             try { saveBtn.disabled = true; } catch(e){}
             try {
-              if (typeof clienteForm.requestSubmit === 'function') clienteForm.requestSubmit();
-              else clienteForm.submit();
+              if (typeof clienteForm.requestSubmit === 'function') { console.log('using requestSubmit'); clienteForm.requestSubmit(); }
+              else { console.log('using form.submit'); clienteForm.submit(); }
             } catch (err) {
               console.error('programmatic submit failed', err);
               clienteForm._submitting = false;
@@ -810,8 +853,25 @@
           } catch (err) { console.error('Save button handler error', err); }
         });
 
+        // Global fallback: if save button is clicked but handlers didn't bind for some reason, ensure submit
+        document.addEventListener('click', function(e){
+          try {
+            const b = e.target.closest && e.target.closest('#clienteSaveBtn');
+            if (b) {
+              console.log('global save click fallback');
+              cleanupModalBackdrops();
+              try { document.getElementById('clienteForm').submit(); } catch(err){ console.error('global fallback submit failed', err); }
+            }
+          } catch(e){}
+        }, true);
+
         const topBtn = document.getElementById('clienteSaveBtn');
+        console.log('setupClienteFormHandlers: topBtn present?', !!topBtn, 'topBtn===saveBtn?', topBtn===saveBtn);
+        try { const diag = document.getElementById('clienteJsDiag'); if (diag) diag.textContent = (diag.textContent||'') + ' | topBtn: '+ (!!topBtn); } catch(e){}
         if (topBtn && topBtn !== saveBtn) {
+          console.log('setupClienteFormHandlers: binding topBtn click');
+          // Ensure the button is clickable
+          try { topBtn.style.pointerEvents = 'auto'; topBtn.disabled = false; } catch(e){}
           topBtn.addEventListener('click', function(ev){
             try { if (clienteForm && typeof clienteForm.requestSubmit === 'function') clienteForm.requestSubmit(); else if (clienteForm) clienteForm.submit(); } catch(e){ console.error('fallback submit failed', e); }
 
@@ -821,7 +881,42 @@
                   console.warn('submit not triggered, performing AJAX fallback');
                   const fd = new FormData(clienteForm);
                   const url = clienteForm.action || window.location.href;
-                  const resp = await fetch(url, {method: 'POST', body: fd, headers: {'X-CSRFToken': getCsrfToken(), 'X-Requested-With': 'XMLHttpRequest'}});
+                  const resp = await fetch(url, {method: 'POST', body: fd, headers: {'X-CSRFToken': getCsrfToken(), 'X-Requested-With': 'XMLHttpRequest', 'Accept':'application/json'}});
+                  // If server returns JSON errors (status 400), parse and show friendly alerts
+                  if (!resp.ok) {
+                    let json = null;
+                    try { json = await resp.json(); } catch(e) { json = null; }
+                    if (json && json.errors) {
+                      // Clear previous invalid states
+                      try { clienteForm.querySelectorAll('.is-invalid').forEach(el=>el.classList.remove('is-invalid')); } catch(e){}
+                      try { clienteForm.querySelectorAll('.invalid-feedback').forEach(el=>el.remove()); } catch(e){}
+
+                      const msgs = [];
+                      Object.keys(json.errors).forEach(k => {
+                        const errors = json.errors[k];
+                        const field = clienteForm.querySelector('[name="'+k+'"]');
+                        msgs.push(k + ': ' + (Array.isArray(errors) ? errors.join('; ') : errors));
+                        if (field) {
+                          field.classList.add('is-invalid');
+                          const div = document.createElement('div'); div.className = 'invalid-feedback'; div.textContent = Array.isArray(errors) ? errors.join('; ') : errors; 
+                          try { if (field.parentNode) field.parentNode.appendChild(div); else field.after(div); } catch(e){}
+                        }
+                      });
+                      // focus / scroll to first invalid field
+                      try {
+                        const first = clienteForm.querySelector('.is-invalid');
+                        if (first && typeof first.focus === 'function') { first.focus(); first.scrollIntoView({behavior:'smooth', block:'center'}); }
+                      } catch(e){}
+                      showClientAlert('❌ Corrija os erros: ' + msgs.join(' — '), 'danger');
+                      return;
+                    }
+                    // Otherwise, fallback to trying to read text and possibly render
+                    const text = await resp.text();
+                    if (text && text.indexOf('<form') !== -1 && text.indexOf('name="razao_social"') !== -1) { document.open(); document.write(text); document.close(); return; }
+                    showClientAlert('Erro ao submeter formulário', 'danger');
+                    return;
+                  }
+
                   const text = await resp.text();
                   if (resp.redirected) { window.location = resp.url; return; }
                   if (text && text.indexOf('<form') !== -1 && text.indexOf('name="razao_social"') !== -1) { document.open(); document.write(text); document.close(); return; }

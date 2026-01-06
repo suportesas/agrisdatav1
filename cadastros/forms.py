@@ -333,8 +333,9 @@ class ClienteForm(forms.ModelForm):
         fields = [
             'empresa', 'codigo', 'tipo_cliente', 'tipo_pessoa',
             'razao_social', 'nome_comercial', 'cnpj_cpf', 'vat',
-            'inscricao_estadual', 'inscricao_municipal', 'eori', 'regime_tributario',
+            'inscricao_estadual', 'inscricao_municipal', 'inscricao_suframa', 'eori', 'regime_tributario',
             'contribuinte_icms', 'indicador_ie',
+            'contato_principal_nome', 'contato_principal_telefone', 'contato_principal_email',
             'pais', 'moeda_padrao', 'porto_destino',
             'limite_credito', 'prazo_pagamento', 'prazo_pagamento_padrao', 'forma_pagamento_padrao', 'desconto_padrao',
             'vendedor_responsavel', 'observacoes_comerciais',
@@ -350,8 +351,11 @@ class ClienteForm(forms.ModelForm):
             'cnpj_cpf': forms.TextInput(attrs={'class': 'form-control', 'data-mask': 'cnpj-cpf', 'placeholder': '00.000.000/0000-00 ou 000.000.000-00 (Opcional para IMPORTADOR)'}),
             'vat': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_vat', 'placeholder': 'VAT / Número de registro do cliente no exterior'}),
             'inscricao_estadual': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_inscricao_estadual'}),
+            'inscricao_municipal': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_inscricao_municipal'}),
+            'inscricao_suframa': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_inscricao_suframa'}),
             'eori': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_eori'}),
             'pais': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_pais'}),
+            'contato_principal_nome': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_contato_principal_nome'}),
             'contato_principal_telefone': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_contato_principal_telefone', 'data-auto': 'true'}),
             'contato_principal_email': forms.EmailInput(attrs={'class': 'form-control', 'id': 'id_contato_principal_email', 'data-auto': 'true'}),
             'limite_credito': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
@@ -444,22 +448,44 @@ class ClienteForm(forms.ModelForm):
             self.initial['pais'] = 'Brasil'
 
     def clean_cnpj_cpf(self):
-        cnpj_cpf = self.cleaned_data.get('cnpj_cpf', '')
+        # Guard against None when field is nullable in DB; treat None as empty string
+        cnpj_cpf = self.cleaned_data.get('cnpj_cpf') or ''
         cnpj_cpf_limpo = re.sub(r'\D', '', cnpj_cpf)
-        if len(cnpj_cpf_limpo) not in [11, 14]:
+        if cnpj_cpf_limpo and len(cnpj_cpf_limpo) not in [11, 14]:
             raise ValidationError('CNPJ/CPF inválido. Digite 11 ou 14 dígitos.')
         # Unique por empresa
         # Use the empresa provided in the form data or fallback to the one injected in __init__
         empresa_aplicavel = self.cleaned_data.get('empresa') or self.empresa
-        qs = Cliente.objects.filter(empresa=empresa_aplicavel, cnpj_cpf=cnpj_cpf_limpo)
-        if self.instance.pk:
-            qs = qs.exclude(pk=self.instance.pk)
-        if qs.exists():
-            raise ValidationError('Este CNPJ/CPF já está cadastrado para a empresa.')
+        # Only validate uniqueness if a value was provided
+        if cnpj_cpf_limpo:
+            qs = Cliente.objects.filter(empresa=empresa_aplicavel, cnpj_cpf=cnpj_cpf_limpo)
+            if self.instance.pk:
+                qs = qs.exclude(pk=self.instance.pk)
+            if qs.exists():
+                raise ValidationError('Este CNPJ/CPF já está cadastrado para a empresa.')
         return cnpj_cpf_limpo
 
     def clean(self):
         cleaned = super().clean()
+        # Determine the tipo_cliente considering POST data, initial or instance
+        tipo = cleaned.get('tipo_cliente') if cleaned.get('tipo_cliente') else None
+        if not tipo:
+            if self.data and self.data.get('tipo_cliente'):
+                tipo = self.data.get('tipo_cliente')
+            elif self.initial and self.initial.get('tipo_cliente'):
+                tipo = self.initial.get('tipo_cliente')
+            elif getattr(self.instance, 'tipo_cliente', None):
+                tipo = self.instance.tipo_cliente
+
+        # If updating an existing Cliente and changing it to IMPORTADOR, require certain fields
+        if tipo == 'IMPORTADOR' and getattr(self.instance, 'pk', None) and getattr(self.instance, 'tipo_cliente', None) != 'IMPORTADOR':
+            if not cleaned.get('eori'):
+                self.add_error('eori', 'EORI é obrigatório ao transformar em IMPORTADOR')
+            if not (cleaned.get('vat') or '').strip():
+                self.add_error('vat', 'VAT é obrigatório ao transformar em IMPORTADOR')
+            if not cleaned.get('porto_destino'):
+                self.add_error('porto_destino', 'Porto de destino é obrigatório ao transformar em IMPORTADOR')
+
         pais = cleaned.get('pais', '').strip() if cleaned.get('pais') else ''
         # For clients outside Brazil, no UF is set on client; Address forms should use UF='EX' when applicable
         return cleaned

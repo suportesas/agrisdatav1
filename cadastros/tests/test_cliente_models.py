@@ -48,6 +48,26 @@ class ClienteModelTests(TestCase):
         c_sub.full_clean()
         self.assertEqual(c_sub.indicador_ie, '1')
 
+    def test_save_sets_indicador_on_create(self):
+        # PF -> indicador_ie = 9 when created via ORM
+        c_pf = Cliente.objects.create(empresa=self.empresa, tipo_pessoa='PF', razao_social='Pessoa Fisica', cnpj_cpf='00000000001')
+        c_pf.refresh_from_db()
+        self.assertEqual(c_pf.indicador_ie, '9')
+
+        # PJ and not contributor -> indicador_ie = 2
+        c_pj = Cliente.objects.create(empresa=self.empresa, tipo_pessoa='PJ', razao_social='Pessoa Juridica', cnpj_cpf='11111111111111')
+        c_pj.refresh_from_db()
+        self.assertEqual(c_pj.indicador_ie, '2')
+
+        # Creating a contribuinte without inscricao_estadual should raise (save triggers validation)
+        with self.assertRaises(ValidationError):
+            Cliente.objects.create(empresa=self.empresa, tipo_pessoa='PJ', razao_social='Contribuinte', cnpj_cpf='22222222222222', contribuinte_icms=True)
+
+        # Now create a contribuent with inscricao_estadual
+        c_sub = Cliente.objects.create(empresa=self.empresa, tipo_pessoa='PJ', razao_social='Contribuinte2', cnpj_cpf='33333333333333', contribuinte_icms=True, inscricao_estadual='123456')
+        c_sub.refresh_from_db()
+        self.assertEqual(c_sub.indicador_ie, '1')
+
     def test_importador_requires_fields(self):
         c = Cliente(empresa=self.empresa, tipo_cliente='IMPORTADOR', tipo_pessoa='PJ', razao_social='Importador', cnpj_cpf='33333333333333')
         # falta EORI -> erro

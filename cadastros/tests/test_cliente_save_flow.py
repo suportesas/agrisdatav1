@@ -78,3 +78,26 @@ class ClienteSaveFlowTests(TestCase):
         self.assertEqual(resp.status_code, 302)
         c.refresh_from_db()
         self.assertEqual(c.prazo_pagamento_padrao, preset)
+
+    def test_create_view_requires_inscricao_for_contribuinte_and_sets_indicador(self):
+        url = reverse('cadastros:cliente_create')
+        # Missing inscrição estadual while marcado como contribuinte -> form should error
+        data = {
+            'razao_social': 'Cli Contrib',
+            'cnpj_cpf': '99999999999999',
+            'tipo_cliente': 'NACIONAL',
+            'tipo_pessoa': 'PJ',
+            'contribuinte_icms': 'on'
+        }
+        resp = self.client.post(url, data)
+        self.assertNotEqual(resp.status_code, 302)
+        form = resp.context.get('form')
+        self.assertIsNotNone(form)
+        self.assertIn('inscricao_estadual', form.errors)
+
+        # Now provide inscrição and expect success and indicador set
+        data['inscricao_estadual'] = '123456'
+        resp = self.client.post(url, data)
+        self.assertEqual(resp.status_code, 302)
+        c = Cliente.objects.get(razao_social='Cli Contrib')
+        self.assertEqual(c.indicador_ie, '1')

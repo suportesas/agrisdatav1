@@ -2,6 +2,7 @@
 from decimal import Decimal
 from django.test import TestCase, Client
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
 
 from cadastros.models import Fazenda, Area, Moeda
 from cadastros.models import Talhao, Cultura, HistoricoTalhao
@@ -690,6 +691,73 @@ class ClienteSaveFlowTests(TestCase):
         self.assertEqual(resp.status_code, 302)
         c.refresh_from_db()
         self.assertEqual(c.prazo_pagamento_padrao, preset)
+
+    def test_create_client_post_redirect(self):
+        """POST to cliente_create should create a Cliente and redirect"""
+        url = reverse('cadastros:cliente_create')
+        data = {
+            'razao_social': 'Cliente Novo',
+            'nome_comercial': 'Comercial Novo',
+            'cnpj_cpf': '12345678901',
+            'tipo_cliente': 'NACIONAL',
+            'tipo_pessoa': 'PJ'
+        }
+        resp = self.client.post(url, data)
+        self.assertEqual(resp.status_code, 302)
+        # Ensure client is created and linked to user's empresa
+        self.assertTrue(Cliente.objects.filter(razao_social='Cliente Novo', empresa=self.user.empresa).exists())
+
+    def test_create_client_with_contact_and_suframa(self):
+        """Create a client including contact fields and inscricao_suframa and ensure they persist"""
+        url = reverse('cadastros:cliente_create')
+        data = {
+            'razao_social': 'Cliente Contato',
+            'nome_comercial': 'Comercial Contato',
+            'cnpj_cpf': '12345678901',
+            'tipo_cliente': 'NACIONAL',
+            'tipo_pessoa': 'PJ',
+            'contato_principal_nome': 'Fulano',
+            'contato_principal_telefone': '11999990000',
+            'contato_principal_email': 'fulano@example.com',
+            'inscricao_suframa': 'SUF12345'
+        }
+        resp = self.client.post(url, data)
+        self.assertEqual(resp.status_code, 302)
+        c = Cliente.objects.get(razao_social='Cliente Contato')
+        self.assertEqual(c.contato_principal_nome, 'Fulano')
+        self.assertEqual(c.contato_principal_telefone, '11999990000')
+        self.assertEqual(c.contato_principal_email, 'fulano@example.com')
+        self.assertEqual(c.inscricao_suframa, 'SUF12345')
+
+    def test_importador_without_eori_vat_porto_saves_with_warnings(self):
+        """Importador sem EORI/VAT/Porto deve salvar e registrar avisos em observacoes_comerciais"""
+        url = reverse('cadastros:cliente_create')
+        data = {
+            'razao_social': 'Importador Test',
+            'tipo_cliente': 'IMPORTADOR',
+            'tipo_pessoa': 'PJ',
+            'pais': 'Estados Unidos'
+        }
+        resp = self.client.post(url, data)
+        self.assertEqual(resp.status_code, 302)
+        c = Cliente.objects.get(razao_social='Importador Test')
+        # deve ter observacoes com avisos
+        self.assertIn('Avisos importador', (c.observacoes_comerciais or ''))
+
+    def test_inscricao_estadual_validation_blocks_when_invalid(self):
+        """Se contribuinte ICMS e IE inválida para UF BR, deve bloquear"""
+        # Create empresa + usuario context
+        plano = Plano.objects.create(codigo='P', nome='P', valor_mensal=1)
+        emp = Empresa.objects.create(nome='E2', plano=plano)
+        User = get_user_model()
+        u = User.objects.create_user(username='testie', password='pass')
+        u.empresa = emp
+        u.save()
+
+        # Attempt to create a cliente with invalid IE for BR
+        c = Cliente(empresa=emp, tipo_cliente='NACIONAL', tipo_pessoa='PJ', razao_social='IE Fail', cnpj_cpf='12345678901234', contribuinte_icms=True, inscricao_estadual='INVALID')
+        with self.assertRaises(ValidationError):
+            c.full_clean()
     def test_create_moeda_ajax_validation_error(self):
         url = reverse('cadastros:moeda_create_ajax')
         resp = self.client.post(url, {'codigo': ''})
@@ -726,6 +794,7 @@ class ClienteDetailRenderTests(TestCase):
             cnpj_cpf='12345678901',
             contribuinte_icms=True,
             indicador_ie='1',
+            inscricao_estadual='IE123',
             inscricao_suframa='SUF123',
             eori='EORI123',
             vat='VAT123',

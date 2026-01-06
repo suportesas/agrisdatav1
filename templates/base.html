@@ -292,11 +292,12 @@
       {% endif %}
 
       <script>
-        // Auto-dismiss alerts after 3s and show a brief toast-like feedback
+        // Auto-dismiss non-danger alerts after 3s and show a brief toast-like feedback
         document.addEventListener('DOMContentLoaded', function(){
           try {
             document.querySelectorAll('.alert').forEach(function(a){
-              // Keep alerts visible for a short time and then dismiss automatically
+              // Skip auto-dismiss for danger/error alerts so users can read validation messages
+              if (a.classList.contains('alert-danger') || a.classList.contains('alert-error')) return;
               setTimeout(function(){ try { var bs = bootstrap.Alert.getInstance(a) || new bootstrap.Alert(a); bs.close(); } catch(e){} }, 3000);
             });
           } catch(e){}

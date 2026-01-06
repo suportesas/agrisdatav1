@@ -2346,6 +2346,9 @@ def cliente_create(request):
             messages.success(request, f'✅ Cliente "{cliente.razao_social}" cadastrado!')
             return redirect('cadastros:cliente_detail', pk=cliente.pk)
         else:
+            # If AJAX, return structured JSON errors so client can display specific alerts
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or 'application/json' in request.headers.get('Accept',''):
+                return JsonResponse({'success': False, 'errors': form.errors}, status=400)
             messages.error(request, '❌ Corrija os erros no formulário: %s' % form.errors)
     else:
         form = ClienteForm(empresa=request.user.empresa, usuario=request.user)
@@ -2359,8 +2362,16 @@ def cliente_create(request):
         selected_moeda = request.POST.get('moeda_padrao','')
     else:
         selected_moeda = form.initial.get('moeda_padrao') or getattr(form.instance, 'moeda_padrao', '')
+
+    # determine selected prazo preset from POST, initial or instance
+    selected_preset = ''
+    if request.method == 'POST':
+        selected_preset = str(request.POST.get('prazo_pagamento_padrao','') or '')
+    else:
+        selected_preset = str(form.initial.get('prazo_pagamento_padrao') or getattr(form.instance, 'prazo_pagamento_padrao_id', '') or '')
+
     moedas_exist = moedas.exists()
-    return render(request, 'cadastros/cliente/cliente_form.html', {'form': form, 'action': 'Cadastrar', 'presets': presets, 'moedas_exist': moedas_exist, 'moedas': moedas, 'selected_moeda': selected_moeda})
+    return render(request, 'cadastros/cliente/cliente_form.html', {'form': form, 'action': 'Cadastrar', 'presets': presets, 'moedas_exist': moedas_exist, 'moedas': moedas, 'selected_moeda': selected_moeda, 'selected_preset': selected_preset})
 
 
 @login_required
@@ -2399,6 +2410,10 @@ def cliente_update(request, pk):
             cliente.save()
             messages.success(request, f'✅ Cliente "{cliente.razao_social}" atualizado!')
             return redirect('cadastros:cliente_detail', pk=cliente.pk)
+        else:
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or 'application/json' in request.headers.get('Accept',''):
+                return JsonResponse({'success': False, 'errors': form.errors}, status=400)
+            messages.error(request, '❌ Corrija os erros no formulário: %s' % form.errors)
     else:
         form = ClienteForm(instance=cliente, empresa=request.user.empresa, usuario=request.user)
     # Also pass presets for template convenience
@@ -2411,8 +2426,16 @@ def cliente_update(request, pk):
         selected_moeda = request.POST.get('moeda_padrao','')
     else:
         selected_moeda = form.initial.get('moeda_padrao') or getattr(form.instance, 'moeda_padrao', '')
+
+    # determine selected prazo preset from POST, initial or instance
+    selected_preset = ''
+    if request.method == 'POST':
+        selected_preset = str(request.POST.get('prazo_pagamento_padrao','') or '')
+    else:
+        selected_preset = str(form.initial.get('prazo_pagamento_padrao') or getattr(form.instance, 'prazo_pagamento_padrao_id', '') or '')
+
     moedas_exist = moedas.exists()
-    return render(request, 'cadastros/cliente/cliente_form.html', {'form': form, 'action': 'Editar', 'cliente': cliente, 'presets': presets, 'moedas_exist': moedas_exist, 'moedas': moedas, 'selected_moeda': selected_moeda})
+    return render(request, 'cadastros/cliente/cliente_form.html', {'form': form, 'action': 'Editar', 'cliente': cliente, 'presets': presets, 'moedas_exist': moedas_exist, 'moedas': moedas, 'selected_moeda': selected_moeda, 'selected_preset': selected_preset})
 
 
 @login_required

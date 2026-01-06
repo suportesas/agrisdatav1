@@ -809,6 +809,37 @@ window.addEventListener('error', function(e){ try { console.error('Uncaught erro
           try { const limite = document.getElementById('id_limite_credito') || document.getElementById('id_limite_credito'); if (limite) try { limite.disabled = false; } catch(e){} } catch(e){}
           try { const prazoInput = document.getElementById('id_prazo_pagamento'); if (prazoInput) try { prazoInput.disabled = false; } catch(e){} } catch(e){}
 
+          // Create/replace hidden inputs with final values to guarantee they are included in POST
+          try {
+            const container = document.getElementById('cliente_hidden_sync') || clienteForm;
+            const fields = [
+              {elId: 'id_vendedor_responsavel', name: 'vendedor_responsavel'},
+              {elId: 'id_limite_credito', name: 'limite_credito'},
+              {elId: 'id_prazo_pagamento', name: 'prazo_pagamento'},
+              {elId: 'id_prazo_pagamento_padrao_select', name: 'prazo_pagamento_padrao'},
+            ];
+            fields.forEach(f => {
+              try {
+                const existing = document.getElementById('sync_hidden_' + f.name);
+                if (existing && existing.parentNode) existing.parentNode.removeChild(existing);
+                let val = '';
+                const el = document.getElementById(f.elId);
+                if (el) {
+                  val = (el.value !== undefined) ? el.value : (el.getAttribute && el.getAttribute('data-value')) || '';
+                } else {
+                  // fallback: try to find a rendered choices/select2 text
+                  const wrapper = document.querySelector('#' + f.elId + ' + .choices') || document.querySelector('.select2-selection__rendered');
+                  if (wrapper) val = (wrapper.textContent || '').trim();
+                }
+                // append hidden input to the container (form) so it appears last in payload
+                const input = document.createElement('input');
+                input.type = 'hidden'; input.name = f.name; input.id = 'sync_hidden_' + f.name; input.value = (val || '').toString();
+                container.appendChild(input);
+                try { console.debug('sync field', f.name, '=>', input.value); } catch(e){}
+              } catch(err) { console.warn('sync field failed', f.name, err); }
+            });
+          } catch(err) { console.warn('hidden sync failed', err); }
+
           const moedaSelect = document.getElementById('id_moeda_padrao');
           if (moedaSelect) {
             try { moedaSelect.dispatchEvent(new Event('change', {bubbles:true})); } catch(e){}

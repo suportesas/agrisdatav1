@@ -61,8 +61,10 @@ def test_permissions_flow_via_ui(page, live_server, e2e_roles_data):
     # Save
     page.click("text=Salvar")
 
-    # Confirm toast/message
+    # Confirm aria-live / toast message
     page.wait_for_selector('text=Permissões atualizadas')
+    # Also confirm status region updated
+    assert page.locator('div[role="status"][aria-live="polite"]').inner_text().strip() != ''
 
     # Verify via API: permissions endpoint should reflect the change
     resp = page.request.get(f"{live_server.url}/empresas/roles/{role.pk}/permissions/")
@@ -70,6 +72,19 @@ def test_permissions_flow_via_ui(page, live_server, e2e_roles_data):
     # Ensure at least one module has add true
     assert any(item['perms']['add'] for item in data['permissions'])
 
+    # Test export: click 'Exportar' and wait for download
+    with page.expect_download() as download_info:
+        page.click('text=Exportar')
+    download = download_info.value
+    path = download.path()
+    # Read downloaded file and assert JSON structure
+    import json
+    with open(path, 'r', encoding='utf-8') as f:
+        payload = json.load(f)
+    assert isinstance(payload, dict)
+    # There should be keys representing models and boolean permission fields
+    example_values = list(payload.values())[0]
+    assert any(k in example_values for k in ['add','change','delete','view'])
     # Additionally ensure role's group in DB has the permission (sync check)
     page.wait_for_timeout(500)
     perm = Permission.objects.filter(codename__startswith='add_').first()

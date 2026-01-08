@@ -11,5 +11,8 @@ class EmpresasConfig(AppConfig):
     verbose_name = 'Empresas e Planos'
     
     def ready(self):
-        """Importa signals se houver"""
-        pass
+        """Importa signals do app para registrar handlers"""
+        try:
+            from . import signals  # noqa: F401
+        except Exception:
+            pass

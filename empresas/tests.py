@@ -3,6 +3,17 @@ from django.core.management import call_command
 from django.contrib.auth.models import Permission
 
 from .models import Empresa, Role
+try:
+    from .management.commands.seed_roles import DEFAULT_ROLES
+except Exception:
+    DEFAULT_ROLES = [
+        'Proprietário',
+        'Almoxarife',
+        'Operacional do Campo',
+        'Financeiro',
+        'Gerente',
+        'Vendedor',
+    ]
 
 
 class RoleTests(TestCase):
@@ -34,3 +45,9 @@ class RoleTests(TestCase):
         role.set_permissions([perm.codename])
         perms = role.get_permissions()
         self.assertTrue(perms.filter(codename=perm.codename).exists())
+
+    def test_empresa_creation_auto_creates_roles(self):
+        # Quando uma empresa é criada, roles padrão devem ser criadas automaticamente
+        empresa2 = Empresa.objects.create(nome='Empresa AutoSeed')
+        for nome in DEFAULT_ROLES:
+            self.assertTrue(Role.objects.filter(empresa=empresa2, name=nome).exists())

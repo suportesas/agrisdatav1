@@ -1,6 +1,7 @@
 from django.test import TestCase
 from django.core.management import call_command
 from django.contrib.auth.models import Permission
+from django.contrib.auth import get_user_model
 
 from .models import Empresa, Role
 try:
@@ -45,6 +46,27 @@ class RoleTests(TestCase):
         role.set_permissions([perm.codename])
         perms = role.get_permissions()
         self.assertTrue(perms.filter(codename=perm.codename).exists())
+
+    def test_set_permissions_assigns_group_to_assigned_users(self):
+        # Cria uma role e um usuário que possui essa role
+        role = Role.objects.create(empresa=self.empresa, name='PermRoleUsers')
+        user = get_user_model().objects.create_user(username='userperm', password='pass')
+        user.empresa = self.empresa
+        user.save()
+        user.roles.add(role)
+
+        # Garante que antes de set_permissions, o grupo exista (role.save cria o group)
+        self.assertIsNotNone(role.group)
+
+        # Define permissão e espera que o group seja atribuído ao usuário
+        perm = Permission.objects.filter(codename__in=['add_empresa', 'change_empresa']).first()
+        if not perm:
+            self.skipTest('Permissões padrão não disponíveis')
+
+        role.set_permissions([perm.codename])
+        user.refresh_from_db()
+        # Agora o usuário deve ter o group da role
+        self.assertIn(role.group, user.groups.all())
 
     def test_empresa_creation_auto_creates_roles(self):
         # Quando uma empresa é criada, roles padrão devem ser criadas automaticamente

@@ -579,11 +579,22 @@ class Role(models.Model):
         super().save(*args, **kwargs)
 
     def set_permissions(self, codenames):
-        """Sincroniza as permissões do Group com a lista de codenames."""
+        """Sincroniza as permissões do Group com a lista de codenames.
+
+        Além de atualizar as permissões do Group, garante que todos os usuários
+        que possuem esta Role tenham o Group adicionado em seus `user.groups`.
+        """
         if not self.group:
             self.save()
         perms = Permission.objects.filter(codename__in=codenames)
         self.group.permissions.set(perms)
+
+        # Garante que todos usuários vinculados à role tenham o group
+        # (evita inconsistência se role foi atribuída previamente e group criado agora)
+        usuarios = self.usuarios.all()
+        if usuarios.exists():
+            for u in usuarios:
+                u.groups.add(self.group)
 
     def get_permissions(self):
         if not self.group:

@@ -8,4 +8,9 @@ class UsuariosConfig(AppConfig):
     
     def ready(self):
         """Importa signals se houver"""
-        pass
+        # Import signals to register signal handlers
+        try:
+            from . import signals  # noqa: F401
+        except Exception:
+            # If signals import fails, ignore to avoid breaking app import
+            pass

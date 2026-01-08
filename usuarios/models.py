@@ -175,6 +175,15 @@ class Usuario(AbstractUser):
         help_text='Percentual de comissão sobre vendas'
     )
     
+    # Funções/roles da empresa
+    roles = models.ManyToManyField(
+        'empresas.Role',
+        blank=True,
+        related_name='usuarios',
+        verbose_name='Funções',
+        help_text='Funções atribuídas ao usuário (ex.: Proprietário, Almoxarife)'
+    )
+    
     # Campos de controle
     data_admissao = models.DateField(
         'Data de Admissão',

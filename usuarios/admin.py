@@ -15,7 +15,7 @@ class UsuarioAdmin(BaseUserAdmin):
     
     list_display = [
         'username', 'get_nome_completo', 'email', 'empresa',
-        'tipo', 'telefone', 'is_active_badge', 'date_joined'
+        'get_roles', 'tipo', 'telefone', 'is_active_badge', 'date_joined'
     ]
     
     list_filter = [
@@ -41,7 +41,7 @@ class UsuarioAdmin(BaseUserAdmin):
                       'telefone', 'data_nascimento', 'foto')
         }),
         ('Empresa e Tipo', {
-            'fields': ('empresa', 'tipo', 'comissao_vendas')
+            'fields': ('empresa', 'tipo', 'comissao_vendas', 'roles')
         }),
         ('Datas', {
             'fields': ('data_admissao', 'data_demissao')
@@ -80,6 +80,14 @@ class UsuarioAdmin(BaseUserAdmin):
             '<span style="color: red; font-weight: bold;">✗ Inativo</span>'
         )
     is_active_badge.short_description = 'Status'
+
+    def get_roles(self, obj):
+        """Retorna as funções/roles atribuídas ao usuário"""
+        roles = obj.roles.all()
+        if roles:
+            return ", ".join([r.name for r in roles])
+        return '-'
+    get_roles.short_description = 'Funções'
 
 
 @admin.register(LoginRegistro)

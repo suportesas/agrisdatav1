@@ -1,3 +1,4 @@
+import json
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
@@ -5,8 +6,9 @@ from django.utils import timezone
 from django.db.models import Count, Q
 from django.http import JsonResponse
 from django.template.loader import render_to_string
+from django.contrib.auth.models import Permission
 
-from .models import Empresa, Plano
+from .models import Empresa, Plano, Role
 from .forms import EmpresaForm, PlanoForm
 
 
@@ -155,10 +157,65 @@ def minha_empresa(request):
         'total_usuarios': empresa.get_total_usuarios(),
         'dias_vencimento': empresa.get_dias_para_vencimento(),
         'proximo_vencimento': empresa.esta_proximo_vencimento(),
+        'plano_consumo': empresa.plan_consumption_summary(),
     }
     
     return render(request, 'empresas/minha_empresa.html', context)
 
+
+@login_required
+def role_list(request):
+    """Lista funções (roles) da empresa do usuário logado"""
+    if not request.user.empresa:
+        messages.warning(request, "Nenhuma empresa vinculada à sua conta.")
+        return redirect('dashboard:index')
+
+    roles = Role.objects.filter(empresa=request.user.empresa)
+
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        html = render_to_string('empresas/_roles_table.html', {'roles': roles}, request=request)
+        return JsonResponse({'html': html})
+
+    return render(request, 'empresas/roles_list.html', {'roles': roles})
+
+
+@login_required
+def role_permissions(request, role_id):
+    """GET: retorna permissões (codename, name, app, model, has)
+       POST: atualiza permissões da role (espera JSON {'permissions': [codename,...]})
+    """
+    role = get_object_or_404(Role, pk=role_id)
+
+    # Verifica permissão: somente admin da empresa ou superuser
+    if not request.user.is_superuser:
+        if not request.user.empresa or role.empresa != request.user.empresa or not request.user.is_admin_empresa():
+            return JsonResponse({'error': 'Permissão negada'}, status=403)
+
+    if request.method == 'GET':
+        # Lista todas as permissões do sistema (filtrar por app se desejar)
+        perms = Permission.objects.all().select_related('content_type')
+        role_perms = set(p.codename for p in role.get_permissions())
+
+        data = []
+        for p in perms:
+            data.append({
+                'codename': p.codename,
+                'name': p.name,
+                'app_label': p.content_type.app_label,
+                'model': p.content_type.model,
+                'has': p.codename in role_perms
+            })
+        return JsonResponse({'permissions': data})
+
+    if request.method == 'POST':
+        try:
+            payload = json.loads(request.body.decode('utf-8'))
+            codenames = payload.get('permissions', [])
+        except Exception:
+            return JsonResponse({'error': 'Payload inválido'}, status=400)
+
+        role.set_permissions(codenames)
+        return JsonResponse({'ok': True, 'updated': len(codenames)})
 
 # ==================== VIEWS DE PLANOS ====================
 

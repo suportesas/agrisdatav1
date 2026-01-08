@@ -9,6 +9,8 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 from django.core.exceptions import ValidationError
 from decimal import Decimal
 import re
+from django.contrib.auth.models import Group, Permission
+from django.utils.text import slugify
 
 
 class Plano(models.Model):
@@ -471,7 +473,41 @@ class Empresa(models.Model):
     def get_total_usuarios(self):
         """Retorna total de usuários ativos"""
         return self.usuarios.filter(is_active=True).count()
-    
+
+    def plan_consumption_summary(self):
+        """Retorna resumo de consumo do plano: usado, limite, saldo e porcentagem."""
+        try:
+            from cadastros.models import Talhao
+        except Exception:
+            Talhao = None
+
+        used_fazendas = self.fazendas.count()
+        used_usuarios = self.get_total_usuarios()
+        used_talhoes = Talhao.objects.filter(fazenda__empresa=self).count() if Talhao is not None else 0
+        used_produtos = self.culturas.count() if hasattr(self, 'culturas') else 0
+
+        def format_limit(n):
+            return 'Ilimitado' if n is None or (isinstance(n, int) and n >= 999) else n
+
+        def make_item(label, used, limit):
+            lim = limit
+            rem = None
+            pct = None
+            if lim is None or (isinstance(lim, int) and lim >= 999):
+                rem = 'Ilimitado'
+            else:
+                rem_val = max(lim - used, 0)
+                rem = rem_val
+                pct = int((used / lim) * 100) if lim > 0 else None
+            return {'label': label, 'used': used, 'limit': format_limit(lim), 'remaining': rem, 'percent': pct}
+
+        summary = [
+            make_item('Fazendas', used_fazendas, self.limite_fazendas),
+            make_item('Usuários', used_usuarios, self.limite_usuarios),
+            make_item('Talhões', used_talhoes, self.limite_talhoes),
+            make_item('Produtos', used_produtos, self.limite_produtos),
+        ]
+        return summary    
     def pode_adicionar_usuario(self):
         """Verifica se pode adicionar mais usuários"""
         if self.limite_usuarios >= 999:  # Ilimitado
@@ -485,4 +521,72 @@ class Empresa(models.Model):
             if len(cnpj) == 14:
                 return f"{cnpj[:2]}.{cnpj[2:5]}.{cnpj[5:8]}/{cnpj[8:12]}-{cnpj[12:]}"
         return self.cnpj
+
+
+class Role(models.Model):
+    """
+    Função (Role) vinculada a uma Empresa.
+    Cada Role possui um Group do Django que armazena as permissões.
+    """
+
+    empresa = models.ForeignKey(
+        Empresa,
+        on_delete=models.CASCADE,
+        related_name='roles',
+        verbose_name='Empresa'
+    )
+    name = models.CharField('Nome da Função', max_length=100)
+    description = models.TextField('Descrição', blank=True)
+    group = models.OneToOneField(
+        Group,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='role',
+        verbose_name='Grupo Django'
+    )
+    builtin = models.BooleanField(
+        'Padrão do sistema',
+        default=False,
+        help_text='Função criada automaticamente pelo seed'
+    )
+    data_criacao = models.DateTimeField('Criado em', auto_now_add=True)
+    data_atualizacao = models.DateTimeField('Atualizado em', auto_now=True)
+
+    class Meta:
+        unique_together = ('empresa', 'name')
+        verbose_name = 'Função (Role)'
+        verbose_name_plural = 'Funções (Roles)'
+        ordering = ['empresa__nome', 'name']
+
+    def __str__(self):
+        return f"{self.name} ({self.empresa.nome})"
+
+    def save(self, *args, **kwargs):
+        """Garante que exista um Group associado com nome consistente."""
+        # Cria/obtém o Group se necessário
+        if not self.group:
+            # group name uses empresa id, may be None until empresa saved with id
+            group_name = f"empresa_{self.empresa.id}_role_{slugify(self.name)}"
+            group, created = Group.objects.get_or_create(name=group_name)
+            self.group = group
+        else:
+            # Mantém nome do grupo consistente com empresa e role
+            expected_name = f"empresa_{self.empresa.id}_role_{slugify(self.name)}"
+            if self.group.name != expected_name:
+                self.group.name = expected_name
+                self.group.save()
+        super().save(*args, **kwargs)
+
+    def set_permissions(self, codenames):
+        """Sincroniza as permissões do Group com a lista de codenames."""
+        if not self.group:
+            self.save()
+        perms = Permission.objects.filter(codename__in=codenames)
+        self.group.permissions.set(perms)
+
+    def get_permissions(self):
+        if not self.group:
+            return Permission.objects.none()
+        return self.group.permissions.all()
         

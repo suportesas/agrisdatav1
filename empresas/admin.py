@@ -5,7 +5,7 @@ Configuração do painel administrativo
 
 from django.contrib import admin
 from django.utils.html import format_html
-from .models import Empresa, Plano
+from .models import Empresa, Plano, Role
 
 
 @admin.register(Plano)
@@ -297,3 +297,14 @@ class EmpresaAdmin(admin.ModelAdmin):
             request,
             f"Limites do plano aplicados para {queryset.count()} empresa(s)."
         )
+
+
+@admin.register(Role)
+class RoleAdmin(admin.ModelAdmin):
+    """Admin para funções (roles) de empresas"""
+
+    list_display = ['name', 'empresa', 'builtin', 'data_criacao']
+    list_filter = ['empresa', 'builtin']
+    search_fields = ['name', 'empresa__nome']
+    ordering = ['empresa__nome', 'name']
+    readonly_fields = ['data_criacao', 'data_atualizacao']

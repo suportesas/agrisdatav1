@@ -123,7 +123,7 @@ class UsuarioCreateForm(UserCreationForm):
         model = Usuario
         fields = [
             'username', 'email', 'first_name', 'last_name',
-            'tipo', 'telefone', 'cpf', 'empresa',
+            'tipo', 'telefone', 'cpf', 'empresa', 'roles',
             'password1', 'password2', 'is_active', 'is_staff'
         ]
         widgets = {
@@ -135,6 +135,9 @@ class UsuarioCreateForm(UserCreationForm):
                 'class': 'form-select'
             }),
             'empresa': forms.Select(attrs={
+                'class': 'form-select'
+            }),
+            'roles': forms.SelectMultiple(attrs={
                 'class': 'form-select'
             }),
             'is_active': forms.CheckboxInput(attrs={
@@ -163,6 +166,14 @@ class UsuarioCreateForm(UserCreationForm):
         if self.user and not self.user.is_superuser:
             self.fields['is_staff'].widget = forms.HiddenInput()
             self.fields['is_active'].initial = True
+
+        # Configura queryset de roles
+        from empresas.models import Role
+        if 'roles' in self.fields:
+            if self.user and not self.user.is_superuser and self.user.empresa:
+                self.fields['roles'].queryset = Role.objects.filter(empresa=self.user.empresa)
+            else:
+                self.fields['roles'].queryset = Role.objects.all()
     
     def clean_email(self):
         email = self.cleaned_data.get('email')
@@ -268,7 +279,7 @@ class UsuarioUpdateForm(UserChangeForm):
         fields = [
             'username', 'email', 'first_name', 'last_name',
             'tipo', 'telefone', 'cpf', 'data_nascimento',
-            'data_admissao', 'comissao_vendas', 'observacoes',
+            'data_admissao', 'comissao_vendas', 'roles', 'observacoes',
             'is_active', 'is_staff'
         ]
         widgets = {
@@ -289,6 +300,9 @@ class UsuarioUpdateForm(UserChangeForm):
                 'min': '0',
                 'max': '100'
             }),
+            'roles': forms.SelectMultiple(attrs={
+                'class': 'form-select'
+            }),
             'is_active': forms.CheckboxInput(attrs={
                 'class': 'form-check-input'
             }),
@@ -304,6 +318,14 @@ class UsuarioUpdateForm(UserChangeForm):
         # Esconde campos de staff se não for superusuário
         if self.user and not self.user.is_superuser:
             self.fields['is_staff'].widget = forms.HiddenInput()
+
+            # Configura queryset de roles
+            from empresas.models import Role
+            if 'roles' in self.fields:
+                if self.user and not self.user.is_superuser and self.user.empresa:
+                    self.fields['roles'].queryset = Role.objects.filter(empresa=self.user.empresa)
+                else:
+                    self.fields['roles'].queryset = Role.objects.all()
     
     def clean_email(self):
         email = self.cleaned_data.get('email')

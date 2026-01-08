@@ -1,0 +1,20 @@
+<table class="table table-hover">
+  <thead>
+    <tr>
+      <th>Função</th>
+      <th>Descrição</th>
+      <th>Padrão</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for role in roles %}
+    <tr class="role-row" data-role-id="{{ role.id }}" style="cursor: pointer;">
+      <td>{{ role.name }}</td>
+      <td>{{ role.description|default:"-" }}</td>
+      <td>{% if role.builtin %}✔{% endif %}</td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="3">Nenhuma função encontrada</td></tr>
+  {% endfor %}
+  </tbody>
+</table>

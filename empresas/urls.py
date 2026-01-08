@@ -11,6 +11,10 @@ urlpatterns = [
     path('<int:pk>/excluir/', views.empresa_delete, name='empresa_delete'),
     path('minha/', views.minha_empresa, name='minha_empresa'),
     path('painel-admin/', views.painel_admin, name='painel_admin'),
+
+    # Roles / Permissões
+    path('roles/', views.role_list, name='roles_list'),
+    path('roles/<int:role_id>/permissions/', views.role_permissions, name='role_permissions'),
     
     # Planos
     path('planos/', views.plano_list, name='plano_list'),

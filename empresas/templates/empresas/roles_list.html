@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>Funções da Empresa</h1>
+<div id="roles-area">
+    {% include 'empresas/_roles_table.html' %}
+</div>
+<div id="permissions-area"></div>
+
+<script>
+function loadPermissions(roleId) {
+  fetch("{% url 'empresas:role_permissions' role_id=0 %}".replace('/0/','/'+roleId+'/'), {
+    headers: {'X-Requested-With':'XMLHttpRequest'}
+  }).then(r=>r.json()).then(data=>{
+    const perms = data.permissions;
+    const grouped = {};
+    perms.forEach(p=>{
+      const key = p.app_label + ':' + p.model;
+      if(!grouped[key]) grouped[key] = [];
+      grouped[key].push(p);
+    });
+    let html = '<h2>Permissões</h2><form id="perms-form"><table class="table"><thead><tr><th>Módulo</th><th>Cadastrar</th><th>Editar</th><th>Excluir</th><th>Visualizar</th></tr></thead><tbody>';
+    Object.keys(grouped).forEach(k=>{
+      const [app,model] = k.split(':');
+      const rows = grouped[k];
+      const hasAdd = rows.some(r=>r.codename.startsWith('add_') && r.has);
+      const hasChange = rows.some(r=>r.codename.startsWith('change_') && r.has);
+      const hasDelete = rows.some(r=>r.codename.startsWith('delete_') && r.has);
+      const hasView = rows.some(r=>r.codename.startsWith('view_') && r.has);
+      html += `<tr data-model="${model}"><td>${app}.${model}</td><td><input type="checkbox" name="add" ${hasAdd?'checked':''}></td><td><input type="checkbox" name="change" ${hasChange?'checked':''}></td><td><input type="checkbox" name="delete" ${hasDelete?'checked':''}></td><td><input type="checkbox" name="view" ${hasView?'checked':''}></td></tr>`;
+    });
+    html += '</tbody></table><button type="button" id="save-perms" class="btn btn-primary">Salvar</button></form>';
+    document.getElementById('permissions-area').innerHTML = html;
+    document.getElementById('save-perms').onclick = function(){ savePermissions(roleId, grouped) };
+  });
+}
+function savePermissions(roleId, grouped){
+  const codenames = [];
+  Object.keys(grouped).forEach(k=>{
+    const [app,model] = k.split(':');
+    const selector = `tr[data-model="${model}"]`;
+    const row = document.querySelector(selector);
+    if(!row) return;
+    const add = row.querySelector('input[name="add"]').checked;
+    const change = row.querySelector('input[name="change"]').checked;
+    const del = row.querySelector('input[name="delete"]').checked;
+    const view = row.querySelector('input[name="view"]').checked;
+    if(add) codenames.push('add_' + model);
+    if(change) codenames.push('change_' + model);
+    if(del) codenames.push('delete_' + model);
+    if(view) codenames.push('view_' + model);
+  });
+  fetch("{% url 'empresas:role_permissions' role_id=0 %}".replace('/0/','/'+roleId+'/'), {
+    method:'POST',
+    headers:{'Content-Type':'application/json','X-CSRFToken': getCookie('csrftoken')},
+    body: JSON.stringify({'permissions': codenames})
+  }).then(r=>r.json()).then(resp=>{
+    if(resp.ok) alert('Permissões atualizadas');
+    else alert('Erro ao atualizar permissões');
+  });
+}
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+document.addEventListener('DOMContentLoaded', function(){
+  document.querySelectorAll('.role-row').forEach(el=>{
+    el.addEventListener('click', function(){ loadPermissions(this.dataset.roleId) });
+  });
+});
+</script>
+
+{% endblock %}

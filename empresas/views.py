@@ -216,20 +216,48 @@ def role_permissions(request, role_id):
             return JsonResponse({'error': 'Permissão negada'}, status=403)
 
     if request.method == 'GET':
-        # Lista todas as permissões do sistema (filtrar por app se desejar)
+        # Lista todas as permissões do sistema agrupadas por app/model
         perms = Permission.objects.all().select_related('content_type')
         role_perms = set(p.codename for p in role.get_permissions())
 
-        data = []
+        grouped = {}
+        # Optional mapping to show friendly module names
+        APP_LABELS = {
+            'cadastros': 'Cadastros',
+            'empresas': 'Empresa',
+            'usuarios': 'Usuários',
+            'auth': 'Autenticação',
+            'cadastros': 'Cadastros',
+        }
+
         for p in perms:
-            data.append({
-                'codename': p.codename,
-                'name': p.name,
-                'app_label': p.content_type.app_label,
-                'model': p.content_type.model,
-                'has': p.codename in role_perms
-            })
-        return JsonResponse({'permissions': data})
+            app = p.content_type.app_label
+            model = p.content_type.model
+            key = f"{app}:{model}"
+            if key not in grouped:
+                grouped[key] = {
+                    'app_label': app,
+                    'model': model,
+                    'display': APP_LABELS.get(app, app.title()) + ' • ' + model.title(),
+                    'perms': {'add': False, 'change': False, 'delete': False, 'view': False}
+                }
+            if p.codename.startswith('add_'):
+                grouped[key]['perms']['add'] = p.codename in role_perms
+            elif p.codename.startswith('change_'):
+                grouped[key]['perms']['change'] = p.codename in role_perms
+            elif p.codename.startswith('delete_'):
+                grouped[key]['perms']['delete'] = p.codename in role_perms
+            elif p.codename.startswith('view_'):
+                grouped[key]['perms']['view'] = p.codename in role_perms
+
+        # Convert grouped to a sorted list for deterministic output
+        items = []
+        for k in sorted(grouped.keys()):
+            item = grouped[k]
+            item['key'] = k
+            items.append(item)
+
+        return JsonResponse({'permissions': items})
 
     if request.method == 'POST':
         try:

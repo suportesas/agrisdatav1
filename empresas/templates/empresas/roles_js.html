@@ -1,0 +1,122 @@
+<script>
+async function loadPermissions(roleId) {
+  const resp = await fetch("{% url 'empresas:role_permissions' role_id=0 %}".replace('/0/','/'+roleId+'/'), {headers:{'X-Requested-With':'XMLHttpRequest'}});
+  const data = await resp.json();
+  const perms = data.permissions;
+
+  let html = '<h2 class="mt-2">Permissões</h2>';
+  html += '<div class="table-responsive"><table class="table table-sm align-middle"><thead><tr><th>Módulo</th><th class="text-center">Cadastrar</th><th class="text-center">Editar</th><th class="text-center">Excluir</th><th class="text-center">Visualizar</th></tr></thead><tbody>';
+
+  perms.forEach(item=>{
+    const k = item.key;
+    const model = item.model;
+    const display = item.display || (item.app_label + '.' + model);
+    const add = item.perms.add ? 'checked' : '';
+    const change = item.perms.change ? 'checked' : '';
+    const del = item.perms.delete ? 'checked' : '';
+    const view = item.perms.view ? 'checked' : '';
+
+    html += `<tr data-key="${k}" data-model="${model}">` +
+            `<td><strong>${display}</strong></td>` +
+            `<td class="text-center"><input type="checkbox" aria-label="${display} - Cadastrar" name="add" ${add}></td>` +
+            `<td class="text-center"><input type="checkbox" aria-label="${display} - Editar" name="change" ${change}></td>` +
+            `<td class="text-center"><input type="checkbox" aria-label="${display} - Excluir" name="delete" ${del}></td>` +
+            `<td class="text-center"><input type="checkbox" aria-label="${display} - Visualizar" name="view" ${view}></td>` +
+            `</tr>`;
+  });
+
+  html += '</tbody></table></div>';
+  html += '<div class="d-flex gap-2"><button id="save-perms" class="btn btn-primary" title="Salvar permissões" aria-describedby="status-message">Salvar</button><button id="export-perms" class="btn btn-outline-secondary" title="Exportar permissões" aria-label="Exportar permissões">Exportar</button></div>';
+  // aria-live region for toast/success messages
+  html += '<div id="status-message" role="status" aria-live="polite" class="mt-2 visually-hidden"></div>';
+
+  document.getElementById('permissions-area').innerHTML = html;
+
+  document.getElementById('save-perms').onclick = function(){ savePermissions(roleId) };
+  document.getElementById('export-perms').onclick = function(){ exportPermissions(); };
+}
+
+async function savePermissions(roleId){
+  const rows = document.querySelectorAll('#permissions-area table tbody tr');
+  const codenames = [];
+  rows.forEach(row=>{
+    const model = row.dataset.model;
+    const add = row.querySelector('input[name="add"]').checked;
+    const change = row.querySelector('input[name="change"]').checked;
+    const del = row.querySelector('input[name="delete"]').checked;
+    const view = row.querySelector('input[name="view"]').checked;
+    if(add) codenames.push('add_' + model);
+    if(change) codenames.push('change_' + model);
+    if(del) codenames.push('delete_' + model);
+    if(view) codenames.push('view_' + model);
+  });
+
+  const res = await fetch("{% url 'empresas:role_permissions' role_id=0 %}".replace('/0/','/'+roleId+'/'), {
+    method:'POST',
+    headers:{'Content-Type':'application/json','X-CSRFToken': getCookie('csrftoken')},
+    body: JSON.stringify({'permissions': codenames})
+  });
+  const r = await res.json();
+  if(r.ok){
+    showToast('Permissões atualizadas', 'success');
+  } else {
+    showToast('Erro ao atualizar permissões', 'danger');
+  }
+}
+
+function exportPermissions(){
+  const rows = document.querySelectorAll('#permissions-area table tbody tr');
+  const exportData = {};
+  rows.forEach(row=>{
+    const model = row.dataset.model;
+    exportData[model] = {
+      add: row.querySelector('input[name="add"]').checked,
+      change: row.querySelector('input[name="change"]').checked,
+      delete: row.querySelector('input[name="delete"]').checked,
+      view: row.querySelector('input[name="view"]').checked,
+    }
+  });
+  const a = document.createElement('a');
+  a.href = 'data:application/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(exportData, null, 2));
+  a.download = 'role-permissions.json';
+  a.click();
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+function showToast(message, type='info'){
+  // Update aria-live region
+  const region = document.getElementById('status-message');
+  if(region){
+    region.textContent = message;
+    region.classList.remove('visually-hidden');
+    region.classList.add('d-block');
+    // Hide after a while
+    setTimeout(()=>{
+      region.classList.add('visually-hidden');
+      region.textContent = '';
+    }, 4000);
+  }
+
+  // Also render a visible alert for UX
+  const el = document.createElement('div');
+  el.className = `alert alert-${type}`;
+  el.setAttribute('role', 'alert');
+  el.textContent = message;
+  document.getElementById('permissions-area').prepend(el);
+  setTimeout(()=>el.remove(), 4000);
+}
+</script>

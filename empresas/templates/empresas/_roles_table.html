@@ -1,20 +1,37 @@
-<table class="table table-hover">
-  <thead>
-    <tr>
-      <th>Função</th>
-      <th>Descrição</th>
-      <th>Padrão</th>
-    </tr>
-  </thead>
-  <tbody>
-  {% for role in roles %}
-    <tr class="role-row" data-role-id="{{ role.id }}" style="cursor: pointer;">
-      <td>{{ role.name }}</td>
-      <td>{{ role.description|default:"-" }}</td>
-      <td>{% if role.builtin %}✔{% endif %}</td>
-    </tr>
-  {% empty %}
-    <tr><td colspan="3">Nenhuma função encontrada</td></tr>
-  {% endfor %}
-  </tbody>
-</table>
+<div class="row">
+  {% if roles %}
+    {% for role in roles %}
+      <div class="col-md-6">
+        <div class="role-card" role="button" tabindex="0" data-role-id="{{ role.id }}" data-builtin="{{ role.builtin|yesno:'true,false' }}">
+          <div class="d-flex justify-content-between align-items-start">
+            <div>
+              <div class="d-flex align-items-center">
+                <h5 class="mb-1 role-name">{{ role.name }}</h5>
+                {% if role.builtin %}
+                  <span class="role-builtin">Padrão</span>
+                {% endif %}
+              </div>
+              <p class="text-muted small mb-2">{{ role.description|default:"Sem descrição" }}</p>
+              <div class="text-muted small">Criado em: {{ role.data_criacao|date:"d/m/Y" }}</div>
+            </div>
+            <div class="text-end">
+              <a href="#" onclick="loadPermissions({{ role.id }})" class="btn btn-outline-primary btn-sm" title="Editar permissões" aria-label="Editar permissões de {{ role.name }}" role="button">
+                <i class="bi bi-shield-lock"></i>
+              </a>
+              <a href="#" class="btn btn-outline-secondary btn-sm ms-1" title="Editar função" aria-label="Editar função {{ role.name }}">
+                <i class="bi bi-pencil-square"></i>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  {% else %}
+    <div class="col-12">
+      <div class="empty-state">
+        <i class="bi bi-person-x"></i>
+        <p class="mt-2">Nenhuma função encontrada. Crie uma nova função para começar.</p>
+      </div>
+    </div>
+  {% endif %}
+</div>

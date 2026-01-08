@@ -1,18 +1,94 @@
 {% extends 'base.html' %}
-{% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
-  <h1>Funções da Empresa</h1>
-  <div class="d-flex gap-2">
-    <a href="{% url 'empresas:role_create' %}" class="btn btn-success"><i class="bi bi-plus-circle"></i> Nova Função</a>
-    <input id="role-search" class="form-control form-control-sm" placeholder="Pesquisar função..." style="max-width:320px;" />
-  </div>
-</div>
-<div id="roles-area">
-    {% include 'empresas/_roles_table.html' %}
-</div>
-<hr>
-<div id="permissions-area"></div>
+{% block extra_css %}
+<style>
+  .filter-card { background: white; border-radius: 12px; padding: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 1rem; }
+  .role-card { background: white; border-radius: 12px; padding: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 0.8rem; border-left: 4px solid #20c997; transition: all 0.2s ease; }
+  .role-card:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0,0,0,0.08); }
+  .role-builtin { font-size: 0.85rem; padding: 0.25rem 0.6rem; border-radius: 12px; background: #e9f7ef; color:#155724; margin-left:0.5rem }
+  .empty-state { text-align:center; padding:2rem; color:#6c757d }
+</style>
+{% endblock %}
 
+{% block content %}
+<div class="container py-4">
+  <nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
+      <li class="breadcrumb-item active">Funções</li>
+    </ol>
+  </nav>
+
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h2 class="fw-bold mb-1"><i class="bi bi-people text-success"></i> Funções</h2>
+      <p class="text-muted mb-0">Gerencie papéis e permissões específicas da sua empresa (Proprietário, Almoxarife, Operacional, etc.)</p>
+    </div>
+    <a href="{% url 'empresas:role_create' %}" class="btn btn-success">
+      <i class="bi bi-plus-circle"></i> Nova Função
+    </a>
+  </div>
+
+  <div class="filter-card">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-md-6">
+        <label class="form-label fw-semibold"><i class="bi bi-search"></i> Pesquisar</label>
+        <input id="role-search" type="text" name="q" class="form-control" placeholder="Nome da função (ex.: Proprietário, Almoxarife)" />
+      </div>
+      <div class="col-md-3">
+        <label class="form-label fw-semibold">Mostrar</label>
+        <select id="role-filter" class="form-select">
+          <option value="all">Todas</option>
+          <option value="builtin">Padrão do sistema</option>
+          <option value="custom">Criadas</option>
+        </select>
+      </div>
+      <div class="col-md-3 text-end">
+        <a href="{% url 'empresas:roles_list' %}" class="btn btn-outline-secondary">Resetar filtros</a>
+      </div>
+    </form>
+  </div>
+
+  <div id="roles-area">
+    {% include 'empresas/_roles_table.html' %}
+  </div>
+
+  <hr>
+  <div id="permissions-area"></div>
+
+</div>
+
+<script>
+function applyFilters(){
+  const q = document.getElementById('role-search').value.toLowerCase();
+  const filter = document.getElementById('role-filter').value;
+  document.querySelectorAll('.role-card').forEach(card=>{
+    const name = card.querySelector('.role-name').textContent.toLowerCase();
+    const builtin = card.dataset.builtin === 'true';
+    let show = name.includes(q);
+    if(filter === 'builtin' && !builtin) show = false;
+    if(filter === 'custom' && builtin) show = false;
+    card.style.display = show ? '' : 'none';
+  });
+}
+document.addEventListener('DOMContentLoaded', function(){
+  document.getElementById('role-search').addEventListener('input', applyFilters);
+  document.getElementById('role-filter').addEventListener('change', applyFilters);
+
+  // wire selection highlighting
+  document.querySelectorAll('.role-card').forEach(el=>{
+    el.addEventListener('click', function(e){
+      if(e.target.tagName.toLowerCase() === 'a' || e.target.closest('button')) return; // ignore clicks on buttons
+      document.querySelectorAll('.role-card').forEach(r=>r.classList.remove('table-active'));
+      this.classList.add('table-active');
+      loadPermissions(this.dataset.roleId);
+    });
+  });
+});
+</script>
+
+{% include 'empresas/roles_js.html' %}
+
+{% endblock %}
 <script>
 async function loadPermissions(roleId) {
   const resp = await fetch("{% url 'empresas:role_permissions' role_id=0 %}".replace('/0/','/'+roleId+'/'), {headers:{'X-Requested-With':'XMLHttpRequest'}});

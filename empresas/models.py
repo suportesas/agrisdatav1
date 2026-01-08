@@ -11,6 +11,9 @@ from decimal import Decimal
 import re
 from django.contrib.auth.models import Group, Permission
 from django.utils.text import slugify
+from django.conf import settings
+import json
+from django.utils import timezone
 
 
 class Plano(models.Model):
@@ -578,11 +581,12 @@ class Role(models.Model):
                 self.group.save()
         super().save(*args, **kwargs)
 
-    def set_permissions(self, codenames):
+    def set_permissions(self, codenames, actor=None):
         """Sincroniza as permissões do Group com a lista de codenames.
 
         Além de atualizar as permissões do Group, garante que todos os usuários
         que possuem esta Role tenham o Group adicionado em seus `user.groups`.
+        Registra uma entrada de auditoria com o `actor` (opcional).
         """
         if not self.group:
             self.save()
@@ -590,14 +594,70 @@ class Role(models.Model):
         self.group.permissions.set(perms)
 
         # Garante que todos usuários vinculados à role tenham o group
-        # (evita inconsistência se role foi atribuída previamente e group criado agora)
         usuarios = self.usuarios.all()
         if usuarios.exists():
             for u in usuarios:
                 u.groups.add(self.group)
 
+        # Cria registro de auditoria
+        try:
+            details = {'permissions': list(perms.values_list('codename', flat=True))}
+            RoleAudit.objects.create(role=self, actor=actor, action='permissions_updated', details=details)
+        except Exception:
+            # Não falha em produção por conta do logging
+            pass
+
     def get_permissions(self):
         if not self.group:
             return Permission.objects.none()
         return self.group.permissions.all()
+
+
+class RoleAudit(models.Model):
+    """Registro de auditoria para ações relacionadas a Roles (permissões/atribuições)."""
+
+    ACTION_CHOICES = [
+        ('permissions_updated', 'Permissões atualizadas'),
+        ('role_assigned', 'Role atribuída'),
+        ('role_removed', 'Role removida'),
+        ('role_created', 'Role criada'),
+        ('role_deleted', 'Role excluída'),
+    ]
+
+    role = models.ForeignKey(
+        Role,
+        on_delete=models.CASCADE,
+        related_name='audits',
+        null=True,
+        blank=True,
+        verbose_name='Role'
+    )
+    actor = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='role_audits',
+        verbose_name='Usuário (executor)'
+    )
+    usuario = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='role_audits_usuario',
+        verbose_name='Usuário afetado'
+    )
+    action = models.CharField('Ação', max_length=50, choices=ACTION_CHOICES)
+    details = models.JSONField('Detalhes', blank=True, null=True)
+    timestamp = models.DateTimeField('Data/Hora', auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ['-timestamp']
+        verbose_name = 'Registro de Auditoria (Role)'
+        verbose_name_plural = 'Registros de Auditoria (Roles)'
+
+    def __str__(self):
+        who = self.actor.username if self.actor else (self.usuario.username if self.usuario else 'Sistema')
+        return f"[{self.timestamp:%Y-%m-%d %H:%M}] {self.get_action_display()} - {who}"
         

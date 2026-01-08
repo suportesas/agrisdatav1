@@ -15,6 +15,7 @@ urlpatterns = [
     # Roles / Permissões
     path('roles/', views.role_list, name='roles_list'),
     path('roles/<int:role_id>/permissions/', views.role_permissions, name='role_permissions'),
+    path('roles/novo/', views.role_create, name='role_create'),
     
     # Planos
     path('planos/', views.plano_list, name='plano_list'),

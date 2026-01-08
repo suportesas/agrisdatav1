@@ -31,6 +31,78 @@ minha_empresa.html{% extends 'base.html' %}
         <dt class="col-sm-3">Data de Cadastro</dt>
         <dd class="col-sm-9">{{ empresa.data_criacao|date:"d/m/Y" }}</dd>
       </dl>
+
+      <hr class="my-4">
+
+      <div class="row">
+        <div class="col-md-6">
+          <h5><i class="bi bi-card-checklist text-success"></i> Plano Contratado</h5>
+          {% if empresa.plano %}
+          <div class="mb-2">
+            <strong class="fs-5">{{ empresa.plano.icone }} {{ empresa.plano.nome }}</strong>
+            <div class="text-muted">Valor mensal: <strong>R$ {{ empresa.plano.valor_mensal|floatformat:2 }}</strong></div>
+            {% if empresa.data_expiracao %}
+              <div class="text-muted">Vence em: {{ empresa.data_expiracao|date:"d/m/Y" }} ({% if dias_vencimento is not None %}{{ dias_vencimento }} dias{% else %}—{% endif %})</div>
+            {% endif %}
+          </div>
+          {% else %}
+            <div class="text-muted">Nenhum plano contratado</div>
+          {% endif %}
+        </div>
+
+        <div class="col-md-6">
+          <h5><i class="bi bi-graph-up text-success"></i> Consumo do Plano</h5>
+          {% if plano_consumo %}
+            <div class="table-responsive">
+              <table class="table table-sm align-middle">
+                <thead>
+                  <tr>
+                    <th>Recurso</th>
+                    <th class="text-end">Usado</th>
+                    <th class="text-end">Limite</th>
+                    <th class="text-end">Saldo</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for item in plano_consumo %}
+                  <tr>
+                    <td>{{ item.label }}</td>
+                    <td class="text-end">{{ item.used }}</td>
+                    <td class="text-end">{{ item.limit }}</td>
+                    <td class="text-end">{{ item.remaining }}</td>
+                  </tr>
+                  <tr>
+                    <td colspan="4">
+                      {% if item.percent is not None %}
+                      <div class="progress" style="height:8px">
+                        <div class="progress-bar" role="progressbar" style="width: {{ item.percent }}%;" aria-valuenow="{{ item.percent }}" aria-valuemin="0" aria-valuemax="100"></div>
+                      </div>
+                      {% else %}
+                        <div class="text-muted small">Ilimitado</div>
+                      {% endif %}
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <div class="text-muted">Sem dados de consumo</div>
+          {% endif %}
+        </div>
+      </div>
+
+      <hr class="my-4">
+
+      <div class="d-flex gap-2">
+        <a href="{% url 'empresas:roles_list' %}" class="btn btn-outline-success">
+          <i class="bi bi-people"></i> Gerenciar Funções (Permissões)
+        </a>
+        <a href="{% url 'usuarios:usuario_list' %}" class="btn btn-outline-secondary">
+          <i class="bi bi-person-lines-fill"></i> Gerenciar Usuários
+        </a>
+      </div>
+
     </div>
   </div>
 </div>

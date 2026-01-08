@@ -1,5 +1,5 @@
 from django import forms
-from .models import Empresa, Plano
+from .models import Empresa, Plano, Role
 
 
 class EmpresaForm(forms.ModelForm):
@@ -62,4 +62,16 @@ class PlanoForm(forms.ModelForm):
             'valor_anual': 'Deixe em branco para calcular automaticamente',
             'desconto_anual': 'Percentual de desconto para pagamento anual',
             'ordem': 'Ordem de exibição (menor = primeiro)',
+        }
+
+
+class RoleForm(forms.ModelForm):
+    """Formulário básico para criar/editar Roles de empresa"""
+
+    class Meta:
+        model = Role
+        fields = ['name', 'description']
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }

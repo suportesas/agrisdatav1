@@ -25,7 +25,8 @@ python manage.py seed_roles
 
 3. Acessar a interface de Roles (usuário admin da empresa):
 - URL: `/empresas/roles/` (necessário estar logado e ter uma empresa)
-
+   - A partir de `Minha Empresa` há um botão **Gerenciar Funções (Permissões)** que abre a tela de roles.
+   - É possível **Criar** novas funções via UI (`/empresas/roles/novo/`) e então editar permissões.
 ## Uso (MVP)
 - Escolha uma função na lista.
 - Clique na função para carregar a tabela de permissões (Módulo | Cadastrar | Editar | Excluir | Visualizar).

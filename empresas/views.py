@@ -180,6 +180,30 @@ def role_list(request):
 
 
 @login_required
+def role_create(request):
+    """Cria nova função (Role) para a empresa do usuário"""
+    if not request.user.empresa or not request.user.is_admin_empresa():
+        messages.error(request, '❌ Você não tem permissão para criar funções.')
+        return redirect('empresas:roles_list')
+
+    from .forms import RoleForm
+
+    if request.method == 'POST':
+        form = RoleForm(request.POST)
+        if form.is_valid():
+            role = form.save(commit=False)
+            role.empresa = request.user.empresa
+            role.builtin = False
+            role.save()
+            messages.success(request, f'✅ Função "{role.name}" criada com sucesso!')
+            return redirect('empresas:roles_list')
+    else:
+        form = RoleForm()
+
+    return render(request, 'empresas/role_form.html', {'form': form, 'action': 'Criar'})
+
+
+@login_required
 def role_permissions(request, role_id):
     """GET: retorna permissões (codename, name, app, model, has)
        POST: atualiza permissões da role (espera JSON {'permissions': [codename,...]})

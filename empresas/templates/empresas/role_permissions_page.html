@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-4">
+  <nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'empresas:roles_list' %}">Funções</a></li>
+      <li class="breadcrumb-item active">Permissões</li>
+    </ol>
+  </nav>
+
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h2 class="fw-bold mb-1"><i class="bi bi-shield-lock text-primary"></i> Permissões - {{ role.name }}</h2>
+      <p class="text-muted mb-0">Edite permissões para a função selecionada ({{ role.empresa.nome }})</p>
+    </div>
+    <a href="{% url 'empresas:roles_list' %}" class="btn btn-outline-secondary">Voltar</a>
+  </div>
+
+  <div id="permissions-area">Carregando...</div>
+</div>
+
+{% include 'empresas/roles_js.html' %}
+<script>
+  // If the page was rendered directly, trigger loading of permissions for the role
+  document.addEventListener('DOMContentLoaded', function(){
+    try { loadPermissions({{ role.id }}); } catch(e) { console.error('loadPermissions not defined', e); }
+  });
+</script>
+{% endblock %}

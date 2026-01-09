@@ -23,10 +23,14 @@ def test_role_selection_highlight_and_hide(page, live_server, e2e_roles_data, dj
     selected_count = page.evaluate("() => document.querySelectorAll('.role-card.selected').length")
     assert selected_count == 1
 
-    # Toggle hide others
-    page.click('#toggle-hide')
-    # Click second card and ensure only one visible
+    # Click second card to change selection (do this while both are visible)
     page.click('.role-card >> nth=1')
+    selected_count2 = page.evaluate("() => document.querySelectorAll('.role-card.selected').length")
+    assert selected_count2 == 1
+
+    # Toggle hide others (now that a card is selected, hidden cards should be collapsed)
+    page.click('#toggle-hide')
+    # Ensure only one role is visible
     visible_count = page.evaluate("() => Array.from(document.querySelectorAll('.role-card')).filter(c=>c.offsetParent!==null).length")
     assert visible_count == 1, 'Expected only the selected role to be visible when hide toggle is active'
 

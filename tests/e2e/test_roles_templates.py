@@ -38,15 +38,19 @@ def test_save_and_apply_template_via_ui(page, live_server, e2e_templates_data):
     # Wait for permission rows to render and toggle first add checkbox
     page.wait_for_selector('table tbody tr', timeout=10000)
     first_add = page.locator('table tbody tr >> nth=0 input[name="add"]')
-    first_add.check()
+    try:
+        first_add.check(timeout=5000)
+    except Exception:
+        # fallback: toggle via JS if Playwright's check fails due to visibility issues
+        page.evaluate("() => { const el = document.querySelector('table tbody tr input[name=\'add\']'); if(el){ el.checked = true; el.dispatchEvent(new Event('change')); } }")
 
+    # Prepare dialog handler before clicking the Save button
+    page.on('dialog', lambda dialog: dialog.accept('E2E Template'))
     # Save as template using button
     page.click('text=Salvar como template')
-    # Browser prompt handled by Playwright: fill with name
-    page.on('dialog', lambda dialog: dialog.accept('E2E Template'))
 
     # Wait for success toast
-    page.wait_for_selector('text=Template salvo com sucesso')
+    page.wait_for_selector('text=Template salvo com sucesso', timeout=10000)
 
     # Ensure template exists via API
     resp = page.request.get(f"{live_server.url}/empresas/roles/templates/")

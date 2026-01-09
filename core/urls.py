@@ -92,3 +92,11 @@ urlpatterns = [
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+
+    # Endpoint para coleta de logs do console (apenas em DEBUG, usado por testes E2E)
+    try:
+        from core import e2e_views
+        urlpatterns += [ path('__e2e_log__', e2e_views.e2e_log) ]
+    except Exception:
+        # Segurança: não atrapalha se o handler não estiver presente
+        pass

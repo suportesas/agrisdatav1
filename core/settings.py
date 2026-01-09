@@ -277,6 +277,13 @@ LOGGING = {
     },
 }
 
+# Durante test runs, reduz ruído ajustando o nível de log do servidor HTTP
+import sys
+if 'test' in sys.argv or any('pytest' in s for s in sys.argv):
+    # Silencia mensagens como "Bad Request: /path" ou "Conflict: /path" durante testes
+    LOGGING['loggers'].setdefault('django.server', {'handlers': ['console'], 'level': 'ERROR', 'propagate': False})
+    LOGGING['loggers'].setdefault('django.request', {'handlers': ['console'], 'level': 'ERROR', 'propagate': False})
+
 # Cria pasta de logs se não existir
 os.makedirs(os.path.join(BASE_DIR, 'logs'), exist_ok=True)
 

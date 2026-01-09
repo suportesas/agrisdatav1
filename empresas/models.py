@@ -660,4 +660,33 @@ class RoleAudit(models.Model):
     def __str__(self):
         who = self.actor.username if self.actor else (self.usuario.username if self.usuario else 'Sistema')
         return f"[{self.timestamp:%Y-%m-%d %H:%M}] {self.get_action_display()} - {who}"
+
+
+class PermissionTemplate(models.Model):
+    """Modelo para armazenar templates de permissões por empresa."""
+
+    empresa = models.ForeignKey(
+        Empresa,
+        on_delete=models.CASCADE,
+        related_name='permission_templates',
+        verbose_name='Empresa'
+    )
+    nome = models.CharField('Nome do Template', max_length=150)
+    dados = models.JSONField('Permissões (modelo->{add,change,delete,view})')
+    criado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name='Criado por'
+    )
+    data_criacao = models.DateTimeField('Criado em', auto_now_add=True)
+
+    class Meta:
+        unique_together = ('empresa', 'nome')
+        verbose_name = 'Template de Permissões'
+        verbose_name_plural = 'Templates de Permissões'
+
+    def __str__(self):
+        return f"{self.nome} ({self.empresa.nome})"
         

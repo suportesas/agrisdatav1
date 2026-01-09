@@ -4071,6 +4071,154 @@ class FornecedorDadoBancario(models.Model):
         super().save(*args, **kwargs)
 
 
+class Transportadora(models.Model):
+    """Transportadoras (Terceiro / Própria) com dados de contato e bancários
+    Multi-tenant via campo `empresa` e constraint de unicidade por `empresa+cnpj`.
+    """
+
+    TIPO_CHOICES = [
+        ('TER', 'Terceiro'),
+        ('PRO', 'Própria'),
+    ]
+
+    empresa = models.ForeignKey(
+        'empresas.Empresa',
+        on_delete=models.CASCADE,
+        related_name='transportadoras',
+        verbose_name='Empresa'
+    )
+
+    razao_social = models.CharField('Nome/Razão Social', max_length=200)
+    nome_fantasia = models.CharField('Nome Fantasia', max_length=200, blank=True)
+
+    tipo = models.CharField('Tipo de Transportadora', max_length=3, choices=TIPO_CHOICES, default='TER')
+
+    cnpj = models.CharField('CNPJ', max_length=18, blank=True, null=True, help_text='Formato: 00.000.000/0000-00')
+    inscricao_estadual = models.CharField('Inscrição Estadual', max_length=50, blank=True)
+
+    # RNTC e Indicadores fiscais
+    rntc = models.CharField('RNTC', max_length=50, blank=True)
+    contribuinte_icms = models.BooleanField('Contribuinte ICMS', default=False)
+    indicador_ie = models.CharField('Indicador IE', max_length=1, blank=True, null=True, help_text='1,2 ou 9')
+
+    # Endereço (campos espelhados)
+    cep = models.CharField('CEP', max_length=10, blank=True)
+    logradouro = models.CharField('Logradouro', max_length=200, blank=True)
+    numero = models.CharField('Número', max_length=10, blank=True)
+    complemento = models.CharField('Complemento', max_length=100, blank=True)
+    bairro = models.CharField('Bairro', max_length=100, blank=True)
+    cidade = models.CharField('Cidade', max_length=100, blank=True)
+    uf = models.CharField('UF', max_length=2, blank=True)
+    pais = models.CharField('País', max_length=100, default='Brasil')
+
+    # Contato
+    contato_principal_nome = models.CharField('Contato Principal', max_length=150, blank=True)
+    contato_principal_telefone = models.CharField('Telefone Contato', max_length=50, blank=True)
+    contato_principal_email = models.EmailField('E-mail Contato', blank=True)
+
+    # Dados bancários
+    banco = models.CharField('Banco', max_length=100, blank=True)
+    agencia = models.CharField('Agência', max_length=20, blank=True)
+    conta = models.CharField('Conta', max_length=50, blank=True)
+
+    # Tipo de conta (Conta Corrente / Poupança)
+    TIPO_CONTA_CHOICES = [
+        ('CC', 'Conta Corrente'),
+        ('PO', 'Poupança'),
+    ]
+    tipo_conta = models.CharField('Tipo de Conta', max_length=2, choices=TIPO_CONTA_CHOICES, blank=True)
+
+    # PIX
+    PIX_TIPOS = [
+        ('CPF', 'CPF'), ('CNPJ', 'CNPJ'), ('EMAIL', 'E-mail'), ('CEL', 'Celular'), ('EVP', 'Chave Aleatória'), ('OUT', 'Outro')
+    ]
+    tipo_pix = models.CharField('Tipo de Pix', max_length=10, choices=PIX_TIPOS, blank=True)
+    pix_key = models.CharField('PIX', max_length=100, blank=True)
+
+    # Valores de frete
+    frete_padrao = models.DecimalField('Frete Padrão', max_digits=10, decimal_places=2, null=True, blank=True)
+    frete_por_km = models.DecimalField('Frete por km', max_digits=10, decimal_places=4, null=True, blank=True)
+    moeda = models.CharField('Moeda', max_length=3, default='BRL')
+
+    ativa = models.BooleanField('Ativa', default=True)
+
+    data_criacao = models.DateTimeField('Data de Criação', auto_now_add=True)
+    data_atualizacao = models.DateTimeField('Última Atualização', auto_now=True)
+
+    objects = models.Manager()
+
+    class Meta:
+        verbose_name = 'Transportadora'
+        verbose_name_plural = 'Transportadoras'
+        ordering = ['razao_social']
+        indexes = [
+            models.Index(fields=['empresa', 'ativa']),
+            models.Index(fields=['cnpj']),
+        ]
+        constraints = [
+            models.UniqueConstraint(fields=['empresa', 'cnpj'], name='unique_transportadora_por_empresa')
+        ]
+
+    def __str__(self):
+        return self.nome_fantasia or self.razao_social
+
+    def clean(self):
+        """Valida CNPJ quando informado e define indicador IE conforme regras fiscais"""
+        import re
+        if self.cnpj:
+            cnpj_limpo = re.sub(r'\D', '', (self.cnpj or ''))
+            if len(cnpj_limpo) != 14:
+                raise ValidationError({'cnpj': 'CNPJ deve ter 14 dígitos'})
+
+        # Indicador IE e validação relacionada
+        # If contribuinte_icms True -> indicador_ie = '1' and inscricao_estadual required
+        if self.contribuinte_icms:
+            if not self.inscricao_estadual:
+                raise ValidationError({'inscricao_estadual': 'Inscrição Estadual é obrigatória para contribuinte ICMS'})
+            self.indicador_ie = '1'
+        else:
+            # Assume PJ for transportadoras; default indicador_ie = '2' (Isento / Não Contribuinte)
+            self.indicador_ie = '2'
+
+
+class Viagem(models.Model):
+    """Registra viagens realizadas pela transportadora"""
+
+    STATUS_CHOICES = [
+        ('PLANEJADA', 'Planejada'),
+        ('EM_TRANSITO', 'Em Trânsito'),
+        ('CONCLUIDA', 'Concluída'),
+        ('CANCELADA', 'Cancelada'),
+    ]
+
+    transportadora = models.ForeignKey(
+        Transportadora,
+        on_delete=models.CASCADE,
+        related_name='viagens',
+        verbose_name='Transportadora'
+    )
+
+    origem = models.CharField('Origem', max_length=200)
+    destino = models.CharField('Destino', max_length=200)
+    data = models.DateField('Data da Viagem')
+    valor_frete = models.DecimalField('Valor do Frete', max_digits=10, decimal_places=2, null=True, blank=True)
+    status = models.CharField('Status', max_length=20, choices=STATUS_CHOICES, default='PLANEJADA')
+
+    criado_em = models.DateTimeField('Criado em', auto_now_add=True)
+    atualizado_em = models.DateTimeField('Atualizado em', auto_now=True)
+
+    class Meta:
+        verbose_name = 'Viagem'
+        verbose_name_plural = 'Viagens'
+        ordering = ['-data']
+        indexes = [
+            models.Index(fields=['transportadora', 'data']),
+        ]
+
+    def __str__(self):
+        return f"{self.transportadora} - {self.origem} → {self.destino} ({self.data})"
+
+
 """
 📝 VIEWS DE FORNECEDOR - CÓDIGO COMPLETO
 =============================================================================

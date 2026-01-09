@@ -119,6 +119,18 @@ urlpatterns = [
     path('fornecedores/<int:pk>/editar/', views.fornecedor_update, name='fornecedor_update'),
     path('fornecedores/<int:pk>/excluir/', views.fornecedor_delete, name='fornecedor_delete'),
 
+    # Transportadoras
+    path('transportadoras/', views.transportadora_list, name='transportadora_list'),
+    path('transportadoras/<int:pk>/', views.transportadora_detail, name='transportadora_detail'),
+    path('transportadoras/novo/', views.transportadora_create, name='transportadora_create'),
+    path('transportadoras/<int:pk>/editar/', views.transportadora_update, name='transportadora_update'),
+    path('transportadoras/<int:pk>/excluir/', views.transportadora_delete, name='transportadora_delete'),
+    # Inline edit frete (AJAX)
+    path('transportadoras/<int:pk>/frete/', views.transportadora_update_frete, name='transportadora_update_frete'),
+    # API JSON endpoints
+    path('api/transportadoras/', views.api_transportadoras, name='api_transportadoras'),
+    path('api/transportadoras/<int:pk>/viagens/', views.api_transportadora_viagens, name='api_transportadora_viagens'),
+
     # Fornecedor: endereços
     path('fornecedores/<int:fornecedor_pk>/enderecos/novo/', views.fornecedor_endereco_create, name='fornecedor_endereco_create'),
     path('fornecedores/<int:fornecedor_pk>/enderecos/<int:endereco_pk>/editar/', views.fornecedor_endereco_update, name='fornecedor_endereco_update'),

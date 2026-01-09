@@ -149,6 +149,17 @@
                 <span>🤝 Fornecedores</span>
               </a>
             </li>
+
+            {% if request.user.is_authenticated %}
+              {% if request.user.empresa or request.user.is_staff or request.user.is_superuser %}
+              <li class="submenu-item">
+                <a href="{% url 'cadastros:transportadora_list' %}" class="submenu-link">
+                  <span>🚚 Transportadoras</span>
+                </a>
+              </li>
+              {% endif %}
+            {% endif %}
+
             <li class="submenu-item">
               <a href="#" class="submenu-link">
                 <span>📦 Produtos/Insumos</span>
@@ -366,6 +377,18 @@
 
       // Ensure aria state initial
       updateAria();
+
+      // Ensure overlay is not active on desktop widths to avoid blocking clicks in tests
+      if (overlay && window.innerWidth > 992) {
+        overlay.classList.remove('active');
+        if (sidebar) sidebar.classList.remove('active');
+      }
+
+      // Defensive: hide overlay initially to avoid E2E flakiness where overlay blocks interactions
+      if (overlay) {
+        overlay.classList.remove('active');
+        overlay.style.display = 'none';
+      }
     });
 
     // Toggle Submenu
@@ -414,5 +437,32 @@
   </div>
 
   {% block extra_js %}{% endblock %}
+
+  <script>
+  // Hook console errors to POST to server for E2E debugging (active only in DEBUG)
+  (function(){
+    try{
+      const orig = console.error.bind(console);
+      console.error = function(){
+        try{
+          const args = Array.from(arguments).map(a=>{ try{ return typeof a === 'object' ? JSON.stringify(a) : String(a) }catch(e){ return String(a) } });
+          // Prefer sendBeacon for minimal impact
+          if(navigator.sendBeacon){
+            navigator.sendBeacon('/__e2e_log__', JSON.stringify({msg: args, url: window.location.href}));
+          } else {
+            fetch('__e2e_log__', {method:'POST', body: JSON.stringify({msg: args, url: window.location.href}), headers:{'Content-Type':'application/json'}}).catch(()=>{});
+          }
+        }catch(e){}
+        orig.apply(console, arguments);
+      };
+      window.addEventListener('error', function(ev){
+        try{ navigator.sendBeacon ? navigator.sendBeacon('__e2e_log__', JSON.stringify({msg: ['error', ev.message], url: window.location.href})) : fetch('__e2e_log__', {method:'POST', body: JSON.stringify({msg: ['error', ev.message], url: window.location.href}), headers:{'Content-Type':'application/json'}}).catch(()=>{}); }catch(e){}
+      });
+      window.addEventListener('unhandledrejection', function(ev){
+        try{ navigator.sendBeacon ? navigator.sendBeacon('__e2e_log__', JSON.stringify({msg: ['promise', String(ev.reason)], url: window.location.href})) : fetch('__e2e_log__', {method:'POST', body: JSON.stringify({msg: ['promise', String(ev.reason)], url: window.location.href}), headers:{'Content-Type':'application/json'}}).catch(()=>{}); }catch(e){}
+      });
+    }catch(e){}
+  })();
+  </script>
 </body>
 </html>

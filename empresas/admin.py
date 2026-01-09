@@ -5,7 +5,7 @@ Configuração do painel administrativo
 
 from django.contrib import admin
 from django.utils.html import format_html
-from .models import Empresa, Plano, Role, RoleAudit
+from .models import Empresa, Plano, Role, RoleAudit, PermissionTemplate
 
 
 @admin.register(Plano)
@@ -333,3 +333,12 @@ class RoleAuditAdmin(admin.ModelAdmin):
         except Exception:
             return ''
     short_details.short_description = 'Detalhes'
+
+
+@admin.register(PermissionTemplate)
+class PermissionTemplateAdmin(admin.ModelAdmin):
+    list_display = ['nome', 'empresa', 'criado_por', 'data_criacao']
+    list_filter = ['empresa']
+    search_fields = ['nome', 'empresa__nome']
+    readonly_fields = ['data_criacao']
+    ordering = ['empresa__nome', 'nome']

@@ -8,7 +8,7 @@ from django.http import JsonResponse
 from django.template.loader import render_to_string
 from django.contrib.auth.models import Permission
 
-from .models import Empresa, Plano, Role
+from .models import Empresa, Plano, Role, PermissionTemplate
 from .forms import EmpresaForm, PlanoForm
 
 
@@ -204,6 +204,35 @@ def role_create(request):
 
 
 @login_required
+def role_update(request, role_id):
+    """Edita uma função existente (apenas para admin da empresa ou superuser)"""
+    role = get_object_or_404(Role, pk=role_id)
+
+    # Apenas superuser ou admin da mesma empresa podem editar
+    if not request.user.is_superuser:
+        if not request.user.empresa or role.empresa != request.user.empresa or not request.user.is_admin_empresa():
+            messages.error(request, '❌ Você não tem permissão para editar esta função.')
+            return redirect('empresas:roles_list')
+
+    # Não permitir edição de funções built-in por usuários comuns
+    if role.builtin and not request.user.is_superuser:
+        messages.error(request, '⚠️ Funções padrão não podem ser editadas.')
+        return redirect('empresas:roles_list')
+
+    from .forms import RoleForm
+    if request.method == 'POST':
+        form = RoleForm(request.POST, instance=role)
+        if form.is_valid():
+            role = form.save()
+            messages.success(request, f'✅ Função "{role.name}" atualizada com sucesso!')
+            return redirect('empresas:roles_list')
+    else:
+        form = RoleForm(instance=role)
+
+    return render(request, 'empresas/role_form.html', {'form': form, 'action': 'Editar', 'role': role})
+
+
+@login_required
 def role_permissions(request, role_id):
     """GET: retorna permissões (codename, name, app, model, has)
        POST: atualiza permissões da role (espera JSON {'permissions': [codename,...]})
@@ -216,48 +245,52 @@ def role_permissions(request, role_id):
             return JsonResponse({'error': 'Permissão negada'}, status=403)
 
     if request.method == 'GET':
-        # Lista todas as permissões do sistema agrupadas por app/model
-        perms = Permission.objects.all().select_related('content_type')
-        role_perms = set(p.codename for p in role.get_permissions())
+        # If request is AJAX or client expects JSON, return JSON payload
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or 'application/json' in request.headers.get('Accept', ''):
+            # Lista todas as permissões do sistema agrupadas por app/model
+            perms = Permission.objects.all().select_related('content_type')
+            role_perms = set(p.codename for p in role.get_permissions())
 
-        grouped = {}
-        # Optional mapping to show friendly module names
-        APP_LABELS = {
-            'cadastros': 'Cadastros',
-            'empresas': 'Empresa',
-            'usuarios': 'Usuários',
-            'auth': 'Autenticação',
-            'cadastros': 'Cadastros',
-        }
+            grouped = {}
+            # Optional mapping to show friendly module names
+            APP_LABELS = {
+                'cadastros': 'Cadastros',
+                'empresas': 'Empresa',
+                'usuarios': 'Usuários',
+                'auth': 'Autenticação',
+                'cadastros': 'Cadastros',
+            }
 
-        for p in perms:
-            app = p.content_type.app_label
-            model = p.content_type.model
-            key = f"{app}:{model}"
-            if key not in grouped:
-                grouped[key] = {
-                    'app_label': app,
-                    'model': model,
-                    'display': APP_LABELS.get(app, app.title()) + ' • ' + model.title(),
-                    'perms': {'add': False, 'change': False, 'delete': False, 'view': False}
-                }
-            if p.codename.startswith('add_'):
-                grouped[key]['perms']['add'] = p.codename in role_perms
-            elif p.codename.startswith('change_'):
-                grouped[key]['perms']['change'] = p.codename in role_perms
-            elif p.codename.startswith('delete_'):
-                grouped[key]['perms']['delete'] = p.codename in role_perms
-            elif p.codename.startswith('view_'):
-                grouped[key]['perms']['view'] = p.codename in role_perms
+            for p in perms:
+                app = p.content_type.app_label
+                model = p.content_type.model
+                key = f"{app}:{model}"
+                if key not in grouped:
+                    grouped[key] = {
+                        'app_label': app,
+                        'model': model,
+                        'display': APP_LABELS.get(app, app.title()) + ' • ' + model.title(),
+                        'perms': {'add': False, 'change': False, 'delete': False, 'view': False}
+                    }
+                if p.codename.startswith('add_'):
+                    grouped[key]['perms']['add'] = p.codename in role_perms
+                elif p.codename.startswith('change_'):
+                    grouped[key]['perms']['change'] = p.codename in role_perms
+                elif p.codename.startswith('delete_'):
+                    grouped[key]['perms']['delete'] = p.codename in role_perms
+                elif p.codename.startswith('view_'):
+                    grouped[key]['perms']['view'] = p.codename in role_perms
 
-        # Convert grouped to a sorted list for deterministic output
-        items = []
-        for k in sorted(grouped.keys()):
-            item = grouped[k]
-            item['key'] = k
-            items.append(item)
+            # Convert grouped to a sorted list for deterministic output
+            items = []
+            for k in sorted(grouped.keys()):
+                item = grouped[k]
+                item['key'] = k
+                items.append(item)
 
-        return JsonResponse({'permissions': items})
+            return JsonResponse({'permissions': items})
+        # Otherwise render an HTML page that will load the permissions via JS
+        return render(request, 'empresas/role_permissions_page.html', {'role': role})
 
     if request.method == 'POST':
         try:
@@ -266,9 +299,133 @@ def role_permissions(request, role_id):
         except Exception:
             return JsonResponse({'error': 'Payload inválido'}, status=400)
 
-        role.set_permissions(codenames)
+        role.set_permissions(codenames, actor=request.user if request.user.is_authenticated else None)
         return JsonResponse({'ok': True, 'updated': len(codenames)})
 
+
+@login_required
+def save_permission_template(request, role_id):
+    """Salva um template a partir das permissões atuais exibidas para a role"""
+    role = get_object_or_404(Role, pk=role_id)
+    if not request.user.is_superuser and role.empresa != request.user.empresa:
+        return JsonResponse({'error': 'Permissão negada'}, status=403)
+
+    try:
+        payload = json.loads(request.body.decode('utf-8'))
+        nome = payload.get('nome')
+        dados = payload.get('dados')
+    except Exception:
+        return JsonResponse({'error': 'Payload inválido'}, status=400)
+
+    if not nome or not isinstance(dados, dict):
+        return JsonResponse({'error': 'Nome ou dados inválidos'}, status=400)
+
+    tpl, created = PermissionTemplate.objects.get_or_create(
+        empresa=role.empresa,
+        nome=nome,
+        defaults={'dados': dados, 'criado_por': request.user}
+    )
+    if not created:
+        tpl.dados = dados
+        tpl.criado_por = request.user
+        tpl.save()
+
+    return JsonResponse({'ok': True, 'template_id': tpl.id})
+
+
+@login_required
+def apply_template_to_role(request, role_id):
+    """Aplica um template a uma role específica (substitui permissões)."""
+    role = get_object_or_404(Role, pk=role_id)
+    if not request.user.is_superuser and role.empresa != request.user.empresa:
+        return JsonResponse({'error': 'Permissão negada'}, status=403)
+
+    try:
+        payload = json.loads(request.body.decode('utf-8'))
+        template_id = payload.get('template_id')
+    except Exception:
+        return JsonResponse({'error': 'Payload inválido'}, status=400)
+
+    tpl = get_object_or_404(PermissionTemplate, pk=template_id)
+    if tpl.empresa != role.empresa:
+        return JsonResponse({'error': 'Template não pertence à mesma empresa'}, status=400)
+
+    # 'dados' tem o formato {"model": {"add": true, ...}}
+    codenames = []
+    for model, perms in tpl.dados.items():
+        if perms.get('add'):
+            codenames.append('add_' + model)
+        if perms.get('change'):
+            codenames.append('change_' + model)
+        if perms.get('delete'):
+            codenames.append('delete_' + model)
+        if perms.get('view'):
+            codenames.append('view_' + model)
+
+    role.set_permissions(codenames, actor=request.user if request.user.is_authenticated else None)
+    return JsonResponse({'ok': True, 'applied': len(codenames)})
+
+
+@login_required
+def apply_template_bulk(request):
+    """Aplica um template a várias roles (bulk apply). Espera {'template_id': int, 'role_ids': [int,...]}"""
+    try:
+        payload = json.loads(request.body.decode('utf-8'))
+        template_id = payload.get('template_id')
+        role_ids = payload.get('role_ids', [])
+    except Exception:
+        return JsonResponse({'error': 'Payload inválido'}, status=400)
+
+    tpl = get_object_or_404(PermissionTemplate, pk=template_id)
+
+    # Valida roles e aplica
+    applied = 0
+    for rid in role_ids:
+        r = Role.objects.filter(pk=rid).first()
+        if not r:
+            continue
+        if not request.user.is_superuser and r.empresa != request.user.empresa:
+            continue
+        # Constrói codename list
+        codenames = []
+        for model, perms in tpl.dados.items():
+            if perms.get('add'):
+                codenames.append('add_' + model)
+            if perms.get('change'):
+                codenames.append('change_' + model)
+            if perms.get('delete'):
+                codenames.append('delete_' + model)
+            if perms.get('view'):
+                codenames.append('view_' + model)
+        r.set_permissions(codenames, actor=request.user if request.user.is_authenticated else None)
+        applied += 1
+
+    return JsonResponse({'ok': True, 'roles_updated': applied})
+
+
+@login_required
+def permission_templates_list(request):
+    """Lista templates de permissões para a empresa do usuário (ou todos para superuser)"""
+    if request.user.is_superuser:
+        templates = PermissionTemplate.objects.all()
+    else:
+        if not request.user.empresa:
+            return JsonResponse({'templates': []})
+        templates = PermissionTemplate.objects.filter(empresa=request.user.empresa)
+
+    data = []
+    for t in templates:
+        data.append({'id': t.id, 'nome': t.nome, 'criado_por': t.criado_por.username if t.criado_por else None, 'data_criacao': t.data_criacao.isoformat()})
+    return JsonResponse({'templates': data})
+
+
+@login_required
+def permission_template_detail(request, pk):
+    tpl = get_object_or_404(PermissionTemplate, pk=pk)
+    if not request.user.is_superuser and tpl.empresa != request.user.empresa:
+        return JsonResponse({'error': 'Permissão negada'}, status=403)
+
+    return JsonResponse({'id': tpl.id, 'nome': tpl.nome, 'dados': tpl.dados, 'criado_por': tpl.criado_por.username if tpl.criado_por else None, 'data_criacao': tpl.data_criacao.isoformat()})
 # ==================== VIEWS DE PLANOS ====================
 
 @login_required

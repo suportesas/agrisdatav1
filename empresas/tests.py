@@ -1,9 +1,11 @@
+import json
 from django.test import TestCase
 from django.core.management import call_command
 from django.contrib.auth.models import Permission
 from django.contrib.auth import get_user_model
 
 from .models import Empresa, Role
+from django.test import Client
 try:
     from .management.commands.seed_roles import DEFAULT_ROLES
 except Exception:
@@ -95,3 +97,74 @@ class RoleTests(TestCase):
         empresa2 = Empresa.objects.create(nome='Empresa AutoSeed')
         for nome in DEFAULT_ROLES:
             self.assertTrue(Role.objects.filter(empresa=empresa2, name=nome).exists())
+
+    def test_role_permissions_access_control(self):
+        # Admin da empresa deve conseguir ver permissões via AJAX; usuário comum não
+        role = Role.objects.create(empresa=self.empresa, name='AccessRole')
+        User = get_user_model()
+        admin = User.objects.create_user(username='aadmin', password='pass', tipo='ADMIN')
+        admin.empresa = self.empresa
+        admin.save()
+
+        client = Client()
+        self.assertTrue(client.login(username='aadmin', password='pass'))
+        resp = client.get(f"/empresas/roles/{role.id}/permissions/", HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(resp.status_code, 200)
+        data = resp.json()
+        self.assertIn('permissions', data)
+
+        # Normal user should be forbidden
+        normal = User.objects.create_user(username='normal', password='pass', tipo='FUNC')
+        normal.empresa = self.empresa
+        normal.save()
+        self.assertTrue(client.login(username='normal', password='pass'))
+        resp2 = client.get(f"/empresas/roles/{role.id}/permissions/", HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(resp2.status_code, 403)
+
+
+class PermissionTemplateTests(TestCase):
+    def setUp(self):
+        self.empresa = Empresa.objects.create(nome='Empresa Tpl')
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        self.superuser = User.objects.create_superuser(username='su', email='su@test', password='pass')
+
+    def test_save_permission_template_creates_template(self):
+        # Cria role
+        role = Role.objects.create(empresa=self.empresa, name='TplRole')
+        self.client.login(username='su', password='pass')
+        url = f"/empresas/roles/{role.id}/permissions/save-template/"
+        dados = {'empresa': {'add': True, 'change': False, 'delete': False, 'view': True}}
+        resp = self.client.post(url, data=json.dumps({'nome': 'Tpl1', 'dados': dados}), content_type='application/json')
+        self.assertEqual(resp.status_code, 200)
+        from .models import PermissionTemplate
+        self.assertTrue(PermissionTemplate.objects.filter(empresa=self.empresa, nome='Tpl1').exists())
+
+        # Também lista via endpoint
+        list_url = '/empresas/roles/templates/'
+        resp2 = self.client.get(list_url)
+        self.assertEqual(resp2.status_code, 200)
+        data = resp2.json()
+        self.assertTrue(any(t['nome']=='Tpl1' for t in data.get('templates', [])))
+
+    def test_apply_template_to_role_creates_audit(self):
+        role = Role.objects.create(empresa=self.empresa, name='RoleApply')
+        tpl = PermissionTemplate.objects.create(empresa=self.empresa, nome='TplApply', dados={'empresa': {'add': True}})
+        self.client.login(username='su', password='pass')
+        url = f"/empresas/roles/{role.id}/permissions/apply-template/"
+        resp = self.client.post(url, data=json.dumps({'template_id': tpl.id}), content_type='application/json')
+        self.assertEqual(resp.status_code, 200)
+        from .models import RoleAudit
+        self.assertTrue(RoleAudit.objects.filter(role=role, action='permissions_updated').exists())
+
+    def test_apply_template_bulk_updates_roles(self):
+        r1 = Role.objects.create(empresa=self.empresa, name='R1')
+        r2 = Role.objects.create(empresa=self.empresa, name='R2')
+        tpl = PermissionTemplate.objects.create(empresa=self.empresa, nome='TplBulk', dados={'empresa': {'view': True}})
+        self.client.login(username='su', password='pass')
+        url = '/empresas/roles/templates/apply-bulk/'
+        resp = self.client.post(url, data=json.dumps({'template_id': tpl.id, 'role_ids': [r1.id, r2.id]}), content_type='application/json')
+        self.assertEqual(resp.status_code, 200)
+        from .models import RoleAudit
+        self.assertTrue(RoleAudit.objects.filter(role=r1, action='permissions_updated').exists())
+        self.assertTrue(RoleAudit.objects.filter(role=r2, action='permissions_updated').exists())

@@ -10,7 +10,7 @@ from .models import (
 from .models import Area, Talhao, HistoricoTalhao, Safra, SafraPlan, SafraReal
 from .models import Vendedor, ComissaoVendedor
 
-from .models import Fornecedor, FornecedorEndereco, FornecedorContato, FornecedorDadoBancario, Porto, Moeda
+from .models import Fornecedor, FornecedorEndereco, FornecedorContato, FornecedorDadoBancario, Transportadora, Viagem, Porto, Moeda
 
 class EnderecoFazendaInline(admin.TabularInline):
     """Inline para endereços"""
@@ -332,6 +332,48 @@ class FornecedorAdmin(admin.ModelAdmin):
             return qs.filter(empresa=request.user.empresa)
         return qs.none()
 
+
+class ViagemInline(admin.TabularInline):
+    model = Viagem
+    extra = 0
+    fields = ['origem', 'destino', 'data', 'valor_frete', 'status']
+
+
+@admin.register(Transportadora)
+class TransportadoraAdmin(admin.ModelAdmin):
+    """Admin de Transportadoras"""
+    list_display = ['razao_social', 'nome_fantasia', 'cnpj', 'tipo', 'frete_padrao', 'ativa', 'empresa', 'get_total_viagens']
+    list_filter = ['tipo', 'ativa', 'uf', 'empresa']
+    search_fields = ['razao_social', 'cnpj', 'empresa__nome']
+    readonly_fields = ['data_criacao', 'data_atualizacao']
+    fieldsets = (
+        ('Identificação', {'fields': ('empresa', 'razao_social', 'nome_fantasia', 'tipo', 'ativa')}),
+        ('Documentação', {'fields': ('cnpj', 'inscricao_estadual')}),
+        ('Contato / Endereço', {'fields': ('contato_principal_nome','contato_principal_telefone','contato_principal_email','cep','logradouro','numero','complemento','bairro','cidade','uf','pais')}),
+        ('Financeiro', {'fields': ('banco','agencia','conta','tipo_conta','pix_key','frete_padrao','frete_por_km','moeda')}),
+        ('Auditoria', {'fields': ('data_criacao','data_atualizacao'), 'classes': ('collapse',)}),
+    )
+
+    inlines = [ViagemInline]
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        if request.user.is_superuser:
+            return qs
+        if hasattr(request.user, 'empresa') and request.user.empresa:
+            return qs.filter(empresa=request.user.empresa)
+        return qs.none()
+
+    def get_total_viagens(self, obj):
+        return obj.viagens.count()
+    get_total_viagens.short_description = 'Total Viagens'
+
+
+@admin.register(Viagem)
+class ViagemAdmin(admin.ModelAdmin):
+    list_display = ['transportadora', 'origem', 'destino', 'data', 'valor_frete', 'status']
+    list_filter = ['status', 'data', 'transportadora__empresa']
+    search_fields = ['transportadora__razao_social', 'origem', 'destino']
 
 @admin.register(FornecedorEndereco)
 class FornecedorEnderecoAdmin(admin.ModelAdmin):

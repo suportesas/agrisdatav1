@@ -55,6 +55,20 @@ def test_cliente_edit_flow(page, live_server, e2e_cliente_data):
     page.on('pageerror', lambda exc: console_msgs.append(f"pageerror:{exc}"))
 
     # Add a moeda via modal
+    # Diagnostics: check visibility and computed style before clicking
+    try:
+        visible = page.is_visible('#addMoedaBtn')
+        bbox = None
+        try:
+            bbox = page.locator('#addMoedaBtn').bounding_box()
+        except Exception:
+            bbox = None
+        display = page.evaluate("() => { const el = document.querySelector('#addMoedaBtn'); return el ? getComputedStyle(el).display : 'missing' }")
+        print('DEBUG addMoedaBtn visibility:', visible, 'bbox:', bbox, 'display:', display)
+    except Exception as e:
+        print('DEBUG inspect failed', e)
+    # Wait for add button to be visible and enabled before clicking
+    page.wait_for_selector('#addMoedaBtn', state='visible', timeout=10000)
     page.click('#addMoedaBtn')
     try:
         page.wait_for_selector('#moedaModal', state='visible', timeout=30000)

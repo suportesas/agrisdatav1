@@ -34,7 +34,24 @@ python manage.py seed_roles
 As permissões são armazenadas no `auth.Group` associado à `Role`. Quando um usuário recebe a `Role` a partir do campo `roles`, ele herda as permissões do `Group`.
 
 ## Observações e próximos passos recomendados
-- Atualmente o frontend é um MVP; podemos melhorar com agrupamento por módulo mais amigável, templates de permissões, import/export e logs/auditoria.
-- Considerar adicionar página de administração de Roles no painel para criar/editar roles avançadas.
+- Atualmente o frontend é um MVP; adicionamos suporte a **Templates de Permissões** (salvar/exportar e aplicar templates) e **Aplicação em Massa (bulk)** via endpoints JSON, além do registro de auditoria para aplicações.
+- Endpoints implementados (exemplos):
+  - `POST /empresas/roles/<role_id>/permissions/save-template/` — salva um template a partir das permissões atuais da role.
+  - `GET /empresas/roles/templates/` — lista templates da empresa.
+  - `POST /empresas/roles/<role_id>/permissions/apply-template/` — aplica um template a uma role.
+  - `POST /empresas/roles/templates/apply-bulk/` — aplica um template a múltiplas roles.
 
-**Se quiser, prossigo agora com:** testes adicionais, aprimoramento da UI ou templates de import/export de permissões.
+- Considerar adicionar UI para importação de JSON com validação e pagina para gerenciar templates (CRUD) via frontend.
+
+**Rodando E2E localmente / em CI**
+
+- Para executar os testes E2E localmente com Playwright:
+  1. Instale dependências: `pip install -r requirements.txt` (inclui `playwright` e `pytest-playwright`).
+  2. Instale navegadores Playwright: `python -m playwright install --with-deps`.
+  3. Execute os testes E2E com a variável de ambiente necessária (permite operações de banco durante o live_server):
+     - PowerShell: `$env:DJANGO_ALLOW_ASYNC_UNSAFE='1'; pytest tests/e2e -q`
+     - Bash: `DJANGO_ALLOW_ASYNC_UNSAFE=1 pytest tests/e2e -q`
+
+- CI: adicionei o workflow GitHub Actions `.github/workflows/e2e-playwright.yml` que instala dependências, executa migrações e roda os testes unitários e E2E (configura `DJANGO_ALLOW_ASYNC_UNSAFE: '1'`).
+
+**Se quiser, prossigo agora com:** depurar os erros de E2E que identifiquei (elementos não visíveis / erros JS), ou melhorar o workflow para rodar apenas os E2E em PRs para a branch `feature/roles-permissions`.

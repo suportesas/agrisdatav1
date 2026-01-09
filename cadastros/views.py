@@ -12,6 +12,7 @@ from django.core.paginator import Paginator
 from django.utils import timezone
 import requests
 import re
+from django.core.cache import cache
 from .models import FornecedorEndereco, Funcionario, FuncaoFuncionario
 from .forms import FornecedorEnderecoForm, FuncionarioForm, FuncaoFuncionarioForm
 
@@ -23,7 +24,7 @@ from .models import (
     Cliente, EnderecoCliente, ContatoCliente, ContaBancariaCliente, DocumentoCliente
 )
 
-from .forms import VendedorForm, VendedorFiltroForm, ComissaoVendedorForm, FornecedorForm, FornecedorContatoForm, FornecedorDadoBancarioForm
+from .forms import VendedorForm, VendedorFiltroForm, ComissaoVendedorForm, FornecedorForm, FornecedorContatoForm, FornecedorDadoBancarioForm, TransportadoraForm
 
 from .forms import (
     FazendaForm, EnderecoFazendaForm, ContatoFazendaForm,
@@ -34,6 +35,16 @@ from .forms import (
     # Cliente-related forms
     ClienteForm, EnderecoClienteForm, ContatoClienteForm, ContaBancariaClienteForm, DocumentoClienteForm,
 )
+
+# Transportadora views (moved to a dedicated module for clarity)
+from .views_transportadora import (
+    transportadora_list, transportadora_detail,
+    transportadora_create, transportadora_update, transportadora_delete,
+    transportadora_update_frete
+)
+
+# API views
+from .views_api import api_transportadoras, api_transportadora_viagens
 
 
 
@@ -230,25 +241,32 @@ def fazenda_delete(request, pk):
 
 @login_required
 def porto_list(request):
-    """Lista os portos da empresa"""
+    """Lista os portos da empresa - versão card-based, espelhada em `fornecedor_list`"""
     if not request.user.empresa:
         messages.warning(request, '⚠️ Seu usuário não está vinculado a nenhuma empresa. Entre em contato com o administrador.')
         return redirect('dashboard:index')
 
-    portos = Porto.objects.filter(empresa=request.user.empresa)
+    portos_qs = Porto.objects.filter(empresa=request.user.empresa)
 
     q = request.GET.get('q', '').strip()
+    tipo_atual = request.GET.get('tipo', '')
+
     if q:
-        portos = portos.filter(
+        portos_qs = portos_qs.filter(
             Q(codigo__icontains=q) | Q(nome__icontains=q) | Q(cidade__icontains=q)
         )
 
-    paginator = Paginator(portos, 25)
-    page_obj = paginator.get_page(request.GET.get('page'))
+    if tipo_atual:
+        portos_qs = portos_qs.filter(tipo=tipo_atual)
+
+    paginator = Paginator(portos_qs, 25)
+    portos = paginator.get_page(request.GET.get('page'))
 
     return render(request, 'cadastros/porto_list.html', {
-        'page_obj': page_obj,
-        'total_portos': portos.count(),
+        'portos': portos,
+        'q': q,
+        'tipo_atual': tipo_atual,
+        'total_portos': portos_qs.count(),
     })
 
 
@@ -320,95 +338,117 @@ def buscar_cnpj(request):
     # If AJAX + not authenticated return 401 JSON instead of redirect
     if not request.user.is_authenticated and (request.headers.get('X-Requested-With') == 'XMLHttpRequest' or 'application/json' in request.headers.get('Accept','')):
         return JsonResponse({'erro': 'Não autorizado'}, status=401)
-    """Busca dados do CNPJ via API ReceitaWS"""
+    """Busca dados do CNPJ via API ReceitaWS. Suporta POST e GET (parâmetro 'cnpj') e implementa cache."""
+    # Accept GET or POST for AJAX convenience
+    cnpj = ''
     if request.method == 'POST':
-        cnpj = request.POST.get('cnpj', '').replace('.', '').replace('/', '').replace('-', '')
-        
-        if len(cnpj) != 14:
-            return JsonResponse({'erro': 'CNPJ inválido'}, status=400)
-        
-        try:
-            # API ReceitaWS (gratuita)
-            url = f'https://www.receitaws.com.br/v1/cnpj/{cnpj}'
-            response = requests.get(url, timeout=10)
-            
-            if response.status_code == 200:
-                dados = response.json()
-                
-                if dados.get('status') == 'ERROR':
-                    return JsonResponse({'erro': dados.get('message', 'CNPJ não encontrado')}, status=404)
-                
-                # Formata dados para retornar
-                resultado = {
-                    'nome': dados.get('nome', ''),
-                    'nome_fantasia': dados.get('fantasia', ''),
-                    'cnpj': dados.get('cnpj', ''),
-                    'telefone': dados.get('telefone', ''),
-                    'email': dados.get('email', ''),
-                    'logradouro': dados.get('logradouro', ''),
-                    'numero': dados.get('numero', ''),
-                    'complemento': dados.get('complemento', ''),
-                    'bairro': dados.get('bairro', ''),
-                    'cidade': dados.get('municipio', ''),
-                    'uf': dados.get('uf', ''),
-                    'cep': dados.get('cep', '').replace('.', '').replace('-', ''),
-                }
-                
-                return JsonResponse({'sucesso': True, 'dados': resultado})
-            else:
-                return JsonResponse({'erro': 'Erro ao consultar API'}, status=500)
-                
-        except requests.exceptions.Timeout:
-            return JsonResponse({'erro': 'Timeout na consulta'}, status=500)
-        except Exception as e:
-            return JsonResponse({'erro': str(e)}, status=500)
-    
-    return JsonResponse({'erro': 'Método não permitido'}, status=405)
+        cnpj = request.POST.get('cnpj', '')
+    elif request.method == 'GET':
+        cnpj = request.GET.get('cnpj', '')
+    else:
+        return JsonResponse({'erro': 'Método não permitido'}, status=405)
+
+    cnpj = cnpj.replace('.', '').replace('/', '').replace('-', '')
+    if len(cnpj) != 14:
+        return JsonResponse({'erro': 'CNPJ inválido'}, status=400)
+
+    cache_key = f'buscar_cnpj:{cnpj}'
+    cached = cache.get(cache_key)
+    if cached:
+        return JsonResponse(cached)
+
+    try:
+        # API ReceitaWS (gratuita)
+        url = f'https://www.receitaws.com.br/v1/cnpj/{cnpj}'
+        response = requests.get(url, timeout=10)
+
+        if response.status_code == 200:
+            dados = response.json()
+
+            if dados.get('status') == 'ERROR':
+                return JsonResponse({'erro': dados.get('message', 'CNPJ não encontrado')}, status=404)
+
+            # Formata dados para retornar
+            resultado = {
+                'nome': dados.get('nome', ''),
+                'nome_fantasia': dados.get('fantasia', ''),
+                'cnpj': dados.get('cnpj', ''),
+                'telefone': dados.get('telefone', ''),
+                'email': dados.get('email', ''),
+                'logradouro': dados.get('logradouro', ''),
+                'numero': dados.get('numero', ''),
+                'complemento': dados.get('complemento', ''),
+                'bairro': dados.get('bairro', ''),
+                'cidade': dados.get('municipio', ''),
+                'uf': dados.get('uf', ''),
+                'cep': dados.get('cep', '').replace('.', '').replace('-', ''),
+            }
+
+            payload = {'sucesso': True, 'dados': resultado}
+            # Cache for 24 hours
+            cache.set(cache_key, payload, timeout=60 * 60 * 24)
+            return JsonResponse(payload)
+        else:
+            return JsonResponse({'erro': 'Erro ao consultar API'}, status=500)
+
+    except requests.exceptions.Timeout:
+        return JsonResponse({'erro': 'Timeout na consulta'}, status=500)
+    except Exception as e:
+        return JsonResponse({'erro': str(e)}, status=500)
 
 
 # ==================== API EXTERNA - CEP ====================
 
 @login_required
 def buscar_cep(request):
-    """Busca endereço via CEP usando ViaCEP"""
+    """Busca endereço via CEP usando ViaCEP. Suporta POST e GET e implementa cache."""
     if request.method == 'POST':
         cep = request.POST.get('cep', '').replace('-', '').replace('.', '')
-        
-        if len(cep) != 8:
-            return JsonResponse({'erro': 'CEP inválido'}, status=400)
-        
-        try:
-            # API ViaCEP (gratuita)
-            url = f'https://viacep.com.br/ws/{cep}/json/'
-            response = requests.get(url, timeout=10)
-            
-            if response.status_code == 200:
-                dados = response.json()
-                
-                if dados.get('erro'):
-                    return JsonResponse({'erro': 'CEP não encontrado'}, status=404)
-                
-                resultado = {
-                    'cep': dados.get('cep', ''),
-                    'logradouro': dados.get('logradouro', ''),
-                    'complemento': dados.get('complemento', ''),
-                    'bairro': dados.get('bairro', ''),
-                    'cidade': dados.get('localidade', ''),
-                    'uf': dados.get('uf', ''),
-                }
-                # Return both wrapped ('dados') and flat keys for backward compatibility with older clients
-                resp_payload = {'sucesso': True, 'dados': resultado}
-                resp_payload.update(resultado)
-                return JsonResponse(resp_payload)
-            else:
-                return JsonResponse({'erro': 'Erro ao consultar API'}, status=500)
-                
-        except requests.exceptions.Timeout:
-            return JsonResponse({'erro': 'Timeout na consulta'}, status=500)
-        except Exception as e:
-            return JsonResponse({'erro': str(e)}, status=500)
-    
-    return JsonResponse({'erro': 'Método não permitido'}, status=405)
+    elif request.method == 'GET':
+        cep = request.GET.get('cep', '').replace('-', '').replace('.', '')
+    else:
+        return JsonResponse({'erro': 'Método não permitido'}, status=405)
+
+    if len(cep) != 8:
+        return JsonResponse({'erro': 'CEP inválido'}, status=400)
+
+    cache_key = f'buscar_cep:{cep}'
+    cached = cache.get(cache_key)
+    if cached:
+        return JsonResponse(cached)
+
+    try:
+        # API ViaCEP (gratuita)
+        url = f'https://viacep.com.br/ws/{cep}/json/'
+        response = requests.get(url, timeout=10)
+
+        if response.status_code == 200:
+            dados = response.json()
+
+            if dados.get('erro'):
+                return JsonResponse({'erro': 'CEP não encontrado'}, status=404)
+
+            resultado = {
+                'cep': dados.get('cep', ''),
+                'logradouro': dados.get('logradouro', ''),
+                'complemento': dados.get('complemento', ''),
+                'bairro': dados.get('bairro', ''),
+                'cidade': dados.get('localidade', ''),
+                'uf': dados.get('uf', ''),
+            }
+            # Return both wrapped ('dados') and flat keys for backward compatibility with older clients
+            resp_payload = {'sucesso': True, 'dados': resultado}
+            resp_payload.update(resultado)
+            # Cache for 24 hours
+            cache.set(cache_key, resp_payload, timeout=60 * 60 * 24)
+            return JsonResponse(resp_payload)
+        else:
+            return JsonResponse({'erro': 'Erro ao consultar API'}, status=500)
+
+    except requests.exceptions.Timeout:
+        return JsonResponse({'erro': 'Timeout na consulta'}, status=500)
+    except Exception as e:
+        return JsonResponse({'erro': str(e)}, status=500)
 
 
 # ==================== ENDEREÇOS ====================

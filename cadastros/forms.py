@@ -25,7 +25,7 @@ from decimal import Decimal
 from .models import Vendedor, ComissaoVendedor
 
 # Import fornecedor-related models to set ModelForm Meta.model directly
-from .models import Fornecedor, FornecedorContato, FornecedorDadoBancario, FornecedorEndereco
+from .models import Fornecedor, FornecedorContato, FornecedorDadoBancario, FornecedorEndereco, Transportadora
 
 
 
@@ -1258,6 +1258,95 @@ class FornecedorForm(forms.ModelForm):
         for f in ['tipo_pessoa', 'pais', 'moeda_padrao', 'regime_tributario']:
             if f in self.fields:
                 self.fields[f].required = False
+
+    def save(self, commit=True):
+        """Associa automaticamente a `empresa` e `criado_por` antes de salvar.
+        Garante salvar campos ManyToMany chamando `save_m2m()` quando necessário."""
+        obj = super().save(commit=False)
+        if getattr(self, 'empresa', None):
+            obj.empresa = self.empresa
+        if getattr(self, 'usuario', None):
+            # compatibilidade com nome do campo usado em modelos
+            if hasattr(obj, 'criado_por'):
+                obj.criado_por = self.usuario
+        if commit:
+            obj.save()
+            # salva relações ManyToMany do form
+            try:
+                self.save_m2m()
+            except Exception:
+                # se não houver m2m ou falhar, não interrompe o save
+                pass
+        return obj
+
+
+class TransportadoraForm(forms.ModelForm):
+    """Formulário para Transportadora"""
+
+    class Meta:
+        model = Transportadora
+        fields = [
+            'razao_social', 'nome_fantasia', 'tipo', 'cnpj', 'inscricao_estadual', 'rntc',
+            'contato_principal_nome', 'contato_principal_telefone', 'contato_principal_email',
+            'cep', 'logradouro', 'numero', 'complemento', 'bairro', 'cidade', 'uf', 'pais',
+            'banco', 'agencia', 'conta', 'tipo_conta', 'tipo_pix', 'pix_key', 'contribuinte_icms', 'indicador_ie',
+            'frete_padrao', 'frete_por_km', 'moeda', 'ativa'
+        ]
+        widgets = {
+            'razao_social': forms.TextInput(attrs={'class': 'form-control'}),
+            'nome_fantasia': forms.TextInput(attrs={'class': 'form-control'}),
+            'tipo': forms.Select(attrs={'class': 'form-select'}),
+            'cnpj': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '00.000.000/0000-00'}),
+            'inscricao_estadual': forms.TextInput(attrs={'class': 'form-control'}),
+            'contato_principal_nome': forms.TextInput(attrs={'class': 'form-control'}),
+            'contato_principal_telefone': forms.TextInput(attrs={'class': 'form-control'}),
+            'contato_principal_email': forms.EmailInput(attrs={'class': 'form-control'}),
+            'cep': forms.TextInput(attrs={'class': 'form-control'}),
+            'logradouro': forms.TextInput(attrs={'class': 'form-control'}),
+            'numero': forms.TextInput(attrs={'class': 'form-control'}),
+            'complemento': forms.TextInput(attrs={'class': 'form-control'}),
+            'bairro': forms.TextInput(attrs={'class': 'form-control'}),
+            'cidade': forms.TextInput(attrs={'class': 'form-control'}),
+            'uf': forms.TextInput(attrs={'class': 'form-control'}),
+            'pais': forms.TextInput(attrs={'class': 'form-control'}),
+            'banco': forms.TextInput(attrs={'class': 'form-control'}),
+            'agencia': forms.TextInput(attrs={'class': 'form-control'}),
+            'conta': forms.TextInput(attrs={'class': 'form-control'}),
+            'tipo_conta': forms.Select(attrs={'class': 'form-select'}),
+            'tipo_pix': forms.Select(attrs={'class': 'form-select'}),
+            'pix_key': forms.TextInput(attrs={'class': 'form-control'}),
+            'rntc': forms.TextInput(attrs={'class': 'form-control'}),
+            'contribuinte_icms': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'indicador_ie': forms.TextInput(attrs={'class': 'form-control', 'readonly': True}),
+            'frete_padrao': forms.NumberInput(attrs={'class': 'form-control', 'step':'0.01'}),
+            'frete_por_km': forms.NumberInput(attrs={'class': 'form-control', 'step':'0.0001'}),
+            'moeda': forms.TextInput(attrs={'class': 'form-control'}),
+            'ativa': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        empresa = kwargs.pop('empresa', None)
+        usuario = kwargs.pop('usuario', None)
+        super().__init__(*args, **kwargs)
+        self.empresa = empresa
+        self.usuario = usuario
+        if 'tipo' in self.fields:
+            self.fields['tipo'].required = False
+        # Avoid forcing pais/moeda on quick POSTs; set defaults
+        if 'pais' in self.fields:
+            self.fields['pais'].required = False
+            self.fields['pais'].initial = 'Brasil'
+        if 'moeda' in self.fields:
+            self.fields['moeda'].required = False
+            self.fields['moeda'].initial = 'BRL'
+
+    def save(self, commit=True):
+        obj = super().save(commit=False)
+        if self.empresa:
+            obj.empresa = self.empresa
+        if commit:
+            obj.save()
+        return obj
 
         # configura queryset para categorias e subcategorias (carrega dinamicamente conforme empresa)
         # Popula opções de categorias/subcategorias de forma tardia (evita import-time errors)

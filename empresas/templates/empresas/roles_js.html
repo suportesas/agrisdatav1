@@ -1,39 +1,96 @@
 <script>
 async function loadPermissions(roleId) {
-  const resp = await fetch("{% url 'empresas:role_permissions' role_id=0 %}".replace('/0/','/'+roleId+'/'), {headers:{'X-Requested-With':'XMLHttpRequest'}});
-  const data = await resp.json();
-  const perms = data.permissions;
+  console.log('loadPermissions called', roleId);
+  const area = document.getElementById('permissions-area');
+  area.innerHTML = '<div class="text-muted">Carregando permissões...</div>';
+  try{
+    const resp = await fetch("{% url 'empresas:role_permissions' role_id=0 %}".replace('/0/','/'+roleId+'/'), {headers:{'X-Requested-With':'XMLHttpRequest'}});
+    if(!resp.ok){
+      const text = await resp.text();
+      console.error('Erro ao obter permissões:', resp.status, text);
+      if(resp.status === 403){
+        area.innerHTML = '<div class="alert alert-warning">Você não tem permissão para visualizar estas permissões.</div>';
+      } else {
+        area.innerHTML = '<div class="alert alert-danger">Erro ao carregar permissões</div>';
+      }
+      // Send debug payload to e2e log endpoint if available (best-effort)
+      try{
+        fetch('/__e2e_log__', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({level: 'error', msg: 'role_permissions_error', status: resp.status, text: text, roleId: roleId})
+        });
+      }catch(e){}
+      return;
+    }
 
-  let html = '<h2 class="mt-2">Permissões</h2>';
-  html += '<div class="table-responsive"><table class="table table-sm align-middle"><thead><tr><th>Módulo</th><th class="text-center">Cadastrar</th><th class="text-center">Editar</th><th class="text-center">Excluir</th><th class="text-center">Visualizar</th></tr></thead><tbody>';
+    const data = await resp.json();
+    const perms = data.permissions || [];
 
-  perms.forEach(item=>{
-    const k = item.key;
-    const model = item.model;
-    const display = item.display || (item.app_label + '.' + model);
-    const add = item.perms.add ? 'checked' : '';
-    const change = item.perms.change ? 'checked' : '';
-    const del = item.perms.delete ? 'checked' : '';
-    const view = item.perms.view ? 'checked' : '';
+    const selCard = document.querySelector('.role-card[data-role-id="'+roleId+'"]');
+    const roleName = selCard ? selCard.querySelector('.role-name').textContent.trim() : '';
 
-    html += `<tr data-key="${k}" data-model="${model}">` +
-            `<td><strong>${display}</strong></td>` +
-            `<td class="text-center"><input type="checkbox" aria-label="${display} - Cadastrar" name="add" ${add}></td>` +
-            `<td class="text-center"><input type="checkbox" aria-label="${display} - Editar" name="change" ${change}></td>` +
-            `<td class="text-center"><input type="checkbox" aria-label="${display} - Excluir" name="delete" ${del}></td>` +
-            `<td class="text-center"><input type="checkbox" aria-label="${display} - Visualizar" name="view" ${view}></td>` +
-            `</tr>`;
-  });
+    if(!perms.length){
+      area.innerHTML = '<div class="alert alert-info">Nenhuma permissão disponível</div>';
+      // still render small header to help tests
+      area.innerHTML += `<h2 class="mt-2">Permissões ${roleName ? '— <span id="selected-role-name">'+roleName+'</span>' : ''}</h2>`;
+      return;
+    }
 
-  html += '</tbody></table></div>';
-  html += '<div class="d-flex gap-2"><button id="save-perms" class="btn btn-primary" title="Salvar permissões" aria-describedby="status-message">Salvar</button><button id="export-perms" class="btn btn-outline-secondary" title="Exportar permissões" aria-label="Exportar permissões">Exportar</button></div>';
-  // aria-live region for toast/success messages
-  html += '<div id="status-message" role="status" aria-live="polite" class="mt-2 visually-hidden"></div>';
+    let html = `<h2 class="mt-2">Permissões ${roleName ? '— <span id="selected-role-name">'+roleName+'</span>' : ''}</h2>`;
+    html += '<div class="table-responsive"><table class="table table-sm align-middle"><thead><tr><th>Módulo</th><th class="text-center">Cadastrar</th><th class="text-center">Editar</th><th class="text-center">Excluir</th><th class="text-center">Visualizar</th></tr></thead><tbody>';
 
-  document.getElementById('permissions-area').innerHTML = html;
+    perms.forEach(item=>{
+      const k = item.key;
+      const model = item.model;
+      const display = item.display || (item.app_label + '.' + model);
+      const add = item.perms.add ? 'checked' : '';
+      const change = item.perms.change ? 'checked' : '';
+      const del = item.perms.delete ? 'checked' : '';
+      const view = item.perms.view ? 'checked' : '';
 
-  document.getElementById('save-perms').onclick = function(){ savePermissions(roleId) };
-  document.getElementById('export-perms').onclick = function(){ exportPermissions(); };
+      html += `<tr data-key="${k}" data-model="${model}">` +
+              `<td><strong>${display}</strong></td>` +
+              `<td class="text-center"><input type="checkbox" aria-label="${display} - Cadastrar" name="add" ${add}></td>` +
+              `<td class="text-center"><input type="checkbox" aria-label="${display} - Editar" name="change" ${change}></td>` +
+              `<td class="text-center"><input type="checkbox" aria-label="${display} - Excluir" name="delete" ${del}></td>` +
+              `<td class="text-center"><input type="checkbox" aria-label="${display} - Visualizar" name="view" ${view}></td>` +
+              `</tr>`;
+    });
+
+    html += '</tbody></table></div>';
+    html += '<div class="d-flex gap-2">'
+    html += '<button id="save-perms" class="btn btn-primary" title="Salvar permissões" aria-describedby="status-message">Salvar</button>'
+    html += '<button id="export-perms" class="btn btn-outline-secondary" title="Exportar permissões" aria-label="Exportar permissões">Exportar</button>'
+    html += '<button id="save-template" class="btn btn-outline-primary" title="Salvar como Template">Salvar como template</button>'
+    html += '<span id="save-template-loading" class="spinner-border spinner-border-sm ms-2 visually-hidden" role="status" aria-hidden="true"></span>'
+    html += '<select id="template-select" class="form-select form-select-sm ms-2" style="width:auto;display:inline-block;">'
+    html += '<option value="">-- Selecionar Template --</option>'
+    html += '</select>'
+    html += '<span id="template-loading" class="spinner-border spinner-border-sm ms-2 visually-hidden" role="status" aria-hidden="true"></span>'
+    html += '<button id="apply-template" class="btn btn-outline-success ms-1" title="Aplicar template" disabled>Aplicar</button>'
+    html += '</div>';
+    // aria-live region for toast/success messages
+    html += '<div id="status-message" role="status" aria-live="polite" class="mt-2 visually-hidden"></div>';
+
+    area.innerHTML = html;
+
+    // Mark selected card visually when loadPermissions invoked (helps external calls)
+    try{ document.querySelectorAll('.role-card').forEach(r=>r.classList.remove('selected')); const sel = document.querySelector('.role-card[data-role-id="'+roleId+'"]'); if(sel) sel.classList.add('selected'); try{ if(window.applyRolesHideState) window.applyRolesHideState(); }catch(e){} }catch(e){}
+
+    document.getElementById('save-perms').onclick = function(){ savePermissions(roleId) };
+    document.getElementById('export-perms').onclick = function(){ exportPermissions(); };
+    document.getElementById('save-template').onclick = function(){ saveAsTemplate(roleId) };
+    document.getElementById('apply-template').onclick = function(){ applySelectedTemplate(roleId) };
+
+    // Carrega templates no dropdown
+    loadTemplatesIntoSelect(roleId);
+    loadTemplatesIntoBulkSelect();
+
+  }catch(err){
+    console.error('loadPermissions error', err);
+    area.innerHTML = '<div class="alert alert-danger">Erro ao carregar permissões</div>';
+  }
 }
 
 async function savePermissions(roleId){
@@ -64,7 +121,7 @@ async function savePermissions(roleId){
   }
 }
 
-function exportPermissions(){
+function getCurrentPermissionsObject(){
   const rows = document.querySelectorAll('#permissions-area table tbody tr');
   const exportData = {};
   rows.forEach(row=>{
@@ -76,11 +133,151 @@ function exportPermissions(){
       view: row.querySelector('input[name="view"]').checked,
     }
   });
+  return exportData;
+}
+
+function exportPermissions(){
+  const exportData = getCurrentPermissionsObject();
   const a = document.createElement('a');
   a.href = 'data:application/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(exportData, null, 2));
   a.download = 'role-permissions.json';
   a.click();
 }
+
+async function saveAsTemplate(roleId){
+  const name = prompt('Nome do template:');
+  if(!name) return;
+  const saveBtn = document.getElementById('save-template');
+  const saveLoader = document.getElementById('save-template-loading');
+  if(saveBtn) saveBtn.disabled = true;
+  if(saveLoader) saveLoader.classList.remove('visually-hidden');
+
+  const dataObj = getCurrentPermissionsObject();
+  const url = "{% url 'empresas:save_permission_template' role_id=0 %}".replace('/0/','/'+roleId+'/');
+  try{
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json','X-CSRFToken': getCookie('csrftoken')},
+      body: JSON.stringify({'nome': name, 'dados': dataObj})
+    });
+    const r = await res.json();
+    if(r.ok){
+      showToast('Template salvo com sucesso', 'success');
+      await loadTemplatesIntoSelect(roleId);
+      await loadTemplatesIntoBulkSelect();
+    } else {
+      showToast('Erro ao salvar template', 'danger');
+    }
+  }catch(e){
+    showToast('Erro ao salvar template', 'danger');
+  }finally{
+    if(saveBtn) saveBtn.disabled = false;
+    if(saveLoader) saveLoader.classList.add('visually-hidden');
+  }
+}
+
+async function loadTemplatesIntoSelect(roleId){
+  const url = "{% url 'empresas:permission_templates_list' %}";
+  const sel = document.getElementById('template-select');
+  const loader = document.getElementById('template-loading');
+  const applyBtn = document.getElementById('apply-template');
+  if(!sel) return;
+
+  // Show loading
+  sel.innerHTML = '<option>Carregando...</option>';
+  if(loader) loader.classList.remove('visually-hidden');
+  if(applyBtn) applyBtn.disabled = true;
+
+  try{
+    const res = await fetch(url, {headers:{'X-Requested-With':'XMLHttpRequest'}});
+    const data = await res.json();
+    sel.innerHTML = '';
+    const opt = document.createElement('option'); opt.value=''; opt.text='-- Selecionar Template --'; sel.appendChild(opt);
+    (data.templates||[]).forEach(t=>{
+      const o = document.createElement('option'); o.value = t.id; o.text = t.nome + (t.criado_por ? ' ('+t.criado_por+')' : '');
+      sel.appendChild(o);
+    });
+    if(applyBtn) applyBtn.disabled = (data.templates || []).length === 0;
+  }catch(e){
+    sel.innerHTML = '<option value="">Erro ao carregar</option>';
+    if(applyBtn) applyBtn.disabled = true;
+  }finally{
+    if(loader) loader.classList.add('visually-hidden');
+  }
+} 
+
+async function applySelectedTemplate(roleId){
+  const sel = document.getElementById('template-select');
+  const id = sel.value;
+  if(!id){ showToast('Selecione um template', 'warning'); return; }
+  const url = "{% url 'empresas:apply_template_to_role' role_id=0 %}".replace('/0/','/'+roleId+'/');
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {'Content-Type':'application/json','X-CSRFToken': getCookie('csrftoken')},
+    body: JSON.stringify({'template_id': Number(id)})
+  });
+  const r = await res.json();
+  if(r.ok){
+    showToast('Template aplicado com sucesso', 'success');
+    // reload permissions to reflect changes
+    loadPermissions(roleId);
+    loadTemplatesIntoBulkSelect();
+  } else {
+    showToast('Erro ao aplicar template', 'danger');
+  }
+}
+
+async function loadTemplatesIntoBulkSelect(){
+  const url = "{% url 'empresas:permission_templates_list' %}";
+  const sel = document.getElementById('bulk-template-select');
+  const loader = document.getElementById('bulk-template-loading');
+  const bulkBtn = document.getElementById('bulk-apply');
+  const status = document.getElementById('bulk-template-status');
+  if(!sel) return;
+
+  sel.innerHTML = '<option>Carregando...</option>';
+  if(loader) loader.classList.remove('visually-hidden');
+  if(bulkBtn) bulkBtn.disabled = true;
+  if(status) status.textContent = 'Carregando templates...';
+
+  try{
+    const res = await fetch(url, {headers:{'X-Requested-With':'XMLHttpRequest'}});
+    const data = await res.json();
+    sel.innerHTML = '';
+    const opt = document.createElement('option'); opt.value=''; opt.text='-- Selecionar Template para Bulk --'; sel.appendChild(opt);
+    (data.templates||[]).forEach(t=>{
+      const o = document.createElement('option'); o.value = t.id; o.text = t.nome + (t.criado_por ? ' ('+t.criado_por+')' : '');
+      sel.appendChild(o);
+    });
+    if(bulkBtn) bulkBtn.disabled = (data.templates || []).length === 0;
+    if(status) status.textContent = (data.templates||[]).length === 0 ? 'Nenhum template disponível' : '';
+  }catch(e){
+    sel.innerHTML = '<option value="">Erro ao carregar</option>';
+    if(status) status.textContent = 'Erro ao carregar templates';
+  }finally{
+    if(loader) loader.classList.add('visually-hidden');
+  }
+} 
+
+document.addEventListener('DOMContentLoaded', function(){
+  const btn = document.getElementById('bulk-apply');
+  if(btn){
+    btn.addEventListener('click', async function(){
+      const sel = document.getElementById('bulk-template-select');
+      const tplid = sel.value;
+      if(!tplid){ showToast('Selecione um template para aplicar', 'warning'); return; }
+      const selected = Array.from(document.querySelectorAll('.role-select:checked')).map(cb=>cb.dataset.roleId);
+      if(selected.length === 0){ showToast('Selecione ao menos uma função', 'warning'); return; }
+      const res = await fetch("{% url 'empresas:apply_template_bulk' %}", {
+        method: 'POST',
+        headers: {'Content-Type':'application/json','X-CSRFToken': getCookie('csrftoken')},
+        body: JSON.stringify({'template_id': Number(tplid), 'role_ids': selected})
+      });
+      const r = await res.json();
+      if(r.ok){ showToast(`Template aplicado a ${r.roles_updated} funções`, 'success'); loadTemplatesIntoBulkSelect(); } else { showToast('Erro no bulk apply', 'danger'); }
+    });
+  }
+});
 
 function getCookie(name) {
     let cookieValue = null;

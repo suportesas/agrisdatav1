@@ -2,10 +2,22 @@
 {% block extra_css %}
 <style>
   .filter-card { background: white; border-radius: 12px; padding: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 1rem; }
-  .role-card { background: white; border-radius: 12px; padding: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 0.8rem; border-left: 4px solid #20c997; transition: all 0.2s ease; }
+  .role-card { background: white; border-radius: 12px; padding: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 0.8rem; border-left: 4px solid #20c997; transition: all 0.18s ease; }
   .role-card:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0,0,0,0.08); }
+  /* Selected / focused states */
+  .role-card.selected { background: linear-gradient(90deg, rgba(233,249,238,0.9), rgba(255,255,255,0.8)); border-left-width:6px; border-left-color:#198754; box-shadow: 0 8px 30px rgba(25, 135, 84, 0.08); }
+  .role-card.dimmed { opacity: 0.38; filter: grayscale(10%); transform: none; }
+  .role-card .role-name { display:inline-block; margin-right: .5rem }
+
   .role-builtin { font-size: 0.85rem; padding: 0.25rem 0.6rem; border-radius: 12px; background: #e9f7ef; color:#155724; margin-left:0.5rem }
   .empty-state { text-align:center; padding:2rem; color:#6c757d }
+  /* Roles header toolbar */
+  .roles-header .input-group-sm { max-width: 280px; }
+  .roles-header .btn-sm { padding-top: .28rem; padding-bottom: .28rem; }
+  @media (max-width: 767px){
+    .roles-header .input-group-sm{ max-width: 100%; }
+    .roles-header .d-inline-flex{ flex-wrap:wrap; gap:.4rem; }
+  }
 </style>
 {% endblock %}
 
@@ -18,32 +30,57 @@
     </ol>
   </nav>
 
+  <!-- Header (title + create) -->
   <div class="d-flex justify-content-between align-items-center mb-3">
     <div>
       <h2 class="fw-bold mb-1"><i class="bi bi-people text-success"></i> Funções</h2>
       <p class="text-muted mb-0">Gerencie papéis e permissões específicas da sua empresa (Proprietário, Almoxarife, Operacional, etc.)</p>
     </div>
-    <a href="{% url 'empresas:role_create' %}" class="btn btn-success">
-      <i class="bi bi-plus-circle"></i> Nova Função
-    </a>
+    <div class="d-flex gap-2 align-items-center">
+      <button id="toggle-hide" type="button" class="btn btn-outline-info btn-sm" aria-pressed="false" title="Ocultar outras funções">Ocultar outras</button>
+      {% if request.user.is_superuser or request.user.is_admin_empresa %}
+      <a href="{% url 'empresas:role_create' %}" class="btn btn-success">
+        <i class="bi bi-plus-circle"></i> Nova Função
+      </a>
+      {% endif %}
+    </div>
   </div>
 
-  <div class="filter-card">
-    <form method="get" class="row g-2 align-items-end">
-      <div class="col-md-6">
-        <label class="form-label fw-semibold"><i class="bi bi-search"></i> Pesquisar</label>
-        <input id="role-search" type="text" name="q" class="form-control" placeholder="Nome da função (ex.: Proprietário, Almoxarife)" />
-      </div>
-      <div class="col-md-3">
-        <label class="form-label fw-semibold">Mostrar</label>
-        <select id="role-filter" class="form-select">
-          <option value="all">Todas</option>
-          <option value="builtin">Padrão do sistema</option>
-          <option value="custom">Criadas</option>
-        </select>
-      </div>
-      <div class="col-md-3 text-end">
-        <a href="{% url 'empresas:roles_list' %}" class="btn btn-outline-secondary">Resetar filtros</a>
+  <!-- Filtros (mimic fornecedor_list) -->
+  <div class="filter-card mb-3">
+    <form method="get" id="rolesFilterForm">
+      <div class="row g-3">
+
+        <div class="col-md-6">
+          <label class="form-label fw-semibold"><i class="bi bi-search"></i> Pesquisar</label>
+          <input id="role-search" type="text" name="q" class="form-control" placeholder="Nome da função (ex.: Proprietário, Almoxarife)" aria-label="Pesquisar função" />
+        </div>
+
+        <div class="col-md-2">
+          <label class="form-label fw-semibold">Mostrar</label>
+          <select id="role-filter" class="form-select" aria-label="Filtrar tipo de função">
+            <option value="all">Todas</option>
+            <option value="builtin">Padrão do sistema</option>
+            <option value="custom">Criadas</option>
+          </select>
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label fw-semibold">Template</label>
+          <div class="d-flex gap-2 align-items-center">
+            <select id="bulk-template-select" class="form-select" aria-label="Selecionar template para aplicar">
+              <option value="">-- Selecionar Template --</option>
+            </select>
+            <span id="bulk-template-loading" class="spinner-border spinner-border-sm ms-2 visually-hidden" role="status" aria-hidden="true"></span>
+            <button id="bulk-apply" type="button" class="btn btn-outline-success" aria-label="Aplicar template às funções selecionadas" disabled>Aplicar</button>
+          </div>
+          <div id="bulk-template-status" class="small text-muted mt-1" aria-live="polite"></div>
+        </div>
+
+        <div class="col-md-1 d-flex align-items-end">
+          <button type="button" id="reset-filters" class="btn btn-outline-secondary w-100" aria-label="Resetar filtros">Reset</button>
+        </div>
+
       </div>
     </form>
   </div>
@@ -71,169 +108,78 @@ function applyFilters(){
   });
 }
 document.addEventListener('DOMContentLoaded', function(){
-  document.getElementById('role-search').addEventListener('input', applyFilters);
-  document.getElementById('role-filter').addEventListener('change', applyFilters);
+  const search = document.getElementById('role-search');
+  const filter = document.getElementById('role-filter');
+  const resetBtn = document.getElementById('reset-filters');
 
-  // wire selection highlighting
-  document.querySelectorAll('.role-card').forEach(el=>{
-    el.addEventListener('click', function(e){
-      if(e.target.tagName.toLowerCase() === 'a' || e.target.closest('button')) return; // ignore clicks on buttons
-      document.querySelectorAll('.role-card').forEach(r=>r.classList.remove('table-active'));
-      this.classList.add('table-active');
-      loadPermissions(this.dataset.roleId);
+  if(search) search.addEventListener('input', applyFilters);
+  if(filter) filter.addEventListener('change', applyFilters);
+  if(resetBtn){
+    resetBtn.addEventListener('click', function(){
+      document.getElementById('role-search').value = '';
+      document.getElementById('role-filter').value = 'all';
+      applyFilters();
     });
-  });
+  }
+
+  // Use event delegation so handlers persist even if #roles-area is replaced
+  const rolesArea = document.getElementById('roles-area');
+  if(rolesArea){
+    // Focus / hide state persisted in localStorage
+    const hideKey = 'roles_hide_others';
+    const hideBtn = document.getElementById('toggle-hide');
+    let hideState = localStorage.getItem(hideKey) === '1';
+    function updateHideBtn(){ if(hideBtn) { hideBtn.textContent = hideState ? 'Mostrar todas' : 'Ocultar outras'; hideBtn.setAttribute('aria-pressed', hideState ? 'true' : 'false'); } }
+    function applyHideState(){
+      const sel = document.querySelector('.role-card.selected');
+      document.querySelectorAll('.role-card').forEach(r=>{
+        if(!sel){ r.classList.remove('dimmed'); r.classList.remove('d-none'); return; }
+        if(r === sel){ r.classList.remove('dimmed'); r.classList.remove('d-none'); } else { if(hideState) r.classList.add('d-none'); else r.classList.add('dimmed'); }
+      });
+    }
+    updateHideBtn(); applyHideState();
+    // expose small helper so other scripts can re-apply after programmatic selection
+    window.applyRolesHideState = applyHideState;
+
+    if(hideBtn){
+      hideBtn.addEventListener('click', function(){ hideState = !hideState; localStorage.setItem(hideKey, hideState ? '1' : '0'); updateHideBtn(); applyHideState(); });
+    }
+
+    rolesArea.addEventListener('click', function(e){
+      // Permission button (explicit)
+      const permBtn = e.target.closest('.btn-permissions');
+      if(permBtn){
+        e.preventDefault();
+        const rid = permBtn.dataset.roleId;
+        console.log('permissions button clicked', rid);
+        loadPermissions(rid);
+        // ensure visual selection when clicking the explicit permissions button
+        const card = document.querySelector('.role-card[data-role-id="'+rid+'"]');
+        if(card){ document.querySelectorAll('.role-card').forEach(r=>r.classList.remove('selected')); card.classList.add('selected'); applyHideState(); }
+        return;
+      }
+
+      const card = e.target.closest('.role-card');
+      if(!card) return;
+      console.log('role card clicked', card.dataset.roleId, e.target.tagName);
+      if(e.target.tagName.toLowerCase() === 'a' || e.target.closest('button')) return; // ignore clicks on other buttons
+      document.querySelectorAll('.role-card').forEach(r=>r.classList.remove('selected'));
+      card.classList.add('selected');
+      applyHideState();
+      loadPermissions(card.dataset.roleId);
+    });
+
+    // Support keyboard selection (Enter / Space)
+    rolesArea.addEventListener('keydown', function(e){
+      if(e.key === 'Enter' || e.key === ' '){
+        const card = e.target.closest('.role-card');
+        if(card){ e.preventDefault(); card.click(); }
+      }
+    });
+  }
 });
 </script>
 
 {% include 'empresas/roles_js.html' %}
-
-{% endblock %}
-<script>
-async function loadPermissions(roleId) {
-  const resp = await fetch("{% url 'empresas:role_permissions' role_id=0 %}".replace('/0/','/'+roleId+'/'), {headers:{'X-Requested-With':'XMLHttpRequest'}});
-  const data = await resp.json();
-  const perms = data.permissions;
-
-  let html = '<h2 class="mt-2">Permissões</h2>';
-  html += '<div class="table-responsive"><table class="table table-sm align-middle"><thead><tr><th>Módulo</th><th class="text-center">Cadastrar</th><th class="text-center">Editar</th><th class="text-center">Excluir</th><th class="text-center">Visualizar</th></tr></thead><tbody>';
-
-  perms.forEach(item=>{
-    const k = item.key;
-    const model = item.model;
-    const display = item.display || (item.app_label + '.' + model);
-    const add = item.perms.add ? 'checked' : '';
-    const change = item.perms.change ? 'checked' : '';
-    const del = item.perms.delete ? 'checked' : '';
-    const view = item.perms.view ? 'checked' : '';
-
-    html += `<tr data-key="${k}" data-model="${model}">` +
-            `<td><strong>${display}</strong></td>` +
-            `<td class="text-center"><input type="checkbox" aria-label="${display} - Cadastrar" name="add" ${add}></td>` +
-            `<td class="text-center"><input type="checkbox" aria-label="${display} - Editar" name="change" ${change}></td>` +
-            `<td class="text-center"><input type="checkbox" aria-label="${display} - Excluir" name="delete" ${del}></td>` +
-            `<td class="text-center"><input type="checkbox" aria-label="${display} - Visualizar" name="view" ${view}></td>` +
-            `</tr>`;
-  });
-
-  html += '</tbody></table></div>';
-  html += '<div class="d-flex gap-2"><button id="save-perms" class="btn btn-primary" title="Salvar permissões" aria-describedby="status-message">Salvar</button><button id="export-perms" class="btn btn-outline-secondary" title="Exportar permissões" aria-label="Exportar permissões">Exportar</button></div>';
-  // aria-live region for toast/success messages
-  html += '<div id="status-message" role="status" aria-live="polite" class="mt-2 visually-hidden"></div>';
-  document.getElementById('permissions-area').innerHTML = html;
-
-  document.getElementById('save-perms').onclick = function(){ savePermissions(roleId) };
-  document.getElementById('export-perms').onclick = function(){ exportPermissions(); };
-}
-
-async function savePermissions(roleId){
-  const rows = document.querySelectorAll('#permissions-area table tbody tr');
-  const codenames = [];
-  rows.forEach(row=>{
-    const model = row.dataset.model;
-    const add = row.querySelector('input[name="add"]').checked;
-    const change = row.querySelector('input[name="change"]').checked;
-    const del = row.querySelector('input[name="delete"]').checked;
-    const view = row.querySelector('input[name="view"]').checked;
-    if(add) codenames.push('add_' + model);
-    if(change) codenames.push('change_' + model);
-    if(del) codenames.push('delete_' + model);
-    if(view) codenames.push('view_' + model);
-  });
-
-  const res = await fetch("{% url 'empresas:role_permissions' role_id=0 %}".replace('/0/','/'+roleId+'/'), {
-    method:'POST',
-    headers:{'Content-Type':'application/json','X-CSRFToken': getCookie('csrftoken')},
-    body: JSON.stringify({'permissions': codenames})
-  });
-  const r = await res.json();
-  if(r.ok){
-    showToast('Permissões atualizadas', 'success');
-  } else {
-    showToast('Erro ao atualizar permissões', 'danger');
-  }
-}
-
-function exportPermissions(){
-  const rows = document.querySelectorAll('#permissions-area table tbody tr');
-  const exportData = {};
-  rows.forEach(row=>{
-    const model = row.dataset.model;
-    exportData[model] = {
-      add: row.querySelector('input[name="add"]').checked,
-      change: row.querySelector('input[name="change"]').checked,
-      delete: row.querySelector('input[name="delete"]').checked,
-      view: row.querySelector('input[name="view"]').checked,
-    }
-  });
-  const a = document.createElement('a');
-  a.href = 'data:application/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(exportData, null, 2));
-  a.download = 'role-permissions.json';
-  a.click();
-}
-
-function getCookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-        const cookies = document.cookie.split(';');
-        for (let i = 0; i < cookies.length; i++) {
-            const cookie = cookies[i].trim();
-            if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
-            }
-        }
-    }
-    return cookieValue;
-}
-
-function showToast(message, type='info'){
-  // Update aria-live region
-  const region = document.getElementById('status-message');
-  if(region){
-    region.textContent = message;
-    region.classList.remove('visually-hidden');
-    region.classList.add('d-block');
-    // Hide after a while
-    setTimeout(()=>{
-      region.classList.add('visually-hidden');
-      region.textContent = '';
-    }, 4000);
-  }
-
-  // Also render a visible alert for UX
-  const el = document.createElement('div');
-  el.className = `alert alert-${type}`;
-  el.setAttribute('role', 'alert');
-  el.textContent = message;
-  document.getElementById('permissions-area').prepend(el);
-  setTimeout(()=>el.remove(), 4000);
-}
-
-// Role selection
-function wireRoleSelection(){
-  document.querySelectorAll('.role-row').forEach(el=>{
-    el.addEventListener('click', function(){
-      // highlight
-      document.querySelectorAll('.role-row').forEach(r=>r.classList.remove('table-active'));
-      this.classList.add('table-active');
-      loadPermissions(this.dataset.roleId);
-    });
-  });
-}
-
-// Search filter
-document.addEventListener('DOMContentLoaded', function(){
-  wireRoleSelection();
-  const search = document.getElementById('role-search');
-  search.addEventListener('input', function(){
-    const q = this.value.toLowerCase();
-    document.querySelectorAll('.role-row').forEach(r=>{
-      const name = r.querySelector('td:first-child').textContent.toLowerCase();
-      r.style.display = name.includes(q) ? '' : 'none';
-    });
-  });
-});
-</script>
 
 {% endblock %}

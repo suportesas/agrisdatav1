@@ -85,3 +85,28 @@ def trace_on_failure(page, request):
     except Exception:
         # Don't fail the test teardown because of artifact collection
         pass
+
+
+@pytest.fixture
+def e2e_roles_data(django_db_blocker):
+    """Create a company, admin user and a role for e2e role tests and return sessionid."""
+    with django_db_blocker.unblock():
+        from django.test import Client
+        from django.contrib.auth import get_user_model
+        from empresas.models import Empresa, Role
+
+        User = get_user_model()
+
+        empresa = Empresa.objects.create(nome='E2E Empresa Roles')
+        user = User.objects.create_user(username='e2eadmin', password='pass', tipo='ADMIN')
+        user.empresa = empresa
+        user.save()
+
+        # Create a role for testing
+        role = Role.objects.create(empresa=empresa, name='E2E Role')
+
+        client = Client()
+        assert client.login(username='e2eadmin', password='pass')
+        sessionid = client.cookies['sessionid'].value
+
+    return {'empresa': empresa, 'user': user, 'role': role, 'sessionid': sessionid}

@@ -2,7 +2,8 @@ import pytest
 from urllib.parse import urlparse
 from django.test import Client
 from django.contrib.auth import get_user_model
-from empresas.models import Empresa, Role, PermissionTemplate
+from empresas.models import Empresa, Role
+# Import PermissionTemplate lazily inside test to avoid collection-time import issues
 
 User = get_user_model()
 
@@ -63,5 +64,6 @@ def test_save_and_apply_template_via_ui(page, live_server, e2e_templates_data):
     page.wait_for_selector('text=Template aplicado com sucesso')
 
     # Check that a RoleAudit entry was created (server-side) by requesting templates detail
+    from empresas.models import PermissionTemplate
     tpl = PermissionTemplate.objects.filter(empresa=role.empresa, nome='E2E Template').first()
     assert tpl is not None

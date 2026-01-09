@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% block title %}Excluir Veículo | ERP Agrícola{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <h2>Excluir Veículo</h2>
+  <p>Tem certeza que deseja excluir o veículo <strong>{{ vehicle }}</strong>?</p>
+  <form method="post">
+    {% csrf_token %}
+    <button class="btn btn-danger">Excluir</button>
+    <a href="{% url 'cadastros:vehicle_detail' vehicle.pk %}" class="btn btn-secondary">Cancelar</a>
+  </form>
+</div>
+{% endblock %}

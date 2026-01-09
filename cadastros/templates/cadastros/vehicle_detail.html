@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+{% block title %}Veículo | ERP Agrícola{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="fw-bold mb-1">{{ vehicle.marca }} {{ vehicle.modelo }}</h2>
+      <p class="text-muted mb-0">Tipo: {{ vehicle.get_tipo_display }} • Placa: {{ vehicle.get_current_plate|default:'—' }}</p>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{% url 'cadastros:vehicle_update' vehicle.pk %}" class="btn btn-outline-secondary">Editar</a>
+      <a href="{% url 'cadastros:vehicle_delete' vehicle.pk %}" class="btn btn-outline-danger">Excluir</a>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-md-6">
+      <div class="card p-3 mb-3">
+        <h5>Placas</h5>
+        <ul class="list-group mt-2">
+          {% for p in plates %}
+            <li class="list-group-item">{{ p.placa }} {% if p.atual %}<span class="badge bg-success">Atual</span>{% endif %}<div class="small text-muted">{{ p.vigencia_inicio }} {% if p.vigencia_fim %}- {{ p.vigencia_fim }}{% endif %}</div></li>
+          {% empty %}
+            <li class="list-group-item text-muted">Nenhuma placa cadastrada.</li>
+          {% endfor %}
+        </ul>
+
+        <div class="mt-3">
+          <h6 class="mb-2">Adicionar Placa</h6>
+          <form method="post" action="{% url 'cadastros:vehicle_plate_create' vehicle.pk %}">
+            {% csrf_token %}
+            {{ plate_form.placa.label_tag }}
+            {{ plate_form.placa }}
+            {{ plate_form.vigencia_inicio }}
+            {{ plate_form.vigencia_fim }}
+            <div class="mt-2">
+              <button id="plateSaveBtn" class="btn btn-primary">Adicionar Placa</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div class="card p-3">
+        <h5>Atribuições</h5>
+        <ul class="list-group mt-2">
+          {% for a in assignments %}
+            <li class="list-group-item">{{ a.motorista }} - {{ a.data_inicio }} {% if a.data_fim %}- {{ a.data_fim }}{% endif %}</li>
+          {% empty %}
+            <li class="list-group-item text-muted">Nenhuma atribuição registrada.</li>
+          {% endfor %}
+        </ul>
+
+        <div class="mt-3">
+          <h6 class="mb-2">Atribuir Motorista</h6>
+          <form method="post" action="{% url 'cadastros:vehicle_assignment_create' vehicle.pk %}">
+            {% csrf_token %}
+            {{ assignment_form.motorista.label_tag }}
+            {{ assignment_form.motorista }}
+            {{ assignment_form.data_inicio }}
+            {{ assignment_form.data_fim }}
+            <div class="mt-2">
+              <button id="assignmentSaveBtn" class="btn btn-primary">Atribuir</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-6">
+      <div class="card p-3">
+        <h5>Detalhes</h5>
+        <dl class="row">
+          <dt class="col-4">Marca</dt><dd class="col-8">{{ vehicle.marca }}</dd>
+          <dt class="col-4">Modelo</dt><dd class="col-8">{{ vehicle.modelo }}</dd>
+          <dt class="col-4">Tipo</dt><dd class="col-8">{{ vehicle.get_tipo_display }}</dd>
+          <dt class="col-4">Capacidade</dt><dd class="col-8">{{ vehicle.capacidade_ton }}</dd>
+          <dt class="col-4">Tara (kg)</dt><dd class="col-8">{{ vehicle.tara_kg }}</dd>
+        </dl>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

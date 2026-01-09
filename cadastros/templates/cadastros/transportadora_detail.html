@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ transportadora.nome_fantasia|default:transportadora.razao_social }} | ERP Agrícola{% endblock %}
+
+{% block extra_css %}
+<style>
+  .info-card { background: white; border-radius: 12px; padding: 1.25rem; box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 1rem; }
+  .section-title { font-size: 1.05rem; font-weight: 700; color: #495057; margin-bottom: 0.75rem; }
+  .info-row { display:flex; padding: 0.5rem 0; border-bottom: 1px solid #f1f3f5; }
+  .info-label { font-weight:600; color:#6c757d; min-width:160px; }
+  .info-value { flex:1; color:#212529; }
+  .badge-status-large { padding: 0.4rem 0.8rem; border-radius: 16px; font-weight:600; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <!-- Breadcrumb -->
+  <nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'cadastros:transportadora_list' %}">Transportadoras</a></li>
+      <li class="breadcrumb-item active">{{ transportadora.nome_fantasia|default:transportadora.razao_social }}</li>
+    </ol>
+  </nav>
+
+  <!-- Header -->
+  <div class="info-card d-flex justify-content-between align-items-start">
+    <div>
+      <h2 class="fw-bold mb-1"><i class="bi bi-truck text-success"></i> {{ transportadora.nome_fantasia|default:transportadora.razao_social }}</h2>
+      <p class="text-muted mb-1">
+        <strong>{{ transportadora.cidade }}/{{ transportadora.uf }}</strong>
+        {% if transportadora.cnpj %} • {{ transportadora.cnpj }}{% endif %}
+      </p>
+      <p class="mb-0">Frete padrão: <strong>{% if transportadora.frete_padrao %}R$ {{ transportadora.frete_padrao }}{% else %}-{% endif %}</strong></p>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{% url 'cadastros:transportadora_update' transportadora.pk %}" class="btn btn-primary"><i class="bi bi-pencil"></i> Editar</a>
+      <a href="{% url 'cadastros:transportadora_delete' transportadora.pk %}" class="btn btn-outline-danger"><i class="bi bi-trash"></i> Excluir</a>
+    </div>
+  </div>
+
+  <ul class="nav nav-tabs mb-3" role="tablist">
+    <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#info">Informações</button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#viagens">Viagens ({{ transportadora.viagens.count }})</button></li>
+  </ul>
+
+  <div class="tab-content">
+    <div class="tab-pane show active" id="info">
+      <div class="row">
+        <div class="col-md-6">
+          <div class="info-card">
+            <h5 class="section-title">Documentação & Endereço</h5>
+            <div class="info-row"><span class="info-label">Inscrição Estadual:</span><span class="info-value">{{ transportadora.inscricao_estadual|default:'—' }}</span></div>
+            <div class="info-row"><span class="info-label">CEP / Logradouro:</span><span class="info-value">{{ transportadora.cep|default:'—' }} / {{ transportadora.logradouro|default:'—' }}</span></div>
+            <div class="info-row"><span class="info-label">Bairro / Cidade / UF:</span><span class="info-value">{{ transportadora.bairro|default:'—' }} / {{ transportadora.cidade|default:'—' }} / {{ transportadora.uf|default:'—' }}</span></div>
+          </div>
+
+          <div class="info-card">
+            <h5 class="section-title">Contato</h5>
+            <div class="info-row"><span class="info-label">Contato:</span><span class="info-value">{{ transportadora.contato_principal_nome|default:'—' }}</span></div>
+            <div class="info-row"><span class="info-label">Telefone:</span><span class="info-value">{{ transportadora.contato_principal_telefone|default:'—' }}</span></div>
+            <div class="info-row"><span class="info-label">E-mail:</span><span class="info-value">{% if transportadora.contato_principal_email %}<a href="mailto:{{ transportadora.contato_principal_email }}">{{ transportadora.contato_principal_email }}</a>{% else %}—{% endif %}</span></div>
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <div class="info-card">
+            <h5 class="section-title">Dados Bancários</h5>
+            <div class="info-row"><span class="info-label">Banco:</span><span class="info-value">{{ transportadora.banco|default:'—' }}</span></div>
+            <div class="info-row"><span class="info-label">Agência / Conta:</span><span class="info-value">{{ transportadora.agencia|default:'—' }} / {{ transportadora.conta|default:'—' }}</span></div>
+            <div class="info-row"><span class="info-label">PIX:</span><span class="info-value">{{ transportadora.pix_key|default:'—' }}</span></div>
+          </div>
+
+          <div class="info-card">
+            <h5 class="section-title">Frete</h5>
+            <div class="info-row"><span class="info-label">Frete Padrão:</span><span class="info-value">{% if transportadora.frete_padrao %}R$ {{ transportadora.frete_padrao }}{% else %}—{% endif %}</span></div>
+            <div class="info-row"><span class="info-label">Frete por km:</span><span class="info-value">{% if transportadora.frete_por_km %}{{ transportadora.frete_por_km }}{% else %}—{% endif %}</span></div>
+            <div class="info-row"><span class="info-label">Moeda:</span><span class="info-value">{{ transportadora.moeda|default:'BRL' }}</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-pane fade" id="viagens">
+      <div class="table-responsive">
+        <table class="table table-striped">
+          <thead><tr><th>Data</th><th>Origem</th><th>Destino</th><th>Valor</th><th>Status</th></tr></thead>
+          <tbody>
+            {% for v in viagens %}
+            <tr>
+              <td>{{ v.data|date:'d/m/Y' }}</td>
+              <td>{{ v.origem }}</td>
+              <td>{{ v.destino }}</td>
+              <td>{% if v.valor_frete %}R$ {{ v.valor_frete }}{% else %}—{% endif %}</td>
+              <td>{{ v.get_status_display }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5">Nenhuma viagem registrada.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="mt-3">
+    <a href="{% url 'cadastros:transportadora_list' %}" class="btn btn-outline-secondary">Voltar</a>
+  </div>
+</div>
+{% endblock %}

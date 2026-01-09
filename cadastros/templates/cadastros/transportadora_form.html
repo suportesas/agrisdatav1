@@ -1,0 +1,284 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ action }} Transportadora | ERP Agrícola{% endblock %}
+
+{% block extra_css %}
+<style>
+  .section-header {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+    padding: 12px 16px;
+    border-radius: 8px 8px 0 0;
+    margin-bottom: 0;
+  }
+  .form-section {
+    background: white;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    margin-bottom: 1.25rem;
+  }
+  .form-section-body { padding: 1.25rem; }
+  .cnpj-search-btn { transition: all 0.25s ease; }
+  .cnpj-search-btn:hover { transform: scale(1.03); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <!-- Breadcrumb -->
+  <nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'cadastros:transportadora_list' %}">Transportadoras</a></li>
+      <li class="breadcrumb-item active">{{ action }} Transportadora</li>
+    </ol>
+  </nav>
+
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="fw-bold mb-1">
+        <i class="bi bi-truck text-success"></i>
+        {{ action }} Transportadora
+      </h2>
+      {% if transportadora %}
+        <p class="text-muted mb-0">Editando: <strong>{{ transportadora.razao_social }}</strong></p>
+      {% else %}
+        <p class="text-muted mb-0">Cadastre uma transportadora para sua empresa</p>
+      {% endif %}
+    </div>
+    <a href="{% url 'cadastros:transportadora_list' %}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left"></i> Voltar
+    </a>
+  </div>
+
+  <form method="post" id="transportadoraForm">
+    {% csrf_token %}
+
+    <!-- Seção: Dados Básicos -->
+    <div class="form-section">
+      <div class="section-header">
+        <h5 class="mb-0"><i class="bi bi-info-circle"></i> Dados Básicos</h5>
+      </div>
+      <div class="form-section-body">
+        <div class="row g-3">
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Tipo</label>
+            {{ form.tipo }}
+          </div>
+
+          <div class="col-md-5">
+            <label class="form-label fw-semibold">CNPJ</label>
+            <div class="input-group">
+              {{ form.cnpj }}
+              <button type="button" class="btn btn-primary cnpj-search-btn" id="buscarCNPJ">
+                <i class="bi bi-search"></i> Buscar
+              </button>
+            </div>
+            <small class="text-muted d-block">Busca automática via CNPJ</small>
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Razão Social</label>
+            {{ form.razao_social }}
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Nome Fantasia</label>
+            {{ form.nome_fantasia }}
+          </div>
+
+          <div class="col-md-2">
+            <label class="form-label fw-semibold d-block">Ativa</label>
+            <div class="form-check form-switch mt-2">
+              {{ form.ativa }}
+              <label class="form-check-label" for="{{ form.ativa.id_for_label }}">Ativa</label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Seção: Documentação -->
+    <div class="form-section">
+      <div class="section-header">
+        <h5 class="mb-0"><i class="bi bi-file-earmark-text"></i> Documentação</h5>
+      </div>
+      <div class="form-section-body">
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Inscrição Estadual</label>
+            {{ form.inscricao_estadual }}
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">RNTC</label>
+            {{ form.rntc }}
+          </div>
+
+          <div class="col-md-2">
+            <label class="form-label fw-semibold d-block">Contribuinte ICMS</label>
+            <div class="form-check form-switch mt-2">
+              {{ form.contribuinte_icms }}
+              <label class="form-check-label" for="{{ form.contribuinte_icms.id_for_label }}">Contribuinte ICMS</label>
+            </div>
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Indicador IE <small class="text-muted">(preenchido automaticamente)</small></label>
+            {{ form.indicador_ie }}
+            <div class="form-text small text-muted">Valores: 1=Contribuinte ICMS, 2=Contribuinte isento de IE (PJ), 9=Não Contribuinte (PF)</div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- Seção: Contato -->
+    <div class="form-section">
+      <div class="section-header">
+        <h5 class="mb-0"><i class="bi bi-telephone"></i> Contato</h5>
+      </div>
+      <div class="form-section-body">
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Nome de Contato</label>
+            {{ form.contato_principal_nome }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Telefone</label>
+            {{ form.contato_principal_telefone }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">E-mail</label>
+            {{ form.contato_principal_email }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Seção: Endereço -->
+    <div class="form-section">
+      <div class="section-header">
+        <h5 class="mb-0"><i class="bi bi-geo-alt"></i> Endereço</h5>
+      </div>
+      <div class="form-section-body">
+        <div class="row g-3">
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">CEP</label>
+            <div class="input-group">
+              {{ form.cep }}
+              <button type="button" class="btn btn-primary btn-sm" id="buscarCEPT" onclick="document.getElementById('id_cep') && document.getElementById('id_cep').dispatchEvent(new Event('blur'))">Buscar</button>
+            </div>
+            <small class="text-muted d-block">Busca automática via CEP</small>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Logradouro</label>
+            {{ form.logradouro }}
+          </div>
+
+          <div class="col-md-2">
+            <label class="form-label fw-semibold">Número</label>
+            {{ form.numero }}
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Complemento</label>
+            {{ form.complemento }}
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Bairro</label>
+            {{ form.bairro }}
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Cidade</label>
+            {{ form.cidade }}
+          </div>
+
+          <div class="col-md-2">
+            <label class="form-label fw-semibold">UF</label>
+            {{ form.uf }}
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">País</label>
+            {{ form.pais }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Seção: Dados Bancários -->
+    <div class="form-section">
+      <div class="section-header">
+        <h5 class="mb-0"><i class="bi bi-bank"></i> Dados Bancários</h5>
+      </div>
+      <div class="form-section-body">
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Banco</label>
+            {{ form.banco }}
+          </div>
+          <div class="col-md-2">
+            <label class="form-label fw-semibold">Agência</label>
+            {{ form.agencia }}
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Conta</label>
+            {{ form.conta }}
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Tipo de Conta</label>
+            {{ form.tipo_conta }}
+          </div>          <div class="col-md-3">
+            <label class="form-label fw-semibold">Tipo de PIX</label>
+            {{ form.tipo_pix }}
+          </div>          <div class="col-md-4">
+            <label class="form-label fw-semibold">PIX</label>
+            {{ form.pix_key }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Seção: Valores de Frete -->
+    <div class="form-section">
+      <div class="section-header">
+        <h5 class="mb-0"><i class="bi bi-truck-flatbed"></i> Valores de Frete</h5>
+      </div>
+      <div class="form-section-body">
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Frete Padrão (R$)</label>
+            {{ form.frete_padrao }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Frete por km</label>
+            {{ form.frete_por_km }}
+          </div>
+          <div class="col-md-2">
+            <label class="form-label fw-semibold">Moeda</label>
+            {{ form.moeda }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="d-flex gap-2">
+      <button class="btn btn-primary">{{ action }}</button>
+      <a href="{% url 'cadastros:transportadora_list' %}" class="btn btn-outline-secondary">Cancelar</a>
+    </div>
+
+  </form>
+
+  {% block scripts %}
+  <script>window.CADASTROS_BUSCAR_CNPJ_URL = '{% url "cadastros:buscar_cnpj" %}'; window.CADASTROS_BUSCAR_CEP_URL = '{% url "cadastros:buscar_cep" %}';</script>
+  <script src="{% static 'js/cadastros_transportadora.js' %}"></script>
+  {% endblock %}
+</div>
+{% endblock %}

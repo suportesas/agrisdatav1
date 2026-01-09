@@ -1,0 +1,685 @@
+<!DOCTYPE html><html lang="pt-br"><head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Editar Cliente | ERP Agrícola</title>
+
+  <!-- Bootstrap e ícones -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/base.css">
+  
+  
+<style>
+  .section-header {
+    background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);
+    color: white;
+    padding: 15px 20px;
+    border-radius: 10px 10px 0 0;
+    margin-bottom: 0;
+  }
+  .form-section {
+    background: white;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+    margin-bottom: 1rem;
+  }
+  .form-section-body { padding: 1.25rem; }
+  .cnpj-search-btn { transition: all 0.3s ease; }
+  .cnpj-search-btn:hover { transform: scale(1.05); }
+</style>
+
+</head>
+
+<body>
+  
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+      <!-- Header -->
+      <div class="sidebar-header">
+        <h5>🌾 ERP Agrícola</h5>
+        <div class="user-info">
+          <i class="bi bi-person-circle"></i> e2ecliente
+        </div>
+      </div>
+
+      <!-- Menu -->
+      <ul class="sidebar-menu">
+        <!-- Dashboard -->
+        <li class="menu-item">
+          <a href="/dashboard/" class="menu-link">
+            <i class="bi bi-speedometer2"></i>
+            <span>Dashboard</span>
+          </a>
+        </li>
+
+        <div class="menu-separator"></div>
+
+        <!-- GESTÃO (apenas superusuário) -->
+        
+
+        <!-- Usuários (admin/staff) -->
+        
+
+        
+        <div class="menu-separator"></div>
+        <li class="menu-item">
+          <a href="/empresas/minha/" class="menu-link">
+            <i class="bi bi-building"></i>
+            <span>Minha Empresa</span>
+          </a>
+        </li>
+        
+
+        <div class="menu-separator"></div>
+        <li class="menu-label">OPERACIONAL</li>
+
+        <!-- Cadastros -->
+        <li class="menu-item">
+          <div class="menu-link expanded" onclick="toggleSubmenu(this)">
+            <i class="bi bi-folder"></i>
+            <span>Cadastros</span>
+            <i class="bi bi-chevron-down expand-icon"></i>
+          </div>
+          <ul class="submenu show">
+            <!-- ✅ FAZENDAS - CORRIGIDO -->
+            <li class="submenu-item">
+              <a href="/cadastros/fazendas/" class="submenu-link">
+                <span>🏭 Fazendas</span>
+              </a>
+            </li>
+            <li class="submenu-item">
+              <a href="/cadastros/funcionarios/" class="submenu-link">
+                <span>👷 Funcionários</span>
+              </a>
+            </li>
+            <li class="submenu-item">
+              <a href="/cadastros/culturas/" class="submenu-link">
+                <span>🌱 Culturas</span>
+              </a>
+
+            </li><li class="submenu-item">
+              <a href="/cadastros/vendedores/" class="submenu-link">
+                <span>👤 Vendedores</span>
+              </a>
+            </li>
+            <li class="submenu-item">
+              <a href="/cadastros/fornecedores/" class="submenu-link">
+                <span>🤝 Fornecedores</span>
+              </a>
+            </li>
+
+            
+              
+              <li class="submenu-item">
+                <a href="/cadastros/transportadoras/" class="submenu-link">
+                  <span>🚚 Transportadoras</span>
+                </a>
+              </li>
+              
+            
+
+            <li class="submenu-item">
+              <a href="#" class="submenu-link">
+                <span>📦 Produtos/Insumos</span>
+              </a>
+            </li>
+            
+            
+            <li class="submenu-item">
+              <a href="/cadastros/clientes/" class="submenu-link active">
+                <span>👥 Clientes</span>
+              </a>
+            </li>
+            
+            <li class="submenu-item">
+              <a href="#" class="submenu-link">
+                <span>🚜 Maquinário</span>
+              </a>
+            </li>
+
+            <li class="submenu-item">
+              <a href="/cadastros/portos/" class="submenu-link">
+                <span>⚓ Portos</span>
+              </a>
+            </li>
+
+            <li class="submenu-item">
+              <a href="/cadastros/areas/" class="submenu-link">
+                <span>🗺️ Área</span>
+              </a>
+            </li>
+
+            <li class="submenu-item">
+              <a href="/cadastros/talhoes/" class="submenu-link">
+                <span>⏸ Talhão</span>
+              </a>
+            </li>
+            
+
+          </ul>
+        </li>
+
+        <!-- Financeiro -->
+        <li class="menu-item">
+          <div class="menu-link" onclick="toggleSubmenu(this)">
+            <i class="bi bi-cash-stack"></i>
+            <span>Financeiro</span>
+            <i class="bi bi-chevron-down expand-icon"></i>
+            <span class="badge-notify">Em breve</span>
+          </div>
+          <ul class="submenu">
+            <li class="submenu-item">
+              <a href="#" class="submenu-link">
+                <span>💵 Contas a Pagar</span>
+              </a>
+            </li>
+            <li class="submenu-item">
+              <a href="#" class="submenu-link">
+                <span>💰 Contas a Receber</span>
+              </a>
+            </li>
+            <li class="submenu-item">
+              <a href="#" class="submenu-link">
+                <span>💳 Empréstimos</span>
+              </a>
+            </li>
+            <li class="submenu-item">
+              <a href="#" class="submenu-link">
+                <span>📊 Fluxo de Caixa</span>
+              </a>
+            </li>
+          </ul>
+        </li>
+
+        <!-- Safra -->
+        <li class="menu-item">
+          <div class="menu-link" onclick="toggleSubmenu(this)">
+            <i class="bi bi-calendar-check"></i>
+            <span>Safra</span>
+            <i class="bi bi-chevron-down expand-icon"></i>
+          </div>
+          <ul class="submenu">
+            <li class="submenu-item">
+              <a href="/cadastros/safras/" class="submenu-link">
+                <span>Safras</span>
+              </a>
+            </li>
+            <li class="submenu-item">
+              <a href="/cadastros/safras/nova/" class="submenu-link">
+                <span>Nova Safra</span>
+              </a>
+            </li>
+          </ul>
+        </li>
+
+        <!-- Relatórios -->
+        <li class="menu-item">
+          <div class="menu-link" onclick="toggleSubmenu(this)">
+            <i class="bi bi-graph-up"></i>
+            <span>Relatórios</span>
+            <span class="badge-notify">Em breve</span>
+          </div>
+        </li>
+      </ul>
+    </div>
+
+    <div id="overlay" class="overlay" style="display: none;"></div>
+  
+
+  <!-- Main Content -->
+  <div class="main-content">
+    
+    <nav class="navbar-custom">
+      <div class="d-flex align-items-center gap-3">
+          <button id="menuToggle" class="menu-toggle" aria-controls="sidebar" aria-expanded="true" aria-label="Alternar menu">
+            <i class="bi bi-list"></i>
+          </button>
+          <h5>Painel de Controle</h5>
+        </div>
+      <div class="user-badge">
+        <span>👤 e2ecliente</span>
+        <a href="/logout/" class="btn btn-outline-danger btn-sm">
+          <i class="bi bi-box-arrow-right"></i> Sair
+        </a>
+      </div>
+    </nav>
+    
+
+    <main>
+      <!-- Mensagens do Django -->
+      
+
+      <script>
+        // Auto-dismiss non-danger alerts after 3s and show a brief toast-like feedback
+        document.addEventListener('DOMContentLoaded', function(){
+          try {
+            document.querySelectorAll('.alert').forEach(function(a){
+              // Skip auto-dismiss for danger/error alerts so users can read validation messages
+              if (a.classList.contains('alert-danger') || a.classList.contains('alert-error')) return;
+              setTimeout(function(){ try { var bs = bootstrap.Alert.getInstance(a) || new bootstrap.Alert(a); bs.close(); } catch(e){} }, 3000);
+            });
+          } catch(e){}
+        });
+      </script>
+
+      
+<div class="container py-4">
+  <nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="/dashboard/">Dashboard</a></li>
+      <li class="breadcrumb-item"><a href="/cadastros/clientes/">Clientes</a></li>
+      <li class="breadcrumb-item active">Editar Cliente</li>
+    </ol>
+  </nav>
+
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="fw-bold mb-1">
+        <i class="bi bi-pencil-square text-primary"></i>
+        Editar Cliente
+      </h2>
+      
+        <p class="text-muted mb-0">Editando: <strong>E2E Cliente</strong></p>
+      
+    </div>
+    <a href="/cadastros/clientes/" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left"></i> Voltar
+    </a>
+  </div>
+
+  <form method="post" enctype="multipart/form-data" id="clienteForm">
+    <input type="hidden" name="csrfmiddlewaretoken" value="ebakoQ5bCeCsDTZRktEZLngmJIIqb7xIk9hzEXbvmHNML50ZSGtNbBzG8flKyBL5" style="">
+
+    <div class="form-section">
+      <div class="section-header">
+        <h5 class="mb-0">Dados Básicos</h5>
+      </div>
+      <div class="form-section-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Razão Social / Nome *</label>
+            <input type="text" name="razao_social" value="E2E Cliente" class="form-control" id="id_razao_social" data-auto="true" maxlength="250" required="" style="">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Nome Comercial</label>
+            <input type="text" name="nome_comercial" class="form-control" id="id_nome_comercial" data-auto="true" maxlength="250" style="">
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">CNPJ/CPF *</label>
+            <div class="input-group">
+              <input type="text" name="cnpj_cpf" value="12345678901234" class="form-control" data-mask="cnpj-cpf" placeholder="00.000.000/0000-00 ou 000.000.000-00 (Opcional para IMPORTADOR)" maxlength="18" aria-describedby="id_cnpj_cpf_helptext" id="id_cnpj_cpf" style="">
+              <button type="button" class="btn btn-primary cnpj-search-btn" id="buscarCNPJ"> <i class="bi bi-search"></i> Buscar</button>
+            </div>
+            <div id="cnpjFeedback" class="form-text mt-1 text-muted">&nbsp;</div>
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Tipo Cliente</label>
+            <select name="tipo_cliente" class="form-select" id="id_tipo_cliente">
+  <option value="NACIONAL" selected="">Nacional</option>
+
+  <option value="IMPORTADOR">Importador</option>
+
+</select>
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Tipo Pessoa</label>
+            <select name="tipo_pessoa" class="form-select" id="id_tipo_pessoa">
+  <option value="PF">Pessoa Física</option>
+
+  <option value="PJ" selected="">Pessoa Jurídica</option>
+
+</select>
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Contato Principal - Nome</label>
+            <input type="text" name="contato_principal_nome" class="form-control" id="id_contato_principal_nome" maxlength="150" style="">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Contato Principal - Telefone</label>
+            <input type="text" name="contato_principal_telefone" class="form-control" id="id_contato_principal_telefone" data-auto="true" maxlength="30" style="">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Contato Principal - E-mail</label>
+            <input type="email" name="contato_principal_email" class="form-control" id="id_contato_principal_email" data-auto="true" maxlength="254" style="">
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="section-header">
+        <h5 class="mb-0">Documentação Fiscal</h5>
+      </div>
+      <div class="form-section-body">
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Inscrição Estadual</label>
+            <input type="text" name="inscricao_estadual" class="form-control" id="id_inscricao_estadual" maxlength="30" style="">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Inscrição Municipal</label>
+            <input type="text" name="inscricao_municipal" class="form-control" id="id_inscricao_municipal" maxlength="30" style="">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Inscrição SUFRAMA</label>
+            <input type="text" name="inscricao_suframa" class="form-control" id="id_inscricao_suframa" maxlength="50" style="">
+          </div>
+          <div class="col-md-4" style="display: none;">
+            <label class="form-label fw-semibold">EORI</label>
+            <input type="text" name="eori" class="form-control" id="id_eori" maxlength="30" style="">
+          </div>
+          <div class="col-md-4" style="display: none;">
+            <label class="form-label fw-semibold">VAT / Número Registro (Exterior)</label>
+            <input type="text" name="vat" class="form-control" id="id_vat" placeholder="VAT / Número de registro do cliente no exterior" maxlength="50" aria-describedby="id_vat_helptext" style="">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Contribuinte ICMS</label>
+            <input type="checkbox" name="contribuinte_icms" id="id_contribuinte_icms" style="">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Indicador IE <small class="text-muted">(preenchido automaticamente)</small></label>
+            <input type="text" class="form-control" readonly="" value="2" style="">
+            <div class="form-text small text-muted">Valores: 1=Contribuinte ICMS, 2=Contribuinte isento de IE (PJ), 9=Não Contribuinte (PF)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="section-header">
+        <h5 class="mb-0">Exportação / Importação</h5>
+      </div>
+      <div class="form-section-body">
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">País</label>
+            <input type="text" name="pais" value="Brasil" class="form-control" id="id_pais" maxlength="100" style="">
+          </div>
+          <div class="col-md-4" style="display: none;">
+            <label class="form-label fw-semibold">Moeda Padrão</label>
+            <div class="d-flex gap-2 align-items-center">
+              <select name="moeda_padrao" id="id_moeda_padrao" class="form-select">
+                <option value="">-- Nenhum --</option>
+                
+              </select>
+              <button type="button" class="btn btn-outline-secondary btn-sm" id="addMoedaBtn">Adicionar</button>
+            </div>
+            
+              <div class="form-text small text-muted mt-1">Nenhuma moeda definida. Você pode adicioná-la aqui mesmo.</div>
+            
+          </div>
+
+          <!-- Modal para adicionar moeda -->
+          <div class="modal fade" id="moedaModal" tabindex="-1" aria-hidden="true" data-a11y="true">
+            <div class="modal-dialog">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h5 class="modal-title">Adicionar Moeda</h5>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                  
+                    <div class="mb-3">
+                      <label class="form-label">Código (ex: JPY)</label>
+                      <input type="text" class="form-control" id="moeda_codigo" maxlength="4" required="" style="">
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label">Nome</label>
+                      <input type="text" class="form-control" id="moeda_nome" required="" style="">
+                    </div>
+                    <div id="moedaFeedback" class="text-danger small"></div>
+                  
+                </div>
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                  <button type="button" class="btn btn-primary" id="moedaSaveBtn">Salvar Moeda</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4" style="display: none;">
+            <label class="form-label fw-semibold">Porto Destino</label>
+            <select name="porto_destino" class="form-select" id="id_porto_destino">
+  <option value="" selected="">---------</option>
+
+</select>
+          </div>
+        </div>
+      </div>
+    </div></form>
+
+    <div class="form-section">
+      <div class="section-header">
+        <h5 class="mb-0">Dados Comerciais</h5>
+      </div>
+      <div class="form-section-body">
+        <div class="row g-3">
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Limite de Crédito</label>
+            <input type="number" name="limite_credito" value="0.00" class="form-control" step="0.01" id="id_limite_credito" style="">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Prazo Pagamento (dias)</label>
+            <input type="number" name="prazo_pagamento" class="form-control" id="id_prazo_pagamento" style="">
+            <div class="form-text small text-muted">Ou escolha um <strong>preset</strong> de termos</div>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Preset Prazo</label>
+            <select id="id_prazo_pagamento_padrao_select" class="form-select" name="prazo_pagamento_padrao">
+              <option value="">-- Nenhum --</option>
+              
+                <option value="1" data-terms="30">30 dias (30)</option>
+              
+            </select>
+            <select id="id_prazo_pagamento_padrao_terms" class="form-select mt-2" style="display:none;"></select>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Vendedor Responsável</label>
+            <select name="vendedor_responsavel" class="form-select" id="id_vendedor_responsavel"><option value="">-- Nenhum --</option></select>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Desconto Padrão (%)</label>
+            <input type="number" name="desconto_padrao" value="0.00" class="form-control" step="0.01" id="id_desconto_padrao" style="">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="d-flex justify-content-between gap-3 mt-4">
+      <a href="/cadastros/clientes/" class="btn btn-outline-secondary btn-lg px-5">
+        <i class="bi bi-x-circle"></i> Cancelar
+      </a>
+      <button type="submit" id="clienteSaveBtn" class="btn btn-success btn-lg px-5">
+        <i class="bi bi-check-circle"></i> Salvar Cliente
+      </button>
+    </div>
+
+      <!-- Hidden sync container: JS will append hidden inputs here before submit to ensure values are posted -->
+      <div id="cliente_hidden_sync" style="display:none"></div>
+  
+</div>
+
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    // Toggle Sidebar and accessibility updates
+    document.addEventListener("DOMContentLoaded", function() {
+      const menuToggle = document.getElementById("menuToggle");
+      const sidebar = document.getElementById("sidebar");
+      const overlay = document.getElementById("overlay");
+
+      const updateAria = () => {
+        if (!menuToggle || !sidebar) return;
+        const expanded = sidebar.classList.contains('active') || !sidebar.classList.contains('collapsed');
+        menuToggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+      };
+
+      if (menuToggle) {
+        menuToggle.addEventListener("click", () => {
+          if (!sidebar) return;
+          if (window.innerWidth <= 992) {
+            sidebar.classList.toggle("active");
+            if (overlay) overlay.classList.toggle("active");
+          } else {
+            sidebar.classList.toggle("collapsed");
+          }
+          updateAria();
+        });
+      }
+
+      if (overlay) {
+        overlay.addEventListener("click", () => {
+          if (sidebar) sidebar.classList.remove("active");
+          overlay.classList.remove("active");
+          updateAria();
+        });
+      }
+
+      // Highlight active menu — compare normalized pathnames
+      const currentPath = window.location.pathname.replace(/\/$/, '');
+      document.querySelectorAll('.menu-link, .submenu-link').forEach(link => {
+        try {
+          const href = link.getAttribute('href');
+          if (!href || href === '#') return;
+          const linkPath = new URL(link.href, window.location.origin).pathname.replace(/\/$/, '');
+          // Mark active links: exact match or when current path is a subpath of the link (e.g. /cadastros/portos/*)
+          if (linkPath === currentPath || currentPath.startsWith(linkPath + '/')) {
+            link.classList.add('active');
+            const parentSubmenu = link.closest('.submenu');
+            if (parentSubmenu) {
+              parentSubmenu.classList.add('show');
+              if (parentSubmenu.previousElementSibling) parentSubmenu.previousElementSibling.classList.add('expanded');
+            }
+          }
+        } catch (e) {
+          // ignore malformed/anchor links
+        }
+      });
+
+      // Ensure aria state initial
+      updateAria();
+
+      // Ensure overlay is not active on desktop widths to avoid blocking clicks in tests
+      if (overlay && window.innerWidth > 992) {
+        overlay.classList.remove('active');
+        if (sidebar) sidebar.classList.remove('active');
+      }
+
+      // Defensive: hide overlay initially to avoid E2E flakiness where overlay blocks interactions
+      if (overlay) {
+        overlay.classList.remove('active');
+        overlay.style.display = 'none';
+      }
+    });
+
+    // Toggle Submenu
+    function toggleSubmenu(element) {
+      const submenu = element.nextElementSibling;
+      if (submenu && submenu.classList.contains('submenu')) {
+        submenu.classList.toggle('show');
+        element.classList.toggle('expanded');
+      }
+    }
+  </script>
+
+  <script src="/static/js/cadastros_cliente.js"></script>
+
+  <!-- Modal Loading CNPJ (global reuse) -->
+  <div class="modal fade" id="cnpjLoadingModal" data-bs-backdrop="static" tabindex="-1" role="status" aria-live="polite" aria-labelledby="cnpjLoadingText" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+      <div class="modal-content">
+        <div class="modal-body text-center py-4">
+          <div class="spinner-border text-primary mb-3" role="status" aria-hidden="true"></div>
+          <p id="cnpjLoadingText" class="mb-0">Buscando CNPJ...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Confirmação de Auto-preenchimento -->
+  <div class="modal fade" id="cnpjConfirmModal" data-bs-backdrop="static" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="cnpjConfirmTitle" aria-describedby="cnpjConfirmNote" data-a11y="true" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="cnpjConfirmTitle">Confirmar dados importados</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body">
+          <p>Foram importados os seguintes dados. Confirme se deseja manter estas alterações:</p>
+          <ul id="cnpjConfirmList" class="list-group mb-3"></ul>
+          <div id="cnpjConfirmNote" class="form-text text-muted">Você pode cancelar para restaurar os valores anteriores.</div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="cnpjConfirmCancel" aria-label="Cancelar importação">Cancelar</button>
+          <button type="button" class="btn btn-primary" id="cnpjConfirmAccept" aria-label="Confirmar importação">Manter Alterações</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  
+<script>
+// Mark auto-fillable fields for accessibility and visual cueing
+document.addEventListener('DOMContentLoaded', function(){
+  try {
+    const toAuto = ['id_razao_social','id_nome_comercial','id_contato_principal_telefone','id_contato_principal_email'];
+    toAuto.forEach(id => { const el = document.getElementById(id); if (el) el.setAttribute('data-auto','true'); });
+  } catch(e){}
+
+  // If a prazo preset was selected on the server, trigger change to populate terms and set prazo input
+  try {
+    const presetSelect = document.getElementById('id_prazo_pagamento_padrao_select');
+    const prazoTermsSelect = document.getElementById('id_prazo_pagamento_padrao_terms');
+    const prazoInput = document.getElementById('id_prazo_pagamento');
+    const selectedPreset = "";
+    if (presetSelect && selectedPreset) {
+      // ensure select has the value and dispatch change to populate options
+      presetSelect.value = selectedPreset;
+      presetSelect.dispatchEvent(new Event('change'));
+      // if prazo already set (editing), try to select matching term
+      if (prazoInput && prazoInput.value && prazoTermsSelect) {
+        const opt = Array.from(prazoTermsSelect.options).find(o=>o.value==String(prazoInput.value));
+        if (opt) prazoTermsSelect.value = String(prazoInput.value);
+      }
+    }
+  } catch(e){}
+});
+</script>
+
+
+  <script>
+  // Hook console errors to POST to server for E2E debugging (active only in DEBUG)
+  (function(){
+    try{
+      const orig = console.error.bind(console);
+      console.error = function(){
+        try{
+          const args = Array.from(arguments).map(a=>{ try{ return typeof a === 'object' ? JSON.stringify(a) : String(a) }catch(e){ return String(a) } });
+          // Prefer sendBeacon for minimal impact
+          if(navigator.sendBeacon){
+            navigator.sendBeacon('/__e2e_log__', JSON.stringify({msg: args, url: window.location.href}));
+          } else {
+            fetch('__e2e_log__', {method:'POST', body: JSON.stringify({msg: args, url: window.location.href}), headers:{'Content-Type':'application/json'}}).catch(()=>{});
+          }
+        }catch(e){}
+        orig.apply(console, arguments);
+      };
+      window.addEventListener('error', function(ev){
+        try{ navigator.sendBeacon ? navigator.sendBeacon('__e2e_log__', JSON.stringify({msg: ['error', ev.message], url: window.location.href})) : fetch('__e2e_log__', {method:'POST', body: JSON.stringify({msg: ['error', ev.message], url: window.location.href}), headers:{'Content-Type':'application/json'}}).catch(()=>{}); }catch(e){}
+      });
+      window.addEventListener('unhandledrejection', function(ev){
+        try{ navigator.sendBeacon ? navigator.sendBeacon('__e2e_log__', JSON.stringify({msg: ['promise', String(ev.reason)], url: window.location.href})) : fetch('__e2e_log__', {method:'POST', body: JSON.stringify({msg: ['promise', String(ev.reason)], url: window.location.href}), headers:{'Content-Type':'application/json'}}).catch(()=>{}); }catch(e){}
+      });
+    }catch(e){}
+  })();
+  </script>
+
+<div id="clienteJsDiag" aria-hidden="true" style="position: fixed; top: 8px; right: 8px; z-index: 1051; background: rgb(13, 110, 253); color: white; padding: 6px 10px; border-radius: 6px; box-shadow: rgba(0, 0, 0, 0.12) 0px 2px 6px; font-size: 12px;">JS: bindings attached | topBtn: true</div></body></html>

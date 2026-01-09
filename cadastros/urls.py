@@ -131,6 +131,15 @@ urlpatterns = [
     path('api/transportadoras/', views.api_transportadoras, name='api_transportadoras'),
     path('api/transportadoras/<int:pk>/viagens/', views.api_transportadora_viagens, name='api_transportadora_viagens'),
 
+    # ==================== VEÍCULOS / FROTA ====================
+    path('veiculos/', views.vehicle_list, name='vehicle_list'),
+    path('veiculos/novo/', views.vehicle_create, name='vehicle_create'),
+    path('veiculos/<int:pk>/', views.vehicle_detail, name='vehicle_detail'),
+    path('veiculos/<int:pk>/editar/', views.vehicle_update, name='vehicle_update'),
+    path('veiculos/<int:pk>/excluir/', views.vehicle_delete, name='vehicle_delete'),
+    path('veiculos/<int:vehicle_pk>/placas/nova/', views.vehicle_plate_create, name='vehicle_plate_create'),
+    path('veiculos/<int:vehicle_pk>/atribuir/', views.vehicle_assignment_create, name='vehicle_assignment_create'),
+
     # Fornecedor: endereços
     path('fornecedores/<int:fornecedor_pk>/enderecos/novo/', views.fornecedor_endereco_create, name='fornecedor_endereco_create'),
     path('fornecedores/<int:fornecedor_pk>/enderecos/<int:endereco_pk>/editar/', views.fornecedor_endereco_update, name='fornecedor_endereco_update'),

@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% block title %}{{ action }} Veículo | ERP Agrícola{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="fw-bold mb-1">{{ action }} Veículo</h2>
+      <p class="text-muted mb-0">Preencha os dados do veículo</p>
+    </div>
+    <a href="{% url 'cadastros:vehicle_list' %}" class="btn btn-outline-secondary">Voltar</a>
+  </div>
+
+  <div class="card p-4">
+    <form method="post">
+      {% csrf_token %}
+      {{ form.non_field_errors }}
+      <div class="row g-3">
+        <div class="col-md-3">{{ form.tipo.label_tag }}{{ form.tipo }}</div>
+        <div class="col-md-3">{{ form.marca.label_tag }}{{ form.marca }}</div>
+        <div class="col-md-3">{{ form.modelo.label_tag }}{{ form.modelo }}</div>
+        <div class="col-md-3">{{ form.cor.label_tag }}{{ form.cor }}</div>
+
+        <div class="col-md-2">{{ form.ano_fabricacao.label_tag }}{{ form.ano_fabricacao }}</div>
+        <div class="col-md-2">{{ form.ano_modelo.label_tag }}{{ form.ano_modelo }}</div>
+        <div class="col-md-2">{{ form.eixos.label_tag }}{{ form.eixos }}</div>
+        <div class="col-md-2">{{ form.tara_kg.label_tag }}{{ form.tara_kg }}</div>
+        <div class="col-md-2">{{ form.capacidade_ton.label_tag }}{{ form.capacidade_ton }}</div>
+
+        <div class="col-12">{{ form.observacoes.label_tag }}{{ form.observacoes }}</div>
+        <div class="col-12 d-flex justify-content-end">
+          <button id="vehicleSaveBtn" class="btn btn-success">{{ action }}</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

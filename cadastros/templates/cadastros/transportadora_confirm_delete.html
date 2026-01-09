@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+  <h1>Confirmar exclusão</h1>
+  <p>Tem certeza que deseja excluir a transportadora <strong>{{ transportadora }}</strong>?</p>
+  <form method="post">
+    {% csrf_token %}
+    <button class="btn btn-danger">Excluir</button>
+    <a href="{% url 'cadastros:transportadora_detail' transportadora.pk %}" class="btn btn-secondary">Cancelar</a>
+  </form>
+</div>
+{% endblock %}

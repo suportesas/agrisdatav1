@@ -46,6 +46,130 @@ from .views_transportadora import (
 # API views
 from .views_api import api_transportadoras, api_transportadora_viagens
 
+# Vehicle related imports
+from .models import Vehicle, VehiclePlate, VehicleAssignment, VehicleDocument
+from .forms import VehicleForm, VehiclePlateForm, VehicleAssignmentForm
+
+
+# ==================== VEÍCULOS (FROTA) ====================
+
+@login_required
+def vehicle_list(request):
+    """Lista veículos da empresa"""
+    if not request.user.empresa:
+        messages.warning(request, '⚠️ Seu usuário não está vinculado a nenhuma empresa.')
+        return redirect('dashboard:index')
+
+    veiculos = Vehicle.objects.filter(empresa=request.user.empresa).prefetch_related('plates', 'assignments')
+
+    q = request.GET.get('q', '').strip()
+    if q:
+        veiculos = veiculos.filter(
+            Q(marca__icontains=q) | Q(modelo__icontains=q) | Q(plates__placa__icontains=q)
+        ).distinct()
+
+    paginator = Paginator(veiculos, 25)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, 'cadastros/vehicle_list.html', {
+        'page_obj': page_obj,
+        'total': veiculos.count()
+    })
+
+
+@login_required
+def vehicle_detail(request, pk):
+    vehicle = get_object_or_404(Vehicle, pk=pk, empresa=request.user.empresa)
+    plate_form = VehiclePlateForm()
+    assignment_form = VehicleAssignmentForm()
+
+    context = {
+        'vehicle': vehicle,
+        'plates': vehicle.plates.all(),
+        'assignments': vehicle.assignments.all(),
+        'plate_form': plate_form,
+        'assignment_form': assignment_form,
+    }
+    return render(request, 'cadastros/vehicle_detail.html', context)
+
+
+@login_required
+def vehicle_create(request):
+    if not request.user.empresa:
+        messages.warning(request, '⚠️ Seu usuário não está vinculado a nenhuma empresa.')
+        return redirect('dashboard:index')
+
+    if request.method == 'POST':
+        form = VehicleForm(request.POST, empresa=request.user.empresa)
+        if form.is_valid():
+            v = form.save()
+            messages.success(request, f'✅ Veículo "{v}" cadastrado com sucesso!')
+            return redirect('cadastros:vehicle_detail', pk=v.pk)
+        else:
+            messages.error(request, '❌ Corrija os erros no formulário.')
+    else:
+        form = VehicleForm(empresa=request.user.empresa)
+
+    return render(request, 'cadastros/vehicle_form.html', {'form': form, 'action': 'Cadastrar'})
+
+
+@login_required
+def vehicle_update(request, pk):
+    vehicle = get_object_or_404(Vehicle, pk=pk, empresa=request.user.empresa)
+    if request.method == 'POST':
+        form = VehicleForm(request.POST, instance=vehicle, empresa=request.user.empresa)
+        if form.is_valid():
+            v = form.save()
+            messages.success(request, f'✅ Veículo "{v}" atualizado!')
+            return redirect('cadastros:vehicle_detail', pk=v.pk)
+    else:
+        form = VehicleForm(instance=vehicle, empresa=request.user.empresa)
+
+    return render(request, 'cadastros/vehicle_form.html', {'form': form, 'vehicle': vehicle, 'action': 'Editar'})
+
+
+@login_required
+def vehicle_delete(request, pk):
+    vehicle = get_object_or_404(Vehicle, pk=pk, empresa=request.user.empresa)
+    if request.method == 'POST':
+        nome = str(vehicle)
+        vehicle.delete()
+        messages.success(request, f'🗑️ Veículo "{nome}" excluído com sucesso!')
+        return redirect('cadastros:vehicle_list')
+    return render(request, 'cadastros/vehicle_confirm_delete.html', {'vehicle': vehicle})
+
+
+@login_required
+def vehicle_plate_create(request, vehicle_pk):
+    vehicle = get_object_or_404(Vehicle, pk=vehicle_pk, empresa=request.user.empresa)
+    if request.method == 'POST':
+        form = VehiclePlateForm(request.POST, vehicle=vehicle)
+        if form.is_valid():
+            form.save()
+            messages.success(request, '✅ Placa adicionada com sucesso!')
+            return redirect('cadastros:vehicle_detail', pk=vehicle.pk)
+        else:
+            messages.error(request, '❌ Corrija os erros no formulário de placa.')
+    return redirect('cadastros:vehicle_detail', pk=vehicle.pk)
+
+
+@login_required
+def vehicle_assignment_create(request, vehicle_pk):
+    vehicle = get_object_or_404(Vehicle, pk=vehicle_pk, empresa=request.user.empresa)
+    if request.method == 'POST':
+        form = VehicleAssignmentForm(request.POST, vehicle=vehicle)
+        if form.is_valid():
+            try:
+                assignment = form.save()
+                messages.success(request, '✅ Atribuição salva com sucesso!')
+            except Exception as e:
+                messages.error(request, f'❌ Erro: {e}')
+        else:
+            messages.error(request, '❌ Corrija os erros na atribuição.')
+    return redirect('cadastros:vehicle_detail', pk=vehicle.pk)
+
+
 
 
 

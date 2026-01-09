@@ -1640,6 +1640,11 @@ class Funcionario(models.Model):
         max_length=20,
         blank=True
     )
+
+    # Habilitação (CNH)
+    cnh = models.CharField('CNH', max_length=20, blank=True)
+    cnh_validade = models.DateField('Validade CNH', null=True, blank=True)
+
     
     # Dados Bancários
     banco = models.CharField(
@@ -4217,6 +4222,144 @@ class Viagem(models.Model):
 
     def __str__(self):
         return f"{self.transportadora} - {self.origem} → {self.destino} ({self.data})"
+
+
+# ==========================
+# MODELOS DE VEÍCULOS / FROTA
+# ==========================
+
+VEHICLE_TYPES = [
+    ('LEVE', 'Leve'),
+    ('MEDIO', 'Médio'),
+    ('PESADO', 'Pesado'),
+    ('REBOQUE', 'Reboque'),
+    ('IMPLEMENTO', 'Implemento'),
+]
+
+
+class Vehicle(models.Model):
+    """Cadastro de veículos (próprios ou de terceiros)."""
+
+    empresa = models.ForeignKey(
+        'empresas.Empresa', on_delete=models.CASCADE, related_name='veiculos', verbose_name='Empresa'
+    )
+    transportadora = models.ForeignKey(
+        'cadastros.Transportadora', on_delete=models.SET_NULL, null=True, blank=True, related_name='veiculos', verbose_name='Transportadora'
+    )
+
+    tipo = models.CharField('Tipo', max_length=20, choices=VEHICLE_TYPES, default='LEVE')
+    marca = models.CharField('Marca', max_length=100, blank=True)
+    modelo = models.CharField('Modelo', max_length=100, blank=True)
+    ano_fabricacao = models.IntegerField('Ano Fabricação', null=True, blank=True)
+    ano_modelo = models.IntegerField('Ano Modelo', null=True, blank=True)
+    capacidade_ton = models.DecimalField('Capacidade (ton)', max_digits=8, decimal_places=2, null=True, blank=True)
+    tara_kg = models.IntegerField('Tara (kg)', null=True, blank=True)
+    eixos = models.IntegerField('Eixos', null=True, blank=True)
+    cor = models.CharField('Cor', max_length=50, blank=True)
+
+    observacoes = models.TextField('Observações', blank=True)
+
+    ativo = models.BooleanField('Ativo', default=True)
+    data_cadastro = models.DateTimeField('Data de Cadastro', auto_now_add=True)
+    data_atualizacao = models.DateTimeField('Última Atualização', auto_now=True)
+
+    class Meta:
+        verbose_name = 'Veículo'
+        verbose_name_plural = 'Veículos'
+        ordering = ['-data_cadastro']
+        indexes = [models.Index(fields=['empresa', 'ativo'])]
+
+    def __str__(self):
+        plate = self.get_current_plate() or ''
+        return f"{self.marca} {self.modelo} {plate}".strip()
+
+    def get_current_plate(self):
+        p = self.plates.filter(atual=True).first()
+        return p.placa if p else None
+
+
+class VehiclePlate(models.Model):
+    vehicle = models.ForeignKey(Vehicle, on_delete=models.CASCADE, related_name='plates')
+    placa = models.CharField('Placa', max_length=10)
+    vigencia_inicio = models.DateField('Vigência Início')
+    vigencia_fim = models.DateField('Vigência Fim', null=True, blank=True)
+    atual = models.BooleanField('Placa Atual', default=False)
+
+    class Meta:
+        verbose_name = 'Placa do Veículo'
+        verbose_name_plural = 'Placas do Veículo'
+        ordering = ['-vigencia_inicio']
+
+    def save(self, *args, **kwargs):
+        # Se esta placa marcada como atual, desmarca as outras
+        if self.atual:
+            VehiclePlate.objects.filter(vehicle=self.vehicle, atual=True).exclude(pk=self.pk).update(atual=False)
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.placa} ({self.vehicle})"
+
+
+class VehicleAssignment(models.Model):
+    """Registra quem dirigiu o veículo durante um intervalo de tempo."""
+    vehicle = models.ForeignKey(Vehicle, on_delete=models.CASCADE, related_name='assignments')
+    motorista = models.ForeignKey('cadastros.Funcionario', on_delete=models.SET_NULL, null=True, blank=True, related_name='veiculos_atribuidos')
+    placa = models.CharField('Placa no momento', max_length=10, blank=True)
+    data_inicio = models.DateTimeField('Início')
+    data_fim = models.DateTimeField('Fim', null=True, blank=True)
+    motivo = models.CharField('Motivo', max_length=200, blank=True)
+
+    class Meta:
+        verbose_name = 'Atribuição de Veículo'
+        verbose_name_plural = 'Atribuições de Veículos'
+        ordering = ['-data_inicio']
+
+    def clean(self):
+        # Simples validação: se motorista tem CNH registrada, garante existência
+        if self.motorista:
+            if not getattr(self.motorista, 'cnh', None):
+                raise ValidationError('Motorista não possui CNH registrada')
+            # Se existir data de validade de CNH, checar se está válida (campo opcional no model Funcionario)
+            validade = getattr(self.motorista, 'cnh_validade', None)
+            if validade and self.data_inicio and validity_is_past(validade, self.data_inicio):
+                raise ValidationError('Motorista possui CNH vencida na data de início')
+
+    def save(self, *args, **kwargs):
+        # Copia placa atual como snapshot se não informado
+        if not self.placa:
+            current = self.vehicle.get_current_plate()
+            if current:
+                self.placa = current
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.vehicle} atribuído a {self.motorista or 'Terceiro'} em {self.data_inicio}"
+
+
+class VehicleDocument(models.Model):
+    vehicle = models.ForeignKey(Vehicle, on_delete=models.CASCADE, related_name='documents')
+    tipo = models.CharField('Tipo', max_length=50)  # CRLV, Seguro, Vistoria
+    numero = models.CharField('Número', max_length=100, blank=True)
+    data_emissao = models.DateField('Emissão', null=True, blank=True)
+    data_validade = models.DateField('Validade', null=True, blank=True)
+    arquivo = models.FileField('Arquivo', upload_to='vehicle_docs/', null=True, blank=True)
+
+    class Meta:
+        verbose_name = 'Documento do Veículo'
+        verbose_name_plural = 'Documentos do Veículo'
+
+    def __str__(self):
+        return f"{self.get_tipo_display() if hasattr(self,'get_tipo_display') else self.tipo} - {self.vehicle}"
+
+
+# Helper: checa se validade < data_inicio
+from django.utils import timezone
+
+def validity_is_past(validade_date, compare_dt):
+    try:
+        return validade_date < compare_dt.date() if hasattr(compare_dt, 'date') else validade_date < compare_dt
+    except Exception:
+        return False
 
 
 """

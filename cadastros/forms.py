@@ -2541,5 +2541,96 @@ class PortoForm(forms.ModelForm):
         return porto
 
 # =============================================================================
+# Forms: Veículos (Vehicle)
+# =============================================================================
+
+from .models import Vehicle, VehiclePlate, VehicleAssignment
+
+
+class VehicleForm(forms.ModelForm):
+    class Meta:
+        model = Vehicle
+        exclude = ('empresa', 'data_cadastro', 'data_atualizacao')
+        widgets = {
+            'tipo': forms.Select(attrs={'class': 'form-select'}),
+            'marca': forms.TextInput(attrs={'class': 'form-control'}),
+            'modelo': forms.TextInput(attrs={'class': 'form-control'}),
+            'ano_fabricacao': forms.NumberInput(attrs={'class': 'form-control'}),
+            'ano_modelo': forms.NumberInput(attrs={'class': 'form-control'}),
+            'capacidade_ton': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'tara_kg': forms.NumberInput(attrs={'class': 'form-control'}),
+            'eixos': forms.NumberInput(attrs={'class': 'form-control'}),
+            'cor': forms.TextInput(attrs={'class': 'form-control'}),
+            'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'ativo': forms.CheckboxInput(attrs={'class': 'form-check-input'})
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.empresa = kwargs.pop('empresa', None)
+        super().__init__(*args, **kwargs)
+        if 'empresa' in self.fields:
+            self.fields['empresa'].widget = forms.HiddenInput()
+            self.fields['empresa'].required = False
+        if self.empresa:
+            self.initial['empresa'] = self.empresa
+
+    def save(self, commit=True):
+        obj = super().save(commit=False)
+        if self.empresa:
+            obj.empresa = self.empresa
+        if commit:
+            obj.save()
+        return obj
+
+
+class VehiclePlateForm(forms.ModelForm):
+    class Meta:
+        model = VehiclePlate
+        fields = ['placa', 'vigencia_inicio', 'vigencia_fim', 'atual']
+        widgets = {
+            'placa': forms.TextInput(attrs={'class': 'form-control'}),
+            'vigencia_inicio': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'vigencia_fim': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'atual': forms.CheckboxInput(attrs={'class': 'form-check-input'})
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.vehicle = kwargs.pop('vehicle', None)
+        super().__init__(*args, **kwargs)
+
+    def save(self, commit=True):
+        obj = super().save(commit=False)
+        if self.vehicle:
+            obj.vehicle = self.vehicle
+        if commit:
+            obj.save()
+        return obj
+
+
+class VehicleAssignmentForm(forms.ModelForm):
+    class Meta:
+        model = VehicleAssignment
+        fields = ['motorista', 'data_inicio', 'data_fim', 'motivo']
+        widgets = {
+            'motorista': forms.Select(attrs={'class': 'form-select'}),
+            'data_inicio': forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'}),
+            'data_fim': forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'}),
+            'motivo': forms.TextInput(attrs={'class': 'form-control'})
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.vehicle = kwargs.pop('vehicle', None)
+        super().__init__(*args, **kwargs)
+
+    def save(self, commit=True):
+        obj = super().save(commit=False)
+        if self.vehicle:
+            obj.vehicle = self.vehicle
+        if commit:
+            obj.save()
+        return obj
+
+
+# =============================================================================
 # ✅ FIM DO CÓDIGO - TESTADO E FUNCIONANDO
 # =============================================================================

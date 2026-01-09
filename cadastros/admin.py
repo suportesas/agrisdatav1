@@ -10,7 +10,7 @@ from .models import (
 from .models import Area, Talhao, HistoricoTalhao, Safra, SafraPlan, SafraReal
 from .models import Vendedor, ComissaoVendedor
 
-from .models import Fornecedor, FornecedorEndereco, FornecedorContato, FornecedorDadoBancario, Transportadora, Viagem, Porto, Moeda
+from .models import Fornecedor, FornecedorEndereco, FornecedorContato, FornecedorDadoBancario, Transportadora, Viagem, Porto, Moeda, Vehicle, VehiclePlate, VehicleAssignment, VehicleDocument
 
 class EnderecoFazendaInline(admin.TabularInline):
     """Inline para endereços"""
@@ -374,6 +374,53 @@ class ViagemAdmin(admin.ModelAdmin):
     list_display = ['transportadora', 'origem', 'destino', 'data', 'valor_frete', 'status']
     list_filter = ['status', 'data', 'transportadora__empresa']
     search_fields = ['transportadora__razao_social', 'origem', 'destino']
+
+
+# ==========================
+# Admin para Veículos
+# ==========================
+class VehiclePlateInline(admin.TabularInline):
+    model = VehiclePlate
+    extra = 0
+    fields = ['placa', 'vigencia_inicio', 'vigencia_fim', 'atual']
+
+class VehicleDocumentInline(admin.TabularInline):
+    model = VehicleDocument
+    extra = 0
+    fields = ['tipo', 'numero', 'data_emissao', 'data_validade', 'arquivo']
+
+class VehicleAssignmentInline(admin.TabularInline):
+    model = VehicleAssignment
+    extra = 0
+    fields = ['motorista', 'placa', 'data_inicio', 'data_fim', 'motivo']
+
+@admin.register(Vehicle)
+class VehicleAdmin(admin.ModelAdmin):
+    list_display = ['__str__', 'empresa', 'transportadora', 'tipo', 'ativo', 'data_cadastro']
+    list_filter = ['tipo', 'ativo', 'empresa']
+    search_fields = ['marca', 'modelo', 'plates__placa']
+    inlines = [VehiclePlateInline, VehicleDocumentInline, VehicleAssignmentInline]
+    readonly_fields = ['data_cadastro', 'data_atualizacao']
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        if request.user.is_superuser:
+            return qs
+        if hasattr(request.user, 'empresa') and request.user.empresa:
+            return qs.filter(empresa=request.user.empresa)
+        return qs.none()
+
+
+@admin.register(VehiclePlate)
+class VehiclePlateAdmin(admin.ModelAdmin):
+    list_display = ['vehicle', 'placa', 'vigencia_inicio', 'vigencia_fim', 'atual']
+    search_fields = ['placa', 'vehicle__marca', 'vehicle__modelo']
+
+@admin.register(VehicleAssignment)
+class VehicleAssignmentAdmin(admin.ModelAdmin):
+    list_display = ['vehicle', 'motorista', 'placa', 'data_inicio', 'data_fim']
+    search_fields = ['vehicle__plates__placa', 'motorista__nome_completo']
+
 
 @admin.register(FornecedorEndereco)
 class FornecedorEnderecoAdmin(admin.ModelAdmin):

@@ -9,6 +9,8 @@ on:
 jobs:
   e2e:
     runs-on: ubuntu-latest
+    env:
+      DJANGO_ALLOW_ASYNC_UNSAFE: '1'
     services:
       postgres:
         image: postgres:15

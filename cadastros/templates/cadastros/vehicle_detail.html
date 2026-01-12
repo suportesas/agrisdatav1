@@ -53,17 +53,46 @@
 
         <div class="mt-3">
           <h6 class="mb-2">Atribuir Motorista</h6>
+          <p class="small text-muted">Selecione um motorista e a data de início. Por padrão, a placa atual será utilizada; desmarque para informar outra placa.</p>
           <form method="post" action="{% url 'cadastros:vehicle_assignment_create' vehicle.pk %}">
             {% csrf_token %}
-            {{ assignment_form.motorista.label_tag }}
-            {{ assignment_form.motorista }}
-            {{ assignment_form.data_inicio }}
-            {{ assignment_form.data_fim }}
+            <div class="mb-2">
+              <strong>Placa atual:</strong> <span id="currentPlate">{{ vehicle.get_current_plate|default:'—' }}</span>
+            </div>
+
+            <div class="form-check mb-2">
+              {{ assignment_form.use_current_plate }} <label class="form-check-label" for="id_use_current_plate">Usar placa atual</label>
+            </div>
+
+            <div id="overridePlateRow" class="mb-2" style="display:none">
+              {{ assignment_form.placa_override.label_tag }}
+              {{ assignment_form.placa_override }}
+              <div class="form-text small">Informe a placa caso o veículo esteja usando placa diferente no momento.</div>
+            </div>
+
+            <div class="mb-2">{{ assignment_form.motorista.label_tag }}{{ assignment_form.motorista }}</div>
+            <div class="mb-2">{{ assignment_form.data_inicio.label_tag }}{{ assignment_form.data_inicio }}<div class="form-text small">Data e hora de início da atribuição.</div></div>
+            <div class="mb-2">{{ assignment_form.data_fim.label_tag }}{{ assignment_form.data_fim }}<div class="form-text small">Data e hora de término (opcional).</div></div>
+            <div class="mb-2">{{ assignment_form.motivo.label_tag }}{{ assignment_form.motivo }}</div>
+
             <div class="mt-2">
               <button id="assignmentSaveBtn" class="btn btn-primary">Atribuir</button>
             </div>
           </form>
         </div>
+
+        <script>
+          document.addEventListener('DOMContentLoaded', function(){
+            const useCurrent = document.getElementById('id_use_current_plate');
+            const overrideRow = document.getElementById('overridePlateRow');
+            function toggleOverride(){
+              if (!useCurrent) return;
+              if (useCurrent.checked){ overrideRow.style.display = 'none'; }
+              else { overrideRow.style.display = 'block'; }
+            }
+            if (useCurrent){ useCurrent.addEventListener('change', toggleOverride); toggleOverride(); }
+          });
+        </script>
       </div>
     </div>
 

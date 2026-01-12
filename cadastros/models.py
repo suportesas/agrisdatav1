@@ -4315,14 +4315,20 @@ class VehicleAssignment(models.Model):
         ordering = ['-data_inicio']
 
     def clean(self):
-        # Simples validação: se motorista tem CNH registrada, garante existência
+        # Simples validação: motorista deve ter CNH válida
         if self.motorista:
             if not getattr(self.motorista, 'cnh', None):
-                raise ValidationError('Motorista não possui CNH registrada')
-            # Se existir data de validade de CNH, checar se está válida (campo opcional no model Funcionario)
+                raise ValidationError({'motorista': 'Motorista não possui CNH registrada'})
             validade = getattr(self.motorista, 'cnh_validade', None)
             if validade and self.data_inicio and validity_is_past(validade, self.data_inicio):
-                raise ValidationError('Motorista possui CNH vencida na data de início')
+                raise ValidationError({'motorista': 'Motorista possui CNH vencida na data de início'})
+        # Validação básica de datas
+        if self.data_inicio and self.data_fim and self.data_fim <= self.data_inicio:
+            raise ValidationError({'data_fim': 'Data de término deve ser posterior à data de início'})
+        
+        # Copia placa atual como snapshot se não informado (save() também cuida disso)
+        if not self.placa and self.vehicle:
+            self.placa = self.vehicle.get_current_plate() or ''
 
     def save(self, *args, **kwargs):
         # Copia placa atual como snapshot se não informado

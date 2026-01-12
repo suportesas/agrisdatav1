@@ -2608,6 +2608,9 @@ class VehiclePlateForm(forms.ModelForm):
 
 
 class VehicleAssignmentForm(forms.ModelForm):
+    use_current_plate = forms.BooleanField(required=False, initial=True, label='Usar placa atual')
+    placa_override = forms.CharField(required=False, label='Placa (se não usar placa atual)', widget=forms.TextInput(attrs={'class':'form-control', 'placeholder':'Ex: ABC-1234'}))
+
     class Meta:
         model = VehicleAssignment
         fields = ['motorista', 'data_inicio', 'data_fim', 'motivo']
@@ -2617,15 +2620,52 @@ class VehicleAssignmentForm(forms.ModelForm):
             'data_fim': forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'}),
             'motivo': forms.TextInput(attrs={'class': 'form-control'})
         }
+        labels = {
+            'motorista': 'Motorista (deve possuir CNH válida)',
+            'data_inicio': 'Início (data/hora)',
+            'data_fim': 'Término (opcional)'
+        }
+        help_texts = {
+            'data_inicio': 'Data e hora de início da atribuição. Use o horário local.',
+            'data_fim': 'Data e hora de término (opcional). Deixe em branco se indefinido.'
+        }
 
     def __init__(self, *args, **kwargs):
         self.vehicle = kwargs.pop('vehicle', None)
         super().__init__(*args, **kwargs)
+        # Limit motorista choices to same empresa where possible
+        if self.vehicle and self.vehicle.empresa:
+            self.fields['motorista'].queryset = self.fields['motorista'].queryset.filter(empresa=self.vehicle.empresa)
+
+    def clean(self):
+        cleaned = super().clean()
+        use_current = cleaned.get('use_current_plate')
+        placa_override = cleaned.get('placa_override')
+        inicio = cleaned.get('data_inicio')
+        fim = cleaned.get('data_fim')
+
+        # Validate plate selection
+        if not use_current and not placa_override:
+            raise ValidationError('Informe a placa a ser atribuída ou selecione "Usar placa atual"')
+
+        # Validate dates
+        if inicio and fim and fim <= inicio:
+            raise ValidationError('Data de término deve ser posterior à data de início')
+
+        # Motorista CNH validation handled in model clean; keep it consistent
+        return cleaned
 
     def save(self, commit=True):
         obj = super().save(commit=False)
         if self.vehicle:
             obj.vehicle = self.vehicle
+        # Decide placa snapshot
+        use_current = self.cleaned_data.get('use_current_plate') if hasattr(self, 'cleaned_data') else True
+        placa_override = self.cleaned_data.get('placa_override') if hasattr(self, 'cleaned_data') else ''
+        if use_current:
+            obj.placa = self.vehicle.get_current_plate() if self.vehicle else obj.placa
+        else:
+            obj.placa = placa_override
         if commit:
             obj.save()
         return obj

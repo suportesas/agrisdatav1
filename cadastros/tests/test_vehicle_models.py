@@ -37,8 +37,31 @@ class VehicleModelTests(TestCase):
         )
         v = Vehicle.objects.create(empresa=self.empresa, marca='Ford', modelo='Cargo')
         a = VehicleAssignment(vehicle=v, motorista=f, data_inicio=timezone.now())
-        with self.assertRaises(ValidationError):
+        with self.assertRaises(ValidationError) as cm:
             a.full_clean()
+        self.assertIn('Motorista não possui CNH', str(cm.exception))
+
+    def test_assignment_date_validation(self):
+        validade = timezone.now().date() + timedelta(days=365)
+        f = Funcionario.objects.create(
+            empresa=self.empresa, nome_completo='Carlos', cpf='00000000414', funcao=self.funcao, salario=0, cnh='12345', cnh_validade=validade
+        )
+        v = Vehicle.objects.create(empresa=self.empresa, marca='Mercedes', modelo='Actros')
+        now = timezone.now()
+        a = VehicleAssignment(vehicle=v, motorista=f, data_inicio=now, data_fim=now - timedelta(hours=1))
+        with self.assertRaises(ValidationError) as cm:
+            a.full_clean()
+        self.assertIn('Data de término deve ser posterior', str(cm.exception))
+
+    def test_assignment_uses_current_plate_when_not_provided(self):
+        validade = timezone.now().date() + timedelta(days=365)
+        f = Funcionario.objects.create(
+            empresa=self.empresa, nome_completo='Maria', cpf='00000000272', funcao=self.funcao, salario=0, cnh='123456789', cnh_validade=validade
+        )
+        v = Vehicle.objects.create(empresa=self.empresa, marca='Scania', modelo='R')
+        VehiclePlate.objects.create(vehicle=v, placa='ZZZ-0000', vigencia_inicio=timezone.now().date(), atual=True)
+        a = VehicleAssignment.objects.create(vehicle=v, motorista=f, data_inicio=timezone.now())
+        self.assertEqual(a.placa, 'ZZZ-0000')
 
     def test_assignment_snapshots_plate_on_save(self):
         # funcionario com CNH válida

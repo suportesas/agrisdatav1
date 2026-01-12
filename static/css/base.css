@@ -107,12 +107,57 @@ body {
   margin: 0;
 }
 
+/* When expanded, make submenu responsive and scrollable to avoid long lists hiding options */
 .submenu.show {
-  max-height: 500px;
+  max-height: calc(100vh - 200px);
+  overflow-y: auto;
+  padding-bottom: 8px;
+}
+
+/* Search input sticky at top of submenu */
+.submenu .submenu-search {
+  padding: 8px 12px;
+  position: -webkit-sticky; /* Safari */
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: linear-gradient(180deg, rgba(15,23,42,0.9), rgba(15,23,42,0.85));
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+}
+
+.submenu .submenu-search input[type="search"] {
+  width: 100%;
+  font-size: 0.85rem;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(255,255,255,0.06);
+  background: rgba(255,255,255,0.02);
+  color: #e2e8f0;
+}
+
+.submenu .submenu-empty {
+  padding: 10px 16px;
+  color: #94a3b8;
+  font-size: 0.9rem;
 }
 
 .submenu-item {
   margin: 2px 8px 2px 20px;
+}
+
+/* Hide items when filtering */
+.submenu-item.hidden {
+  display: none !important;
+}
+
+/* Scrollbar styling inside submenu */
+.submenu::-webkit-scrollbar {
+  width: 8px;
+}
+
+.submenu::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.06);
+  border-radius: 8px;
 }
 
 .submenu-link {

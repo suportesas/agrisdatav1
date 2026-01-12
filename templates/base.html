@@ -122,7 +122,13 @@
             <span>Cadastros</span>
             <i class="bi bi-chevron-down expand-icon"></i>
           </div>
-          <ul class="submenu">
+          <ul class="submenu" id="submenu-cadastros">
+            <!-- Search / Filter for long menus -->
+            <li class="submenu-search">
+              <input id="submenu-cadastros-search" type="search" placeholder="Filtrar cadastros..." aria-label="Filtrar cadastros" />
+            </li>
+            <li class="submenu-empty d-none">Nenhum resultado</li>
+
             <!-- ✅ FAZENDAS - CORRIGIDO -->
             <li class="submenu-item">
               <a href="{% url 'cadastros:fazenda_list' %}" class="submenu-link">
@@ -397,8 +403,47 @@
       if (submenu && submenu.classList.contains('submenu')) {
         submenu.classList.toggle('show');
         element.classList.toggle('expanded');
+        // Focus the filter input if opening a submenu that has a search
+        if (submenu.classList.contains('show')) {
+          const search = submenu.querySelector('input[type="search"]');
+          if (search) {
+            try { search.focus(); search.select(); } catch(e){}
+          }
+        }
       }
     }
+
+    // Submenu filter helper (live filter)
+    function wireSubmenuFilters() {
+      document.querySelectorAll('.submenu').forEach(function(submenu) {
+        const input = submenu.querySelector('input[type="search"]');
+        const emptyRow = submenu.querySelector('.submenu-empty');
+        if (!input) return;
+        input.addEventListener('input', function(e) {
+          const q = (e.target.value || '').trim().toLowerCase();
+          let visible = 0;
+          submenu.querySelectorAll('.submenu-item').forEach(function(li) {
+            const text = li.textContent.trim().toLowerCase();
+            if (!q || text.indexOf(q) !== -1) {
+              li.classList.remove('hidden');
+              visible += 1;
+            } else {
+              li.classList.add('hidden');
+            }
+          });
+          if (emptyRow) {
+            if (visible === 0) emptyRow.classList.remove('d-none'); else emptyRow.classList.add('d-none');
+          }
+        });
+        // Clear on Escape
+        input.addEventListener('keydown', function(e) {
+          if (e.key === 'Escape') { input.value=''; input.dispatchEvent(new Event('input')); input.blur(); }
+        });
+      });
+    }
+
+    // Initialize submenu filters on DOM ready
+    document.addEventListener('DOMContentLoaded', function(){ wireSubmenuFilters(); });
   </script>
 
   <script src="{% static 'js/cadastros_cliente.js' %}"></script>

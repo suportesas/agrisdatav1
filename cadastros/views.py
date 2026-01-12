@@ -155,6 +155,47 @@ def vehicle_plate_create(request, vehicle_pk):
 
 
 @login_required
+def vehicle_plate_update(request, vehicle_pk, plate_pk):
+    vehicle = get_object_or_404(Vehicle, pk=vehicle_pk, empresa=request.user.empresa)
+    plate = get_object_or_404(VehiclePlate, pk=plate_pk, vehicle=vehicle)
+
+    if request.method == 'POST':
+        form = VehiclePlateForm(request.POST, instance=plate, vehicle=vehicle)
+        if form.is_valid():
+            form.save()
+            messages.success(request, '✅ Placa atualizada com sucesso!')
+            return redirect('cadastros:vehicle_detail', pk=vehicle.pk)
+        else:
+            messages.error(request, '❌ Corrija os erros no formulário de placa.')
+    else:
+        form = VehiclePlateForm(instance=plate, vehicle=vehicle)
+
+    return render(request, 'cadastros/vehicle_plate_form.html', {
+        'form': form,
+        'vehicle': vehicle,
+        'plate': plate,
+        'action': 'Editar Placa'
+    })
+
+
+@login_required
+def vehicle_plate_delete(request, vehicle_pk, plate_pk):
+    vehicle = get_object_or_404(Vehicle, pk=vehicle_pk, empresa=request.user.empresa)
+    plate = get_object_or_404(VehiclePlate, pk=plate_pk, vehicle=vehicle)
+
+    if request.method == 'POST':
+        placa = plate.placa
+        plate.delete()
+        messages.success(request, f'🗑️ Placa "{placa}" excluída com sucesso!')
+        return redirect('cadastros:vehicle_detail', pk=vehicle.pk)
+
+    return render(request, 'cadastros/vehicle_plate_confirm_delete.html', {
+        'vehicle': vehicle,
+        'plate': plate
+    })
+
+
+@login_required
 def vehicle_assignment_create(request, vehicle_pk):
     vehicle = get_object_or_404(Vehicle, pk=vehicle_pk, empresa=request.user.empresa)
     if request.method == 'POST':

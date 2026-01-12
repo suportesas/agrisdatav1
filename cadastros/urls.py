@@ -138,6 +138,8 @@ urlpatterns = [
     path('veiculos/<int:pk>/editar/', views.vehicle_update, name='vehicle_update'),
     path('veiculos/<int:pk>/excluir/', views.vehicle_delete, name='vehicle_delete'),
     path('veiculos/<int:vehicle_pk>/placas/nova/', views.vehicle_plate_create, name='vehicle_plate_create'),
+    path('veiculos/<int:vehicle_pk>/placas/<int:plate_pk>/editar/', views.vehicle_plate_update, name='vehicle_plate_update'),
+    path('veiculos/<int:vehicle_pk>/placas/<int:plate_pk>/excluir/', views.vehicle_plate_delete, name='vehicle_plate_delete'),
     path('veiculos/<int:vehicle_pk>/atribuir/', views.vehicle_assignment_create, name='vehicle_assignment_create'),
 
     # Fornecedor: endereços

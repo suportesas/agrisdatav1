@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% block title %}Excluir Placa | Veículo{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <h3>Excluir Placa</h3>
+  <p>Tem certeza que deseja excluir a placa <strong>{{ plate.placa }}</strong> do veículo <strong>{{ vehicle }}</strong>?</p>
+  <form method="post">
+    {% csrf_token %}
+    <button class="btn btn-danger">Excluir</button>
+    <a href="{% url 'cadastros:vehicle_detail' vehicle.pk %}" class="btn btn-secondary">Cancelar</a>
+  </form>
+</div>
+{% endblock %}

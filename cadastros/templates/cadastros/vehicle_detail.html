@@ -20,7 +20,16 @@
         <h5>Placas</h5>
         <ul class="list-group mt-2">
           {% for p in plates %}
-            <li class="list-group-item">{{ p.placa }} {% if p.atual %}<span class="badge bg-success">Atual</span>{% endif %}<div class="small text-muted">{{ p.vigencia_inicio }} {% if p.vigencia_fim %}- {{ p.vigencia_fim }}{% endif %}</div></li>
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              <div>
+                <div>{{ p.placa }} {% if p.atual %}<span class="badge bg-success">Atual</span>{% endif %}</div>
+                <div class="small text-muted">Vigência: {{ p.vigencia_inicio }} {% if p.vigencia_fim %}- {{ p.vigencia_fim }}{% endif %}</div>
+              </div>
+              <div class="d-flex gap-2">
+                <a href="{% url 'cadastros:vehicle_plate_update' vehicle.pk p.pk %}" class="btn btn-sm btn-outline-secondary">Editar</a>
+                <a href="{% url 'cadastros:vehicle_plate_delete' vehicle.pk p.pk %}" class="btn btn-sm btn-outline-danger">Excluir</a>
+              </div>
+            </li>
           {% empty %}
             <li class="list-group-item text-muted">Nenhuma placa cadastrada.</li>
           {% endfor %}

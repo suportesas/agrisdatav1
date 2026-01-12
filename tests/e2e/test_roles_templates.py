@@ -42,7 +42,7 @@ def test_save_and_apply_template_via_ui(page, live_server, e2e_templates_data):
         first_add.check(timeout=5000)
     except Exception:
         # fallback: toggle via JS if Playwright's check fails due to visibility issues
-        page.evaluate("() => { const el = document.querySelector('table tbody tr input[name=\'add\']'); if(el){ el.checked = true; el.dispatchEvent(new Event('change')); } }")
+        page.eval_on_selector('table tbody tr input[name="add"]', 'el => { el.checked = true; el.dispatchEvent(new Event("change")); }')
 
     # Prepare dialog handler before clicking the Save button
     page.on('dialog', lambda dialog: dialog.accept('E2E Template'))

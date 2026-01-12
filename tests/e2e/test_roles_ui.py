@@ -34,7 +34,12 @@ def test_role_selection_highlight_and_hide(page, live_server, e2e_roles_data, dj
     visible_count = page.evaluate("() => Array.from(document.querySelectorAll('.role-card')).filter(c=>c.offsetParent!==null).length")
     assert visible_count == 1, 'Expected only the selected role to be visible when hide toggle is active'
 
-    # Turn off hide and ensure both visible
+    # Turn off hide and ensure both visible (poll a few times for animation/dom updates)
     page.click('#toggle-hide')
-    visible_count2 = page.evaluate("() => Array.from(document.querySelectorAll('.role-card')).filter(c=>c.offsetParent!==null).length")
-    assert visible_count2 >= 2
+    visible_count2 = 0
+    for _ in range(20):
+        visible_count2 = page.evaluate("() => Array.from(document.querySelectorAll('.role-card')).filter(c=>c.offsetParent!==null).length")
+        if visible_count2 >= 2:
+            break
+        page.wait_for_timeout(250)
+    assert visible_count2 >= 2, f'Expected at least 2 visible roles, got {visible_count2}'

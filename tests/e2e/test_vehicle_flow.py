@@ -25,7 +25,7 @@ def e2e_vehicle_data(django_db_blocker):
 
         # create a driver with CNH
         from cadastros.models import FuncaoFuncionario
-        funcao = FuncaoFuncionario.objects.create(nome='Motorista E2E')
+        funcao = FuncaoFuncionario.objects.create(empresa=empresa, nome='Motorista E2E')
         driver = Funcionario.objects.create(
             empresa=empresa, nome_completo='Motorista E2E', cpf='00000000353', funcao=funcao, salario=0, cnh='ABC123', cnh_validade=timezone.now().date() + timedelta(days=365)
         )

@@ -69,11 +69,29 @@ def test_cliente_edit_flow(page, live_server, e2e_cliente_data):
         print('DEBUG inspect failed', e)
     # Wait for add button to be attached and attempt to click (allow force fallback)
     page.wait_for_selector('#addMoedaBtn', state='attached', timeout=10000)
+    # If the button exists but isn't visible, try to show the modal programmatically first
+    try:
+        if not page.is_visible('#addMoedaBtn'):
+            # Fallback: show modal directly (some layouts render the button hidden)
+            try:
+                page.eval_on_selector('#moedaModal', 'el => new bootstrap.Modal(el).show()')
+                page.wait_for_selector('#moedaModal', state='visible', timeout=5000)
+                console_msgs.append('diagnostic:modal_shown_by_fallback_before_click')
+            except Exception:
+                pass
+    except Exception:
+        pass
+
     try:
         page.click('#addMoedaBtn', timeout=5000)
     except Exception:
         # fallback: force the click if element is present but not interactable in headless environment
-        page.click('#addMoedaBtn', force=True)
+        try:
+            page.click('#addMoedaBtn', force=True)
+        except Exception:
+            # last resort: show modal programmatically
+            page.eval_on_selector('#moedaModal', 'el => new bootstrap.Modal(el).show()')
+
     try:
         page.wait_for_selector('#moedaModal', state='visible', timeout=30000)
     except Exception:

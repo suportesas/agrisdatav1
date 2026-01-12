@@ -187,11 +187,17 @@
               <a href="#" class="submenu-link disabled" title="Seu usuário não está vinculado a uma empresa"><span class="text-muted">👥 Clientes</span></a>
             </li>
             {% endif %}
+            {% if request.user.is_authenticated and request.user.empresa %}
             <li class="submenu-item">
-              <a href="#" class="submenu-link">
-                <span>🚜 Maquinário</span>
+              <a href="{% url 'cadastros:vehicle_list' %}" class="submenu-link">
+                <span>🚚 Veículos</span>
               </a>
             </li>
+            {% else %}
+            <li class="submenu-item">
+              <a href="#" class="submenu-link disabled" title="Seu usuário não está vinculado a uma empresa"><span class="text-muted">🚚 Veículos</span></a>
+            </li>
+            {% endif %}
 
             <li class="submenu-item">
               <a href="{% url 'cadastros:porto_list' %}" class="submenu-link">

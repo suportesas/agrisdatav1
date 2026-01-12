@@ -135,6 +135,32 @@ body {
   color: #e2e8f0;
 }
 
+/* Clear button and reset link */
+.submenu .submenu-search .btn-outline-light {
+  padding: 4px 8px;
+  font-size: 0.85rem;
+  line-height: 1;
+  color: #111827;
+  background: rgba(255,255,255,0.9);
+  border: none;
+  border-radius: 6px;
+}
+
+.submenu .submenu-search .btn-outline-light:hover {
+  filter: brightness(0.95);
+}
+
+.submenu .submenu-search .btn-link {
+  color: #cbd5e1;
+  text-decoration: underline;
+  font-size: 0.85rem;
+}
+
+.submenu .submenu-search .btn-link:hover {
+  color: #fff;
+  text-decoration: none;
+}
+
 .submenu .submenu-empty {
   padding: 10px 16px;
   color: #94a3b8;

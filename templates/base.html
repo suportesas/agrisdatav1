@@ -125,7 +125,11 @@
           <ul class="submenu" id="submenu-cadastros">
             <!-- Search / Filter for long menus -->
             <li class="submenu-search">
-              <input id="submenu-cadastros-search" type="search" placeholder="Filtrar cadastros..." aria-label="Filtrar cadastros" />
+              <div class="d-flex align-items-center gap-2">
+                <input id="submenu-cadastros-search" type="search" placeholder="Filtrar cadastros..." aria-label="Filtrar cadastros" />
+                <button type="button" id="submenu-cadastros-clear" class="btn btn-sm btn-outline-light" aria-label="Limpar busca" title="Limpar busca">✕</button>
+                <button type="button" id="submenu-cadastros-reset" class="btn btn-sm btn-link text-white p-0" aria-label="Ver tudo" title="Mostrar todos">Ver tudo</button>
+              </div>
             </li>
             <li class="submenu-empty d-none">Nenhum resultado</li>
 
@@ -435,6 +439,29 @@
             if (visible === 0) emptyRow.classList.remove('d-none'); else emptyRow.classList.add('d-none');
           }
         });
+
+        // Clear button
+        const clearBtn = submenu.querySelector('#submenu-cadastros-clear');
+        if (clearBtn) {
+          clearBtn.addEventListener('click', function(){ input.value=''; input.dispatchEvent(new Event('input')); input.focus(); });
+        }
+
+        // Ver tudo / Reset button
+        const resetBtn = submenu.querySelector('#submenu-cadastros-reset');
+        if (resetBtn) {
+          resetBtn.addEventListener('click', function(){
+            input.value = '';
+            input.dispatchEvent(new Event('input'));
+            // ensure submenu visible and scroll to top
+            if (!submenu.classList.contains('show')) {
+              submenu.classList.add('show');
+              if (submenu.previousElementSibling) submenu.previousElementSibling.classList.add('expanded');
+            }
+            submenu.scrollTop = 0;
+            input.focus();
+          });
+        }
+
         // Clear on Escape
         input.addEventListener('keydown', function(e) {
           if (e.key === 'Escape') { input.value=''; input.dispatchEvent(new Event('input')); input.blur(); }

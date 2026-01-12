@@ -26,7 +26,7 @@
                 <div class="small text-muted">Vigência: {{ p.vigencia_inicio }} {% if p.vigencia_fim %}- {{ p.vigencia_fim }}{% endif %}</div>
               </div>
               <div class="d-flex gap-2">
-                <a href="{% url 'cadastros:vehicle_plate_update' vehicle.pk p.pk %}" class="btn btn-sm btn-outline-secondary">Editar</a>
+                <button type="button" class="btn btn-sm btn-outline-secondary btn-plate-edit" data-plate-id="{{ p.pk }}" data-placa="{{ p.placa }}" data-vigencia-inicio="{{ p.vigencia_inicio }}" data-vigencia-fim="{{ p.vigencia_fim }}" data-atual="{{ p.atual|yesno:'1,0' }}">Editar</button>
                 <a href="{% url 'cadastros:vehicle_plate_delete' vehicle.pk p.pk %}" class="btn btn-sm btn-outline-danger">Excluir</a>
               </div>
             </li>
@@ -118,5 +118,122 @@
       </div>
     </div>
   </div>
+
+  <!-- Modal: Edit Plate -->
+  <div class="modal fade" id="plateEditModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <form id="plateEditForm">
+          <div class="modal-header">
+            <h5 class="modal-title">Editar Placa</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+          </div>
+          <div class="modal-body">
+            {% csrf_token %}
+            <input type="hidden" name="plate_pk" id="modal_plate_pk" />
+            <div class="mb-2">
+              <label for="modal_placa">Placa</label>
+              <input type="text" id="modal_placa" name="placa" class="form-control" />
+            </div>
+            <div class="mb-2">
+              <label for="modal_vigencia_inicio">Data Início da Vigência</label>
+              <input type="date" id="modal_vigencia_inicio" name="vigencia_inicio" class="form-control" />
+            </div>
+            <div class="mb-2">
+              <label for="modal_vigencia_fim">Data Fim da Vigência (opcional)</label>
+              <input type="date" id="modal_vigencia_fim" name="vigencia_fim" class="form-control" />
+            </div>
+            <div class="form-check">
+              <input type="checkbox" id="modal_atual" name="atual" class="form-check-input" /> <label class="form-check-label" for="modal_atual">Placa Atual</label>
+            </div>
+            <div id="modal_plate_error" class="text-danger small mt-2 d-none"></div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+            <button type="submit" class="btn btn-primary">Salvar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function(){
+      const plateModal = new bootstrap.Modal(document.getElementById('plateEditModal'));
+      const form = document.getElementById('plateEditForm');
+      const modalPlatePk = document.getElementById('modal_plate_pk');
+      const modalPlaca = document.getElementById('modal_placa');
+      const modalVi = document.getElementById('modal_vigencia_inicio');
+      const modalVf = document.getElementById('modal_vigencia_fim');
+      const modalAtual = document.getElementById('modal_atual');
+      const modalError = document.getElementById('modal_plate_error');
+
+      document.querySelectorAll('.btn-plate-edit').forEach(function(btn){
+        btn.addEventListener('click', function(){
+          modalError.classList.add('d-none');
+          const plateId = btn.dataset.plateId;
+          modalPlatePk.value = plateId;
+          modalPlaca.value = btn.dataset.placa || '';
+          modalVi.value = btn.dataset.vigenciaInicio || '';
+          modalVf.value = btn.dataset.vigenciaFim || '';
+          modalAtual.checked = btn.dataset.atual === '1';
+          plateModal.show();
+        });
+      });
+
+      form.addEventListener('submit', function(e){
+        e.preventDefault();
+        modalError.classList.add('d-none');
+        const platePk = modalPlatePk.value;
+        const url = new URL(window.location.origin + `{% url 'cadastros:vehicle_plate_update' vehicle.pk 0 %}`);
+        // replace last segment with platePk
+        url.pathname = url.pathname.replace('/0/', `/${platePk}/`);
+        const data = new FormData();
+        data.append('placa', modalPlaca.value);
+        data.append('vigencia_inicio', modalVi.value);
+        data.append('vigencia_fim', modalVf.value);
+        data.append('atual', modalAtual.checked ? 'on' : '');
+        // CSRF
+        const csrftoken = document.querySelector('input[name="csrfmiddlewaretoken"]') ? document.querySelector('input[name="csrfmiddlewaretoken"]').value : null;
+        fetch(url.toString(), {
+          method: 'POST',
+          headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRFToken': csrftoken
+          },
+          body: data
+        }).then(r => r.json())
+        .then(json => {
+          if (json.success) {
+            // Update the plate row in DOM
+            const row = document.querySelector(`[data-plate-id="${json.plate_pk}"]`);
+            if (row) {
+              // find parent item and update texts
+              const parent = row.closest('.list-group-item');
+              if (parent) {
+                parent.querySelector('div > div').innerHTML = `${json.placa} ${json.atual ? '<span class="badge bg-success">Atual</span>' : ''}`;
+                parent.querySelector('.small.text-muted').textContent = `Vigência: ${json.vigencia_inicio || ''}${json.vigencia_fim ? ' - ' + json.vigencia_fim : ''}`;
+                // also update the edit button data attributes
+                const editBtn = parent.querySelector('.btn-plate-edit');
+                if (editBtn) {
+                  editBtn.dataset.placa = json.placa || '';
+                  editBtn.dataset.vigenciaInicio = json.vigencia_inicio || '';
+                  editBtn.dataset.vigenciaFim = json.vigencia_fim || '';
+                  editBtn.dataset.atual = json.atual ? '1' : '0';
+                }
+              }
+            }
+            plateModal.hide();
+          } else {
+            modalError.textContent = json.errors ? JSON.stringify(json.errors) : 'Erro ao salvar';
+            modalError.classList.remove('d-none');
+          }
+        }).catch(err => {
+          modalError.textContent = 'Erro de comunicação';
+          modalError.classList.remove('d-none');
+        });
+      });
+    });
+  </script>
 </div>
 {% endblock %}

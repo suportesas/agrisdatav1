@@ -50,19 +50,20 @@ def test_edit_and_delete_plate(page, live_server, e2e_plate_data):
     # Go to vehicle detail
     page.goto(f"{live_server.url}/cadastros/veiculos/{vehicle.pk}/")
 
-    # Click Edit on first plate
-    page.wait_for_selector('a:has-text("Editar")')
-    page.click('a:has-text("Editar")')
+    # Click Edit on first plate (opens modal)
+    page.wait_for_selector('button.btn-plate-edit')
+    page.click('button.btn-plate-edit')
 
-    # Change plate
-    page.wait_for_selector('input[name="placa"]', timeout=3000)
-    page.fill('input[name="placa"]', 'NEW-2222')
-    page.click('button:has-text("Salvar")')
+    # Change plate in modal
+    page.wait_for_selector('#plateEditModal input#modal_placa', timeout=3000)
+    page.fill('#modal_placa', 'NEW-2222')
+    page.click('#plateEditModal button:has-text("Salvar")')
 
+    # Wait for DOM update
     page.wait_for_selector('text=NEW-2222')
     assert page.locator('text=NEW-2222').count() >= 1
 
-    # Now delete the plate
+    # Now delete the plate (confirm page)
     page.click('a:has-text("Excluir")')
     page.wait_for_selector('button:has-text("Excluir")')
     page.click('button:has-text("Excluir")')

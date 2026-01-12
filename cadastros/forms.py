@@ -2593,10 +2593,28 @@ class VehiclePlateForm(forms.ModelForm):
             'vigencia_fim': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
             'atual': forms.CheckboxInput(attrs={'class': 'form-check-input'})
         }
+        labels = {
+            'placa': 'Placa',
+            'vigencia_inicio': 'Data Início da Vigência',
+            'vigencia_fim': 'Data Fim da Vigência (opcional)',
+            'atual': 'Placa Atual'
+        }
+        help_texts = {
+            'vigencia_inicio': 'Data em que esta placa passou a vigorar neste veículo.',
+            'vigencia_fim': 'Data em que esta placa deixou de ser utilizada (opcional).'
+        }
 
     def __init__(self, *args, **kwargs):
         self.vehicle = kwargs.pop('vehicle', None)
         super().__init__(*args, **kwargs)
+
+    def clean(self):
+        cleaned = super().clean()
+        vi = cleaned.get('vigencia_inicio')
+        vf = cleaned.get('vigencia_fim')
+        if vi and vf and vf <= vi:
+            raise ValidationError({'vigencia_fim': 'Data fim da vigência deve ser posterior à data início'})
+        return cleaned
 
     def save(self, commit=True):
         obj = super().save(commit=False)

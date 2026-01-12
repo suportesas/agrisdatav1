@@ -162,10 +162,22 @@ def vehicle_plate_update(request, vehicle_pk, plate_pk):
     if request.method == 'POST':
         form = VehiclePlateForm(request.POST, instance=plate, vehicle=vehicle)
         if form.is_valid():
-            form.save()
+            plate = form.save()
+            # If AJAX, return JSON with updated values
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': True,
+                    'placa': plate.placa,
+                    'vigencia_inicio': plate.vigencia_inicio.isoformat() if plate.vigencia_inicio else None,
+                    'vigencia_fim': plate.vigencia_fim.isoformat() if plate.vigencia_fim else None,
+                    'atual': plate.atual,
+                    'plate_pk': plate.pk,
+                })
             messages.success(request, '✅ Placa atualizada com sucesso!')
             return redirect('cadastros:vehicle_detail', pk=vehicle.pk)
         else:
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'errors': form.errors}, status=400)
             messages.error(request, '❌ Corrija os erros no formulário de placa.')
     else:
         form = VehiclePlateForm(instance=plate, vehicle=vehicle)

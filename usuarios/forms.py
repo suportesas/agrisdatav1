@@ -138,7 +138,8 @@ class UsuarioCreateForm(UserCreationForm):
                 'class': 'form-select'
             }),
             'roles': forms.SelectMultiple(attrs={
-                'class': 'form-select'
+                'class': 'form-select',
+                'size': '10'
             }),
             'is_active': forms.CheckboxInput(attrs={
                 'class': 'form-check-input'
@@ -166,6 +167,20 @@ class UsuarioCreateForm(UserCreationForm):
         if self.user and not self.user.is_superuser:
             self.fields['is_staff'].widget = forms.HiddenInput()
             self.fields['is_active'].initial = True
+
+        # Tornar comissão opcional para quem não é vendedor
+        tipo_val = None
+        if self.data and self.data.get('tipo'):
+            tipo_val = self.data.get('tipo')
+        elif self.initial and self.initial.get('tipo'):
+            tipo_val = self.initial.get('tipo')
+        elif getattr(getattr(self, 'instance', None), 'tipo', None):
+            tipo_val = self.instance.tipo
+
+        if tipo_val != 'VENDEDOR' and 'comissao_vendas' in self.fields:
+            # Não exigir comissão se não for vendedor
+            self.fields['comissao_vendas'].required = False
+            self.fields['comissao_vendas'].widget.attrs.update({'placeholder': 'Apenas para vendedores (opcional)'})
 
         # Configura queryset de roles
         from empresas.models import Role
@@ -301,7 +316,8 @@ class UsuarioUpdateForm(UserChangeForm):
                 'max': '100'
             }),
             'roles': forms.SelectMultiple(attrs={
-                'class': 'form-select'
+                'class': 'form-select',
+                'size': '10'
             }),
             'is_active': forms.CheckboxInput(attrs={
                 'class': 'form-check-input'
@@ -319,13 +335,26 @@ class UsuarioUpdateForm(UserChangeForm):
         if self.user and not self.user.is_superuser:
             self.fields['is_staff'].widget = forms.HiddenInput()
 
-            # Configura queryset de roles
-            from empresas.models import Role
-            if 'roles' in self.fields:
-                if self.user and not self.user.is_superuser and self.user.empresa:
-                    self.fields['roles'].queryset = Role.objects.filter(empresa=self.user.empresa)
-                else:
-                    self.fields['roles'].queryset = Role.objects.all()
+        # Tornar comissão opcional para quem não é vendedor
+        tipo_val = None
+        if self.data and self.data.get('tipo'):
+            tipo_val = self.data.get('tipo')
+        elif self.initial and self.initial.get('tipo'):
+            tipo_val = self.initial.get('tipo')
+        elif getattr(getattr(self, 'instance', None), 'tipo', None):
+            tipo_val = self.instance.tipo
+
+        if tipo_val != 'VENDEDOR' and 'comissao_vendas' in self.fields:
+            self.fields['comissao_vendas'].required = False
+            self.fields['comissao_vendas'].widget.attrs.update({'placeholder': 'Apenas para vendedores (opcional)'})
+
+        # Configura queryset de roles
+        from empresas.models import Role
+        if 'roles' in self.fields:
+            if self.user and not self.user.is_superuser and self.user.empresa:
+                self.fields['roles'].queryset = Role.objects.filter(empresa=self.user.empresa)
+            else:
+                self.fields['roles'].queryset = Role.objects.all()
     
     def clean_email(self):
         email = self.cleaned_data.get('email')

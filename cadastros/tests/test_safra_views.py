@@ -25,7 +25,7 @@ class SafraViewsTest(TestCase):
         resp = self.client.get(reverse('cadastros:safra_list'))
         self.assertEqual(resp.status_code, 200)
         # Ensure the correct template was used
-        self.assertTemplateUsed(resp, 'cadastros/safra_list.html')
+        self.assertTemplateUsed(resp, 'cadastros/safra/safra_list.html')
 
 
     def test_safra_form_contains_choicesjs(self):

@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% block title %}Funções | ERP Agrícola{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Funções</h2>
+    <a href="#" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modalNovaFuncao">Nova Função</a>
+  </div>
+
+  <table class="table table-striped">
+    <thead>
+      <tr><th>Nome</th><th>Ativa</th><th>Ações</th></tr>
+    </thead>
+    <tbody>
+      {% for f in funcoes %}
+      <tr>
+        <td>{{ f.nome }}</td>
+        <td>{{ f.ativa|yesno:"Sim,Não" }}</td>
+        <td>
+          <a href="{% url 'cadastros:funcao_update' f.pk %}" class="btn btn-sm btn-outline-secondary">Editar</a>
+          <a href="{% url 'cadastros:funcao_delete' f.pk %}" class="btn btn-sm btn-outline-danger">Excluir</a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="3">Nenhuma função cadastrada.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <!-- Modal for new function re-uses existing AJAX modal in funcionario form; include a simple fallback form here -->
+  <div class="modal fade" id="modalNovaFuncao" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <form id="formNovaFuncao" method="post" action="{% url 'cadastros:funcao_create_ajax' %}">
+          <div class="modal-header"><h5 class="modal-title">Nova Função</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+          <div class="modal-body">
+            {% csrf_token %}
+            {{ form_funcao.nome.label_tag }}
+            {{ form_funcao.nome }}
+            {{ form_funcao.descricao.label_tag }}
+            {{ form_funcao.descricao }}
+            {{ form_funcao.salario_base.label_tag }}
+            {{ form_funcao.salario_base }}
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+            <button type="submit" class="btn btn-primary">Salvar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

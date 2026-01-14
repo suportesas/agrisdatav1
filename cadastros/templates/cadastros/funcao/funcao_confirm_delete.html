@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block title %}Excluir Função | ERP Agrícola{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <h2>Excluir Função</h2>
+  <p>Tem certeza que deseja excluir a função <strong>{{ funcao.nome }}</strong>?</p>
+  {% if funcao.funcionarios.exists %}
+    <div class="alert alert-danger">Esta função está atribuída aos seguintes funcionários (exemplo):
+      <ul>
+        {% for f in funcao.funcionarios.all|slice:":10" %}
+          <li>{{ f.nome_completo }} ({{ f.pk }})</li>
+        {% endfor %}
+      </ul>
+      Para excluir, remova ou altere a função dos funcionários listados primeiro.</div>
+  {% endif %}
+
+  <form method="post">
+    {% csrf_token %}
+    <button class="btn btn-danger">Excluir</button>
+    <a href="{% url 'cadastros:funcao_list' %}" class="btn btn-link">Cancelar</a>
+  </form>
+</div>
+{% endblock %}

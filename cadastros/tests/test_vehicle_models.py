@@ -5,7 +5,7 @@ from datetime import timedelta
 
 from empresas.models import Plano, Empresa
 from cadastros.models import (
-    FuncaoFuncionario, Funcionario, Vehicle, VehiclePlate, VehicleAssignment
+    FuncaoFuncionario, Funcionario, Vehicle, VehiclePlate
 )
 
 
@@ -15,7 +15,7 @@ class VehicleModelTests(TestCase):
             codigo='PEQ', nome='Plano Teste', valor_mensal=0.0, valor_anual=0.0
         )
         self.empresa = Empresa.objects.create(nome='Empresa Teste', plano=self.plano)
-        self.funcao = FuncaoFuncionario.objects.create(nome='Motorista')
+        self.funcao = FuncaoFuncionario.objects.create(empresa=self.empresa, nome='Motorista')
 
     def test_plate_current_and_switch(self):
         v = Vehicle.objects.create(empresa=self.empresa, marca='VW', modelo='Delivery')
@@ -30,46 +30,33 @@ class VehicleModelTests(TestCase):
         self.assertTrue(p2.atual)
         self.assertEqual(v.get_current_plate(), 'XYZ-9999')
 
-    def test_assignment_requires_cnh(self):
-        # funcionario sem CNH
-        f = Funcionario.objects.create(
-            empresa=self.empresa, nome_completo='Joao', cpf='00000000191', funcao=self.funcao, salario=0
-        )
-        v = Vehicle.objects.create(empresa=self.empresa, marca='Ford', modelo='Cargo')
-        a = VehicleAssignment(vehicle=v, motorista=f, data_inicio=timezone.now())
-        with self.assertRaises(ValidationError) as cm:
-            a.full_clean()
-        self.assertIn('Motorista não possui CNH', str(cm.exception))
 
-    def test_assignment_date_validation(self):
-        validade = timezone.now().date() + timedelta(days=365)
-        f = Funcionario.objects.create(
-            empresa=self.empresa, nome_completo='Carlos', cpf='00000000414', funcao=self.funcao, salario=0, cnh='12345', cnh_validade=validade
-        )
-        v = Vehicle.objects.create(empresa=self.empresa, marca='Mercedes', modelo='Actros')
-        now = timezone.now()
-        a = VehicleAssignment(vehicle=v, motorista=f, data_inicio=now, data_fim=now - timedelta(hours=1))
-        with self.assertRaises(ValidationError) as cm:
-            a.full_clean()
-        self.assertIn('Data de término deve ser posterior', str(cm.exception))
 
-    def test_assignment_uses_current_plate_when_not_provided(self):
-        validade = timezone.now().date() + timedelta(days=365)
-        f = Funcionario.objects.create(
-            empresa=self.empresa, nome_completo='Maria', cpf='00000000272', funcao=self.funcao, salario=0, cnh='123456789', cnh_validade=validade
+    def test_optional_vehicle_fields_saved(self):
+        # Testa se os campos opcionais do veículo são guardados corretamente
+        v = Vehicle.objects.create(
+            empresa=self.empresa,
+            marca='Novo',
+            modelo='Modelo',
+            renavam='REN-001',
+            chassis='CHS123456',
+            numero_motor='MTR789',
+            tipo_combustivel='DIESEL',
+            codigo_patrimonio='PAT-0001',
+            consumo_medio='8.75'
         )
-        v = Vehicle.objects.create(empresa=self.empresa, marca='Scania', modelo='R')
-        VehiclePlate.objects.create(vehicle=v, placa='ZZZ-0000', vigencia_inicio=timezone.now().date(), atual=True)
-        a = VehicleAssignment.objects.create(vehicle=v, motorista=f, data_inicio=timezone.now())
-        self.assertEqual(a.placa, 'ZZZ-0000')
+        v.refresh_from_db()
+        self.assertEqual(v.renavam, 'REN-001')
+        self.assertEqual(v.chassis, 'CHS123456')
+        self.assertEqual(v.numero_motor, 'MTR789')
+        self.assertEqual(v.tipo_combustivel, 'DIESEL')
+        self.assertEqual(v.codigo_patrimonio, 'PAT-0001')
+        self.assertEqual(str(v.consumo_medio), '8.75')
 
-    def test_assignment_snapshots_plate_on_save(self):
-        # funcionario com CNH válida
-        validade = timezone.now().date() + timedelta(days=365)
-        f = Funcionario.objects.create(
-            empresa=self.empresa, nome_completo='Maria', cpf='00000000272', funcao=self.funcao, salario=0, cnh='123456789', cnh_validade=validade
-        )
-        v = Vehicle.objects.create(empresa=self.empresa, marca='Scania', modelo='R')
-        VehiclePlate.objects.create(vehicle=v, placa='ZZZ-0000', vigencia_inicio=timezone.now().date(), atual=True)
-        a = VehicleAssignment.objects.create(vehicle=v, motorista=f, data_inicio=timezone.now())
-        self.assertEqual(a.placa, v.get_current_plate())
+    def test_tank_capacity_and_estimated_range(self):
+        # Provide consumo in L/km (8 L/100km -> 0.08 L/km)
+        v = Vehicle.objects.create(empresa=self.empresa, marca='Auto', modelo='Range', consumo_medio='0.08', tank_capacity='50.00', consumo_unidade='L_KM')
+        v.refresh_from_db()
+        self.assertEqual(str(v.tank_capacity), '50.00')
+        # Estimated range = (tank_capacity / consumo_medio) => (50 / 0.08) = 625.00 km
+        self.assertEqual(str(v.estimated_range_km), '625.00')

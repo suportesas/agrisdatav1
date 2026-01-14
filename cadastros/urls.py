@@ -44,7 +44,10 @@ urlpatterns = [
     
     # ==================== FUNÇÕES ====================
     path('funcoes/', views.funcao_list, name='funcao_list'),
+    path('funcoes/novo/', views.funcao_create, name='funcao_create'),
     path('funcoes/criar-ajax/', views.funcao_create_ajax, name='funcao_create_ajax'),
+    path('funcoes/<int:pk>/editar/', views.funcao_update, name='funcao_update'),
+    path('funcoes/<int:pk>/excluir/', views.funcao_delete, name='funcao_delete'),
     
     # ==================== FUNCIONÁRIOS ====================
     path('funcionarios/', views.funcionario_list, name='funcionario_list'),
@@ -140,7 +143,10 @@ urlpatterns = [
     path('veiculos/<int:vehicle_pk>/placas/nova/', views.vehicle_plate_create, name='vehicle_plate_create'),
     path('veiculos/<int:vehicle_pk>/placas/<int:plate_pk>/editar/', views.vehicle_plate_update, name='vehicle_plate_update'),
     path('veiculos/<int:vehicle_pk>/placas/<int:plate_pk>/excluir/', views.vehicle_plate_delete, name='vehicle_plate_delete'),
-    path('veiculos/<int:vehicle_pk>/atribuir/', views.vehicle_assignment_create, name='vehicle_assignment_create'),
+
+    # API: vehicles
+    path('api/veiculos/', views.api_vehicles, name='api_vehicles'),
+    path('veiculos/export/csv/', views.vehicle_export_csv, name='vehicle_export_csv'),
 
     # Fornecedor: endereços
     path('fornecedores/<int:fornecedor_pk>/enderecos/novo/', views.fornecedor_endereco_create, name='fornecedor_endereco_create'),

@@ -11,6 +11,7 @@ class RoleSyncTests(TestCase):
         self.role = Role.objects.create(empresa=self.empresa, name='SyncRole')
         self.user = User.objects.create_user(username='syncuser', password='pass')
         self.user.empresa = self.empresa
+        self.user.is_staff = True
         self.user.save()
 
     def test_adding_role_adds_group_to_user(self):
@@ -44,3 +45,101 @@ class RoleSyncTests(TestCase):
         self.user.roles.clear()
         self.user.refresh_from_db()
         self.assertEqual(self.user.groups.count(), 0)
+
+
+class UsuarioFormTests(TestCase):
+    def setUp(self):
+        self.empresa = Empresa.objects.create(nome='Empresa Form')
+        self.role = Role.objects.create(empresa=self.empresa, name='FormRole')
+        self.user = User.objects.create_user(username='formadmin', password='pass')
+        self.user.empresa = self.empresa
+        self.user.is_staff = True
+        self.user.save()
+
+    def test_roles_visible_in_create_form_for_company_admin(self):
+        # Login as staff (company admin)
+        self.client.force_login(self.user)
+        resp = self.client.get('/usuarios/novo/')
+        self.assertEqual(resp.status_code, 200)
+        # Ensure the role name appears in the rendered form
+        self.assertContains(resp, 'FormRole')
+
+    def test_other_company_roles_not_shown(self):
+        other = Empresa.objects.create(nome='Outra')
+        Role.objects.create(empresa=other, name='OtherRole')
+        self.client.force_login(self.user)
+        resp = self.client.get('/usuarios/novo/')
+        self.assertEqual(resp.status_code, 200)
+        self.assertNotContains(resp, 'OtherRole')
+
+    def test_roles_save_on_update(self):
+        # Create another user to edit
+        target = User.objects.create_user(username='target', password='pass')
+        target.empresa = self.empresa
+        target.save()
+
+        # Create a role in the same company
+        role = Role.objects.create(empresa=self.empresa, name='EditorRole')
+
+        # Login and post update selecting the role
+        self.client.force_login(self.user)
+        url = f'/usuarios/{target.pk}/editar/'
+        data = {
+            'username': target.username,
+            'email': 't@example.com',
+            'first_name': 'T',
+            'last_name': 'User',
+            'tipo': 'FUNC',
+            'telefone': '',
+            'cpf': '',
+            'data_nascimento': '',
+            'data_admissao': '',
+            # do NOT provide comissao_vendas (should be optional for FUNC)
+            'roles': [str(role.pk)],
+            'is_active': True,
+            'is_staff': True
+        }
+        resp = self.client.post(url, data, follow=True)
+        self.assertEqual(resp.status_code, 200)
+        target.refresh_from_db()
+        self.assertIn(role, target.roles.all())
+        # Also ensure the group was added via signals
+        self.assertIn(role.group, target.groups.all())
+
+    def test_update_without_comissao_for_non_vendedor_succeeds(self):
+        target = User.objects.create_user(username='nocom', password='pass')
+        target.empresa = self.empresa
+        target.save()
+        self.client.force_login(self.user)
+        url = f'/usuarios/{target.pk}/editar/'
+        data = {
+            'username': target.username,
+            'email': 'a@example.com',
+            'first_name': 'A',
+            'last_name': 'NoCom',
+            'tipo': 'FUNC',
+            # comissao_vendas intentionally omitted
+            'roles': [],
+            'is_active': True,
+            'is_staff': True
+        }
+        resp = self.client.post(url, data, follow=True)
+        self.assertEqual(resp.status_code, 200)
+        target.refresh_from_db()
+        # Should not raise validation error and leave comissao_vendas at default (0)
+        from decimal import Decimal
+        self.assertEqual(target.comissao_vendas, Decimal('0.00'))
+
+    def test_roles_shown_in_user_list(self):
+        # Create target user and assign a role
+        target = User.objects.create_user(username='listuser', password='pass')
+        target.empresa = self.empresa
+        target.save()
+        role = Role.objects.create(empresa=self.empresa, name='ListRole')
+        target.roles.add(role)
+
+        # Login and fetch the user list page
+        self.client.force_login(self.user)
+        resp = self.client.get('/usuarios/')
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, 'ListRole')

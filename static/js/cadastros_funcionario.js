@@ -58,6 +58,7 @@ document.addEventListener('DOMContentLoaded', function () {
       btn.disabled = true;
 
       try {
+        console.log('Submitting nova funcao via AJAX to', cfg.funcao_create_url);
         document.getElementById('loadingText').textContent = 'Salvando função...';
         modalNovaFuncao.hide();
         loadingModal.show();

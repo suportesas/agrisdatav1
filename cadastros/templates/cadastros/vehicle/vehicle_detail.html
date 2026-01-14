@@ -3,6 +3,15 @@
 
 {% block content %}
 <div class="container py-4">
+  <!-- Breadcrumb -->
+  <nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'cadastros:vehicle_list' %}">Veículos</a></li>
+      <li class="breadcrumb-item active">{{ vehicle.marca }} {{ vehicle.modelo }}</li>
+    </ol>
+  </nav>
+
   <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
       <h2 class="fw-bold mb-1">{{ vehicle.marca }} {{ vehicle.modelo }}</h2>
@@ -41,8 +50,13 @@
             {% csrf_token %}
             {{ plate_form.placa.label_tag }}
             {{ plate_form.placa }}
-            {{ plate_form.vigencia_inicio }}
-            {{ plate_form.vigencia_fim }}
+
+            <div class="row g-2">
+              <div class="col-md-6">{{ plate_form.vigencia_inicio.label_tag }}{{ plate_form.vigencia_inicio }}</div>
+              <div class="col-md-6">{{ plate_form.vigencia_fim.label_tag }}{{ plate_form.vigencia_fim }}</div>
+            </div>
+            <div class="form-text small mt-1">Vigência Início: data em que esta placa passou a vigorar neste veículo. Vigência Fim: data em que esta placa deixou de ser utilizada (opcional). Marque <strong>Placa Atual</strong> se esta placa estiver em uso no veículo.</div>
+
             <div class="mt-2">
               <button id="plateSaveBtn" class="btn btn-primary">Adicionar Placa</button>
             </div>
@@ -50,59 +64,7 @@
         </div>
       </div>
 
-      <div class="card p-3">
-        <h5>Atribuições</h5>
-        <ul class="list-group mt-2">
-          {% for a in assignments %}
-            <li class="list-group-item">{{ a.motorista }} - {{ a.data_inicio }} {% if a.data_fim %}- {{ a.data_fim }}{% endif %}</li>
-          {% empty %}
-            <li class="list-group-item text-muted">Nenhuma atribuição registrada.</li>
-          {% endfor %}
-        </ul>
 
-        <div class="mt-3">
-          <h6 class="mb-2">Atribuir Motorista</h6>
-          <p class="small text-muted">Selecione um motorista e a data de início. Por padrão, a placa atual será utilizada; desmarque para informar outra placa.</p>
-          <form method="post" action="{% url 'cadastros:vehicle_assignment_create' vehicle.pk %}">
-            {% csrf_token %}
-            <div class="mb-2">
-              <strong>Placa atual:</strong> <span id="currentPlate">{{ vehicle.get_current_plate|default:'—' }}</span>
-            </div>
-
-            <div class="form-check mb-2">
-              {{ assignment_form.use_current_plate }} <label class="form-check-label" for="id_use_current_plate">Usar placa atual</label>
-            </div>
-
-            <div id="overridePlateRow" class="mb-2" style="display:none">
-              {{ assignment_form.placa_override.label_tag }}
-              {{ assignment_form.placa_override }}
-              <div class="form-text small">Informe a placa caso o veículo esteja usando placa diferente no momento.</div>
-            </div>
-
-            <div class="mb-2">{{ assignment_form.motorista.label_tag }}{{ assignment_form.motorista }}</div>
-            <div class="mb-2">{{ assignment_form.data_inicio.label_tag }}{{ assignment_form.data_inicio }}<div class="form-text small">Data e hora de início da atribuição.</div></div>
-            <div class="mb-2">{{ assignment_form.data_fim.label_tag }}{{ assignment_form.data_fim }}<div class="form-text small">Data e hora de término (opcional).</div></div>
-            <div class="mb-2">{{ assignment_form.motivo.label_tag }}{{ assignment_form.motivo }}</div>
-
-            <div class="mt-2">
-              <button id="assignmentSaveBtn" class="btn btn-primary">Atribuir</button>
-            </div>
-          </form>
-        </div>
-
-        <script>
-          document.addEventListener('DOMContentLoaded', function(){
-            const useCurrent = document.getElementById('id_use_current_plate');
-            const overrideRow = document.getElementById('overridePlateRow');
-            function toggleOverride(){
-              if (!useCurrent) return;
-              if (useCurrent.checked){ overrideRow.style.display = 'none'; }
-              else { overrideRow.style.display = 'block'; }
-            }
-            if (useCurrent){ useCurrent.addEventListener('change', toggleOverride); toggleOverride(); }
-          });
-        </script>
-      </div>
     </div>
 
     <div class="col-md-6">
@@ -114,10 +76,38 @@
           <dt class="col-4">Tipo</dt><dd class="col-8">{{ vehicle.get_tipo_display }}</dd>
           <dt class="col-4">Capacidade</dt><dd class="col-8">{{ vehicle.capacidade_ton }}</dd>
           <dt class="col-4">Tara (kg)</dt><dd class="col-8">{{ vehicle.tara_kg }}</dd>
+          <dt class="col-4">RENAVAM</dt><dd class="col-8">{{ vehicle.renavam }}</dd>
+          <dt class="col-4">Chassi</dt><dd class="col-8">{{ vehicle.chassis }}</dd>
+          <dt class="col-4">Nº Motor</dt><dd class="col-8">{{ vehicle.numero_motor }}</dd>
+          <dt class="col-4">Combustível</dt><dd class="col-8">{{ vehicle.get_tipo_combustivel_display }}</dd>
+          <dt class="col-4">Código Patrimônio</dt><dd class="col-8">{{ vehicle.codigo_patrimonio }}</dd>
+          <dt class="col-4">Código Patrimônio</dt><dd class="col-8">{{ vehicle.codigo_patrimonio }}</dd>
+          <dt class="col-4">Valor Atual</dt><dd class="col-8">{% if vehicle.valor_atual %}R$ {{ vehicle.valor_atual|floatformat:2 }}{% else %}—{% endif %}</dd>
+          <dt class="col-4">Consumo médio</dt><dd class="col-8">{% if vehicle.consumo_medio %}{{ vehicle.consumo_medio }} {% if vehicle.consumo_unidade == 'L_KM' %}L/km{% else %}L/h{% endif %}{% else %}—{% endif %}</dd>
+          <dt class="col-4">Capacidade do Tanque (L)</dt><dd class="col-8">{% if vehicle.tank_capacity %}{{ vehicle.tank_capacity|floatformat:2 }} L{% else %}—{% endif %}</dd>
+          <dt class="col-4">Estimativa de Autonomia</dt><dd class="col-8">{% if vehicle.estimated_range_km %}{{ vehicle.estimated_range_km|floatformat:0 }} km (aprox.){% elif vehicle.estimated_hours_per_tank %}{{ vehicle.estimated_hours_per_tank|floatformat:2 }} h (aprox.){% else %}—{% endif %}</dd>
         </dl>
       </div>
     </div>
   </div>
+
+  <!-- Histórico de Valor -->
+  {% if vehicle.value_history.exists %}
+  <div class="card p-3 mt-3">
+    <h5>Histórico de Valor</h5>
+    <ul class="list-group mt-2">
+      {% for h in vehicle.value_history.all|slice:":5" %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          <div>
+            <div><strong>{% if h.tipo == 'VAL' %}Valorização{% else %}Desvalorização{% endif %} {{ h.percentual }}%</strong></div>
+            <div class="small text-muted">De R$ {{ h.previous_value|floatformat:2 }} para R$ {{ h.new_value|floatformat:2 }} — {{ h.data_aplicacao|date:'d/m/Y H:i' }}</div>
+          </div>
+          <div class="small text-muted">Por: {{ h.aplicado_por }}</div>
+        </li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
 
   <!-- Modal: Edit Plate -->
   <div class="modal fade" id="plateEditModal" tabindex="-1" aria-hidden="true">
@@ -143,6 +133,7 @@
               <label for="modal_vigencia_fim">Data Fim da Vigência (opcional)</label>
               <input type="date" id="modal_vigencia_fim" name="vigencia_fim" class="form-control" />
             </div>
+            <div class="form-text small">Dica: deixe a data de término em branco enquanto a placa estiver em uso. Ajuste a data fim apenas quando a placa deixar de vigorar.</div>
             <div class="form-check">
               <input type="checkbox" id="modal_atual" name="atual" class="form-check-input" /> <label class="form-check-label" for="modal_atual">Placa Atual</label>
             </div>

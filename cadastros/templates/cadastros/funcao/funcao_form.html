@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block title %}{{ action }} Função | ERP Agrícola{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <h2>{{ action }} Função</h2>
+  <form method="post">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    <div class="mb-3">{{ form.nome.label_tag }}{{ form.nome }}</div>
+    <div class="mb-3">{{ form.descricao.label_tag }}{{ form.descricao }}</div>
+    <div class="mb-3">{{ form.salario_base.label_tag }}{{ form.salario_base }}</div>
+    <div class="form-check mb-3">{{ form.ativa }} <label class="form-check-label">Ativa</label></div>
+    <div class="mt-2">
+      <button class="btn btn-primary">Salvar</button>
+      <a href="{% url 'cadastros:funcao_list' %}" class="btn btn-link">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

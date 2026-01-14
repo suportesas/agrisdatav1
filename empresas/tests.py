@@ -4,7 +4,7 @@ from django.core.management import call_command
 from django.contrib.auth.models import Permission
 from django.contrib.auth import get_user_model
 
-from .models import Empresa, Role
+from .models import Empresa, Role, PermissionTemplate
 from django.test import Client
 try:
     from .management.commands.seed_roles import DEFAULT_ROLES

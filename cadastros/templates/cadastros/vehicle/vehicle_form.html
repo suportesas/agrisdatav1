@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+{% block title %}{{ action }} Veículo | ERP Agrícola{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="fw-bold mb-1">{{ action }} Veículo</h2>
+      <p class="text-muted mb-0">Preencha os dados do veículo</p>
+    </div>
+    <a href="{% url 'cadastros:vehicle_list' %}" class="btn btn-outline-secondary">Voltar</a>
+  </div>
+
+  <div class="card p-4">
+    <form method="post">
+      {% csrf_token %}
+      {{ form.non_field_errors }}
+      <div class="row g-3">
+        <div class="col-md-3">{{ form.tipo.label_tag }}{{ form.tipo }}</div>
+        <div class="col-md-3">{{ form.marca.label_tag }}{{ form.marca }}</div>
+        <div class="col-md-3">{{ form.modelo.label_tag }}{{ form.modelo }}</div>
+        <div class="col-md-3">{{ form.cor.label_tag }}{{ form.cor }}</div>
+
+        <div class="col-md-3">{{ form.renavam.label_tag }}{{ form.renavam }}</div>
+        <div class="col-md-3">{{ form.chassis.label_tag }}{{ form.chassis }}</div>
+        <div class="col-md-3">{{ form.numero_motor.label_tag }}{{ form.numero_motor }}</div>
+        <div class="col-md-3">{{ form.tipo_combustivel.label_tag }}{{ form.tipo_combustivel }}</div>
+
+        <div class="col-md-6">{{ form.codigo_patrimonio.label_tag }}{{ form.codigo_patrimonio }}<div class="form-text small">Usado em veículos sem placa (ex.: tratores, implementos)</div></div>
+        <div class="col-md-6">{{ form.consumo_medio.label_tag }}{{ form.consumo_medio }}</div>
+
+        <div class="col-md-6">{{ form.codigo_patrimonio.label_tag }}{{ form.codigo_patrimonio }}<div class="form-text small">Usado em veículos sem placa (ex.: tratores, implementos)</div></div>
+        <div class="col-md-6">{{ form.consumo_medio.label_tag }}{{ form.consumo_medio }}</div>
+
+        <!-- Extra fields: transportadora and ativo -->
+        <div class="col-md-6">{{ form.transportadora.label_tag }}{{ form.transportadora }}</div>
+        <div class="col-md-6 d-flex align-items-center">
+          <div class="form-check">
+            {{ form.ativo }} <label for="id_ativo" class="form-check-label">Ativo</label>
+          </div>
+        </div>
+
+        <!-- Valorização / Desvalorização -->
+        <div class="col-md-4">{{ form.valor_atual.label_tag }}{{ form.valor_atual }}</div>
+        <div class="col-md-4">{{ form.percentual_variacao.label_tag }}{{ form.percentual_variacao }}</div>
+        <div class="col-md-4">{{ form.tipo_variacao.label_tag }}{{ form.tipo_variacao }}</div>
+        <div class="col-12 d-flex align-items-center">
+          {{ form.aplicar_variacao_agora }} <label for="id_aplicar_variacao_agora" class="form-check-label ms-2">Aplicar variação agora</label>
+        </div>
+
+        <div class="col-md-2">{{ form.ano_fabricacao.label_tag }}{{ form.ano_fabricacao }}</div>
+        <div class="col-md-2">{{ form.ano_modelo.label_tag }}{{ form.ano_modelo }}</div>
+        <div class="col-md-2">{{ form.eixos.label_tag }}{{ form.eixos }}</div>
+        <div class="col-md-2">{{ form.tara_kg.label_tag }}{{ form.tara_kg }}</div>
+        <div class="col-md-2">{{ form.capacidade_ton.label_tag }}{{ form.capacidade_ton }}</div>
+
+        <div class="col-12">{{ form.observacoes.label_tag }}{{ form.observacoes }}</div>
+        <div class="col-12 d-flex justify-content-end">
+          <button id="vehicleSaveBtn" class="btn btn-success">{{ action }}</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

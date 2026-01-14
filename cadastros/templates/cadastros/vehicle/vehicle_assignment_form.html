@@ -1,0 +1,9 @@
+{% extends 'base.html' %}
+{% block title %}Atribuir Motorista (Removido) | ERP Agrícola{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="alert alert-info">A funcionalidade de atribuir motorista foi removida do sistema. Se precisar reativá-la, entre em contato com o time de desenvolvimento.</div>
+  <a href="{% url 'cadastros:vehicle_list' %}" class="btn btn-secondary">Voltar para Veículos</a>
+</div>
+{% endblock %}

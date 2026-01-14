@@ -94,18 +94,5 @@ def test_vehicle_create_plate_assign(page, live_server, e2e_vehicle_data):
     # Ensure plate appears in list
     assert page.locator('text=E2E-1234').count() >= 1
 
-    # Assign driver
-    # Select by value (driver.pk)
-    page.select_option('select[name="motorista"]', str(driver.pk))
-    # Fill start datetime (use now)
-    now = datetime.now().strftime('%Y-%m-%dT%H:%M')
-    page.fill('input[name="data_inicio"]', now)
-    try:
-        page.click('#assignmentSaveBtn')
-    except Exception:
-        page.click('#assignmentSaveBtn', force=True)
-
-    page.wait_for_timeout(500)
-
-    # Check driver appears in assignments
-    assert page.locator(f'text={driver.nome_completo}').count() >= 1
+    # Assignment UI was removed; ensure the motorista select is not present
+    assert page.locator('select[name="motorista"]').count() == 0

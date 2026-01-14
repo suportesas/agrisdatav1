@@ -4257,8 +4257,44 @@ class Vehicle(models.Model):
     eixos = models.IntegerField('Eixos', null=True, blank=True)
     cor = models.CharField('Cor', max_length=50, blank=True)
 
+    # Novos campos opcionais solicitados
+    RENAVAM_CHOICES = []  # placeholder if needed in future
+    FUEL_CHOICES = [
+        ('DIESEL', 'Diesel'),
+        ('GASOLINA', 'Gasolina'),
+        ('FLEX', 'Flex'),
+        ('ELETRICO', 'Elétrico'),
+        ('OUTRO', 'Outro')
+    ]
+
+    renavam = models.CharField('RENAVAM', max_length=30, blank=True)
+    chassis = models.CharField('Chassi', max_length=50, blank=True)
+    numero_motor = models.CharField('Número do Motor', max_length=50, blank=True)
+    tipo_combustivel = models.CharField('Tipo de Combustível', max_length=20, choices=FUEL_CHOICES, blank=True)
+    codigo_patrimonio = models.CharField('Código de Patrimônio', max_length=50, blank=True, help_text='Usado em veículos/implementos sem placa')
+    # Consumo pode ser por km (L/km) ou por hora (L/hora - usado para tratores)
+    CONSUMO_UNIDADE_CHOICES = [
+        ('L_KM', 'L/km'),
+        ('L_HORA', 'L/hora')
+    ]
+    consumo_medio = models.DecimalField('Consumo Médio', max_digits=8, decimal_places=4, null=True, blank=True, help_text='Consumo médio: L/km (padrão) ou L/hora para tratores')
+    consumo_unidade = models.CharField('Unidade de Consumo', max_length=10, choices=CONSUMO_UNIDADE_CHOICES, default='L_KM')
+
+    # Capacidade do tanque em litros
+    tank_capacity = models.DecimalField('Capacidade do Tanque (L)', max_digits=8, decimal_places=2, null=True, blank=True)
+
+    # Valor e variação de mercado
+    valor_atual = models.DecimalField('Valor Atual (R$)', max_digits=12, decimal_places=2, null=True, blank=True)
+    percentual_variacao = models.DecimalField('Percentual de Variação (%)', max_digits=5, decimal_places=2, null=True, blank=True)
+    TIPO_VARIACAO_CHOICES = [
+        ('VAL', 'Valorização'),
+        ('DES', 'Desvalorização'),
+    ]
+    tipo_variacao = models.CharField('Tipo de Variação', max_length=3, choices=TIPO_VARIACAO_CHOICES, blank=True)
+
     observacoes = models.TextField('Observações', blank=True)
 
+    # Campos de controle
     ativo = models.BooleanField('Ativo', default=True)
     data_cadastro = models.DateTimeField('Data de Cadastro', auto_now_add=True)
     data_atualizacao = models.DateTimeField('Última Atualização', auto_now=True)
@@ -4269,6 +4305,38 @@ class Vehicle(models.Model):
         ordering = ['-data_cadastro']
         indexes = [models.Index(fields=['empresa', 'ativo'])]
 
+    @property
+    def estimated_range_km(self):
+        """If consumption is L/km, estimate km per full tank. Otherwise return None."""
+        from decimal import Decimal, ROUND_HALF_UP
+        if not self.tank_capacity or not self.consumo_medio:
+            return None
+        try:
+            if self.consumo_unidade == 'L_HORA':
+                return None
+            if self.consumo_medio == Decimal('0'):
+                return None
+            val = (self.tank_capacity / self.consumo_medio)
+            return val.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        except Exception:
+            return None
+
+    @property
+    def estimated_hours_per_tank(self):
+        """If consumption is L/hora, estimate hours per full tank."""
+        from decimal import Decimal, ROUND_HALF_UP
+        if not self.tank_capacity or not self.consumo_medio:
+            return None
+        try:
+            if self.consumo_unidade == 'L_KM':
+                return None
+            if self.consumo_medio == Decimal('0'):
+                return None
+            val = (self.tank_capacity / self.consumo_medio)
+            return val.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        except Exception:
+            return None
+
     def __str__(self):
         plate = self.get_current_plate() or ''
         return f"{self.marca} {self.modelo} {plate}".strip()
@@ -4276,6 +4344,25 @@ class Vehicle(models.Model):
     def get_current_plate(self):
         p = self.plates.filter(atual=True).first()
         return p.placa if p else None
+
+
+# Histórico de variações (registrado quando aplicadas)
+class VehicleValueHistory(models.Model):
+    vehicle = models.ForeignKey('Vehicle', on_delete=models.CASCADE, related_name='value_history')
+    previous_value = models.DecimalField('Valor Anterior (R$)', max_digits=12, decimal_places=2)
+    new_value = models.DecimalField('Valor Novo (R$)', max_digits=12, decimal_places=2)
+    percentual = models.DecimalField('Percentual (%)', max_digits=6, decimal_places=2)
+    tipo = models.CharField('Tipo', max_length=3, choices=Vehicle.TIPO_VARIACAO_CHOICES)
+    aplicado_por = models.ForeignKey('usuarios.Usuario', null=True, blank=True, on_delete=models.SET_NULL)
+    data_aplicacao = models.DateTimeField('Data Aplicação', auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Histórico de Valor do Veículo'
+        verbose_name_plural = 'Históricos de Valor de Veículos'
+        ordering = ['-data_aplicacao']
+
+    def __str__(self):
+        return f"{self.vehicle} — {self.tipo} {self.percentual}% em {self.data_aplicacao.date()}"
 
 
 class VehiclePlate(models.Model):
@@ -4300,46 +4387,7 @@ class VehiclePlate(models.Model):
         return f"{self.placa} ({self.vehicle})"
 
 
-class VehicleAssignment(models.Model):
-    """Registra quem dirigiu o veículo durante um intervalo de tempo."""
-    vehicle = models.ForeignKey(Vehicle, on_delete=models.CASCADE, related_name='assignments')
-    motorista = models.ForeignKey('cadastros.Funcionario', on_delete=models.SET_NULL, null=True, blank=True, related_name='veiculos_atribuidos')
-    placa = models.CharField('Placa no momento', max_length=10, blank=True)
-    data_inicio = models.DateTimeField('Início')
-    data_fim = models.DateTimeField('Fim', null=True, blank=True)
-    motivo = models.CharField('Motivo', max_length=200, blank=True)
 
-    class Meta:
-        verbose_name = 'Atribuição de Veículo'
-        verbose_name_plural = 'Atribuições de Veículos'
-        ordering = ['-data_inicio']
-
-    def clean(self):
-        # Simples validação: motorista deve ter CNH válida
-        if self.motorista:
-            if not getattr(self.motorista, 'cnh', None):
-                raise ValidationError({'motorista': 'Motorista não possui CNH registrada'})
-            validade = getattr(self.motorista, 'cnh_validade', None)
-            if validade and self.data_inicio and validity_is_past(validade, self.data_inicio):
-                raise ValidationError({'motorista': 'Motorista possui CNH vencida na data de início'})
-        # Validação básica de datas
-        if self.data_inicio and self.data_fim and self.data_fim <= self.data_inicio:
-            raise ValidationError({'data_fim': 'Data de término deve ser posterior à data de início'})
-        
-        # Copia placa atual como snapshot se não informado (save() também cuida disso)
-        if not self.placa and self.vehicle:
-            self.placa = self.vehicle.get_current_plate() or ''
-
-    def save(self, *args, **kwargs):
-        # Copia placa atual como snapshot se não informado
-        if not self.placa:
-            current = self.vehicle.get_current_plate()
-            if current:
-                self.placa = current
-        super().save(*args, **kwargs)
-
-    def __str__(self):
-        return f"{self.vehicle} atribuído a {self.motorista or 'Terceiro'} em {self.data_inicio}"
 
 
 class VehicleDocument(models.Model):

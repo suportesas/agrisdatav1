@@ -16,6 +16,7 @@ from .models import (
 )
 
 from .models import Funcionario, FuncaoFuncionario
+from django.utils import timezone
 import re
 
 
@@ -983,7 +984,7 @@ class FuncaoFuncionarioForm(forms.ModelForm):
         widgets = {
             'nome': forms.TextInput(attrs={
                 'class': 'form-control',
-                'placeholder': 'Ex: Tratorista, Colhedor, Supervisor'
+                'placeholder': 'Ex: Motorista, Tratorista, Colhedor (Dica: crie uma função "Motorista" para facilitar atribuições)'
             }),
             'descricao': forms.Textarea(attrs={
                 'class': 'form-control',
@@ -1017,7 +1018,7 @@ class FuncionarioForm(forms.ModelForm):
             'cep', 'endereco', 'numero', 'complemento',
             'bairro', 'cidade', 'uf',
             'funcao', 'tipo_contrato', 'data_admissao', 'data_demissao',
-            'salario', 'ctps', 'pis',
+            'salario', 'ctps', 'pis', 'cnh', 'cnh_validade',
             'banco', 'agencia', 'conta', 'tipo_conta', 'pix_habilitado', 'tipo_chave_pix', 'chave_pix',
             'contato_emergencia_nome', 'contato_emergencia_telefone',
             'contato_emergencia_parentesco',
@@ -1058,6 +1059,14 @@ class FuncionarioForm(forms.ModelForm):
             'email': forms.EmailInput(attrs={
                 'class': 'form-control'
             }),
+            'cnh': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Número da CNH (somente motoristas)'
+            }),
+            'cnh_validade': forms.DateInput(attrs={
+                'class': 'form-control',
+                'type': 'date'
+            }),
             'cep': forms.TextInput(attrs={
                 'class': 'form-control',
                 'placeholder': '00000-000'
@@ -1083,7 +1092,8 @@ class FuncionarioForm(forms.ModelForm):
             }),
             'funcao': forms.Select(attrs={
                 'class': 'form-select',
-                'id': 'id_funcao'
+                'id': 'id_funcao',
+                'size': '10'
             }),
             'tipo_contrato': forms.Select(attrs={'class': 'form-select'}),
             'data_admissao': forms.DateInput(attrs={
@@ -1136,6 +1146,25 @@ class FuncionarioForm(forms.ModelForm):
                 'accept': 'image/*'
             }),
         }
+
+    def clean(self):
+        cleaned = super().clean()
+        funcao = cleaned.get('funcao')
+        # If the role name includes 'motorista', require CNH and validade
+        if funcao and getattr(funcao, 'nome', '').lower().find('motorista') != -1:
+            cnh = cleaned.get('cnh')
+            cnh_validade = cleaned.get('cnh_validade')
+            errors = {}
+            if not cnh:
+                errors['cnh'] = 'Motorista deve ter CNH registrada.'
+            if not cnh_validade:
+                errors['cnh_validade'] = 'Motorista deve ter validade da CNH registrada.'
+            else:
+                if cnh_validade <= timezone.now().date():
+                    errors['cnh_validade'] = 'Validade da CNH deve ser uma data futura.'
+            if errors:
+                raise ValidationError(errors)
+        return cleaned
     
 
     def __init__(self, *args, **kwargs):
@@ -2544,10 +2573,12 @@ class PortoForm(forms.ModelForm):
 # Forms: Veículos (Vehicle)
 # =============================================================================
 
-from .models import Vehicle, VehiclePlate, VehicleAssignment
+from .models import Vehicle, VehiclePlate
 
 
 class VehicleForm(forms.ModelForm):
+    aplicar_variacao_agora = forms.BooleanField(required=False, initial=False, label='Aplicar variação agora')
+
     class Meta:
         model = Vehicle
         exclude = ('empresa', 'data_cadastro', 'data_atualizacao')
@@ -2561,6 +2592,18 @@ class VehicleForm(forms.ModelForm):
             'tara_kg': forms.NumberInput(attrs={'class': 'form-control'}),
             'eixos': forms.NumberInput(attrs={'class': 'form-control'}),
             'cor': forms.TextInput(attrs={'class': 'form-control'}),
+            'renavam': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'RENAVAM'}),
+            'chassis': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Chassi'}),
+            'numero_motor': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Número do Motor'}),
+            'tipo_combustivel': forms.Select(attrs={'class': 'form-select'}),
+            'codigo_patrimonio': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Código de Patrimônio (se não há placa)'}),
+            'consumo_medio': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.0001'}),
+            'consumo_unidade': forms.Select(attrs={'class': 'form-select'}),
+            'tank_capacity': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1'}),
+            'valor_atual': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'percentual_variacao': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'tipo_variacao': forms.Select(attrs={'class': 'form-select'}),
+            'transportadora': forms.Select(attrs={'class': 'form-select'}),
             'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'ativo': forms.CheckboxInput(attrs={'class': 'form-check-input'})
         }
@@ -2574,10 +2617,56 @@ class VehicleForm(forms.ModelForm):
         if self.empresa:
             self.initial['empresa'] = self.empresa
 
-    def save(self, commit=True):
+    def clean(self):
+        from decimal import Decimal
+        cleaned = super().clean()
+        aplicar = cleaned.get('aplicar_variacao_agora')
+        perc = cleaned.get('percentual_variacao')
+        tipo = cleaned.get('tipo_variacao')
+        valor = cleaned.get('valor_atual')
+
+        if aplicar:
+            if valor is None:
+                raise ValidationError({'valor_atual': 'Para aplicar a variação é necessário informar o Valor Atual.'})
+            if perc is None or perc == Decimal('0.00'):
+                raise ValidationError({'percentual_variacao': 'Informe um percentual diferente de 0 para aplicar a variação.'})
+            if not tipo:
+                raise ValidationError({'tipo_variacao': 'Selecione o tipo de variação (Valorização/Desvalorização).'})
+        return cleaned
+
+    def save(self, commit=True, user=None):
+        """Saves vehicle and applies variation if requested, also sets empresa."""
+        from decimal import Decimal
         obj = super().save(commit=False)
         if self.empresa:
             obj.empresa = self.empresa
+
+        aplicar = self.cleaned_data.get('aplicar_variacao_agora')
+        perc = self.cleaned_data.get('percentual_variacao')
+        tipo = self.cleaned_data.get('tipo_variacao')
+
+        # If requested, apply variation to valor_atual
+        if aplicar and perc and tipo and obj.valor_atual is not None:
+            prev = obj.valor_atual or Decimal('0.00')
+            factor = (Decimal('1.0') + (perc / Decimal('100'))) if tipo == 'VAL' else (Decimal('1.0') - (perc / Decimal('100')))
+            new_val = (prev * factor).quantize(Decimal('0.01'))
+            obj.valor_atual = new_val
+            if commit:
+                obj.save()
+                try:
+                    VehicleValueHistory = __import__('cadastros.models', fromlist=['VehicleValueHistory']).VehicleValueHistory
+                    VehicleValueHistory.objects.create(
+                        vehicle=obj,
+                        previous_value=prev,
+                        new_value=new_val,
+                        percentual=perc,
+                        tipo=tipo,
+                        aplicado_por=user
+                    )
+                except Exception:
+                    pass
+            return obj
+
         if commit:
             obj.save()
         return obj
@@ -2620,73 +2709,7 @@ class VehiclePlateForm(forms.ModelForm):
         obj = super().save(commit=False)
         if self.vehicle:
             obj.vehicle = self.vehicle
-        if commit:
-            obj.save()
-        return obj
 
-
-class VehicleAssignmentForm(forms.ModelForm):
-    use_current_plate = forms.BooleanField(required=False, initial=True, label='Usar placa atual')
-    placa_override = forms.CharField(required=False, label='Placa (se não usar placa atual)', widget=forms.TextInput(attrs={'class':'form-control', 'placeholder':'Ex: ABC-1234'}))
-
-    class Meta:
-        model = VehicleAssignment
-        fields = ['motorista', 'data_inicio', 'data_fim', 'motivo']
-        widgets = {
-            'motorista': forms.Select(attrs={'class': 'form-select'}),
-            'data_inicio': forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'}),
-            'data_fim': forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'}),
-            'motivo': forms.TextInput(attrs={'class': 'form-control'})
-        }
-        labels = {
-            'motorista': 'Motorista (deve possuir CNH válida)',
-            'data_inicio': 'Início (data/hora)',
-            'data_fim': 'Término (opcional)'
-        }
-        help_texts = {
-            'data_inicio': 'Data e hora de início da atribuição. Use o horário local.',
-            'data_fim': 'Data e hora de término (opcional). Deixe em branco se indefinido.'
-        }
-
-    def __init__(self, *args, **kwargs):
-        self.vehicle = kwargs.pop('vehicle', None)
-        super().__init__(*args, **kwargs)
-        # Limit motorista choices to same empresa where possible
-        if self.vehicle and self.vehicle.empresa:
-            self.fields['motorista'].queryset = self.fields['motorista'].queryset.filter(empresa=self.vehicle.empresa)
-
-    def clean(self):
-        cleaned = super().clean()
-        use_current = cleaned.get('use_current_plate')
-        placa_override = cleaned.get('placa_override')
-        inicio = cleaned.get('data_inicio')
-        fim = cleaned.get('data_fim')
-
-        # Validate plate selection
-        if not use_current and not placa_override:
-            raise ValidationError('Informe a placa a ser atribuída ou selecione "Usar placa atual"')
-
-        # Validate dates
-        if inicio and fim and fim <= inicio:
-            raise ValidationError('Data de término deve ser posterior à data de início')
-
-        # Motorista CNH validation handled in model clean; keep it consistent
-        return cleaned
-
-    def save(self, commit=True):
-        obj = super().save(commit=False)
-        if self.vehicle:
-            obj.vehicle = self.vehicle
-        # Decide placa snapshot
-        use_current = self.cleaned_data.get('use_current_plate') if hasattr(self, 'cleaned_data') else True
-        placa_override = self.cleaned_data.get('placa_override') if hasattr(self, 'cleaned_data') else ''
-        if use_current:
-            obj.placa = self.vehicle.get_current_plate() if self.vehicle else obj.placa
-        else:
-            obj.placa = placa_override
-        if commit:
-            obj.save()
-        return obj
 
 
 # =============================================================================

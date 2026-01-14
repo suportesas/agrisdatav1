@@ -7,6 +7,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
+from django.core.exceptions import ValidationError
 from django.db.models import Q, Count, Sum, Avg
 from django.core.paginator import Paginator
 from django.utils import timezone
@@ -47,8 +48,8 @@ from .views_transportadora import (
 from .views_api import api_transportadoras, api_transportadora_viagens
 
 # Vehicle related imports
-from .models import Vehicle, VehiclePlate, VehicleAssignment, VehicleDocument
-from .forms import VehicleForm, VehiclePlateForm, VehicleAssignmentForm
+from .models import Vehicle, VehiclePlate, VehicleDocument
+from .forms import VehicleForm, VehiclePlateForm
 
 
 # ==================== VEÍCULOS (FROTA) ====================
@@ -60,7 +61,7 @@ def vehicle_list(request):
         messages.warning(request, '⚠️ Seu usuário não está vinculado a nenhuma empresa.')
         return redirect('dashboard:index')
 
-    veiculos = Vehicle.objects.filter(empresa=request.user.empresa).prefetch_related('plates', 'assignments')
+    veiculos = Vehicle.objects.filter(empresa=request.user.empresa).prefetch_related('plates', 'transportadora')
 
     q = request.GET.get('q', '').strip()
     if q:
@@ -68,30 +69,101 @@ def vehicle_list(request):
             Q(marca__icontains=q) | Q(modelo__icontains=q) | Q(plates__placa__icontains=q)
         ).distinct()
 
-    paginator = Paginator(veiculos, 25)
+    # Filters
+    tipo = request.GET.get('tipo', '').strip()
+    if tipo:
+        veiculos = veiculos.filter(tipo=tipo)
+
+    tipo_combustivel = request.GET.get('tipo_combustivel', '').strip()
+    if tipo_combustivel:
+        veiculos = veiculos.filter(tipo_combustivel=tipo_combustivel)
+
+    transportadora_id = request.GET.get('transportadora_id')
+    if transportadora_id:
+        veiculos = veiculos.filter(transportadora__pk=transportadora_id)
+
+
+
+    # Ordering
+    sort = request.GET.get('sort')
+    allowed_sort = {'marca', '-marca', 'modelo', '-modelo', 'consumo_medio', '-consumo_medio', 'tipo', '-tipo'}
+    if sort in allowed_sort:
+        veiculos = veiculos.order_by(sort)
+
+    # Pagination: show 10 items per page for a compact list view
+    paginator = Paginator(veiculos, 10)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
-    return render(request, 'cadastros/vehicle_list.html', {
+    # Prepare extra context for template
+    transportadoras = []
+    try:
+        from .models import Transportadora
+        transportadoras = Transportadora.objects.filter(empresa=request.user.empresa).order_by('razao_social')
+    except Exception:
+        transportadoras = []
+
+    tipo_choices = Vehicle._meta.get_field('tipo').choices
+    fuel_choices = Vehicle._meta.get_field('tipo_combustivel').choices
+
+    # Build sort links (querystrings)
+    base_qs = request.GET.copy()
+    sort_links = {}
+    def make_link(value):
+        qs = base_qs.copy()
+        qs['sort'] = value
+        return qs.urlencode()
+    sort_links['marca'] = make_link('marca')
+    sort_links['marca_desc'] = make_link('-marca')
+    sort_links['modelo'] = make_link('modelo')
+    sort_links['modelo_desc'] = make_link('-modelo')
+    sort_links['consumo'] = make_link('consumo_medio')
+    sort_links['consumo_desc'] = make_link('-consumo_medio')
+    sort_links['tipo'] = make_link('tipo')
+    sort_links['tipo_desc'] = make_link('-tipo')
+
+    # Compute transport names for vehicles in the current page
+    for v in page_obj.object_list:
+        v.transportadora_name = getattr(v.transportadora, 'razao_social', '') if v.transportadora else ''
+
+    # Counts per vehicle tipo (Leve, Médio, Pesado, etc.)
+    tipo_counts = []
+    for val, label in tipo_choices:
+        cnt = Vehicle.objects.filter(empresa=request.user.empresa, tipo=val).count()
+        tipo_counts.append({'key': val, 'label': label, 'count': cnt})
+
+    # Extra metrics for header stats
+    active_count = Vehicle.objects.filter(empresa=request.user.empresa, ativo=True).count()
+    transportadoras_count = len(transportadoras)
+    tipo_used_count = sum(1 for t in tipo_counts if t['count'] > 0)
+
+    return render(request, 'cadastros/vehicle/vehicle_list.html', {
         'page_obj': page_obj,
-        'total': veiculos.count()
+        'total': veiculos.count(),
+        'active_count': active_count,
+        'transportadoras_count': transportadoras_count,
+        'tipo_used_count': tipo_used_count,
+        'tipo_choices': tipo_choices,
+        'fuel_choices': fuel_choices,
+        'transportadoras': transportadoras,
+        'sort_links': sort_links,
+        'tipo_counts': tipo_counts,
     })
 
 
 @login_required
 def vehicle_detail(request, pk):
     vehicle = get_object_or_404(Vehicle, pk=pk, empresa=request.user.empresa)
+
+    # Assignment form moved to a dedicated page; only prepare plate form here
     plate_form = VehiclePlateForm()
-    assignment_form = VehicleAssignmentForm()
 
     context = {
         'vehicle': vehicle,
-        'plates': vehicle.plates.all(),
-        'assignments': vehicle.assignments.all(),
+        'plates': vehicle.plates.all().order_by('-atual', '-vigencia_inicio'),
         'plate_form': plate_form,
-        'assignment_form': assignment_form,
     }
-    return render(request, 'cadastros/vehicle_detail.html', context)
+    return render(request, 'cadastros/vehicle/vehicle_detail.html', context)
 
 
 @login_required
@@ -103,7 +175,7 @@ def vehicle_create(request):
     if request.method == 'POST':
         form = VehicleForm(request.POST, empresa=request.user.empresa)
         if form.is_valid():
-            v = form.save()
+            v = form.save(user=request.user)
             messages.success(request, f'✅ Veículo "{v}" cadastrado com sucesso!')
             return redirect('cadastros:vehicle_detail', pk=v.pk)
         else:
@@ -111,7 +183,7 @@ def vehicle_create(request):
     else:
         form = VehicleForm(empresa=request.user.empresa)
 
-    return render(request, 'cadastros/vehicle_form.html', {'form': form, 'action': 'Cadastrar'})
+    return render(request, 'cadastros/vehicle/vehicle_form.html', {'form': form, 'action': 'Cadastrar'})
 
 
 @login_required
@@ -120,13 +192,13 @@ def vehicle_update(request, pk):
     if request.method == 'POST':
         form = VehicleForm(request.POST, instance=vehicle, empresa=request.user.empresa)
         if form.is_valid():
-            v = form.save()
+            v = form.save(user=request.user)
             messages.success(request, f'✅ Veículo "{v}" atualizado!')
-            return redirect('cadastros:vehicle_detail', pk=v.pk)
+            return redirect('cadastros:vehicle_list')
     else:
         form = VehicleForm(instance=vehicle, empresa=request.user.empresa)
 
-    return render(request, 'cadastros/vehicle_form.html', {'form': form, 'vehicle': vehicle, 'action': 'Editar'})
+    return render(request, 'cadastros/vehicle/vehicle_form.html', {'form': form, 'vehicle': vehicle, 'action': 'Editar'})
 
 
 @login_required
@@ -137,7 +209,7 @@ def vehicle_delete(request, pk):
         vehicle.delete()
         messages.success(request, f'🗑️ Veículo "{nome}" excluído com sucesso!')
         return redirect('cadastros:vehicle_list')
-    return render(request, 'cadastros/vehicle_confirm_delete.html', {'vehicle': vehicle})
+    return render(request, 'cadastros/vehicle/vehicle_confirm_delete.html', {'vehicle': vehicle})
 
 
 @login_required
@@ -151,7 +223,7 @@ def vehicle_plate_create(request, vehicle_pk):
             return redirect('cadastros:vehicle_detail', pk=vehicle.pk)
         else:
             messages.error(request, '❌ Corrija os erros no formulário de placa.')
-    return redirect('cadastros:vehicle_detail', pk=vehicle.pk)
+    return redirect('cadastros:vehicle_detail', pk=vehicle.pk)  # template for plate handled via vehicle page
 
 
 @login_required
@@ -182,7 +254,7 @@ def vehicle_plate_update(request, vehicle_pk, plate_pk):
     else:
         form = VehiclePlateForm(instance=plate, vehicle=vehicle)
 
-    return render(request, 'cadastros/vehicle_plate_form.html', {
+    return render(request, 'cadastros/vehicle/vehicle_plate_form.html', {
         'form': form,
         'vehicle': vehicle,
         'plate': plate,
@@ -201,30 +273,154 @@ def vehicle_plate_delete(request, vehicle_pk, plate_pk):
         messages.success(request, f'🗑️ Placa "{placa}" excluída com sucesso!')
         return redirect('cadastros:vehicle_detail', pk=vehicle.pk)
 
-    return render(request, 'cadastros/vehicle_plate_confirm_delete.html', {
+    return render(request, 'cadastros/vehicle/vehicle_plate_confirm_delete.html', {
         'vehicle': vehicle,
         'plate': plate
     })
 
 
+
+
+
+
+
+
+# ==================== VEÍCULOS: API / EXPORT ====================
+
 @login_required
-def vehicle_assignment_create(request, vehicle_pk):
-    vehicle = get_object_or_404(Vehicle, pk=vehicle_pk, empresa=request.user.empresa)
-    if request.method == 'POST':
-        form = VehicleAssignmentForm(request.POST, vehicle=vehicle)
-        if form.is_valid():
-            try:
-                assignment = form.save()
-                messages.success(request, '✅ Atribuição salva com sucesso!')
-            except Exception as e:
-                messages.error(request, f'❌ Erro: {e}')
-        else:
-            messages.error(request, '❌ Corrija os erros na atribuição.')
-    return redirect('cadastros:vehicle_detail', pk=vehicle.pk)
+def api_vehicles(request):
+    """JSON list of vehicles (paginated) including optional fields"""
+    if not request.user.empresa:
+        return JsonResponse({'error': 'Usuário sem empresa'}, status=400)
+
+    qs = Vehicle.objects.filter(empresa=request.user.empresa).prefetch_related('plates')
+
+    q = request.GET.get('q', '').strip()
+    if q:
+        qs = qs.filter(
+            Q(marca__icontains=q) | Q(modelo__icontains=q) | Q(plates__placa__icontains=q)
+        ).distinct()
+
+    # Additional filters
+    tipo = request.GET.get('tipo')
+    if tipo:
+        qs = qs.filter(tipo=tipo)
+
+    tipo_combustivel = request.GET.get('tipo_combustivel')
+    if tipo_combustivel:
+        qs = qs.filter(tipo_combustivel=tipo_combustivel)
 
 
 
+    transportadora_id = request.GET.get('transportadora_id')
+    if transportadora_id:
+        qs = qs.filter(transportadora__pk=transportadora_id)
 
+    # Ordering
+    sort = request.GET.get('sort')
+    allowed_sort = {'marca', '-marca', 'modelo', '-modelo', 'consumo_medio', '-consumo_medio', 'tipo', '-tipo'}
+    if sort in allowed_sort:
+        qs = qs.order_by(sort)
+
+    page = int(request.GET.get('page', 1))
+    per = int(request.GET.get('per', 20))
+    paginator = Paginator(qs, per)
+    page_obj = paginator.get_page(page)
+
+    items = []
+    for v in page_obj.object_list:
+        transportadora = None
+        if v.transportadora:
+            transportadora = {'id': v.transportadora.pk, 'razao_social': getattr(v.transportadora, 'razao_social', '')}
+
+        # Resolve placa_atual: prefer placa marcada como atual, else fallback to first plate if available
+        placa_atual = v.get_current_plate()
+        if not placa_atual:
+            first_plate = v.plates.order_by('-atual', '-vigencia_inicio').first()
+            placa_atual = first_plate.placa if first_plate else None
+
+        items.append({
+            'id': v.pk,
+            'marca': v.marca,
+            'modelo': v.modelo,
+            'tipo': v.tipo,
+            'placa_atual': placa_atual,
+            'renavam': v.renavam,
+            'chassis': v.chassis,
+            'numero_motor': v.numero_motor,
+            'tipo_combustivel': v.tipo_combustivel,
+            'codigo_patrimonio': v.codigo_patrimonio,
+            'consumo_medio': str(v.consumo_medio) if v.consumo_medio is not None else None,
+            'capacidade_ton': str(v.capacidade_ton) if v.capacidade_ton is not None else None,
+            'tara_kg': v.tara_kg,
+            'eixos': v.eixos,
+            'transportadora': transportadora,
+        })
+
+    return JsonResponse({
+        'count': paginator.count,
+        'num_pages': paginator.num_pages,
+        'page': page_obj.number,
+        'items': items
+    })
+
+
+@login_required
+def vehicle_export_csv(request):
+    """Export vehicles for user's company as CSV including the optional fields"""
+    import csv
+    if not request.user.empresa:
+        return redirect('dashboard:index')
+
+    qs = Vehicle.objects.filter(empresa=request.user.empresa).prefetch_related('plates').order_by('pk')
+
+    # Prepare response
+    from django.http import HttpResponse
+    resp = HttpResponse(content_type='text/csv')
+    resp['Content-Disposition'] = 'attachment; filename=veiculos.csv'
+
+    writer = csv.writer(resp)
+    # Support filters/order parameters on export as well
+    tipo = request.GET.get('tipo')
+    if tipo:
+        qs = qs.filter(tipo=tipo)
+    tipo_combustivel = request.GET.get('tipo_combustivel')
+    if tipo_combustivel:
+        qs = qs.filter(tipo_combustivel=tipo_combustivel)
+
+    transportadora_id = request.GET.get('transportadora_id')
+    if transportadora_id:
+        qs = qs.filter(transportadora__pk=transportadora_id)
+    sort = request.GET.get('sort')
+    allowed_sort = {'marca', '-marca', 'modelo', '-modelo', 'consumo_medio', '-consumo_medio', 'tipo', '-tipo'}
+    if sort in allowed_sort:
+        qs = qs.order_by(sort)
+
+    header = ['id', 'marca', 'modelo', 'tipo', 'placa_atual', 'renavam', 'chassis', 'numero_motor', 'tipo_combustivel', 'codigo_patrimonio', 'consumo_medio', 'transportadora_id', 'transportadora_razao_social']
+    writer.writerow(header)
+
+    for v in qs:
+        transportadora_id = v.transportadora.pk if v.transportadora else ''
+        transportadora_razao = getattr(v.transportadora, 'razao_social', '') if v.transportadora else ''
+        writer.writerow([
+            v.pk,
+            v.marca,
+            v.modelo,
+            v.tipo,
+            v.get_current_plate() or '',
+            v.renavam or '',
+            v.chassis or '',
+            v.numero_motor or '',
+            v.tipo_combustivel or '',
+            v.codigo_patrimonio or '',
+            str(v.consumo_medio) if v.consumo_medio is not None else '',
+            transportadora_id,
+            transportadora_razao,
+            current_driver_id,
+            current_driver_nome,
+        ])
+
+    return resp
 
 
 # ==================== FAZENDAS ====================
@@ -276,7 +472,7 @@ def fazenda_list(request):
         'pode_adicionar': fazendas.filter(ativa=True).count() < request.user.empresa.limite_fazendas,
     }
     
-    return render(request, 'cadastros/fazenda_list.html', context)
+    return render(request, 'cadastros/fazenda/fazenda_list.html', context)
 
 
 @login_required
@@ -307,7 +503,7 @@ def fazenda_detail(request, pk):
         'docs_vencendo': docs_vencendo,
     }
     
-    return render(request, 'cadastros/fazenda_detail.html', context)
+    return render(request, 'cadastros/fazenda/fazenda_detail.html', context)
 
 
 @login_required
@@ -358,7 +554,7 @@ def fazenda_create(request):
             usuario=request.user
         )
     
-    return render(request, 'cadastros/fazenda_form.html', {
+    return render(request, 'cadastros/fazenda/fazenda_form.html', {
         'form': form,
         'action': 'Cadastrar'
     })
@@ -387,7 +583,7 @@ def fazenda_update(request, pk):
             
         )
     
-    return render(request, 'cadastros/fazenda_form.html', {
+    return render(request, 'cadastros/fazenda/fazenda_form.html', {
         'form': form,
         'fazenda': fazenda,
         'action': 'Editar'
@@ -411,7 +607,7 @@ def fazenda_delete(request, pk):
         messages.success(request, f'🗑️ Fazenda "{nome}" excluída com sucesso!')
         return redirect('cadastros:fazenda_list')
     
-    return render(request, 'cadastros/fazenda_confirm_delete.html', {'fazenda': fazenda})
+    return render(request, 'cadastros/fazenda/fazenda_confirm_delete.html', {'fazenda': fazenda})
 
 
 # ==================== PORTOS ====================
@@ -439,7 +635,7 @@ def porto_list(request):
     paginator = Paginator(portos_qs, 25)
     portos = paginator.get_page(request.GET.get('page'))
 
-    return render(request, 'cadastros/porto_list.html', {
+    return render(request, 'cadastros/porto/porto_list.html', {
         'portos': portos,
         'q': q,
         'tipo_atual': tipo_atual,
@@ -450,7 +646,7 @@ def porto_list(request):
 @login_required
 def porto_detail(request, pk):
     porto = get_object_or_404(Porto, pk=pk, empresa=request.user.empresa)
-    return render(request, 'cadastros/porto_detail.html', {'porto': porto})
+    return render(request, 'cadastros/porto/porto_detail.html', {'porto': porto})
 
 
 @login_required
@@ -470,7 +666,7 @@ def porto_create(request):
     else:
         form = PortoForm(empresa=request.user.empresa)
 
-    return render(request, 'cadastros/porto_form.html', {
+    return render(request, 'cadastros/porto/porto_form.html', {
         'form': form,
         'action': 'Cadastrar'
     })
@@ -489,7 +685,7 @@ def porto_update(request, pk):
     else:
         form = PortoForm(instance=porto, empresa=request.user.empresa)
 
-    return render(request, 'cadastros/porto_form.html', {
+    return render(request, 'cadastros/porto/porto_form.html', {
         'form': form,
         'porto': porto,
         'action': 'Editar'
@@ -506,7 +702,7 @@ def porto_delete(request, pk):
         messages.success(request, f'🗑️ Porto "{nome}" excluído com sucesso!')
         return redirect('cadastros:porto_list')
 
-    return render(request, 'cadastros/porto_confirm_delete.html', {'porto': porto})
+    return render(request, 'cadastros/porto/porto_confirm_delete.html', {'porto': porto})
 
 
 # ==================== API EXTERNA - CNPJ ====================
@@ -646,7 +842,7 @@ def endereco_create(request, fazenda_pk):
     else:
         form = EnderecoFazendaForm()
     
-    return render(request, 'cadastros/endereco_form.html', {
+    return render(request, 'cadastros/endereco/endereco_form.html', {
         'form': form,
         'fazenda': fazenda,
         'action': 'Adicionar'
@@ -668,7 +864,7 @@ def endereco_update(request, fazenda_pk, endereco_pk):
     else:
         form = EnderecoFazendaForm(instance=endereco)
     
-    return render(request, 'cadastros/endereco_form.html', {
+    return render(request, 'cadastros/endereco/endereco_form.html', {
         'form': form,
         'fazenda': fazenda,
         'endereco': endereco,
@@ -687,7 +883,7 @@ def endereco_delete(request, fazenda_pk, endereco_pk):
         messages.success(request, '🗑️ Endereço removido!')
         return redirect('cadastros:fazenda_detail', pk=fazenda.pk)
     
-    return render(request, 'cadastros/endereco_confirm_delete.html', {
+    return render(request, 'cadastros/endereco/endereco_confirm_delete.html', {
         'fazenda': fazenda,
         'endereco': endereco
     })
@@ -713,7 +909,7 @@ def contato_create(request, fazenda_pk):
     else:
         form = ContatoFazendaForm()
     
-    return render(request, 'cadastros/contato_form.html', {
+    return render(request, 'cadastros/contato/contato_form.html', {
         'form': form,
         'fazenda': fazenda,
         'action': 'Adicionar'
@@ -737,7 +933,7 @@ def contato_update(request, fazenda_pk, contato_pk):
     else:
         form = ContatoFazendaForm(instance=contato)
     
-    return render(request, 'cadastros/contato_form.html', {
+    return render(request, 'cadastros/contato/contato_form.html', {
         'form': form,
         'fazenda': fazenda,
         'contato': contato,
@@ -756,7 +952,7 @@ def contato_delete(request, fazenda_pk, contato_pk):
         messages.success(request, '🗑️ Contato removido!')
         return redirect('cadastros:fazenda_detail', pk=fazenda.pk)
     
-    return render(request, 'cadastros/contato_confirm_delete.html', {
+    return render(request, 'cadastros/contato/contato_confirm_delete.html', {
         'fazenda': fazenda,
         'contato': contato
     })
@@ -780,7 +976,7 @@ def conta_bancaria_create(request, fazenda_pk):
     else:
         form = ContaBancariaFazendaForm()
     
-    return render(request, 'cadastros/conta_bancaria_form.html', {
+    return render(request, 'cadastros/conta_bancaria/conta_bancaria_form.html', {
         'form': form,
         'fazenda': fazenda,
         'action': 'Adicionar'
@@ -802,7 +998,7 @@ def conta_bancaria_update(request, fazenda_pk, conta_pk):
     else:
         form = ContaBancariaFazendaForm(instance=conta)
     
-    return render(request, 'cadastros/conta_bancaria_form.html', {
+    return render(request, 'cadastros/conta_bancaria/conta_bancaria_form.html', {
         'form': form,
         'fazenda': fazenda,
         'conta': conta,
@@ -821,7 +1017,7 @@ def conta_bancaria_delete(request, fazenda_pk, conta_pk):
         messages.success(request, '🗑️ Conta bancária removida!')
         return redirect('cadastros:fazenda_detail', pk=fazenda.pk)
     
-    return render(request, 'cadastros/conta_bancaria_confirm_delete.html', {
+    return render(request, 'cadastros/conta_bancaria/conta_bancaria_confirm_delete.html', {
         'fazenda': fazenda,
         'conta': conta
     })
@@ -846,7 +1042,7 @@ def documento_create(request, fazenda_pk):
     else:
         form = DocumentoFazendaForm()
     
-    return render(request, 'cadastros/documento_form.html', {
+    return render(request, 'cadastros/documento/documento_form.html', {
         'form': form,
         'fazenda': fazenda,
         'action': 'Adicionar'
@@ -873,7 +1069,7 @@ def fornecedor_documento_create(request, fornecedor_pk):
     else:
         form = DocumentoFornecedorForm()
 
-    return render(request, 'cadastros/documento_form.html', {
+    return render(request, 'cadastros/documento/documento_form.html', {
         'form': form,
         'fornecedor': fornecedor,
         'action': 'Adicionar'
@@ -898,7 +1094,7 @@ def documento_update(request, fazenda_pk, documento_pk):
     else:
         form = DocumentoFazendaForm(instance=documento)
 
-    return render(request, 'cadastros/documento_form.html', {
+    return render(request, 'cadastros/documento/documento_form.html', {
         'form': form,
         'fazenda': fazenda,
         'documento': documento,
@@ -923,7 +1119,7 @@ def fornecedor_documento_update(request, fornecedor_pk, documento_pk):
     else:
         form = DocumentoFornecedorForm(instance=documento)
 
-    return render(request, 'cadastros/documento_form.html', {
+    return render(request, 'cadastros/documento/documento_form.html', {
         'form': form,
         'fornecedor': fornecedor,
         'documento': documento,
@@ -946,7 +1142,7 @@ def documento_delete(request, fazenda_pk, documento_pk):
         messages.success(request, '🗑️ Documento removido!')
         return redirect('cadastros:fazenda_detail', pk=fazenda.pk)
 
-    return render(request, 'cadastros/documento_confirm_delete.html', {
+    return render(request, 'cadastros/documento/documento_confirm_delete.html', {
         'fazenda': fazenda,
         'documento': documento
     })
@@ -965,7 +1161,7 @@ def fornecedor_documento_delete(request, fornecedor_pk, documento_pk):
         messages.success(request, '🗑️ Documento removido!')
         return redirect('cadastros:fornecedor_detail', pk=fornecedor.pk)
 
-    return render(request, 'cadastros/documento_confirm_delete.html', {
+    return render(request, 'cadastros/documento/documento_confirm_delete.html', {
         'fornecedor': fornecedor,
         'documento': documento
     })
@@ -1027,7 +1223,7 @@ def funcao_list(request):
     if q:
         funcoes = funcoes.filter(nome__icontains=q)
     
-    return render(request, 'cadastros/funcao_list.html', {'funcoes': funcoes})
+    return render(request, 'cadastros/funcao/funcao_list.html', {'funcoes': funcoes})
 
 
 @login_required
@@ -1053,6 +1249,55 @@ def funcao_create_ajax(request):
             }, status=400)
     
     return JsonResponse({'erro': 'Método não permitido'}, status=405)
+
+
+@login_required
+def funcao_create(request):
+    """Cria função de funcionário (fallback non-AJAX)"""
+    if request.method == 'POST':
+        form = FuncaoFuncionarioForm(request.POST)
+        if form.is_valid():
+            funcao = form.save(commit=False)
+            funcao.empresa = request.user.empresa
+            funcao.save()
+            messages.success(request, f'✅ Função "{funcao.nome}" criada com sucesso!')
+            return redirect('cadastros:funcao_list')
+    else:
+        form = FuncaoFuncionarioForm()
+    return render(request, 'cadastros/funcao/funcao_form.html', {'form': form, 'action': 'Cadastrar'})
+
+
+def funcao_update(request, pk):
+    """Editar função de funcionário"""
+    funcao = get_object_or_404(FuncaoFuncionario, pk=pk, empresa=request.user.empresa)
+    if request.method == 'POST':
+        form = FuncaoFuncionarioForm(request.POST, instance=funcao)
+        if form.is_valid():
+            funcao = form.save()
+            messages.success(request, f'✅ Função "{funcao.nome}" atualizada!')
+            return redirect('cadastros:funcao_list')
+    else:
+        form = FuncaoFuncionarioForm(instance=funcao)
+    return render(request, 'cadastros/funcao/funcao_form.html', {'form': form, 'funcao': funcao, 'action': 'Editar'})
+
+
+@login_required
+def funcao_delete(request, pk):
+    """Excluir função de funcionário (trata dependências)"""
+    from django.db.models.deletion import ProtectedError
+    funcao = get_object_or_404(FuncaoFuncionario, pk=pk, empresa=request.user.empresa)
+    if request.method == 'POST':
+        try:
+            nome = funcao.nome
+            funcao.delete()
+            messages.success(request, f'🗑️ Função "{nome}" excluída com sucesso!')
+            return redirect('cadastros:funcao_list')
+        except ProtectedError:
+            empregados = funcao.funcionarios.all()
+            sample = ', '.join([str(e) for e in empregados[:10]])
+            messages.error(request, f'❌ Não é possível excluir a função porque está atribuída a funcionários: {sample}')
+            return redirect('cadastros:funcao_list')
+    return render(request, 'cadastros/funcao/funcao_confirm_delete.html', {'funcao': funcao})
 
 
 # ==================== FUNCIONÁRIOS ====================
@@ -1104,7 +1349,7 @@ def funcionario_list(request):
         'total_funcionarios': funcionarios.count(),
     }
     
-    return render(request, 'cadastros/funcionario_list.html', context)
+    return render(request, 'cadastros/funcionario/funcionario_list.html', context)
 
 
 @login_required
@@ -1116,7 +1361,7 @@ def funcionario_detail(request, pk):
         empresa=request.user.empresa
     )
     
-    return render(request, 'cadastros/funcionario_detail.html', {
+    return render(request, 'cadastros/funcionario/funcionario_detail.html', {
         'funcionario': funcionario
     })
 
@@ -1135,6 +1380,13 @@ def funcionario_create(request):
             funcionario = form.save()
             messages.success(request, f'✅ Funcionário "{funcionario.nome_completo}" cadastrado!')
             return redirect('cadastros:funcionario_detail', pk=funcionario.pk)
+        else:
+            # Surface validation errors to the top to help debugging in the UI
+            try:
+                errors_text = '\n'.join([f"{k}: {', '.join(v)}" for k, v in form.errors.items()])
+            except Exception:
+                errors_text = str(form.errors)
+            messages.error(request, f'❌ Erros no formulário: {errors_text}')
     else:
         form = FuncionarioForm(
             empresa=request.user.empresa,
@@ -1144,7 +1396,7 @@ def funcionario_create(request):
     # Para o modal de nova função
     form_funcao = FuncaoFuncionarioForm()
     
-    return render(request, 'cadastros/funcionario_form.html', {
+    return render(request, 'cadastros/funcionario/funcionario_form.html', {
         'form': form,
         'form_funcao': form_funcao,
         'action': 'Cadastrar'
@@ -1168,6 +1420,13 @@ def funcionario_update(request, pk):
             funcionario = form.save()
             messages.success(request, f'✅ Funcionário "{funcionario.nome_completo}" atualizado!')
             return redirect('cadastros:funcionario_detail', pk=funcionario.pk)
+        else:
+            # Surface validation errors to the top to help debugging in the UI
+            try:
+                errors_text = '\n'.join([f"{k}: {', '.join(v)}" for k, v in form.errors.items()])
+            except Exception:
+                errors_text = str(form.errors)
+            messages.error(request, f'❌ Erros no formulário: {errors_text}')
     else:
         form = FuncionarioForm(
             instance=funcionario,
@@ -1177,7 +1436,7 @@ def funcionario_update(request, pk):
     
     form_funcao = FuncaoFuncionarioForm()
     
-    return render(request, 'cadastros/funcionario_form.html', {
+    return render(request, 'cadastros/funcionario/funcionario_form.html', {
         'form': form,
         'form_funcao': form_funcao,
         'funcionario': funcionario,
@@ -1196,7 +1455,7 @@ def funcionario_delete(request, pk):
         messages.success(request, f'🗑️ Funcionário "{nome}" excluído!')
         return redirect('cadastros:funcionario_list')
     
-    return render(request, 'cadastros/funcionario_confirm_delete.html', {
+    return render(request, 'cadastros/funcionario/funcionario_confirm_delete.html', {
         'funcionario': funcionario
     })
 
@@ -1254,7 +1513,7 @@ def cultura_list(request):
         'tipos_cultura': Cultura.TIPO_CULTURA,
     }
     
-    return render(request, 'cadastros/cultura_list.html', context)
+    return render(request, 'cadastros/cultura/cultura_list.html', context)
 
 
 @login_required
@@ -1271,7 +1530,7 @@ def cultura_detail(request, pk):
         # 'total_plantios': cultura.get_total_plantios(),  # Implementar depois
     }
     
-    return render(request, 'cadastros/cultura_detail.html', context)
+    return render(request, 'cadastros/cultura/cultura_detail.html', context)
 
 
 @login_required
@@ -1309,7 +1568,7 @@ def cultura_create(request):
             usuario=request.user
         )
     
-    return render(request, 'cadastros/cultura_form.html', {
+    return render(request, 'cadastros/cultura/cultura_form.html', {
         'form': form,
         'action': 'Cadastrar'
     })
@@ -1339,7 +1598,7 @@ def cultura_update(request, pk):
             usuario=request.user
         )
     
-    return render(request, 'cadastros/cultura_form.html', {
+    return render(request, 'cadastros/cultura/cultura_form.html', {
         'form': form,
         'cultura': cultura,
         'action': 'Editar'
@@ -1368,7 +1627,7 @@ def cultura_delete(request, pk):
         messages.success(request, f'🗑️ Cultura "{nome}" excluída com sucesso!')
         return redirect('cadastros:cultura_list')
     
-    return render(request, 'cadastros/cultura_confirm_delete.html', {'cultura': cultura})
+    return render(request, 'cadastros/cultura/cultura_confirm_delete.html', {'cultura': cultura})
 
 
 
@@ -1380,7 +1639,7 @@ def safra_list(request):
         messages.warning(request, 'Você não está vinculado a nenhuma empresa.')
         # Em vez de redirecionar, renderiza a lista com aviso e sem safras
         context = {'safras': [], 'empresa_missing': True}
-        return render(request, 'cadastros/safra_list.html', context)
+        return render(request, 'cadastros/safra/safra_list.html', context)
 
     safras = Safra.objects.filter(fazenda__empresa=empresa).select_related('fazenda', 'cultura')
 
@@ -1413,7 +1672,7 @@ def safra_list(request):
         'fazendas': Fazenda.objects.filter(empresa=empresa, ativa=True).order_by('nome'),
         'culturas': Cultura.objects.filter(empresa=empresa, ativa=True).order_by('nome'),
     }
-    return render(request, 'cadastros/safra_list.html', context)
+    return render(request, 'cadastros/safra/safra_list.html', context)
 
 #=====================================
 #                SAFRAS
@@ -1426,7 +1685,7 @@ def safra_create(request):
     empresa = request.user.empresa
     if not empresa:
         messages.warning(request, 'Você não está vinculado a nenhuma empresa.')
-        return render(request, 'cadastros/safra_form.html', {'empresa_missing': True, 'action': 'Cadastrar'})
+        return render(request, 'cadastros/safra/safra_form.html', {'empresa_missing': True, 'action': 'Cadastrar'})
 
     if request.method == 'POST':
         form = SafraForm(request.POST, user=request.user)
@@ -1448,7 +1707,7 @@ def safra_create(request):
                         if invalidos:
                             messages.error(request, f'❌ Talhões não pertencem à fazenda: {", ".join(invalidos)}')
                             safra.delete()
-                            return render(request, 'cadastros/safra_form.html', {'form': form, 'action': 'Cadastrar'})
+                            return render(request, 'cadastros/safra/safra_form.html', {'form': form, 'action': 'Cadastrar'})
 
                         # Valida conflitos
                         conflitos = []
@@ -1466,7 +1725,7 @@ def safra_create(request):
                         if conflitos:
                             messages.error(request, f'❌ Talhões já estão em uso: {", ".join(conflitos)}')
                             safra.delete()
-                            return render(request, 'cadastros/safra_form.html', {'form': form, 'action': 'Cadastrar'})
+                            return render(request, 'cadastros/safra/safra_form.html', {'form': form, 'action': 'Cadastrar'})
 
                         # Limpa e associa
                         safra.talhoes.clear()
@@ -1475,13 +1734,13 @@ def safra_create(request):
                     except ValueError as e:
                         messages.error(request, f'❌ IDs de talhões inválidos: {e}')
                         safra.delete()
-                        return render(request, 'cadastros/safra_form.html', {'form': form, 'action': 'Cadastrar'})
+                        return render(request, 'cadastros/safra/safra_form.html', {'form': form, 'action': 'Cadastrar'})
                     except Exception as e:
                         import traceback
                         traceback.print_exc()
                         messages.error(request, f'❌ Erro ao processar talhões: {e}')
                         safra.delete()
-                        return render(request, 'cadastros/safra_form.html', {'form': form, 'action': 'Cadastrar'})
+                        return render(request, 'cadastros/safra/safra_form.html', {'form': form, 'action': 'Cadastrar'})
 
                 total_talhoes = safra.talhoes.count()
                 messages.success(request, f'✅ Safra "{safra}" cadastrada com {total_talhoes} talhão(ões)!')
@@ -1495,7 +1754,7 @@ def safra_create(request):
     else:
         form = SafraForm(user=request.user)
 
-    return render(request, 'cadastros/safra_form.html', {'form': form, 'action': 'Cadastrar'})
+    return render(request, 'cadastros/safra/safra_form.html', {'form': form, 'action': 'Cadastrar'})
 
 
 @login_required
@@ -1522,7 +1781,7 @@ def safra_update(request, pk):
                         invalidos = [t.codigo for t in talhoes if t.fazenda != safra.fazenda]
                         if invalidos:
                             messages.error(request, f'❌ Talhões não pertencem à fazenda: {", ".join(invalidos)}')
-                            return render(request, 'cadastros/safra_form.html', {'form': form, 'safra': safra, 'action': 'Editar'})
+                            return render(request, 'cadastros/safra/safra_form.html', {'form': form, 'safra': safra, 'action': 'Editar'})
 
                         # Valida conflitos
                         conflitos = []
@@ -1539,17 +1798,17 @@ def safra_update(request, pk):
 
                         if conflitos:
                             messages.error(request, f'❌ Talhões já estão em uso: {", ".join(conflitos)}')
-                            return render(request, 'cadastros/safra_form.html', {'form': form, 'safra': safra, 'action': 'Editar'})
+                            return render(request, 'cadastros/safra/safra_form.html', {'form': form, 'safra': safra, 'action': 'Editar'})
 
                         safra.talhoes.set(talhoes)
                     except ValueError as e:
                         messages.error(request, f'❌ IDs de talhões inválidos: {e}')
-                        return render(request, 'cadastros/safra_form.html', {'form': form, 'safra': safra, 'action': 'Editar'})
+                        return render(request, 'cadastros/safra/safra_form.html', {'form': form, 'safra': safra, 'action': 'Editar'})
                     except Exception as e:
                         import traceback
                         traceback.print_exc()
                         messages.error(request, f'❌ Erro ao processar talhões: {e}')
-                        return render(request, 'cadastros/safra_form.html', {'form': form, 'safra': safra, 'action': 'Editar'})
+                        return render(request, 'cadastros/safra/safra_form.html', {'form': form, 'safra': safra, 'action': 'Editar'})
 
                 messages.success(request, f'✅ Safra "{safra}" atualizada com sucesso')
                 return redirect('cadastros:safra_detail', pk=safra.pk)
@@ -1562,7 +1821,7 @@ def safra_update(request, pk):
     else:
         form = SafraForm(instance=safra, user=request.user)
 
-    return render(request, 'cadastros/safra_form.html', {
+    return render(request, 'cadastros/safra/safra_form.html', {
         'form': form,
         'safra': safra,
         'action': 'Editar'
@@ -1573,7 +1832,7 @@ def safra_detail(request, pk):
     safra = get_object_or_404(Safra, pk=pk, fazenda__empresa=request.user.empresa)
     # Prepare comparativo
     context = {'safra': safra}
-    return render(request, 'cadastros/safra_detail.html', context)
+    return render(request, 'cadastros/safra/safra_detail.html', context)
 
 
 @login_required
@@ -1584,7 +1843,7 @@ def safra_delete(request, pk):
         safra.delete()
         messages.success(request, f'🗑️ Safra "{nome}" excluída com sucesso!')
         return redirect('cadastros:safra_list')
-    return render(request, 'cadastros/safra_confirm_delete.html', {'safra': safra})
+    return render(request, 'cadastros/safra/safra_confirm_delete.html', {'safra': safra})
 
 
 
@@ -1668,7 +1927,7 @@ def area_list(request):
         'total_areas': areas.count(),
     }
     
-    return render(request, 'cadastros/area_list.html', context)
+    return render(request, 'cadastros/area/area_list.html', context)
 
 
 @login_required
@@ -1699,7 +1958,7 @@ def area_create(request):
     else:
         form = AreaForm(user=request.user)
     
-    return render(request, 'cadastros/area_form.html', {
+    return render(request, 'cadastros/area/area_form.html', {
         'form': form,
         'title': 'Nova Área'
     })
@@ -1728,7 +1987,7 @@ def area_update(request, pk):
     else:
         form = AreaForm(instance=area, user=request.user)
     
-    return render(request, 'cadastros/area_form.html', {
+    return render(request, 'cadastros/area/area_form.html', {
         'form': form,
         'area': area,
         'title': f'Editar Área: {area.nome}'
@@ -1765,7 +2024,7 @@ def area_delete(request, pk):
         messages.success(request, f'🗑️ Área "{nome}" excluída com sucesso!')
         return redirect('cadastros:area_list')
     
-    return render(request, 'cadastros/area_confirm_delete.html', {
+    return render(request, 'cadastros/area/area_confirm_delete.html', {
         'area': area
     })
 
@@ -1797,7 +2056,7 @@ def area_detail(request, pk):
         'talhoes_disponiveis': talhoes.filter(status='DISPONIVEL').count(),
     }
     
-    return render(request, 'cadastros/area_detail.html', {
+    return render(request, 'cadastros/area/area_detail.html', {
         'area': area,
         'talhoes': talhoes,
         'stats': stats
@@ -1893,7 +2152,7 @@ def talhao_list(request):
         'stats': stats,
     }
     
-    return render(request, 'cadastros/talhao_list.html', context)
+    return render(request, 'cadastros/talhao/talhao_list.html', context)
 
 
 @login_required
@@ -1937,7 +2196,7 @@ def talhao_create(request):
     else:
         form = TalhaoForm(user=request.user)
     
-    return render(request, 'cadastros/talhao_form.html', {
+    return render(request, 'cadastros/talhao/talhao_form.html', {
         'form': form,
         'title': 'Novo Talhão'
     })
@@ -1966,7 +2225,7 @@ def talhao_update(request, pk):
     else:
         form = TalhaoForm(instance=talhao, user=request.user)
     
-    return render(request, 'cadastros/talhao_form.html', {
+    return render(request, 'cadastros/talhao/talhao_form.html', {
         'form': form,
         'talhao': talhao,
         'title': f'Editar Talhão: {talhao.codigo}'
@@ -2000,7 +2259,7 @@ def talhao_delete(request, pk):
         messages.success(request, f'🗑️ Talhão "{codigo}" excluído!')
         return redirect('cadastros:talhao_list')
     
-    return render(request, 'cadastros/talhao_confirm_delete.html', {
+    return render(request, 'cadastros/talhao/talhao_confirm_delete.html', {
         'talhao': talhao
     })
 
@@ -2031,7 +2290,7 @@ def talhao_detail(request, pk):
         media_produtividade=Avg('produtividade')
     )
     
-    return render(request, 'cadastros/talhao_detail.html', {
+    return render(request, 'cadastros/talhao/talhao_detail.html', {
         'talhao': talhao,
         'historico': historico,
         'historico_stats': historico_stats
@@ -2057,7 +2316,7 @@ def historico_create(request, talhao_pk):
     else:
         form = HistoricoTalhaoForm(initial={'talhao': talhao}, user=request.user)
 
-    return render(request, 'cadastros/historico_form.html', {
+    return render(request, 'cadastros/talhao/historico_form.html', {
         'form': form,
         'talhao': talhao,
         'action': 'Registrar'
@@ -2079,7 +2338,7 @@ def historico_update(request, pk):
     else:
         form = HistoricoTalhaoForm(instance=historico, user=request.user)
 
-    return render(request, 'cadastros/historico_form.html', {
+    return render(request, 'cadastros/talhao/historico_form.html', {
         'form': form,
         'historico': historico,
         'action': 'Editar'
@@ -2098,7 +2357,7 @@ def historico_delete(request, pk):
         messages.success(request, '🗑️ Histórico excluído!')
         return redirect('cadastros:talhao_detail', pk=talhao_pk)
 
-    return render(request, 'cadastros/historico_confirm_delete.html', {
+    return render(request, 'cadastros/talhao/historico_confirm_delete.html', {
         'historico': historico
     })
 
@@ -2109,7 +2368,7 @@ def historico_detail(request, pk):
     empresa = request.user.empresa
     historico = get_object_or_404(HistoricoTalhao.objects.select_related('talhao', 'cultura', 'registrado_por'), pk=pk, empresa=empresa)
 
-    return render(request, 'cadastros/historico_detail.html', {
+    return render(request, 'cadastros/talhao/historico_detail.html', {
         'historico': historico
     })
 
@@ -2285,7 +2544,7 @@ def vendedor_list(request):
         }
 
         logger.debug('About to render vendedor_list with %d vendedores', total_vendedores)
-        return render(request, 'cadastros/vendedor_list.html', context)
+        return render(request, 'cadastros/vendedor/vendedor_list.html', context)
     except Exception as e:
         logger.exception('Error in vendedor_list')
         messages.error(request, 'Erro ao listar vendedores: %s' % str(e))
@@ -2736,7 +2995,7 @@ def cliente_endereco_create(request, cliente_pk):
             messages.error(request, '❌ Corrija os erros no formulário: %s' % form.errors)
     else:
         form = EnderecoClienteForm()
-    return render(request, 'cadastros/endereco_form.html', {'form': form, 'cliente': cliente, 'action': 'Adicionar'})
+    return render(request, 'cadastros/endereco/endereco_form.html', {'form': form, 'cliente': cliente, 'action': 'Adicionar'})
 
 
 @login_required
@@ -2789,7 +3048,7 @@ def cliente_endereco_update(request, cliente_pk, endereco_pk):
     else:
         form = EnderecoClienteForm(instance=endereco)
     debug_form = request.GET.get('debug_form') == '1'
-    return render(request, 'cadastros/endereco_form.html', {'form': form, 'cliente': cliente, 'endereco': endereco, 'action': 'Editar', 'debug_form': debug_form})
+    return render(request, 'cadastros/endereco/endereco_form.html', {'form': form, 'cliente': cliente, 'endereco': endereco, 'action': 'Editar', 'debug_form': debug_form})
 
 
 @login_required
@@ -2800,7 +3059,7 @@ def cliente_endereco_delete(request, cliente_pk, endereco_pk):
         endereco.delete()
         messages.success(request, '🗑️ Endereço removido!')
         return redirect('cadastros:cliente_detail', pk=cliente.pk)
-    return render(request, 'cadastros/endereco_confirm_delete.html', {'cliente': cliente, 'endereco': endereco})
+    return render(request, 'cadastros/endereco/endereco_confirm_delete.html', {'cliente': cliente, 'endereco': endereco})
 
 
 # ==================== CONTATOS DO CLIENTE ====================
@@ -2820,7 +3079,7 @@ def cliente_contato_create(request, cliente_pk):
             messages.error(request, '❌ Corrija os erros no formulário: %s' % form.errors)
     else:
         form = ContatoClienteForm()
-    return render(request, 'cadastros/contato_form.html', {'form': form, 'cliente': cliente, 'action': 'Adicionar'})
+    return render(request, 'cadastros/contato/contato_form.html', {'form': form, 'cliente': cliente, 'action': 'Adicionar'})
 
 
 @login_required
@@ -2861,7 +3120,7 @@ def cliente_contato_update(request, cliente_pk, contato_pk):
             messages.error(request, '❌ Corrija os erros no formulário: %s' % form.errors)
     else:
         form = ContatoClienteForm(instance=contato)
-    return render(request, 'cadastros/contato_form.html', {'form': form, 'cliente': cliente, 'contato': contato, 'action': 'Editar'})
+    return render(request, 'cadastros/contato/contato_form.html', {'form': form, 'cliente': cliente, 'contato': contato, 'action': 'Editar'})
 
 
 @login_required
@@ -2872,7 +3131,7 @@ def cliente_contato_delete(request, cliente_pk, contato_pk):
         contato.delete()
         messages.success(request, '🗑️ Contato removido!')
         return redirect('cadastros:cliente_detail', pk=cliente.pk)
-    return render(request, 'cadastros/contato_confirm_delete.html', {'cliente': cliente, 'contato': contato})
+    return render(request, 'cadastros/contato/contato_confirm_delete.html', {'cliente': cliente, 'contato': contato})
 
 
 # ==================== CONTAS BANCÁRIAS DO CLIENTE ====================
@@ -2892,7 +3151,7 @@ def cliente_conta_create(request, cliente_pk):
             messages.error(request, '❌ Corrija os erros no formulário: %s' % form.errors)
     else:
         form = ContaBancariaClienteForm()
-    return render(request, 'cadastros/conta_bancaria_form.html', {'form': form, 'cliente': cliente, 'action': 'Adicionar'})
+    return render(request, 'cadastros/conta_bancaria/conta_bancaria_form.html', {'form': form, 'cliente': cliente, 'action': 'Adicionar'})
 
 
 @login_required
@@ -2931,7 +3190,7 @@ def cliente_conta_update(request, cliente_pk, conta_pk):
             messages.error(request, '❌ Corrija os erros no formulário: %s' % form.errors)
     else:
         form = ContaBancariaClienteForm(instance=conta)
-    return render(request, 'cadastros/conta_bancaria_form.html', {'form': form, 'cliente': cliente, 'conta': conta, 'action': 'Editar'})
+    return render(request, 'cadastros/conta_bancaria/conta_bancaria_form.html', {'form': form, 'cliente': cliente, 'conta': conta, 'action': 'Editar'})
 
 
 @login_required
@@ -2942,7 +3201,7 @@ def cliente_conta_delete(request, cliente_pk, conta_pk):
         conta.delete()
         messages.success(request, '🗑️ Conta bancária removida!')
         return redirect('cadastros:cliente_detail', pk=cliente.pk)
-    return render(request, 'cadastros/conta_bancaria_confirm_delete.html', {'cliente': cliente, 'conta': conta})
+    return render(request, 'cadastros/conta_bancaria/conta_bancaria_confirm_delete.html', {'cliente': cliente, 'conta': conta})
 
 
 @login_required
@@ -3001,7 +3260,7 @@ def cliente_documento_create(request, cliente_pk):
             messages.error(request, '❌ Corrija os erros no formulário: %s' % form.errors)
     else:
         form = DocumentoClienteForm()
-    return render(request, 'cadastros/documento_form.html', {'form': form, 'cliente': cliente, 'action': 'Adicionar'})
+    return render(request, 'cadastros/documento/documento_form.html', {'form': form, 'cliente': cliente, 'action': 'Adicionar'})
 
 
 @login_required
@@ -3041,7 +3300,7 @@ def cliente_documento_update(request, cliente_pk, documento_pk):
             messages.error(request, '❌ Corrija os erros no formulário: %s' % form.errors)
     else:
         form = DocumentoClienteForm(instance=documento)
-    return render(request, 'cadastros/documento_form.html', {'form': form, 'cliente': cliente, 'documento': documento, 'action': 'Editar'})
+    return render(request, 'cadastros/documento/documento_form.html', {'form': form, 'cliente': cliente, 'documento': documento, 'action': 'Editar'})
 
 
 @login_required
@@ -3052,7 +3311,7 @@ def cliente_documento_delete(request, cliente_pk, documento_pk):
         documento.delete()
         messages.success(request, '🗑️ Documento removido!')
         return redirect('cadastros:cliente_detail', pk=cliente.pk)
-    return render(request, 'cadastros/documento_confirm_delete.html', {'cliente': cliente, 'documento': documento})
+    return render(request, 'cadastros/documento/documento_confirm_delete.html', {'cliente': cliente, 'documento': documento})
 
 
 # ==================== ENDEREÇOS DO FORNECEDOR ====================
@@ -3072,7 +3331,7 @@ def fornecedor_endereco_create(request, fornecedor_pk):
             messages.error(request, '❌ Corrija os erros no formulário: %s' % form.errors)
     else:
         form = FornecedorEnderecoForm()
-    return render(request, 'cadastros/endereco_form.html', {'form': form, 'fornecedor': fornecedor, 'action': 'Adicionar'})
+    return render(request, 'cadastros/endereco/endereco_form.html', {'form': form, 'fornecedor': fornecedor, 'action': 'Adicionar'})
 
 
 @login_required
@@ -3092,7 +3351,7 @@ def fornecedor_endereco_update(request, fornecedor_pk, endereco_pk):
 
     # Optional debug: visit URL with ?debug_form=1 to display raw form HTML for diagnostics
     debug_form = request.GET.get('debug_form') == '1'
-    return render(request, 'cadastros/endereco_form.html', {'form': form, 'fornecedor': fornecedor, 'endereco': endereco, 'action': 'Editar', 'debug_form': debug_form})
+    return render(request, 'cadastros/endereco/endereco_form.html', {'form': form, 'fornecedor': fornecedor, 'endereco': endereco, 'action': 'Editar', 'debug_form': debug_form})
 
 
 @login_required
@@ -3103,7 +3362,7 @@ def fornecedor_endereco_delete(request, fornecedor_pk, endereco_pk):
         endereco.delete()
         messages.success(request, '🗑️ Endereço removido!')
         return redirect('cadastros:fornecedor_detail', pk=fornecedor.pk)
-    return render(request, 'cadastros/endereco_confirm_delete.html', {'fornecedor': fornecedor, 'endereco': endereco})
+    return render(request, 'cadastros/endereco/endereco_confirm_delete.html', {'fornecedor': fornecedor, 'endereco': endereco})
 
 
 # ==================== CONTATOS DO FORNECEDOR ====================
@@ -3123,7 +3382,7 @@ def fornecedor_contato_create(request, fornecedor_pk):
             messages.error(request, '❌ Corrija os erros no formulário: %s' % form.errors)
     else:
         form = FornecedorContatoForm()
-    return render(request, 'cadastros/contato_form.html', {'form': form, 'fornecedor': fornecedor, 'action': 'Adicionar'})
+    return render(request, 'cadastros/contato/contato_form.html', {'form': form, 'fornecedor': fornecedor, 'action': 'Adicionar'})
 
 
 @login_required
@@ -3138,7 +3397,7 @@ def fornecedor_contato_update(request, fornecedor_pk, contato_pk):
             return redirect('cadastros:fornecedor_detail', pk=fornecedor.pk)
     else:
         form = FornecedorContatoForm(instance=contato)
-    return render(request, 'cadastros/contato_form.html', {'form': form, 'fornecedor': fornecedor, 'contato': contato, 'action': 'Editar'})
+    return render(request, 'cadastros/contato/contato_form.html', {'form': form, 'fornecedor': fornecedor, 'contato': contato, 'action': 'Editar'})
 
 
 @login_required
@@ -3149,7 +3408,7 @@ def fornecedor_contato_delete(request, fornecedor_pk, contato_pk):
         contato.delete()
         messages.success(request, '🗑️ Contato removido!')
         return redirect('cadastros:fornecedor_detail', pk=fornecedor.pk)
-    return render(request, 'cadastros/contato_confirm_delete.html', {'fornecedor': fornecedor, 'contato': contato})
+    return render(request, 'cadastros/contato/contato_confirm_delete.html', {'fornecedor': fornecedor, 'contato': contato})
 
 
 # ==================== CONTAS BANCÁRIAS DO FORNECEDOR ====================
@@ -3169,7 +3428,7 @@ def fornecedor_conta_create(request, fornecedor_pk):
             messages.error(request, '❌ Corrija os erros no formulário: %s' % form.errors)
     else:
         form = FornecedorDadoBancarioForm()
-    return render(request, 'cadastros/conta_bancaria_form.html', {'form': form, 'fornecedor': fornecedor, 'action': 'Adicionar'})
+    return render(request, 'cadastros/conta_bancaria/conta_bancaria_form.html', {'form': form, 'fornecedor': fornecedor, 'action': 'Adicionar'})
 
 
 @login_required
@@ -3184,7 +3443,7 @@ def fornecedor_conta_update(request, fornecedor_pk, conta_pk):
             return redirect('cadastros:fornecedor_detail', pk=fornecedor.pk)
     else:
         form = FornecedorDadoBancarioForm(instance=conta)
-    return render(request, 'cadastros/conta_bancaria_form.html', {'form': form, 'fornecedor': fornecedor, 'conta': conta, 'action': 'Editar'})
+    return render(request, 'cadastros/conta_bancaria/conta_bancaria_form.html', {'form': form, 'fornecedor': fornecedor, 'conta': conta, 'action': 'Editar'})
 
 
 @login_required
@@ -3195,7 +3454,7 @@ def fornecedor_conta_delete(request, fornecedor_pk, conta_pk):
         conta.delete()
         messages.success(request, '🗑️ Conta bancária removida!')
         return redirect('cadastros:fornecedor_detail', pk=fornecedor.pk)
-    return render(request, 'cadastros/conta_bancaria_confirm_delete.html', {'fornecedor': fornecedor, 'conta': conta})
+    return render(request, 'cadastros/conta_bancaria/conta_bancaria_confirm_delete.html', {'fornecedor': fornecedor, 'conta': conta})
 
 
 @login_required
@@ -3235,7 +3494,7 @@ def vendedor_create(request):
         'title': 'Novo Vendedor'
     }
     
-    return render(request, 'cadastros/vendedor_form.html', context)
+    return render(request, 'cadastros/vendedor/vendedor_form.html', context)
 
 
 @login_required
@@ -3280,7 +3539,7 @@ def vendedor_update(request, pk):
         'title': f'Editar: {vendedor.nome_completo}'
     }
     
-    return render(request, 'cadastros/vendedor_form.html', context)
+    return render(request, 'cadastros/vendedor/vendedor_form.html', context)
 
 
 @login_required
@@ -3326,7 +3585,7 @@ def vendedor_detail(request, pk):
         'ultimas_comissoes': ultimas_comissoes,
     }
     
-    return render(request, 'cadastros/vendedor_detail.html', context)
+    return render(request, 'cadastros/vendedor/vendedor_detail.html', context)
 
 
 @login_required
@@ -3371,7 +3630,7 @@ def vendedor_delete(request, pk):
         return redirect('cadastros:vendedor_list')
     
     context = {'vendedor': vendedor}
-    return render(request, 'cadastros/vendedor_confirm_delete.html', context)
+    return render(request, 'cadastros/vendedor/vendedor_confirm_delete.html', context)
 
 
 # =============================================================================

@@ -7,10 +7,10 @@ from .models import (
     Fazenda, EnderecoFazenda, ContatoFazenda,
     ContaBancariaFazenda, DocumentoFazenda, Cultura
 )
-from .models import Area, Talhao, HistoricoTalhao, Safra, SafraPlan, SafraReal
+from .models import Area, Talhao, HistoricoTalhao, Safra, SafraPlan, SafraReal, FuncaoFuncionario
 from .models import Vendedor, ComissaoVendedor
 
-from .models import Fornecedor, FornecedorEndereco, FornecedorContato, FornecedorDadoBancario, Transportadora, Viagem, Porto, Moeda, Vehicle, VehiclePlate, VehicleAssignment, VehicleDocument
+from .models import Fornecedor, FornecedorEndereco, FornecedorContato, FornecedorDadoBancario, Transportadora, Viagem, Porto, Moeda, Vehicle, VehiclePlate, VehicleDocument, VehicleValueHistory
 
 class EnderecoFazendaInline(admin.TabularInline):
     """Inline para endereços"""
@@ -127,6 +127,19 @@ class DocumentoFazendaAdmin(admin.ModelAdmin):
             return '⚠️ Vencendo'
         return '✅ Válido'
     esta_vencido.short_description = 'Status'
+
+
+@admin.register(FuncaoFuncionario)
+class FuncaoFuncionarioAdmin(admin.ModelAdmin):
+    """Admin para funções de funcionário"""
+    list_display = ['nome', 'empresa', 'ativa']
+    search_fields = ['nome']
+    fieldsets = (
+        ('Informações', {
+            'fields': ('empresa', 'nome', 'descricao', 'salario_base', 'ativa'),
+            'description': 'Dica: crie uma função chamada "Motorista" para facilitar atribuições de veículos. Ao cadastrar motoristas, lembre-se de preencher CNH e data de validade.'
+        }),
+    )
 
 
 @admin.register(Cultura)
@@ -389,18 +402,18 @@ class VehicleDocumentInline(admin.TabularInline):
     extra = 0
     fields = ['tipo', 'numero', 'data_emissao', 'data_validade', 'arquivo']
 
-class VehicleAssignmentInline(admin.TabularInline):
-    model = VehicleAssignment
-    extra = 0
-    fields = ['motorista', 'placa', 'data_inicio', 'data_fim', 'motivo']
 
 @admin.register(Vehicle)
 class VehicleAdmin(admin.ModelAdmin):
-    list_display = ['__str__', 'empresa', 'transportadora', 'tipo', 'ativo', 'data_cadastro']
+    list_display = ['__str__', 'empresa', 'transportadora', 'tipo', 'ativo', 'consumo_medio', 'consumo_unidade', 'tank_capacity', 'estimated_range_display', 'data_cadastro']
     list_filter = ['tipo', 'ativo', 'empresa']
     search_fields = ['marca', 'modelo', 'plates__placa']
-    inlines = [VehiclePlateInline, VehicleDocumentInline, VehicleAssignmentInline]
+    inlines = [VehiclePlateInline, VehicleDocumentInline]
     readonly_fields = ['data_cadastro', 'data_atualizacao']
+
+    def estimated_range_display(self, obj):
+        return f"{obj.estimated_range_km} km" if obj.estimated_range_km else '—'
+    estimated_range_display.short_description = 'Estimativa (km)'
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
@@ -416,10 +429,15 @@ class VehiclePlateAdmin(admin.ModelAdmin):
     list_display = ['vehicle', 'placa', 'vigencia_inicio', 'vigencia_fim', 'atual']
     search_fields = ['placa', 'vehicle__marca', 'vehicle__modelo']
 
-@admin.register(VehicleAssignment)
-class VehicleAssignmentAdmin(admin.ModelAdmin):
-    list_display = ['vehicle', 'motorista', 'placa', 'data_inicio', 'data_fim']
-    search_fields = ['vehicle__plates__placa', 'motorista__nome_completo']
+
+
+@admin.register(VehicleValueHistory)
+class VehicleValueHistoryAdmin(admin.ModelAdmin):
+    list_display = ['vehicle', 'tipo', 'percentual', 'previous_value', 'new_value', 'aplicado_por', 'data_aplicacao']
+    list_filter = ['tipo', 'aplicado_por']
+    search_fields = ['vehicle__marca', 'vehicle__modelo']
+    readonly_fields = ['previous_value', 'new_value', 'percentual', 'tipo', 'aplicado_por', 'data_aplicacao']
+    ordering = ['-data_aplicacao']
 
 
 @admin.register(FornecedorEndereco)

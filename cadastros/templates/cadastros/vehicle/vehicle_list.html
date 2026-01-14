@@ -1,0 +1,328 @@
+{% extends 'base.html' %}
+{% block title %}Veículos | ERP Agrícola{% endblock %}
+
+{% block extra_css %}
+<style>
+  .stat-card-vehicle {
+    border-radius: 12px;
+    padding: 0.9rem 1.1rem;
+    color: white;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    display: flex;
+    gap: .75rem;
+    align-items: center;
+    text-decoration: none;
+    flex: 1 1 160px; /* allow wrapping and responsive sizing */
+    min-width: 150px;
+    max-width: 260px;
+  }
+  .stat-card-vehicle:hover { transform: translateY(-4px); box-shadow: 0 12px 30px rgba(0,0,0,0.12); }
+  .stat-icon { font-size: 1.4rem; opacity: 0.9 }
+  .stat-meta { font-size: .85rem; opacity: .9 }
+  .stat-count { font-size: 1.4rem; font-weight:700 }
+  .bg-LEVE { background: linear-gradient(135deg, #10b981 0%, #34d399 100%); }
+  .bg-MEDIO { background: linear-gradient(135deg, #60a5fa 0%, #7c3aed 100%); }
+  .bg-PESADO { background: linear-gradient(135deg, #f97316 0%, #f43f5e 100%); }
+  .bg-REBOQUE { background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%); }
+  .bg-IMPLEMENTO { background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%); }
+
+  /* Fornecedor-like cards and filter styling (aligned to fornecedor_list) */
+  .filter-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    margin-bottom: 1.5rem;
+  }
+  .fornecedor-card {
+    background-color: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    transition: all 0.3s ease;
+    margin-bottom: 1rem;
+    border-left: 4px solid #0ea5a4;
+  }
+  /* Ensure the inner row spreads columns across the full width */
+  .fornecedor-card .row {
+    align-items: center;
+    justify-content: space-between;
+  }
+  .fornecedor-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  }
+
+  .badge-status {
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+  .badge-ativo { background: #d4edda; color: #155724; }
+  .badge-inativo { background: #f8d7da; color: #721c24; }
+  .badge-bloqueado { background: #dc3545; color: white; }
+  .badge-em-analise { background: #fff3cd; color: #856404; }
+  .badge-pendente-doc { background: #ffc107; color: #000; }
+
+  .score-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    font-weight: 600;
+  }
+  .score-high { background: #d4edda; color: #155724; }
+  .score-medium { background: #fff3cd; color: #856404; }
+  .score-low { background: #f8d7da; color: #721c24; }
+
+  .categoria-tag {
+    display: inline-block;
+    padding: 0.25rem 0.6rem;
+    margin: 0.2rem;
+    background: #e3f2fd;
+    color: #1976d2;
+    border-radius: 12px;
+    font-size: 0.8rem;
+  }
+
+  .empty-state {
+    text-align:center;
+    padding: 3rem;
+    color: #6c757d;
+  }
+  .empty-state i {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    opacity: 0.3;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <!-- Breadcrumb -->
+  <nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
+      <li class="breadcrumb-item active">Veículos</li>
+    </ol>
+  </nav>
+
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="fw-bold mb-1"><i class="bi bi-truck text-success"></i> Veículos</h2>
+      <p class="text-muted mb-0">Gerencie sua frota</p>
+
+  </div>
+  <a id="addVehicleBtn" href="{% url 'cadastros:vehicle_create' %}" class="btn btn-success"><i class="bi bi-plus-circle"></i> Novo Veículo</a>
+</div>
+
+<div class="d-flex flex-wrap gap-3 mb-4 justify-content-center">
+  {% for t in tipo_counts %}
+    <a href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}tipo={{ t.key }}" class="stat-card-vehicle fornecedor-card bg-{{ t.key }}" title="Filtrar por {{ t.label }}">
+      <div class="stat-icon"><i class="bi bi-truck"></i></div>
+      <div>
+        <div class="stat-meta">{{ t.label }}</div>
+        <div class="stat-count">{{ t.count }}</div>
+      </div>
+    </a>
+  {% endfor %}
+</div>
+
+  {% if page_obj and page_obj.object_list %}
+
+    <div class="filter-card">
+      <form method="get" id="filterForm">
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label fw-semibold"><i class="bi bi-search"></i> Pesquisar</label>
+            <input type="text" name="q" class="form-control" placeholder="Marca, modelo ou placa" value="{{ request.GET.q }}">
+          </div>
+
+          <div class="col-md-2">
+            <label class="form-label fw-semibold">Tipo</label>
+            <select name="tipo" class="form-select">
+              <option value="">Todos</option>
+              {% for val,label in tipo_choices %}
+                <option value="{{ val }}" {% if request.GET.tipo == val %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="col-md-2">
+            <label class="form-label fw-semibold">Combustível</label>
+            <select name="tipo_combustivel" class="form-select">
+              <option value="">Todos</option>
+              {% for val,label in fuel_choices %}
+                <option value="{{ val }}" {% if request.GET.tipo_combustivel == val %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Transportadora</label>
+            <select name="transportadora_id" class="form-select">
+              <option value="">Todas</option>
+              {% for t in transportadoras %}
+                <option value="{{ t.pk }}" {% if request.GET.transportadora_id == t.pk|stringformat:'s' %}selected{% endif %}>{{ t.razao_social }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="col-md-1 d-flex align-items-end">
+            <button type="submit" class="btn btn-primary w-100"><i class="bi bi-funnel"></i></button>
+          </div>
+
+        </div>
+      </form>
+
+      <div class="mt-3 text-end">
+        <a href="{% url 'cadastros:vehicle_export_csv' %}?{{ request.GET.urlencode }}" class="btn btn-outline-secondary btn-sm">
+          <i class="bi bi-file-earmark-spreadsheet"></i> Exportar CSV
+        </a>
+      </div>
+    </div>
+
+    <!-- Lista de Veículos no estilo Fornecedor (um cartão por linha) -->
+    <div id="vehiclesList">
+      <div class="row">
+        {% for v in page_obj %}
+        <div class="col-12">
+          <div class="fornecedor-card">
+            <div class="row align-items-center">
+
+              <!-- Informações Principais -->
+              <div class="col-md-5">
+                <h5 class="mb-1 fw-bold">
+                  <i class="bi bi-truck-fill text-success"></i>
+                  {{ v.marca }} {{ v.modelo }}
+                </h5>
+                <p class="text-muted mb-2 small">
+                  <strong>Placa:</strong>
+                  {% if v.get_current_plate %}
+                    {{ v.get_current_plate }}
+                  {% else %}
+                    {% with p=v.plates.first %}
+                      {{ p.placa|default:'—' }}
+                    {% endwith %}
+                  {% endif %}
+                  {% if v.transportadora_name %}<br><strong>Transportadora:</strong> {{ v.transportadora_name }}{% endif %}
+                </p>
+
+                <div class="mb-2">
+                  <span class="categoria-tag">{{ v.get_tipo_display }}</span>
+                  {% if v.codigo_patrimonio %}<span class="categoria-tag">Patrimônio: {{ v.codigo_patrimonio }}</span>{% endif %}
+                </div>
+              </div>
+
+              <div class="col-md-3 text-center">
+                <div class="mb-2">
+                  {% if v.ativo %}
+                    <span class="badge-status badge-ativo">✓ Ativo</span>
+                  {% else %}
+                    <span class="badge-status badge-inativo">⏸ Inativo</span>
+                  {% endif %}
+                </div>
+                <div class="small text-muted">
+                  <strong>Motorista:</strong><br>
+                  {{ v.current_driver_name|default:'—' }}
+                </div>
+              </div>
+
+              <!-- Estatísticas -->
+              <div class="col-md-2 text-center">
+                <div class="mb-1">
+                  <strong class="text-success">R$ {{ v.valor_atual|floatformat:2|default:'—' }}</strong>
+                  <br><small class="text-muted">Valor Atual</small>
+                </div>
+                <div class="mb-1">
+                  <strong class="text-success">{% if v.consumo_medio %}{{ v.consumo_medio }} {% if v.consumo_unidade == 'L_KM' %}L/km{% else %}L/h{% endif %}{% else %}—{% endif %}</strong>
+                  <br><small class="text-muted">Consumo médio</small>
+                </div>
+                <div class="mb-1">
+                  <strong class="text-success">{% if v.estimated_range_km %}{{ v.estimated_range_km|floatformat:0 }} km{% elif v.estimated_hours_per_tank %}{{ v.estimated_hours_per_tank|floatformat:2 }} h{% else %}—{% endif %}</strong>
+                  <br><small class="text-muted">Autonomia (aprox.)</small>
+                </div>
+                <div>
+                  <strong>{{ v.renavam|default:'—' }}</strong>
+                  <br><small class="text-muted">RENAVAM</small>
+                </div>
+              </div>
+
+              <div class="col-md-2 text-end">
+                <a href="{% url 'cadastros:vehicle_detail' v.pk %}" class="btn btn-sm btn-outline-info" title="Ver Detalhes"><i class="bi bi-eye"></i></a>
+                <a href="{% url 'cadastros:vehicle_update' v.pk %}" class="btn btn-sm btn-outline-primary" title="Editar"><i class="bi bi-pencil"></i></a>
+                <a href="{% url 'cadastros:vehicle_delete' v.pk %}" class="btn btn-sm btn-outline-danger" title="Excluir"><i class="bi bi-trash"></i></a>
+              </div>
+
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+
+      <!-- Total e Paginação -->
+      <div class="mt-3 text-center text-muted">
+        <small>Total: <strong>{{ page_obj.paginator.count }}</strong> veículo{{ page_obj.paginator.count|pluralize }}</small>
+        <div class="small text-muted">Mostrando {{ page_obj.start_index }}–{{ page_obj.end_index }} de {{ page_obj.paginator.count }}</div>
+      </div>
+
+      {% if page_obj.has_other_pages %}
+      <nav aria-label="Page navigation">
+        <ul class="pagination justify-content-center">
+          {% if page_obj.has_previous %}
+            <li class="page-item">
+              {% if request.GET %}<a class="page-link" href="?{{ request.GET.urlencode }}&page={{ page_obj.previous_page_number }}">&laquo; Anterior</a>{% else %}<a class="page-link" href="?page={{ page_obj.previous_page_number }}">&laquo; Anterior</a>{% endif %}
+            </li>
+          {% else %}
+            <li class="page-item disabled"><span class="page-link">&laquo; Anterior</span></li>
+          {% endif %}
+
+          {% for p in page_obj.paginator.page_range %}
+            <li class="page-item {% if p == page_obj.number %}active{% endif %}">
+              {% if request.GET %}<a class="page-link" href="?{{ request.GET.urlencode }}&page={{ p }}">{{ p }}</a>{% else %}<a class="page-link" href="?page={{ p }}">{{ p }}</a>{% endif %}
+            </li>
+          {% endfor %}
+
+          {% if page_obj.has_next %}
+            <li class="page-item">
+              {% if request.GET %}<a class="page-link" href="?{{ request.GET.urlencode }}&page={{ page_obj.next_page_number }}">Próximo &raquo;</a>{% else %}<a class="page-link" href="?page={{ page_obj.next_page_number }}">Próximo &raquo;</a>{% endif %}
+            </li>
+          {% else %}
+            <li class="page-item disabled"><span class="page-link">Próximo &raquo;</span></li>
+          {% endif %}
+        </ul>
+      </nav>
+      {% endif %}
+
+    </div>
+
+  {% else %}
+    <div class="empty-state">
+      <i class="bi bi-truck"></i>
+      <h4 class="text-muted">Nenhum veículo encontrado</h4>
+      {% if request.GET.q or request.GET.tipo or request.GET.tipo_combustivel or request.GET.transportadora_id %}
+        <p>Tente ajustar os filtros de pesquisa</p>
+        <a href="{% url 'cadastros:vehicle_list' %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-counterclockwise"></i> Limpar Filtros</a>
+      {% else %}
+        <p>Comece cadastrando seu primeiro veículo</p>
+        <a href="{% url 'cadastros:vehicle_create' %}" class="btn btn-success"><i class="bi bi-plus-circle"></i> Novo Veículo</a>
+      {% endif %}
+    </div>
+  {% endif %}
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const filterForm = document.getElementById('filterForm');
+  if (filterForm) {
+    const selects = filterForm.querySelectorAll('select');
+    selects.forEach(select => select.addEventListener('change', function() { filterForm.submit(); }));
+  }
+});
+</script>
+
+{% endblock %}

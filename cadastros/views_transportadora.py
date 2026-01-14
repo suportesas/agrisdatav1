@@ -11,7 +11,7 @@ from django.contrib import messages
 @login_required
 def transportadora_list(request):
     if not request.user.empresa:
-        return render(request, 'cadastros/transportadora_list.html', {'page_obj': None, 'total': 0})
+        return render(request, 'cadastros/transportadora/transportadora_list.html', {'page_obj': None, 'total': 0})
 
     qs = Transportadora.objects.filter(empresa=request.user.empresa).prefetch_related('viagens')
 
@@ -62,7 +62,7 @@ def transportadora_list(request):
         'filtro_uf': uf,
         'ufs': UFS,
     }
-    return render(request, 'cadastros/transportadora_list.html', context)
+    return render(request, 'cadastros/transportadora/transportadora_list.html', context)
 
 
 @login_required
@@ -74,7 +74,7 @@ def transportadora_detail(request, pk):
         'transportadora': t,
         'viagens': viagens,
     }
-    return render(request, 'cadastros/transportadora_detail.html', context)
+    return render(request, 'cadastros/transportadora/transportadora_detail.html', context)
 
 
 @login_required
@@ -92,7 +92,7 @@ def transportadora_create(request):
     else:
         form = TransportadoraForm(empresa=request.user.empresa)
 
-    return render(request, 'cadastros/transportadora_form.html', {'form': form, 'action': 'Criar'})
+    return render(request, 'cadastros/transportadora/transportadora_form.html', {'form': form, 'action': 'Criar'})
 
 
 @login_required
@@ -107,7 +107,7 @@ def transportadora_update(request, pk):
     else:
         form = TransportadoraForm(instance=t, empresa=request.user.empresa)
 
-    return render(request, 'cadastros/transportadora_form.html', {'form': form, 'transportadora': t, 'action': 'Editar'})
+    return render(request, 'cadastros/transportadora/transportadora_form.html', {'form': form, 'transportadora': t, 'action': 'Editar'})
 
 
 @login_required
@@ -117,7 +117,7 @@ def transportadora_delete(request, pk):
         t.delete()
         messages.success(request, 'Transportadora excluída!')
         return redirect('cadastros:transportadora_list')
-    return render(request, 'cadastros/transportadora_confirm_delete.html', {'transportadora': t})
+    return render(request, 'cadastros/transportadora/transportadora_confirm_delete.html', {'transportadora': t})
 
 
 @login_required

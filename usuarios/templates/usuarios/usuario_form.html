@@ -24,7 +24,9 @@
       </div>
       {% endif %}
 
-      <form method="post" enctype="multipart/form-data" novalidate>
+      <form id="form-usuario" method="post" enctype="multipart/form-data" novalidate>
+        <!-- Loading indicator -->
+        <div id="loading" class="d-none">Salvando...</div>
         {% csrf_token %}
 
         <div class="row g-3">
@@ -104,6 +106,22 @@
             </div>
             {% endif %}
           </div>
+
+          <!-- Roles / Funções -->
+          {% if form.roles %}
+          <div class="col-md-6">
+            <label class="form-label fw-bold">{{ form.roles.label }}</label>
+            {{ form.roles }}
+            {% if form.roles.errors %}
+            <div class="text-danger small mt-1">
+              {{ form.roles.errors|join:", " }}
+            </div>
+            {% endif %}
+            {% if form.roles.help_text %}
+            <div class="form-text">{{ form.roles.help_text }} • <a href="{% url 'empresas:roles_list' %}">Gerenciar Funções</a></div>
+            {% endif %}
+          </div>
+          {% endif %}
 
           <!-- Telefone -->
           <div class="col-md-6">
@@ -202,6 +220,14 @@
     height: 42px !important;
     border-radius: 8px !important;
   }
+
+  /* Override to increase visible rows for select lists with size attribute */
+  select.form-select[size], select.form-select[multiple] {
+    min-height: 220px !important;
+    height: auto !important;
+    overflow-y: auto;
+  }
+
   .form-label {
     margin-bottom: 0.5rem;
   }

@@ -362,6 +362,13 @@ def usuario_update(request, pk):
                 f'✅ Usuário {usuario.get_full_name()} atualizado com sucesso!'
             )
             return redirect('usuarios:usuario_list')
+        else:
+            # Surface validation errors to aid debugging
+            try:
+                errors_text = '\n'.join([f"{k}: {', '.join(v)}" for k, v in form.errors.items()])
+            except Exception:
+                errors_text = str(form.errors)
+            messages.error(request, f'❌ Erros no formulário: {errors_text}')
     else:
         form = UsuarioUpdateForm(instance=usuario, user=request.user)
     

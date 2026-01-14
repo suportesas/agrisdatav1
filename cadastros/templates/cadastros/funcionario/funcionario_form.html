@@ -15,6 +15,24 @@
   .quick-add-btn:hover {
     transform: scale(1.05);
   }
+
+  /* Increase visible size of select lists (override global 42px rule) */
+  select.form-select[size], #id_funcao {
+    min-height: 220px !important;
+    height: auto !important;
+    overflow-y: auto;
+  }
+  /* Specifically for multiple selects (roles) */
+  select.form-select[multiple], select.form-select[size][multiple] {
+    min-height: 220px !important;
+  }
+
+  /* Small screens: slightly smaller */
+  @media (max-width: 576px) {
+    select.form-select[size], #id_funcao {
+      min-height: 160px !important;
+    }
+  }
 </style>
 {% endblock %}
 
@@ -175,6 +193,22 @@
               <i class="bi bi-plus-circle"></i> Nova Função
             </button>
           </div>
+
+          <!-- Campos específicos para Motorista (CNH) - inicialmente escondidos -->
+          <div id="motorista_fields" class="col-md-6 d-none">
+            <label class="form-label fw-semibold">CNH</label>
+            {{ form.cnh }}
+            {% if form.cnh.errors %}
+              <div class="text-danger small">{{ form.cnh.errors|striptags }}</div>
+            {% endif %}
+          </div>
+          <div id="motorista_fields_validade" class="col-md-6 d-none">
+            <label class="form-label fw-semibold">Validade CNH</label>
+            {{ form.cnh_validade }}
+            {% if form.cnh_validade.errors %}
+              <div class="text-danger small">{{ form.cnh_validade.errors|striptags }}</div>
+            {% endif %}
+          </div>
           <div class="col-md-4">
             <label class="form-label fw-semibold">Tipo de Contrato *</label>
             {{ form.tipo_contrato }}
@@ -329,7 +363,7 @@
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
-        <form id="formNovaFuncao">
+        <form id="formNovaFuncao" method="post" action="{% url 'cadastros:funcao_create' %}">
           {% csrf_token %}
           <div id="funcao-errors" aria-live="polite"></div>
           <div class="mb-3">
@@ -393,4 +427,39 @@
   };
 </script>
 <script src="{% static 'js/cadastros_funcionario.js' %}"></script>
+
+<script>
+  // Toggle CNH fields visibility based on selected função
+  document.addEventListener('DOMContentLoaded', function() {
+    const funcaoSelect = document.getElementById('id_funcao');
+    const motoristaFields = document.getElementById('motorista_fields');
+    const motoristaFieldsVal = document.getElementById('motorista_fields_validade');
+
+    function toggleMotoristaFields() {
+      if (!funcaoSelect) return;
+      const opt = funcaoSelect.options[funcaoSelect.selectedIndex];
+      const txt = (opt && opt.text) ? opt.text.toLowerCase() : '';
+      const isMotorista = txt.indexOf('motorista') !== -1;
+      if (isMotorista) {
+        motoristaFields && motoristaFields.classList.remove('d-none');
+        motoristaFieldsVal && motoristaFieldsVal.classList.remove('d-none');
+      } else {
+        motoristaFields && motoristaFields.classList.add('d-none');
+        motoristaFieldsVal && motoristaFieldsVal.classList.add('d-none');
+      }
+    }
+
+    // Run on change and on load
+    if (funcaoSelect) {
+      funcaoSelect.addEventListener('change', toggleMotoristaFields);
+      toggleMotoristaFields();
+    }
+
+    // Also re-run after modal may add a new função and set it (the AJAX already sets the value)
+    document.getElementById('btnSalvarFuncao') && document.getElementById('btnSalvarFuncao').addEventListener('click', function() {
+      // small timeout to allow AJAX to set the new option
+      setTimeout(toggleMotoristaFields, 500);
+    });
+  });
+</script>
 {% endblock %}

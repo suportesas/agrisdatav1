@@ -232,7 +232,10 @@ def role_update(request, role_id):
     return render(request, 'empresas/role_form.html', {'form': form, 'action': 'Editar', 'role': role})
 
 
+from django.views.decorators.csrf import ensure_csrf_cookie
+
 @login_required
+@ensure_csrf_cookie
 def role_permissions(request, role_id):
     """GET: retorna permissões (codename, name, app, model, has)
        POST: atualiza permissões da role (espera JSON {'permissions': [codename,...]})
@@ -309,6 +312,13 @@ def save_permission_template(request, role_id):
     role = get_object_or_404(Role, pk=role_id)
     if not request.user.is_superuser and role.empresa != request.user.empresa:
         return JsonResponse({'error': 'Permissão negada'}, status=403)
+
+    # Debugging aid: log CSRF presence for E2E diagnostics
+    try:
+        print('DEBUG save_permission_template: csrftoken cookie=', request.COOKIES.get('csrftoken'))
+        print('DEBUG save_permission_template: X-CSRFToken header=', request.headers.get('X-CSRFToken'))
+    except Exception:
+        pass
 
     try:
         payload = json.loads(request.body.decode('utf-8'))

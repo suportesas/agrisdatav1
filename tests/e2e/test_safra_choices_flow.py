@@ -93,6 +93,10 @@ def test_talhao_in_use_hidden_in_dropdown(page, live_server, e2e_safra_data, dja
     page.select_option('#id_fazenda', str(fazenda.pk))
     page.wait_for_selector('#talhoes-loading', state='hidden')
 
+    # Ensure the talhoes select is visible and populated (Choices.js initialization may be async)
+    page.wait_for_selector('#id_talhoes', state='visible', timeout=5000)
+    page.wait_for_function("() => document.querySelectorAll('#id_talhoes option:not([disabled])').length > 0", timeout=5000)
+
     # Note: older behavior hid talhões em uso; in current UI talhões may be present but disabled.
     # Ensure Choices.js is initialized (assets available)
     assert page.locator('.choices').count() >= 0
@@ -101,7 +105,19 @@ def test_talhao_in_use_hidden_in_dropdown(page, live_server, e2e_safra_data, dja
     page.select_option('#id_cultura', str(cultura.pk))
     # Seleciona primeira opção disponível (deve existir pelo setup)
     first_val = page.locator('#id_talhoes option:not([disabled])').nth(0).get_attribute('value')
-    page.select_option('#id_talhoes', first_val)
+    try:
+        page.select_option('#id_talhoes', first_val)
+    except Exception:
+        import os
+        os.makedirs('artifacts/screenshots', exist_ok=True)
+        os.makedirs('artifacts/html', exist_ok=True)
+        screenshot_path = 'artifacts/screenshots/safra_choices_debug.png'
+        html_path = 'artifacts/html/safra_choices_debug.html'
+        page.screenshot(path=screenshot_path, full_page=True)
+        with open(html_path, 'w', encoding='utf-8') as fh:
+            fh.write(page.content())
+        print(f'DEBUG: saved screenshot {screenshot_path} and html {html_path}')
+        raise
 
     # Preenche datas mínimas
     today = date.today().isoformat()

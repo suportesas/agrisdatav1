@@ -75,7 +75,19 @@ def test_vehicle_create_plate_assign(page, live_server, e2e_vehicle_data):
         page.click('#vehicleSaveBtn', force=True)
 
     # Wait for redirect to detail page
-    page.wait_for_url(f"{live_server.url}/cadastros/veiculos/*")
+    try:
+        page.wait_for_url(f"{live_server.url}/cadastros/veiculos/*", timeout=30000)
+    except Exception:
+        import os
+        os.makedirs('artifacts/screenshots', exist_ok=True)
+        os.makedirs('artifacts/html', exist_ok=True)
+        screenshot_path = 'artifacts/screenshots/vehicle_create_debug.png'
+        html_path = 'artifacts/html/vehicle_create_debug.html'
+        page.screenshot(path=screenshot_path, full_page=True)
+        with open(html_path, 'w', encoding='utf-8') as fh:
+            fh.write(page.content())
+        print(f'DEBUG: saved screenshot {screenshot_path} and html {html_path}')
+        raise
 
     # Check brand/model present
     assert page.locator('text=TestMarca').count() >= 1

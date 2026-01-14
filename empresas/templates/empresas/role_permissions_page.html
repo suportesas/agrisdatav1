@@ -19,6 +19,8 @@
   </div>
 
   <div id="permissions-area">Carregando...</div>
+  <!-- Ensure CSRF token is present in DOM for AJAX and E2E tests to read -->
+  <form style="display:none">{% csrf_token %}</form>
 </div>
 
 {% include 'empresas/roles_js.html' %}

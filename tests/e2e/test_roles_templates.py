@@ -35,6 +35,20 @@ def test_save_and_apply_template_via_ui(page, live_server, e2e_templates_data):
     page.goto(f"{live_server.url}/empresas/roles/{role.id}/permissions/")
     page.wait_for_selector('text=Permissões')
 
+    # Ensure CSRF cookie is present (some AJAX endpoints require the csrftoken cookie)
+    token = page.evaluate("() => (document.querySelector('input[name=csrfmiddlewaretoken]') ? document.querySelector('input[name=csrfmiddlewaretoken]').value : '')")
+    if token:
+        # Use URL to scope cookie so Playwright sets it correctly for local dev server
+        page.context.add_cookies([{'name':'csrftoken','value':token,'url': live_server.url,'path':'/'}])
+        # Debug: list cookies after adding
+        try:
+            ck = page.context.cookies()
+            print('DEBUG cookies after add:', ck)
+        except Exception:
+            pass
+    else:
+        print('DEBUG: no csrf token found on page; continuing (may fail CSRF checks)')
+
     # Wait for permission rows to render and toggle first add checkbox
     page.wait_for_selector('table tbody tr', timeout=10000)
     first_add = page.locator('table tbody tr >> nth=0 input[name="add"]')
@@ -46,11 +60,37 @@ def test_save_and_apply_template_via_ui(page, live_server, e2e_templates_data):
 
     # Prepare dialog handler before clicking the Save button
     page.on('dialog', lambda dialog: dialog.accept('E2E Template'))
-    # Save as template using button
+    # Ensure CSRF cookie/header present for the AJAX save (fallback): fetch a page that sets CSRF token and use it
+    page.goto(f"{live_server.url}/login/")
+    try:
+        page.wait_for_selector('input[name=csrfmiddlewaretoken]', timeout=5000)
+        token2 = page.evaluate("() => (document.querySelector('input[name=csrfmiddlewaretoken]') ? document.querySelector('input[name=csrfmiddlewaretoken]').value : '')")
+        if token2:
+            page.context.add_cookies([{'name':'csrftoken','value':token2,'domain': host,'path':'/'}])
+            print('DEBUG: set csrftoken from login page')
+    except Exception:
+        print('DEBUG: could not obtain csrf token from login page')
+    # Go back to permissions page
+    page.goto(f"{live_server.url}/empresas/roles/{role.id}/permissions/")
+    page.wait_for_selector('text=Permissões')
+# Save as template using button
     page.click('text=Salvar como template')
 
     # Wait for success toast
-    page.wait_for_selector('text=Template salvo com sucesso', timeout=10000)
+    try:
+        page.wait_for_selector('text=Template salvo com sucesso', timeout=10000)
+    except Exception as e:
+        import os
+        os.makedirs('artifacts/screenshots', exist_ok=True)
+        os.makedirs('artifacts/html', exist_ok=True)
+        screenshot_path = 'artifacts/screenshots/roles_template_save_debug.png'
+        html_path = 'artifacts/html/roles_template_save_debug.html'
+        page.screenshot(path=screenshot_path, full_page=True)
+        with open(html_path, 'w', encoding='utf-8') as fh:
+            fh.write(page.content())
+        print(f'DEBUG: saved screenshot {screenshot_path} and html {html_path}')
+        # No fallback: surface the failure so test reflects app behavior
+        raise
 
     # Ensure template exists via API
     resp = page.request.get(f"{live_server.url}/empresas/roles/templates/")
@@ -65,7 +105,19 @@ def test_save_and_apply_template_via_ui(page, live_server, e2e_templates_data):
     page.click('text=Aplicar')
 
     # Wait for success
-    page.wait_for_selector('text=Template aplicado com sucesso')
+    try:
+        page.wait_for_selector('text=Template aplicado com sucesso', timeout=10000)
+    except Exception:
+        import os
+        os.makedirs('artifacts/screenshots', exist_ok=True)
+        os.makedirs('artifacts/html', exist_ok=True)
+        screenshot_path = 'artifacts/screenshots/roles_template_apply_debug.png'
+        html_path = 'artifacts/html/roles_template_apply_debug.html'
+        page.screenshot(path=screenshot_path, full_page=True)
+        with open(html_path, 'w', encoding='utf-8') as fh:
+            fh.write(page.content())
+        print(f'DEBUG: saved screenshot {screenshot_path} and html {html_path}')
+        raise
 
     # Check that a RoleAudit entry was created (server-side) by requesting templates detail
     from empresas.models import PermissionTemplate

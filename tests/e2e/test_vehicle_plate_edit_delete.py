@@ -60,8 +60,20 @@ def test_edit_and_delete_plate(page, live_server, e2e_plate_data):
     page.click('#plateEditModal button:has-text("Salvar")')
 
     # Wait for DOM update
-    page.wait_for_selector('text=NEW-2222')
-    assert page.locator('text=NEW-2222').count() >= 1
+    try:
+        page.wait_for_selector('text=NEW-2222', timeout=20000)
+        assert page.locator('text=NEW-2222').count() >= 1
+    except Exception:
+        import os
+        os.makedirs('artifacts/screenshots', exist_ok=True)
+        os.makedirs('artifacts/html', exist_ok=True)
+        screenshot_path = 'artifacts/screenshots/plate_edit_debug.png'
+        html_path = 'artifacts/html/plate_edit_debug.html'
+        page.screenshot(path=screenshot_path, full_page=True)
+        with open(html_path, 'w', encoding='utf-8') as fh:
+            fh.write(page.content())
+        print(f'DEBUG: saved screenshot {screenshot_path} and html {html_path}')
+        raise
 
     # Now delete the plate (confirm page)
     page.click('a:has-text("Excluir")')

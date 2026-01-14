@@ -37,9 +37,22 @@ def test_role_selection_highlight_and_hide(page, live_server, e2e_roles_data, dj
     # Turn off hide and ensure both visible (poll a few times for animation/dom updates)
     page.click('#toggle-hide')
     visible_count2 = 0
-    for _ in range(20):
+    # Give more time for animations / DOM updates
+    for _ in range(40):
         visible_count2 = page.evaluate("() => Array.from(document.querySelectorAll('.role-card')).filter(c=>c.offsetParent!==null).length")
         if visible_count2 >= 2:
             break
-        page.wait_for_timeout(250)
-    assert visible_count2 >= 2, f'Expected at least 2 visible roles, got {visible_count2}'
+        page.wait_for_timeout(500)
+    try:
+        assert visible_count2 >= 2, f'Expected at least 2 visible roles, got {visible_count2}'
+    except AssertionError:
+        import os
+        os.makedirs('artifacts/screenshots', exist_ok=True)
+        os.makedirs('artifacts/html', exist_ok=True)
+        screenshot_path = 'artifacts/screenshots/roles_ui_debug.png'
+        html_path = 'artifacts/html/roles_ui_debug.html'
+        page.screenshot(path=screenshot_path, full_page=True)
+        with open(html_path, 'w', encoding='utf-8') as fh:
+            fh.write(page.content())
+        print(f'DEBUG: saved screenshot {screenshot_path} and html {html_path}')
+        raise

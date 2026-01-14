@@ -1,0 +1,24 @@
+[
+  {
+    "model": "cadastros.ncm",
+    "pk": 1,
+    "fields": {
+      "codigo": "01012100",
+      "nome": "Cavalos, asininos e muares vivos",
+      "cest": "",
+      "descricao": "Exemplo de NCM",
+      "ativo": true
+    }
+  },
+  {
+    "model": "cadastros.ncm",
+    "pk": 2,
+    "fields": {
+      "codigo": "02011000",
+      "nome": "Carne de bovinos fresca ou refrigerada",
+      "cest": "",
+      "descricao": "Exemplo de NCM 2",
+      "ativo": true
+    }
+  }
+]

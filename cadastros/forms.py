@@ -7,7 +7,7 @@ from django import forms
 from django.core.exceptions import ValidationError
 from .models import (
     Fazenda, EnderecoFazenda, ContatoFazenda,
-    ContaBancariaFazenda, DocumentoFazenda,
+    ContaBancariaFazenda, DocumentoFazenda, NCM,
 )
 
 # Modelos de Cliente
@@ -236,6 +236,27 @@ class FazendaForm(forms.ModelForm):
                 raise
         
         return fazenda
+
+
+class NCMForm(forms.ModelForm):
+    """Form para cadastro/edição de NCM"""
+
+    class Meta:
+        model = NCM
+        fields = ['codigo', 'nome', 'cest', 'descricao', 'ativo']
+        widgets = {
+            'codigo': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: 01012100'}),
+            'nome': forms.TextInput(attrs={'class': 'form-control'}),
+            'cest': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Opcional'}),
+            'descricao': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'ativo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
+
+    def clean_codigo(self):
+        codigo = re.sub(r'\D', '', self.cleaned_data.get('codigo', ''))
+        if len(codigo) != 8:
+            raise ValidationError('Código NCM inválido. Deve ter 8 dígitos.')
+        return codigo
 
 
 class EnderecoFazendaForm(forms.ModelForm):

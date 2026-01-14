@@ -10,7 +10,7 @@ from .models import (
 from .models import Area, Talhao, HistoricoTalhao, Safra, SafraPlan, SafraReal, FuncaoFuncionario
 from .models import Vendedor, ComissaoVendedor
 
-from .models import Fornecedor, FornecedorEndereco, FornecedorContato, FornecedorDadoBancario, Transportadora, Viagem, Porto, Moeda, Vehicle, VehiclePlate, VehicleDocument, VehicleValueHistory
+from .models import Fornecedor, FornecedorEndereco, FornecedorContato, FornecedorDadoBancario, Transportadora, Viagem, Porto, Moeda, NCM, Vehicle, VehiclePlate, VehicleDocument, VehicleValueHistory
 
 class EnderecoFazendaInline(admin.TabularInline):
     """Inline para endereços"""
@@ -255,6 +255,14 @@ class PortoAdmin(admin.ModelAdmin):
 class MoedaAdmin(admin.ModelAdmin):
     list_display = ['codigo', 'nome']
     search_fields = ['codigo', 'nome']
+    ordering = ['codigo']
+
+
+@admin.register(NCM)
+class NCMAdmin(admin.ModelAdmin):
+    list_display = ['codigo', 'nome', 'cest', 'ativo', 'criado_em']
+    search_fields = ['codigo', 'nome']
+    list_filter = ['ativo']
     ordering = ['codigo']
 
 

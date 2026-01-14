@@ -1186,6 +1186,32 @@ class Moeda(models.Model):
         return f"{self.nome} ({self.codigo})"
 
 
+class NCM(models.Model):
+    """Nomenclatura Comum do Mercosul (NCM) usada para emissão de NF-e"""
+    codigo = models.CharField('Código NCM', max_length=8, unique=True, help_text='8 dígitos numéricos')
+    nome = models.CharField('Descrição', max_length=255)
+    descricao = models.TextField('Observações', blank=True)
+    cest = models.CharField('CEST', max_length=10, blank=True, help_text='CEST (se aplicável)')
+    ativo = models.BooleanField('Ativo', default=True)
+    criado_em = models.DateTimeField('Data de criação', auto_now_add=True)
+    atualizado_em = models.DateTimeField('Última atualização', auto_now=True)
+
+    class Meta:
+        verbose_name = 'NCM'
+        verbose_name_plural = 'NCMs'
+        ordering = ['codigo']
+        indexes = [models.Index(fields=['codigo'])]
+
+    def __str__(self):
+        return f"{self.codigo} - {self.nome}"
+
+    def clean(self):
+        # Normaliza e valida código
+        self.codigo = re.sub(r'\D','', (self.codigo or ''))
+        if len(self.codigo) != 8:
+            raise ValidationError({'codigo': 'Código NCM inválido. Deve conter 8 dígitos.'})
+
+
 class EnderecoCliente(models.Model):
     TIPO_ENDERECO = [
         ('PRINCIPAL','Principal'),('FATURAMENTO','Faturamento'),('COBRANCA','Cobrança'),('ENTREGA','Entrega'),('NOTIFY','Notify')

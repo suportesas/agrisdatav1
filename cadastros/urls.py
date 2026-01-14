@@ -179,6 +179,13 @@ urlpatterns = [
     # AJAX endpoints
     path('moedas/novo-ajax/', views.moeda_create_ajax, name='moeda_create_ajax'),
 
+    # NCM (Nomenclatura Comum do Mercosul)
+    path('ncm/', views.ncm_list, name='ncm_list'),
+    path('ncm/novo/', views.ncm_create, name='ncm_create'),
+    path('ncm/<int:pk>/editar/', views.ncm_update, name='ncm_update'),
+    path('ncm/<int:pk>/excluir/', views.ncm_delete, name='ncm_delete'),
+    path('api/ncm/autocomplete/', views.ncm_autocomplete, name='ncm_autocomplete'),
+
     # Cliente: endereços
     path('clientes/<int:cliente_pk>/enderecos/novo/', views.cliente_endereco_create, name='cliente_endereco_create'),
     path('clientes/<int:cliente_pk>/enderecos/<int:endereco_pk>/editar/', views.cliente_endereco_update, name='cliente_endereco_update'),

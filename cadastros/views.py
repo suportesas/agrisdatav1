@@ -21,7 +21,7 @@ from .models import (
     Fazenda, EnderecoFazenda, ContatoFazenda,
     ContaBancariaFazenda, DocumentoFazenda, DocumentoFornecedor,
     Area, Talhao, Cultura, HistoricoTalhao, Safra,
-    Vendedor, ComissaoVendedor, Fornecedor, FornecedorContato, FornecedorDadoBancario, Porto,
+    Vendedor, ComissaoVendedor, Fornecedor, FornecedorContato, FornecedorDadoBancario, Porto, NCM,
     Cliente, EnderecoCliente, ContatoCliente, ContaBancariaCliente, DocumentoCliente
 )
 
@@ -31,7 +31,7 @@ from .forms import (
     FazendaForm, EnderecoFazendaForm, ContatoFazendaForm,
     ContaBancariaFazendaForm, DocumentoFazendaForm, DocumentoFornecedorForm,
     
-    AreaForm, TalhaoForm, CulturaForm, HistoricoTalhaoForm, SafraForm, PortoForm,
+    AreaForm, TalhaoForm, CulturaForm, HistoricoTalhaoForm, SafraForm, PortoForm, NCMForm,
 
     # Cliente-related forms
     ClienteForm, EnderecoClienteForm, ContatoClienteForm, ContaBancariaClienteForm, DocumentoClienteForm,
@@ -421,6 +421,66 @@ def vehicle_export_csv(request):
         ])
 
     return resp
+
+
+# ==================== NCM (Nomenclatura Comum do Mercosul) ====================
+
+@login_required
+def ncm_list(request):
+    q = request.GET.get('q', '').strip()
+    qs = NCM.objects.all()
+    if q:
+        qs = qs.filter(Q(codigo__icontains=q) | Q(nome__icontains=q))
+    paginator = Paginator(qs.order_by('codigo'), 25)
+    page_obj = paginator.get_page(request.GET.get('page'))
+    return render(request, 'cadastros/ncm/ncm_list.html', {'page_obj': page_obj})
+
+
+@login_required
+def ncm_create(request):
+    if request.method == 'POST':
+        form = NCMForm(request.POST)
+        if form.is_valid():
+            n = form.save()
+            messages.success(request, f'✅ NCM {n.codigo} criado com sucesso!')
+            return redirect('cadastros:ncm_list')
+    else:
+        form = NCMForm()
+    return render(request, 'cadastros/ncm/ncm_form.html', {'form': form, 'action': 'Cadastrar'})
+
+
+@login_required
+def ncm_update(request, pk):
+    n = get_object_or_404(NCM, pk=pk)
+    if request.method == 'POST':
+        form = NCMForm(request.POST, instance=n)
+        if form.is_valid():
+            form.save()
+            messages.success(request, '✅ NCM atualizado com sucesso!')
+            return redirect('cadastros:ncm_list')
+    else:
+        form = NCMForm(instance=n)
+    return render(request, 'cadastros/ncm/ncm_form.html', {'form': form, 'action': 'Editar'})
+
+
+@login_required
+def ncm_delete(request, pk):
+    n = get_object_or_404(NCM, pk=pk)
+    if request.method == 'POST':
+        n.delete()
+        messages.success(request, '🗑️ NCM excluído com sucesso!')
+        return redirect('cadastros:ncm_list')
+    return render(request, 'cadastros/ncm/ncm_confirm_delete.html', {'ncm': n})
+
+
+@login_required
+def ncm_autocomplete(request):
+    q = request.GET.get('q', '').strip()
+    qs = NCM.objects.filter(ativo=True)
+    if q:
+        qs = qs.filter(Q(codigo__icontains=q) | Q(nome__icontains=q))
+    items = [{'id': n.pk, 'codigo': n.codigo, 'nome': n.nome} for n in qs.order_by('codigo')[:20]]
+    return JsonResponse({'items': items})
 
 
 # ==================== FAZENDAS ====================

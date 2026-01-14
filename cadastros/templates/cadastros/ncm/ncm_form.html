@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-3">
+  <h1>{{ action }} NCM</h1>
+  <form method="post">
+    {% csrf_token %}
+    <div class="mb-3">
+      {{ form.codigo.label_tag }}
+      {{ form.codigo }}
+      {% if form.codigo.errors %}<div class="text-danger">{{ form.codigo.errors }}</div>{% endif %}
+    </div>
+    <div class="mb-3">
+      {{ form.nome.label_tag }}
+      {{ form.nome }}
+      {% if form.nome.errors %}<div class="text-danger">{{ form.nome.errors }}</div>{% endif %}
+    </div>
+    <div class="mb-3">
+      {{ form.cest.label_tag }}
+      {{ form.cest }}
+    </div>
+    <div class="mb-3">
+      {{ form.descricao.label_tag }}
+      {{ form.descricao }}
+    </div>
+    <div class="mb-3 form-check">
+      {{ form.ativo }} {{ form.ativo.label_tag }}
+    </div>
+
+    <button class="btn btn-primary">Salvar</button>
+    <a class="btn btn-secondary ms-2" href="{% url 'cadastros:ncm_list' %}">Cancelar</a>
+  </form>
+</div>
+{% endblock %}

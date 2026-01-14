@@ -3797,7 +3797,7 @@ def comissao_list(request):
         'vendedores': Vendedor.objects.filter(empresa=empresa, status='ATIVO'),
     }
     
-    return render(request, 'cadastros/comissao_list.html', context)
+    return render(request, 'cadastros/comissao/comissao_list.html', context)
 
 
 @login_required
@@ -3832,7 +3832,7 @@ def comissao_create(request):
         'title': 'Nova Comissão'
     }
     
-    return render(request, 'cadastros/comissao_form.html', context)
+    return render(request, 'cadastros/comissao/comissao_form.html', context)
 
 
 @login_required

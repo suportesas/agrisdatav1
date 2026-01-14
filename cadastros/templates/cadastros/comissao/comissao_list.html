@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container py-4">
+  <h3>Comissões</h3>
+  {% if comissoes %}
+    <table class="table">
+      <thead><tr><th>Vendedor</th><th>Valor</th><th>Status</th><th>Referência</th></tr></thead>
+      <tbody>
+      {% for c in comissoes %}
+        <tr>
+          <td>{{ c.vendedor }}</td>
+          <td>{{ c.valor_comissao }}</td>
+          <td>{{ c.status }}</td>
+          <td>{{ c.referencia_mes }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p>Nenhuma comissão encontrada.</p>
+  {% endif %}
+</div>
+{% endblock %}

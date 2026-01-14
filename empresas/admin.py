@@ -109,7 +109,7 @@ class EmpresaAdmin(admin.ModelAdmin):
     
     readonly_fields = [
         'data_criacao', 'data_ultima_atualizacao',
-        'get_status_display', 'get_dias_vencimento'
+        'get_status_display', 'get_dias_vencimento', 'last_ncm_seeded_at'
     ]
     
     fieldsets = (
@@ -167,8 +167,21 @@ class EmpresaAdmin(admin.ModelAdmin):
         'desbloquear_empresas',
         'ativar_empresas',
         'desativar_empresas',
-        'aplicar_limites_plano'
+        'aplicar_limites_plano',
+        'seed_ncms_now'
     ]
+
+    def seed_ncms_now(self, request, queryset):
+        """Admin action to seed NCMs for selected companies (runs async)."""
+        from cadastros.tasks import seed_ncms_for_company_async
+        count = 0
+        for e in queryset:
+            if e.auto_seed_ncm:
+                seed_ncms_for_company_async(e.pk)
+                count += 1
+        self.message_user(request, f'Enfileiradas sementes de NCM para {count} empresas')
+    seed_ncms_now.short_description = 'Popular NCMs agora (async)'
+
     
     def get_cnpj(self, obj):
         """CNPJ formatado"""

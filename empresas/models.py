@@ -374,6 +374,19 @@ class Empresa(models.Model):
         'Última Atualização',
         auto_now=True
     )
+
+    # NCM seeding and sync control
+    auto_seed_ncm = models.BooleanField(
+        'Popular NCMs automaticamente ao criar empresa',
+        default=True,
+        help_text='Se ativo, a lista de NCMs será copiada dos templates globais no cadastro da empresa'
+    )
+
+    last_ncm_seeded_at = models.DateTimeField(
+        'Última vez que NCMs foram populados',
+        null=True,
+        blank=True
+    )
     
     class Meta:
         ordering = ['nome']

@@ -221,8 +221,34 @@
           </ul>
         </li>
 
-        <!-- Financeiro -->
+        <!-- Fiscal -->
         <li class="menu-item">
+          <div class="menu-link" onclick="toggleSubmenu(this)">
+            <i class="bi bi-receipt"></i>
+            <span>Fiscal</span>
+            <i class="bi bi-chevron-down expand-icon"></i>
+          </div>
+          <ul class="submenu">
+            <li class="submenu-item">
+              <a href="{% url 'cadastros:ncm_list' %}" class="submenu-link">
+                <span>📜 NCMs</span>
+              </a>
+            </li>
+            <li class="submenu-item">
+              <a href="{% url 'cadastros:cfop_list' %}" class="submenu-link">
+                <span>⚖️ CFOP</span>
+              </a>
+            </li>
+            {% if perms.cadastros.add_cfop %}
+            <li class="submenu-item">
+              <a href="{% url 'cadastros:cfop_import' %}" class="submenu-link">
+                <span>📥 Importar CFOP</span>
+              </a>
+            </li>
+            {% endif %}
+          </ul>
+        </li>
+
           <div class="menu-link" onclick="toggleSubmenu(this)">
             <i class="bi bi-cash-stack"></i>
             <span>Financeiro</span>

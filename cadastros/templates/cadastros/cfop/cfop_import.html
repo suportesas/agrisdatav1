@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-3">
+  <h1>Importar CFOP (CSV)</h1>
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <div class="mb-3">
+      {{ form.arquivo.label_tag }}
+      {{ form.arquivo }}
+    </div>
+    <div class="mb-3 form-check">
+      {{ form.replace }} {{ form.replace.label_tag }}
+      {{ form.apply_to_all }} {{ form.apply_to_all.label_tag }}
+      {{ form.dry_run }} {{ form.dry_run.label_tag }}
+    </div>
+    <button id="cfopImportBtn" class="btn btn-primary">Enviar <span id="cfopImportSpinner" class="spinner-border spinner-border-sm ms-2 visually-hidden" role="status" aria-hidden="true"></span></button>
+    <a class="btn btn-secondary ms-2" href="{% url 'cadastros:cfop_list' %}">Cancelar</a>
+  </form>
+
+  <div id="cfopImportStatus" role="status" aria-live="polite" class="visually-hidden small mt-2"></div>
+
+  <script>
+  document.addEventListener('DOMContentLoaded', function(){
+    const form = document.querySelector('form[enctype="multipart/form-data"]');
+    const btn = document.getElementById('cfopImportBtn');
+    const spinner = document.getElementById('cfopImportSpinner');
+    const status = document.getElementById('cfopImportStatus');
+    if(!form || !btn) return;
+    form.addEventListener('submit', function(){
+      try{ btn.disabled = true; } catch(e){}
+      try{ spinner.classList.remove('visually-hidden'); } catch(e){}
+      try{ status.classList.remove('visually-hidden'); status.innerText = 'Importando...'; } catch(e){}
+    });
+  });
+  </script>
+
+  {% if result %}
+    <div class="mt-3">
+      <h5>Resultado</h5>
+      <pre>{{ result }}</pre>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

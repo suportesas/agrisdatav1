@@ -55,6 +55,9 @@ def test_cfop_import_dry_run_and_persist(page, live_server, e2e_cfop_import_data
     page.set_input_files('input[name="arquivo"]', {'name': 'cfop_sample.csv', 'mimeType': 'text/csv', 'buffer': csv_bytes})
     page.click('button:has-text("Enviar")')
 
+    # Button should be disabled immediately to prevent duplicate submits
+    page.wait_for_function("() => document.querySelector('button#cfopImportBtn').disabled === true", timeout=2000)
+
     # Wait for result block
     page.wait_for_selector('pre', timeout=5000)
     text = page.locator('pre').inner_text()

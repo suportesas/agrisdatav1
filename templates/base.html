@@ -355,6 +355,35 @@
             });
           } catch(e){}
         });
+
+        // Global toast function for transient UX feedback (accessible)
+        function showToast(message, type='info'){
+          try{
+            const containerId = 'global-toast-area';
+            let container = document.getElementById(containerId);
+            if(!container){
+              container = document.createElement('div');
+              container.id = containerId;
+              container.setAttribute('aria-live','polite');
+              container.setAttribute('aria-atomic','true');
+              container.style.position = 'fixed';
+              container.style.top = '1rem';
+              container.style.right = '1rem';
+              container.style.zIndex = 1060;
+              document.body.appendChild(container);
+            }
+
+            const el = document.createElement('div');
+            el.className = `alert alert-${type} shadow-sm`;
+            el.setAttribute('role','status');
+            el.style.marginBottom = '0.5rem';
+            el.textContent = message;
+            container.prepend(el);
+
+            // Auto-remove
+            setTimeout(()=>{ try{ el.remove(); } catch(e){} }, 4000);
+          }catch(e){/* non-fatal */}
+        }
       </script>
 
       {% block content %}{% endblock %}

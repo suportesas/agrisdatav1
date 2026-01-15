@@ -357,7 +357,7 @@
         });
 
         // Global toast function for transient UX feedback (accessible)
-        function showToast(message, type='info'){
+        function showToast(message, type='info', opts={}){
           try{
             const containerId = 'global-toast-area';
             let container = document.getElementById(containerId);
@@ -377,7 +377,32 @@
             el.className = `alert alert-${type} shadow-sm`;
             el.setAttribute('role','status');
             el.style.marginBottom = '0.5rem';
-            el.textContent = message;
+
+            const msgSpan = document.createElement('span');
+            msgSpan.textContent = message;
+            el.appendChild(msgSpan);
+
+            // Optionally add a details link that focuses the result <pre>
+            if(opts && opts.details){
+              const link = document.createElement('a');
+              link.href = '#';
+              link.id = opts.linkId || 'toast-detail-link';
+              link.className = 'ms-2';
+              link.textContent = opts.linkText || 'Ver detalhes';
+              link.addEventListener('click', function(ev){
+                ev.preventDefault();
+                try{
+                  const pre = document.querySelector('pre');
+                  if(pre){
+                    pre.setAttribute('tabindex','-1');
+                    pre.focus();
+                    pre.scrollIntoView({behavior:'smooth', block:'center'});
+                  }
+                }catch(e){}
+              });
+              el.appendChild(link);
+            }
+
             container.prepend(el);
 
             // Auto-remove

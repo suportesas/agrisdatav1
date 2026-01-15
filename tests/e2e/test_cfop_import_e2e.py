@@ -63,8 +63,13 @@ def test_cfop_import_dry_run_and_persist(page, live_server, e2e_cfop_import_data
     text = page.locator('pre').inner_text()
     assert 'dry_run=True' in text or 'Import concluído' in text
 
-    # A transient toast should also be shown
-    page.wait_for_selector("div.alert:has-text('Importação concluída')", timeout=5000)
+    # A transient toast should also be shown and provide a details link
+    page.wait_for_selector("div.alert", timeout=5000)
+    page.wait_for_selector('a#toast-detail-link', timeout=5000)
+    page.click('a#toast-detail-link')
+    # After clicking, the <pre> of results should receive focus
+    active_tag = page.evaluate("() => document.activeElement && document.activeElement.tagName")
+    assert active_tag == 'PRE'
 
     # Ensure that in dry-run no CFOP was created
     with django_db_blocker.unblock():

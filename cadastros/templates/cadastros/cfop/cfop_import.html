@@ -46,11 +46,11 @@
           const res = `{{ result|escapejs }}`;
           // If result contains 'Erro' show danger toast, otherwise success
           if(/erro|erro durante/i.test(res)){
-            showToast('Erro durante a importação', 'danger');
+            showToast('Erro durante a importação', 'danger', {details:true});
           } else if(/inválido|inválidos|inválido/i.test(res)){
-            showToast('Import concluído com problemas (ver resultados)', 'warning');
+            showToast('Import concluído com problemas (ver resultados)', 'warning', {details:true});
           } else {
-            showToast('Importação concluída', 'success');
+            showToast('Importação concluída', 'success', {details:true});
           }
         }catch(e){}
       });

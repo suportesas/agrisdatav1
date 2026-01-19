@@ -1,0 +1,2139 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-3">
+  <h1>{{ action }} Produto</h1>
+  
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    
+    <ul class="nav nav-tabs" id="produtoTabs" role="tablist">
+      <li class="nav-item">
+        <button class="nav-link active" id="geral-tab" data-bs-toggle="tab" data-bs-target="#geral" type="button">Geral</button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link" id="fiscal-tab" data-bs-toggle="tab" data-bs-target="#fiscal" type="button">Fiscal</button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link" id="financeiro-tab" data-bs-toggle="tab" data-bs-target="#financeiro" type="button">Financeiro</button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link" id="estoque-tab" data-bs-toggle="tab" data-bs-target="#estoque" type="button">Estoque</button>
+      </li>
+      <li class="nav-item" id="agricola-tab-li" style="display: none;">
+        <button class="nav-link" id="agricola-tab" data-bs-toggle="tab" data-bs-target="#agricola" type="button">Agrícola</button>
+      </li>
+      <li class="nav-item" id="defensivo-tab-li" style="display: none;">
+        <button class="nav-link" id="defensivo-tab" data-bs-toggle="tab" data-bs-target="#defensivo" type="button">
+          <i class="bi bi-shield-fill-exclamation me-1"></i>Defensivo - Culturas/Pragas
+        </button>
+      </li>
+      <li class="nav-item" id="fertilizante-tab-li" style="display: none;">
+        <button class="nav-link" id="fertilizante-tab" data-bs-toggle="tab" data-bs-target="#fertilizante" type="button">
+          <i class="bi bi-droplet-fill me-1"></i>Fertilizantes
+        </button>
+      </li>
+      {% if object.pk %}
+      <li class="nav-item">
+        <button class="nav-link" id="documentos-tab" data-bs-toggle="tab" data-bs-target="#documentos" type="button">
+          <i class="bi bi-file-earmark-text me-1"></i>Documentos
+        </button>
+      </li>
+      {% endif %}
+    </ul>
+
+    <div class="tab-content border border-top-0 p-3" id="produtoTabContent">
+      <!-- ABA GERAL -->
+      <div class="tab-pane fade show active" id="geral">
+        <h5 class="mb-3">Informações Gerais</h5>
+        <div class="row">
+          <div class="col-md-3 mb-3">
+            {{ form.codigo.label_tag }}
+            {{ form.codigo }}
+            <small class="form-text text-muted">{{ form.codigo.help_text }}</small>
+            {% if form.codigo.errors %}<div class="text-danger">{{ form.codigo.errors }}</div>{% endif %}
+          </div>
+          <div class="col-md-3 mb-3">
+            {{ form.codigo_barras.label_tag }}
+            {{ form.codigo_barras }}
+          </div>
+          <div class="col-md-6 mb-3">
+            {{ form.nome.label_tag }}
+            {{ form.nome }}
+            {% if form.nome.errors %}<div class="text-danger">{{ form.nome.errors }}</div>{% endif %}
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            {{ form.nome_resumido.label_tag }}
+            {{ form.nome_resumido }}
+          </div>
+          <div class="col-md-6 mb-3">
+            {{ form.tipo_produto.label_tag }}
+            {{ form.tipo_produto }}
+          </div>
+        </div>
+        <div class="mb-3">
+          {{ form.descricao.label_tag }}
+          {{ form.descricao }}
+        </div>
+        <div class="row">
+          <div class="col-md-4 mb-3">
+            {{ form.categoria.label_tag }}
+            <div class="input-group">
+              {{ form.categoria }}
+              <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalCategoria" title="Cadastrar nova categoria">
+                <i class="bi bi-plus-lg"></i>
+              </button>
+            </div>
+            {% if form.categoria.errors %}<div class="text-danger">{{ form.categoria.errors }}</div>{% endif %}
+          </div>
+          <div class="col-md-4 mb-3">
+            {{ form.subcategoria.label_tag }}
+            <div class="input-group">
+              {{ form.subcategoria }}
+              <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalSubcategoria" title="Cadastrar nova subcategoria">
+                <i class="bi bi-plus-lg"></i>
+              </button>
+            </div>
+          </div>
+          <div class="col-md-4 mb-3">
+            {{ form.fornecedor_padrao.label_tag }}
+            {{ form.fornecedor_padrao }}
+          </div>
+        </div>
+        <h5 class="mb-3 mt-4">Unidades</h5>
+        <div class="row">
+          <div class="col-md-3 mb-3">
+            {{ form.unidade_medida.label_tag }}
+            <div class="input-group">
+              {{ form.unidade_medida }}
+              <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalUnidadeMedida" title="Cadastrar nova unidade de medida">
+                <i class="bi bi-plus-lg"></i>
+              </button>
+            </div>
+            {% if form.unidade_medida.errors %}<div class="text-danger">{{ form.unidade_medida.errors }}</div>{% endif %}
+          </div>
+          <div class="col-md-3 mb-3">
+            {{ form.unidade_compra.label_tag }}
+            <div class="input-group">
+              {{ form.unidade_compra }}
+              <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalUnidadeMedida" title="Cadastrar nova unidade de medida">
+                <i class="bi bi-plus-lg"></i>
+              </button>
+            </div>
+          </div>
+          <div class="col-md-3 mb-3">
+            {{ form.unidade_venda.label_tag }}
+            <div class="input-group">
+              {{ form.unidade_venda }}
+              <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalUnidadeMedida" title="Cadastrar nova unidade de medida">
+                <i class="bi bi-plus-lg"></i>
+              </button>
+            </div>
+          </div>
+          <div class="col-md-3 mb-3">
+            {{ form.fator_conversao.label_tag }}
+            {{ form.fator_conversao }}
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            {{ form.imagem.label_tag }}
+            {{ form.imagem }}
+          </div>
+          <div class="col-md-6 mb-3">
+            <div class="form-check mt-4">
+              {{ form.ativo }} {{ form.ativo.label_tag }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ABA FISCAL -->
+      <div class="tab-pane fade" id="fiscal">
+        <h5 class="mb-3">Informações Fiscais</h5>
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label class="form-label">NCM <span class="text-danger">*</span></label>
+            <div class="row g-2">
+              <div class="col-4">
+                <input type="text" class="form-control" id="ncmCodigoInput" placeholder="Digite o código NCM" maxlength="8">
+              </div>
+              <div class="col-auto">
+                <button type="button" class="btn btn-primary" id="btnBuscarNCM">
+                  <i class="bi bi-search"></i> Buscar
+                </button>
+              </div>
+            </div>
+            <div id="ncmDescricaoDisplay" class="mt-2 p-2 bg-light border rounded d-none">
+              <small class="text-muted d-block">Descrição:</small>
+              <strong id="ncmDescricaoTexto"></strong>
+            </div>
+            <div id="ncmError" class="text-danger small mt-1 d-none"></div>
+            <!-- Hidden field com o ID do NCM -->
+            <div style="position: absolute; left: -9999px;">
+              {{ form.ncm }}
+            </div>
+            {% if form.ncm.errors %}<div class="text-danger">{{ form.ncm.errors }}</div>{% endif %}
+          </div>
+          <div class="col-md-6 mb-3">
+            {{ form.cest.label_tag }}
+            <div class="input-group">
+              {{ form.cest }}
+              <span class="input-group-text bg-light">
+                <i class="bi bi-info-circle" title="Preenchido automaticamente pelo NCM"></i>
+              </span>
+            </div>
+            <small class="text-muted">Preenchido automaticamente ao buscar NCM (se disponível)</small>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-md-12 mb-3">
+            {{ form.tipo_item.label_tag }}
+            {{ form.tipo_item }}
+          </div>
+        </div>
+
+        {% if object.pk %}
+        <hr class="my-4">
+        
+        <!-- Seção de Tributações por CFOP -->
+        <div class="mt-4">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="mb-0">
+              <i class="bi bi-calculator me-2"></i>Tributações por CFOP
+            </h5>
+            <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalTributacao">
+              <i class="bi bi-plus-circle me-1"></i>Adicionar Tributação
+            </button>
+          </div>
+
+          <!-- Tabela de Tributações -->
+          <div class="table-responsive">
+            <table class="table table-hover" id="tabelaTributacoes">
+              <thead class="table-light">
+                <tr>
+                  <th>CFOP</th>
+                  <th>Natureza Operação</th>
+                  <th>CST/CSOSN</th>
+                  <th>Alíquotas (%)</th>
+                  <th>Origem</th>
+                  <th class="text-end">Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for trib in object.tributacoes.all %}
+                <tr>
+                  <td><strong>{{ trib.cfop.codigo }}</strong></td>
+                  <td>{{ trib.natureza_operacao.descricao|truncatewords:5 }}</td>
+                  <td>
+                    {% if trib.icms_situacao_tributaria %}CST: {{ trib.icms_situacao_tributaria }}{% endif %}
+                    {% if trib.csosn %}CSOSN: {{ trib.csosn }}{% endif %}
+                  </td>
+                  <td>
+                    <small>
+                      {% if trib.icms_aliquota %}ICMS: {{ trib.icms_aliquota }}%{% endif %}
+                      {% if trib.ipi_aliquota %} | IPI: {{ trib.ipi_aliquota }}%{% endif %}
+                      {% if trib.pis_aliquota %} | PIS: {{ trib.pis_aliquota }}%{% endif %}
+                      {% if trib.cofins_aliquota %} | COFINS: {{ trib.cofins_aliquota }}%{% endif %}
+                    </small>
+                  </td>
+                  <td>{{ trib.get_origem_mercadoria_display }}</td></td>
+                  <td class="text-end">
+                    <a href="{% url 'produtos:tributacao_update' trib.pk %}" class="btn btn-sm btn-warning">
+                      <i class="bi bi-pencil"></i>
+                    </a>
+                    <button type="button" class="btn btn-sm btn-danger" 
+                            onclick="excluirTributacao({{ trib.id }})">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </td>
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="6" class="text-center text-muted py-4">
+                    <i class="bi bi-inbox" style="font-size: 2rem;"></i>
+                    <p class="mb-0 mt-2">Nenhuma tributação cadastrada ainda.</p>
+                    <small>Clique em "Adicionar Tributação" para começar.</small>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+
+          <div class="alert alert-info mt-3">
+            <i class="bi bi-info-circle me-2"></i>
+            <strong>Importante:</strong> Configure as tributações para cada CFOP (natureza de operação) que será utilizado com este produto.
+            A origem da mercadoria deve ser definida em cada tributação.
+          </div>
+        </div>
+        {% else %}
+        <div class="alert alert-warning mt-4">
+          <i class="bi bi-exclamation-triangle me-2"></i>
+          <strong>Atenção:</strong> Salve o produto primeiro para poder cadastrar suas tributações por CFOP.
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- ABA FINANCEIRO -->
+      <div class="tab-pane fade" id="financeiro">
+        <h5 class="mb-3">Informações Financeiras</h5>
+        <div class="row">
+          <div class="col-md-3 mb-3">
+            {{ form.preco_custo.label_tag }}
+            {{ form.preco_custo }}
+          </div>
+          <div class="col-md-3 mb-3">
+            {{ form.preco_venda.label_tag }}
+            {{ form.preco_venda }}
+          </div>
+          <div class="col-md-3 mb-3">
+            {{ form.margem_lucro.label_tag }}
+            {{ form.margem_lucro }}
+          </div>
+          <div class="col-md-3 mb-3">
+            {{ form.preco_minimo.label_tag }}
+            {{ form.preco_minimo }}
+          </div>
+        </div>
+      </div>
+
+      <!-- ABA ESTOQUE -->
+      <div class="tab-pane fade" id="estoque">
+        <h5 class="mb-3">Controle de Estoque</h5>
+        <div class="form-check mb-3">
+          {{ form.controla_estoque }} {{ form.controla_estoque.label_tag }}
+        </div>
+        <div class="row">
+          <div class="col-md-3 mb-3">
+            {{ form.estoque_minimo.label_tag }}
+            {{ form.estoque_minimo }}
+          </div>
+          <div class="col-md-3 mb-3">
+            {{ form.estoque_maximo.label_tag }}
+            {{ form.estoque_maximo }}
+          </div>
+          <div class="col-md-3 mb-3">
+            {{ form.estoque_atual.label_tag }}
+            {{ form.estoque_atual }}
+          </div>
+          <div class="col-md-3 mb-3">
+            {{ form.localizacao.label_tag }}
+            {{ form.localizacao }}
+          </div>
+        </div>
+        <h5 class="mb-3 mt-4">Rastreabilidade</h5>
+        <div class="row">
+          <div class="col-md-4 mb-3">
+            <div class="form-check">
+              {{ form.lote_obrigatorio }} {{ form.lote_obrigatorio.label_tag }}
+            </div>
+          </div>
+          <div class="col-md-4 mb-3">
+            <div class="form-check">
+              {{ form.validade_obrigatoria }} {{ form.validade_obrigatoria.label_tag }}
+            </div>
+          </div>
+          <div class="col-md-4 mb-3">
+            {{ form.dias_validade.label_tag }}
+            {{ form.dias_validade }}
+          </div>
+        </div>
+      </div>
+
+      <!-- ABA AGRÍCOLA -->
+      <div class="tab-pane fade" id="agricola">
+        <!-- Campo hidden para categoria_agricola -->
+        <div style="display: none;">
+          {{ form.categoria_agricola }}
+        </div>
+        
+        <h5 class="mb-3">Classificação</h5>
+        
+        <!-- Categoria Geral (somente leitura) -->
+        <div class="mb-3">
+          <label class="form-label">Categoria</label>
+          <div class="form-control bg-light" id="categoriaDisplay" style="cursor: not-allowed;">
+            <small class="text-muted">Selecione na aba Geral</small>
+          </div>
+          <small class="text-muted">Este campo é definido na aba "Geral"</small>
+        </div>
+        
+        <h5 class="mb-3 mt-4">Defensivos</h5>
+        <div class="alert alert-success d-none" id="alertDefensivoInfo">
+          <i class="bi bi-info-circle me-2"></i>
+          <strong>Categoria Defensivo detectada!</strong> 
+          Após salvar este produto, você poderá cadastrar as culturas e pragas na aba 
+          <strong>"Defensivo - Culturas/Pragas"</strong>.
+        </div>
+        <div class="row">
+          <div class="col-md-4 mb-3">
+            {{ form.classe_agronomica.label_tag }}
+            {{ form.classe_agronomica }}
+          </div>
+          <div class="col-md-4 mb-3">
+            {{ form.ingrediente_ativo.label_tag }}
+            {{ form.ingrediente_ativo }}
+          </div>
+          <div class="col-md-4 mb-3">
+            {{ form.concentracao.label_tag }}
+            {{ form.concentracao }}
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-md-3 mb-3">
+            {{ form.registro_mapa.label_tag }}
+            {{ form.registro_mapa }}
+          </div>
+          <div class="col-md-3 mb-3">
+            {{ form.classe_toxicologica.label_tag }}
+            {{ form.classe_toxicologica }}
+          </div>
+          <div class="col-md-3 mb-3">
+            {{ form.classe_ambiental.label_tag }}
+            {{ form.classe_ambiental }}
+          </div>
+          <div class="col-md-3 mb-3">
+            {{ form.periodo_reentrada.label_tag }}
+            {{ form.periodo_reentrada }}
+            <small class="text-muted d-block">Período de reentrada após aplicação</small>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-12 mb-3">
+            {{ form.paises_proibidos.label_tag }}
+            {{ form.paises_proibidos }}
+            <small class="text-muted d-block">
+              <i class="bi bi-info-circle me-1"></i>
+              Importante para rastreabilidade e exportação. Digite os países separados por vírgula.
+            </small>
+          </div>
+        </div>
+        
+        <div class="alert alert-success d-none" id="alertFertilizanteInfo">
+          <i class="bi bi-info-circle me-2"></i>
+          <strong>Categoria Fertilizante detectada!</strong> 
+          Após salvar o produto, você poderá cadastrar as informações específicas de fertilizante na aba 
+          <strong>"Fertilizantes"</strong>.
+        </div>
+        
+        <div class="mb-3">
+          {{ form.observacoes.label_tag }}
+          {{ form.observacoes }}
+        </div>
+      </div>
+
+
+      <!-- ABA DEFENSIVO - CULTURAS/PRAGAS -->
+      <div class="tab-pane fade" id="defensivo">
+        {% if object.pk %}
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <div>
+            <h5 class="mb-0">
+              <i class="bi bi-shield-fill-exclamation me-2"></i>Culturas e Pragas
+            </h5>
+            <p class="text-muted mb-0">Registre para cada cultura as pragas combatidas e as dosagens específicas</p>
+          </div>
+          <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalDefensivoCultura">
+            <i class="bi bi-plus-circle me-1"></i>Adicionar Cultura/Praga
+          </button>
+        </div>
+
+        <!-- Tabela de Culturas/Pragas -->
+        <div class="table-responsive">
+          <table class="table table-hover" id="tabelaDefensivoCulturas">
+            <thead class="table-light">
+              <tr>
+                <th>Cultura</th>
+                <th>Praga/Doença</th>
+                <th>Dosagem</th>
+                <th>Carência</th>
+                <th>Máx. Aplicações</th>
+                <th>Intervalo</th>
+                <th>MRL</th>
+                <th>Volume Calda</th>
+                <th class="text-end">Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for dc in object.defensivo_culturas.all %}
+              <tr>
+                <td><strong>{{ dc.cultura.nome }}</strong></td>
+                <td>{{ dc.praga.nome_comum }}</td>
+                <td>
+                  {{ dc.dosagem_minima }} - {{ dc.dosagem_maxima }} {{ dc.unidade_dosagem.sigla }}
+                </td>
+                <td>{{ dc.carencia }} dias</td>
+                <td class="text-center">{{ dc.quantidade_maxima_aplicacoes }}x</td>
+                <td>{{ dc.intervalo_reaplicacao }} dias</td>
+                <td>{% if dc.mrl %}{{ dc.mrl }} mg/kg{% else %}<span class="text-muted">-</span>{% endif %}</td>
+                <td>{{ dc.volume_calda_minimo }} - {{ dc.volume_calda_maximo }} L/ha</td>
+                <td class="text-end">
+                  <button type="button" class="btn btn-sm btn-warning" 
+                          onclick="editarDefensivoCultura({{ dc.id }})">
+                    <i class="bi bi-pencil"></i>
+                  </button>
+                  <button type="button" class="btn btn-sm btn-danger" 
+                          onclick="excluirDefensivoCultura({{ dc.id }})">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="9" class="text-center text-muted py-4">
+                  <i class="bi bi-inbox" style="font-size: 2rem;"></i>
+                  <p class="mb-0 mt-2">Nenhuma cultura/praga cadastrada ainda.</p>
+                  <small>Clique em "Adicionar Cultura/Praga" para começar.</small>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <div class="alert alert-info mt-3">
+          <i class="bi bi-info-circle me-2"></i>
+          <strong>Importante:</strong> Para cada cultura, registre todas as pragas que este defensivo combate, 
+          incluindo dosagens específicas, carência e limite de aplicações conforme bula.
+        </div>
+        {% else %}
+        <div class="alert alert-warning">
+          <i class="bi bi-exclamation-triangle me-2"></i>
+          <strong>Atenção:</strong> Salve o produto primeiro para cadastrar culturas e pragas.
+        </div>
+        {% endif %}
+      </div>
+      
+      <!-- ABA FERTILIZANTES -->
+      <div class="tab-pane fade" id="fertilizante">
+        {% if object.pk %}
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="mb-0">
+            <i class="bi bi-droplet-fill me-2"></i>Informações de Fertilizante
+          </h5>
+        </div>
+        
+        <div class="alert alert-info">
+          <i class="bi bi-info-circle me-2"></i>
+          <strong>Importante:</strong> Preencha as informações específicas do fertilizante conforme a composição do produto.
+        </div>
+        
+        <h6 class="mb-3 mt-4"><i class="bi bi-tag me-1"></i>Tipo e Fórmula</h6>
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            {{ form.tipo_fertilizante.label_tag }}
+            {{ form.tipo_fertilizante }}
+            {% if form.tipo_fertilizante.errors %}
+            <div class="text-danger">{{ form.tipo_fertilizante.errors }}</div>
+            {% endif %}
+          </div>
+          <div class="col-md-6 mb-3">
+            {{ form.formula_npk.label_tag }}
+            {{ form.formula_npk }}
+            <small class="text-muted d-block">Ex: 10-20-10</small>
+            {% if form.formula_npk.errors %}
+            <div class="text-danger">{{ form.formula_npk.errors }}</div>
+            {% endif %}
+          </div>
+        </div>
+        
+        <h6 class="mb-3 mt-4"><i class="bi bi-graph-up me-1"></i>Composição NPK (%)</h6>
+        <div class="row">
+          <div class="col-md-4 mb-3">
+            {{ form.nitrogenio_n.label_tag }}
+            {{ form.nitrogenio_n }}
+            <small class="text-muted d-block">Percentual de Nitrogênio</small>
+            {% if form.nitrogenio_n.errors %}
+            <div class="text-danger">{{ form.nitrogenio_n.errors }}</div>
+            {% endif %}
+          </div>
+          <div class="col-md-4 mb-3">
+            {{ form.fosforo_p2o5.label_tag }}
+            {{ form.fosforo_p2o5 }}
+            <small class="text-muted d-block">Percentual de Fósforo (P₂O₅)</small>
+            {% if form.fosforo_p2o5.errors %}
+            <div class="text-danger">{{ form.fosforo_p2o5.errors }}</div>
+            {% endif %}
+          </div>
+          <div class="col-md-4 mb-3">
+            {{ form.potassio_k2o.label_tag }}
+            {{ form.potassio_k2o }}
+            <small class="text-muted d-block">Percentual de Potássio (K₂O)</small>
+            {% if form.potassio_k2o.errors %}
+            <div class="text-danger">{{ form.potassio_k2o.errors }}</div>
+            {% endif %}
+          </div>
+        </div>
+        {% else %}
+        <div class="alert alert-warning">
+          <i class="bi bi-exclamation-triangle me-2"></i>
+          <strong>Atenção:</strong> Salve o produto primeiro para cadastrar informações de fertilizante.
+        </div>
+        {% endif %}
+      </div>
+      
+      <!-- ABA DOCUMENTOS -->
+      {% if object.pk %}
+      <div class="tab-pane fade" id="documentos">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="mb-0">
+            <i class="bi bi-file-earmark-text me-2"></i>Documentos do Produto
+          </h5>
+          <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalUploadDocumento">
+            <i class="bi bi-cloud-upload me-1"></i>Adicionar Documento
+          </button>
+        </div>
+        
+        <div class="alert alert-info">
+          <i class="bi bi-info-circle me-2"></i>
+          <strong>Importante:</strong> Faça upload de documentos como bulas, certificados, FISPQ, fichas técnicas, laudos e outros arquivos relacionados ao produto.
+        </div>
+        
+        {% if object.documentos.all %}
+        <div class="table-responsive">
+          <table class="table table-hover">
+            <thead class="table-light">
+              <tr>
+                <th>Tipo</th>
+                <th>Nome/Descrição</th>
+                <th>Arquivo</th>
+                <th>Cadastrado por</th>
+                <th>Data</th>
+                <th style="width: 100px;">Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for doc in object.documentos.all %}
+              <tr>
+                <td>
+                  <span class="badge bg-secondary">{{ doc.get_tipo_display }}</span>
+                </td>
+                <td><strong>{{ doc.nome }}</strong></td>
+                <td>
+                  <a href="{{ doc.arquivo.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-download me-1"></i>Download
+                    <small>({{ doc.tamanho_formatado }})</small>
+                  </a>
+                </td>
+                <td>
+                  <small>
+                    {% if doc.cadastrado_por %}
+                      {{ doc.cadastrado_por.nome }}
+                    {% else %}
+                      <span class="text-muted">-</span>
+                    {% endif %}
+                  </small>
+                </td>
+                <td><small>{{ doc.created_at|date:"d/m/Y H:i" }}</small></td>
+                <td>
+                  <button type="button" class="btn btn-sm btn-danger" 
+                          onclick="excluirDocumento({{ doc.id }})" title="Excluir">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </td>
+              </tr>
+              {% if doc.observacoes %}
+              <tr>
+                <td colspan="6" class="bg-light">
+                  <small><i class="bi bi-chat-left-text me-1"></i><strong>Observações:</strong> {{ doc.observacoes }}</small>
+                </td>
+              </tr>
+              {% endif %}
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="alert alert-secondary text-center">
+          <i class="bi bi-inbox display-4 d-block mb-2"></i>
+          <p class="mb-0">Nenhum documento cadastrado. Clique em "Adicionar Documento" para fazer upload.</p>
+        </div>
+        {% endif %}
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="mt-3">
+      <button type="submit" class="btn btn-primary" id="btnSalvarProduto">
+        <i class="bi bi-save me-1"></i>Salvar
+      </button>
+      <a href="{% url 'produtos:produto_list' %}" class="btn btn-secondary ms-2">
+        <i class="bi bi-x-circle me-1"></i>Cancelar
+      </a>
+    </div>
+  </form>
+</div>
+
+<!-- Alert para debug -->
+<div id="debugAlert" class="alert alert-info mt-3 d-none">
+  <h5>Debug Info</h5>
+  <div id="debugContent"></div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // ============== DECLARAÇÃO DE VARIÁVEIS GLOBAIS ==============
+    const produtoForm = document.querySelector('form');
+    const btnSalvarProduto = document.getElementById('btnSalvarProduto');
+    const debugAlert = document.getElementById('debugAlert');
+    const debugContent = document.getElementById('debugContent');
+    const categoriaSelect = document.getElementById('id_categoria');
+    const subcategoriaSelect = document.getElementById('id_subcategoria');
+    const defensivoTab = document.getElementById('defensivo-tab');
+    const categoriaAgricolaInput = document.querySelector('[name="categoria_agricola"]');
+    const alertDefensivoInfo = document.getElementById('alertDefensivoInfo');
+    const isProdutoExistente = {% if object.pk %}true{% else %}false{% endif %};
+    const defensivoTabLi = document.getElementById('defensivo-tab-li');
+    const agricolaTabLi = document.getElementById('agricola-tab-li');
+    
+    // ============== DEBUG INICIAL ==============
+    console.log('🚀 Iniciando controle da aba defensivo...');
+    console.log('📦 Elementos encontrados:', {
+        categoriaSelect: !!categoriaSelect,
+        defensivoTab: !!defensivoTab,
+        defensivoTabLi: !!defensivoTabLi,
+        categoriaAgricolaInput: !!categoriaAgricolaInput,
+        alertDefensivoInfo: !!alertDefensivoInfo,
+        isProdutoExistente: isProdutoExistente
+    });
+    
+    // ============== ATUALIZAR DISPLAY DE CATEGORIA ==============
+    // Atualizar exibição da categoria na aba Agrícola
+    function atualizarCategoriaDisplay() {
+        if (categoriaSelect && categoriaSelect.value) {
+            const selectedOption = categoriaSelect.options[categoriaSelect.selectedIndex];
+            const categoriaDisplay = document.getElementById('categoriaDisplay');
+            if (categoriaDisplay) {
+                categoriaDisplay.innerHTML = `<i class="bi bi-tag-fill me-2 text-primary"></i>${selectedOption.text}`;
+                categoriaDisplay.classList.remove('text-muted');
+                categoriaDisplay.classList.add('text-dark');
+            }
+        } else {
+            const categoriaDisplay = document.getElementById('categoriaDisplay');
+            if (categoriaDisplay) {
+                categoriaDisplay.innerHTML = '<small class="text-muted">Selecione na aba Geral</small>';
+                categoriaDisplay.classList.remove('text-dark');
+            }
+        }
+    }
+    
+    // Atualizar ao carregar a página
+    if (categoriaSelect) {
+        atualizarCategoriaDisplay();
+        categoriaSelect.addEventListener('change', atualizarCategoriaDisplay);
+    }
+    
+    // Log de debug
+    function logDebug(message) {
+        console.log('🔍 DEBUG:', message);
+        debugContent.innerHTML += `<p>${message}</p>`;
+        debugAlert.classList.remove('d-none');
+    }
+    
+    // ============== VALIDAÇÃO DO FORMULÁRIO ==============
+    // Validação desabilitada para permitir edição de produtos existentes
+    // O NCM é obrigatório apenas no backend (Django)
+    produtoForm.addEventListener('submit', function(e) {
+        // Deixar o formulário submeter normalmente
+        // A validação do NCM é feita pelo Django
+    });
+    
+    // ============== FILTRO DE SUBCATEGORIAS ==============
+    if (categoriaSelect && subcategoriaSelect) {
+        // Salvar todas as opções de subcategoria
+        const todasSubcategorias = Array.from(subcategoriaSelect.options).map(option => ({
+            value: option.value,
+            text: option.text,
+            categoriaId: option.getAttribute('data-categoria-id')
+        }));
+        
+        function filtrarSubcategorias() {
+            const categoriaSelecionada = categoriaSelect.value;
+            const subcategoriaSelecionada = subcategoriaSelect.value;
+            
+            // Limpar opções atuais (mantendo a opção vazia)
+            subcategoriaSelect.innerHTML = '<option value="">---------</option>';
+            
+            // Adicionar apenas subcategorias da categoria selecionada
+            todasSubcategorias.forEach(sub => {
+                if (!categoriaSelecionada || sub.categoriaId === categoriaSelecionada) {
+                    const option = document.createElement('option');
+                    option.value = sub.value;
+                    option.text = sub.text;
+                    option.setAttribute('data-categoria-id', sub.categoriaId);
+                    
+                    // Manter a seleção anterior se ainda for válida
+                    if (sub.value === subcategoriaSelecionada) {
+                        option.selected = true;
+                    }
+                    
+                    subcategoriaSelect.appendChild(option);
+                }
+            });
+        }
+        
+        // Filtrar ao mudar categoria
+        categoriaSelect.addEventListener('change', filtrarSubcategorias);
+        
+        // Aplicar filtro inicial (para edição)
+        if (categoriaSelect.value) {
+            filtrarSubcategorias();
+        }
+    }
+    
+    // ============== CONTROLE DA ABA DEFENSIVO ==============
+    // Função para verificar se a categoria é "Defensivo"
+    function verificarCategoriaDefensivo() {
+        if (!categoriaSelect) {
+            console.error('⚠️ categoriaSelect não encontrado');
+            return;
+        }
+        
+        const selectedOption = categoriaSelect.options[categoriaSelect.selectedIndex];
+        const categoriaText = selectedOption?.text || '';
+        const categoriaTextLower = categoriaText.toLowerCase();
+        
+        // Verifica se o texto contém "defensivo" ou "def" (código comum)
+        // Remove acentos para melhor compatibilidade
+        const textoNormalizado = categoriaTextLower
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '');
+        
+        const isDefensivo = textoNormalizado.includes('defensivo') || 
+                           textoNormalizado.includes('def -') ||
+                           textoNormalizado.startsWith('def') ||
+                           categoriaTextLower.match(/\bdef\b/i) ||
+                           (categoriaAgricolaInput && categoriaAgricolaInput.value === 'DEFENSIVO');
+        
+        console.log('🔍 VERIFICAÇÃO DETALHADA:');
+        console.log('   Texto original:', `"${categoriaText}"`);
+        console.log('   Texto normalizado:', `"${textoNormalizado}"`);
+        console.log('   categoria_agricola:', categoriaAgricolaInput?.value);
+        console.log('   É Defensivo?', isDefensivo);
+        console.log('   Produto existente?', isProdutoExistente);
+        console.log('   Deveria mostrar aba?', isDefensivo && isProdutoExistente);
+        
+        // Mostrar alerta na aba Agrícola se for defensivo e produto novo
+        if (alertDefensivoInfo) {
+            if (isDefensivo && !isProdutoExistente) {
+                alertDefensivoInfo.classList.remove('d-none');
+                console.log('✅ Alerta mostrado (produto novo)');
+            } else {
+                alertDefensivoInfo.classList.add('d-none');
+            }
+        }
+        
+        // Mostrar/ocultar aba Agrícola - só mostra se for defensivo
+        if (agricolaTabLi) {
+            if (isDefensivo) {
+                agricolaTabLi.style.display = 'block';
+                console.log('🌾 Aba Agrícola mostrada (categoria Defensivo)');
+            } else {
+                agricolaTabLi.style.display = 'none';
+                console.log('🌾 Aba Agrícola oculta (categoria não é Defensivo)');
+            }
+        }
+        
+        // Mostrar/ocultar aba - só mostra se for defensivo E produto já existir
+        if (defensivoTabLi) {
+            const shouldShow = isDefensivo && isProdutoExistente;
+            
+            if (shouldShow) {
+                defensivoTabLi.style.display = 'block';
+                console.log('🎯 ============================================');
+                console.log('🎯 ABA DEFENSIVO MOSTRADA COM SUCESSO!');
+                console.log('🎯 Display aplicado:', window.getComputedStyle(defensivoTabLi).display);
+                console.log('🎯 ============================================');
+            } else {
+                defensivoTabLi.style.display = 'none';
+                if (!isDefensivo) {
+                    console.warn('⚠️ Categoria não é defensivo');
+                }
+                if (!isProdutoExistente) {
+                    console.warn('⚠️ Produto novo - salve primeiro');
+                }
+            }
+        } else {
+            console.error('❌ Elemento defensivo-tab-li não encontrado no DOM!');
+        }
+        
+        // Definir categoria_agricola automaticamente
+        if (isDefensivo && categoriaAgricolaInput) {
+            categoriaAgricolaInput.value = 'DEFENSIVO';
+            console.log('✅ categoria_agricola = DEFENSIVO');
+        }
+    }
+    
+    // ============== CONTROLE DA ABA FERTILIZANTE ==============
+    const fertilizanteTabLi = document.getElementById('fertilizante-tab-li');
+    const alertFertilizanteInfo = document.getElementById('alertFertilizanteInfo');
+    
+    // Função para verificar se a categoria é "Fertilizante"
+    function verificarCategoriaFertilizante() {
+        if (!categoriaSelect) {
+            console.error('⚠️ categoriaSelect não encontrado');
+            return;
+        }
+        
+        const selectedOption = categoriaSelect.options[categoriaSelect.selectedIndex];
+        const categoriaText = selectedOption?.text || '';
+        const categoriaTextLower = categoriaText.toLowerCase();
+        
+        // Verifica se o texto contém "fertilizante" ou "fert" (código comum)
+        const textoNormalizado = categoriaTextLower
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '');
+        
+        const isFertilizante = textoNormalizado.includes('fertilizante') || 
+                               textoNormalizado.includes('fert -') ||
+                               textoNormalizado.startsWith('fert') ||
+                               categoriaTextLower.match(/\bfert\b/i);
+        
+        console.log('🌱 VERIFICAÇÃO FERTILIZANTE:');
+        console.log('   Texto original:', `"${categoriaText}"`);
+        console.log('   Texto normalizado:', `"${textoNormalizado}"`);
+        console.log('   É Fertilizante?', isFertilizante);
+        console.log('   Produto existente?', isProdutoExistente);
+        console.log('   Deveria mostrar aba?', isFertilizante && isProdutoExistente);
+        
+        // Mostrar alerta na aba Agrícola se for fertilizante e produto novo
+        if (alertFertilizanteInfo) {
+            if (isFertilizante && !isProdutoExistente) {
+                alertFertilizanteInfo.classList.remove('d-none');
+                console.log('✅ Alerta fertilizante mostrado (produto novo)');
+            } else {
+                alertFertilizanteInfo.classList.add('d-none');
+            }
+        }
+        
+        // Mostrar/ocultar aba - só mostra se for fertilizante E produto já existir
+        if (fertilizanteTabLi) {
+            const shouldShow = isFertilizante && isProdutoExistente;
+            
+            if (shouldShow) {
+                fertilizanteTabLi.style.display = 'block';
+                console.log('🌱 ============================================');
+                console.log('🌱 ABA FERTILIZANTE MOSTRADA COM SUCESSO!');
+                console.log('🌱 Display aplicado:', window.getComputedStyle(fertilizanteTabLi).display);
+                console.log('🌱 ============================================');
+            } else {
+                fertilizanteTabLi.style.display = 'none';
+                if (!isFertilizante) {
+                    console.warn('⚠️ Categoria não é fertilizante');
+                }
+                if (!isProdutoExistente) {
+                    console.warn('⚠️ Produto novo - salve primeiro');
+                }
+            }
+        } else {
+            console.error('❌ Elemento fertilizante-tab-li não encontrado no DOM!');
+        }
+    }
+    
+    // Verificar ao carregar e ao mudar categoria
+    if (categoriaSelect) {
+        console.log('🎯 Executando verificação inicial...');
+        verificarCategoriaDefensivo();
+        verificarCategoriaFertilizante();
+        categoriaSelect.addEventListener('change', verificarCategoriaDefensivo);
+        categoriaSelect.addEventListener('change', verificarCategoriaFertilizante);
+        console.log('✅ Event listener adicionado');
+    } else {
+        console.error('❌ categoriaSelect não encontrado - verificação não será executada');
+    }
+});
+
+// ============== FUNÇÕES GLOBAIS ==============
+// Funções que precisam ser acessadas de outros lugares
+function excluirDefensivoCultura(id) {
+    if (!confirm('Deseja realmente excluir este registro de cultura/praga?')) {
+        return;
+    }
+    
+    fetch(`/produtos/defensivo-cultura/${id}/delete/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+        },
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Erro ao excluir: ' + (data.error || 'Erro desconhecido'));
+        }
+    })
+    .catch(error => {
+        console.error('Erro:', error);
+        alert('Erro ao excluir registro');
+    });
+}
+
+function editarDefensivoCultura(id) {
+    // Redirecionar para página de edição
+    window.location.href = `/produtos/defensivo-cultura/${id}/edit/`;
+}
+
+// ============== FUNÇÕES DE DOCUMENTOS ==============
+function excluirDocumento(id) {
+    if (!confirm('Deseja realmente excluir este documento? O arquivo será removido permanentemente.')) {
+        return;
+    }
+    
+    fetch(`/produtos/documentos/${id}/delete/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+        },
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Erro ao excluir documento: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Erro:', error);
+        alert('Erro ao excluir documento.');
+    });
+}
+
+// ============== FUNÇÕES DE TRIBUTAÇÃO ==============
+function excluirTributacao(id) {
+    if (!confirm('Deseja realmente excluir esta tributação?')) {
+        return;
+    }
+    
+    fetch(`/produtos/tributacao/${id}/delete/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'X-Requested-With': 'XMLHttpRequest',
+        },
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Erro ao excluir: ' + (data.error || 'Erro desconhecido'));
+        }
+    })
+    .catch(error => {
+        console.error('Erro:', error);
+        alert('Erro ao excluir tributação');
+    });
+}
+</script>
+
+<!-- Modais para Cadastro Rápido -->
+
+<!-- Modal Categoria -->
+<div class="modal fade" id="modalCategoria" tabindex="-1" aria-labelledby="modalCategoriaLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalCategoriaLabel">
+          <i class="bi bi-plus-circle me-2"></i>Nova Categoria
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body">
+        <form id="formCategoria">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label for="categoriaCodigoInput" class="form-label">Código <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="categoriaCodigoInput" name="codigo" required>
+          </div>
+          <div class="mb-3">
+            <label for="categoriaNomeInput" class="form-label">Nome <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="categoriaNomeInput" name="nome" required>
+          </div>
+          <div class="mb-3">
+            <label for="categoriaDescricaoInput" class="form-label">Descrição</label>
+            <textarea class="form-control" id="categoriaDescricaoInput" name="descricao" rows="2"></textarea>
+          </div>
+          <div id="categoriaError" class="alert alert-danger d-none"></div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary" id="btnSalvarCategoria">
+          <i class="bi bi-check-lg me-1"></i>Salvar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Subcategoria -->
+<div class="modal fade" id="modalSubcategoria" tabindex="-1" aria-labelledby="modalSubcategoriaLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalSubcategoriaLabel">
+          <i class="bi bi-plus-circle me-2"></i>Nova Subcategoria
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body">
+        <form id="formSubcategoria">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label for="subcategoriaCategoria" class="form-label">Categoria <span class="text-danger">*</span></label>
+            <select class="form-select" id="subcategoriaCategoria" name="categoria_id" required>
+              <option value="">Selecione...</option>
+            </select>
+            <small class="text-muted">Selecione a categoria no formulário principal primeiro</small>
+          </div>
+          <div class="mb-3">
+            <label for="subcategoriaCodigoInput" class="form-label">Código <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="subcategoriaCodigoInput" name="codigo" required>
+          </div>
+          <div class="mb-3">
+            <label for="subcategoriaNomeInput" class="form-label">Nome <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="subcategoriaNomeInput" name="nome" required>
+          </div>
+          <div class="mb-3">
+            <label for="subcategoriaDescricaoInput" class="form-label">Descrição</label>
+            <textarea class="form-control" id="subcategoriaDescricaoInput" name="descricao" rows="2"></textarea>
+          </div>
+          <div id="subcategoriaError" class="alert alert-danger d-none"></div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary" id="btnSalvarSubcategoria">
+          <i class="bi bi-check-lg me-1"></i>Salvar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Unidade de Medida -->
+<div class="modal fade" id="modalUnidadeMedida" tabindex="-1" aria-labelledby="modalUnidadeMedidaLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalUnidadeMedidaLabel">
+          <i class="bi bi-plus-circle me-2"></i>Nova Unidade de Medida
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body">
+        <form id="formUnidadeMedida">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label for="unidadeSiglaInput" class="form-label">Sigla <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="unidadeSiglaInput" name="sigla" required maxlength="10" placeholder="Ex: KG, UN, CX">
+            <small class="text-muted">Máximo 10 caracteres</small>
+          </div>
+          <div class="mb-3">
+            <label for="unidadeDescricaoInput" class="form-label">Descrição <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="unidadeDescricaoInput" name="descricao" required placeholder="Ex: Quilograma, Unidade, Caixa">
+          </div>
+          <div id="unidadeError" class="alert alert-danger d-none"></div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary" id="btnSalvarUnidadeMedida">
+          <i class="bi bi-check-lg me-1"></i>Salvar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // ============== VARIÁVEIS PARA MODAIS ==============
+    const unidadeMedidaSelect = document.getElementById('id_unidade_medida');
+    const unidadeCompraSelect = document.getElementById('id_unidade_compra');
+    const unidadeVendaSelect = document.getElementById('id_unidade_venda');
+    const categoriaSelect = document.getElementById('id_categoria');
+    const subcategoriaSelect = document.getElementById('id_subcategoria');
+    
+    // ========== CADASTRO RÁPIDO DE CATEGORIA ==========
+    const btnSalvarCategoria = document.getElementById('btnSalvarCategoria');
+    const formCategoria = document.getElementById('formCategoria');
+    const modalCategoria = new bootstrap.Modal(document.getElementById('modalCategoria'));
+    
+    btnSalvarCategoria.addEventListener('click', function() {
+        const errorDiv = document.getElementById('categoriaError');
+        errorDiv.classList.add('d-none');
+        
+        const formData = new FormData(formCategoria);
+        
+        // Validação básica
+        if (!formData.get('codigo') || !formData.get('nome')) {
+            errorDiv.textContent = 'Código e nome são obrigatórios';
+            errorDiv.classList.remove('d-none');
+            return;
+        }
+        
+        btnSalvarCategoria.disabled = true;
+        btnSalvarCategoria.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Salvando...';
+        
+        fetch('{% url "produtos:categoria_create_ajax" %}', {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+            },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Adiciona a nova opção ao select
+                const option = new Option(
+                    `${data.codigo} - ${data.nome}`,
+                    data.id,
+                    true,
+                    true
+                );
+                categoriaSelect.add(option);
+                
+                // Limpa o formulário
+                formCategoria.reset();
+                
+                // Fecha o modal
+                modalCategoria.hide();
+                
+                // Mostra mensagem de sucesso
+                alert('Categoria cadastrada com sucesso!');
+            } else {
+                errorDiv.textContent = data.error || 'Erro ao cadastrar categoria';
+                errorDiv.classList.remove('d-none');
+            }
+        })
+        .catch(error => {
+            errorDiv.textContent = 'Erro ao cadastrar categoria: ' + error;
+            errorDiv.classList.remove('d-none');
+        })
+        .finally(() => {
+            btnSalvarCategoria.disabled = false;
+            btnSalvarCategoria.innerHTML = '<i class="bi bi-check-lg me-1"></i>Salvar';
+        });
+    });
+    
+    // ========== CADASTRO RÁPIDO DE SUBCATEGORIA ==========
+    const btnSalvarSubcategoria = document.getElementById('btnSalvarSubcategoria');
+    const formSubcategoria = document.getElementById('formSubcategoria');
+    const modalSubcategoria = new bootstrap.Modal(document.getElementById('modalSubcategoria'));
+    const subcategoriaCategoriaSelect = document.getElementById('subcategoriaCategoria');
+    
+    // Ao abrir modal de subcategoria, preencher o select de categoria
+    document.getElementById('modalSubcategoria').addEventListener('show.bs.modal', function() {
+        if (!categoriaSelect) return;
+        
+        // Limpar e popular o select de categoria no modal
+        subcategoriaCategoriaSelect.innerHTML = '<option value="">Selecione...</option>';
+        
+        // Copiar opções do select principal
+        Array.from(categoriaSelect.options).forEach(option => {
+            if (option.value) {
+                const newOption = option.cloneNode(true);
+                subcategoriaCategoriaSelect.add(newOption);
+            }
+        });
+        
+        // Selecionar a categoria atual se houver
+        if (categoriaSelect.value) {
+            subcategoriaCategoriaSelect.value = categoriaSelect.value;
+        }
+    });
+    
+    btnSalvarSubcategoria.addEventListener('click', function() {
+        const errorDiv = document.getElementById('subcategoriaError');
+        errorDiv.classList.add('d-none');
+        
+        const formData = new FormData(formSubcategoria);
+        
+        // Validação básica
+        if (!formData.get('categoria_id') || !formData.get('codigo') || !formData.get('nome')) {
+            errorDiv.textContent = 'Categoria, código e nome são obrigatórios';
+            errorDiv.classList.remove('d-none');
+            return;
+        }
+        
+        btnSalvarSubcategoria.disabled = true;
+        btnSalvarSubcategoria.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Salvando...';
+        
+        fetch('{% url "produtos:subcategoria_create_ajax" %}', {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+            },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Adiciona a nova opção ao select
+                const option = new Option(
+                    `${data.codigo} - ${data.nome}`,
+                    data.id,
+                    true,
+                    true
+                );
+                option.setAttribute('data-categoria-id', data.categoria_id);
+                subcategoriaSelect.add(option);
+                
+                // Limpa o formulário
+                formSubcategoria.reset();
+                
+                // Fecha o modal
+                modalSubcategoria.hide();
+                
+                // Mostra mensagem de sucesso
+                alert('Subcategoria cadastrada com sucesso!');
+            } else {
+                errorDiv.textContent = data.error || 'Erro ao cadastrar subcategoria';
+                errorDiv.classList.remove('d-none');
+            }
+        })
+        .catch(error => {
+            errorDiv.textContent = 'Erro ao cadastrar subcategoria: ' + error;
+            errorDiv.classList.remove('d-none');
+        })
+        .finally(() => {
+            btnSalvarSubcategoria.disabled = false;
+            btnSalvarSubcategoria.innerHTML = '<i class="bi bi-check-lg me-1"></i>Salvar';
+        });
+    });
+    
+    // ========== CADASTRO RÁPIDO DE UNIDADE DE MEDIDA ==========
+    const btnSalvarUnidadeMedida = document.getElementById('btnSalvarUnidadeMedida');
+    const formUnidadeMedida = document.getElementById('formUnidadeMedida');
+    const modalUnidadeMedida = new bootstrap.Modal(document.getElementById('modalUnidadeMedida'));
+    
+    btnSalvarUnidadeMedida.addEventListener('click', function() {
+        const errorDiv = document.getElementById('unidadeError');
+        errorDiv.classList.add('d-none');
+        
+        const formData = new FormData(formUnidadeMedida);
+        
+        // Validação básica
+        if (!formData.get('sigla') || !formData.get('descricao')) {
+            errorDiv.textContent = 'Sigla e descrição são obrigatórias';
+            errorDiv.classList.remove('d-none');
+            return;
+        }
+        
+        btnSalvarUnidadeMedida.disabled = true;
+        btnSalvarUnidadeMedida.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Salvando...';
+        
+        fetch('{% url "produtos:unidademedida_create_ajax" %}', {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+            },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Adiciona a nova opção aos três selects de unidade
+                const optionText = `${data.sigla} - ${data.descricao}`;
+                
+                // Unidade de Medida
+                const optionMedida = new Option(optionText, data.id, true, true);
+                unidadeMedidaSelect.add(optionMedida);
+                
+                // Unidade de Compra
+                const optionCompra = new Option(optionText, data.id, false, false);
+                unidadeCompraSelect.add(optionCompra);
+                
+                // Unidade de Venda
+                const optionVenda = new Option(optionText, data.id, false, false);
+                unidadeVendaSelect.add(optionVenda);
+                
+                // Limpa o formulário
+                formUnidadeMedida.reset();
+                
+                // Fecha o modal
+                modalUnidadeMedida.hide();
+                
+                // Mostra mensagem de sucesso
+                alert('Unidade de medida cadastrada com sucesso!');
+            } else {
+                errorDiv.textContent = data.error || 'Erro ao cadastrar unidade de medida';
+                errorDiv.classList.remove('d-none');
+            }
+        })
+        .catch(error => {
+            errorDiv.textContent = 'Erro ao cadastrar unidade de medida: ' + error;
+            errorDiv.classList.remove('d-none');
+        })
+        .finally(() => {
+            btnSalvarUnidadeMedida.disabled = false;
+            btnSalvarUnidadeMedida.innerHTML = '<i class="bi bi-check-lg me-1"></i>Salvar';
+        });
+    });
+    
+    // ========== BUSCA DE NCM ==========
+    const ncmCodigoInput = document.getElementById('ncmCodigoInput');
+    const btnBuscarNCM = document.getElementById('btnBuscarNCM');
+    const ncmDescricaoDisplay = document.getElementById('ncmDescricaoDisplay');
+    const ncmDescricaoTexto = document.getElementById('ncmDescricaoTexto');
+    const ncmError = document.getElementById('ncmError');
+    const ncmSelect = document.getElementById('id_ncm');
+    const cestInput = document.getElementById('id_cest');
+    
+    // Guardar valor original do CEST (para não perder na edição)
+    const cestOriginal = cestInput.value;
+    
+    // Carregar NCM inicial se houver (para edição)
+    if (ncmSelect.value) {
+        const selectedOption = ncmSelect.options[ncmSelect.selectedIndex];
+        if (selectedOption && selectedOption.text) {
+            const parts = selectedOption.text.split(' - ');
+            if (parts.length >= 2) {
+                ncmCodigoInput.value = parts[0];
+                ncmDescricaoTexto.textContent = parts.slice(1).join(' - ');
+                ncmDescricaoDisplay.classList.remove('d-none');
+            }
+        }
+    }
+    
+    // Buscar NCM ao clicar no botão
+    btnBuscarNCM.addEventListener('click', function() {
+        const codigo = ncmCodigoInput.value.trim();
+        
+        ncmError.classList.add('d-none');
+        ncmDescricaoDisplay.classList.add('d-none');
+        
+        if (!codigo) {
+            ncmError.textContent = 'Digite o código NCM';
+            ncmError.classList.remove('d-none');
+            return;
+        }
+        
+        btnBuscarNCM.disabled = true;
+        btnBuscarNCM.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Buscando...';
+        
+        // Buscar via AJAX
+        fetch(`{% url "produtos:ncm_buscar_ajax" %}?codigo=${codigo}`, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Selecionar o NCM no select hidden
+                ncmSelect.value = data.id;
+                
+                // Mostrar descrição
+                ncmDescricaoTexto.textContent = data.nome;
+                ncmDescricaoDisplay.classList.remove('d-none');
+                
+                // Preencher CEST automaticamente (máximo 7 dígitos)
+                if (data.cest) {
+                    // Garantir que CEST tenha no máximo 7 dígitos
+                    const cestFormatado = String(data.cest).replace(/\D/g, '').substring(0, 7);
+                    cestInput.value = cestFormatado;
+                    cestInput.classList.add('bg-success', 'bg-opacity-10');
+                    setTimeout(() => {
+                        cestInput.classList.remove('bg-success', 'bg-opacity-10');
+                    }, 2000);
+                }
+                // Se não veio CEST no retorno, manter valor existente (não limpar)
+            } else {
+                ncmError.textContent = data.error || 'NCM não encontrado';
+                ncmError.classList.remove('d-none');
+                ncmSelect.value = '';
+                // Não limpar CEST se já tinha valor original
+            }
+        })
+        .catch(error => {
+            ncmError.textContent = 'Erro ao buscar NCM: ' + error;
+            ncmError.classList.remove('d-none');
+        })
+        .finally(() => {
+            btnBuscarNCM.disabled = false;
+            btnBuscarNCM.innerHTML = '<i class="bi bi-search"></i> Buscar';
+        });
+    });
+    
+    // Buscar também ao pressionar Enter
+    ncmCodigoInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            btnBuscarNCM.click();
+        }
+    });
+    
+    // Limpar seleção ao alterar o código
+    ncmCodigoInput.addEventListener('input', function() {
+        ncmDescricaoDisplay.classList.add('d-none');
+        ncmError.classList.add('d-none');
+    });
+});
+
+</script>
+
+<!-- Modal Tributação -->
+{% if object.pk %}
+<div class="modal fade" id="modalTributacao" tabindex="-1">
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="bi bi-calculator me-2"></i>Adicionar Tributação por CFOP
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form action="{% url 'produtos:tributacao_create' object.pk %}" method="post">
+        {% csrf_token %}
+        <div class="modal-body">
+          <div class="alert alert-info">
+            <i class="bi bi-info-circle me-2"></i>
+            Configure a tributação específica para cada CFOP (natureza de operação) utilizado com este produto.
+          </div>
+          
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label required-label">CFOP</label>
+              <select name="cfop" class="form-select" required>
+                <option value="">Selecione...</option>
+                {% for cfop in form.fields.cfop.queryset %}
+                <option value="{{ cfop.id }}">{{ cfop.codigo }} - {{ cfop.descricao|truncatewords:8 }}</option>
+                {% endfor %}
+              </select>
+              <small class="text-muted">Código Fiscal de Operações e Prestações</small>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label required-label">Natureza da Operação</label>
+              <select name="natureza_operacao" class="form-select" required>
+                <option value="">Selecione...</option>
+                {% for nat in form.fields.natureza_operacao.queryset %}
+                <option value="{{ nat.id }}">{{ nat.codigo }} - {{ nat.descricao|truncatewords:8 }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+
+          <h6 class="mb-3"><i class="bi bi-tag me-1"></i>Origem da Mercadoria</h6>
+          <div class="row">
+            <div class="col-md-12 mb-3">
+              <label class="form-label required-label">Origem</label>
+              <select name="origem_mercadoria" class="form-select" required>
+                <option value="">Selecione...</option>
+                <option value="0">0 - Nacional</option>
+                <option value="1">1 - Estrangeira - Importação direta</option>
+                <option value="2">2 - Estrangeira - Adquirida no mercado interno</option>
+                <option value="3">3 - Nacional com mais de 40% de conteúdo estrangeiro</option>
+                <option value="4">4 - Nacional produzida através de processos produtivos básicos</option>
+                <option value="5">5 - Nacional com menos de 40% de conteúdo estrangeiro</option>
+                <option value="6">6 - Estrangeira - Importação direta sem similar nacional</option>
+                <option value="7">7 - Estrangeira - Mercado interno sem similar nacional</option>
+                <option value="8">8 - Nacional - Mercadoria ou bem com Conteúdo de Importação superior a 70%</option>
+              </select>
+            </div>
+          </div>
+
+          <h6 class="mb-3"><i class="bi bi-receipt me-1"></i>ICMS</h6>
+          <div class="row">
+            <div class="col-md-4 mb-3">
+              <label class="form-label">CST ICMS</label>
+              <input type="text" name="icms_situacao_tributaria" class="form-control" 
+                     placeholder="Ex: 00" maxlength="2">
+              <small class="text-muted">Para empresas no Regime Normal</small>
+            </div>
+            <div class="col-md-4 mb-3">
+              <label class="form-label">CSOSN</label>
+              <input type="text" name="csosn" class="form-control" 
+                     placeholder="Ex: 101" maxlength="3">
+              <small class="text-muted">Para empresas no Simples Nacional</small>
+            </div>
+            <div class="col-md-4 mb-3">
+              <label class="form-label">Alíquota ICMS (%)</label>
+              <input type="number" name="icms_aliquota" class="form-control" 
+                     step="0.01" placeholder="Ex: 18.00">
+            </div>
+          </div>
+
+          <h6 class="mb-3"><i class="bi bi-percent me-1"></i>Outros Impostos</h6>
+          <div class="row">
+            <div class="col-md-3 mb-3">
+              <label class="form-label">CST IPI</label>
+              <input type="text" name="ipi_situacao_tributaria" class="form-control" 
+                     placeholder="Ex: 50" maxlength="2">
+            </div>
+            <div class="col-md-3 mb-3">
+              <label class="form-label">Alíquota IPI (%)</label>
+              <input type="number" name="ipi_aliquota" class="form-control" 
+                     step="0.01" placeholder="Ex: 5.00">
+            </div>
+            <div class="col-md-3 mb-3">
+              <label class="form-label">CST PIS</label>
+              <input type="text" name="pis_situacao_tributaria" class="form-control" 
+                     placeholder="Ex: 01" maxlength="2">
+            </div>
+            <div class="col-md-3 mb-3">
+              <label class="form-label">Alíquota PIS (%)</label>
+              <input type="number" name="pis_aliquota" class="form-control" 
+                     step="0.01" placeholder="Ex: 1.65">
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-4 mb-3">
+              <label class="form-label">CST COFINS</label>
+              <input type="text" name="cofins_situacao_tributaria" class="form-control" 
+                     placeholder="Ex: 01" maxlength="2">
+            </div>
+            <div class="col-md-4 mb-3">
+              <label class="form-label">Alíquota COFINS (%)</label>
+              <input type="number" name="cofins_aliquota" class="form-control" 
+                     step="0.01" placeholder="Ex: 7.60">
+            </div>
+            <div class="col-md-4 mb-3">
+              <label class="form-label">CEST</label>
+              <input type="text" name="cest" class="form-control" 
+                     placeholder="Ex: 0100100">
+              <small class="text-muted">Código Especificador da Substituição Tributária</small>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Observações</label>
+            <textarea name="observacoes" class="form-control" rows="2" 
+                      placeholder="Informações adicionais sobre esta tributação"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+            <i class="bi bi-x-circle me-1"></i>Cancelar
+          </button>
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-save me-1"></i>Salvar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Modal Defensivo Cultura -->
+{% if object.pk %}
+<div class="modal fade" id="modalDefensivoCultura" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="bi bi-shield-fill-exclamation me-2"></i>Adicionar Cultura e Praga
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form action="{% url 'produtos:defensivo_cultura_create' object.pk %}" method="post">
+        {% csrf_token %}
+        <div class="modal-body">
+          <div class="alert alert-info">
+            <i class="bi bi-info-circle me-2"></i>
+            Preencha os dados conforme a bula do produto para esta cultura específica.
+          </div>
+          
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label required-label">Cultura</label>
+              <div class="input-group">
+                <select name="cultura" id="culturaSelect" class="form-select" required>
+                  <option value="">Selecione...</option>
+                  {% for cultura in culturas %}
+                  <option value="{{ cultura.id }}">{{ cultura.nome }}</option>
+                  {% endfor %}
+                </select>
+                <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modalCadastroRapidoCultura" title="Cadastrar nova cultura">
+                  <i class="bi bi-plus-lg"></i>
+                </button>
+              </div>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label required-label">Praga/Doença</label>
+              <div class="input-group">
+                <select name="praga" id="pragaSelect" class="form-select" required>
+                  <option value="">Selecione...</option>
+                  {% for praga in pragas %}
+                  <option value="{{ praga.id }}">{{ praga.nome_comum }}</option>
+                  {% endfor %}
+                </select>
+                <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modalCadastroRapidoPraga">
+                  <i class="bi bi-plus"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          <h6 class="mb-3"><i class="bi bi-droplet me-1"></i>Dosagem</h6>
+          <div class="row">
+            <div class="col-md-4 mb-3">
+              <label class="form-label required-label">Dosagem Mínima</label>
+              <input type="number" name="dosagem_minima" class="form-control" 
+                     step="0.001" placeholder="Ex: 1.5" required>
+            </div>
+            <div class="col-md-4 mb-3">
+              <label class="form-label required-label">Dosagem Máxima</label>
+              <input type="number" name="dosagem_maxima" class="form-control" 
+                     step="0.001" placeholder="Ex: 2.5" required>
+            </div>
+            <div class="col-md-4 mb-3">
+              <label class="form-label required-label">Unidade</label>
+              <div class="input-group">
+                <select name="unidade_dosagem" id="unidadeDosagemSelect" class="form-select" required>
+                  <option value="">Selecione...</option>
+                  {% for unidade in unidades_dosagem %}
+                  <option value="{{ unidade.id }}">{{ unidade.sigla }} - {{ unidade.nome }}</option>
+                  {% endfor %}
+                </select>
+                <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modalCadastroRapidoUnidadeDosagem">
+                  <i class="bi bi-plus"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          <h6 class="mb-3"><i class="bi bi-water me-1"></i>Volume de Calda</h6>
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label required-label">Volume Mínimo (L/ha)</label>
+              <input type="number" name="volume_calda_minimo" class="form-control" 
+                     step="0.01" placeholder="Ex: 100" required>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label required-label">Volume Máximo (L/ha)</label>
+              <input type="number" name="volume_calda_maximo" class="form-control" 
+                     step="0.01" placeholder="Ex: 200" required>
+            </div>
+          </div>
+          
+          <h6 class="mb-3"><i class="bi bi-calculator me-1"></i>Dosagem Convertida (Cálculo)</h6>
+          <div class="row">
+            <div class="col-md-4 mb-3">
+              <label class="form-label">Dosagem Mínima (Cálculo)</label>
+              <input type="number" name="dosagem_minima_calc" id="dosagemMinimaCalc" class="form-control" 
+                     style="background-color: #e8f5e9;" step="0.001" placeholder="Conversão automática" readonly>
+              <small class="text-muted">Fórmula: (Dosagem ml/ha) ÷ (Volume L/ha) × 100</small>
+            </div>
+            <div class="col-md-4 mb-3">
+              <label class="form-label">Dosagem Máxima (Cálculo)</label>
+              <input type="number" name="dosagem_maxima_calc" id="dosagemMaximaCalc" class="form-control" 
+                     style="background-color: #e8f5e9;" step="0.001" placeholder="Conversão automática" readonly>
+              <small class="text-muted">Fórmula: (Dosagem ml/ha) ÷ (Volume L/ha) × 100</small>
+            </div>
+            <div class="col-md-4 mb-3">
+              <label class="form-label">Unidade (Cálculo)</label>
+              <div class="input-group">
+                <select name="unidade_dosagem_calc" id="unidadeDosagemCalcSelect" class="form-select" style="background-color: #e8f5e9;">
+                  <option value="">Selecione...</option>
+                  {% for unidade in unidades_dosagem %}
+                  <option value="{{ unidade.id }}">{{ unidade.sigla }} - {{ unidade.nome }}</option>
+                  {% endfor %}
+                </select>
+                <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modalCadastroRapidoUnidadeDosagem">
+                  <i class="bi bi-plus"></i>
+                </button>
+              </div>
+              <small class="text-muted">Ex: ml/100L para conversão de ml/ha</small>
+            </div>
+          </div>
+
+          <h6 class="mb-3"><i class="bi bi-arrows-angle-expand me-1"></i>Cálculo Reverso (Volume → Dosagem)</h6>
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Volume de Calda para Aplicação (L)</label>
+              <input type="number" name="volume_calda_aplicacao" id="volumeCaldaAplicacao" class="form-control" 
+                     style="background-color: #fff3cd;" step="0.01" placeholder="Ex: 500">
+              <small class="text-muted">Digite o volume de calda que será aplicado</small>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Dosagem Calculada (ml/ha)</label>
+              <input type="number" name="dosagem_calculada_ha" id="dosagemCalculadaHa" class="form-control" 
+                     style="background-color: #fff3cd;" step="0.001" placeholder="Cálculo automático" readonly>
+              <div id="alertaDosagem" class="mt-1"></div>
+              <small class="text-muted">Fórmula: (Dosagem ml/100L) × (Volume L) ÷ 100</small>
+            </div>
+          </div>
+          
+          <h6 class="mb-3"><i class="bi bi-calendar-check me-1"></i>Aplicação</h6>
+          <div class="row">
+            <div class="col-md-4 mb-3">
+              <label class="form-label required-label">Carência (dias)</label>
+              <input type="number" name="carencia" class="form-control" 
+                     placeholder="Dias até colheita" required>
+              <small class="text-muted">Entre última aplicação e colheita</small>
+            </div>
+            <div class="col-md-4 mb-3">
+              <label class="form-label required-label">Máx. Aplicações</label>
+              <input type="number" name="quantidade_maxima_aplicacoes" class="form-control" 
+                     placeholder="Ex: 3" required>
+            </div>
+            <div class="col-md-4 mb-3">
+              <label class="form-label required-label">Intervalo (dias)</label>
+              <input type="number" name="intervalo_reaplicacao" class="form-control" 
+                     placeholder="Entre aplicações" required>
+            </div>
+          </div>
+          
+          <h6 class="mb-3"><i class="bi bi-flask me-1"></i>Limite Máximo de Resíduo</h6>
+          <div class="row">
+            <div class="col-md-12 mb-3">
+              <label class="form-label">MRL (mg/kg)</label>
+              <input type="number" name="mrl" class="form-control" 
+                     step="0.001" placeholder="Ex: 0.001">
+              <small class="text-muted">Limite Máximo de Resíduo conforme legislação</small>
+            </div>
+          </div>
+          
+          <div class="mb-3">
+            <label class="form-label">Observações</label>
+            <textarea name="observacoes" class="form-control" rows="2" 
+                      placeholder="Informações adicionais sobre esta aplicação"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+            <i class="bi bi-x-circle me-1"></i>Cancelar
+          </button>
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-save me-1"></i>Salvar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Modal Cadastro Rápido de Cultura -->
+<div class="modal fade" id="modalCadastroRapidoCultura" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="bi bi-plus-circle me-2"></i>Cadastrar Nova Cultura
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label required-label">Nome da Cultura</label>
+          <input type="text" id="novaCulturaNome" class="form-control" 
+                 placeholder="Ex: Soja, Milho, Algodão" required>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Tipo de Cultura</label>
+          <select id="novaCulturaTipo" class="form-select">
+            <option value="FRUTA">Fruta</option>
+            <option value="HORTALICA">Hortaliça</option>
+            <option value="GRAOS">Grãos</option>
+            <option value="TUBEROSAS">Tuberosas</option>
+            <option value="OLEAGINOSAS">Oleaginosas</option>
+            <option value="OUTROS">Outros</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          <i class="bi bi-x-circle me-1"></i>Cancelar
+        </button>
+        <button type="button" class="btn btn-success" onclick="salvarNovaCultura()">
+          <i class="bi bi-save me-1"></i>Salvar Cultura
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function salvarNovaCultura() {
+    const nome = document.getElementById('novaCulturaNome').value.trim();
+    const tipo = document.getElementById('novaCulturaTipo').value;
+    
+    if (!nome) {
+        alert('Por favor, informe o nome da cultura.');
+        return;
+    }
+    
+    // Enviar via AJAX
+    fetch('{% url "produtos:cultura_create_ajax" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({
+            nome: nome,
+            tipo: tipo
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Adicionar nova cultura ao select
+            const culturaSelect = document.getElementById('culturaSelect');
+            const option = document.createElement('option');
+            option.value = data.id;
+            option.text = data.nome;
+            option.selected = true;
+            culturaSelect.add(option);
+            
+            // Limpar e fechar modal
+            document.getElementById('novaCulturaNome').value = '';
+            document.getElementById('novaCulturaTipo').value = 'FRUTA';
+            
+            const modal = bootstrap.Modal.getInstance(document.getElementById('modalCadastroRapidoCultura'));
+            modal.hide();
+            
+            alert('Cultura cadastrada com sucesso!');
+        } else {
+            alert('Erro ao cadastrar cultura: ' + (data.error || 'Erro desconhecido'));
+        }
+    })
+    .catch(error => {
+        console.error('Erro:', error);
+        alert('Erro ao cadastrar cultura');
+    });
+}
+</script>
+
+<!-- Modal: Cadastro Rápido de Unidade de Medida -->
+<div class="modal fade" id="modalCadastroRapidoUnidadeDosagem" tabindex="-1" aria-labelledby="modalUnidadeDosagemLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title" id="modalUnidadeDosagemLabel">
+          <i class="bi bi-plus-circle me-2"></i>Cadastrar Unidade de Medida
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label for="novaUnidadeSigla" class="form-label">Sigla <span class="text-danger">*</span></label>
+          <input type="text" class="form-control" id="novaUnidadeSigla" placeholder="Ex: L/ha, kg/ha" required>
+        </div>
+        <div class="mb-3">
+          <label for="novaUnidadeNome" class="form-label">Nome <span class="text-danger">*</span></label>
+          <input type="text" class="form-control" id="novaUnidadeNome" placeholder="Ex: Litros por hectare" required>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-success" onclick="salvarNovaUnidadeDosagem()">
+          <i class="bi bi-check-circle me-1"></i>Salvar Unidade
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Upload Documento -->
+{% if object.pk %}
+<div class="modal fade" id="modalUploadDocumento" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <form method="post" action="{% url 'produtos:documento_upload' object.pk %}" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="modal-header">
+          <h5 class="modal-title">
+            <i class="bi bi-cloud-upload me-2"></i>Adicionar Documento
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label required-label">Tipo de Documento</label>
+              <select name="tipo" class="form-select" required>
+                <option value="">Selecione...</option>
+                <option value="BULA">Bula</option>
+                <option value="CERTIFICADO">Certificado</option>
+                <option value="FISPQ">FISPQ (Ficha de Informação de Segurança)</option>
+                <option value="FICHA_TECNICA">Ficha Técnica</option>
+                <option value="ANALISE">Análise</option>
+                <option value="LAUDO">Laudo</option>
+                <option value="REGISTRO">Registro (MAPA/Anvisa)</option>
+                <option value="ROTULO">Rótulo</option>
+                <option value="MANUAL">Manual de Uso</option>
+                <option value="OUTROS">Outros</option>
+              </select>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label required-label">Nome/Descrição</label>
+              <input type="text" name="nome" class="form-control" placeholder="Ex: Bula do produto - Versão 2024" required>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label required-label">Arquivo</label>
+            <input type="file" name="arquivo" class="form-control" accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png" required>
+            <small class="text-muted">
+              <i class="bi bi-info-circle me-1"></i>
+              Formatos aceitos: PDF, DOC, DOCX, XLS, XLSX, JPG, PNG (Máx: 10MB)
+            </small>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Observações</label>
+            <textarea name="observacoes" class="form-control" rows="3" placeholder="Informações adicionais (opcional)"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+            <i class="bi bi-x-circle me-1"></i>Cancelar
+          </button>
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-cloud-upload me-1"></i>Enviar Documento
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<script>
+function salvarNovaUnidadeDosagem() {
+    const sigla = document.getElementById('novaUnidadeSigla').value.trim();
+    const nome = document.getElementById('novaUnidadeNome').value.trim();
+    
+    if (!sigla || !nome) {
+        alert('Por favor, preencha todos os campos obrigatórios');
+        return;
+    }
+    
+    fetch("{% url 'produtos:unidademedida_create_ajax' %}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({
+            sigla: sigla,
+            nome: nome
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Adicionar nova opção ao select
+            const unidadeSelect = document.getElementById('unidadeDosagemSelect');
+            const option = document.createElement('option');
+            option.value = data.id;
+            option.text = data.sigla + ' - ' + data.nome;
+            option.selected = true;
+            unidadeSelect.add(option);
+            
+            // Limpar e fechar modal
+            document.getElementById('novaUnidadeSigla').value = '';
+            document.getElementById('novaUnidadeNome').value = '';
+            
+            const modal = bootstrap.Modal.getInstance(document.getElementById('modalCadastroRapidoUnidadeDosagem'));
+            modal.hide();
+            
+            alert('Unidade de medida cadastrada com sucesso!');
+        } else {
+            alert('Erro ao cadastrar unidade: ' + (data.error || 'Erro desconhecido'));
+        }
+    })
+    .catch(error => {
+        console.error('Erro:', error);
+        alert('Erro ao cadastrar unidade de medida');
+    });
+}
+
+// Conversão de dosagem ml/ha para ml/100L
+document.addEventListener('DOMContentLoaded', function() {
+    const dosagemMinima = document.querySelector('input[name="dosagem_minima"]');
+    const dosagemMaxima = document.querySelector('input[name="dosagem_maxima"]');
+    const volumeCaldaMin = document.querySelector('input[name="volume_calda_minimo"]');
+    const volumeCaldaMax = document.querySelector('input[name="volume_calda_maximo"]');
+    const dosagemMinimaCalc = document.getElementById('dosagemMinimaCalc');
+    const dosagemMaximaCalc = document.getElementById('dosagemMaximaCalc');
+    
+    function calcularDosagem() {
+        const dosMin = parseFloat(dosagemMinima?.value) || 0;
+        const dosMax = parseFloat(dosagemMaxima?.value) || 0;
+        const volMin = parseFloat(volumeCaldaMin?.value) || 0;
+        const volMax = parseFloat(volumeCaldaMax?.value) || 0;
+        
+        // Conversão: (ml/ha) / (L/ha) * 100 = ml/100L
+        // Exemplo: 1000 ml/ha / 400 L/ha * 100 = 250 ml/100L
+        if (dosMin > 0 && volMin > 0) {
+            const calcMin = (dosMin / volMin) * 100;
+            dosagemMinimaCalc.value = calcMin.toFixed(3);
+        } else {
+            dosagemMinimaCalc.value = '';
+        }
+        
+        if (dosMax > 0 && volMax > 0) {
+            const calcMax = (dosMax / volMax) * 100;
+            dosagemMaximaCalc.value = calcMax.toFixed(3);
+        } else {
+            dosagemMaximaCalc.value = '';
+        }
+    }
+    
+    // Adicionar eventos de mudança
+    if (dosagemMinima) dosagemMinima.addEventListener('input', calcularDosagem);
+    if (dosagemMaxima) dosagemMaxima.addEventListener('input', calcularDosagem);
+    if (volumeCaldaMin) volumeCaldaMin.addEventListener('input', calcularDosagem);
+    if (volumeCaldaMax) volumeCaldaMax.addEventListener('input', calcularDosagem);
+    
+    // Cálculo Reverso: Volume → Dosagem
+    const volumeCaldaAplicacao = document.getElementById('volumeCaldaAplicacao');
+    const dosagemCalculadaHa = document.getElementById('dosagemCalculadaHa');
+    const alertaDosagem = document.getElementById('alertaDosagem');
+    
+    function calcularDosagemReversa() {
+        const volume = parseFloat(volumeCaldaAplicacao?.value) || 0;
+        const dosagemCalcMin = parseFloat(dosagemMinimaCalc?.value) || 0;
+        const dosagemCalcMax = parseFloat(dosagemMaximaCalc?.value) || 0;
+        const dosMin = parseFloat(dosagemMinima?.value) || 0;
+        const dosMax = parseFloat(dosagemMaxima?.value) || 0;
+        
+        if (volume > 0 && dosagemCalcMin > 0) {
+            // Conversão: (ml/100L) * (Volume L) / 100 = ml/ha
+            // Exemplo: 250 ml/100L * 500 L / 100 = 1250 ml/ha
+            const dosagemCalculada = (dosagemCalcMin * volume) / 100;
+            dosagemCalculadaHa.value = dosagemCalculada.toFixed(3);
+            
+            // Validar se está dentro da margem
+            if (dosMin > 0 && dosMax > 0) {
+                if (dosagemCalculada < dosMin) {
+                    alertaDosagem.innerHTML = '<small class="text-danger"><i class="bi bi-exclamation-triangle-fill"></i> Atenção: Dosagem abaixo do mínimo recomendado (' + dosMin + ' ml/ha)</small>';
+                } else if (dosagemCalculada > dosMax) {
+                    alertaDosagem.innerHTML = '<small class="text-danger"><i class="bi bi-exclamation-triangle-fill"></i> Atenção: Dosagem acima do máximo recomendado (' + dosMax + ' ml/ha)</small>';
+                } else {
+                    alertaDosagem.innerHTML = '<small class="text-success"><i class="bi bi-check-circle-fill"></i> Dosagem dentro da margem recomendada</small>';
+                }
+            }
+        } else {
+            dosagemCalculadaHa.value = '';
+            alertaDosagem.innerHTML = '';
+        }
+    }
+    
+    // Eventos para cálculo reverso
+    if (volumeCaldaAplicacao) volumeCaldaAplicacao.addEventListener('input', calcularDosagemReversa);
+    if (dosagemMinimaCalc) dosagemMinimaCalc.addEventListener('change', calcularDosagemReversa);
+    if (dosagemMaximaCalc) dosagemMaximaCalc.addEventListener('change', calcularDosagemReversa);
+    if (dosagemMinima) dosagemMinima.addEventListener('input', calcularDosagemReversa);
+    if (dosagemMaxima) dosagemMaxima.addEventListener('input', calcularDosagemReversa);
+});
+</script>
+
+{% endblock %}
+

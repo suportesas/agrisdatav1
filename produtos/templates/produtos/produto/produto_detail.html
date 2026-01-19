@@ -1,0 +1,377 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-3">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h1>{{ produto.nome }}</h1>
+    <div>
+      <a href="{% url 'produtos:produto_update' produto.pk %}" class="btn btn-warning">
+        <i class="bi bi-pencil"></i> Editar
+      </a>
+      <a href="{% url 'produtos:produto_delete' produto.pk %}" class="btn btn-danger">
+        <i class="bi bi-trash"></i> Excluir
+      </a>
+      <a href="{% url 'produtos:produto_list' %}" class="btn btn-secondary">
+        <i class="bi bi-arrow-left"></i> Voltar
+      </a>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-md-8">
+      <!-- Informações Gerais -->
+      <div class="card mb-3">
+        <div class="card-header"><strong>Informações Gerais</strong></div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-6">
+              <p><strong>Código:</strong> {{ produto.codigo }}</p>
+              <p><strong>Código de Barras:</strong> {{ produto.codigo_barras|default:"-" }}</p>
+              <p><strong>Categoria:</strong> {{ produto.categoria }}</p>
+              <p><strong>Subcategoria:</strong> {{ produto.subcategoria|default:"-" }}</p>
+            </div>
+            <div class="col-md-6">
+              <p><strong>Tipo:</strong> {{ produto.get_tipo_produto_display }}</p>
+              <p><strong>Unidade:</strong> {{ produto.unidade_medida }}</p>
+              <p><strong>Fornecedor Padrão:</strong> {{ produto.fornecedor_padrao|default:"-" }}</p>
+              <p><strong>Status:</strong> 
+                {% if produto.ativo %}
+                  <span class="badge bg-success">Ativo</span>
+                {% else %}
+                  <span class="badge bg-secondary">Inativo</span>
+                {% endif %}
+              </p>
+            </div>
+          </div>
+          {% if produto.descricao %}
+          <p><strong>Descrição:</strong><br>{{ produto.descricao }}</p>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Informações Fiscais -->
+      <div class="card mb-3">
+        <div class="card-header"><strong>Informações Fiscais</strong></div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-6">
+              <p><strong>NCM:</strong> {{ produto.ncm }}</p>
+              <p><strong>CEST:</strong> {{ produto.cest|default:"-" }}</p>
+            </div>
+            <div class="col-md-6">
+              <p><strong>Tipo Item:</strong> {{ produto.get_tipo_item_display }}</p>
+              <p><em class="text-muted">A Origem da Mercadoria é definida na Tributação</em></p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Informações Financeiras -->
+      <div class="card mb-3">
+        <div class="card-header"><strong>Informações Financeiras</strong></div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-3">
+              <p><strong>Preço Custo:</strong><br>R$ {{ produto.preco_custo|floatformat:2 }}</p>
+            </div>
+            <div class="col-md-3">
+              <p><strong>Preço Venda:</strong><br>R$ {{ produto.preco_venda|floatformat:2 }}</p>
+            </div>
+            <div class="col-md-3">
+              <p><strong>Margem Lucro:</strong><br>{{ produto.margem_lucro }}%</p>
+            </div>
+            <div class="col-md-3">
+              <p><strong>Preço Mínimo:</strong><br>R$ {{ produto.preco_minimo|floatformat:2 }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Estoque -->
+      <div class="card mb-3">
+        <div class="card-header"><strong>Estoque</strong></div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-3">
+              <p><strong>Estoque Atual:</strong><br>{{ produto.estoque_atual }}</p>
+            </div>
+            <div class="col-md-3">
+              <p><strong>Estoque Mínimo:</strong><br>{{ produto.estoque_minimo }}</p>
+            </div>
+            <div class="col-md-3">
+              <p><strong>Estoque Máximo:</strong><br>{{ produto.estoque_maximo }}</p>
+            </div>
+            <div class="col-md-3">
+              <p><strong>Localização:</strong><br>{{ produto.localizacao|default:"-" }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <!-- Imagem -->
+      {% if produto.imagem %}
+      <div class="card mb-3">
+        <div class="card-body text-center">
+          <img src="{{ produto.imagem.url }}" alt="{{ produto.nome }}" class="img-fluid">
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Categoria Agrícola -->
+      {% if produto.categoria_agricola %}
+      <div class="card mb-3">
+        <div class="card-header"><strong>Informações Agrícolas</strong></div>
+        <div class="card-body">
+          <p><strong>Categoria:</strong> {{ produto.get_categoria_agricola_display }}</p>
+          
+          {% if produto.classe_agronomica %}
+          <p><strong>Classe:</strong> {{ produto.get_classe_agronomica_display }}</p>
+          <p><strong>Ingrediente Ativo:</strong> {{ produto.ingrediente_ativo|default:"-" }}</p>
+          <p><strong>Concentração:</strong> {{ produto.concentracao|default:"-" }}</p>
+          <p><strong>Registro MAPA:</strong> {{ produto.registro_mapa|default:"-" }}</p>
+          
+          {% if produto.periodo_reentrada %}
+          <p><strong>Período de Reentrada:</strong> {{ produto.periodo_reentrada }} horas</p>
+          {% endif %}
+          
+          {% if produto.paises_proibidos %}
+          <p><strong>Países Proibidos:</strong><br>
+            <span class="badge bg-danger me-1" style="font-size: 0.85rem;">{{ produto.paises_proibidos }}</span>
+          </p>
+          {% endif %}
+          {% endif %}
+          
+          {% if produto.tipo_fertilizante %}
+          <p><strong>Tipo:</strong> {{ produto.get_tipo_fertilizante_display }}</p>
+          <p><strong>Fórmula NPK:</strong> {{ produto.formula_npk|default:"-" }}</p>
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Defensivo - Culturas/Pragas -->
+      {% if produto.categoria_agricola == 'DEFENSIVO' and produto.defensivo_culturas.all %}
+      <div class="card mb-3">
+        <div class="card-header">
+          <strong><i class="bi bi-shield-fill-exclamation me-2"></i>Culturas e Pragas Registradas</strong>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-sm table-hover">
+              <thead class="table-light">
+                <tr>
+                  <th>Cultura</th>
+                  <th>Praga/Doença</th>
+                  <th>Dosagem</th>
+                  <th>Volume Calda</th>
+                  <th>Dosagem Calc.</th>
+                  <th>Carência</th>
+                  <th>Máx. Aplic.</th>
+                  <th>Intervalo</th>
+                  <th>MRL</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for dc in produto.defensivo_culturas.all %}
+                <tr>
+                  <td><strong>{{ dc.cultura.nome }}</strong></td>
+                  <td>{{ dc.praga.nome_comum }}</td>
+                  <td>
+                    <small>
+                      <strong>{{ dc.dosagem_minima }}-{{ dc.dosagem_maxima }}</strong> {{ dc.unidade_dosagem.sigla }}
+                    </small>
+                  </td>
+                  <td>
+                    <small>
+                      {{ dc.volume_calda_minimo }}-{{ dc.volume_calda_maximo }} L/ha
+                    </small>
+                  </td>
+                  <td>
+                    {% if dc.dosagem_minima_calc and dc.dosagem_maxima_calc %}
+                      <small class="text-success">
+                        <strong>{{ dc.dosagem_minima_calc }}-{{ dc.dosagem_maxima_calc }}</strong>
+                        {% if dc.unidade_dosagem_calc %}{{ dc.unidade_dosagem_calc.sigla }}{% endif %}
+                      </small>
+                    {% else %}
+                      <span class="text-muted">-</span>
+                    {% endif %}
+                  </td>
+                  <td><small>{{ dc.carencia }} dias</small></td>
+                  <td><small>{{ dc.quantidade_maxima_aplicacoes }}x</small></td>
+                  <td><small>{{ dc.intervalo_reaplicacao }} dias</small></td>
+                  <td>
+                    {% if dc.mrl %}
+                      <small>{{ dc.mrl }} mg/kg</small>
+                    {% else %}
+                      <span class="text-muted">-</span>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          <div class="mt-2">
+            <a href="{% url 'produtos:produto_update' produto.pk %}" class="btn btn-sm btn-primary">
+              <i class="bi bi-pencil me-1"></i>Editar Registros
+            </a>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Fertilizantes -->
+      {% if produto.tipo_fertilizante or produto.formula_npk or produto.nitrogenio_n or produto.fosforo_p2o5 or produto.potassio_k2o %}
+      <div class="card mb-3">
+        <div class="card-header">
+          <strong><i class="bi bi-droplet-fill me-2"></i>Informações de Fertilizante</strong>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            {% if produto.tipo_fertilizante %}
+            <div class="col-md-6 mb-3">
+              <p><strong>Tipo de Fertilizante:</strong></p>
+              <p class="mb-0">{{ produto.get_tipo_fertilizante_display }}</p>
+            </div>
+            {% endif %}
+            {% if produto.formula_npk %}
+            <div class="col-md-6 mb-3">
+              <p><strong>Fórmula NPK:</strong></p>
+              <p class="mb-0"><span class="badge bg-primary">{{ produto.formula_npk }}</span></p>
+            </div>
+            {% endif %}
+          </div>
+          
+          {% if produto.nitrogenio_n or produto.fosforo_p2o5 or produto.potassio_k2o %}
+          <div class="mt-3">
+            <p><strong>Composição:</strong></p>
+            <div class="row">
+              {% if produto.nitrogenio_n %}
+              <div class="col-md-4 mb-2">
+                <div class="border rounded p-3 text-center">
+                  <h5 class="text-primary mb-1">{{ produto.nitrogenio_n }}%</h5>
+                  <small class="text-muted">Nitrogênio (N)</small>
+                </div>
+              </div>
+              {% endif %}
+              {% if produto.fosforo_p2o5 %}
+              <div class="col-md-4 mb-2">
+                <div class="border rounded p-3 text-center">
+                  <h5 class="text-success mb-1">{{ produto.fosforo_p2o5 }}%</h5>
+                  <small class="text-muted">Fósforo (P₂O₅)</small>
+                </div>
+              </div>
+              {% endif %}
+              {% if produto.potassio_k2o %}
+              <div class="col-md-4 mb-2">
+                <div class="border rounded p-3 text-center">
+                  <h5 class="text-warning mb-1">{{ produto.potassio_k2o }}%</h5>
+                  <small class="text-muted">Potássio (K₂O)</small>
+                </div>
+              </div>
+              {% endif %}
+            </div>
+          </div>
+          {% endif %}
+          
+          <div class="mt-3">
+            <a href="{% url 'produtos:produto_update' produto.pk %}" class="btn btn-sm btn-primary">
+              <i class="bi bi-pencil me-1"></i>Editar Informações
+            </a>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Documentos -->
+      {% if produto.documentos.all %}
+      <div class="card mb-3">
+        <div class="card-header">
+          <strong><i class="bi bi-file-earmark-text me-2"></i>Documentos do Produto</strong>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            {% for doc in produto.documentos.all %}
+            <div class="col-md-6 mb-3">
+              <div class="card h-100">
+                <div class="card-body">
+                  <div class="d-flex justify-content-between align-items-start mb-2">
+                    <h6 class="card-title mb-0">
+                      <span class="badge bg-secondary me-2">{{ doc.get_tipo_display }}</span>
+                    </h6>
+                    <small class="text-muted">{{ doc.created_at|date:"d/m/Y" }}</small>
+                  </div>
+                  <p class="card-text"><strong>{{ doc.nome }}</strong></p>
+                  {% if doc.observacoes %}
+                  <p class="card-text"><small class="text-muted">{{ doc.observacoes }}</small></p>
+                  {% endif %}
+                  <div class="d-flex justify-content-between align-items-center">
+                    <a href="{{ doc.arquivo.url }}" target="_blank" class="btn btn-sm btn-primary">
+                      <i class="bi bi-download me-1"></i>Download
+                      <small>({{ doc.tamanho_formatado }})</small>
+                    </a>
+                    <small class="text-muted">
+                      {% if doc.cadastrado_por %}
+                        <i class="bi bi-person me-1"></i>{{ doc.cadastrado_por.nome }}
+                      {% else %}
+                        <i class="bi bi-person me-1"></i><span class="text-muted">N/D</span>
+                      {% endif %}
+                    </small>
+                  </div>
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          <div class="mt-2">
+            <a href="{% url 'produtos:produto_update' produto.pk %}" class="btn btn-sm btn-primary">
+              <i class="bi bi-plus-circle me-1"></i>Adicionar Documento
+            </a>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Tributações Cadastradas -->
+      {% if produto.tributacoes.all %}
+      <div class="card mb-3">
+        <div class="card-header">
+          <strong><i class="bi bi-calculator me-2"></i>Tributações Cadastradas</strong>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-sm">
+              <thead class="table-light">
+                <tr>
+                  <th>CFOP</th>
+                  <th>Origem</th>
+                  <th>ICMS %</th>
+                  <th>IPI %</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for trib in produto.tributacoes.all %}
+                <tr>
+                  <td><strong>{{ trib.cfop.codigo }}</strong></td>
+                  <td>{{ trib.get_origem_mercadoria_display|truncatewords:3 }}</td>
+                  <td>{{ trib.icms_aliquota }}%</td>
+                  <td>{{ trib.ipi_aliquota }}%</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          <div class="mt-2">
+            <a href="{% url 'produtos:produto_update' produto.pk %}" class="btn btn-sm btn-primary">
+              <i class="bi bi-pencil me-1"></i>Gerenciar Tributações
+            </a>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

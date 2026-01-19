@@ -1,0 +1,327 @@
+{% extends 'base.html' %}
+
+{% block extra_css %}
+<style>
+  .product-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+    height: 100%;
+  }
+  .product-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  }
+  .product-image {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+    background: #f8f9fa;
+  }
+  .product-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 1;
+  }
+  .filter-chip {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    margin: 0.25rem;
+    background: #e9ecef;
+    border-radius: 20px;
+    font-size: 0.875rem;
+  }
+  .filter-chip .bi {
+    cursor: pointer;
+  }
+  .view-toggle .btn {
+    border-radius: 0;
+  }
+  .view-toggle .btn:first-child {
+    border-top-left-radius: 0.25rem;
+    border-bottom-left-radius: 0.25rem;
+  }
+  .view-toggle .btn:last-child {
+    border-top-right-radius: 0.25rem;
+    border-bottom-right-radius: 0.25rem;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-3">
+  <!-- Cabeçalho -->
+  <div class="row mb-3">
+    <div class="col-md-6">
+      <h1><i class="bi bi-box-seam me-2"></i>Produtos</h1>
+      <p class="text-muted">Gerencie seu catálogo de produtos</p>
+    </div>
+    <div class="col-md-6 text-end">
+      <a href="{% url 'produtos:unidademedida_list' %}" class="btn btn-outline-secondary">
+        <i class="bi bi-rulers"></i> Unidades
+      </a>
+      <a href="{% url 'produtos:categoria_list' %}" class="btn btn-outline-secondary">
+        <i class="bi bi-tags"></i> Categorias
+      </a>
+      <a href="{% url 'produtos:subcategoria_list' %}" class="btn btn-outline-secondary">
+        <i class="bi bi-tag"></i> Subcategorias
+      </a>
+      <a href="{% url 'produtos:produto_create' %}" class="btn btn-primary">
+        <i class="bi bi-plus-circle"></i> Novo Produto
+      </a>
+    </div>
+  </div>
+
+  <!-- Filtros e Busca -->
+  <div class="card mb-3">
+    <div class="card-body">
+      <form method="get" id="filterForm">
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label"><i class="bi bi-search me-1"></i>Buscar</label>
+            <input type="text" name="q" class="form-control" 
+                   placeholder="Código, nome, código de barras..." 
+                   value="{{ query }}">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label"><i class="bi bi-tags me-1"></i>Categoria</label>
+            <select name="categoria" class="form-select">
+              <option value="">Todas</option>
+              {% for cat in categorias %}
+              <option value="{{ cat.id }}" {% if request.GET.categoria == cat.id|stringformat:"s" %}selected{% endif %}>
+                {{ cat.nome }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label"><i class="bi bi-toggle-on me-1"></i>Status</label>
+            <select name="status" class="form-select">
+              <option value="">Todos</option>
+              <option value="ativo" {% if request.GET.status == "ativo" %}selected{% endif %}>Ativo</option>
+              <option value="inativo" {% if request.GET.status == "inativo" %}selected{% endif %}>Inativo</option>
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label d-block">&nbsp;</label>
+            <button type="submit" class="btn btn-primary">
+              <i class="bi bi-funnel"></i> Filtrar
+            </button>
+            <a href="{% url 'produtos:produto_list' %}" class="btn btn-outline-secondary">
+              <i class="bi bi-x-circle"></i> Limpar
+            </a>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Barra de Ferramentas -->
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <span class="text-muted">
+        <i class="bi bi-box-seam me-1"></i>
+        <strong>{{ produtos|length }}</strong> produto{{ produtos|length|pluralize }}
+      </span>
+    </div>
+    <div class="view-toggle btn-group" role="group">
+      <button type="button" class="btn btn-outline-secondary active" id="btnGridView">
+        <i class="bi bi-grid-3x3-gap"></i> Grade
+      </button>
+      <button type="button" class="btn btn-outline-secondary" id="btnTableView">
+        <i class="bi bi-list-ul"></i> Tabela
+      </button>
+    </div>
+  </div>
+
+  <!-- Visualização em Grade (padrão) -->
+  <div id="gridView">
+    <div class="row g-3">
+      {% for produto in produtos %}
+      <div class="col-md-6 col-lg-4 col-xl-3">
+        <div class="card product-card">
+          <div class="position-relative">
+            {% if produto.imagem %}
+            <img src="{{ produto.imagem.url }}" class="product-image" alt="{{ produto.nome }}">
+            {% else %}
+            <div class="product-image d-flex align-items-center justify-content-center">
+              <i class="bi bi-image text-muted" style="font-size: 3rem;"></i>
+            </div>
+            {% endif %}
+            <div class="product-badge">
+              {% if produto.ativo %}
+              <span class="badge bg-success"><i class="bi bi-check-circle"></i> Ativo</span>
+              {% else %}
+              <span class="badge bg-secondary"><i class="bi bi-x-circle"></i> Inativo</span>
+              {% endif %}
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+              <small class="text-muted">
+                <i class="bi bi-upc-scan me-1"></i>{{ produto.codigo }}
+              </small>
+              <small class="badge bg-light text-dark">{{ produto.categoria.nome }}</small>
+            </div>
+            <h6 class="card-title mb-2" title="{{ produto.nome }}">{{ produto.nome|truncatechars:40 }}</h6>
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <div>
+                <small class="text-muted d-block">Preço</small>
+                <strong class="text-success">R$ {{ produto.preco_venda|floatformat:2 }}</strong>
+              </div>
+              <div class="text-end">
+                <small class="text-muted d-block">Estoque</small>
+                <strong>{{ produto.estoque_atual }} {{ produto.unidade_medida.sigla }}</strong>
+              </div>
+            </div>
+          </div>
+          <div class="card-footer bg-white border-top">
+            <div class="btn-group w-100" role="group">
+              <a href="{% url 'produtos:produto_detail' produto.pk %}" 
+                 class="btn btn-sm btn-outline-primary" 
+                 title="Visualizar">
+                <i class="bi bi-eye"></i>
+              </a>
+              <a href="{% url 'produtos:produto_update' produto.pk %}" 
+                 class="btn btn-sm btn-outline-warning" 
+                 title="Editar">
+                <i class="bi bi-pencil"></i>
+              </a>
+              <a href="{% url 'produtos:produto_delete' produto.pk %}" 
+                 class="btn btn-sm btn-outline-danger" 
+                 title="Excluir"
+                 onclick="return confirm('Deseja realmente excluir este produto?')">
+                <i class="bi bi-trash"></i>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% empty %}
+      <div class="col-12">
+        <div class="alert alert-info text-center">
+          <i class="bi bi-info-circle me-2"></i>
+          Nenhum produto encontrado.
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Visualização em Tabela (oculta inicialmente) -->
+  <div id="tableView" class="d-none">
+    <div class="card">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="table-light">
+            <tr>
+              <th style="width: 60px;"></th>
+              <th>Código</th>
+              <th>Nome</th>
+              <th>Categoria</th>
+              <th>Unidade</th>
+              <th class="text-end">Preço Venda</th>
+              <th class="text-end">Estoque</th>
+              <th>Status</th>
+              <th class="text-end" style="width: 180px;">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for produto in produtos %}
+            <tr>
+              <td>
+                {% if produto.imagem %}
+                <img src="{{ produto.imagem.url }}" width="40" height="40" class="rounded" style="object-fit: cover;">
+                {% else %}
+                <div class="bg-light rounded d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                  <i class="bi bi-image text-muted"></i>
+                </div>
+                {% endif %}
+              </td>
+              <td><code>{{ produto.codigo }}</code></td>
+              <td>
+                <strong>{{ produto.nome|truncatechars:50 }}</strong>
+                {% if produto.nome_resumido %}
+                <br><small class="text-muted">{{ produto.nome_resumido }}</small>
+                {% endif %}
+              </td>
+              <td><span class="badge bg-light text-dark">{{ produto.categoria.nome }}</span></td>
+              <td>{{ produto.unidade_medida.sigla }}</td>
+              <td class="text-end"><strong class="text-success">R$ {{ produto.preco_venda|floatformat:2 }}</strong></td>
+              <td class="text-end">
+                {% if produto.estoque_atual <= produto.estoque_minimo %}
+                <span class="badge bg-danger">{{ produto.estoque_atual }}</span>
+                {% else %}
+                {{ produto.estoque_atual }}
+                {% endif %}
+              </td>
+              <td>
+                {% if produto.ativo %}
+                <span class="badge bg-success"><i class="bi bi-check-circle"></i> Ativo</span>
+                {% else %}
+                <span class="badge bg-secondary"><i class="bi bi-x-circle"></i> Inativo</span>
+                {% endif %}
+              </td>
+              <td class="text-end">
+                <div class="btn-group btn-group-sm">
+                  <a href="{% url 'produtos:produto_detail' produto.pk %}" class="btn btn-info" title="Ver">
+                    <i class="bi bi-eye"></i>
+                  </a>
+                  <a href="{% url 'produtos:produto_update' produto.pk %}" class="btn btn-warning" title="Editar">
+                    <i class="bi bi-pencil"></i>
+                  </a>
+                  <a href="{% url 'produtos:produto_delete' produto.pk %}" class="btn btn-danger" title="Excluir"
+                     onclick="return confirm('Deseja realmente excluir este produto?')">
+                    <i class="bi bi-trash"></i>
+                  </a>
+                </div>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="9" class="text-center">
+                <div class="py-4">
+                  <i class="bi bi-inbox text-muted" style="font-size: 3rem;"></i>
+                  <p class="text-muted mt-2">Nenhum produto encontrado.</p>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const btnGridView = document.getElementById('btnGridView');
+    const btnTableView = document.getElementById('btnTableView');
+    const gridView = document.getElementById('gridView');
+    const tableView = document.getElementById('tableView');
+    
+    // Alternar entre visualizações
+    btnGridView.addEventListener('click', function() {
+        gridView.classList.remove('d-none');
+        tableView.classList.add('d-none');
+        btnGridView.classList.add('active');
+        btnTableView.classList.remove('active');
+        localStorage.setItem('productsView', 'grid');
+    });
+    
+    btnTableView.addEventListener('click', function() {
+        gridView.classList.add('d-none');
+        tableView.classList.remove('d-none');
+        btnTableView.classList.add('active');
+        btnGridView.classList.remove('active');
+        localStorage.setItem('productsView', 'table');
+    });
+    
+    // Restaurar visualização salva
+    const savedView = localStorage.getItem('productsView');
+    if (savedView === 'table') {
+        btnTableView.click();
+    }
+});
+</script>
+{% endblock %}

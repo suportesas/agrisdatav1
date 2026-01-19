@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-3">
+  <h1>Excluir Unidade de Medida</h1>
+  <div class="alert alert-warning">
+    <p>Tem certeza que deseja excluir a unidade <strong>{{ object }}</strong>?</p>
+  </div>
+  <form method="post">
+    {% csrf_token %}
+    <button class="btn btn-danger">Sim, excluir</button>
+    <a class="btn btn-secondary ms-2" href="{% url 'produtos:unidademedida_list' %}">Cancelar</a>
+  </form>
+</div>
+{% endblock %}

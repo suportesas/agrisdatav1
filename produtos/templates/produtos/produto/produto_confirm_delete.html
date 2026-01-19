@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-3">
+  <h1>Excluir Produto</h1>
+  <div class="alert alert-warning">
+    <p>Tem certeza que deseja excluir o produto <strong>{{ object }}</strong>?</p>
+    <p class="mb-0"><small>Esta ação não pode ser desfeita.</small></p>
+  </div>
+  <form method="post">
+    {% csrf_token %}
+    <button class="btn btn-danger">Sim, excluir</button>
+    <a class="btn btn-secondary ms-2" href="{% url 'produtos:produto_list' %}">Cancelar</a>
+  </form>
+</div>
+{% endblock %}

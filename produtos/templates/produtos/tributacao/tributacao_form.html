@@ -1,0 +1,556 @@
+{% extends 'base.html' %}
+
+{% block extra_css %}
+<style>
+  .form-control.is-invalid,
+  .form-select.is-invalid {
+    border-color: #dc3545;
+    padding-right: calc(1.5em + 0.75rem);
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%23dc3545'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath stroke-linejoin='round' d='M5.8 3.6h.4L6 6.5z'/%3e%3ccircle cx='6' cy='8.2' r='.6' fill='%23dc3545' stroke='none'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right calc(0.375em + 0.1875rem) center;
+    background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+  }
+  
+  .card-header {
+    background-color: #f8f9fa;
+    font-weight: 600;
+  }
+  
+  #debugAlert {
+    max-height: 400px;
+    overflow-y: auto;
+    border-left: 4px solid #ffc107;
+  }
+  
+  .required-label::after {
+    content: " *";
+    color: #dc3545;
+    font-weight: bold;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-3">
+  <h1>{{ action }} Tributação - {{ produto.nome }}</h1>
+  
+  {% if form.errors %}
+  <div class="alert alert-danger alert-dismissible fade show" role="alert">
+    <strong><i class="bi bi-exclamation-triangle-fill me-2"></i>Erro ao salvar!</strong>
+    <ul class="mb-0 mt-2">
+      {% for field in form %}
+        {% if field.errors %}
+          {% for error in field.errors %}
+            <li><strong>{{ field.label }}:</strong> {{ error }}</li>
+          {% endfor %}
+        {% endif %}
+      {% endfor %}
+      {% if form.non_field_errors %}
+        {% for error in form.non_field_errors %}
+          <li>{{ error }}</li>
+        {% endfor %}
+      {% endif %}
+    </ul>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  {% endif %}
+  
+  <form method="post" id="tributacaoForm">
+    {% csrf_token %}
+    
+    <!-- Campo produto hidden -->
+    <input type="hidden" name="produto" value="{{ produto.id }}" id="id_produto">
+    
+    <div class="card mb-3">
+      <div class="card-header"><strong>Identificação</strong></div>
+      <div class="card-body">
+        <div class="alert alert-info mb-3">
+          <i class="bi bi-box-seam me-2"></i>
+          <strong>Produto:</strong> {{ produto.codigo }} - {{ produto.nome }}
+        </div>
+        <div class="row">
+          <div class="col-md-4 mb-3">
+            <label for="cfopCodigoInput" class="form-label required-label">{{ form.cfop.label }}</label>
+            <div class="input-group">
+              <input type="text" 
+                     id="cfopCodigoInput" 
+                     class="form-control" 
+                     placeholder="Digite o código CFOP"
+                     maxlength="4">
+              <button type="button" 
+                      class="btn btn-primary" 
+                      id="btnBuscarCfop">
+                <i class="bi bi-search"></i> Buscar
+              </button>
+            </div>
+            <!-- Descrição do CFOP encontrado -->
+            <div id="cfopDescricao" class="mt-2 d-none">
+              <small class="text-success">
+                <i class="bi bi-check-circle-fill me-1"></i>
+                <strong id="cfopDescricaoTexto"></strong>
+              </small>
+            </div>
+            <!-- Select CFOP oculto (necessário para o formulário) -->
+            <div style="position: absolute; left: -9999px;">
+              {{ form.cfop }}
+            </div>
+            {% if form.cfop.errors %}
+              <div class="invalid-feedback d-block">{{ form.cfop.errors.0 }}</div>
+            {% else %}
+              <small class="form-text text-muted">Digite o código (ex: 5101)</small>
+            {% endif %}
+          </div>
+          <div class="col-md-4 mb-3">
+            <label for="id_natureza_operacao" class="form-label">{{ form.natureza_operacao.label }}</label>
+            {{ form.natureza_operacao }}
+            {% if form.natureza_operacao.errors %}
+              <div class="invalid-feedback d-block">{{ form.natureza_operacao.errors.0 }}</div>
+            {% else %}
+              <small class="form-text text-muted">Selecione a natureza da operação (opcional)</small>
+            {% endif %}
+          </div>
+          <div class="col-md-4 mb-3">
+            <label for="id_descricao" class="form-label">{{ form.descricao.label }}</label>
+            {{ form.descricao }}
+            {% if form.descricao.errors %}
+              <div class="invalid-feedback d-block">{{ form.descricao.errors.0 }}</div>
+            {% else %}
+              <small class="form-text text-muted">Preenchido automaticamente pela Natureza da Operação</small>
+            {% endif %}
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-md-12 mb-3">
+            <label for="id_origem_mercadoria" class="form-label required-label">{{ form.origem_mercadoria.label }}</label>
+            {{ form.origem_mercadoria }}
+            {% if form.origem_mercadoria.errors %}
+              <div class="invalid-feedback d-block">{{ form.origem_mercadoria.errors.0 }}</div>
+            {% else %}
+              <small class="form-text text-muted">Obrigatório para emissão de NF-e - Indica a procedência da mercadoria</small>
+            {% endif %}
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <div class="form-check">
+              {{ form.padrao }} {{ form.padrao.label_tag }}
+            </div>
+          </div>
+          <div class="col-md-6 mb-3">
+            <div class="form-check">
+              {{ form.ativo }} {{ form.ativo.label_tag }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card mb-3">
+      <div class="card-header"><strong>ICMS</strong></div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-4 mb-3">
+            <label for="id_icms_situacao_tributaria" class="form-label required-label">{{ form.icms_situacao_tributaria.label }}</label>
+            {{ form.icms_situacao_tributaria }}
+            {% if form.icms_situacao_tributaria.errors %}
+              <div class="invalid-feedback d-block">{{ form.icms_situacao_tributaria.errors.0 }}</div>
+            {% else %}
+              <small class="form-text text-muted">CST/CSOSN do ICMS</small>
+            {% endif %}
+          </div>
+          <div class="col-md-4 mb-3">
+            <label for="id_icms_modalidade_base" class="form-label">{{ form.icms_modalidade_base.label }}</label>
+            {{ form.icms_modalidade_base }}
+            {% if form.icms_modalidade_base.errors %}
+              <div class="invalid-feedback d-block">{{ form.icms_modalidade_base.errors.0 }}</div>
+            {% endif %}
+          </div>
+          <div class="col-md-4 mb-3">
+            <label for="id_icms_aliquota" class="form-label">{{ form.icms_aliquota.label }}</label>
+            {{ form.icms_aliquota }}
+            {% if form.icms_aliquota.errors %}
+              <div class="invalid-feedback d-block">{{ form.icms_aliquota.errors.0 }}</div>
+            {% else %}
+              <small class="form-text text-muted">Percentual (0-100)</small>
+            {% endif %}
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label for="id_icms_reducao_base" class="form-label">{{ form.icms_reducao_base.label }}</label>
+            {{ form.icms_reducao_base }}
+            {% if form.icms_reducao_base.errors %}
+              <div class="invalid-feedback d-block">{{ form.icms_reducao_base.errors.0 }}</div>
+            {% else %}
+              <small class="form-text text-muted">Percentual (0-100)</small>
+            {% endif %}
+          </div>
+          <div class="col-md-6 mb-3">
+            <label for="id_icms_base_calculo" class="form-label">{{ form.icms_base_calculo.label }}</label>
+            {{ form.icms_base_calculo }}
+            {% if form.icms_base_calculo.errors %}
+              <div class="invalid-feedback d-block">{{ form.icms_base_calculo.errors.0 }}</div>
+            {% else %}
+              <small class="form-text text-muted">Percentual (0-100)</small>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card mb-3">
+      <div class="card-header"><strong>ICMS ST</strong></div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-4 mb-3">
+            <label for="id_icms_st_aliquota" class="form-label">{{ form.icms_st_aliquota.label }}</label>
+            {{ form.icms_st_aliquota }}
+            {% if form.icms_st_aliquota.errors %}
+              <div class="invalid-feedback d-block">{{ form.icms_st_aliquota.errors.0 }}</div>
+            {% else %}
+              <small class="form-text text-muted">Percentual (0-100)</small>
+            {% endif %}
+          </div>
+          <div class="col-md-4 mb-3">
+            <label for="id_icms_st_mva" class="form-label">{{ form.icms_st_mva.label }}</label>
+            {{ form.icms_st_mva }}
+            {% if form.icms_st_mva.errors %}
+              <div class="invalid-feedback d-block">{{ form.icms_st_mva.errors.0 }}</div>
+            {% else %}
+              <small class="form-text text-muted">Margem Valor Agregado (%)</small>
+            {% endif %}
+          </div>
+          <div class="col-md-4 mb-3">
+            <label for="id_icms_st_reducao_base" class="form-label">{{ form.icms_st_reducao_base.label }}</label>
+            {{ form.icms_st_reducao_base }}
+            {% if form.icms_st_reducao_base.errors %}
+              <div class="invalid-feedback d-block">{{ form.icms_st_reducao_base.errors.0 }}</div>
+            {% else %}
+              <small class="form-text text-muted">Percentual (0-100)</small>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card mb-3">
+      <div class="card-header"><strong>IPI</strong></div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-4 mb-3">
+            <label for="id_ipi_situacao_tributaria" class="form-label">{{ form.ipi_situacao_tributaria.label }}</label>
+            {{ form.ipi_situacao_tributaria }}
+            {% if form.ipi_situacao_tributaria.errors %}
+              <div class="invalid-feedback d-block">{{ form.ipi_situacao_tributaria.errors.0 }}</div>
+            {% else %}
+              <small class="form-text text-muted">CST do IPI</small>
+            {% endif %}
+          </div>
+          <div class="col-md-4 mb-3">
+            <label for="id_ipi_aliquota" class="form-label">{{ form.ipi_aliquota.label }}</label>
+            {{ form.ipi_aliquota }}
+            {% if form.ipi_aliquota.errors %}
+              <div class="invalid-feedback d-block">{{ form.ipi_aliquota.errors.0 }}</div>
+            {% else %}
+              <small class="form-text text-muted">Percentual (0-100)</small>
+            {% endif %}
+          </div>
+          <div class="col-md-4 mb-3">
+            <label for="id_ipi_codigo_enquadramento" class="form-label">{{ form.ipi_codigo_enquadramento.label }}</label>
+            {{ form.ipi_codigo_enquadramento }}
+            {% if form.ipi_codigo_enquadramento.errors %}
+              <div class="invalid-feedback d-block">{{ form.ipi_codigo_enquadramento.errors.0 }}</div>
+            {% else %}
+              <small class="form-text text-muted">Ex: 999</small>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card mb-3">
+      <div class="card-header"><strong>PIS / COFINS</strong></div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-4 mb-3">
+            <label for="id_pis_situacao_tributaria" class="form-label required-label">{{ form.pis_situacao_tributaria.label }}</label>
+            {{ form.pis_situacao_tributaria }}
+            {% if form.pis_situacao_tributaria.errors %}
+              <div class="invalid-feedback d-block">{{ form.pis_situacao_tributaria.errors.0 }}</div>
+            {% else %}
+              <small class="form-text text-muted">CST do PIS</small>
+            {% endif %}
+          </div>
+          <div class="col-md-4 mb-3">
+            <label for="id_pis_aliquota" class="form-label">{{ form.pis_aliquota.label }}</label>
+            {{ form.pis_aliquota }}
+            {% if form.pis_aliquota.errors %}
+              <div class="invalid-feedback d-block">{{ form.pis_aliquota.errors.0 }}</div>
+            {% else %}
+              <small class="form-text text-muted">Percentual (0-100)</small>
+            {% endif %}
+          </div>
+          <div class="col-md-4 mb-3">
+            <label for="id_pis_base_calculo" class="form-label">{{ form.pis_base_calculo.label }}</label>
+            {{ form.pis_base_calculo }}
+            {% if form.pis_base_calculo.errors %}
+              <div class="invalid-feedback d-block">{{ form.pis_base_calculo.errors.0 }}</div>
+            {% else %}
+              <small class="form-text text-muted">Percentual (0-100)</small>
+            {% endif %}
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-md-4 mb-3">
+            <label for="id_cofins_situacao_tributaria" class="form-label required-label">{{ form.cofins_situacao_tributaria.label }}</label>
+            {{ form.cofins_situacao_tributaria }}
+            {% if form.cofins_situacao_tributaria.errors %}
+              <div class="invalid-feedback d-block">{{ form.cofins_situacao_tributaria.errors.0 }}</div>
+            {% else %}
+              <small class="form-text text-muted">CST do COFINS</small>
+            {% endif %}
+          </div>
+          <div class="col-md-4 mb-3">
+            <label for="id_cofins_aliquota" class="form-label">{{ form.cofins_aliquota.label }}</label>
+            {{ form.cofins_aliquota }}
+            {% if form.cofins_aliquota.errors %}
+              <div class="invalid-feedback d-block">{{ form.cofins_aliquota.errors.0 }}</div>
+            {% else %}
+              <small class="form-text text-muted">Percentual (0-100)</small>
+            {% endif %}
+          </div>
+          <div class="col-md-4 mb-3">
+            <label for="id_cofins_base_calculo" class="form-label">{{ form.cofins_base_calculo.label }}</label>
+            {{ form.cofins_base_calculo }}
+            {% if form.cofins_base_calculo.errors %}
+              <div class="invalid-feedback d-block">{{ form.cofins_base_calculo.errors.0 }}</div>
+            {% else %}
+              <small class="form-text text-muted">Percentual (0-100)</small>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card mb-3">
+      <div class="card-header"><strong>Outros</strong></div>
+      <div class="card-body">
+        <div class="mb-3">
+          <label for="id_beneficio_fiscal" class="form-label">{{ form.beneficio_fiscal.label }}</label>
+          {{ form.beneficio_fiscal }}
+          {% if form.beneficio_fiscal.errors %}
+            <div class="invalid-feedback d-block">{{ form.beneficio_fiscal.errors.0 }}</div>
+          {% else %}
+            <small class="form-text text-muted">Código de benefício fiscal, se aplicável</small>
+          {% endif %}
+        </div>
+        <div class="mb-3">
+          <label for="id_observacoes" class="form-label">{{ form.observacoes.label }}</label>
+          {{ form.observacoes }}
+          {% if form.observacoes.errors %}
+            <div class="invalid-feedback d-block">{{ form.observacoes.errors.0 }}</div>
+          {% else %}
+            <small class="form-text text-muted">Informações complementares sobre a tributação</small>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-3">
+      <button type="submit" class="btn btn-primary" id="btnSalvarTributacao">
+        <i class="bi bi-save me-1"></i>Salvar Tributação
+      </button>
+      <a href="{% url 'produtos:produto_detail' produto.pk %}" class="btn btn-secondary ms-2">
+        <i class="bi bi-x-circle me-1"></i>Cancelar
+      </a>
+    </div>
+  </form>
+</div>
+
+<!-- Alert de Debug -->
+<div id="debugAlert" class="alert alert-warning mt-3 d-none" role="alert">
+  <h5><i class="bi bi-bug me-2"></i>Informações de Debug</h5>
+  <hr>
+  <div id="debugContent" style="font-family: monospace; font-size: 0.9em;"></div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const tributacaoForm = document.getElementById('tributacaoForm');
+    const btnSalvar = document.getElementById('btnSalvarTributacao');
+    const debugAlert = document.getElementById('debugAlert');
+    const debugContent = document.getElementById('debugContent');
+    
+    // Função para adicionar log de debug
+    function logDebug(message, type = 'info') {
+        const timestamp = new Date().toLocaleTimeString();
+        const icons = {
+            'info': 'ℹ️',
+            'success': '✅',
+            'warning': '⚠️',
+            'error': '❌'
+        };
+        const icon = icons[type] || 'ℹ️';
+        
+        console.log(`[${timestamp}] ${icon} ${message}`);
+        debugContent.innerHTML += `<div class="mb-1"><strong>[${timestamp}]</strong> ${icon} ${message}</div>`;
+        debugAlert.classList.remove('d-none');
+    }
+    
+    // Validar formulário antes de submeter
+    tributacaoForm.addEventListener('submit', function(e) {
+        logDebug('Formulário sendo enviado...', 'info');
+        
+        const formData = new FormData(tributacaoForm);
+        
+        // Log dos campos obrigatórios
+        const camposObrigatorios = [
+            { name: 'produto', label: 'Produto' },
+            { name: 'cfop', label: 'CFOP' },
+            { name: 'origem_mercadoria', label: 'Origem da Mercadoria' },
+            { name: 'icms_situacao_tributaria', label: 'ICMS - Situação Tributária' },
+            { name: 'pis_situacao_tributaria', label: 'PIS - Situação Tributária' },
+            { name: 'cofins_situacao_tributaria', label: 'COFINS - Situação Tributária' }
+        ];
+        
+        let temErro = false;
+        
+        camposObrigatorios.forEach(campo => {
+            const valor = formData.get(campo.name);
+            if (!valor || valor.trim() === '') {
+                logDebug(`❌ ${campo.label}: VAZIO`, 'error');
+                temErro = true;
+                
+                // Destacar o campo com erro
+                const input = tributacaoForm.querySelector(`[name="${campo.name}"]`);
+                if (input) {
+                    input.classList.add('is-invalid');
+                }
+            } else {
+                logDebug(`✓ ${campo.label}: ${valor}`, 'success');
+            }
+        });
+        
+        // Se houver erro, impedir envio
+        if (temErro) {
+            e.preventDefault();
+            alert('Por favor, preencha todos os campos obrigatórios marcados com *');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            return false;
+        }
+        
+        // Desabilitar botão para evitar double-submit
+        btnSalvar.disabled = true;
+        btnSalvar.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Salvando...';
+        
+        logDebug('✅ Validação OK - Enviando formulário...', 'success');
+        // Deixar o formulário submeter normalmente
+    });
+    
+    // Remover classe de erro ao corrigir campo
+    const inputs = tributacaoForm.querySelectorAll('input, select, textarea');
+    inputs.forEach(input => {
+        input.addEventListener('change', function() {
+            this.classList.remove('is-invalid');
+        });
+    });
+    
+    // ========================================
+    // BUSCA DE CFOP
+    // ========================================
+    const cfopCodigoInput = document.getElementById('cfopCodigoInput');
+    const btnBuscarCfop = document.getElementById('btnBuscarCfop');
+    const cfopSelect = document.getElementById('id_cfop');
+    const cfopDescricao = document.getElementById('cfopDescricao');
+    const cfopDescricaoTexto = document.getElementById('cfopDescricaoTexto');
+    
+    // Buscar CFOP ao clicar no botão
+    if (btnBuscarCfop && cfopCodigoInput) {
+        btnBuscarCfop.addEventListener('click', function() {
+            const codigo = cfopCodigoInput.value.trim();
+            
+            if (!codigo) {
+                alert('Digite o código do CFOP');
+                cfopCodigoInput.focus();
+                return;
+            }
+            
+            // Desabilitar botão durante a busca
+            btnBuscarCfop.disabled = true;
+            btnBuscarCfop.innerHTML = '<i class="bi bi-hourglass-split"></i> Buscando...';
+            
+            // Fazer a busca via AJAX
+            fetch(`/produtos/cfop/buscar/?codigo=${codigo}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // CFOP encontrado - atualizar select hidden
+                        cfopSelect.value = data.id;
+                        
+                        // Mostrar descrição
+                        cfopDescricaoTexto.textContent = `${data.codigo} - ${data.descricao}`;
+                        cfopDescricao.classList.remove('d-none');
+                        
+                        logDebug(`CFOP encontrado: ${data.codigo} - ${data.descricao}`, 'success');
+                    } else {
+                        alert(`CFOP não encontrado: ${data.error}`);
+                        cfopDescricao.classList.add('d-none');
+                        logDebug(`CFOP não encontrado: ${codigo}`, 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro na busca:', error);
+                    alert('Erro ao buscar CFOP. Verifique o console.');
+                    logDebug(`Erro na busca: ${error}`, 'error');
+                })
+                .finally(() => {
+                    // Reabilitar botão
+                    btnBuscarCfop.disabled = false;
+                    btnBuscarCfop.innerHTML = '<i class="bi bi-search"></i> Buscar';
+                });
+        });
+        
+        // Buscar ao pressionar Enter
+        cfopCodigoInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                btnBuscarCfop.click();
+            }
+        });
+    }
+    
+    // ========================================
+    // NATUREZA DA OPERAÇÃO
+    // ========================================
+    const naturezaSelect = document.getElementById('id_natureza_operacao');
+    const descricaoInput = document.getElementById('id_descricao');
+    
+    if (naturezaSelect && descricaoInput) {
+        // Guardar descrições das naturezas
+        const naturezasData = {};
+        Array.from(naturezaSelect.options).forEach(option => {
+            if (option.value) {
+                naturezasData[option.value] = option.text.split(' - ')[1] || option.text;
+            }
+        });
+        
+        // Atualizar descrição ao mudar natureza
+        naturezaSelect.addEventListener('change', function() {
+            const naturezaId = this.value;
+            if (naturezaId && naturezasData[naturezaId]) {
+                descricaoInput.value = naturezasData[naturezaId];
+                descricaoInput.setAttribute('readonly', 'readonly');
+            } else {
+                descricaoInput.removeAttribute('readonly');
+            }
+        });
+        
+        // Se já tiver uma natureza selecionada, aplicar ao carregar
+        if (naturezaSelect.value) {
+            naturezaSelect.dispatchEvent(new Event('change'));
+        }
+    }
+});
+</script>
+{% endblock %}

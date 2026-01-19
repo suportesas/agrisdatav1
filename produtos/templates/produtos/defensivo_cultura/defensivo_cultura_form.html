@@ -1,0 +1,295 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-3">
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'produtos:produto_list' %}">Produtos</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'produtos:produto_detail' produto.pk %}">{{ produto.codigo }}</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'produtos:produto_update' produto.pk %}">Editar Produto</a></li>
+      <li class="breadcrumb-item active">{{ action }} Cultura/Praga</li>
+    </ol>
+  </nav>
+
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h1><i class="bi bi-shield-fill-exclamation me-2"></i>{{ action }} Cultura/Praga</h1>
+      <p class="text-muted mb-0">Produto: <strong>{{ produto.nome }}</strong></p>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body">
+      <form method="post">
+        {% csrf_token %}
+        
+        <div class="alert alert-info">
+          <i class="bi bi-info-circle me-2"></i>
+          Preencha os dados conforme a bula do produto para esta cultura específica.
+        </div>
+        
+        <h5 class="mb-3"><i class="bi bi-info-circle me-2"></i>Identificação</h5>
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            {{ form.cultura.label_tag }}
+            {{ form.cultura }}
+            {% if form.cultura.errors %}
+            <div class="text-danger">{{ form.cultura.errors }}</div>
+            {% endif %}
+          </div>
+          <div class="col-md-6 mb-3">
+            {{ form.praga.label_tag }}
+            {{ form.praga }}
+            {% if form.praga.errors %}
+            <div class="text-danger">{{ form.praga.errors }}</div>
+            {% endif %}
+          </div>
+        </div>
+        
+        <h5 class="mb-3 mt-4"><i class="bi bi-droplet me-2"></i>Dosagem</h5>
+        <div class="row">
+          <div class="col-md-4 mb-3">
+            {{ form.dosagem_minima.label_tag }}
+            {{ form.dosagem_minima }}
+            {% if form.dosagem_minima.errors %}
+            <div class="text-danger">{{ form.dosagem_minima.errors }}</div>
+            {% endif %}
+          </div>
+          <div class="col-md-4 mb-3">
+            {{ form.dosagem_maxima.label_tag }}
+            {{ form.dosagem_maxima }}
+            {% if form.dosagem_maxima.errors %}
+            <div class="text-danger">{{ form.dosagem_maxima.errors }}</div>
+            {% endif %}
+          </div>
+          <div class="col-md-4 mb-3">
+            {{ form.unidade_dosagem.label_tag }}
+            {{ form.unidade_dosagem }}
+            {% if form.unidade_dosagem.errors %}
+            <div class="text-danger">{{ form.unidade_dosagem.errors }}</div>
+            {% endif %}
+          </div>
+        </div>
+        
+        <h5 class="mb-3 mt-4"><i class="bi bi-water me-2"></i>Volume de Calda</h5>
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            {{ form.volume_calda_minimo.label_tag }}
+            {{ form.volume_calda_minimo }}
+            {% if form.volume_calda_minimo.errors %}
+            <div class="text-danger">{{ form.volume_calda_minimo.errors }}</div>
+            {% endif %}
+          </div>
+          <div class="col-md-6 mb-3">
+            {{ form.volume_calda_maximo.label_tag }}
+            {{ form.volume_calda_maximo }}
+            {% if form.volume_calda_maximo.errors %}
+            <div class="text-danger">{{ form.volume_calda_maximo.errors }}</div>
+            {% endif %}
+          </div>
+        </div>
+        
+        <h5 class="mb-3 mt-4"><i class="bi bi-calculator me-2"></i>Dosagem Convertida (Cálculo)</h5>
+        <div class="row">
+          <div class="col-md-4 mb-3">
+            {{ form.dosagem_minima_calc.label_tag }}
+            {{ form.dosagem_minima_calc }}
+            <small class="text-muted d-block">Fórmula: (Dosagem ml/ha) ÷ (Volume L/ha) × 100</small>
+            {% if form.dosagem_minima_calc.errors %}
+            <div class="text-danger">{{ form.dosagem_minima_calc.errors }}</div>
+            {% endif %}
+          </div>
+          <div class="col-md-4 mb-3">
+            {{ form.dosagem_maxima_calc.label_tag }}
+            {{ form.dosagem_maxima_calc }}
+            <small class="text-muted d-block">Fórmula: (Dosagem ml/ha) ÷ (Volume L/ha) × 100</small>
+            {% if form.dosagem_maxima_calc.errors %}
+            <div class="text-danger">{{ form.dosagem_maxima_calc.errors }}</div>
+            {% endif %}
+          </div>
+          <div class="col-md-4 mb-3">
+            {{ form.unidade_dosagem_calc.label_tag }}
+            {{ form.unidade_dosagem_calc }}
+            <small class="text-muted d-block">Ex: ml/100L para conversão de ml/ha</small>
+            {% if form.unidade_dosagem_calc.errors %}
+            <div class="text-danger">{{ form.unidade_dosagem_calc.errors }}</div>
+            {% endif %}
+          </div>
+        </div>
+        
+        <h5 class="mb-3 mt-4"><i class="bi bi-arrows-angle-expand me-2"></i>Cálculo Reverso (Volume → Dosagem)</h5>
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            {{ form.volume_calda_aplicacao.label_tag }}
+            {{ form.volume_calda_aplicacao }}
+            <small class="text-muted d-block">Digite o volume de calda que será aplicado</small>
+            {% if form.volume_calda_aplicacao.errors %}
+            <div class="text-danger">{{ form.volume_calda_aplicacao.errors }}</div>
+            {% endif %}
+          </div>
+          <div class="col-md-6 mb-3">
+            {{ form.dosagem_calculada_ha.label_tag }}
+            {{ form.dosagem_calculada_ha }}
+            <div id="alertaDosagem" class="mt-1"></div>
+            <small class="text-muted d-block">Fórmula: (Dosagem ml/100L) × (Volume L) ÷ 100</small>
+            {% if form.dosagem_calculada_ha.errors %}
+            <div class="text-danger">{{ form.dosagem_calculada_ha.errors }}</div>
+            {% endif %}
+          </div>
+        </div>
+        
+        <h5 class="mb-3 mt-4"><i class="bi bi-calendar-check me-2"></i>Aplicação</h5>
+        <div class="row">
+          <div class="col-md-4 mb-3">
+            {{ form.carencia.label_tag }}
+            {{ form.carencia }}
+            <small class="text-muted">Entre última aplicação e colheita</small>
+            {% if form.carencia.errors %}
+            <div class="text-danger">{{ form.carencia.errors }}</div>
+            {% endif %}
+          </div>
+          <div class="col-md-4 mb-3">
+            {{ form.quantidade_maxima_aplicacoes.label_tag }}
+            {{ form.quantidade_maxima_aplicacoes }}
+            {% if form.quantidade_maxima_aplicacoes.errors %}
+            <div class="text-danger">{{ form.quantidade_maxima_aplicacoes.errors }}</div>
+            {% endif %}
+          </div>
+          <div class="col-md-4 mb-3">
+            {{ form.intervalo_reaplicacao.label_tag }}
+            {{ form.intervalo_reaplicacao }}
+            {% if form.intervalo_reaplicacao.errors %}
+            <div class="text-danger">{{ form.intervalo_reaplicacao.errors }}</div>
+            {% endif %}
+          </div>
+        </div>
+        
+        <h5 class="mb-3 mt-4"><i class="bi bi-flask me-2"></i>Limite Máximo de Resíduo</h5>
+        <div class="row">
+          <div class="col-md-12 mb-3">
+            {{ form.mrl.label_tag }}
+            {{ form.mrl }}
+            <small class="text-muted d-block">mg/kg - Conforme legislação vigente</small>
+            {% if form.mrl.errors %}
+            <div class="text-danger">{{ form.mrl.errors }}</div>
+            {% endif %}
+          </div>
+        </div>
+        
+        <div class="mb-3">
+          {{ form.observacoes.label_tag }}
+          {{ form.observacoes }}
+          {% if form.observacoes.errors %}
+          <div class="text-danger">{{ form.observacoes.errors }}</div>
+          {% endif %}
+        </div>
+        
+        {{ form.produto }}
+        
+        <div class="mt-4">
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-save me-1"></i>Salvar
+          </button>
+          <a href="{% url 'produtos:produto_update' produto.pk %}" class="btn btn-secondary ms-2">
+            <i class="bi bi-x-circle me-1"></i>Cancelar
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Elementos do formulário
+  const dosagemMinima = document.getElementById('id_dosagem_minima');
+  const dosagemMaxima = document.getElementById('id_dosagem_maxima');
+  const volumeCaldaMinimo = document.getElementById('id_volume_calda_minimo');
+  const volumeCaldaMaximo = document.getElementById('id_volume_calda_maximo');
+  const dosagemMinimaCalc = document.getElementById('id_dosagem_minima_calc');
+  const dosagemMaximaCalc = document.getElementById('id_dosagem_maxima_calc');
+  const volumeCaldaAplicacao = document.getElementById('id_volume_calda_aplicacao');
+  const dosagemCalculadaHa = document.getElementById('id_dosagem_calculada_ha');
+  const alertaDosagem = document.getElementById('alertaDosagem');
+
+  // Função para calcular dosagem ml/ha → ml/100L (Forward)
+  function calcularDosagem() {
+    const dosMin = parseFloat(dosagemMinima?.value) || 0;
+    const dosMax = parseFloat(dosagemMaxima?.value) || 0;
+    const volMin = parseFloat(volumeCaldaMinimo?.value) || 0;
+    const volMax = parseFloat(volumeCaldaMaximo?.value) || 0;
+
+    if (dosMin > 0 && volMin > 0) {
+      const calcMin = (dosMin / volMin) * 100;
+      if (dosagemMinimaCalc) dosagemMinimaCalc.value = calcMin.toFixed(3);
+    } else {
+      if (dosagemMinimaCalc) dosagemMinimaCalc.value = '';
+    }
+
+    if (dosMax > 0 && volMax > 0) {
+      const calcMax = (dosMax / volMax) * 100;
+      if (dosagemMaximaCalc) dosagemMaximaCalc.value = calcMax.toFixed(3);
+    } else {
+      if (dosagemMaximaCalc) dosagemMaximaCalc.value = '';
+    }
+
+    // Se houver volume de calda aplicação, recalcular também o reverso
+    calcularDosagemReversa();
+  }
+
+  // Função para calcular Volume → Dosagem (Reverse)
+  function calcularDosagemReversa() {
+    const dosMinCalc = parseFloat(dosagemMinimaCalc?.value) || 0;
+    const dosMaxCalc = parseFloat(dosagemMaximaCalc?.value) || 0;
+    const dosMin = parseFloat(dosagemMinima?.value) || 0;
+    const dosMax = parseFloat(dosagemMaxima?.value) || 0;
+    const volumeAplicacao = parseFloat(volumeCaldaAplicacao?.value) || 0;
+
+    if (dosMinCalc > 0 && volumeAplicacao > 0) {
+      // Fórmula: (Dosagem ml/100L) × (Volume L) ÷ 100 = ml/ha
+      const dosagemCalculada = (dosMinCalc * volumeAplicacao) / 100;
+      if (dosagemCalculadaHa) dosagemCalculadaHa.value = dosagemCalculada.toFixed(3);
+
+      // Validar se a dosagem calculada está dentro do range
+      if (alertaDosagem) {
+        if (dosMin > 0 && dosagemCalculada < dosMin) {
+          alertaDosagem.innerHTML = `<div class="alert alert-danger py-1 px-2 mb-0 small">
+            <i class="bi bi-exclamation-triangle me-1"></i>
+            Atenção: Dosagem calculada (${dosagemCalculada.toFixed(3)} ml/ha) está abaixo do mínimo recomendado (${dosMin} ml/ha)
+          </div>`;
+        } else if (dosMax > 0 && dosagemCalculada > dosMax) {
+          alertaDosagem.innerHTML = `<div class="alert alert-danger py-1 px-2 mb-0 small">
+            <i class="bi bi-exclamation-triangle me-1"></i>
+            Atenção: Dosagem calculada (${dosagemCalculada.toFixed(3)} ml/ha) está acima do máximo recomendado (${dosMax} ml/ha)
+          </div>`;
+        } else if (dosMin > 0 && dosMax > 0) {
+          alertaDosagem.innerHTML = `<div class="alert alert-success py-1 px-2 mb-0 small">
+            <i class="bi bi-check-circle me-1"></i>
+            Dosagem calculada está dentro do range recomendado (${dosMin} - ${dosMax} ml/ha)
+          </div>`;
+        } else {
+          alertaDosagem.innerHTML = '';
+        }
+      }
+    } else {
+      if (dosagemCalculadaHa) dosagemCalculadaHa.value = '';
+      if (alertaDosagem) alertaDosagem.innerHTML = '';
+    }
+  }
+
+  // Event listeners para cálculo forward
+  if (dosagemMinima) dosagemMinima.addEventListener('input', calcularDosagem);
+  if (dosagemMaxima) dosagemMaxima.addEventListener('input', calcularDosagem);
+  if (volumeCaldaMinimo) volumeCaldaMinimo.addEventListener('input', calcularDosagem);
+  if (volumeCaldaMaximo) volumeCaldaMaximo.addEventListener('input', calcularDosagem);
+
+  // Event listeners para cálculo reverso
+  if (volumeCaldaAplicacao) volumeCaldaAplicacao.addEventListener('input', calcularDosagemReversa);
+  if (dosagemMinimaCalc) dosagemMinimaCalc.addEventListener('input', calcularDosagemReversa);
+
+  // Calcular ao carregar a página (caso haja valores pré-preenchidos)
+  calcularDosagem();
+});
+</script>
+
+{% endblock %}

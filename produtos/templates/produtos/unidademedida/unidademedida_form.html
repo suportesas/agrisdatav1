@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-3">
+  <h1>{{ action }} Unidade de Medida</h1>
+  <form method="post">
+    {% csrf_token %}
+    <div class="row">
+      <div class="col-md-3 mb-3">
+        {{ form.sigla.label_tag }}
+        {{ form.sigla }}
+        {% if form.sigla.errors %}<div class="text-danger">{{ form.sigla.errors }}</div>{% endif %}
+      </div>
+      <div class="col-md-5 mb-3">
+        {{ form.nome.label_tag }}
+        {{ form.nome }}
+        {% if form.nome.errors %}<div class="text-danger">{{ form.nome.errors }}</div>{% endif %}
+      </div>
+      <div class="col-md-4 mb-3">
+        {{ form.tipo.label_tag }}
+        {{ form.tipo }}
+        {% if form.tipo.errors %}<div class="text-danger">{{ form.tipo.errors }}</div>{% endif %}
+      </div>
+    </div>
+    <div class="mb-3 form-check">
+      {{ form.ativo }} {{ form.ativo.label_tag }}
+    </div>
+
+    <button class="btn btn-primary">Salvar</button>
+    <a class="btn btn-secondary ms-2" href="{% url 'produtos:unidademedida_list' %}">Cancelar</a>
+  </form>
+</div>
+{% endblock %}

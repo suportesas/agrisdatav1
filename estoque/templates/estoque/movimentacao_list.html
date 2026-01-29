@@ -1,0 +1,385 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Movimentações de Estoque{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="mb-1">
+        <i class="bi bi-arrow-left-right"></i> Movimentações de Estoque
+        <button type="button" class="btn btn-sm btn-outline-info ms-2" data-bs-toggle="modal" data-bs-target="#helpModal">
+          <i class="bi bi-question-circle"></i> Ajuda
+        </button>
+      </h2>
+      <p class="text-muted">Histórico de entradas, saídas e transferências</p>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{% url 'estoque:entrada_create' %}" class="btn btn-success">
+        <i class="bi bi-box-arrow-in-down"></i> Entrada
+      </a>
+      <a href="{% url 'estoque:saida_create' %}" class="btn btn-warning">
+        <i class="bi bi-box-arrow-up"></i> Saída
+      </a>
+      <a href="{% url 'estoque:transferencia_create' %}" class="btn btn-info">
+        <i class="bi bi-arrow-left-right"></i> Transferência
+      </a>
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <div class="card mb-4">
+    <div class="card-body">
+      <form method="get" class="row g-3">
+        <div class="col-md-4">
+          <label class="form-label">Tipo de Movimentação</label>
+          <select name="tipo" class="form-select">
+            <option value="">Todos</option>
+            {% for value, label in tipos %}
+              <option value="{{ value }}" {% if tipo_filtro == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Status</label>
+          <select name="status" class="form-select">
+            <option value="">Todos</option>
+            {% for value, label in status_choices %}
+              <option value="{{ value }}" {% if status_filtro == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-4 d-flex align-items-end">
+          <button type="submit" class="btn btn-primary me-2">
+            <i class="bi bi-filter"></i> Filtrar
+          </button>
+          <a href="{% url 'estoque:movimentacao_list' %}" class="btn btn-secondary">
+            <i class="bi bi-x-circle"></i> Limpar
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Tabela de Movimentações -->
+  <div class="card">
+    <div class="card-body">
+      {% if movimentacoes %}
+        <div class="table-responsive">
+          <table class="table table-hover">
+            <thead>
+              <tr>
+                <th>Número</th>
+                <th>Data</th>
+                <th>Tipo</th>
+                <th>Produto/Lote</th>
+                <th>Quantidade</th>
+                <th>Origem</th>
+                <th>Destino</th>
+                <th>Status</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for mov in movimentacoes %}
+                <tr>
+                  <td>
+                    <a href="{% url 'estoque:movimentacao_detail' mov.pk %}" class="text-decoration-none">
+                      <strong>{{ mov.numero }}</strong>
+                    </a>
+                  </td>
+                  <td>{{ mov.data_movimentacao|date:"d/m/Y H:i" }}</td>
+                  <td>
+                    {% if mov.tipo == 'ENTRADA' %}
+                      <span class="badge bg-success">{{ mov.get_tipo_display }}</span>
+                    {% elif mov.tipo == 'SAIDA' %}
+                      <span class="badge bg-warning">{{ mov.get_tipo_display }}</span>
+                    {% elif mov.tipo == 'TRANSFERENCIA' %}
+                      <span class="badge bg-info">{{ mov.get_tipo_display }}</span>
+                    {% elif mov.tipo == 'AJUSTE' %}
+                      <span class="badge bg-secondary">{{ mov.get_tipo_display }}</span>
+                    {% else %}
+                      <span class="badge bg-primary">{{ mov.get_tipo_display }}</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    <div>{{ mov.lote.produto.nome }}</div>
+                    <small class="text-muted">Lote: {{ mov.lote.numero_lote }}</small>
+                  </td>
+                  <td>
+                    <strong>{{ mov.quantidade }}</strong>
+                    <small class="text-muted">{{ mov.lote.unidade_medida.sigla }}</small>
+                  </td>
+                  <td>
+                    {% if mov.armazem_origem %}
+                      {{ mov.armazem_origem.nome }}
+                    {% else %}
+                      -
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if mov.armazem_destino %}
+                      {{ mov.armazem_destino.nome }}
+                    {% else %}
+                      -
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if mov.status == 'PENDENTE' %}
+                      <span class="badge bg-warning text-dark">{{ mov.get_status_display }}</span>
+                    {% elif mov.status == 'APROVADO' %}
+                      <span class="badge bg-info">{{ mov.get_status_display }}</span>
+                    {% elif mov.status == 'EXECUTADO' %}
+                      <span class="badge bg-success">{{ mov.get_status_display }}</span>
+                    {% else %}
+                      <span class="badge bg-danger">{{ mov.get_status_display }}</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    <a href="{% url 'estoque:movimentacao_detail' mov.pk %}" class="btn btn-sm btn-outline-primary">
+                      <i class="bi bi-eye"></i>
+                    </a>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="text-center py-5">
+          <i class="bi bi-inbox" style="font-size: 4rem; color: #ccc;"></i>
+          <h5 class="mt-3 text-muted">Nenhuma movimentação encontrada</h5>
+          <p class="text-muted">Comece registrando uma entrada, saída ou transferência</p>
+          <div class="mt-3">
+            <a href="{% url 'estoque:entrada_create' %}" class="btn btn-success me-2">
+              <i class="bi bi-box-arrow-in-down"></i> Nova Entrada
+            </a>
+            <a href="{% url 'estoque:saida_create' %}" class="btn btn-warning">
+              <i class="bi bi-box-arrow-up"></i> Nova Saída
+            </a>
+          </div>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Modal de Ajuda -->
+<div class="modal fade" id="helpModal" tabindex="-1" aria-labelledby="helpModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title" id="helpModalLabel">
+          <i class="bi bi-question-circle-fill"></i> O que são Movimentações de Estoque?
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <h6 class="text-primary"><i class="bi bi-arrow-left-right"></i> Conceito</h6>
+        <p>
+          <strong>Movimentações de Estoque</strong> são registros de todas as entradas e saídas de produtos, 
+          permitindo controle total sobre o fluxo de materiais e rastreabilidade completa.
+        </p>
+        
+        <hr>
+        
+        <h6 class="text-primary"><i class="bi bi-star-fill"></i> Importância</h6>
+        <ul>
+          <li><strong>Rastreabilidade:</strong> Histórico completo de todas as movimentações</li>
+          <li><strong>Acuracidade:</strong> Estoque sempre atualizado automaticamente</li>
+          <li><strong>Auditoria:</strong> Quem fez, quando fez e por que fez</li>
+          <li><strong>Controle:</strong> Previne perdas e facilita inventários</li>
+          <li><strong>Compliance:</strong> Atende exigências fiscais e regulatórias</li>
+        </ul>
+        
+        <hr>
+        
+        <h6 class="text-primary"><i class="bi bi-clipboard-check"></i> Tipos de Movimentação</h6>
+        
+        <div class="accordion" id="accordionTipos">
+          <div class="accordion-item">
+            <h2 class="accordion-header">
+              <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseEntrada">
+                <i class="bi bi-box-arrow-in-down text-success me-2"></i> <strong>Entrada de Estoque</strong>
+              </button>
+            </h2>
+            <div id="collapseEntrada" class="accordion-collapse collapse show" data-bs-parent="#accordionTipos">
+              <div class="accordion-body">
+                <p><strong>Quando usar:</strong> Recebimento de produtos no estoque</p>
+                <p><strong>Exemplos práticos:</strong></p>
+                <ul>
+                  <li><strong>Compra:</strong> Recebimento de 50 sacos de fertilizante NPK 10-10-10, NF 12345</li>
+                  <li><strong>Produção:</strong> Entrada de 200kg de tomates colhidos do Talhão A-01</li>
+                  <li><strong>Devolução Cliente:</strong> Retorno de 10 caixas de produto com defeito</li>
+                </ul>
+                <p><strong>Resultado:</strong> <span class="badge bg-success">Aumenta o estoque</span></p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="accordion-item">
+            <h2 class="accordion-header">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSaida">
+                <i class="bi bi-box-arrow-up text-warning me-2"></i> <strong>Saída de Estoque</strong>
+              </button>
+            </h2>
+            <div id="collapseSaida" class="accordion-collapse collapse" data-bs-parent="#accordionTipos">
+              <div class="accordion-body">
+                <p><strong>Quando usar:</strong> Retirada de produtos do estoque</p>
+                <p><strong>Exemplos práticos:</strong></p>
+                <ul>
+                  <li><strong>Requisição:</strong> 5 litros de herbicida para aplicação no Talhão B-03</li>
+                  <li><strong>Venda:</strong> Expedição de 100 caixas para Cliente ABC, NF 54321</li>
+                  <li><strong>Consumo:</strong> 25kg de fertilizante usado na fertirrigação</li>
+                  <li><strong>Perda:</strong> 3kg de defensivo vencido descartado (justificativa obrigatória)</li>
+                </ul>
+                <p><strong>Resultado:</strong> <span class="badge bg-warning text-dark">Diminui o estoque</span></p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="accordion-item">
+            <h2 class="accordion-header">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTransferencia">
+                <i class="bi bi-arrow-left-right text-info me-2"></i> <strong>Transferência entre Armazéns</strong>
+              </button>
+            </h2>
+            <div id="collapseTransferencia" class="accordion-collapse collapse" data-bs-parent="#accordionTipos">
+              <div class="accordion-body">
+                <p><strong>Quando usar:</strong> Mover produtos entre locais diferentes</p>
+                <p><strong>Exemplo prático:</strong></p>
+                <div class="alert alert-info">
+                  <strong>Situação:</strong> Transferir 30 caixas de embalagens<br>
+                  <strong>Origem:</strong> Almoxarifado Central → Local: Prateleira A-05<br>
+                  <strong>Destino:</strong> Depósito Packing House → Local: Área de Expedição<br>
+                  <strong>Motivo:</strong> Demanda para produção da semana
+                </div>
+                <p><strong>Resultado:</strong> <span class="badge bg-info">Sai de um e entra em outro</span></p>
+                <p class="mb-0"><strong>Rastreabilidade:</strong> O mesmo lote mantém histórico completo da movimentação</p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="accordion-item">
+            <h2 class="accordion-header">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseAjuste">
+                <i class="bi bi-wrench text-secondary me-2"></i> <strong>Ajuste de Inventário</strong>
+              </button>
+            </h2>
+            <div id="collapseAjuste" class="accordion-collapse collapse" data-bs-parent="#accordionTipos">
+              <div class="accordion-body">
+                <p><strong>Quando usar:</strong> Corrigir diferenças encontradas no inventário</p>
+                <p><strong>Exemplos práticos:</strong></p>
+                <ul>
+                  <li><strong>Ajuste Entrada:</strong> Encontradas 5 unidades a mais que o sistema (erro de lançamento)</li>
+                  <li><strong>Ajuste Saída:</strong> Faltam 3 unidades (possível furto ou erro de contagem)</li>
+                </ul>
+                <p><strong>⚠️ Atenção:</strong> Justificativa é <strong>obrigatória</strong> para ajustes</p>
+                <p class="mb-0"><strong>Resultado:</strong> <span class="badge bg-secondary">Corrige saldo do sistema</span></p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="accordion-item">
+            <h2 class="accordion-header">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseDevolucao">
+                <i class="bi bi-arrow-return-left text-danger me-2"></i> <strong>Devolução</strong>
+              </button>
+            </h2>
+            <div id="collapseDevolucao" class="accordion-collapse collapse" data-bs-parent="#accordionTipos">
+              <div class="accordion-body">
+                <p><strong>Quando usar:</strong> Devolver produtos para fornecedor ou receber de cliente</p>
+                <p><strong>Exemplos práticos:</strong></p>
+                <ul>
+                  <li><strong>Devolução Fornecedor:</strong> 20 sacos de ração com problema de qualidade</li>
+                  <li><strong>Devolução Cliente:</strong> Produto entregue errado</li>
+                </ul>
+                <p class="mb-0"><strong>Resultado:</strong> Varia conforme a origem da devolução</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <hr class="mt-4">
+        
+        <h6 class="text-primary"><i class="bi bi-diagram-3"></i> Fluxo de Aprovação</h6>
+        <div class="row">
+          <div class="col-md-12">
+            <div class="alert alert-light border">
+              <div class="d-flex align-items-center justify-content-between mb-3">
+                <div class="text-center flex-fill">
+                  <span class="badge bg-warning text-dark" style="font-size: 1rem;">PENDENTE</span>
+                  <p class="small mb-0 mt-1">Criada</p>
+                </div>
+                <div class="text-center">
+                  <i class="bi bi-arrow-right" style="font-size: 1.5rem;"></i>
+                </div>
+                <div class="text-center flex-fill">
+                  <span class="badge bg-info" style="font-size: 1rem;">APROVADO</span>
+                  <p class="small mb-0 mt-1">Aprovada<br>(opcional)</p>
+                </div>
+                <div class="text-center">
+                  <i class="bi bi-arrow-right" style="font-size: 1.5rem;"></i>
+                </div>
+                <div class="text-center flex-fill">
+                  <span class="badge bg-success" style="font-size: 1rem;">EXECUTADO</span>
+                  <p class="small mb-0 mt-1">Estoque<br>atualizado</p>
+                </div>
+              </div>
+              <p class="small mb-0"><strong>💡 Dica:</strong> Ao executar, o estoque é atualizado automaticamente!</p>
+            </div>
+          </div>
+        </div>
+        
+        <hr>
+        
+        <h6 class="text-primary"><i class="bi bi-lightbulb-fill"></i> Exemplo Completo de Uso</h6>
+        <div class="alert alert-success">
+          <strong>📦 Cenário Real: Aplicação de Defensivo</strong>
+          <ol class="mb-0 mt-2">
+            <li><strong>Tipo:</strong> Saída de Estoque</li>
+            <li><strong>Origem:</strong> Consumo na Produção</li>
+            <li><strong>Lote:</strong> DEF-2024-0156 (Herbicida XYZ 500ml)</li>
+            <li><strong>Quantidade:</strong> 10 litros</li>
+            <li><strong>Armazém Origem:</strong> Depósito de Insumos → Prateleira B-03</li>
+            <li><strong>Documento:</strong> OS-2024-0089 (Ordem de Serviço de aplicação)</li>
+            <li><strong>Observação:</strong> Aplicação no Talhão A-05 contra plantas daninhas</li>
+          </ol>
+          <hr>
+          <p class="mb-0">
+            <strong>✅ Resultado:</strong> Sistema registra que 10L foram consumidos, atualiza lote automaticamente 
+            de 50L para 40L disponíveis, e mantém rastreabilidade completa (quem requisitou, quando, para qual talhão).
+          </p>
+        </div>
+        
+        <hr>
+        
+        <h6 class="text-primary"><i class="bi bi-check-circle-fill"></i> Boas Práticas</h6>
+        <ul>
+          <li>✅ Registre <strong>todas</strong> as movimentações em tempo real</li>
+          <li>✅ Sempre informe o documento de origem (NF, OS, Requisição)</li>
+          <li>✅ Para perdas e ajustes, justifique detalhadamente</li>
+          <li>✅ Execute a movimentação após validar os dados</li>
+          <li>✅ Use transferências ao invés de saída+entrada manual</li>
+          <li>✅ Mantenha a rastreabilidade informando observações relevantes</li>
+        </ul>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+        <div class="btn-group">
+          <a href="{% url 'estoque:entrada_create' %}" class="btn btn-success">
+            <i class="bi bi-box-arrow-in-down"></i> Nova Entrada
+          </a>
+          <a href="{% url 'estoque:saida_create' %}" class="btn btn-warning">
+            <i class="bi bi-box-arrow-up"></i> Nova Saída
+          </a>
+          <a href="{% url 'estoque:transferencia_create' %}" class="btn btn-info">
+            <i class="bi bi-arrow-left-right"></i> Transferência
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

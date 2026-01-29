@@ -121,13 +121,19 @@
               </div>
 
               <div class="col-md-2 text-end">
-                <a href="{% url 'cadastros:cliente_detail' cliente.pk %}" class="btn btn-sm btn-outline-info" title="Ver Detalhes"><i class="bi bi-eye"></i></a>
-                <a href="{% url 'cadastros:cliente_update' cliente.pk %}" class="btn btn-sm btn-outline-primary" title="Editar"><i class="bi bi-pencil"></i></a>
-                {% if cliente.status != 'INATIVO' %}
-                  <a href="{% url 'cadastros:cliente_delete' cliente.pk %}" class="btn btn-sm btn-outline-danger" title="Desativar"><i class="bi bi-trash"></i></a>
-                {% else %}
-                  <span class="badge bg-secondary">INATIVO</span>
-                {% endif %}
+                <div class="dropdown">
+                  <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                    <i class="bi bi-three-dots-vertical"></i> Ações
+                  </button>
+                  <ul class="dropdown-menu dropdown-menu-end">
+                    <li><a class="dropdown-item" href="{% url 'cadastros:cliente_detail' cliente.pk %}"><i class="bi bi-eye text-primary"></i> Visualizar</a></li>
+                    <li><a class="dropdown-item" href="{% url 'cadastros:cliente_update' cliente.pk %}"><i class="bi bi-pencil text-warning"></i> Editar</a></li>
+                    {% if cliente.status != 'INATIVO' %}
+                      <li><hr class="dropdown-divider"></li>
+                      <li><a class="dropdown-item text-danger" href="{% url 'cadastros:cliente_delete' cliente.pk %}"><i class="bi bi-trash"></i> Desativar</a></li>
+                    {% endif %}
+                  </ul>
+                </div>
               </div>
 
             </div>

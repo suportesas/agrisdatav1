@@ -293,18 +293,42 @@
           <div class="col-md-4">
             <label class="form-label fw-semibold">Telefone</label>
             {{ form.telefone }}
+            {% if form.telefone.help_text %}
+              <small class="form-text text-muted">{{ form.telefone.help_text }}</small>
+            {% endif %}
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">{{ form.celular.label }}</label>
+            {{ form.celular }}
+            {% if form.celular.help_text %}
+              <small class="form-text text-muted d-block mt-1">
+                <i class="bi bi-whatsapp text-success"></i> {{ form.celular.help_text }}
+              </small>
+            {% endif %}
+            {% if form.celular.errors %}
+              <div class="text-danger small">{{ form.celular.errors|striptags }}</div>
+            {% endif %}
           </div>
 
           <div class="col-md-4">
             <label class="form-label fw-semibold">E-mail</label>
             {{ form.email }}
+            {% if form.email.help_text %}
+              <small class="form-text text-muted">{{ form.email.help_text }}</small>
+            {% endif %}
           </div>
 
-          <div class="col-md-4">
+        </div>
+        
+        <div class="row g-3 mt-2">
+          <div class="col-md-12">
             <label class="form-label fw-semibold">Website</label>
             {{ form.website }}
+            {% if form.website.help_text %}
+              <small class="form-text text-muted">{{ form.website.help_text }}</small>
+            {% endif %}
           </div>
-
         </div>
       </div>
     </div>
@@ -404,6 +428,7 @@ document.addEventListener('DOMContentLoaded', function() {
           document.getElementById('{{ form.nome.id_for_label }}').value = d.nome || '';
           document.getElementById('{{ form.nome_fantasia.id_for_label }}').value = d.nome_fantasia || '';
           document.getElementById('{{ form.telefone.id_for_label }}').value = d.telefone || '';
+          document.getElementById('{{ form.celular.id_for_label }}').value = d.telefone || '';
           document.getElementById('{{ form.email.id_for_label }}').value = d.email || '';
 
           if (isExportadorCheckbox) {
@@ -464,6 +489,16 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
 
+});
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.16/jquery.mask.min.js"></script>
+<script>
+$(document).ready(function(){
+    var celularInput = $("#{{ form.celular.id_for_label }}");
+    if (celularInput.length) {
+        celularInput.mask('(00) 00000-0000');
+    }
 });
 </script>
 {% endblock %}

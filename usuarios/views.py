@@ -221,7 +221,6 @@ def logout_view(request):
 # ============================================
 
 @login_required
-@user_passes_test(is_admin)
 def usuario_list(request):
     """
     Lista todos os usuários com filtros e busca
@@ -266,8 +265,16 @@ def usuario_list(request):
     if ordem:
         usuarios = usuarios.order_by(ordem)
 
-    # Paginação
-    paginator = Paginator(usuarios, 25)
+    # Paginação com controle de registros por página
+    per_page = request.GET.get('per_page', '25')
+    try:
+        per_page = int(per_page)
+        if per_page not in [10, 20, 25, 50, 100]:
+            per_page = 25
+    except (ValueError, TypeError):
+        per_page = 25
+    
+    paginator = Paginator(usuarios, per_page)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
@@ -275,7 +282,7 @@ def usuario_list(request):
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         html = render_to_string(
             'usuarios/_usuario_table.html',
-            {'page_obj': page_obj},
+            {'page_obj': page_obj, 'user': request.user},
             request=request
         )
         return JsonResponse({'html': html})
@@ -290,13 +297,18 @@ def usuario_list(request):
 
 
 @login_required
-@user_passes_test(is_admin)
 def usuario_create(request):
     """
     Cria novo usuário
+    Apenas administradores podem criar usuários
     Superusuário pode escolher qualquer empresa
     Usuário comum só pode criar na sua empresa
     """
+    # Verifica se usuário é administrador
+    if not is_admin(request.user):
+        messages.error(request, '❌ Apenas administradores podem criar novos usuários.')
+        return redirect('usuarios:usuario_list')
+    
     # ✅ Verifica se empresa pode adicionar mais usuários
     if not request.user.is_superuser:
         if request.user.empresa and not request.user.empresa.pode_adicionar_usuario():
@@ -339,12 +351,17 @@ def usuario_create(request):
 
 
 @login_required
-@user_passes_test(is_admin)
 def usuario_update(request, pk):
     """
     Atualiza usuário existente
+    Apenas administradores podem editar usuários
     Valida se usuário tem permissão para editar
     """
+    # Verifica se usuário é administrador
+    if not is_admin(request.user):
+        messages.error(request, '❌ Apenas administradores podem editar usuários.')
+        return redirect('usuarios:usuario_list')
+    
     usuario = get_object_or_404(Usuario, pk=pk)
     
     # Valida permissão: apenas superusuário ou usuário da mesma empresa
@@ -382,12 +399,17 @@ def usuario_update(request, pk):
 
 
 @login_required
-@user_passes_test(is_admin)
 def usuario_delete(request, pk):
     """
     Exclui usuário (com confirmação)
+    Apenas administradores podem excluir usuários
     Não permite excluir o próprio usuário logado
     """
+    # Verifica se usuário é administrador
+    if not is_admin(request.user):
+        messages.error(request, '❌ Apenas administradores podem excluir usuários.')
+        return redirect('usuarios:usuario_list')
+    
     usuario = get_object_or_404(Usuario, pk=pk)
     
     # Valida permissão

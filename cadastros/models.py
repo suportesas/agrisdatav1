@@ -1187,7 +1187,12 @@ class Moeda(models.Model):
 
 
 class NCM(models.Model):
-    """Nomenclatura Comum do Mercosul (NCM) usada para emissão de NF-e"""
+    """Nomenclatura Comum do Mercosul (NCM) usada para emissão de NF-e
+
+    Este modelo funciona como fonte mestre (templates). Empresas terão cópias
+    individuais no modelo `EmpresaNCM` para permitir customizações por empresa
+    sem afetar outras empresas (SaaS multi-tenant behavior).
+    """
     codigo = models.CharField('Código NCM', max_length=8, unique=True, help_text='8 dígitos numéricos')
     nome = models.CharField('Descrição', max_length=255)
     descricao = models.TextField('Observações', blank=True)
@@ -1210,6 +1215,84 @@ class NCM(models.Model):
         self.codigo = re.sub(r'\D','', (self.codigo or ''))
         if len(self.codigo) != 8:
             raise ValidationError({'codigo': 'Código NCM inválido. Deve conter 8 dígitos.'})
+
+
+class EmpresaNCM(models.Model):
+    """NCM específico de cada empresa. Cópia da tabela mestre para customização por empresa."""
+    empresa = models.ForeignKey('empresas.Empresa', on_delete=models.CASCADE, related_name='ncms')
+    codigo = models.CharField('Código NCM', max_length=8, help_text='8 dígitos numéricos')
+    nome = models.CharField('Descrição', max_length=255)
+    descricao = models.TextField('Observações', blank=True)
+    cest = models.CharField('CEST', max_length=10, blank=True)
+    ativo = models.BooleanField('Ativo', default=True)
+    template = models.ForeignKey(NCM, on_delete=models.SET_NULL, null=True, blank=True, help_text='Referência ao template global (opcional)')
+    criado_em = models.DateTimeField('Data de criação', auto_now_add=True)
+    atualizado_em = models.DateTimeField('Última atualização', auto_now=True)
+
+    class Meta:
+        verbose_name = 'NCM da Empresa'
+        verbose_name_plural = 'NCMs das Empresas'
+        ordering = ['codigo']
+        constraints = [
+            models.UniqueConstraint(fields=['empresa','codigo'], name='unique_ncm_per_empresa')
+        ]
+        indexes = [models.Index(fields=['empresa','codigo'])]
+
+    def __str__(self):
+        return f"{self.codigo} - {self.nome} ({self.empresa})"
+
+    def clean(self):
+        self.codigo = re.sub(r'\D','', (self.codigo or ''))
+        if len(self.codigo) != 8:
+            raise ValidationError({'codigo': 'Código NCM inválido. Deve conter 8 dígitos.'})
+
+
+class CFOP(models.Model):
+    """CFOP - Código Fiscal de Operações e Prestações"""
+    codigo = models.CharField('Código CFOP', max_length=4, unique=True, help_text='Código CFOP (p. ex. 5102)')
+    nome = models.CharField('Descrição', max_length=255)
+    descricao = models.TextField('Observações', blank=True)
+    ativo = models.BooleanField('Ativo', default=True)
+    criado_em = models.DateTimeField('Data de criação', auto_now_add=True)
+    atualizado_em = models.DateTimeField('Última atualização', auto_now=True)
+
+    class Meta:
+        verbose_name = 'CFOP'
+        verbose_name_plural = 'CFOPs'
+        ordering = ['codigo']
+        indexes = [models.Index(fields=['codigo'])]
+
+    def __str__(self):
+        return f"{self.codigo} - {self.nome}"
+
+
+class EmpresaCFOP(models.Model):
+    """CFOP específico de cada empresa. Cópia da tabela mestre para customização por empresa."""
+    empresa = models.ForeignKey('empresas.Empresa', on_delete=models.CASCADE, related_name='cfops')
+    codigo = models.CharField('Código CFOP', max_length=4, help_text='Código CFOP (p. ex. 5102)')
+    nome = models.CharField('Descrição', max_length=255)
+    descricao = models.TextField('Observações', blank=True)
+    ativo = models.BooleanField('Ativo', default=True)
+    template = models.ForeignKey(CFOP, on_delete=models.SET_NULL, null=True, blank=True, help_text='Referência ao template global (opcional)')
+    criado_em = models.DateTimeField('Data de criação', auto_now_add=True)
+    atualizado_em = models.DateTimeField('Última atualização', auto_now=True)
+
+    class Meta:
+        verbose_name = 'CFOP da Empresa'
+        verbose_name_plural = 'CFOPs das Empresas'
+        ordering = ['codigo']
+        constraints = [
+            models.UniqueConstraint(fields=['empresa','codigo'], name='unique_cfop_per_empresa')
+        ]
+        indexes = [models.Index(fields=['empresa','codigo'])]
+
+    def __str__(self):
+        return f"{self.codigo} - {self.nome} ({self.empresa})"
+
+    def clean(self):
+        self.codigo = re.sub(r'\D','', (self.codigo or ''))
+        if not (2 <= len(self.codigo) <= 4):
+            raise ValidationError({'codigo': 'Código CFOP inválido. Deve conter 2 a 4 dígitos.'})
 
 
 class EnderecoCliente(models.Model):
@@ -2174,6 +2257,81 @@ class Cultura(models.Model):
         # Será implementado quando criar o módulo de Plantio
         return 0
 
+
+class Praga(models.Model):
+    """
+    Cadastro de Pragas Agrícolas
+    Insetos, fungos, doenças que afetam as culturas
+    """
+    
+    # Vinculação multi-tenant
+    empresa = models.ForeignKey(
+        'empresas.Empresa',
+        on_delete=models.CASCADE,
+        related_name='pragas',
+        verbose_name='Empresa'
+    )
+    
+    # Dados básicos
+    nome_comum = models.CharField(
+        'Nome Comum',
+        max_length=150,
+        help_text='Ex: Lagarta-do-cartucho, Mosca-branca, Ferrugem'
+    )
+    
+    nome_cientifico = models.CharField(
+        'Nome Científico',
+        max_length=200,
+        blank=True,
+        help_text='Nome científico da praga/doença'
+    )
+    
+    # Status
+    ativa = models.BooleanField(
+        'Praga Ativa',
+        default=True,
+        help_text='Define se a praga está ativa para cadastro'
+    )
+    
+    # Auditoria
+    data_cadastro = models.DateTimeField(
+        'Data de Cadastro',
+        auto_now_add=True
+    )
+    
+    data_atualizacao = models.DateTimeField(
+        'Última Atualização',
+        auto_now=True
+    )
+    
+    cadastrado_por = models.ForeignKey(
+        'usuarios.Usuario',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='pragas_cadastradas',
+        verbose_name='Cadastrado por'
+    )
+    
+    class Meta:
+        verbose_name = 'Praga'
+        verbose_name_plural = 'Pragas'
+        ordering = ['nome_comum']
+        indexes = [
+            models.Index(fields=['empresa', 'ativa']),
+            models.Index(fields=['nome_comum']),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=['empresa', 'nome_comum'],
+                name='unique_praga_empresa'
+            )
+        ]
+    
+    def __str__(self):
+        if self.nome_cientifico:
+            return f"{self.nome_comum} ({self.nome_cientifico})"
+        return self.nome_comum
 
 
 # ============================================
@@ -3695,7 +3853,8 @@ class Fornecedor(models.Model):
 
     # Campos de contato básicos
     telefone = models.CharField('Telefone', max_length=20, blank=True)
-    celular = models.CharField('Celular', max_length=20, blank=True)
+    celular = models.CharField('Celular/WhatsApp', max_length=20, blank=True, 
+                               help_text='Formato: (00) 00000-0000 - Usado para envio de pedidos via WhatsApp')
     email = models.EmailField('E-mail', blank=True)
 
     # Campos de endereço espelhados (conveniência) — dados primários do fornecedor

@@ -1,0 +1,401 @@
+{% extends 'base.html' %}
+
+{% block title %}Pedido {{ pedido.numero }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Fluxo Visual do Processo de Compra -->
+    {% include 'compras/includes/fluxo_compras.html' with etapa_atual='pedido' solicitacao=pedido.cotacao.solicitacao cotacao=pedido.cotacao pedido=pedido %}
+    
+    <!-- Instruções para esta etapa -->
+    {% include 'compras/includes/instrucoes_etapa.html' with etapa='pedido' %}
+    
+    <!-- Cabeçalho -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2><i class="bi bi-file-earmark-check me-2"></i> Pedido {{ pedido.numero }}</h2>
+            <p class="text-muted mb-0">
+                Fornecedor: <strong>{{ pedido.fornecedor.nome }}</strong> | 
+                Comprador: {{ pedido.comprador.get_full_name }}
+            </p>
+        </div>
+        <div class="col-md-4 text-end">
+            <div class="btn-group mb-2 d-flex flex-wrap gap-2 justify-content-end" role="group">
+                <a href="{% url 'compras:pedido_pdf' pedido.pk %}"
+                   target="_blank"
+                   class="btn btn-danger"
+                   title="Gerar PDF">
+                    <i class="bi bi-file-pdf"></i> PDF
+                </a>
+                {% if pedido.status != 'CANCELADO' and pedido.status != 'RECEBIDO' %}
+                <a href="{% url 'compras:pedido_whatsapp' pedido.pk %}"
+                   class="btn btn-success"
+                   title="Enviar via WhatsApp">
+                    <i class="bi bi-whatsapp"></i> WhatsApp
+                </a>
+                <a href="{% url 'compras:pedido_enviar_email' pedido.pk %}"
+                   class="btn btn-primary"
+                   title="Enviar por Email">
+                    <i class="bi bi-envelope"></i> Email
+                </a>
+                {% if pedido.status != 'ENVIADO' %}
+                <a href="{% url 'compras:pedido_enviar' pedido.pk %}"
+                   class="btn btn-warning fw-bold border border-2 border-dark"
+                   title="Marcar como Enviado ao Fornecedor">
+                    <i class="bi bi-send"></i> Marcar como Enviado
+                </a>
+                {% endif %}
+                {% endif %}
+            </div>
+            <div class="btn-group mt-2 d-flex flex-wrap gap-2 justify-content-end" role="group">
+                {% if pedido.status == 'ENVIADO' or pedido.status == 'PARCIALMENTE_RECEBIDO' %}
+                <a href="{% url 'compras:recebimento_create' pedido.pk %}"
+                   class="btn btn-success"
+                   title="Receber Mercadoria">
+                    <i class="bi bi-inbox-fill"></i> Receber
+                </a>
+                {% endif %}
+                <a href="{% url 'compras:historico_completo' pedido.cotacao.solicitacao.pk %}"
+                   class="btn btn-info"
+                   title="Ver Histórico Completo">
+                    <i class="bi bi-clock-history"></i> Histórico
+                </a>
+                {% if pedido.status != 'CANCELADO' and pedido.status != 'RECEBIDO' %}
+                <a href="{% url 'compras:pedido_cancelar' pedido.pk %}"
+                   class="btn btn-warning"
+                   title="Cancelar Pedido">
+                    <i class="bi bi-x-circle"></i> Cancelar
+                </a>
+                {% endif %}
+                <a href="{% url 'compras:pedido_list' %}"
+                   class="btn btn-secondary"
+                   title="Voltar para lista">
+                    <i class="bi bi-arrow-left"></i> Voltar
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Rastreamento de Origem -->
+    <div class="row mb-3">
+        <div class="col-md-12">
+            <div class="card border-info">
+                <div class="card-header bg-light border-info">
+                    <h6 class="mb-0"><i class="bi bi-diagram-3 text-info me-2"></i> Rastreamento de Origem</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="text-center">
+                                <div class="badge bg-light text-dark fs-6 p-2 mb-2">
+                                    <i class="bi bi-file-earmark-text"></i><br>
+                                    <small>Solicitação</small>
+                                </div>
+                                <div>
+                                    <a href="{% url 'compras:solicitacao_detail' pedido.cotacao.solicitacao.pk %}" class="text-decoration-none fw-bold">
+                                        {{ pedido.cotacao.solicitacao.numero }}
+                                    </a>
+                                </div>
+                            </div>
+                            <i class="bi bi-arrow-right text-secondary fs-5"></i>
+                            <div class="text-center">
+                                <div class="badge bg-light text-dark fs-6 p-2 mb-2">
+                                    <i class="bi bi-calculator"></i><br>
+                                    <small>Cotação</small>
+                                </div>
+                                <div>
+                                    <a href="{% url 'compras:cotacao_item_comparativo' pedido.cotacao.pk %}" class="text-decoration-none fw-bold">
+                                        {{ pedido.cotacao.numero }}
+                                    </a>
+                                </div>
+                            </div>
+                            <i class="bi bi-arrow-right text-secondary fs-5"></i>
+                            <div class="text-center">
+                                <div class="badge bg-primary text-white fs-6 p-2 mb-2">
+                                    <i class="bi bi-file-earmark-check"></i><br>
+                                    <small>Pedido</small>
+                                </div>
+                                <div>
+                                    <strong class="text-primary">{{ pedido.numero }}</strong>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-muted small">
+                            Pedido gerado a partir da cotação <strong>{{ pedido.cotacao.numero }}</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Status e Info Básica -->
+    <div class="row mb-3">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Informações do Pedido</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <strong>Status:</strong><br>
+                            {% if status_recebimento == 'RECEBIDO_TOTAL' %}
+                                <span class="badge bg-teal text-white fs-6" style="background-color:#20c997;">Recebido Total</span>
+                            {% elif status_recebimento == 'RECEBIDO_PARCIAL' %}
+                                <span class="badge bg-purple text-white fs-6" style="background-color:#6f42c1;">Recebido Parcial</span>
+                            {% else %}
+                                {% if pedido.status == 'PENDENTE' %}
+                                <span class="badge bg-warning text-dark fs-6">{{ pedido.get_status_display }}</span>
+                                {% elif pedido.status == 'ENVIADO' %}
+                                <span class="badge bg-info fs-6">{{ pedido.get_status_display }}</span>
+                                {% elif pedido.status == 'CONFIRMADO' %}
+                                <span class="badge bg-primary fs-6">{{ pedido.get_status_display }}</span>
+                                {% elif pedido.status == 'PARCIALMENTE_RECEBIDO' %}
+                                <span class="badge bg-warning fs-6">{{ pedido.get_status_display }}</span>
+                                {% elif pedido.status == 'RECEBIDO' %}
+                                <span class="badge bg-success fs-6">{{ pedido.get_status_display }}</span>
+                                {% elif pedido.status == 'CANCELADO' %}
+                                <span class="badge bg-danger fs-6">{{ pedido.get_status_display }}</span>
+                                {% else %}
+                                <span class="badge bg-secondary fs-6">{{ pedido.get_status_display }}</span>
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Fornecedor:</strong><br>
+                            {{ pedido.fornecedor.nome_fantasia }}<br>
+                            <small class="text-muted">{{ pedido.fornecedor.cnpj }}</small>
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Comprador:</strong><br>
+                            {{ pedido.comprador.get_full_name }}
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Data do Pedido:</strong><br>
+                            {{ pedido.data_pedido|date:"d/m/Y H:i" }}
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="row">
+                        <div class="col-md-3">
+                            <strong>Entrega Prevista:</strong><br>
+                            {% if pedido.data_entrega_prevista %}
+                            {{ pedido.data_entrega_prevista|date:"d/m/Y" }}
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Prazo:</strong><br>
+                            {{ pedido.prazo_entrega_dias }} dias
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Forma de Pagamento:</strong><br>
+                            {{ pedido.forma_pagamento|default:"-" }}
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Condição:</strong><br>
+                            {{ pedido.condicao_pagamento|default:"-" }}
+                        </div>
+                    </div>
+                    
+                    {% if pedido.data_envio %}
+                    <hr>
+                    <div class="row">
+                        <div class="col-md-3">
+                            <strong>Enviado em:</strong><br>
+                            {{ pedido.data_envio|date:"d/m/Y H:i" }}
+                        </div>
+                        {% if pedido.data_confirmacao %}
+                        <div class="col-md-3">
+                            <strong>Confirmado em:</strong><br>
+                            {{ pedido.data_confirmacao|date:"d/m/Y H:i" }}
+                        </div>
+                        {% endif %}
+                        {% if pedido.data_entrega_real %}
+                        <div class="col-md-3">
+                            <strong>Entregue em:</strong><br>
+                            {{ pedido.data_entrega_real|date:"d/m/Y" }}
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Itens do Pedido -->
+    <div class="card mb-3">
+        <div class="card-header">
+            <h5>Itens do Pedido</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Produto</th>
+                            <th>Especificação</th>
+                            <th>Marca</th>
+                            <th class="text-end">Qtd Pedida</th>
+                            <th class="text-end">Qtd Recebida</th>
+                            <th class="text-end">Preço Unit.</th>
+                            <th class="text-end">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in itens %}
+                        <tr>
+                            <td>
+                                <strong>{{ item.produto.nome }}</strong><br>
+                                <small class="text-muted">{{ item.produto.codigo }}</small>
+                            </td>
+                            <td>
+                                {% if item.especificacao %}
+                                {{ item.especificacao|truncatewords:10 }}
+                                {% else %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ item.marca|default:"-" }}</td>
+                            <td class="text-end">{{ item.quantidade_pedida }} {{ item.unidade_medida.sigla }}</td>
+                            <td class="text-end">
+                                {{ item.quantidade_recebida }} {{ item.unidade_medida.sigla }}
+                                {% if item.quantidade_recebida > 0 %}
+                                <br><small class="text-success">({{ item.percentual_recebido|floatformat:0 }}%)</small>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">R$ {{ item.preco_unitario|floatformat:2 }}</td>
+                            <td class="text-end"><strong>R$ {{ item.preco_total|floatformat:2 }}</strong></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot class="table-light">
+                        <tr>
+                            <th colspan="6" class="text-end">Subtotal:</th>
+                            <th class="text-end">R$ {{ pedido.valor_total|floatformat:2 }}</th>
+                        </tr>
+                        {% if pedido.valor_desconto > 0 %}
+                        <tr>
+                            <th colspan="6" class="text-end">Desconto:</th>
+                            <th class="text-end text-success">- R$ {{ pedido.valor_desconto|floatformat:2 }}</th>
+                        </tr>
+                        {% endif %}
+                        {% if pedido.valor_frete > 0 %}
+                        <tr>
+                            <th colspan="6" class="text-end">Frete:</th>
+                            <th class="text-end">+ R$ {{ pedido.valor_frete|floatformat:2 }}</th>
+                        </tr>
+                        {% endif %}
+                        <tr class="table-primary">
+                            <th colspan="6" class="text-end">TOTAL:</th>
+                            <th class="text-end">R$ {{ pedido.valor_final|floatformat:2 }}</th>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Observações -->
+    {% if pedido.observacoes or pedido.observacoes_internas %}
+    <div class="card mb-3">
+        <div class="card-header">
+            <h5>Observações</h5>
+        </div>
+        <div class="card-body">
+            {% if pedido.observacoes %}
+            <div class="mb-3">
+                <strong>Observações do Pedido:</strong>
+                <p>{{ pedido.observacoes }}</p>
+            </div>
+            {% endif %}
+            
+            {% if pedido.observacoes_internas %}
+            <div class="alert alert-warning">
+                <strong>Observações Internas (não enviadas ao fornecedor):</strong>
+                <p class="mb-0">{{ pedido.observacoes_internas }}</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Recebimentos -->
+    {% if recebimentos %}
+    <div class="card">
+        <div class="card-header bg-success text-white">
+            <h5 class="mb-0">
+                <i class="bi bi-inbox-fill me-2"></i>
+                Recebimentos deste Pedido
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Número</th>
+                            <th>Nota Fiscal</th>
+                            <th>Data Recebimento</th>
+                            <th>Status</th>
+                            <th class="text-center">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for recebimento in recebimentos %}
+                        <tr>
+                            <td>
+                                <a href="{% url 'compras:recebimento_detail' recebimento.pk %}" class="fw-bold">
+                                    {{ recebimento.numero }}
+                                </a>
+                            </td>
+                            <td>{{ recebimento.nota_fiscal }}</td>
+                            <td>{{ recebimento.data_recebimento|date:"d/m/Y" }}</td>
+                            <td>
+                                {% if recebimento.status == 'PENDENTE' %}
+                                <span class="badge bg-warning text-dark">{{ recebimento.get_status_display }}</span>
+                                {% elif recebimento.status == 'CONFERIDO' %}
+                                <span class="badge bg-primary">{{ recebimento.get_status_display }}</span>
+                                {% elif recebimento.status == 'FINALIZADO' %}
+                                <span class="badge bg-success">{{ recebimento.get_status_display }}</span>
+                                {% else %}
+                                <span class="badge bg-secondary">{{ recebimento.get_status_display }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                {% if recebimento.status == 'PENDENTE' %}
+                                <a href="{% url 'compras:recebimento_conferir' recebimento.pk %}" 
+                                   class="btn btn-sm btn-success" 
+                                   title="Conferir">
+                                    <i class="bi bi-check-circle"></i> Conferir
+                                </a>
+                                {% elif recebimento.status == 'CONFERIDO' %}
+                                <form method="post" action="{% url 'compras:recebimento_entrada_estoque' recebimento.pk %}" style="display:inline;">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-primary" title="Dar entrada no estoque">
+                                        <i class="bi bi-box-arrow-in-down"></i> Entrada Estoque
+                                    </button>
+                                </form>
+                                {% elif recebimento.status == 'FINALIZADO' %}
+                                <a href="{% url 'compras:recebimento_detail' recebimento.pk %}" 
+                                   class="btn btn-sm btn-outline-success" 
+                                   title="Ver detalhes">
+                                    <i class="bi bi-eye"></i> Ver
+                                </a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

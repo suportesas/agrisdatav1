@@ -1,47 +1,254 @@
 <div class="card shadow-sm border-0 rounded-4">
-  <div class="card-body table-responsive">
-    <table class="table table-hover align-middle mb-0">
-      <thead class="table-light">
-        <tr>
-          <th>ID</th>
-          <th>Usuário</th>
-          <th>Email</th>
-          <th>Tipo</th>
-          <th>Funções</th>
-          <th>Telefone</th>
-          <th class="text-center">Ações</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for usuario in page_obj %}
-        <tr>
-          <td>{{ usuario.id }}</td>
-          <td>{{ usuario.username }}</td>
-          <td>{{ usuario.email }}</td>
-          <td>{{ usuario.get_tipo_display }}</td>
-          <td>
-            {% for r in usuario.roles.all %}
-              <span class="badge bg-secondary me-1">{{ r.name }}</span>
-            {% empty %}
-              —
-            {% endfor %}
-          </td>
-          <td>{{ usuario.telefone|default:"—" }}</td>
-          <td class="text-center">
-            <a href="{% url 'usuarios:usuario_update' usuario.id %}" class="btn btn-sm btn-outline-success">
-              <i class="bi bi-pencil-square"></i>
-            </a>
-            <a href="{% url 'usuarios:usuario_delete' usuario.id %}" class="btn btn-sm btn-outline-danger">
-              <i class="bi bi-trash"></i>
-            </a>
-          </td>
-        </tr>
-        {% empty %}
-        <tr>
-          <td colspan="7" class="text-center text-muted">Nenhum usuário encontrado.</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="bg-light border-bottom">
+          <tr>
+            <th class="px-4 py-3 text-muted fw-semibold" style="width: 60px;">
+              <small>ID</small>
+            </th>
+            <th class="px-3 py-3 text-muted fw-semibold">
+              <small>USUÁRIO</small>
+            </th>
+            <th class="px-3 py-3 text-muted fw-semibold">
+              <small>CONTATO</small>
+            </th>
+            <th class="px-3 py-3 text-muted fw-semibold">
+              <small>EMPRESA</small>
+            </th>
+            <th class="px-3 py-3 text-muted fw-semibold text-center">
+              <small>TIPO</small>
+            </th>
+            <th class="px-3 py-3 text-muted fw-semibold text-center">
+              <small>STATUS</small>
+            </th>
+            <th class="px-3 py-3 text-muted fw-semibold">
+              <small>FUNÇÕES</small>
+            </th>
+            {% if user.is_superuser or user.is_staff or user.tipo == 'ADMIN' %}
+            <th class="px-3 py-3 text-muted fw-semibold text-center" style="width: 100px;">
+              <small>AÇÕES</small>
+            </th>
+            {% endif %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for usuario in page_obj %}
+          <tr class="border-bottom">
+            <td class="px-4 py-3">
+              <span class="badge bg-light text-dark border">{{ usuario.id }}</span>
+            </td>
+            <td class="px-3 py-3">
+              <div class="d-flex align-items-center">
+                <div class="avatar-circle bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px; min-width: 40px;">
+                  <i class="bi bi-person-fill"></i>
+                </div>
+                <div>
+                  <div class="fw-semibold text-dark">{{ usuario.username }}</div>
+                  <small class="text-muted">{{ usuario.first_name }} {{ usuario.last_name }}</small>
+                </div>
+              </div>
+            </td>
+            <td class="px-3 py-3">
+              <div>
+                {% if usuario.email %}
+                <div class="mb-1">
+                  <i class="bi bi-envelope text-muted me-1"></i>
+                  <small>{{ usuario.email }}</small>
+                </div>
+                {% endif %}
+                {% if usuario.telefone %}
+                <div>
+                  <i class="bi bi-telephone text-muted me-1"></i>
+                  <small>{{ usuario.telefone }}</small>
+                </div>
+                {% endif %}
+                {% if not usuario.email and not usuario.telefone %}
+                <span class="text-muted small">—</span>
+                {% endif %}
+              </div>
+            </td>
+            <td class="px-3 py-3">
+              {% if usuario.empresa %}
+                <div class="d-flex align-items-center">
+                  <i class="bi bi-building text-primary me-2"></i>
+                  <span class="badge bg-primary bg-opacity-10 text-primary border border-primary px-3 py-2">
+                    {{ usuario.empresa.nome }}
+                  </span>
+                </div>
+              {% else %}
+                <span class="text-muted small">Sem empresa</span>
+              {% endif %}
+            </td>
+            <td class="px-3 py-3 text-center">
+              {% if usuario.tipo == 'ADMIN' %}
+                <span class="badge bg-danger bg-opacity-10 text-danger border border-danger px-3 py-2">
+                  <i class="bi bi-shield-fill-check me-1"></i>{{ usuario.get_tipo_display }}
+                </span>
+              {% elif usuario.tipo == 'GERENTE' %}
+                <span class="badge bg-warning bg-opacity-10 text-warning border border-warning px-3 py-2">
+                  <i class="bi bi-person-badge me-1"></i>{{ usuario.get_tipo_display }}
+                </span>
+              {% elif usuario.tipo == 'VENDEDOR' %}
+                <span class="badge bg-success bg-opacity-10 text-success border border-success px-3 py-2">
+                  <i class="bi bi-cart-check me-1"></i>{{ usuario.get_tipo_display }}
+                </span>
+              {% elif usuario.tipo == 'FINANCEIRO' %}
+                <span class="badge bg-info bg-opacity-10 text-info border border-info px-3 py-2">
+                  <i class="bi bi-cash-coin me-1"></i>{{ usuario.get_tipo_display }}
+                </span>
+              {% elif usuario.tipo == 'PROD' %}
+                <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary px-3 py-2">
+                  <i class="bi bi-gear me-1"></i>{{ usuario.get_tipo_display }}
+                </span>
+              {% else %}
+                <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary px-3 py-2">
+                  <i class="bi bi-person me-1"></i>{{ usuario.get_tipo_display }}
+                </span>
+              {% endif %}
+            </td>
+            <td class="px-3 py-3 text-center">
+              {% if usuario.is_active %}
+                <span class="badge bg-success bg-opacity-10 text-success border border-success px-3 py-2">
+                  <i class="bi bi-check-circle-fill me-1"></i>Ativo
+                </span>
+              {% else %}
+                <span class="badge bg-danger bg-opacity-10 text-danger border border-danger px-3 py-2">
+                  <i class="bi bi-x-circle-fill me-1"></i>Inativo
+                </span>
+              {% endif %}
+            </td>
+            <td class="px-3 py-3">
+              <div class="d-flex flex-wrap gap-1">
+                {% for r in usuario.roles.all %}
+                  <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary">
+                    <i class="bi bi-tag-fill me-1"></i>{{ r.name }}
+                  </span>
+                {% empty %}
+                  <span class="text-muted small">Nenhuma</span>
+                {% endfor %}
+              </div>
+            </td>
+            {% if user.is_superuser or user.is_staff or user.tipo == 'ADMIN' %}
+            <td class="px-3 py-3 text-center">
+              <div class="btn-group btn-group-sm" role="group">
+                <a href="{% url 'usuarios:usuario_update' usuario.id %}" 
+                   class="btn btn-outline-primary" 
+                   title="Visualizar"
+                   data-bs-toggle="tooltip">
+                  <i class="bi bi-eye"></i>
+                </a>
+                <a href="{% url 'usuarios:usuario_update' usuario.id %}" 
+                   class="btn btn-outline-success" 
+                   title="Editar"
+                   data-bs-toggle="tooltip">
+                  <i class="bi bi-pencil-square"></i>
+                </a>
+                <a href="{% url 'usuarios:usuario_delete' usuario.id %}" 
+                   class="btn btn-outline-danger" 
+                   title="Excluir"
+                   data-bs-toggle="tooltip">
+                  <i class="bi bi-trash"></i>
+                </a>
+              </div>
+            </td>
+            {% endif %}
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="{% if user.is_superuser or user.is_staff or user.tipo == 'ADMIN' %}8{% else %}7{% endif %}" class="text-center py-5">
+              <div class="text-muted">
+                <i class="bi bi-inbox display-4 d-block mb-3"></i>
+                <p class="mb-0">Nenhum usuário encontrado.</p>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
   </div>
+  
+  <!-- Paginação Moderna -->
+  {% if page_obj.has_other_pages %}
+  <div class="card-footer bg-white border-top py-3 px-4">
+    <div class="row align-items-center">
+      <!-- Informações -->
+      <div class="col-md-4 mb-2 mb-md-0">
+        <small class="text-muted">
+          Mostrando <strong>{{ page_obj.start_index }}</strong> a <strong>{{ page_obj.end_index }}</strong> 
+          de <strong>{{ page_obj.paginator.count }}</strong> usuários
+        </small>
+      </div>
+      
+      <!-- Controles de Paginação -->
+      <div class="col-md-8">
+        <nav aria-label="Navegação de páginas">
+          <ul class="pagination pagination-sm justify-content-end mb-0">
+            <!-- Primeira página -->
+            {% if page_obj.has_previous %}
+              <li class="page-item">
+                <a class="page-link" href="?page=1{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.tipo %}&tipo={{ request.GET.tipo }}{% endif %}{% if request.GET.per_page %}&per_page={{ request.GET.per_page }}{% endif %}" 
+                   title="Primeira página">
+                  <i class="bi bi-chevron-double-left"></i>
+                </a>
+              </li>
+              <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.tipo %}&tipo={{ request.GET.tipo }}{% endif %}{% if request.GET.per_page %}&per_page={{ request.GET.per_page }}{% endif %}" 
+                   title="Página anterior">
+                  <i class="bi bi-chevron-left"></i>
+                </a>
+              </li>
+            {% else %}
+              <li class="page-item disabled">
+                <span class="page-link"><i class="bi bi-chevron-double-left"></i></span>
+              </li>
+              <li class="page-item disabled">
+                <span class="page-link"><i class="bi bi-chevron-left"></i></span>
+              </li>
+            {% endif %}
+            
+            <!-- Páginas numéricas -->
+            {% for num in page_obj.paginator.page_range %}
+              {% if page_obj.number == num %}
+                <li class="page-item active">
+                  <span class="page-link fw-bold">{{ num }}</span>
+                </li>
+              {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                <li class="page-item">
+                  <a class="page-link" href="?page={{ num }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.tipo %}&tipo={{ request.GET.tipo }}{% endif %}{% if request.GET.per_page %}&per_page={{ request.GET.per_page }}{% endif %}">
+                    {{ num }}
+                  </a>
+                </li>
+              {% endif %}
+            {% endfor %}
+            
+            <!-- Última página -->
+            {% if page_obj.has_next %}
+              <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.tipo %}&tipo={{ request.GET.tipo }}{% endif %}{% if request.GET.per_page %}&per_page={{ request.GET.per_page }}{% endif %}" 
+                   title="Próxima página">
+                  <i class="bi bi-chevron-right"></i>
+                </a>
+              </li>
+              <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.tipo %}&tipo={{ request.GET.tipo }}{% endif %}{% if request.GET.per_page %}&per_page={{ request.GET.per_page }}{% endif %}" 
+                   title="Última página">
+                  <i class="bi bi-chevron-double-right"></i>
+                </a>
+              </li>
+            {% else %}
+              <li class="page-item disabled">
+                <span class="page-link"><i class="bi bi-chevron-right"></i></span>
+              </li>
+              <li class="page-item disabled">
+                <span class="page-link"><i class="bi bi-chevron-double-right"></i></span>
+              </li>
+            {% endif %}
+          </ul>
+        </nav>
+      </div>
+    </div>
+  </div>
+  {% endif %}
 </div>

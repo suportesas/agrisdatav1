@@ -1,0 +1,309 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Nova Cotação - Fornecedores{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2><i class="bi bi-calculator text-primary"></i> Nova Cotação de Compra</h2>
+      <p class="text-muted mb-0">Passo 2 de 2: Definir quantidades e selecionar fornecedores</p>
+    </div>
+    <a href="{% url 'compras:cotacao_create_step1' %}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left"></i> Voltar
+    </a>
+  </div>
+
+  <!-- Stepper -->
+  <div class="card mb-4">
+    <div class="card-body">
+      <div class="row text-center">
+        <div class="col-md-6">
+          <div class="bg-success text-white rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+            <i class="bi bi-check-lg"></i>
+          </div>
+          <p class="mt-2 mb-0 text-muted">Produtos Selecionados</p>
+        </div>
+        <div class="col-md-6">
+          <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+            <strong>2</strong>
+          </div>
+          <p class="mt-2 mb-0"><strong>Fornecedores e Quantidades</strong></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Formulário -->
+  <form method="post">
+    {% csrf_token %}
+
+    <!-- Dados da Cotação -->
+    <div class="card mb-4">
+      <div class="card-header bg-primary text-white">
+        <h5 class="mb-0"><i class="bi bi-info-circle"></i> Dados da Cotação</h5>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Data de Validade *</label>
+            <input type="date" name="data_validade" class="form-control" value="{{ data_validade_padrao }}" required>
+            <small class="text-muted">Prazo final para receber propostas</small>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Prazo de Entrega Desejado</label>
+            <input type="number" name="prazo_entrega_desejado" class="form-control" placeholder="Dias">
+            <small class="text-muted">Em dias (opcional)</small>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Condições de Pagamento</label>
+            <input type="text" name="condicoes_pagamento" class="form-control" placeholder="Ex: 30/60 dias">
+          </div>
+          <div class="col-md-12">
+            <label class="form-label fw-semibold">Observações Gerais</label>
+            <textarea name="observacoes" class="form-control" rows="2" placeholder="Informações adicionais para os fornecedores..."></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Produtos e Fornecedores -->
+    {% for data in produtos_data %}
+    <div class="card mb-4 produto-card">
+      <div class="card-header bg-light">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <h5 class="mb-0">
+              <i class="bi bi-box-seam text-primary"></i>
+              {{ data.produto.nome }}
+            </h5>
+            <small class="text-muted">
+              Código: <code>{{ data.produto.codigo }}</code> | 
+              Unidade: {{ data.produto.unidade_medida.sigla }}
+              {% if data.ultimo_preco %}
+                | Último preço: <strong class="text-success">R$ {{ data.ultimo_preco|floatformat:2 }}</strong> ({{ data.ultima_data|date:"d/m/Y" }})
+              {% endif %}
+            </small>
+          </div>
+          <div>
+            <span class="badge bg-info">
+              <i class="bi bi-shop"></i> {{ data.fornecedores|length }} fornecedor(es) encontrado(s)
+            </span>
+          </div>
+        </div>
+      </div>
+      <div class="card-body">
+        
+        {% if data.fornecedores %}
+          <!-- Fornecedores cadastrados no produto -->
+          <div class="alert alert-success">
+            <i class="bi bi-check-circle me-2"></i>
+            <strong>Busca Automática:</strong> Sistema encontrou {{ data.fornecedores|length }} fornecedor(es) cadastrado(s) para este produto.
+          </div>
+        {% else %}
+          <!-- Produto sem fornecedores - seleção manual -->
+          <div class="alert alert-warning">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            <strong>Atenção:</strong> Este produto não possui fornecedores cadastrados.
+            <br>Selecione manualmente os fornecedores abaixo ou 
+            <a href="{% url 'produtos:produto_update' data.produto.pk %}" target="_blank" class="alert-link">
+              <i class="bi bi-box-arrow-up-right"></i> cadastre fornecedores no produto
+            </a>.
+          </div>
+        {% endif %}
+
+        <div class="row g-3 mb-3">
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Quantidade *</label>
+            <input type="number" name="quantidade_{{ data.produto.id }}" 
+                   class="form-control" step="0.001" min="0.001" 
+                   placeholder="0.000" required>
+          </div>
+          <div class="col-md-9">
+            <label class="form-label fw-semibold">Especificações Adicionais</label>
+            <input type="text" name="especificacao_{{ data.produto.id }}" 
+                   class="form-control" 
+                   placeholder="Detalhes específicos, embalagem, etc...">
+          </div>
+        </div>
+
+        <label class="form-label fw-semibold">
+          <i class="bi bi-shop"></i> Selecione os Fornecedores para Cotar
+        </label>
+        
+        {% if data.fornecedores %}
+          <div class="table-responsive">
+            <table class="table table-sm table-hover">
+              <thead class="table-light">
+                <tr>
+                  <th width="50">
+                    <input type="checkbox" class="form-check-input select-all-fornecedores" data-produto="{{ data.produto.id }}">
+                  </th>
+                  <th>Fornecedor</th>
+                  <th>Código no Fornecedor</th>
+                  <th>Último Preço</th>
+                  <th>Prazo Entrega</th>
+                  <th>Qtd. Mínima</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for pf in data.fornecedores %}
+                <tr>
+                  <td>
+                    <input type="checkbox" name="fornecedores_{{ data.produto.id }}" 
+                           value="{{ pf.fornecedor.id }}" 
+                           class="form-check-input fornecedor-check" 
+                           data-produto="{{ data.produto.id }}"
+                           {% if pf.fornecedor_preferencial %}checked{% endif %}>
+                  </td>
+                  <td>
+                    <strong>{{ pf.fornecedor.nome }}</strong>
+                    {% if pf.fornecedor_preferencial %}
+                      <i class="bi bi-star-fill text-warning" title="Fornecedor Preferencial"></i>
+                    {% endif %}
+                    <br><small class="text-muted">{{ pf.fornecedor.cnpj_cpf }}</small>
+                  </td>
+                  <td><code>{{ pf.codigo_fornecedor }}</code></td>
+                  <td>
+                    {% if pf.preco_compra > 0 %}
+                      <strong class="text-success">R$ {{ pf.preco_compra|floatformat:2 }}</strong>
+                    {% else %}
+                      <span class="text-muted">-</span>
+                    {% endif %}
+                  </td>
+                  <td>{{ pf.prazo_entrega|default:"-" }} dias</td>
+                  <td>{{ pf.quantidade_minima }} {{ data.produto.unidade_medida.sigla }}</td>
+                  <td>
+                    <span class="badge bg-success">Ativo</span>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          
+          <div class="text-muted small mt-2">
+            <i class="bi bi-info-circle"></i>
+            <span class="fornecedor-count" data-produto="{{ data.produto.id }}">0</span> fornecedor(es) selecionado(s)
+          </div>
+        {% else %}
+          <!-- Seleção manual de fornecedores -->
+          <div class="table-responsive">
+            <table class="table table-sm table-hover">
+              <thead class="table-light">
+                <tr>
+                  <th width="50">
+                    <input type="checkbox" class="form-check-input select-all-fornecedores" data-produto="{{ data.produto.id }}">
+                  </th>
+                  <th>Fornecedor</th>
+                  <th>CNPJ/CPF</th>
+                  <th>Telefone</th>
+                  <th>E-mail</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for fornecedor in todos_fornecedores %}
+                <tr>
+                  <td>
+                    <input type="checkbox" name="fornecedores_{{ data.produto.id }}" 
+                           value="{{ fornecedor.id }}" 
+                           class="form-check-input fornecedor-check" 
+                           data-produto="{{ data.produto.id }}">
+                  </td>
+                  <td>
+                    <strong>{{ fornecedor.nome }}</strong>
+                    <br><small class="text-muted">{{ fornecedor.razao_social }}</small>
+                  </td>
+                  <td><small>{{ fornecedor.cnpj_cpf }}</small></td>
+                  <td><small>{{ fornecedor.telefone|default:"-" }}</small></td>
+                  <td><small>{{ fornecedor.email|default:"-" }}</small></td>
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="5" class="text-center text-muted py-3">
+                    Nenhum fornecedor cadastrado na empresa.
+                    <a href="{% url 'cadastros:fornecedor_create' %}" target="_blank" class="btn btn-sm btn-primary ms-2">
+                      <i class="bi bi-plus-circle"></i> Cadastrar Fornecedor
+                    </a>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          
+          <div class="text-muted small mt-2">
+            <i class="bi bi-info-circle"></i>
+            <span class="fornecedor-count" data-produto="{{ data.produto.id }}">0</span> fornecedor(es) selecionado(s)
+          </div>
+        {% endif %}
+
+      </div>
+    </div>
+    {% endfor %}
+
+    <!-- Botões -->
+    <div class="card">
+      <div class="card-body">
+        <div class="d-flex justify-content-between">
+          <a href="{% url 'compras:cotacao_create_step1' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Voltar
+          </a>
+          <button type="submit" class="btn btn-success btn-lg">
+            <i class="bi bi-check-circle"></i> Criar Cotação
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </form>
+
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  
+  // Selecionar todos os fornecedores de um produto
+  document.querySelectorAll('.select-all-fornecedores').forEach(checkbox => {
+    checkbox.addEventListener('change', function() {
+      const produtoId = this.dataset.produto;
+      const fornecedorChecks = document.querySelectorAll(`.fornecedor-check[data-produto="${produtoId}"]`);
+      fornecedorChecks.forEach(check => check.checked = this.checked);
+      updateFornecedorCount(produtoId);
+    });
+  });
+  
+  // Atualizar contadores ao marcar fornecedores
+  document.querySelectorAll('.fornecedor-check').forEach(checkbox => {
+    checkbox.addEventListener('change', function() {
+      updateFornecedorCount(this.dataset.produto);
+    });
+  });
+  
+  function updateFornecedorCount(produtoId) {
+    const checked = document.querySelectorAll(`.fornecedor-check[data-produto="${produtoId}"]:checked`).length;
+    const countDisplay = document.querySelector(`.fornecedor-count[data-produto="${produtoId}"]`);
+    if (countDisplay) {
+      countDisplay.textContent = checked;
+    }
+    
+    // Atualizar select-all
+    const selectAll = document.querySelector(`.select-all-fornecedores[data-produto="${produtoId}"]`);
+    const total = document.querySelectorAll(`.fornecedor-check[data-produto="${produtoId}"]`).length;
+    if (selectAll) {
+      selectAll.checked = checked > 0 && checked === total;
+    }
+  }
+  
+  // Inicializar contadores
+  document.querySelectorAll('.select-all-fornecedores').forEach(checkbox => {
+    updateFornecedorCount(checkbox.dataset.produto);
+  });
+});
+</script>
+
+{% endblock %}

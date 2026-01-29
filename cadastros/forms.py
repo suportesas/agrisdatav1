@@ -7,7 +7,7 @@ from django import forms
 from django.core.exceptions import ValidationError
 from .models import (
     Fazenda, EnderecoFazenda, ContatoFazenda,
-    ContaBancariaFazenda, DocumentoFazenda, NCM,
+    ContaBancariaFazenda, DocumentoFazenda, NCM, EmpresaNCM, CFOP, EmpresaCFOP,
 )
 
 # Modelos de Cliente
@@ -20,7 +20,7 @@ from django.utils import timezone
 import re
 
 
-from .models import Area, Talhao, HistoricoTalhao,  Cultura
+from .models import Area, Talhao, HistoricoTalhao,  Cultura, Praga
 from .models import Safra, SafraPlan, SafraReal
 from decimal import Decimal
 from .models import Vendedor, ComissaoVendedor
@@ -239,7 +239,7 @@ class FazendaForm(forms.ModelForm):
 
 
 class NCMForm(forms.ModelForm):
-    """Form para cadastro/edição de NCM"""
+    """Form para cadastro/edição de NCM (template/global)"""
 
     class Meta:
         model = NCM
@@ -256,6 +256,73 @@ class NCMForm(forms.ModelForm):
         codigo = re.sub(r'\D', '', self.cleaned_data.get('codigo', ''))
         if len(codigo) != 8:
             raise ValidationError('Código NCM inválido. Deve ter 8 dígitos.')
+        return codigo
+
+
+class EmpresaNCMForm(forms.ModelForm):
+    """Form para NCM de empresa (cópia personalizável)"""
+    class Meta:
+        model = EmpresaNCM
+        fields = ['codigo', 'nome', 'cest', 'descricao', 'ativo']
+        widgets = {
+            'codigo': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: 01012100', 'readonly': True}),
+            'nome': forms.TextInput(attrs={'class': 'form-control'}),
+            'cest': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Opcional'}),
+            'descricao': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'ativo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
+
+    def clean_codigo(self):
+        codigo = re.sub(r'\D', '', self.cleaned_data.get('codigo', ''))
+        if len(codigo) != 8:
+            raise ValidationError('Código NCM inválido. Deve ter 8 dígitos.')
+        return codigo
+
+
+class NCMImportForm(forms.Form):
+    """Form para upload de CSV de NCM"""
+    arquivo = forms.FileField(label='Arquivo CSV', help_text='CSV com colunas de código e nome')
+    replace = forms.BooleanField(required=False, initial=False, label='Substituir templates não presentes')
+    apply_to_all = forms.BooleanField(required=False, initial=False, label='Aplicar para todas as empresas (EmpresaNCM)')
+    dry_run = forms.BooleanField(required=False, initial=True, label='Somente simular (dry-run)')
+
+
+class CFOPForm(forms.ModelForm):
+    """Form para cadastro/edição de CFOP"""
+
+    class Meta:
+        model = CFOP
+        fields = ['codigo', 'nome', 'descricao', 'ativo']
+        widgets = {
+            'codigo': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: 5102'}),
+            'nome': forms.TextInput(attrs={'class': 'form-control'}),
+            'descricao': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'ativo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
+
+    def clean_codigo(self):
+        codigo = re.sub(r'\D', '', self.cleaned_data.get('codigo', ''))
+        if not (2 <= len(codigo) <= 4):
+            raise ValidationError('Código CFOP inválido. Deve ter 2 a 4 dígitos.')
+        return codigo
+
+
+class EmpresaCFOPForm(forms.ModelForm):
+    """Form para CFOP de empresa (cópia personalizável)"""
+    class Meta:
+        model = EmpresaCFOP
+        fields = ['codigo', 'nome', 'descricao', 'ativo']
+        widgets = {
+            'codigo': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: 5102'}),
+            'nome': forms.TextInput(attrs={'class': 'form-control'}),
+            'descricao': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'ativo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
+
+    def clean_codigo(self):
+        codigo = re.sub(r'\D', '', self.cleaned_data.get('codigo', ''))
+        if not (2 <= len(codigo) <= 4):
+            raise ValidationError('Código CFOP inválido. Deve ter 2 a 4 dígitos.')
         return codigo
 
 
@@ -1002,22 +1069,47 @@ class FuncaoFuncionarioForm(forms.ModelForm):
     class Meta:
         model = FuncaoFuncionario
         fields = ['nome', 'descricao', 'salario_base', 'ativa']
+        labels = {
+            'nome': 'Nome da Função/Cargo',
+            'descricao': 'Descrição das Atividades',
+            'salario_base': 'Salário Base Sugerido (R$)',
+            'ativa': 'Função Ativa',
+        }
+        help_texts = {
+            'nome': 'Digite o cargo ou função (ex: Motorista, Tratorista, Colhedor)',
+            'descricao': 'Descreva as principais atividades e responsabilidades',
+            'salario_base': 'Valor de referência para o cargo (opcional)',
+        }
         widgets = {
             'nome': forms.TextInput(attrs={
                 'class': 'form-control',
-                'placeholder': 'Ex: Motorista, Tratorista, Colhedor (Dica: crie uma função "Motorista" para facilitar atribuições)'
+                'placeholder': 'Ex: Motorista, Tratorista, Colhedor',
+                'required': True,
             }),
             'descricao': forms.Textarea(attrs={
                 'class': 'form-control',
-                'rows': 2,
-                'placeholder': 'Descrição das atividades'
+                'rows': 3,
+                'placeholder': 'Descreva as principais atividades desta função...',
             }),
             'salario_base': forms.NumberInput(attrs={
                 'class': 'form-control',
                 'step': '0.01',
-                'placeholder': '0.00'
+                'placeholder': '0,00',
+                'min': '0',
+            }),
+            'ativa': forms.CheckboxInput(attrs={
+                'class': 'form-check-input',
             }),
         }
+    
+    def clean_nome(self):
+        """Valida o nome da função"""
+        nome = self.cleaned_data.get('nome', '').strip()
+        if not nome:
+            raise forms.ValidationError('O nome da função é obrigatório.')
+        if len(nome) < 3:
+            raise forms.ValidationError('O nome deve ter pelo menos 3 caracteres.')
+        return nome
 
 
 class FuncionarioForm(forms.ModelForm):
@@ -1274,7 +1366,7 @@ class FornecedorForm(forms.ModelForm):
             'eori': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Código EORI para exportação'}),
             'regime_tributario': forms.Select(attrs={'class': 'form-select'}),
             'telefone': forms.TextInput(attrs={'class': 'form-control'}),
-            'celular': forms.TextInput(attrs={'class': 'form-control'}),
+            'celular': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '(00) 00000-0000'}),
             'email': forms.EmailInput(attrs={'class': 'form-control'}),
             'website': forms.URLInput(attrs={'class': 'form-control', 'placeholder': 'https://www.fornecedor.com'}),
             'cep': forms.TextInput(attrs={'class': 'form-control'}),
@@ -1639,7 +1731,65 @@ class CulturaForm(forms.ModelForm):
         return cultura
 
 
-
+class PragaForm(forms.ModelForm):
+    """Formulário de cadastro de pragas"""
+    
+    class Meta:
+        model = Praga
+        fields = ['nome_comum', 'nome_cientifico', 'ativa']
+        widgets = {
+            'nome_comum': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ex: Lagarta-do-cartucho, Mosca-branca, Ferrugem',
+                'required': True
+            }),
+            'nome_cientifico': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Nome científico (opcional)'
+            }),
+        }
+    
+    def __init__(self, *args, **kwargs):
+        self.empresa = kwargs.pop('empresa', None)
+        self.usuario = kwargs.pop('usuario', None)
+        super().__init__(*args, **kwargs)
+    
+    def clean_nome_comum(self):
+        """Valida se já existe praga com mesmo nome na empresa"""
+        nome_comum = self.cleaned_data.get('nome_comum')
+        
+        if nome_comum and self.empresa:
+            # Verifica duplicação (case-insensitive)
+            queryset = Praga.objects.filter(
+                empresa=self.empresa,
+                nome_comum__iexact=nome_comum
+            )
+            
+            # Se estiver editando, exclui o próprio registro da busca
+            if self.instance and self.instance.pk:
+                queryset = queryset.exclude(pk=self.instance.pk)
+            
+            if queryset.exists():
+                raise ValidationError(
+                    f'Já existe uma praga cadastrada com o nome "{nome_comum}" nesta empresa.'
+                )
+        
+        return nome_comum
+    
+    def save(self, commit=True):
+        """Salva praga com empresa e usuário"""
+        praga = super().save(commit=False)
+        
+        if self.empresa:
+            praga.empresa = self.empresa
+        
+        if self.usuario:
+            praga.cadastrado_por = self.usuario
+        
+        if commit:
+            praga.save()
+        
+        return praga
 
 
 """

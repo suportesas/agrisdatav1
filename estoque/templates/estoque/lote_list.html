@@ -1,0 +1,234 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Lotes em Estoque{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="mb-1">
+        <i class="bi bi-box2"></i> Lotes em Estoque
+        <button type="button" class="btn btn-sm btn-outline-info ms-2" data-bs-toggle="modal" data-bs-target="#helpModal">
+          <i class="bi bi-question-circle"></i> Ajuda
+        </button>
+      </h2>
+      <p class="text-muted">Controle de lotes e validades</p>
+    </div>
+    <a href="{% url 'estoque:lote_create' %}" class="btn btn-primary">
+      <i class="bi bi-plus-circle"></i> Novo Lote
+    </a>
+  </div>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-hover">
+          <thead>
+            <tr>
+              <th>Lote</th>
+              <th>Produto</th>
+              <th>Armazém</th>
+              <th>Local</th>
+              <th>Quantidade</th>
+              <th>Validade</th>
+              <th>Status</th>
+              <th style="width: 120px;">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for lote in lotes %}
+            <tr {% if lote.esta_vencido %}class="table-danger"{% elif lote.dias_para_vencer <= 30 %}class="table-warning"{% endif %}>
+              <td><strong>{{ lote.numero_lote }}</strong></td>
+              <td>{{ lote.produto.nome }}</td>
+              <td>{{ lote.armazem.nome }}</td>
+              <td>{{ lote.local_estocagem.codigo|default:"-" }}</td>
+              <td>{{ lote.quantidade_atual }} {{ lote.unidade_medida.sigla }}</td>
+              <td>
+                {{ lote.data_validade|date:"d/m/Y" }}
+                {% if lote.esta_vencido %}
+                  <br><span class="badge bg-danger">Vencido</span>
+                {% elif lote.dias_para_vencer <= 30 %}
+                  <br><span class="badge bg-warning">{{ lote.dias_para_vencer }} dias</span>
+                {% endif %}
+              </td>
+              <td>
+                <span class="badge bg-{% if lote.status == 'DISPONIVEL' %}success{% elif lote.status == 'BLOQUEADO' %}danger{% elif lote.status == 'VENCIDO' %}dark{% elif lote.status == 'ESGOTADO' %}secondary{% else %}warning{% endif %}">
+                  {{ lote.get_status_display }}
+                </span>
+              </td>
+              <td>
+                <div class="dropdown">
+                  <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                    <i class="bi bi-three-dots-vertical"></i>
+                  </button>
+                  <ul class="dropdown-menu dropdown-menu-end">
+                    <li><a class="dropdown-item" href="{% url 'estoque:lote_detail' lote.pk %}"><i class="bi bi-eye text-primary"></i> Visualizar</a></li>
+                    <li><a class="dropdown-item" href="{% url 'estoque:lote_edit' lote.pk %}"><i class="bi bi-pencil text-warning"></i> Editar</a></li>
+                  </ul>
+                </div>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="8" class="text-center text-muted py-4">
+                <i class="bi bi-inbox" style="font-size: 3rem;"></i>
+                <p class="mt-2">Nenhum lote cadastrado</p>
+                <a href="{% url 'estoque:lote_create' %}" class="btn btn-primary">
+                  <i class="bi bi-plus-circle"></i> Cadastrar Primeiro Lote
+                </a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de Ajuda -->
+<div class="modal fade" id="helpModal" tabindex="-1" aria-labelledby="helpModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-warning text-dark">
+        <h5 class="modal-title" id="helpModalLabel">
+          <i class="bi bi-question-circle-fill"></i> O que é um Lote?
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <h6 class="text-warning"><i class="bi bi-box2"></i> Conceito</h6>
+        <p>
+          O <strong>Lote</strong> representa uma quantidade específica de um produto que foi fabricada ou 
+          recebida em um determinado momento. Cada lote tem características únicas como data de fabricação, 
+          validade e origem.
+        </p>
+        
+        <hr>
+        
+        <h6 class="text-warning"><i class="bi bi-star-fill"></i> Importância</h6>
+        <ul>
+          <li><strong>Rastreabilidade:</strong> Identifica origem e histórico de cada produto</li>
+          <li><strong>Validade:</strong> Controla datas de vencimento e garante qualidade</li>
+          <li><strong>Recall:</strong> Em caso de problemas, é possível rastrear produtos específicos</li>
+          <li><strong>Compliance:</strong> Atende exigências legais e fiscais (especialmente alimentos e medicamentos)</li>
+          <li><strong>FIFO:</strong> Permite usar primeiro os produtos que vencem primeiro</li>
+        </ul>
+        
+        <hr>
+        
+        <h6 class="text-warning"><i class="bi bi-clipboard-check"></i> Informações do Lote</h6>
+        <div class="row">
+          <div class="col-md-6">
+            <div class="alert alert-light">
+              <strong>🔢 Número do Lote:</strong> Identificador único (ex: L-2024-001)
+            </div>
+            <div class="alert alert-light">
+              <strong>📦 Produto:</strong> Qual produto está neste lote
+            </div>
+            <div class="alert alert-light">
+              <strong>📍 Localização:</strong> Armazém e local específico
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="alert alert-light">
+              <strong>📅 Validade:</strong> Data de vencimento
+            </div>
+            <div class="alert alert-light">
+              <strong>📊 Quantidade:</strong> Atual e inicial
+            </div>
+            <div class="alert alert-light">
+              <strong>🏭 Origem:</strong> Fornecedor e nota fiscal
+            </div>
+          </div>
+        </div>
+        
+        <hr>
+        
+        <h6 class="text-warning"><i class="bi bi-lightbulb-fill"></i> Exemplo Prático</h6>
+        <div class="alert alert-warning">
+          <strong>Situação:</strong> Recebimento de defensivo agrícola<br><br>
+          <strong>Lote cadastrado:</strong>
+          <ul class="mb-0 mt-2">
+            <li><strong>Número:</strong> DEF-2024-0156</li>
+            <li><strong>Produto:</strong> Herbicida XYZ 500ml</li>
+            <li><strong>Armazém:</strong> Depósito de Insumos</li>
+            <li><strong>Local:</strong> Prateleira B-03</li>
+            <li><strong>Quantidade:</strong> 50 unidades</li>
+            <li><strong>Validade:</strong> 31/12/2025</li>
+            <li><strong>Fornecedor:</strong> Agroquímica ABC</li>
+            <li><strong>NF:</strong> 123456</li>
+          </ul>
+          <p class="mt-2 mb-0">
+            <strong>Benefício:</strong> Rastreabilidade total! Se houver problema, é possível identificar 
+            rapidamente quais produtos vieram deste lote.
+          </p>
+        </div>
+        
+        <hr>
+        
+        <h6 class="text-warning"><i class="bi bi-exclamation-triangle-fill"></i> Status do Lote</h6>
+        <div class="row">
+          <div class="col-md-6">
+            <div class="alert alert-success mb-2">
+              <strong>✅ Disponível:</strong> Pode ser usado normalmente
+            </div>
+            <div class="alert alert-danger mb-2">
+              <strong>🔒 Bloqueado:</strong> Suspeita de problema, aguardando análise
+            </div>
+            <div class="alert alert-dark mb-2">
+              <strong>⌛ Vencido:</strong> Data de validade ultrapassada
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="alert alert-secondary mb-2">
+              <strong>📭 Esgotado:</strong> Quantidade zerada
+            </div>
+            <div class="alert alert-warning mb-2">
+              <strong>🧪 Quarentena:</strong> Aguardando liberação de qualidade
+            </div>
+          </div>
+        </div>
+        
+        <hr>
+        
+        <h6 class="text-warning"><i class="bi bi-shield-fill-check"></i> Controle FIFO</h6>
+        <p>
+          O sistema alerta sobre lotes próximos do vencimento para garantir que sejam usados primeiro:
+        </p>
+        <ul>
+          <li><strong>Alerta Amarelo:</strong> Lotes que vencem em até 30 dias</li>
+          <li><strong>Alerta Vermelho:</strong> Lotes vencidos</li>
+        </ul>
+        
+        <hr>
+        
+        <h6 class="text-warning"><i class="bi bi-check-circle-fill"></i> Próximos Passos</h6>
+        <ol>
+          <li>Ao receber produtos, cadastre um novo lote</li>
+          <li>Informe sempre o número do lote (da embalagem ou NF)</li>
+          <li>Registre a validade corretamente</li>
+          <li>Indique o local exato onde está armazenado</li>
+          <li>Acompanhe o dashboard para alertas de vencimento</li>
+        </ol>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+        <a href="{% url 'estoque:lote_create' %}" class="btn btn-warning">
+          <i class="bi bi-plus-circle"></i> Criar Lote
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

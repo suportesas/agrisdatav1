@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import UnidadeMedida, Categoria, SubCategoria, Produto, ProdutoTributacao, NaturezaOperacao, ProdutoDocumento
+from .models import UnidadeMedida, Categoria, SubCategoria, Produto, ProdutoTributacao, NaturezaOperacao, ProdutoDocumento, ProdutoFornecedor
 
 
 @admin.register(UnidadeMedida)
@@ -40,13 +40,20 @@ class ProdutoTributacaoInline(admin.TabularInline):
     fields = ['cfop', 'descricao', 'icms_situacao_tributaria', 'icms_aliquota', 'padrao', 'ativo']
 
 
+class ProdutoFornecedorInline(admin.TabularInline):
+    model = ProdutoFornecedor
+    extra = 1
+    fields = ['fornecedor', 'codigo_fornecedor', 'preco_compra', 'prazo_entrega', 'quantidade_minima', 'fornecedor_preferencial', 'ativo']
+    autocomplete_fields = ['fornecedor']
+
+
 @admin.register(Produto)
 class ProdutoAdmin(admin.ModelAdmin):
     list_display = ['codigo', 'nome', 'categoria', 'preco_venda', 'estoque_atual', 'ativo']
     list_filter = ['categoria', 'tipo_produto', 'categoria_agricola', 'ativo']
     search_fields = ['codigo', 'nome', 'codigo_barras']
     ordering = ['nome']
-    inlines = [ProdutoTributacaoInline]
+    inlines = [ProdutoTributacaoInline, ProdutoFornecedorInline]
     
     fieldsets = (
         ('Identificação', {

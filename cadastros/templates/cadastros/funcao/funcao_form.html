@@ -1,20 +1,205 @@
 {% extends 'base.html' %}
+{% load static %}
+
 {% block title %}{{ action }} Função | ERP Agrícola{% endblock %}
 
 {% block content %}
-<div class="container py-4">
-  <h2>{{ action }} Função</h2>
-  <form method="post">
-    {% csrf_token %}
-    {{ form.non_field_errors }}
-    <div class="mb-3">{{ form.nome.label_tag }}{{ form.nome }}</div>
-    <div class="mb-3">{{ form.descricao.label_tag }}{{ form.descricao }}</div>
-    <div class="mb-3">{{ form.salario_base.label_tag }}{{ form.salario_base }}</div>
-    <div class="form-check mb-3">{{ form.ativa }} <label class="form-check-label">Ativa</label></div>
-    <div class="mt-2">
-      <button class="btn btn-primary">Salvar</button>
-      <a href="{% url 'cadastros:funcao_list' %}" class="btn btn-link">Cancelar</a>
+<div class="container-fluid px-4 py-4">
+  <!-- Breadcrumb -->
+  <nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}"><i class="bi bi-house-door"></i> Início</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'cadastros:funcao_list' %}">Funções</a></li>
+      <li class="breadcrumb-item active">{{ action }} Função</li>
+    </ol>
+  </nav>
+
+  <div class="row justify-content-center">
+    <div class="col-xl-8 col-lg-10">
+      <!-- Card Principal -->
+      <div class="card shadow-sm border-0">
+        <div class="card-header bg-primary text-white py-3">
+          <div class="d-flex align-items-center">
+            <i class="bi bi-person-badge fs-4 me-2"></i>
+            <div>
+              <h4 class="mb-0">{{ action }} Função de Funcionário</h4>
+              {% if request.user.empresa %}
+              <small class="opacity-75">
+                <i class="bi bi-building"></i> {{ request.user.empresa.nome }}
+              </small>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <div class="card-body p-4">
+          <!-- Alert Multi-tenant -->
+          {% if request.user.empresa %}
+          <div class="alert alert-primary border-0 d-flex align-items-start mb-4">
+            <i class="bi bi-building fs-5 me-2"></i>
+            <div>
+              <strong>Função exclusiva da sua empresa</strong>
+              <p class="mb-0 small">Esta função/cargo será criada apenas para <strong>{{ request.user.empresa.nome }}</strong> e será utilizada no cadastro de funcionários.</p>
+            </div>
+          </div>
+          {% endif %}
+
+          <form method="post" id="funcaoForm">
+            {% csrf_token %}
+            
+            <!-- Erros Gerais -->
+            {% if form.non_field_errors %}
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+              <i class="bi bi-exclamation-triangle me-2"></i>
+              {{ form.non_field_errors }}
+              <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endif %}
+
+            <!-- Nome da Função -->
+            <div class="mb-4">
+              <label for="{{ form.nome.id_for_label }}" class="form-label fw-semibold">
+                <i class="bi bi-tag text-primary me-1"></i>
+                {{ form.nome.label }}
+                <span class="text-danger">*</span>
+              </label>
+              {{ form.nome }}
+              {% if form.nome.help_text %}
+              <div class="form-text">
+                <i class="bi bi-lightbulb text-warning"></i> {{ form.nome.help_text }}
+              </div>
+              {% endif %}
+              {% if form.nome.errors %}
+              <div class="invalid-feedback d-block">
+                <i class="bi bi-x-circle"></i> {{ form.nome.errors.0 }}
+              </div>
+              {% endif %}
+            </div>
+
+            <!-- Descrição -->
+            <div class="mb-4">
+              <label for="{{ form.descricao.id_for_label }}" class="form-label fw-semibold">
+                <i class="bi bi-file-text text-primary me-1"></i>
+                {{ form.descricao.label }}
+              </label>
+              {{ form.descricao }}
+              {% if form.descricao.help_text %}
+              <div class="form-text">
+                <i class="bi bi-lightbulb text-warning"></i> {{ form.descricao.help_text }}
+              </div>
+              {% endif %}
+              {% if form.descricao.errors %}
+              <div class="invalid-feedback d-block">
+                <i class="bi bi-x-circle"></i> {{ form.descricao.errors.0 }}
+              </div>
+              {% endif %}
+            </div>
+
+            <!-- Salário Base -->
+            <div class="mb-4">
+              <label for="{{ form.salario_base.id_for_label }}" class="form-label fw-semibold">
+                <i class="bi bi-cash text-primary me-1"></i>
+                {{ form.salario_base.label }}
+              </label>
+              <div class="input-group">
+                <span class="input-group-text">R$</span>
+                {{ form.salario_base }}
+              </div>
+              {% if form.salario_base.help_text %}
+              <div class="form-text">
+                <i class="bi bi-lightbulb text-warning"></i> {{ form.salario_base.help_text }}
+              </div>
+              {% endif %}
+              {% if form.salario_base.errors %}
+              <div class="invalid-feedback d-block">
+                <i class="bi bi-x-circle"></i> {{ form.salario_base.errors.0 }}
+              </div>
+              {% endif %}
+            </div>
+
+            <!-- Função Ativa -->
+            <div class="mb-4">
+              <div class="form-check form-switch">
+                {{ form.ativa }}
+                <label class="form-check-label" for="{{ form.ativa.id_for_label }}">
+                  <i class="bi bi-toggle-on text-success me-1"></i>
+                  {{ form.ativa.label }}
+                </label>
+              </div>
+              <small class="text-muted ms-4">Funções inativas não aparecem nas opções de seleção</small>
+            </div>
+
+            <!-- Exemplos -->
+            <div class="card bg-light border-0 mb-4">
+              <div class="card-body">
+                <h6 class="fw-semibold mb-3">
+                  <i class="bi bi-lightbulb text-warning me-1"></i>
+                  Exemplos de Funções Agrícolas:
+                </h6>
+                <div class="row g-2">
+                  <div class="col-md-6">
+                    <div class="p-2 bg-white rounded border">
+                      <strong class="text-primary">Motorista</strong>
+                      <p class="small text-muted mb-0">Transporte de cargas e insumos</p>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="p-2 bg-white rounded border">
+                      <strong class="text-primary">Tratorista</strong>
+                      <p class="small text-muted mb-0">Operação de tratores e implementos</p>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="p-2 bg-white rounded border">
+                      <strong class="text-primary">Colhedor</strong>
+                      <p class="small text-muted mb-0">Colheita manual de culturas</p>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="p-2 bg-white rounded border">
+                      <strong class="text-primary">Supervisor de Campo</strong>
+                      <p class="small text-muted mb-0">Supervisão de equipes rurais</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Botões -->
+            <div class="d-flex gap-2 justify-content-between align-items-center pt-3 border-top">
+              <a href="{% url 'cadastros:funcao_list' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Voltar
+              </a>
+              <button type="submit" class="btn btn-primary btn-lg px-4">
+                <i class="bi bi-check-circle"></i> Salvar Função
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Footer -->
+        <div class="card-footer bg-light text-muted small">
+          <i class="bi bi-info-circle"></i>
+          Esta função poderá ser atribuída aos funcionários no cadastro de colaboradores.
+        </div>
+      </div>
     </div>
-  </form>
+  </div>
 </div>
+
+<style>
+  .form-control:focus, .form-select:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.15);
+  }
+  
+  .btn {
+    transition: all 0.2s;
+  }
+  
+  .btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+</style>
 {% endblock %}

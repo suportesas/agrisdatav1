@@ -1,3 +1,20 @@
+# Método utilitário para recalcular estoque do produto
+from decimal import Decimal
+from django.db import models
+
+def recalcular_estoque(self):
+    """
+    Recalcula o estoque_atual baseado em todos os lotes
+    Útil para ajustes manuais ou correções
+    """
+    total = self.lotes.filter(
+        status__in=['DISPONIVEL', 'BLOQUEADO']
+    ).aggregate(total=models.Sum('quantidade_atual'))['total']
+    self.estoque_atual = Decimal(total) if total is not None else Decimal('0.000')
+    self.save(update_fields=['estoque_atual'])
+
+# Adicione ao modelo Produto:
+setattr(models.Model, 'recalcular_estoque', recalcular_estoque)
 from django.db import models
 from cadastros.models import NCM, Fornecedor, CFOP
 
@@ -298,6 +315,10 @@ class Produto(models.Model):
         return []
     
     def save(self, *args, **kwargs):
+        # Normalizar nome: Title Case e remover espaços extras
+        if self.nome:
+            self.nome = self.nome.strip().title()
+        
         # Gerar código automático se não foi fornecido
         if not self.codigo:
             self.codigo = self._gerar_codigo()
@@ -343,6 +364,94 @@ class Produto(models.Model):
             return self.tributacoes.get(cfop=cfop)
         except ProdutoTributacao.DoesNotExist:
             return None
+
+
+class ProdutoFornecedor(models.Model):
+    """
+    Relacionamento M2M entre Produto e Fornecedor com informações adicionais
+    Permite registrar código específico do fornecedor e condições comerciais
+    """
+    # Relacionamentos
+    produto = models.ForeignKey(
+        Produto, 
+        on_delete=models.CASCADE, 
+        related_name='fornecedores_relacionados',
+        verbose_name='Produto'
+    )
+    fornecedor = models.ForeignKey(
+        Fornecedor, 
+        on_delete=models.CASCADE, 
+        related_name='produtos_relacionados',
+        verbose_name='Fornecedor'
+    )
+    
+    # Identificação do produto no fornecedor
+    codigo_fornecedor = models.CharField(
+        max_length=100,
+        verbose_name='Código no Fornecedor',
+        help_text='Código que aparece na nota fiscal do fornecedor'
+    )
+    
+    # Informações comerciais
+    preco_compra = models.DecimalField(
+        max_digits=15, 
+        decimal_places=2, 
+        default=0,
+        verbose_name='Preço de Compra'
+    )
+    prazo_entrega = models.IntegerField(
+        blank=True, 
+        null=True,
+        verbose_name='Prazo de Entrega (dias)'
+    )
+    quantidade_minima = models.DecimalField(
+        max_digits=15, 
+        decimal_places=3, 
+        default=0,
+        verbose_name='Quantidade Mínima',
+        help_text='Quantidade mínima de compra'
+    )
+    
+    # Preferências
+    fornecedor_preferencial = models.BooleanField(
+        default=False,
+        verbose_name='Fornecedor Preferencial',
+        help_text='Marque se este é o fornecedor preferencial para este produto'
+    )
+    
+    # Observações
+    observacoes = models.TextField(
+        blank=True,
+        verbose_name='Observações'
+    )
+    
+    # Status
+    ativo = models.BooleanField(
+        default=True,
+        verbose_name='Ativo'
+    )
+    
+    # Auditoria
+    cadastrado_por = models.ForeignKey(
+        'usuarios.Usuario',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='produtos_fornecedores_cadastrados',
+        verbose_name='Cadastrado por'
+    )
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Criado em')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='Atualizado em')
+    
+    class Meta:
+        verbose_name = 'Produto-Fornecedor'
+        verbose_name_plural = 'Produtos-Fornecedores'
+        ordering = ['-fornecedor_preferencial', 'fornecedor__nome']
+        unique_together = ['produto', 'fornecedor']
+    
+    def __str__(self):
+        preferencial = " ⭐" if self.fornecedor_preferencial else ""
+        return f"{self.produto.codigo} - {self.fornecedor.nome}{preferencial}"
 
 
 class ProdutoTributacao(models.Model):

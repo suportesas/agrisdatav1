@@ -64,6 +64,13 @@ urlpatterns = [
     path('culturas/<int:pk>/editar/', views.cultura_update, name='cultura_update'),
     path('culturas/<int:pk>/excluir/', views.cultura_delete, name='cultura_delete'),
 
+    # ==================== PRAGAS ====================
+    path('pragas/', views.praga_list, name='praga_list'),
+    path('pragas/nova/', views.praga_create, name='praga_create'),
+    path('pragas/<int:pk>/', views.praga_detail, name='praga_detail'),
+    path('pragas/<int:pk>/editar/', views.praga_update, name='praga_update'),
+    path('pragas/<int:pk>/excluir/', views.praga_delete, name='praga_delete'),
+
     
     # ====================  Áreas ====================== 
     path('areas/', views.area_list, name='area_list'),
@@ -185,6 +192,14 @@ urlpatterns = [
     path('ncm/<int:pk>/editar/', views.ncm_update, name='ncm_update'),
     path('ncm/<int:pk>/excluir/', views.ncm_delete, name='ncm_delete'),
     path('api/ncm/autocomplete/', views.ncm_autocomplete, name='ncm_autocomplete'),
+    path('ncm/importar/', views.ncm_import, name='ncm_import'),
+
+    # CFOP (Código Fiscal de Operações e Prestações)
+    path('cfop/', views.cfop_list, name='cfop_list'),
+    path('cfop/novo/', views.cfop_create, name='cfop_create'),
+    path('cfop/importar/', views.cfop_import, name='cfop_import'),
+    path('cfop/<int:pk>/editar/', views.cfop_update, name='cfop_update'),
+    path('cfop/<int:pk>/excluir/', views.cfop_delete, name='cfop_delete'),
 
     # Cliente: endereços
     path('clientes/<int:cliente_pk>/enderecos/novo/', views.cliente_endereco_create, name='cliente_endereco_create'),

@@ -1,0 +1,184 @@
+                    <p><strong>Observações:</strong></p>
+                    <p>{{ cotacao.observacoes }}</p>
+                    {% endif %}
+                    
+                    {% if cotacao.condicoes_pagamento %}
+                    <p><strong>Condições de Pagamento:</strong></p>
+                    <p>{{ cotacao.condicoes_pagamento }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Resumo</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <i class="bi bi-box-seam text-primary me-2"></i>
+                        <strong>{{ cotacao.total_itens }}</strong> produto{{ cotacao.total_itens|pluralize }}
+                    </div>
+                    <div class="mb-3">
+                        <i class="bi bi-shop text-success me-2"></i>
+                        <strong>{{ cotacao.total_fornecedores }}</strong> fornecedor{{ cotacao.total_fornecedores|pluralize:"es" }}
+                    </div>
+                    <div class="mb-3">
+                        <i class="bi bi-envelope-check text-info me-2"></i>
+                        <strong>{{ cotacao.propostas.count }}</strong> proposta{{ cotacao.propostas.count|pluralize }}
+                    </div>
+                    
+                    {% if cotacao.total_propostas_selecionadas > 0 %}
+                    <hr>
+                    <div class="alert alert-success mb-0">
+                        <i class="bi bi-check-circle-fill me-2"></i>
+                        <strong>{{ cotacao.total_propostas_selecionadas }}</strong> proposta{{ cotacao.total_propostas_selecionadas|pluralize }} selecionada{{ cotacao.total_propostas_selecionadas|pluralize }}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Fornecedores Participantes -->
+    {% if fornecedores %}
+    <div class="card mb-4">
+        <div class="card-header bg-light">
+            <h5 class="mb-0">
+                <i class="bi bi-shop"></i> Fornecedores Participantes
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                {% for cf in fornecedores %}
+                <div class="col-md-4 mb-2">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-building text-success me-2"></i>
+                        <div>
+                            <strong>{{ cf.fornecedor.nome }}</strong>
+                            {% if cf.email_enviado %}
+                            <br><small class="text-muted">
+                                <i class="bi bi-envelope-check"></i> E-mail enviado
+                            </small>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Itens e Propostas -->
+    <div class="card">
+        <div class="card-header bg-light">
+            <h5 class="mb-0">
+                <i class="bi bi-list-check"></i> Itens e Propostas
+            </h5>
+        </div>
+        <div class="card-body">
+            {% for item_info in itens_data %}
+            <div class="mb-4 {% if not forloop.last %}border-bottom pb-4{% endif %}">
+                <!-- Produto -->
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div>
+                        <h5 class="mb-1">{{ item_info.item.produto.nome }}</h5>
+                        <p class="text-muted mb-1">
+                            Quantidade: <strong>{{ item_info.item.quantidade }} {{ item_info.item.unidade_medida.sigla }}</strong>
+                        </p>
+                        {% if item_info.item.especificacao %}
+                        <p class="text-muted mb-0">
+                            <small>{{ item_info.item.especificacao }}</small>
+                        </p>
+                        {% endif %}
+                    </div>
+                    
+                    {% if item_info.preco_medio %}
+                    <div class="text-end">
+                        <small class="text-muted d-block">Estatísticas</small>
+                        <div class="badge bg-info">Menor: R$ {{ item_info.menor_preco }}</div>
+                        <div class="badge bg-secondary">Média: R$ {{ item_info.preco_medio|floatformat:2 }}</div>
+                        <div class="badge bg-warning text-dark">Maior: R$ {{ item_info.maior_preco }}</div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Botão para adicionar proposta -->
+                <div class="mb-2">
+                    <a href="{% url 'compras:adicionar_proposta' cotacao.pk item_info.item.pk %}"
+                       class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-plus"></i> Adicionar/Editar Proposta
+                    </a>
+                </div>
+                <!-- Propostas -->
+                {% if item_info.propostas %}
+                <div class="table-responsive">
+                    <table class="table table-hover table-sm">
+                        <thead>
+                            <tr>
+                                <th>Fornecedor</th>
+                                <th class="text-end">Preço Unit.</th>
+                                <th class="text-end">Total</th>
+                                <th class="text-center">Prazo</th>
+                                <th>Condições</th>
+                                <th class="text-center">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for proposta in item_info.propostas %}
+                            <tr {% if proposta.selecionada %}class="table-success"{% elif proposta.melhor_preco %}class="table-info"{% endif %}>
+                                <td>
+                                    <strong>{{ proposta.fornecedor.nome }}</strong>
+                                </td>
+                                <td class="text-end">
+                                    R$ {{ proposta.preco_unitario }}
+                                </td>
+                                <td class="text-end">
+                                    <strong>R$ {{ proposta.preco_total|floatformat:2 }}</strong>
+                                </td>
+                                <td class="text-center">
+                                    {{ proposta.prazo_entrega }} dias
+                                </td>
+                                <td>
+                                    {{ proposta.condicao_pagamento|default:"-" }}
+                                </td>
+                                <td class="text-center">
+                                    {% if proposta.selecionada %}
+                                        <span class="badge bg-success">
+                                            <i class="bi bi-check-circle-fill"></i> Selecionada
+                                        </span>
+                                    {% elif proposta.melhor_preco %}
+                                        <span class="badge bg-info">
+                                            <i class="bi bi-star-fill"></i> Melhor Preço
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Não selecionada</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% if proposta.observacoes %}
+                            <tr>
+                                <td colspan="6" class="bg-light">
+                                    <small><strong>Observações:</strong> {{ proposta.observacoes }}</small>
+                                </td>
+                            </tr>
+                            {% endif %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    Nenhuma proposta recebida para este item.
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+</div>
+{% endblock %}

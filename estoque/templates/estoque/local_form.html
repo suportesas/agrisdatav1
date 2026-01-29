@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{% if form.instance.pk %}Editar{% else %}Novo{% endif %} Local de Estocagem{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="mb-1">
+        <i class="bi bi-pin-map"></i> 
+        {% if form.instance.pk %}Editar Local{% else %}Novo Local de Estocagem{% endif %}
+      </h2>
+      <p class="text-muted">Preencha os dados do local</p>
+    </div>
+    <a href="{% url 'estoque:local_list' %}" class="btn btn-secondary">
+      <i class="bi bi-arrow-left"></i> Voltar
+    </a>
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <form method="post">
+        {% csrf_token %}
+        
+        {% if form.errors %}
+          <div class="alert alert-danger">
+            <strong>Erros encontrados:</strong>
+            <ul class="mb-0">
+              {% for field in form %}
+                {% for error in field.errors %}
+                  <li>{{ field.label }}: {{ error }}</li>
+                {% endfor %}
+              {% endfor %}
+            </ul>
+          </div>
+        {% endif %}
+
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label class="form-label">{{ form.armazem.label }} *</label>
+            {{ form.armazem }}
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label">{{ form.codigo.label }} *</label>
+            {{ form.codigo }}
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-12 mb-3">
+            <label class="form-label">{{ form.descricao.label }} *</label>
+            {{ form.descricao }}
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label class="form-label">{{ form.tipo.label }} *</label>
+            {{ form.tipo }}
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label">{{ form.capacidade_kg.label }}</label>
+            {{ form.capacidade_kg }}
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <div class="form-check">
+            {{ form.ativo }}
+            <label class="form-check-label" for="{{ form.ativo.id_for_label }}">
+              {{ form.ativo.label }}
+            </label>
+          </div>
+        </div>
+
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-check-circle"></i> Salvar
+          </button>
+          <a href="{% url 'estoque:local_list' %}" class="btn btn-secondary">
+            <i class="bi bi-x-circle"></i> Cancelar
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,360 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Recebimento {{ recebimento.numero }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <!-- Fluxo Visual do Processo de Compra -->
+    {% include 'compras/includes/fluxo_compras.html' with etapa_atual='recebimento' solicitacao=recebimento.pedido.cotacao.solicitacao cotacao=recebimento.pedido.cotacao pedido=recebimento.pedido recebimento=recebimento %}
+    
+    <!-- Instruções para esta etapa -->
+    {% include 'compras/includes/instrucoes_etapa.html' with etapa='recebimento' %}
+    
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col">
+            <h2>
+                <i class="bi bi-inbox-fill me-2"></i>
+                Recebimento {{ recebimento.numero }}
+            </h2>
+            <p class="text-muted">
+                {% if recebimento.pedido %}
+                Pedido: 
+                <a href="{% url 'compras:pedido_detail' recebimento.pedido.pk %}">
+                    {{ recebimento.pedido.numero }}
+                </a>
+                {% else %}
+                <span class="badge bg-warning text-dark">
+                    <i class="bi bi-box-arrow-in-down me-1"></i>
+                    Entrada Direta (sem processo de pedido/aprovação)
+                </span>
+                {% endif %}
+            </p>
+        </div>
+        <div class="col-auto">
+            {% if recebimento.status == 'PENDENTE' %}
+                <a href="{% url 'compras:recebimento_conferir' recebimento.pk %}" class="btn btn-success">
+                    <i class="bi bi-check-circle me-2"></i>
+                    Conferir Recebimento
+                </a>
+            {% elif recebimento.status == 'CONFERIDO' %}
+                <form method="post" action="{% url 'compras:recebimento_entrada_estoque' recebimento.pk %}" style="display:inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-box-arrow-in-down me-2"></i>
+                        Dar entrada no estoque
+                    </button>
+                </form>
+            {% elif recebimento.status == 'FINALIZADO' %}
+                <a href="{% url 'estoque:estoque_produtos_list' %}" class="btn btn-outline-success">
+                    <i class="bi bi-boxes me-2"></i>
+                    Ver estoque
+                </a>
+            {% endif %}
+            <a href="{% url 'compras:recebimento_list' %}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left me-2"></i>
+                Voltar
+            </a>
+        </div>
+    </div>
+
+    <!-- Fluxo de Estados do Recebimento -->
+    <div class="card mb-4 border-primary">
+        <div class="card-body p-3">
+            <div class="d-flex align-items-center justify-content-between position-relative">
+                <!-- Linha de conexão -->
+                <div class="position-absolute top-50 start-0 w-100" style="height: 2px; background: #dee2e6; z-index: 0;"></div>
+                
+                <!-- Etapa 1: PENDENTE -->
+                <div class="text-center position-relative" style="z-index: 1; flex: 1;">
+                    <div class="mb-2">
+                        {% if recebimento.status == 'PENDENTE' %}
+                        <span class="badge rounded-circle bg-warning text-dark p-3" style="width: 50px; height: 50px; display: inline-flex; align-items: center; justify-content: center; font-size: 1.2rem;">
+                            <i class="bi bi-clock"></i>
+                        </span>
+                        {% else %}
+                        <span class="badge rounded-circle bg-success p-3" style="width: 50px; height: 50px; display: inline-flex; align-items: center; justify-content: center; font-size: 1.2rem;">
+                            <i class="bi bi-check"></i>
+                        </span>
+                        {% endif %}
+                    </div>
+                    <small class="fw-bold d-block">1. PENDENTE</small>
+                    <small class="text-muted">Aguardando conferência</small>
+                </div>
+                
+                <!-- Etapa 2: CONFERIDO -->
+                <div class="text-center position-relative" style="z-index: 1; flex: 1;">
+                    <div class="mb-2">
+                        {% if recebimento.status == 'CONFERIDO' %}
+                        <span class="badge rounded-circle bg-primary p-3" style="width: 50px; height: 50px; display: inline-flex; align-items: center; justify-content: center; font-size: 1.2rem;">
+                            <i class="bi bi-check-circle"></i>
+                        </span>
+                        {% elif recebimento.status == 'FINALIZADO' %}
+                        <span class="badge rounded-circle bg-success p-3" style="width: 50px; height: 50px; display: inline-flex; align-items: center; justify-content: center; font-size: 1.2rem;">
+                            <i class="bi bi-check"></i>
+                        </span>
+                        {% else %}
+                        <span class="badge rounded-circle bg-secondary p-3" style="width: 50px; height: 50px; display: inline-flex; align-items: center; justify-content: center; font-size: 1.2rem; opacity: 0.5;">
+                            <i class="bi bi-check-circle"></i>
+                        </span>
+                        {% endif %}
+                    </div>
+                    <small class="fw-bold d-block">2. CONFERIDO</small>
+                    <small class="text-muted">Pronto para entrada</small>
+                </div>
+                
+                <!-- Etapa 3: FINALIZADO -->
+                <div class="text-center position-relative" style="z-index: 1; flex: 1;">
+                    <div class="mb-2">
+                        {% if recebimento.status == 'FINALIZADO' %}
+                        <span class="badge rounded-circle bg-success p-3" style="width: 50px; height: 50px; display: inline-flex; align-items: center; justify-content: center; font-size: 1.2rem;">
+                            <i class="bi bi-box-seam"></i>
+                        </span>
+                        {% else %}
+                        <span class="badge rounded-circle bg-secondary p-3" style="width: 50px; height: 50px; display: inline-flex; align-items: center; justify-content: center; font-size: 1.2rem; opacity: 0.5;">
+                            <i class="bi bi-box-seam"></i>
+                        </span>
+                        {% endif %}
+                    </div>
+                    <small class="fw-bold d-block">3. FINALIZADO</small>
+                    <small class="text-muted">No estoque</small>
+                </div>
+            </div>
+            
+            <!-- Ação atual -->
+            {% if recebimento.status == 'PENDENTE' %}
+            <div class="alert alert-warning mt-3 mb-0 d-flex align-items-center gap-2">
+                <i class="bi bi-arrow-right-circle fs-4"></i>
+                <div>
+                    <strong>Próxima ação:</strong> Clique em <strong>"Conferir Recebimento"</strong> para validar os itens recebidos.
+                </div>
+            </div>
+            {% elif recebimento.status == 'CONFERIDO' %}
+            <div class="alert alert-primary mt-3 mb-0 d-flex align-items-center gap-2">
+                <i class="bi bi-arrow-right-circle fs-4"></i>
+                <div>
+                    <strong>Próxima ação:</strong> Clique em <strong>"Dar entrada no estoque"</strong> para atualizar o estoque.
+                </div>
+            </div>
+            {% elif recebimento.status == 'FINALIZADO' %}
+            <div class="alert alert-success mt-3 mb-0 d-flex align-items-center gap-2">
+                <i class="bi bi-check-circle fs-4"></i>
+                <div>
+                    <strong>Concluído!</strong> Os itens já foram lançados no estoque.
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Dados da Nota Fiscal -->
+    <div class="card mb-4">
+        <div class="card-header bg-info text-white">
+            <h5 class="mb-0">
+                <i class="bi bi-receipt me-2"></i>
+                Dados da Nota Fiscal
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3">
+                    <strong>Número NF-e:</strong><br>
+                    {{ recebimento.nota_fiscal }}
+                </div>
+                <div class="col-md-2">
+                    <strong>Série:</strong><br>
+                    {{ recebimento.serie_nota }}
+                </div>
+                <div class="col-md-4">
+                    <strong>Chave de Acesso:</strong><br>
+                    <small class="font-monospace">{{ recebimento.chave_nfe|default:"Não informada" }}</small>
+                </div>
+                <div class="col-md-3">
+                    <strong>Data Emissão:</strong><br>
+                    {{ recebimento.data_emissao_nf|date:"d/m/Y" }}
+                </div>
+            </div>
+            <hr>
+            <div class="row">
+                <div class="col-md-3">
+                    <strong>Data Recebimento:</strong><br>
+                    {{ recebimento.data_recebimento|date:"d/m/Y" }}
+                </div>
+                <div class="col-md-3">
+                    <strong>Hora Recebimento:</strong><br>
+                    {{ recebimento.hora_recebimento|time:"H:i" }}
+                </div>
+                <div class="col-md-3">
+                    <strong>Valor Total NF:</strong><br>
+                    R$ {{ recebimento.valor_total_nf|floatformat:2 }}
+                </div>
+                <div class="col-md-3">
+                    <strong>Recebido por:</strong><br>
+                    {{ recebimento.recebido_por.get_full_name }}
+                </div>
+            </div>
+            
+            {% if recebimento.arquivo_nfe %}
+            <hr>
+            <div class="row">
+                <div class="col">
+                    <strong>Arquivo XML:</strong><br>
+                    <a href="{{ recebimento.arquivo_nfe.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-file-earmark-code me-1"></i>
+                        Baixar XML
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Informações do Pedido -->
+    {% if recebimento.pedido %}
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">
+                <i class="bi bi-file-earmark-text me-2"></i>
+                Informações do Pedido
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4">
+                    <strong>Número do Pedido:</strong><br>
+                    <a href="{% url 'compras:pedido_detail' recebimento.pedido.pk %}">
+                        {{ recebimento.pedido.numero }}
+                    </a>
+                </div>
+                <div class="col-md-4">
+                    <strong>Fornecedor:</strong><br>
+                    {{ recebimento.pedido.fornecedor.nome }}
+                </div>
+                <div class="col-md-4">
+                    <strong>Data do Pedido:</strong><br>
+                    {{ recebimento.pedido.data_pedido|date:"d/m/Y" }}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="card mb-4 border-warning">
+        <div class="card-header bg-warning">
+            <h5 class="mb-0">
+                <i class="bi bi-box-arrow-in-down me-2"></i>
+                Entrada Direta
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <strong>Fornecedor:</strong><br>
+                    {{ recebimento.fornecedor.nome }}
+                </div>
+                <div class="col-md-6">
+                    <div class="alert alert-warning mb-0 alerta-fixa-entrada-direta" style="position:relative;">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <strong>Entrada registrada sem processo de pedido/aprovação</strong><br>
+                        Esta mercadoria foi recebida diretamente, sem um pedido de compra formal.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Itens Recebidos -->
+    <div class="card mb-4">
+        <div class="card-header bg-success text-white">
+            <h5 class="mb-0">
+                <i class="bi bi-box-seam me-2"></i>
+                Itens Recebidos
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Produto</th>
+                            <th class="text-end">Qtd. Recebida</th>
+                            <th>Local Estoque</th>
+                            <th>Lote</th>
+                            <th>Fabricação</th>
+                            <th>Validade</th>
+                            <th>Observações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in recebimento.itens.all %}
+                        <tr>
+                            <td>
+                                {% if item.item_pedido %}
+                                    {{ item.item_pedido.produto.nome }}
+                                {% else %}
+                                    {{ item.produto.nome }}
+                                {% endif %}
+                            </td>
+                            <td class="text-end">
+                                <strong>
+                                    {{ item.quantidade_recebida }}
+                                    {% if item.item_pedido %}
+                                        {{ item.item_pedido.unidade_medida.sigla }}
+                                    {% else %}
+                                        {{ item.unidade_medida.sigla }}
+                                    {% endif %}
+                                </strong>
+                            </td>
+                            <td>{{ item.local_estoque.nome }}</td>
+                            <td>{{ item.lote|default:"-" }}</td>
+                            <td>{{ item.data_fabricacao|date:"d/m/Y"|default:"-" }}</td>
+                            <td>{{ item.data_validade|date:"d/m/Y"|default:"-" }}</td>
+                            <td>
+                                <small>{{ item.observacoes|default:"-" }}</small>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Observações e Divergências -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="bi bi-chat-left-text me-2"></i>
+                Observações e Divergências
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="mb-3">
+                <strong>Observações:</strong>
+                <p class="mb-0">{{ recebimento.observacoes|default:'Nenhuma observação registrada.' }}</p>
+            </div>
+            <div class="alert alert-warning mb-0 alerta-fixa-divergencia">
+                <strong><i class="bi bi-exclamation-triangle me-2"></i>Divergências:</strong>
+                <p class="mb-0">{{ recebimento.divergencias|default:'Nenhuma divergência registrada.' }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Auditoria -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row text-muted small">
+                <div class="col-md-6">
+                    <i class="bi bi-calendar-plus me-1"></i>
+                    Cadastrado em: {{ recebimento.data_cadastro|date:"d/m/Y H:i" }}
+                </div>
+                <div class="col-md-6 text-end">
+                    <i class="bi bi-calendar-check me-1"></i>
+                    Última atualização: {{ recebimento.data_atualizacao|date:"d/m/Y H:i" }}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

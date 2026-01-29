@@ -1,0 +1,146 @@
+{% extends 'base.html' %}
+
+{% block title %}Pedidos de Compra{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-file-earmark-check"></i> Pedidos de Compra</h2>
+    </div>
+
+    <div class="alert alert-info alert-dismissible fade show d-flex align-items-start gap-3 alerta-fixa-orientacao" role="alert">
+        <i class="bi bi-info-circle mt-1"></i>
+        <div>
+            <strong>Próximo passo:</strong> abra um pedido e clique em <strong>“Receber Mercadorias”</strong> para registrar a entrada no estoque.
+            Se ainda não há pedidos, volte à cotação e gere o pedido vencedor.
+            <div class="mt-2">
+                <a class="btn btn-sm btn-outline-primary" href="{% url 'compras:recebimento_list' %}">
+                    <i class="bi bi-box-arrow-in-down"></i> Ir para Recebimentos
+                </a>
+            </div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
+    </div>
+    
+    <!-- Filtros -->
+    <div class="card mb-3">
+        <div class="card-body">
+            <form method="get" class="row g-2">
+                <div class="col-md-3">
+                    <select name="status" class="form-select" onchange="this.form.submit()">
+                        <option value="">Todos os Status</option>
+                        {% for value, label in status_choices %}
+                        <option value="{{ value }}" {% if request.GET.status == value %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Lista -->
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Número</th>
+                            <th>Fornecedor</th>
+                            <th>Data Pedido</th>
+                            <th>Entrega Prevista</th>
+                            <th>Valor Total</th>
+                            <th>Status</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for pedido, status_recebimento in pedidos_recebimento %}
+                        <tr>
+                            <td>
+                                <a href="{% url 'compras:pedido_detail' pedido.pk %}">
+                                    <strong>{{ pedido.numero }}</strong>
+                                </a>
+                            </td>
+                            <td>{{ pedido.fornecedor.nome_fantasia }}</td>
+                            <td>{{ pedido.data_pedido|date:"d/m/Y H:i" }}</td>
+                            <td>
+                                {% if pedido.data_entrega_prevista %}
+                                {{ pedido.data_entrega_prevista|date:"d/m/Y" }}
+                                {% else %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>R$ {{ pedido.valor_final|floatformat:2 }}</td>
+                            <td>
+                                {% if status_recebimento == 'RECEBIDO_TOTAL' %}
+                                    <span class="badge bg-teal text-white" style="background-color:#20c997;">Recebido Total</span>
+                                {% elif status_recebimento == 'RECEBIDO_PARCIAL' %}
+                                    <span class="badge bg-purple text-white" style="background-color:#6f42c1;">Recebido Parcial</span>
+                                {% else %}
+                                    {% if pedido.status == 'PENDENTE' %}
+                                    <span class="badge bg-warning text-dark">{{ pedido.get_status_display }}</span>
+                                    {% elif pedido.status == 'ENVIADO' %}
+                                    <span class="badge bg-info">{{ pedido.get_status_display }}</span>
+                                    {% elif pedido.status == 'CONFIRMADO' %}
+                                    <span class="badge bg-primary">{{ pedido.get_status_display }}</span>
+                                    {% elif pedido.status == 'EM_ENTREGA' %}
+                                    <span class="badge bg-primary">{{ pedido.get_status_display }}</span>
+                                    {% elif pedido.status == 'PARCIALMENTE_RECEBIDO' %}
+                                    <span class="badge bg-info">{{ pedido.get_status_display }}</span>
+                                    {% elif pedido.status == 'RECEBIDO' %}
+                                    <span class="badge bg-success">{{ pedido.get_status_display }}</span>
+                                    {% elif pedido.status == 'CANCELADO' %}
+                                    <span class="badge bg-danger">{{ pedido.get_status_display }}</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">{{ pedido.get_status_display }}</span>
+                                    {% endif %}
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{% url 'compras:pedido_detail' pedido.pk %}" 
+                                   class="btn btn-sm btn-info" title="Ver Detalhes">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center text-muted py-4">
+                                <i class="bi bi-inbox" style="font-size: 3rem;"></i>
+                                <p class="mt-2">Nenhum pedido encontrado</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Paginação -->
+            {% if pedidos.has_other_pages %}
+            <nav>
+                <ul class="pagination justify-content-center">
+                    {% if pedidos.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ pedidos.previous_page_number }}">Anterior</a>
+                    </li>
+                    {% endif %}
+                    
+                    <li class="page-item active">
+                        <span class="page-link">{{ pedidos.number }} de {{ pedidos.paginator.num_pages }}</span>
+                    </li>
+                    
+                    {% if pedidos.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ pedidos.next_page_number }}">Próximo</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

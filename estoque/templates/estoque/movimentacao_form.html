@@ -1,0 +1,248 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="mb-4">
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'estoque:dashboard' %}">Estoque</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'estoque:movimentacao_list' %}">Movimentações</a></li>
+        <li class="breadcrumb-item active">{{ titulo }}</li>
+      </ol>
+    </nav>
+    <h2>
+      {% if tipo == 'ENTRADA' %}
+        <i class="bi bi-box-arrow-in-down text-success"></i>
+      {% elif tipo == 'SAIDA' %}
+        <i class="bi bi-box-arrow-up text-warning"></i>
+      {% elif tipo == 'TRANSFERENCIA' %}
+        <i class="bi bi-arrow-left-right text-info"></i>
+      {% else %}
+        <i class="bi bi-arrow-left-right"></i>
+      {% endif %}
+      {{ titulo }}
+    </h2>
+  </div>
+
+  <div class="row">
+    <div class="col-lg-8">
+      <div class="card">
+        <div class="card-body">
+          <form method="post">
+            {% csrf_token %}
+            
+            {% if form.non_field_errors %}
+              <div class="alert alert-danger">
+                {{ form.non_field_errors }}
+              </div>
+            {% endif %}
+
+            <!-- Tipo e Origem -->
+            <div class="row g-3 mb-3">
+              {% if 'tipo' in form.fields %}
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold">{{ form.tipo.label }} *</label>
+                  {{ form.tipo }}
+                  {% if form.tipo.errors %}
+                    <div class="text-danger small">{{ form.tipo.errors.0 }}</div>
+                  {% endif %}
+                </div>
+              {% endif %}
+              
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">{{ form.origem.label }} *</label>
+                {{ form.origem }}
+                {% if form.origem.errors %}
+                  <div class="text-danger small">{{ form.origem.errors.0 }}</div>
+                {% endif %}
+                <div class="form-text">Motivo da movimentação</div>
+              </div>
+            </div>
+
+            <!-- Lote e Quantidade -->
+            <div class="row g-3 mb-3">
+              <div class="col-md-8">
+                <label class="form-label fw-semibold">{{ form.lote.label }} *</label>
+                <div class="input-group">
+                  {{ form.lote }}
+                  {% if tipo == 'ENTRADA' %}
+                    <a href="{% url 'estoque:lote_create' %}" class="btn btn-outline-secondary" target="_blank" title="Cadastrar Novo Lote">
+                      <i class="bi bi-plus-lg"></i>
+                    </a>
+                  {% endif %}
+                </div>
+                {% if form.lote.errors %}
+                  <div class="text-danger small">{{ form.lote.errors.0 }}</div>
+                {% endif %}
+                {% if form.lote.help_text %}
+                  <div class="form-text">{{ form.lote.help_text }}</div>
+                {% else %}
+                  {% if tipo == 'ENTRADA' %}
+                    <div class="form-text">
+                      <i class="bi bi-info-circle"></i> 
+                      Selecione o lote para adicionar estoque. Se não há lotes, 
+                      <a href="{% url 'estoque:lote_create' %}" target="_blank" class="fw-semibold">cadastre um novo lote</a> antes.
+                    </div>
+                  {% endif %}
+                {% endif %}
+              </div>
+              
+              <div class="col-md-4">
+                <label class="form-label fw-semibold">{{ form.quantidade.label }} *</label>
+                {{ form.quantidade }}
+                {% if form.quantidade.errors %}
+                  <div class="text-danger small">{{ form.quantidade.errors.0 }}</div>
+                {% endif %}
+              </div>
+            </div>
+
+            <hr>
+
+            <!-- Localização Origem -->
+            {% if 'armazem_origem' in form.fields %}
+              <h5 class="mb-3"><i class="bi bi-geo-alt"></i> Origem</h5>
+              <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                  <label class="form-label">{{ form.armazem_origem.label }}</label>
+                  {{ form.armazem_origem }}
+                  {% if form.armazem_origem.errors %}
+                    <div class="text-danger small">{{ form.armazem_origem.errors.0 }}</div>
+                  {% endif %}
+                </div>
+                
+                {% if 'local_origem' in form.fields %}
+                  <div class="col-md-6">
+                    <label class="form-label">{{ form.local_origem.label }}</label>
+                    {{ form.local_origem }}
+                    {% if form.local_origem.errors %}
+                      <div class="text-danger small">{{ form.local_origem.errors.0 }}</div>
+                    {% endif %}
+                  </div>
+                {% endif %}
+              </div>
+              <hr>
+            {% endif %}
+
+            <!-- Localização Destino -->
+            {% if 'armazem_destino' in form.fields %}
+              <h5 class="mb-3"><i class="bi bi-geo-alt-fill"></i> Destino</h5>
+              <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                  <label class="form-label">{{ form.armazem_destino.label }} {% if tipo == 'TRANSFERENCIA' %}*{% endif %}</label>
+                  {{ form.armazem_destino }}
+                  {% if form.armazem_destino.errors %}
+                    <div class="text-danger small">{{ form.armazem_destino.errors.0 }}</div>
+                  {% endif %}
+                </div>
+                
+                {% if 'local_destino' in form.fields %}
+                  <div class="col-md-6">
+                    <label class="form-label">{{ form.local_destino.label }}</label>
+                    {{ form.local_destino }}
+                    {% if form.local_destino.errors %}
+                      <div class="text-danger small">{{ form.local_destino.errors.0 }}</div>
+                    {% endif %}
+                  </div>
+                {% endif %}
+              </div>
+              <hr>
+            {% endif %}
+
+            <!-- Informações Adicionais -->
+            <h5 class="mb-3"><i class="bi bi-info-circle"></i> Informações Adicionais</h5>
+            
+            <div class="mb-3">
+              <label class="form-label">{{ form.documento.label }}</label>
+              {{ form.documento }}
+              {% if form.documento.errors %}
+                <div class="text-danger small">{{ form.documento.errors.0 }}</div>
+              {% endif %}
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">{{ form.observacao.label }}</label>
+              {{ form.observacao }}
+              {% if form.observacao.errors %}
+                <div class="text-danger small">{{ form.observacao.errors.0 }}</div>
+              {% endif %}
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">{{ form.justificativa.label }}</label>
+              {{ form.justificativa }}
+              {% if form.justificativa.errors %}
+                <div class="text-danger small">{{ form.justificativa.errors.0 }}</div>
+              {% endif %}
+              <div class="form-text">Obrigatório para ajustes e perdas</div>
+            </div>
+
+            <!-- Botões -->
+            <div class="d-flex gap-2 mt-4">
+              <button type="submit" class="btn btn-primary">
+                <i class="bi bi-check-circle"></i> Salvar Movimentação
+              </button>
+              <a href="{% url 'estoque:movimentacao_list' %}" class="btn btn-secondary">
+                <i class="bi bi-x-circle"></i> Cancelar
+              </a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sidebar com ajuda -->
+    <div class="col-lg-4">
+      <div class="card bg-light">
+        <div class="card-body">
+          <h5 class="card-title">
+            <i class="bi bi-lightbulb"></i> Dicas
+          </h5>
+          
+          {% if tipo == 'ENTRADA' %}
+            <p class="small mb-2"><strong>Entrada de Estoque:</strong></p>
+            <ul class="small">
+              <li>Use para compras, produção própria e devoluções de clientes</li>
+              <li>Aumenta a quantidade do lote selecionado</li>
+              <li>Informe o documento (NF, OP, etc)</li>
+            </ul>
+          {% elif tipo == 'SAIDA' %}
+            <p class="small mb-2"><strong>Saída de Estoque:</strong></p>
+            <ul class="small">
+              <li>Use para requisições, vendas, consumo e perdas</li>
+              <li>Diminui a quantidade do lote</li>
+              <li>Justificativa obrigatória para perdas</li>
+              <li>Informe o centro de custo para requisições</li>
+            </ul>
+          {% elif tipo == 'TRANSFERENCIA' %}
+            <p class="small mb-2"><strong>Transferência:</strong></p>
+            <ul class="small">
+              <li>Move produtos entre armazéns diferentes</li>
+              <li>Mantém rastreabilidade do lote</li>
+              <li>Armazém destino é obrigatório</li>
+              <li>Quantidade é retirada da origem e adicionada no destino</li>
+            </ul>
+          {% else %}
+            <p class="small mb-2"><strong>Movimentação de Estoque:</strong></p>
+            <ul class="small">
+              <li>Mantenha o histórico completo de movimentações</li>
+              <li>Use o campo documento para rastreabilidade</li>
+              <li>Justifique ajustes e perdas adequadamente</li>
+            </ul>
+          {% endif %}
+
+          <hr>
+
+          <p class="small mb-2"><strong>Status da Movimentação:</strong></p>
+          <ul class="small mb-0">
+            <li><strong>Pendente:</strong> Criada, aguardando execução</li>
+            <li><strong>Executada:</strong> Estoque atualizado automaticamente</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

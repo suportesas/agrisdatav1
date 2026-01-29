@@ -3,7 +3,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('empresas', '0006_auto_...'),
+        ('empresas', '0006_alter_permissiontemplate_id'),
     ]
 
     operations = [

@@ -107,7 +107,7 @@ class ProdutoForm(forms.ModelForm):
             # Rastreabilidade
             'lote_obrigatorio', 'validade_obrigatoria', 'dias_validade',
             # Informações Adicionais
-            'fornecedor_padrao', 'observacoes', 'imagem', 'ativo',
+            'observacoes', 'imagem', 'ativo',
             # Categoria Agrícola
             'categoria_agricola',
             # Defensivos
@@ -170,7 +170,6 @@ class ProdutoForm(forms.ModelForm):
             'dias_validade': forms.NumberInput(attrs={'class': 'form-control'}),
             
             # Informações Adicionais
-            'fornecedor_padrao': forms.Select(attrs={'class': 'form-select'}),
             'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'imagem': forms.FileInput(attrs={'class': 'form-control'}),
             'ativo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),

@@ -1,0 +1,406 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Histórico - {{ produto.nome }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="mb-4">
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'estoque:dashboard' %}">Estoque</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'estoque:estoque_produtos_list' %}">Estoque de Produtos</a></li>
+        <li class="breadcrumb-item active">Histórico</li>
+      </ol>
+    </nav>
+    <div class="d-flex justify-content-between align-items-start">
+      <div>
+        <h2><i class="bi bi-clock-history"></i> Histórico do Produto</h2>
+        <h4 class="text-muted">{{ produto.nome }}</h4>
+        {% if produto.codigo %}
+          <p class="text-muted mb-0">Código: <strong>{{ produto.codigo }}</strong></p>
+        {% endif %}
+      </div>
+      <div class="text-end">
+        <div class="mb-2">
+          <span class="badge bg-primary fs-5">Estoque Atual: {{ produto.estoque_atual|floatformat:2 }} {{ produto.unidade_medida.sigla }}</span>
+        </div>
+        <a href="{% url 'produtos:produto_detail' produto.id %}" class="btn btn-outline-primary btn-sm">
+          <i class="bi bi-box-seam"></i> Ver Produto
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Estatísticas -->
+  <div class="row mb-4">
+    <div class="col-md-2">
+      <div class="card text-center">
+        <div class="card-body">
+          <h3 class="text-success mb-0">{{ stats.total_entradas|floatformat:0 }}</h3>
+          <small class="text-muted">Total Entradas</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-2">
+      <div class="card text-center">
+        <div class="card-body">
+          <h3 class="text-warning mb-0">{{ stats.total_saidas|floatformat:0 }}</h3>
+          <small class="text-muted">Total Saídas</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-2">
+      <div class="card text-center">
+        <div class="card-body">
+          <h3 class="text-info mb-0">{{ stats.total_transferencias }}</h3>
+          <small class="text-muted">Transferências</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-2">
+      <div class="card text-center">
+        <div class="card-body">
+          <h3 class="text-primary mb-0">{{ stats.total_compras }}</h3>
+          <small class="text-muted">Compras</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-2">
+      <div class="card text-center">
+        <div class="card-body">
+          <h3 class="text-secondary mb-0">{{ stats.total_solicitacoes }}</h3>
+          <small class="text-muted">Solicitações</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-2">
+      <div class="card text-center">
+        <div class="card-body">
+          <h3 class="mb-0">{{ produto.estoque_atual|floatformat:2 }}</h3>
+          <small class="text-muted">Saldo Atual</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <div class="card mb-3">
+    <div class="card-header bg-primary text-white">
+      <h5 class="mb-0"><i class="bi bi-funnel"></i> Filtrar Movimentações</h5>
+    </div>
+    <div class="card-body">
+      <form method="get" class="row g-3">
+        <div class="col-md-3">
+          <label class="form-label">Tipo de Movimentação</label>
+          <select name="tipo" class="form-select">
+            <option value="">Todos os tipos</option>
+            <option value="ENTRADA" {% if tipo_filtro == 'ENTRADA' %}selected{% endif %}>Entrada</option>
+            <option value="SAIDA" {% if tipo_filtro == 'SAIDA' %}selected{% endif %}>Saída</option>
+            <option value="TRANSFERENCIA" {% if tipo_filtro == 'TRANSFERENCIA' %}selected{% endif %}>Transferência</option>
+            <option value="AJUSTE" {% if tipo_filtro == 'AJUSTE' %}selected{% endif %}>Ajuste</option>
+            <option value="DEVOLUCAO" {% if tipo_filtro == 'DEVOLUCAO' %}selected{% endif %}>Devolução</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Origem</label>
+          <select name="origem" class="form-select">
+            <option value="">Todas as origens</option>
+            <option value="COMPRA" {% if origem_filtro == 'COMPRA' %}selected{% endif %}>Compra</option>
+            <option value="PRODUCAO" {% if origem_filtro == 'PRODUCAO' %}selected{% endif %}>Produção Própria</option>
+            <option value="DEVOLUCAO_CLIENTE" {% if origem_filtro == 'DEVOLUCAO_CLIENTE' %}selected{% endif %}>Devolução de Cliente</option>
+            <option value="TRANSFERENCIA_ENTRADA" {% if origem_filtro == 'TRANSFERENCIA_ENTRADA' %}selected{% endif %}>Transferência (Entrada)</option>
+            <option value="REQUISICAO" {% if origem_filtro == 'REQUISICAO' %}selected{% endif %}>Requisição Interna</option>
+            <option value="VENDA" {% if origem_filtro == 'VENDA' %}selected{% endif %}>Venda</option>
+            <option value="PERDA" {% if origem_filtro == 'PERDA' %}selected{% endif %}>Perda/Avaria</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">Data Início</label>
+          <input type="date" name="data_inicio" class="form-control" value="{{ data_inicio }}">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">Data Fim</label>
+          <input type="date" name="data_fim" class="form-control" value="{{ data_fim }}">
+        </div>
+        <div class="col-md-1 d-flex align-items-end">
+          <button type="submit" class="btn btn-primary w-100">
+            <i class="bi bi-search"></i> Filtrar
+          </button>
+        </div>
+        <div class="col-md-1 d-flex align-items-end">
+          <a href="{% url 'estoque:produto_historico_pdf' produto.id %}?tipo={{ tipo_filtro }}&origem={{ origem_filtro }}&data_inicio={{ data_inicio }}&data_fim={{ data_fim }}" 
+             class="btn btn-danger w-100" 
+             title="Gerar PDF com filtros aplicados" 
+             target="_blank">
+            <i class="bi bi-file-pdf"></i> PDF
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <ul class="nav nav-tabs mb-3" role="tablist">
+    <li class="nav-item" role="presentation">
+      <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#movimentacoes" type="button">
+        <i class="bi bi-arrow-left-right"></i> Movimentações ({{ movimentacoes|length }})
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" data-bs-toggle="tab" data-bs-target="#compras" type="button">
+        <i class="bi bi-cart-check"></i> Compras (<span id="compras-count">{{ compras|length }}</span>)
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" data-bs-toggle="tab" data-bs-target="#solicitacoes" type="button">
+        <i class="bi bi-file-text"></i> Solicitações ({{ solicitacoes|length }})
+      </button>
+    </li>
+    {% if emprestimos %}
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" data-bs-toggle="tab" data-bs-target="#emprestimos" type="button">
+        <i class="bi bi-arrow-repeat"></i> Empréstimos ({{ emprestimos|length }})
+      </button>
+    </li>
+    {% endif %}
+  </ul>
+
+  <!-- Tab Content -->
+  <div class="tab-content">
+    <!-- Movimentações -->
+    <div class="tab-pane fade show active" id="movimentacoes">
+      <div class="card">
+        <div class="card-body p-0">
+          {% if movimentacoes %}
+            <div class="table-responsive">
+              <table class="table table-hover mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th>Data</th>
+                    <th>Número</th>
+                    <th>Tipo</th>
+                    <th>Origem</th>
+                    <th>Quantidade</th>
+                    <th>Lote</th>
+                    <th>Armazém</th>
+                    <th>Requisitante</th>
+                    <th>Status</th>
+                    <th class="text-center">Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for mov in movimentacoes %}
+                  <tr>
+                    <td>
+                      <small>{{ mov.data_cadastro|date:"d/m/Y H:i" }}</small>
+                    </td>
+                    <td>
+                      <a href="{% url 'estoque:movimentacao_detail' mov.pk %}" class="text-decoration-none">
+                        <strong>{{ mov.numero }}</strong>
+                      </a>
+                    </td>
+                    <td>
+                      {% if mov.tipo == 'ENTRADA' %}
+                        <span class="badge bg-success">Entrada</span>
+                      {% elif mov.tipo == 'SAIDA' %}
+                        <span class="badge bg-warning text-dark">Saída</span>
+                      {% elif mov.tipo == 'TRANSFERENCIA' %}
+                        <span class="badge bg-info">Transferência</span>
+                      {% else %}
+                        <span class="badge bg-secondary">{{ mov.get_tipo_display }}</span>
+                      {% endif %}
+                    </td>
+                    <td>
+                      <small>{{ mov.get_origem_display }}</small>
+                    </td>
+                    <td>
+                      <strong class="{% if mov.tipo == 'ENTRADA' %}text-success{% elif mov.tipo == 'SAIDA' %}text-warning{% endif %}">
+                        {% if mov.tipo == 'ENTRADA' %}+{% elif mov.tipo == 'SAIDA' %}-{% endif %}{{ mov.quantidade|floatformat:2 }}
+                      </strong>
+                    </td>
+                    <td>
+                      {% if mov.lote %}
+                        <small class="text-muted">{{ mov.lote.numero_lote }}</small>
+                      {% else %}
+                        <small class="text-muted">-</small>
+                      {% endif %}
+                    </td>
+                    <td>
+                      {% if mov.armazem_origem %}
+                        <small>{{ mov.armazem_origem.nome }}</small>
+                      {% elif mov.armazem_destino %}
+                        <small>{{ mov.armazem_destino.nome }}</small>
+                      {% else %}
+                        -
+                      {% endif %}
+                    </td>
+                    <td>
+                      {% if mov.requisitante %}
+                        <small>{{ mov.requisitante.get_full_name|default:mov.requisitante.username }}</small>
+                      {% else %}
+                        -
+                      {% endif %}
+                    </td>
+                    <td>
+                      {% if mov.status == 'EXECUTADO' %}
+                        <span class="badge bg-success">Executado</span>
+                      {% elif mov.status == 'PENDENTE' %}
+                        <span class="badge bg-warning">Pendente</span>
+                      {% else %}
+                        <span class="badge bg-secondary">{{ mov.get_status_display }}</span>
+                      {% endif %}
+                    </td>
+                    <td class="text-center">
+                      <a href="{% url 'estoque:movimentacao_detail' mov.pk %}" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-eye"></i>
+                      </a>
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <div class="alert alert-info mb-0">
+              <i class="bi bi-info-circle"></i> Nenhuma movimentação encontrada com os filtros aplicados.
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Compras -->
+    <div class="tab-pane fade" id="compras">
+      <div class="card">
+        <div class="card-body p-0">
+          {% if compras %}
+            <div class="table-responsive">
+              <table class="table table-hover mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th>Data</th>
+                    <th>Pedido</th>
+                    <th>Fornecedor</th>
+                    <th>Quantidade</th>
+                    <th>Preço Unit.</th>
+                    <th>Total</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for item in compras %}
+                  <tr>
+                    <td>{{ item.pedido.data_pedido|date:"d/m/Y" }}</td>
+                    <td>
+                      <a href="{% url 'compras:pedido_detail' item.pedido.pk %}">
+                        {{ item.pedido.numero }}
+                      </a>
+                    </td>
+                    <td>{{ item.pedido.fornecedor.nome_fantasia }}</td>
+                    <td><strong>{{ item.quantidade_pedida|floatformat:2 }}</strong></td>
+                    <td>R$ {{ item.preco_unitario|floatformat:2 }}</td>
+                    <td><strong>R$ {{ item.preco_total|floatformat:2 }}</strong></td>
+                    <td>
+                      <span class="badge bg-{{ item.pedido.status|lower }}">{{ item.pedido.get_status_display }}</span>
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <div class="alert alert-info mb-0">
+              <i class="bi bi-info-circle"></i> Nenhuma compra registrada para este produto.
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Solicitações -->
+    <div class="tab-pane fade" id="solicitacoes">
+      <div class="card">
+        <div class="card-body p-0">
+          {% if solicitacoes %}
+            <div class="table-responsive">
+              <table class="table table-hover mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th>Data</th>
+                    <th>Solicitação</th>
+                    <th>Solicitante</th>
+                    <th>Quantidade</th>
+                    <th>Motivo</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for item in solicitacoes %}
+                  <tr>
+                    <td>{{ item.solicitacao.data_solicitacao|date:"d/m/Y" }}</td>
+                    <td>
+                      <a href="{% url 'compras:solicitacao_detail' item.solicitacao.pk %}">
+                        {{ item.solicitacao.numero }}
+                      </a>
+                    </td>
+                    <td>{{ item.solicitacao.solicitante.get_full_name }}</td>
+                    <td><strong>{{ item.quantidade|floatformat:2 }}</strong></td>
+                    <td><small>{{ item.solicitacao.motivo|default:"-" }}</small></td>
+                    <td>
+                      <span class="badge bg-{{ item.solicitacao.status|lower }}">{{ item.solicitacao.get_status_display }}</span>
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <div class="alert alert-info mb-0">
+              <i class="bi bi-info-circle"></i> Nenhuma solicitação registrada para este produto.
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Empréstimos -->
+    {% if emprestimos %}
+    <div class="tab-pane fade" id="emprestimos">
+      <div class="card">
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Data</th>
+                  <th>Empréstimo</th>
+                  <th>Produtor</th>
+                  <th>Quantidade</th>
+                  <th>Devolvido</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for item in emprestimos %}
+                <tr>
+                  <td>{{ item.emprestimo.data_emprestimo|date:"d/m/Y" }}</td>
+                  <td>{{ item.emprestimo.numero }}</td>
+                  <td>{{ item.emprestimo.produtor.nome }}</td>
+                  <td><strong>{{ item.quantidade|floatformat:2 }}</strong></td>
+                  <td>{{ item.quantidade_devolvida|floatformat:2 }}</td>
+                  <td>
+                    <span class="badge bg-{{ item.status|lower }}">{{ item.get_status_display }}</span>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -9,7 +9,7 @@ class EmpresaForm(forms.ModelForm):
         model = Empresa
         fields = [
             'nome', 'cnpj', 'telefone', 'email',
-            'endereco', 'cidade', 'uf',
+            'endereco', 'cidade', 'uf', 'logo',
             'plano',  # Campo de plano
             'valor_mensalidade', 'dia_vencimento', 'data_expiracao',
             'ativa', 'bloqueada', 'bloqueada_ate', 'motivo_bloqueio',
@@ -22,6 +22,7 @@ class EmpresaForm(forms.ModelForm):
             'endereco': forms.TextInput(attrs={'class': 'form-control'}),
             'cidade': forms.TextInput(attrs={'class': 'form-control'}),
             'uf': forms.TextInput(attrs={'class': 'form-control', 'maxlength': 2}),
+            'logo': forms.FileInput(attrs={'class': 'form-control', 'accept': 'image/*'}),
             'plano': forms.Select(attrs={'class': 'form-select'}),
             'valor_mensalidade': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'dia_vencimento': forms.NumberInput(attrs={'class': 'form-control'}),
@@ -71,7 +72,32 @@ class RoleForm(forms.ModelForm):
     class Meta:
         model = Role
         fields = ['name', 'description']
-        widgets = {
-            'name': forms.TextInput(attrs={'class': 'form-control'}),
-            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+        labels = {
+            'name': 'Nome da Função',
+            'description': 'Descrição (opcional)',
         }
+        help_texts = {
+            'name': 'Digite o nome da função (ex: Gerente de Compras, Supervisor de Estoque)',
+            'description': 'Descreva as responsabilidades desta função',
+        }
+        widgets = {
+            'name': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ex: Gerente de Compras',
+                'required': True,
+            }),
+            'description': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 4,
+                'placeholder': 'Descreva as responsabilidades e permissões desta função...',
+            }),
+        }
+    
+    def clean_name(self):
+        """Valida e limpa o nome da função"""
+        name = self.cleaned_data.get('name', '').strip()
+        if not name:
+            raise forms.ValidationError('O nome da função é obrigatório.')
+        if len(name) < 3:
+            raise forms.ValidationError('O nome deve ter pelo menos 3 caracteres.')
+        return name

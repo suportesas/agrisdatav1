@@ -1,0 +1,341 @@
+{% extends 'base.html' %}
+
+{% block title %}Solicitação {{ solicitacao.numero }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Tornar checkboxes mais visíveis */
+    .item-checkbox, #select-all {
+        width: 20px;
+        height: 20px;
+        border: 2px solid #495057 !important;
+        cursor: pointer;
+    }
+    
+    .item-checkbox:checked, #select-all:checked {
+        background-color: #0d6efd !important;
+        border-color: #0d6efd !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Fluxo Visual do Processo de Compra -->
+    {% include 'compras/includes/fluxo_compras.html' with etapa_atual='solicitacao' solicitacao=solicitacao cotacao=cotacao pedido=pedido recebimento=recebimento %}
+    
+    <!-- Instruções para esta etapa -->
+    {% include 'compras/includes/instrucoes_etapa.html' with etapa='solicitacao' %}
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>
+            <i class="fas fa-file-alt"></i> Solicitação {{ solicitacao.numero }}
+            {% if solicitacao.emergencial %}
+            <span class="badge bg-danger">
+                <i class="bi bi-lightning-fill"></i> EMERGENCIAL
+            </span>
+            {% endif %}
+        </h2>
+        <div>
+            <a href="{% url 'compras:historico_completo' solicitacao.pk %}" class="btn btn-info">
+                <i class="bi bi-clock-history"></i> Ver Histórico Completo
+            </a>
+            <a href="{% url 'compras:solicitacao_list' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Voltar
+            </a>
+        </div>
+    </div>
+    
+    <!-- Informações da Solicitação -->
+    <div class="row mb-3">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5>Dados da Solicitação</h5>
+                    {% if solicitacao.status == 'RASCUNHO' %}
+                    <span class="badge bg-secondary fs-6">{{ solicitacao.get_status_display }}</span>
+                    {% elif solicitacao.status == 'PENDENTE' %}
+                    <span class="badge bg-warning text-dark fs-6">{{ solicitacao.get_status_display }}</span>
+                    {% elif solicitacao.status == 'APROVADA' %}
+                    <span class="badge bg-success fs-6">{{ solicitacao.get_status_display }}</span>
+                    {% elif solicitacao.status == 'PARCIALMENTE_COTADA' %}
+                    <span class="badge bg-info fs-6">{{ solicitacao.get_status_display }}</span>
+                    {% elif solicitacao.status == 'TOTALMENTE_COTADA' %}
+                    <span class="badge bg-primary fs-6">{{ solicitacao.get_status_display }}</span>
+                    {% elif solicitacao.status == 'CONCLUIDA' %}
+                    <span class="badge bg-dark fs-6">{{ solicitacao.get_status_display }}</span>
+                    {% elif solicitacao.status == 'CANCELADA' %}
+                    <span class="badge bg-danger fs-6">{{ solicitacao.get_status_display }}</span>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm">
+                        <tr>
+                            <th width="30%">Solicitante:</th>
+                            <td>{{ solicitacao.solicitante.get_full_name }}</td>
+                        </tr>
+                        <tr>
+                            <th>Data da Solicitação:</th>
+                            <td>{{ solicitacao.data_solicitacao|date:"d/m/Y H:i" }}</td>
+                        </tr>
+                        <tr>
+                            <th>Data de Necessidade:</th>
+                            <td>{{ solicitacao.data_necessidade|date:"d/m/Y" }}</td>
+                        </tr>
+                        {% if solicitacao.departamento %}
+                        <tr>
+                            <th>Departamento:</th>
+                            <td>{{ solicitacao.departamento }}</td>
+                        </tr>
+                        {% endif %}
+                        <tr>
+                            <th>Justificativa:</th>
+                            <td>{{ solicitacao.justificativa }}</td>
+                        </tr>
+                        {% if solicitacao.emergencial %}
+                        <tr>
+                            <th>
+                                <span class="badge bg-danger">EMERGENCIAL</span> Justificativa:
+                            </th>
+                            <td>
+                                <strong class="text-danger">{{ solicitacao.justificativa_emergencial }}</strong>
+                            </td>
+                        </tr>
+                        {% endif %}
+                        {% if solicitacao.aprovador %}
+                        <tr>
+                            <th>Aprovador:</th>
+                            <td>{{ solicitacao.aprovador.get_full_name }} em {{ solicitacao.data_aprovacao|date:"d/m/Y H:i" }}</td>
+                        </tr>
+                        {% endif %}
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Progresso de Cotação</h5>
+                </div>
+                <div class="card-body text-center">
+                    <div class="progress mb-3" style="height: 30px;">
+                        <div class="progress-bar" role="progressbar" 
+                             style="width: {{ percentual_cotado }}%" 
+                             aria-valuenow="{{ percentual_cotado }}" 
+                             aria-valuemin="0" aria-valuemax="100">
+                            <strong>{{ percentual_cotado }}%</strong>
+                        </div>
+                    </div>
+                    
+                    <!-- Ações -->
+                    {% if solicitacao.status == 'PENDENTE' %}
+                    <a href="{% url 'compras:solicitacao_aprovar' solicitacao.pk %}" 
+                       class="btn btn-success btn-sm w-100 mb-2"
+                       onclick="return confirm('Deseja aprovar esta solicitação?')">
+                        <i class="fas fa-check"></i> Aprovar Solicitação
+                    </a>
+                    {% endif %}
+                    
+                    {% if solicitacao.status in 'APROVADA,PARCIALMENTE_COTADA,EM_COMPRA' %}
+                    <button type="button" class="btn btn-primary btn-sm w-100 mb-2" 
+                            onclick="submitSelecao()">
+                        <i class="fas fa-shopping-cart"></i> Cotar Selecionados
+                    </button>
+                    {% endif %}
+                    
+                    {% if solicitacao.status in 'RASCUNHO,PENDENTE' %}
+                    <a href="{% url 'compras:solicitacao_cancelar' solicitacao.pk %}" 
+                       class="btn btn-danger btn-sm w-100"
+                       onclick="return confirm('Deseja cancelar esta solicitação?')">
+                        <i class="fas fa-times"></i> Cancelar
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Itens da Solicitação -->
+    <div class="card">
+        <div class="card-header">
+            <h5>Itens da Solicitação</h5>
+            <!-- DEBUG -->
+            <small class="text-muted">
+                Status atual: <strong>{{ solicitacao.status }}</strong> |
+                Mostra coluna aprovação: 
+                {% if request.user == solicitacao.aprovador %}
+                    <span class="text-success">Usuário é aprovador</span>
+                {% else %}
+                    <span class="text-danger">Usuário NÃO é aprovador</span>
+                {% endif %}
+                | request.user.id={{ request.user.id }}, aprovador.id={{ solicitacao.aprovador.id }}
+            </small>
+        </div>
+        <div class="card-body">
+            <form method="post" action="{% url 'compras:selecionar_itens_cotar' solicitacao.pk %}" id="form-selecao">
+                {% csrf_token %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                {% if solicitacao.status in 'APROVADA,PARCIALMENTE_COTADA,EM_COMPRA' %}
+                                <th width="5%">
+                                    <input type="checkbox" id="select-all" class="form-check-input">
+                                </th>
+                                {% endif %}
+                                {% if request.user == solicitacao.aprovador and solicitacao.status == 'PENDENTE' %}
+                                    <th width="5%">Aprovar</th>
+                                {% endif %}
+                                <th>Produto</th>
+                                <th>Estoque Atual</th>
+                                <th>Quantidade</th>
+                                <th>Especificação</th>
+                                <th>Status</th>
+                                <th>Pedido Gerado</th>
+                                <th>Cotação</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in itens %}
+                            <tr>
+                                {% if solicitacao.status in 'APROVADA,PARCIALMENTE_COTADA,EM_COMPRA' %}
+                                <td>
+                                    {% if item.status_item in 'PENDENTE,SELECIONADO' %}
+                                    <input type="checkbox" name="itens_selecionados" 
+                                           value="{{ item.id }}" class="form-check-input item-checkbox"
+                                           {% if item.status_item == 'SELECIONADO' %}checked{% endif %}>
+                                    {% else %}
+                                    <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                {% endif %}
+                                {% if request.user == solicitacao.aprovador and solicitacao.status == 'PENDENTE' %}
+                                <td>
+                                    <input type="checkbox" name="itens_aprovados" value="{{ item.id }}" class="form-check-input" {% if item.status_item == 'APROVADO' %}checked{% endif %}>
+                                </td>
+                                {% endif %}
+                                <td>
+                                    <strong>{{ item.produto.nome }}</strong><br>
+                                    <small class="text-muted">{{ item.produto.codigo }}</small>
+                                    <!-- DEBUG: status_item='{{ item.status_item }}' -->
+                                </td>
+                                <td>
+                                    {% if item.produto.estoque_atual is not None %}
+                                        {{ item.produto.estoque_atual }} {{ item.produto.unidade_medida.sigla }}
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ item.quantidade }} {{ item.unidade_medida.sigla }}</td>
+                                <td>
+                                    {% if item.especificacao %}
+                                    {{ item.especificacao|truncatewords:10 }}
+                                    {% else %}
+                                    <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if item.status_item == 'PENDENTE' %}
+                                    <span class="badge bg-secondary" title="Aguardando cotação">{{ item.get_status_item_display }}</span>
+                                    {% elif item.status_item == 'SELECIONADO' %}
+                                    <span class="badge bg-warning text-dark" title="Selecionado para cotação">{{ item.get_status_item_display }} ⭐</span>
+                                    {% elif item.status_item == 'EM_COTACAO' %}
+                                    <span class="badge bg-info" title="Em cotação com fornecedores">{{ item.get_status_item_display }} 🕒</span>
+                                    {% elif item.status_item == 'COTADO' %}
+                                    <span class="badge bg-success" title="Cotação concluída, aguardando pedido">{{ item.get_status_item_display }} ✔️</span>
+                                    {% elif item.status_item == 'APROVADO' %}
+                                        {% if item.produto.id in itens_pedido_ids %}
+                                            <span class="badge bg-primary" title="Pedido gerado e enviado ao fornecedor">Cotado</span>
+                                        {% else %}
+                                            <span class="badge bg-primary" title="Aprovado para compra, aguardando pedido">{{ item.get_status_item_display }}</span>
+                                        {% endif %}
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    {% if item.produto.id in itens_pedido_ids %}
+                                        <span title="Pedido gerado"><i class="bi bi-box-seam text-success"></i> Sim</span>
+                                    {% else %}
+                                        <span class="text-muted">Não</span>
+                                    {% endif %}
+                                </td>
+                                </td>
+                                <td>
+                                    {% if item.cotacao_vinculada %}
+                                    <a href="{% url 'compras:cotacao_detail' item.cotacao_vinculada.pk %}">
+                                        {{ item.cotacao_vinculada.numero }}
+                                    </a>
+                                    {% else %}
+                                    <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center">Nenhum item na solicitação</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% if request.user == solicitacao.aprovador and solicitacao.status == 'PENDENTE' %}
+                    <button type="submit" name="salvar_aprovacao" class="btn btn-success mt-2">Salvar Aprovação dos Itens</button>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+    
+    <!-- Diálogo entre aprovador e solicitante -->
+    <div class="card mt-4">
+        <div class="card-header">
+            <h5>Diálogo entre Solicitante e Aprovador</h5>
+        </div>
+        <div class="card-body" style="max-height: 300px; overflow-y: auto;">
+            {% if mensagens %}
+                <ul class="list-group mb-3">
+                    {% for msg in mensagens %}
+                    <li class="list-group-item">
+                        <strong>{{ msg.autor.get_full_name|default:msg.autor.username }}</strong>
+                        <span class="text-muted small">({{ msg.data_envio|date:'d/m/Y H:i' }})</span><br>
+                        {{ msg.mensagem|linebreaksbr }}
+                    </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <div class="alert alert-info mb-3">Nenhuma mensagem registrada ainda.</div>
+            {% endif %}
+            <form method="post" class="mt-2">
+                {% csrf_token %}
+                {{ msg_form.mensagem.label_tag }}
+                {{ msg_form.mensagem }}
+                <button type="submit" name="enviar_mensagem" class="btn btn-outline-primary btn-sm mt-2 float-end">
+                    <i class="bi bi-send"></i> Enviar Mensagem
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Selecionar todos os checkboxes
+document.getElementById('select-all')?.addEventListener('change', function() {
+    const checkboxes = document.querySelectorAll('.item-checkbox');
+    checkboxes.forEach(cb => cb.checked = this.checked);
+});
+
+// Submeter formulário de seleção
+function submitSelecao() {
+    const form = document.getElementById('form-selecao');
+    const checkedBoxes = document.querySelectorAll('.item-checkbox:checked');
+    
+    if (checkedBoxes.length === 0) {
+        alert('Selecione pelo menos um item para cotação.');
+        return;
+    }
+    
+    if (confirm(`Deseja criar cotação com ${checkedBoxes.length} item(ns)?`)) {
+        form.submit();
+    }
+}
+</script>
+{% endblock %}

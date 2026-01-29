@@ -1,0 +1,242 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{% if form.instance.pk %}Editar{% else %}Novo{% endif %} Armazém{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="mb-1">
+        <i class="bi bi-building"></i> 
+        {% if form.instance.pk %}Editar Armazém{% else %}Novo Armazém{% endif %}
+      </h2>
+      <p class="text-muted">Preencha os dados do armazém</p>
+    </div>
+    <a href="{% url 'estoque:armazem_list' %}" class="btn btn-secondary">
+      <i class="bi bi-arrow-left"></i> Voltar
+    </a>
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <form method="post">
+        {% csrf_token %}
+        
+        {% if form.errors %}
+          <div class="alert alert-danger">
+            <strong>Erros encontrados:</strong>
+            <ul class="mb-0">
+              {% for field in form %}
+                {% for error in field.errors %}
+                  <li>{{ field.label }}: {{ error }}</li>
+                {% endfor %}
+              {% endfor %}
+              {% for error in form.non_field_errors %}
+                <li>{{ error }}</li>
+              {% endfor %}
+            </ul>
+          </div>
+        {% endif %}
+
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label class="form-label">{{ form.codigo.label }} *</label>
+            {{ form.codigo }}
+            {% if form.codigo.help_text %}
+              <small class="form-text text-muted">{{ form.codigo.help_text }}</small>
+            {% endif %}
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label">{{ form.nome.label }} *</label>
+            {{ form.nome }}
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label class="form-label">{{ form.tipo.label }} *</label>
+            {{ form.tipo }}
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label">{{ form.localizacao.label }}</label>
+            {{ form.localizacao }}
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label class="form-label">{{ form.fazenda.label }}</label>
+            {{ form.fazenda }}
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label">{{ form.responsavel.label }}</label>
+            {{ form.responsavel }}
+          </div>
+        </div>
+
+        <hr class="my-4">
+        <h5 class="mb-3">
+          <i class="bi bi-rulers text-primary"></i> Dimensões do Armazém
+        </h5>
+        <div class="alert alert-info">
+          <i class="bi bi-info-circle"></i>
+          <strong>Cálculo Automático:</strong> Informe as dimensões e a densidade para calcular automaticamente as capacidades.
+        </div>
+
+        <div class="row">
+          <div class="col-md-3 mb-3">
+            <label class="form-label">
+              {{ form.comprimento.label }}
+              <i class="bi bi-question-circle text-muted" title="{{ form.comprimento.help_text }}"></i>
+            </label>
+            {{ form.comprimento }}
+            <small class="form-text text-muted">{{ form.comprimento.help_text }}</small>
+          </div>
+          <div class="col-md-3 mb-3">
+            <label class="form-label">
+              {{ form.largura.label }}
+              <i class="bi bi-question-circle text-muted" title="{{ form.largura.help_text }}"></i>
+            </label>
+            {{ form.largura }}
+            <small class="form-text text-muted">{{ form.largura.help_text }}</small>
+          </div>
+          <div class="col-md-3 mb-3">
+            <label class="form-label">
+              {{ form.altura.label }}
+              <i class="bi bi-question-circle text-muted" title="{{ form.altura.help_text }}"></i>
+            </label>
+            {{ form.altura }}
+            <small class="form-text text-muted">{{ form.altura.help_text }}</small>
+          </div>
+          <div class="col-md-3 mb-3">
+            <label class="form-label">
+              {{ form.densidade_media.label }}
+              <i class="bi bi-question-circle text-muted" title="{{ form.densidade_media.help_text }}"></i>
+            </label>
+            {{ form.densidade_media }}
+            <small class="form-text text-muted">{{ form.densidade_media.help_text }}</small>
+          </div>
+        </div>
+
+        <hr class="my-4">
+        <h5 class="mb-3">
+          <i class="bi bi-archive text-success"></i> Capacidades (Calculadas)
+        </h5>
+
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label class="form-label">
+              {{ form.capacidade_m3.label }}
+              <span class="badge bg-success">Auto</span>
+            </label>
+            <div class="input-group">
+              {{ form.capacidade_m3 }}
+              <span class="input-group-text">m³</span>
+            </div>
+            <small class="form-text text-muted">{{ form.capacidade_m3.help_text }}</small>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label">
+              {{ form.capacidade_kg.label }}
+              <span class="badge bg-success">Auto</span>
+            </label>
+            <div class="input-group">
+              {{ form.capacidade_kg }}
+              <span class="input-group-text">kg</span>
+            </div>
+            <small class="form-text text-muted">{{ form.capacidade_kg.help_text }}</small>
+          </div>
+        </div>
+
+        <hr class="my-4">
+
+        <div class="mb-3">
+          <div class="form-check">
+            {{ form.controla_temperatura }}
+            <label class="form-check-label" for="{{ form.controla_temperatura.id_for_label }}">
+              {{ form.controla_temperatura.label }}
+            </label>
+          </div>
+        </div>
+
+        <div class="row" id="temperatura-fields">
+          <div class="col-md-6 mb-3">
+            <label class="form-label">{{ form.temperatura_min.label }}</label>
+            {{ form.temperatura_min }}
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label">{{ form.temperatura_max.label }}</label>
+            {{ form.temperatura_max }}
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">{{ form.observacoes.label }}</label>
+          {{ form.observacoes }}
+        </div>
+
+        <div class="mb-3">
+          <div class="form-check">
+            {{ form.ativo }}
+            <label class="form-check-label" for="{{ form.ativo.id_for_label }}">
+              {{ form.ativo.label }}
+            </label>
+          </div>
+        </div>
+
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-check-circle"></i> Salvar
+          </button>
+          <a href="{% url 'estoque:armazem_list' %}" class="btn btn-secondary">
+            <i class="bi bi-x-circle"></i> Cancelar
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Cálculo automático de capacidade
+  function calcularCapacidades() {
+    const comprimento = parseFloat(document.getElementById('id_comprimento').value) || 0;
+    const largura = parseFloat(document.getElementById('id_largura').value) || 0;
+    const altura = parseFloat(document.getElementById('id_altura').value) || 0;
+    const densidade = parseFloat(document.getElementById('id_densidade_media').value) || 0;
+    
+    // Calcula volume (m³)
+    if (comprimento > 0 && largura > 0 && altura > 0) {
+      const volumeM3 = comprimento * largura * altura;
+      document.getElementById('id_capacidade_m3').value = volumeM3.toFixed(2);
+      
+      // Calcula peso (kg) se tiver densidade
+      if (densidade > 0) {
+        const pesoKg = volumeM3 * densidade;
+        document.getElementById('id_capacidade_kg').value = pesoKg.toFixed(2);
+      }
+    }
+  }
+  
+  // Adiciona eventos aos campos
+  document.getElementById('id_comprimento').addEventListener('input', calcularCapacidades);
+  document.getElementById('id_largura').addEventListener('input', calcularCapacidades);
+  document.getElementById('id_altura').addEventListener('input', calcularCapacidades);
+  document.getElementById('id_densidade_media').addEventListener('input', calcularCapacidades);
+  
+  // Calcula na carga da página se houver valores
+  document.addEventListener('DOMContentLoaded', calcularCapacidades);
+  
+  // Mostrar/ocultar campos de temperatura
+  const controlaTemp = document.getElementById('{{ form.controla_temperatura.id_for_label }}');
+  const tempFields = document.getElementById('temperatura-fields');
+  
+  function toggleTempFields() {
+    tempFields.style.display = controlaTemp.checked ? 'flex' : 'none';
+  }
+  
+  controlaTemp.addEventListener('change', toggleTempFields);
+  toggleTempFields(); // Inicializar
+</script>
+{% endblock %}

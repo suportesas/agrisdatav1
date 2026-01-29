@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+
+{% block title %}Enviar Pedido - {{ pedido.numero }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-envelope"></i> Enviar Pedido por Email
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> 
+                        O pedido <strong>{{ pedido.numero }}</strong> será enviado em formato PDF para o fornecedor.
+                    </div>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="email_destino" class="form-label">
+                                <i class="bi bi-envelope-at"></i> Email do Fornecedor *
+                            </label>
+                            <input 
+                                type="email" 
+                                class="form-control" 
+                                id="email_destino" 
+                                name="email_destino" 
+                                value="{{ email_padrao }}" 
+                                required
+                            >
+                            <small class="form-text text-muted">
+                                Verifique se o email está correto antes de enviar.
+                            </small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="mensagem" class="form-label">
+                                <i class="bi bi-chat-left-text"></i> Mensagem Adicional (Opcional)
+                            </label>
+                            <textarea 
+                                class="form-control" 
+                                id="mensagem" 
+                                name="mensagem" 
+                                rows="4"
+                                placeholder="Digite uma mensagem adicional para o fornecedor..."
+                            ></textarea>
+                        </div>
+
+                        <div class="card mb-3">
+                            <div class="card-header">
+                                <strong>Resumo do Pedido</strong>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <p class="mb-2">
+                                            <strong>Número:</strong> {{ pedido.numero }}
+                                        </p>
+                                        <p class="mb-2">
+                                            <strong>Data:</strong> {{ pedido.data_pedido|date:"d/m/Y" }}
+                                        </p>
+                                        <p class="mb-2">
+                                            <strong>Fornecedor:</strong> {{ pedido.fornecedor.razao_social }}
+                                        </p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <p class="mb-2">
+                                            <strong>Valor Total:</strong> R$ {{ pedido.valor_total|floatformat:2 }}
+                                        </p>
+                                        <p class="mb-2">
+                                            <strong>Previsão Entrega:</strong> {{ pedido.data_entrega_prevista|date:"d/m/Y" }}
+                                        </p>
+                                        <p class="mb-2">
+                                            <strong>Condição Pagto:</strong> {{ pedido.condicao_pagamento }}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            <strong>Atenção:</strong> Após o envio, o status do pedido será alterado para "ENVIADO".
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'compras:pedido_detail' pedido.pk %}" class="btn btn-secondary">
+                                <i class="bi bi-x-circle"></i> Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-send"></i> Enviar Email
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-header">
+                    <strong><i class="bi bi-file-pdf"></i> Preview do PDF</strong>
+                </div>
+                <div class="card-body text-center">
+                    <a href="{% url 'compras:pedido_pdf' pedido.pk %}" 
+                       target="_blank" 
+                       class="btn btn-outline-danger">
+                        <i class="bi bi-eye"></i> Visualizar PDF antes de enviar
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,185 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Estoque - Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+  .stat-card {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    transition: transform 0.2s;
+  }
+  .stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  }
+  .stat-value {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #1e293b;
+  }
+  .stat-label {
+    color: #64748b;
+    font-size: 0.95rem;
+    margin-top: 8px;
+  }
+  .stat-icon {
+    font-size: 3rem;
+    opacity: 0.2;
+    position: absolute;
+    right: 24px;
+    top: 24px;
+  }
+  .quick-actions {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  }
+  .action-btn {
+    padding: 12px 24px;
+    border-radius: 8px;
+    transition: all 0.2s;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="mb-1"><i class="bi bi-box-seam"></i> Gestão de Estoque</h2>
+      <p class="text-muted">Visão geral do estoque e movimentações</p>
+    </div>
+  </div>
+
+  <!-- Estatísticas -->
+  <div class="row mb-4">
+    <div class="col-md-3">
+      <div class="stat-card position-relative">
+        <i class="bi bi-building stat-icon"></i>
+        <div class="stat-value text-primary">{{ total_armazens }}</div>
+        <div class="stat-label">Armazéns Ativos</div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="stat-card position-relative">
+        <i class="bi bi-pin-map stat-icon"></i>
+        <div class="stat-value text-success">{{ total_locais }}</div>
+        <div class="stat-label">Locais de Estocagem</div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="stat-card position-relative">
+        <i class="bi bi-box2 stat-icon"></i>
+        <div class="stat-value text-info">{{ total_lotes }}</div>
+        <div class="stat-label">Lotes em Estoque</div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="stat-card position-relative">
+        <i class="bi bi-exclamation-triangle stat-icon"></i>
+        <div class="stat-value text-warning">{{ lotes_vencendo }}</div>
+        <div class="stat-label">Lotes Vencendo</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Ações Rápidas -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="quick-actions">
+        <h5 class="mb-3"><i class="bi bi-lightning-charge"></i> Ações Rápidas</h5>
+        <div class="d-flex gap-2 flex-wrap">
+          <a href="{% url 'estoque:entrada_create' %}" class="btn btn-success action-btn">
+            <i class="bi bi-box-arrow-in-down"></i> Entrada
+          </a>
+          <a href="{% url 'estoque:saida_create' %}" class="btn btn-warning action-btn">
+            <i class="bi bi-box-arrow-up"></i> Saída
+          </a>
+          <a href="{% url 'estoque:transferencia_create' %}" class="btn btn-info action-btn">
+            <i class="bi bi-arrow-left-right"></i> Transferência
+          </a>
+          <a href="{% url 'estoque:lote_create' %}" class="btn btn-primary action-btn">
+            <i class="bi bi-box2"></i> Novo Lote
+          </a>
+          <a href="{% url 'estoque:movimentacao_list' %}" class="btn btn-outline-secondary action-btn">
+            <i class="bi bi-list-ul"></i> Ver Movimentações
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Alertas -->
+  {% if lotes_vencidos %}
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="alert alert-danger">
+        <h5><i class="bi bi-exclamation-octagon"></i> Lotes Vencidos</h5>
+        <ul class="mb-0">
+          {% for lote in lotes_vencidos %}
+          <li>
+            <strong>{{ lote.numero_lote }}</strong> - {{ lote.produto.nome }} 
+            (Venceu em {{ lote.data_validade|date:"d/m/Y" }})
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Lotes Próximos do Vencimento -->
+  {% if lotes_proximos_vencimento %}
+  <div class="row">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header bg-warning text-white">
+          <h5 class="mb-0"><i class="bi bi-clock-history"></i> Lotes Próximos do Vencimento (30 dias)</h5>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead>
+                <tr>
+                  <th>Lote</th>
+                  <th>Produto</th>
+                  <th>Armazém</th>
+                  <th>Quantidade</th>
+                  <th>Validade</th>
+                  <th>Dias</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for lote in lotes_proximos_vencimento %}
+                <tr>
+                  <td><strong>{{ lote.numero_lote }}</strong></td>
+                  <td>{{ lote.produto.nome }}</td>
+                  <td>{{ lote.armazem.nome }}</td>
+                  <td>{{ lote.quantidade_atual }} {{ lote.unidade_medida.sigla }}</td>
+                  <td>{{ lote.data_validade|date:"d/m/Y" }}</td>
+                  <td>
+                    <span class="badge bg-warning">{{ lote.dias_para_vencer }} dias</span>
+                  </td>
+                  <td>
+                    <a href="{% url 'estoque:lote_detail' lote.pk %}" class="btn btn-sm btn-outline-primary">
+                      <i class="bi bi-eye"></i>
+                    </a>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

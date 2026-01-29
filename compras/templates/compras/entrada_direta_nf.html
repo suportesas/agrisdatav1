@@ -1,0 +1,570 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Entrada Direta de NF-e{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col">
+            <h2>
+                <i class="bi bi-box-arrow-in-down me-2"></i>
+                Entrada Direta de NF-e
+            </h2>
+            <p class="text-muted">Registrar entrada de mercadorias sem pedido de compra</p>
+        </div>
+        <div class="col-auto">
+            <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#ajudaEntradaDiretaModal">
+                <i class="bi bi-question-circle me-2"></i>
+                Ajuda
+            </button>
+        </div>
+    </div>
+
+    <!-- Alerta Informativo -->
+    <div class="alert alert-warning">
+        <i class="bi bi-exclamation-triangle me-2"></i>
+        <strong>Entrada Direta:</strong> Use esta funcionalidade quando receber mercadorias SEM um pedido de compra formal.
+        A entrada será registrada no histórico como "Entrada Direta sem Processo de Pedido/Aprovação".
+    </div>
+
+    <!-- Formulário -->
+    <form method="post" id="entradaDiretaForm" enctype="multipart/form-data">
+        {% csrf_token %}
+        <input type="hidden" name="itens_count" id="itensCount" value="1">
+        
+        <!-- Dados da Nota Fiscal -->
+        <div class="card mb-4">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-receipt me-2"></i>
+                    Dados da Nota Fiscal
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label">Fornecedor *</label>
+                            <select name="fornecedor" class="form-select" required>
+                                <option value="">Selecione...</option>
+                                {% for fornecedor in fornecedores %}
+                                <option value="{{ fornecedor.pk }}" {% if xml_data.fornecedor_nome and fornecedor.nome == xml_data.fornecedor_nome %}selected{% endif %}>{{ fornecedor.nome }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="mb-3">
+                            <label class="form-label">Número NF-e *</label>
+                            <input type="text" name="nota_fiscal" class="form-control" required value="{{ xml_data.nota_fiscal|default:'' }}">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="mb-3">
+                            <label class="form-label">Série</label>
+                            <input type="text" name="serie_nota" class="form-control" value="{{ xml_data.serie_nota|default:'1' }}">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label">Chave NF-e (44 dígitos)</label>
+                            <input type="text" name="chave_nfe" class="form-control" maxlength="44" value="{{ xml_data.chave_nfe|default:'' }}">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="mb-3">
+                            <label class="form-label">Data Emissão *</label>
+                            <input type="date" name="data_emissao_nf" class="form-control" required value="{{ xml_data.data_emissao_nf|default:'' }}">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="mb-3">
+                            <label class="form-label">Valor Total NF *</label>
+                            <input type="number" name="valor_total_nf" class="form-control" step="0.01" required value="{{ xml_data.valor_total_nf|default:'' }}">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="mb-3">
+                            <label class="form-label">Frete (R$)</label>
+                            <input type="number" name="valor_frete" class="form-control" step="0.01" min="0" value="{{ xml_data.valor_frete|default:'' }}">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="mb-3">
+                            <label class="form-label">Desconto (R$)</label>
+                            <input type="number" name="valor_desconto" class="form-control" step="0.01" min="0" value="{{ xml_data.valor_desconto|default:'' }}">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="mb-3">
+                            <label class="form-label">Data Recebimento *</label>
+                            <input type="date" name="data_recebimento" class="form-control" required id="dataRecebimento">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="mb-3">
+                            <label class="form-label">Hora Recebimento *</label>
+                            <input type="time" name="hora_recebimento" class="form-control" required id="horaRecebimento">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label">Observações</label>
+                            <textarea name="observacoes" class="form-control" rows="2"></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Itens -->
+        <div class="card mb-4">
+            <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="bi bi-box-seam me-2"></i>
+                    Itens da Nota Fiscal
+                </h5>
+                <button type="button" class="btn btn-light btn-sm" onclick="adicionarItem()">
+                    <i class="bi bi-plus-circle me-1"></i>
+                    Adicionar Item
+                </button>
+            </div>
+            <div class="card-body">
+                <div id="itensContainer">
+                    {% if xml_data.produtos %}
+                        {% for item in xml_data.produtos %}
+                            {% with prod=item.prod %}
+                            <div class="item-entrada border p-3 mb-3 rounded" data-index="{{ forloop.counter0 }}">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="mb-3">
+                                            <label class="form-label">Produto *</label>
+                                            <select name="produto_{{ forloop.counter0 }}" class="form-select" required>
+                                                <option value="">Selecione...</option>
+                                                {% for produto in produtos %}
+                                                <option value="{{ produto.pk }}" {% if prod.xProd and produto.nome == prod.xProd %}selected{% endif %}>{{ produto.nome }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <div class="mb-3">
+                                            <label class="form-label">Unidade *</label>
+                                            <select name="unidade_medida_{{ forloop.counter0 }}" class="form-select" required>
+                                                {% for unidade in unidades %}
+                                                <option value="{{ unidade.pk }}" {% if prod.uCom and unidade.sigla == prod.uCom %}selected{% endif %}>{{ unidade.sigla }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <div class="mb-3">
+                                            <label class="form-label">Quantidade *</label>
+                                            <input type="number" name="quantidade_{{ forloop.counter0 }}" class="form-control" step="0.001" required value="{{ prod.qCom|default:'' }}">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <div class="mb-3">
+                                            <label class="form-label">Preço Unit. *</label>
+                                            <input type="number" name="preco_unitario_{{ forloop.counter0 }}" class="form-control" step="0.01" required value="{{ prod.vUnCom|default:'' }}">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <div class="mb-3">
+                                            <label class="form-label">&nbsp;</label>
+                                            <button type="button" class="btn btn-danger w-100" onclick="removerItem(this)" style="display: block;">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-3">
+                                        <div class="mb-3">
+                                            <label class="form-label">Local Estoque *</label>
+                                            <select name="local_estoque_{{ forloop.counter0 }}" class="form-select" required>
+                                                <option value="">Selecione...</option>
+                                                {% for local in locais_estoque %}
+                                                <option value="{{ local.pk }}">{{ local.armazem.nome }} - {{ local.descricao|default:local.codigo }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="mb-3">
+                                            <label class="form-label">Lote</label>
+                                            <input type="text" name="lote_{{ forloop.counter0 }}" class="form-control" value="">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="mb-3">
+                                            <label class="form-label">Data Fabricação</label>
+                                            <input type="date" name="data_fabricacao_{{ forloop.counter0 }}" class="form-control" value="">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="mb-3">
+                                            <label class="form-label">Data Validade</label>
+                                            <input type="date" name="data_validade_{{ forloop.counter0 }}" class="form-control" value="">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <div class="mb-3">
+                                            <label class="form-label">Observações</label>
+                                            <textarea name="observacoes_{{ forloop.counter0 }}" class="form-control" rows="1"></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endwith %}
+                        {% endfor %}
+                        <input type="hidden" name="itens_count" id="itensCount" value="{{ xml_data.produtos|length }}">
+                    {% else %}
+                        <!-- Item 0 - Template inicial -->
+                        <div class="item-entrada border p-3 mb-3 rounded" data-index="0">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label class="form-label">Produto *</label>
+                                        <select name="produto_0" class="form-select" required>
+                                            <option value="">Selecione...</option>
+                                            {% for produto in produtos %}
+                                            <option value="{{ produto.pk }}" data-unidade="{{ produto.unidade_medida.pk }}">
+                                                {{ produto.nome }}
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="mb-3">
+                                        <label class="form-label">Unidade *</label>
+                                        <select name="unidade_medida_0" class="form-select" required>
+                                            {% for unidade in unidades %}
+                                            <option value="{{ unidade.pk }}">{{ unidade.sigla }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="mb-3">
+                                        <label class="form-label">Quantidade *</label>
+                                        <input type="number" name="quantidade_0" class="form-control" step="0.001" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="mb-3">
+                                        <label class="form-label">Preço Unit. *</label>
+                                        <input type="number" name="preco_unitario_0" class="form-control" step="0.01" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="mb-3">
+                                        <label class="form-label">&nbsp;</label>
+                                        <button type="button" class="btn btn-danger w-100" onclick="removerItem(this)" style="display: none;">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <div class="mb-3">
+                                        <label class="form-label">Local Estoque *</label>
+                                        <select name="local_estoque_0" class="form-select" required>
+                                            <option value="">Selecione...</option>
+                                            {% for local in locais_estoque %}
+                                            <option value="{{ local.pk }}">{{ local.armazem.nome }} - {{ local.descricao|default:local.codigo }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="mb-3">
+                                        <label class="form-label">Lote</label>
+                                        <input type="text" name="lote_0" class="form-control">
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="mb-3">
+                                        <label class="form-label">Data Fabricação</label>
+                                        <input type="date" name="data_fabricacao_0" class="form-control">
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="mb-3">
+                                        <label class="form-label">Data Validade</label>
+                                        <input type="date" name="data_validade_0" class="form-control">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div class="mb-3">
+                                        <label class="form-label">Observações</label>
+                                        <textarea name="observacoes_0" class="form-control" rows="1"></textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <input type="hidden" name="itens_count" id="itensCount" value="1">
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Upload XML -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-file-earmark-xml me-2"></i>
+                    Upload de XML da NF-e
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label">Selecione o arquivo XML da NF-e</label>
+                    <input type="file" name="xml_file" class="form-control" accept=".xml">
+                </div>
+                <div class="mb-3">
+                    <button type="button" class="btn btn-secondary" onclick="extrairDadosXML()">
+                        <i class="bi bi-file-earmark-arrow-down me-2"></i>
+                        Extrair Dados do XML
+                    </button>
+                </div>
+
+                <!-- Preview dos dados extraídos -->
+                <div id="previewDadosXML" class="d-none">
+                    <h6>Dados Extraídos do XML:</h6>
+                    <div id="dadosXMLContent"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Botões -->
+        <div class="row mb-4">
+            <div class="col">
+                <button type="submit" class="btn btn-success btn-lg">
+                    <i class="bi bi-check-circle me-2"></i>
+                    Registrar Entrada Direta
+                </button>
+                <a href="{% url 'compras:recebimento_list' %}" class="btn btn-secondary btn-lg">
+                    <i class="bi bi-x-circle me-2"></i>
+                    Cancelar
+                </a>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Modal de Ajuda -->
+<div class="modal fade" id="ajudaEntradaDiretaModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title">
+                    <i class="bi bi-question-circle me-2"></i>
+                    Ajuda - Entrada Direta de NF-e
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <h6><i class="bi bi-info-circle me-2"></i>Quando usar Entrada Direta?</h6>
+                <ul>
+                    <li>Compras emergenciais sem tempo para processo formal</li>
+                    <li>Compras pequenas ou esporádicas</li>
+                    <li>Amostras e brindes recebidos</li>
+                    <li>Devoluções de terceiros</li>
+                    <li>Transferências entre filiais</li>
+                </ul>
+
+                <hr>
+
+                <h6><i class="bi bi-clipboard-check me-2"></i>O que acontece?</h6>
+                <ol>
+                    <li>✅ Entrada registrada no histórico como "Entrada Direta"</li>
+                    <li>✅ Estoque atualizado automaticamente</li>
+                    <li>✅ Custo lançado no produto</li>
+                    <li>✅ Rastreabilidade mantida (lote, validade)</li>
+                    <li>⚠️ <strong>Não há validação de pedido</strong> - você tem total liberdade</li>
+                </ol>
+
+                <hr>
+
+                <h6><i class="bi bi-exclamation-triangle me-2 text-warning"></i>Importante</h6>
+                <div class="alert alert-warning mb-0">
+                    <ul class="mb-0">
+                        <li>Todos os campos marcados com * são obrigatórios</li>
+                        <li>Preço unitário é obrigatório para cálculo de custo</li>
+                        <li>A entrada é <strong>imediata e irreversível</strong></li>
+                        <li>Aparecerá no histórico como "sem processo de pedido/aprovação"</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let itemIndex = 1;
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Preenche data e hora atual
+    const dataRecebimento = document.getElementById('dataRecebimento');
+    const horaRecebimento = document.getElementById('horaRecebimento');
+    
+    if (dataRecebimento) {
+        dataRecebimento.value = new Date().toISOString().split('T')[0];
+    }
+    
+    if (horaRecebimento) {
+        horaRecebimento.value = new Date().toTimeString().split(' ')[0].substring(0, 5);
+    }
+
+    // Auto-seleciona unidade ao selecionar produto
+    document.addEventListener('change', function(e) {
+        if (e.target.name && e.target.name.startsWith('produto_')) {
+            const index = e.target.name.split('_')[1];
+            const unidadeSelect = document.querySelector(`select[name="unidade_medida_${index}"]`);
+            const selectedOption = e.target.options[e.target.selectedIndex];
+            const unidadeId = selectedOption.getAttribute('data-unidade');
+            
+            if (unidadeId && unidadeSelect) {
+                unidadeSelect.value = unidadeId;
+            }
+        }
+    });
+});
+
+function adicionarItem() {
+    const container = document.getElementById('itensContainer');
+    const primeiroItem = container.querySelector('.item-entrada');
+    const novoItem = primeiroItem.cloneNode(true);
+    
+    // Atualiza índice
+    novoItem.setAttribute('data-index', itemIndex);
+    
+    // Atualiza nomes dos campos
+    novoItem.querySelectorAll('input, select, textarea').forEach(field => {
+        const name = field.getAttribute('name');
+        if (name) {
+            field.setAttribute('name', name.replace(/_\d+$/, `_${itemIndex}`));
+            field.value = '';
+        }
+    });
+    
+    // Mostra botão de remover
+    const btnRemover = novoItem.querySelector('button[onclick^="removerItem"]');
+    if (btnRemover) {
+        btnRemover.style.display = 'block';
+    }
+    
+    container.appendChild(novoItem);
+    
+    itemIndex++;
+    document.getElementById('itensCount').value = itemIndex;
+}
+
+function removerItem(button) {
+    const item = button.closest('.item-entrada');
+    if (document.querySelectorAll('.item-entrada').length > 1) {
+        item.remove();
+    } else {
+        alert('É necessário pelo menos um item!');
+    }
+}
+
+function extrairDadosXML() {
+    const fileInput = document.querySelector('input[name="xml_file"]');
+    const previewContainer = document.getElementById('previewDadosXML');
+    const dadosXMLContent = document.getElementById('dadosXMLContent');
+    
+    if (fileInput.files.length === 0) {
+        alert('Selecione um arquivo XML primeiro.');
+        return;
+    }
+    
+    const file = fileInput.files[0];
+    const reader = new FileReader();
+    
+    reader.onload = function(e) {
+        const xmlContent = e.target.result;
+        // Aqui você pode fazer o parsing do XML e extrair os dados necessários
+        // Por enquanto, vamos apenas mostrar o conteúdo bruto do XML
+        dadosXMLContent.textContent = xmlContent;
+        previewContainer.classList.remove('d-none');
+    };
+    
+    reader.readAsText(file);
+}
+// Cálculo automático do Valor Total NF
+
+function calcularValorTotalNF() {
+    let total = 0;
+    document.querySelectorAll('.item-entrada').forEach(function(item) {
+        // Busca campos de quantidade e preço unitário
+        const qtdInput = item.querySelector('input[name^="quantidade_"]');
+        const precoInput = item.querySelector('input[name^="preco_unitario_"]');
+        if (qtdInput && precoInput) {
+            const qtd = parseFloat(qtdInput.value.replace(',', '.')) || 0;
+            const preco = parseFloat(precoInput.value.replace(',', '.')) || 0;
+            total += qtd * preco;
+        }
+    });
+    // Soma frete e subtrai desconto do cabeçalho
+    const campoFrete = document.querySelector('input[name="valor_frete"]');
+    const campoDesconto = document.querySelector('input[name="valor_desconto"]');
+    const frete = campoFrete ? parseFloat(campoFrete.value.replace(',', '.')) || 0 : 0;
+    const desconto = campoDesconto ? parseFloat(campoDesconto.value.replace(',', '.')) || 0 : 0;
+    total = total + frete - desconto;
+    const campoTotal = document.querySelector('input[name="valor_total_nf"]');
+    if (campoTotal) {
+        campoTotal.value = total.toFixed(2);
+    }
+}
+
+
+document.addEventListener('input', function(e) {
+    if (
+        e.target && (
+            e.target.name.startsWith('quantidade_') ||
+            e.target.name.startsWith('preco_unitario_') ||
+            e.target.name === 'valor_frete' ||
+            e.target.name === 'valor_desconto'
+        )
+    ) {
+        calcularValorTotalNF();
+    }
+});
+
+// Recalcula ao adicionar/remover item
+const oldAdicionarItem = window.adicionarItem;
+window.adicionarItem = function() {
+    oldAdicionarItem();
+    calcularValorTotalNF();
+};
+const oldRemoverItem = window.removerItem;
+window.removerItem = function(btn) {
+    oldRemoverItem(btn);
+    calcularValorTotalNF();
+};
+
+// Inicializa cálculo ao carregar
+document.addEventListener('DOMContentLoaded', calcularValorTotalNF);
+</script>
+{% endblock %}

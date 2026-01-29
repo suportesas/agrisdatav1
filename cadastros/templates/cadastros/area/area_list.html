@@ -201,25 +201,16 @@
 
               <!-- Ações -->
               <td class="text-center">
-                <div class="btn-group btn-group-sm" role="group">
-                  <a 
-                    href="{% url 'cadastros:area_detail' area.id %}" 
-                    class="btn btn-outline-info"
-                    title="Detalhes">
-                    <i class="bi bi-eye"></i>
-                  </a>
-                  <a 
-                    href="{% url 'cadastros:area_update' area.id %}" 
-                    class="btn btn-outline-primary"
-                    title="Editar">
-                    <i class="bi bi-pencil"></i>
-                  </a>
-                  <a 
-                    href="{% url 'cadastros:area_delete' area.id %}" 
-                    class="btn btn-outline-danger"
-                    title="Excluir">
-                    <i class="bi bi-trash"></i>
-                  </a>
+                <div class="dropdown">
+                  <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                    <i class="bi bi-three-dots-vertical"></i>
+                  </button>
+                  <ul class="dropdown-menu dropdown-menu-end">
+                    <li><a class="dropdown-item" href="{% url 'cadastros:area_detail' area.id %}"><i class="bi bi-eye text-primary"></i> Visualizar</a></li>
+                    <li><a class="dropdown-item" href="{% url 'cadastros:area_update' area.id %}"><i class="bi bi-pencil text-warning"></i> Editar</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item text-danger" href="{% url 'cadastros:area_delete' area.id %}"><i class="bi bi-trash"></i> Excluir</a></li>
+                  </ul>
                 </div>
               </td>
             </tr>

@@ -266,6 +266,15 @@ class Empresa(models.Model):
         help_text='Sigla do estado'
     )
     
+    # Logo da empresa
+    logo = models.ImageField(
+        'Logo da Empresa',
+        upload_to='empresas/logos/',
+        blank=True,
+        null=True,
+        help_text='Logo para documentos (PDF, relatórios, etc.)'
+    )
+    
     # ✅ CORRIGIDO: Plano agora é ForeignKey correto
     plano = models.ForeignKey(
         Plano,

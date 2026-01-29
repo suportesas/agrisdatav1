@@ -1,0 +1,72 @@
+{% comment %}
+Componente reutilizável: Breadcrumb visual do fluxo de compras
+Uso: {% include 'compras/includes/fluxo_compras.html' with etapa_atual='solicitacao' solicitacao=object %}
+Etapas: solicitacao, cotacao, pedido, recebimento
+{% endcomment %}
+
+<div class="card mb-4 border-0 shadow-sm">
+    <div class="card-body p-3">
+        <!-- Timeline Visual -->
+        <div class="d-flex align-items-center justify-content-between position-relative">
+            <!-- Linha de fundo -->
+            <div class="position-absolute top-50 start-0 end-0 border-top border-2" 
+                 style="z-index: 0; border-color: {% if etapa_atual in 'cotacao,pedido,recebimento' %}#28a745{% else %}#dee2e6{% endif %};"></div>
+            
+            <!-- Step 1: Solicitação -->
+            <div class="position-relative text-center flex-grow-1" style="z-index: 1;">
+                <div class="mx-auto mb-2" style="width: 50px; height: 50px;">
+                    <button type="button" class="btn rounded-circle w-100 h-100 {% if etapa_atual in 'solicitacao,cotacao,pedido,recebimento' %}btn-success{% else %}btn-light{% endif %}" 
+                            style="border: 2px solid {% if etapa_atual in 'solicitacao,cotacao,pedido,recebimento' %}#28a745{% else %}#dee2e6{% endif %}; font-size: 20px;">
+                        📋
+                    </button>
+                </div>
+                <small class="d-block text-muted">Solicitação</small>
+                {% if solicitacao %}
+                    <small class="d-block text-success fw-bold">{{ solicitacao.numero }}</small>
+                {% endif %}
+            </div>
+            
+            <!-- Step 2: Cotação -->
+            <div class="position-relative text-center flex-grow-1" style="z-index: 1;">
+                <div class="mx-auto mb-2" style="width: 50px; height: 50px;">
+                    <button type="button" class="btn rounded-circle w-100 h-100 {% if etapa_atual in 'cotacao,pedido,recebimento' %}btn-success{% else %}btn-light{% endif %}" 
+                            style="border: 2px solid {% if etapa_atual in 'cotacao,pedido,recebimento' %}#28a745{% else %}#dee2e6{% endif %}; font-size: 20px;">
+                        📊
+                    </button>
+                </div>
+                <small class="d-block text-muted">Cotação</small>
+                {% if cotacao %}
+                    <small class="d-block text-success fw-bold">{{ cotacao.numero }}</small>
+                {% endif %}
+            </div>
+            
+            <!-- Step 3: Pedido -->
+            <div class="position-relative text-center flex-grow-1" style="z-index: 1;">
+                <div class="mx-auto mb-2" style="width: 50px; height: 50px;">
+                    <button type="button" class="btn rounded-circle w-100 h-100 {% if etapa_atual in 'pedido,recebimento' %}btn-success{% else %}btn-light{% endif %}" 
+                            style="border: 2px solid {% if etapa_atual in 'pedido,recebimento' %}#28a745{% else %}#dee2e6{% endif %}; font-size: 20px;">
+                        📦
+                    </button>
+                </div>
+                <small class="d-block text-muted">Pedido</small>
+                {% if pedido %}
+                    <small class="d-block text-success fw-bold">{{ pedido.numero }}</small>
+                {% endif %}
+            </div>
+            
+            <!-- Step 4: Recebimento -->
+            <div class="position-relative text-center flex-grow-1" style="z-index: 1;">
+                <div class="mx-auto mb-2" style="width: 50px; height: 50px;">
+                    <button type="button" class="btn rounded-circle w-100 h-100 {% if etapa_atual == 'recebimento' %}btn-success{% else %}btn-light{% endif %}" 
+                            style="border: 2px solid {% if etapa_atual == 'recebimento' %}#28a745{% else %}#dee2e6{% endif %}; font-size: 20px;">
+                        ✓
+                    </button>
+                </div>
+                <small class="d-block text-muted">Entrada Estoque</small>
+                {% if recebimento %}
+                    <small class="d-block text-success fw-bold">{{ recebimento.numero }}</small>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>

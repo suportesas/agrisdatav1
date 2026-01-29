@@ -1,0 +1,147 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Conferir Recebimento {{ recebimento.numero }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col">
+            <h2>
+                <i class="bi bi-clipboard-check me-2"></i>
+                Conferir Recebimento {{ recebimento.numero }}
+            </h2>
+            <p class="text-muted">
+                Pedido: {{ recebimento.pedido.numero }} | NF-e: {{ recebimento.nota_fiscal }}
+            </p>
+        </div>
+    </div>
+
+    <!-- Formulário de Conferência -->
+    <form method="post">
+        {% csrf_token %}
+        
+        <div class="card mb-4">
+            <div class="card-header bg-warning">
+                <h5 class="mb-0">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    Conferência do Recebimento
+                </h5>
+            </div>
+            <div class="card-body">
+                <!-- Itens Recebidos -->
+                <div class="table-responsive mb-4">
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Produto</th>
+                                <th class="text-end">Qtd. Recebida</th>
+                                <th>Local</th>
+                                <th>Lote</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in recebimento.itens.all %}
+                            <tr>
+                                <td>
+                                    {% if item.item_pedido %}
+                                        {{ item.item_pedido.produto.nome }}
+                                    {% else %}
+                                        {{ item.produto.nome }}
+                                    {% endif %}
+                                </td>
+                                <td class="text-end">
+                                    {{ item.quantidade_recebida }}
+                                    {% if item.item_pedido %}
+                                        {{ item.item_pedido.unidade_medida.sigla }}
+                                    {% else %}
+                                        {{ item.unidade_medida.sigla }}
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if item.local_estoque %}
+                                        {{ item.local_estoque }}
+                                    {% elif item.lote and item.lote.local_estocagem %}
+                                        {{ item.lote.local_estocagem }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if item.lote %}
+                                        {{ item.lote.numero_lote }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pergunta sobre Divergências -->
+                <div class="form-check form-check-inline mb-3">
+                    <input class="form-check-input" type="radio" name="tem_divergencia" 
+                           id="semDivergencia" value="nao" checked>
+                    <label class="form-check-label" for="semDivergencia">
+                        <i class="bi bi-check-circle text-success me-1"></i>
+                        Recebimento Conferido - Tudo OK
+                    </label>
+                </div>
+                <div class="form-check form-check-inline mb-3">
+                    <input class="form-check-input" type="radio" name="tem_divergencia" 
+                           id="comDivergencia" value="sim">
+                    <label class="form-check-label" for="comDivergencia">
+                        <i class="bi bi-exclamation-triangle text-danger me-1"></i>
+                        Há Divergências
+                    </label>
+                </div>
+
+                <!-- Campo de Divergências (inicialmente oculto) -->
+                <div id="campoDivergencias" style="display: none;">
+                    <div class="alert alert-warning">
+                        <strong>Descreva as divergências encontradas:</strong>
+                    </div>
+                    <textarea name="divergencias" class="form-control" rows="4" 
+                              placeholder="Exemplos: quantidade diferente, produto danificado, etc."></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- Botões -->
+        <div class="row mb-4">
+            <div class="col">
+                <button type="submit" class="btn btn-success btn-lg">
+                    <i class="bi bi-check-circle me-2"></i>
+                    Confirmar Conferência
+                </button>
+                <a href="{% url 'compras:recebimento_detail' recebimento.pk %}" class="btn btn-secondary btn-lg">
+                    <i class="bi bi-x-circle me-2"></i>
+                    Cancelar
+                </a>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const semDivergencia = document.getElementById('semDivergencia');
+    const comDivergencia = document.getElementById('comDivergencia');
+    const campoDivergencias = document.getElementById('campoDivergencias');
+    
+    function toggleDivergencias() {
+        if (comDivergencia.checked) {
+            campoDivergencias.style.display = 'block';
+        } else {
+            campoDivergencias.style.display = 'none';
+        }
+    }
+    
+    semDivergencia.addEventListener('change', toggleDivergencias);
+    comDivergencia.addEventListener('change', toggleDivergencias);
+});
+</script>
+{% endblock %}

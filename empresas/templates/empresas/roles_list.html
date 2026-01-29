@@ -33,8 +33,15 @@
   <!-- Header (title + create) -->
   <div class="d-flex justify-content-between align-items-center mb-3">
     <div>
-      <h2 class="fw-bold mb-1"><i class="bi bi-people text-success"></i> Funções</h2>
-      <p class="text-muted mb-0">Gerencie papéis e permissões específicas da sua empresa (Proprietário, Almoxarife, Operacional, etc.)</p>
+      <h2 class="fw-bold mb-1"><i class="bi bi-shield-lock text-success"></i> Funções e Cargos</h2>
+      {% if request.user.empresa %}
+      <p class="text-muted mb-0">
+        <i class="bi bi-building"></i> <strong>{{ request.user.empresa.nome }}</strong> - 
+        Gerencie papéis e permissões específicas da sua empresa
+      </p>
+      {% else %}
+      <p class="text-muted mb-0">Gerencie papéis e permissões do sistema</p>
+      {% endif %}
     </div>
     <div class="d-flex gap-2 align-items-center">
       <button id="toggle-hide" type="button" class="btn btn-outline-info btn-sm" aria-pressed="false" title="Ocultar outras funções">Ocultar outras</button>
@@ -111,39 +118,96 @@ document.addEventListener('DOMContentLoaded', function(){
   const search = document.getElementById('role-search');
   const filter = document.getElementById('role-filter');
   const resetBtn = document.getElementById('reset-filters');
+  
+  // Focus / hide state persisted in localStorage
+  const hideKey = 'roles_hide_others';
+  const hideBtn = document.getElementById('toggle-hide');
+  let hideState = localStorage.getItem(hideKey) === '1';
+  
+  function updateHideBtn(){ 
+    if(hideBtn) { 
+      hideBtn.textContent = hideState ? 'Mostrar todas' : 'Ocultar outras'; 
+      hideBtn.setAttribute('aria-pressed', hideState ? 'true' : 'false'); 
+    } 
+  }
+  
+  function applyHideState(){
+    const sel = document.querySelector('.role-card.selected');
+    document.querySelectorAll('.role-card').forEach(r=>{
+      if(!sel){ r.classList.remove('dimmed'); r.classList.remove('d-none'); return; }
+      if(r === sel){ r.classList.remove('dimmed'); r.classList.remove('d-none'); } 
+      else { 
+        if(hideState) r.classList.add('d-none'); 
+        else r.classList.add('dimmed'); 
+      }
+    });
+  }
+  
+  // Expose for external use
+  window.applyRolesHideState = applyHideState;
 
   if(search) search.addEventListener('input', applyFilters);
   if(filter) filter.addEventListener('change', applyFilters);
+  
   if(resetBtn){
     resetBtn.addEventListener('click', function(){
+      // Resetar campos de busca e filtro
       document.getElementById('role-search').value = '';
       document.getElementById('role-filter').value = 'all';
+      
+      // Resetar template selecionado
+      const bulkTemplate = document.getElementById('bulk-template-select');
+      if(bulkTemplate) bulkTemplate.value = '';
+      
+      // Desabilitar botão de aplicar
+      const bulkApplyBtn = document.getElementById('bulk-apply');
+      if(bulkApplyBtn) bulkApplyBtn.disabled = true;
+      
+      // Desmarcar todos os checkboxes de seleção
+      document.querySelectorAll('.role-select').forEach(cb => cb.checked = false);
+      
+      // Remover seleção visual de cards
+      document.querySelectorAll('.role-card').forEach(card => {
+        card.classList.remove('selected');
+        card.classList.remove('dimmed');
+        card.classList.remove('d-none');
+      });
+      
+      // Limpar status do template
+      const bulkStatus = document.getElementById('bulk-template-status');
+      if(bulkStatus) bulkStatus.textContent = '';
+      
+      // Limpar área de permissões
+      const permArea = document.getElementById('permissions-area');
+      if(permArea) permArea.innerHTML = '';
+      
+      // Resetar estado "ocultar outras"
+      hideState = false;
+      localStorage.setItem(hideKey, '0');
+      updateHideBtn();
+      
+      // Aplicar filtros
       applyFilters();
     });
   }
+  
+  // Toggle hide button
+  if(hideBtn){
+    hideBtn.addEventListener('click', function(){ 
+      hideState = !hideState; 
+      localStorage.setItem(hideKey, hideState ? '1' : '0'); 
+      updateHideBtn(); 
+      applyHideState(); 
+    });
+  }
+  
+  // Initialize hide state
+  updateHideBtn(); 
+  applyHideState();
 
   // Use event delegation so handlers persist even if #roles-area is replaced
   const rolesArea = document.getElementById('roles-area');
   if(rolesArea){
-    // Focus / hide state persisted in localStorage
-    const hideKey = 'roles_hide_others';
-    const hideBtn = document.getElementById('toggle-hide');
-    let hideState = localStorage.getItem(hideKey) === '1';
-    function updateHideBtn(){ if(hideBtn) { hideBtn.textContent = hideState ? 'Mostrar todas' : 'Ocultar outras'; hideBtn.setAttribute('aria-pressed', hideState ? 'true' : 'false'); } }
-    function applyHideState(){
-      const sel = document.querySelector('.role-card.selected');
-      document.querySelectorAll('.role-card').forEach(r=>{
-        if(!sel){ r.classList.remove('dimmed'); r.classList.remove('d-none'); return; }
-        if(r === sel){ r.classList.remove('dimmed'); r.classList.remove('d-none'); } else { if(hideState) r.classList.add('d-none'); else r.classList.add('dimmed'); }
-      });
-    }
-    updateHideBtn(); applyHideState();
-    // expose small helper so other scripts can re-apply after programmatic selection
-    window.applyRolesHideState = applyHideState;
-
-    if(hideBtn){
-      hideBtn.addEventListener('click', function(){ hideState = !hideState; localStorage.setItem(hideKey, hideState ? '1' : '0'); updateHideBtn(); applyHideState(); });
-    }
 
     rolesArea.addEventListener('click', function(e){
       // Permission button (explicit)

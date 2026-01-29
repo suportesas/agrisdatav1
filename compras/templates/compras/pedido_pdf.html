@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Pedido de Compra {{ pedido.numero }}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 2cm;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 10pt;
+            line-height: 1.4;
+            color: #333;
+        }
+        .header {
+            border-bottom: 3px solid #0d6efd;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .empresa-info {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .empresa-info h1 {
+            color: #0d6efd;
+            margin: 0;
+            font-size: 18pt;
+        }
+        .pedido-numero {
+            background: #0d6efd;
+            color: white;
+            padding: 10px;
+            text-align: center;
+            font-size: 16pt;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        .info-section {
+            margin-bottom: 20px;
+        }
+        .info-section h3 {
+            background: #f8f9fa;
+            padding: 8px;
+            margin: 0 0 10px 0;
+            font-size: 12pt;
+            border-left: 4px solid #0d6efd;
+        }
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        .info-item {
+            margin-bottom: 8px;
+        }
+        .info-label {
+            font-weight: bold;
+            color: #666;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th {
+            background: #0d6efd;
+            color: white;
+            padding: 10px;
+            text-align: left;
+            font-weight: bold;
+        }
+        td {
+            padding: 8px;
+            border-bottom: 1px solid #ddd;
+        }
+        tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+        .text-end {
+            text-align: right;
+        }
+        .total-section {
+            margin-top: 20px;
+            text-align: right;
+        }
+        .total-row {
+            display: inline-block;
+            margin-left: auto;
+            min-width: 300px;
+        }
+        .total-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            border-bottom: 1px solid #ddd;
+        }
+        .total-item.grand-total {
+            font-weight: bold;
+            font-size: 12pt;
+            border-top: 2px solid #0d6efd;
+            border-bottom: 2px solid #0d6efd;
+            padding: 10px 0;
+            margin-top: 5px;
+        }
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+            text-align: center;
+            font-size: 9pt;
+            color: #666;
+        }
+        .assinatura {
+            margin-top: 60px;
+            padding-top: 40px;
+        }
+        .assinatura-linha {
+            border-top: 1px solid #333;
+            width: 300px;
+            margin: 0 auto;
+            padding-top: 5px;
+            text-align: center;
+        }
+        .observacoes {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            padding: 10px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="empresa-info">
+            <h1>{{ pedido.empresa.razao_social }}</h1>
+            {% if pedido.empresa.cnpj %}
+            <p>CNPJ: {{ pedido.empresa.cnpj }}</p>
+            {% endif %}
+            {% if pedido.empresa.endereco %}
+            <p>{{ pedido.empresa.endereco }}</p>
+            {% endif %}
+            {% if pedido.empresa.telefone %}
+            <p>Tel: {{ pedido.empresa.telefone }} | Email: {{ pedido.empresa.email }}</p>
+            {% endif %}
+        </div>
+        
+        <div class="pedido-numero">
+            PEDIDO DE COMPRA Nº {{ pedido.numero }}
+        </div>
+    </div>
+
+    <div class="info-section">
+        <h3>Informações do Fornecedor</h3>
+        <div class="info-item">
+            <span class="info-label">Razão Social:</span> {{ pedido.fornecedor.razao_social }}
+        </div>
+        {% if pedido.fornecedor.cnpj %}
+        <div class="info-item">
+            <span class="info-label">CNPJ:</span> {{ pedido.fornecedor.cnpj }}
+        </div>
+        {% endif %}
+        {% if pedido.fornecedor.endereco %}
+        <div class="info-item">
+            <span class="info-label">Endereço:</span> {{ pedido.fornecedor.endereco }}
+        </div>
+        {% endif %}
+        {% if pedido.fornecedor.telefone %}
+        <div class="info-item">
+            <span class="info-label">Telefone:</span> {{ pedido.fornecedor.telefone }}
+        </div>
+        {% endif %}
+        {% if pedido.fornecedor.email %}
+        <div class="info-item">
+            <span class="info-label">Email:</span> {{ pedido.fornecedor.email }}
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="info-section">
+        <h3>Dados do Pedido</h3>
+        <div class="info-grid">
+            <div>
+                <div class="info-item">
+                    <span class="info-label">Data do Pedido:</span> {{ pedido.data_pedido|date:"d/m/Y" }}
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Previsão de Entrega:</span> {{ pedido.data_entrega_prevista|date:"d/m/Y" }}
+                </div>
+            </div>
+            <div>
+                <div class="info-item">
+                    <span class="info-label">Condição de Pagamento:</span> {{ pedido.condicao_pagamento }}
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Status:</span> {{ pedido.get_status_display }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="info-section">
+        <h3>Itens do Pedido</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 8%;">Código</th>
+                    <th style="width: 32%;">Produto</th>
+                    <th style="width: 10%;">Unidade</th>
+                    <th style="width: 12%;" class="text-end">Quantidade</th>
+                    <th style="width: 13%;" class="text-end">Preço Unit.</th>
+                    <th style="width: 13%;" class="text-end">Subtotal</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in pedido.itens.all %}
+                <tr>
+                    <td>{{ item.produto.codigo }}</td>
+                    <td>{{ item.produto.nome }}</td>
+                    <td>{{ item.unidade_medida.sigla }}</td>
+                    <td class="text-end">{{ item.quantidade_pedida }}</td>
+                    <td class="text-end">R$ {{ item.preco_unitario|floatformat:2 }}</td>
+                    <td class="text-end">R$ {{ item.subtotal|floatformat:2 }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="total-section">
+        <div class="total-row">
+            <div class="total-item">
+                <span>Subtotal:</span>
+                <span>R$ {{ pedido.valor_total|floatformat:2 }}</span>
+            </div>
+            {% if pedido.valor_desconto %}
+            <div class="total-item">
+                <span>Desconto:</span>
+                <span>R$ {{ pedido.valor_desconto|floatformat:2 }}</span>
+            </div>
+            {% endif %}
+            {% if pedido.valor_frete %}
+            <div class="total-item">
+                <span>Frete:</span>
+                <span>R$ {{ pedido.valor_frete|floatformat:2 }}</span>
+            </div>
+            {% endif %}
+            <div class="total-item grand-total">
+                <span>TOTAL:</span>
+                <span>R$ {{ pedido.valor_total|floatformat:2 }}</span>
+            </div>
+        </div>
+    </div>
+
+    {% if pedido.observacoes %}
+    <div class="observacoes">
+        <strong>Observações:</strong><br>
+        {{ pedido.observacoes|linebreaks }}
+    </div>
+    {% endif %}
+
+    <div class="assinatura">
+        <div class="assinatura-linha">
+            {{ pedido.empresa.razao_social }}<br>
+            <small>Responsável pela Compra</small>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>Documento gerado em {{ now|date:"d/m/Y às H:i" }}</p>
+        <p>Este é um documento digital e não necessita de assinatura física.</p>
+    </div>
+</body>
+</html>

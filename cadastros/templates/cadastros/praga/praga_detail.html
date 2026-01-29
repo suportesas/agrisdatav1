@@ -1,0 +1,125 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ praga.nome_comum }} | ERP Agrícola{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  
+  <!-- Header -->
+  <div class="d-flex align-items-center justify-content-between mb-4">
+    <div class="d-flex align-items-center">
+      <a href="{% url 'cadastros:praga_list' %}" class="btn btn-outline-secondary me-3">
+        <i class="bi bi-arrow-left"></i>
+      </a>
+      <div>
+        <h2 class="fw-bold mb-0">
+          <i class="bi bi-bug text-danger"></i> {{ praga.nome_comum }}
+        </h2>
+        {% if praga.nome_cientifico %}
+          <p class="text-muted mb-0"><em>{{ praga.nome_cientifico }}</em></p>
+        {% endif %}
+      </div>
+    </div>
+    <div>
+      {% if praga.ativa %}
+        <span class="badge bg-success fs-6">Ativa</span>
+      {% else %}
+        <span class="badge bg-secondary fs-6">Inativa</span>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Ações -->
+  <div class="mb-4">
+    <a href="{% url 'cadastros:praga_update' praga.pk %}" class="btn btn-primary">
+      <i class="bi bi-pencil"></i> Editar
+    </a>
+    <a href="{% url 'cadastros:praga_delete' praga.pk %}" class="btn btn-danger">
+      <i class="bi bi-trash"></i> Excluir
+    </a>
+  </div>
+
+  <!-- Informações -->
+  <div class="row g-4">
+    
+    <!-- Dados Básicos -->
+    <div class="col-md-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header bg-danger bg-opacity-10 border-0">
+          <h5 class="mb-0 fw-bold">
+            <i class="bi bi-info-circle text-danger"></i> Dados Básicos
+          </h5>
+        </div>
+        <div class="card-body">
+          <table class="table table-borderless mb-0">
+            <tbody>
+              <tr>
+                <td class="fw-bold" width="40%">Nome Comum:</td>
+                <td>{{ praga.nome_comum }}</td>
+              </tr>
+              <tr>
+                <td class="fw-bold">Nome Científico:</td>
+                <td>
+                  {% if praga.nome_cientifico %}
+                    <em>{{ praga.nome_cientifico }}</em>
+                  {% else %}
+                    <span class="text-muted">Não informado</span>
+                  {% endif %}
+                </td>
+              </tr>
+              <tr>
+                <td class="fw-bold">Status:</td>
+                <td>
+                  {% if praga.ativa %}
+                    <span class="badge bg-success">Ativa</span>
+                  {% else %}
+                    <span class="badge bg-secondary">Inativa</span>
+                  {% endif %}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Auditoria -->
+    <div class="col-md-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header bg-info bg-opacity-10 border-0">
+          <h5 class="mb-0 fw-bold">
+            <i class="bi bi-clock-history text-info"></i> Auditoria
+          </h5>
+        </div>
+        <div class="card-body">
+          <table class="table table-borderless mb-0">
+            <tbody>
+              <tr>
+                <td class="fw-bold" width="40%">Cadastrado por:</td>
+                <td>
+                  {% if praga.cadastrado_por %}
+                    {{ praga.cadastrado_por.get_full_name }}
+                  {% else %}
+                    <span class="text-muted">-</span>
+                  {% endif %}
+                </td>
+              </tr>
+              <tr>
+                <td class="fw-bold">Data de Cadastro:</td>
+                <td>{{ praga.data_cadastro|date:"d/m/Y H:i" }}</td>
+              </tr>
+              <tr>
+                <td class="fw-bold">Última Atualização:</td>
+                <td>{{ praga.data_atualizacao|date:"d/m/Y H:i" }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+{% endblock %}

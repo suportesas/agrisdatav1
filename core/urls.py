@@ -77,6 +77,9 @@ urlpatterns = [
     path('empresas/', include(('empresas.urls', 'empresas'))),
     path('usuarios/', include(('usuarios.urls', 'usuarios'))),
     path('cadastros/', include(('cadastros.urls', 'cadastros'))),
+    path('produtos/', include(('produtos.urls', 'produtos'))),
+    path('estoque/', include(('estoque.urls', 'estoque'))),
+    path('compras/', include(('compras.urls', 'compras'))),
     
     # ============================================
     # API REST

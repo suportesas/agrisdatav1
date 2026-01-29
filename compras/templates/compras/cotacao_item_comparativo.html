@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+
+{% block title %}Comparativo de Propostas{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Fluxo Visual do Processo de Compra -->
+    {% include 'compras/includes/fluxo_compras.html' with etapa_atual='cotacao' solicitacao=cotacao.solicitacao cotacao=cotacao %}
+    
+    <!-- Instruções para esta etapa -->
+    {% include 'compras/includes/instrucoes_etapa.html' with etapa='cotacao' %}
+    
+    <h2 class="mb-4"><i class="bi bi-list-columns"></i> Comparativo de Propostas</h2>
+    <form method="post" action="">
+        {% csrf_token %}
+        {% for item in itens_data %}
+        <div class="card shadow-sm mb-4 border-0">
+            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                <div>
+                    <span class="fw-bold">{{ item.item.produto.nome }}</span>
+                    <span class="text-muted ms-2">({{ item.item.quantidade }} {{ item.item.unidade_medida.sigla }})</span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="mb-3 text-end">
+                    <a href="{% url 'compras:adicionar_proposta' cotacao.pk item.item.pk %}" class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-pencil-square"></i> Adicionar/Editar Propostas
+                    </a>
+                </div>
+                {% if item.propostas %}
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover align-middle bg-white">
+                        <thead class="table-light">
+                            <tr class="align-middle text-center">
+                                <th>Fornecedor</th>
+                                <th class="text-end">Preço Unit.</th>
+                                <th class="text-end">Total</th>
+                                <th>Prazo (dias)</th>
+                                <th>Condições</th>
+                                <th>Selecionar</th>
+                                <th>Motivo (se não menor preço)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for proposta in item.propostas %}
+                            <tr {% if proposta.melhor_preco %}class="table-info"{% endif %}>
+                                <td class="fw-bold">{{ proposta.fornecedor.nome }}</td>
+                                <td class="text-end">R$ {{ proposta.preco_unitario|floatformat:2 }}</td>
+                                <td class="text-end">R$ {{ proposta.preco_total|floatformat:2 }}</td>
+                                <td class="text-center">{{ proposta.prazo_entrega }} dias</td>
+                                <td>{{ proposta.condicao_pagamento|default:"-" }}</td>
+                                <td class="text-center">
+                                    <input type="radio" name="selecionada_{{ item.item.pk }}" value="{{ proposta.pk }}" {% if proposta.selecionado %}checked{% endif %}>
+                                    {% if proposta.melhor_preco %}<span class="badge bg-info">Menor Preço</span>{% endif %}
+                                </td>
+                                <td>
+                                    <input type="text" name="motivo_{{ proposta.pk }}" class="form-control form-control-sm" value="{{ proposta.motivo_escolha }}" {% if proposta.melhor_preco %}readonly{% endif %} placeholder="Motivo da escolha">
+                                </td>
+                            </tr>
+                            {% if proposta.observacoes %}
+                            <tr>
+                                <td colspan="7" class="bg-light">
+                                    <small><strong>Observações:</strong> {{ proposta.observacoes }}</small>
+                                </td>
+                            </tr>
+                            {% endif %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle"></i> Nenhuma proposta recebida para este item.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+        <div class="d-flex justify-content-between align-items-center mt-3">
+            <div class="text-muted small">
+                <i class="bi bi-info-circle"></i> Se selecionar uma proposta diferente do menor preço, justifique o motivo.
+            </div>
+            <button type="submit" class="btn btn-success px-4 shadow">
+                <i class="bi bi-save"></i> Salvar Seleção
+            </button>
+        </div>
+    </form>
+    <div class="text-end mt-4">
+        {% if has_pedidos %}
+            <div class="alert alert-info d-inline-block me-2">
+                <i class="bi bi-info-circle"></i> Pedidos de compra já foram gerados a partir desta cotação.
+            </div>
+            <button class="btn btn-primary" disabled title="Pedidos já foram gerados">
+                <i class="bi bi-file-earmark-plus"></i> Gerar Pedido de Compra
+            </button>
+        {% else %}
+            <a href="{% url 'compras:pedido_gerar' cotacao.pk %}" class="btn btn-primary">
+                <i class="bi bi-file-earmark-plus"></i> Gerar Pedido de Compra
+            </a>
+        {% endif %}
+    </div>
+</div>
+<style>
+.card { border-radius: 1rem; }
+.table th, .table td { vertical-align: middle !important; }
+.badge.bg-info { font-size: 0.9em; }
+.btn-success { box-shadow: 0 2px 8px rgba(40,167,69,0.08); }
+.btn-outline-primary { box-shadow: 0 2px 8px rgba(13,110,253,0.08); }
+.form-control-sm { font-size: 0.95em; }
+@media (max-width: 991.98px) {
+    .card { border-radius: .5rem; }
+    .card-body { padding: 1.25rem !important; }
+}
+</style>
+{% endblock %}

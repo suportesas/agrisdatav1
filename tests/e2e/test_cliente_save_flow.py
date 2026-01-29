@@ -196,9 +196,9 @@ def test_cliente_edit_flow(page, live_server, e2e_cliente_data):
     prazo_val = page.input_value('#id_prazo_pagamento')
     assert prazo_val == '30'
 
-# Make sure moeda is included in POST (Choices.js can keep underlying <option> hidden). Add a hidden sync field as a reliable fallback
-        page.evaluate("() => { const form = document.getElementById('clienteForm'); let h = document.getElementById('sync_hidden_moeda_padrao'); if (h && h.parentNode) h.parentNode.removeChild(h); h = document.createElement('input'); h.type='hidden'; h.name='moeda_padrao'; h.id='sync_hidden_moeda_padrao'; h.value='JPY'; form.appendChild(h); }")
-        # Save client
+    # Make sure moeda is included in POST (Choices.js can keep underlying <option> hidden). Add a hidden sync field as a reliable fallback
+    page.evaluate("() => { const form = document.getElementById('clienteForm'); let h = document.getElementById('sync_hidden_moeda_padrao'); if (h && h.parentNode) h.parentNode.removeChild(h); h = document.createElement('input'); h.type='hidden'; h.name='moeda_padrao'; h.id='sync_hidden_moeda_padrao'; h.value='JPY'; form.appendChild(h); }")
+    # Save client
     page.click('button#clienteSaveBtn')
 
     # wait for redirect to client list or detail; if no redirect, reload and assert saved data persisted

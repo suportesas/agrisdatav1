@@ -1,0 +1,140 @@
+<!-- Template renomeado para evitar duplicidade. Usar apenas se necessário para cotações tradicionais. -->
+{% extends 'base.html' %}
+{% block title %}Cotações Tradicionais{% endblock %}
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-shopping-cart"></i> Cotações</h2>
+    </div>
+    
+    <!-- Filtros -->
+    <div class="card mb-3">
+        <div class="card-body">
+            <form method="get" class="row g-2">
+                <div class="col-md-3">
+                    <select name="status" class="form-select" onchange="this.form.submit()">
+                        <option value="">Todos os Status</option>
+                        {% for value, label in status_choices %}
+                        <option value="{{ value }}" {% if request.GET.status == value %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Alerta de cotações pendentes -->
+    {% if cotacoes_pendentes > 0 %}
+    <div class="alert alert-warning mb-3" role="alert">
+        <strong>{{ cotacoes_pendentes }}</strong> cotações pendentes de resposta!
+    </div>
+    {% endif %}
+    
+    <!-- Card de solicitações pendentes de cotação -->
+    {% if solicitacoes_pendentes > 0 %}
+    <div class="alert alert-info mb-3" role="alert">
+        <strong>{{ solicitacoes_pendentes }}</strong> solicitações de cotação pendentes ({{ percentual_pendentes }}%)
+    </div>
+    {% endif %}
+    
+    <!-- Card de solicitações parcialmente cotadas -->
+    {% if solicitacoes_parcial > 0 %}
+    <div class="alert alert-primary mb-3" role="alert">
+        <strong>{{ solicitacoes_parcial }}</strong> solicitações de compra estão <b>Parcialmente Cotadas</b>!
+    </div>
+    {% endif %}
+    
+    <!-- Lista -->
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Número</th>
+                            <th>Solicitação</th>
+                            <th>Comprador</th>
+                            <th>Data</th>
+                            <th>Limite Resposta</th>
+                            <th>Status</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for cotacao in cotacoes %}
+                        <tr>
+                            <td>
+                                <a href="{% url 'compras:cotacao_detail' cotacao.pk %}">
+                                    <strong>{{ cotacao.numero }}</strong>
+                                </a>
+                            </td>
+                            <td>
+                                <a href="{% url 'compras:solicitacao_detail' cotacao.solicitacao.pk %}">
+                                    {{ cotacao.solicitacao.numero }}
+                                </a>
+                            </td>
+                            <td>{{ cotacao.comprador.get_full_name }}</td>
+                            <td>{{ cotacao.data_cotacao|date:"d/m/Y" }}</td>
+                            <td>
+                                {% if cotacao.data_limite_resposta %}
+                                {{ cotacao.data_limite_resposta|date:"d/m/Y" }}
+                                {% else %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if cotacao.status == 'RASCUNHO' %}
+                                <span class="badge bg-secondary">{{ cotacao.get_status_display }}</span>
+                                {% elif cotacao.status == 'EM_ANDAMENTO' %}
+                                <span class="badge bg-warning text-dark">{{ cotacao.get_status_display }}</span>
+                                {% elif cotacao.status == 'CONCLUIDA' %}
+                                <span class="badge bg-success">{{ cotacao.get_status_display }}</span>
+                                {% elif cotacao.status == 'CANCELADA' %}
+                                <span class="badge bg-danger">{{ cotacao.get_status_display }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{% url 'compras:cotacao_detail' cotacao.pk %}" class="btn btn-sm btn-info" title="Ver Detalhes">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center">Nenhuma cotação encontrada</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Paginação -->
+            {% if cotacoes.has_other_pages %}
+            <nav>
+                <ul class="pagination justify-content-center">
+                    {% if cotacoes.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ cotacoes.previous_page_number }}">Anterior</a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for num in cotacoes.paginator.page_range %}
+                    <li class="page-item {% if cotacoes.number == num %}active{% endif %}">
+                        <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                    </li>
+                    {% endfor %}
+                    
+                    {% if cotacoes.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ cotacoes.next_page_number }}">Próxima</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

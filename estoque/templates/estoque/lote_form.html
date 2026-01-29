@@ -1,0 +1,575 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{% if form.instance.pk %}Editar{% else %}Novo{% endif %} Lote{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="mb-1">
+        <i class="bi bi-box2"></i> 
+        {% if form.instance.pk %}Editar Lote{% else %}Novo Lote{% endif %}
+      </h2>
+      <p class="text-muted">Controle de rastreabilidade e validade dos produtos</p>
+    </div>
+    <div class="d-flex gap-2">
+      <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#ajudaLoteModal">
+        <i class="bi bi-question-circle me-2"></i>
+        Ajuda
+      </button>
+      <a href="{% url 'estoque:lote_list' %}" class="btn btn-secondary">
+        <i class="bi bi-arrow-left"></i> Voltar
+      </a>
+    </div>
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <form method="post">
+        {% csrf_token %}
+        
+        {% if form.errors %}
+          <div class="alert alert-danger">
+            <strong>Erros encontrados:</strong>
+            <ul class="mb-0">
+              {% for field in form %}
+                {% for error in field.errors %}
+                  <li>{{ field.label }}: {{ error }}</li>
+                {% endfor %}
+              {% endfor %}
+              {% for error in form.non_field_errors %}
+                <li>{{ error }}</li>
+              {% endfor %}
+            </ul>
+          </div>
+        {% endif %}
+
+        <h5 class="mb-3"><i class="bi bi-box"></i> Identificação</h5>
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label class="form-label">{{ form.produto.label }} *</label>
+            {{ form.produto }}
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label">
+              {{ form.numero_lote.label }} *
+              <i class="bi bi-question-circle text-muted" title="{{ form.numero_lote.help_text }}"></i>
+            </label>
+            {{ form.numero_lote }}
+            <small class="form-text text-muted">{{ form.numero_lote.help_text }}</small>
+          </div>
+        </div>
+
+        <h5 class="mb-3 mt-4"><i class="bi bi-pin-map"></i> Localização</h5>
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label class="form-label">{{ form.armazem.label }} *</label>
+            <div class="input-group">
+              {{ form.armazem }}
+              <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalArmazem" title="Cadastrar novo armazém">
+                <i class="bi bi-plus-lg"></i>
+              </button>
+            </div>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label">{{ form.local_estocagem.label }}</label>
+            <div class="input-group">
+              {{ form.local_estocagem }}
+              <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalLocalEstocagem" title="Cadastrar novo local de estocagem">
+                <i class="bi bi-plus-lg"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <h5 class="mb-3 mt-4"><i class="bi bi-calendar"></i> Datas</h5>
+        <div class="row">
+          <div class="col-md-4 mb-3">
+            <label class="form-label">
+              {{ form.data_fabricacao.label }}
+              <i class="bi bi-question-circle text-muted" title="{{ form.data_fabricacao.help_text }}"></i>
+            </label>
+            <input type="date" name="{{ form.data_fabricacao.name }}" class="form-control" value="{{ form.data_fabricacao.value|date:'Y-m-d'|default:'' }}" id="id_{{ form.data_fabricacao.name }}">
+            <small class="form-text text-muted">{{ form.data_fabricacao.help_text }}</small>
+          </div>
+          <div class="col-md-4 mb-3">
+            <label class="form-label">
+              {{ form.data_validade.label }} *
+              <i class="bi bi-question-circle text-muted" title="{{ form.data_validade.help_text }}"></i>
+            </label>
+            <input type="date" name="{{ form.data_validade.name }}" class="form-control" value="{{ form.data_validade.value|date:'Y-m-d'|default:'' }}" id="id_{{ form.data_validade.name }}">
+            <small class="form-text text-muted">{{ form.data_validade.help_text }}</small>
+          </div>
+          <div class="col-md-4 mb-3">
+            <label class="form-label">
+              {{ form.data_entrada.label }} *
+              <i class="bi bi-question-circle text-muted" title="{{ form.data_entrada.help_text }}"></i>
+            </label>
+            <input type="date" name="{{ form.data_entrada.name }}" class="form-control" value="{{ form.data_entrada.value|date:'Y-m-d'|default:'' }}" id="id_{{ form.data_entrada.name }}">
+            <small class="form-text text-muted">{{ form.data_entrada.help_text }}</small>
+          </div>
+        </div>
+
+        <h5 class="mb-3 mt-4"><i class="bi bi-calculator"></i> Quantidades</h5>
+        <div class="row">
+          <div class="col-md-4 mb-3">
+            <label class="form-label">
+              {{ form.quantidade_inicial.label }} *
+              <i class="bi bi-question-circle text-muted" title="{{ form.quantidade_inicial.help_text }}"></i>
+            </label>
+            {{ form.quantidade_inicial }}
+            <small class="form-text text-muted">{{ form.quantidade_inicial.help_text }}</small>
+          </div>
+          <div class="col-md-4 mb-3">
+            <label class="form-label">
+              {{ form.quantidade_atual.label }} *
+              <i class="bi bi-question-circle text-muted" title="{{ form.quantidade_atual.help_text }}"></i>
+            </label>
+            <input type="number" name="{{ form.quantidade_atual.name }}" class="form-control" step="0.01" value="{{ form.quantidade_atual.value|default:'' }}" id="id_{{ form.quantidade_atual.name }}">
+            <small class="form-text text-muted">{{ form.quantidade_atual.help_text }}</small>
+          </div>
+          <div class="col-md-4 mb-3">
+            <label class="form-label">{{ form.unidade_medida.label }} *</label>
+            {{ form.unidade_medida }}
+          </div>
+        </div>
+
+        <h5 class="mb-3 mt-4"><i class="bi bi-cash"></i> Origem e Valores</h5>
+        <div class="row">
+          <div class="col-md-4 mb-3">
+            <label class="form-label">
+              {{ form.fornecedor.label }}
+              <i class="bi bi-question-circle text-muted" title="{{ form.fornecedor.help_text }}"></i>
+            </label>
+            {{ form.fornecedor }}
+            <small class="form-text text-muted">{{ form.fornecedor.help_text }}</small>
+          </div>
+          <div class="col-md-4 mb-3">
+            <label class="form-label">
+              {{ form.nota_fiscal.label }}
+              <i class="bi bi-question-circle text-muted" title="{{ form.nota_fiscal.help_text }}"></i>
+            </label>
+            <input type="text" name="{{ form.nota_fiscal.name }}" class="form-control" value="{{ form.nota_fiscal.value|default:'' }}" placeholder="Ex: 12345" id="id_{{ form.nota_fiscal.name }}">
+            <small class="form-text text-muted">{{ form.nota_fiscal.help_text }}</small>
+          </div>
+          <div class="col-md-4 mb-3">
+            <label class="form-label">
+              {{ form.valor_unitario.label }}
+              <i class="bi bi-question-circle text-muted" title="{{ form.valor_unitario.help_text }}"></i>
+            </label>
+            <div class="input-group">
+              <span class="input-group-text">R$</span>
+              <input type="number" name="{{ form.valor_unitario.name }}" class="form-control" step="0.01" value="{{ form.valor_unitario.value|default:'' }}" placeholder="0,00" id="id_{{ form.valor_unitario.name }}">
+            </div>
+            <small class="form-text text-muted">{{ form.valor_unitario.help_text }}</small>
+          </div>
+        </div>
+
+        <h5 class="mb-3 mt-4"><i class="bi bi-memo"></i> Observações</h5>
+        <div class="mb-3">
+          <label class="form-label">{{ form.observacoes.label }}</label>
+          {{ form.observacoes }}
+        </div>
+
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-check-circle"></i> Salvar
+          </button>
+          <a href="{% url 'estoque:lote_list' %}" class="btn btn-secondary">
+            <i class="bi bi-x-circle"></i> Cancelar
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Cadastro Rápido - Armazém -->
+<div class="modal fade" id="modalArmazem" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title">
+          <i class="bi bi-building me-2"></i>
+          Cadastrar Armazém
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="formArmazem">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label class="form-label">Nome do Armazém *</label>
+            <input type="text" class="form-control" id="armazem_nome" required>
+            <small class="text-muted">Ex: Armazém Principal, Depósito A, Galpão 1</small>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Código</label>
+            <input type="text" class="form-control" id="armazem_codigo">
+            <small class="text-muted">Identificação curta do armazém</small>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Capacidade (kg)</label>
+            <input type="number" class="form-control" id="armazem_capacidade_kg" step="0.01">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Endereço</label>
+            <textarea class="form-control" id="armazem_endereco" rows="2"></textarea>
+          </div>
+          <div class="alert alert-info mb-0">
+            <i class="bi bi-info-circle me-2"></i>
+            <small>Após salvar, o armazém estará disponível para seleção.</small>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary" onclick="salvarArmazem()">
+          <i class="bi bi-check-circle me-2"></i>Salvar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Cadastro Rápido - Local de Estocagem -->
+<div class="modal fade" id="modalLocalEstocagem" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title">
+          <i class="bi bi-pin-map me-2"></i>
+          Cadastrar Local de Estocagem
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="formLocalEstocagem">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label class="form-label">Armazém *</label>
+            <select class="form-select" id="local_armazem" required>
+              <option value="">Selecione o armazém</option>
+              {% for armazem in form.armazem.field.queryset %}
+                <option value="{{ armazem.id }}">{{ armazem.nome }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Código *</label>
+            <input type="text" class="form-control" id="local_codigo" required>
+            <small class="text-muted">Ex: A1, CORR-01, PRAT-A</small>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Descrição *</label>
+            <input type="text" class="form-control" id="local_descricao" required>
+            <small class="text-muted">Ex: Corredor A, Prateleira 1, Setor Norte</small>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Tipo</label>
+            <select class="form-select" id="local_tipo">
+              <option value="PRATELEIRA">Prateleira</option>
+              <option value="PALLET">Pallet</option>
+              <option value="CORREDOR">Corredor</option>
+              <option value="SETOR">Setor</option>
+              <option value="OUTRO">Outro</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Capacidade (kg)</label>
+            <input type="number" class="form-control" id="local_capacidade_kg" step="0.01">
+          </div>
+          <div class="alert alert-info mb-0">
+            <i class="bi bi-info-circle me-2"></i>
+            <small>O local será criado dentro do armazém selecionado.</small>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary" onclick="salvarLocalEstocagem()">
+          <i class="bi bi-check-circle me-2"></i>Salvar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Função para salvar armazém via AJAX
+function salvarArmazem() {
+  const nome = document.getElementById('armazem_nome').value.trim();
+  const codigo = document.getElementById('armazem_codigo').value.trim();
+  const capacidade_kg = document.getElementById('armazem_capacidade_kg').value;
+  const endereco = document.getElementById('armazem_endereco').value.trim();
+  
+  if (!nome) {
+    alert('Por favor, informe o nome do armazém.');
+    return;
+  }
+  
+  const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+  
+  fetch('{% url "estoque:armazem_create" %}', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'X-CSRFToken': csrftoken
+    },
+    body: new URLSearchParams({
+      'nome': nome,
+      'codigo': codigo,
+      'capacidade_kg': capacidade_kg || '',
+      'endereco': endereco,
+      'ativo': 'on'
+    })
+  })
+  .then(response => {
+    if (response.ok) {
+      // Recarrega a página para atualizar o select
+      location.reload();
+    } else {
+      alert('Erro ao salvar armazém. Verifique os dados e tente novamente.');
+    }
+  })
+  .catch(error => {
+    console.error('Erro:', error);
+    alert('Erro ao salvar armazém.');
+  });
+}
+
+// Função para salvar local de estocagem via AJAX
+function salvarLocalEstocagem() {
+  const armazem = document.getElementById('local_armazem').value;
+  const codigo = document.getElementById('local_codigo').value.trim();
+  const descricao = document.getElementById('local_descricao').value.trim();
+  const tipo = document.getElementById('local_tipo').value;
+  const capacidade_kg = document.getElementById('local_capacidade_kg').value;
+  
+  if (!armazem) {
+    alert('Por favor, selecione o armazém.');
+    return;
+  }
+  
+  if (!codigo || !descricao) {
+    alert('Por favor, informe o código e descrição do local.');
+    return;
+  }
+  
+  const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+  
+  fetch('{% url "estoque:local_create" %}', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'X-CSRFToken': csrftoken
+    },
+    body: new URLSearchParams({
+      'armazem': armazem,
+      'codigo': codigo,
+      'descricao': descricao,
+      'tipo': tipo,
+      'capacidade_kg': capacidade_kg || '',
+      'ativo': 'on'
+    })
+  })
+  .then(response => {
+    if (response.ok) {
+      // Recarrega a página para atualizar o select
+      location.reload();
+    } else {
+      alert('Erro ao salvar local de estocagem. Verifique os dados e tente novamente.');
+    }
+  })
+  .catch(error => {
+    console.error('Erro:', error);
+    alert('Erro ao salvar local de estocagem.');
+  });
+}
+</script>
+
+<!-- Modal de Ajuda -->
+<div class="modal fade" id="ajudaLoteModal" tabindex="-1" aria-labelledby="ajudaLoteModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-info text-white">
+        <h5 class="modal-title" id="ajudaLoteModalLabel">
+          <i class="bi bi-question-circle me-2"></i>
+          Ajuda - Cadastro de Lote
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <h6 class="text-info"><i class="bi bi-box2"></i> Conceito</h6>
+        <p>
+          O <strong>Lote</strong> representa uma quantidade específica de um produto que foi fabricada ou 
+          recebida em um determinado momento. Cada lote tem características únicas como data de fabricação, 
+          validade e origem.
+        </p>
+        
+        <hr>
+        
+        <h6 class="text-info"><i class="bi bi-star-fill"></i> Importância</h6>
+        <ul>
+          <li><strong>Rastreabilidade:</strong> Identifica origem e histórico de cada produto</li>
+          <li><strong>Validade:</strong> Controla datas de vencimento e garante qualidade</li>
+          <li><strong>Recall:</strong> Em caso de problemas, é possível rastrear produtos específicos</li>
+          <li><strong>Compliance:</strong> Atende exigências legais e fiscais (especialmente alimentos e medicamentos)</li>
+          <li><strong>FIFO:</strong> Permite usar primeiro os produtos que vencem primeiro</li>
+        </ul>
+        
+        <hr>
+        
+        <h6 class="text-info"><i class="bi bi-clipboard-check"></i> Informações do Lote</h6>
+        <div class="row">
+          <div class="col-md-6">
+            <p><strong>Número do Lote:</strong> Código único de identificação (ex: L20240115-A)</p>
+            <p><strong>Data de Fabricação:</strong> Quando o produto foi fabricado</p>
+            <p><strong>Data de Validade:</strong> Até quando o produto é válido</p>
+          </div>
+          <div class="col-md-6">
+            <p><strong>Quantidade:</strong> Total de unidades do lote</p>
+            <p><strong>Fornecedor:</strong> Origem do produto</p>
+            <p><strong>Nota Fiscal:</strong> Documento de entrada</p>
+          </div>
+        </div>
+        
+        <hr>
+        
+        <h6 class="text-info"><i class="bi bi-lightbulb-fill"></i> Exemplo Prático</h6>
+        <div class="card border-info mb-3">
+          <div class="card-body">
+            <p class="mb-2"><strong>Situação:</strong> Sua fazenda recebeu uma entrega de fertilizante NPK 10-10-10</p>
+            
+            <div class="card mb-2">
+              <div class="card-header bg-success text-white py-1">
+                <small><strong>📦 Dados da Nota Fiscal e Embalagem</strong></small>
+              </div>
+              <div class="card-body py-2">
+                <div class="row">
+                  <div class="col-md-6">
+                    <small>• <strong>Produto:</strong> Fertilizante NPK 10-10-10</small><br>
+                    <small>• <strong>Lote na embalagem:</strong> L20240115-A</small><br>
+                    <small>• <strong>Data de Fabricação:</strong> 15/01/2024</small><br>
+                    <small>• <strong>Data de Validade:</strong> 15/01/2026 (2 anos)</small>
+                  </div>
+                  <div class="col-md-6">
+                    <small>• <strong>Quantidade:</strong> 100 sacas (50kg cada) = 5.000 kg</small><br>
+                    <small>• <strong>Fornecedor:</strong> AgroFert Ltda</small><br>
+                    <small>• <strong>NF-e:</strong> 12345</small><br>
+                    <small>• <strong>Valor Unitário:</strong> R$ 150,00/saca</small>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="card mb-2">
+              <div class="card-header bg-primary text-white py-1">
+                <small><strong>📝 Como Cadastrar no Sistema</strong></small>
+              </div>
+              <div class="card-body py-2">
+                <ol class="mb-0" style="padding-left: 20px;">
+                  <li><small><strong>Produto:</strong> Selecione "Fertilizante NPK 10-10-10" no cadastro</small></li>
+                  <li><small><strong>Número do Lote:</strong> Digite exatamente como está na embalagem: <code>L20240115-A</code></small></li>
+                  <li><small><strong>Armazém:</strong> Selecione onde será armazenado (ex: Armazém Principal)</small></li>
+                  <li><small><strong>Local Estocagem:</strong> Especifique (ex: Corredor 2, Prateleira A)</small></li>
+                  <li><small><strong>Data Fabricação:</strong> 15/01/2024</small></li>
+                  <li><small><strong>Data Validade:</strong> 15/01/2026</small></li>
+                  <li><small><strong>Data Entrada:</strong> Data de hoje (quando recebeu)</small></li>
+                  <li><small><strong>Quantidade Inicial:</strong> 5000</small></li>
+                  <li><small><strong>Quantidade Atual:</strong> 5000 (mesmo valor no momento do cadastro)</small></li>
+                  <li><small><strong>Unidade Medida:</strong> kg</small></li>
+                  <li><small><strong>Fornecedor:</strong> AgroFert Ltda</small></li>
+                  <li><small><strong>Nota Fiscal:</strong> 12345</small></li>
+                  <li><small><strong>Valor Unitário:</strong> R$ 30,00 (R$ 150,00 ÷ 50kg)</small></li>
+                </ol>
+              </div>
+            </div>
+            
+            <div class="card mb-2">
+              <div class="card-header bg-warning py-1">
+                <small><strong>🎯 Resultado</strong></small>
+              </div>
+              <div class="card-body py-2">
+                <small>
+                  ✅ O sistema irá rastrear este lote específico<br>
+                  ✅ Alertará quando estiver próximo do vencimento (30 dias antes)<br>
+                  ✅ Controlará automaticamente a quantidade conforme o uso<br>
+                  ✅ Permitirá saber exatamente qual lote foi usado em cada aplicação<br>
+                  ✅ Em caso de recall, você saberá onde está e quanto resta deste lote
+                </small>
+              </div>
+            </div>
+            
+            <div class="card border-info bg-info bg-opacity-10">
+              <div class="card-body py-2">
+                <small>
+                  <strong><i class="bi bi-info-circle"></i> Dica:</strong> 
+                  Sempre copie o número do lote exatamente como está na embalagem ou nota fiscal. 
+                  Isso garante rastreabilidade completa com o fornecedor.
+                </small>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <hr>
+        
+        <h6 class="text-info"><i class="bi bi-exclamation-triangle-fill"></i> Status do Lote</h6>
+        <div class="row">
+          <div class="col-md-6">
+            <div class="card bg-success bg-opacity-10 border-success mb-2">
+              <div class="card-body py-2">
+                <strong>✅ Disponível:</strong> Pode ser utilizado normalmente
+              </div>
+            </div>
+            <div class="card bg-danger bg-opacity-10 border-danger mb-2">
+              <div class="card-body py-2">
+                <strong>🔒 Bloqueado:</strong> Suspeita de problema, aguardando análise
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="card bg-warning bg-opacity-10 border-warning mb-2">
+              <div class="card-body py-2">
+                <strong>⚠️ Próximo do Vencimento:</strong> Usar com prioridade
+              </div>
+            </div>
+            <div class="card bg-secondary bg-opacity-10 border-secondary mb-2">
+              <div class="card-body py-2">
+                <strong>❌ Vencido:</strong> Não deve ser utilizado
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <hr>
+        
+        <h6 class="text-info"><i class="bi bi-shield-fill-check"></i> Controle FIFO</h6>
+        <p>
+          O sistema alerta sobre lotes próximos do vencimento para garantir que sejam usados primeiro:
+        </p>
+        <ul>
+          <li><strong>Alerta Amarelo:</strong> Lotes que vencem em até 30 dias</li>
+          <li><strong>Alerta Vermelho:</strong> Lotes vencidos</li>
+        </ul>
+        
+        <hr>
+        
+        <h6 class="text-info"><i class="bi bi-check-circle-fill"></i> Próximos Passos</h6>
+        <ol>
+          <li>Ao receber produtos, cadastre um novo lote</li>
+          <li>Informe sempre o número do lote (da embalagem ou NF)</li>
+          <li>Registre a validade corretamente</li>
+          <li>Indique o local exato onde está armazenado</li>
+          <li>Acompanhe o dashboard para alertas de vencimento</li>
+        </ol>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

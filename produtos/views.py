@@ -1,11 +1,67 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.db.models import Q
+from django.db.models import Q, Count
 from django.http import JsonResponse
-from .models import UnidadeMedida, Categoria, SubCategoria, Produto, ProdutoTributacao, NaturezaOperacao, ProdutoDefensivoCultura
+from django.views.decorators.http import require_POST
+from django.core.paginator import Paginator
+import json
+from decimal import Decimal
+from .models import UnidadeMedida, Categoria, SubCategoria, Produto, ProdutoTributacao, NaturezaOperacao, ProdutoDefensivoCultura, ProdutoFornecedor
 from .forms import UnidadeMedidaForm, CategoriaForm, SubCategoriaForm, ProdutoForm, ProdutoTributacaoForm, NaturezaOperacaoForm, ProdutoDefensivoCulturaForm
-from cadastros.models import NCM, CFOP
+from cadastros.models import NCM, CFOP, Fornecedor
+
+
+# ============== DASHBOARD ==============
+
+@login_required
+def dashboard(request):
+    """Dashboard do módulo Produtos"""
+    empresa = request.user.empresa
+    
+    # Estatísticas gerais - Filtrar por categoria__empresa
+    total_produtos = Produto.objects.filter(categoria__empresa=empresa, ativo=True).count()
+    total_categorias = Categoria.objects.filter(empresa=empresa).count()
+    total_subcategorias = SubCategoria.objects.filter(categoria__empresa=empresa).count()
+    produtos_sem_tributacao = Produto.objects.filter(
+        categoria__empresa=empresa, 
+        ativo=True
+    ).exclude(
+        tributacoes__isnull=False
+    ).count()
+    
+    # Produtos por categoria (top 5)
+    produtos_por_categoria = Categoria.objects.filter(
+        empresa=empresa
+    ).annotate(
+        total_produtos=Count('produto')
+    ).order_by('-total_produtos')[:5]
+    
+    # Últimos produtos cadastrados
+    ultimos_produtos = Produto.objects.filter(
+        categoria__empresa=empresa
+    ).select_related('categoria', 'subcategoria').order_by('-created_at')[:5]
+    
+    # Produtos sem categoria
+    produtos_sem_categoria = Produto.objects.filter(
+        categoria__isnull=True,
+        ativo=True
+    ).count()
+    
+    # Produtos inativos
+    produtos_inativos = Produto.objects.filter(categoria__empresa=empresa, ativo=False).count()
+    
+    context = {
+        'total_produtos': total_produtos,
+        'total_categorias': total_categorias,
+        'total_subcategorias': total_subcategorias,
+        'produtos_sem_tributacao': produtos_sem_tributacao,
+        'produtos_por_categoria': produtos_por_categoria,
+        'ultimos_produtos': ultimos_produtos,
+        'produtos_sem_categoria': produtos_sem_categoria,
+        'produtos_inativos': produtos_inativos,
+    }
+    return render(request, 'produtos/dashboard.html', context)
 
 
 # ============== UNIDADE DE MEDIDA ==============
@@ -291,10 +347,24 @@ def produto_list(request):
     
     categorias = Categoria.objects.filter(empresa=request.user.empresa).order_by('nome')
     
+    # Paginação
+    try:
+        per_page = int(request.GET.get('per_page', 25))
+    except (TypeError, ValueError):
+        per_page = 25
+    if per_page not in (10, 25, 50, 100):
+        per_page = 25
+    
+    paginator = Paginator(produtos.order_by('nome'), per_page)
+    page_obj = paginator.get_page(request.GET.get('page'))
+    
     return render(request, 'produtos/produto/produto_list.html', {
-        'produtos': produtos,
+        'page_obj': page_obj,
         'categorias': categorias,
-        'query': query
+        'query': query,
+        'categoria_filter': categoria_filter,
+        'status_filter': status_filter,
+        'per_page': per_page,
     })
 
 
@@ -346,6 +416,10 @@ def produto_update(request, pk):
     pragas = Praga.objects.filter(empresa=request.user.empresa, ativa=True).order_by('nome_comum')
     unidades = UnidadeMedida.objects.filter(empresa=request.user.empresa).order_by('sigla')
     
+    # Buscar fornecedores e fornecedores relacionados ao produto
+    fornecedores = Fornecedor.objects.filter(empresa=request.user.empresa, ativa=True).order_by('nome')
+    fornecedores_produto = ProdutoFornecedor.objects.filter(produto=produto).select_related('fornecedor')
+    
     return render(request, 'produtos/produto/produto_form.html', {
         'form': form,
         'action': 'Editar',
@@ -353,6 +427,8 @@ def produto_update(request, pk):
         'culturas': culturas,
         'pragas': pragas,
         'unidades_dosagem': unidades,
+        'fornecedores': fornecedores,
+        'fornecedores_produto': fornecedores_produto,
     })
 
 
@@ -366,6 +442,37 @@ def produto_delete(request, pk):
     return render(request, 'produtos/produto/produto_confirm_delete.html', {
         'object': produto
     })
+
+
+@login_required
+def produto_clone(request, pk):
+    """Clona um produto com todos os seus dados relacionados"""
+    produto_original = get_object_or_404(Produto, pk=pk)
+    
+    # Criar cópia do produto
+    produto_clone = Produto.objects.get(pk=pk)
+    produto_clone.pk = None  # Remove o ID para criar novo registro
+    produto_clone.codigo = f"{produto_original.codigo}-COPIA"
+    produto_clone.nome = f"{produto_original.nome} (CÓPIA)"
+    produto_clone.codigo_barras = ""  # Limpar código de barras para evitar duplicidade
+    produto_clone.save()
+    
+    # Clonar tributações
+    tributacoes = ProdutoTributacao.objects.filter(produto=produto_original)
+    for trib in tributacoes:
+        trib.pk = None
+        trib.produto = produto_clone
+        trib.save()
+    
+    # Clonar defensivos/culturas se existirem
+    defensivos = ProdutoDefensivoCultura.objects.filter(produto=produto_original)
+    for def_cult in defensivos:
+        def_cult.pk = None
+        def_cult.produto = produto_clone
+        def_cult.save()
+    
+    messages.success(request, f'Produto clonado com sucesso! Edite o código e nome conforme necessário.')
+    return redirect('produtos:produto_update', pk=produto_clone.pk)
 
 
 # ============== TRIBUTAÇÃO ==============
@@ -851,3 +958,93 @@ def documento_delete(request, pk):
             return JsonResponse({'success': False, 'error': str(e)}, status=500)
     
     return JsonResponse({'success': False, 'error': 'Método não permitido'}, status=405)
+
+
+# ============== PRODUTO FORNECEDOR ==============
+
+@login_required
+def fornecedores_listar(request):
+    """Lista fornecedores ativos da empresa via AJAX"""
+    fornecedores = Fornecedor.objects.filter(
+        empresa=request.user.empresa, 
+        ativa=True
+    ).order_by('nome').values('id', 'nome', 'cnpj_cpf')
+    
+    return JsonResponse({
+        'success': True,
+        'fornecedores': list(fornecedores)
+    })
+
+
+@login_required
+@require_POST
+def produto_fornecedor_create(request, produto_pk):
+    """Adiciona um fornecedor a um produto via AJAX"""
+    try:
+        produto = get_object_or_404(Produto, pk=produto_pk)
+        
+        # Verificar se o produto pertence à empresa do usuário
+        if produto.categoria.empresa != request.user.empresa:
+            return JsonResponse({'success': False, 'error': 'Não autorizado'}, status=403)
+        
+        # Parse JSON data
+        data = json.loads(request.body)
+        
+        fornecedor_id = data.get('fornecedor_id')
+        codigo_fornecedor = data.get('codigo_fornecedor', '').strip()
+        
+        if not fornecedor_id or not codigo_fornecedor:
+            return JsonResponse({'success': False, 'error': 'Fornecedor e código são obrigatórios'}, status=400)
+        
+        fornecedor = get_object_or_404(Fornecedor, pk=fornecedor_id, empresa=request.user.empresa)
+        
+        # Verificar se já existe essa combinação
+        if ProdutoFornecedor.objects.filter(produto=produto, fornecedor=fornecedor).exists():
+            return JsonResponse({'success': False, 'error': 'Este fornecedor já está vinculado ao produto'}, status=400)
+        
+        # Criar relacionamento
+        produto_fornecedor = ProdutoFornecedor(
+            produto=produto,
+            fornecedor=fornecedor,
+            codigo_fornecedor=codigo_fornecedor,
+            preco_compra=Decimal(data.get('preco_compra', 0)),
+            prazo_entrega=data.get('prazo_entrega') or None,
+            quantidade_minima=Decimal(data.get('quantidade_minima', 0)),
+            fornecedor_preferencial=data.get('fornecedor_preferencial', False),
+            observacoes=data.get('observacoes', ''),
+            cadastrado_por=request.user
+        )
+        produto_fornecedor.save()
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'Fornecedor adicionado com sucesso!',
+            'id': produto_fornecedor.pk
+        })
+        
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'error': 'Dados JSON inválidos'}, status=400)
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@login_required
+@require_POST
+def produto_fornecedor_delete(request, pk):
+    """Remove um fornecedor de um produto via AJAX"""
+    try:
+        produto_fornecedor = get_object_or_404(ProdutoFornecedor, pk=pk)
+        
+        # Verificar se o produto pertence à empresa do usuário
+        if produto_fornecedor.produto.categoria.empresa != request.user.empresa:
+            return JsonResponse({'success': False, 'error': 'Não autorizado'}, status=403)
+        
+        produto_fornecedor.delete()
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'Fornecedor removido com sucesso!'
+        })
+        
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)

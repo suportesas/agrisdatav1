@@ -1,5 +1,42 @@
 {% extends 'base.html' %}
 
+{% block extra_css %}
+<style>
+  /* Estilização melhorada das tabs de produto */
+  #produtoTabs .nav-link {
+    background-color: #e9ecef;
+    color: #495057 !important;
+    font-weight: 500;
+    border: 1px solid #dee2e6;
+    margin-right: 3px;
+    transition: all 0.3s ease;
+  }
+  
+  #produtoTabs .nav-link:hover {
+    background-color: #d3d8dd;
+    color: #212529 !important;
+    border-color: #adb5bd;
+  }
+  
+  #produtoTabs .nav-link.active {
+    background-color: #0d6efd !important;
+    color: #ffffff !important;
+    font-weight: 600;
+    border-color: #0d6efd;
+  }
+  
+  #produtoTabs .nav-link i {
+    opacity: 0.9;
+    color: inherit;
+  }
+  
+  #produtoTabs .nav-link.active i {
+    opacity: 1;
+    color: #ffffff !important;
+  }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container mt-3">
   <h1>{{ action }} Produto</h1>
@@ -19,6 +56,11 @@
       </li>
       <li class="nav-item">
         <button class="nav-link" id="estoque-tab" data-bs-toggle="tab" data-bs-target="#estoque" type="button">Estoque</button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link" id="fornecedores-tab" data-bs-toggle="tab" data-bs-target="#fornecedores" type="button">
+          <i class="bi bi-shop me-1"></i>Fornecedores
+        </button>
       </li>
       <li class="nav-item" id="agricola-tab-li" style="display: none;">
         <button class="nav-link" id="agricola-tab" data-bs-toggle="tab" data-bs-target="#agricola" type="button">Agrícola</button>
@@ -96,10 +138,6 @@
                 <i class="bi bi-plus-lg"></i>
               </button>
             </div>
-          </div>
-          <div class="col-md-4 mb-3">
-            {{ form.fornecedor_padrao.label_tag }}
-            {{ form.fornecedor_padrao }}
           </div>
         </div>
         <h5 class="mb-3 mt-4">Unidades</h5>
@@ -423,6 +461,108 @@
           {{ form.observacoes.label_tag }}
           {{ form.observacoes }}
         </div>
+      </div>
+
+
+      <!-- ABA FORNECEDORES -->
+      <div class="tab-pane fade" id="fornecedores">
+        {% if object.pk %}
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <div>
+            <h5 class="mb-0">
+              <i class="bi bi-shop me-2"></i>Fornecedores do Produto
+            </h5>
+            <p class="text-muted mb-0">Gerencie os fornecedores e seus códigos específicos para este produto</p>
+          </div>
+          <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalFornecedor">
+            <i class="bi bi-plus-circle me-1"></i>Adicionar Fornecedor
+          </button>
+        </div>
+
+        <!-- Tabela de Fornecedores -->
+        <div class="table-responsive">
+          <table class="table table-hover" id="tabelaFornecedores">
+            <thead class="table-light">
+              <tr>
+                <th>Fornecedor</th>
+                <th>Código no Fornecedor</th>
+                <th>Preço Compra</th>
+                <th>Prazo Entrega</th>
+                <th>Qtd. Mínima</th>
+                <th>Preferencial</th>
+                <th>Status</th>
+                <th class="text-end">Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for pf in object.fornecedores_relacionados.all %}
+              <tr>
+                <td>
+                  <strong>{{ pf.fornecedor.nome }}</strong>
+                  {% if pf.fornecedor_preferencial %}<i class="bi bi-star-fill text-warning ms-1" title="Fornecedor Preferencial"></i>{% endif %}
+                  <br><small class="text-muted">{{ pf.fornecedor.cnpj_cpf }}</small>
+                </td>
+                <td><code>{{ pf.codigo_fornecedor }}</code></td>
+                <td><strong class="text-success">R$ {{ pf.preco_compra|floatformat:2 }}</strong></td>
+                <td>{{ pf.prazo_entrega|default:'-' }} dias</td>
+                <td>{{ pf.quantidade_minima }} {{ object.unidade_medida.sigla }}</td>
+                <td>
+                  {% if pf.fornecedor_preferencial %}
+                    <span class="badge bg-warning"><i class="bi bi-star-fill"></i> Sim</span>
+                  {% else %}
+                    <span class="text-muted">Não</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if pf.ativo %}
+                    <span class="badge bg-success">Ativo</span>
+                  {% else %}
+                    <span class="badge bg-secondary">Inativo</span>
+                  {% endif %}
+                </td>
+                <td class="text-end">
+                  <div class="dropdown">
+                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                      <i class="bi bi-three-dots-vertical"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                      <li><a class="dropdown-item" href="#" onclick="editarFornecedor({{ pf.id }})"><i class="bi bi-pencil text-warning"></i> Editar</a></li>
+                      <li><hr class="dropdown-divider"></li>
+                      <li><a class="dropdown-item text-danger" href="#" onclick="excluirFornecedor({{ pf.id }})"><i class="bi bi-trash"></i> Excluir</a></li>
+                    </ul>
+                  </div>
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="8" class="text-center text-muted py-4">
+                  <i class="bi bi-shop" style="font-size: 3rem; opacity: 0.3;"></i>
+                  <p class="mb-0">Nenhum fornecedor cadastrado para este produto</p>
+                  <button type="button" class="btn btn-primary mt-2" data-bs-toggle="modal" data-bs-target="#modalFornecedor">
+                    <i class="bi bi-plus-circle"></i> Adicionar Primeiro Fornecedor
+                  </button>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <div class="alert alert-info mt-3">
+          <i class="bi bi-info-circle me-2"></i>
+          <strong>Dica:</strong> O código do fornecedor é importante para facilitar a conferência na nota fiscal e agilizar o recebimento de mercadorias.
+        </div>
+        {% else %}
+        <!-- Produto ainda não foi salvo -->
+        <div class="text-center py-5">
+          <i class="bi bi-save" style="font-size: 4rem; color: #dee2e6;"></i>
+          <h4 class="mt-3 text-muted">Salve o produto primeiro</h4>
+          <p class="text-muted">Para adicionar fornecedores, você precisa salvar o produto primeiro.<br>Após salvar, volte aqui para gerenciar os fornecedores.</p>
+          <button type="submit" class="btn btn-primary btn-lg mt-2">
+            <i class="bi bi-check-circle me-1"></i>Salvar Produto
+          </button>
+        </div>
+        {% endif %}
       </div>
 
 
@@ -1627,6 +1767,97 @@ document.addEventListener('DOMContentLoaded', function() {
 </div>
 {% endif %}
 
+<!-- Modal Fornecedor -->
+{% if object.pk %}
+<div class="modal fade" id="modalFornecedor" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="bi bi-shop me-2"></i>Adicionar Fornecedor
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="alert alert-info">
+          <i class="bi bi-info-circle me-2"></i>
+          <strong>Importante:</strong> Informe o código que o fornecedor usa para este produto (aparece na nota fiscal).
+        </div>
+        
+        <div class="row g-3">
+          <div class="col-md-12">
+            <label class="form-label fw-semibold">Fornecedor *</label>
+            <div class="input-group">
+              <select class="form-select" id="fornecedor_id" required>
+                <option value="">Selecione o fornecedor...</option>
+                {% for forn in fornecedores %}
+                  <option value="{{ forn.id }}">{{ forn.nome }} - {{ forn.cnpj_cpf }}</option>
+                {% endfor %}
+              </select>
+              <button type="button" class="btn btn-outline-secondary" onclick="recarregarFornecedores()" title="Recarregar lista de fornecedores">
+                <i class="bi bi-arrow-clockwise"></i>
+              </button>
+            </div>
+            <small class="text-muted">Se cadastrou um fornecedor agora, clique em <i class="bi bi-arrow-clockwise"></i> para atualizar a lista</small>
+          </div>
+          
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Código no Fornecedor *</label>
+            <input type="text" class="form-control" id="codigo_fornecedor" 
+                   placeholder="Ex: PROD-123, ABC-456" required>
+            <small class="text-muted">Código que aparece na nota fiscal</small>
+          </div>
+          
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Preço de Compra</label>
+            <div class="input-group">
+              <span class="input-group-text">R$</span>
+              <input type="number" class="form-control" id="preco_compra" 
+                     step="0.01" min="0" value="0">
+            </div>
+          </div>
+          
+          <div class="col-md-6">
+            <label class="form-label">Prazo de Entrega (dias)</label>
+            <input type="number" class="form-control" id="prazo_entrega" min="0">
+          </div>
+          
+          <div class="col-md-6">
+            <label class="form-label">Quantidade Mínima</label>
+            <input type="number" class="form-control" id="quantidade_minima" 
+                   step="0.001" min="0" value="0">
+          </div>
+          
+          <div class="col-md-12">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="fornecedor_preferencial">
+              <label class="form-check-label" for="fornecedor_preferencial">
+                <i class="bi bi-star-fill text-warning"></i> Marcar como Fornecedor Preferencial
+              </label>
+              <small class="text-muted d-block">Este será o fornecedor sugerido nas compras</small>
+            </div>
+          </div>
+          
+          <div class="col-md-12">
+            <label class="form-label">Observações</label>
+            <textarea class="form-control" id="observacoes" rows="2"></textarea>
+          </div>
+        </div>
+        
+        <div id="fornecedorError" class="alert alert-danger mt-3" style="display: none;"></div>
+        <div id="fornecedorSuccess" class="alert alert-success mt-3" style="display: none;"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary" onclick="salvarFornecedor()">
+          <i class="bi bi-check-lg"></i> Salvar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
 <!-- Modal Defensivo Cultura -->
 {% if object.pk %}
 <div class="modal fade" id="modalDefensivoCultura" tabindex="-1">
@@ -2133,6 +2364,123 @@ document.addEventListener('DOMContentLoaded', function() {
     if (dosagemMinima) dosagemMinima.addEventListener('input', calcularDosagemReversa);
     if (dosagemMaxima) dosagemMaxima.addEventListener('input', calcularDosagemReversa);
 });
+
+// Função para recarregar lista de fornecedores
+function recarregarFornecedores() {
+  fetch("{% url 'produtos:fornecedores_listar' %}")
+    .then(response => response.json())
+    .then(result => {
+      if (result.success) {
+        const select = document.getElementById('fornecedor_id');
+        // Guardar o valor atual
+        const currentValue = select.value;
+        // Limpar options (exceto o primeiro)
+        select.innerHTML = '<option value="">Selecione o fornecedor...</option>';
+        // Adicionar fornecedores
+        result.fornecedores.forEach(forn => {
+          const option = document.createElement('option');
+          option.value = forn.id;
+          option.textContent = `${forn.nome} - ${forn.cnpj_cpf}`;
+          select.appendChild(option);
+        });
+        // Restaurar valor se ainda existir
+        if (currentValue) {
+          select.value = currentValue;
+        }
+      }
+    })
+    .catch(error => {
+      console.error('Erro ao recarregar fornecedores:', error);
+    });
+}
+
+// Recarregar fornecedores quando o modal for aberto
+{% if object.pk %}
+document.addEventListener('DOMContentLoaded', function() {
+  const modalFornecedor = document.getElementById('modalFornecedor');
+  if (modalFornecedor) {
+    modalFornecedor.addEventListener('show.bs.modal', function() {
+      recarregarFornecedores();
+    });
+  }
+});
+{% endif %}
+
+// Funções para gerenciar fornecedores
+function salvarFornecedor() {
+  const errorDiv = document.getElementById('fornecedorError');
+  const successDiv = document.getElementById('fornecedorSuccess');
+  errorDiv.style.display = 'none';
+  successDiv.style.display = 'none';
+  
+  const data = {
+    fornecedor_id: document.getElementById('fornecedor_id').value,
+    codigo_fornecedor: document.getElementById('codigo_fornecedor').value,
+    preco_compra: document.getElementById('preco_compra').value || 0,
+    prazo_entrega: document.getElementById('prazo_entrega').value || null,
+    quantidade_minima: document.getElementById('quantidade_minima').value || 0,
+    fornecedor_preferencial: document.getElementById('fornecedor_preferencial').checked,
+    observacoes: document.getElementById('observacoes').value
+  };
+  
+  if (!data.fornecedor_id || !data.codigo_fornecedor) {
+    errorDiv.textContent = 'Preencha os campos obrigatórios: Fornecedor e Código no Fornecedor';
+    errorDiv.style.display = 'block';
+    return;
+  }
+  
+  {% if object.pk %}
+  fetch("{% url 'produtos:produto_fornecedor_create' object.pk %}", {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': '{{ csrf_token }}'
+    },
+    body: JSON.stringify(data)
+  })
+  .then(response => response.json())
+  .then(result => {
+    if (result.success) {
+      successDiv.textContent = 'Fornecedor adicionado com sucesso!';
+      successDiv.style.display = 'block';
+      setTimeout(() => location.reload(), 1000);
+    } else {
+      errorDiv.textContent = result.error || 'Erro ao adicionar fornecedor';
+      errorDiv.style.display = 'block';
+    }
+  })
+  .catch(error => {
+    errorDiv.textContent = 'Erro ao salvar: ' + error;
+    errorDiv.style.display = 'block';
+  });
+  {% endif %}
+}
+
+function excluirFornecedor(id) {
+  if (!confirm('Deseja realmente remover este fornecedor?')) return;
+  
+  fetch(`/produtos/fornecedor/${id}/excluir/`, {
+    method: 'POST',
+    headers: {
+      'X-CSRFToken': '{{ csrf_token }}'
+    }
+  })
+  .then(response => response.json())
+  .then(result => {
+    if (result.success) {
+      location.reload();
+    } else {
+      alert('Erro ao excluir: ' + (result.error || 'Erro desconhecido'));
+    }
+  })
+  .catch(error => {
+    alert('Erro ao excluir: ' + error);
+  });
+}
+
+function editarFornecedor(id) {
+  alert('Funcionalidade de edição em desenvolvimento. Use excluir e adicionar novamente por enquanto.');
+}
 </script>
 
 {% endblock %}

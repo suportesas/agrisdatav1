@@ -1,0 +1,209 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Locais de Estocagem{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="mb-1">
+        <i class="bi bi-pin-map"></i> Locais de Estocagem
+        <button type="button" class="btn btn-sm btn-outline-info ms-2" data-bs-toggle="modal" data-bs-target="#helpModal">
+          <i class="bi bi-question-circle"></i> Ajuda
+        </button>
+      </h2>
+      <p class="text-muted">Gestão de locais dentro dos armazéns</p>
+    </div>
+    <a href="{% url 'estoque:local_create' %}" class="btn btn-primary">
+      <i class="bi bi-plus-circle"></i> Novo Local
+    </a>
+  </div>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-hover">
+          <thead>
+            <tr>
+              <th>Armazém</th>
+              <th>Código</th>
+              <th>Descrição</th>
+              <th>Tipo</th>
+              <th>Capacidade (kg)</th>
+              <th>Status</th>
+              <th style="width: 150px;">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for local in locais %}
+            <tr>
+              <td>{{ local.armazem.nome }}</td>
+              <td><strong>{{ local.codigo }}</strong></td>
+              <td>{{ local.descricao }}</td>
+              <td>
+                <span class="badge bg-info">{{ local.get_tipo_display }}</span>
+              </td>
+              <td>{{ local.capacidade_kg|default:"-" }}</td>
+              <td>
+                {% if local.bloqueado %}
+                  <span class="badge bg-danger">Bloqueado</span>
+                {% elif local.ativo %}
+                  <span class="badge bg-success">Ativo</span>
+                {% else %}
+                  <span class="badge bg-secondary">Inativo</span>
+                {% endif %}
+              </td>
+              <td>
+                <div class="dropdown">
+                  <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                    <i class="bi bi-three-dots-vertical"></i>
+                  </button>
+                  <ul class="dropdown-menu dropdown-menu-end">
+                    <li><a class="dropdown-item" href="{% url 'estoque:local_edit' local.pk %}"><i class="bi bi-pencil text-warning"></i> Editar</a></li>
+                    {% if local.bloqueado %}
+                      <li><a class="dropdown-item" href="{% url 'estoque:local_desbloquear' local.pk %}"><i class="bi bi-unlock text-success"></i> Desbloquear</a></li>
+                    {% else %}
+                      <li><a class="dropdown-item" href="{% url 'estoque:local_bloquear' local.pk %}"><i class="bi bi-lock text-warning"></i> Bloquear</a></li>
+                    {% endif %}
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item text-danger" href="{% url 'estoque:local_delete' local.pk %}" onclick="return confirm('Deseja realmente excluir este local?')"><i class="bi bi-trash"></i> Excluir</a></li>
+                  </ul>
+                </div>
+              </td>
+                    <i class="bi bi-trash"></i>
+                  </a>
+                </div>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="7" class="text-center text-muted py-4">
+                <i class="bi bi-inbox" style="font-size: 3rem;"></i>
+                <p class="mt-2">Nenhum local cadastrado</p>
+                <a href="{% url 'estoque:local_create' %}" class="btn btn-primary">
+                  <i class="bi bi-plus-circle"></i> Cadastrar Primeiro Local
+                </a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de Ajuda -->
+<div class="modal fade" id="helpModal" tabindex="-1" aria-labelledby="helpModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title" id="helpModalLabel">
+          <i class="bi bi-question-circle-fill"></i> O que é um Local de Estocagem?
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <h6 class="text-success"><i class="bi bi-pin-map"></i> Conceito</h6>
+        <p>
+          O <strong>Local de Estocagem</strong> é uma subdivisão dentro de um armazém, representando 
+          posições específicas onde os produtos são fisicamente armazenados. É como um "endereço" dentro do armazém.
+        </p>
+        
+        <hr>
+        
+        <h6 class="text-success"><i class="bi bi-star-fill"></i> Importância</h6>
+        <ul>
+          <li><strong>Precisão:</strong> Localiza exatamente onde cada produto está</li>
+          <li><strong>Agilidade:</strong> Acelera a separação e expedição de produtos</li>
+          <li><strong>Endereçamento:</strong> Facilita o trabalho de operadores e conferentes</li>
+          <li><strong>Bloqueio:</strong> Permite bloquear locais com problemas (contaminação, manutenção)</li>
+        </ul>
+        
+        <hr>
+        
+        <h6 class="text-success"><i class="bi bi-clipboard-check"></i> Tipos de Locais</h6>
+        <div class="row">
+          <div class="col-md-6">
+            <div class="alert alert-light">
+              <strong>📚 Prateleira:</strong> A-01, A-02, B-01... (mais comum)
+            </div>
+            <div class="alert alert-light">
+              <strong>📦 Pallet:</strong> P-001, P-002... (empilhadeiras)
+            </div>
+            <div class="alert alert-light">
+              <strong>🚪 Sala:</strong> Sala-01, Sala-02... (produtos segregados)
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="alert alert-light">
+              <strong>❄️ Câmara:</strong> C1-Z01, C1-Z02... (câmaras frias)
+            </div>
+            <div class="alert alert-light">
+              <strong>🌾 Silo:</strong> S-01, S-02... (silos individuais)
+            </div>
+            <div class="alert alert-light">
+              <strong>📦 Box:</strong> BOX-A, BOX-B... (divisórias)
+            </div>
+          </div>
+        </div>
+        
+        <hr>
+        
+        <h6 class="text-success"><i class="bi bi-lightbulb-fill"></i> Exemplo Prático</h6>
+        <div class="alert alert-success">
+          <strong>Armazém:</strong> Câmara Fria 01<br>
+          <strong>Locais criados:</strong>
+          <ul class="mb-0 mt-2">
+            <li><strong>CF1-A01:</strong> Prateleira A, nível 01 (tomates)</li>
+            <li><strong>CF1-A02:</strong> Prateleira A, nível 02 (alfaces)</li>
+            <li><strong>CF1-B01:</strong> Prateleira B, nível 01 (pimentões)</li>
+          </ul>
+          <p class="mt-2 mb-0">
+            <strong>Benefício:</strong> O operador sabe exatamente onde buscar cada produto!
+          </p>
+        </div>
+        
+        <hr>
+        
+        <h6 class="text-success"><i class="bi bi-shield-fill-exclamation"></i> Bloqueio de Locais</h6>
+        <p>
+          Locais podem ser bloqueados quando:
+        </p>
+        <ul>
+          <li>Detectada contaminação ou problema de qualidade</li>
+          <li>Em manutenção ou limpeza</li>
+          <li>Aguardando liberação de quarentena</li>
+          <li>Estrutura danificada (prateleira quebrada, por exemplo)</li>
+        </ul>
+        
+        <hr>
+        
+        <h6 class="text-success"><i class="bi bi-check-circle-fill"></i> Próximos Passos</h6>
+        <ol>
+          <li>Escolha um <strong>Armazém</strong></li>
+          <li>Cadastre os locais físicos (prateleiras, pallets, boxes)</li>
+          <li>Use códigos curtos e fáceis de lembrar (A01, B02, etc)</li>
+          <li>Ao registrar <strong>Lotes</strong>, informe em qual local está armazenado</li>
+        </ol>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+        <a href="{% url 'estoque:local_create' %}" class="btn btn-success">
+          <i class="bi bi-plus-circle"></i> Criar Local
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

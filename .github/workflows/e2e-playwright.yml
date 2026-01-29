@@ -13,6 +13,23 @@ jobs:
 
     env:
       DJANGO_ALLOW_ASYNC_UNSAFE: '1'
+      # Postgres service credentials (used by Django settings when PG_NAME is provided)
+      PG_NAME: erp_agricola
+      PG_USER: erp_user
+      PG_PASSWORD: secret
+      PG_HOST: localhost
+      PG_PORT: 5432
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: erp_agricola
+          POSTGRES_USER: erp_user
+          POSTGRES_PASSWORD: secret
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U erp_user -d erp_agricola" --health-interval 10s --health-timeout 5s --health-retries 5
 
     strategy:
       matrix:

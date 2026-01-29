@@ -4,6 +4,9 @@ from . import views
 app_name = 'produtos'
 
 urlpatterns = [
+    # Dashboard
+    path('dashboard/', views.dashboard, name='dashboard'),
+    
     # Unidade de Medida
     path('unidades/', views.unidademedida_list, name='unidademedida_list'),
     path('unidades/cadastrar/', views.unidademedida_create, name='unidademedida_create'),
@@ -43,6 +46,7 @@ urlpatterns = [
     path('cadastrar/', views.produto_create, name='produto_create'),
     path('<int:pk>/editar/', views.produto_update, name='produto_update'),
     path('<int:pk>/excluir/', views.produto_delete, name='produto_delete'),
+    path('<int:pk>/clonar/', views.produto_clone, name='produto_clone'),
     
     # Tributação
     path('<int:produto_id>/tributacao/cadastrar/', views.produtotributacao_create, name='tributacao_create'),
@@ -56,6 +60,11 @@ urlpatterns = [
     
     # AJAX - Cadastro rápido de cultura
     path('culturas/ajax/criar/', views.cultura_create_ajax, name='cultura_create_ajax'),
+    
+    # Fornecedores do Produto
+    path('fornecedores/listar/', views.fornecedores_listar, name='fornecedores_listar'),
+    path('<int:produto_pk>/fornecedor/criar/', views.produto_fornecedor_create, name='produto_fornecedor_create'),
+    path('fornecedor/<int:pk>/excluir/', views.produto_fornecedor_delete, name='produto_fornecedor_delete'),
     
     # Documentos do Produto
     path('<int:produto_pk>/documentos/upload/', views.documento_upload, name='documento_upload'),

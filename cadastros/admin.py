@@ -5,12 +5,12 @@ Admin do módulo Fazendas e Culturas
 from django.contrib import admin
 from .models import (
     Fazenda, EnderecoFazenda, ContatoFazenda,
-    ContaBancariaFazenda, DocumentoFazenda, Cultura
+    ContaBancariaFazenda, DocumentoFazenda, Cultura, Praga
 )
 from .models import Area, Talhao, HistoricoTalhao, Safra, SafraPlan, SafraReal, FuncaoFuncionario
 from .models import Vendedor, ComissaoVendedor
 
-from .models import Fornecedor, FornecedorEndereco, FornecedorContato, FornecedorDadoBancario, Transportadora, Viagem, Porto, Moeda, NCM, Vehicle, VehiclePlate, VehicleDocument, VehicleValueHistory
+from .models import Fornecedor, FornecedorEndereco, FornecedorContato, FornecedorDadoBancario, Transportadora, Viagem, Porto, Moeda, NCM, EmpresaNCM, Vehicle, VehiclePlate, VehicleDocument, VehicleValueHistory, CFOP, EmpresaCFOP
 
 class EnderecoFazendaInline(admin.TabularInline):
     """Inline para endereços"""
@@ -197,6 +197,35 @@ class CulturaAdmin(admin.ModelAdmin):
     
 
 
+@admin.register(Praga)
+class PragaAdmin(admin.ModelAdmin):
+    """Admin de Pragas"""
+    list_display = [
+        'nome_comum', 'nome_cientifico', 'ativa', 'empresa', 'data_cadastro'
+    ]
+    list_filter = ['ativa', 'empresa', 'data_cadastro']
+    search_fields = ['nome_comum', 'nome_cientifico']
+    readonly_fields = ['data_cadastro', 'data_atualizacao', 'cadastrado_por']
+    
+    fieldsets = (
+        ('Informações Básicas', {
+            'fields': ('empresa', 'nome_comum', 'nome_cientifico', 'ativa')
+        }),
+        ('Auditoria', {
+            'fields': ('cadastrado_por', 'data_cadastro', 'data_atualizacao'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    def get_queryset(self, request):
+        """Filtra por empresa se não for superusuário"""
+        qs = super().get_queryset(request)
+        if request.user.is_superuser:
+            return qs
+        if hasattr(request.user, 'empresa') and request.user.empresa:
+            return qs.filter(empresa=request.user.empresa)
+        return qs.none()
+
 
 
     
@@ -264,6 +293,47 @@ class NCMAdmin(admin.ModelAdmin):
     search_fields = ['codigo', 'nome']
     list_filter = ['ativo']
     ordering = ['codigo']
+
+
+@admin.register(EmpresaNCM)
+class EmpresaNCMAdmin(admin.ModelAdmin):
+    list_display = ['codigo', 'nome', 'empresa', 'cest', 'ativo', 'criado_em']
+    search_fields = ['codigo', 'nome', 'empresa__nome']
+    list_filter = ['ativo', 'empresa']
+    ordering = ['empresa', 'codigo']
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        # non-superusers see only their empresa
+        if request.user.is_superuser:
+            return qs
+        if hasattr(request.user, 'empresa') and request.user.empresa:
+            return qs.filter(empresa=request.user.empresa)
+        return qs.none()
+
+
+@admin.register(CFOP)
+class CFOPAdmin(admin.ModelAdmin):
+    list_display = ['codigo', 'nome', 'ativo']
+    search_fields = ['codigo', 'nome']
+    list_filter = ['ativo']
+    ordering = ['codigo']
+
+
+@admin.register(EmpresaCFOP)
+class EmpresaCFOPAdmin(admin.ModelAdmin):
+    list_display = ['codigo', 'nome', 'empresa', 'ativo', 'criado_em']
+    search_fields = ['codigo', 'nome', 'empresa__nome']
+    list_filter = ['ativo', 'empresa']
+    ordering = ['empresa', 'codigo']
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        if request.user.is_superuser:
+            return qs
+        if hasattr(request.user, 'empresa') and request.user.empresa:
+            return qs.filter(empresa=request.user.empresa)
+        return qs.none()
 
 
 @admin.register(Vendedor)

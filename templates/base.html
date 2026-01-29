@@ -15,303 +15,18 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
   <link rel="stylesheet" href="{% static 'css/base.css' %}">
+  <link rel="stylesheet" href="{% static 'css/sidebar-modern.css' %}">
   
   {% block extra_css %}{% endblock %}
 </head>
 
 <body>
   {% if user.is_authenticated %}
-    <!-- Sidebar -->
-    <div class="sidebar" id="sidebar">
-      <!-- Header -->
-      <div class="sidebar-header">
-        <h5>🌾 ERP Agrícola</h5>
-        <div class="user-info">
-          <i class="bi bi-person-circle"></i> {{ request.user.username }}
-        </div>
-      </div>
+    <!-- Sidebar Moderno -->
+    {% include 'sidebar.html' %}
 
-      <!-- Menu -->
-      <ul class="sidebar-menu">
-        <!-- Dashboard -->
-        <li class="menu-item">
-          <a href="{% url 'dashboard:index' %}" class="menu-link">
-            <i class="bi bi-speedometer2"></i>
-            <span>Dashboard</span>
-          </a>
-        </li>
-
-        <div class="menu-separator"></div>
-
-        <!-- GESTÃO (apenas superusuário) -->
-        {% if user.is_superuser %}
-        <li class="menu-label">GESTÃO DO SISTEMA</li>
-        
-        <!-- Empresas -->
-        <li class="menu-item">
-          <div class="menu-link" onclick="toggleSubmenu(this)">
-            <i class="bi bi-buildings"></i>
-            <span>Empresas</span>
-            <i class="bi bi-chevron-down expand-icon"></i>
-          </div>
-          <ul class="submenu">
-            <li class="submenu-item">
-              <a href="{% url 'empresas:empresa_list' %}" class="submenu-link">
-                <span>Listar Empresas</span>
-              </a>
-            </li>
-            <li class="submenu-item">
-              <a href="{% url 'empresas:empresa_create' %}" class="submenu-link">
-                <span>Nova Empresa</span>
-              </a>
-            </li>
-            <li class="submenu-item">
-              <a href="{% url 'empresas:plano_list' %}" class="submenu-link">
-                <span>Planos</span>
-              </a>
-            </li>
-          </ul>
-        </li>
-        {% endif %}
-
-        <!-- Usuários (admin/staff) -->
-        {% if user.is_staff or user.is_superuser %}
-        <li class="menu-item">
-          <div class="menu-link" onclick="toggleSubmenu(this)">
-            <i class="bi bi-people"></i>
-            <span>Usuários</span>
-            <i class="bi bi-chevron-down expand-icon"></i>
-          </div>
-          <ul class="submenu">
-            <li class="submenu-item">
-              <a href="{% url 'usuarios:usuario_list' %}" class="submenu-link">
-                <span>Listar Usuários</span>
-              </a>
-            </li>
-            <li class="submenu-item">
-              <a href="{% url 'usuarios:usuario_create' %}" class="submenu-link">
-                <span>Novo Usuário</span>
-              </a>
-            </li>
-            <li class="submenu-item">
-              <a href="{% url 'usuarios:login_registros' %}" class="submenu-link">
-                <span>Registros de Login</span>
-              </a>
-            </li>
-          </ul>
-        </li>
-        {% endif %}
-
-        {% if not user.is_superuser %}
-        <div class="menu-separator"></div>
-        <li class="menu-item">
-          <a href="{% url 'empresas:minha_empresa' %}" class="menu-link">
-            <i class="bi bi-building"></i>
-            <span>Minha Empresa</span>
-          </a>
-        </li>
-        {% endif %}
-
-        <div class="menu-separator"></div>
-        <li class="menu-label">OPERACIONAL</li>
-
-        <!-- Cadastros -->
-        <li class="menu-item">
-          <div class="menu-link" onclick="toggleSubmenu(this)">
-            <i class="bi bi-folder"></i>
-            <span>Cadastros</span>
-            <i class="bi bi-chevron-down expand-icon"></i>
-          </div>
-          <ul class="submenu" id="submenu-cadastros">
-            <!-- Search / Filter for long menus -->
-            <li class="submenu-search">
-              <div class="d-flex align-items-center gap-2">
-                <input id="submenu-cadastros-search" type="search" placeholder="Filtrar cadastros..." aria-label="Filtrar cadastros" />
-                <button type="button" id="submenu-cadastros-clear" class="btn btn-sm btn-outline-light" aria-label="Limpar busca" title="Limpar busca">✕</button>
-                <button type="button" id="submenu-cadastros-reset" class="btn btn-sm btn-link text-white p-0" aria-label="Ver tudo" title="Mostrar todos">Ver tudo</button>
-              </div>
-            </li>
-            <li class="submenu-empty d-none">Nenhum resultado</li>
-
-            <!-- ✅ FAZENDAS - CORRIGIDO -->
-            <li class="submenu-item">
-              <a href="{% url 'cadastros:fazenda_list' %}" class="submenu-link">
-                <span>🏭 Fazendas</span>
-              </a>
-            </li>
-            <li class="submenu-item">
-              <a href="{% url 'cadastros:funcionario_list' %}" class="submenu-link">
-                <span>👷 Funcionários</span>
-              </a>
-            </li>
-            <li class="submenu-item">
-              <a href="{% url 'cadastros:cultura_list' %}" class="submenu-link">
-                <span>🌱 Culturas</span>
-              </a>
-
-            <li class="submenu-item">
-              <a href="{% url 'cadastros:vendedor_list' %}" class="submenu-link">
-                <span>👤 Vendedores</span>
-              </a>
-            </li>
-            <li class="submenu-item">
-              <a href="{% url 'cadastros:fornecedor_list' %}" class="submenu-link">
-                <span>🤝 Fornecedores</span>
-              </a>
-            </li>
-
-            {% if request.user.is_authenticated %}
-              {% if request.user.empresa or request.user.is_staff or request.user.is_superuser %}
-              <li class="submenu-item">
-                <a href="{% url 'cadastros:transportadora_list' %}" class="submenu-link">
-                  <span>🚚 Transportadoras</span>
-                </a>
-              </li>
-              {% endif %}
-            {% endif %}
-
-            <li class="submenu-item">
-              <a href="#" class="submenu-link">
-                <span>📦 Produtos/Insumos</span>
-              </a>
-            </li>
-            
-            {% if request.user.is_authenticated and request.user.empresa %}
-            <li class="submenu-item">
-              <a href="{% url 'cadastros:cliente_list' %}" class="submenu-link">
-                <span>👥 Clientes</span>
-              </a>
-            </li>
-            {% else %}
-            <li class="submenu-item">
-              <a href="#" class="submenu-link disabled" title="Seu usuário não está vinculado a uma empresa"><span class="text-muted">👥 Clientes</span></a>
-            </li>
-            {% endif %}
-            {% if request.user.is_authenticated and request.user.empresa %}
-            <li class="submenu-item">
-              <a href="{% url 'cadastros:vehicle_list' %}" class="submenu-link">
-                <span>🚚 Veículos</span>
-              </a>
-            </li>
-            {% else %}
-            <li class="submenu-item">
-              <a href="#" class="submenu-link disabled" title="Seu usuário não está vinculado a uma empresa"><span class="text-muted">🚚 Veículos</span></a>
-            </li>
-            {% endif %}
-
-            <li class="submenu-item">
-              <a href="{% url 'cadastros:porto_list' %}" class="submenu-link">
-                <span>⚓ Portos</span>
-              </a>
-            </li>
-
-            <li class="submenu-item">
-              <a href="{% url 'cadastros:area_list' %}" class="submenu-link">
-                <span>🗺️ Área</span>
-              </a>
-            </li>
-
-            <li class="submenu-item">
-              <a href="{% url 'cadastros:talhao_list' %}" class="submenu-link">
-                <span>⏸ Talhão</span>
-              </a>
-            </li>
-            
-
-          </ul>
-        </li>
-
-        <!-- Fiscal -->
-        <li class="menu-item">
-          <div class="menu-link" onclick="toggleSubmenu(this)">
-            <i class="bi bi-receipt"></i>
-            <span>Fiscal</span>
-            <i class="bi bi-chevron-down expand-icon"></i>
-          </div>
-          <ul class="submenu">
-            <li class="submenu-item">
-              <a href="{% url 'cadastros:ncm_list' %}" class="submenu-link">
-                <span>📜 NCMs</span>
-              </a>
-            </li>
-            <li class="submenu-item">
-              <a href="{% url 'cadastros:cfop_list' %}" class="submenu-link">
-                <span>⚖️ CFOP</span>
-              </a>
-            </li>
-            {% if perms.cadastros.add_cfop %}
-            <li class="submenu-item">
-              <a href="{% url 'cadastros:cfop_import' %}" class="submenu-link">
-                <span>📥 Importar CFOP</span>
-              </a>
-            </li>
-            {% endif %}
-          </ul>
-        </li>
-
-          <div class="menu-link" onclick="toggleSubmenu(this)">
-            <i class="bi bi-cash-stack"></i>
-            <span>Financeiro</span>
-            <i class="bi bi-chevron-down expand-icon"></i>
-            <span class="badge-notify">Em breve</span>
-          </div>
-          <ul class="submenu">
-            <li class="submenu-item">
-              <a href="#" class="submenu-link">
-                <span>💵 Contas a Pagar</span>
-              </a>
-            </li>
-            <li class="submenu-item">
-              <a href="#" class="submenu-link">
-                <span>💰 Contas a Receber</span>
-              </a>
-            </li>
-            <li class="submenu-item">
-              <a href="#" class="submenu-link">
-                <span>💳 Empréstimos</span>
-              </a>
-            </li>
-            <li class="submenu-item">
-              <a href="#" class="submenu-link">
-                <span>📊 Fluxo de Caixa</span>
-              </a>
-            </li>
-          </ul>
-        </li>
-
-        <!-- Safra -->
-        <li class="menu-item">
-          <div class="menu-link" onclick="toggleSubmenu(this)">
-            <i class="bi bi-calendar-check"></i>
-            <span>Safra</span>
-            <i class="bi bi-chevron-down expand-icon"></i>
-          </div>
-          <ul class="submenu">
-            <li class="submenu-item">
-              <a href="{% url 'cadastros:safra_list' %}" class="submenu-link">
-                <span>Safras</span>
-              </a>
-            </li>
-            <li class="submenu-item">
-              <a href="{% url 'cadastros:safra_create' %}" class="submenu-link">
-                <span>Nova Safra</span>
-              </a>
-            </li>
-          </ul>
-        </li>
-
-        <!-- Relatórios -->
-        <li class="menu-item">
-          <div class="menu-link" onclick="toggleSubmenu(this)">
-            <i class="bi bi-graph-up"></i>
-            <span>Relatórios</span>
-            <span class="badge-notify">Em breve</span>
-          </div>
-        </li>
-      </ul>
-    </div>
-
-    <div id="overlay" class="overlay"></div>
+    <!-- Overlay para mobile -->
+    <div id="sidebarOverlay" class="sidebar-overlay"></div>
   {% endif %}
 
   <!-- Main Content -->
@@ -351,6 +66,10 @@
             document.querySelectorAll('.alert').forEach(function(a){
               // Skip auto-dismiss for danger/error alerts so users can read validation messages
               if (a.classList.contains('alert-danger') || a.classList.contains('alert-error')) return;
+              // Skip auto-dismiss for alerts inside modals (help documentation)
+              if (a.closest('.modal')) return;
+              // Skip auto-dismiss for fixed direct entry alert, fixed divergence alert, or fixed guidance alert
+              if (a.classList.contains('alerta-fixa-entrada-direta') || a.classList.contains('alerta-fixa-divergencia') || a.classList.contains('alerta-fixa-orientacao')) return;
               setTimeout(function(){ try { var bs = bootstrap.Alert.getInstance(a) || new bootstrap.Alert(a); bs.close(); } catch(e){} }, 3000);
             });
           } catch(e){}
@@ -622,5 +341,8 @@
     }catch(e){}
   })();
   </script>
+  
+  <!-- Sidebar Moderno JS -->
+  <script src="{% static 'js/sidebar-modern.js' %}"></script>
 </body>
 </html>

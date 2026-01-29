@@ -1,0 +1,184 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Armazéns{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="mb-1">
+        <i class="bi bi-building"></i> Armazéns
+        <button type="button" class="btn btn-sm btn-outline-info ms-2" data-bs-toggle="modal" data-bs-target="#helpModal">
+          <i class="bi bi-question-circle"></i> Ajuda
+        </button>
+      </h2>
+      <p class="text-muted">Gestão de armazéns e depósitos</p>
+    </div>
+    <a href="{% url 'estoque:armazem_create' %}" class="btn btn-primary">
+      <i class="bi bi-plus-circle"></i> Novo Armazém
+    </a>
+  </div>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-hover">
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Nome</th>
+              <th>Tipo</th>
+              <th>Fazenda</th>
+              <th>Capacidade (m³)</th>
+              <th>Capacidade (kg)</th>
+              <th>Status</th>
+              <th style="width: 150px;">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for armazem in armazens %}
+            <tr>
+              <td><strong>{{ armazem.codigo }}</strong></td>
+              <td>{{ armazem.nome }}</td>
+              <td>
+                <span class="badge bg-secondary">{{ armazem.get_tipo_display }}</span>
+              </td>
+              <td>{{ armazem.fazenda|default:"-" }}</td>
+              <td>{{ armazem.capacidade_m3|default:"-" }}</td>
+              <td>{{ armazem.capacidade_kg|default:"-" }}</td>
+              <td>
+                {% if armazem.ativo %}
+                  <span class="badge bg-success">Ativo</span>
+                {% else %}
+                  <span class="badge bg-danger">Inativo</span>
+                {% endif %}
+              </td>
+              <td>
+                <div class="dropdown">
+                  <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                    <i class="bi bi-three-dots-vertical"></i>
+                  </button>
+                  <ul class="dropdown-menu dropdown-menu-end">
+                    <li><a class="dropdown-item" href="{% url 'estoque:armazem_detail' armazem.pk %}"><i class="bi bi-eye text-primary"></i> Visualizar</a></li>
+                    <li><a class="dropdown-item" href="{% url 'estoque:armazem_edit' armazem.pk %}"><i class="bi bi-pencil text-warning"></i> Editar</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item text-danger" href="{% url 'estoque:armazem_delete' armazem.pk %}" onclick="return confirm('Deseja realmente excluir este armazém?')"><i class="bi bi-trash"></i> Excluir</a></li>
+                  </ul>
+                </div>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="8" class="text-center text-muted py-4">
+                <i class="bi bi-inbox" style="font-size: 3rem;"></i>
+                <p class="mt-2">Nenhum armazém cadastrado</p>
+                <a href="{% url 'estoque:armazem_create' %}" class="btn btn-primary">
+                  <i class="bi bi-plus-circle"></i> Cadastrar Primeiro Armazém
+                </a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de Ajuda -->
+<div class="modal fade" id="helpModal" tabindex="-1" aria-labelledby="helpModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-info text-white">
+        <h5 class="modal-title" id="helpModalLabel">
+          <i class="bi bi-question-circle-fill"></i> O que é um Armazém?
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <h6 class="text-primary"><i class="bi bi-building"></i> Conceito</h6>
+        <p>
+          O <strong>Armazém</strong> representa um espaço físico destinado ao armazenamento de produtos, insumos, 
+          matéria-prima e mercadorias. É a estrutura principal do controle de estoque.
+        </p>
+        
+        <hr>
+        
+        <h6 class="text-primary"><i class="bi bi-star-fill"></i> Importância</h6>
+        <ul>
+          <li><strong>Organização:</strong> Centraliza e organiza o armazenamento de produtos</li>
+          <li><strong>Controle:</strong> Permite controlar capacidade, temperatura e condições de armazenamento</li>
+          <li><strong>Rastreabilidade:</strong> Facilita saber onde cada produto está localizado</li>
+          <li><strong>Gestão:</strong> Possibilita análise de ocupação e planejamento de espaço</li>
+        </ul>
+        
+        <hr>
+        
+        <h6 class="text-primary"><i class="bi bi-clipboard-check"></i> Tipos de Armazéns</h6>
+        <div class="row">
+          <div class="col-md-6">
+            <div class="alert alert-light">
+              <strong>🏭 Almoxarifado:</strong> Materiais gerais, ferramentas, EPIs
+            </div>
+            <div class="alert alert-light">
+              <strong>📦 Depósito:</strong> Produtos acabados, mercadorias para revenda
+            </div>
+            <div class="alert alert-light">
+              <strong>❄️ Câmara Fria:</strong> Produtos que necessitam refrigeração
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="alert alert-light">
+              <strong>🌾 Silo:</strong> Grãos e cereais a granel
+            </div>
+            <div class="alert alert-light">
+              <strong>📦 Packing:</strong> Embalagem e processamento
+            </div>
+            <div class="alert alert-light">
+              <strong>🌱 Campo:</strong> Armazenamento temporário no campo
+            </div>
+          </div>
+        </div>
+        
+        <hr>
+        
+        <h6 class="text-primary"><i class="bi bi-lightbulb-fill"></i> Exemplo Prático</h6>
+        <div class="alert alert-info">
+          <strong>Cenário:</strong> Fazenda com produção de hortaliças<br>
+          <strong>Armazéns cadastrados:</strong>
+          <ul class="mb-0 mt-2">
+            <li><strong>Câmara Fria 01:</strong> Temperatura controlada (2-8°C) para produtos colhidos</li>
+            <li><strong>Almoxarifado Geral:</strong> Ferramentas, EPIs e materiais de consumo</li>
+            <li><strong>Depósito de Insumos:</strong> Defensivos, fertilizantes e sementes</li>
+          </ul>
+        </div>
+        
+        <hr>
+        
+        <h6 class="text-primary"><i class="bi bi-check-circle-fill"></i> Próximos Passos</h6>
+        <ol>
+          <li>Cadastre seus armazéns físicos</li>
+          <li>Defina <strong>Locais de Estocagem</strong> dentro de cada armazém (prateleiras, boxes, etc)</li>
+          <li>Registre <strong>Lotes</strong> de produtos em cada local</li>
+        </ol>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+        <a href="{% url 'estoque:armazem_create' %}" class="btn btn-primary">
+          <i class="bi bi-plus-circle"></i> Criar Armazém
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

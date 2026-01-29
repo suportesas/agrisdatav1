@@ -1,0 +1,159 @@
+{% extends 'base.html' %}
+
+{% block title %}Solicitações de Compra{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    {% if messages %}
+    <div class="row">
+        <div class="col-12">
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-file-alt"></i> Solicitações de Compra</h2>
+        <a href="{% url 'compras:solicitacao_create' %}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Nova Solicitação
+        </a>
+    </div>
+    
+    <!-- Filtros -->
+    <div class="card mb-3">
+        <div class="card-body">
+            <form method="get" class="row g-2">
+                <div class="col-md-3">
+                    <select name="status" class="form-select" onchange="this.form.submit()">
+                        <option value="">Todos os Status</option>
+                        {% for value, label in status_choices %}
+                        <option value="{{ value }}" {% if request.GET.status == value %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Lista -->
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Número</th>
+                            <th>Solicitante</th>
+                            <th>Data Solicitação</th>
+                            <th>Data Necessidade</th>
+                            <th>Status</th>
+                            <th>% Cotado</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for solicitacao in solicitacoes %}
+                        <tr>
+                            <td>
+                                <a href="{% url 'compras:solicitacao_detail' solicitacao.pk %}">
+                                    <strong>{{ solicitacao.numero }}</strong>
+                                </a>
+                                {% if solicitacao.nova_msg %}
+                                    <span title="Nova mensagem" style="font-size: 1.2em;">📩</span>
+                                {% endif %}
+                                {% if solicitacao.emergencial %}
+                                <span class="badge bg-danger ms-1" title="Compra Emergencial">
+                                    <i class="bi bi-lightning-fill"></i>
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td>{{ solicitacao.solicitante.get_full_name }}</td>
+                            <td>{{ solicitacao.data_solicitacao|date:"d/m/Y H:i" }}</td>
+                            <td>{{ solicitacao.data_necessidade|date:"d/m/Y" }}</td>
+                            <td>
+                                {% if solicitacao.status == 'TOTALMENTE_COTADA' %}
+                                    <span class="badge bg-primary">Totalmente Cotado</span>
+                                {% elif solicitacao.status == 'PARCIALMENTE_COTADA' %}
+                                    <span class="badge bg-info text-dark">Parcialmente Cotado</span>
+                                {% elif solicitacao.status == 'RASCUNHO' %}
+                                    <span class="badge bg-secondary">Rascunho</span>
+                                {% elif solicitacao.status == 'PENDENTE' %}
+                                    <span class="badge bg-warning text-dark">Pendente</span>
+                                {% elif solicitacao.status == 'APROVADA' %}
+                                    <span class="badge bg-success">Aprovada</span>
+                                {% elif solicitacao.status == 'CONCLUIDA' %}
+                                    <span class="badge bg-dark">Concluída</span>
+                                {% elif solicitacao.status == 'CANCELADA' %}
+                                    <span class="badge bg-danger">Cancelada</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="progress" style="height: 20px;">
+                                    {% with percentual=solicitacao.calcular_percentual_cotado %}
+                                    <div class="progress-bar" role="progressbar" 
+                                         style="width: {{ percentual }}%" 
+                                         aria-valuenow="{{ percentual }}" 
+                                         aria-valuemin="0" aria-valuemax="100">
+                                        {{ percentual }}%
+                                    </div>
+                                    {% endwith %}
+                                </div>
+                            </td>
+                            <td>
+                                <a href="{% url 'compras:solicitacao_detail' solicitacao.pk %}" 
+                                   class="btn btn-sm btn-info" title="Ver Detalhes">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                {% if solicitacao.status in 'RASCUNHO,PENDENTE' %}
+                                <a href="{% url 'compras:solicitacao_cancelar' solicitacao.pk %}"
+                                   class="btn btn-sm btn-danger ms-1"
+                                   title="Cancelar Solicitação"
+                                   onclick="return confirm('Deseja realmente cancelar esta solicitação?');">
+                                    <i class="fas fa-times"></i>
+                                </a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center">Nenhuma solicitação encontrada</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Paginação -->
+            {% if solicitacoes.has_other_pages %}
+            <nav>
+                <ul class="pagination justify-content-center">
+                    {% if solicitacoes.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ solicitacoes.previous_page_number }}">Anterior</a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for num in solicitacoes.paginator.page_range %}
+                    <li class="page-item {% if solicitacoes.number == num %}active{% endif %}">
+                        <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                    </li>
+                    {% endfor %}
+                    
+                    {% if solicitacoes.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ solicitacoes.next_page_number }}">Próxima</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

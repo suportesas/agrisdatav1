@@ -1,0 +1,712 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Recebimento de Mercadorias - Pedido {{ pedido.numero }}{% endblock %}
+
+{% block content %}
+{% include 'compras/includes/fluxo_compras.html' with etapa_atual='recebimento' solicitacao=pedido.cotacao.solicitacao cotacao=pedido.cotacao pedido=pedido %}
+
+{% include 'compras/includes/instrucoes_etapa.html' with etapa='recebimento' %}
+
+<div class="container-fluid mt-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col">
+            <h2>
+                <i class="bi bi-inbox-fill me-2"></i>
+                Receber Mercadorias
+            </h2>
+            <p class="text-muted">Pedido: {{ pedido.numero }} - Fornecedor: {{ pedido.fornecedor.nome }}</p>
+        </div>
+        <div class="col-auto">
+            <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#ajudaRecebimentoModal">
+                <i class="bi bi-question-circle me-2"></i>
+                Ajuda
+            </button>
+        </div>
+    </div>
+
+    <!-- Informações do Pedido -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">
+                <i class="bi bi-file-earmark-text me-2"></i>
+                Informações do Pedido
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3">
+                    <strong>Número:</strong><br>
+                    {{ pedido.numero }}
+                </div>
+                <div class="col-md-3">
+                    <strong>Fornecedor:</strong><br>
+                    {{ pedido.fornecedor.nome }}
+                </div>
+                <div class="col-md-3">
+                    <strong>Data do Pedido:</strong><br>
+                    {{ pedido.data_pedido|date:"d/m/Y" }}
+                </div>
+                <div class="col-md-3">
+                    <strong>Valor Total:</strong><br>
+                    R$ {{ pedido.valor_total|floatformat:2 }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Itens Pendentes -->
+    <div class="card mb-4">
+        <div class="card-header bg-warning">
+            <h5 class="mb-0">
+                <i class="bi bi-box-seam me-2"></i>
+                Itens Pendentes de Recebimento
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-sm table-hover">
+                    <thead>
+                        <tr>
+                            <th>Produto</th>
+                            <th class="text-end">Qtd. Pedida</th>
+                            <th class="text-end">Já Recebido</th>
+                            <th class="text-end">Pendente</th>
+                            <th class="text-end">%</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in itens_pendentes %}
+                        <tr>
+                            <td>{{ item.produto.nome }}</td>
+                            <td class="text-end">{{ item.quantidade_pedida }} {{ item.unidade_medida.sigla }}</td>
+                            <td class="text-end">{{ item.quantidade_recebida }} {{ item.unidade_medida.sigla }}</td>
+                            <td class="text-end"><strong>{{ item.quantidade_pendente }} {{ item.unidade_medida.sigla }}</strong></td>
+                            <td class="text-end">
+                                {% if item.percentual_recebido|floatformat:0|default:0|add:0 > 0 %}
+                                    <span class="badge bg-info">
+                                        {{ item.percentual_recebido|floatformat:0 }}%
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-secondary">
+                                        {{ item.percentual_recebido|floatformat:0 }}%
+                                    </span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Formulário de Recebimento -->
+    <form method="post" enctype="multipart/form-data" id="recebimentoForm">
+        {% csrf_token %}
+        
+        <!-- Dados da Nota Fiscal -->
+        <div class="card mb-4">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-receipt me-2"></i>
+                    Dados da Nota Fiscal
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="mb-3">
+                            <label class="form-label">{{ form.nota_fiscal.label }}</label>
+                            {{ form.nota_fiscal }}
+                            {% if form.nota_fiscal.errors %}
+                                <div class="invalid-feedback d-block">{{ form.nota_fiscal.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="mb-3">
+                            <label class="form-label">{{ form.serie_nota.label }}</label>
+                            {{ form.serie_nota }}
+                            {% if form.serie_nota.errors %}
+                                <div class="invalid-feedback d-block">{{ form.serie_nota.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label class="form-label">{{ form.chave_nfe.label }}</label>
+                            {{ form.chave_nfe }}
+                            {% if form.chave_nfe.errors %}
+                                <div class="invalid-feedback d-block">{{ form.chave_nfe.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="mb-3">
+                            <label class="form-label">{{ form.data_emissao_nf.label }}</label>
+                            {{ form.data_emissao_nf }}
+                            {% if form.data_emissao_nf.errors %}
+                                <div class="invalid-feedback d-block">{{ form.data_emissao_nf.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="mb-3">
+                            <label class="form-label">{{ form.data_recebimento.label }}</label>
+                            {{ form.data_recebimento }}
+                            {% if form.data_recebimento.errors %}
+                                <div class="invalid-feedback d-block">{{ form.data_recebimento.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="mb-3">
+                            <label class="form-label">{{ form.hora_recebimento.label }}</label>
+                            {{ form.hora_recebimento }}
+                            {% if form.hora_recebimento.errors %}
+                                <div class="invalid-feedback d-block">{{ form.hora_recebimento.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="mb-3">
+                            <label class="form-label">{{ form.valor_total_nf.label }}</label>
+                            {{ form.valor_total_nf }}
+                            {% if form.valor_total_nf.errors %}
+                                <div class="invalid-feedback d-block">{{ form.valor_total_nf.errors }}</div>
+                            {% endif %}
+                            <small class="form-text text-muted">Calculado automaticamente com base nos itens.</small>
+                        </div>
+                            <script>
+                            document.addEventListener('DOMContentLoaded', function() {
+                                function calcularValorTotalNF() {
+                                    let total = 0;
+                                    document.querySelectorAll('.item-recebimento').forEach(function(item) {
+                                        const qtd = parseFloat(item.querySelector('input[name$="quantidade_recebida"]')?.value.replace(',', '.') || '0');
+                                        const preco = parseFloat(item.querySelector('input[name$="preco_unitario"]')?.value.replace(',', '.') || '0');
+                                        const desconto = parseFloat(item.querySelector('input[name$="valor_desconto"]')?.value.replace(',', '.') || '0');
+                                        total += (qtd * preco) - desconto;
+                                    });
+                                    const campoTotal = document.querySelector('input[name="valor_total_nf"]');
+                                    if (campoTotal) {
+                                        campoTotal.value = total.toFixed(2);
+                                    }
+                                }
+                                // Atualiza ao alterar qualquer campo relevante
+                                document.querySelectorAll('input[name$="quantidade_recebida"], input[name$="preco_unitario"], input[name$="valor_desconto"]').forEach(function(input) {
+                                    input.addEventListener('input', calcularValorTotalNF);
+                                });
+                                // Atualiza ao adicionar novo item
+                                document.getElementById('add-item-btn')?.addEventListener('click', function() {
+                                    setTimeout(function() {
+                                        document.querySelectorAll('input[name$="quantidade_recebida"], input[name$="preco_unitario"], input[name$="valor_desconto"]').forEach(function(input) {
+                                            input.removeEventListener('input', calcularValorTotalNF);
+                                            input.addEventListener('input', calcularValorTotalNF);
+                                        });
+                                        calcularValorTotalNF();
+                                    }, 300);
+                                });
+                                // Inicializa valor ao carregar
+                                calcularValorTotalNF();
+                            });
+                            </script>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="mb-3">
+                            <label class="form-label">{{ form.arquivo_nfe.label }}</label>
+                            {{ form.arquivo_nfe }}
+                            <small class="form-text text-muted">Arquivo XML da NF-e (opcional)</small>
+                            {% if form.arquivo_nfe.errors %}
+                                <div class="invalid-feedback d-block">{{ form.arquivo_nfe.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label">{{ form.observacoes.label }}</label>
+                            {{ form.observacoes }}
+                            {% if form.observacoes.errors %}
+                                <div class="invalid-feedback d-block">{{ form.observacoes.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label">{{ form.divergencias.label }}</label>
+                            {{ form.divergencias }}
+                            {% if form.divergencias.errors %}
+                                <div class="invalid-feedback d-block">{{ form.divergencias.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Itens do Recebimento -->
+        <div class="card mb-4">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-clipboard-check me-2"></i>
+                    Itens a Receber
+                </h5>
+            </div>
+            <div class="card-body">
+                {{ formset.management_form }}
+                
+                <div id="itensRecebimento">
+                    {% for item_form in formset %}
+                    <div class="item-recebimento border p-3 mb-3 rounded">
+                        {{ item_form.id }}
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <label class="form-label">{{ item_form.item_pedido.label }} *</label>
+                                    {{ item_form.item_pedido }}
+                                    {% if item_form.item_pedido.errors %}
+                                        <div class="invalid-feedback d-block">{{ item_form.item_pedido.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="mb-3">
+                                    <label class="form-label">{{ item_form.quantidade_recebida.label }} *</label>
+                                    {{ item_form.quantidade_recebida }}
+                                    {% if item_form.quantidade_recebida.errors %}
+                                        <div class="invalid-feedback d-block">{{ item_form.quantidade_recebida.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="mb-3">
+                                    <label class="form-label">{{ item_form.local_estoque.label }} *</label>
+                                    {{ item_form.local_estoque }}
+                                    {% if item_form.local_estoque.errors %}
+                                        <div class="invalid-feedback d-block">{{ item_form.local_estoque.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="mb-3">
+                                    <label class="form-label">{{ item_form.preco_unitario.label }}</label>
+                                    {{ item_form.preco_unitario }}
+                                    {% if item_form.preco_unitario.errors %}
+                                        <div class="invalid-feedback d-block">{{ item_form.preco_unitario.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="mb-3">
+                                    <label class="form-label">{{ item_form.valor_desconto.label }}</label>
+                                    {{ item_form.valor_desconto }}
+                                    {% if item_form.valor_desconto.errors %}
+                                        <div class="invalid-feedback d-block">{{ item_form.valor_desconto.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row align-items-end g-2">
+                            <div class="col-md-3">
+                                <div class="mb-2">
+                                    <label class="form-label">{{ item_form.data_fabricacao.label }}</label>
+                                    {{ item_form.data_fabricacao }}
+                                    {% if item_form.data_fabricacao.errors %}
+                                        <div class="invalid-feedback d-block">{{ item_form.data_fabricacao.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="mb-2">
+                                    <label class="form-label">{{ item_form.data_validade.label }}</label>
+                                    {{ item_form.data_validade }}
+                                    {% if item_form.data_validade.errors %}
+                                        <div class="invalid-feedback d-block">{{ item_form.data_validade.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-2">
+                                    <label class="form-label">{{ item_form.observacoes.label }}</label>
+                                    {{ item_form.observacoes }}
+                                    {% if item_form.observacoes.errors %}
+                                        <div class="invalid-feedback d-block">{{ item_form.observacoes.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        {% if formset.can_delete %}
+                        <div class="text-end">
+                            {{ item_form.DELETE }}
+                            <label for="{{ item_form.DELETE.id_for_label }}" class="text-danger">
+                                <i class="bi bi-trash me-1"></i>Remover item
+                            </label>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+                <button type="button" class="btn btn-outline-primary" id="add-item-btn">
+                    <i class="bi bi-plus-circle"></i> Adicionar item
+                </button>
+                <script>
+                document.addEventListener('DOMContentLoaded', function() {
+                    const addBtn = document.getElementById('add-item-btn');
+                    const totalForms = document.getElementById('id_itens-TOTAL_FORMS');
+                    const itensRecebimento = document.getElementById('itensRecebimento');
+                    const emptyForm = itensRecebimento.querySelector('.item-recebimento:last-child').cloneNode(true);
+
+                    addBtn.addEventListener('click', function() {
+                        let formCount = parseInt(totalForms.value);
+                        let newForm = emptyForm.cloneNode(true);
+                        // Limpa os valores dos inputs
+                        newForm.querySelectorAll('input, select, textarea').forEach(function(input) {
+                            if (input.type === 'checkbox' || input.type === 'radio') {
+                                input.checked = false;
+                            } else {
+                                input.value = '';
+                            }
+                        });
+                        // Atualiza os atributos name/id dos campos
+                        newForm.innerHTML = newForm.innerHTML.replace(/-\d+-/g, '-' + formCount + '-');
+                        itensRecebimento.appendChild(newForm);
+                        totalForms.value = formCount + 1;
+                    });
+                });
+                </script>
+
+                <!-- Aviso de lançamento automático no estoque -->
+                <div class="alert alert-warning d-flex align-items-center mb-4" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    <strong>Atenção:</strong> Ao registrar o recebimento, a entrada será automaticamente lançada no estoque no local especificado.
+                </div>
+            </div>
+        </div>
+
+        <!-- Botões -->
+        <div class="row mb-4">
+            <div class="col">
+                <button type="submit" class="btn btn-success btn-lg">
+                    <i class="bi bi-check-circle me-2"></i>
+                    Registrar Recebimento
+                </button>
+                <script>
+                document.addEventListener('DOMContentLoaded', function() {
+                    const submitBtn = document.querySelector('button[type="submit"]');
+                    submitBtn.addEventListener('mousedown', function(e) {
+                        const horaInput = document.querySelector('input[name="hora_recebimento"]');
+                        if (horaInput) {
+                            horaInput.blur();
+                        }
+                    });
+                });
+                </script>
+                <a href="{% url 'compras:pedido_detail' pedido.pk %}" class="btn btn-secondary btn-lg">
+                    <i class="bi bi-x-circle me-2"></i>
+                    Cancelar
+                </a>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Preenche data e hora atual por padrão
+    const dataRecebimento = document.querySelector('input[name="data_recebimento"]');
+    const horaRecebimento = document.querySelector('input[name="hora_recebimento"]');
+    
+    if (dataRecebimento && !dataRecebimento.value) {
+        const hoje = new Date().toISOString().split('T')[0];
+        dataRecebimento.value = hoje;
+    }
+    
+    if (horaRecebimento && !horaRecebimento.value) {
+        const agora = new Date().toTimeString().split(' ')[0].substring(0, 5);
+        horaRecebimento.value = agora;
+    }
+});
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    function calcularTotalNF() {
+        let total = 0;
+        document.querySelectorAll('.item-recebimento').forEach(function(itemDiv) {
+            const qtd = parseFloat(itemDiv.querySelector('input[name$="quantidade_recebida"]').value) || 0;
+            const preco = parseFloat(itemDiv.querySelector('input[name$="preco_unitario"]').value) || 0;
+            const desconto = parseFloat(itemDiv.querySelector('input[name$="valor_desconto"]').value) || 0;
+            total += (qtd * preco) - desconto;
+        });
+        const campoTotal = document.getElementById('id_valor_total_nf');
+        if (campoTotal) {
+            campoTotal.value = total.toFixed(2);
+        }
+    }
+    document.querySelectorAll('.item-recebimento input').forEach(function(input) {
+        input.addEventListener('input', calcularTotalNF);
+    });
+    calcularTotalNF(); // inicializa
+});
+</script>
+
+<!-- Modal de Ajuda -->
+<div class="modal fade" id="ajudaRecebimentoModal" tabindex="-1" aria-labelledby="ajudaRecebimentoModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title" id="ajudaRecebimentoModalLabel">
+                    <i class="bi bi-question-circle me-2"></i>
+                    Ajuda - Recebimento de Mercadorias
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="accordion" id="accordionAjuda">
+                    <!-- Como Funciona -->
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapse1">
+                                <i class="bi bi-info-circle me-2"></i>
+                                Como Funciona o Recebimento?
+                            </button>
+                        </h2>
+                        <div id="collapse1" class="accordion-collapse collapse show" data-bs-parent="#accordionAjuda">
+                            <div class="accordion-body">
+                                <p><strong>O recebimento é o processo de registrar a entrada física de mercadorias no estoque.</strong></p>
+                                <ol>
+                                    <li>Informe os dados da <strong>Nota Fiscal</strong> que acompanha a mercadoria</li>
+                                    <li>Registre a <strong>quantidade recebida</strong> de cada item</li>
+                                    <li>Selecione o <strong>local de estoque</strong> onde será armazenado</li>
+                                    <li>Informe dados de <strong>rastreabilidade</strong> (lote, validade)</li>
+                                    <li>Ao salvar, a entrada será <strong>automaticamente lançada no estoque</strong></li>
+                                </ol>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Dados da NF -->
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse2">
+                                <i class="bi bi-receipt me-2"></i>
+                                Dados da Nota Fiscal (Obrigatórios)
+                            </button>
+                        </h2>
+                        <div id="collapse2" class="accordion-collapse collapse" data-bs-parent="#accordionAjuda">
+                            <div class="accordion-body">
+                                <ul>
+                                    <li><strong>Número da NF-e:</strong> Número da nota fiscal de entrada</li>
+                                    <li><strong>Série:</strong> Geralmente "1" (padrão)</li>
+                                    <li><strong>Chave NF-e:</strong> 44 dígitos da chave de acesso (opcional, mas recomendado)</li>
+                                    <li><strong>Data de Emissão:</strong> Data em que a NF foi emitida pelo fornecedor</li>
+                                    <li><strong>Data/Hora Recebimento:</strong> Quando a mercadoria chegou fisicamente</li>
+                                    <li><strong>Valor Total NF:</strong> Valor total da nota fiscal</li>
+                                </ul>
+                                <div class="alert alert-warning mb-0">
+                                    <i class="bi bi-exclamation-triangle me-2"></i>
+                                    <strong>Importante:</strong> O número da NF-e deve ser único no sistema.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Validações -->
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse3">
+                                <i class="bi bi-shield-check me-2"></i>
+                                Validações Importantes
+                            </button>
+                        </h2>
+                        <div id="collapse3" class="accordion-collapse collapse" data-bs-parent="#accordionAjuda">
+                            <div class="accordion-body">
+                                <h6><i class="bi bi-exclamation-triangle text-danger me-2"></i>O sistema valida:</h6>
+                                <ol>
+                                    <li>
+                                        <strong>Quantidade não pode exceder o pedido:</strong>
+                                        <ul>
+                                            <li>Total recebido ≤ Quantidade pedida</li>
+                                            <li>Exemplo: Se pediu 100 unidades e já recebeu 60, só pode receber no máximo mais 40</li>
+                                        </ul>
+                                    </li>
+                                    <li>
+                                        <strong>Pelo menos 1 item deve ser informado</strong>
+                                    </li>
+                                    <li>
+                                        <strong>Quantidade recebida deve ser maior que zero</strong>
+                                    </li>
+                                    <li>
+                                        <strong>Local de estoque deve estar ativo</strong>
+                                    </li>
+                                    <li>
+                                        <strong>Data de validade deve ser posterior à data de fabricação</strong>
+                                    </li>
+                                </ol>
+                                
+                                <div class="alert alert-danger mb-0">
+                                    <i class="bi bi-x-circle me-2"></i>
+                                    <strong>Bloqueio:</strong> Se tentar receber quantidade maior que o pedido, o sistema apresentará erro e não permitirá salvar.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recebimentos Parciais -->
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse4">
+                                <i class="bi bi-layers me-2"></i>
+                                Recebimentos Parciais
+                            </button>
+                        </h2>
+                        <div id="collapse4" class="accordion-collapse collapse" data-bs-parent="#accordionAjuda">
+                            <div class="accordion-body">
+                                <p><strong>Você pode fazer múltiplos recebimentos para o mesmo pedido!</strong></p>
+                                
+                                <h6>Exemplo:</h6>
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-bordered">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Recebimento</th>
+                                                <th>Qtd. Pedida</th>
+                                                <th>Qtd. Recebida</th>
+                                                <th>Qtd. Pendente</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td>1º Recebimento</td>
+                                                <td>100 un</td>
+                                                <td>60 un</td>
+                                                <td>40 un</td>
+                                            </tr>
+                                            <tr>
+                                                <td>2º Recebimento</td>
+                                                <td>100 un</td>
+                                                <td>30 un</td>
+                                                <td>10 un</td>
+                                            </tr>
+                                            <tr>
+                                                <td>3º Recebimento</td>
+                                                <td>100 un</td>
+                                                <td>10 un</td>
+                                                <td>0 un</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                
+                                <div class="alert alert-info mb-0">
+                                    <i class="bi bi-info-circle me-2"></i>
+                                    O status do pedido muda automaticamente:
+                                    <ul class="mb-0 mt-2">
+                                        <li><strong>Parcialmente Recebido:</strong> Quando recebe parte dos itens</li>
+                                        <li><strong>Totalmente Recebido:</strong> Quando recebe 100% dos itens</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Rastreabilidade -->
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse5">
+                                <i class="bi bi-upc-scan me-2"></i>
+                                Rastreabilidade (Lote, Validade)
+                            </button>
+                        </h2>
+                        <div id="collapse5" class="accordion-collapse collapse" data-bs-parent="#accordionAjuda">
+                            <div class="accordion-body">
+                                <p><strong>Campos opcionais mas importantes para controle:</strong></p>
+                                <ul>
+                                    <li><strong>Lote:</strong> Número do lote do fornecedor (importante para recalls e rastreamento)</li>
+                                    <li><strong>Data de Fabricação:</strong> Quando o produto foi fabricado</li>
+                                    <li><strong>Data de Validade:</strong> Prazo de validade do produto</li>
+                                </ul>
+                                
+                                <div class="alert alert-success mb-0">
+                                    <i class="bi bi-check-circle me-2"></i>
+                                    <strong>Recomendação:</strong> Sempre preencha esses campos para produtos perecíveis, insumos agrícolas com validade, medicamentos veterinários, etc.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Integração com Estoque -->
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse6">
+                                <i class="bi bi-archive me-2"></i>
+                                Integração com Estoque
+                            </button>
+                        </h2>
+                        <div id="collapse6" class="accordion-collapse collapse" data-bs-parent="#accordionAjuda">
+                            <div class="accordion-body">
+                                <p><strong>O que acontece ao salvar o recebimento:</strong></p>
+                                <ol>
+                                    <li>✅ Cria registro de recebimento com status "Pendente Conferência"</li>
+                                    <li>✅ Atualiza quantidade recebida no item do pedido</li>
+                                    <li>✅ <strong>Lança entrada automática no estoque</strong> (MovimentoEstoque)</li>
+                                    <li>✅ Atualiza saldo do produto no local especificado</li>
+                                    <li>✅ Registra custo unitário do item</li>
+                                    <li>✅ Vincula ao documento (NF-e) para auditoria</li>
+                                </ol>
+                                
+                                <div class="alert alert-warning mb-0">
+                                    <i class="bi bi-exclamation-triangle me-2"></i>
+                                    <strong>Atenção:</strong> A entrada no estoque é <strong>imediata e irreversível</strong>. Certifique-se dos dados antes de salvar.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Próximos Passos -->
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse7">
+                                <i class="bi bi-arrow-right-circle me-2"></i>
+                                Próximos Passos Após Salvar
+                            </button>
+                        </h2>
+                        <div id="collapse7" class="accordion-collapse collapse" data-bs-parent="#accordionAjuda">
+                            <div class="accordion-body">
+                                <p><strong>Após registrar o recebimento:</strong></p>
+                                <ol>
+                                    <li>O sistema cria o recebimento com status <span class="badge bg-warning">Pendente Conferência</span></li>
+                                    <li>Você pode acessar a página de <strong>Conferência</strong> para:
+                                        <ul>
+                                            <li>Confirmar que tudo está OK</li>
+                                            <li>OU registrar divergências (quantidade, qualidade, etc)</li>
+                                        </ul>
+                                    </li>
+                                    <li>Após conferir, o status muda para:
+                                        <ul>
+                                            <li><span class="badge bg-success">Conferido</span> - Tudo OK</li>
+                                            <li><span class="badge bg-danger">Com Divergência</span> - Há problemas</li>
+                                        </ul>
+                                    </li>
+                                </ol>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

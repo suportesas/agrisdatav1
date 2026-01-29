@@ -1,0 +1,187 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ armazem.nome }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="mb-1"><i class="bi bi-building"></i> {{ armazem.nome }}</h2>
+      <p class="text-muted">Código: {{ armazem.codigo }}</p>
+    </div>
+    <div>
+      <a href="{% url 'estoque:armazem_edit' armazem.pk %}" class="btn btn-primary">
+        <i class="bi bi-pencil"></i> Editar
+      </a>
+      <a href="{% url 'estoque:armazem_list' %}" class="btn btn-secondary">
+        <i class="bi bi-arrow-left"></i> Voltar
+      </a>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-md-8">
+      <div class="card shadow-sm mb-4">
+        <div class="card-header">
+          <h5 class="mb-0"><i class="bi bi-info-circle"></i> Informações do Armazém</h5>
+        </div>
+        <div class="card-body">
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <strong>Código:</strong><br>
+              {{ armazem.codigo }}
+            </div>
+            <div class="col-md-6">
+              <strong>Nome:</strong><br>
+              {{ armazem.nome }}
+            </div>
+          </div>
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <strong>Tipo:</strong><br>
+              <span class="badge bg-secondary">{{ armazem.get_tipo_display }}</span>
+            </div>
+            <div class="col-md-6">
+              <strong>Localização:</strong><br>
+              {{ armazem.localizacao|default:"-" }}
+            </div>
+          </div>
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <strong>Fazenda:</strong><br>
+              {{ armazem.fazenda|default:"-" }}
+            </div>
+            <div class="col-md-6">
+              <strong>Responsável:</strong><br>
+              {{ armazem.responsavel|default:"-" }}
+            </div>
+          </div>
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <strong>Capacidade (m³):</strong><br>
+              {{ armazem.capacidade_m3|default:"-" }}
+            </div>
+            <div class="col-md-6">
+              <strong>Capacidade (kg):</strong><br>
+              {{ armazem.capacidade_kg|default:"-" }}
+            </div>
+          </div>
+          {% if armazem.controla_temperatura %}
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <strong>Temperatura Mínima:</strong><br>
+              {{ armazem.temperatura_min }}°C
+            </div>
+            <div class="col-md-6">
+              <strong>Temperatura Máxima:</strong><br>
+              {{ armazem.temperatura_max }}°C
+            </div>
+          </div>
+          {% endif %}
+          {% if armazem.observacoes %}
+          <div class="row">
+            <div class="col-12">
+              <strong>Observações:</strong><br>
+              {{ armazem.observacoes }}
+            </div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Locais de Estocagem -->
+      <div class="card shadow-sm">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h5 class="mb-0"><i class="bi bi-pin-map"></i> Locais de Estocagem</h5>
+          <a href="{% url 'estoque:local_create' %}?armazem={{ armazem.pk }}" class="btn btn-sm btn-success">
+            <i class="bi bi-plus"></i> Adicionar Local
+          </a>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead>
+                <tr>
+                  <th>Código</th>
+                  <th>Descrição</th>
+                  <th>Tipo</th>
+                  <th>Capacidade (kg)</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for local in locais %}
+                <tr>
+                  <td><strong>{{ local.codigo }}</strong></td>
+                  <td>{{ local.descricao }}</td>
+                  <td><span class="badge bg-info">{{ local.get_tipo_display }}</span></td>
+                  <td>{{ local.capacidade_kg|default:"-" }}</td>
+                  <td>
+                    {% if local.bloqueado %}
+                      <span class="badge bg-danger">Bloqueado</span>
+                    {% elif local.ativo %}
+                      <span class="badge bg-success">Ativo</span>
+                    {% else %}
+                      <span class="badge bg-secondary">Inativo</span>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="5" class="text-center text-muted">Nenhum local cadastrado</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card shadow-sm mb-4">
+        <div class="card-header">
+          <h5 class="mb-0"><i class="bi bi-bar-chart"></i> Estatísticas</h5>
+        </div>
+        <div class="card-body">
+          <div class="mb-3">
+            <strong>Total de Locais:</strong>
+            <div class="h4">{{ locais.count }}</div>
+          </div>
+          <div class="mb-3">
+            <strong>Lotes Armazenados:</strong>
+            <div class="h4">{{ total_lotes }}</div>
+          </div>
+          <div class="mb-3">
+            <strong>Status:</strong><br>
+            {% if armazem.ativo %}
+              <span class="badge bg-success">Ativo</span>
+            {% else %}
+              <span class="badge bg-danger">Inativo</span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div class="card shadow-sm">
+        <div class="card-header">
+          <h5 class="mb-0"><i class="bi bi-clock-history"></i> Auditoria</h5>
+        </div>
+        <div class="card-body">
+          <small class="text-muted">
+            <strong>Cadastrado em:</strong><br>
+            {{ armazem.data_cadastro|date:"d/m/Y H:i" }}<br>
+            por {{ armazem.cadastrado_por }}<br><br>
+            
+            {% if armazem.data_modificacao %}
+            <strong>Última modificação:</strong><br>
+            {{ armazem.data_modificacao|date:"d/m/Y H:i" }}
+            {% endif %}
+          </small>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

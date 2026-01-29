@@ -1,0 +1,1668 @@
+
+"""
+Módulo de Compras - Models
+Sistema completo de solicitação, cotação e pedido de compras
+"""
+from django.db import models
+from django.conf import settings
+from django.core.validators import MinValueValidator
+
+# ...existing code...
+
+# Comunicação de divergências em recebimentos
+class RecebimentoMensagem(models.Model):
+    recebimento = models.ForeignKey(
+        'RecebimentoCompra',
+        on_delete=models.CASCADE,
+        related_name='mensagens_recebimento',
+        verbose_name='Recebimento'
+    )
+    autor = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name='mensagens_recebimento_autor',
+        verbose_name='Autor'
+    )
+    destinatario = models.ForeignKey(
+        'cadastros.Fornecedor',
+        on_delete=models.PROTECT,
+        related_name='mensagens_recebimento_destinatario',
+        verbose_name='Fornecedor Destinatário',
+        blank=True,
+        null=True
+    )
+    mensagem = models.TextField('Mensagem')
+    data_envio = models.DateTimeField('Data de Envio', auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Mensagem de Recebimento'
+        verbose_name_plural = 'Mensagens de Recebimento'
+        ordering = ['data_envio']
+
+    def __str__(self):
+        return f"{self.autor} ({self.data_envio:%d/%m/%Y %H:%M}): {self.mensagem[:30]}..."
+
+"""
+Módulo de Compras - Models
+Sistema completo de solicitação, cotação e pedido de compras
+"""
+from django.db import models
+from django.conf import settings
+from django.core.validators import MinValueValidator
+from django.core.exceptions import ValidationError
+from django.utils import timezone
+from decimal import Decimal
+
+
+# ... (restante dos models)
+
+# Adicionar ao final do arquivo, após todos os outros models:
+class SolicitacaoMensagem(models.Model):
+    """
+    Mensagens de diálogo entre aprovador e solicitante de uma solicitação de compra
+    """
+    solicitacao = models.ForeignKey(
+        'SolicitacaoCompra',
+        on_delete=models.CASCADE,
+        related_name='mensagens',
+        verbose_name='Solicitação'
+    )
+    autor = models.ForeignKey(
+        'usuarios.Usuario',
+        on_delete=models.PROTECT,
+        related_name='mensagens_solicitacao',
+        verbose_name='Autor'
+    )
+    mensagem = models.TextField('Mensagem')
+    data_envio = models.DateTimeField('Data de Envio', auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Mensagem da Solicitação'
+        verbose_name_plural = 'Mensagens das Solicitações'
+        ordering = ['data_envio']
+
+    def __str__(self):
+        return f"{self.autor.get_full_name()} ({self.data_envio:%d/%m/%Y %H:%M}): {self.mensagem[:30]}..."
+"""
+Módulo de Compras - Models
+Sistema completo de solicitação, cotação e pedido de compras
+"""
+from django.db import models
+from django.conf import settings
+from django.core.validators import MinValueValidator
+from django.core.exceptions import ValidationError
+from django.utils import timezone
+from decimal import Decimal
+
+
+class SolicitacaoCompra(models.Model):
+    cancelado_por = models.ForeignKey(
+        'usuarios.Usuario',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='solicitacoes_canceladas',
+        verbose_name='Usuário que Cancelou'
+    )
+    # Controle de leitura de mensagens
+    data_leitura_solicitante = models.DateTimeField('Última leitura do solicitante', null=True, blank=True)
+    data_leitura_aprovador = models.DateTimeField('Última leitura do aprovador', null=True, blank=True)
+
+    def tem_nova_mensagem_para(self, usuario):
+        """
+        Retorna True se há mensagens não lidas para o usuário informado.
+        Para simplificação, considera nova mensagem se existe alguma mensagem cujo autor não é o usuário e data_envio > data_ultimo_acesso (ou data_aprovacao, se não houver campo de acesso).
+        """
+        # Se não houver mensagens, não há novidade
+        if not hasattr(self, 'mensagens') or not self.mensagens.exists():
+            return False
+    # Se o usuário for o solicitante, verifica se há mensagem do aprovador após a última leitura
+    def tem_nova_mensagem_para(self, usuario):
+        msgs = self.mensagens.order_by('-data_envio')
+        if usuario == self.solicitante:
+            if self.data_leitura_solicitante:
+                return msgs.filter(autor=self.aprovador, data_envio__gt=self.data_leitura_solicitante).exists()
+            else:
+                return msgs.filter(autor=self.aprovador).exists()
+        elif usuario == self.aprovador:
+            if self.data_leitura_aprovador:
+                return msgs.filter(autor=self.solicitante, data_envio__gt=self.data_leitura_aprovador).exists()
+            else:
+                return msgs.filter(autor=self.solicitante).exists()
+        return False
+    """
+    Solicitação de Compra (Requisição Interna)
+    RF-050: Solicitações de compra com aprovações por nível
+    """
+    
+    STATUS_CHOICES = [
+        ('RASCUNHO', 'Rascunho'),
+        ('PENDENTE', 'Pendente Aprovação'),
+        ('APROVADA', 'Aprovada'),
+        ('PARCIALMENTE_COTADA', 'Parcialmente Cotada'),
+        ('TOTALMENTE_COTADA', 'Totalmente Cotada'),
+        ('EM_COMPRA', 'Em Processo de Compra'),
+        ('CONCLUIDA', 'Concluída'),
+        ('CANCELADA', 'Cancelada'),
+    ]
+    
+    # Multi-tenant
+    empresa = models.ForeignKey(
+        'empresas.Empresa',
+        on_delete=models.CASCADE,
+        related_name='solicitacoes_compra',
+        verbose_name='Empresa'
+    )
+    
+    # Identificação
+    numero = models.CharField(
+        'Número',
+        max_length=30,
+        unique=True,
+        help_text='Número único da solicitação'
+    )
+    
+    # Solicitante
+    solicitante = models.ForeignKey(
+        'usuarios.Usuario',
+        on_delete=models.PROTECT,
+        related_name='solicitacoes_compra',
+        verbose_name='Solicitante'
+    )
+    
+    # Datas
+    data_solicitacao = models.DateTimeField(
+        'Data da Solicitação',
+        default=timezone.now
+    )
+    
+    data_necessidade = models.DateField(
+        'Data de Necessidade',
+        help_text='Quando os produtos são necessários'
+    )
+    
+    # Status
+    status = models.CharField(
+        'Status',
+        max_length=30,
+        choices=STATUS_CHOICES,
+        default='RASCUNHO'
+    )
+    
+    # Aprovação
+    aprovador = models.ForeignKey(
+        'usuarios.Usuario',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='solicitacoes_aprovadas',
+        verbose_name='Aprovador'
+    )
+    
+    data_aprovacao = models.DateTimeField(
+        'Data de Aprovação',
+        null=True,
+        blank=True
+    )
+    
+    # Informações adicionais
+    justificativa = models.TextField(
+        'Justificativa',
+        help_text='Motivo da solicitação'
+    )
+    
+    observacoes = models.TextField(
+        'Observações',
+        blank=True
+    )
+    
+    # Centro de custo
+    departamento = models.CharField(
+        'Departamento',
+        max_length=100,
+        blank=True
+    )
+    
+    # Emergencial
+    emergencial = models.BooleanField(
+        'Compra Emergencial',
+        default=False,
+        help_text='Marcado como emergencial pula a aprovação formal'
+    )
+    # TODO: Adicionar permissão 'compras.add_solicitacao_emergencial' 
+    # para restringir quem pode criar compras emergenciais
+    # Níveis sugeridos:
+    # - Supervisor: até R$ 10.000
+    # - Gerente: até R$ 50.000
+    # - Diretor: sem limite
+    
+    justificativa_emergencial = models.TextField(
+        'Justificativa da Emergência',
+        blank=True,
+        help_text='Obrigatório para compras emergenciais'
+    )
+    
+    # Auditoria
+    data_cadastro = models.DateTimeField(
+        'Data de Cadastro',
+        auto_now_add=True
+    )
+    
+    data_atualizacao = models.DateTimeField(
+        'Última Atualização',
+        auto_now=True
+    )
+    
+    class Meta:
+        verbose_name = 'Solicitação de Compra'
+        verbose_name_plural = 'Solicitações de Compra'
+        ordering = ['-data_solicitacao']
+        indexes = [
+            models.Index(fields=['empresa', 'status']),
+            models.Index(fields=['numero']),
+            models.Index(fields=['data_solicitacao']),
+        ]
+    
+    def __str__(self):
+        return f"{self.numero} - {self.solicitante.get_full_name()}"
+    
+    def save(self, *args, **kwargs):
+        if not self.numero:
+            self.numero = self.gerar_numero()
+        super().save(*args, **kwargs)
+    
+    def gerar_numero(self):
+        """Gera número sequencial da solicitação"""
+        ultima = SolicitacaoCompra.objects.filter(
+            empresa=self.empresa,
+            numero__startswith='SC-'
+        ).order_by('-numero').first()
+        
+        if ultima:
+            try:
+                ultimo_num = int(ultima.numero.split('-')[1])
+                proximo_num = ultimo_num + 1
+            except (IndexError, ValueError):
+                proximo_num = 1
+        else:
+            proximo_num = 1
+        
+        return f"SC-{proximo_num:06d}"
+    
+    def calcular_percentual_cotado(self):
+        """Calcula percentual de itens já cotados ou aprovados para compra"""
+        total_itens = self.itens.count()
+        if total_itens == 0:
+            return 0
+        # Considera cotados ou aprovados
+        itens_cotados = self.itens.filter(status_item__in=['COTADO', 'APROVADO']).count()
+        return int((itens_cotados / total_itens) * 100)
+    
+    def atualizar_status_cotacao(self):
+        """Atualiza status baseado no percentual cotado ou aprovado, exceto se já estiver CANCELADA ou CONCLUIDA"""
+        if self.status in ['CANCELADA', 'CONCLUIDA']:
+            return
+        percentual = self.calcular_percentual_cotado()
+        if percentual == 0:
+            if self.status == 'APROVADA':
+                return  # Mantém aprovada
+            self.status = 'PENDENTE'
+        elif percentual == 100:
+            self.status = 'TOTALMENTE_COTADA'
+        else:
+            self.status = 'PARCIALMENTE_COTADA'
+        self.save()
+    
+    def aprovar(self, usuario):
+        """Aprova a solicitação"""
+        if self.status != 'PENDENTE':
+            raise ValidationError('Apenas solicitações pendentes podem ser aprovadas')
+        if self.emergencial and not self.justificativa_emergencial:
+            raise ValidationError('Solicitações emergenciais precisam de justificativa da emergência')
+        self.status = 'APROVADA'
+        self.aprovador = usuario
+        self.data_aprovacao = timezone.now()
+        self.save()
+
+    def cancelar(self, usuario=None):
+        """Cancela a solicitação e registra o usuário que cancelou"""
+        if self.status in ['CONCLUIDA']:
+            raise ValidationError('Solicitações concluídas não podem ser canceladas')
+        self.status = 'CANCELADA'
+        if usuario:
+            self.cancelado_por = usuario
+        self.save()
+
+
+class ItemSolicitacaoCompra(models.Model):
+    motivo_recusa = models.TextField('Motivo da Recusa', blank=True, null=True)
+    aprovador_recusa = models.ForeignKey(
+        'usuarios.Usuario',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='itens_reprovados',
+        verbose_name='Aprovador que Reprovou'
+    )
+    """
+    Item da Solicitação de Compra
+    """
+    
+    STATUS_ITEM_CHOICES = [
+        ('PENDENTE', 'Pendente Cotação'),
+        ('SELECIONADO', 'Selecionado para Cotação'),
+        ('EM_COTACAO', 'Em Cotação'),
+        ('COTADO', 'Cotado'),
+        ('APROVADO', 'Aprovado para Compra'),
+    ]
+    
+    # Relacionamento
+    solicitacao = models.ForeignKey(
+        SolicitacaoCompra,
+        on_delete=models.CASCADE,
+        related_name='itens',
+        verbose_name='Solicitação'
+    )
+    
+    # Produto
+    produto = models.ForeignKey(
+        'produtos.Produto',
+        on_delete=models.PROTECT,
+        related_name='itens_solicitacao',
+        verbose_name='Produto'
+    )
+    
+    # Quantidade
+    quantidade = models.DecimalField(
+        'Quantidade',
+        max_digits=15,
+        decimal_places=3,
+        validators=[MinValueValidator(Decimal('0.001'))]
+    )
+    
+    unidade_medida = models.ForeignKey(
+        'produtos.UnidadeMedida',
+        on_delete=models.PROTECT,
+        related_name='itens_solicitacao',
+        verbose_name='Unidade de Medida'
+    )
+    
+    # Seleção para cotação
+    selecionado_para_cotar = models.BooleanField(
+        'Selecionado para Cotação',
+        default=False,
+        help_text='Marca se este item foi selecionado para cotação'
+    )
+    
+    # Status
+    status_item = models.CharField(
+        'Status',
+        max_length=20,
+        choices=STATUS_ITEM_CHOICES,
+        default='PENDENTE'
+    )
+    
+    # Cotação vinculada
+    cotacao_vinculada = models.ForeignKey(
+        'Cotacao',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='itens_origem',
+        verbose_name='Cotação Vinculada'
+    )
+    
+    # Informações adicionais
+    especificacao = models.TextField(
+        'Especificação Técnica',
+        blank=True,
+        help_text='Especificações técnicas do produto'
+    )
+    
+    observacoes = models.TextField(
+        'Observações',
+        blank=True
+    )
+    
+    # Auditoria
+    data_cadastro = models.DateTimeField(
+        'Data de Cadastro',
+        auto_now_add=True
+    )
+    
+    class Meta:
+        verbose_name = 'Item da Solicitação'
+        verbose_name_plural = 'Itens da Solicitação'
+        ordering = ['id']
+    
+    def __str__(self):
+        return f"{self.produto.nome} - {self.quantidade} {self.unidade_medida.sigla}"
+
+
+class Cotacao(models.Model):
+    """
+    Cotação de Preços
+    RF-051: Cotações com múltiplos fornecedores
+    """
+    
+    STATUS_CHOICES = [
+        ('RASCUNHO', 'Rascunho'),
+        ('EM_ANDAMENTO', 'Em Andamento'),
+        ('CONCLUIDA', 'Concluída'),
+        ('CANCELADA', 'Cancelada'),
+    ]
+    
+    # Multi-tenant
+    empresa = models.ForeignKey(
+        'empresas.Empresa',
+        on_delete=models.CASCADE,
+        related_name='cotacoes',
+        verbose_name='Empresa'
+    )
+    
+    # Identificação
+    numero = models.CharField(
+        'Número',
+        max_length=30,
+        unique=True
+    )
+    
+    # Solicitação origem
+    solicitacao = models.ForeignKey(
+        SolicitacaoCompra,
+        on_delete=models.PROTECT,
+        related_name='cotacoes',
+        verbose_name='Solicitação de Compra'
+    )
+    
+    # Responsável
+    comprador = models.ForeignKey(
+        'usuarios.Usuario',
+        on_delete=models.PROTECT,
+        related_name='cotacoes',
+        verbose_name='Comprador'
+    )
+    
+    # Datas
+    data_cotacao = models.DateTimeField(
+        'Data da Cotação',
+        default=timezone.now
+    )
+    
+    data_limite_resposta = models.DateField(
+        'Data Limite para Resposta',
+        null=True,
+        blank=True
+    )
+    
+    # Status
+    status = models.CharField(
+        'Status',
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='RASCUNHO'
+    )
+    
+    # Observações
+    observacoes = models.TextField(
+        'Observações',
+        blank=True
+    )
+    
+    # Auditoria
+    data_cadastro = models.DateTimeField(
+        'Data de Cadastro',
+        auto_now_add=True
+    )
+    
+    data_conclusao = models.DateTimeField(
+        'Data de Conclusão',
+        null=True,
+        blank=True
+    )
+    
+    class Meta:
+        verbose_name = 'Cotação'
+        verbose_name_plural = 'Cotações'
+        ordering = ['-data_cotacao']
+        indexes = [
+            models.Index(fields=['empresa', 'status']),
+            models.Index(fields=['solicitacao']),
+        ]
+
+    def pode_concluir(self):
+        """Só pode concluir se todos os itens estiverem cotados"""
+        return all(item.status_item == 'COTADO' for item in self.itens.all())
+
+    def concluir(self):
+        """Marca cotação como concluída se todos os itens estiverem cotados"""
+        for item in self.itens.all():
+            item.atualizar_status()
+        if not self.pode_concluir():
+            raise Exception('Cotação não pode ser concluída: há itens pendentes ou parcialmente cotados.')
+        self.status = 'CONCLUIDA'
+        self.data_conclusao = timezone.now()
+        self.save()
+        # Atualiza status da solicitação
+        self.solicitacao.atualizar_status_cotacao()
+    
+    def __str__(self):
+        return f"{self.numero} - SC {self.solicitacao.numero}"
+    
+    def save(self, *args, **kwargs):
+        if not self.numero:
+            self.numero = self.gerar_numero()
+        super().save(*args, **kwargs)
+    
+    def gerar_numero(self):
+        """Gera número sequencial da cotação"""
+        ultima = Cotacao.objects.filter(
+            empresa=self.empresa,
+            numero__startswith='COT-'
+        ).order_by('-numero').first()
+        
+        if ultima:
+            try:
+                ultimo_num = int(ultima.numero.split('-')[1])
+                proximo_num = ultimo_num + 1
+            except (IndexError, ValueError):
+                proximo_num = 1
+        else:
+            proximo_num = 1
+        
+        return f"COT-{proximo_num:06d}"
+    
+    def concluir(self):
+        """Marca cotação como concluída e atualiza status dos itens"""
+        self.status = 'CONCLUIDA'
+        self.data_conclusao = timezone.now()
+        self.save()
+        
+        # Marca todos os itens desta cotação como COTADO
+        for item_cotacao in self.itens.all():
+            if item_cotacao.item_solicitacao:
+                item_cotacao.item_solicitacao.status_item = 'COTADO'
+                item_cotacao.item_solicitacao.save()
+        
+        # Atualiza status da solicitação
+        self.solicitacao.atualizar_status_cotacao()
+
+
+class ItemCotacao(models.Model):
+    """
+    Item da Cotação
+    """
+    
+    # Relacionamento
+    cotacao = models.ForeignKey(
+        Cotacao,
+        on_delete=models.CASCADE,
+        related_name='itens',
+        verbose_name='Cotação'
+    )
+    
+    # Item origem da solicitação
+    item_solicitacao = models.ForeignKey(
+        ItemSolicitacaoCompra,
+        on_delete=models.PROTECT,
+        related_name='cotacoes_item',
+        verbose_name='Item da Solicitação'
+    )
+    
+    # Produto
+    produto = models.ForeignKey(
+        'produtos.Produto',
+        on_delete=models.PROTECT,
+        related_name='itens_cotacao',
+        verbose_name='Produto'
+    )
+    
+    # Quantidade
+    quantidade = models.DecimalField(
+        'Quantidade',
+        max_digits=15,
+        decimal_places=3,
+        validators=[MinValueValidator(Decimal('0.001'))]
+    )
+    
+    unidade_medida = models.ForeignKey(
+        'produtos.UnidadeMedida',
+        on_delete=models.PROTECT,
+        related_name='itens_cotacao',
+        verbose_name='Unidade de Medida'
+    )
+    
+    # Informações
+    especificacao = models.TextField(
+        'Especificação',
+        blank=True
+    )
+    
+    class Meta:
+        verbose_name = 'Item da Cotação'
+        verbose_name_plural = 'Itens da Cotação'
+        ordering = ['id']
+    
+    def __str__(self):
+        return f"{self.produto.nome} - {self.quantidade}"
+    
+    STATUS_ITEM_CHOICES = [
+        ('PENDENTE', 'Pendente'),
+        ('PARCIALMENTE_COTADO', 'Parcialmente Cotado'),
+        ('COTADO', 'Cotado'),
+    ]
+
+    status_item = models.CharField(
+        'Status do Item',
+        max_length=30,
+        choices=STATUS_ITEM_CHOICES,
+        default='PENDENTE'
+    )
+
+    def atualizar_status(self):
+        propostas = self.propostas.all()
+        if not propostas.exists():
+            self.status_item = 'PENDENTE'
+        elif propostas.filter(selecionado=True).exists():
+            self.status_item = 'COTADO'
+        elif any(p.preco_unitario > 0 for p in propostas):
+            self.status_item = 'PARCIALMENTE_COTADO'
+        else:
+            self.status_item = 'PENDENTE'
+        self.save(update_fields=['status_item'])
+
+class FornecedorCotacao(models.Model):
+    """
+    Proposta do Fornecedor na Cotação
+    """
+    
+    # Relacionamento
+    item_cotacao = models.ForeignKey(
+        ItemCotacao,
+        on_delete=models.CASCADE,
+        related_name='propostas',
+        verbose_name='Item da Cotação'
+    )
+    
+    fornecedor = models.ForeignKey(
+        'cadastros.Fornecedor',
+        on_delete=models.PROTECT,
+        related_name='propostas_cotacao',
+        verbose_name='Fornecedor'
+    )
+    
+    # Valores
+    preco_unitario = models.DecimalField(
+        'Preço Unitário',
+        max_digits=15,
+        decimal_places=2,
+        validators=[MinValueValidator(Decimal('0.01'))]
+    )
+    
+    preco_total = models.DecimalField(
+        'Preço Total',
+        max_digits=15,
+        decimal_places=2,
+        validators=[MinValueValidator(Decimal('0.01'))]
+    )
+    
+    # Condições
+    prazo_entrega = models.PositiveIntegerField(
+        'Prazo de Entrega (dias)',
+        help_text='Prazo em dias úteis'
+    )
+    
+    forma_pagamento = models.CharField(
+        'Forma de Pagamento',
+        max_length=100,
+        blank=True
+    )
+    
+    condicao_pagamento = models.CharField(
+        'Condição de Pagamento',
+        max_length=200,
+        blank=True,
+        help_text='Ex: 30/60 dias, à vista, etc'
+    )
+    
+    # Seleção
+    selecionado = models.BooleanField(
+        'Selecionado',
+        default=False,
+        help_text='Marca este fornecedor como vencedor'
+    )
+    
+    # Informações adicionais
+    marca = models.CharField(
+        'Marca',
+        max_length=100,
+        blank=True
+    )
+
+    observacoes = models.TextField(
+        'Observações',
+        blank=True
+    )
+
+    motivo_escolha = models.TextField(
+        'Motivo da Escolha',
+        blank=True,
+        help_text='Informe o motivo da escolha caso não seja o menor preço.'
+    )
+    
+    # Auditoria
+    data_cadastro = models.DateTimeField(
+        'Data do Cadastro',
+        auto_now_add=True
+    )
+    
+    class Meta:
+        verbose_name = 'Proposta do Fornecedor'
+        verbose_name_plural = 'Propostas dos Fornecedores'
+        ordering = ['preco_total']
+    
+    def __str__(self):
+        return f"{self.fornecedor.nome_fantasia} - R$ {self.preco_total}"
+    
+    def save(self, *args, **kwargs):
+        # Calcula preço total
+        if self.preco_unitario and self.item_cotacao:
+            self.preco_total = self.preco_unitario * self.item_cotacao.quantidade
+        super().save(*args, **kwargs)
+
+
+class PedidoCompra(models.Model):
+    """
+    Pedido de Compra (Purchase Order)
+    Gerado após conclusão da cotação
+    """
+    
+    STATUS_CHOICES = [
+        ('RASCUNHO', 'Rascunho'),
+        ('PENDENTE', 'Pendente Envio'),
+        ('ENVIADO', 'Enviado ao Fornecedor'),
+        ('CONFIRMADO', 'Confirmado pelo Fornecedor'),
+        ('EM_ENTREGA', 'Em Entrega'),
+        ('PARCIALMENTE_RECEBIDO', 'Parcialmente Recebido'),
+        ('RECEBIDO', 'Totalmente Recebido'),
+        ('CANCELADO', 'Cancelado'),
+    ]
+    
+    # Multi-tenant
+    empresa = models.ForeignKey(
+        'empresas.Empresa',
+        on_delete=models.CASCADE,
+        related_name='pedidos_compra',
+        verbose_name='Empresa'
+    )
+    
+    # Identificação
+    numero = models.CharField(
+        'Número do Pedido',
+        max_length=20,
+        unique=True,
+        blank=True
+    )
+    
+    # Relacionamentos
+    cotacao = models.ForeignKey(
+        Cotacao,
+        on_delete=models.PROTECT,
+        related_name='pedidos',
+        verbose_name='Cotação Origem'
+    )
+
+    fornecedor = models.ForeignKey(
+        'cadastros.Fornecedor',
+        on_delete=models.PROTECT,
+        related_name='pedidos_compra',
+        verbose_name='Fornecedor'
+    )
+
+    comprador = models.ForeignKey(
+        'usuarios.Usuario',
+        on_delete=models.PROTECT,
+        related_name='pedidos_realizados',
+        verbose_name='Comprador'
+    )
+    
+    # Status e Datas
+    status = models.CharField(
+        'Status',
+        max_length=30,
+        choices=STATUS_CHOICES,
+        default='PENDENTE'
+    )
+    
+    data_pedido = models.DateTimeField(
+        'Data do Pedido',
+        auto_now_add=True
+    )
+    
+    data_envio = models.DateTimeField(
+        'Data de Envio',
+        null=True,
+        blank=True
+    )
+    
+    data_confirmacao = models.DateTimeField(
+        'Data de Confirmação',
+        null=True,
+        blank=True
+    )
+    
+    data_entrega_prevista = models.DateField(
+        'Data de Entrega Prevista',
+        null=True,
+        blank=True
+    )
+    
+    data_entrega_real = models.DateField(
+        'Data de Entrega Real',
+        null=True,
+        blank=True
+    )
+    
+    # Condições Comerciais
+    forma_pagamento = models.CharField(
+        'Forma de Pagamento',
+        max_length=100,
+        blank=True
+    )
+    
+    condicao_pagamento = models.CharField(
+        'Condição de Pagamento',
+        max_length=100,
+        blank=True
+    )
+    
+    prazo_entrega_dias = models.IntegerField(
+        'Prazo de Entrega (dias)',
+        default=0
+    )
+    
+    # Valores
+    valor_total = models.DecimalField(
+        'Valor Total',
+        max_digits=15,
+        decimal_places=2,
+        default=0
+    )
+    
+    valor_desconto = models.DecimalField(
+        'Desconto',
+        max_digits=15,
+        decimal_places=2,
+        default=0
+    )
+    
+    valor_frete = models.DecimalField(
+        'Frete',
+        max_digits=15,
+        decimal_places=2,
+        default=0
+    )
+    
+    valor_final = models.DecimalField(
+        'Valor Final',
+        max_digits=15,
+        decimal_places=2,
+        default=0
+    )
+    
+    # Observações
+    observacoes = models.TextField(
+        'Observações',
+        blank=True
+    )
+    
+    observacoes_internas = models.TextField(
+        'Observações Internas',
+        blank=True,
+        help_text='Não aparece no PDF do pedido'
+    )
+    
+    # Auditoria
+    data_cadastro = models.DateTimeField(
+        'Data de Cadastro',
+        auto_now_add=True
+    )
+    
+    data_atualizacao = models.DateTimeField(
+        'Data de Atualização',
+        auto_now=True
+    )
+    
+    class Meta:
+        verbose_name = 'Pedido de Compra'
+        verbose_name_plural = 'Pedidos de Compra'
+        ordering = ['-data_pedido']
+    
+    def __str__(self):
+        return f"{self.numero} - {self.fornecedor.nome_fantasia}"
+    
+    def save(self, *args, **kwargs):
+        if not self.numero:
+            self.numero = self.gerar_numero()
+        # Proteção: se já foi ENVIADO, nunca volta para PENDENTE
+        if self.pk:
+            from django.db import transaction
+            try:
+                old = type(self).objects.get(pk=self.pk)
+                if old.status == 'ENVIADO' and self.status == 'PENDENTE':
+                    self.status = 'ENVIADO'
+            except type(self).DoesNotExist:
+                pass
+        # Calcula valor final
+        self.valor_final = self.valor_total - self.valor_desconto + self.valor_frete
+        super().save(*args, **kwargs)
+    
+    def gerar_numero(self):
+        """Gera número sequencial PO-XXXXXX"""
+        ultimo = PedidoCompra.objects.filter(
+            empresa=self.empresa
+        ).order_by('-id').first()
+        
+        if ultimo and ultimo.numero:
+            try:
+                ultimo_num = int(ultimo.numero.split('-')[1])
+                novo_num = ultimo_num + 1
+            except (IndexError, ValueError):
+                novo_num = 1
+        else:
+            novo_num = 1
+        
+        return f"PO-{novo_num:06d}"
+    
+    def enviar(self):
+        """Marca pedido como enviado"""
+        self.status = 'ENVIADO'
+        self.data_envio = timezone.now()
+        self.save()
+    
+    def confirmar(self):
+        """Marca pedido como confirmado pelo fornecedor"""
+        self.status = 'CONFIRMADO'
+        self.data_confirmacao = timezone.now()
+        self.save()
+    
+    def iniciar_entrega(self):
+        """Marca pedido como em entrega"""
+        self.status = 'EM_ENTREGA'
+        self.save()
+    
+    def receber_parcial(self):
+        """Marca pedido como parcialmente recebido"""
+        self.status = 'PARCIALMENTE_RECEBIDO'
+        self.save()
+    
+    def receber_total(self):
+        """Marca pedido como totalmente recebido"""
+        self.status = 'RECEBIDO'
+        self.data_entrega_real = timezone.now().date()
+        self.save()
+    
+    def cancelar(self, motivo=''):
+        """Cancela o pedido"""
+        self.status = 'CANCELADO'
+        if motivo:
+            self.observacoes_internas += f"\n\nCancelado: {motivo}"
+        self.save()
+    
+    def calcular_total(self):
+        """Calcula o valor total baseado nos itens"""
+        total = sum(item.preco_total for item in self.itens.all())
+        self.valor_total = total
+        self.save()
+        return total
+
+
+class ItemPedidoCompra(models.Model):
+    """
+    Item do Pedido de Compra
+    """
+    
+    # Relacionamentos
+    pedido = models.ForeignKey(
+        PedidoCompra,
+        on_delete=models.CASCADE,
+        related_name='itens',
+        verbose_name='Pedido'
+    )
+    
+    proposta_fornecedor = models.ForeignKey(
+        FornecedorCotacao,
+        on_delete=models.PROTECT,
+        related_name='itens_pedido',
+        verbose_name='Proposta Origem'
+    )
+    
+    # Produto
+    produto = models.ForeignKey(
+        'produtos.Produto',
+        on_delete=models.PROTECT,
+        related_name='itens_pedido_compra',
+        verbose_name='Produto'
+    )
+    
+    # Quantidades
+    quantidade_pedida = models.DecimalField(
+        'Quantidade Pedida',
+        max_digits=15,
+        decimal_places=3
+    )
+    
+    quantidade_recebida = models.DecimalField(
+        'Quantidade Recebida',
+        max_digits=15,
+        decimal_places=3,
+        default=0
+    )
+    
+    unidade_medida = models.ForeignKey(
+        'produtos.UnidadeMedida',
+        on_delete=models.PROTECT,
+        related_name='itens_pedido_compra',
+        verbose_name='Unidade de Medida'
+    )
+    
+    # Preços
+    preco_unitario = models.DecimalField(
+        'Preço Unitário',
+        max_digits=15,
+        decimal_places=2
+    )
+    
+    preco_total = models.DecimalField(
+        'Preço Total',
+        max_digits=15,
+        decimal_places=2
+    )
+    
+    # Detalhes
+    especificacao = models.TextField(
+        'Especificação',
+        blank=True
+    )
+    
+    marca = models.CharField(
+        'Marca',
+        max_length=100,
+        blank=True
+    )
+    
+    observacoes = models.TextField(
+        'Observações',
+        blank=True
+    )
+    
+    # Auditoria
+    data_cadastro = models.DateTimeField(
+        'Data de Cadastro',
+        auto_now_add=True
+    )
+    
+    class Meta:
+        verbose_name = 'Item do Pedido'
+        verbose_name_plural = 'Itens do Pedido'
+        ordering = ['id']
+    
+    def __str__(self):
+        return f"{self.produto.nome} - {self.quantidade_pedida} {self.unidade_medida.sigla}"
+    
+    def save(self, *args, **kwargs):
+        # Calcula preço total
+        self.preco_total = self.preco_unitario * self.quantidade_pedida
+        super().save(*args, **kwargs)
+    
+    @property
+    def quantidade_pendente(self):
+        """Retorna quantidade ainda não recebida"""
+        return self.quantidade_pedida - self.quantidade_recebida
+    
+    @property
+    def percentual_recebido(self):
+        """Retorna percentual recebido"""
+        if self.quantidade_pedida > 0:
+            return (self.quantidade_recebida / self.quantidade_pedida) * 100
+        return 0
+
+
+class RecebimentoCompra(models.Model):
+    """
+    Recebimento de Mercadorias do Pedido de Compra
+    Permite recebimentos parciais e múltiplos
+    """
+    
+    STATUS_CHOICES = [
+        ('PENDENTE', 'Pendente Conferência'),
+        ('CONFERIDO', 'Conferido'),
+        ('DIVERGENTE', 'Com Divergência'),
+        ('CANCELADO', 'Cancelado'),
+        ('FINALIZADO', 'Finalizado'),
+    ]
+    
+    # Multi-tenant
+    empresa = models.ForeignKey(
+        'empresas.Empresa',
+        on_delete=models.CASCADE,
+        related_name='recebimentos_compra',
+        verbose_name='Empresa'
+    )
+    
+    # Vinculação
+    pedido = models.ForeignKey(
+        PedidoCompra,
+        on_delete=models.PROTECT,
+        related_name='recebimentos',
+        verbose_name='Pedido de Compra',
+        blank=True,
+        null=True,
+        help_text='Deixe em branco para entrada direta sem pedido'
+    )
+    
+    # Para recebimentos sem pedido
+    fornecedor = models.ForeignKey(
+        'cadastros.Fornecedor',
+        on_delete=models.PROTECT,
+        related_name='recebimentos_diretos',
+        verbose_name='Fornecedor',
+        blank=True,
+        null=True,
+        help_text='Obrigatório apenas para entradas diretas sem pedido'
+    )
+    
+    # Identificação
+    numero = models.CharField(
+        'Número do Recebimento',
+        max_length=30,
+        unique=True,
+        help_text='Número único do recebimento'
+    )
+    
+    # Dados da Nota Fiscal
+    nota_fiscal = models.CharField(
+        'Número da NF-e',
+        max_length=20,
+        help_text='Número da Nota Fiscal de entrada'
+    )
+    
+    serie_nota = models.CharField(
+        'Série',
+        max_length=5,
+        default='1'
+    )
+    
+    chave_nfe = models.CharField(
+        'Chave NF-e',
+        max_length=44,
+        blank=True,
+        help_text='Chave de acesso da NF-e (44 dígitos)'
+    )
+    
+    data_emissao_nf = models.DateField(
+        'Data de Emissão NF',
+        help_text='Data de emissão da nota fiscal'
+    )
+    
+    # Recebimento
+    data_recebimento = models.DateField(
+        'Data do Recebimento',
+        default=timezone.now
+    )
+    
+    hora_recebimento = models.TimeField(
+        'Hora do Recebimento',
+        default=timezone.now
+    )
+    
+    # Responsável
+    recebido_por = models.ForeignKey(
+        'usuarios.Usuario',
+        on_delete=models.PROTECT,
+        related_name='recebimentos_realizados',
+        verbose_name='Recebido por'
+    )
+    
+    # Status e controle
+    status = models.CharField(
+        'Status',
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='PENDENTE'
+    )
+    
+    # Valores
+    valor_total_nf = models.DecimalField(
+        'Valor Total da NF',
+        max_digits=15,
+        decimal_places=2,
+        validators=[MinValueValidator(Decimal('0.01'))]
+    )
+
+    valor_frete = models.DecimalField(
+        'Frete',
+        max_digits=15,
+        decimal_places=2,
+        default=0,
+        help_text='Valor do frete informado na nota fiscal'
+    )
+
+    valor_desconto = models.DecimalField(
+        'Desconto',
+        max_digits=15,
+        decimal_places=2,
+        default=0,
+        help_text='Valor do desconto informado na nota fiscal'
+    )
+    
+    # Observações
+    observacoes = models.TextField(
+        'Observações',
+        blank=True,
+        help_text='Observações sobre o recebimento'
+    )
+    
+    divergencias = models.TextField(
+        'Divergências',
+        blank=True,
+        help_text='Registrar divergências encontradas (quantidade, qualidade, etc)'
+    )
+    
+    # Anexos
+    arquivo_nfe = models.FileField(
+        'Arquivo XML da NF-e',
+        upload_to='compras/nfe/%Y/%m/',
+        blank=True,
+        null=True
+    )
+    
+    # Auditoria
+    data_cadastro = models.DateTimeField(
+        'Data de Cadastro',
+        auto_now_add=True
+    )
+    
+    data_atualizacao = models.DateTimeField(
+        'Última Atualização',
+        auto_now=True
+    )
+    
+    class Meta:
+        verbose_name = 'Recebimento de Compra'
+        verbose_name_plural = 'Recebimentos de Compras'
+        ordering = ['-data_recebimento', '-numero']
+    
+    def __str__(self):
+        if self.pedido:
+            return f"Recebimento {self.numero} - NF {self.nota_fiscal} - Pedido {self.pedido.numero}"
+        else:
+            return f"Recebimento {self.numero} - NF {self.nota_fiscal} - Entrada Direta"
+    
+    def clean(self):
+        """Valida que pelo menos pedido ou fornecedor foi informado"""
+        # Só exige fornecedor se não houver pedido
+        if not self.pedido and not self.fornecedor:
+            raise ValidationError('É necessário informar o Pedido de Compra OU o Fornecedor.')
+        # Se houver pedido, não exige fornecedor
+        # Se não houver pedido, exige fornecedor
+    
+    def save(self, *args, **kwargs):
+        # Gera número automático se não existir
+        if not self.numero:
+            ultimo = RecebimentoCompra.objects.filter(
+                empresa=self.empresa
+            ).order_by('-numero').first()
+            
+            if ultimo and ultimo.numero:
+                try:
+                    ultimo_num = int(ultimo.numero.split('-')[1])
+                    proximo_num = ultimo_num + 1
+                except:
+                    proximo_num = 1
+            else:
+                proximo_num = 1
+            
+            self.numero = f"REC-{proximo_num:06d}"
+        
+        super().save(*args, **kwargs)
+        
+        # Atualiza status do pedido (apenas se houver pedido)
+        if self.pedido:
+            self.atualizar_status_pedido()
+    
+    def atualizar_status_pedido(self):
+        """Atualiza status do pedido baseado nos recebimentos"""
+        if not self.pedido:
+            return
+            
+        pedido = self.pedido
+        
+        # Verifica se todos os itens foram recebidos completamente
+        todos_recebidos = all(
+            item.quantidade_recebida >= item.quantidade_pedida
+            for item in pedido.itens.all()
+        )
+        
+        # Verifica se algum item foi parcialmente recebido
+        algum_recebido = any(
+            item.quantidade_recebida > 0
+            for item in pedido.itens.all()
+        )
+        
+        if todos_recebidos:
+            pedido.status = 'RECEBIDO'
+        elif algum_recebido:
+            pedido.status = 'PARCIALMENTE_RECEBIDO'
+        
+        pedido.save(update_fields=['status'])
+
+
+class ItemRecebimento(models.Model):
+    """
+    Item recebido do Pedido de Compra
+    """
+    
+    # Vinculação
+    recebimento = models.ForeignKey(
+        RecebimentoCompra,
+        on_delete=models.CASCADE,
+        related_name='itens',
+        verbose_name='Recebimento'
+    )
+    
+    item_pedido = models.ForeignKey(
+        ItemPedidoCompra,
+        on_delete=models.PROTECT,
+        related_name='recebimentos',
+        verbose_name='Item do Pedido',
+        blank=True,
+        null=True,
+        help_text='Obrigatório apenas para recebimentos vinculados a pedido'
+    )
+    
+    # Para entradas diretas sem pedido
+    produto = models.ForeignKey(
+        'produtos.Produto',
+        on_delete=models.PROTECT,
+        related_name='recebimentos_diretos',
+        verbose_name='Produto',
+        blank=True,
+        null=True,
+        help_text='Obrigatório apenas para entradas diretas sem pedido'
+    )
+    
+    unidade_medida = models.ForeignKey(
+        'produtos.UnidadeMedida',
+        on_delete=models.PROTECT,
+        verbose_name='Unidade de Medida',
+        blank=True,
+        null=True,
+        help_text='Obrigatório apenas para entradas diretas sem pedido'
+    )
+    
+    preco_unitario = models.DecimalField(
+        'Preço Unitário',
+        max_digits=15,
+        decimal_places=2,
+        validators=[MinValueValidator(Decimal('0.01'))],
+        blank=True,
+        null=True,
+        help_text='Obrigatório apenas para entradas diretas sem pedido'
+    )
+    
+    # Quantidade
+    quantidade_recebida = models.DecimalField(
+        'Quantidade Recebida',
+        max_digits=15,
+        decimal_places=3,
+        validators=[MinValueValidator(Decimal('0.001'))]
+    )
+    
+    valor_desconto = models.DecimalField(
+        'Valor de Desconto',
+        max_digits=15,
+        decimal_places=2,
+        default=0,
+        blank=True,
+        null=True,
+        help_text='Valor de desconto aplicado neste item'
+    )
+    
+    # Armazenamento
+    local_estoque = models.ForeignKey(
+        'estoque.LocalEstocagem',
+        on_delete=models.PROTECT,
+        verbose_name='Local de Estoque'
+    )
+    
+    lote = models.ForeignKey(
+        'estoque.Lote',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name='Lote',
+        help_text='Lote do fornecedor ou lote interno'
+    )
+    
+    data_fabricacao = models.DateField(
+        'Data de Fabricação',
+        blank=True,
+        null=True
+    )
+    
+    data_validade = models.DateField(
+        'Data de Validade',
+        blank=True,
+        null=True
+    )
+    
+    # Observações
+    observacoes = models.TextField(
+        'Observações',
+        blank=True
+    )
+    
+    # Auditoria
+    data_cadastro = models.DateTimeField(
+        'Data de Cadastro',
+        auto_now_add=True
+    )
+    
+    class Meta:
+        verbose_name = 'Item do Recebimento'
+        verbose_name_plural = 'Itens do Recebimento'
+        ordering = ['id']
+    
+    def __str__(self):
+        if self.item_pedido:
+            return f"{self.item_pedido.produto.nome} - {self.quantidade_recebida} {self.item_pedido.unidade_medida.sigla}"
+        else:
+            return f"{self.produto.nome} - {self.quantidade_recebida} {self.unidade_medida.sigla}"
+    
+    def clean(self):
+        """Valida que os campos necessários foram preenchidos"""
+        if not self.item_pedido and not self.produto:
+            raise ValidationError('É necessário informar o Item do Pedido OU o Produto.')
+        
+        if not self.item_pedido:
+            # Entrada direta - valida campos obrigatórios
+            if not self.unidade_medida:
+                null=True,
+                blank=True,
+                raise ValidationError('Preço Unitário é obrigatório para entradas diretas.')
+    
+    def save(self, *args, **kwargs):
+        # Se houver item_pedido, preenche produto e unidade_medida automaticamente
+        if self.item_pedido and not self.produto:
+            self.produto = self.item_pedido.produto
+            self.unidade_medida = self.item_pedido.unidade_medida
+            
+        # Valida se não está recebendo mais do que foi pedido (apenas para itens com pedido)
+        if self.item_pedido:
+            total_ja_recebido = ItemRecebimento.objects.filter(
+                item_pedido=self.item_pedido
+            ).exclude(
+                id=self.id
+            ).aggregate(
+                total=models.Sum('quantidade_recebida')
+            )['total'] or Decimal('0')
+            novo_total = total_ja_recebido + self.quantidade_recebida
+            if novo_total > self.item_pedido.quantidade_pedida:
+                raise ValidationError(
+                    f"A quantidade total recebida ({novo_total}) não pode ser maior "
+                    f"que a quantidade pedida ({self.item_pedido.quantidade_pedida})"
+                )
+            # Atualiza quantidade recebida no item do pedido
+            self.item_pedido.quantidade_recebida = novo_total
+            self.item_pedido.save(update_fields=['quantidade_recebida'])
+            # Atualiza status do pedido após atualizar quantidades
+            if self.recebimento and self.recebimento.pedido:
+                self.recebimento.atualizar_status_pedido()
+
+        # Cria automaticamente um lote padrão se não for informado
+        if not self.lote:
+            from estoque.models import Lote, Armazem
+            try:
+                armazem = None
+                # Determina produto e unidade de medida
+                if self.item_pedido:
+                    produto = self.item_pedido.produto
+                    unidade_medida = self.item_pedido.unidade_medida
+                else:
+                    produto = self.produto
+                    unidade_medida = self.unidade_medida
+                
+                # Obtém armazém do local de estoque
+                if self.local_estoque:
+                    armazem = self.local_estoque.armazem
+                
+                # Se não conseguiu armazém, pega o primeiro da empresa
+                if not armazem:
+                    armazem = Armazem.objects.filter(empresa=self.recebimento.empresa).first()
+                
+                # Se ainda não há armazém, não consegue criar lote
+                if not armazem:
+                    import logging
+                    logging.error(f"Nenhum armazém disponível para criar lote. Empresa: {self.recebimento.empresa}")
+                    raise ValidationError("Nenhum armazém disponível. Configure um armazém para a empresa.")
+                
+                # Cria o lote
+                self.lote = Lote.objects.create(
+                    empresa=self.recebimento.empresa,
+                    produto=produto,
+                    armazem=armazem,
+                    local_estocagem=self.local_estoque,
+                    numero_lote=f"AUTO-{timezone.now().strftime('%Y%m%d%H%M%S')}",
+                    quantidade_inicial=self.quantidade_recebida,
+                    quantidade_atual=self.quantidade_recebida,
+                    data_fabricacao=self.data_fabricacao or timezone.now().date(),
+                    data_validade=self.data_validade,
+                    status='DISPONIVEL',
+                    unidade_medida=unidade_medida,
+                    fornecedor=self.recebimento.fornecedor if hasattr(self.recebimento, 'fornecedor') else None,
+                    nota_fiscal=self.recebimento.nota_fiscal,
+                )
+            except Exception as e:
+                import logging
+                logging.exception(f"Erro ao criar lote para ItemRecebimento: {str(e)}")
+                raise ValidationError(f"Erro ao criar lote: {str(e)}")
+
+        super().save(*args, **kwargs)
+        # NÃO registra movimento aqui - será registrado apenas quando o recebimento for FINALIZADO
+        # Evita entrada falsa no estoque quando item está em PENDENTE/CONFERIDO
+    
+    def registrar_movimento_estoque(self):
+        """
+        Registra entrada no estoque e atualiza estoque do produto.
+        IMPORTANTE: Deve ser chamado APENAS quando recebimento é FINALIZADO.
+        É idempotente - pode ser chamada várias vezes sem duplicar movimentação.
+        """
+        from estoque.models import MovimentacaoEstoque
+        import logging
+        
+        try:
+            # Determina produto e unidade
+            if self.item_pedido:
+                produto = self.item_pedido.produto
+                unidade = self.item_pedido.unidade_medida
+            else:
+                produto = self.produto
+                unidade = self.unidade_medida
+            
+            # Chave única para evitar duplicatas
+            documento_nf = f'NF-e: {self.recebimento.nota_fiscal}'
+            chave_unica = f"{self.id}-{self.lote.id if self.lote else 'sem-lote'}"
+            
+            # Verifica se já foi registrada movimentação para este item
+            existe_mov = MovimentacaoEstoque.objects.filter(
+                observacao__contains=f"Item Recebimento #{self.id}"
+            ).exists()
+            
+            if existe_mov:
+                logging.info(f"Movimentação já registrada para ItemRecebimento #{self.id}")
+                return
+            
+            created_lote = False
+            # Garante lote para movimentação
+            if not self.lote:
+                from estoque.models import Lote, Armazem
+                armazem = None
+                if self.local_estoque:
+                    armazem = self.local_estoque.armazem
+                if not armazem:
+                    armazem = Armazem.objects.filter(empresa=self.recebimento.empresa).first()
+                if not armazem:
+                    raise ValidationError("Nenhum armazém disponível para criar lote.")
+                self.lote = Lote.objects.create(
+                    empresa=self.recebimento.empresa,
+                    produto=produto,
+                    armazem=armazem,
+                    local_estocagem=self.local_estoque,
+                    numero_lote=f"AUTO-{timezone.now().strftime('%Y%m%d%H%M%S')}",
+                    quantidade_inicial=self.quantidade_recebida,
+                    quantidade_atual=self.quantidade_recebida,
+                    data_fabricacao=self.data_fabricacao or timezone.now().date(),
+                    data_validade=self.data_validade,
+                    status='DISPONIVEL',
+                    unidade_medida=unidade,
+                    fornecedor=self.recebimento.fornecedor if hasattr(self.recebimento, 'fornecedor') else None,
+                    nota_fiscal=self.recebimento.nota_fiscal,
+                )
+                created_lote = True
+                ItemRecebimento.objects.filter(pk=self.pk).update(lote=self.lote)
+
+            # Cria a movimentação de estoque (agora com chave única no campo observacao)
+            if self.lote:
+                MovimentacaoEstoque.objects.create(
+                    empresa=self.recebimento.empresa,
+                    lote=self.lote,
+                    tipo='ENTRADA',
+                    origem='COMPRA',
+                    quantidade=self.quantidade_recebida,
+                    local_destino=self.local_estoque,
+                    documento=documento_nf,
+                    observacao=f"Recebimento {self.recebimento.numero} - Item Recebimento #{self.id}" + (f" - Pedido {self.recebimento.pedido_compra.numero}" if self.recebimento.pedido_compra else " - Entrada Direta"),
+                    executado_por=self.recebimento.recebido_por,
+                    data_movimentacao=self.recebimento.data_recebimento,
+                )
+
+            # Atualiza quantidade do lote quando o lote já existia (primeira vez)
+            if self.lote and not created_lote:
+                self.lote.quantidade_atual = (self.lote.quantidade_atual or Decimal('0')) + self.quantidade_recebida
+                self.lote.save(update_fields=['quantidade_atual'])
+            
+            # Atualiza estoque_atual do produto (soma das quantidades dos lotes disponíveis)
+            if produto:
+                total_estoque = Decimal('0')
+                lotes_disponiveis = produto.lotes.filter(status='DISPONIVEL')
+                for lote in lotes_disponiveis:
+                    total_estoque += lote.quantidade_atual
+                
+                produto.estoque_atual = total_estoque
+                produto.save(update_fields=['estoque_atual'])
+                logging.info(f"Estoque atualizado para {produto.nome}: {total_estoque}")
+                logging.info(f"Movimentação ENTRADA registrada para ItemRecebimento #{self.id}")
+        
+        except Exception as e:
+            logging.exception(f"Erro ao registrar movimento de estoque: {str(e)}")

@@ -1,0 +1,354 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+{% endblock %}
+
+{% block content %}
+<div class="alert alert-primary mx-3 mt-3">
+    <i class="bi bi-clipboard-plus"></i> <strong>Nova Solicitação de Compra:</strong> Adicione os produtos que precisa comprar. Após criar, você poderá gerar cotações com fornecedores.
+</div>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h2 class="mb-4">{{ title }}</h2>
+            <form method="post" id="solicitacao-form">
+                {% csrf_token %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const itemsContainer = document.getElementById('item-forms');
+    const addButton = document.getElementById('add-item');
+    const totalFormsInput = document.getElementById('id_itens-TOTAL_FORMS');
+    let formIndex = parseInt(totalFormsInput.value);
+
+    function renumberItems() {
+        const rows = itemsContainer.querySelectorAll('.item-form');
+        const visibleRows = Array.from(rows).filter(row => row.style.display !== 'none');
+        visibleRows.forEach((row, index) => {
+            row.querySelector('.item-number').textContent = index + 1;
+        });
+        const count = visibleRows.length;
+        const countBadge = document.getElementById('item-count');
+        countBadge.textContent = count === 1 ? '1 item' : `${count} itens`;
+    }
+
+    // Função para buscar unidade de medida do produto via API de estoque
+    function autoFillUnidade(row, produtoId) {
+        if (!produtoId) return;
+        fetch(`/compras/api/produto/${produtoId}/estoque/`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.unidade_id) {
+                    const unidadeSelect = row.querySelector('select[name*="unidade_medida"]');
+                    if (unidadeSelect) {
+                        unidadeSelect.value = data.unidade_id;
+                        unidadeSelect.dispatchEvent(new Event('change'));
+                    }
+                }
+            });
+    }
+
+    // Função para buscar estoque atual do produto
+    function autoFillEstoque(row, produtoId) {
+        if (!produtoId) return;
+        fetch(`/compras/api/produto/${produtoId}/estoque/`)
+            .then(response => response.json())
+            .then(data => {
+                const estoqueCell = row.querySelector('.estoque-atual-value');
+                if (data.success && estoqueCell) {
+                    estoqueCell.textContent = data.estoque_atual + ' ' + (data.unidade || '');
+                } else if (estoqueCell) {
+                    estoqueCell.textContent = '-';
+                }
+            });
+    }
+
+    addButton.addEventListener('click', function() {
+        const lastRow = itemsContainer.querySelector('.item-form:last-child');
+        const newRow = lastRow.cloneNode(true);
+        const inputs = newRow.querySelectorAll('input, select, textarea');
+        inputs.forEach(input => {
+            const name = input.getAttribute('name');
+            const id = input.getAttribute('id');
+            if (name) {
+                const newName = name.replace(/itens-\d+-/, `itens-${formIndex}-`);
+                input.setAttribute('name', newName);
+            }
+            if (id) {
+                const newId = id.replace(/id_itens-\d+-/, `id_itens-${formIndex}-`);
+                input.setAttribute('id', newId);
+            }
+            if (input.type !== 'hidden' && !input.name.includes('DELETE')) {
+                input.value = '';
+                if (input.tagName === 'SELECT') {
+                    input.selectedIndex = 0;
+                }
+            }
+            if (input.type === 'checkbox' && input.name.includes('DELETE')) {
+                input.checked = false;
+                input.style.display = 'none';
+            }
+        });
+        const errors = newRow.querySelectorAll('.text-danger');
+        errors.forEach(error => error.remove());
+        itemsContainer.appendChild(newRow);
+        newRow.style.backgroundColor = '#d1e7dd';
+        setTimeout(() => {
+            newRow.style.transition = 'background-color 0.5s';
+            newRow.style.backgroundColor = '';
+        }, 100);
+        formIndex++;
+        totalFormsInput.value = formIndex;
+        renumberItems();
+        const removeBtn = newRow.querySelector('.remove-item');
+        removeBtn.addEventListener('click', function() {
+            removeItem(newRow);
+        });
+        newRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // Adiciona evento de auto preenchimento da unidade
+        const produtoSelect = newRow.querySelector('select[name*="produto"]');
+        if (produtoSelect) {
+            produtoSelect.addEventListener('change', function() {
+                autoFillUnidade(newRow, this.value);
+                autoFillEstoque(newRow, this.value);
+            });
+            // também já busca unidade e estoque se já houver valor
+            if (produtoSelect.value) {
+                autoFillUnidade(newRow, produtoSelect.value);
+                autoFillEstoque(newRow, produtoSelect.value);
+            }
+        }
+    });
+
+    function removeItem(row) {
+        const rows = itemsContainer.querySelectorAll('.item-form');
+        if (rows.length <= 1) {
+            alert('Não é possível remover o último item. A solicitação precisa ter pelo menos 1 produto.');
+            return;
+        }
+        const idInput = row.querySelector('input[type="hidden"][name*="-id"]');
+        if (idInput && idInput.value) {
+            const deleteCheckbox = row.querySelector('input[type="checkbox"][name*="DELETE"]');
+            if (deleteCheckbox) {
+                deleteCheckbox.checked = true;
+            }
+            row.style.display = 'none';
+        } else {
+            row.remove();
+        }
+        renumberItems();
+    }
+    document.querySelectorAll('.remove-item').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const row = btn.closest('.item-form');
+            removeItem(row);
+        });
+    });
+    document.querySelectorAll('input[type="checkbox"][name*="DELETE"]').forEach(cb => {
+        cb.style.display = 'none';
+    });
+    // Evento de auto preenchimento da unidade para selects já existentes
+    document.querySelectorAll('tr.item-form select[name*="produto"]').forEach(function(produtoSelect) {
+        produtoSelect.addEventListener('change', function() {
+            const row = produtoSelect.closest('tr');
+            autoFillUnidade(row, this.value);
+            autoFillEstoque(row, this.value);
+        });
+        // preenchimento inicial quando já houver produto selecionado
+        if (produtoSelect.value) {
+            const row = produtoSelect.closest('tr');
+            autoFillUnidade(row, produtoSelect.value);
+            autoFillEstoque(row, produtoSelect.value);
+        }
+    });
+    renumberItems();
+});
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-file-alt"></i> {{ title }}</h2>
+        <a href="{% url 'compras:solicitacao_list' %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Voltar
+        </a>
+    </div>
+    <form method="post" id="solicitacao-form">
+        {% csrf_token %}
+        <div class="card mb-3">
+            <div class="card-header">
+                <h5>Dados da Solicitação</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        {{ form.data_necessidade.label_tag }}
+                        {{ form.data_necessidade }}
+                        {% if form.data_necessidade.errors %}
+                        <div class="text-danger">{{ form.data_necessidade.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        {{ form.departamento.label_tag }}
+                        {{ form.departamento }}
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-12">
+                        {{ form.justificativa.label_tag }}
+                        {{ form.justificativa }}
+                        {% if form.justificativa.errors %}
+                        <div class="text-danger">{{ form.justificativa.errors }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                <!-- Compra Emergencial -->
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <div class="alert alert-warning border-warning">
+                            <h6 class="alert-heading">
+                                <i class="bi bi-info-circle"></i> Sobre Compras Emergenciais
+                            </h6>
+                            <p class="mb-2">
+                                <strong>Use apenas para situações reais de emergência.</strong> 
+                                Compras emergenciais são aprovadas automaticamente e pulam o processo formal de aprovação.
+                            </p>
+                            <hr>
+                            <p class="mb-1"><strong>Exemplo de Uso Correto:</strong></p>
+                            <div class="bg-white p-2 rounded small">
+                                <strong>Situação:</strong> Quebra do trator T-001 às 14h durante preparo do solo.<br>
+                                <strong>Impacto:</strong> Produção parada, 50 hectares aguardando plantio.<br>
+                                <strong>Urgência:</strong> Janela de plantio fecha em 3 dias.<br>
+                                <strong>Perda:</strong> R$ 45.000 se perder a janela de plantio.<br>
+                                <strong>Justificativa:</strong> Necessário peça urgente para reparo amanhã. Não pode aguardar aprovação formal (48h).
+                            </div>
+                            <hr class="my-2">
+                            <p class="mb-0 small text-muted">
+                                <i class="bi bi-lock"></i> <strong>Nota:</strong> Esta funcionalidade será restrita por permissões no futuro.
+                                Apenas usuários autorizados poderão criar compras emergenciais.
+                            </p>
+                        </div>
+                        
+                        <div class="form-check form-switch">
+                            {{ form.emergencial }}
+                            <label class="form-check-label" for="id_emergencial">
+                                <strong>{{ form.emergencial.label }}</strong>
+                                <span class="badge bg-danger ms-2">Pula Aprovação</span>
+                            </label>
+                            <div class="form-text">
+                                Marque esta opção para compras urgentes que não podem aguardar aprovação formal.
+                                Será aprovada automaticamente pelo solicitante.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row mt-3" id="justificativa-emergencial-field" style="display: none;">
+                    <div class="col-12">
+                        {{ form.justificativa_emergencial.label_tag }}
+                        {{ form.justificativa_emergencial }}
+                        {% if form.justificativa_emergencial.errors %}
+                        <div class="text-danger">{{ form.justificativa_emergencial.errors }}</div>
+                        {% endif %}
+                        <div class="form-text text-danger">
+                            <strong>Obrigatório:</strong> Explique detalhadamente o motivo da emergência.
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row mt-3">
+                    <div class="col-12">
+                        {{ form.observacoes.label_tag }}
+                        {{ form.observacoes }}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Itens da Solicitação -->
+        <div class="card mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="bi bi-list-ul"></i> Itens da Solicitação
+                    <span class="badge bg-primary ms-2" id="item-count">1 item</span>
+                </h5>
+                <button type="button" class="btn btn-success btn-sm" id="add-item">
+                    <i class="bi bi-plus-circle"></i> Adicionar Item
+                </button>
+            </div>
+            <div class="card-body">
+                {{ formset.management_form }}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle" id="items-table">
+                        <thead class="table-light">
+                            <tr>
+                                <th>#</th>
+                                <th>Produto *</th>
+                                <th>Estoque Atual</th>
+                                <th>Quantidade *</th>
+                                <th>Unidade *</th>
+                                <th>Especificação</th>
+                                <th class="text-center">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="item-forms">
+                            {% for form in formset %}
+                            <tr class="item-form" data-form-index="{{ forloop.counter0 }}">
+                                <td class="text-center">
+                                    <strong class="item-number">{{ forloop.counter }}</strong>
+                                    {{ form.id }}
+                                </td>
+                                <td>
+                                    {{ form.produto }}
+                                    {% if form.produto.errors %}
+                                    <div class="text-danger small">{{ form.produto.errors }}</div>
+                                    {% endif %}
+                                </td>
+                                <td class="estoque-atual-cell">
+                                    <span class="estoque-atual-value">-</span>
+                                </td>
+                                <td>
+                                    {{ form.quantidade }}
+                                    {% if form.quantidade.errors %}
+                                    <div class="text-danger small">{{ form.quantidade.errors }}</div>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {{ form.unidade_medida }}
+                                </td>
+                                <td>
+                                    {{ form.especificacao }}
+                                </td>
+                                <td class="text-center">
+                                    <button type="button" class="btn btn-sm btn-danger remove-item" 
+                                            title="Remover item">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                    {{ form.DELETE }}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <div class="alert alert-info mt-3">
+                    <i class="bi bi-info-circle"></i> 
+                    <strong>Dica:</strong> Clique em "Adicionar Item" para incluir mais produtos à solicitação.
+                    Você pode adicionar quantos itens forem necessários.
+                </div>
+            </div>
+        </div>
+        <div class="text-end">
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-save"></i> Salvar Solicitação
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -54,4 +54,33 @@ As permissões são armazenadas no `auth.Group` associado à `Role`. Quando um u
 
 - CI: adicionei o workflow GitHub Actions `.github/workflows/e2e-playwright.yml` que instala dependências, executa migrações e roda os testes unitários e E2E (configura `DJANGO_ALLOW_ASYNC_UNSAFE: '1'`).
 
+
+### Usando PostgreSQL para pesquisa sem acentos (recomendado)
+
+Para tirar proveito do `unaccent` (buscas insensíveis a acentos) e dos índices de expressão, recomendamos usar PostgreSQL em desenvolvimento e produção.
+
+Opções locais:
+- Instalar Postgres no Windows: https://www.postgresql.org/download/windows/ ou via choco: `choco install postgresql`.
+- Usar Docker (recomendado se não quiser instalar localmente):
+  - `docker run --name erp-postgres -e POSTGRES_USER=erp_user -e POSTGRES_PASSWORD=secret -e POSTGRES_DB=erp_agricola -p 5432:5432 -d postgres:16`
+
+Depois, a aplicação detecta Postgres via variável de ambiente `PG_NAME` (ou `PG_USER`, `PG_PASSWORD` etc.). Exemplo de variáveis para dev (PowerShell):
+
+```powershell
+$env:PG_NAME='erp_agricola'
+$env:PG_USER='erp_user'
+$env:PG_PASSWORD='secret'
+$env:PG_HOST='127.0.0.1'
+$env:PG_PORT='5432'
+```
+
+Recomendações de migração de dados:
+- Pequeno dataset: usar `python manage.py dumpdata > data.json`, apontar Django para Postgres, rodar migrations e `python manage.py loaddata data.json`.
+- Dataset maior: usar `pgloader` ou outra ferramenta dedicada para migrar do SQLite/MySQL para Postgres.
+
+Notas:
+- A migration que criei (`cadastros/migrations/0032_unaccent_and_indexes.py`) habilita `unaccent` e cria índices `lower(unaccent(descricao))` para acelerar buscas.
+- Em produção, crie um backup do banco antes da migração e agende janela de manutenção para aplicar índices concurrentes sem bloquear o banco.
+
+
 **Se quiser, prossigo agora com:** depurar os erros de E2E que identifiquei (elementos não visíveis / erros JS), ou melhorar o workflow para rodar apenas os E2E em PRs para a branch `feature/roles-permissions`.

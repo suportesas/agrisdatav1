@@ -16,7 +16,7 @@
         {% endif %}
       </h4>
 
-      <form method="post" novalidate>
+      <form method="post" enctype="multipart/form-data" novalidate>
         {% csrf_token %}
         
         <!-- SEÇÃO: Dados Básicos -->
@@ -64,6 +64,25 @@
           <div class="col-md-2">
             <label class="form-label fw-semibold">UF</label>
             {{ form.uf }}
+          </div>
+          
+          <div class="col-md-12">
+            <label class="form-label fw-semibold">
+              <i class="bi bi-image"></i> Logo da Empresa
+            </label>
+            {{ form.logo }}
+            {% if empresa and empresa.logo %}
+              <div class="mt-2">
+                <img src="{{ empresa.logo.url }}" alt="Logo atual" style="max-height: 100px;" class="img-thumbnail">
+                <small class="d-block text-muted mt-1">Logo atual</small>
+              </div>
+            {% endif %}
+            <small class="form-text text-muted d-block mt-1">
+              <i class="bi bi-info-circle"></i> Usado em documentos PDF, relatórios, etc. Formatos aceitos: JPG, PNG (Recomendado: 300x300px)
+            </small>
+            {% if form.logo.errors %}
+              <div class="text-danger small">{{ form.logo.errors|join:", " }}</div>
+            {% endif %}
           </div>
         </div>
 

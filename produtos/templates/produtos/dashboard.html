@@ -1,0 +1,315 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Produtos - Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+  .stat-card {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    transition: transform 0.2s;
+  }
+  .stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  }
+  .stat-value {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #1e293b;
+  }
+  .stat-label {
+    color: #64748b;
+    font-size: 0.95rem;
+    margin-top: 8px;
+  }
+  .stat-icon {
+    font-size: 3rem;
+    opacity: 0.2;
+    position: absolute;
+    right: 24px;
+    top: 24px;
+  }
+  .quick-actions {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  }
+  .action-btn {
+    padding: 12px 24px;
+    border-radius: 8px;
+    transition: all 0.2s;
+  }
+  .chart-card {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  }
+  .category-bar {
+    height: 50px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    color: white;
+    font-weight: 600;
+    margin-bottom: 12px;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    position: relative;
+    overflow: hidden;
+  }
+  .category-bar::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.2) 100%);
+    pointer-events: none;
+  }
+  .category-bar:hover {
+    transform: translateX(8px) scale(1.02);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  }
+  .category-bar:nth-child(1) { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+  .category-bar:nth-child(2) { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+  .category-bar:nth-child(3) { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+  .category-bar:nth-child(4) { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
+  .category-bar:nth-child(5) { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
+  
+  .category-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    z-index: 1;
+  }
+  .category-number {
+    background: rgba(255,255,255,0.3);
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    font-weight: 700;
+  }
+  .category-name {
+    font-size: 1rem;
+  }
+  .category-stats {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    z-index: 1;
+  }
+  .category-count {
+    font-size: 1.3rem;
+    font-weight: 700;
+  }
+  .category-percent {
+    background: rgba(255,255,255,0.3);
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="mb-1"><i class="bi bi-box-seam"></i> Dashboard de Produtos</h2>
+      <p class="text-muted">Visão geral do catálogo de produtos</p>
+    </div>
+  </div>
+
+  <!-- Estatísticas -->
+  <div class="row mb-4">
+    <div class="col-md-3">
+      <div class="stat-card position-relative">
+        <i class="bi bi-box-seam stat-icon"></i>
+        <div class="stat-value text-primary">{{ total_produtos }}</div>
+        <div class="stat-label">Produtos Ativos</div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="stat-card position-relative">
+        <i class="bi bi-folder stat-icon"></i>
+        <div class="stat-value text-success">{{ total_categorias }}</div>
+        <div class="stat-label">Categorias</div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="stat-card position-relative">
+        <i class="bi bi-tag stat-icon"></i>
+        <div class="stat-value text-info">{{ total_subcategorias }}</div>
+        <div class="stat-label">Subcategorias</div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="stat-card position-relative">
+        <i class="bi bi-exclamation-triangle stat-icon"></i>
+        <div class="stat-value text-warning">{{ produtos_sem_tributacao }}</div>
+        <div class="stat-label">Sem Tributação</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Ações Rápidas -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="quick-actions">
+        <h5 class="mb-3"><i class="bi bi-lightning-charge"></i> Ações Rápidas</h5>
+        <div class="d-flex gap-2 flex-wrap">
+          <a href="{% url 'produtos:produto_create' %}" class="btn btn-primary action-btn">
+            <i class="bi bi-plus-circle"></i> Novo Produto
+          </a>
+          <a href="{% url 'produtos:categoria_create' %}" class="btn btn-success action-btn">
+            <i class="bi bi-folder-plus"></i> Nova Categoria
+          </a>
+          <a href="{% url 'produtos:subcategoria_create' %}" class="btn btn-info action-btn">
+            <i class="bi bi-tag"></i> Nova Subcategoria
+          </a>
+          <a href="{% url 'produtos:unidademedida_create' %}" class="btn btn-secondary action-btn">
+            <i class="bi bi-rulers"></i> Nova Unidade
+          </a>
+          <a href="{% url 'produtos:produto_list' %}" class="btn btn-outline-primary action-btn">
+            <i class="bi bi-list-ul"></i> Ver Todos Produtos
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <!-- Produtos por Categoria -->
+    <div class="col-md-6 mb-4">
+      <div class="chart-card">
+        <h5 class="mb-4"><i class="bi bi-bar-chart-fill"></i> Top 5 Categorias com Mais Produtos</h5>
+        {% if produtos_por_categoria %}
+          {% for categoria in produtos_por_categoria %}
+            <div class="category-bar" style="width: {% widthratio categoria.total_produtos produtos_por_categoria.0.total_produtos 100 %}%;">
+              <div class="category-info">
+                <span class="category-number">{{ forloop.counter }}</span>
+                <span class="category-name">{{ categoria.nome }}</span>
+              </div>
+              <div class="category-stats">
+                <span class="category-count">{{ categoria.total_produtos }}</span>
+                <span class="category-percent">
+                  {% widthratio categoria.total_produtos total_produtos 100 %}%
+                </span>
+              </div>
+            </div>
+          {% endfor %}
+        {% else %}
+          <div class="text-center py-5">
+            <i class="bi bi-inbox" style="font-size: 3rem; color: #cbd5e1;"></i>
+            <p class="text-muted mt-3">Nenhuma categoria com produtos cadastrados</p>
+            <a href="{% url 'produtos:categoria_create' %}" class="btn btn-primary mt-2">
+              <i class="bi bi-plus-circle"></i> Criar Primeira Categoria
+            </a>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Últimos Produtos -->
+    <div class="col-md-6 mb-4">
+      <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+          <h5 class="mb-0"><i class="bi bi-clock-history"></i> Últimos Produtos Cadastrados</h5>
+        </div>
+        <div class="card-body p-0">
+          {% if ultimos_produtos %}
+            <div class="list-group list-group-flush">
+              {% for produto in ultimos_produtos %}
+              <a href="{% url 'produtos:produto_detail' produto.pk %}" class="list-group-item list-group-item-action">
+                <div class="d-flex justify-content-between align-items-center">
+                  <div>
+                    <strong>{{ produto.nome }}</strong><br>
+                    <small class="text-muted">
+                      {% if produto.categoria %}
+                        {{ produto.categoria.nome }}
+                        {% if produto.subcategoria %} > {{ produto.subcategoria.nome }}{% endif %}
+                      {% else %}
+                        <span class="badge bg-warning">Sem categoria</span>
+                      {% endif %}
+                    </small>
+                  </div>
+                  <small class="text-muted">{{ produto.created_at|date:"d/m/Y" }}</small>
+                </div>
+              </a>
+              {% endfor %}
+            </div>
+          {% else %}
+            <p class="text-muted text-center py-4">Nenhum produto cadastrado</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Alertas -->
+  {% if produtos_sem_categoria or produtos_sem_tributacao or produtos_inativos %}
+  <div class="row">
+    <div class="col-12">
+      <div class="card shadow-sm">
+        <div class="card-header bg-warning text-white">
+          <h5 class="mb-0"><i class="bi bi-bell"></i> Alertas e Pendências</h5>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            {% if produtos_sem_categoria %}
+            <div class="col-md-4 mb-3">
+              <div class="alert alert-warning mb-0">
+                <h6><i class="bi bi-folder-x"></i> Sem Categoria</h6>
+                <p class="mb-2">{{ produtos_sem_categoria }} produto(s) sem categoria definida</p>
+                <a href="{% url 'produtos:produto_list' %}?sem_categoria=1" class="btn btn-sm btn-warning">
+                  Ver Produtos
+                </a>
+              </div>
+            </div>
+            {% endif %}
+            
+            {% if produtos_sem_tributacao %}
+            <div class="col-md-4 mb-3">
+              <div class="alert alert-danger mb-0">
+                <h6><i class="bi bi-receipt"></i> Sem Tributação</h6>
+                <p class="mb-2">{{ produtos_sem_tributacao }} produto(s) sem tributação configurada</p>
+                <a href="{% url 'produtos:produto_list' %}?sem_tributacao=1" class="btn btn-sm btn-danger">
+                  Ver Produtos
+                </a>
+              </div>
+            </div>
+            {% endif %}
+            
+            {% if produtos_inativos %}
+            <div class="col-md-4 mb-3">
+              <div class="alert alert-secondary mb-0">
+                <h6><i class="bi bi-eye-slash"></i> Produtos Inativos</h6>
+                <p class="mb-2">{{ produtos_inativos }} produto(s) inativo(s)</p>
+                <a href="{% url 'produtos:produto_list' %}?inativos=1" class="btn btn-sm btn-secondary">
+                  Ver Produtos
+                </a>
+              </div>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

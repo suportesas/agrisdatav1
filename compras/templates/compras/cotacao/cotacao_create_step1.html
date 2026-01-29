@@ -1,0 +1,183 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Nova Cotação - Selecionar Produtos{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2><i class="bi bi-calculator text-primary"></i> Nova Cotação de Compra</h2>
+      <p class="text-muted mb-0">Passo 1 de 2: Selecione os produtos para cotar</p>
+    </div>
+    <a href="{% url 'compras:cotacao_list' %}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left"></i> Voltar
+    </a>
+  </div>
+
+  <!-- Stepper -->
+  <div class="card mb-4">
+    <div class="card-body">
+      <div class="row text-center">
+        <div class="col-md-6">
+          <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+            <strong>1</strong>
+          </div>
+          <p class="mt-2 mb-0"><strong>Selecionar Produtos</strong></p>
+        </div>
+        <div class="col-md-6">
+          <div class="bg-secondary text-white rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+            <strong>2</strong>
+          </div>
+          <p class="mt-2 mb-0 text-muted">Fornecedores e Quantidades</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <div class="card mb-4">
+    <div class="card-body">
+      <form method="get" class="row g-3">
+        <div class="col-md-10">
+          <input type="text" name="search" class="form-control" placeholder="Buscar por nome ou código do produto..." value="{{ search }}">
+        </div>
+        <div class="col-md-2">
+          <button type="submit" class="btn btn-primary w-100"><i class="bi bi-search"></i> Buscar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Formulário -->
+  <form method="post">
+    {% csrf_token %}
+    
+    <div class="card">
+      <div class="card-header bg-light">
+        <h5 class="mb-0"><i class="bi bi-box-seam"></i> Produtos Disponíveis</h5>
+        <small class="text-muted">Exibindo apenas produtos com fornecedores cadastrados</small>
+      </div>
+      <div class="card-body">
+        
+        {% if produtos %}
+          <div class="alert alert-info">
+            <i class="bi bi-info-circle me-2"></i>
+            <strong>Busca Automática:</strong> O sistema buscará automaticamente os fornecedores cadastrados para cada produto selecionado.
+            <br><small>Produtos sem fornecedores cadastrados poderão ter fornecedores selecionados manualmente no próximo passo.</small>
+          </div>
+
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead class="table-light">
+                <tr>
+                  <th width="50">
+                    <input type="checkbox" id="selectAll" class="form-check-input">
+                  </th>
+                  <th>Código</th>
+                  <th>Produto</th>
+                  <th>Categoria</th>
+                  <th>Unidade</th>
+                  <th class="text-center">Fornecedores</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for produto in produtos %}
+                <tr>
+                  <td>
+                    <input type="checkbox" name="produtos" value="{{ produto.id }}" class="form-check-input produto-check">
+                  </td>
+                  <td><code>{{ produto.codigo }}</code></td>
+                  <td>
+                    <strong>{{ produto.nome }}</strong>
+                    {% if produto.subcategoria %}
+                      <br><small class="text-muted">{{ produto.subcategoria.nome }}</small>
+                    {% endif %}
+                  </td>
+                  <td>
+                    <span class="badge bg-secondary">{{ produto.categoria.nome }}</span>
+                  </td>
+                  <td>{{ produto.unidade_medida.sigla }}</td>
+                  <td class="text-center">
+                    {% if produto.total_fornecedores > 0 %}
+                      <span class="badge bg-success">
+                        <i class="bi bi-shop"></i> {{ produto.total_fornecedores }} fornecedor{{ produto.total_fornecedores|pluralize:"es" }}
+                      </span>
+                    {% else %}
+                      <span class="badge bg-warning text-dark">
+                        <i class="bi bi-exclamation-triangle"></i> Sem fornecedores
+                      </span>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+
+          <div class="d-flex justify-content-between align-items-center mt-4">
+            <div>
+              <span id="selectedCount">0</span> produto(s) selecionado(s)
+            </div>
+            <button type="submit" class="btn btn-primary btn-lg" id="btnProximo" disabled>
+              Próximo Passo <i class="bi bi-arrow-right"></i>
+            </button>
+          </div>
+
+        {% else %}
+          <div class="alert alert-warning">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            <strong>Nenhum produto encontrado.</strong>
+            {% if search %}
+              Tente uma busca diferente ou <a href="{% url 'compras:cotacao_create_step1' %}">visualize todos os produtos</a>.
+            {% else %}
+              Você precisa cadastrar fornecedores nos produtos antes de criar cotações.
+              <a href="{% url 'produtos:produto_list' %}" class="alert-link">Ir para Produtos</a>
+            {% endif %}
+          </div>
+        {% endif %}
+
+      </div>
+    </div>
+  </form>
+
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const selectAll = document.getElementById('selectAll');
+  const checks = document.querySelectorAll('.produto-check');
+  const countDisplay = document.getElementById('selectedCount');
+  const btnProximo = document.getElementById('btnProximo');
+  
+  // Selecionar/desselecionar todos
+  if (selectAll) {
+    selectAll.addEventListener('change', function() {
+      checks.forEach(check => check.checked = this.checked);
+      updateCount();
+    });
+  }
+  
+  // Atualizar contador
+  checks.forEach(check => {
+    check.addEventListener('change', updateCount);
+  });
+  
+  function updateCount() {
+    const selected = document.querySelectorAll('.produto-check:checked').length;
+    countDisplay.textContent = selected;
+    btnProximo.disabled = selected === 0;
+    
+    // Atualizar selectAll
+    if (selectAll) {
+      selectAll.checked = selected > 0 && selected === checks.length;
+    }
+  }
+  
+  updateCount();
+});
+</script>
+
+{% endblock %}

@@ -6,9 +6,13 @@ Configurações corrigidas e otimizadas
 import os
 from pathlib import Path
 from datetime import timedelta
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Carrega variáveis de ambiente do arquivo .env
+load_dotenv(BASE_DIR / '.env')
 
 
 # Quick-start development settings - unsuitable for production
@@ -31,7 +35,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    
+    'django.contrib.humanize',
     # Apps de terceiros
     'rest_framework',
     'rest_framework_simplejwt',
@@ -42,6 +46,9 @@ INSTALLED_APPS = [
     'empresas',
     'dashboard',
     'cadastros',
+    'produtos',
+    'estoque',
+    'compras',
 ]
 
 
@@ -82,12 +89,26 @@ WSGI_APPLICATION = 'core.wsgi.application'
 
 
 # Database
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+# By default use SQLite for local development. To use PostgreSQL, set environment variables:
+# PG_NAME, PG_USER, PG_PASSWORD, PG_HOST, PG_PORT
+if os.getenv('PG_NAME'):
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql_psycopg2',
+            'NAME': os.getenv('PG_NAME'),
+            'USER': os.getenv('PG_USER', ''),
+            'PASSWORD': os.getenv('PG_PASSWORD', ''),
+            'HOST': os.getenv('PG_HOST', 'localhost'),
+            'PORT': os.getenv('PG_PORT', '5432'),
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 
 # Password validation
@@ -192,11 +213,26 @@ CORS_ALLOW_CREDENTIALS = True
 # ============================================
 # EMAIL CONFIGURATION
 # ============================================
-# Desenvolvimento - console
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+# Para testar sem enviar emails reais, use:
+# EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
-DEFAULT_FROM_EMAIL = 'ERP Agrícola <no-reply@erp-agricola.com>'
+# Para enviar emails reais via SMTP:
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')  # ou smtp-mail.outlook.com, smtp.office365.com
+EMAIL_PORT = int(os.getenv('EMAIL_PORT', '587'))
+EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True') == 'True'
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')  # seu email completo
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')  # senha de app (não a senha normal)
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'ERP Agrícola <no-reply@erp-agricola.com>')
 EMAIL_SUBJECT_PREFIX = '[ERP Agrícola] '
+
+# IMPORTANTE: Crie um arquivo .env na raiz do projeto com:
+# EMAIL_HOST=smtp.gmail.com
+# EMAIL_PORT=587
+# EMAIL_USE_TLS=True
+# EMAIL_HOST_USER=seu.email@gmail.com
+# EMAIL_HOST_PASSWORD=sua_senha_de_app_aqui
+# DEFAULT_FROM_EMAIL=ERP Agrícola <seu.email@gmail.com>
 
 
 # ============================================

@@ -1,0 +1,73 @@
+{% comment %}
+Componente reutilizável: Instruções para cada etapa do fluxo
+Uso: {% include 'compras/includes/instrucoes_etapa.html' with etapa='solicitacao' %}
+{% endcomment %}
+
+{% if etapa == 'solicitacao' %}
+<div class="alert alert-info alert-dismissible fade show alerta-fixa-orientacao" role="alert">
+    <h5 class="alert-heading">📋 Etapa 1: Solicitação de Compra</h5>
+    <p class="mb-2"><strong>O que fazer aqui:</strong></p>
+    <ul class="mb-0">
+        <li>Preencha os dados gerais da solicitação</li>
+        <li>Adicione todos os itens que deseja comprar (Produto, Quantidade, Unidade)</li>
+        <li>Revise a quantidade total antes de salvar</li>
+    </ul>
+    <hr>
+    <p class="mb-0"><strong>Próximo passo:</strong> Após salvar, você irá <strong>criar uma cotação</strong> para que os fornecedores enviem propostas de preço.</p>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+
+{% elif etapa == 'cotacao' %}
+<div class="alert alert-info alert-dismissible fade show alerta-fixa-orientacao" role="alert">
+    <h5 class="alert-heading">📊 Etapa 2: Cotação de Preços</h5>
+    <p class="mb-2"><strong>O que fazer aqui:</strong></p>
+    <ul class="mb-0">
+        <li>Adicione fornecedores que irão enviar propostas</li>
+        <li>Para cada item, preencha as propostas de preço de cada fornecedor</li>
+        <li>Selecione a melhor opção (menor preço ou outro critério)</li>
+        <li>Após selecionar todas as propostas, <strong>conclua a cotação</strong></li>
+    </ul>
+    <hr>
+    <p class="mb-0"><strong>Próximo passo:</strong> Após concluir, você irá <strong>gerar os pedidos de compra</strong> para os fornecedores selecionados.</p>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+
+{% elif etapa == 'pedido' %}
+<div class="alert alert-info alert-dismissible fade show alerta-fixa-orientacao" role="alert">
+    <h5 class="alert-heading">📦 Etapa 3: Pedido de Compra</h5>
+    <p class="mb-2"><strong>O que fazer aqui:</strong></p>
+    <ul class="mb-0">
+        <li>Revise todos os dados do pedido (fornecedor, itens, preços)</li>
+        <li>Marque como <strong>ENVIADO</strong> quando o fornecedor receber o pedido</li>
+        <li>Você pode acompanhar o status do pedido (Enviado, Confirmado, Em Entrega, Recebido)</li>
+    </ul>
+    <hr>
+    <p class="mb-0"><strong>Próximo passo:</strong> Quando o fornecedor começar a enviar a mercadoria, você irá <strong>criar recebimentos</strong> para registrar cada entrega.</p>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+
+{% elif etapa == 'recebimento' %}
+<div class="alert alert-info alert-dismissible fade show alerta-fixa-orientacao" role="alert">
+    <h5 class="alert-heading">✓ Etapa 4: Recebimento e Entrada no Estoque</h5>
+    <p class="mb-2"><strong>O que fazer aqui:</strong></p>
+    <ul class="mb-0">
+        <li><strong>Criar Recebimento:</strong> Registre a chegada dos itens com a Nota Fiscal</li>
+        <li><strong>Adicionar Itens:</strong> Especifique quais itens do pedido foram entregues e as quantidades</li>
+        <li><strong>Conferir:</strong> Valide se tudo chegou conforme o pedido</li>
+        <li><strong>Dar Entrada no Estoque:</strong> Confirme a entrada e atualize o estoque</li>
+    </ul>
+    <hr>
+    <p class="mb-2"><strong>Estados do Recebimento:</strong></p>
+    <div class="row">
+        <div class="col-md-6">
+            <small><strong>🟡 PENDENTE:</strong> Recém criado, aguardando conferência</small><br>
+            <small><strong>🔵 CONFERIDO:</strong> Conferido, pronto para entrada</small>
+        </div>
+        <div class="col-md-6">
+            <small><strong>✅ FINALIZADO:</strong> Entrada processada, estoque atualizado</small>
+        </div>
+    </div>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+
+{% endif %}

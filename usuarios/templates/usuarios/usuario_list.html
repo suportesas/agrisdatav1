@@ -8,9 +8,11 @@
 <div class="container mt-4">
   <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
     <h4 class="fw-bold text-secondary">Usuários Cadastrados</h4>
+    {% if user.is_superuser or user.is_staff or user.tipo == 'ADMIN' %}
     <a href="{% url 'usuarios:usuario_create' %}" class="btn btn-primary">
       <i class="bi bi-plus-circle"></i> Novo Usuário
     </a>
+    {% endif %}
   </div>
 
   <!-- Filtros -->
@@ -28,6 +30,20 @@
           <option value="PROD" {% if request.GET.tipo == "PROD" %}selected{% endif %}>Produtor</option>
         </select>
       </div>
+      <div class="col-md-3">
+        <div class="input-group">
+          <span class="input-group-text bg-white border-end-0">
+            <i class="bi bi-list-ol"></i>
+          </span>
+          <select id="perPageSelect" name="per_page" class="form-select border-start-0">
+            <option value="10" {% if request.GET.per_page == '10' %}selected{% endif %}>10 por página</option>
+            <option value="20" {% if request.GET.per_page == '20' %}selected{% endif %}>20 por página</option>
+            <option value="25" {% if request.GET.per_page == '25' or not request.GET.per_page %}selected{% endif %}>25 por página</option>
+            <option value="50" {% if request.GET.per_page == '50' %}selected{% endif %}>50 por página</option>
+            <option value="100" {% if request.GET.per_page == '100' %}selected{% endif %}>100 por página</option>
+          </select>
+        </div>
+      </div>
     </div>
   </form>
 
@@ -43,22 +59,55 @@ document.addEventListener('DOMContentLoaded', function() {
   const filtroForm = document.getElementById('filtroForm');
   const buscaInput = document.getElementById('buscaInput');
   const tipoSelect = document.getElementById('tipoSelect');
+  const perPageSelect = document.getElementById('perPageSelect');
   const tabelaContainer = document.getElementById('tabelaUsuarios');
 
-  function atualizarTabela() {
+  function atualizarTabela(resetPage = true) {
     const params = new URLSearchParams(new FormData(filtroForm));
-    fetch(`/usuarios/buscar/?${params.toString()}`, {
+    
+    // Reseta para página 1 ao mudar filtros
+    if (resetPage) {
+      params.set('page', '1');
+    }
+    
+    fetch(`/usuarios/?${params.toString()}`, {
       headers: { 'X-Requested-With': 'XMLHttpRequest' }
     })
     .then(response => response.json())
     .then(data => {
       tabelaContainer.innerHTML = data.html;
+      
+      // Atualizar URL sem recarregar a página
+      const newUrl = `${window.location.pathname}?${params.toString()}`;
+      window.history.pushState({}, '', newUrl);
     })
     .catch(error => console.error('Erro na busca:', error));
   }
 
-  buscaInput.addEventListener('keyup', () => atualizarTabela());
-  tipoSelect.addEventListener('change', () => atualizarTabela());
+  // Event listeners
+  buscaInput.addEventListener('keyup', () => atualizarTabela(true));
+  tipoSelect.addEventListener('change', () => atualizarTabela(true));
+  perPageSelect.addEventListener('change', () => atualizarTabela(true));
+  
+  // Delegação de eventos para links de paginação
+  tabelaContainer.addEventListener('click', function(e) {
+    const link = e.target.closest('a.page-link');
+    if (link && link.href) {
+      e.preventDefault();
+      const url = new URL(link.href);
+      const params = new URLSearchParams(url.search);
+      
+      // Atualizar o formulário com os parâmetros da URL
+      params.forEach((value, key) => {
+        const input = filtroForm.querySelector(`[name="${key}"]`);
+        if (input) {
+          input.value = value;
+        }
+      });
+      
+      atualizarTabela(false);
+    }
+  });
 });
 </script>
 {% endblock %}

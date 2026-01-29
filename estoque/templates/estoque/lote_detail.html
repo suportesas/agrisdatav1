@@ -1,0 +1,163 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Lote {{ lote.numero_lote }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="mb-1"><i class="bi bi-box2"></i> Lote {{ lote.numero_lote }}</h2>
+      <p class="text-muted">{{ lote.produto.nome }}</p>
+    </div>
+    <div>
+      <a href="{% url 'estoque:lote_edit' lote.pk %}" class="btn btn-primary">
+        <i class="bi bi-pencil"></i> Editar
+      </a>
+      <a href="{% url 'estoque:lote_list' %}" class="btn btn-secondary">
+        <i class="bi bi-arrow-left"></i> Voltar
+      </a>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-md-8">
+      <div class="card shadow-sm mb-4">
+        <div class="card-header">
+          <h5 class="mb-0"><i class="bi bi-info-circle"></i> Informações do Lote</h5>
+        </div>
+        <div class="card-body">
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <strong>Número do Lote:</strong><br>
+              <span class="h5">{{ lote.numero_lote }}</span>
+            </div>
+            <div class="col-md-6">
+              <strong>Produto:</strong><br>
+              {{ lote.produto.nome }}
+            </div>
+          </div>
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <strong>Armazém:</strong><br>
+              {{ lote.armazem.nome }}
+            </div>
+            <div class="col-md-6">
+              <strong>Local de Estocagem:</strong><br>
+              {{ lote.local_estocagem.codigo|default:"-" }}
+            </div>
+          </div>
+          <hr>
+          <div class="row mb-3">
+            <div class="col-md-4">
+              <strong>Data de Fabricação:</strong><br>
+              {{ lote.data_fabricacao|date:"d/m/Y"|default:"-" }}
+            </div>
+            <div class="col-md-4">
+              <strong>Data de Validade:</strong><br>
+              {{ lote.data_validade|date:"d/m/Y" }}
+              {% if lote.esta_vencido %}
+                <br><span class="badge bg-danger">Vencido</span>
+              {% elif lote.dias_para_vencer <= 30 %}
+                <br><span class="badge bg-warning">Vence em {{ lote.dias_para_vencer }} dias</span>
+              {% endif %}
+            </div>
+            <div class="col-md-4">
+              <strong>Data de Entrada:</strong><br>
+              {{ lote.data_entrada|date:"d/m/Y" }}
+            </div>
+          </div>
+          <hr>
+          <div class="row mb-3">
+            <div class="col-md-4">
+              <strong>Quantidade Inicial:</strong><br>
+              {{ lote.quantidade_inicial }} {{ lote.unidade_medida.sigla }}
+            </div>
+            <div class="col-md-4">
+              <strong>Quantidade Atual:</strong><br>
+              <span class="h5 text-primary">{{ lote.quantidade_atual }} {{ lote.unidade_medida.sigla }}</span>
+            </div>
+            <div class="col-md-4">
+              <strong>Consumido:</strong><br>
+              {{ lote.get_percentual_consumido }}%
+            </div>
+          </div>
+          {% if lote.fornecedor or lote.nota_fiscal %}
+          <hr>
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <strong>Fornecedor:</strong><br>
+              {{ lote.fornecedor|default:"-" }}
+            </div>
+            <div class="col-md-6">
+              <strong>Nota Fiscal:</strong><br>
+              {{ lote.nota_fiscal|default:"-" }}
+            </div>
+          </div>
+          {% endif %}
+          {% if lote.valor_unitario %}
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <strong>Valor Unitário:</strong><br>
+              R$ {{ lote.valor_unitario }}
+            </div>
+            <div class="col-md-6">
+              <strong>Valor Total:</strong><br>
+              R$ {{ lote.valor_total }}
+            </div>
+          </div>
+          {% endif %}
+          {% if lote.observacoes %}
+          <hr>
+          <div class="row">
+            <div class="col-12">
+              <strong>Observações:</strong><br>
+              {{ lote.observacoes }}
+            </div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card shadow-sm mb-4">
+        <div class="card-header">
+          <h5 class="mb-0"><i class="bi bi-activity"></i> Status</h5>
+        </div>
+        <div class="card-body text-center">
+          <span class="badge bg-{% if lote.status == 'DISPONIVEL' %}success{% elif lote.status == 'BLOQUEADO' %}danger{% elif lote.status == 'VENCIDO' %}dark{% elif lote.status == 'ESGOTADO' %}secondary{% else %}warning{% endif %} p-3" style="font-size: 1.2rem;">
+            {{ lote.get_status_display }}
+          </span>
+          
+          {% if lote.status == 'BLOQUEADO' and lote.motivo_bloqueio %}
+          <hr>
+          <small class="text-muted">
+            <strong>Motivo do Bloqueio:</strong><br>
+            {{ lote.motivo_bloqueio }}
+          </small>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="card shadow-sm">
+        <div class="card-header">
+          <h5 class="mb-0"><i class="bi bi-clock-history"></i> Auditoria</h5>
+        </div>
+        <div class="card-body">
+          <small class="text-muted">
+            <strong>Cadastrado em:</strong><br>
+            {{ lote.data_cadastro|date:"d/m/Y H:i" }}<br>
+            por {{ lote.cadastrado_por }}<br><br>
+            
+            {% if lote.data_modificacao %}
+            <strong>Última modificação:</strong><br>
+            {{ lote.data_modificacao|date:"d/m/Y H:i" }}
+            {% endif %}
+          </small>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

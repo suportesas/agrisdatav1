@@ -1,0 +1,595 @@
+empresa_id,empresa_nome,codigo,old_nome,new_nome,old_descricao,new_descricao,old_ativo,new_ativo
+14,Potiguar Fruit Importacao E Exportacão Ltda,1000,ENTRADAS OU AQUISIÇÕES DE SERVIÇOS DO ESTADO,"""ENTRADAS OU AQUISIÇÕES DE SERVIÇOS DO ESTADO""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1100,,"""COMPRAS PARA INDUSTRIALIZAÇÃO, COMERCIALIZAÇÃO OU PRESTAÇÃO DE SERVIÇOS""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1101,,"""Compra para industrialização ou produção rural""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1102,,"""Compra para comercialização""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1111,,"""Compra para industrialização de mercadoria recebida anteriormente em consignação industrial""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1113,,"""Compra para comercialização, de mercadoria recebida anteriormente em consignação mercantil""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1116,,"""Compra para industrialização ou produção rural originada de encomenda para recebimento futuro""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1117,,"""Compra para comercialização originada de encomenda para recebimento futuro""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1118,,"""Compra de mercadoria para comercialização pelo adquirente originário, entregue pelo vendedor remetente ao destinatário, em venda à ordem""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1120,,"""Compra para industrialização, em venda à ordem, já recebida do vendedor remetente""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1121,,"""Compra para comercialização, em venda à ordem, já recebida do vendedor remetente""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1122,,"""Compra para industrialização em que a mercadoria foi remetida pelo fornecedor ao industrializador sem transitar pelo estabelecimento adquirente""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1124,,"""Industrialização efetuada por outra empresa""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1125,,"""Industrialização efetuada por outra empresa quando a mercadoria remetida para utilização no processo de industrialização não transitou pelo estabelecimento adquirente da mercadoria""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1126,,"""compras para utilização na prestação de serviços sujeitas ao ICMS""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1128,,"""compras para utilização na prestação de serviços sujeitas ao ISSQN""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1150,,"""TRANSFERÊNCIAS PARA INDUSTRIALIZAÇÃO, COMERCIALIZAÇÃO OU PRESTAÇÃO DE SERVIÇOS""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1151,,"""Transferência para industrialização ou produção rural""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1152,,"""Transferência para comercialização""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1153,,"""Transferência de energia elétrica para distribuição""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1154,,"""Transferência para utilização na prestação de serviço""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1200,,"""DEVOLUÇÕES DE VENDAS DE PRODUÇÃO PRÓPRIA, DE TERCEIROS OU ANULAÇÕES DE VALORES""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1201,,"""Devolução de venda de produção do estabelecimento""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1202,,"""Devolução de venda de mercadoria adquirida ou recebida de terceiros""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1203,,"""Devolução de venda de produção do estabelecimento, destinada à Zona Franca de Manaus ou Áreas de Livre Comércio""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1204,,"""Devolução de venda de mercadoria adquirida ou recebida de terceiros, destinada à Zona Franca de Manaus ou Áreas de Livre Comércio""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1205,,"""Anulação de valor relativo à prestação de serviço de comunicação""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1206,,"""Anulação de valor relativo à prestação de serviço de transporte""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1207,,"""Anulação de valor relativo à venda de energia elétrica""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1208,,"""Devolução de produção do estabelecimento, remetida em transferência""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1209,,"""Devolução de mercadoria adquirida ou recebida de terceiros, remetida em transferência""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1250,,"""COMPRAS DE ENERGIA ELÉTRICA""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1251,,"""Compra de energia elétrica para distribuição ou comercialização""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1252,,"""Compra de energia elétrica por estabelecimento industrial""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1253,,"""Compra de energia elétrica por estabelecimento comercial""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1254,,"""Compra de energia elétrica por estabelecimento prestador de serviço de transporte""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1255,,"""Compra de energia elétrica por estabelecimento prestador de serviço de comunicação""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1256,,"""Compra de energia elétrica por estabelecimento de produtor rural""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1257,,"""Compra de energia elétrica para consumo por demanda contratada""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1300,,"""AQUISIÇÕES DE SERVIÇOS DE COMUNICAÇÃO""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1301,,"""Aquisição de serviço de comunicação para execução de serviço da mesma natureza""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1302,,"""Aquisição de serviço de comunicação por estabelecimento industrial""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1303,,"""Aquisição de serviço de comunicação por estabelecimento comercial""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1304,,"""Aquisição de serviço de comunicação por estabelecimento de prestador de serviço de transporte""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1350,,"""AQUISIÇÕES DE SERVIÇOS DE TRANSPORTE""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1351,,"""Aquisição de serviço de transporte para execução de serviço da mesma natureza""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1352,,"""Aquisição de serviço de transporte por estabelecimento industrial""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1353,,"""Aquisição de serviço de transporte por estabelecimento comercial""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1354,,"""Aquisição de serviço de transporte por estabelecimento de prestador de serviço de comunicação""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1355,,"""Aquisição de serviço de transporte por estabelecimento de geradora ou de distribuidora de energia elétrica""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1356,,"""Aquisição de serviço de transporte por estabelecimento de produtor rural""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1360,,"""Aquisição de serviço de transporte por contribuinte substituto em relação ao serviço de transporte""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1400,,"""ENTRADAS DE MERCADORIAS SUJEITAS AO REGIME DE SUBSTITUIÇÃO TRIBUTÁRIA""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1401,,"""Compra para industrialização ou produção rural em operação com mercadoria sujeita ao regime de substituição tributária""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1403,,"""Compra para comercialização em operação com mercadoria sujeita ao regime de substituição tributária""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1406,,"""Compra de bem para o ativo imobilizado cuja mercadoria está sujeita ao regime de substituição tributária""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1407,,"""Compra de mercadoria para uso ou consumo cuja mercadoria está sujeita ao regime de substituição tributária""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1408,,"""Transferência para industrialização ou produção rural em operação com mercadoria sujeita ao regime de substituição tributária""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1409,,"""Transferência para comercialização em operação com mercadoria sujeita ao regime de substituição tributária""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1410,,"""Devolução de venda de produção do estabelecimento em operação com produto sujeito ao regime de substituição tributária""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1415,,"""Retorno de mercadoria adquirida ou recebida de terceiros, remetida para venda fora do estabelecimento em operação com mercadoria sujeita ao regime de substituição tributária""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1450,,"""SISTEMAS DE INTEGRAÇÃO""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1451,,"""Retorno de animal do estabelecimento produtor""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1452,,"""Retorno de insumo não utilizado na produção""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1500,,"""ENTRADAS DE MERCADORIAS REMETIDAS COM FIM ESPECÍFICO DE EXPORTAÇÃO E EVENTUAIS DEVOLUÇÕES""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1501,,"""Entrada de mercadoria recebida com fim específico de exportação""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1503,,"""Entrada decorrente de devolução de produto remetido com fim específico de exportação, de produção do estabelecimento""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1504,,"""Entrada decorrente de devolução de mercadoria remetida com fim específico de exportação, adquirida ou recebida de terceiros""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1505,,"""Entrada decorrente de devolução simbólica de mercadorias remetidas para formação de lote de exportação, de produtos industrializados ou produzidos pelo próprio estabelecimento""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1506,,"""Entrada decorrente de devolução simbólica de mercadorias, adquiridas ou recebidas de terceiros, remetidas para formação de lote de exportação""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1550,,"""OPERAÇÕES COM BENS DE ATIVO IMOBILIZADO E MATERIAIS PARA USO OU CONSUMO""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1551,,"""Compra de bem para o ativo imobilizado""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1552,,"""Transferência de bem do ativo imobilizado""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1553,,"""Devolução de venda de bem do ativo imobilizado""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1554,,"""Retorno de bem do ativo imobilizado remetido para uso fora do estabelecimento""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1555,,"""Entrada de bem do ativo imobilizado de terceiro, remetido para uso no estabelecimento""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1556,,"""Compra de material para uso ou consumo""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1557,,"""Transferência de material para uso ou consumo""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1600,,"""CRÉDITOS E RESSARCIMENTOS DE ICMS""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1601,,"""Recebimento, por transferência, de crédito de ICMS""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1602,,"""Recebimento, por transferência, de saldo credor de ICMS de outro estabelecimento da mesma empresa, para compensação de saldo devedor de ICMS""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1605,,"""Recebimento, por transferência, de saldo devedor de ICMS de outro estabelecimento da mesma empresa""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1652,,"""Compra de combustível ou lubrificante para comercialização""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1653,,"""Compra de combustível ou lubrificante por consumidor ou usuário final""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1658,,"""Transferência de combustível e lubrificante para industrialização""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1659,,"""Transferência de combustível e lubrificante para comercialização""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1660,,"""Devolução de venda de combustível ou lubrificante destinado à industrialização subseqüente""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1661,,"""Devolução de venda de combustível ou lubrificante destinado à comercialização""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1662,,"""Devolução de venda de combustível ou lubrificante destinado a consumidor ou usuário final""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1663,,"""Entrada de combustível ou lubrificante para armazenagem""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1664,,"""Retorno de combustível ou lubrificante remetido para armazenagem""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1900,,"""OUTRAS ENTRADAS DE MERCADORIAS OU AQUISIÇÕES DE SERVIÇOS""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1901,,"""Entrada para industrialização por encomenda""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1902,,"""Retorno de mercadoria remetida para industrialização por encomenda""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1903,,"""Entrada de mercadoria remetida para industrialização e não aplicada no referido processo""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1904,,"""Retorno de remessa para venda fora do estabelecimento""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1905,,"""Entrada de mercadoria recebida para depósito em depósito fechado ou armazém geral""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1906,,"""Retorno de mercadoria remetida para depósito fechado ou armazém geral""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1907,,"""Retorno simbólico de mercadoria remetida para depósito fechado ou armazém geral""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1908,,"""Entrada de bem por conta de contrato de comodato""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1909,,"""Retorno de bem remetido por conta de contrato de comodato""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1910,,"""Entrada de bonificação, doação ou brinde""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1911,,"""Entrada de amostra grátis""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1912,,"""Entrada de mercadoria ou bem recebido para demonstração""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1913,,"""Retorno de mercadoria ou bem remetido para demonstração""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1914,,"""Retorno de mercadoria ou bem remetido para exposição ou feira""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1915,,"""Entrada de mercadoria ou bem recebido para conserto ou reparo""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1916,,"""Retorno de mercadoria ou bem remetido para conserto ou reparo""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1917,,"""Entrada de mercadoria recebida em consignação mercantil ou industrial""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1918,,"""Devolução de mercadoria remetida em consignação mercantil ou industrial""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1919,,"""Devolução simbólica de mercadoria vendida ou utilizada em processo industrial, remetida anteriormente em consignação mercantil ou industrial""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1920,,"""Entrada de vasilhame ou sacaria""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1921,,"""Retorno de vasilhame ou sacaria""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1922,,"""Lançamento efetuado a título de simples faturamento decorrente de compra para recebimento futuro""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1923,,"""Entrada de mercadoria recebida do vendedor remetente, em venda à ordem""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1924,,"""Entrada para industrialização por conta e ordem do adquirente da mercadoria, quando esta não transitar pelo estabelecimento do adquirente""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1925,,"""Retorno de mercadoria remetida para industrialização por conta e ordem do adquirente da mercadoria, quando esta não transitar pelo estabelecimento do adquirente""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1926,,"""Lançamento efetuado a título de reclassificação de mercadoria decorrente de formação de kit ou de sua desagregação""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1931,,"""Lançamento efetuado pelo tomador do serviço de transporte quando a responsabilidade de retenção do imposto for atribuída ao remetente ou alienante da mercadoria, pelo serviço de transporte realizado por transportador autônomo ou por transportador não inscrito na unidade da Federação onde iniciado o serviço""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1932,,"""Aquisição de serviço de transporte iniciado em unidade da Federação diversa daquela onde inscrito o prestador""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1933,,"""Aquisição de serviço tributado pelo ISSQN""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,1949,,"""Outra entrada de mercadoria ou prestação de serviço não especificada""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2000,,"""ENTRADAS OU AQUISIÇÕES DE SERVIÇOS DE OUTROS ESTADOS""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2100,,"""COMPRAS PARA INDUSTRIALIZAÇÃO, COMERCIALIZAÇÃO OU PRESTAÇÃO DE SERVIÇOS""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2101,,"""Compra para industrialização ou produção rural""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2102,,"""Compra para comercialização""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2111,,"""Compra para industrialização de mercadoria recebida anteriormente em consignação industrial""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2113,,"""Compra para comercialização, de mercadoria recebida anteriormente em consignação mercantil""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2116,,"""Compra para industrialização ou produção rural originada de encomenda para recebimento futuro""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2117,,"""Compra para comercialização originada de encomenda para recebimento futuro""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2118,,"""Compra de mercadoria para comercialização pelo adquirente originário, entregue pelo vendedor remetente ao destinatário, em venda à ordem""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2122,,"""Compra para industrialização em que a mercadoria foi remetida pelo fornecedor ao industrializador sem transitar pelo estabelecimento adquirente""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2124,,"""Industrialização efetuada por outra empresa""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2125,,"""Industrialização efetuada por outra empresa quando a mercadoria remetida para utilização no processo de industrialização não transitou pelo estabelecimento adquirente da mercadoria""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2126,,"""Compra para utilização na prestação de serviço""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2150,,"""TRANSFERÊNCIAS PARA INDUSTRIALIZAÇÃO, COMERCIALIZAÇÃO OU PRESTAÇÃO DE SERVIÇOS""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2151,,"""Transferência para industrialização ou produção rural""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2152,,"""Transferência para comercialização""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2153,,"""Transferência de energia elétrica para distribuição""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2154,,"""Transferência para utilização na prestação de serviço""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2200,,"""DEVOLUÇÕES DE VENDAS DE PRODUÇÃO PRÓPRIA, DE TERCEIROS OU ANULAÇÕES DE VALORES""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2201,,"""Devolução de venda de produção do estabelecimento""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2202,,"""Devolução de venda de mercadoria adquirida ou recebida de terceiros""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2203,,"""Devolução de venda de produção do estabelecimento, destinada à Zona Franca de Manaus ou Áreas de Livre Comércio""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2204,,"""Devolução de venda de mercadoria adquirida ou recebida de terceiros, destinada à Zona Franca de Manaus ou Áreas de Livre Comércio""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2205,,"""Anulação de valor relativo à prestação de serviço de comunicação""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2206,,"""Anulação de valor relativo à prestação de serviço de transporte""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2207,,"""Anulação de valor relativo à venda de energia elétrica""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2208,,"""Devolução de produção do estabelecimento, remetida em transferência""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2209,,"""Devolução de mercadoria adquirida ou recebida de terceiros, remetida em transferência """,,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2250,,"""COMPRAS DE ENERGIA ELÉTRICA""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2251,,"""Compra de energia elétrica para distribuição ou comercialização""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2252,,"""Compra de energia elétrica por estabelecimento industrial""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2253,,"""Compra de energia elétrica por estabelecimento comercial""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2254,,"""Compra de energia elétrica por estabelecimento prestador de serviço de transporte""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2255,,"""Compra de energia elétrica por estabelecimento prestador de serviço de comunicação""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2256,,"""Compra de energia elétrica por estabelecimento de produtor rural""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2257,,"""Compra de energia elétrica para consumo por demanda contratada""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2300,,"""AQUISIÇÕES DE SERVIÇOS DE COMUNICAÇÃO""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2301,,"""Aquisição de serviço de comunicação para execução de serviço da mesma natureza""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2302,,"""Aquisição de serviço de comunicação por estabelecimento industrial""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2303,,"""Aquisição de serviço de comunicação por estabelecimento comercial""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2304,,"""Aquisição de serviço de comunicação por estabelecimento de prestador de serviço de transporte""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2305,,"""Aquisição de serviço de comunicação por estabelecimento de geradora ou de distribuidora de energia elétrica""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2306,,"""Aquisição de serviço de comunicação por estabelecimento de produtor rural""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2351,,"""Aquisição de serviço de transporte para execução de serviço da mesma natureza""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2352,,"""Aquisição de serviço de transporte por estabelecimento industrial""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2353,,"""Aquisição de serviço de transporte por estabelecimento comercial""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2354,,"""Aquisição de serviço de transporte por estabelecimento de prestador de serviço de comunicação""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2355,,"""Aquisição de serviço de transporte por estabelecimento de geradora ou de distribuidora de energia elétrica""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2356,,"""Aquisição de serviço de transporte por estabelecimento de produtor rural""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2400,,"""ENTRADAS DE MERCADORIAS SUJEITAS AO REGIME DE SUBSTITUIÇÃO TRIBUTÁRIA""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2401,,"""Compra para industrialização ou produção rural em operação com mercadoria sujeita ao regime desubstituição tributária""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2403,,"""Compra para comercialização em operação com mercadoria sujeita ao regime de substituição tributária""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2406,,"""Compra de bem para o ativo imobilizado cuja mercadoria está sujeita ao regime de substituição tributária""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2407,,"""Compra de mercadoria para uso ou consumo cuja mercadoria está sujeita ao regime de substituição tributária""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2408,,"""Transferência para industrialização ou produção rural em operação com mercadoria sujeita ao regime de substituição tributária""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2409,,"""Transferência para comercialização em operação com mercadoria sujeita ao regime de substituição tributária""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2410,,"""Devolução de venda de produção do estabelecimento em operação com produto sujeito ao regime desubstituição tributária""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2411,,"""Devolução de venda de mercadoria adquirida ou recebida de terceiros em operação com mercadoria sujeita ao regime de substituição tributária""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2414,,"""Retorno de produção do estabelecimento, remetida para venda fora do estabelecimento em operação com produto sujeito ao regime de substituição tributária""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2415,,"""Retorno de mercadoria adquirida ou recebida de terceiros, remetida para venda fora do estabelecimento em operação com mercadoria sujeita ao regime de substituição tributária""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2500,,"""ENTRADAS DE MERCADORIAS REMETIDAS COM FIM ESPECÍFICO DE EXPORTAÇÃO E EVENTUAIS DEVOLUÇÕES""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2501,,"""Entrada de mercadoria recebida com fim específico de exportação""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2503,,"""Entrada decorrente de devolução de produto remetido com fim específico de exportação, de produção do estabelecimento""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2504,,"""Entrada decorrente de devolução de mercadoria remetida com fim específico de exportação, adquirida ou recebida de terceiros""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2505,,"""Entrada decorrente de devolução simbólica de mercadorias remetidas para formação de lote de exportação, de produtos industrializados ou produzidos pelo próprio estabelecimento""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2506,,"""Entrada decorrente de devolução simbólica de mercadorias, adquiridas ou recebidas de terceiros, remetidas para formação de lote de exportação""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2550,,"""OPERAÇÕES COM BENS DE ATIVO IMOBILIZADO E MATERIAIS PARA USO OU CONSUMO""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2551,,"""Compra de bem para o ativo imobilizado""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2552,,"""Transferência de bem do ativo imobilizado""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2553,,"""Devolução de venda de bem do ativo imobilizado""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2554,,"""Retorno de bem do ativo imobilizado remetido para uso fora do estabelecimento""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2555,,"""Entrada de bem do ativo imobilizado de terceiro, remetido para uso no estabelecimento""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2556,,"""Compra de material para uso ou consumo""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2557,,"""Transferência de material para uso ou consumo""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2600,,"""CRÉDITOS E RESSARCIMENTOS DE ICMS""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2603,,"""Ressarcimento de ICMS retido por substituição tributária""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2651,,"""Compra de combustível ou lubrificante para industrialização subseqüente""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2652,,"""Compra de combustível ou lubrificante para comercialização""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2653,,"""Compra de combustível ou lubrificante por consumidor ou usuário final""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2658,,"""Transferência de combustível e lubrificante para industrialização""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2659,,"""Transferência de combustível e lubrificante para comercialização""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2660,,"""Devolução de venda de combustível ou lubrificante destinado à industrialização subseqüente""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2661,,"""Devolução de venda de combustível ou lubrificante destinado à comercialização""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2662,,"""Devolução de venda de combustível ou lubrificante destinado a consumidor ou usuário final""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2663,,"""Entrada de combustível ou lubrificante para armazenagem""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2664,,"""Retorno de combustível ou lubrificante remetido para armazenagem """,,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2900,,"""OUTRAS ENTRADAS DE MERCADORIAS OU AQUISIÇÕES DE SERVIÇOS""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2901,,"""Entrada para industrialização por encomenda""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2902,,"""Retorno de mercadoria remetida para industrialização por encomenda""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2903,,"""Entrada de mercadoria remetida para industrialização e não aplicada no referido processo""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2904,,"""Retorno de remessa para venda fora do estabelecimento""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2905,,"""Entrada de mercadoria recebida para depósito em depósito fechado ou armazém geral""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2906,,"""Retorno de mercadoria remetida para depósito fechado ou armazém geral""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2907,,"""Retorno simbólico de mercadoria remetida para depósito fechado ou armazém geral""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2908,,"""Entrada de bem por conta de contrato de comodato""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2909,,"""Retorno de bem remetido por conta de contrato de comodato""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2910,,"""Entrada de bonificação, doação ou brinde""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2911,,"""Entrada de amostra grátis""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2912,,"""Entrada de mercadoria ou bem recebido para demonstração""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2913,,"""Retorno de mercadoria ou bem remetido para demonstração""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2914,,"""Retorno de mercadoria ou bem remetido para exposição ou feira""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2915,,"""Entrada de mercadoria ou bem recebido para conserto ou reparo""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2916,,"""Retorno de mercadoria ou bem remetido para conserto ou reparo""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2917,,"""Entrada de mercadoria recebida em consignação mercantil ou industrial""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2918,,"""Devolução de mercadoria remetida em consignação mercantil ou industrial""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2919,,"""Devolução simbólica de mercadoria vendida ou utilizada em processo industrial, remetida anteriormente em consignação mercantil ou industrial""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2920,,"""Entrada de vasilhame ou sacaria""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2921,,"""Retorno de vasilhame ou sacaria""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2922,,"""Lançamento efetuado a título de simples faturamento decorrente de compra para recebimento futuro""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2923,,"""Entrada de mercadoria recebida do vendedor remetente, em venda à ordem""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2924,,"""Entrada para industrialização por conta e ordem do adquirente da mercadoria, quando esta não transitar pelo estabelecimento do adquirente""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2925,,"""Retorno de mercadoria remetida para industrialização por conta e ordem do adquirente da mercadoria, quando esta não transitar pelo estabelecimento do adquirente""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2931,,"""Lançamento efetuado pelo tomador do serviço de transporte quando a responsabilidade de retenção do imposto for atribuída ao remetente ou alienante da mercadoria, pelo serviço de transporte realizado por transportador autônomo ou por transportador não inscrito na unidade da Federação onde iniciado o serviço""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2932,,"""Aquisição de serviço de transporte iniciado em unidade da Federação diversa daquela onde inscrito o prestador""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2933,,"""Aquisição de serviço tributado pelo ISSQN""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,2949,,"""Outra entrada de mercadoria ou prestação de serviço não especificado """,,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,3000,,"""ENTRADAS OU AQUISIÇÕES DE SERVIÇOS DO EXTERIOR """,,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,3100,,"""COMPRAS PARA INDUSTRIALIZAÇÃO, COMERCIALIZAÇÃO OU PRESTAÇÃO DE SERVIÇOS""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,3101,,"""Compra para industrialização ou produção rural""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,3102,,"""Compra para comercialização""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,3126,,"""Compra para utilização na prestação de serviço""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,3127,,"""Compra para industrialização sob o regime de ""drawback"" """,,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,3200,,"""DEVOLUÇÕES DE VENDAS DE PRODUÇÃO PRÓPRIA, DE TERCEIROS OU ANULAÇÕES DE VALORES""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,3201,,"""Devolução de venda de produção do estabelecimento""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,3202,,"""Devolução de venda de mercadoria adquirida ou recebida de terceiros""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,3205,,"""Anulação de valor relativo à prestação de serviço de comunicação""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,3206,,"""Anulação de valor relativo à prestação de serviço de transporte""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,3207,,"""Anulação de valor relativo à venda de energia elétrica""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,3211,,"""Devolução de venda de produção do estabelecimento sob o regime de ""drawback"" """,,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,3250,,"""COMPRAS DE ENERGIA ELÉTRICA""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,3251,,"""Compra de energia elétrica para distribuição ou comercialização """,,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,3300,,"""AQUISIÇÕES DE SERVIÇOS DE COMUNICAÇÃO""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,3301,,"""Aquisição de serviço de comunicação para execução de serviço da mesma natureza """,,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,3350,,"""AQUISIÇÕES DE SERVIÇOS DE TRANSPORTE""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,3351,,"""Aquisição de serviço de transporte para execução de serviço da mesma natureza""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,3352,,"""Aquisição de serviço de transporte por estabelecimento industrial""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,3353,,"""Aquisição de serviço de transporte por estabelecimento comercial""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,3354,,"""Aquisição de serviço de transporte por estabelecimento de prestador de serviço de comunicação""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,3355,,"""Aquisição de serviço de transporte por estabelecimento de geradora ou de distribuidora de energia elétrica""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,3356,,"""Aquisição de serviço de transporte por estabelecimento de produtor rural """,,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,3500,,"""ENTRADAS DE MERCADORIAS REMETIDAS COM FIM ESPECÍFICO DE EXPORTAÇÃO E EVENTUAIS DEVOLUÇÕES""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,3503,,"""Devolução de mercadoria exportada que tenha sido recebida com fim específico de exportação """,,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,3550,,"""OPERAÇÕES COM BENS DE ATIVO IMOBILIZADO E MATERIAIS PARA USO OU CONSUMO""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,3551,,"""Compra de bem para o ativo imobilizado""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,3553,,"""Devolução de venda de bem do ativo imobilizado""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,3556,,"""Compra de material para uso ou consumo""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,3651,,"""Compra de combustível ou lubrificante para industrialização subseqüente""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,3652,,"""Compra de combustível ou lubrificante para comercialização""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,3653,,"""Compra de combustível ou lubrificante por consumidor ou usuário final """,,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,3900,,"""OUTRAS ENTRADAS DE MERCADORIAS OU AQUISIÇÕES DE SERVIÇOS""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,3930,,"""Lançamento efetuado a título de entrada de bem sob amparo de regime especial aduaneiro de admissão temporária""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,3949,,"""Outra entrada de mercadoria ou prestação de serviço não especificado """,,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5000,,"""SAÍDAS OU PRESTAÇÕES DE SERVIÇOS PARA O ESTADO """,,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5100,,"""VENDAS DE PRODUÇÃO PRÓPRIA OU DE TERCEIROS""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5101,,"""Venda de produção do estabelecimento""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5102,,"""Venda de mercadoria adquirida ou recebida de terceiros""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5103,,"""Venda de produção do estabelecimento, efetuada fora do estabelecimento""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5104,,"""Venda de mercadoria adquirida ou recebida de terceiros, efetuada fora do estabelecimento""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5105,,"""Venda de produção do estabelecimento que não deva por ele transitar""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5106,,"""Venda de mercadoria adquirida ou recebida de terceiros, que não deva por ele transitar""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5109,,"""Venda de produção do estabelecimento, destinada à Zona Franca de Manaus ou Áreas de Livre Comércio""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5110,,"""Venda de mercadoria adquirida ou recebida de terceiros, destinada à Zona Franca de Manaus ou Áreas de Livre Comércio""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5111,,"""Venda de produção do estabelecimento remetida anteriormente em consignação industrial""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5112,,"""Venda de mercadoria adquirida ou recebida de terceiros remetida anteriormente em consignação industrial""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5113,,"""Venda de produção do estabelecimento remetida anteriormente em consignação mercantil""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5114,,"""Venda de mercadoria adquirida ou recebida de terceiros remetida anteriormente em consignação mercantil""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5115,,"""Venda de mercadoria adquirida ou recebida de terceiros, recebida anteriormente em consignação mercantil""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5116,,"""Venda de produção do estabelecimento originada de encomenda para entrega futura""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5117,,"""Venda de mercadoria adquirida ou recebida de terceiros, originada de encomenda para entrega futura""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5118,,"""Venda de produção do estabelecimento entregue ao destinatário por conta e ordem do adquirente originário, em venda à ordem""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5119,,"""Venda de mercadoria adquirida ou recebida de terceiros entregue ao destinatário por conta e ordem do adquirente originário, em venda à ordem""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5120,,"""Venda de mercadoria adquirida ou recebida de terceiros entregue ao destinatário pelo vendedor remetente, em venda à ordem""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5122,,"""Venda de produção do estabelecimento remetida para industrialização, por conta e ordem do adquirente, sem transitar pelo estabelecimento do adquirente""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5123,,"""Venda de mercadoria adquirida ou recebida de terceiros remetida para industrialização, por conta e ordem do adquirente, sem transitar pelo estabelecimento do adquirente""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5124,,"""Industrialização efetuada para outra empresa""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5125,,"""Industrialização efetuada para outra empresa quando a mercadoria recebida para utilização no processo de industrialização não transitar pelo estabelecimento adquirente da mercadoria""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5150,,"""TRANSFERÊNCIAS DE PRODUÇÃO PRÓPRIA OU DE TERCEIROS""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5151,,"""Transferência de produção do estabelecimento""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5152,,"""Transferência de mercadoria adquirida ou recebida de terceiros""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5153,,"""Transferência de energia elétrica""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5155,,"""Transferência de produção do estabelecimento, que não deva por ele transitar""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5156,,"""Transferência de mercadoria adquirida ou recebida de terceiros, que não deva por ele transitar""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5200,,"""DEVOLUÇÕES DE COMPRAS PARA INDUSTRIALIZAÇÃO, COMERCIALIZAÇÃO OU ANULAÇÕES DE VALORES""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5201,,"""Devolução de compra para industrialização ou produção rural""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5202,,"""Devolução de compra para comercialização""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5205,,"""Anulação de valor relativo a aquisição de serviço de comunicação""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5206,,"""Anulação de valor relativo a aquisição de serviço de transporte""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5207,,"""Anulação de valor relativo à compra de energia elétrica""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5208,,"""Devolução de mercadoria recebida em transferência para industrialização ou produção rural""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5209,,"""Devolução de mercadoria recebida em transferência para comercialização""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5210,,"""Devolução de compra para utilização na prestação de serviço sujeitas ao ICMS ou ISSQN""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5250,,"""VENDAS DE ENERGIA ELÉTRICA""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5251,,"""Venda de energia elétrica para distribuição ou comercialização""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5252,,"""Venda de energia elétrica para estabelecimento industrial""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5253,,"""Venda de energia elétrica para estabelecimento comercial""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5254,,"""Venda de energia elétrica para estabelecimento prestador de serviço de transporte""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5255,,"""Venda de energia elétrica para estabelecimento prestador de serviço de comunicação""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5256,,"""Venda de energia elétrica para estabelecimento de produtor rural""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5257,,"""Venda de energia elétrica para consumo por demanda contratada""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5258,,"""Venda de energia elétrica a não contribuinte """,,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5300,,"""PRESTAÇÕES DE SERVIÇOS DE COMUNICAÇÃO""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5301,,"""Prestação de serviço de comunicação para execução de serviço da mesma natureza""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5302,,"""Prestação de serviço de comunicação a estabelecimento industrial""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5303,,"""Prestação de serviço de comunicação a estabelecimento comercial""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5304,,"""Prestação de serviço de comunicação a estabelecimento de prestador de serviço de transporte""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5305,,"""Prestação de serviço de comunicação a estabelecimento de geradora ou de distribuidora de energia elétrica""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5306,,"""Prestação de serviço de comunicação a estabelecimento de produtor rural""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5307,,"""Prestação de serviço de comunicação a não contribuinte """,,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5350,,"""PRESTAÇÕES DE SERVIÇOS DE TRANSPORTE""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5351,,"""Prestação de serviço de transporte para execução de serviço da mesma natureza""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5352,,"""Prestação de serviço de transporte a estabelecimento industrial""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5353,,"""Prestação de serviço de transporte a estabelecimento comercial""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5354,,"""Prestação de serviço de transporte a estabelecimento de prestador de serviço de comunicação""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5355,,"""Prestação de serviço de transporte a estabelecimento de geradora ou de distribuidora de energia elétrica""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5356,,"""Prestação de serviço de transporte a estabelecimento de produtor rural""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5357,,"""Prestação de serviço de transporte a não contribuinte""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5359,,"""Prestação de serviço de transporte a contribuinte ou a não contribuinte quando a mercadoria transportada está dispensada de emissão de nota fiscal""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5360,,"""Prestação de serviço de transporte a contribuinte substituto em relação ao serviço de transporte""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5400,,"""SAÍDAS DE MERCADORIAS SUJEITAS AO REGIME DE SUBSTITUIÇÃO TRIBUTÁRIA""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5401,,"""Venda de produção do estabelecimento em operação com produto sujeito ao regime de substituição tributária, na condição de contribuinte substituto""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5402,,"""Venda de produção do estabelecimento de produto sujeito ao regime de substituição tributária, em operação entre contribuintes substitutos do mesmo produto""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5403,,"""Venda de mercadoria adquirida ou recebida de terceiros em operação com mercadoria sujeita ao regime de substituição tributária, na condição de contribuinte substituto""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5405,,"""Venda de mercadoria adquirida ou recebida de terceiros em operação com mercadoria sujeita ao regime de substituição tributária, na condição de contribuinte substituído""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5408,,"""Transferência de produção do estabelecimento em operação com produto sujeito ao regime de substituição tributária""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5409,,"""Transferência de mercadoria adquirida ou recebida de terceiros em operação com mercadoria sujeita ao regime de substituição tributária""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5410,,"""Devolução de compra para industrialização ou produção rural em operação com mercadoria sujeita ao regime de substituição tributária""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5411,,"""Devolução de compra para comercialização em operação com mercadoria sujeita ao regime de substituição tributária""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5412,,"""Devolução de bem do ativo imobilizado, em operação com mercadoria sujeita ao regime de substituição tributária""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5413,,"""Devolução de mercadoria destinada ao uso ou consumo, em operação com mercadoria sujeita ao regime de substituição tributária""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5414,,"""Remessa de produção do estabelecimento para venda fora do estabelecimento em operação com produto sujeito ao regime de substituição tributária""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5415,,"""Remessa de mercadoria adquirida ou recebida de terceiros para venda fora do estabelecimento, em operação com mercadoria sujeita ao regime de substituição tributária""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5450,,"""SISTEMAS DE INTEGRAÇÃO""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5451,,"""Remessa de animal e de insumo para estabelecimento produtor""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5500,,"""REMESSAS COM FIM ESPECÍFICO DE EXPORTAÇÃO E EVENTUAIS DEVOLUÇÕES""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5503,,"""Devolução de mercadoria recebida com fim específico de exportação""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5504,,"""Remessa de mercadorias para formação de lote de exportação, de produtos industrializados ou produzidos pelo próprio estabelecimento""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5505,,"""Remessa de mercadorias, adquiridas ou recebidas de terceiros, para formação de lote de exportação """,,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5550,,"""OPERAÇÕES COM BENS DE ATIVO IMOBILIZADO E MATERIAIS PARA USO OU CONSUMO""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5551,,"""Venda de bem do ativo imobilizado""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5552,,"""Transferência de bem do ativo imobilizado""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5553,,"""Devolução de compra de bem para o ativo imobilizado""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5554,,"""Remessa de bem do ativo imobilizado para uso fora do estabelecimento""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5555,,"""Devolução de bem do ativo imobilizado de terceiro, recebido para uso no estabelecimento""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5556,,"""Devolução de compra de material de uso ou consumo""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5557,,"""Transferência de material de uso ou consumo""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5600,,"""CRÉDITOS E RESSARCIMENTOS DE ICMS""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5601,,"""Transferência de crédito de ICMS acumulado""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5602,,"""Transferência de saldo credor de ICMS para outro estabelecimento da mesma empresa, destinado à compensação de saldo devedor de ICMS""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5603,,"""Ressarcimento de ICMS retido por substituição tributária""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5605,,"""Transferência de saldo devedor de ICMS de outro estabelecimento da mesma empresa""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5606,,"""Utilização de saldo credor de ICMS para extinção por compensação de débitos fiscais""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5651,,"""Venda de combustível ou lubrificante de produção do estabelecimento destinado à industrialização subseqüente""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5652,,"""Venda de combustível ou lubrificante de produção do estabelecimento destinado à comercialização""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5653,,"""Venda de combustível ou lubrificante de produção do estabelecimento destinado a consumidor ou usuário final""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5654,,"""Venda de combustível ou lubrificante adquirido ou recebido de terceiros destinado à industrialização subseqüente""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5655,,"""Venda de combustível ou lubrificante adquirido ou recebido de terceiros destinado à comercialização""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5656,,"""Venda de combustível ou lubrificante adquirido ou recebido de terceiros destinado a consumidor ou usuário final""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5657,,"""Remessa de combustível ou lubrificante adquirido ou recebido de terceiros para venda fora do estabelecimento""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5658,,"""Transferência de combustível ou lubrificante de produção do estabelecimento""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5659,,"""Transferência de combustível ou lubrificante adquirido ou recebido de terceiro""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5660,,"""Devolução de compra de combustível ou lubrificante adquirido para industrialização subseqüente""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5661,,"""Devolução de compra de combustível ou lubrificante adquirido para comercialização""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5662,,"""Devolução de compra de combustível ou lubrificante adquirido por consumidor ou usuário final""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5663,,"""Remessa para armazenagem de combustível ou lubrificante""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5664,,"""Retorno de combustível ou lubrificante recebido para armazenagem""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5665,,"""Retorno simbólico de combustível ou lubrificante recebido para armazenagem""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5666,,"""Remessa por conta e ordem de terceiros de combustível ou lubrificante recebido para armazenagem """,,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5900,,"""OUTRAS SAÍDAS DE MERCADORIAS OU PRESTAÇÕES DE SERVIÇOS""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5901,,"""Remessa para industrialização por encomenda""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5902,,"""Retorno de mercadoria utilizada na industrialização por encomenda""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5903,,"""Retorno de mercadoria recebida para industrialização e não aplicada no referido processo""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5904,,"""Remessa para venda fora do estabelecimento""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5905,,"""Remessa para depósito fechado ou armazém geral""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5906,,"""Retorno de mercadoria depositada em depósito fechado ou armazém geral""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5907,,"""Retorno simbólico de mercadoria depositada em depósito fechado ou armazém geral""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5908,,"""Remessa de bem por conta de contrato de comodato""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5909,,"""Retorno de bem recebido por conta de contrato de comodato""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5910,,"""Remessa em bonificação, doação ou brinde""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5911,,"""Remessa de amostra grátis""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5912,,"""Remessa de mercadoria ou bem para demonstração""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5913,,"""Retorno de mercadoria ou bem recebido para demonstração""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5914,,"""Remessa de mercadoria ou bem para exposição ou feira""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5915,,"""Remessa de mercadoria ou bem para conserto ou reparo""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5916,,"""Retorno de mercadoria ou bem recebido para conserto ou reparo""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5917,,"""Remessa de mercadoria em consignação mercantil ou industrial""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5918,,"""Devolução de mercadoria recebida em consignação mercantil ou industrial""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5919,,"""Devolução simbólica de mercadoria vendida ou utilizada em processo industrial, recebida anteriormente em consignação mercantil ou industrial""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5920,,"""Remessa de vasilhame ou sacaria""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5921,,"""Devolução de vasilhame ou sacaria""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5922,,"""Lançamento efetuado a título de simples faturamento decorrente de venda para entrega futura""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5923,,"""Remessa de mercadoria por conta e ordem de terceiros, em venda à ordem""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5924,,"""Remessa para industrialização por conta e ordem do adquirente da mercadoria, quando esta não transitar pelo estabelecimento do adquirente""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5925,,"""Retorno de mercadoria recebida para industrialização por conta e ordem do adquirente da mercadoria, quando aquela não transitar pelo estabelecimento do adquirente""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5926,,"""Lançamento efetuado a título de reclassificação de mercadoria decorrente de formação de kit ou de sua desagregação""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5927,,"""Lançamento efetuado a título de baixa de estoque decorrente de perda, roubo ou deterioração""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5928,,"""Lançamento efetuado a título de baixa de estoque decorrente do encerramento da atividade da empresa""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5929,,"""Lançamento efetuado em decorrência de emissão de documento fiscal relativo a operação ou prestação também registrada em equipamento Emissor de Cupom Fiscal - ECF""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5931,,"""Lançamento efetuado em decorrência da responsabilidade de retenção do imposto por substituição tributária, atribuída ao remetente ou alienante da mercadoria, pelo serviço de transporte realizado por transportador autônomo ou por transportador não inscrito na unidade da Federação onde iniciado o serviço""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5932,,"""Prestação de serviço de transporte iniciada em unidade da Federação diversa daquela onde inscrito o prestador""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5933,,"""Prestação de serviço tributado pelo ISSQN""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,5949,,"""Outra saída de mercadoria ou prestação de serviço não especificado """,,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6000,,"""SAÍDAS OU PRESTAÇÕES DE SERVIÇOS PARA OUTROS ESTADOS """,,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6100,,"""VENDAS DE PRODUÇÃO PRÓPRIA OU DE TERCEIROS""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6101,,"""Venda de produção do estabelecimento""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6102,,"""Venda de mercadoria adquirida ou recebida de terceiros""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6103,,"""Venda de produção do estabelecimento, efetuada fora do estabelecimento""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6104,,"""Venda de mercadoria adquirida ou recebida de terceiros, efetuada fora do estabelecimento""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6105,,"""Venda de produção do estabelecimento que não deva por ele transitar""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6106,,"""Venda de mercadoria adquirida ou recebida de terceiros, que não deva por ele transitar""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6107,,"""Venda de produção do estabelecimento, destinada a não contribuinte""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6108,,"""Venda de mercadoria adquirida ou recebida de terceiros, destinada a não contribuinte""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6109,,"""Venda de produção do estabelecimento, destinada à Zona Franca de Manaus ou Áreas de Livre Comércio""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6110,,"""Venda de mercadoria adquirida ou recebida de terceiros, destinada à Zona Franca de Manaus ou Áreas de Livre Comércio""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6111,,"""Venda de produção do estabelecimento remetida anteriormente em consignação industrial""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6112,,"""Venda de mercadoria adquirida ou recebida de Terceiros remetida anteriormente em consignação industrial""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6113,,"""Venda de produção do estabelecimento remetida anteriormente em consignação mercantil""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6114,,"""Venda de mercadoria adquirida ou recebida de terceiros remetida anteriormente em consignação mercantil""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6115,,"""Venda de mercadoria adquirida ou recebida de terceiros, recebida anteriormente em consignação mercantil""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6116,,"""Venda de produção do estabelecimento originada de encomenda para entrega futura""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6117,,"""Venda de mercadoria adquirida ou recebida de terceiros, originada de encomenda para entrega futura""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6118,,"""Venda de produção do estabelecimento entregue ao destinatário por conta e ordem do adquirente originário, em venda à ordem""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6119,,"""Venda de mercadoria adquirida ou recebida de terceiros entregue ao destinatário por conta e ordem do adquirente originário, em venda à ordem""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6120,,"""Venda de mercadoria adquirida ou recebida de terceiros entregue ao destinatário pelo vendedor remetente, em venda à ordem""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6122,,"""Venda de produção do estabelecimento remetida para industrialização, por conta e ordem do adquirente, sem transitar pelo estabelecimento do adquirente""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6123,,"""Venda de mercadoria adquirida ou recebida de terceiros remetida para industrialização, por conta e ordem do adquirente, sem transitar pelo estabelecimento do adquirente""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6124,,"""Industrialização efetuada para outra empresa""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6125,,"""Industrialização efetuada para outra empresa quando a mercadoria recebida para utilização no processo de industrialização não transitar pelo estabelecimento adquirente da mercadoria""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6150,,"""TRANSFERÊNCIAS DE PRODUÇÃO PRÓPRIA OU DE TERCEIROS""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6151,,"""Transferência de produção do estabelecimento""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6152,,"""Transferência de mercadoria adquirida ou recebida de terceiros""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6156,,"""Transferência de mercadoria adquirida ou recebida de terceiros, que não deva por ele transitar""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6200,,"""DEVOLUÇÕES DE COMPRAS PARA INDUSTRIALIZAÇÃO, COMERCIALIZAÇÃO OU ANULAÇÕES DE VALORES""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6201,,"""Devolução de compra para industrialização ou produção rural""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6202,,"""Devolução de compra para comercialização""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6205,,"""Anulação de valor relativo a aquisição de serviço de comunicação""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6206,,"""Anulação de valor relativo a aquisição de serviço de transporte""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6207,,"""Anulação de valor relativo à compra de energia elétrica""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6208,,"""Devolução de mercadoria recebida em transferência para industrialização ou produção rural""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6209,,"""Devolução de mercadoria recebida em transferência para comercialização""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6210,,"""Devolução de compra para utilização na prestação de serviço """,,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6250,,"""VENDAS DE ENERGIA ELÉTRICA""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6251,,"""Venda de energia elétrica para distribuição ou comercialização""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6252,,"""Venda de energia elétrica para estabelecimento industrial""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6253,,"""Venda de energia elétrica para estabelecimento comercial""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6254,,"""Venda de energia elétrica para estabelecimento prestador de serviço de transporte""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6255,,"""Venda de energia elétrica para estabelecimento prestador de serviço de comunicação""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6256,,"""Venda de energia elétrica para estabelecimento de produtor rural""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6257,,"""Venda de energia elétrica para consumo por demanda contratada""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6258,,"""Venda de energia elétrica a não contribuinte""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6300,,"""PRESTAÇÕES DE SERVIÇOS DE COMUNICAÇÃO""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6301,,"""Prestação de serviço de comunicação para execução de serviço da mesma natureza""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6302,,"""Prestação de serviço de comunicação a estabelecimento industrial""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6303,,"""Prestação de serviço de comunicação a estabelecimento comercial""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6304,,"""Prestação de serviço de comunicação a estabelecimento de prestador de serviço de transporte""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6305,,"""Prestação de serviço de comunicação a estabelecimento de geradora ou de distribuidora de energia elétrica""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6306,,"""Prestação de serviço de comunicação a estabelecimento de produtor rural""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6307,,"""Prestação de serviço de comunicação a não contribuinte""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6350,,"""PRESTAÇÕES DE SERVIÇOS DE TRANSPORTE""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6351,,"""Prestação de serviço de transporte para execução de serviço da mesma natureza""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6352,,"""Prestação de serviço de transporte a estabelecimento industrial""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6353,,"""Prestação de serviço de transporte a estabelecimento comercial""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6354,,"""Prestação de serviço de transporte a estabelecimento de prestador de serviço de comunicação""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6355,,"""Prestação de serviço de transporte a estabelecimento de geradora ou de distribuidora de energia elétrica""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6356,,"""Prestação de serviço de transporte a estabelecimento de produtor rural""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6357,,"""Prestação de serviço de transporte a não contribuinte""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6359,,"""Prestação de serviço de transporte a contribuinte ou a não contribuinte quando a mercadoria transportada está dispensada de emissão de nota fiscal""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6400,,"""SAÍDAS DE MERCADORIAS SUJEITAS AO REGIME DE SUBSTITUIÇÃO TRIBUTÁRIA""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6401,,"""Venda de produção do estabelecimento em operação com produto sujeito ao regime de substituição tributária, na condição de contribuinte substituto""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6402,,"""Venda de produção do estabelecimento de produto sujeito ao regime de substituição tributária, em operação entre contribuintes substitutos do mesmo produto""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6403,,"""Venda de mercadoria adquirida ou recebida de terceiros em operação com mercadoria sujeita ao regime de substituição tributária, na condição de contribuinte substituto""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6404,,"""Venda de mercadoria sujeita ao regime de substituição tributária, cujo imposto já tenha sido retido anteriormente""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6408,,"""Transferência de produção do estabelecimento em operação com produto sujeito ao regime de substituição tributária""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6409,,"""Transferência de mercadoria adquirida ou recebida de terceiros em operação com mercadoria sujeita ao regime de substituição tributária""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6410,,"""Devolução de compra para industrialização ou produção rural em operação com mercadoria sujeita ao regime de substituição tributária""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6411,,"""Devolução de compra para comercialização em operação com mercadoria sujeita ao regime de substituição tributária""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6412,,"""Devolução de bem do ativo imobilizado, em operação com mercadoria sujeita ao regime de substituição tributária""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6413,,"""Devolução de mercadoria destinada ao uso ou consumo, em operação com mercadoria sujeita ao regime de substituição tributária""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6414,,"""Remessa de produção do estabelecimento para venda fora do estabelecimento em operação com produto sujeito ao regime de substituição tributária""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6415,,"""Remessa de mercadoria adquirida ou recebida de terceiros para venda fora do estabelecimento, em operação com mercadoria sujeita ao regime de substituição tributária""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6500,,"""REMESSAS COM FIM ESPECÍFICO DE EXPORTAÇÃO E EVENTUAIS DEVOLUÇÕES""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6501,,"""Remessa de produção do estabelecimento, com fim específico de exportação""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6502,,"""Remessa de mercadoria adquirida ou recebida de terceiros, com fim específico de exportação""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6503,,"""Devolução de mercadoria recebida com fim específico de exportação""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6504,,"""Remessa de mercadorias para formação de lote de exportação, de produtos industrializados ou produzidos pelo próprio estabelecimento""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6505,,"""Remessa de mercadorias, adquiridas ou recebidas de terceiros, para formação de lote de exportação""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6550,,"""OPERAÇÕES COM BENS DE ATIVO IMOBILIZADO E MATERIAIS PARA USO OU CONSUMO""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6551,,"""Venda de bem do ativo imobilizado""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6552,,"""Transferência de bem do ativo imobilizado""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6553,,"""Devolução de compra de bem para o ativo imobilizado""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6554,,"""Remessa de bem do ativo imobilizado para uso fora do estabelecimento""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6555,,"""Devolução de bem do ativo imobilizado de terceiro, recebido para uso no estabelecimento""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6556,,"""Devolução de compra de material de uso ou consumo""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6557,,"""Transferência de material de uso ou consumo""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6600,,"""CRÉDITOS E RESSARCIMENTOS DE ICMS""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6603,,"""Ressarcimento de ICMS retido por substituição tributária""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6651,,"""Venda de combustível ou lubrificante de produção do estabelecimento destinado à industrialização subseqüente""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6652,,"""Venda de combustível ou lubrificante de produção do estabelecimento destinado à comercialização""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6653,,"""Venda de combustível ou lubrificante de produção do estabelecimento destinado a consumidor ou usuário final""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6654,,"""Venda de combustível ou lubrificante adquirido ou recebido de terceiros destinado à industrialização subseqüente""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6655,,"""Venda de combustível ou lubrificante adquirido ou recebido de terceiros destinado à comercialização""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6656,,"""Venda de combustível ou lubrificante adquirido ou recebido de terceiros destinado a consumidor ou usuário final""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6657,,"""Remessa de combustível ou lubrificante adquirido ou recebido de terceiros para venda fora do estabelecimento""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6658,,"""Transferência de combustível ou lubrificante de produção do estabelecimento""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6659,,"""Transferência de combustível ou lubrificante adquirido ou recebido de terceiro""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6660,,"""Devolução de compra de combustível ou lubrificante adquirido para industrialização subseqüente""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6661,,"""Devolução de compra de combustível ou lubrificante adquirido para comercialização""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6662,,"""Devolução de compra de combustível ou lubrificante adquirido por consumidor ou usuário final""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6663,,"""Remessa para armazenagem de combustível ou lubrificante""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6664,,"""Retorno de combustível ou lubrificante recebido para armazenagem""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6665,,"""Retorno simbólico de combustível ou lubrificante recebido para armazenagem""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6666,,"""Remessa por conta e ordem de terceiros de combustível ou lubrificante recebido para armazenagem""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6900,,"""OUTRAS SAÍDAS DE MERCADORIAS OU PRESTAÇÕES DE SERVIÇOS""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6901,,"""Remessa para industrialização por encomenda""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6902,,"""Retorno de mercadoria utilizada na industrialização por encomenda""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6903,,"""Retorno de mercadoria recebida para industrialização e não aplicada no referido processo""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6904,,"""Remessa para venda fora do estabelecimento""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6905,,"""Remessa para depósito fechado ou armazém geral""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6906,,"""Retorno de mercadoria depositada em depósito fechado ou armazém geral""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6907,,"""Retorno simbólico de mercadoria depositada em depósito fechado ou armazém geral""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6908,,"""Remessa de bem por conta de contrato de comodato""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6909,,"""Retorno de bem recebido por conta de contrato de comodato""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6910,,"""Remessa em bonificação, doação ou brinde""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6911,,"""Remessa de amostra grátis""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6914,,"""Remessa de mercadoria ou bem para exposição ou feira""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6915,,"""Remessa de mercadoria ou bem para conserto ou reparo""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6916,,"""Retorno de mercadoria ou bem recebido para conserto ou reparo""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6917,,"""Remessa de mercadoria em consignação mercantil ou industrial""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6918,,"""Devolução de mercadoria recebida em consignação mercantil ou industrial""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6919,,"""Devolução simbólica de mercadoria vendida ou utilizada em processo industrial, recebida anteriormente em consignação mercantil ou industrial""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6920,,"""Remessa de vasilhame ou sacaria""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6921,,"""Devolução de vasilhame ou sacaria""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6922,,"""Lançamento efetuado a título de simples faturamento decorrente de venda para entrega futura""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6923,,"""Remessa de mercadoria por conta e ordem de terceiros, em venda à ordem""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6924,,"""Remessa para industrialização por conta e ordem do adquirente da mercadoria, quando esta não transitar pelo estabelecimento do adquirente""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6925,,"""Retorno de mercadoria recebida para industrialização por conta e ordem do adquirente da mercadoria, quando aquela não transitar pelo estabelecimento do adquirente""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6929,,"""Lançamento efetuado em decorrência de emissão de documento fiscal relativo a operação ou prestação também registrada em equipamento Emissor de Cupom Fiscal - ECF""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6931,,"""Lançamento efetuado em decorrência da responsabilidade de retenção do imposto por substituição tributária, atribuída ao remetente ou alienante da mercadoria, pelo serviço de transporte realizado por transportador autônomo ou por transportador não inscrito na unidade da Federação onde iniciado o serviço""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6932,,"""Prestação de serviço de transporte iniciada em unidade da Federação diversa daquela onde inscrito o prestador""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6933,,"""Prestação de serviço tributado pelo ISSQN""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,6949,,"""Outra saída de mercadoria ou prestação de serviço não especificado""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,7000,,"""SAÍDAS OU PRESTAÇÕES DE SERVIÇOS PARA O EXTERIOR """,,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,7100,,"""VENDAS DE PRODUÇÃO PRÓPRIA OU DE TERCEIROS""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,7101,,"""Venda de produção do estabelecimento""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,7102,,"""Venda de mercadoria adquirida ou recebida de terceiros""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,7105,,"""Venda de produção do estabelecimento, que não deva por ele transitar""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,7106,,"""Venda de mercadoria adquirida ou recebida de terceiros, que não deva por ele transitar""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,7127,,"""Venda de produção do estabelecimento sob o regime de ""drawback"" """,,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,7200,,"""DEVOLUÇÕES DE COMPRAS PARA INDUSTRIALIZAÇÃO, COMERCIALIZAÇÃO OU ANULAÇÕES DE VALORES""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,7201,,"""Devolução de compra para industrialização ou produção rural""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,7202,,"""Devolução de compra para comercialização""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,7205,,"""Anulação de valor relativo à aquisição de serviço de comunicação""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,7206,,"""Anulação de valor relativo a aquisição de serviço de transporte""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,7207,,"""Anulação de valor relativo à compra de energia elétrica""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,7210,,"""Devolução de compra para utilização na prestação de serviço""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,7211,,"""Devolução de compras para industrialização sob o regime de drawback"" """,,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,7250,,"""VENDAS DE ENERGIA ELÉTRICA""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,7251,,"""Venda de energia elétrica para o exterior """,,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,7300,,"""PRESTAÇÕES DE SERVIÇOS DE COMUNICAÇÃO""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,7301,,"""Prestação de serviço de comunicação para execução de serviço da mesma natureza """,,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,7350,,"""PRESTAÇÕES DE SERVIÇO DE TRANSPORTE""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,7358,,"""Prestação de serviço de transporte """,,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,7500,,"""EXPORTAÇÃO DE MERCADORIAS RECEBIDAS COM FIM ESPECÍFICO DE EXPORTAÇÃO""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,7501,,"""Exportação de mercadorias recebidas com fim específico de exportação""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,7550,,"""OPERAÇÕES COM BENS DE ATIVO IMOBILIZADO E MATERIAIS PARA USO OU CONSUMO""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,7551,,"""Venda de bem do ativo imobilizado""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,7553,,"""Devolução de compra de bem para o ativo imobilizado""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,7556,,"""Devolução de compra de material de uso ou consumo""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,7651,,"""Venda de combustível ou lubrificante de produção do estabelecimento""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,7654,,"""Venda de combustível ou lubrificante adquirido ou recebido de terceiros""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,7900,,"""OUTRAS SAÍDAS DE MERCADORIAS OU PRESTAÇÕES DE SERVIÇOS""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,7930,,"""Lançamento efetuado atítulo de devolução de bem cuja entrada tenha ocorrido sob amparo de regime especial aduaneiro de admissão temporária""",,,True,True
+14,Potiguar Fruit Importacao E Exportacão Ltda,7949,,"""Outra saída de mercadoria ou prestação de serviço não especificado""",,,True,True

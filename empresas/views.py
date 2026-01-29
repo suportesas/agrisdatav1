@@ -76,7 +76,7 @@ def empresa_list(request):
 def empresa_create(request):
     """Cria nova empresa"""
     if request.method == 'POST':
-        form = EmpresaForm(request.POST)
+        form = EmpresaForm(request.POST, request.FILES)
         if form.is_valid():
             empresa = form.save()
             messages.success(request, f"✅ Empresa '{empresa.nome}' criada com sucesso.")
@@ -99,7 +99,7 @@ def empresa_update(request, pk):
     empresa = get_object_or_404(Empresa, pk=pk)
     
     if request.method == 'POST':
-        form = EmpresaForm(request.POST, instance=empresa)
+        form = EmpresaForm(request.POST, request.FILES, instance=empresa)
         if form.is_valid():
             empresa = form.save()
             messages.success(request, f"✅ Empresa '{empresa.nome}' atualizada com sucesso.")
@@ -261,7 +261,8 @@ def role_permissions(request, role_id):
                 'empresas': 'Empresa',
                 'usuarios': 'Usuários',
                 'auth': 'Autenticação',
-                'cadastros': 'Cadastros',
+                'produtos': 'Produtos',
+                'estoque': 'Estoque',
             }
 
             for p in perms:
@@ -317,6 +318,11 @@ def save_permission_template(request, role_id):
     try:
         print('DEBUG save_permission_template: csrftoken cookie=', request.COOKIES.get('csrftoken'))
         print('DEBUG save_permission_template: X-CSRFToken header=', request.headers.get('X-CSRFToken'))
+        # Also log body for debugging
+        try:
+            print('DEBUG save_permission_template: body=', request.body[:1000])
+        except Exception:
+            pass
     except Exception:
         pass
 
@@ -339,6 +345,11 @@ def save_permission_template(request, role_id):
         tpl.dados = dados
         tpl.criado_por = request.user
         tpl.save()
+
+    try:
+        print('DEBUG save_permission_template: created=', created, 'tpl_id=', tpl.id, 'tpl_nome=', tpl.nome)
+    except Exception:
+        pass
 
     return JsonResponse({'ok': True, 'template_id': tpl.id})
 

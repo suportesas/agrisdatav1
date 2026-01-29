@@ -1,0 +1,283 @@
+{% extends 'base.html' %}
+
+{% block title %}Histórico - {{ solicitacao.numero }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.timeline {
+    position: relative;
+    padding: 20px 0;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 50px;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: #e9ecef;
+}
+
+.timeline-item {
+    position: relative;
+    padding: 20px 0 20px 100px;
+    min-height: 100px;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: 35px;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+    font-size: 14px;
+}
+
+.timeline-content {
+    background: white;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 15px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    transition: all 0.3s;
+}
+
+.timeline-content:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
+}
+
+.timeline-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: start;
+    margin-bottom: 10px;
+}
+
+.timeline-title {
+    font-weight: 600;
+    font-size: 1.1rem;
+    margin: 0;
+}
+
+.timeline-date {
+    color: #6c757d;
+    font-size: 0.875rem;
+}
+
+.timeline-description {
+    color: #495057;
+    margin-bottom: 8px;
+}
+
+.timeline-details {
+    color: #6c757d;
+    font-size: 0.875rem;
+    font-style: italic;
+}
+
+.timeline-user {
+    color: #6c757d;
+    font-size: 0.875rem;
+    margin-top: 8px;
+}
+
+.summary-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 15px;
+    margin-bottom: 30px;
+}
+
+.summary-card {
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    border-left: 4px solid;
+}
+
+.summary-card h3 {
+    font-size: 2rem;
+    margin: 0;
+    font-weight: 700;
+}
+
+.summary-card p {
+    margin: 5px 0 0 0;
+    color: #6c757d;
+    font-size: 0.875rem;
+}
+
+@media (max-width: 768px) {
+    .timeline::before {
+        left: 20px;
+    }
+    
+    .timeline-marker {
+        left: 5px;
+    }
+    
+    .timeline-item {
+        padding-left: 60px;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-clock-history"></i> Histórico Completo do Processo</h2>
+        <a href="{% url 'compras:solicitacao_detail' solicitacao.pk %}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+    </div>
+    
+    <!-- Resumo Geral -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">
+                <i class="bi bi-file-text"></i> Solicitação {{ solicitacao.numero }}
+                {% if solicitacao.emergencial %}
+                <span class="badge bg-danger ms-2">
+                    <i class="bi bi-lightning-fill"></i> EMERGENCIAL
+                </span>
+                {% endif %}
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3">
+                    <strong>Solicitante:</strong><br>
+                    {{ solicitacao.solicitante.get_full_name }}
+                </div>
+                <div class="col-md-3">
+                    <strong>Data Necessidade:</strong><br>
+                    {{ solicitacao.data_necessidade|date:"d/m/Y" }}
+                </div>
+                <div class="col-md-3">
+                    <strong>Status Atual:</strong><br>
+                    <span class="badge bg-info">{{ solicitacao.get_status_display }}</span>
+                </div>
+                <div class="col-md-3">
+                    <strong>Itens Solicitados:</strong><br>
+                    {{ solicitacao.itens.count }} item(ns)
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Cards Resumo -->
+    <div class="summary-cards mb-4">
+        <div class="summary-card" style="border-left-color: #0d6efd;">
+            <h3>{{ cotacoes.count }}</h3>
+            <p><i class="bi bi-cart3"></i> Cotaç{{ cotacoes.count|pluralize:"ão,ões" }} Realizada{{ cotacoes.count|pluralize:",s" }}</p>
+        </div>
+        
+        <div class="summary-card" style="border-left-color: #198754;">
+            <h3>{{ pedidos.count }}</h3>
+            <p><i class="bi bi-file-earmark-check"></i> Pedido{{ pedidos.count|pluralize:",s" }} Gerado{{ pedidos.count|pluralize:",s" }}</p>
+        </div>
+        
+        <div class="summary-card" style="border-left-color: #ffc107;">
+            <h3>{{ eventos|length }}</h3>
+            <p><i class="bi bi-clock-history"></i> Evento{{ eventos|length|pluralize:",s" }} Registrado{{ eventos|length|pluralize:",s" }}</p>
+        </div>
+        
+        <div class="summary-card" style="border-left-color: #dc3545;">
+            <h3>
+                {% if pedidos %}
+                R$ {% widthratio pedidos.0.valor_final 1 1 %}
+                {% else %}
+                -
+                {% endif %}
+            </h3>
+            <p><i class="bi bi-currency-dollar"></i> Valor Total</p>
+        </div>
+    </div>
+    
+    <!-- Timeline de Eventos -->
+    <div class="card">
+        <div class="card-header">
+            <h5><i class="bi bi-diagram-3"></i> Linha do Tempo</h5>
+        </div>
+        <div class="card-body">
+            <div class="timeline">
+                {% for evento in eventos %}
+                <div class="timeline-item">
+                    <div class="timeline-marker bg-{{ evento.cor }} text-white">
+                        <i class="{{ evento.icone }}"></i>
+                    </div>
+                    <div class="timeline-content">
+                        <div class="timeline-header">
+                            <div>
+                                <h5 class="timeline-title">
+                                    {% if evento.link %}
+                                    <a href="{% url evento.link evento.link_id %}" class="text-decoration-none">
+                                        {{ evento.titulo }}
+                                    </a>
+                                    {% else %}
+                                    {{ evento.titulo }}
+                                    {% endif %}
+                                    {% if evento.badge %}
+                                    <span class="badge bg-{{ evento.badge_cor }} ms-2">{{ evento.badge }}</span>
+                                    {% endif %}
+                                </h5>
+                                <div class="timeline-description">
+                                    {{ evento.descricao }}
+                                </div>
+                            </div>
+                            <div class="timeline-date">
+                                <i class="bi bi-calendar"></i>
+                                {{ evento.data|date:"d/m/Y H:i" }}
+                            </div>
+                        </div>
+                        {% if evento.detalhes %}
+                        <div class="timeline-details">
+                            <i class="bi bi-info-circle"></i> {{ evento.detalhes }}
+                        </div>
+                        {% endif %}
+                        <div class="timeline-user">
+                            <i class="bi bi-person"></i> {{ evento.usuario }}
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-center text-muted py-4">
+                    <i class="bi bi-inbox" style="font-size: 3rem;"></i>
+                    <p class="mt-2">Nenhum evento registrado</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Conversas entre solicitante e aprovador -->
+    <div class="card mt-4">
+        <div class="card-header">
+            <h5><i class="bi bi-chat-dots"></i> Conversas entre Solicitante e Aprovador</h5>
+        </div>
+        <div class="card-body">
+            {% if mensagens %}
+                <ul class="list-group mb-3">
+                    {% for msg in mensagens %}
+                    <li class="list-group-item">
+                        <strong>{{ msg.autor.get_full_name|default:msg.autor.username }}</strong>
+                        <span class="text-muted small">({{ msg.data_envio|date:'d/m/Y H:i' }})</span><br>
+                        {{ msg.mensagem|linebreaksbr }}
+                    </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <div class="alert alert-info mb-3">Nenhuma mensagem registrada ainda.</div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

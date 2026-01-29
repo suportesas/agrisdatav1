@@ -7,7 +7,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ValidationError, PermissionDenied
 from django.db.models import Q, Count, Sum, Avg
 from django.core.paginator import Paginator
 from django.utils import timezone
@@ -20,8 +20,8 @@ from .forms import FornecedorEnderecoForm, FuncionarioForm, FuncaoFuncionarioFor
 from .models import (
     Fazenda, EnderecoFazenda, ContatoFazenda,
     ContaBancariaFazenda, DocumentoFazenda, DocumentoFornecedor,
-    Area, Talhao, Cultura, HistoricoTalhao, Safra,
-    Vendedor, ComissaoVendedor, Fornecedor, FornecedorContato, FornecedorDadoBancario, Porto, NCM,
+    Area, Talhao, Cultura, Praga, HistoricoTalhao, Safra,
+    Vendedor, ComissaoVendedor, Fornecedor, FornecedorContato, FornecedorDadoBancario, Porto, NCM, EmpresaNCM, CFOP,
     Cliente, EnderecoCliente, ContatoCliente, ContaBancariaCliente, DocumentoCliente
 )
 
@@ -31,7 +31,7 @@ from .forms import (
     FazendaForm, EnderecoFazendaForm, ContatoFazendaForm,
     ContaBancariaFazendaForm, DocumentoFazendaForm, DocumentoFornecedorForm,
     
-    AreaForm, TalhaoForm, CulturaForm, HistoricoTalhaoForm, SafraForm, PortoForm, NCMForm,
+    AreaForm, TalhaoForm, CulturaForm, PragaForm, HistoricoTalhaoForm, SafraForm, PortoForm, NCMForm, EmpresaNCMForm, CFOPForm,
 
     # Cliente-related forms
     ClienteForm, EnderecoClienteForm, ContatoClienteForm, ContaBancariaClienteForm, DocumentoClienteForm,
@@ -428,16 +428,74 @@ def vehicle_export_csv(request):
 @login_required
 def ncm_list(request):
     q = request.GET.get('q', '').strip()
-    qs = NCM.objects.all()
+    desc_q = request.GET.get('descricao', '').strip()
+
+    # If user has empresa, show company-scoped NCMs. If company has none, seed them from templates lazily.
+    if request.user.is_authenticated and getattr(request.user, 'empresa', None):
+        empresa = request.user.empresa
+        from .models import EmpresaNCM
+        if EmpresaNCM.objects.filter(empresa=empresa).count() == 0:
+            # Lazy seed: copy templates to company
+            templates = NCM.objects.filter(ativo=True).order_by('codigo')
+            bulk = []
+            for t in templates:
+                bulk.append(EmpresaNCM(empresa=empresa, codigo=t.codigo, nome=t.nome, descricao=t.descricao, cest=t.cest, ativo=t.ativo, template=t))
+            if bulk:
+                EmpresaNCM.objects.bulk_create(bulk)
+        qs = EmpresaNCM.objects.filter(empresa=empresa)
+    else:
+        qs = NCM.objects.all()
+
     if q:
         qs = qs.filter(Q(codigo__icontains=q) | Q(nome__icontains=q))
-    paginator = Paginator(qs.order_by('codigo'), 25)
+    if desc_q:
+        # If running on PostgreSQL, use unaccent + lower for accent-insensitive substring search
+        from django.db import connection
+        if connection.vendor == 'postgresql':
+            # annotate a normalized (unaccented, lowercased) description and filter by it
+            from django.db.models import F, Func
+            from django.db.models.functions import Lower
+            qs = qs.annotate(_desc_search=Lower(Func(F('descricao'), function='unaccent')))
+            qs = qs.filter(_desc_search__contains=desc_q.lower())
+        else:
+            qs = qs.filter(descricao__icontains=desc_q)
+
+    # Respect per_page query parameter to control items per page (sanitized)
+    try:
+        per_page = int(request.GET.get('per_page', 25))
+    except (TypeError, ValueError):
+        per_page = 25
+    # Allow only sensible choices
+    if per_page not in (10, 25, 50, 100):
+        per_page = 25
+
+    paginator = Paginator(qs.order_by('codigo'), per_page)
     page_obj = paginator.get_page(request.GET.get('page'))
-    return render(request, 'cadastros/ncm/ncm_list.html', {'page_obj': page_obj})
+    return render(request, 'cadastros/ncm/ncm_list.html', {'page_obj': page_obj, 'q': q, 'descricao': desc_q, 'per_page': per_page})
 
 
 @login_required
 def ncm_create(request):
+    # create per-company NCM if user has empresa
+    if request.user.is_authenticated and getattr(request.user, 'empresa', None):
+        empresa = request.user.empresa
+        if request.method == 'POST':
+            form = EmpresaNCMForm(request.POST)
+            if form.is_valid():
+                obj = form.save(commit=False)
+                obj.empresa = empresa
+                obj.save()
+                messages.success(request, f'✅ NCM {obj.codigo} criado para sua empresa!')
+                return redirect('cadastros:ncm_list')
+        else:
+            form = EmpresaNCMForm()
+        return render(request, 'cadastros/ncm/ncm_form.html', {'form': form, 'action': 'Cadastrar'})
+
+    # superuser/global template
+    if not request.user.is_superuser:
+        messages.warning(request, '⚠️ Você não tem permissão para criar templates globais de NCM.')
+        return redirect('cadastros:ncm_list')
+
     if request.method == 'POST':
         form = NCMForm(request.POST)
         if form.is_valid():
@@ -451,7 +509,24 @@ def ncm_create(request):
 
 @login_required
 def ncm_update(request, pk):
+    if request.user.is_authenticated and getattr(request.user, 'empresa', None):
+        empresa = request.user.empresa
+        obj = get_object_or_404(EmpresaNCM, pk=pk, empresa=empresa)
+        if request.method == 'POST':
+            form = EmpresaNCMForm(request.POST, instance=obj)
+            if form.is_valid():
+                form.save()
+                messages.success(request, '✅ NCM atualizado para sua empresa!')
+                return redirect('cadastros:ncm_list')
+        else:
+            form = EmpresaNCMForm(instance=obj)
+        return render(request, 'cadastros/ncm/ncm_form.html', {'form': form, 'action': 'Editar'})
+
     n = get_object_or_404(NCM, pk=pk)
+    if not request.user.is_superuser:
+        messages.warning(request, '⚠️ Você não tem permissão para editar templates globais de NCM.')
+        return redirect('cadastros:ncm_list')
+
     if request.method == 'POST':
         form = NCMForm(request.POST, instance=n)
         if form.is_valid():
@@ -465,7 +540,19 @@ def ncm_update(request, pk):
 
 @login_required
 def ncm_delete(request, pk):
+    if request.user.is_authenticated and getattr(request.user, 'empresa', None):
+        obj = get_object_or_404(EmpresaNCM, pk=pk, empresa=request.user.empresa)
+        if request.method == 'POST':
+            obj.delete()
+            messages.success(request, '🗑️ NCM excluído da sua empresa com sucesso!')
+            return redirect('cadastros:ncm_list')
+        return render(request, 'cadastros/ncm/ncm_confirm_delete.html', {'ncm': obj})
+
     n = get_object_or_404(NCM, pk=pk)
+    if not request.user.is_superuser:
+        messages.warning(request, '⚠️ Você não tem permissão para excluir templates globais de NCM.')
+        return redirect('cadastros:ncm_list')
+
     if request.method == 'POST':
         n.delete()
         messages.success(request, '🗑️ NCM excluído com sucesso!')
@@ -476,11 +563,254 @@ def ncm_delete(request, pk):
 @login_required
 def ncm_autocomplete(request):
     q = request.GET.get('q', '').strip()
-    qs = NCM.objects.filter(ativo=True)
+    if request.user.is_authenticated and getattr(request.user, 'empresa', None):
+        qs = EmpresaNCM.objects.filter(empresa=request.user.empresa, ativo=True)
+    else:
+        qs = NCM.objects.filter(ativo=True)
     if q:
         qs = qs.filter(Q(codigo__icontains=q) | Q(nome__icontains=q))
     items = [{'id': n.pk, 'codigo': n.codigo, 'nome': n.nome} for n in qs.order_by('codigo')[:20]]
     return JsonResponse({'items': items})
+
+
+@login_required
+def ncm_import(request):
+    # Only superusers can import global templates
+    if not request.user.is_superuser:
+        messages.warning(request, '⚠️ Apenas administradores podem importar templates globais de NCM.')
+        return redirect('cadastros:ncm_list')
+
+    from .forms import NCMImportForm
+    from django.core.files.uploadedfile import UploadedFile
+    import tempfile
+    import io
+    from django.core.management import call_command
+    import sys
+
+    result = None
+    if request.method == 'POST':
+        form = NCMImportForm(request.POST, request.FILES)
+        if form.is_valid():
+            f = form.cleaned_data['arquivo']
+            replace = form.cleaned_data['replace']
+            apply_to_all = form.cleaned_data['apply_to_all']
+            dry_run = form.cleaned_data['dry_run']
+
+            # Save uploaded file to temp
+            tmp = tempfile.NamedTemporaryFile(delete=False, suffix='.csv')
+            for chunk in f.chunks():
+                tmp.write(chunk)
+            tmp.flush()
+            tmp.close()
+
+            # Capture stdout from management command
+            out = io.StringIO()
+            try:
+                call_command('import_ncm', path=tmp.name, replace=replace, apply_to_all_companies=apply_to_all, dry_run=dry_run, stdout=out)
+                result = out.getvalue()
+                messages.success(request, 'Importação concluída (ver resultados abaixo).')
+            except Exception as e:
+                result = str(e)
+                messages.error(request, f'Erro durante a importação: {e}')
+            finally:
+                out.close()
+    else:
+        form = NCMImportForm()
+
+    return render(request, 'cadastros/ncm/ncm_import.html', {'form': form, 'result': result})
+
+
+# ==================== CFOP (Código Fiscal de Operações e Prestações) ====================
+
+@login_required
+def cfop_list(request):
+    q = request.GET.get('q', '').strip()
+    desc_q = request.GET.get('descricao', '').strip()
+
+    # If user has empresa, show company-scoped CFOPs. If company has none, seed them from templates lazily.
+    if request.user.is_authenticated and getattr(request.user, 'empresa', None):
+        empresa = request.user.empresa
+        from .models import EmpresaCFOP
+        if EmpresaCFOP.objects.filter(empresa=empresa).count() == 0:
+            # Lazy seed: copy templates to company
+            templates = CFOP.objects.filter(ativo=True).order_by('codigo')
+            bulk = []
+            for t in templates:
+                bulk.append(EmpresaCFOP(empresa=empresa, codigo=t.codigo, nome=t.nome, descricao=t.descricao, ativo=t.ativo, template=t))
+            if bulk:
+                EmpresaCFOP.objects.bulk_create(bulk)
+        qs = EmpresaCFOP.objects.filter(empresa=empresa)
+    else:
+        qs = CFOP.objects.all()
+
+    if q:
+        qs = qs.filter(Q(codigo__icontains=q) | Q(nome__icontains=q))
+    if desc_q:
+        qs = qs.filter(descricao__icontains=desc_q)
+
+    # per_page support
+    try:
+        per_page = int(request.GET.get('per_page', 25))
+    except (TypeError, ValueError):
+        per_page = 25
+    if per_page not in (10, 25, 50, 100):
+        per_page = 25
+
+    paginator = Paginator(qs.order_by('codigo'), per_page)
+    page_obj = paginator.get_page(request.GET.get('page'))
+    return render(request, 'cadastros/cfop/cfop_list.html', {'page_obj': page_obj, 'q': q, 'descricao': desc_q, 'per_page': per_page})
+
+
+@login_required
+def cfop_create(request):
+    # If user has empresa, create company-scoped CFOP (requires permission)
+    if request.user.is_authenticated and getattr(request.user, 'empresa', None):
+        if not request.user.has_perm('cadastros.add_empresacfop'):
+            messages.warning(request, '⚠️ Você não tem permissão para criar CFOPs da empresa.')
+            return redirect('cadastros:cfop_list')
+        empresa = request.user.empresa
+        if request.method == 'POST':
+            form = EmpresaCFOPForm(request.POST)
+            if form.is_valid():
+                obj = form.save(commit=False)
+                obj.empresa = empresa
+                obj.save()
+                messages.success(request, f'✅ CFOP {obj.codigo} criado para sua empresa!')
+                return redirect('cadastros:cfop_list')
+        else:
+            form = EmpresaCFOPForm()
+        return render(request, 'cadastros/cfop/cfop_form.html', {'form': form, 'action': 'Cadastrar'})
+
+    # Otherwise require add_cfop permission to create global templates
+    if not request.user.has_perm('cadastros.add_cfop'):
+        messages.warning(request, '⚠️ Você não tem permissão para criar templates de CFOP.')
+        return redirect('cadastros:cfop_list')
+
+    if request.method == 'POST':
+        form = CFOPForm(request.POST)
+        if form.is_valid():
+            cf = form.save()
+            messages.success(request, f'✅ CFOP {cf.codigo} criado com sucesso!')
+            return redirect('cadastros:cfop_list')
+    else:
+        form = CFOPForm()
+
+    return render(request, 'cadastros/cfop/cfop_form.html', {'form': form, 'action': 'Cadastrar'})
+
+@login_required
+def cfop_update(request, pk):
+    # If company user, fetch company-scoped CFOP
+    if request.user.is_authenticated and getattr(request.user, 'empresa', None):
+        if not request.user.has_perm('cadastros.change_empresacfop'):
+            messages.warning(request, '⚠️ Você não tem permissão para editar CFOPs da empresa.')
+            return redirect('cadastros:cfop_list')
+        empresa = request.user.empresa
+        obj = get_object_or_404(EmpresaCFOP, pk=pk, empresa=empresa)
+        if request.method == 'POST':
+            form = EmpresaCFOPForm(request.POST, instance=obj)
+            if form.is_valid():
+                form.save()
+                messages.success(request, '✅ CFOP atualizado para sua empresa!')
+                return redirect('cadastros:cfop_list')
+        else:
+            form = EmpresaCFOPForm(instance=obj)
+        return render(request, 'cadastros/cfop/cfop_form.html', {'form': form, 'action': 'Editar'})
+
+    # Otherwise global template
+    cf = get_object_or_404(CFOP, pk=pk)
+    if not request.user.has_perm('cadastros.change_cfop'):
+        messages.warning(request, '⚠️ Você não tem permissão para editar templates de CFOP.')
+        return redirect('cadastros:cfop_list')
+
+    if request.method == 'POST':
+        form = CFOPForm(request.POST, instance=cf)
+        if form.is_valid():
+            form.save()
+            messages.success(request, '✅ CFOP atualizado com sucesso!')
+            return redirect('cadastros:cfop_list')
+    else:
+        form = CFOPForm(instance=cf)
+
+    return render(request, 'cadastros/cfop/cfop_form.html', {'form': form, 'action': 'Editar'})
+
+
+@login_required
+def cfop_import(request):
+    # Only users with add_cfop permission can import global templates
+    if not request.user.has_perm('cadastros.add_cfop'):
+        messages.warning(request, '⚠️ Você não tem permissão para importar CFOPs.')
+        return redirect('cadastros:cfop_list')
+
+    from .forms.import_form import CFOPImportForm
+    import tempfile, io, os
+    from django.core.management import call_command
+
+    result = None
+    if request.method == 'POST':
+        form = CFOPImportForm(request.POST, request.FILES)
+        if form.is_valid():
+            f = form.cleaned_data['arquivo']
+            replace = form.cleaned_data['replace']
+            apply_to_all = form.cleaned_data['apply_to_all']
+            dry_run = form.cleaned_data['dry_run']
+
+            tmp = tempfile.NamedTemporaryFile(delete=False, suffix='.csv')
+            try:
+                for chunk in f.chunks():
+                    tmp.write(chunk)
+                tmp.flush()
+                tmp.close()
+
+                out = io.StringIO()
+                try:
+                    call_command('import_cfop', path=tmp.name, replace=replace, apply_to_all_companies=apply_to_all, dry_run=dry_run, stdout=out)
+                    result = out.getvalue()
+                    messages.success(request, 'Importação concluída (ver resultados abaixo).')
+                except Exception as e:
+                    result = str(e)
+                    messages.error(request, f'Erro durante a importação: {e}')
+                finally:
+                    out.close()
+            finally:
+                try:
+                    os.unlink(tmp.name)
+                except Exception:
+                    pass
+    else:
+        form = CFOPImportForm()
+
+    return render(request, 'cadastros/cfop/cfop_import.html', {'form': form, 'result': result})
+
+
+@login_required
+def cfop_delete(request, pk):
+    # If company user, delete EmpresaCFOP
+    if request.user.is_authenticated and getattr(request.user, 'empresa', None):
+        if not request.user.has_perm('cadastros.delete_empresacfop'):
+            messages.warning(request, '⚠️ Você não tem permissão para excluir CFOPs da empresa.')
+            return redirect('cadastros:cfop_list')
+        empresa = request.user.empresa
+        obj = get_object_or_404(EmpresaCFOP, pk=pk, empresa=empresa)
+        if request.method == 'POST':
+            nome = obj.nome
+            obj.delete()
+            messages.success(request, f'🗑️ CFOP "{nome}" excluído da sua empresa!')
+            return redirect('cadastros:cfop_list')
+        return render(request, 'cadastros/cfop/cfop_confirm_delete.html', {'cfop': obj})
+
+    # Otherwise global template
+    cf = get_object_or_404(CFOP, pk=pk)
+    if not request.user.has_perm('cadastros.delete_cfop'):
+        messages.warning(request, '⚠️ Você não tem permissão para excluir templates de CFOP.')
+        return redirect('cadastros:cfop_list')
+
+    if request.method == 'POST':
+        nome = cf.nome
+        cf.delete()
+        messages.success(request, f'🗑️ CFOP template "{nome}" excluído!')
+        return redirect('cadastros:cfop_list')
+
+    return render(request, 'cadastros/cfop/cfop_confirm_delete.html', {'cfop': cf})
 
 
 # ==================== FAZENDAS ====================
@@ -1690,6 +2020,127 @@ def cultura_delete(request, pk):
     return render(request, 'cadastros/cultura/cultura_confirm_delete.html', {'cultura': cultura})
 
 
+# ==================== PRAGAS ====================
+
+@login_required
+def praga_list(request):
+    """Lista todas as pragas da empresa"""
+    pragas = Praga.objects.filter(
+        empresa=request.user.empresa
+    ).select_related('empresa', 'cadastrado_por')
+    
+    # Busca
+    q = request.GET.get('q', '').strip()
+    if q:
+        pragas = pragas.filter(
+            Q(nome_comum__icontains=q) |
+            Q(nome_cientifico__icontains=q)
+        )
+    
+    # Filtro por status
+    status = request.GET.get('status', '')
+    if status == 'ativas':
+        pragas = pragas.filter(ativa=True)
+    elif status == 'inativas':
+        pragas = pragas.filter(ativa=False)
+    
+    # Paginação
+    paginator = Paginator(pragas, 25)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'page_obj': page_obj,
+        'total_pragas': pragas.count(),
+    }
+    
+    return render(request, 'cadastros/praga/praga_list.html', context)
+
+
+@login_required
+def praga_detail(request, pk):
+    """Detalhes completos da praga"""
+    praga = get_object_or_404(
+        Praga,
+        pk=pk,
+        empresa=request.user.empresa
+    )
+    
+    context = {
+        'praga': praga,
+    }
+    
+    return render(request, 'cadastros/praga/praga_detail.html', context)
+
+
+@login_required
+def praga_create(request):
+    """Cria nova praga"""
+    if request.method == 'POST':
+        form = PragaForm(
+            request.POST,
+            empresa=request.user.empresa,
+            usuario=request.user
+        )
+        if form.is_valid():
+            praga = form.save()
+            messages.success(request, f'✅ Praga "{praga.nome_comum}" cadastrada com sucesso!')
+            return redirect('cadastros:praga_detail', pk=praga.pk)
+    else:
+        form = PragaForm(
+            empresa=request.user.empresa,
+            usuario=request.user
+        )
+    
+    return render(request, 'cadastros/praga/praga_form.html', {
+        'form': form,
+        'action': 'Cadastrar'
+    })
+
+
+@login_required
+def praga_update(request, pk):
+    """Edita praga"""
+    praga = get_object_or_404(Praga, pk=pk, empresa=request.user.empresa)
+    
+    if request.method == 'POST':
+        form = PragaForm(
+            request.POST,
+            instance=praga,
+            empresa=request.user.empresa,
+            usuario=request.user
+        )
+        if form.is_valid():
+            praga = form.save()
+            messages.success(request, f'✅ Praga "{praga.nome_comum}" atualizada!')
+            return redirect('cadastros:praga_detail', pk=praga.pk)
+    else:
+        form = PragaForm(
+            instance=praga,
+            empresa=request.user.empresa,
+            usuario=request.user
+        )
+    
+    return render(request, 'cadastros/praga/praga_form.html', {
+        'form': form,
+        'praga': praga,
+        'action': 'Editar'
+    })
+
+
+@login_required
+def praga_delete(request, pk):
+    """Deleta praga"""
+    praga = get_object_or_404(Praga, pk=pk, empresa=request.user.empresa)
+    
+    if request.method == 'POST':
+        nome = praga.nome_comum
+        praga.delete()
+        messages.success(request, f'🗑️ Praga "{nome}" excluída com sucesso!')
+        return redirect('cadastros:praga_list')
+    
+    return render(request, 'cadastros/praga/praga_confirm_delete.html', {'praga': praga})
+
 
 @login_required
 def safra_list(request):
@@ -2676,7 +3127,15 @@ def fornecedor_list(request):
             fornecedores = fornecedores.filter(is_exportador=False)
 
     # pagination
-    paginator = Paginator(fornecedores.distinct().order_by('nome'), 10)
+    per_page = request.GET.get('per_page', '50')
+    try:
+        per_page = int(per_page)
+        if per_page not in [10, 25, 50, 100]:
+            per_page = 50
+    except ValueError:
+        per_page = 50
+    
+    paginator = Paginator(fornecedores.distinct().order_by('nome'), per_page)
     page = request.GET.get('page')
     try:
         fornecedores_page = paginator.get_page(page)
@@ -2695,6 +3154,7 @@ def fornecedor_list(request):
         'tipo_atual': tipo,
         'categorias': categorias,
         'paginator': paginator,
+        'per_page': per_page,
     }
     return render(request, 'cadastros/fornecedor/fornecedor_list.html', context)
 

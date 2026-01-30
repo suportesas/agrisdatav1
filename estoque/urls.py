@@ -46,6 +46,10 @@ urlpatterns = [
     path('saida/', views.saida_create, name='saida_create'),
     path('transferencia/', views.transferencia_create, name='transferencia_create'),
     
+    # Relatórios
+    path('relatorio/', views.relatorio_estoque, name='relatorio_estoque'),
+    path('relatorio/produto/', views.relatorio_produto, name='relatorio_produto'),
+    
     # API
     path('api/lotes-disponiveis/', views.get_lotes_disponiveis, name='api_lotes_disponiveis'),
     

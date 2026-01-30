@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+{% block title %}Relatório de Estoque - Visualização{% endblock %}
+{% block content %}
+<div class="container-fluid mt-4">
+    <h2 class="mb-4"><i class="bi bi-table"></i> Relatório de Estoque (Visualização na Tela)</h2>
+    <div class="alert alert-info mb-4">
+        <strong>Filtros aplicados:</strong> {{ filtros_str }}
+    </div>
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Lote</th>
+                            <th>Produto</th>
+                            <th>Categoria</th>
+                            <th>Armazém</th>
+                            <th>Quantidade Atual</th>
+                            <th>Unidade</th>
+                            <th>Status</th>
+                            <th>Validade</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for lote in lotes %}
+                        <tr>
+                            <td>{{ lote.numero_lote }}</td>
+                            <td>{{ lote.produto.nome }}</td>
+                            <td>{{ lote.produto.categoria.nome }}</td>
+                            <td>{{ lote.armazem.nome }}</td>
+                            <td>{{ lote.quantidade_atual }}</td>
+                            <td>{{ lote.unidade_medida.sigla }}</td>
+                            <td>{{ lote.get_status_display }}</td>
+                            <td>{{ lote.data_validade|date:'d/m/Y' }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="8" class="text-center">Nenhum lote encontrado para os filtros selecionados.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <a href="{% url 'estoque:relatorio_estoque' %}" class="btn btn-outline-secondary mt-3">
+                <i class="bi bi-arrow-left"></i> Voltar para Filtros
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

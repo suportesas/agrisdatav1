@@ -1,0 +1,234 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Relatório de Estoque por Produto - {{ block.super }}{% endblock %}
+
+{% block extra_css %}
+<style>
+  .filter-card {
+    border-left: 4px solid #1f4788;
+    margin-bottom: 1rem;
+  }
+  
+  .config-card {
+    border-left: 4px solid #28a745;
+    margin-bottom: 1rem;
+  }
+  
+  .form-check-label {
+    margin-left: 0.25rem;
+  }
+  
+  .help-text {
+    font-size: 0.875rem;
+    color: #6c757d;
+    margin-top: 0.25rem;
+  }
+  
+  #email-group, #whatsapp-group {
+    display: none;
+    margin-top: 1rem;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+  <div class="row">
+    <div class="col-12">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2><i class="bi bi-file-earmark-bar-graph"></i> {{ title }}</h2>
+        <a href="{% url 'estoque:dashboard' %}" class="btn btn-secondary">
+          <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <form method="post">
+    {% csrf_token %}
+    
+    <div class="row">
+      <!-- Coluna Esquerda: Filtros -->
+      <div class="col-lg-8">
+        <div class="card filter-card">
+          <div class="card-header bg-light">
+            <h5 class="mb-0"><i class="bi bi-funnel"></i> Filtros de Relatório</h5>
+          </div>
+          <div class="card-body">
+            
+            <!-- Armazém -->
+            <div class="mb-3">
+              <label class="form-label fw-bold">{{ form.armazem.label }}</label>
+              {% for checkbox in form.armazem %}
+                <div class="form-check">
+                  {{ checkbox.tag }}
+                  <label class="form-check-label" for="{{ checkbox.id_for_label }}">
+                    {{ checkbox.choice_label }}
+                  </label>
+                </div>
+              {% endfor %}
+              {% if form.armazem.errors %}
+                <div class="text-danger small">{{ form.armazem.errors }}</div>
+              {% endif %}
+            </div>
+
+            <hr>
+
+            <!-- Categoria -->
+            <div class="mb-3">
+              <label class="form-label fw-bold">{{ form.categoria.label }}</label>
+              {% for checkbox in form.categoria %}
+                <div class="form-check">
+                  {{ checkbox.tag }}
+                  <label class="form-check-label" for="{{ checkbox.id_for_label }}">
+                    {{ checkbox.choice_label }}
+                  </label>
+                </div>
+              {% endfor %}
+              {% if form.categoria.errors %}
+                <div class="text-danger small">{{ form.categoria.errors }}</div>
+              {% endif %}
+            </div>
+
+            <hr>
+
+            <!-- Filtros Especiais -->
+            <div class="mb-3">
+              <label class="form-label fw-bold">Filtros Especiais</label>
+              
+              <div class="form-check">
+                {{ form.apenas_baixo_estoque }}
+                <label class="form-check-label" for="{{ form.apenas_baixo_estoque.id_for_label }}">
+                  {{ form.apenas_baixo_estoque.label }}
+                </label>
+                {% if form.apenas_baixo_estoque.help_text %}
+                  <div class="help-text">{{ form.apenas_baixo_estoque.help_text }}</div>
+                {% endif %}
+              </div>
+
+              <div class="form-check mt-2">
+                {{ form.incluir_zerados }}
+                <label class="form-check-label" for="{{ form.incluir_zerados.id_for_label }}">
+                  {{ form.incluir_zerados.label }}
+                </label>
+                {% if form.incluir_zerados.help_text %}
+                  <div class="help-text">{{ form.incluir_zerados.help_text }}</div>
+                {% endif %}
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- Coluna Direita: Configurações -->
+      <div class="col-lg-4">
+        <div class="card config-card">
+          <div class="card-header bg-light">
+            <h5 class="mb-0"><i class="bi bi-gear"></i> Configurações</h5>
+          </div>
+          <div class="card-body">
+            
+            <!-- Ordenação -->
+            <div class="mb-3">
+              <label class="form-label fw-bold">{{ form.ordenacao.label }}</label>
+              {% for radio in form.ordenacao %}
+                <div class="form-check">
+                  {{ radio.tag }}
+                  <label class="form-check-label" for="{{ radio.id_for_label }}">
+                    {{ radio.choice_label }}
+                  </label>
+                </div>
+              {% endfor %}
+            </div>
+
+            <hr>
+
+            <!-- Formato -->
+            <div class="mb-3">
+              <label class="form-label fw-bold">{{ form.formato.label }}</label>
+              {% for radio in form.formato %}
+                <div class="form-check">
+                  {{ radio.tag }}
+                  <label class="form-check-label" for="{{ radio.id_for_label }}">
+                    {{ radio.choice_label }}
+                  </label>
+                </div>
+              {% endfor %}
+            </div>
+
+            <hr>
+
+            <!-- Envio -->
+            <div class="mb-3">
+              <label class="form-label fw-bold">{{ form.enviar_para.label }}</label>
+              {% for radio in form.enviar_para %}
+                <div class="form-check">
+                  {{ radio.tag }}
+                  <label class="form-check-label" for="{{ radio.id_for_label }}">
+                    {{ radio.choice_label }}
+                  </label>
+                </div>
+              {% endfor %}
+            </div>
+
+            <!-- Email (condicional) -->
+            <div id="email-group">
+              <label class="form-label fw-bold">{{ form.email_destino.label }}</label>
+              {{ form.email_destino }}
+              {% if form.email_destino.errors %}
+                <div class="text-danger small">{{ form.email_destino.errors }}</div>
+              {% endif %}
+            </div>
+
+            <!-- WhatsApp (condicional) -->
+            <div id="whatsapp-group">
+              <label class="form-label fw-bold">{{ form.whatsapp_destino.label }}</label>
+              {{ form.whatsapp_destino }}
+              {% if form.whatsapp_destino.errors %}
+                <div class="text-danger small">{{ form.whatsapp_destino.errors }}</div>
+              {% endif %}
+            </div>
+
+            <hr>
+
+            <!-- Botão -->
+            <button type="submit" class="btn btn-primary w-100">
+              <i class="bi bi-file-earmark-arrow-down"></i> Gerar Relatório
+            </button>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const enviarRadios = document.querySelectorAll('input[name="enviar_para"]');
+  const emailGroup = document.getElementById('email-group');
+  const whatsappGroup = document.getElementById('whatsapp-group');
+  
+  function updateVisibility() {
+    const selected = document.querySelector('input[name="enviar_para"]:checked');
+    if (!selected) return;
+    
+    const value = selected.value;
+    
+    emailGroup.style.display = (value === 'email' || value === 'ambos') ? 'block' : 'none';
+    whatsappGroup.style.display = (value === 'whatsapp' || value === 'ambos') ? 'block' : 'none';
+  }
+  
+  enviarRadios.forEach(radio => {
+    radio.addEventListener('change', updateVisibility);
+  });
+  
+  updateVisibility();
+});
+</script>
+{% endblock %}

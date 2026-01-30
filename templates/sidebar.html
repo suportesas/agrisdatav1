@@ -194,6 +194,7 @@
           <li><a href="{% url 'estoque:saida_create' %}"><i class="bi bi-box-arrow-up text-warning"></i> Saída</a></li>
           <li><a href="{% url 'estoque:transferencia_create' %}"><i class="bi bi-arrow-left-right text-info"></i> Transferência</a></li>
           <li><a href="{% url 'estoque:estoque_produtos_list' %}"><i class="bi bi-box-seam"></i> Estoque de Produtos</a></li>
+          <li class="submenu-divider"></li>
         </ul>
       </li>
 
@@ -259,12 +260,29 @@
       </li>
 
       <!-- Relatórios -->
-      <li class="nav-item disabled">
+      <li class="nav-item has-submenu">
         <a href="#" class="nav-link">
-          <i class="bi bi-graph-up-arrow"></i>
+          <i class="bi bi-clipboard-data"></i>
           <span>Relatórios</span>
-          <span class="badge-soon">Em breve</span>
+          <i class="bi bi-chevron-down submenu-arrow"></i>
         </a>
+        <ul class="nav-submenu">
+          <li class="has-submenu">
+            <a href="#"><i class="bi bi-archive"></i> Estoque <i class="bi bi-chevron-right ms-auto"></i></a>
+            <ul class="nested-submenu">
+              <li><a href="{% url 'estoque:relatorio_estoque' %}"><i class="bi bi-file-earmark-pdf"></i> Relatório por Lotes</a></li>
+              <li><a href="{% url 'estoque:relatorio_produto' %}"><i class="bi bi-file-earmark-bar-graph"></i> Relatório por Produto</a></li>
+              <li><a href="#"><i class="bi bi-clipboard-check"></i> Relatório Inventário</a></li>
+            </ul>
+          </li>
+          <li class="has-submenu">
+            <a href="#"><i class="bi bi-cart-check"></i> Compras <i class="bi bi-chevron-right ms-auto"></i></a>
+            <ul class="nested-submenu">
+              <li><a href="{% url 'compras:relatorio_compras' %}"><i class="bi bi-file-earmark-bar-graph"></i> Compras por Período</a></li>
+              <li><a href="{% url 'compras:relatorio_pedidos_pendentes' %}"><i class="bi bi-file-earmark-excel"></i> Pedidos Pendentes</a></li>
+            </ul>
+          </li>
+        </ul>
       </li>
 
     </ul>

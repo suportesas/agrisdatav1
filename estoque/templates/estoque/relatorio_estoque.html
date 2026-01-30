@@ -1,0 +1,261 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Relatório de Estoque{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h2 class="mb-4">
+                <i class="bi bi-file-earmark-pdf"></i> Relatório de Estoque
+            </h2>
+            
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-funnel"></i> Filtros e Configurações</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" id="relatorio-form">
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <!-- Filtros de Dados -->
+                            <div class="col-lg-8">
+                                <div class="card mb-3" style="border-left: 4px solid #0d6efd;">
+                                    <div class="card-header">
+                                        <h6 class="mb-0"><i class="bi bi-filter"></i> Filtros de Dados</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <!-- Armazém -->
+                                        <div class="mb-3">
+                                            <label class="form-label"><strong>Armazém</strong></label>
+                                            <div class="border p-3 rounded" style="max-height: 200px; overflow-y: auto;">
+                                                {% if form.armazem %}
+                                                    {% for choice in form.armazem %}
+                                                        <div class="form-check">
+                                                            {{ choice.tag }}
+                                                            <label class="form-check-label">
+                                                                {{ choice.choice_label }}
+                                                            </label>
+                                                        </div>
+                                                    {% endfor %}
+                                                {% endif %}
+                                            </div>
+                                            <small class="text-muted">Deixe vazio para todos os armazéns</small>
+                                        </div>
+                                        
+                                        <!-- Categoria -->
+                                        <div class="mb-3">
+                                            <label class="form-label"><strong>Categoria de Produto</strong></label>
+                                            <div class="border p-3 rounded" style="max-height: 200px; overflow-y: auto;">
+                                                {% if form.categoria %}
+                                                    {% for choice in form.categoria %}
+                                                        <div class="form-check">
+                                                            {{ choice.tag }}
+                                                            <label class="form-check-label">
+                                                                {{ choice.choice_label }}
+                                                            </label>
+                                                        </div>
+                                                    {% endfor %}
+                                                {% endif %}
+                                            </div>
+                                            <small class="text-muted">Deixe vazio para todas as categorias</small>
+                                        </div>
+                                        
+                                        <!-- Status do Lote -->
+                                        <div class="mb-3">
+                                            <label class="form-label"><strong>Status do Lote</strong></label>
+                                            <div class="border p-3 rounded">
+                                                {% if form.status_lote %}
+                                                    {% for choice in form.status_lote %}
+                                                        <div class="form-check">
+                                                            {{ choice.tag }}
+                                                            <label class="form-check-label">
+                                                                {{ choice.choice_label }}
+                                                            </label>
+                                                        </div>
+                                                    {% endfor %}
+                                                {% endif %}
+                                            </div>
+                                            <small class="text-muted">Deixe vazio para todos os status</small>
+                                        </div>
+                                        
+                                        <!-- Filtros Especiais -->
+                                        <div class="mb-3">
+                                            <div class="form-check">
+                                                {{ form.apenas_baixo_estoque }}
+                                                <label class="form-check-label">
+                                                    {{ form.apenas_baixo_estoque.label }}
+                                                </label>
+                                            </div>
+                                            <div class="form-check">
+                                                {{ form.apenas_vencidos }}
+                                                <label class="form-check-label">
+                                                    {{ form.apenas_vencidos.label }}
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Configurações de Saída -->
+                            <div class="col-lg-4">
+                                <!-- Formato -->
+                                <div class="card mb-3" style="border-left: 4px solid #198754;">
+                                    <div class="card-header">
+                                        <h6 class="mb-0"><i class="bi bi-file-earmark"></i> Formato</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        {% if form.formato %}
+                                            {% for choice in form.formato %}
+                                                <div class="form-check">
+                                                    {{ choice.tag }}
+                                                    <label class="form-check-label">
+                                                        {{ choice.choice_label }}
+                                                    </label>
+                                                </div>
+                                            {% endfor %}
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <!-- Envio -->
+                                <div class="card mb-3" style="border-left: 4px solid #ffc107;">
+                                    <div class="card-header">
+                                        <h6 class="mb-0"><i class="bi bi-send"></i> Envio</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        {% if form.enviar_para %}
+                                            {% for choice in form.enviar_para %}
+                                                <div class="form-check">
+                                                    {{ choice.tag }}
+                                                    <label class="form-check-label">
+                                                        {{ choice.choice_label }}
+                                                    </label>
+                                                </div>
+                                            {% endfor %}
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <!-- Contatos -->
+                                <div class="card" id="contatos-section" style="display: none;">
+                                    <div class="card-header">
+                                        <h6 class="mb-0"><i class="bi bi-phone"></i> Contatos</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3" id="email-field" style="display: none;">
+                                            {{ form.email_destino }}
+                                            <small class="form-text text-muted d-block">{{ form.email_destino.help_text }}</small>
+                                            {% if form.email_destino.errors %}
+                                                <div class="text-danger small">{{ form.email_destino.errors }}</div>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <div class="mb-3" id="whatsapp-field" style="display: none;">
+                                            {{ form.whatsapp_destino }}
+                                            <small class="form-text text-muted d-block">{{ form.whatsapp_destino.help_text }}</small>
+                                            {% if form.whatsapp_destino.errors %}
+                                                <div class="text-danger small">{{ form.whatsapp_destino.errors }}</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Botões de Ação -->
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-primary btn-lg">
+                                    <i class="bi bi-download"></i> Gerar Relatório
+                                </button>
+                                <a href="{% url 'estoque:dashboard' %}" class="btn btn-outline-secondary btn-lg">
+                                    <i class="bi bi-arrow-left"></i> Voltar
+                                </a>
+                            </div>
+                        </div>
+                        
+                        <!-- Mostrar erros do form -->
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger mt-3" role="alert">
+                                <i class="bi bi-exclamation-triangle"></i>
+                                {% for error in form.non_field_errors %}
+                                    <div>{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const enviarParaInputs = document.querySelectorAll('input[name="enviar_para"]');
+    const contatosSection = document.getElementById('contatos-section');
+    const emailField = document.getElementById('email-field');
+    const whatsappField = document.getElementById('whatsapp-field');
+    
+    function atualizarVisibilidade() {
+        const enviarPara = document.querySelector('input[name="enviar_para"]:checked').value;
+        
+        // Mostrar seção de contatos se necessário
+        if (enviarPara !== 'nenhum') {
+            contatosSection.style.display = 'block';
+        } else {
+            contatosSection.style.display = 'none';
+        }
+        
+        // Email
+        if (enviarPara === 'email' || enviarPara === 'ambos') {
+            emailField.style.display = 'block';
+        } else {
+            emailField.style.display = 'none';
+        }
+        
+        // WhatsApp
+        if (enviarPara === 'whatsapp' || enviarPara === 'ambos') {
+            whatsappField.style.display = 'block';
+        } else {
+            whatsappField.style.display = 'none';
+        }
+    }
+    
+    // Inicializar
+    atualizarVisibilidade();
+    
+    // Listener para mudanças
+    enviarParaInputs.forEach(input => {
+        input.addEventListener('change', atualizarVisibilidade);
+    });
+});
+</script>
+
+<style>
+.form-control, .form-select {
+    border-color: #dee2e6;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+.card {
+    transition: box-shadow 0.3s ease;
+}
+
+.card:hover {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+}
+
+.border {
+    background-color: #f8f9fa;
+}
+</style>
+{% endblock %}

@@ -623,3 +623,270 @@ def produto_historico_pdf(request, pk):
         return HttpResponse(result.getvalue(), content_type='application/pdf')
     return HttpResponse('Erro ao gerar PDF', status=500)
 
+
+@login_required
+def relatorio_estoque(request):
+    """Exibir formulário de filtros para relatório de estoque"""
+    from .forms_relatorio import FiltroRelatorioEstoqueForm
+    
+    if request.method == 'POST':
+        form = FiltroRelatorioEstoqueForm(request.POST, empresa=request.user.empresa)
+        
+        if form.is_valid():
+            return processar_relatorio(request, form)
+    else:
+        form = FiltroRelatorioEstoqueForm(empresa=request.user.empresa)
+    
+    context = {
+        'form': form,
+        'title': 'Relatório de Estoque',
+    }
+    return render(request, 'estoque/relatorio_estoque.html', context)
+
+
+def processar_relatorio(request, form):
+    """Processar e gerar o relatório"""
+    from .relatorio_utils import RelatorioEstoquePDF, RelatorioEstoqueExcel
+    from .enviador import EnviadorRelatorio
+    from datetime import datetime
+    
+    empresa = request.user.empresa
+    
+    # Iniciar query de lotes
+    lotes = Lote.objects.filter(empresa=empresa).select_related(
+        'produto', 'armazem', 'unidade_medida'
+    )
+    
+    # Aplicar filtros
+    armazens = form.cleaned_data.get('armazem')
+    if armazens:
+        lotes = lotes.filter(armazem__in=armazens)
+    
+    categorias = form.cleaned_data.get('categoria')
+    if categorias:
+        lotes = lotes.filter(produto__categoria__in=categorias)
+    
+    status_lote = form.cleaned_data.get('status_lote')
+    if status_lote:
+        lotes = lotes.filter(status__in=status_lote)
+    
+    if form.cleaned_data.get('apenas_baixo_estoque'):
+        lotes = lotes.filter(
+            produto__estoque_atual__lt=models.F('produto__estoque_minimo')
+        )
+    
+    if form.cleaned_data.get('apenas_vencidos'):
+        lotes = lotes.filter(status='VENCIDO')
+    
+    # Construir descrição dos filtros
+    filtros_desc = []
+    if armazens:
+        filtros_desc.append(f"Armazéns: {', '.join([a.nome for a in armazens])}")
+    if categorias:
+        filtros_desc.append(f"Categorias: {', '.join([c.nome for c in categorias])}")
+    if status_lote:
+        filtros_desc.append(f"Status: {', '.join([dict(Lote.STATUS_CHOICES).get(s) for s in status_lote])}")
+    if form.cleaned_data.get('apenas_baixo_estoque'):
+        filtros_desc.append("Apenas baixo estoque")
+    if form.cleaned_data.get('apenas_vencidos'):
+        filtros_desc.append("Apenas lotes vencidos")
+    
+    filtros_str = ' | '.join(filtros_desc) if filtros_desc else 'Nenhum filtro aplicado'
+    
+    # Gerar relatório
+    enviar_para = form.cleaned_data.get('enviar_para')
+    formato = form.cleaned_data.get('formato')
+    nome_arquivo = f"relatorio_estoque_{datetime.now().strftime('%d%m%Y_%H%M%S')}"
+
+    if enviar_para == 'tela':
+        # Visualizar na tela (HTML)
+        context = {
+            'form': form,
+            'title': 'Relatório de Estoque',
+            'lotes': lotes,
+            'filtros_str': filtros_str,
+        }
+        return render(request, 'estoque/relatorio_estoque_tela.html', context)
+
+    if formato == 'pdf':
+        relatorio = RelatorioEstoquePDF(empresa, titulo='Relatório de Estoque')
+        relatorio.adicionar_cabecalho(filtros_str)
+        relatorio.adicionar_tabela_lotes(lotes)
+        relatorio.adicionar_resumo_produtos(lotes)
+        arquivo_bytes = relatorio.gerar()
+        nome_arquivo += '.pdf'
+        tipo_mime = 'application/pdf'
+    else:  # excel
+        relatorio = RelatorioEstoqueExcel(empresa)
+        relatorio.adicionar_cabecalho(filtros_str)
+        linha = relatorio.adicionar_tabela_lotes(lotes)
+        relatorio.adicionar_resumo_produtos(lotes, linha_inicio=linha + 2)
+        arquivo_bytes = relatorio.gerar()
+        nome_arquivo += '.xlsx'
+        tipo_mime = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+
+    # Verificar se será enviado ou apenas baixado
+    if enviar_para == 'nenhum':
+        # Apenas baixar
+        response = HttpResponse(arquivo_bytes, content_type=tipo_mime)
+        response['Content-Disposition'] = f'attachment; filename="{nome_arquivo}"'
+        return response
+
+    # Enviar por email e/ou WhatsApp
+    resultados = []
+
+    if enviar_para in ['email', 'ambos']:
+        email = form.cleaned_data.get('email_destino')
+        sucesso, msg = EnviadorRelatorio.enviar(
+            'email', email, empresa.nome, arquivo_bytes, 
+            nome_arquivo, formato
+        )
+        resultados.append(('Email', sucesso, msg))
+
+    if enviar_para in ['whatsapp', 'ambos']:
+        whatsapp = form.cleaned_data.get('whatsapp_destino')
+        sucesso, msg = EnviadorRelatorio.enviar(
+            'whatsapp', whatsapp, empresa.nome, arquivo_bytes, 
+            nome_arquivo, formato
+        )
+        resultados.append(('WhatsApp', sucesso, msg))
+
+    # Exibir resultados
+    for tipo, sucesso, mensagem in resultados:
+        if sucesso:
+            messages.success(request, f'{tipo}: {mensagem}')
+        else:
+            messages.error(request, f'{tipo}: {mensagem}')
+
+    return redirect('estoque:relatorio_estoque')
+
+
+@login_required
+def relatorio_produto(request):
+    """Exibir formulário de filtros para relatório de estoque por produto"""
+    from .forms_relatorio_produto import FiltroRelatorioProdutoForm
+    
+    if request.method == 'POST':
+        form = FiltroRelatorioProdutoForm(request.POST, empresa=request.user.empresa)
+        
+        if form.is_valid():
+            return processar_relatorio_produto(request, form)
+    else:
+        form = FiltroRelatorioProdutoForm(empresa=request.user.empresa)
+    
+    context = {
+        'form': form,
+        'title': 'Relatório de Estoque por Produto',
+    }
+    return render(request, 'estoque/relatorio_produto.html', context)
+
+
+def processar_relatorio_produto(request, form):
+    """Processar e gerar o relatório por produto"""
+    from .relatorio_produto_utils import RelatorioProdutoPDF, RelatorioProdutoExcel, gerar_dados_relatorio_produto
+    from .enviador import EnviadorRelatorio
+    from datetime import datetime
+    
+    empresa = request.user.empresa
+    
+    # Iniciar query de lotes
+    lotes = Lote.objects.filter(empresa=empresa).select_related(
+        'produto', 'armazem', 'unidade_medida', 'produto__categoria'
+    )
+    
+    # Aplicar filtros
+    armazens = form.cleaned_data.get('armazem')
+    if armazens:
+        lotes = lotes.filter(armazem__in=armazens)
+    
+    categorias = form.cleaned_data.get('categoria')
+    if categorias:
+        lotes = lotes.filter(produto__categoria__in=categorias)
+    
+    if form.cleaned_data.get('apenas_baixo_estoque'):
+        lotes = lotes.filter(
+            produto__estoque_atual__lt=models.F('produto__estoque_minimo')
+        )
+    
+    incluir_zerados = form.cleaned_data.get('incluir_zerados', False)
+    
+    # Construir descrição dos filtros
+    filtros_desc = []
+    if armazens:
+        filtros_desc.append(f"Armazéns: {', '.join([a.nome for a in armazens])}")
+    if categorias:
+        filtros_desc.append(f"Categorias: {', '.join([c.nome for c in categorias])}")
+    if form.cleaned_data.get('apenas_baixo_estoque'):
+        filtros_desc.append("Apenas baixo estoque")
+    if incluir_zerados:
+        filtros_desc.append("Incluindo produtos zerados")
+    
+    filtros_str = ' | '.join(filtros_desc) if filtros_desc else 'Nenhum filtro aplicado'
+    
+    # Gerar dados agregados por produto
+    ordenacao = form.cleaned_data.get('ordenacao', 'produto')
+    produtos_data = gerar_dados_relatorio_produto(lotes, empresa, incluir_zerados, ordenacao)
+    
+    # Gerar relatório
+    formato = form.cleaned_data.get('formato')
+    nome_arquivo = f"relatorio_produto_{datetime.now().strftime('%d%m%Y_%H%M%S')}"
+    
+    if formato == 'pdf':
+        relatorio = RelatorioProdutoPDF(empresa)
+        relatorio.adicionar_cabecalho(filtros_str)
+        relatorio.adicionar_tabela_produtos(produtos_data)
+        arquivo_bytes = relatorio.gerar()
+        nome_arquivo += '.pdf'
+        tipo_mime = 'application/pdf'
+    else:  # excel
+        relatorio = RelatorioProdutoExcel(empresa)
+        relatorio.adicionar_cabecalho(filtros_str)
+        relatorio.adicionar_tabela_produtos(produtos_data)
+        arquivo_bytes = relatorio.gerar()
+        nome_arquivo += '.xlsx'
+        tipo_mime = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    
+    # Verificar se será enviado ou apenas baixado
+    enviar_para = form.cleaned_data.get('enviar_para')
+    
+    if enviar_para == 'visualizar':
+        # Visualizar na tela
+        response = HttpResponse(arquivo_bytes, content_type=tipo_mime)
+        response['Content-Disposition'] = f'inline; filename="{nome_arquivo}"'
+        return response
+    
+    if enviar_para == 'nenhum':
+        # Apenas baixar
+        response = HttpResponse(arquivo_bytes, content_type=tipo_mime)
+        response['Content-Disposition'] = f'attachment; filename="{nome_arquivo}"'
+        return response
+    
+    # Enviar por email e/ou WhatsApp
+    resultados = []
+    
+    if enviar_para in ['email', 'ambos']:
+        email = form.cleaned_data.get('email_destino')
+        sucesso, msg = EnviadorRelatorio.enviar(
+            'email', email, empresa.nome, arquivo_bytes, 
+            nome_arquivo, formato
+        )
+        resultados.append(('Email', sucesso, msg))
+    
+    if enviar_para in ['whatsapp', 'ambos']:
+        whatsapp = form.cleaned_data.get('whatsapp_destino')
+        sucesso, msg = EnviadorRelatorio.enviar(
+            'whatsapp', whatsapp, empresa.nome, arquivo_bytes, 
+            nome_arquivo, formato
+        )
+        resultados.append(('WhatsApp', sucesso, msg))
+    
+    # Exibir resultados
+    for tipo, sucesso, mensagem in resultados:
+        if sucesso:
+            messages.success(request, f'{tipo}: {mensagem}')
+        else:
+            messages.error(request, f'{tipo}: {mensagem}')
+    
+    return redirect('estoque:relatorio_produto')
+
+

@@ -18,170 +18,8 @@
             <h2 class="mb-4">{{ title }}</h2>
             <form method="post" id="solicitacao-form">
                 {% csrf_token %}
-
-{% block extra_js %}
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const itemsContainer = document.getElementById('item-forms');
-    const addButton = document.getElementById('add-item');
-    const totalFormsInput = document.getElementById('id_itens-TOTAL_FORMS');
-    let formIndex = parseInt(totalFormsInput.value);
-
-    function renumberItems() {
-        const rows = itemsContainer.querySelectorAll('.item-form');
-        const visibleRows = Array.from(rows).filter(row => row.style.display !== 'none');
-        visibleRows.forEach((row, index) => {
-            row.querySelector('.item-number').textContent = index + 1;
-        });
-        const count = visibleRows.length;
-        const countBadge = document.getElementById('item-count');
-        countBadge.textContent = count === 1 ? '1 item' : `${count} itens`;
-    }
-
-    // Função para buscar unidade de medida do produto via API de estoque
-    function autoFillUnidade(row, produtoId) {
-        if (!produtoId) return;
-        fetch(`/compras/api/produto/${produtoId}/estoque/`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.success && data.unidade_id) {
-                    const unidadeSelect = row.querySelector('select[name*="unidade_medida"]');
-                    if (unidadeSelect) {
-                        unidadeSelect.value = data.unidade_id;
-                        unidadeSelect.dispatchEvent(new Event('change'));
-                    }
-                }
-            });
-    }
-
-    // Função para buscar estoque atual do produto
-    function autoFillEstoque(row, produtoId) {
-        if (!produtoId) return;
-        fetch(`/compras/api/produto/${produtoId}/estoque/`)
-            .then(response => response.json())
-            .then(data => {
-                const estoqueCell = row.querySelector('.estoque-atual-value');
-                if (data.success && estoqueCell) {
-                    estoqueCell.textContent = data.estoque_atual + ' ' + (data.unidade || '');
-                } else if (estoqueCell) {
-                    estoqueCell.textContent = '-';
-                }
-            });
-    }
-
-    addButton.addEventListener('click', function() {
-        const lastRow = itemsContainer.querySelector('.item-form:last-child');
-        const newRow = lastRow.cloneNode(true);
-        const inputs = newRow.querySelectorAll('input, select, textarea');
-        inputs.forEach(input => {
-            const name = input.getAttribute('name');
-            const id = input.getAttribute('id');
-            if (name) {
-                const newName = name.replace(/itens-\d+-/, `itens-${formIndex}-`);
-                input.setAttribute('name', newName);
-            }
-            if (id) {
-                const newId = id.replace(/id_itens-\d+-/, `id_itens-${formIndex}-`);
-                input.setAttribute('id', newId);
-            }
-            if (input.type !== 'hidden' && !input.name.includes('DELETE')) {
-                input.value = '';
-                if (input.tagName === 'SELECT') {
-                    input.selectedIndex = 0;
-                }
-            }
-            if (input.type === 'checkbox' && input.name.includes('DELETE')) {
-                input.checked = false;
-                input.style.display = 'none';
-            }
-        });
-        const errors = newRow.querySelectorAll('.text-danger');
-        errors.forEach(error => error.remove());
-        itemsContainer.appendChild(newRow);
-        newRow.style.backgroundColor = '#d1e7dd';
-        setTimeout(() => {
-            newRow.style.transition = 'background-color 0.5s';
-            newRow.style.backgroundColor = '';
-        }, 100);
-        formIndex++;
-        totalFormsInput.value = formIndex;
-        renumberItems();
-        const removeBtn = newRow.querySelector('.remove-item');
-        removeBtn.addEventListener('click', function() {
-            removeItem(newRow);
-        });
-        newRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        // Adiciona evento de auto preenchimento da unidade
-        const produtoSelect = newRow.querySelector('select[name*="produto"]');
-        if (produtoSelect) {
-            produtoSelect.addEventListener('change', function() {
-                autoFillUnidade(newRow, this.value);
-                autoFillEstoque(newRow, this.value);
-            });
-            // também já busca unidade e estoque se já houver valor
-            if (produtoSelect.value) {
-                autoFillUnidade(newRow, produtoSelect.value);
-                autoFillEstoque(newRow, produtoSelect.value);
-            }
-        }
-    });
-
-    function removeItem(row) {
-        const rows = itemsContainer.querySelectorAll('.item-form');
-        if (rows.length <= 1) {
-            alert('Não é possível remover o último item. A solicitação precisa ter pelo menos 1 produto.');
-            return;
-        }
-        const idInput = row.querySelector('input[type="hidden"][name*="-id"]');
-        if (idInput && idInput.value) {
-            const deleteCheckbox = row.querySelector('input[type="checkbox"][name*="DELETE"]');
-            if (deleteCheckbox) {
-                deleteCheckbox.checked = true;
-            }
-            row.style.display = 'none';
-        } else {
-            row.remove();
-        }
-        renumberItems();
-    }
-    document.querySelectorAll('.remove-item').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const row = btn.closest('.item-form');
-            removeItem(row);
-        });
-    });
-    document.querySelectorAll('input[type="checkbox"][name*="DELETE"]').forEach(cb => {
-        cb.style.display = 'none';
-    });
-    // Evento de auto preenchimento da unidade para selects já existentes
-    document.querySelectorAll('tr.item-form select[name*="produto"]').forEach(function(produtoSelect) {
-        produtoSelect.addEventListener('change', function() {
-            const row = produtoSelect.closest('tr');
-            autoFillUnidade(row, this.value);
-            autoFillEstoque(row, this.value);
-        });
-        // preenchimento inicial quando já houver produto selecionado
-        if (produtoSelect.value) {
-            const row = produtoSelect.closest('tr');
-            autoFillUnidade(row, produtoSelect.value);
-            autoFillEstoque(row, produtoSelect.value);
-        }
-    });
-    renumberItems();
-});
-</script>
-{% endblock %}
-
-{% block content %}
-<div class="container-fluid">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2><i class="fas fa-file-alt"></i> {{ title }}</h2>
-        <a href="{% url 'compras:solicitacao_list' %}" class="btn btn-secondary">
-            <i class="fas fa-arrow-left"></i> Voltar
-        </a>
-    </div>
-    <form method="post" id="solicitacao-form">
-        {% csrf_token %}
+                
+                {{ form.management_form }}
         <div class="card mb-3">
             <div class="card-header">
                 <h5>Dados da Solicitação</h5>
@@ -334,6 +172,39 @@ document.addEventListener('DOMContentLoaded', function() {
                                 </td>
                             </tr>
                             {% endfor %}
+                            <!-- Template para novo item (usado pelo JavaScript) -->
+                            <tr class="item-form empty-form d-none" data-form-index="__prefix__">
+                                <td class="text-center">
+                                    <strong class="item-number">X</strong>
+                                    <input type="hidden" name="itemsolicitacaocompra_set-__prefix__-id">
+                                </td>
+                                <td>
+                                    <select name="itemsolicitacaocompra_set-__prefix__-produto" class="form-select">
+                                        <option value="">Selecione um produto</option>
+                                        {% for produto in produtos %}
+                                            <option value="{{ produto.id }}">{{ produto.nome }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </td>
+                                <td class="estoque-atual-cell">
+                                    <span class="estoque-atual-value">-</span>
+                                </td>
+                                <td>
+                                    <input type="number" name="itemsolicitacaocompra_set-__prefix__-quantidade" class="form-control" step="0.01" min="0">
+                                </td>
+                                <td>
+                                    <select name="itemsolicitacaocompra_set-__prefix__-unidade_medida" class="form-select"></select>
+                                </td>
+                                <td>
+                                    <textarea name="itemsolicitacaocompra_set-__prefix__-especificacao" class="form-control" rows="1"></textarea>
+                                </td>
+                                <td class="text-center">
+                                    <button type="button" class="btn btn-sm btn-danger remove-item" title="Remover item">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                    <input type="hidden" name="itemsolicitacaocompra_set-__prefix__-DELETE">
+                                </td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
@@ -351,4 +222,151 @@ document.addEventListener('DOMContentLoaded', function() {
         </div>
     </form>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Inicializa Select2 para campos de produto
+    function initSelect2() {
+        $('[name$="produto"]').select2({
+            theme: 'bootstrap-5',
+            width: '100%',
+            language: {
+                noResults: function() {
+                    return 'Nenhum produto encontrado';
+                }
+            }
+        });
+    }
+    
+    // Busca estoque do produto via API
+    function atualizarEstoque(produtoId, row) {
+        if (!produtoId) {
+            row.querySelector('.estoque-atual-value').textContent = '-';
+            return;
+        }
+        
+        fetch('/compras/api/produto/' + produtoId + '/estoque/')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const estoqueCell = row.querySelector('.estoque-atual-cell');
+                    const unidadeSelect = row.querySelector('select[name$="unidade_medida"]');
+                    
+                    // Atualiza estoque atual
+                    estoqueCell.querySelector('.estoque-atual-value').textContent = 
+                        data.estoque_atual.toFixed(2) + ' ' + data.unidade;
+                    
+                    // Atualiza unidade de medida
+                    if (unidadeSelect && data.unidade_id) {
+                        unidadeSelect.value = data.unidade_id;
+                    }
+                } else {
+                    row.querySelector('.estoque-atual-value').textContent = '-';
+                }
+            })
+            .catch(error => {
+                console.error('Erro ao buscar estoque:', error);
+                row.querySelector('.estoque-atual-value').textContent = '-';
+            });
+    }
+    
+    // Atualiza unidade de medida quando produto é selecionado
+    function atualizarUnidade(select, row) {
+        const produtoId = select.value;
+        if (produtoId) {
+            atualizarEstoque(produtoId, row);
+        }
+    }
+    
+    // Event listener para mudança de produto
+    document.addEventListener('change', function(e) {
+        const select = e.target;
+        
+        // Verifica se é um select de produto
+        if (select.name && select.name.includes('produto')) {
+            const row = select.closest('tr.item-form');
+            if (row) {
+                const produtoId = select.value;
+                atualizarUnidade(select, row);
+            }
+        }
+    });
+    
+    // Adicionar item
+    document.getElementById('add-item').addEventListener('click', function() {
+        const formCount = document.querySelectorAll('[name$="DELETE"]').length;
+        const emptyForm = document.querySelector('.empty-form');
+        
+        if (emptyForm) {
+            const newForm = emptyForm.cloneNode(true);
+            const tbody = document.getElementById('item-forms');
+            
+            // Atualizar índices
+            newForm.innerHTML = newForm.innerHTML.replace(/__prefix__/g, formCount);
+            newForm.classList.remove('empty-form');
+            newForm.classList.add('item-form');
+            newForm.setAttribute('data-form-index', formCount);
+            
+            // Atualizar número do item
+            const itemNumber = newForm.querySelector('.item-number');
+            if (itemNumber) {
+                itemNumber.textContent = tbody.querySelectorAll('tr.item-form').length + 1;
+            }
+            
+            tbody.appendChild(newForm);
+            
+            // Atualizar total de itens
+            atualizarTotalItens();
+            
+            // Reinicializar Select2
+            initSelect2();
+            
+            // Adicionar event listener ao botão remover
+            newForm.querySelector('.remove-item').addEventListener('click', removerItem);
+        }
+    });
+    
+    // Remover item
+    function removerItem(e) {
+        e.preventDefault();
+        const row = e.target.closest('tr.item-form');
+        const deleteCheckbox = row.querySelector('[name$="DELETE"]');
+        
+        if (deleteCheckbox) {
+            deleteCheckbox.checked = true;
+            row.style.display = 'none';
+            atualizarTotalItens();
+        }
+    }
+    
+    // Atualizar contador de itens
+    function atualizarTotalItens() {
+        const visibleItems = document.querySelectorAll('tr.item-form:not([style*="display: none"])').length;
+        const itemCount = document.getElementById('item-count');
+        if (itemCount) {
+            itemCount.textContent = visibleItems + ' item' + (visibleItems !== 1 ? 'ns' : '');
+        }
+    }
+    
+    // Inicializar evento de emergencial
+    const emergencialCheckbox = document.getElementById('id_emergencial');
+    if (emergencialCheckbox) {
+        emergencialCheckbox.addEventListener('change', function() {
+            const field = document.getElementById('justificativa-emergencial-field');
+            if (field) {
+                field.style.display = this.checked ? 'flex' : 'none';
+            }
+        });
+    }
+    
+    // Inicializar
+    initSelect2();
+    document.querySelectorAll('.remove-item').forEach(btn => {
+        btn.addEventListener('click', removerItem);
+    });
+});
+</script>
 {% endblock %}

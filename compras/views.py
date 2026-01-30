@@ -2052,3 +2052,288 @@ def recebimento_entrada_estoque(request, pk):
     from django.urls import reverse
     return redirect(reverse('compras:recebimento_detail', args=[recebimento.pk]))
 
+
+@login_required
+def relatorio_pedidos_pendentes(request):
+    """Relatório de pedidos de compra pendentes"""
+    from .forms_relatorio import FiltroPedidosPendentesForm
+    
+    if request.method == 'POST':
+        form = FiltroPedidosPendentesForm(request.POST, empresa=request.user.empresa)
+        
+        if form.is_valid():
+            return processar_relatorio_pedidos(request, form)
+    else:
+        form = FiltroPedidosPendentesForm(empresa=request.user.empresa)
+    
+    context = {
+        'form': form,
+        'title': 'Relatório de Pedidos Pendentes',
+    }
+    return render(request, 'compras/relatorio_pedidos_pendentes.html', context)
+
+
+def processar_relatorio_pedidos(request, form):
+    """Processar e gerar relatório de pedidos pendentes"""
+    from .relatorio_utils import RelatorioPedidosPendentesPDF, RelatorioPedidosPendentesExcel, gerar_dados_pedidos_pendentes
+    from estoque.enviador import EnviadorRelatorio
+    from datetime import datetime
+    from django.http import HttpResponse
+    from django.shortcuts import redirect
+    from django.contrib import messages
+    
+    empresa = request.user.empresa
+    
+    # Buscar pedidos com status que indique pendência
+    from .models import PedidoCompra
+    pedidos = PedidoCompra.objects.filter(
+        empresa=empresa
+    ).exclude(
+        status__in=['CANCELADO', 'FINALIZADO']
+    ).select_related('fornecedor').prefetch_related('itens', 'recebimentos__itens')
+    
+    # Aplicar filtros
+    fornecedores = form.cleaned_data.get('fornecedor')
+    if fornecedores:
+        pedidos = pedidos.filter(fornecedor__in=fornecedores)
+    
+    data_inicio = form.cleaned_data.get('data_inicio')
+    if data_inicio:
+        pedidos = pedidos.filter(data_pedido__gte=data_inicio)
+    
+    data_fim = form.cleaned_data.get('data_fim')
+    if data_fim:
+        pedidos = pedidos.filter(data_pedido__lte=data_fim)
+    
+    apenas_parciais = form.cleaned_data.get('apenas_parciais', False)
+    
+    # Construir descrição dos filtros
+    filtros_desc = []
+    if fornecedores:
+        filtros_desc.append(f"Fornecedores: {', '.join([f.nome_razao for f in fornecedores])}")
+    if data_inicio:
+        filtros_desc.append(f"Data início: {data_inicio.strftime('%d/%m/%Y')}")
+    if data_fim:
+        filtros_desc.append(f"Data fim: {data_fim.strftime('%d/%m/%Y')}")
+    if apenas_parciais:
+        filtros_desc.append("Apenas parcialmente recebidos")
+    
+    filtros_str = ' | '.join(filtros_desc) if filtros_desc else 'Todos os pedidos pendentes'
+    
+    # Gerar dados
+    pedidos_data = gerar_dados_pedidos_pendentes(pedidos)
+    
+    # Filtrar apenas parciais se solicitado
+    if apenas_parciais:
+        pedidos_data = [p for p in pedidos_data if p['status'] == 'Parcial']
+    
+    # Gerar relatório
+    formato = form.cleaned_data.get('formato')
+    nome_arquivo = f"pedidos_pendentes_{datetime.now().strftime('%d%m%Y_%H%M%S')}"
+    
+    if formato == 'pdf':
+        relatorio = RelatorioPedidosPendentesPDF(empresa)
+        relatorio.adicionar_cabecalho(filtros_str)
+        relatorio.adicionar_tabela_pedidos(pedidos_data)
+        arquivo_bytes = relatorio.gerar()
+        nome_arquivo += '.pdf'
+        tipo_mime = 'application/pdf'
+    else:  # excel
+        relatorio = RelatorioPedidosPendentesExcel(empresa)
+        relatorio.adicionar_cabecalho(filtros_str)
+        relatorio.adicionar_tabela_pedidos(pedidos_data)
+        arquivo_bytes = relatorio.gerar()
+        nome_arquivo += '.xlsx'
+        tipo_mime = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    
+    # Verificar se será enviado ou apenas baixado
+    enviar_para = form.cleaned_data.get('enviar_para')
+    
+    if enviar_para == 'visualizar':
+        # Visualizar na tela
+        response = HttpResponse(arquivo_bytes, content_type=tipo_mime)
+        response['Content-Disposition'] = f'inline; filename="{nome_arquivo}"'
+        return response
+    
+    if enviar_para == 'nenhum':
+        # Apenas baixar
+        response = HttpResponse(arquivo_bytes, content_type=tipo_mime)
+        response['Content-Disposition'] = f'attachment; filename="{nome_arquivo}"'
+        return response
+    
+    # Enviar por email e/ou WhatsApp
+    resultados = []
+    
+    if enviar_para in ['email', 'ambos']:
+        email = form.cleaned_data.get('email_destino')
+        sucesso, msg = EnviadorRelatorio.enviar(
+            'email', email, empresa.nome, arquivo_bytes, 
+            nome_arquivo, formato
+        )
+        resultados.append(('Email', sucesso, msg))
+    
+    if enviar_para in ['whatsapp', 'ambos']:
+        whatsapp = form.cleaned_data.get('whatsapp_destino')
+        sucesso, msg = EnviadorRelatorio.enviar(
+            'whatsapp', whatsapp, empresa.nome, arquivo_bytes, 
+            nome_arquivo, formato
+        )
+        resultados.append(('WhatsApp', sucesso, msg))
+    
+    # Exibir resultados
+    for tipo, sucesso, mensagem in resultados:
+        if sucesso:
+            messages.success(request, f'{tipo}: {mensagem}')
+        else:
+            messages.error(request, f'{tipo}: {mensagem}')
+    
+    return redirect('compras:relatorio_pedidos_pendentes')
+
+
+@login_required
+def relatorio_compras(request):
+    """Relatório de compras por período com detalhes de notas fiscais"""
+    from .forms_relatorio_compras import FiltroRelatorioComprasForm
+    
+    if request.method == 'POST':
+        form = FiltroRelatorioComprasForm(request.POST, empresa=request.user.empresa)
+        
+        if form.is_valid():
+            return processar_relatorio_compras(request, form)
+    else:
+        form = FiltroRelatorioComprasForm(empresa=request.user.empresa)
+    
+    context = {
+        'form': form,
+        'title': 'Relatório de Compras por Período',
+    }
+    return render(request, 'compras/relatorio_compras.html', context)
+
+
+def processar_relatorio_compras(request, form):
+    """Processar e gerar relatório de compras por período"""
+    from .relatorio_compras_utils import RelatorioComprasPDF, RelatorioComprasExcel, gerar_dados_compras
+    from estoque.enviador import EnviadorRelatorio
+    from datetime import datetime
+    from django.http import HttpResponse
+    from django.shortcuts import redirect
+    from django.contrib import messages
+    
+    empresa = request.user.empresa
+    
+    # Buscar pedidos
+    from .models import PedidoCompra
+    pedidos = PedidoCompra.objects.filter(
+        empresa=empresa
+    ).select_related('fornecedor').prefetch_related(
+        'itens__produto',
+        'recebimentos__itens__produto'
+    )
+    
+    # Aplicar filtros
+    fornecedores = form.cleaned_data.get('fornecedor')
+    if fornecedores:
+        pedidos = pedidos.filter(fornecedor__in=fornecedores)
+    
+    data_inicio = form.cleaned_data.get('data_inicio')
+    if data_inicio:
+        pedidos = pedidos.filter(data_pedido__gte=data_inicio)
+    
+    data_fim = form.cleaned_data.get('data_fim')
+    if data_fim:
+        pedidos = pedidos.filter(data_pedido__lte=data_fim)
+    
+    incluir_cancelados = form.cleaned_data.get('incluir_cancelados', False)
+    if not incluir_cancelados:
+        pedidos = pedidos.exclude(status='CANCELADO')
+    
+    agrupar_por_fornecedor = form.cleaned_data.get('agrupar_por_fornecedor', False)
+    ordenacao = form.cleaned_data.get('ordenacao', 'fornecedor')
+    
+    # Construir descrição dos filtros
+    filtros_desc = []
+    if fornecedores:
+        filtros_desc.append(f"Fornecedores: {', '.join([f.nome for f in fornecedores])}")
+    if data_inicio:
+        filtros_desc.append(f"Data início: {data_inicio.strftime('%d/%m/%Y')}")
+    if data_fim:
+        filtros_desc.append(f"Data fim: {data_fim.strftime('%d/%m/%Y')}")
+    if incluir_cancelados:
+        filtros_desc.append("Incluindo cancelados")
+    if agrupar_por_fornecedor:
+        filtros_desc.append("Agrupado por fornecedor")
+    
+    # Mapa de rótulos de ordenação
+    ordenacao_labels = {
+        'fornecedor': 'Fornecedor',
+        'nota_fiscal': 'Número da Nota',
+        'data_emissao': 'Data de Emissão',
+    }
+    filtros_desc.append(f"Ordenado por: {ordenacao_labels.get(ordenacao, ordenacao)}")
+    
+    filtros_str = ' | '.join(filtros_desc) if filtros_desc else 'Todas as compras'
+    
+    # Gerar dados
+    compras_data = gerar_dados_compras(pedidos, ordenacao)
+    
+    # Gerar relatório
+    formato = form.cleaned_data.get('formato')
+    nome_arquivo = f"compras_{datetime.now().strftime('%d%m%Y_%H%M%S')}"
+    
+    if formato == 'pdf':
+        relatorio = RelatorioComprasPDF(empresa)
+        relatorio.adicionar_cabecalho(filtros_str)
+        relatorio.adicionar_tabela_compras(compras_data, agrupar_por_fornecedor)
+        arquivo_bytes = relatorio.gerar()
+        nome_arquivo += '.pdf'
+        tipo_mime = 'application/pdf'
+    else:  # excel
+        relatorio = RelatorioComprasExcel(empresa)
+        linha_inicio = relatorio.adicionar_cabecalho(filtros_str)
+        relatorio.adicionar_tabela_compras(compras_data, linha_inicio, agrupar_por_fornecedor)
+        arquivo_bytes = relatorio.gerar()
+        nome_arquivo += '.xlsx'
+        tipo_mime = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    
+    # Verificar se será enviado ou apenas baixado
+    enviar_para = form.cleaned_data.get('enviar_para')
+    
+    if enviar_para == 'visualizar':
+        # Visualizar na tela
+        response = HttpResponse(arquivo_bytes, content_type=tipo_mime)
+        response['Content-Disposition'] = f'inline; filename="{nome_arquivo}"'
+        return response
+    
+    if enviar_para == 'nenhum':
+        # Apenas baixar
+        response = HttpResponse(arquivo_bytes, content_type=tipo_mime)
+        response['Content-Disposition'] = f'attachment; filename="{nome_arquivo}"'
+        return response
+    
+    # Enviar por email e/ou WhatsApp
+    resultados = []
+    
+    if enviar_para in ['email', 'ambos']:
+        email = form.cleaned_data.get('email_destino')
+        sucesso, msg = EnviadorRelatorio.enviar(
+            'email', email, empresa.nome, arquivo_bytes, 
+            nome_arquivo, formato
+        )
+        resultados.append(('Email', sucesso, msg))
+    
+    if enviar_para in ['whatsapp', 'ambos']:
+        whatsapp = form.cleaned_data.get('whatsapp_destino')
+        sucesso, msg = EnviadorRelatorio.enviar(
+            'whatsapp', whatsapp, empresa.nome, arquivo_bytes, 
+            nome_arquivo, formato
+        )
+        resultados.append(('WhatsApp', sucesso, msg))
+    
+    # Exibir resultados
+    for tipo, sucesso, mensagem in resultados:
+        if sucesso:
+            messages.success(request, f'{tipo}: {mensagem}')
+        else:
+            messages.error(request, f'{tipo}: {mensagem}')
+    
+    return redirect('compras:relatorio_compras')

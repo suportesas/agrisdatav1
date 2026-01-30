@@ -25,7 +25,8 @@ def dashboard_compras(request):
     produtos_mais_comprados = Produto.objects.filter(
         itens_pedido_compra__pedido__empresa=empresa
     ).annotate(
-        total_comprado=Sum('itens_pedido_compra__quantidade_pedida')
+        total_comprado=Sum('itens_pedido_compra__quantidade_pedida'),
+        valor_total_comprado=Sum('itens_pedido_compra__preco_total')
     ).order_by('-total_comprado')[:5]
 
     # Pedidos pendentes de aprovação
@@ -37,6 +38,17 @@ def dashboard_compras(request):
         .annotate(total_comprado=Sum('pedidos_compra__valor_total'))
         .order_by('-total_comprado')[:5]
     )
+    
+    # Pedidos parcialmente recebidos (pendentes de recebimento completo)
+    pedidos_parcialmente_recebidos = PedidoCompra.objects.filter(
+        empresa=empresa,
+        status='PARCIALMENTE_RECEBIDO'
+    ).select_related('fornecedor').prefetch_related('recebimentos').order_by('-data_pedido')
+    
+    # Adicionar recebimento pendente a cada pedido
+    for pedido in pedidos_parcialmente_recebidos:
+        pedido.recebimento_pendente = pedido.recebimentos.exclude(status='FINALIZADO').first()
+    
     context = {
         'compras_ano': compras_ano,
         'compras_mes': compras_mes,
@@ -45,5 +57,6 @@ def dashboard_compras(request):
         'produtos_mais_comprados': produtos_mais_comprados,
         'pedidos_pendentes': pedidos_pendentes,
         'fornecedores_rank': fornecedores_rank,
+        'pedidos_parcialmente_recebidos': pedidos_parcialmente_recebidos,
     }
     return render(request, 'compras/dashboard_compras.html', context)

@@ -67,4 +67,8 @@ urlpatterns = [
     path('cotacoes/teste-template/',
          lambda request: __import__('compras.views_template_teste').views_template_teste.template_teste(request),
          name='cotacao_teste_template'),
+    
+    # Relatórios
+    path('relatorios/pedidos-pendentes/', views.relatorio_pedidos_pendentes, name='relatorio_pedidos_pendentes'),
+    path('relatorios/compras/', views.relatorio_compras, name='relatorio_compras'),
 ]

@@ -1,0 +1,259 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Entrada Rápida de Estoque{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-success text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h4 class="mb-0">
+                                <i class="fas fa-bolt"></i> Entrada Rápida de Estoque
+                            </h4>
+                            <small>Modo Simples - Adicione produtos de forma rápida e intuitiva</small>
+                        </div>
+                        <a href="{% url 'estoque:movimentacao_list' %}" class="btn btn-light btn-sm">
+                            <i class="fas fa-arrow-left"></i> Voltar
+                        </a>
+                    </div>
+                </div>
+
+                <div class="card-body">
+                    <form method="post" id="formEntradaRapida">
+                        {% csrf_token %}
+
+                        <!-- Dados Gerais -->
+                        <div class="row mb-4">
+                            <div class="col-md-4">
+                                <label class="form-label">
+                                    <i class="fas fa-warehouse text-primary"></i> Local de Estoque *
+                                </label>
+                                <select name="local_estocagem" class="form-select" required>
+                                    <option value="">Selecione...</option>
+                                    {% for local in locais %}
+                                    <option value="{{ local.id }}">{{ local.codigo }} - {{ local.descricao }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label">
+                                    <i class="fas fa-truck text-info"></i> Fornecedor
+                                </label>
+                                <select name="fornecedor" class="form-select">
+                                    <option value="">Não informado</option>
+                                    {% for fornecedor in fornecedores %}
+                                    <option value="{{ fornecedor.id }}">{{ fornecedor.nome }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label">
+                                    <i class="fas fa-file-invoice text-warning"></i> Nota Fiscal
+                                </label>
+                                <input type="text" name="nota_fiscal" class="form-control" placeholder="Número da NF">
+                            </div>
+                        </div>
+
+                        <!-- Produtos -->
+                        <div class="card bg-light mb-3">
+                            <div class="card-header">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-box"></i> Produtos
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <table class="table table-hover" id="tabelaProdutos">
+                                    <thead class="table-success">
+                                        <tr>
+                                            <th width="40%">Produto</th>
+                                            <th width="15%">Quantidade</th>
+                                            <th width="15%">Unidade</th>
+                                            <th width="20%">Preço Unitário</th>
+                                            <th width="10%">Ação</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="linhasProdutos">
+                                        <!-- Linhas serão adicionadas via JavaScript -->
+                                    </tbody>
+                                    <tfoot>
+                                        <tr>
+                                            <td colspan="5">
+                                                <button type="button" class="btn btn-success btn-sm" id="btnAdicionarLinha">
+                                                    <i class="fas fa-plus"></i> Adicionar Produto
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Observações -->
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <label class="form-label">
+                                    <i class="fas fa-comment"></i> Observações
+                                </label>
+                                <textarea name="observacao" class="form-control" rows="3" 
+                                          placeholder="Informações adicionais sobre esta entrada..."></textarea>
+                            </div>
+                        </div>
+
+                        <!-- Resumo -->
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i>
+                            <strong>Resumo:</strong>
+                            <span id="resumoItens">0 produtos</span> |
+                            <strong>Total:</strong> R$ <span id="resumoTotal">0,00</span>
+                        </div>
+
+                        <!-- Botões -->
+                        <div class="d-flex justify-content-end gap-2">
+                            <a href="{% url 'estoque:movimentacao_list' %}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-success btn-lg">
+                                <i class="fas fa-check"></i> Confirmar Entrada
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Template para linha de produto -->
+<template id="templateLinhaProduto">
+    <tr>
+        <td>
+            <select name="produto_id" class="form-select form-select-sm produto-select" required>
+                <option value="">Selecione o produto...</option>
+                {% for produto in produtos %}
+                <option value="{{ produto.id }}" 
+                        data-unidade="{{ produto.unidade_compra.sigla }}"
+                        data-preco="{{ produto.preco_custo|default:'0.00' }}">
+                    {{ produto.codigo }} - {{ produto.descricao }}
+                </option>
+                {% endfor %}
+            </select>
+        </td>
+        <td>
+            <input type="number" name="quantidade" class="form-control form-control-sm quantidade-input" 
+                   step="0.01" min="0.01" placeholder="0,00" required>
+        </td>
+        <td>
+            <input type="text" class="form-control form-control-sm unidade-display" readonly>
+        </td>
+        <td>
+            <input type="number" name="preco_unitario" class="form-control form-control-sm preco-input" 
+                   step="0.01" min="0" placeholder="0,00">
+        </td>
+        <td>
+            <button type="button" class="btn btn-danger btn-sm btn-remover">
+                <i class="fas fa-trash"></i>
+            </button>
+        </td>
+    </tr>
+</template>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const tabelaProdutos = document.getElementById('linhasProdutos');
+    const btnAdicionarLinha = document.getElementById('btnAdicionarLinha');
+    const template = document.getElementById('templateLinhaProduto');
+    
+    // Adicionar primeira linha automaticamente
+    adicionarLinha();
+    
+    // Botão adicionar linha
+    btnAdicionarLinha.addEventListener('click', adicionarLinha);
+    
+    function adicionarLinha() {
+        const clone = template.content.cloneNode(true);
+        const tr = clone.querySelector('tr');
+        
+        // Eventos
+        const produtoSelect = tr.querySelector('.produto-select');
+        const quantidadeInput = tr.querySelector('.quantidade-input');
+        const precoInput = tr.querySelector('.preco-input');
+        const unidadeDisplay = tr.querySelector('.unidade-display');
+        const btnRemover = tr.querySelector('.btn-remover');
+        
+        // Quando seleciona produto
+        produtoSelect.addEventListener('change', function() {
+            const option = this.options[this.selectedIndex];
+            unidadeDisplay.value = option.dataset.unidade || '';
+            precoInput.value = option.dataset.preco || '0.00';
+            quantidadeInput.focus();
+            atualizarResumo();
+        });
+        
+        // Quando muda quantidade ou preço
+        quantidadeInput.addEventListener('input', atualizarResumo);
+        precoInput.addEventListener('input', atualizarResumo);
+        
+        // Remover linha
+        btnRemover.addEventListener('click', function() {
+            if (tabelaProdutos.children.length > 1) {
+                tr.remove();
+                atualizarResumo();
+            } else {
+                alert('É necessário ter pelo menos um produto!');
+            }
+        });
+        
+        tabelaProdutos.appendChild(tr);
+    }
+    
+    function atualizarResumo() {
+        let totalItens = 0;
+        let totalValor = 0;
+        
+        document.querySelectorAll('#linhasProdutos tr').forEach(tr => {
+            const produtoSelect = tr.querySelector('.produto-select');
+            const quantidadeInput = tr.querySelector('.quantidade-input');
+            const precoInput = tr.querySelector('.preco-input');
+            
+            if (produtoSelect.value && quantidadeInput.value) {
+                totalItens++;
+                const qtd = parseFloat(quantidadeInput.value) || 0;
+                const preco = parseFloat(precoInput.value) || 0;
+                totalValor += qtd * preco;
+            }
+        });
+        
+        document.getElementById('resumoItens').textContent = totalItens + ' produto(s)';
+        document.getElementById('resumoTotal').textContent = totalValor.toFixed(2).replace('.', ',');
+    }
+    
+    // Validação antes de submeter
+    document.getElementById('formEntradaRapida').addEventListener('submit', function(e) {
+        const linhas = document.querySelectorAll('#linhasProdutos tr');
+        let temProduto = false;
+        
+        linhas.forEach(tr => {
+            const produtoSelect = tr.querySelector('.produto-select');
+            if (produtoSelect.value) {
+                temProduto = true;
+            }
+        });
+        
+        if (!temProduto) {
+            e.preventDefault();
+            alert('Adicione pelo menos um produto!');
+            return false;
+        }
+    });
+});
+</script>
+{% endblock %}

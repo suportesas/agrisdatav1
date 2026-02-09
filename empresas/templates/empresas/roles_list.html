@@ -1,59 +1,502 @@
 {% extends 'base.html' %}
 {% block extra_css %}
 <style>
-  .filter-card { background: white; border-radius: 12px; padding: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 1rem; }
-  .role-card { background: white; border-radius: 12px; padding: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 0.8rem; border-left: 4px solid #20c997; transition: all 0.18s ease; }
-  .role-card:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0,0,0,0.08); }
-  /* Selected / focused states */
-  .role-card.selected { background: linear-gradient(90deg, rgba(233,249,238,0.9), rgba(255,255,255,0.8)); border-left-width:6px; border-left-color:#198754; box-shadow: 0 8px 30px rgba(25, 135, 84, 0.08); }
-  .role-card.dimmed { opacity: 0.38; filter: grayscale(10%); transform: none; }
-  .role-card .role-name { display:inline-block; margin-right: .5rem }
-
-  .role-builtin { font-size: 0.85rem; padding: 0.25rem 0.6rem; border-radius: 12px; background: #e9f7ef; color:#155724; margin-left:0.5rem }
-  .empty-state { text-align:center; padding:2rem; color:#6c757d }
-  /* Roles header toolbar */
+  /* Card de filtros */
+  .filter-card { 
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    border-radius: 16px; 
+    padding: 1.5rem; 
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08); 
+    margin-bottom: 1.5rem; 
+    border: 1px solid rgba(0,0,0,0.05);
+  }
+  
+  /* Cards de Roles - Design moderno */
+  .role-card { 
+    background: white;
+    border-radius: 16px; 
+    padding: 1.5rem; 
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08); 
+    margin-bottom: 0.8rem; 
+    border: 2px solid transparent;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+  }
+  
+  /* Borda colorida sutil no topo */
+  .role-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #0d6efd, #0dcaf0);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  
+  .role-card:hover::before {
+    opacity: 1;
+  }
+  
+  .role-card:hover { 
+    transform: translateY(-4px); 
+    box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    border-color: rgba(13, 110, 253, 0.2);
+  }
+  
+  /* Estado selecionado */
+  .role-card.selected { 
+    background: linear-gradient(135deg, #e7f5ff 0%, #ffffff 100%);
+    border-color: #0d6efd;
+    box-shadow: 0 8px 32px rgba(13, 110, 253, 0.15);
+    transform: translateY(-2px);
+  }
+  
+  .role-card.selected::before {
+    opacity: 1;
+    height: 6px;
+  }
+  
+  .role-card.dimmed { 
+    opacity: 0.4; 
+    filter: grayscale(20%); 
+    transform: none; 
+  }
+  
+  /* Tipografia */
+  .role-card .role-name { 
+    color: #212529;
+    font-size: 1.1rem;
+    font-weight: 600;
+  }
+  
+  .role-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  /* Badges modernos */
+  .badge {
+    font-weight: 500;
+    padding: 0.4rem 0.8rem;
+    font-size: 0.8rem;
+    border-radius: 8px;
+  }
+  
+  /* Botões de ação */
+  .role-card .btn-sm {
+    font-size: 0.85rem;
+    padding: 0.5rem 1rem;
+    font-weight: 500;
+    border-radius: 8px;
+  }
+  
+  .role-card .btn-primary {
+    background: linear-gradient(135deg, #0d6efd 0%, #0dcaf0 100%);
+    border: none;
+    color: white;
+  }
+  
+  .role-card .btn-primary:hover {
+    background: linear-gradient(135deg, #0b5ed7 0%, #0aa2c0 100%);
+    transform: scale(1.02);
+  }
+  
+  /* Empty state */
+  .empty-state { 
+    text-align: center; 
+    padding: 3rem 1rem;
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+    border-radius: 16px;
+    border: 2px dashed #dee2e6;
+  }
+  
+  /* Header toolbar */
+  .roles-header-card {
+    background: linear-gradient(135deg, #0d6efd 0%, #0dcaf0 100%);
+    border-radius: 16px;
+    padding: 2rem;
+    color: white;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 16px rgba(13, 110, 253, 0.2);
+  }
+  
+  .roles-header-card h2 {
+    color: white;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+  
+  .roles-header-card .text-muted {
+    color: rgba(255,255,255,0.9) !important;
+  }
+  
+  /* Inputs e selects */
+  .filter-card .form-control,
+  .filter-card .form-select {
+    border-radius: 10px;
+    border: 1px solid #dee2e6;
+    padding: 0.6rem 1rem;
+    transition: all 0.2s ease;
+  }
+  
+  .filter-card .form-control:focus,
+  .filter-card .form-select:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.15);
+  }
+  
+  .filter-card .form-label {
+    color: #495057;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+  }
+  
+  /* Botões do header */
+  .btn-create-role {
+    background: white;
+    color: #0d6efd;
+    border: 2px solid white;
+    font-weight: 600;
+    padding: 0.6rem 1.5rem;
+    border-radius: 10px;
+    transition: all 0.2s ease;
+  }
+  
+  .btn-create-role:hover {
+    background: rgba(255,255,255,0.9);
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  }
+  
+  /* Toggle button */
+  #toggle-hide {
+    border-radius: 10px;
+    border: 2px solid rgba(255,255,255,0.8);
+    color: white;
+    background: rgba(255,255,255,0.1);
+    backdrop-filter: blur(10px);
+    font-weight: 500;
+  }
+  
+  #toggle-hide:hover {
+    background: rgba(255,255,255,0.2);
+    border-color: white;
+  }
+  
+  /* Responsivo */
   .roles-header .input-group-sm { max-width: 280px; }
   .roles-header .btn-sm { padding-top: .28rem; padding-bottom: .28rem; }
+  
   @media (max-width: 767px){
     .roles-header .input-group-sm{ max-width: 100%; }
     .roles-header .d-inline-flex{ flex-wrap:wrap; gap:.4rem; }
+    .role-card { padding: 1rem; }
+    .filter-card { padding: 1rem; }
+  }
+  
+  /* Animação de entrada */
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  .role-card {
+    animation: fadeInUp 0.4s ease-out;
+
+    /* ========================================= */
+    /* ESTILOS DA TABELA DE PERMISSÕES */
+    /* ========================================= */
+  
+    .permissions-table-wrapper {
+      background: white;
+      border-radius: 16px;
+      padding: 0;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      margin-bottom: 2rem;
+      overflow: hidden;
+      border: 1px solid #e9ecef;
+    }
+  
+    .permissions-table {
+      width: 100%;
+      margin-bottom: 0;
+      border-collapse: separate;
+      border-spacing: 0;
+    }
+  
+    .permissions-table thead {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+  
+    .permissions-table thead th {
+      padding: 1.2rem 1rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      letter-spacing: 1px;
+      color: white;
+      border: none;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+    }
+  
+    .permissions-table tbody tr {
+      border-bottom: 1px solid #f0f0f0;
+      transition: all 0.25s ease;
+    }
+  
+    .permissions-table tbody tr:hover:not(.module-group-header) {
+      background: linear-gradient(90deg, #f8f9ff 0%, #ffffff 100%);
+      transform: translateX(4px);
+      box-shadow: -4px 0 0 0 #667eea;
+    }
+  
+    .permissions-table tbody td {
+      padding: 1.1rem 1rem;
+      vertical-align: middle;
+      border: none;
+    }
+  
+    .permissions-table tbody td:first-child {
+      font-weight: 600;
+      color: #212529;
+      padding-left: 1.5rem;
+    }
+  
+    .permissions-table tbody td.text-center {
+      text-align: center;
+    }
+  
+    .permission-checkbox {
+      width: 26px;
+      height: 26px;
+      cursor: pointer;
+      accent-color: #1a73e8;
+      transition: all 0.25s ease;
+      border-radius: 6px;
+    }
+  
+    .permission-checkbox:hover {
+      transform: scale(1.3);
+      box-shadow: 0 0 0 4px rgba(26, 115, 232, 0.1);
+    }
+  
+    .permission-checkbox:checked {
+      accent-color: #10b981;
+      filter: drop-shadow(0 2px 4px rgba(16, 185, 129, 0.3));
+    }
+  
+    .permission-icon {
+      display: inline-block;
+      width: 36px;
+      height: 36px;
+      line-height: 36px;
+      border-radius: 10px;
+      text-align: center;
+      font-size: 1.1rem;
+      margin-right: 0.5rem;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+  
+    .icon-add { background: linear-gradient(135deg, #d4f4dd 0%, #a7f3d0 100%); color: #065f46; }
+    .icon-change { background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); color: #1e40af; }
+    .icon-delete { background: linear-gradient(135deg, #fecaca 0%, #fca5a5 100%); color: #991b1b; }
+    .icon-view { background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); color: #92400e; }
+  
+    .module-group-header {
+      background: linear-gradient(135deg, #e8f4fd 0%, #d4e9f7 100%);
+      color: #1a73e8;
+      font-weight: 800;
+      font-size: 1.1rem;
+      letter-spacing: 0.5px;
+      border-left: 6px solid #1a73e8;
+      border-top: none;
+      border-bottom: 2px solid #1a73e8;
+      box-shadow: inset 0 1px 3px rgba(26, 115, 232, 0.1);
+    }
+  
+    .module-group-header td {
+      padding: 1.3rem 1.5rem !important;
+      color: #1a73e8 !important;
+      font-weight: 800 !important;
+    }
+  
+    .module-group-header .module-icon-large {
+      font-size: 1.6rem;
+      margin-right: 0.75rem;
+      display: inline-block;
+      vertical-align: middle;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+    }
+  
+    .module-group-header .badge {
+      background: white !important;
+      color: #1a73e8 !important;
+      border: 2px solid #1a73e8;
+      font-weight: 700;
+      padding: 0.35rem 0.75rem;
+      font-size: 0.85rem;
+      border-radius: 20px;
+    }
+  
+    .permissions-table tbody tr:not(.module-group-header) td:first-child {
+      font-weight: 500;
+      color: #495057;
+      padding-left: 3.5rem;
+      position: relative;
+      font-size: 0.95rem;
+    }
+  
+    .permissions-table tbody tr:not(.module-group-header) td:first-child::before {
+      content: '•';
+      position: absolute;
+      left: 2.5rem;
+      color: #cbd5e1;
+      font-size: 1.5rem;
+      font-weight: bold;
+    }
+  
+    .permissions-table tbody tr:not(.module-group-header) {
+      background: white;
+    }
+  
+    .permissions-table tbody tr:not(.module-group-header):nth-child(even) {
+      background: #fafbfc;
+    }
+  
+    .permissions-table tbody tr:not(.module-group-header):hover {
+      background: linear-gradient(90deg, #eff6ff 0%, #ffffff 100%) !important;
+      box-shadow: -4px 0 0 0 #1a73e8 !important;
+    }
+  
+    .actions-bar {
+      background: white;
+      border-radius: 16px;
+      padding: 1.5rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      margin-bottom: 2rem;
+      border: 1px solid rgba(0,0,0,0.05);
+    }
+  
+    .btn-save-perms {
+      background: linear-gradient(135deg, #198754 0%, #157347 100%);
+      border: none;
+      color: white;
+      font-weight: 600;
+      padding: 0.7rem 2rem;
+      border-radius: 10px;
+      transition: all 0.2s ease;
+    }
+  
+    .btn-save-perms:hover {
+      transform: scale(1.05);
+      box-shadow: 0 4px 12px rgba(25, 135, 84, 0.3);
+    }
+  
+    .table-scroll {
+      max-height: 70vh;
+      overflow-y: auto;
+      border-radius: 12px;
+    }
+  
+    .table-scroll::-webkit-scrollbar { width: 8px; }
+    .table-scroll::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
+    .table-scroll::-webkit-scrollbar-thumb { background: #888; border-radius: 10px; }
+    .table-scroll::-webkit-scrollbar-thumb:hover { background: #555; }
   }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container py-4">
+<div class="container-fluid py-4" style="max-width: 1400px;">
   <nav aria-label="breadcrumb" class="mb-3">
     <ol class="breadcrumb">
-      <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
-      <li class="breadcrumb-item active">Funções</li>
+      <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}"><i class="bi bi-house-door"></i> Dashboard</a></li>
+      <li class="breadcrumb-item active">Funções e Permissões</li>
     </ol>
   </nav>
 
-  <!-- Header (title + create) -->
-  <div class="d-flex justify-content-between align-items-center mb-3">
-    <div>
-      <h2 class="fw-bold mb-1"><i class="bi bi-shield-lock text-success"></i> Funções e Cargos</h2>
-      {% if request.user.empresa %}
-      <p class="text-muted mb-0">
-        <i class="bi bi-building"></i> <strong>{{ request.user.empresa.nome }}</strong> - 
-        Gerencie papéis e permissões específicas da sua empresa
-      </p>
-      {% else %}
-      <p class="text-muted mb-0">Gerencie papéis e permissões do sistema</p>
-      {% endif %}
+  <!-- Header moderno -->
+  <div class="roles-header-card mb-4">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+      <div>
+        <h2 class="fw-bold mb-2">
+          <i class="bi bi-shield-lock"></i> Funções e Cargos
+        </h2>
+        {% if request.user.empresa %}
+        <p class="mb-0" style="color: rgba(255,255,255,0.95);">
+          <i class="bi bi-building"></i> <strong>{{ request.user.empresa.nome }}</strong>
+        </p>
+        <p class="small mb-0" style="color: rgba(255,255,255,0.8);">
+          Gerencie papéis e permissões específicas da sua empresa
+        </p>
+        {% else %}
+        <p class="mb-0" style="color: rgba(255,255,255,0.9);">Gerencie papéis e permissões do sistema</p>
+        {% endif %}
+      </div>
+      <div class="d-flex gap-2 align-items-center">
+        <button id="toggle-hide" type="button" class="btn btn-sm" aria-pressed="false" title="Ocultar outras funções">
+          <i class="bi bi-eye-slash"></i> Ocultar outras
+        </button>
+        {% if request.user.is_superuser or request.user.is_admin_empresa %}
+        <a href="{% url 'empresas:role_create' %}" class="btn btn-create-role">
+          <i class="bi bi-plus-circle-fill"></i> Nova Função
+        </a>
+        {% endif %}
+      </div>
     </div>
-    <div class="d-flex gap-2 align-items-center">
-      <button id="toggle-hide" type="button" class="btn btn-outline-info btn-sm" aria-pressed="false" title="Ocultar outras funções">Ocultar outras</button>
-      {% if request.user.is_superuser or request.user.is_admin_empresa %}
-      <a href="{% url 'empresas:role_create' %}" class="btn btn-success">
-        <i class="bi bi-plus-circle"></i> Nova Função
-      </a>
-      {% endif %}
+    
+    <!-- Estatísticas rápidas -->
+    <div class="row g-3 mt-3">
+      <div class="col-md-4">
+        <div class="d-flex align-items-center">
+          <div class="me-3" style="font-size: 2rem;">
+            <i class="bi bi-collection"></i>
+          </div>
+          <div>
+            <div style="font-size: 1.5rem; font-weight: 700;">{{ total_roles }}</div>
+            <div style="font-size: 0.9rem; opacity: 0.9;">Total de Funções</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="d-flex align-items-center">
+          <div class="me-3" style="font-size: 2rem;">
+            <i class="bi bi-star-fill"></i>
+          </div>
+          <div>
+            <div style="font-size: 1.5rem; font-weight: 700;">{{ builtin_roles }}</div>
+            <div style="font-size: 0.9rem; opacity: 0.9;">Funções Padrão</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="d-flex align-items-center">
+          <div class="me-3" style="font-size: 2rem;">
+            <i class="bi bi-pencil-square"></i>
+          </div>
+          <div>
+            <div style="font-size: 1.5rem; font-weight: 700;">{{ custom_roles }}</div>
+            <div style="font-size: 0.9rem; opacity: 0.9;">Personalizadas</div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
-  <!-- Filtros (mimic fornecedor_list) -->
+  <!-- Filtros -->
   <div class="filter-card mb-3">
     <form method="get" id="rolesFilterForm">
       <div class="row g-3">
@@ -102,18 +545,48 @@
 </div>
 
 <script>
+// Função para confirmar exclusão de role
+function confirmDelete(roleId, roleName) {
+  if (confirm(`Tem certeza que deseja excluir a função "${roleName}"?\n\nEsta ação não pode ser desfeita.`)) {
+    // TODO: Implementar a exclusão via AJAX
+    alert('Funcionalidade de exclusão será implementada em breve.');
+  }
+}
+
 function applyFilters(){
   const q = document.getElementById('role-search').value.toLowerCase();
   const filter = document.getElementById('role-filter').value;
+  let visibleCount = 0;
+  
   document.querySelectorAll('.role-card').forEach(card=>{
     const name = card.querySelector('.role-name').textContent.toLowerCase();
     const builtin = card.dataset.builtin === 'true';
     let show = name.includes(q);
     if(filter === 'builtin' && !builtin) show = false;
     if(filter === 'custom' && builtin) show = false;
-    card.style.display = show ? '' : 'none';
+    
+    if(show) {
+      card.style.display = '';
+      visibleCount++;
+    } else {
+      card.style.display = 'none';
+    }
   });
+  
+  // Mostra mensagem se nenhum resultado
+  const emptyMsg = document.getElementById('no-results-msg');
+  if(emptyMsg) emptyMsg.remove();
+  
+  if(visibleCount === 0 && (q || filter !== 'all')) {
+    const rolesArea = document.getElementById('roles-area');
+    const msg = document.createElement('div');
+    msg.id = 'no-results-msg';
+    msg.className = 'alert alert-info';
+    msg.innerHTML = '<i class="bi bi-info-circle"></i> Nenhuma função encontrada com os filtros aplicados.';
+    rolesArea.appendChild(msg);
+  }
 }
+
 document.addEventListener('DOMContentLoaded', function(){
   const search = document.getElementById('role-search');
   const filter = document.getElementById('role-filter');
@@ -125,8 +598,12 @@ document.addEventListener('DOMContentLoaded', function(){
   let hideState = localStorage.getItem(hideKey) === '1';
   
   function updateHideBtn(){ 
-    if(hideBtn) { 
-      hideBtn.textContent = hideState ? 'Mostrar todas' : 'Ocultar outras'; 
+    if(hideBtn) {
+      if(hideState) {
+        hideBtn.innerHTML = '<i class="bi bi-eye"></i> Mostrar todas';
+      } else {
+        hideBtn.innerHTML = '<i class="bi bi-eye-slash"></i> Ocultar outras';
+      }
       hideBtn.setAttribute('aria-pressed', hideState ? 'true' : 'false'); 
     } 
   }

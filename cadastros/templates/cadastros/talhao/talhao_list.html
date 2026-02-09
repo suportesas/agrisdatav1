@@ -78,9 +78,14 @@
     <h4 class="fw-bold text-secondary mb-0">
       <i class="bi bi-grid-3x3-gap text-success"></i> Talhões Cadastrados
     </h4>
-    <a href="{% url 'cadastros:talhao_create' %}" class="btn btn-success">
-      <i class="bi bi-plus-circle"></i> Novo Talhão
-    </a>
+    <div>
+      <button type="button" class="btn btn-outline-secondary me-2" data-bs-toggle="modal" data-bs-target="#modalAjuda">
+        <i class="bi bi-question-circle"></i> Como Fazer?
+      </button>
+      <a href="{% url 'cadastros:talhao_create' %}" class="btn btn-success">
+        <i class="bi bi-plus-circle"></i> Novo Talhão
+      </a>
+    </div>
   </div>
 
   <!-- Filtros -->
@@ -327,4 +332,214 @@
     transform: translateY(-2px);
   }
 </style>
+
+<!-- Modal de Ajuda -->
+<div class="modal fade" id="modalAjuda" tabindex="-1" aria-labelledby="modalAjudaLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title" id="modalAjudaLabel">
+          <i class="bi bi-question-circle"></i> Como Cadastrar e Gerenciar Talhões?
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body">
+        <div class="alert alert-info">
+          <i class="bi bi-info-circle"></i> <strong>O que é um Talhão?</strong><br>
+          Um talhão é uma subdivisão de uma área dentro de uma fazenda. Representa um lote específico de terra com características próprias, onde você pode realizar plantios, aplicar tratamentos, fazer colheitas e acompanhar a produção de forma detalhada.
+        </div>
+
+        <h5 class="mt-4"><i class="bi bi-list-ol"></i> Passo a Passo</h5>
+        
+        <div class="accordion" id="accordionTalhoes">
+          <!-- Passo 1 -->
+          <div class="accordion-item">
+            <h2 class="accordion-header">
+              <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#passo1">
+                <strong>1. Criar Novo Talhão</strong>
+              </button>
+            </h2>
+            <div id="passo1" class="accordion-collapse collapse show" data-bs-parent="#accordionTalhoes">
+              <div class="accordion-body">
+                <ul>
+                  <li>Clique no botão <span class="badge bg-success"><i class="bi bi-plus-circle"></i> Novo Talhão</span></li>
+                  <li>Preencha os <strong>campos obrigatórios</strong>:
+                    <ul>
+                      <li><strong>Código/Identificação:</strong> Código único do talhão (ex: "TH-001", "TALHAO-A1")</li>
+                      <li><strong>Área:</strong> Selecione a área à qual o talhão pertence</li>
+                      <li><strong>Tamanho em hectares:</strong> Área do talhão em ha (não pode ser maior que a área disponível da área pai)</li>
+                      <li><strong>Tipo de Uso:</strong> Escolha o tipo de cultivo/uso:
+                        <ul>
+                          <li>🌾 <strong>Lavoura</strong> - Plantações de culturas</li>
+                          <li>🐄 <strong>Pastagem</strong> - Criação de gado</li>
+                          <li>🌳 <strong>Floresta</strong> - Áreas florestais</li>
+                          <li><strong>Infraestrutura</strong> - Benfeitorias, estradas</li>
+                          <li><strong>Outro</strong> - Outros usos</li>
+                        </ul>
+                      </li>
+                    </ul>
+                  </li>
+                  <li>Clique em <strong>Salvar</strong></li>
+                </ul>
+                <div class="alert alert-warning">
+                  <i class="bi bi-lightbulb"></i> <strong>Dica:</strong> Use códigos sequenciais para facilitar a identificação (TH-001, TH-002, etc)!
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Passo 2 -->
+          <div class="accordion-item">
+            <h2 class="accordion-header">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#passo2">
+                <strong>2. Informações Adicionais do Talhão</strong>
+              </button>
+            </h2>
+            <div id="passo2" class="accordion-collapse collapse" data-bs-parent="#accordionTalhoes">
+              <div class="accordion-body">
+                <ul>
+                  <li><strong>Localização Específica:</strong> (Opcional) Descrição da localização dentro da área</li>
+                  <li><strong>Altitude/Cota:</strong> (Opcional) Altura em metros para melhor caracterização</li>
+                  <li><strong>Solo:</strong> (Opcional) Tipo de solo (argiloso, arenoso, areno-argiloso, etc)</li>
+                  <li><strong>Topografia:</strong> (Opcional) Característica do terreno (plano, inclinado, etc)</li>
+                  <li><strong>Status do Talhão:</strong> Define a situação atual:
+                    <ul>
+                      <li>✓ <strong>Disponível</strong> - Pronto para plantio</li>
+                      <li>🌱 <strong>Em Preparo</strong> - Sendo preparado para plantio</li>
+                      <li>✓ <strong>Plantado</strong> - Com cultivo ativo</li>
+                      <li>⏸ <strong>Pousio</strong> - Em descanso/recuperação</li>
+                      <li>🔧 <strong>Em Manutenção</strong> - Recebendo tratamentos/tratos</li>
+                      <li>⏹ <strong>Inativo</strong> - Temporariamente indisponível</li>
+                    </ul>
+                  </li>
+                  <li><strong>Observações:</strong> (Opcional) Anotações importantes sobre o talhão</li>
+                </ul>
+                <div class="alert alert-info">
+                  <i class="bi bi-info-circle"></i> O sistema vincula automaticamente o talhão à <strong>área selecionada</strong> e controla sua disponibilidade!
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Passo 3 -->
+          <div class="accordion-item">
+            <h2 class="accordion-header">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#passo3">
+                <strong>3. Visualizar e Editar Talhões</strong>
+              </button>
+            </h2>
+            <div id="passo3" class="accordion-collapse collapse" data-bs-parent="#accordionTalhoes">
+              <div class="accordion-body">
+                <ul>
+                  <li>Na tabela de talhões, localize o talhão desejado</li>
+                  <li>Clique no ícone <button class="btn btn-sm btn-outline-secondary" disabled><i class="bi bi-three-dots-vertical"></i></button> para ver opções:
+                    <ul>
+                      <li><strong>Visualizar:</strong> Ver detalhes completos do talhão</li>
+                      <li><strong>Editar:</strong> Modificar informações do talhão</li>
+                      <li><strong>Registros:</strong> Ver histórico de plantios e operações</li>
+                      <li><strong>Excluir:</strong> Remover o talhão do sistema</li>
+                    </ul>
+                  </li>
+                  <li>Os dados são atualizados em tempo real</li>
+                </ul>
+                <div class="alert alert-warning">
+                  <i class="bi bi-exclamation-triangle"></i> <strong>Atenção:</strong> Só é possível excluir um talhão se ele não estiver vinculado a plantios ou operações ativas!
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Passo 4 -->
+          <div class="accordion-item">
+            <h2 class="accordion-header">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#passo4">
+                <strong>4. Filtrar e Buscar Talhões</strong>
+              </button>
+            </h2>
+            <div id="passo4" class="accordion-collapse collapse" data-bs-parent="#accordionTalhoes">
+              <div class="accordion-body">
+                <ul>
+                  <li>Use a <strong>barra de busca</strong> para procurar por:
+                    <ul>
+                      <li>Código do talhão</li>
+                      <li>Nome da fazenda</li>
+                      <li>Nome da área</li>
+                    </ul>
+                  </li>
+                  <li>Filtre por:
+                    <ul>
+                      <li><strong>Área:</strong> Talhões de uma área específica</li>
+                      <li><strong>Tipo:</strong> Lavoura, Pastagem, Floresta, etc</li>
+                      <li><strong>Status:</strong> Disponível, Plantado, Em Preparo, etc</li>
+                    </ul>
+                  </li>
+                  <li>Clique em <button class="btn btn-sm btn-primary" disabled><i class="bi bi-filter"></i></button> para aplicar os filtros</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- Passo 5 -->
+          <div class="accordion-item">
+            <h2 class="accordion-header">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#passo5">
+                <strong>5. Entender os Dados Exibidos</strong>
+              </button>
+            </h2>
+            <div id="passo5" class="accordion-collapse collapse" data-bs-parent="#accordionTalhoes">
+              <div class="accordion-body">
+                <ul>
+                  <li><strong>Código:</strong> Identificação única do talhão</li>
+                  <li><strong>Área:</strong> A qual área o talhão pertence</li>
+                  <li><strong>Tamanho:</strong> Área em hectares</li>
+                  <li><strong>Tipo:</strong> Tipo de uso (Lavoura, Pastagem, etc)</li>
+                  <li><strong>Status:</strong> Situação atual do talhão com indicadores visuais (badges coloridas)</li>
+                  <li><strong>Operações:</strong> Número de plantios/operações vinculadas</li>
+                  <li><strong>Índice de Acurácia:</strong> (Se disponível) Indicador de desempenho do talhão</li>
+                </ul>
+                <div class="alert alert-info">
+                  <i class="bi bi-info-circle"></i> Passe o mouse sobre as colunas para ver informações adicionais em tooltips!
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="alert alert-primary mt-4">
+          <h6><i class="bi bi-info-circle"></i> Informações Importantes</h6>
+          <ul class="mb-0">
+            <li><strong>Restrição de Tamanho:</strong> O talhão não pode ser maior que a área disponível da área pai</li>
+            <li><strong>Vínculo com Área:</strong> Todo talhão deve estar vinculado a uma área (não pode ser excluído sem descvincular talhões)</li>
+            <li><strong>Rastreabilidade:</strong> Todos os plantios e operações são rastreáveis por talhão</li>
+            <li><strong>Estatísticas:</strong> Visualize totais de talhões no painel de estatísticas superior</li>
+          </ul>
+        </div>
+
+        <div class="card bg-light mt-3">
+          <div class="card-body">
+            <h6><i class="bi bi-lightbulb text-warning"></i> Boas Práticas</h6>
+            <ul class="mb-0">
+              <li>Mantenha os <strong>códigos consistentes</strong> e sequenciais</li>
+              <li>Registre sempre o <strong>tipo de solo</strong> para melhor planejamento</li>
+              <li>Atualize o <strong>status</strong> conforme as mudanças nas operações</li>
+              <li>Divida <strong>áreas grandes</strong> em talhões menores (máx 10-20 ha)</li>
+              <li>Use <strong>observações</strong> para registrar questões especiais do talhão</li>
+              <li>Realize <strong>auditorias periódicas</strong> dos talhões cadastrados</li>
+              <li>Mantenha informações de <strong>localização/topografia</strong> atualizadas</li>
+              <li>Vincule <strong>plantios e operações</strong> aos talhões para rastreamento</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          <i class="bi bi-x-circle"></i> Fechar
+        </button>
+        <a href="{% url 'cadastros:talhao_create' %}" class="btn btn-success">
+          <i class="bi bi-plus-circle"></i> Criar Novo Talhão
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
 {% endblock %}

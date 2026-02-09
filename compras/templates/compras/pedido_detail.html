@@ -55,11 +55,13 @@
                     <i class="bi bi-inbox-fill"></i> Receber
                 </a>
                 {% endif %}
+                {% if pedido.cotacao.solicitacao %}
                 <a href="{% url 'compras:historico_completo' pedido.cotacao.solicitacao.pk %}"
                    class="btn btn-info"
                    title="Ver Histórico Completo">
                     <i class="bi bi-clock-history"></i> Histórico
                 </a>
+                {% endif %}
                 {% if pedido.status != 'CANCELADO' and pedido.status != 'RECEBIDO' %}
                 <a href="{% url 'compras:pedido_cancelar' pedido.pk %}"
                    class="btn btn-warning"
@@ -77,6 +79,7 @@
     </div>
     
     <!-- Rastreamento de Origem -->
+    {% if pedido.cotacao.solicitacao %}
     <div class="row mb-3">
         <div class="col-md-12">
             <div class="card border-info">
@@ -226,8 +229,7 @@
                 </div>
             </div>
         </div>
-    </div>
-    
+    </div>    {% endif %}    
     <!-- Itens do Pedido -->
     <div class="card mb-3">
         <div class="card-header">
@@ -382,6 +384,9 @@
                                     </button>
                                 </form>
                                 {% elif recebimento.status == 'FINALIZADO' %}
+                                <button type="button" class="btn btn-sm btn-outline-secondary" disabled title="Entrada já realizada">
+                                    <i class="bi bi-lock"></i> Entrada
+                                </button>
                                 <a href="{% url 'compras:recebimento_detail' recebimento.pk %}" 
                                    class="btn btn-sm btn-outline-success" 
                                    title="Ver detalhes">

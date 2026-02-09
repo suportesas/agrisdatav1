@@ -1,0 +1,179 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <h1 class="mb-4">
+                <i class="fas fa-history"></i> {{ title }}
+            </h1>
+            
+            <!-- Filtros -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Filtros de Auditoria</h5>
+                </div>
+                <div class="card-body">
+                    <form method="GET" class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-label">Tipo de Movimento</label>
+                            <select name="tipo" class="form-select">
+                                <option value="">-- Todos --</option>
+                                {% for value, label in tipos_movimento %}
+                                <option value="{{ value }}" {% if request.GET.tipo == value %}selected{% endif %}>
+                                    {{ label }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Usuário</label>
+                            <input type="text" name="usuario" class="form-control" 
+                                   value="{{ request.GET.usuario }}" placeholder="Nome do usuário">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Data Inicial</label>
+                            <input type="date" name="data_inicio" class="form-control" 
+                                   value="{{ request.GET.data_inicio }}">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Data Final</label>
+                            <input type="date" name="data_fim" class="form-control" 
+                                   value="{{ request.GET.data_fim }}">
+                        </div>
+                        <div class="col-md-2 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="fas fa-search"></i> Filtrar
+                            </button>
+                        </div>
+                    </form>
+                    {% if filtros_ativos %}
+                    <div class="mt-2">
+                        <a href="{% url 'estoque:relatorio_auditoria' %}" class="btn btn-sm btn-secondary">
+                            <i class="fas fa-redo"></i> Limpar Filtros
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Tabela de Transações -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        Histórico de Transações
+                        <span class="badge bg-info">{{ movimentacoes|length }}</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Data/Hora</th>
+                                    <th>Tipo</th>
+                                    <th>Produto</th>
+                                    <th>Quantidade</th>
+                                    <th>Usuário</th>
+                                    <th>Armazém</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for mov in movimentacoes %}
+                                <tr>
+                                    <td>
+                                        <small>{{ mov.data_movimentacao|date:"d/m/Y H:i" }}</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-
+                                            {% if mov.tipo == 'ENTRADA' %}success
+                                            {% elif mov.tipo == 'SAIDA' %}danger
+                                            {% elif mov.tipo == 'TRANSFERENCIA' %}info
+                                            {% else %}secondary
+                                            {% endif %}
+                                        ">
+                                            {{ mov.get_tipo_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if mov.produto %}
+                                            <a href="{% url 'estoque:produto_historico' mov.produto.id %}">
+                                                {{ mov.produto.nome }}
+                                            </a>
+                                        {% else %}
+                                            <span class="text-muted">—</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if mov.produto %}
+                                            {{ mov.quantidade }} {{ mov.produto.unidade_medida.sigla }}
+                                        {% else %}
+                                            {{ mov.quantidade }}
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if mov.cadastrado_por %}
+                                            <small>{{ mov.cadastrado_por.get_full_name|default:mov.cadastrado_por.username }}</small>
+                                        {% else %}
+                                            <span class="text-muted">—</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <small>{{ mov.armazem_origem.nome }}</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-
+                                            {% if mov.status == 'EXECUTADO' %}success
+                                            {% elif mov.status == 'PENDENTE' %}warning
+                                            {% else %}secondary
+                                            {% endif %}
+                                        ">
+                                            {{ mov.get_status_display }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="7" class="text-center text-muted">
+                                        Nenhuma transação encontrada
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Informações de Auditoria -->
+            <div class="alert alert-info mt-4">
+                <h5>Rastreamento Completo</h5>
+                <p>
+                    Este relatório fornece um rastreamento completo de todas as movimentações de estoque,
+                    registrando quem fez, o quê fez, quando fez e onde foi realizada cada operação.
+                </p>
+                <ul>
+                    <li><strong>Data/Hora:</strong> Momento exato da transação</li>
+                    <li><strong>Tipo:</strong> Entrada, Saída, Transferência ou Ajuste</li>
+                    <li><strong>Usuário:</strong> Quem realizou a operação</li>
+                    <li><strong>Status:</strong> Se foi executada ou ainda está pendente</li>
+                </ul>
+            </div>
+
+            <!-- Botões de Ação -->
+            <div class="mt-4">
+                <a href="{% url 'estoque:dashboard' %}" class="btn btn-secondary">
+                    <i class="fas fa-home"></i> Voltar ao Dashboard
+                </a>
+                <a href="{% url 'estoque:relatorio_estoque' %}" class="btn btn-primary">
+                    <i class="fas fa-file-pdf"></i> Outro Relatório
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

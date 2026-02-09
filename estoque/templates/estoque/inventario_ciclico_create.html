@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Novo Inventário Cíclico{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <h1>
+                <i class="fas fa-plus-circle"></i> Novo Inventário Cíclico
+            </h1>
+            
+            <div class="card mt-4">
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="armazem" class="form-label">Armazém *</label>
+                            <select name="armazem" id="armazem" class="form-select" required>
+                                <option value="">-- Selecione um armazém --</option>
+                                {% for armazem in armazens %}
+                                <option value="{{ armazem.id }}">{{ armazem.nome }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="tipo_inventario" class="form-label">Tipo de Inventário *</label>
+                            <select name="tipo_inventario" id="tipo_inventario" class="form-select" required>
+                                <option value="POR_LOTE">Por Lote (Contagem Detalhada)</option>
+                                <option value="POR_ITEM">Por Item (Estoque Agregado)</option>
+                            </select>
+                            <small class="form-text text-muted">
+                                <strong>Por Lote:</strong> Conta cada lote individualmente.<br>
+                                <strong>Por Item:</strong> Soma todos os lotes do produto e conta apenas o total.
+                            </small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="categoria_abc" class="form-label">Amostragem ABC *</label>
+                            <select name="categoria_abc" id="categoria_abc" class="form-select" required>
+                                <option value="TODOS">Todos (100%)</option>
+                                <option value="A">Classe A (80% do valor)</option>
+                                <option value="B">Classe B (15% do valor)</option>
+                                <option value="C">Classe C (5% do valor)</option>
+                            </select>
+                            <small class="form-text text-muted">
+                                Selecione qual classificação ABC deseja contar. O sistema calculará automaticamente.
+                            </small>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <i class="fas fa-lightbulb"></i> <strong>Dica:</strong>
+                            <ul class="mb-0 mt-2">
+                                <li><strong>Classe A:</strong> ~20% dos itens que representam ~80% do valor</li>
+                                <li><strong>Classe B:</strong> ~30% dos itens que representam ~15% do valor</li>
+                                <li><strong>Classe C:</strong> ~50% dos itens que representam ~5% do valor</li>
+                            </ul>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{% url 'estoque:inventario_ciclico_list' %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Voltar
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Criar Inventário
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

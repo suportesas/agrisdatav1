@@ -8,10 +8,23 @@ from .views_cotacao import (
     cotacao_detail, proposta_create, proposta_selecionar, historico_precos
 )
 from .views_dashboard import dashboard_compras
+from . import views_simples
 
 app_name = 'compras'
 
 urlpatterns = [
+    # ========================================
+    # 🚀 MODO SIMPLES - Compras Rápidas
+    # ========================================
+    path('compra-rapida/', views_simples.compra_rapida, name='compra_rapida'),
+    path('recebimento-rapido/', views_simples.recebimento_rapido, name='recebimento_rapido'),
+    path('recebimento-rapido/<int:pedido_pk>/', views_simples.recebimento_rapido, name='recebimento_rapido_pedido'),
+    path('escolher-modo/', views_simples.escolher_modo_compra, name='escolher_modo_compra'),
+    
+    # ========================================
+    # 📋 MODO FORMAL - Fluxo Completo
+    # ========================================
+    
     # Solicitações de Compra
     path('solicitacoes/', views.solicitacao_list, name='solicitacao_list'),
     path('solicitacoes/nova/', views.solicitacao_create, name='solicitacao_create'),
@@ -47,6 +60,7 @@ urlpatterns = [
     
     # Recebimentos de Compra
     path('recebimentos/', views.recebimento_list, name='recebimento_list'),
+    path('recebimentos/entrada-direta/', views.entrada_direta_nf, name='entrada_direta_nf'),
     path('recebimentos/<int:pk>/', views.recebimento_detail, name='recebimento_detail'),
     path('recebimentos/novo/<int:pedido_id>/', views.recebimento_create, name='recebimento_create'),
     path('recebimentos/<int:pk>/conferir/', views.recebimento_conferir, name='recebimento_conferir'),
@@ -69,6 +83,9 @@ urlpatterns = [
          name='cotacao_teste_template'),
     
     # Relatórios
+    path('relatorios/', views.relatorio_compras_simples, name='relatorio_compras_simples'),
+    path('relatorios/pdf/', views.relatorio_compras_simples_pdf, name='relatorio_compras_simples_pdf'),
+    path('relatorios/geral/', views.relatorio_compras_geral, name='relatorio_compras_geral'),
     path('relatorios/pedidos-pendentes/', views.relatorio_pedidos_pendentes, name='relatorio_pedidos_pendentes'),
     path('relatorios/compras/', views.relatorio_compras, name='relatorio_compras'),
 ]

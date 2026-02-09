@@ -1,0 +1,185 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <h1 class="mb-4">
+                <i class="fas fa-chart-pie"></i> {{ title }}
+            </h1>
+            
+            <!-- Resumo -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card bg-primary text-white">
+                        <div class="card-body">
+                            <h6 class="card-title">Classe A</h6>
+                            <h2>{{ classe_a_count }}</h2>
+                            <small>Produtos estratégicos (80%)</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-warning text-white">
+                        <div class="card-body">
+                            <h6 class="card-title">Classe B</h6>
+                            <h2>{{ classe_b_count }}</h2>
+                            <small>Produtos importantes (15%)</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-secondary text-white">
+                        <div class="card-body">
+                            <h6 class="card-title">Classe C</h6>
+                            <h2>{{ classe_c_count }}</h2>
+                            <small>Produtos diversos (5%)</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-info text-white">
+                        <div class="card-body">
+                            <h6 class="card-title">Total</h6>
+                            <h2>R$ {{ valor_total_geral|floatformat:2 }}</h2>
+                            <small>Valor total em estoque</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabela -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Produtos por Classificação ABC</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Classe</th>
+                                    <th>Produto</th>
+                                    <th>Estoque Atual</th>
+                                    <th>Preço Custo</th>
+                                    <th>Valor Total</th>
+                                    <th>% do Total</th>
+                                    <th>% Acumulado</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in produtos %}
+                                <tr>
+                                    <td>
+                                        <span class="badge bg-
+                                            {% if item.classe == 'A' %}primary
+                                            {% elif item.classe == 'B' %}warning
+                                            {% else %}secondary
+                                            {% endif %}
+                                        ">{{ item.classe }}</span>
+                                    </td>
+                                    <td>
+                                        <strong>{{ item.produto.nome }}</strong>
+                                    </td>
+                                    <td>
+                                        {{ item.estoque_atual }} {{ item.produto.unidade_medida.sigla }}
+                                    </td>
+                                    <td>
+                                        R$ {{ item.preco_custo|floatformat:2 }}
+                                    </td>
+                                    <td>
+                                        <strong>R$ {{ item.valor_estoque|floatformat:2 }}</strong>
+                                    </td>
+                                    <td>
+                                        {{ item.percentual_valor }}%
+                                    </td>
+                                    <td>
+                                        <div class="progress">
+                                            <div class="progress-bar
+                                                {% if item.classe == 'A' %}bg-primary
+                                                {% elif item.classe == 'B' %}bg-warning
+                                                {% else %}bg-secondary
+                                                {% endif %}
+                                            " style="width: {{ item.percentual_acumulado }}%">
+                                                {{ item.percentual_acumulado }}%
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="7" class="text-center text-muted">
+                                        Nenhum dado disponível
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Informações -->
+            <div class="alert alert-info mt-4">
+                <h5>O que é Análise ABC?</h5>
+                <p>
+                    A análise ABC (Pareto) classifica os produtos de acordo com sua importância relativa:
+                </p>
+                <ul>
+                    <li><strong>Classe A:</strong> 80% do valor em estoque - Produtos prioritários para controle rigoroso</li>
+                    <li><strong>Classe B:</strong> 15% do valor em estoque - Produtos intermediários</li>
+                    <li><strong>Classe C:</strong> 5% do valor em estoque - Produtos diversos com menor impacto</li>
+                </ul>
+            </div>
+
+            <!-- Botões de Ação -->
+            <div class="mt-4">
+                <a href="{% url 'estoque:dashboard' %}" class="btn btn-secondary">
+                    <i class="fas fa-home"></i> Voltar ao Dashboard
+                </a>
+                <a href="{% url 'estoque:relatorio_estoque' %}" class="btn btn-primary">
+                    <i class="fas fa-file-pdf"></i> Outro Relatório
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Gráfico ABC
+    const ctx = document.createElement('canvas');
+    const container = document.querySelector('.card-body');
+    container.insertBefore(ctx, container.firstChild);
+    
+    const classeCounts = {
+        'A': {{ classe_a_count }},
+        'B': {{ classe_b_count }},
+        'C': {{ classe_c_count }}
+    };
+    
+    new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Classe A', 'Classe B', 'Classe C'],
+            datasets: [{
+                data: [classeCounts['A'], classeCounts['B'], classeCounts['C']],
+                backgroundColor: ['#0d6efd', '#ffc107', '#6c757d']
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'right'
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}

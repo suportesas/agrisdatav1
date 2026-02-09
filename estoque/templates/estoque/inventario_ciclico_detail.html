@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Inventário Cíclico - {{ inventario.numero }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1>
+                <i class="fas fa-cube"></i> {{ inventario.numero }}
+            </h1>
+            <p class="text-muted">{{ inventario.armazem.nome }} - {{ inventario.data_contagem|date:"d/m/Y" }}</p>
+        </div>
+        <div class="col-md-4 text-end">
+            {% if inventario.status == 'PLANEJADO' %}
+            <a href="?classificacao=A" class="btn btn-sm btn-warning">
+                <i class="fas fa-play"></i> Iniciar Contagem
+            </a>
+            {% elif inventario.status == 'EM_CONTAGEM' %}
+            <a href="{% url 'estoque:inventario_ciclico_conciliar' inventario.id %}" class="btn btn-sm btn-info">
+                <i class="fas fa-check"></i> Conciliar
+            </a>
+            {% elif inventario.status == 'CONCILIADO' %}
+            <a href="{% url 'estoque:inventario_ciclico_finalizar' inventario.id %}" class="btn btn-sm btn-success">
+                <i class="fas fa-check-circle"></i> Finalizar
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Status e Progresso -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3">
+                    <h6 class="text-muted">Status</h6>
+                    <p class="display-6">
+                        <span class="badge bg-{% if inventario.status == 'PLANEJADO' %}primary{% elif inventario.status == 'EM_CONTAGEM' %}warning{% elif inventario.status == 'CONCILIADO' %}info{% else %}success{% endif %}">
+                            {{ inventario.get_status_display }}
+                        </span>
+                    </p>
+                </div>
+                <div class="col-md-3">
+                    <h6 class="text-muted">Progresso de Contagem</h6>
+                    <div class="progress">
+                        <div class="progress-bar bg-success" role="progressbar" style="width: {{ percentual_contagem }}%">
+                            {{ percentual_contagem|floatformat:0 }}%
+                        </div>
+                    </div>
+                    <small>{{ inventario.total_items_contados }} de {{ inventario.total_items_sistema }}</small>
+                </div>
+                <div class="col-md-3">
+                    <h6 class="text-muted">Divergências</h6>
+                    <p class="display-6">
+                        <span class="badge bg-{% if inventario.total_items_divergencia > 0 %}danger{% else %}success{% endif %}">
+                            {{ inventario.total_items_divergencia }}
+                        </span>
+                    </p>
+                </div>
+                <div class="col-md-3">
+                    <h6 class="text-muted">Acurácia</h6>
+                    <p class="display-6">
+                        <strong>{{ inventario.acuracia_percentual|floatformat:1 }}%</strong>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtro por Classe ABC -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="btn-group" role="group">
+                <a href="?classificacao=TODOS" class="btn btn-sm {% if classificacao_selecionada == 'TODOS' %}btn-primary active{% else %}btn-outline-primary{% endif %}">
+                    <i class="fas fa-list"></i> Todos
+                </a>
+                <a href="?classificacao=A" class="btn btn-sm {% if classificacao_selecionada == 'A' %}btn-primary active{% else %}btn-outline-primary{% endif %}">
+                    <i class="fas fa-star"></i> Classe A
+                </a>
+                <a href="?classificacao=B" class="btn btn-sm {% if classificacao_selecionada == 'B' %}btn-primary active{% else %}btn-outline-primary{% endif %}">
+                    <i class="fas fa-star-half-alt"></i> Classe B
+                </a>
+                <a href="?classificacao=C" class="btn btn-sm {% if classificacao_selecionada == 'C' %}btn-primary active{% else %}btn-outline-primary{% endif %}">
+                    <i class="fas fa-circle-notch"></i> Classe C
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabela de Itens -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">
+                Itens para Contar
+                {% if classificacao_selecionada != 'TODOS' %}
+                    (Classe {{ classificacao_selecionada }})
+                {% endif %}
+            </h5>
+        </div>
+        <div class="card-body">
+            {% if inventario.total_items_sistema == 0 %}
+            <div class="alert alert-warning">
+                <i class="fas fa-exclamation-triangle"></i>
+                Este inventário não possui itens. Verifique se há lotes no armazém selecionado
+                com status <strong>Disponível</strong> ou <strong>Bloqueado</strong>.
+            </div>
+            {% elif itens %}
+            <div class="table-responsive">
+                <table class="table table-sm table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Produto</th>
+                            {% if inventario.tipo_inventario == 'POR_LOTE' %}
+                            <th>Lote</th>
+                            {% endif %}
+                            <th class="text-end">Saldo Sistema</th>
+                            <th class="text-end">Contado</th>
+                            <th class="text-center">Divergência</th>
+                            <th class="text-center">Status</th>
+                            <th class="text-center">Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in itens %}
+                        <tr class="{% if item.tem_divergencia %}table-warning{% elif item.quantidade_contada %}table-success{% endif %}">
+                            <td>
+                                <strong>{{ item.produto.nome }}</strong><br>
+                                <small class="text-muted">Código: {{ item.produto.codigo }}</small>
+                            </td>
+                            {% if inventario.tipo_inventario == 'POR_LOTE' %}
+                            <td>{{ item.lote.numero_lote }}</td>
+                            {% endif %}
+                            <td class="text-end">
+                                {{ item.quantidade_sistema }} {{ item.produto.unidade_medida.sigla }}
+                            </td>
+                            <td class="text-end">
+                                {% if item.quantidade_contada %}
+                                <strong class="text-success">{{ item.quantidade_contada }}</strong>
+                                {% else %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                {% if item.tem_divergencia %}
+                                <span class="badge bg-warning text-dark">
+                                    {% if item.quantidade_diferenca > 0 %}
+                                    +{{ item.quantidade_diferenca }}
+                                    {% else %}
+                                    {{ item.quantidade_diferenca }}
+                                    {% endif %}
+                                </span>
+                                {% else %}
+                                <span class="badge bg-success">OK</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                {% if item.quantidade_contada %}
+                                <span class="badge bg-success">Contado</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Pendente</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                <a href="{% url 'estoque:inventario_ciclico_registrar_contagem' item.id %}" class="btn btn-sm btn-primary">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i> Nenhum item na classe selecionada.
+                <a href="?classificacao=TODOS" class="alert-link">Ver todos os itens</a>.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Resumo de Valor -->
+    {% if inventario.valor_divergencia != 0 %}
+    <div class="card mt-4 border-warning">
+        <div class="card-body">
+            <h6>Resumo de Divergência</h6>
+            <p>
+                <strong>Valor Total de Divergência:</strong> 
+                <span class="text-danger h5">R$ {{ inventario.valor_divergencia|floatformat:2 }}</span>
+            </p>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Botões -->
+    <div class="mt-4">
+        <a href="{% url 'estoque:inventario_ciclico_list' %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Voltar
+        </a>
+    </div>
+</div>
+{% endblock %}

@@ -39,6 +39,121 @@
     padding: 24px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.08);
   }
+  .action-card {
+    background: white;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 24px 16px;
+    text-align: center;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    text-decoration: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    min-height: 140px;
+    justify-content: center;
+  }
+  .action-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+    text-decoration: none;
+  }
+  .action-card.success {
+    border-color: #10b981;
+  }
+  .action-card.success:hover {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    border-color: #10b981;
+  }
+  .action-card.warning {
+    border-color: #f59e0b;
+  }
+  .action-card.warning:hover {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    border-color: #f59e0b;
+  }
+  .action-card.info {
+    border-color: #3b82f6;
+  }
+  .action-card.info:hover {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    border-color: #3b82f6;
+  }
+  .action-card.primary {
+    border-color: #6366f1;
+  }
+  .action-card.primary:hover {
+    background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+    border-color: #6366f1;
+  }
+  .action-card.secondary {
+    border-color: #64748b;
+  }
+  .action-card.secondary:hover {
+    background: linear-gradient(135deg, #64748b 0%, #475569 100%);
+    border-color: #64748b;
+  }
+  .action-card-icon {
+    font-size: 3rem;
+    transition: all 0.3s ease;
+  }
+  .action-card.success .action-card-icon {
+    color: #10b981;
+  }
+  .action-card.warning .action-card-icon {
+    color: #f59e0b;
+  }
+  .action-card.info .action-card-icon {
+    color: #3b82f6;
+  }
+  .action-card.primary .action-card-icon {
+    color: #6366f1;
+  }
+  .action-card.secondary .action-card-icon {
+    color: #64748b;
+  }
+  .action-card:hover .action-card-icon {
+    color: white;
+    transform: scale(1.1);
+  }
+  .action-card-text {
+    font-weight: 600;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+  }
+  .action-card.success .action-card-text {
+    color: #10b981;
+  }
+  .action-card.warning .action-card-text {
+    color: #f59e0b;
+  }
+  .action-card.info .action-card-text {
+    color: #3b82f6;
+  }
+  .action-card.primary .action-card-text {
+    color: #6366f1;
+  }
+  .action-card.secondary .action-card-text {
+    color: #64748b;
+  }
+  .action-card.danger {
+    border-color: #ef4444;
+  }
+  .action-card.danger:hover {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    border-color: #ef4444;
+  }
+  .action-card.danger .action-card-icon {
+    color: #ef4444;
+  }
+  .action-card.danger .action-card-text {
+    color: #ef4444;
+  }
+  .action-card:hover .action-card-text {
+    color: white;
+  }
   .action-btn {
     padding: 12px 24px;
     border-radius: 8px;
@@ -92,32 +207,89 @@
   <div class="row mb-4">
     <div class="col-12">
       <div class="quick-actions">
-        <h5 class="mb-3"><i class="bi bi-lightning-charge"></i> Ações Rápidas</h5>
-        <div class="d-flex gap-2 flex-wrap">
-          <a href="{% url 'estoque:entrada_create' %}" class="btn btn-success action-btn">
-            <i class="bi bi-box-arrow-in-down"></i> Entrada
-          </a>
-          <a href="{% url 'estoque:saida_create' %}" class="btn btn-warning action-btn">
-            <i class="bi bi-box-arrow-up"></i> Saída
-          </a>
-          <a href="{% url 'estoque:transferencia_create' %}" class="btn btn-info action-btn">
-            <i class="bi bi-arrow-left-right"></i> Transferência
-          </a>
-          <a href="{% url 'estoque:lote_create' %}" class="btn btn-primary action-btn">
-            <i class="bi bi-box2"></i> Novo Lote
-          </a>
-          <a href="{% url 'estoque:movimentacao_list' %}" class="btn btn-outline-secondary action-btn">
-            <i class="bi bi-list-ul"></i> Ver Movimentações
-          </a>
-          <a href="{% url 'estoque:relatorio_estoque' %}" class="btn btn-outline-info action-btn">
-            <i class="bi bi-file-earmark-text"></i> Relatório de Estoque
-          </a>
+        <h5 class="mb-4"><i class="bi bi-lightning-charge"></i> Ações Rápidas</h5>
+        <div class="row g-3">
+          <div class="col-6 col-md-4 col-lg-2">
+            <a href="{% url 'estoque:entrada_create' %}" class="action-card success">
+              <i class="bi bi-box-arrow-in-down action-card-icon"></i>
+              <span class="action-card-text">Entrada</span>
+            </a>
+          </div>
+          <div class="col-6 col-md-4 col-lg-2">
+            <a href="{% url 'estoque:saida_create' %}" class="action-card warning">
+              <i class="bi bi-box-arrow-up action-card-icon"></i>
+              <span class="action-card-text">Saída</span>
+            </a>
+          </div>
+          <div class="col-6 col-md-4 col-lg-2">
+            <a href="{% url 'estoque:transferencia_create' %}" class="action-card info">
+              <i class="bi bi-arrow-left-right action-card-icon"></i>
+              <span class="action-card-text">Transferência</span>
+            </a>
+          </div>
+          <div class="col-6 col-md-4 col-lg-2">
+            <a href="{% url 'estoque:lote_create' %}" class="action-card primary">
+              <i class="bi bi-box2 action-card-icon"></i>
+              <span class="action-card-text">Novo Lote</span>
+            </a>
+          </div>
+          <div class="col-6 col-md-4 col-lg-2">
+            <a href="{% url 'estoque:movimentacao_list' %}" class="action-card secondary">
+              <i class="bi bi-list-ul action-card-icon"></i>
+              <span class="action-card-text">Movimentações</span>
+            </a>
+          </div>
+          <div class="col-6 col-md-4 col-lg-2">
+            <a href="{% url 'estoque:relatorio_estoque' %}" class="action-card secondary">
+              <i class="bi bi-file-earmark-bar-graph action-card-icon"></i>
+              <span class="action-card-text">Relatório</span>
+            </a>
+          </div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Alertas -->
+  <!-- Relatórios Avançados -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="quick-actions">
+        <h5 class="mb-4"><i class="bi bi-graph-up"></i> Relatórios Avançados (FASE 3)</h5>
+        <div class="row g-3">
+          <div class="col-6 col-md-4 col-lg-2">
+            <a href="{% url 'estoque:relatorio_abc' %}" class="action-card primary">
+              <i class="bi bi-pie-chart action-card-icon"></i>
+              <span class="action-card-text">Análise ABC</span>
+            </a>
+          </div>
+          <div class="col-6 col-md-4 col-lg-2">
+            <a href="{% url 'estoque:relatorio_comparativo' %}" class="action-card info">
+              <i class="bi bi-graph-up action-card-icon"></i>
+              <span class="action-card-text">Comparativo</span>
+            </a>
+          </div>
+          <div class="col-6 col-md-4 col-lg-2">
+            <a href="{% url 'estoque:relatorio_auditoria' %}" class="action-card secondary">
+              <i class="bi bi-clock-history action-card-icon"></i>
+              <span class="action-card-text">Auditoria</span>
+            </a>
+          </div>
+          <div class="col-6 col-md-4 col-lg-2">
+            <a href="{% url 'estoque:relatorio_rastreamento' %}" class="action-card primary">
+              <i class="bi bi-upc-scan action-card-icon"></i>
+              <span class="action-card-text">Rastreamento</span>
+            </a>
+          </div>
+          <div class="col-6 col-md-4 col-lg-2">
+            <a href="{% url 'estoque:relatorio_alertas_estoque' %}" class="action-card danger">
+              <i class="bi bi-exclamation-triangle action-card-icon"></i>
+              <span class="action-card-text">Alertas</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
   {% if lotes_vencidos %}
   <div class="row mb-4">
     <div class="col-12">
@@ -126,7 +298,9 @@
         <ul class="mb-0">
           {% for lote in lotes_vencidos %}
           <li>
-            <strong>{{ lote.numero_lote }}</strong> - {{ lote.produto.nome }} 
+            <a href="{% url 'estoque:lote_detail' lote.pk %}" class="text-danger fw-bold text-decoration-none">
+              <strong>{{ lote.numero_lote }}</strong>
+            </a> - {{ lote.produto.nome }} 
             (Venceu em {{ lote.data_validade|date:"d/m/Y" }})
           </li>
           {% endfor %}

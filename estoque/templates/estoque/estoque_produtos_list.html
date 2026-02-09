@@ -12,7 +12,23 @@
         <li class="breadcrumb-item active">Estoque de Produtos</li>
       </ol>
     </nav>
-    <h2><i class="bi bi-box-seam"></i> Estoque de Produtos</h2>
+    <div class="d-flex justify-content-between align-items-center">
+      <h2><i class="bi bi-box-seam"></i> Estoque de Produtos</h2>
+      {% if alertas_estoque.total_alertas > 0 %}
+      <div class="alert-badges">
+        {% if alertas_criticos > 0 %}
+        <span class="badge bg-danger me-2" title="Estoque Crítico (zerado)">
+          <i class="bi bi-exclamation-circle"></i> Críticos: {{ alertas_criticos }}
+        </span>
+        {% endif %}
+        {% if alertas_excesso > 0 %}
+        <span class="badge bg-info" title="Estoque Acima do Máximo">
+          <i class="bi bi-info-circle"></i> Acima do Máximo: {{ alertas_excesso }}
+        </span>
+        {% endif %}
+      </div>
+      {% endif %}
+    </div>
   </div>
 
   <!-- Filtros -->
@@ -34,6 +50,19 @@
             {% endfor %}
           </select>
         </div>
+        {% if can_choose_fazenda %}
+        <div class="col-md-3">
+          <label class="form-label">Fazenda</label>
+          <select name="fazenda" class="form-select">
+            <option value="">Todas as fazendas</option>
+            {% for faz in fazendas %}
+              <option value="{{ faz.id }}" {% if fazenda_filtro and fazenda_filtro.id == faz.id %}selected{% endif %}>
+                {{ faz.nome }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+        {% endif %}
         <div class="col-md-3">
           <label class="form-label">Situação do Estoque</label>
           <select name="estoque" class="form-select">
@@ -51,6 +80,12 @@
       </form>
     </div>
   </div>
+  {% if can_choose_fazenda and fazenda_filtro %}
+  <div class="alert alert-info py-2">
+    <i class="bi bi-info-circle"></i>
+    Exibindo estoque da fazenda: <strong>{{ fazenda_filtro.nome }}</strong>. Movimentações diretas sem armazém não são atribuídas a uma fazenda específica.
+  </div>
+  {% endif %}
 
   <!-- Tabela de Produtos -->
   <div class="card">
@@ -72,7 +107,7 @@
             </thead>
             <tbody>
               {% for produto in produtos %}
-                <tr>
+                <tr {% if produto.alerta_tipo == 'critico' %}class="table-danger"{% elif produto.alerta_tipo == 'excesso' %}class="table-info"{% endif %}>
                   <td>
                     <span class="badge bg-secondary">{{ produto.codigo|default:"-" }}</span>
                   </td>
@@ -80,6 +115,15 @@
                     <a href="{% url 'produtos:produto_detail' produto.pk %}" class="text-decoration-none">
                       <strong>{{ produto.nome }}</strong>
                     </a>
+                    {% if produto.alerta_tipo %}
+                    <div class="small mt-1">
+                      {% if produto.alerta_tipo == 'critico' %}
+                        <i class="bi bi-exclamation-circle"></i> <span class="text-danger fw-bold">Estoque crítico</span>
+                      {% elif produto.alerta_tipo == 'excesso' %}
+                        <i class="bi bi-info-circle"></i> <span class="text-info fw-bold">Acima do máximo</span>
+                      {% endif %}
+                    </div>
+                    {% endif %}
                   </td>
                   <td>
                     <span class="text-muted">{{ produto.categoria.nome }}</span>
@@ -88,7 +132,7 @@
                     {% if produto.estoque_total %}
                       <strong class="text-primary">{{ produto.estoque_total|floatformat:2 }}</strong>
                     {% else %}
-                      <span class="text-danger">0,00</span>
+                      <span class="text-danger fw-bold">0,00</span>
                     {% endif %}
                     <small class="text-muted">{{ produto.unidade_medida.sigla }}</small>
                   </td>
@@ -99,14 +143,12 @@
                     {{ produto.estoque_maximo|floatformat:2 }}
                   </td>
                   <td class="text-center">
-                    {% if not produto.estoque_total or produto.estoque_total == 0 %}
-                      <span class="badge bg-danger">Zerado</span>
-                    {% elif produto.estoque_total <= produto.estoque_minimo %}
-                      <span class="badge bg-warning text-dark">Baixo</span>
-                    {% elif produto.estoque_total >= produto.estoque_maximo and produto.estoque_maximo > 0 %}
-                      <span class="badge bg-info">Alto</span>
+                    {% if produto.alerta_tipo == 'critico' %}
+                      <span class="badge bg-danger"><i class="bi bi-exclamation-circle"></i> Crítico</span>
+                    {% elif produto.alerta_tipo == 'excesso' %}
+                      <span class="badge bg-info"><i class="bi bi-info-circle"></i> Acima do Máximo</span>
                     {% else %}
-                      <span class="badge bg-success">Normal</span>
+                      <span class="badge bg-success"><i class="bi bi-check-circle"></i> Normal</span>
                     {% endif %}
                   </td>
                   <td class="text-center">
@@ -139,6 +181,9 @@
           <p class="text-muted mb-0">
             <i class="bi bi-info-circle"></i>
             Total: <strong>{{ produtos|length }}</strong> produto(s) encontrado(s)
+            {% if alertas_criticos > 0 or alertas_excesso > 0 %}
+            | <i class="bi bi-exclamation-octagon text-warning"></i> <strong>{{ alertas_criticos }}</strong> crítico(s) + <strong>{{ alertas_excesso }}</strong> acima do máximo
+            {% endif %}
           </p>
         </div>
       {% else %}

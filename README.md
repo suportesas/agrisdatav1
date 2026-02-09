@@ -80,7 +80,7 @@ erp_agricola/
 
 ### 1️⃣ **Clone o Repositório**
 ```bash
-git clone https://github.com/seu-usuario/erp_agricola.git
+git clone https://github.com/EMSSousa/erp_agricola_novo.git
 cd erp_agricola
 ```
 
@@ -432,7 +432,7 @@ Desenvolvido com ❤️ e apoio da IA
 ## 📞 Suporte
 
 - Email: seu-email@exemplo.com
-- Issues: https://github.com/seu-usuario/erp_agricola/issues
+- Issues: https://github.com/EMSSousa/erp_agricola_novo/issues
 
 ## 🗺️ Roadmap
 

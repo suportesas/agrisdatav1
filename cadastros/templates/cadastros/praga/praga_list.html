@@ -14,7 +14,10 @@
       </h2>
       <p class="text-muted mb-0">Cadastro de pragas e doenças agrícolas</p>
     </div>
-    <div class="col-md-4 text-end">
+    <div class="col-md-4 text-end d-flex justify-content-end gap-2 align-items-start">
+      <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#modalAjuda">
+        <i class="bi bi-question-circle"></i> Como Fazer?
+      </button>
       <a href="{% url 'cadastros:praga_create' %}" class="btn btn-success btn-lg shadow-sm">
         <i class="bi bi-plus-circle"></i> Nova Praga
       </a>
@@ -183,5 +186,232 @@
     </div>
   {% endif %}
 
+</div>
+
+<!-- Modal de Ajuda -->
+<div class="modal fade" id="modalAjuda" tabindex="-1" aria-labelledby="modalAjudaLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title" id="modalAjudaLabel">
+          <i class="bi bi-question-circle"></i> Como Cadastrar e Gerenciar Pragas?
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body">
+        <div class="alert alert-danger">
+          <i class="bi bi-info-circle"></i> <strong>O que é uma Praga?</strong><br>
+          Uma praga é qualquer inseto, ácaro, molusco ou outro organismo que causa danos às culturas agrícolas. Também incluem doenças causadas por fungos, bactérias, vírus e outras patologias que afetam o crescimento e produção das plantas.
+        </div>
+
+        <h5 class="mt-4"><i class="bi bi-list-ol"></i> Passo a Passo</h5>
+        
+        <div class="accordion" id="accordionPragas">
+          <!-- Passo 1 -->
+          <div class="accordion-item">
+            <h2 class="accordion-header">
+              <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#passo1">
+                <strong>1. Criar Nova Praga</strong>
+              </button>
+            </h2>
+            <div id="passo1" class="accordion-collapse collapse show" data-bs-parent="#accordionPragas">
+              <div class="accordion-body">
+                <ul>
+                  <li>Clique no botão <span class="badge bg-success"><i class="bi bi-plus-circle"></i> Nova Praga</span></li>
+                  <li>Preencha os <strong>campos obrigatórios</strong>:
+                    <ul>
+                      <li><strong>Nome Comum:</strong> Nome popular da praga (ex: "Mosca-da-fruta", "Lagarta-do-cartucho")</li>
+                      <li><strong>Nome Científico:</strong> Nome científico/latin (ex: "Ceratitis capitata", "Spodoptera frugiperda")</li>
+                      <li><strong>Tipo de Praga:</strong> Classifique conforme a natureza:
+                        <ul>
+                          <li>🐛 <strong>Inseto</strong> - Borboletas, percevejos, pulgões, vespas, etc</li>
+                          <li>🕷️ <strong>Ácaro</strong> - Ácaros e carrapatos</li>
+                          <li>🦗 <strong>Nematoide</strong> - Vermes parasitas do solo</li>
+                          <li>🍄 <strong>Fungo</strong> - Oídios, míldios, ferrugem, etc</li>
+                          <li>🦠 <strong>Bactéria</strong> - Murcha bacteriana, canela, etc</li>
+                          <li>💉 <strong>Vírus</strong> - Mosaico, enrolamento, etc</li>
+                          <li>🐌 <strong>Molusco</strong> - Lesmas e caracóis</li>
+                          <li><strong>Outro</strong> - Outros tipos</li>
+                        </ul>
+                      </li>
+                      <li><strong>Descrição:</strong> Características principais e forma de ataque/sintomas</li>
+                    </ul>
+                  </li>
+                  <li>Clique em <strong>Salvar</strong></li>
+                </ul>
+                <div class="alert alert-warning">
+                  <i class="bi bi-lightbulb"></i> <strong>Dica:</strong> Use nomes científicos precisos para evitar confusões com espécies similares!
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Passo 2 -->
+          <div class="accordion-item">
+            <h2 class="accordion-header">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#passo2">
+                <strong>2. Informações Detalhadas da Praga</strong>
+              </button>
+            </h2>
+            <div id="passo2" class="accordion-collapse collapse" data-bs-parent="#accordionPragas">
+              <div class="accordion-body">
+                <ul>
+                  <li><strong>Culturas Afetadas:</strong> (Opcional) Quais culturas sofrem ataque desta praga</li>
+                  <li><strong>Sintomas:</strong> (Opcional) Como identificar o dano/infestação:
+                    <ul>
+                      <li>Manchas nas folhas</li>
+                      <li>Amarelecimento</li>
+                      <li>Murcha</li>
+                      <li>Enrolamento de folhas</li>
+                      <li>Deformação de frutos</li>
+                      <li>Etc</li>
+                    </ul>
+                  </li>
+                  <li><strong>Condições Favoráveis:</strong> Clima, umidade, temperatura ideais para proliferação</li>
+                  <li><strong>Ciclo de Vida (dias):</strong> (Opcional) Tempo de um ciclo completo da praga</li>
+                  <li><strong>Período Crítico:</strong> (Opcional) Melhor época para controle (semeadura, floração, etc)</li>
+                  <li><strong>Controle Recomendado:</strong> (Opcional) Métodos preventivos e curativos:
+                    <ul>
+                      <li>Controle cultural (rotação, destruição de restos)</li>
+                      <li>Controle biológico (predadores, parasitoides)</li>
+                      <li>Controle químico (inseticidas, fungicidas)</li>
+                      <li>Outras medidas</li>
+                    </ul>
+                  </li>
+                  <li><strong>Nível de Dano Econômico:</strong> (Opcional) A partir de quantos indivíduos há risco econômico</li>
+                  <li><strong>Ativa:</strong> Marque para deixar a praga disponível no sistema</li>
+                </ul>
+                <div class="alert alert-info">
+                  <i class="bi bi-info-circle"></i> Quanto mais detalhes registrados, melhor o manejo e controle!
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Passo 3 -->
+          <div class="accordion-item">
+            <h2 class="accordion-header">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#passo3">
+                <strong>3. Visualizar e Editar Pragas</strong>
+              </button>
+            </h2>
+            <div id="passo3" class="accordion-collapse collapse" data-bs-parent="#accordionPragas">
+              <div class="accordion-body">
+                <ul>
+                  <li>Na tabela de pragas, localize a praga desejada</li>
+                  <li>Clique no nome para <strong>visualizar</strong> detalhes completos</li>
+                  <li>Use os botões de ação para:
+                    <ul>
+                      <li><strong>Editar:</strong> Modificar informações da praga</li>
+                      <li><strong>Excluir:</strong> Remover a praga do sistema</li>
+                    </ul>
+                  </li>
+                  <li>Atualize informações conforme aprende mais sobre a praga</li>
+                </ul>
+                <div class="alert alert-warning">
+                  <i class="bi bi-exclamation-triangle"></i> <strong>Atenção:</strong> Se desativar uma praga, ela não aparecerá em novos registros de monitoramento!
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Passo 4 -->
+          <div class="accordion-item">
+            <h2 class="accordion-header">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#passo4">
+                <strong>4. Buscar e Filtrar Pragas</strong>
+              </button>
+            </h2>
+            <div id="passo4" class="accordion-collapse collapse" data-bs-parent="#accordionPragas">
+              <div class="accordion-body">
+                <ul>
+                  <li>Use a <strong>barra de busca</strong> para procurar por:
+                    <ul>
+                      <li>Nome comum da praga</li>
+                      <li>Nome científico</li>
+                      <li>Tipo de praga</li>
+                    </ul>
+                  </li>
+                  <li>Filtre por:
+                    <ul>
+                      <li><strong>Status:</strong> Ativas ou Inativas</li>
+                    </ul>
+                  </li>
+                  <li>Clique em <button class="btn btn-sm btn-primary" disabled><i class="bi bi-funnel"></i> Filtrar</button> para aplicar os filtros</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- Passo 5 -->
+          <div class="accordion-item">
+            <h2 class="accordion-header">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#passo5">
+                <strong>5. Vinculação com Operações de Controle</strong>
+              </button>
+            </h2>
+            <div id="passo5" class="accordion-collapse collapse" data-bs-parent="#accordionPragas">
+              <div class="accordion-body">
+                <ul>
+                  <li>As pragas cadastradas podem ser vinculadas a:</li>
+                  <li><strong>Monitoramento:</strong> Registre observações de pragas nos talhões</li>
+                  <li><strong>Operações de Controle:</strong> Aplique tratamentos contra a praga</li>
+                  <li><strong>Relatórios:</strong> Acompanhe a evolução da infestação</li>
+                  <li>Use a base de dados para rastreabilidade completa:
+                    <ul>
+                      <li>Qual praga foi detectada</li>
+                      <li>Quando e onde foi detectada</li>
+                      <li>Quais medidas de controle foram aplicadas</li>
+                      <li>Qual foi a eficácia do controle</li>
+                    </ul>
+                  </li>
+                </ul>
+                <div class="alert alert-info">
+                  <i class="bi bi-info-circle"></i> Manter um registro detalhado ajuda a entender os padrões de pragas em sua propriedade!
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="alert alert-danger mt-4">
+          <h6><i class="bi bi-info-circle"></i> Informações Importantes</h6>
+          <ul class="mb-0">
+            <li><strong>Identificação Correta:</strong> Sempre identifique corretamente a praga antes de aplicar controle</li>
+            <li><strong>Nomes Científicos:</strong> Use nomes cientificamente corretos para referência padrão</li>
+            <li><strong>Monitoramento Regular:</strong> Faça monitoria frequente para detectar pragas no início</li>
+            <li><strong>Nível de Dano Econômico:</strong> Controle somente quando necessário economicamente</li>
+            <li><strong>Integração de Métodos:</strong> Combine controle cultural, biológico e químico (MIP)</li>
+          </ul>
+        </div>
+
+        <div class="card bg-light mt-3">
+          <div class="card-body">
+            <h6><i class="bi bi-lightbulb text-warning"></i> Boas Práticas</h6>
+            <ul class="mb-0">
+              <li>Mantenha nomes <strong>científicos e comuns precisos</strong></li>
+              <li>Documente <strong>culturas afetadas</strong> para melhor prevenção</li>
+              <li>Registre <strong>sintomas específicos</strong> para diagnóstico rápido</li>
+              <li>Mantenha informações sobre <strong>condições favoráveis</strong> para antecipação</li>
+              <li>Documente <strong>métodos de controle efetivos</strong> em sua região</li>
+              <li>Atualize dados conforme novas <strong>pragas surgem</strong> na propriedade</li>
+              <li>Mantenha histórico mesmo de <strong>pragas descontinuadas</strong> para análise</li>
+              <li>Compartilhe informações com <strong>vizinhos e agrônomos</strong> para controle integrado</li>
+              <li>Use <strong>monitoramento sistemático</strong> em vez de reativo</li>
+              <li>Registre o <strong>nível de controle econômico</strong> para otimizar custos</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          <i class="bi bi-x-circle"></i> Fechar
+        </button>
+        <a href="{% url 'cadastros:praga_create' %}" class="btn btn-danger">
+          <i class="bi bi-plus-circle"></i> Criar Nova Praga
+        </a>
+      </div>
+    </div>
+  </div>
 </div>
 {% endblock %}

@@ -544,6 +544,20 @@
             <a href="{% url 'cadastros:safra_update' safra.pk %}" class="btn btn-outline-success">
               <i class="bi bi-pencil"></i> Editar Safra
             </a>
+
+            {% if safra.planned_production %}
+            <button class="btn btn-outline-primary" id="btnEditPlan" data-url="{% url 'cadastros:safra_plan_update' safra.pk %}">
+              <i class="bi bi-pencil-square"></i> Editar Planejamento
+            </button>
+            <button class="btn btn-outline-danger" id="btnDeletePlan" data-bs-toggle="modal" data-bs-target="#safraPlanDeleteModal">
+              <i class="bi bi-trash"></i> Excluir Planejamento
+            </button>
+            {% else %}
+            <button class="btn btn-outline-primary" id="btnAddPlan" data-url="{% url 'cadastros:safra_plan_create' safra.pk %}">
+              <i class="bi bi-clipboard-plus"></i> Adicionar Planejamento
+            </button>
+            {% endif %}
+
             <button class="btn btn-outline-primary" disabled>
               <i class="bi bi-file-earmark-bar-graph"></i> Gerar Relatório
             </button>
@@ -557,8 +571,151 @@
         </div>
       </div>
 
+    
+
+<!-- Safra Plan Modal -->
+<div class="modal fade" id="safraPlanModal" tabindex="-1" aria-labelledby="safraPlanModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <form method="post" action="{% url 'cadastros:safra_plan_create' safra.pk %}">
+        {% csrf_token %}
+        <div class="modal-header">
+          <h5 class="modal-title" id="safraPlanModalLabel">Adicionar Planejamento</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body" id="safraPlanModalBody">
+          {% include 'cadastros/safra/partials/safra_plan_form_fields.html' %}
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-success">Salvar Planejamento</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        </div>
+      </form>
     </div>
   </div>
+</div>
+
+<!-- Delete Plan Modal -->
+{% if safra.plano %}
+<div class="modal fade" id="safraPlanDeleteModal" tabindex="-1" aria-labelledby="safraPlanDeleteModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="post" id="safraPlanDeleteForm" action="{% url 'cadastros:safra_plan_delete' safra.pk %}">
+        {% csrf_token %}
+        <div class="modal-header">
+          <h5 class="modal-title" id="safraPlanDeleteModalLabel">Excluir Planejamento</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body">
+          <p>Tem certeza que deseja excluir o planejamento desta safra?</p>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-danger">Excluir</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% block extra_js %}
+<script>
+// AJAX submit for create/edit form in modal
+document.addEventListener('DOMContentLoaded', function() {
+  const modal = document.getElementById('safraPlanModal');
+  if (modal) {
+    // Intercept submit (works for both create and edit since action is dynamic)
+    modal.addEventListener('submit', function(e) {
+      const form = modal.querySelector('form');
+      if (!form) return;
+      e.preventDefault();
+      const url = form.action;
+      const data = new FormData(form);
+      const submitBtn = form.querySelector('button[type="submit"]');
+      if (submitBtn) submitBtn.disabled = true;
+
+      fetch(url, {
+        method: 'POST',
+        headers: {'X-Requested-With': 'XMLHttpRequest'},
+        body: data
+      }).then(r => r.json())
+        .then(js => {
+          if (js.success) {
+            // close modal and refresh page to show updated values
+            var bsModal = bootstrap.Modal.getInstance(modal);
+            if (bsModal) bsModal.hide();
+            location.reload();
+          } else {
+            const body = document.getElementById('safraPlanModalBody');
+            if (body && js.html) body.innerHTML = js.html;
+          }
+        }).catch(err => {
+          alert('Erro ao salvar planejamento');
+          console.error(err);
+        }).finally(() => {
+          if (submitBtn) submitBtn.disabled = false;
+        });
+    }, true);
+
+    // Fill modal for Add button (if present)
+    const btnAdd = document.getElementById('btnAddPlan');
+    if (btnAdd) {
+      btnAdd.addEventListener('click', function(e) {
+        const url = btnAdd.dataset.url;
+        // Load empty partial from server (we included it server-side already, but set form action accordingly)
+        const form = modal.querySelector('form');
+        form.action = url;
+        // If modal body has stale content from previous edit, refresh by fetching the create page partial via GET (optional)
+        // For simplicity, keep initial partial included in page; ensure inputs are empty
+        const body = document.getElementById('safraPlanModalBody');
+        body.querySelectorAll('input').forEach(i => i.value = '');
+      });
+    }
+
+    // Fill modal for Edit button (AJAX GET)
+    const btnEdit = document.getElementById('btnEditPlan');
+    if (btnEdit) {
+      btnEdit.addEventListener('click', function(e) {
+        const url = btnEdit.dataset.url;
+        fetch(url, {headers: {'X-Requested-With': 'XMLHttpRequest'}})
+          .then(r => r.json())
+          .then(js => {
+            if (js.success) {
+              const body = document.getElementById('safraPlanModalBody');
+              body.innerHTML = js.html;
+              const form = modal.querySelector('form');
+              form.action = url; // set to update URL
+              var bsModal = new bootstrap.Modal(modal);
+              bsModal.show();
+            } else {
+              alert('Erro ao obter formulário de edição');
+            }
+          }).catch(err => {
+            console.error(err); alert('Erro ao obter formulário de edição');
+          });
+      });
+    }
+  }
+
+  // AJAX delete
+  const deleteForm = document.getElementById('safraPlanDeleteForm');
+  if (deleteForm) {
+    deleteForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      if (!confirm('Confirmar exclusão do planejamento?')) return;
+      const url = deleteForm.action;
+      const data = new FormData(deleteForm);
+      fetch(url, {method: 'POST', headers: {'X-Requested-With': 'XMLHttpRequest'}, body: data})
+        .then(r => r.json())
+        .then(js => {
+          if (js.success) location.reload(); else alert('Erro ao excluir planejamento');
+        }).catch(err => { console.error(err); alert('Erro ao excluir planejamento'); });
+    });
+  }
+});
+</script>
+{% endblock %}
 
 </div>
 {% endblock %}

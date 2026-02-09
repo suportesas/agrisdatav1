@@ -1,0 +1,377 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Sistema de Compras - Modos de Operação{% endblock %}
+
+{% block extra_css %}
+<style>
+    .info-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 10px;
+        padding: 30px;
+        margin-bottom: 30px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .info-card h2 {
+        margin-bottom: 15px;
+    }
+
+    .flow-diagram {
+        display: flex;
+        align-items: center;
+        justify-content: space-around;
+        margin: 40px 0;
+        flex-wrap: wrap;
+        gap: 20px;
+    }
+
+    .flow-step {
+        text-align: center;
+        flex: 1;
+        min-width: 150px;
+    }
+
+    .flow-step-icon {
+        width: 80px;
+        height: 80px;
+        background-color: #f0f0f0;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 15px;
+        font-size: 32px;
+    }
+
+    .flow-step h4 {
+        margin-bottom: 5px;
+    }
+
+    .flow-arrow {
+        font-size: 24px;
+        color: #667eea;
+        align-self: center;
+    }
+
+    .mode-comparison {
+        margin: 30px 0;
+    }
+
+    .comparison-table {
+        width: 100%;
+        border-collapse: collapse;
+        background: white;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .comparison-table thead {
+        background-color: #667eea;
+        color: white;
+    }
+
+    .comparison-table th,
+    .comparison-table td {
+        padding: 15px;
+        text-align: left;
+        border-bottom: 1px solid #dee2e6;
+    }
+
+    .comparison-table tbody tr:hover {
+        background-color: #f9f9f9;
+    }
+
+    .badge-simples {
+        background-color: #d4edda;
+        color: #155724;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: bold;
+    }
+
+    .badge-formal {
+        background-color: #fff3cd;
+        color: #856404;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: bold;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+        margin: 40px 0;
+        flex-wrap: wrap;
+    }
+
+    .action-btn {
+        padding: 12px 30px;
+        border-radius: 6px;
+        text-decoration: none;
+        font-weight: bold;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.3s ease;
+    }
+
+    .action-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .btn-simples {
+        background-color: #28a745;
+        color: white;
+    }
+
+    .btn-formal {
+        background-color: #ffc107;
+        color: #333;
+    }
+
+    .config-badge {
+        display: inline-block;
+        padding: 8px 16px;
+        background-color: #e7f3ff;
+        color: #0066cc;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: bold;
+        margin-top: 10px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <!-- Header -->
+    <div class="info-card">
+        <h2><i class="fas fa-cogs"></i> Sistema de Modos de Operação</h2>
+        <p>
+            O sistema oferece flexibilidade total para escolher entre um processo rápido e simples
+            ou um processo formal e rastreável. Você pode configurar por padrão qual modo usar
+            ou deixar em modo HÍBRIDO para escolher a cada operação.
+        </p>
+    </div>
+
+    <!-- Modo Simples -->
+    <div class="card mb-4 border-success">
+        <div class="card-header bg-success text-white">
+            <h5 class="mb-0"><i class="fas fa-bolt"></i> MODO SIMPLES ⚡</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>📋 Processo de Compra:</h6>
+                    <div class="flow-diagram">
+                        <div class="flow-step">
+                            <div class="flow-step-icon"><i class="fas fa-shopping-cart"></i></div>
+                            <h4>Seleção</h4>
+                            <small>Produtos e Fornecedor</small>
+                        </div>
+                        <div class="flow-arrow">→</div>
+                        <div class="flow-step">
+                            <div class="flow-step-icon"><i class="fas fa-file-invoice"></i></div>
+                            <h4>Pedido</h4>
+                            <small>Criado na hora</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <h6>📦 Processo de Estoque:</h6>
+                    <div class="flow-diagram">
+                        <div class="flow-step">
+                            <div class="flow-step-icon"><i class="fas fa-boxes"></i></div>
+                            <h4>Entrada/Saída</h4>
+                            <small>Direta no estoque</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="alert alert-info">
+                <strong>✓ Vantagens:</strong> Rápido • Poucos cliques • Intuitivo • Ideal para pequenas operações
+            </div>
+            <div class="action-buttons">
+                <a href="{% url 'compras:compra_rapida' %}" class="action-btn btn-simples">
+                    <i class="fas fa-lightning-bolt"></i> Ir para Compra Rápida
+                </a>
+                <a href="{% url 'estoque:entrada_rapida' %}" class="action-btn btn-simples">
+                    <i class="fas fa-arrow-down"></i> Entrada Rápida de Estoque
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modo Formal -->
+    <div class="card mb-4 border-warning">
+        <div class="card-header bg-warning text-dark">
+            <h5 class="mb-0"><i class="fas fa-clipboard-list"></i> MODO FORMAL 📋</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>📋 Processo de Compra:</h6>
+                    <div class="flow-diagram">
+                        <div class="flow-step">
+                            <div class="flow-step-icon"><i class="fas fa-edit"></i></div>
+                            <h4>Solicitação</h4>
+                            <small>Criar requisição</small>
+                        </div>
+                        <div class="flow-arrow">→</div>
+                        <div class="flow-step">
+                            <div class="flow-step-icon"><i class="fas fa-comments"></i></div>
+                            <h4>Cotação</h4>
+                            <small>Comparar preços</small>
+                        </div>
+                        <div class="flow-arrow">→</div>
+                        <div class="flow-step">
+                            <div class="flow-step-icon"><i class="fas fa-file-invoice"></i></div>
+                            <h4>Pedido</h4>
+                            <small>Após aprovação</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <h6>📦 Processo de Estoque:</h6>
+                    <div class="flow-diagram">
+                        <div class="flow-step">
+                            <div class="flow-step-icon"><i class="fas fa-barcode"></i></div>
+                            <h4>Lote</h4>
+                            <small>Número + validade</small>
+                        </div>
+                        <div class="flow-arrow">→</div>
+                        <div class="flow-step">
+                            <div class="flow-step-icon"><i class="fas fa-warehouse"></i></div>
+                            <h4>Movimentação</h4>
+                            <small>Com rastreabilidade</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="alert alert-warning">
+                <strong>✓ Vantagens:</strong> Rastreável • Controlado • Aprovações • Ideal para grandes operações
+            </div>
+            <div class="action-buttons">
+                <a href="{% url 'compras:solicitacao_create' %}" class="action-btn btn-formal">
+                    <i class="fas fa-file-alt"></i> Nova Solicitação
+                </a>
+                <a href="{% url 'estoque:movimentacao_list' %}" class="action-btn btn-formal">
+                    <i class="fas fa-list"></i> Movimentações
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modo Híbrido -->
+    <div class="card mb-4 border-info">
+        <div class="card-header bg-info text-white">
+            <h5 class="mb-0"><i class="fas fa-exchange-alt"></i> MODO HÍBRIDO 🔀</h5>
+        </div>
+        <div class="card-body">
+            <p>
+                <strong>Flexibilidade total!</strong> Com o modo híbrido ativado, você pode escolher
+                entre o modo simples ou formal em cada operação. O sistema apresentará uma tela de seleção
+                permitindo que você decida qual fluxo usar no momento.
+            </p>
+            <div class="row mt-3">
+                <div class="col-md-6">
+                    <h6><i class="fas fa-check-circle text-success"></i> Para Compras:</h6>
+                    <a href="{% url 'compras:escolher_modo_compra' %}" class="btn btn-outline-primary">
+                        Escolher modo de compra →
+                    </a>
+                </div>
+                <div class="col-md-6">
+                    <h6><i class="fas fa-check-circle text-success"></i> Para Estoque:</h6>
+                    <a href="{% url 'estoque:escolher_modo_estoque' %}" class="btn btn-outline-primary">
+                        Escolher modo de estoque →
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabela Comparativa -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="fas fa-table"></i> Comparação de Modos</h5>
+        </div>
+        <div class="card-body">
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Aspecto</th>
+                        <th><span class="badge-simples">SIMPLES</span></th>
+                        <th><span class="badge-formal">FORMAL</span></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Tempo para completar</strong></td>
+                        <td>30-60 segundos</td>
+                        <td>5-10 minutos</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Etapas envolvidas</strong></td>
+                        <td>1-2 telas</td>
+                        <td>3-4 telas com aprovação</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Validação de estoque</strong></td>
+                        <td>Básica ou opcional</td>
+                        <td>Rigorosa</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Controle de lote</strong></td>
+                        <td>Automático simplificado</td>
+                        <td>Manual com validade</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Rastreabilidade</strong></td>
+                        <td>Básica</td>
+                        <td>Completa</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Ideal para</strong></td>
+                        <td>Pequenas/rápidas operações</td>
+                        <td>Operações críticas</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Configuração -->
+    <div class="card mb-4">
+        <div class="card-header bg-secondary text-white">
+            <h5 class="mb-0"><i class="fas fa-cog"></i> Configurar Modo Padrão</h5>
+        </div>
+        <div class="card-body">
+            <p>
+                Acesse a <strong>Configuração do Sistema</strong> para definir qual modo será ativado por padrão
+                para sua empresa. Você pode escolher entre:
+            </p>
+            <ul>
+                <li><strong>SIMPLES:</strong> Sempre usar o fluxo rápido</li>
+                <li><strong>FORMAL:</strong> Sempre usar o fluxo completo</li>
+                <li><strong>HÍBRIDO:</strong> Permitir escolha a cada operação</li>
+            </ul>
+            <div class="config-badge">
+                <i class="fas fa-shield-alt"></i> Apenas administradores podem alterar estas configurações
+            </div>
+            <br><br>
+            <a href="{% url 'configuracao_sistema' %}" class="btn btn-primary">
+                <i class="fas fa-sliders-h"></i> Acessar Configurações do Sistema
+            </a>
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}

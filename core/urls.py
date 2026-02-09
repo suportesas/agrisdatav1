@@ -9,6 +9,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib.auth import views as auth_views
 from usuarios import views as user_views
+from compras import views as compras_views
 
 
 def root_redirect(request):
@@ -70,6 +71,18 @@ urlpatterns = [
          ), 
          name='password_reset_complete'),
     
+    # ============================================
+    # ATALHOS GLOBAIS
+    # ============================================
+    path('compras/recebimentos/entrada-direta/', compras_views.entrada_direta_nf, name='entrada_direta_nf'),
+    
+    # ============================================
+    # CONFIGURAÇÕES DO SISTEMA
+    # ============================================
+    path('configuracoes/', include([
+        path('sistema/', user_views.configuracao_sistema, name='configuracao_sistema'),
+    ])),
+
     # ============================================
     # APPS PRINCIPAIS (COM NAMESPACE)
     # ============================================

@@ -2,6 +2,30 @@
 {% block title %}Empresas | ERP Agrícola{% endblock %}
 {% block page_title %}Empresas Cadastradas{% endblock %}
 
+{% block extra_css %}
+<style>
+  .nav-tabs .nav-link {
+    color: #6c757d;
+    font-weight: 500;
+    border-color: #dee2e6;
+    transition: all 0.2s ease;
+  }
+  
+  .nav-tabs .nav-link:hover {
+    color: #495057;
+    border-color: #dee2e6;
+  }
+  
+  .nav-tabs .nav-link.active {
+    color: #f0f0f0;
+    border-bottom: 3px solid #0d6efd;
+    font-weight: 600;
+    background-color: #0d6efd;
+    border-radius: 4px 4px 0 0;
+  }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container mt-4">
   <div class="d-flex justify-content-between mb-3">
@@ -10,6 +34,18 @@
       <i class="bi bi-plus-circle"></i> Nova Empresa
     </a>
   </div>
+
+  <ul class="nav nav-tabs mb-3">
+    <li class="nav-item">
+      <a class="nav-link {% if status == 'ativas' %}active{% endif %}" href="{% url 'empresas:empresa_list' %}?status=ativas">Ativas</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link {% if status == 'inativas' %}active{% endif %}" href="{% url 'empresas:empresa_list' %}?status=inativas">Inativas</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link {% if status == 'todas' %}active{% endif %}" href="{% url 'empresas:empresa_list' %}?status=todas">Todas</a>
+    </li>
+  </ul>
 
   <div class="card shadow-sm border-0 rounded-4">
     <div class="card-body table-responsive">

@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Relatório de Alertas de Estoque{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1>
+                <i class="fas fa-exclamation-triangle"></i> Relatório de Alertas de Estoque
+            </h1>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="?export=excel" class="btn btn-success me-2">
+                <i class="fas fa-file-excel"></i> Exportar Excel
+            </a>
+            <a href="?export=pdf" class="btn btn-danger">
+                <i class="fas fa-file-pdf"></i> Exportar PDF
+            </a>
+        </div>
+    </div>
+
+    <!-- Cards de Resumo -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card bg-danger text-white">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="fas fa-circle"></i> Alertas Críticos
+                    </h5>
+                    <p class="card-text display-4">{{ total_criticos }}</p>
+                    <small>Estoque ≤ 0</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="fas fa-circle"></i> Alertas de Excesso
+                    </h5>
+                    <p class="card-text display-4">{{ total_excesso }}</p>
+                    <small>Estoque > Máximo</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-warning text-dark">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="fas fa-bell"></i> Total de Alertas
+                    </h5>
+                    <p class="card-text display-4">{{ total_alertas }}</p>
+                    <small>Produtos afetados</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alertas Críticos -->
+    {% if alertas_criticos %}
+    <div class="card mb-4 border-danger">
+        <div class="card-header bg-danger text-white">
+            <h5 class="mb-0">
+                <i class="fas fa-exclamation-circle"></i> Alertas Críticos ({{ total_criticos }})
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-sm table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Código</th>
+                            <th>Produto</th>
+                            <th>Categoria</th>
+                            <th class="text-end">Saldo Atual</th>
+                            <th class="text-end">Est. Mínimo</th>
+                            <th class="text-end">Est. Máximo</th>
+                            <th>Unidade</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for alerta in alertas_criticos %}
+                        <tr class="table-danger">
+                            <td>
+                                <code>{{ alerta.produto.codigo|default:"-" }}</code>
+                            </td>
+                            <td>
+                                <strong>{{ alerta.produto.nome }}</strong>
+                            </td>
+                            <td>{{ alerta.produto.categoria.nome|default:"-" }}</td>
+                            <td class="text-end text-danger">
+                                <strong>{{ alerta.saldo }}</strong>
+                            </td>
+                            <td class="text-end">{{ alerta.minimo }}</td>
+                            <td class="text-end">{{ alerta.maximo }}</td>
+                            <td>{{ alerta.produto.unidade_medida.sigla|default:"-" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Alertas de Excesso -->
+    {% if alertas_excesso %}
+    <div class="card mb-4 border-info">
+        <div class="card-header bg-info text-white">
+            <h5 class="mb-0">
+                <i class="fas fa-arrow-up-circle"></i> Alertas de Excesso ({{ total_excesso }})
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-sm table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Código</th>
+                            <th>Produto</th>
+                            <th>Categoria</th>
+                            <th class="text-end">Saldo Atual</th>
+                            <th class="text-end">Est. Mínimo</th>
+                            <th class="text-end">Est. Máximo</th>
+                            <th>Unidade</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for alerta in alertas_excesso %}
+                        <tr class="table-info">
+                            <td>
+                                <code>{{ alerta.produto.codigo|default:"-" }}</code>
+                            </td>
+                            <td>
+                                <strong>{{ alerta.produto.nome }}</strong>
+                            </td>
+                            <td>{{ alerta.produto.categoria.nome|default:"-" }}</td>
+                            <td class="text-end text-info">
+                                <strong>{{ alerta.saldo }}</strong>
+                            </td>
+                            <td class="text-end">{{ alerta.minimo }}</td>
+                            <td class="text-end">{{ alerta.maximo }}</td>
+                            <td>{{ alerta.produto.unidade_medida.sigla|default:"-" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Sem alertas -->
+    {% if not alertas_criticos and not alertas_excesso %}
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="fas fa-check-circle"></i> <strong>Nenhum alerta!</strong> Todos os produtos estão com estoque normal.
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+    .card-header {
+        font-weight: 600;
+    }
+    
+    .table-danger {
+        background-color: #f8d7da;
+    }
+    
+    .table-info {
+        background-color: #d1ecf1;
+    }
+    
+    code {
+        background-color: #f4f4f4;
+        padding: 2px 6px;
+        border-radius: 3px;
+    }
+</style>
+{% endblock %}

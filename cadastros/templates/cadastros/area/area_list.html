@@ -16,9 +16,14 @@
         Total: <strong>{{ total_areas }}</strong> área{{ total_areas|pluralize }}
       </p>
     </div>
-    <a href="{% url 'cadastros:area_create' %}" class="btn btn-success">
-      <i class="bi bi-plus-circle"></i> Nova Área
-    </a>
+    <div>
+      <button type="button" class="btn btn-outline-secondary me-2" data-bs-toggle="modal" data-bs-target="#modalAjuda">
+        <i class="bi bi-question-circle"></i> Como Fazer?
+      </button>
+      <a href="{% url 'cadastros:area_create' %}" class="btn btn-success">
+        <i class="bi bi-plus-circle"></i> Nova Área
+      </a>
+    </div>
   </div>
 
   <!-- Filtros -->
@@ -259,4 +264,237 @@
     padding: 0.25rem 0.5rem;
   }
 </style>
+
+<!-- Modal de Ajuda -->
+<div class="modal fade" id="modalAjuda" tabindex="-1" aria-labelledby="modalAjudaLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title" id="modalAjudaLabel">
+          <i class="bi bi-question-circle"></i> Como Cadastrar e Gerenciar Áreas?
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body">
+        <div class="alert alert-info">
+          <i class="bi bi-info-circle"></i> <strong>O que é uma Área?</strong><br>
+          Uma área é uma porção de terra dentro de uma fazenda, caracterizada por sua localização, tamanho e tipo de uso (agrícola, pastagem, reserva, etc). As áreas podem ser subdivididas em talhões para melhor gerenciamento.
+        </div>
+
+        <h5 class="mt-4"><i class="bi bi-list-ol"></i> Passo a Passo</h5>
+        
+        <div class="accordion" id="accordionAreas">
+          <!-- Passo 1 -->
+          <div class="accordion-item">
+            <h2 class="accordion-header">
+              <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#passo1">
+                <strong>1. Criar Nova Área</strong>
+              </button>
+            </h2>
+            <div id="passo1" class="accordion-collapse collapse show" data-bs-parent="#accordionAreas">
+              <div class="accordion-body">
+                <ul>
+                  <li>Clique no botão <span class="badge bg-success"><i class="bi bi-plus-circle"></i> Nova Área</span></li>
+                  <li>Preencha os <strong>campos obrigatórios</strong>:
+                    <ul>
+                      <li><strong>Nome:</strong> Identificação da área (ex: "Talhão Sul", "Pasto A")</li>
+                      <li><strong>Fazenda:</strong> Selecione a fazenda à qual a área pertence</li>
+                      <li><strong>Tipo:</strong> Escolha o tipo de uso:
+                        <ul>
+                          <li>🌾 <strong>Agrícola</strong> - Área para plantio de culturas</li>
+                          <li>🐄 <strong>Pastagem</strong> - Área para criação de gado</li>
+                          <li>🌳 <strong>Reserva</strong> - Área de reserva ambiental</li>
+                          <li>🛡️ <strong>APP</strong> - Área de Proteção Permanente</li>
+                          <li><strong>Infraestrutura</strong> - Estradas, galpões, etc.</li>
+                        </ul>
+                      </li>
+                      <li><strong>Área Total:</strong> Tamanho em hectares (ha)</li>
+                    </ul>
+                  </li>
+                  <li>Clique em <strong>Salvar</strong></li>
+                </ul>
+                <div class="alert alert-warning">
+                  <i class="bi bi-lightbulb"></i> <strong>Dica:</strong> Use nomes claros e descritivos para facilitar a identificação no campo!
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Passo 2 -->
+          <div class="accordion-item">
+            <h2 class="accordion-header">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#passo2">
+                <strong>2. Informações Adicionais</strong>
+              </button>
+            </h2>
+            <div id="passo2" class="accordion-collapse collapse" data-bs-parent="#accordionAreas">
+              <div class="accordion-body">
+                <ul>
+                  <li><strong>Código Interno:</strong> (Opcional) Código personalizado para referência interna</li>
+                  <li><strong>Área de Reserva:</strong> Quantidade de hectares reservados (não utilizáveis)</li>
+                  <li><strong>Status da Área:</strong> Define a situação atual:
+                    <ul>
+                      <li>✓ <strong>Disponível</strong> - Pronta para uso</li>
+                      <li>⚡ <strong>Em Uso</strong> - Ocupada com cultivo/criação</li>
+                      <li>⏸ <strong>Descanso</strong> - Em período de pousio</li>
+                      <li>🔧 <strong>Preparação</strong> - Sendo preparada para plantio</li>
+                      <li>✗ <strong>Inativa</strong> - Temporariamente indisponível</li>
+                    </ul>
+                  </li>
+                  <li><strong>Localização/Coordenadas:</strong> (Opcional) Informações de geolocalização</li>
+                </ul>
+                <div class="alert alert-info">
+                  <i class="bi bi-info-circle"></i> O sistema calcula automaticamente a <strong>área disponível</strong> (Total - Reserva) e o <strong>percentual de uso</strong>!
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Passo 3 -->
+          <div class="accordion-item">
+            <h2 class="accordion-header">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#passo3">
+                <strong>3. Visualizar e Editar Áreas</strong>
+              </button>
+            </h2>
+            <div id="passo3" class="accordion-collapse collapse" data-bs-parent="#accordionAreas">
+              <div class="accordion-body">
+                <ul>
+                  <li>Na tabela de áreas, localize a área desejada</li>
+                  <li>Clique no ícone <button class="btn btn-sm btn-outline-secondary" disabled><i class="bi bi-three-dots-vertical"></i></button> para ver opções:
+                    <ul>
+                      <li><strong>Visualizar:</strong> Ver detalhes completos da área</li>
+                      <li><strong>Editar:</strong> Modificar informações da área</li>
+                      <li><strong>Excluir:</strong> Remover a área do sistema</li>
+                    </ul>
+                  </li>
+                  <li>Os dados são atualizados em tempo real</li>
+                </ul>
+                <div class="alert alert-warning">
+                  <i class="bi bi-exclamation-triangle"></i> <strong>Atenção:</strong> Só é possível excluir uma área se ela não tiver talhões associados!
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Passo 4 -->
+          <div class="accordion-item">
+            <h2 class="accordion-header">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#passo4">
+                <strong>4. Filtrar e Buscar Áreas</strong>
+              </button>
+            </h2>
+            <div id="passo4" class="accordion-collapse collapse" data-bs-parent="#accordionAreas">
+              <div class="accordion-body">
+                <ul>
+                  <li>Use a <strong>barra de busca</strong> para procurar por:
+                    <ul>
+                      <li>Nome da área</li>
+                      <li>Código interno</li>
+                      <li>Nome da fazenda</li>
+                    </ul>
+                  </li>
+                  <li>Filtre por:
+                    <ul>
+                      <li><strong>Fazenda:</strong> Exibir áreas de uma fazenda específica</li>
+                      <li><strong>Tipo:</strong> Agrícola, Pastagem, Reserva, APP, etc.</li>
+                      <li><strong>Status:</strong> Disponível, Em Uso, Descanso, etc.</li>
+                    </ul>
+                  </li>
+                  <li>Clique em <button class="btn btn-sm btn-primary" disabled><i class="bi bi-filter"></i></button> para aplicar os filtros</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="alert alert-primary mt-4">
+          <h6><i class="bi bi-info-circle"></i> Informações Importantes</h6>
+          <ul class="mb-0">
+            <li><strong>Área Total:</strong> Tamanho total em hectares (não pode ser alterado após criação)</li>
+            <li><strong>Área Disponível:</strong> Calculada automaticamente como (Total - Reserva)</li>
+            <li><strong>Percentual de Uso:</strong> Indica quanto da área está sendo utilizada</li>
+            <li><strong>Talhões:</strong> Subdivisões da área para melhor gerenciamento</li>
+          </ul>
+        </div>
+
+        <div class="card bg-light mt-3">
+          <div class="card-body">
+            <h6><i class="bi bi-lightbulb text-warning"></i> Boas Práticas</h6>
+            <ul class="mb-0">
+              <li>Mantenha os nomes das áreas <strong>consistentes</strong> e <strong>descritivos</strong></li>
+              <li>Atualize o <strong>status</strong> conforme as mudanças de uso</li>
+              <li>Registre a <strong>área de reserva</strong> para cálculos precisos</li>
+              <li>Subdivida áreas grandes em <strong>talhões</strong> para melhor controle</li>
+              <li>Realize <strong>auditorias periódicas</strong> dos dados cadastrados</li>
+              <li>Use a <strong>localização/coordenadas</strong> para rastreamento via GPS</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          <i class="bi bi-x-circle"></i> Fechar
+        </button>
+        <a href="{% url 'cadastros:area_create' %}" class="btn btn-success">
+          <i class="bi bi-plus-circle"></i> Criar Nova Área
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% block extra_js %}
+<script>
+// Posiciona menu do dropdown como fixed ao ser aberto para evitar recorte por containers com overflow
+// e garante reposicionamento correto ao fechar.
+document.addEventListener('DOMContentLoaded', function(){
+  document.querySelectorAll('.table .dropdown').forEach(function(dropdown){
+    var btn = dropdown.querySelector('.dropdown-toggle');
+    var menu = dropdown.querySelector('.dropdown-menu');
+    if(!btn || !menu) return;
+
+    dropdown.addEventListener('shown.bs.dropdown', function(){
+      try{
+        // Executa no próximo frame para garantir que Popper/Bootstrap apliquem
+        // seus estilos primeiro, e então sobrescrevemos com nosso posicionamento
+        requestAnimationFrame(function(){
+          var rect = btn.getBoundingClientRect();
+
+          // Se o menu estiver escondido, force display temporário para medir largura
+          var wasHidden = window.getComputedStyle(menu).display === 'none';
+          if (wasHidden) { menu.style.display = 'block'; menu.style.visibility = 'hidden'; }
+
+          var menuWidth = menu.offsetWidth;
+          var isEnd = menu.classList.contains('dropdown-menu-end');
+
+          // Torna o menu fixed sobrepondo a tabela
+          menu.style.position = 'fixed';
+          menu.style.zIndex = 2000;
+
+          var left = isEnd ? (rect.right - menuWidth) : rect.left;
+          // Ajusta para não sair pela direita da viewport
+          left = Math.min(Math.max(0, left), window.innerWidth - menuWidth);
+
+          menu.style.left = left + 'px';
+          menu.style.top = (rect.bottom) + 'px';
+          menu.style.transform = 'none';
+
+          if (wasHidden) { menu.style.display = ''; menu.style.visibility = ''; }
+        });
+      }catch(e){/* fail silently */}
+    });
+
+    dropdown.addEventListener('hide.bs.dropdown', function(){
+      // Restaura estilos originais
+      menu.style.position = '';
+      menu.style.left = '';
+      menu.style.top = '';
+      menu.style.zIndex = '';
+      menu.style.transform = '';
+    });
+  });
+});
+</script>
+{% endblock %}
 {% endblock %}

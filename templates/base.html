@@ -313,7 +313,98 @@
     </div>
   </div>
 
-  {% block extra_js %}{% endblock %}
+  {% block extra_js %}
+  <script>
+  // Global fix: cobre dropdowns em tabelas e outros containers com overflow
+  document.addEventListener('DOMContentLoaded', function(){
+    function isClippedByAncestor(el){
+      try{
+        var p = el.parentElement;
+        while(p && p !== document.body){
+          var s = getComputedStyle(p);
+          if (s.overflow !== 'visible' || s.overflowX !== 'visible' || s.overflowY !== 'visible'){
+            // se tiver overflow diferente de visible, pode recortar o menu
+            if (s.overflow !== 'visible' && s.overflow !== 'visible') return true;
+            if (s.overflowX !== 'visible' && s.overflowX !== '') return true;
+            if (s.overflowY !== 'visible' && s.overflowY !== '') return true;
+          }
+          p = p.parentElement;
+        }
+      }catch(e){}
+      return false;
+    }
+
+    function shouldReposition(menu){
+      // Sempre reposicionar se estiver dentro de uma tabela ou table-responsive
+      if (menu.closest('.table') || menu.closest('.table-responsive')) return true;
+      // Ou se algum ancestor puder cortar o menu
+      return isClippedByAncestor(menu);
+    }
+
+    function repositionDropdown(dropdown){
+      try{
+        var btn = dropdown.querySelector('.dropdown-toggle');
+        var menu = dropdown.querySelector('.dropdown-menu');
+        if(!btn || !menu) return;
+
+        // Só reposiciona quando necessário
+        if (!shouldReposition(menu)) return;
+
+        var rect = btn.getBoundingClientRect();
+        var wasHidden = window.getComputedStyle(menu).display === 'none';
+        if (wasHidden) { menu.style.display = 'block'; menu.style.visibility = 'hidden'; }
+
+        var menuWidth = menu.offsetWidth;
+        var isEnd = menu.classList.contains('dropdown-menu-end');
+
+        menu.style.position = 'fixed';
+        menu.style.zIndex = 2000;
+        menu.style.transform = 'none';
+
+        var left = isEnd ? (rect.right - menuWidth) : rect.left;
+        left = Math.min(Math.max(0, left), window.innerWidth - menuWidth);
+
+        menu.style.left = left + 'px';
+        menu.style.top = (rect.bottom) + 'px';
+
+        if (wasHidden) { menu.style.display = ''; menu.style.visibility = ''; }
+      }catch(e){/* silencioso */}
+    }
+
+    // Hook em todos os dropdowns da página (abrange tabelas e outros casos)
+    document.querySelectorAll('.dropdown').forEach(function(dropdown){
+      var menu = dropdown.querySelector('.dropdown-menu');
+      if(!menu) return;
+
+      dropdown.addEventListener('shown.bs.dropdown', function(){
+        // deixa Popper/Bootstrap aplicar primeiro, então sobrescrevemos
+        requestAnimationFrame(function(){ repositionDropdown(dropdown); });
+      });
+
+      dropdown.addEventListener('hide.bs.dropdown', function(){
+        try{
+          if(menu){
+            menu.style.position = '';
+            menu.style.left = '';
+            menu.style.top = '';
+            menu.style.zIndex = '';
+            menu.style.transform = '';
+          }
+        }catch(e){}
+      });
+    });
+
+    // Reposiciona menus abertos em resize/scroll
+    var onViewportChange = function(){
+      document.querySelectorAll('.dropdown.show').forEach(function(dropdown){
+        requestAnimationFrame(function(){ repositionDropdown(dropdown); });
+      });
+    };
+    window.addEventListener('resize', onViewportChange);
+    window.addEventListener('scroll', onViewportChange, { passive: true });
+  });
+  </script>
+  {% endblock %}
 
   <script>
   // Hook console errors to POST to server for E2E debugging (active only in DEBUG)

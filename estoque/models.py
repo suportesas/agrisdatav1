@@ -758,7 +758,28 @@ class MovimentacaoEstoque(models.Model):
         'Lote',
         on_delete=models.CASCADE,
         related_name='movimentacoes',
-        verbose_name='Lote'
+        verbose_name='Lote',
+        blank=True,
+        null=True
+    )
+    
+    # Produto e Unidade de Medida (alternativos ao lote)
+    produto = models.ForeignKey(
+        'produtos.Produto',
+        on_delete=models.SET_NULL,
+        related_name='movimentacoes_estoque',
+        verbose_name='Produto',
+        blank=True,
+        null=True
+    )
+    
+    unidade_medida = models.ForeignKey(
+        'produtos.UnidadeMedida',
+        on_delete=models.SET_NULL,
+        related_name='movimentacoes_estoque',
+        verbose_name='Unidade de Medida',
+        blank=True,
+        null=True
     )
     TIPO_CHOICES = [
         ('ENTRADA', 'Entrada'),
@@ -958,44 +979,17 @@ class MovimentacaoEstoque(models.Model):
             self.lote.produto.save()
     
     def save(self, *args, **kwargs):
-        def clean(self):
-            """Validações - SEM alteração de dados"""
-            errors = {}
-            # Validações por tipo
-            if self.tipo == 'TRANSFERENCIA':
-                if not self.armazem_destino:
-                    errors['armazem_destino'] = 'Armazém de destino é obrigatório para transferências'
-                if self.armazem_origem and self.armazem_origem == self.armazem_destino:
-                    errors['armazem_destino'] = 'Armazéns de origem e destino devem ser diferentes'
-            # Validação de quantidade disponível (SEM alterar dados)
-            if self.tipo in ['SAIDA', 'TRANSFERENCIA'] and self.lote:
-                if self.quantidade > self.lote.quantidade_atual:
-                    errors['quantidade'] = f'Quantidade indisponível. Disponível: {self.lote.quantidade_atual} {self.lote.unidade_medida.sigla}'
-            # Validação de ajuste de saída
-            if self.tipo == 'AJUSTE' and self.origem == 'AJUSTE_SAIDA' and self.lote:
-                if self.quantidade > self.lote.quantidade_atual:
-                    errors['quantidade'] = f'Quantidade insuficiente para ajuste de saída. Disponível: {self.lote.quantidade_atual}'
-            # Validar justificativa obrigatória
-            if self.origem in ['AJUSTE_ENTRADA', 'AJUSTE_SAIDA', 'PERDA'] and not self.justificativa:
-                errors['justificativa'] = 'Obrigatória para este tipo de movimentação'
-            if errors:
-                raise ValidationError(errors)
-        """Gera número automático"""
+        """Gera número automático mas NÃO atualiza estoque aqui"""
         if not self.numero:
             self.numero = self.gerar_numero()
+        
+        # Define armazém origem automaticamente se não informado
         if not self.armazem_origem and self.tipo in ['SAIDA', 'TRANSFERENCIA']:
-            self.armazem_origem = self.lote.armazem
-            self.local_origem = self.lote.local_estocagem
-        super().save(*args, **kwargs)
-        def save(self, *args, **kwargs):
-            """Gera número automático"""
-            if not self.numero:
-                self.numero = self.gerar_numero()
-            # Define armazém origem automaticamente se não informado
-            if not self.armazem_origem and self.tipo in ['SAIDA', 'TRANSFERENCIA']:
+            if self.lote:
                 self.armazem_origem = self.lote.armazem
                 self.local_origem = self.lote.local_estocagem
-            super().save(*args, **kwargs)
+        
+        super().save(*args, **kwargs)
     
     def gerar_numero(self):
         """Gera número sequencial da movimentação"""
@@ -1049,60 +1043,74 @@ class MovimentacaoEstoque(models.Model):
         self.executado_por = usuario
         self.data_execucao = timezone.now()
         self.save()
-        @transaction.atomic
-        def executar(self, usuario):
-            """
-            Executa a movimentação e atualiza estoque
-            CORRIGIDO: Atualiza estoque ANTES de marcar como executado
-            """
-            if self.status not in ['PENDENTE', 'APROVADO']:
-                raise ValidationError('Movimentação não pode ser executada')
-            # CRÍTICO: Atualiza estoque ANTES
-            self._atualizar_estoque()
-            # Marca como executado apenas após sucesso
-            self.status = 'EXECUTADO'
-            self.executado_por = usuario
-            self.data_execucao = timezone.now()
-            self.save()
 
     def _atualizar_estoque(self):
         """
         Atualiza quantidade do lote e estoque do produto
+        Chamado apenas por executar() para movimentações que precisam de validação
+        Suporta AMBOS: movimentações com lote e movimentações diretas (sem lote)
         """
         from decimal import Decimal
+        from django.db.models import Sum, Q
+        
+        # Se não tem lote, atualiza estoque direto do produto
+        if not self.lote:
+            if self.tipo in ['ENTRADA', 'SAIDA'] and self.produto:
+                # Recalcula estoque do produto
+                movimentacoes = MovimentacaoEstoque.objects.filter(
+                    Q(produto=self.produto) | Q(lote__produto=self.produto)
+                )
+                entrada = movimentacoes.filter(tipo='ENTRADA').aggregate(
+                    total=Sum('quantidade')
+                )['total'] or Decimal('0.000')
+                saida = movimentacoes.filter(tipo='SAIDA').aggregate(
+                    total=Sum('quantidade')
+                )['total'] or Decimal('0.000')
+                self.produto.estoque_atual = Decimal(entrada) - Decimal(saida)
+                self.produto.save(update_fields=['estoque_atual'])
+            return
+        
         produto = self.lote.produto
+        
         # ENTRADA
         if self.tipo == 'ENTRADA':
             self.lote.quantidade_atual += self.quantidade
             self.lote.save()
+        
         # SAIDA ou DEVOLUCAO
         elif self.tipo in ['SAIDA', 'DEVOLUCAO']:
             if self.lote.quantidade_atual < self.quantidade:
-                raise ValidationError('Quantidade insuficiente em estoque')
+                raise ValidationError(f'Quantidade insuficiente em estoque. Disponível: {self.lote.quantidade_atual}')
             self.lote.quantidade_atual -= self.quantidade
             self.lote.save()
+        
         # TRANSFERENCIA
         elif self.tipo == 'TRANSFERENCIA':
             if self.lote.quantidade_atual < self.quantidade:
-                raise ValidationError('Quantidade insuficiente em estoque')
+                raise ValidationError(f'Quantidade insuficiente em estoque. Disponível: {self.lote.quantidade_atual}')
+            # Diminui do lote origem
             self.lote.quantidade_atual -= self.quantidade
             self.lote.save()
-            # Buscar lote destino, nunca criar duplicado
-            lote_destino = Lote.objects.filter(
-                empresa=self.empresa,
-                produto=self.lote.produto,
-                armazem=self.armazem_destino,
-                numero_lote=self.lote.numero_lote,
-                data_fabricacao=self.lote.data_fabricacao,
-            ).first()
-            if lote_destino:
+            
+            # Busca ou cria lote destino
+            try:
+                lote_destino = Lote.objects.get(
+                    empresa=self.empresa,
+                    produto=self.lote.produto,
+                    armazem=self.armazem_destino,
+                    numero_lote=self.lote.numero_lote,
+                    data_fabricacao=self.lote.data_fabricacao,
+                )
+                # Lote JÁ existe, apenas atualiza
                 lote_destino.quantidade_atual += self.quantidade
+                if lote_destino.quantidade_atual > lote_destino.quantidade_inicial:
+                    lote_destino.quantidade_inicial = lote_destino.quantidade_atual
                 if lote_destino.quantidade_atual > 0:
                     lote_destino.status = 'DISPONIVEL'
                 lote_destino.save()
-            else:
-                # Cria apenas se não existe nenhum lote (nem inativo)
-                lote_destino = Lote.objects.create(
+            except Lote.DoesNotExist:
+                # Lote NÃO existe, cria novo
+                Lote.objects.create(
                     empresa=self.empresa,
                     produto=self.lote.produto,
                     armazem=self.armazem_destino,
@@ -1120,15 +1128,17 @@ class MovimentacaoEstoque(models.Model):
                     cadastrado_por=self.executado_por,
                     status='DISPONIVEL',
                 )
+        
         # AJUSTE
         elif self.tipo == 'AJUSTE':
             if self.origem == 'AJUSTE_ENTRADA':
                 self.lote.quantidade_atual += self.quantidade
             else:  # AJUSTE_SAIDA
                 if self.lote.quantidade_atual < self.quantidade:
-                    raise ValidationError('Quantidade insuficiente para ajuste de saída')
+                    raise ValidationError(f'Quantidade insuficiente para ajuste de saída. Disponível: {self.lote.quantidade_atual}')
                 self.lote.quantidade_atual -= self.quantidade
             self.lote.save()
+        
         # Atualiza estoque_atual do produto sempre ao final
         if hasattr(produto, 'recalcular_estoque'):
             produto.recalcular_estoque()
@@ -1137,73 +1147,6 @@ class MovimentacaoEstoque(models.Model):
             total = lotes_filtrados.aggregate(total=models.Sum('quantidade_atual'))['total']
             produto.estoque_atual = Decimal(total) if total is not None else Decimal('0.000')
             produto.save(update_fields=['estoque_atual'])
-        def _atualizar_estoque(self):
-            """
-            Atualiza quantidade do lote e estoque do produto
-            CORRIGIDO: Versão final sem duplicações
-            """
-            # ENTRADA
-            if self.tipo == 'ENTRADA':
-                self.lote.quantidade_atual += self.quantidade
-                self.lote.save()  # Já atualiza produto via save() do Lote
-            # SAIDA ou DEVOLUCAO
-            elif self.tipo in ['SAIDA', 'DEVOLUCAO']:
-                if self.lote.quantidade_atual < self.quantidade:
-                    raise ValidationError(f'Quantidade insuficiente em estoque. Disponível: {self.lote.quantidade_atual}')
-                self.lote.quantidade_atual -= self.quantidade
-                self.lote.save()  # Já atualiza produto via save() do Lote
-            # TRANSFERENCIA
-            elif self.tipo == 'TRANSFERENCIA':
-                if self.lote.quantidade_atual < self.quantidade:
-                    raise ValidationError(f'Quantidade insuficiente em estoque. Disponível: {self.lote.quantidade_atual}')
-                # Diminui do lote origem
-                self.lote.quantidade_atual -= self.quantidade
-                self.lote.save()  # Já atualiza produto via save() do Lote
-                # CORRIGIDO: Busca lote destino com try/except (evita duplicação)
-                try:
-                    lote_destino = Lote.objects.get(
-                        empresa=self.empresa,
-                        produto=self.lote.produto,
-                        armazem=self.armazem_destino,
-                        numero_lote=self.lote.numero_lote,
-                        data_fabricacao=self.lote.data_fabricacao,
-                    )
-                    # Lote JÁ existe, apenas atualiza
-                    lote_destino.quantidade_atual += self.quantidade
-                    if lote_destino.quantidade_atual > lote_destino.quantidade_inicial:
-                        lote_destino.quantidade_inicial = lote_destino.quantidade_atual
-                    if lote_destino.quantidade_atual > 0:
-                        lote_destino.status = 'DISPONIVEL'
-                    lote_destino.save()  # Já atualiza produto via save() do Lote
-                except Lote.DoesNotExist:
-                    # Lote NÃO existe, cria novo
-                    Lote.objects.create(
-                        empresa=self.empresa,
-                        produto=self.lote.produto,
-                        armazem=self.armazem_destino,
-                        local_estocagem=self.local_destino,
-                        numero_lote=self.lote.numero_lote,
-                        data_fabricacao=self.lote.data_fabricacao,
-                        data_validade=self.lote.data_validade,
-                        data_entrada=timezone.now(),
-                        quantidade_inicial=self.quantidade,
-                        quantidade_atual=self.quantidade,
-                        unidade_medida=self.lote.unidade_medida,
-                        fornecedor=self.lote.fornecedor,
-                        nota_fiscal=getattr(self.lote, 'nota_fiscal', None),
-                        valor_unitario=self.lote.valor_unitario,
-                        cadastrado_por=self.executado_por,
-                        status='DISPONIVEL',
-                    )  # Já atualiza produto via save() do Lote
-            # AJUSTE
-            elif self.tipo == 'AJUSTE':
-                if self.origem == 'AJUSTE_ENTRADA':
-                    self.lote.quantidade_atual += self.quantidade
-                else:  # AJUSTE_SAIDA
-                    if self.lote.quantidade_atual < self.quantidade:
-                        raise ValidationError(f'Quantidade insuficiente para ajuste de saída. Disponível: {self.lote.quantidade_atual}')
-                    self.lote.quantidade_atual -= self.quantidade
-                self.lote.save()  # Já atualiza produto via save() do Lote
     
     def cancelar(self):
         """Cancela a movimentação"""
@@ -1214,4 +1157,216 @@ class MovimentacaoEstoque(models.Model):
         self.save()
     
     # O método atualizar_estoque foi substituído por _atualizar_estoque e não deve ser chamado diretamente.
+
+
+# ============================================
+# INVENTÁRIO CÍCLICO (RF-056)
+# ============================================
+
+class InventarioCiclicoSchedule(models.Model):
+    """Agendamento de inventários cíclicos"""
+    
+    STATUS_CHOICES = [
+        ('ATIVO', 'Ativo'),
+        ('PAUSADO', 'Pausado'),
+        ('ENCERRADO', 'Encerrado'),
+    ]
+    
+    PERIODICIDADE_CHOICES = [
+        ('SEMANAL', 'Semanal'),
+        ('QUINZENAL', 'Quinzenal'),
+        ('MENSAL', 'Mensal'),
+        ('TRIMESTRAL', 'Trimestral'),
+    ]
+    
+    empresa = models.ForeignKey('empresas.Empresa', on_delete=models.CASCADE)
+    nome = models.CharField(max_length=100)
+    descricao = models.TextField(blank=True)
+    periodicidade = models.CharField(max_length=20, choices=PERIODICIDADE_CHOICES)
+    armazen = models.ForeignKey(Armazem, on_delete=models.CASCADE)
+    categoria_amostragem = models.CharField(max_length=1, choices=[('A', 'A'), ('B', 'B'), ('C', 'C')], default='A')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='ATIVO')
+    data_inicio = models.DateField()
+    data_fim = models.DateField(null=True, blank=True)
+    proxima_contagem = models.DateField()
+    ultima_contagem = models.DateField(null=True, blank=True)
+    criado_em = models.DateTimeField(auto_now_add=True)
+    atualizado_em = models.DateTimeField(auto_now=True)
+    
+    def __str__(self):
+        return f"{self.nome} - {self.armazen.nome}"
+    
+    class Meta:
+        ordering = ['-data_inicio']
+        verbose_name = 'Agendamento de Inventário Cíclico'
+        verbose_name_plural = 'Agendamentos de Inventário Cíclico'
+
+
+class InventarioCiclico(models.Model):
+    """Contagem cíclica de estoque"""
+    
+    STATUS_CHOICES = [
+        ('PLANEJADO', 'Planejado'),
+        ('EM_CONTAGEM', 'Em Contagem'),
+        ('CONCILIADO', 'Conciliado'),
+        ('FINALIZADO', 'Finalizado'),
+        ('CANCELADO', 'Cancelado'),
+    ]
+    
+    RESULTADO_CHOICES = [
+        ('CONFORME', 'Conforme'),
+        ('DIVERGENCIA', 'Com Divergência'),
+    ]
+    
+    TIPO_CHOICES = [
+        ('POR_LOTE', 'Por Lote'),
+        ('POR_ITEM', 'Por Item (Estoque Agregado)'),
+    ]
+    
+    empresa = models.ForeignKey('empresas.Empresa', on_delete=models.CASCADE)
+    schedule = models.ForeignKey(InventarioCiclicoSchedule, on_delete=models.SET_NULL, null=True, blank=True)
+    numero = models.CharField(max_length=20, unique=True)
+    armazem = models.ForeignKey(Armazem, on_delete=models.CASCADE)
+    tipo_inventario = models.CharField(max_length=20, choices=TIPO_CHOICES, default='POR_LOTE')
+    data_contagem = models.DateField()
+    data_conciliacao = models.DateField(null=True, blank=True)
+    data_finalizacao = models.DateField(null=True, blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PLANEJADO')
+    resultado = models.CharField(max_length=20, choices=RESULTADO_CHOICES, null=True, blank=True)
+    
+    # Estatísticas
+    total_items_sistema = models.IntegerField(default=0)
+    total_items_contados = models.IntegerField(default=0)
+    total_items_divergencia = models.IntegerField(default=0)
+    acuracia_percentual = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    valor_divergencia = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    
+    observacoes = models.TextField(blank=True)
+    responsavel = models.ForeignKey('usuarios.Usuario', on_delete=models.SET_NULL, null=True, blank=True)
+    criado_em = models.DateTimeField(auto_now_add=True)
+    atualizado_em = models.DateTimeField(auto_now=True)
+    
+    def __str__(self):
+        return f"{self.numero} - {self.armazem.nome} ({self.data_contagem})"
+    
+    def calcular_acuracia(self):
+        """Calcula acurácia do inventário"""
+        if self.total_items_sistema == 0:
+            self.acuracia_percentual = 100
+        else:
+            itens_corretos = self.total_items_sistema - self.total_items_divergencia
+            self.acuracia_percentual = (itens_corretos / self.total_items_sistema) * 100
+        self.save(update_fields=['acuracia_percentual'])
+    
+    def conciliar(self):
+        """Realiza conciliação automática"""
+        from django.utils import timezone
+        
+        self.data_conciliacao = timezone.now().date()
+        self.status = 'CONCILIADO'
+        
+        # Processa divergências
+        itens_divergencia = self.itens.filter(tem_divergencia=True)
+        for item in itens_divergencia:
+            item.processar_ajuste()
+        
+        self.calcular_acuracia()
+        self.resultado = 'CONFORME' if self.total_items_divergencia == 0 else 'DIVERGENCIA'
+        self.save()
+    
+    def finalizar(self):
+        """Finaliza o inventário"""
+        from django.utils import timezone
+        
+        self.data_finalizacao = timezone.now().date()
+        self.status = 'FINALIZADO'
+        self.save()
+    
+    class Meta:
+        ordering = ['-data_contagem']
+        verbose_name = 'Inventário Cíclico'
+        verbose_name_plural = 'Inventários Cíclicos'
+
+
+class InventarioCiclicoItem(models.Model):
+    """Item/Lote a ser contado no inventário cíclico"""
+    
+    inventario = models.ForeignKey(InventarioCiclico, on_delete=models.CASCADE, related_name='itens')
+    lote = models.ForeignKey(Lote, on_delete=models.CASCADE, null=True, blank=True)  # Null quando for por item
+    produto = models.ForeignKey('produtos.Produto', on_delete=models.CASCADE)
+    
+    # Dados do sistema
+    quantidade_sistema = models.DecimalField(max_digits=15, decimal_places=3)
+    valor_unitario_sistema = models.DecimalField(max_digits=12, decimal_places=2)
+    valor_total_sistema = models.DecimalField(max_digits=15, decimal_places=2)
+    
+    # Dados da contagem
+    quantidade_contada = models.DecimalField(max_digits=15, decimal_places=3, null=True, blank=True)
+    data_contagem = models.DateTimeField(null=True, blank=True)
+    contado_por = models.ForeignKey('usuarios.Usuario', on_delete=models.SET_NULL, null=True, blank=True)
+    
+    # Divergência
+    tem_divergencia = models.BooleanField(default=False)
+    quantidade_diferenca = models.DecimalField(max_digits=15, decimal_places=3, default=0)
+    valor_diferenca = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    motivo_divergencia = models.CharField(max_length=200, blank=True)
+    
+    # Classificação ABC
+    classificacao_abc = models.CharField(max_length=1, choices=[('A', 'A'), ('B', 'B'), ('C', 'C')], default='C')
+    
+    criado_em = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        if self.lote:
+            return f"{self.produto.nome} - {self.lote.numero_lote}"
+        return f"{self.produto.nome} (Agregado)"
+    
+    def registrar_contagem(self, quantidade, contado_por):
+        """Registra a contagem de um item"""
+        from django.utils import timezone
+        
+        self.quantidade_contada = quantidade
+        self.data_contagem = timezone.now()
+        self.contado_por = contado_por
+        
+        # Calcula divergência
+        self.quantidade_diferenca = self.quantidade_contada - self.quantidade_sistema
+        self.valor_diferenca = self.quantidade_diferenca * self.valor_unitario_sistema
+        self.tem_divergencia = self.quantidade_diferenca != 0
+        
+        self.save()
+        
+        # Atualiza estatísticas do inventário
+        inventario = self.inventario
+        inventario.total_items_contados = inventario.itens.filter(quantidade_contada__isnull=False).count()
+        inventario.total_items_divergencia = inventario.itens.filter(tem_divergencia=True).count()
+        inventario.valor_divergencia = sum(
+            item.valor_diferenca for item in inventario.itens.all()
+        )
+        inventario.save()
+    
+    def processar_ajuste(self):
+        """Cria movimentação de ajuste para divergência"""
+        if not self.tem_divergencia:
+            return
+        
+        tipo_movimento = 'AJUSTE_ENTRADA' if self.quantidade_diferenca > 0 else 'AJUSTE_SAIDA'
+        
+        MovimentacaoEstoque.objects.create(
+            empresa=self.inventario.empresa,
+            produto=self.produto,
+            lote=self.lote,
+            tipo='AJUSTE',
+            origem=tipo_movimento,
+            quantidade=abs(self.quantidade_diferenca),
+            armazem_origem=self.inventario.armazem,
+            motivo=f'Ajuste de inventário cíclico {self.inventario.numero}',
+            status='EXECUTADO',
+            executado_por=self.inventario.responsavel,
+        )
+    
+    class Meta:
+        ordering = ['classificacao_abc', 'produto__nome']
+        verbose_name = 'Item de Inventário Cíclico'
+        verbose_name_plural = 'Itens de Inventário Cíclico'
 

@@ -41,3 +41,35 @@ def seed_ncms_on_create(sender, instance, created, **kwargs):
     except Exception:
         # Fail silently; admin can trigger via action
         pass
+
+
+@receiver(post_save, sender=Empresa)
+def seed_pragas_on_create(sender, instance, created, **kwargs):
+    """Cria pragas pré-definidas quando uma Empresa é criada."""
+    if not created:
+        return
+
+    # Lazy import to avoid circular imports
+    try:
+        from cadastros.pragas_seed import seed_pragas_for_company
+        criadas, ignoradas = seed_pragas_for_company(instance)
+        # Log silencioso - pode adicionar logging se necessário
+    except Exception as e:
+        # Fail silently; não deve bloquear criação de empresa
+        pass
+
+
+@receiver(post_save, sender=Empresa)
+def seed_defensivos_on_create(sender, instance, created, **kwargs):
+    """Cria defensivos pré-definidos quando uma Empresa é criada."""
+    if not created:
+        return
+
+    # Lazy import to avoid circular imports
+    try:
+        from produtos.defensivos_seed import seed_defensivos_for_empresa
+        criados, ignorados = seed_defensivos_for_empresa(instance)
+        # Log silencioso - pode adicionar logging se necessário
+    except Exception as e:
+        # Fail silently; não deve bloquear criação de empresa
+        pass

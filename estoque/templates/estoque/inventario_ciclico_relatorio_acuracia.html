@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Relatório de Acurácia de Inventário{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1>
+                <i class="fas fa-chart-bar"></i> Relatório de Acurácia de Inventário
+            </h1>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="?export=excel" class="btn btn-success">
+                <i class="fas fa-file-excel"></i> Exportar Excel
+            </a>
+        </div>
+    </div>
+
+    <!-- Cards de Resumo -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Total de Inventários</h5>
+                    <p class="card-text display-4">{{ total_inventarios }}</p>
+                    <small>Realizados e conciliados</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Acurácia Média</h5>
+                    <p class="card-text display-4">
+                        {% if acuracia_media %}
+                        {{ acuracia_media|floatformat:1 }}%
+                        {% else %}
+                        0%
+                        {% endif %}
+                    </p>
+                    <small>Todos os inventários</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Padrão de Excelência</h5>
+                    <p class="card-text display-4">95%+</p>
+                    <small>Meta de acurácia</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabela de Inventários -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">Histórico de Inventários</h5>
+        </div>
+        <div class="card-body">
+            {% if inventarios %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Número</th>
+                            <th>Armazém</th>
+                            <th>Data Contagem</th>
+                            <th class="text-center">Items Contados</th>
+                            <th class="text-center">Divergências</th>
+                            <th class="text-center">Acurácia</th>
+                            <th>Resultado</th>
+                            <th class="text-end">Valor Divergência</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for inv in inventarios %}
+                        <tr>
+                            <td>
+                                <a href="{% url 'estoque:inventario_ciclico_detail' inv.id %}">
+                                    <strong>{{ inv.numero }}</strong>
+                                </a>
+                            </td>
+                            <td>{{ inv.armazem.nome }}</td>
+                            <td>{{ inv.data_contagem|date:"d/m/Y" }}</td>
+                            <td class="text-center">{{ inv.total_items_sistema }}</td>
+                            <td class="text-center">
+                                {% if inv.total_items_divergencia > 0 %}
+                                <span class="badge bg-danger">{{ inv.total_items_divergencia }}</span>
+                                {% else %}
+                                <span class="badge bg-success">0</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                <strong>{{ inv.acuracia_percentual|floatformat:1 }}%</strong>
+                                <div class="progress mt-2" style="height: 20px;">
+                                    <div class="progress-bar {% if inv.acuracia_percentual >= 95 %}bg-success{% elif inv.acuracia_percentual >= 90 %}bg-info{% else %}bg-warning{% endif %}"
+                                         role="progressbar"
+                                         style="width: {{ inv.acuracia_percentual }}%">
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                {% if inv.resultado == 'CONFORME' %}
+                                <span class="badge bg-success">
+                                    <i class="fas fa-check"></i> Conforme
+                                </span>
+                                {% else %}
+                                <span class="badge bg-warning">
+                                    <i class="fas fa-exclamation"></i> Divergência
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">
+                                <span class="{% if inv.valor_divergencia != 0 %}text-danger{% else %}text-success{% endif %}">
+                                    R$ {{ inv.valor_divergencia|floatformat:2 }}
+                                </span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i> Nenhum inventário conciliado para exibir.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Análise de Tendências -->
+    {% if inventarios %}
+    <div class="card mt-4">
+        <div class="card-header">
+            <h5 class="mb-0">Indicadores de Qualidade</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4">
+                    <h6 class="text-muted">Inventários Conformes</h6>
+                    <p class="display-5 text-success">
+                        {{ inventarios|dictsort:"resultado"|length }}
+                    </p>
+                    <small>(100% de acurácia)</small>
+                </div>
+                <div class="col-md-4">
+                    <h6 class="text-muted">Inventários com Divergência</h6>
+                    <p class="display-5 text-warning">
+                        0
+                    </p>
+                    <small>(Menor que 100%)</small>
+                </div>
+                <div class="col-md-4">
+                    <h6 class="text-muted">Valor Total em Divergências</h6>
+                    <p class="display-5 text-danger">
+                        R$ 
+                        {% widthratio 1 1 1 %}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Recomendações -->
+    <div class="alert alert-light border mt-4">
+        <h6><i class="fas fa-lightbulb"></i> Recomendações</h6>
+        <ul class="mb-0 mt-2">
+            <li>Mantenha acurácia acima de 95% para operações eficientes</li>
+            <li>Realize inventários cíclicos regularmente (recomendação: mensal)</li>
+            <li>Investigue produtos com divergências frequentes</li>
+            <li>Aplique ajustes automáticos após conciliação</li>
+            <li>Implemente treinamento para equipes com baixa acurácia</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}

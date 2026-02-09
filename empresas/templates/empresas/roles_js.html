@@ -1,19 +1,32 @@
 <script>
+// Ícones por módulo
+const MODULE_ICONS = {
+  'cadastros': '📋',
+  'produtos': '📦',
+  'estoque': '📊',
+  'compras': '🛒',
+  'empresas': '🏢',
+  'usuarios': '👥',
+  'auth': '🔐',
+  'dashboard': '�',
+  'vendas': '💰',
+};
+
 async function loadPermissions(roleId) {
   console.log('loadPermissions called', roleId);
   const area = document.getElementById('permissions-area');
-  area.innerHTML = '<div class="text-muted">Carregando permissões...</div>';
+  area.innerHTML = '<div class="text-center py-5 loading-skeleton"><div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;"><span class="visually-hidden">Carregando...</span></div><p class="text-muted">Carregando permissões...</p></div>';
+  
   try{
     const resp = await fetch("{% url 'empresas:role_permissions' role_id=0 %}".replace('/0/','/'+roleId+'/'), {headers:{'X-Requested-With':'XMLHttpRequest'}});
     if(!resp.ok){
       const text = await resp.text();
       console.error('Erro ao obter permissões:', resp.status, text);
       if(resp.status === 403){
-        area.innerHTML = '<div class="alert alert-warning">Você não tem permissão para visualizar estas permissões.</div>';
+        area.innerHTML = '<div class="alert alert-warning"><i class="bi bi-exclamation-triangle"></i> Você não tem permissão para visualizar estas permissões.</div>';
       } else {
-        area.innerHTML = '<div class="alert alert-danger">Erro ao carregar permissões</div>';
+        area.innerHTML = '<div class="alert alert-danger"><i class="bi bi-x-circle"></i> Erro ao carregar permissões</div>';
       }
-      // Send debug payload to e2e log endpoint if available (best-effort)
       try{
         fetch('/__e2e_log__', {
           method: 'POST',
@@ -31,108 +44,227 @@ async function loadPermissions(roleId) {
     const roleName = selCard ? selCard.querySelector('.role-name').textContent.trim() : '';
 
     if(!perms.length){
-      area.innerHTML = '<div class="alert alert-info">Nenhuma permissão disponível</div>';
-      // still render small header to help tests
+      area.innerHTML = '<div class="alert alert-info"><i class="bi bi-info-circle"></i> Nenhuma permissão disponível</div>';
       area.innerHTML += `<h2 class="mt-2">Permissões ${roleName ? '— <span id="selected-role-name">'+roleName+'</span>' : ''}</h2>`;
       return;
     }
 
-    let html = `<h2 class="mt-2">Permissões ${roleName ? '— <span id="selected-role-name">'+roleName+'</span>' : ''}</h2>`;
-    html += '<div class="table-responsive"><table class="table table-sm align-middle"><thead><tr><th>Módulo</th><th class="text-center">Cadastrar</th><th class="text-center">Editar</th><th class="text-center">Excluir</th><th class="text-center">Visualizar</th></tr></thead><tbody>';
-
-    perms.forEach(item=>{
-      const k = item.key;
-      const model = item.model;
-      const display = item.display || (item.app_label + '.' + model);
-      const add = item.perms.add ? 'checked' : '';
-      const change = item.perms.change ? 'checked' : '';
-      const del = item.perms.delete ? 'checked' : '';
-      const view = item.perms.view ? 'checked' : '';
-
-      html += `<tr data-key="${k}" data-model="${model}">` +
-              `<td><strong>${display}</strong></td>` +
-              `<td class="text-center"><input type="checkbox" aria-label="${display} - Cadastrar" name="add" ${add}></td>` +
-              `<td class="text-center"><input type="checkbox" aria-label="${display} - Editar" name="change" ${change}></td>` +
-              `<td class="text-center"><input type="checkbox" aria-label="${display} - Excluir" name="delete" ${del}></td>` +
-              `<td class="text-center"><input type="checkbox" aria-label="${display} - Visualizar" name="view" ${view}></td>` +
-              `</tr>`;
+    // Agrupa por app_label
+    const groupedByApp = {};
+    perms.forEach(item => {
+      const app = item.app_label;
+      if (!groupedByApp[app]) {
+        groupedByApp[app] = [];
+      }
+      groupedByApp[app].push(item);
     });
 
-    html += '</tbody></table></div>';
-    html += '<div class="d-flex gap-2">'
-    html += '<button id="save-perms" class="btn btn-primary" title="Salvar permissões" aria-describedby="status-message">Salvar</button>'
-    html += '<button id="export-perms" class="btn btn-outline-secondary" title="Exportar permissões" aria-label="Exportar permissões">Exportar</button>'
-    html += '<button id="save-template" class="btn btn-outline-primary" title="Salvar como Template">Salvar como template</button>'
-    html += '<span id="save-template-loading" class="spinner-border spinner-border-sm ms-2 visually-hidden" role="status" aria-hidden="true"></span>'
-    html += '<select id="template-select" class="form-select form-select-sm ms-2" style="width:auto;display:inline-block;">'
-    html += '<option value="">-- Selecionar Template --</option>'
-    html += '</select>'
-    html += '<span id="template-loading" class="spinner-border spinner-border-sm ms-2 visually-hidden" role="status" aria-hidden="true"></span>'
-    html += '<button id="apply-template" class="btn btn-outline-success ms-1" title="Aplicar template" disabled>Aplicar</button>'
-    html += '</div>';
-    // aria-live region for toast/success messages
-    html += '<div id="status-message" role="status" aria-live="polite" class="mt-2 visually-hidden"></div>';
+    // Monta HTML com tabela moderna
+    let html = '';
+    
+    // Barra de ações fixa no topo
+    html += `
+      <div class="actions-bar">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+          <div>
+            <h5 class="mb-1"><i class="bi bi-sliders"></i> Ações Rápidas</h5>
+            <p class="text-muted small mb-0">Configure as permissões para esta função</p>
+          </div>
+          <div class="d-flex gap-2 flex-wrap">
+            <button id="select-all" class="btn btn-outline-primary btn-sm">
+              <i class="bi bi-check-all"></i> Marcar Todas
+            </button>
+            <button id="deselect-all" class="btn btn-outline-secondary btn-sm">
+              <i class="bi bi-x-lg"></i> Desmarcar Todas
+            </button>
+            <button id="save-perms" class="btn btn-save-perms">
+              <i class="bi bi-save"></i> Salvar Permissões
+            </button>
+          </div>
+        </div>
+        <div id="status-message" role="status" aria-live="polite" class="mt-2 visually-hidden"></div>
+      </div>
+    `;
+
+    // Tabela com permissões agrupadas por módulo
+    html += `<div class="permissions-table-wrapper">`;
+    html += `  <div class="table-scroll">`;
+    html += `    <table class="permissions-table table table-hover mb-0">`;
+    html += `      <thead>`;
+    html += `        <tr>`;
+    html += `          <th style="width: 40%;">Módulo / Modelo</th>`;
+    html += `          <th class="text-center" style="width: 15%;"><span class="permission-icon icon-add"><i class="bi bi-plus-circle"></i></span>Cadastrar</th>`;
+    html += `          <th class="text-center" style="width: 15%;"><span class="permission-icon icon-change"><i class="bi bi-pencil"></i></span>Editar</th>`;
+    html += `          <th class="text-center" style="width: 15%;"><span class="permission-icon icon-delete"><i class="bi bi-trash"></i></span>Excluir</th>`;
+    html += `          <th class="text-center" style="width: 15%;"><span class="permission-icon icon-view"><i class="bi bi-eye"></i></span>Visualizar</th>`;
+    html += `        </tr>`;
+    html += `      </thead>`;
+    html += `      <tbody>`;
+    
+    // Renderiza por módulo
+    Object.keys(groupedByApp).sort().forEach(app => {
+      const items = groupedByApp[app];
+      const icon = MODULE_ICONS[app] || '📌';
+      const appLabel = app.charAt(0).toUpperCase() + app.slice(1);
+      
+      // Linha de cabeçalho do módulo
+      html += `<tr class="module-group-header">`;
+      html += `  <td colspan="5"><span class="module-icon-large">${icon}</span><strong>${appLabel}</strong> <span class="badge bg-light text-dark ms-2">${items.length} modelo${items.length > 1 ? 's' : ''}</span></td>`;
+      html += `</tr>`;
+      
+      // Linhas de cada modelo
+      items.forEach(item => {
+        const k = item.key;
+        const model = item.model;
+        const display = item.display || (item.app_label + '.' + model);
+        const add = item.perms.add ? 'checked' : '';
+        const change = item.perms.change ? 'checked' : '';
+        const del = item.perms.delete ? 'checked' : '';
+        const view = item.perms.view ? 'checked' : '';
+        
+        html += `<tr data-key="${k}" data-model="${model}">`;
+        html += `  <td><strong>${display}</strong></td>`;
+        html += `  <td class="text-center"><input type="checkbox" class="permission-checkbox" name="add" ${add} aria-label="${display} - Cadastrar"></td>`;
+        html += `  <td class="text-center"><input type="checkbox" class="permission-checkbox" name="change" ${change} aria-label="${display} - Editar"></td>`;
+        html += `  <td class="text-center"><input type="checkbox" class="permission-checkbox" name="delete" ${del} aria-label="${display} - Excluir"></td>`;
+        html += `  <td class="text-center"><input type="checkbox" class="permission-checkbox" name="view" ${view} aria-label="${display} - Visualizar"></td>`;
+        html += `</tr>`;
+      });
+    });
+    
+    html += `      </tbody>`;
+    html += `    </table>`;
+    html += `  </div>`;
+    html += `</div>`;
+    
+    // Ações de template no final
+    html += `
+      <div class="actions-bar">
+        <div class="row g-3">
+          <div class="col-md-12">
+            <h6 class="mb-3"><i class="bi bi-file-earmark-code"></i> Gerenciar Templates</h6>
+            <div class="d-flex gap-2 flex-wrap align-items-center">
+              <button id="save-template" class="btn btn-outline-primary" title="Salvar como Template">
+                <i class="bi bi-bookmark-plus"></i> Salvar como Template
+              </button>
+              <span id="save-template-loading" class="spinner-border spinner-border-sm visually-hidden" role="status"></span>
+              
+              <select id="template-select" class="form-select" style="max-width: 300px;">
+                <option value="">-- Selecionar Template --</option>
+              </select>
+              <span id="template-loading" class="spinner-border spinner-border-sm visually-hidden" role="status"></span>
+              
+              <button id="apply-template" class="btn btn-outline-success" title="Aplicar template" disabled>
+                <i class="bi bi-arrow-down-circle"></i> Aplicar Template
+              </button>
+              
+              <button id="export-perms" class="btn btn-outline-secondary" title="Exportar permissões">
+                <i class="bi bi-download"></i> Exportar JSON
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
 
     area.innerHTML = html;
 
-    // Mark selected card visually when loadPermissions invoked (helps external calls)
-    try{ document.querySelectorAll('.role-card').forEach(r=>r.classList.remove('selected')); const sel = document.querySelector('.role-card[data-role-id="'+roleId+'"]'); if(sel) sel.classList.add('selected'); try{ if(window.applyRolesHideState) window.applyRolesHideState(); }catch(e){} }catch(e){}
+    // Mark selected card visually
+    try{ 
+      document.querySelectorAll('.role-card').forEach(r=>r.classList.remove('selected')); 
+      const sel = document.querySelector('.role-card[data-role-id="'+roleId+'"]'); 
+      if(sel) sel.classList.add('selected'); 
+      try{ if(window.applyRolesHideState) window.applyRolesHideState(); }catch(e){} 
+    }catch(e){}
 
+    // Event listeners
     document.getElementById('save-perms').onclick = function(){ savePermissions(roleId) };
     document.getElementById('export-perms').onclick = function(){ exportPermissions(); };
     document.getElementById('save-template').onclick = function(){ saveAsTemplate(roleId) };
     document.getElementById('apply-template').onclick = function(){ applySelectedTemplate(roleId) };
+    document.getElementById('select-all').onclick = selectAllPermissions;
+    document.getElementById('deselect-all').onclick = deselectAllPermissions;
 
-    // Carrega templates no dropdown
+    // Carrega templates
     loadTemplatesIntoSelect(roleId);
     loadTemplatesIntoBulkSelect();
 
   }catch(err){
     console.error('loadPermissions error', err);
-    area.innerHTML = '<div class="alert alert-danger">Erro ao carregar permissões</div>';
+    area.innerHTML = '<div class="alert alert-danger"><i class="bi bi-x-circle"></i> Erro ao carregar permissões</div>';
   }
 }
 
+function selectAllPermissions() {
+  document.querySelectorAll('.permission-checkbox').forEach(cb => {
+    cb.checked = true;
+  });
+  showToast('Todas as permissões foram marcadas', 'info');
+}
+
+function deselectAllPermissions() {
+  document.querySelectorAll('.permission-checkbox').forEach(cb => {
+    cb.checked = false;
+  });
+  showToast('Todas as permissões foram desmarcadas', 'info');
+}
+
 async function savePermissions(roleId){
-  const rows = document.querySelectorAll('#permissions-area table tbody tr');
+  const rows = document.querySelectorAll('.permissions-table tbody tr[data-model]');
   const codenames = [];
-  rows.forEach(row=>{
+  
+  rows.forEach(row => {
     const model = row.dataset.model;
-    const add = row.querySelector('input[name="add"]').checked;
-    const change = row.querySelector('input[name="change"]').checked;
-    const del = row.querySelector('input[name="delete"]').checked;
-    const view = row.querySelector('input[name="view"]').checked;
+    const add = row.querySelector('input[name="add"]')?.checked;
+    const change = row.querySelector('input[name="change"]')?.checked;
+    const del = row.querySelector('input[name="delete"]')?.checked;
+    const view = row.querySelector('input[name="view"]')?.checked;
+    
     if(add) codenames.push('add_' + model);
     if(change) codenames.push('change_' + model);
     if(del) codenames.push('delete_' + model);
     if(view) codenames.push('view_' + model);
   });
 
-  const res = await fetch("{% url 'empresas:role_permissions' role_id=0 %}".replace('/0/','/'+roleId+'/'), {
-    method:'POST',
-    headers:{'Content-Type':'application/json','X-CSRFToken': getCookie('csrftoken')},
-    body: JSON.stringify({'permissions': codenames})
-  });
-  const r = await res.json();
-  if(r.ok){
-    showToast('Permissões atualizadas', 'success');
-  } else {
-    showToast('Erro ao atualizar permissões', 'danger');
+  const saveBtn = document.getElementById('save-perms');
+  const originalText = saveBtn.innerHTML;
+  saveBtn.disabled = true;
+  saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Salvando...';
+
+  try {
+    const res = await fetch("{% url 'empresas:role_permissions' role_id=0 %}".replace('/0/','/'+roleId+'/'), {
+      method:'POST',
+      headers:{'Content-Type':'application/json','X-CSRFToken': getCookie('csrftoken')},
+      body: JSON.stringify({'permissions': codenames})
+    });
+    const r = await res.json();
+    if(r.ok){
+      showToast('✅ Permissões atualizadas com sucesso!', 'success');
+    } else {
+      showToast('❌ Erro ao atualizar permissões', 'danger');
+    }
+  } catch(e) {
+    showToast('❌ Erro ao salvar permissões', 'danger');
+  } finally {
+    saveBtn.disabled = false;
+    saveBtn.innerHTML = originalText;
   }
 }
 
 function getCurrentPermissionsObject(){
-  const rows = document.querySelectorAll('#permissions-area table tbody tr');
+  const rows = document.querySelectorAll('.permissions-table tbody tr[data-model]');
   const exportData = {};
-  rows.forEach(row=>{
+  
+  rows.forEach(row => {
     const model = row.dataset.model;
     exportData[model] = {
-      add: row.querySelector('input[name="add"]').checked,
-      change: row.querySelector('input[name="change"]').checked,
-      delete: row.querySelector('input[name="delete"]').checked,
-      view: row.querySelector('input[name="view"]').checked,
+      add: row.querySelector('input[name="add"]')?.checked || false,
+      change: row.querySelector('input[name="change"]')?.checked || false,
+      delete: row.querySelector('input[name="delete"]')?.checked || false,
+      view: row.querySelector('input[name="view"]')?.checked || false,
     }
   });
+  
   return exportData;
 }
 
@@ -301,19 +433,140 @@ function showToast(message, type='info'){
     region.textContent = message;
     region.classList.remove('visually-hidden');
     region.classList.add('d-block');
-    // Hide after a while
     setTimeout(()=>{
       region.classList.add('visually-hidden');
       region.textContent = '';
     }, 4000);
   }
 
-  // Also render a visible alert for UX
-  const el = document.createElement('div');
-  el.className = `alert alert-${type}`;
-  el.setAttribute('role', 'alert');
-  el.textContent = message;
-  document.getElementById('permissions-area').prepend(el);
-  setTimeout(()=>el.remove(), 4000);
+  // Cria um toast bonito e moderno
+  const toastContainer = document.getElementById('toast-container') || createToastContainer();
+  
+  const toast = document.createElement('div');
+  toast.className = `toast-modern toast-${type} show`;
+  toast.setAttribute('role', 'alert');
+  
+  const icons = {
+    'success': '<i class="bi bi-check-circle-fill"></i>',
+    'danger': '<i class="bi bi-x-circle-fill"></i>',
+    'warning': '<i class="bi bi-exclamation-triangle-fill"></i>',
+    'info': '<i class="bi bi-info-circle-fill"></i>'
+  };
+  
+  toast.innerHTML = `
+    <div class="toast-icon">${icons[type] || icons['info']}</div>
+    <div class="toast-message">${message}</div>
+    <button type="button" class="toast-close" onclick="this.parentElement.remove()">
+      <i class="bi bi-x"></i>
+    </button>
+  `;
+  
+  toastContainer.appendChild(toast);
+  
+  // Animação de entrada
+  setTimeout(() => toast.classList.add('toast-show'), 10);
+  
+  // Remove após 4 segundos
+  setTimeout(() => {
+    toast.classList.remove('toast-show');
+    setTimeout(() => toast.remove(), 300);
+  }, 4000);
+}
+
+function createToastContainer() {
+  const container = document.createElement('div');
+  container.id = 'toast-container';
+  container.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    max-width: 400px;
+  `;
+  document.body.appendChild(container);
+  
+  // Adiciona CSS para os toasts
+  const style = document.createElement('style');
+  style.textContent = `
+    .toast-modern {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 1rem 1.5rem;
+      margin-bottom: 0.5rem;
+      border-radius: 12px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+      backdrop-filter: blur(10px);
+      opacity: 0;
+      transform: translateX(100%);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    .toast-modern.toast-show {
+      opacity: 1;
+      transform: translateX(0);
+    }
+    
+    .toast-success {
+      background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+      border-left: 4px solid #28a745;
+      color: #155724;
+    }
+    
+    .toast-danger {
+      background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+      border-left: 4px solid #dc3545;
+      color: #721c24;
+    }
+    
+    .toast-warning {
+      background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+      border-left: 4px solid #ffc107;
+      color: #856404;
+    }
+    
+    .toast-info {
+      background: linear-gradient(135deg, #d1ecf1 0%, #bee5eb 100%);
+      border-left: 4px solid #17a2b8;
+      color: #0c5460;
+    }
+    
+    .toast-icon {
+      font-size: 1.5rem;
+      flex-shrink: 0;
+    }
+    
+    .toast-message {
+      flex-grow: 1;
+      font-weight: 500;
+    }
+    
+    .toast-close {
+      background: none;
+      border: none;
+      font-size: 1.2rem;
+      cursor: pointer;
+      opacity: 0.7;
+      transition: opacity 0.2s;
+      padding: 0;
+      color: inherit;
+    }
+    
+    .toast-close:hover {
+      opacity: 1;
+    }
+    
+    @media (max-width: 768px) {
+      #toast-container {
+        left: 20px;
+        right: 20px;
+        max-width: none;
+      }
+    }
+  `;
+  document.head.appendChild(style);
+  
+  return container;
 }
 </script>
+```

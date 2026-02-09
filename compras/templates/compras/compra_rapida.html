@@ -1,0 +1,267 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Compra Rápida - Sistema de Compras{% endblock %}
+
+{% block extra_css %}
+<style>
+    .cart-table tbody tr:hover {
+        background-color: #f5f5f5;
+    }
+    .btn-remove-row {
+        color: #dc3545;
+        cursor: pointer;
+        font-weight: bold;
+    }
+    .btn-remove-row:hover {
+        color: #c82333;
+    }
+    .input-group-number {
+        max-width: 150px;
+    }
+    .total-section {
+        background-color: #f9f9f9;
+        border-top: 2px solid #dee2e6;
+        padding: 15px;
+        margin-top: 15px;
+        border-radius: 4px;
+    }
+    .total-row {
+        display: flex;
+        justify-content: space-between;
+        font-size: 18px;
+        font-weight: bold;
+        color: #2c3e50;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1>
+                <i class="fas fa-shopping-cart"></i> Compra Rápida
+            </h1>
+            <p class="text-muted">Crie um pedido de compra com múltiplos produtos em uma única tela</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{% url 'compras:pedido_list' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-list"></i> Pedidos
+            </a>
+        </div>
+    </div>
+
+    {% if messages %}
+    <div class="alert alert-info alert-dismissible fade show" role="alert">
+        {% for message in messages %}
+            <strong>{{ message }}</strong>
+        {% endfor %}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endif %}
+
+    <form method="POST" id="compraForm">
+        {% csrf_token %}
+
+        <!-- Seção: Informações Principais -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-info-circle"></i> Informações da Compra</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="fornecedor" class="form-label">Fornecedor *</label>
+                            <select name="fornecedor_id" id="fornecedor" class="form-select" required>
+                                <option value="">-- Selecione um fornecedor --</option>
+                                {% for fornecedor in fornecedores %}
+                                <option value="{{ fornecedor.id }}">
+                                    {{ fornecedor.razao_social }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="data_entrega" class="form-label">Data de Entrega Prevista</label>
+                            <input type="date" name="data_entrega" id="data_entrega" class="form-control">
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="mb-0">
+                            <label for="observacoes" class="form-label">Observações</label>
+                            <textarea name="observacoes" id="observacoes" class="form-control" rows="2" placeholder="Adicione observações sobre a compra..."></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Seção: Produtos -->
+        <div class="card mb-4">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="fas fa-cube"></i> Produtos</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-bordered cart-table" id="produtosTable">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 35%;">Produto</th>
+                            <th style="width: 15%;">Quantidade</th>
+                            <th style="width: 15%;">Preço Unit.</th>
+                            <th style="width: 20%;">Subtotal</th>
+                            <th style="width: 15%;">Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody id="produtosBody">
+                        <tr class="produto-row">
+                            <td>
+                                <select name="produtos" class="form-select produto-select" onchange="atualizarPreco(this)">
+                                    <option value="">-- Selecione um produto --</option>
+                                    {% for produto in produtos %}
+                                    <option value="{{ produto.id }}" data-preco="{{ produto.preco_custo|default:0 }}">
+                                        {{ produto.nome }} ({{ produto.unidade_medida }})
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </td>
+                            <td>
+                                <input type="number" name="quantidades" class="form-control quantidade-input" min="0.01" step="0.01" placeholder="0" onchange="calcularSubtotal(this)">
+                            </td>
+                            <td>
+                                <input type="number" name="precos" class="form-control preco-input" min="0" step="0.01" placeholder="0,00" onchange="calcularSubtotal(this)">
+                            </td>
+                            <td>
+                                <input type="text" class="form-control subtotal-input" readonly placeholder="0,00">
+                            </td>
+                            <td class="text-center">
+                                <span class="btn-remove-row" onclick="removerProduto(this)">
+                                    <i class="fas fa-trash"></i>
+                                </span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <button type="button" class="btn btn-outline-primary" onclick="adicionarProduto()">
+                    <i class="fas fa-plus"></i> Adicionar Produto
+                </button>
+            </div>
+        </div>
+
+        <!-- Seção: Totais -->
+        <div class="total-section">
+            <div class="total-row">
+                <span>Total da Compra:</span>
+                <span id="totalCompra">R$ 0,00</span>
+            </div>
+        </div>
+
+        <!-- Botões de Ação -->
+        <div class="d-flex gap-2 justify-content-between mt-4">
+            <a href="{% url 'compras:pedido_list' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Cancelar
+            </a>
+            <button type="submit" class="btn btn-primary btn-lg" onclick="return validarFormulario()">
+                <i class="fas fa-check"></i> Criar Pedido de Compra
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+function adicionarProduto() {
+    const tableBody = document.getElementById('produtosBody');
+    const row = document.querySelector('.produto-row').cloneNode(true);
+    
+    // Limpar valores da nova linha
+    row.querySelector('.produto-select').value = '';
+    row.querySelector('.quantidade-input').value = '';
+    row.querySelector('.preco-input').value = '';
+    row.querySelector('.subtotal-input').value = '';
+    
+    tableBody.appendChild(row);
+}
+
+function removerProduto(btn) {
+    const rows = document.querySelectorAll('.produto-row');
+    if (rows.length > 1) {
+        btn.closest('tr').remove();
+        calcularTotal();
+    } else {
+        alert('Você deve manter pelo menos um produto na compra.');
+    }
+}
+
+function atualizarPreco(select) {
+    const preco = select.options[select.selectedIndex].dataset.preco || 0;
+    const row = select.closest('tr');
+    row.querySelector('.preco-input').value = parseFloat(preco).toFixed(2);
+    calcularSubtotal(row.querySelector('.quantidade-input'));
+}
+
+function calcularSubtotal(input) {
+    const row = input.closest('tr');
+    const quantidade = parseFloat(row.querySelector('.quantidade-input').value) || 0;
+    const preco = parseFloat(row.querySelector('.preco-input').value) || 0;
+    const subtotal = (quantidade * preco).toFixed(2);
+    
+    row.querySelector('.subtotal-input').value = formatarMoeda(subtotal);
+    calcularTotal();
+}
+
+function calcularTotal() {
+    let total = 0;
+    document.querySelectorAll('.produto-row').forEach(row => {
+        const subtotal = parseFloat(row.querySelector('.subtotal-input').value.replace('R$ ', '').replace(',', '.')) || 0;
+        total += subtotal;
+    });
+    
+    document.getElementById('totalCompra').textContent = formatarMoeda(total.toFixed(2));
+}
+
+function formatarMoeda(valor) {
+    return 'R$ ' + parseFloat(valor).toLocaleString('pt-BR', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
+}
+
+function validarFormulario() {
+    const fornecedor = document.getElementById('fornecedor').value;
+    if (!fornecedor) {
+        alert('Por favor, selecione um fornecedor.');
+        return false;
+    }
+    
+    const rows = document.querySelectorAll('.produto-row');
+    let temProduto = false;
+    
+    rows.forEach(row => {
+        const produto = row.querySelector('.produto-select').value;
+        const quantidade = row.querySelector('.quantidade-input').value;
+        
+        if (produto && quantidade) {
+            temProduto = true;
+        }
+    });
+    
+    if (!temProduto) {
+        alert('Por favor, adicione pelo menos um produto com quantidade.');
+        return false;
+    }
+    
+    return true;
+}
+
+// Calcular total ao carregar a página
+document.addEventListener('DOMContentLoaded', function() {
+    calcularTotal();
+});
+</script>
+
+{% endblock %}

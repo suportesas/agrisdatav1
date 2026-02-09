@@ -1,37 +1,91 @@
-<div class="row">
+<div class="row g-3">
   {% if roles %}
     {% for role in roles %}
-      <div class="col-md-6">
-        <div class="role-card" role="button" tabindex="0" data-role-id="{{ role.id }}" data-builtin="{{ role.builtin|yesno:'true,false' }}">
-          <div class="d-flex justify-content-between align-items-start">
-            <div>
-              <div class="d-flex align-items-center">
-                <input type="checkbox" class="role-select me-2" data-role-id="{{ role.id }}" aria-label="Selecionar função {{ role.name }}">
-                <h5 class="mb-1 role-name">{{ role.name }}</h5>
+      <div class="col-md-6 col-lg-4">
+        <div class="role-card h-100" role="button" tabindex="0" data-role-id="{{ role.id }}" data-builtin="{{ role.builtin|yesno:'true,false' }}">
+          
+          <!-- Header com checkbox e ícone -->
+          <div class="d-flex align-items-start mb-3">
+            <input type="checkbox" class="role-select me-3 mt-1" data-role-id="{{ role.id }}" aria-label="Selecionar função {{ role.name }}" style="width: 18px; height: 18px; cursor: pointer;">
+            
+            <div class="flex-grow-1">
+              <!-- Ícone + Nome -->
+              <div class="d-flex align-items-center mb-2">
+                <div class="role-icon me-2">
+                  {% if role.builtin %}
+                    <i class="bi bi-star-fill text-warning" style="font-size: 1.3rem;"></i>
+                  {% else %}
+                    <i class="bi bi-person-badge text-primary" style="font-size: 1.3rem;"></i>
+                  {% endif %}
+                </div>
+                <h5 class="mb-0 role-name fw-bold">{{ role.name }}</h5>
+              </div>
+              
+              <!-- Badge -->
+              <div class="mb-2">
                 {% if role.builtin %}
-                  <span class="role-builtin">Padrão</span>
+                  <span class="badge bg-success-subtle text-success border border-success-subtle">
+                    <i class="bi bi-patch-check-fill"></i> Função Padrão
+                  </span>
+                {% else %}
+                  <span class="badge bg-primary-subtle text-primary border border-primary-subtle">
+                    <i class="bi bi-pencil-square"></i> Personalizada
+                  </span>
                 {% endif %}
               </div>
-              <p class="text-muted small mb-2">{{ role.description|default:"Sem descrição" }}</p>
-              <div class="text-muted small">Criado em: {{ role.data_criacao|date:"d/m/Y" }}</div>
-            </div>
-            <div class="text-end">
-              <a href="#" class="btn btn-outline-primary btn-sm btn-permissions" data-role-id="{{ role.id }}" title="Editar permissões" aria-label="Editar permissões de {{ role.name }}" role="button">
-                <i class="bi bi-shield-lock"></i>
-              </a>
-              <a href="{% url 'empresas:role_update' role_id=role.id %}" class="btn btn-outline-secondary btn-sm ms-1" title="Editar função" aria-label="Editar função {{ role.name }}">
-                <i class="bi bi-pencil-square"></i>
-              </a>
+              
+              <!-- Descrição -->
+              <p class="text-muted small mb-2" style="min-height: 40px;">
+                {% if role.description %}
+                  {{ role.description|truncatewords:15 }}
+                {% else %}
+                  <em class="text-black-50">Nenhuma descrição cadastrada</em>
+                {% endif %}
+              </p>
+              
+              <!-- Info adicional -->
+              <div class="d-flex align-items-center gap-3 text-muted small mb-3">
+                <span title="Data de criação">
+                  <i class="bi bi-calendar3"></i> {{ role.data_criacao|date:"d/m/Y" }}
+                </span>
+                <span title="Número de usuários com esta função">
+                  <i class="bi bi-people-fill"></i> {{ role.usuarios.count }} usuário{{ role.usuarios.count|pluralize }}
+                </span>
+              </div>
             </div>
           </div>
+          
+          <!-- Botões de ação -->
+          <div class="d-grid gap-2">
+            <a href="#" class="btn btn-primary btn-sm btn-permissions" data-role-id="{{ role.id }}" aria-label="Editar permissões de {{ role.name }}" role="button">
+              <i class="bi bi-shield-lock"></i> Gerenciar Permissões
+            </a>
+            <div class="d-flex gap-2">
+              <a href="{% url 'empresas:role_update' role_id=role.id %}" class="btn btn-outline-secondary btn-sm flex-fill" aria-label="Editar função {{ role.name }}">
+                <i class="bi bi-pencil-square"></i> Editar
+              </a>
+              {% if not role.builtin %}
+              <button type="button" class="btn btn-outline-danger btn-sm" onclick="confirmDelete({{ role.id }}, '{{ role.name }}')" aria-label="Excluir função {{ role.name }}">
+                <i class="bi bi-trash"></i>
+              </button>
+              {% endif %}
+            </div>
+          </div>
+          
         </div>
       </div>
     {% endfor %}
   {% else %}
     <div class="col-12">
-      <div class="empty-state">
-        <i class="bi bi-person-x"></i>
-        <p class="mt-2">Nenhuma função encontrada. Crie uma nova função para começar.</p>
+      <div class="empty-state py-5">
+        <i class="bi bi-person-x" style="font-size: 4rem; color: #dee2e6;"></i>
+        <h5 class="mt-3 text-muted">Nenhuma função encontrada</h5>
+        <p class="text-muted mb-3">Crie uma nova função para gerenciar permissões de usuários</p>
+        {% if request.user.is_superuser or request.user.is_admin_empresa %}
+        <a href="{% url 'empresas:role_create' %}" class="btn btn-success">
+          <i class="bi bi-plus-circle"></i> Criar Primeira Função
+        </a>
+        {% endif %}
       </div>
     </div>
   {% endif %}

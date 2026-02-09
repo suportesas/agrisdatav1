@@ -1,0 +1,374 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Configurações do Sistema{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-cog"></i> Configurações do Sistema
+                    </h4>
+                    <p class="mb-0 mt-2">
+                        <small>Personalize o comportamento do sistema de acordo com as necessidades da sua empresa</small>
+                    </p>
+                </div>
+                <div class="card-body">
+                    <form method="post" id="formConfiguracoes">
+                        {% csrf_token %}
+                        
+                        <!-- MODO DE COMPRAS -->
+                        <div class="row mb-5">
+                            <div class="col-12">
+                                <h5 class="border-bottom pb-2 mb-4">
+                                    <i class="fas fa-shopping-cart text-primary"></i> Modo de Operação de Compras
+                                </h5>
+                            </div>
+                            
+                            <div class="col-md-12 mb-4">
+                                <label class="form-label fw-bold">Como deseja trabalhar com compras?</label>
+                                
+                                <div class="row">
+                                    <!-- MODO SIMPLES -->
+                                    <div class="col-md-4">
+                                        <div class="card h-100 border-success {{ config.modo_compras == 'SIMPLES'|yesno:'border-3,' }}">
+                                            <div class="card-body text-center">
+                                                <input type="radio" name="modo_compras" value="SIMPLES" 
+                                                       id="modo_simples" class="form-check-input" 
+                                                       {% if config.modo_compras == 'SIMPLES' %}checked{% endif %}>
+                                                <label for="modo_simples" class="w-100 cursor-pointer">
+                                                    <i class="fas fa-bolt fa-3x text-success mb-3"></i>
+                                                    <h5>Modo Simples</h5>
+                                                    <p class="text-muted small">
+                                                        ✓ Compra direta e rápida<br>
+                                                        ✓ Sem burocracia<br>
+                                                        ✓ Ideal para pequenas empresas<br>
+                                                        ✓ 3-4 cliques para comprar<br>
+                                                        <br>
+                                                        <strong>Fluxo:</strong><br>
+                                                        Pedido → Recebimento → Estoque
+                                                    </p>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- MODO FORMAL -->
+                                    <div class="col-md-4">
+                                        <div class="card h-100 border-primary {{ config.modo_compras == 'FORMAL'|yesno:'border-3,' }}">
+                                            <div class="card-body text-center">
+                                                <input type="radio" name="modo_compras" value="FORMAL" 
+                                                       id="modo_formal" class="form-check-input"
+                                                       {% if config.modo_compras == 'FORMAL' %}checked{% endif %}>
+                                                <label for="modo_formal" class="w-100 cursor-pointer">
+                                                    <i class="fas fa-shield-alt fa-3x text-primary mb-3"></i>
+                                                    <h5>Modo Formal</h5>
+                                                    <p class="text-muted small">
+                                                        ✓ Controle total<br>
+                                                        ✓ Aprovações obrigatórias<br>
+                                                        ✓ Cotações formais<br>
+                                                        ✓ Auditoria completa<br>
+                                                        <br>
+                                                        <strong>Fluxo:</strong><br>
+                                                        Solicitação → Aprovação → Cotação → Pedido → Recebimento → Estoque
+                                                    </p>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- MODO HÍBRIDO -->
+                                    <div class="col-md-4">
+                                        <div class="card h-100 border-warning {{ config.modo_compras == 'HIBRIDO'|yesno:'border-3,' }}">
+                                            <div class="card-body text-center">
+                                                <input type="radio" name="modo_compras" value="HIBRIDO" 
+                                                       id="modo_hibrido" class="form-check-input"
+                                                       {% if config.modo_compras == 'HIBRIDO' %}checked{% endif %}>
+                                                <label for="modo_hibrido" class="w-100 cursor-pointer">
+                                                    <i class="fas fa-random fa-3x text-warning mb-3"></i>
+                                                    <h5>Modo Híbrido</h5>
+                                                    <p class="text-muted small">
+                                                        ✓ Melhor dos dois mundos<br>
+                                                        ✓ Escolhe o fluxo por situação<br>
+                                                        ✓ Flexível<br>
+                                                        ✓ Recomendado<br>
+                                                        <br>
+                                                        <strong>Você decide:</strong><br>
+                                                        Compra urgente? Modo simples<br>
+                                                        Compra grande? Modo formal
+                                                    </p>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Configurações Detalhadas de Compras -->
+                            <div class="col-12" id="configComprasDetalhadas">
+                                <div class="card bg-light">
+                                    <div class="card-body">
+                                        <h6 class="mb-3">Configurações Detalhadas</h6>
+                                        
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="form-check form-switch mb-3">
+                                                    <input type="checkbox" name="exigir_aprovacao_solicitacao" 
+                                                           class="form-check-input" id="exigir_aprovacao"
+                                                           {% if config.exigir_aprovacao_solicitacao %}checked{% endif %}>
+                                                    <label class="form-check-label" for="exigir_aprovacao">
+                                                        Exigir Aprovação de Solicitações
+                                                        <small class="text-muted d-block">Solicitações precisam ser aprovadas antes de virar pedido</small>
+                                                    </label>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="col-md-6">
+                                                <div class="form-check form-switch mb-3">
+                                                    <input type="checkbox" name="exigir_cotacao_obrigatoria" 
+                                                           class="form-check-input" id="exigir_cotacao"
+                                                           {% if config.exigir_cotacao_obrigatoria %}checked{% endif %}>
+                                                    <label class="form-check-label" for="exigir_cotacao">
+                                                        Cotação é Obrigatória
+                                                        <small class="text-muted d-block">Não permite criar pedido sem cotação formal</small>
+                                                    </label>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="col-md-6">
+                                                <div class="form-check form-switch mb-3">
+                                                    <input type="checkbox" name="permitir_recebimento_sem_pedido" 
+                                                           class="form-check-input" id="recebimento_direto"
+                                                           {% if config.permitir_recebimento_sem_pedido %}checked{% endif %}>
+                                                    <label class="form-check-label" for="recebimento_direto">
+                                                        Permitir Recebimento Direto
+                                                        <small class="text-muted d-block">Registrar recebimento sem pedido prévio</small>
+                                                    </label>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="col-md-6">
+                                                <div class="form-check form-switch mb-3">
+                                                    <input type="checkbox" name="entrada_estoque_automatica" 
+                                                           class="form-check-input" id="entrada_auto"
+                                                           {% if config.entrada_estoque_automatica %}checked{% endif %}>
+                                                    <label class="form-check-label" for="entrada_auto">
+                                                        Entrada Automática no Estoque
+                                                        <small class="text-muted d-block">Ao confirmar recebimento, já atualiza estoque</small>
+                                                    </label>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="col-md-6">
+                                                <label class="form-label">Limite para Compra Sem Aprovação</label>
+                                                <div class="input-group">
+                                                    <span class="input-group-text">R$</span>
+                                                    <input type="number" name="limite_compra_sem_aprovacao" 
+                                                           class="form-control" step="0.01" 
+                                                           value="{{ config.limite_compra_sem_aprovacao }}">
+                                                </div>
+                                                <small class="text-muted">Valor 0 = sempre exige aprovação</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- CONFIGURAÇÕES DE ESTOQUE -->
+                        <div class="row mb-5">
+                            <div class="col-12">
+                                <h5 class="border-bottom pb-2 mb-4">
+                                    <i class="fas fa-boxes text-success"></i> Controle de Estoque
+                                </h5>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-check form-switch mb-3">
+                                    <input type="checkbox" name="controle_lote_obrigatorio" 
+                                           class="form-check-input" id="lote_obrig"
+                                           {% if config.controle_lote_obrigatorio %}checked{% endif %}>
+                                    <label class="form-check-label" for="lote_obrig">
+                                        Controle de Lote Obrigatório
+                                        <small class="text-muted d-block">Exige lote em todas movimentações</small>
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-check form-switch mb-3">
+                                    <input type="checkbox" name="gerar_lote_automatico" 
+                                           class="form-check-input" id="lote_auto"
+                                           {% if config.gerar_lote_automatico %}checked{% endif %}>
+                                    <label class="form-check-label" for="lote_auto">
+                                        Gerar Lote Automaticamente
+                                        <small class="text-muted d-block">Cria lote automático quando não informado</small>
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-check form-switch mb-3">
+                                    <input type="checkbox" name="permitir_estoque_negativo" 
+                                           class="form-check-input" id="estoque_neg"
+                                           {% if config.permitir_estoque_negativo %}checked{% endif %}>
+                                    <label class="form-check-label" for="estoque_neg">
+                                        Permitir Estoque Negativo
+                                        <small class="text-muted d-block text-danger">⚠️ Permite saída sem estoque suficiente</small>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- CONFIGURAÇÕES DE PRODUTOS -->
+                        <div class="row mb-5">
+                            <div class="col-12">
+                                <h5 class="border-bottom pb-2 mb-4">
+                                    <i class="fas fa-box text-info"></i> Cadastro de Produtos
+                                </h5>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-check form-switch mb-3">
+                                    <input type="checkbox" name="ncm_obrigatorio" 
+                                           class="form-check-input" id="ncm_obrig"
+                                           {% if config.ncm_obrigatorio %}checked{% endif %}>
+                                    <label class="form-check-label" for="ncm_obrig">
+                                        NCM Obrigatório
+                                        <small class="text-muted d-block">Exige NCM no cadastro de produtos</small>
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-check form-switch mb-3">
+                                    <input type="checkbox" name="preco_custo_obrigatorio" 
+                                           class="form-check-input" id="preco_obrig"
+                                           {% if config.preco_custo_obrigatorio %}checked{% endif %}>
+                                    <label class="form-check-label" for="preco_obrig">
+                                        Preço de Custo Obrigatório
+                                        <small class="text-muted d-block">Exige preço de custo no cadastro</small>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- CONFIGURAÇÕES DE NOTIFICAÇÕES -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h5 class="border-bottom pb-2 mb-4">
+                                    <i class="fas fa-bell text-warning"></i> Notificações
+                                </h5>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-check form-switch mb-3">
+                                    <input type="checkbox" name="notificar_estoque_minimo" 
+                                           class="form-check-input" id="notif_estoque"
+                                           {% if config.notificar_estoque_minimo %}checked{% endif %}>
+                                    <label class="form-check-label" for="notif_estoque">
+                                        Notificar Estoque Mínimo
+                                        <small class="text-muted d-block">Alerta quando produto atinge estoque mínimo</small>
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-check form-switch mb-3">
+                                    <input type="checkbox" name="notificar_solicitacao_pendente" 
+                                           class="form-check-input" id="notif_solic"
+                                           {% if config.notificar_solicitacao_pendente %}checked{% endif %}>
+                                    <label class="form-check-label" for="notif_solic">
+                                        Notificar Solicitações Pendentes
+                                        <small class="text-muted d-block">Notifica aprovadores sobre pendências</small>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Botões -->
+                        <div class="row mt-4">
+                            <div class="col-12 text-end">
+                                <button type="button" class="btn btn-secondary" onclick="window.history.back()">
+                                    <i class="fas fa-times"></i> Cancelar
+                                </button>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i> Salvar Configurações
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.cursor-pointer {
+    cursor: pointer;
+}
+
+.card:has(input[type="radio"]:checked) {
+    box-shadow: 0 0 20px rgba(0,123,255,0.5);
+}
+
+.form-check-input {
+    width: 20px;
+    height: 20px;
+}
+
+.form-switch .form-check-input {
+    width: 3em;
+    height: 1.5em;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Atualiza configurações detalhadas baseado no modo escolhido
+    const radios = document.querySelectorAll('input[name="modo_compras"]');
+    const configDetalhadas = document.getElementById('configComprasDetalhadas');
+    
+    radios.forEach(radio => {
+        radio.addEventListener('change', function() {
+            if (this.value === 'SIMPLES') {
+                // Modo simples: desabilita controles burocráticos
+                document.getElementById('exigir_aprovacao').checked = false;
+                document.getElementById('exigir_cotacao').checked = false;
+                document.getElementById('recebimento_direto').checked = true;
+                document.getElementById('entrada_auto').checked = true;
+            } else if (this.value === 'FORMAL') {
+                // Modo formal: habilita todos controles
+                document.getElementById('exigir_aprovacao').checked = true;
+                document.getElementById('exigir_cotacao').checked = true;
+                document.getElementById('recebimento_direto').checked = false;
+                document.getElementById('entrada_auto').checked = false;
+            }
+            // Híbrido: deixa como está
+        });
+    });
+    
+    // Confirmação ao salvar
+    document.getElementById('formConfiguracoes').addEventListener('submit', function(e) {
+        const modo = document.querySelector('input[name="modo_compras"]:checked').value;
+        let mensagem = '';
+        
+        if (modo === 'SIMPLES') {
+            mensagem = 'Modo Simples ativado: compras serão rápidas e diretas. Confirma?';
+        } else if (modo === 'FORMAL') {
+            mensagem = 'Modo Formal ativado: todas compras passarão por aprovação e cotação. Confirma?';
+        } else {
+            mensagem = 'Modo Híbrido ativado: você poderá escolher o fluxo por compra. Confirma?';
+        }
+        
+        if (!confirm(mensagem)) {
+            e.preventDefault();
+        }
+    });
+});
+</script>
+{% endblock %}

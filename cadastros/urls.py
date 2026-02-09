@@ -96,6 +96,9 @@ urlpatterns = [
     path('safras/nova/', views.safra_create, name='safra_create'),
     path('safras/<int:pk>/', views.safra_detail, name='safra_detail'),
     path('safras/<int:pk>/editar/', views.safra_update, name='safra_update'),
+    path('safras/<int:pk>/planejamento/novo/', views.safra_plan_create, name='safra_plan_create'),
+    path('safras/<int:pk>/planejamento/editar/', views.safra_plan_update, name='safra_plan_update'),
+    path('safras/<int:pk>/planejamento/excluir/', views.safra_plan_delete, name='safra_plan_delete'),
     path('safras/<int:pk>/excluir/', views.safra_delete, name='safra_delete'),
     
     # AJAX

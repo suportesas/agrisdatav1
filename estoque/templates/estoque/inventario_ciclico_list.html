@@ -1,0 +1,302 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Inventário Cíclico{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1>
+                <i class="fas fa-cube"></i> Inventário Cíclico (RF-056)
+            </h1>
+        </div>
+        <div class="col-md-4 text-end">
+            <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#modalAjuda">
+                <i class="fas fa-question-circle"></i> Como Fazer?
+            </button>
+            <a href="{% url 'estoque:inventario_ciclico_create' %}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Novo Inventário
+            </a>
+            <a href="{% url 'estoque:inventario_ciclico_relatorio_acuracia' %}" class="btn btn-info">
+                <i class="fas fa-chart-bar"></i> Relatório de Acurácia
+            </a>
+        </div>
+    </div>
+
+    <!-- Cards de Resumo -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-calendar-check"></i> Planejados</h5>
+                    <p class="card-text display-4">{{ total_planejados }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-dark">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-tasks"></i> Em Contagem</h5>
+                    <p class="card-text display-4">{{ total_em_contagem }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-check-circle"></i> Finalizados</h5>
+                    <p class="card-text display-4">{{ total_finalizados }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-boxes"></i> Total</h5>
+                    <p class="card-text display-4">{{ inventarios.count }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabela de Inventários -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">Lista de Inventários Cíclicos</h5>
+        </div>
+        <div class="card-body">
+            {% if inventarios %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Número</th>
+                            <th>Armazém</th>
+                            <th>Data</th>
+                            <th>Status</th>
+                            <th class="text-center">Items</th>
+                            <th class="text-center">Contados</th>
+                            <th class="text-center">Divergências</th>
+                            <th class="text-center">Acurácia</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for inv in inventarios %}
+                        <tr>
+                            <td><strong>{{ inv.numero }}</strong></td>
+                            <td>{{ inv.armazem.nome }}</td>
+                            <td>{{ inv.data_contagem|date:"d/m/Y" }}</td>
+                            <td>
+                                <span class="badge bg-{% if inv.status == 'PLANEJADO' %}primary{% elif inv.status == 'EM_CONTAGEM' %}warning{% elif inv.status == 'CONCILIADO' %}info{% else %}success{% endif %}">
+                                    {{ inv.get_status_display }}
+                                </span>
+                            </td>
+                            <td class="text-center">{{ inv.total_items_sistema }}</td>
+                            <td class="text-center">
+                                <span class="badge bg-success">{{ inv.total_items_contados }}</span>
+                            </td>
+                            <td class="text-center">
+                                {% if inv.total_items_divergencia > 0 %}
+                                <span class="badge bg-danger">{{ inv.total_items_divergencia }}</span>
+                                {% else %}
+                                <span class="badge bg-success">0</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                <strong>{{ inv.acuracia_percentual|floatformat:1 }}%</strong>
+                            </td>
+                            <td>
+                                <a href="{% url 'estoque:inventario_ciclico_detail' inv.id %}" class="btn btn-sm btn-info" title="Detalhar">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                {% if inv.status == 'PLANEJADO' %}
+                                <a href="{% url 'estoque:inventario_ciclico_detail' inv.id %}" class="btn btn-sm btn-warning" title="Iniciar Contagem">
+                                    <i class="fas fa-play"></i>
+                                </a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i> Nenhum inventário cíclico registrado.
+                <a href="{% url 'estoque:inventario_ciclico_create' %}">Clique aqui para criar um novo.</a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Ajuda -->
+<div class="modal fade" id="modalAjuda" tabindex="-1" aria-labelledby="modalAjudaLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="modalAjudaLabel">
+                    <i class="fas fa-question-circle"></i> Como Fazer Inventário Cíclico?
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> <strong>O que é?</strong><br>
+                    O Inventário Cíclico é uma contagem periódica e parcial do estoque, focando nos itens mais importantes (classificação ABC) sem interromper as operações.
+                </div>
+
+                <h5 class="mt-4"><i class="fas fa-list-ol"></i> Passo a Passo</h5>
+                
+                <div class="accordion" id="accordionProcedimento">
+                    <!-- Passo 1 -->
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#passo1">
+                                <strong>1. Criar Novo Inventário</strong>
+                            </button>
+                        </h2>
+                        <div id="passo1" class="accordion-collapse collapse show" data-bs-parent="#accordionProcedimento">
+                            <div class="accordion-body">
+                                <ul>
+                                    <li>Clique no botão <span class="badge bg-primary">+ Novo Inventário</span></li>
+                                    <li>Selecione o <strong>Armazém</strong> que será inventariado</li>
+                                    <li>Escolha a <strong>Classificação ABC</strong>:
+                                        <ul>
+                                            <li><strong>A</strong> - 80% do valor (itens mais importantes) ⭐</li>
+                                            <li><strong>B</strong> - 15% do valor (itens intermediários)</li>
+                                            <li><strong>C</strong> - 5% do valor (itens menos críticos)</li>
+                                            <li><strong>Todos</strong> - Inventário completo</li>
+                                        </ul>
+                                    </li>
+                                    <li>Clique em <strong>Criar Inventário</strong></li>
+                                </ul>
+                                <div class="alert alert-warning">
+                                    <i class="fas fa-lightbulb"></i> <strong>Dica:</strong> Comece sempre pela Classe A (produtos mais valiosos)!
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Passo 2 -->
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#passo2">
+                                <strong>2. Realizar Contagem</strong>
+                            </button>
+                        </h2>
+                        <div id="passo2" class="accordion-collapse collapse" data-bs-parent="#accordionProcedimento">
+                            <div class="accordion-body">
+                                <ul>
+                                    <li>Na lista, clique no ícone <button class="btn btn-sm btn-info"><i class="fas fa-eye"></i></button> para <strong>Visualizar</strong> o inventário</li>
+                                    <li>Você verá todos os itens com suas <strong>quantidades do sistema</strong></li>
+                                    <li>Para cada item:
+                                        <ol>
+                                            <li>Clique no botão <button class="btn btn-sm btn-primary"><i class="fas fa-clipboard-check"></i> Contar</button></li>
+                                            <li>Vá até o local físico e conte o produto</li>
+                                            <li>Digite a <strong>quantidade contada</strong></li>
+                                            <li>Se houver divergência, informe o <strong>motivo</strong></li>
+                                            <li>Clique em <strong>Salvar Contagem</strong></li>
+                                        </ol>
+                                    </li>
+                                </ul>
+                                <div class="alert alert-success">
+                                    <i class="fas fa-check-circle"></i> O sistema calculará automaticamente a diferença e destacará divergências!
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Passo 3 -->
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#passo3">
+                                <strong>3. Conciliar Divergências</strong>
+                            </button>
+                        </h2>
+                        <div id="passo3" class="accordion-collapse collapse" data-bs-parent="#accordionProcedimento">
+                            <div class="accordion-body">
+                                <ul>
+                                    <li>Após contar <strong>todos os itens</strong>, clique em <button class="btn btn-warning"><i class="fas fa-balance-scale"></i> Conciliar</button></li>
+                                    <li>O sistema irá:
+                                        <ul>
+                                            <li>Verificar se todos os itens foram contados ✓</li>
+                                            <li>Criar <strong>ajustes automáticos</strong> para divergências</li>
+                                            <li>Calcular a <strong>acurácia do inventário</strong></li>
+                                            <li>Atualizar o status para <span class="badge bg-info">CONCILIADO</span></li>
+                                        </ul>
+                                    </li>
+                                </ul>
+                                <div class="alert alert-danger">
+                                    <i class="fas fa-exclamation-triangle"></i> <strong>Atenção:</strong> Só concilie após contar todos os itens! A operação não pode ser desfeita.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Passo 4 -->
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#passo4">
+                                <strong>4. Finalizar Inventário</strong>
+                            </button>
+                        </h2>
+                        <div id="passo4" class="accordion-collapse collapse" data-bs-parent="#accordionProcedimento">
+                            <div class="accordion-body">
+                                <ul>
+                                    <li>Após conciliar, revise os dados</li>
+                                    <li>Verifique a <strong>acurácia percentual</strong>:
+                                        <ul>
+                                            <li><span class="badge bg-success">≥ 95%</span> - Excelente ⭐⭐⭐</li>
+                                            <li><span class="badge bg-primary">≥ 90%</span> - Bom ⭐⭐</li>
+                                            <li><span class="badge bg-warning">< 90%</span> - Precisa melhorar ⚠️</li>
+                                        </ul>
+                                    </li>
+                                    <li>Clique em <button class="btn btn-success"><i class="fas fa-check"></i> Finalizar</button></li>
+                                    <li>Status mudará para <span class="badge bg-success">FINALIZADO</span></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="alert alert-primary mt-4">
+                    <h6><i class="fas fa-chart-line"></i> Análise de Resultados</h6>
+                    <p class="mb-0">
+                        Acesse <strong>Relatório de Acurácia</strong> para visualizar:
+                    </p>
+                    <ul>
+                        <li>Histórico de todos os inventários</li>
+                        <li>Acurácia média da empresa</li>
+                        <li>Comparação de desempenho</li>
+                        <li>Exportação para Excel</li>
+                    </ul>
+                </div>
+
+                <div class="card bg-light mt-3">
+                    <div class="card-body">
+                        <h6><i class="fas fa-lightbulb text-warning"></i> Boas Práticas</h6>
+                        <ul class="mb-0">
+                            <li>Realize inventários <strong>regularmente</strong> (ex: mensalmente para classe A)</li>
+                            <li>Conte em <strong>horários de baixo movimento</strong></li>
+                            <li>Use <strong>equipes de 2 pessoas</strong> (um conta, outro anota)</li>
+                            <li>Documente <strong>todos os motivos</strong> de divergência</li>
+                            <li>Mantenha a meta de <strong>acurácia ≥ 95%</strong></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times"></i> Fechar
+                </button>
+                <a href="{% url 'estoque:inventario_ciclico_create' %}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Criar Novo Inventário
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

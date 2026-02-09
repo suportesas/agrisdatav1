@@ -198,9 +198,9 @@ ItemSolicitacaoFormSet = inlineformset_factory(
     ItemSolicitacaoCompra,
     form=ItemSolicitacaoCompraForm,
     formset=BaseItemSolicitacaoFormSet,
-    extra=1,  # Começa com apenas 1 item vazio
+    extra=0,  # Começa sem formas extras (o JavaScript adiciona se necessário)
     can_delete=True,
-    min_num=1,
+    min_num=1,  # Mínimo de 1 item
     validate_min=True,
 )
 

@@ -1,24 +1,330 @@
 {% extends 'base.html' %}
 
+{% block extra_css %}
+<style>
+  /* VERSÃO ATUALIZADA 2026-02-04 10:54 - TABELA MODERNA */
+  
+  .permissions-header {
+    background: linear-gradient(135deg, #6f42c1 0%, #563d7c 100%);
+    border-radius: 16px;
+    padding: 2rem;
+    color: white;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 16px rgba(111, 66, 193, 0.2);
+  }
+  
+  .permissions-header h2 {
+    color: white;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+  
+  .actions-bar {
+    background: white;
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    margin-bottom: 2rem;
+    border: 1px solid rgba(0,0,0,0.05);
+  }
+  
+  .permissions-table-wrapper {
+    background: white;
+    border-radius: 16px;
+    padding: 0;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    margin-bottom: 2rem;
+    overflow: hidden;
+    border: 1px solid #e9ecef;
+  }
+  
+  .permissions-table {
+    width: 100%;
+    margin-bottom: 0;
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+  
+  .permissions-table thead {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  
+  .permissions-table thead th {
+    padding: 1.2rem 1rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 1px;
+    color: white;
+    border: none;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+  }
+  
+  .permissions-table thead th:first-child {
+    border-radius: 0;
+  }
+  
+  .permissions-table tbody tr {
+    border-bottom: 1px solid #f0f0f0;
+    transition: all 0.25s ease;
+  }
+  
+  .permissions-table tbody tr:hover:not(.module-group-header) {
+    background: linear-gradient(90deg, #f8f9ff 0%, #ffffff 100%);
+    transform: translateX(4px);
+    box-shadow: -4px 0 0 0 #667eea;
+  }
+  
+  .permissions-table tbody td {
+    padding: 1.1rem 1rem;
+    vertical-align: middle;
+    border: none;
+  }
+  
+  .permissions-table tbody td:first-child {
+    font-weight: 600;
+    color: #212529;
+    padding-left: 1.5rem;
+  }
+  
+  .permissions-table tbody td.text-center {
+    text-align: center;
+  }
+  
+  /* Checkboxes customizados */
+  .permission-checkbox {
+    width: 26px;
+    height: 26px;
+    cursor: pointer;
+    accent-color: #1a73e8;
+    transition: all 0.25s ease;
+    border-radius: 6px;
+  }
+  
+  .permission-checkbox:hover {
+    transform: scale(1.3);
+    box-shadow: 0 0 0 4px rgba(26, 115, 232, 0.1);
+  }
+  
+  .permission-checkbox:checked {
+    accent-color: #10b981;
+    filter: drop-shadow(0 2px 4px rgba(16, 185, 129, 0.3));
+  }
+  
+  /* Ícones nas colunas */
+  .permission-icon {
+    display: inline-block;
+    width: 36px;
+    height: 36px;
+    line-height: 36px;
+    border-radius: 10px;
+    text-align: center;
+    font-size: 1.1rem;
+    margin-right: 0.5rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+  
+  .icon-add { 
+    background: linear-gradient(135deg, #d4f4dd 0%, #a7f3d0 100%);
+    color: #065f46;
+  }
+  .icon-change { 
+    background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+    color: #1e40af;
+  }
+  .icon-delete { 
+    background: linear-gradient(135deg, #fecaca 0%, #fca5a5 100%);
+    color: #991b1b;
+  }
+  .icon-view { 
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    color: #92400e;
+  }
+  
+  /* Grupos de módulos */
+  .module-group-header {
+    background: linear-gradient(135deg, #e8f4fd 0%, #d4e9f7 100%);
+    color: #1a73e8;
+    font-weight: 800;
+    font-size: 1.1rem;
+    letter-spacing: 0.5px;
+    border-left: 6px solid #1a73e8;
+    border-top: none;
+    border-bottom: 2px solid #1a73e8;
+    box-shadow: inset 0 1px 3px rgba(26, 115, 232, 0.1);
+  }
+  
+  .module-group-header td {
+    padding: 1.3rem 1.5rem !important;
+    color: #1a73e8 !important;
+    font-weight: 800 !important;
+  }
+  
+  .module-group-header .module-icon-large {
+    font-size: 1.6rem;
+    margin-right: 0.75rem;
+    display: inline-block;
+    vertical-align: middle;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+  }
+  
+  .module-group-header .badge {
+    background: white !important;
+    color: #1a73e8 !important;
+    border: 2px solid #1a73e8;
+    font-weight: 700;
+    padding: 0.35rem 0.75rem;
+    font-size: 0.85rem;
+    border-radius: 20px;
+  }
+  
+  /* Linhas de permissões individuais */
+  .permissions-table tbody tr:not(.module-group-header) td:first-child {
+    font-weight: 500;
+    color: #495057;
+    padding-left: 3.5rem;
+    position: relative;
+    font-size: 0.95rem;
+  }
+  
+  .permissions-table tbody tr:not(.module-group-header) td:first-child::before {
+    content: '•';
+    position: absolute;
+    left: 2.5rem;
+    color: #cbd5e1;
+    font-size: 1.5rem;
+    font-weight: bold;
+  }
+  
+  .permissions-table tbody tr:not(.module-group-header) {
+    background: white;
+  }
+  
+  .permissions-table tbody tr:not(.module-group-header):nth-child(even) {
+    background: #fafbfc;
+  }
+  
+  .permissions-table tbody tr:not(.module-group-header):hover {
+    background: linear-gradient(90deg, #eff6ff 0%, #ffffff 100%) !important;
+    box-shadow: -4px 0 0 0 #1a73e8 !important;
+  }
+  
+  /* Botões modernos */
+  .btn-save-perms {
+    background: linear-gradient(135deg, #198754 0%, #157347 100%);
+    border: none;
+    color: white;
+    font-weight: 600;
+    padding: 0.7rem 2rem;
+    border-radius: 10px;
+    transition: all 0.2s ease;
+  }
+  
+  .btn-save-perms:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(25, 135, 84, 0.3);
+  }
+  
+  /* Loading skeleton */
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+  
+  .loading-skeleton {
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+  
+  /* Scroll suave para tabelas grandes */
+  .table-scroll {
+    max-height: 70vh;
+    overflow-y: auto;
+    border-radius: 12px;
+  }
+  
+  .table-scroll::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  .table-scroll::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+  }
+  
+  .table-scroll::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 10px;
+  }
+  
+  .table-scroll::-webkit-scrollbar-thumb:hover {
+    background: #555;
+  }
+  
+  /* Responsivo */
+  @media (max-width: 768px) {
+    .permissions-table {
+      font-size: 0.85rem;
+    }
+    
+    .permissions-table thead th,
+    .permissions-table tbody td {
+      padding: 0.75rem 0.5rem;
+    }
+    
+    .permission-checkbox {
+      width: 20px;
+      height: 20px;
+    }
+    
+    .actions-bar {
+      position: relative;
+      top: 0;
+    }
+  }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="container py-4">
+<div class="container-fluid py-4" style="max-width: 1400px;">
   <nav aria-label="breadcrumb" class="mb-3">
     <ol class="breadcrumb">
-      <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
-      <li class="breadcrumb-item"><a href="{% url 'empresas:roles_list' %}">Funções</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}"><i class="bi bi-house-door"></i> Dashboard</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'empresas:roles_list' %}"><i class="bi bi-shield-lock"></i> Funções</a></li>
       <li class="breadcrumb-item active">Permissões</li>
     </ol>
   </nav>
 
-  <div class="d-flex justify-content-between align-items-center mb-3">
-    <div>
-      <h2 class="fw-bold mb-1"><i class="bi bi-shield-lock text-primary"></i> Permissões - {{ role.name }}</h2>
-      <p class="text-muted mb-0">Edite permissões para a função selecionada ({{ role.empresa.nome }})</p>
+  <!-- Header bonito -->
+  <div class="permissions-header">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+      <div>
+        <h2 class="fw-bold mb-2">
+          <i class="bi bi-shield-check"></i> Gerenciar Permissões
+        </h2>
+        <p class="mb-1" style="font-size: 1.1rem; color: rgba(255,255,255,0.95);">
+          <strong>{{ role.name }}</strong>
+        </p>
+        <p class="small mb-0" style="color: rgba(255,255,255,0.8);">
+          <i class="bi bi-building"></i> {{ role.empresa.nome }}
+        </p>
+      </div>
+      <a href="{% url 'empresas:roles_list' %}" class="btn btn-light">
+        <i class="bi bi-arrow-left"></i> Voltar
+      </a>
     </div>
-    <a href="{% url 'empresas:roles_list' %}" class="btn btn-outline-secondary">Voltar</a>
   </div>
 
-  <div id="permissions-area">Carregando...</div>
+  <div id="permissions-area">
+    <div class="text-center py-5 loading-skeleton">
+      <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;">
+        <span class="visually-hidden">Carregando...</span>
+      </div>
+      <p class="text-muted">Carregando permissões...</p>
+    </div>
+  </div>
+  
   <!-- Ensure CSRF token is present in DOM for AJAX and E2E tests to read -->
   <form style="display:none">{% csrf_token %}</form>
 </div>

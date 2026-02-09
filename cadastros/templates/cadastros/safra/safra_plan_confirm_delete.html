@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block title %}Confirmar exclusão - {{ safra }}{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <div class="row">
+    <div class="col-md-6 offset-md-3">
+      <div class="card">
+        <div class="card-body">
+          <h5>Confirmar exclusão do Planejamento</h5>
+          <p>Tem certeza que deseja excluir o planejamento desta safra?</p>
+          <form method="post">
+            {% csrf_token %}
+            <button class="btn btn-danger" type="submit">Excluir</button>
+            <a class="btn btn-secondary" href="{% url 'cadastros:safra_detail' safra.pk %}">Cancelar</a>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

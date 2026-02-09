@@ -249,11 +249,19 @@ class HistoricoTalhaoAdmin(admin.ModelAdmin):
     search_fields = ['talhao__nome', 'cultura__nome']
 
 
+class SafraPlanInline(admin.StackedInline):
+    model = SafraPlan
+    can_delete = False
+    verbose_name = 'Planejamento de Safra'
+    verbose_name_plural = 'Planejamentos de Safra'
+    max_num = 1
+
 @admin.register(Safra)
 class SafraAdmin(admin.ModelAdmin):
     list_display = ['nome', 'fazenda', 'cultura', 'ano', 'status']
     list_filter = ['status', 'fazenda', 'cultura', 'ano']
     search_fields = ['nome', 'fazenda__nome', 'cultura__nome']
+    inlines = [SafraPlanInline]
 
 
 @admin.register(SafraPlan)

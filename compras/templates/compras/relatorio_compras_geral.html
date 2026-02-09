@@ -1,0 +1,337 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>
+            <i class="bi bi-clipboard-data"></i>
+            {{ title }}
+        </h2>
+        <a href="{% url 'compras:pedido_list' %}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Filtros</h5>
+        </div>
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Data Início</label>
+                    <input type="date" name="data_inicio" class="form-control" value="{{ data_inicio }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Data Fim</label>
+                    <input type="date" name="data_fim" class="form-control" value="{{ data_fim }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Fornecedores</label>
+                    <select name="fornecedor" multiple class="form-select" size="6">
+                        {% for f in fornecedores %}
+                            <option value="{{ f.id }}" {% if f.id in filtros.fornecedor %}selected{% endif %}>
+                                {{ f.nome_fantasia|default:f.nome }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Compradores</label>
+                    <select name="comprador" multiple class="form-select" size="6">
+                        {% for u in compradores %}
+                            <option value="{{ u.id }}" {% if u.id in filtros.comprador %}selected{% endif %}>
+                                {{ u.get_full_name|default:u.username }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-12">
+                    <label class="form-label">Status do Pedido</label>
+                    <div class="d-flex flex-wrap gap-3">
+                        {% for value, label in status_choices %}
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="status" value="{{ value }}" id="status_{{ value }}" {% if value in filtros.status %}checked{% endif %}>
+                                <label class="form-check-label" for="status_{{ value }}">{{ label }}</label>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="col-md-12">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-search"></i> Filtrar
+                    </button>
+                    <a href="{% url 'compras:relatorio_compras_geral' %}" class="btn btn-outline-secondary ms-2">
+                        Limpar
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card text-bg-light">
+                <div class="card-body">
+                    <div class="text-muted">Pedidos</div>
+                    <div class="fs-4 fw-bold">{{ total_pedidos }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-bg-light">
+                <div class="card-body">
+                    <div class="text-muted">Valor Total</div>
+                    <div class="fs-4 fw-bold">R$ {{ total_valor|floatformat:2 }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-bg-light">
+                <div class="card-body">
+                    <div class="text-muted">Ticket Médio</div>
+                    <div class="fs-4 fw-bold">R$ {{ ticket_medio|floatformat:2 }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-bg-light">
+                <div class="card-body">
+                    <div class="text-muted">Itens / Qtde</div>
+                    <div class="fs-6 fw-bold">{{ total_itens }} itens • {{ total_qtd|floatformat:2 }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-lg-6">
+            <div class="card mb-4">
+                <div class="card-header"><strong>Pedidos por Status</strong></div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Status</th>
+                                    <th>Quantidade</th>
+                                    <th>Valor</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for s in por_status %}
+                                    <tr>
+                                        <td>{{ s.label }}</td>
+                                        <td>{{ s.total }}</td>
+                                        <td>R$ {{ s.valor|floatformat:2 }}</td>
+                                    </tr>
+                                {% empty %}
+                                    <tr><td colspan="3" class="text-muted">Sem dados</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card mb-4">
+                <div class="card-header"><strong>Pedidos por Fornecedor</strong></div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Fornecedor</th>
+                                    <th>Pedidos</th>
+                                    <th>Valor</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for f in por_fornecedor %}
+                                    <tr>
+                                        <td>{{ f.fornecedor__nome_fantasia|default:f.fornecedor__nome }}</td>
+                                        <td>{{ f.total }}</td>
+                                        <td>R$ {{ f.valor|floatformat:2 }}</td>
+                                    </tr>
+                                {% empty %}
+                                    <tr><td colspan="3" class="text-muted">Sem dados</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-lg-6">
+            <div class="card mb-4">
+                <div class="card-header"><strong>Top Produtos</strong></div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Produto</th>
+                                    <th>Qtd</th>
+                                    <th>Valor</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for p in top_produtos %}
+                                    <tr>
+                                        <td>{{ p.produto__nome }}</td>
+                                        <td>{{ p.qtd|floatformat:2 }} {{ p.produto__unidade_medida__sigla }}</td>
+                                        <td>R$ {{ p.valor|floatformat:2 }}</td>
+                                    </tr>
+                                {% empty %}
+                                    <tr><td colspan="3" class="text-muted">Sem dados</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card mb-4">
+                <div class="card-header"><strong>Pedidos por Comprador</strong></div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Comprador</th>
+                                    <th>Pedidos</th>
+                                    <th>Valor</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for c in por_comprador %}
+                                    <tr>
+                                        <td>{{ c.comprador__first_name }} {{ c.comprador__last_name }}{% if not c.comprador__first_name and not c.comprador__last_name %}{{ c.comprador__username }}{% endif %}</td>
+                                        <td>{{ c.total }}</td>
+                                        <td>R$ {{ c.valor|floatformat:2 }}</td>
+                                    </tr>
+                                {% empty %}
+                                    <tr><td colspan="3" class="text-muted">Sem dados</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-lg-6">
+            <div class="card mb-4">
+                <div class="card-header"><strong>Pedidos Atrasados</strong></div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Pedido</th>
+                                    <th>Fornecedor</th>
+                                    <th>Previsto</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for p in pedidos_atrasados %}
+                                    <tr>
+                                        <td>{{ p.numero }}</td>
+                                        <td>{{ p.fornecedor.nome_fantasia|default:p.fornecedor.nome }}</td>
+                                        <td>{{ p.data_entrega_prevista|date:"d/m/Y" }}</td>
+                                        <td>{{ p.get_status_display }}</td>
+                                    </tr>
+                                {% empty %}
+                                    <tr><td colspan="4" class="text-muted">Sem atrasos no período</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card mb-4">
+                <div class="card-header"><strong>Recebimentos (Resumo)</strong></div>
+                <div class="card-body">
+                    <div class="mb-2">Total de recebimentos: <strong>{{ recebimentos_total }}</strong></div>
+                    <div class="mb-3">Valor total: <strong>R$ {{ recebimentos_valor|floatformat:2 }}</strong></div>
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Status</th>
+                                    <th>Qtd</th>
+                                    <th>Valor</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for r in recebimentos_por_status %}
+                                    <tr>
+                                        <td>{{ r.label }}</td>
+                                        <td>{{ r.total }}</td>
+                                        <td>R$ {{ r.valor|floatformat:2 }}</td>
+                                    </tr>
+                                {% empty %}
+                                    <tr><td colspan="3" class="text-muted">Sem dados</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header"><strong>Recebimentos Recentes</strong></div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Número</th>
+                            <th>NF</th>
+                            <th>Fornecedor</th>
+                            <th>Data</th>
+                            <th>Status</th>
+                            <th>Valor</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for r in recebimentos_lista %}
+                            <tr>
+                                <td>{{ r.numero }}</td>
+                                <td>{{ r.nota_fiscal }}</td>
+                                <td>
+                                    {% if r.pedido %}
+                                        {{ r.pedido.fornecedor.nome_fantasia|default:r.pedido.fornecedor.nome }}
+                                    {% else %}
+                                        {{ r.fornecedor.nome_fantasia|default:r.fornecedor.nome }}
+                                    {% endif %}
+                                </td>
+                                <td>{{ r.data_recebimento|date:"d/m/Y" }}</td>
+                                <td>{{ r.get_status_display }}</td>
+                                <td>R$ {{ r.valor_total_nf|floatformat:2 }}</td>
+                            </tr>
+                        {% empty %}
+                            <tr><td colspan="6" class="text-muted">Sem recebimentos no período</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

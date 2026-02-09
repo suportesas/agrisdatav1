@@ -4,6 +4,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.utils import timezone
 from django.db.models import Count, Q
+from django.db.models.deletion import ProtectedError
 from django.http import JsonResponse
 from django.template.loader import render_to_string
 from django.contrib.auth.models import Permission
@@ -53,6 +54,7 @@ def painel_admin(request):
 def empresa_list(request):
     """Lista empresas"""
     q = request.GET.get('q', '').strip()
+    status = request.GET.get('status', 'ativas').strip()
     empresas = Empresa.objects.select_related('plano').all()
 
     if not request.user.is_superuser:
@@ -64,11 +66,20 @@ def empresa_list(request):
     if q:
         empresas = empresas.filter(Q(nome__icontains=q) | Q(cnpj__icontains=q))
 
+    if status == 'ativas':
+        empresas = empresas.filter(ativa=True, bloqueada=False)
+    elif status == 'inativas':
+        empresas = empresas.filter(Q(ativa=False) | Q(bloqueada=True))
+    # status == 'todas': sem filtro adicional
+
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         html = render_to_string('empresas/_empresa_table.html', {'empresas': empresas}, request=request)
         return JsonResponse({'html': html})
 
-    return render(request, 'empresas/empresa_list.html', {'empresas': empresas})
+    return render(request, 'empresas/empresa_list.html', {
+        'empresas': empresas,
+        'status': status,
+    })
 
 
 @login_required
@@ -133,10 +144,35 @@ def empresa_delete(request, pk):
         )
         return redirect('empresas:empresa_list')
     
+    # Verifica vínculos que impedem exclusão (PROTECT)
+    total_funcionarios = empresa.funcionarios.count()
+    total_funcoes = empresa.funcoes_funcionarios.count()
+
+    if total_funcionarios > 0 or total_funcoes > 0:
+        detalhes = []
+        if total_funcionarios > 0:
+            detalhes.append(f"{total_funcionarios} funcionário(s)")
+        if total_funcoes > 0:
+            detalhes.append(f"{total_funcoes} função(ões)")
+        detalhes_str = " e ".join(detalhes)
+        messages.error(
+            request,
+            f"❌ Não é possível excluir! A empresa possui {detalhes_str} vinculados. "
+            f"Remova esses registros primeiro."
+        )
+        return redirect('empresas:empresa_list')
+
     if request.method == 'POST':
         nome = empresa.nome
-        empresa.delete()
-        messages.success(request, f"🗑️ Empresa '{nome}' excluída com sucesso.")
+        try:
+            empresa.delete()
+            messages.success(request, f"🗑️ Empresa '{nome}' excluída com sucesso.")
+        except ProtectedError:
+            messages.error(
+                request,
+                "❌ Não é possível excluir! Existem registros vinculados que impedem a exclusão. "
+                "Remova-os primeiro."
+            )
         return redirect('empresas:empresa_list')
     
     return render(request, 'empresas/empresa_confirm_delete.html', {'empresa': empresa})
@@ -171,12 +207,23 @@ def role_list(request):
         return redirect('dashboard:index')
 
     roles = Role.objects.filter(empresa=request.user.empresa)
+    
+    # Estatísticas
+    total_roles = roles.count()
+    builtin_roles = roles.filter(builtin=True).count()
+    custom_roles = roles.filter(builtin=False).count()
 
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         html = render_to_string('empresas/_roles_table.html', {'roles': roles}, request=request)
         return JsonResponse({'html': html})
 
-    return render(request, 'empresas/roles_list.html', {'roles': roles})
+    context = {
+        'roles': roles,
+        'total_roles': total_roles,
+        'builtin_roles': builtin_roles,
+        'custom_roles': custom_roles,
+    }
+    return render(request, 'empresas/roles_list.html', context)
 
 
 @login_required
@@ -263,6 +310,7 @@ def role_permissions(request, role_id):
                 'auth': 'Autenticação',
                 'produtos': 'Produtos',
                 'estoque': 'Estoque',
+                'compras': 'Compras',
             }
 
             for p in perms:

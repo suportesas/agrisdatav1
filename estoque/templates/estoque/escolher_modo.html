@@ -1,0 +1,181 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Escolher Modo de Estoque{% endblock %}
+
+{% block extra_css %}
+<style>
+    .mode-card {
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border: 2px solid #dee2e6;
+        border-radius: 8px;
+        padding: 40px 20px;
+        text-align: center;
+        text-decoration: none;
+        color: inherit;
+        display: block;
+        height: 100%;
+    }
+
+    .mode-card:hover {
+        border-color: #007bff;
+        box-shadow: 0 4px 12px rgba(0, 123, 255, 0.2);
+        transform: translateY(-5px);
+    }
+
+    .mode-card.simples {
+        border-left: 4px solid #28a745;
+    }
+
+    .mode-card.formal {
+        border-left: 4px solid #ffc107;
+    }
+
+    .mode-icon {
+        font-size: 48px;
+        margin-bottom: 20px;
+    }
+
+    .mode-simples .mode-icon {
+        color: #28a745;
+    }
+
+    .mode-formal .mode-icon {
+        color: #ffc107;
+    }
+
+    .mode-title {
+        font-size: 24px;
+        font-weight: bold;
+        margin-bottom: 15px;
+    }
+
+    .mode-description {
+        color: #6c757d;
+        font-size: 14px;
+        line-height: 1.6;
+        margin-bottom: 20px;
+    }
+
+    .mode-features {
+        text-align: left;
+        display: inline-block;
+        margin-bottom: 20px;
+    }
+
+    .mode-features li {
+        padding: 8px 0;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    .mode-features li:last-child {
+        border-bottom: none;
+    }
+
+    .mode-badge {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: bold;
+        margin-top: 10px;
+    }
+
+    .badge-rapido {
+        background-color: #d4edda;
+        color: #155724;
+    }
+
+    .badge-completo {
+        background-color: #fff3cd;
+        color: #856404;
+    }
+
+    .header-section {
+        text-align: center;
+        margin-bottom: 50px;
+    }
+
+    .header-section h1 {
+        font-size: 32px;
+        margin-bottom: 10px;
+    }
+
+    .header-section p {
+        font-size: 16px;
+        color: #6c757d;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="header-section">
+        <h1>
+            <i class="fas fa-boxes"></i> Escolher Modo de Estoque
+        </h1>
+        <p>Selecione como você deseja gerenciar o estoque</p>
+    </div>
+
+    <div class="row g-4 justify-content-center">
+        <!-- MODO SIMPLES -->
+        <div class="col-md-5">
+            <a href="{% url 'estoque:entrada_rapida' %}" class="mode-card simples" title="Modo Simples">
+                <div class="mode-icon">
+                    <i class="fas fa-bolt"></i>
+                </div>
+                <div class="mode-title">Modo Simples</div>
+                <div class="mode-description">
+                    Registre entradas e saídas de forma rápida e direta
+                </div>
+
+                <ul class="mode-features">
+                    <li>✓ Entrada rápida de produtos</li>
+                    <li>✓ Saída direta do estoque</li>
+                    <li>✓ Ajustes pontuais</li>
+                    <li>✓ Menos etapas e validações</li>
+                </ul>
+
+                <span class="mode-badge badge-rapido">⚡ RÁPIDO</span>
+            </a>
+        </div>
+
+        <!-- MODO FORMAL -->
+        <div class="col-md-5">
+            <a href="{% url 'estoque:movimentacao_list' %}" class="mode-card formal" title="Modo Formal">
+                <div class="mode-icon">
+                    <i class="fas fa-warehouse"></i>
+                </div>
+                <div class="mode-title">Modo Formal</div>
+                <div class="mode-description">
+                    Controle completo com lotes, validade e rastreamento
+                </div>
+
+                <ul class="mode-features">
+                    <li>✓ Controle de lotes e validade</li>
+                    <li>✓ Rastreabilidade completa</li>
+                    <li>✓ FIFO automático</li>
+                    <li>✓ Validações rigorosas</li>
+                </ul>
+
+                <span class="mode-badge badge-completo">📋 FORMAL</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Info Box -->
+    <div class="row mt-5">
+        <div class="col-md-10 mx-auto">
+            <div class="alert alert-info" role="alert">
+                <h5 class="alert-heading"><i class="fas fa-info-circle"></i> Dica</h5>
+                <p class="mb-0">
+                    Você pode trocar de modo a qualquer momento voltando a esta tela ou através da configuração do sistema.
+                    Esta escolha é válida apenas para esta sessão.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,329 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Recebimento Rápido - Sistema de Compras{% endblock %}
+
+{% block extra_css %}
+<style>
+    .items-table tbody tr:hover {
+        background-color: #f5f5f5;
+    }
+    .btn-remove-item {
+        color: #dc3545;
+        cursor: pointer;
+        font-weight: bold;
+    }
+    .btn-remove-item:hover {
+        color: #c82333;
+    }
+    .status-badge {
+        font-size: 12px;
+        padding: 4px 8px;
+        border-radius: 3px;
+    }
+    .status-parcial {
+        background-color: #fff3cd;
+        color: #856404;
+    }
+    .status-pendente {
+        background-color: #e7e7e7;
+        color: #383d41;
+    }
+    .total-section {
+        background-color: #f9f9f9;
+        border-top: 2px solid #dee2e6;
+        padding: 15px;
+        margin-top: 15px;
+        border-radius: 4px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1>
+                <i class="fas fa-inbox"></i> Recebimento Rápido
+            </h1>
+            <p class="text-muted">Registre o recebimento de produtos e atualize o estoque</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{% url 'compras:recebimento_list' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-list"></i> Recebimentos
+            </a>
+        </div>
+    </div>
+
+    {% if messages %}
+    <div class="alert alert-info alert-dismissible fade show" role="alert">
+        {% for message in messages %}
+            <strong>{{ message }}</strong>
+        {% endfor %}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endif %}
+
+    <form method="POST" id="recebimentoForm">
+        {% csrf_token %}
+
+        <!-- Seção: Seleção de Pedido -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-file-invoice"></i> Pedido de Compra</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-8">
+                        <div class="mb-3">
+                            <label for="pedido" class="form-label">Selecione o Pedido *</label>
+                            <select name="pedido_id" id="pedido" class="form-select" required onchange="carregarItens()">
+                                <option value="">-- Selecione um pedido --</option>
+                                {% for pedido in pedidos %}
+                                <option value="{{ pedido.id }}" data-fornecedor="{{ pedido.fornecedor.razao_social }}">
+                                    {% if pedido.numero %}
+                                        Pedido #{{ pedido.numero }} -
+                                    {% endif %}
+                                    {{ pedido.fornecedor.razao_social }}
+                                    ({{ pedido.itens.count }} itens)
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="fornecedor_display" class="form-label">Fornecedor</label>
+                            <input type="text" id="fornecedor_display" class="form-control" disabled>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="nota_fiscal" class="form-label">Número da Nota Fiscal</label>
+                            <input type="text" name="nota_fiscal" id="nota_fiscal" class="form-control" placeholder="Ex: NF-001234">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="data_recebimento" class="form-label">Data do Recebimento</label>
+                            <input type="date" name="data_recebimento" id="data_recebimento" class="form-control" required>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Seção: Itens -->
+        <div class="card mb-4">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="fas fa-boxes"></i> Itens Recebidos</h5>
+            </div>
+            <div class="card-body">
+                <div id="itensContainer">
+                    <p class="text-muted text-center">Selecione um pedido acima para visualizar os itens.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Seção: Armazenamento -->
+        <div class="card mb-4">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="fas fa-warehouse"></i> Armazenamento</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="armazem" class="form-label">Armazém *</label>
+                            <select name="armazem_id" id="armazem" class="form-select" required onchange="carregarLocais()">
+                                <option value="">-- Selecione um armazém --</option>
+                                {% for armazem in armazens %}
+                                <option value="{{ armazem.id }}">{{ armazem.nome }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="local" class="form-label">Local de Estocagem *</label>
+                            <select name="local_id" id="local" class="form-select" required>
+                                <option value="">-- Selecione um local --</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Seção: Observações -->
+        <div class="card mb-4">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0"><i class="fas fa-sticky-note"></i> Observações</h5>
+            </div>
+            <div class="card-body">
+                <textarea name="observacoes" class="form-control" rows="3" placeholder="Adicione observações sobre o recebimento..."></textarea>
+            </div>
+        </div>
+
+        <!-- Botões de Ação -->
+        <div class="d-flex gap-2 justify-content-between mt-4">
+            <a href="{% url 'compras:recebimento_list' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Cancelar
+            </a>
+            <button type="submit" class="btn btn-primary btn-lg" onclick="return validarFormulario()">
+                <i class="fas fa-check"></i> Confirmar Recebimento
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+// Dados dos pedidos e locais
+const pedidosData = {
+    {% for pedido in pedidos %}
+    {{ pedido.id }}: {
+        fornecedor: "{{ pedido.fornecedor.razao_social }}",
+        itens: [
+            {% for item in pedido.itens.all %}
+            {
+                id: {{ item.id }},
+                produto: "{{ item.produto.nome }}",
+                quantidade: {{ item.quantidade }},
+                preco: {{ item.preco_unitario|default:0 }},
+                unidade: "{{ item.produto.unidade_medida }}"
+            }{{ forloop.last|yesno:",," }}
+            {% endfor %}
+        ]
+    }{{ forloop.last|yesno:",," }}
+    {% endfor %}
+};
+
+const locaisData = {
+    {% for local in locais %}
+    {{ local.armazem.id }}: [
+        {% for l in locais %}
+            {% if l.armazem.id == local.armazem.id %}
+            { id: {{ l.id }}, nome: "{{ l.nome }}" }{{ forloop.last|yesno:",," }}
+            {% endif %}
+        {% endfor %}
+    ]{{ forloop.last|yesno:",," }}
+    {% endfor %}
+};
+
+function carregarItens() {
+    const pedidoSelect = document.getElementById('pedido');
+    const pedidoId = pedidoSelect.value;
+    const container = document.getElementById('itensContainer');
+    
+    // Atualizar fornecedor
+    const fornecedor = pedidoSelect.options[pedidoSelect.selectedIndex].dataset.fornecedor || '';
+    document.getElementById('fornecedor_display').value = fornecedor;
+    
+    if (!pedidoId || !pedidosData[pedidoId]) {
+        container.innerHTML = '<p class="text-muted text-center">Selecione um pedido para visualizar os itens.</p>';
+        return;
+    }
+    
+    const itens = pedidosData[pedidoId].itens;
+    if (itens.length === 0) {
+        container.innerHTML = '<p class="text-muted text-center">Este pedido não possui itens.</p>';
+        return;
+    }
+    
+    let html = `
+        <table class="table table-bordered items-table">
+            <thead class="table-light">
+                <tr>
+                    <th style="width: 40%;">Produto</th>
+                    <th style="width: 15%;">Qtd. Pedida</th>
+                    <th style="width: 15%;">Qtd. Recebida</th>
+                    <th style="width: 15%;">Valor Unit.</th>
+                    <th style="width: 15%;">Subtotal</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+    
+    itens.forEach((item, idx) => {
+        html += `
+            <tr>
+                <td>${item.produto}</td>
+                <td><strong>${item.quantidade} ${item.unidade}</strong></td>
+                <td>
+                    <input type="hidden" name="item_ids" value="${item.id}">
+                    <input type="number" name="quantidades_recebidas" class="form-control qtd-recebida" min="0" step="0.01" max="${item.quantidade}" value="${item.quantidade}" onchange="calcularSubtotais()">
+                </td>
+                <td>R$ ${item.preco.toFixed(2)}</td>
+                <td>
+                    <input type="text" class="form-control subtotal-recebimento" readonly value="R$ 0,00">
+                </td>
+            </tr>
+        `;
+    });
+    
+    html += `
+            </tbody>
+        </table>
+    `;
+    
+    container.innerHTML = html;
+    calcularSubtotais();
+}
+
+function carregarLocais() {
+    const armazemId = document.getElementById('armazem').value;
+    const localSelect = document.getElementById('local');
+    
+    localSelect.innerHTML = '<option value="">-- Selecione um local --</option>';
+    
+    if (armazemId && locaisData[armazemId]) {
+        locaisData[armazemId].forEach(local => {
+            const option = document.createElement('option');
+            option.value = local.id;
+            option.textContent = local.nome;
+            localSelect.appendChild(option);
+        });
+    }
+}
+
+function calcularSubtotais() {
+    const itensContainer = document.getElementById('itensContainer');
+    const subtotalInputs = itensContainer.querySelectorAll('.subtotal-recebimento');
+    const qtdInputs = itensContainer.querySelectorAll('.qtd-recebida');
+    
+    // Recalcular subtotais (implementar conforme necessário)
+}
+
+function validarFormulario() {
+    const pedido = document.getElementById('pedido').value;
+    const armazem = document.getElementById('armazem').value;
+    const local = document.getElementById('local').value;
+    
+    if (!pedido) {
+        alert('Por favor, selecione um pedido.');
+        return false;
+    }
+    
+    if (!armazem) {
+        alert('Por favor, selecione um armazém.');
+        return false;
+    }
+    
+    if (!local) {
+        alert('Por favor, selecione um local de estocagem.');
+        return false;
+    }
+    
+    return true;
+}
+
+// Definir data atual por padrão
+document.addEventListener('DOMContentLoaded', function() {
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('data_recebimento').value = today;
+});
+</script>
+
+{% endblock %}

@@ -367,6 +367,14 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('.remove-item').forEach(btn => {
         btn.addEventListener('click', removerItem);
     });
+    
+    // Se não houver nenhum item visível, adicionar um vazio
+    const visibleItems = document.querySelectorAll('tr.item-form:not([style*="display: none"])').length;
+    if (visibleItems === 0) {
+        document.getElementById('add-item').click();
+    }
+    
+    atualizarTotalItens();
 });
 </script>
 {% endblock %}

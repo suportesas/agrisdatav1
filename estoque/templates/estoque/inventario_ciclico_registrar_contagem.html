@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Registrar Contagem - {{ item.produto.nome }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-md-6 offset-md-3">
+            <h1>
+                <i class="fas fa-check-square"></i> Registrar Contagem
+            </h1>
+
+            <div class="card mt-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">{{ item.produto.nome }}</h5>
+                    <small class="text-muted">Código: {{ item.produto.codigo }}</small>
+                </div>
+                <div class="card-body">
+                    <!-- Informações do Sistema -->
+                    <div class="alert alert-info">
+                        <h6>Informações do Sistema</h6>
+                        <p class="mb-1">
+                            <strong>Lote:</strong> {{ item.lote.numero_lote }}
+                        </p>
+                        <p class="mb-1">
+                            <strong>Saldo no Sistema:</strong> 
+                            <span class="badge bg-info">{{ item.quantidade_sistema }} {{ item.lote.unidade_medida.sigla }}</span>
+                        </p>
+                        <p class="mb-0">
+                            <strong>Valor Unitário:</strong> R$ {{ item.valor_unitario_sistema|floatformat:2 }}
+                        </p>
+                    </div>
+
+                    <!-- Formulário de Contagem -->
+                    <form method="post">
+                        {% csrf_token %}
+
+                        <div class="mb-3">
+                            <label for="quantidade" class="form-label">Quantidade Contada *</label>
+                            <div class="input-group input-group-lg">
+                                <input type="number" name="quantidade" id="quantidade" 
+                                       class="form-control" step="0.001" required
+                                       placeholder="0.000"
+                                       onchange="calcularDiferenca()">
+                                <span class="input-group-text">{{ item.lote.unidade_medida.sigla }}</span>
+                            </div>
+                        </div>
+
+                        <!-- Cálculo de Diferença -->
+                        <div class="alert alert-light" id="resultado">
+                            <p class="mb-0" id="mensagem-resultado">Informe a quantidade contada acima</p>
+                        </div>
+
+                        <!-- Se houver divergência -->
+                        <div class="mb-3" id="motivo-container" style="display: none;">
+                            <label for="motivo" class="form-label">Motivo da Divergência</label>
+                            <textarea name="motivo" id="motivo" class="form-control" rows="3"
+                                      placeholder="Descreva o motivo da divergência encontrada"></textarea>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{% url 'estoque:inventario_ciclico_detail' inventario.id %}" 
+                               class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Voltar
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Salvar Contagem
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Histórico de Contagem -->
+            {% if item.quantidade_contada %}
+            <div class="card mt-4">
+                <div class="card-header bg-success text-white">
+                    <h6 class="mb-0">Última Contagem Registrada</h6>
+                </div>
+                <div class="card-body">
+                    <p class="mb-1">
+                        <strong>Quantidade:</strong> {{ item.quantidade_contada }} {{ item.lote.unidade_medida.sigla }}
+                    </p>
+                    <p class="mb-1">
+                        <strong>Data/Hora:</strong> {{ item.data_contagem|date:"d/m/Y H:i" }}
+                    </p>
+                    <p class="mb-1">
+                        <strong>Contado por:</strong> {{ item.contado_por.get_full_name|default:item.contado_por.username }}
+                    </p>
+                    {% if item.tem_divergencia %}
+                    <hr>
+                    <p class="mb-1 text-warning">
+                        <strong>⚠️ Divergência encontrada!</strong>
+                    </p>
+                    <p class="mb-0">
+                        Diferença: <strong class="text-danger">
+                        {% if item.quantidade_diferenca > 0 %}
+                            +{{ item.quantidade_diferenca }}
+                        {% else %}
+                            {{ item.quantidade_diferenca }}
+                        {% endif %}
+                        </strong> (R$ {{ item.valor_diferenca|floatformat:2 }})
+                    </p>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+function calcularDiferenca() {
+    const sistemaValue = {{ item.quantidade_sistema|safe }};
+    const inputElement = document.getElementById('quantidade');
+    const contadaValue = parseFloat(inputElement.value) || 0;
+    const diferenca = contadaValue - sistemaValue;
+    const valorDiferenca = diferenca * {{ item.valor_unitario_sistema|safe }};
+    
+    const resultadoDiv = document.getElementById('resultado');
+    const mensagem = document.getElementById('mensagem-resultado');
+    const motivoContainer = document.getElementById('motivo-container');
+    
+    if (contadaValue === 0) {
+        resultadoDiv.className = 'alert alert-light';
+        mensagem.innerHTML = 'Informe a quantidade contada acima';
+        motivoContainer.style.display = 'none';
+    } else if (diferenca === 0) {
+        resultadoDiv.className = 'alert alert-success';
+        mensagem.innerHTML = `<strong>✓ Conforme!</strong> Quantidade bate com o sistema.`;
+        motivoContainer.style.display = 'none';
+    } else if (diferenca > 0) {
+        resultadoDiv.className = 'alert alert-warning';
+        mensagem.innerHTML = `<strong>⚠️ Sobra de ${diferenca.toFixed(3)} unidades</strong><br>
+                             Valor: R$ ${valorDiferenca.toFixed(2)}`;
+        motivoContainer.style.display = 'block';
+    } else {
+        resultadoDiv.className = 'alert alert-danger';
+        mensagem.innerHTML = `<strong>❌ Falta de ${Math.abs(diferenca).toFixed(3)} unidades</strong><br>
+                             Valor: R$ ${Math.abs(valorDiferenca).toFixed(2)}`;
+        motivoContainer.style.display = 'block';
+    }
+}
+
+// Calcular ao carregar se houver valor anterior
+document.addEventListener('DOMContentLoaded', function() {
+    const input = document.getElementById('quantidade');
+    if (input.value) {
+        calcularDiferenca();
+    }
+});
+</script>
+{% endblock %}

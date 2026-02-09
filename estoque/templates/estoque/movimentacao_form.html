@@ -45,7 +45,16 @@
               {% if 'tipo' in form.fields %}
                 <div class="col-md-6">
                   <label class="form-label fw-semibold">{{ form.tipo.label }} *</label>
-                  {{ form.tipo }}
+                  {% if form.tipo.value %}
+                    {{ form.tipo }}
+                  {% else %}
+                    <!-- Se não houver value, renderiza com initial value da view -->
+                    <select name="tipo" class="form-select" id="id_tipo">
+                      {% for val, label in form.tipo.field.choices %}
+                        <option value="{{ val }}" {% if val == 'ENTRADA' or val == form.tipo.initial %}selected{% endif %}>{{ label }}</option>
+                      {% endfor %}
+                    </select>
+                  {% endif %}
                   {% if form.tipo.errors %}
                     <div class="text-danger small">{{ form.tipo.errors.0 }}</div>
                   {% endif %}
@@ -62,34 +71,31 @@
               </div>
             </div>
 
-            <!-- Lote e Quantidade -->
+            <!-- Produto, Unidade de Medida e Quantidade -->
             <div class="row g-3 mb-3">
-              <div class="col-md-8">
-                <label class="form-label fw-semibold">{{ form.lote.label }} *</label>
-                <div class="input-group">
-                  {{ form.lote }}
-                  {% if tipo == 'ENTRADA' %}
-                    <a href="{% url 'estoque:lote_create' %}" class="btn btn-outline-secondary" target="_blank" title="Cadastrar Novo Lote">
-                      <i class="bi bi-plus-lg"></i>
-                    </a>
+              <!-- Produto (opcional) -->
+              {% if 'produto' in form.fields %}
+                <div class="col-md-5">
+                  <label class="form-label">{{ form.produto.label }}</label>
+                  {{ form.produto }}
+                  {% if form.produto.errors %}
+                    <div class="text-danger small">{{ form.produto.errors.0 }}</div>
                   {% endif %}
                 </div>
-                {% if form.lote.errors %}
-                  <div class="text-danger small">{{ form.lote.errors.0 }}</div>
-                {% endif %}
-                {% if form.lote.help_text %}
-                  <div class="form-text">{{ form.lote.help_text }}</div>
-                {% else %}
-                  {% if tipo == 'ENTRADA' %}
-                    <div class="form-text">
-                      <i class="bi bi-info-circle"></i> 
-                      Selecione o lote para adicionar estoque. Se não há lotes, 
-                      <a href="{% url 'estoque:lote_create' %}" target="_blank" class="fw-semibold">cadastre um novo lote</a> antes.
-                    </div>
-                  {% endif %}
-                {% endif %}
-              </div>
+              {% endif %}
               
+              <!-- Unidade de Medida (opcional) -->
+              {% if 'unidade_medida' in form.fields %}
+                <div class="col-md-3">
+                  <label class="form-label">{{ form.unidade_medida.label }}</label>
+                  {{ form.unidade_medida }}
+                  {% if form.unidade_medida.errors %}
+                    <div class="text-danger small">{{ form.unidade_medida.errors.0 }}</div>
+                  {% endif %}
+                </div>
+              {% endif %}
+              
+              <!-- Quantidade -->
               <div class="col-md-4">
                 <label class="form-label fw-semibold">{{ form.quantidade.label }} *</label>
                 {{ form.quantidade }}
@@ -98,6 +104,29 @@
                 {% endif %}
               </div>
             </div>
+
+            <!-- Lote (opcional) -->
+            {% if 'lote' in form.fields %}
+              <div class="row g-3 mb-3">
+                <div class="col-md-12">
+                  <label class="form-label">{{ form.lote.label }}</label>
+                  <div class="input-group">
+                    {{ form.lote }}
+                    {% if tipo == 'ENTRADA' %}
+                      <a href="{% url 'estoque:lote_create' %}" class="btn btn-outline-secondary" target="_blank" title="Cadastrar Novo Lote">
+                        <i class="bi bi-plus-lg"></i>
+                      </a>
+                    {% endif %}
+                  </div>
+                  {% if form.lote.errors %}
+                    <div class="text-danger small">{{ form.lote.errors.0 }}</div>
+                  {% endif %}
+                  {% if form.lote.help_text %}
+                    <div class="form-text">{{ form.lote.help_text }}</div>
+                  {% endif %}
+                </div>
+              </div>
+            {% endif %}
 
             <hr>
 
@@ -245,4 +274,30 @@
     </div>
   </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const produtoSelect = document.getElementById('id_produto');
+  const unidadeMedidaSelect = document.getElementById('id_unidade_medida');
+  
+  if (produtoSelect && unidadeMedidaSelect) {
+    produtoSelect.addEventListener('change', function() {
+      const produtoId = this.value;
+      
+      if (produtoId) {
+        // Fazer requisição AJAX para buscar a unidade de medida do produto
+        fetch(`{% url 'estoque:api_produto_unidade' 0 %}`.replace('0', produtoId))
+          .then(response => response.json())
+          .then(data => {
+            if (data.success) {
+              // Selecionar a unidade de medida correspondente
+              unidadeMedidaSelect.value = data.unidade_medida_id;
+            }
+          })
+          .catch(error => console.error('Erro:', error));
+      }
+    });
+  }
+});
+</script>
 {% endblock %}

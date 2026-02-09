@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>
+            <i class="bi bi-check2-square"></i>
+            {{ title }}
+        </h2>
+        <a href="{% url 'estoque:estoque_produtos_list' %}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Filtros</h5>
+        </div>
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label">Buscar Produto</label>
+                    <input type="text" name="busca" class="form-control" value="{{ busca }}" placeholder="Nome do produto">
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="show_all" value="1" id="show_all" {% if show_all %}checked{% endif %}>
+                        <label class="form-check-label" for="show_all">Exibir todos</label>
+                    </div>
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-search"></i> Filtrar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-6">
+            <div class="card text-bg-light">
+                <div class="card-body">
+                    <div class="text-muted">Total de Produtos</div>
+                    <div class="fs-4 fw-bold">{{ total_produtos }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card text-bg-light">
+                <div class="card-body">
+                    <div class="text-muted">Divergências</div>
+                    <div class="fs-4 fw-bold">{{ total_divergencias }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header"><strong>Validação de Saldo</strong></div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-sm table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Produto</th>
+                            <th>Estoque Atual</th>
+                            <th>Saldo Calculado</th>
+                            <th>Diferença</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for d in divergencias %}
+                            <tr>
+                                <td>{{ d.produto.nome }}</td>
+                                <td>{{ d.estoque_atual }}</td>
+                                <td>{{ d.saldo_calculado }}</td>
+                                <td>
+                                    {% if d.diferenca == 0 %}
+                                        <span class="text-success">0</span>
+                                    {% else %}
+                                        <span class="text-danger">{{ d.diferenca }}</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% empty %}
+                            <tr><td colspan="4" class="text-muted">Sem divergências</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <small class="text-muted">Saldo calculado = Lotes disponíveis/bloqueados + (Entradas diretas - Saídas diretas)</small>
+        </div>
+    </div>
+</div>
+{% endblock %}

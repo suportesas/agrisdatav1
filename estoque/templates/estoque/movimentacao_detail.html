@@ -61,21 +61,39 @@
             <div class="col-md-6">
               <p class="mb-2">
                 <strong>Produto:</strong><br>
-                <a href="{% url 'produtos:produto_detail' movimentacao.lote.produto.pk %}" class="text-decoration-none">
-                  {{ movimentacao.lote.produto.nome }}
-                </a>
+                {% if movimentacao.lote %}
+                  <a href="{% url 'produtos:produto_detail' movimentacao.lote.produto.pk %}" class="text-decoration-none">
+                    {{ movimentacao.lote.produto.nome }}
+                  </a>
+                {% elif movimentacao.produto %}
+                  <a href="{% url 'produtos:produto_detail' movimentacao.produto.pk %}" class="text-decoration-none">
+                    {{ movimentacao.produto.nome }}
+                  </a>
+                {% else %}
+                  <span class="text-muted">Não informado</span>
+                {% endif %}
               </p>
               <p class="mb-2">
                 <strong>Lote:</strong><br>
-                <a href="{% url 'estoque:lote_detail' movimentacao.lote.pk %}" class="text-decoration-none">
-                  {{ movimentacao.lote.numero_lote }}
-                </a>
+                {% if movimentacao.lote %}
+                  <a href="{% url 'estoque:lote_detail' movimentacao.lote.pk %}" class="text-decoration-none">
+                    {{ movimentacao.lote.numero_lote }}
+                  </a>
+                {% else %}
+                  <span class="text-muted">Não informado</span>
+                {% endif %}
               </p>
             </div>
             <div class="col-md-6">
               <p class="mb-2">
                 <strong>Quantidade:</strong><br>
-                <span class="fs-4 text-primary">{{ movimentacao.quantidade }} {{ movimentacao.lote.unidade_medida.sigla }}</span>
+                {% if movimentacao.lote %}
+                  <span class="fs-4 text-primary">{{ movimentacao.quantidade }} {{ movimentacao.lote.unidade_medida.sigla }}</span>
+                {% elif movimentacao.unidade_medida %}
+                  <span class="fs-4 text-primary">{{ movimentacao.quantidade }} {{ movimentacao.unidade_medida.sigla }}</span>
+                {% else %}
+                  <span class="fs-4 text-primary">{{ movimentacao.quantidade }}</span>
+                {% endif %}
               </p>
               <p class="mb-0">
                 <strong>Origem:</strong><br>

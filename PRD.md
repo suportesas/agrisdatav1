@@ -157,6 +157,44 @@ RF-088 Empréstimos a produtores (integração com Conta Corrente)
 RF-089 Rastreabilidade completa: insumo → talhão → produto final
 RF-090 Transferência entre armazéns
 
+### Status de Implementação (Atualizado em 2026-02-03)
+
+**3.4 Suprimentos e Compras (verificado no código)**
+- ✅ RF-050 Solicitações de compra com aprovações por nível
+- ✅ RF-051 Cotações com múltiplos fornecedores
+- ✅ RF-052 Emissão de pedidos de compra
+- ✅ RF-053 Controle de recebimento (físico x fiscal)
+- ✅ RF-057 Curva ABC de estoque (relatório disponível no módulo de estoque)
+- ⚠️ RF-054 Entrada de NF-e via XML (entrada direta existe; parsing XML não evidenciado)
+- ✅ RF-055 Controle de estoque mínimo/máximo com alertas 
+  - ✅ Sistema de alertas em 2 níveis: Crítico (≤0) e Excesso (>máximo)
+  - ✅ Badge no sidebar com contador de alertas
+  - ✅ Lista de produtos com estoque em alerta (/estoque/produtos/)
+  - ✅ Relatório exportável em Excel e PDF com dados detalhados
+  - ✅ Acesso via menu: Estoque → Relatório de Alertas ou Relatórios → Estoque Avançado
+- ⏳ RF-056 Inventário cíclico (não evidenciado)
+- ⏳ RF-058 Controle especial de defensivos e fertilizantes (não evidenciado)
+- ⏳ RF-059 Ranking e avaliação de fornecedores (não evidenciado)
+
+**3.5 Almoxarifado e Armazéns (verificado no código)**
+- ✅ RF-080 Cadastro de armazéns e depósitos
+- ✅ RF-081 Controle de locais de estocagem com endereçamento
+- ✅ RF-085 Entrada e saída por lote e validade
+- ✅ RF-090 Transferência entre armazéns
+- ⚠️ RF-089 Rastreabilidade completa (rastreio por lote/movimentação existente; integração insumo → talhão → produto final não evidenciada)
+- ⏳ RF-082 Requisições internas (não evidenciado)
+- ⏳ RF-083 Devoluções (não evidenciado)
+- ⏳ RF-084 Inventário geral e parcial (não evidenciado)
+- ⏳ RF-086 Bloqueio de estoque contaminado (não evidenciado)
+- ⏳ RF-087 Logística reversa de embalagens (não evidenciado)
+- ⏳ RF-088 Empréstimos a produtores (não evidenciado)
+
+**Implementações adicionais registradas**
+- ✅ Dashboards de rastreamento e validação de disponibilidade de estoque
+- ✅ Entrada direta de NF-e (sem pedido) com movimentação automática de estoque
+- ✅ Atualização automática do `Produto.preco_custo` no recebimento
+- ✅ Validações para evitar duplicidade de entrada de estoque
+
 3.6 Produção Agrícola
 RF-100 Planejamento completo de safra
 RF-101 Previsão de colheita por área
@@ -844,6 +882,143 @@ Performance < 2s
 Mobile offline funcional
 Integrações testadas
 
+## 📋 PRÓXIMOS PASSOS - ROADMAP 2026
+
+### FASE 1: MELHORIAS DE ESTOQUE (Semana de 03-02-2026)
+
+#### 1.1 Aprimoramentos do RF-055 (Alertas)
+- [ ] **Filtros avançados**: Por tipo de alerta, categoria, faixa de preço
+- [ ] **Agendamento de relatórios**: Enviar por email automaticamente (diariamente/semanalmente)
+- [ ] **Notificações em tempo real**: Push notifications quando estoque atinge limite crítico
+- [ ] **Histórico de alertas**: Rastrear quando produtos entraram/saíram de alerta
+- [ ] **Ações rápidas**: Botão para criar solicitação de compra direto do relatório
+- [ ] **Análise de tendências**: Gráfico de evolução do estoque nos últimos meses
+
+#### 1.2 RF-056: Inventário Cíclico
+- [ ] Criar modelo `InventarioCiclico` com agendamento de contagens
+- [ ] Sistema de amostragem por categoria/valor ABC
+- [ ] Registro de discrepâncias físico x sistema
+- [ ] Conciliação automática
+- [ ] Ajustes de estoque aprovados
+- [ ] Relatório de acurácia do inventário
+
+#### 1.3 RF-058: Controle de Defensivos e Fertilizantes
+- [ ] Rastreamento adicional para produtos controlados (MAPA, ANVISA)
+- [ ] Certificados de registro
+- [ ] Datas de validade críticas
+- [ ] Alertas especiais para produtos vencidos ou próximos a vencer
+- [ ] Relatórios de consumo por talhão
+- [ ] Integração com aplicações agrícolas
+
+#### 1.4 RF-082: Requisições Internas
+- [ ] CRUD de requisições entre departamentos/armazéns
+- [ ] Fluxo de aprovação
+- [ ] Integração com movimentações de estoque
+- [ ] Rastreamento de status
+
+#### 1.5 RF-083: Devoluções
+- [ ] Processo de devolução de produtos
+- [ ] Motivos de devolução
+- [ ] Reintegração ao estoque
+- [ ] Crédito para fornecedor/cliente
+
+---
+
+### FASE 2: COMPRAS E FORNECEDORES (Semana de 10-02-2026)
+
+#### 2.1 RF-054: Parsing XML de NF-e
+- [ ] Integração com serviço de parsing XML
+- [ ] Validação automática de campos críticos
+- [ ] Importação de CFOP, NCM, impostos
+- [ ] Detecção de duplicatas
+- [ ] Alertas para divergências (quantidade, valor)
+
+#### 2.2 RF-059: Ranking e Avaliação de Fornecedores
+- [ ] Scorecard: prazo entrega, qualidade, preço
+- [ ] Histórico de compras por fornecedor
+- [ ] Cálculo automático de ranking (A/B/C)
+- [ ] Relatório comparativo de fornecedores
+- [ ] Sugestão de fornecedor na solicitação de compra
+
+#### 2.3 Melhorias de Cotação
+- [ ] Cotação com múltiplos cenários (quantidade/prazo)
+- [ ] Histórico de preços
+- [ ] Alertas de preço anormal
+- [ ] Integração com cotações de commodities (se aplicável)
+
+---
+
+### FASE 3: RASTREABILIDADE E QUALIDADE (Semana de 17-02-2026)
+
+#### 3.1 RF-089: Rastreabilidade Completa (Insumo → Produto Final)
+- [ ] Vincular insumo (estoque) → aplicação em talhão → colheita → produto final
+- [ ] Cadeia reversa (produto final → qual talhão → qual insumo)
+- [ ] Timeline visual de movimentação
+- [ ] Relatório de rastreabilidade para certificações (GLOBALG.A.P, etc)
+
+#### 3.2 RF-086: Bloqueio de Estoque Contaminado
+- [ ] Status adicional: CONTAMINADO, EM_QUARENTENA
+- [ ] Não permitir movimentação de lotes bloqueados
+- [ ] Workflow de liberação com aprovação
+- [ ] Registro de motivo e data
+
+#### 3.3 Integrações com Produção
+- [ ] Consumo automático de insumo quando aplicado em talhão
+- [ ] Atualização de custo do talhão
+- [ ] Alertas de falta de insumo para operação programada
+
+---
+
+### FASE 4: RELATÓRIOS E BI (Semana de 24-02-2026)
+
+#### 4.1 Dashboards Analíticos
+- [ ] Dashboard de custo de estoque
+- [ ] Curva de consumo por produto
+- [ ] Sazonalidade de demanda
+- [ ] Dias de estoque média
+- [ ] Cash flow de estoque
+
+#### 4.2 Exportações de Dados
+- [ ] Integração com Power BI
+- [ ] Exportação para Google Sheets
+- [ ] API para sistemas externos
+- [ ] Webhooks para eventos de estoque
+
+---
+
+### FASE 5: MOBILE E OFFLINE (Semana de 03-03-2026)
+
+#### 5.1 App Mobile para Estoque
+- [ ] Leitura de QR Code / Código de Barras
+- [ ] Contagem de estoque offline
+- [ ] Síncronia automática
+- [ ] Consulta rápida de saldo
+
+#### 5.2 PWA (Progressive Web App)
+- [ ] Offline mode para consultas
+- [ ] Cache de dados críticos
+- [ ] Push notifications
+
+---
+
+## 🎯 PRIORIDADES RECOMENDADAS
+
+**CURTO PRAZO (Imediato):**
+1. RF-056 Inventário Cíclico (reduz discrepâncias)
+2. RF-054 Parsing de XML (integração fiscal)
+3. Filtros e agendamento de RF-055 (melhora usabilidade)
+
+**MÉDIO PRAZO (2-4 semanas):**
+1. RF-089 Rastreabilidade completa (compliance e rastreamento)
+2. RF-059 Ranking de fornecedores (reduz custos)
+3. Dashboards analíticos de estoque
+
+**LONGO PRAZO (1-3 meses):**
+1. Mobile app com QR Code
+2. Integrações com BI
+3. RF-088 Empréstimos a produtores
+
+---
 
 10. GLOSSÁRIO
 Account Sales: Demonstrativo de vendas enviado pelo importador

@@ -1902,6 +1902,107 @@ def recebimento_create(request, pedido_id):
 
 
 @login_required
+def entrada_direta_nf(request):
+    """Entrada direta de NF-e (sem pedido)"""
+    from decimal import Decimal
+    from django.db import transaction
+    from cadastros.models import Fornecedor
+    from produtos.models import Produto, UnidadeMedida
+    from estoque.models import LocalEstocagem
+    from .models import RecebimentoCompra, ItemRecebimento
+
+    empresa = request.user.empresa
+
+    fornecedores = Fornecedor.objects.filter(empresa=empresa, ativa=True).order_by('nome')
+    produtos = Produto.objects.filter(ativo=True, categoria__empresa=empresa).order_by('nome')
+    unidades = UnidadeMedida.objects.all().order_by('sigla')
+    locais_estoque = LocalEstocagem.objects.filter(armazem__empresa=empresa, ativo=True).order_by('armazem__nome')
+
+    if request.method == 'POST':
+        try:
+            with transaction.atomic():
+                fornecedor_id = request.POST.get('fornecedor')
+                nota_fiscal = request.POST.get('nota_fiscal')
+                serie_nota = request.POST.get('serie_nota') or '1'
+                chave_nfe = request.POST.get('chave_nfe')
+                data_emissao_nf = request.POST.get('data_emissao_nf')
+                data_recebimento = request.POST.get('data_recebimento')
+                hora_recebimento = request.POST.get('hora_recebimento')
+                valor_total_nf = request.POST.get('valor_total_nf') or '0'
+                valor_frete = request.POST.get('valor_frete') or '0'
+                valor_desconto = request.POST.get('valor_desconto') or '0'
+                observacoes = request.POST.get('observacoes')
+
+                recebimento = RecebimentoCompra.objects.create(
+                    empresa=empresa,
+                    fornecedor_id=fornecedor_id,
+                    numero='',
+                    nota_fiscal=nota_fiscal,
+                    serie_nota=serie_nota,
+                    chave_nfe=chave_nfe,
+                    data_emissao_nf=data_emissao_nf,
+                    data_recebimento=data_recebimento,
+                    hora_recebimento=hora_recebimento,
+                    recebido_por=request.user,
+                    status='CONFERIDO',
+                    valor_total_nf=Decimal(valor_total_nf),
+                    valor_frete=Decimal(valor_frete),
+                    valor_desconto=Decimal(valor_desconto),
+                    observacoes=observacoes or '',
+                )
+
+                itens_count = int(request.POST.get('itens_count', 1))
+                itens = []
+                for i in range(itens_count):
+                    produto_id = request.POST.get(f'produto_{i}')
+                    unidade_id = request.POST.get(f'unidade_medida_{i}')
+                    quantidade = request.POST.get(f'quantidade_{i}')
+                    preco_unitario = request.POST.get(f'preco_unitario_{i}')
+                    valor_desc = request.POST.get(f'valor_desconto_{i}') or '0'
+                    local_estoque_id = request.POST.get(f'local_estoque_{i}')
+                    data_fabricacao = request.POST.get(f'data_fabricacao_{i}') or None
+                    data_validade = request.POST.get(f'data_validade_{i}') or None
+                    observacoes_item = request.POST.get(f'observacoes_{i}') or ''
+
+                    if not produto_id or not quantidade or not local_estoque_id:
+                        continue
+
+                    item = ItemRecebimento.objects.create(
+                        recebimento=recebimento,
+                        produto_id=produto_id,
+                        unidade_medida_id=unidade_id,
+                        quantidade_recebida=Decimal(quantidade),
+                        preco_unitario=Decimal(preco_unitario or '0'),
+                        valor_desconto=Decimal(valor_desc),
+                        local_estoque_id=local_estoque_id,
+                        data_fabricacao=data_fabricacao,
+                        data_validade=data_validade,
+                        observacoes=observacoes_item,
+                    )
+                    itens.append(item)
+
+                for item in itens:
+                    item.registrar_movimento_estoque()
+
+                recebimento.status = 'FINALIZADO'
+                recebimento.save(update_fields=['status'])
+
+            messages.success(request, 'Entrada direta registrada e estoque atualizado!')
+            return redirect('compras:recebimento_detail', pk=recebimento.pk)
+        except Exception as e:
+            messages.error(request, f'Erro ao registrar entrada direta: {str(e)}')
+
+    context = {
+        'fornecedores': fornecedores,
+        'produtos': produtos,
+        'unidades': unidades,
+        'locais_estoque': locais_estoque,
+        'xml_data': {},
+    }
+    return render(request, 'compras/entrada_direta_nf.html', context)
+
+
+@login_required
 def recebimento_list(request):
     """Lista todos os recebimentos"""
     from .models import RecebimentoCompra
@@ -2208,6 +2309,402 @@ def relatorio_compras(request):
         'title': 'Relatório de Compras por Período',
     }
     return render(request, 'compras/relatorio_compras.html', context)
+
+
+@login_required
+def relatorio_compras_simples(request):
+    """Relatório simples de compras: Data, NF, Fornecedor, Valor"""
+    from datetime import datetime, timedelta
+    from django.db.models import Sum
+    from django.utils import timezone
+    from .models import RecebimentoCompra
+    from cadastros.models import Fornecedor
+
+    empresa = request.user.empresa
+    hoje = timezone.now().date()
+
+    # Filtros
+    data_fim_str = request.GET.get('data_fim')
+    data_inicio_str = request.GET.get('data_inicio')
+
+    data_fim = hoje
+    data_inicio = hoje - timedelta(days=30)
+
+    if data_inicio_str:
+        try:
+            data_inicio = datetime.strptime(data_inicio_str, '%Y-%m-%d').date()
+        except ValueError:
+            pass
+    if data_fim_str:
+        try:
+            data_fim = datetime.strptime(data_fim_str, '%Y-%m-%d').date()
+        except ValueError:
+            pass
+
+    fornecedor_ids = request.GET.getlist('fornecedor')
+
+    recebimentos = RecebimentoCompra.objects.filter(
+        empresa=empresa,
+        data_emissao_nf__gte=data_inicio,
+        data_emissao_nf__lte=data_fim
+    ).exclude(status='CANCELADO').select_related('pedido__fornecedor', 'fornecedor').order_by('-data_emissao_nf')
+
+    if fornecedor_ids:
+        from django.db.models import Q
+        recebimentos = recebimentos.filter(
+            Q(pedido__fornecedor_id__in=fornecedor_ids) | Q(fornecedor_id__in=fornecedor_ids)
+        )
+
+    # Calcular total
+    total_valor = recebimentos.aggregate(total=Sum('valor_total_nf'))['total'] or 0
+
+    # Listas de filtros
+    fornecedores = Fornecedor.objects.filter(empresa=empresa, ativa=True).order_by('nome')
+
+    context = {
+        'title': 'Relatório de Compras',
+        'data_inicio': data_inicio.strftime('%Y-%m-%d'),
+        'data_fim': data_fim.strftime('%Y-%m-%d'),
+        'fornecedores': fornecedores,
+        'filtros': {
+            'fornecedor': list(map(int, fornecedor_ids)) if fornecedor_ids else [],
+        },
+        'recebimentos': recebimentos,
+        'total_valor': total_valor,
+        'total_compras': recebimentos.count(),
+    }
+    return render(request, 'compras/relatorio_compras_simples.html', context)
+
+
+@login_required
+def relatorio_compras_simples_pdf(request):
+    """Gera PDF do relatório simples de compras"""
+    from datetime import datetime, timedelta
+    from django.db.models import Sum
+    from django.utils import timezone
+    from .models import RecebimentoCompra
+    from reportlab.lib.pagesizes import A4, landscape
+    from reportlab.lib import colors
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+    from reportlab.lib.units import cm
+    from reportlab.lib.enums import TA_CENTER
+    import io
+
+    empresa = request.user.empresa
+    hoje = timezone.now().date()
+
+    # Filtros (mesmos do relatório HTML)
+    data_fim_str = request.GET.get('data_fim')
+    data_inicio_str = request.GET.get('data_inicio')
+    data_fim = hoje
+    data_inicio = hoje - timedelta(days=30)
+
+    if data_inicio_str:
+        try:
+            data_inicio = datetime.strptime(data_inicio_str, '%Y-%m-%d').date()
+        except ValueError:
+            pass
+    if data_fim_str:
+        try:
+            data_fim = datetime.strptime(data_fim_str, '%Y-%m-%d').date()
+        except ValueError:
+            pass
+
+    fornecedor_ids = request.GET.getlist('fornecedor')
+
+    recebimentos = RecebimentoCompra.objects.filter(
+        empresa=empresa,
+        data_emissao_nf__gte=data_inicio,
+        data_emissao_nf__lte=data_fim
+    ).exclude(status='CANCELADO').select_related('pedido__fornecedor', 'fornecedor').order_by('-data_emissao_nf')
+
+    if fornecedor_ids:
+        from django.db.models import Q
+        recebimentos = recebimentos.filter(
+            Q(pedido__fornecedor_id__in=fornecedor_ids) | Q(fornecedor_id__in=fornecedor_ids)
+        )
+
+    # Calcular total
+    total_valor = recebimentos.aggregate(total=Sum('valor_total_nf'))['total'] or 0
+
+    # Criar PDF
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=landscape(A4),
+        rightMargin=1*cm,
+        leftMargin=1*cm,
+        topMargin=1.5*cm,
+        bottomMargin=1*cm,
+    )
+
+    elementos = []
+    styles = getSampleStyleSheet()
+
+    # Estilo customizado para título
+    title_style = ParagraphStyle(
+        'CustomTitle',
+        parent=styles['Heading1'],
+        fontSize=18,
+        textColor=colors.HexColor('#1f4788'),
+        spaceAfter=10,
+        alignment=TA_CENTER,
+        fontName='Helvetica-Bold'
+    )
+
+    subtitle_style = ParagraphStyle(
+        'Subtitle',
+        parent=styles['Normal'],
+        fontSize=10,
+        textColor=colors.HexColor('#666666'),
+        spaceAfter=15,
+        alignment=TA_CENTER,
+    )
+
+    # Cabeçalho
+    elementos.append(Paragraph('Relatório de Compras', title_style))
+    
+    info_texto = f'<b>Empresa:</b> {empresa.nome}<br/>'
+    info_texto += f'<b>Período:</b> {data_inicio.strftime("%d/%m/%Y")} a {data_fim.strftime("%d/%m/%Y")}<br/>'
+    info_texto += f'<b>Gerado em:</b> {timezone.now().strftime("%d/%m/%Y às %H:%M")}'
+    
+    elementos.append(Paragraph(info_texto, subtitle_style))
+    elementos.append(Spacer(1, 0.5*cm))
+
+    # Tabela
+    dados = [['Data Emissão', 'Nota Fiscal', 'Fornecedor', 'Valor da Compra']]
+
+    for r in recebimentos:
+        if r.pedido:
+            fornecedor_nome = r.pedido.fornecedor.nome_fantasia or r.pedido.fornecedor.nome
+        elif r.fornecedor:
+            fornecedor_nome = r.fornecedor.nome_fantasia or r.fornecedor.nome
+        else:
+            fornecedor_nome = 'N/A'
+
+        dados.append([
+            r.data_emissao_nf.strftime('%d/%m/%Y'),
+            f'{r.nota_fiscal} - {r.serie_nota}' if r.serie_nota else r.nota_fiscal,
+            fornecedor_nome[:50],  # Limitar tamanho
+            f'R$ {r.valor_total_nf:,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.'),
+        ])
+
+    # Linha de total
+    dados.append([
+        '',
+        '',
+        'TOTAL GERAL',
+        f'R$ {total_valor:,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.'),
+    ])
+
+    # Criar tabela
+    tabela = Table(dados, colWidths=[3*cm, 3.5*cm, 11*cm, 4*cm])
+
+    # Estilo da tabela
+    estilo = TableStyle([
+        # Cabeçalho
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1f4788')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 11),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 10),
+        ('TOPPADDING', (0, 0), (-1, 0), 10),
+        
+        # Corpo
+        ('GRID', (0, 0), (-1, -2), 0.5, colors.grey),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -2), [colors.white, colors.HexColor('#f5f5f5')]),
+        ('FONTSIZE', (0, 1), (-1, -2), 9),
+        ('LEFTPADDING', (0, 0), (-1, -1), 5),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 5),
+        ('TOPPADDING', (0, 1), (-1, -1), 5),
+        ('BOTTOMPADDING', (0, 1), (-1, -1), 5),
+        ('ALIGN', (3, 1), (3, -1), 'RIGHT'),  # Valor alinhado à direita
+        
+        # Linha de total
+        ('BACKGROUND', (0, -1), (-1, -1), colors.HexColor('#e9ecef')),
+        ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, -1), (-1, -1), 11),
+        ('TOPPADDING', (0, -1), (-1, -1), 8),
+        ('BOTTOMPADDING', (0, -1), (-1, -1), 8),
+        ('LINEABOVE', (0, -1), (-1, -1), 2, colors.HexColor('#1f4788')),
+    ])
+
+    tabela.setStyle(estilo)
+    elementos.append(tabela)
+
+    # Construir PDF
+    doc.build(elementos)
+    buffer.seek(0)
+
+    # Retornar resposta
+    response = HttpResponse(buffer.getvalue(), content_type='application/pdf')
+    filename = f'relatorio_compras_{data_inicio.strftime("%Y%m%d")}_{data_fim.strftime("%Y%m%d")}.pdf'
+    response['Content-Disposition'] = f'inline; filename="{filename}"'
+    
+    return response
+
+
+@login_required
+def relatorio_compras_geral(request):
+    """Relatório geral de compras com visão gerencial"""
+    from datetime import datetime, timedelta
+    from django.db.models import Sum, Count, Q
+    from django.utils import timezone
+    from django.contrib.auth import get_user_model
+    from .models import PedidoCompra, ItemPedidoCompra, RecebimentoCompra
+    from cadastros.models import Fornecedor
+
+    empresa = request.user.empresa
+    hoje = timezone.now().date()
+
+    # Filtros
+    data_fim_str = request.GET.get('data_fim')
+    data_inicio_str = request.GET.get('data_inicio')
+
+    data_fim = hoje
+    data_inicio = hoje - timedelta(days=90)
+
+    if data_inicio_str:
+        try:
+            data_inicio = datetime.strptime(data_inicio_str, '%Y-%m-%d').date()
+        except ValueError:
+            pass
+    if data_fim_str:
+        try:
+            data_fim = datetime.strptime(data_fim_str, '%Y-%m-%d').date()
+        except ValueError:
+            pass
+
+    fornecedor_ids = request.GET.getlist('fornecedor')
+    comprador_ids = request.GET.getlist('comprador')
+    status_list = request.GET.getlist('status')
+
+    pedidos = PedidoCompra.objects.filter(
+        empresa=empresa,
+        data_pedido__date__gte=data_inicio,
+        data_pedido__date__lte=data_fim
+    ).select_related('fornecedor', 'comprador')
+
+    if fornecedor_ids:
+        pedidos = pedidos.filter(fornecedor_id__in=fornecedor_ids)
+    if comprador_ids:
+        pedidos = pedidos.filter(comprador_id__in=comprador_ids)
+    if status_list:
+        pedidos = pedidos.filter(status__in=status_list)
+
+    # Totais
+    total_pedidos = pedidos.count()
+    total_valor = pedidos.aggregate(total=Sum('valor_final'))['total'] or 0
+    ticket_medio = (total_valor / total_pedidos) if total_pedidos else 0
+
+    # Itens
+    itens = ItemPedidoCompra.objects.filter(pedido__in=pedidos)
+    total_itens = itens.count()
+    total_qtd = itens.aggregate(total=Sum('quantidade_pedida'))['total'] or 0
+
+    # Atrasos
+    pedidos_atrasados = pedidos.filter(
+        data_entrega_prevista__lt=hoje
+    ).exclude(status__in=['RECEBIDO', 'CANCELADO']).order_by('data_entrega_prevista')
+
+    # Breakdown por status
+    status_labels = dict(PedidoCompra.STATUS_CHOICES)
+    por_status_raw = pedidos.values('status').annotate(
+        total=Count('id'),
+        valor=Sum('valor_final')
+    ).order_by('-total')
+    por_status = [
+        {
+            'status': s['status'],
+            'label': status_labels.get(s['status'], s['status']),
+            'total': s['total'],
+            'valor': s['valor'] or 0,
+        }
+        for s in por_status_raw
+    ]
+
+    # Por fornecedor
+    por_fornecedor = pedidos.values('fornecedor__nome_fantasia', 'fornecedor__nome').annotate(
+        total=Count('id'),
+        valor=Sum('valor_final')
+    ).order_by('-valor')[:20]
+
+    # Por comprador
+    por_comprador = pedidos.values('comprador__username', 'comprador__first_name', 'comprador__last_name').annotate(
+        total=Count('id'),
+        valor=Sum('valor_final')
+    ).order_by('-valor')[:20]
+
+    # Top produtos
+    top_produtos = itens.values('produto__nome', 'produto__unidade_medida__sigla').annotate(
+        qtd=Sum('quantidade_pedida'),
+        valor=Sum('preco_total')
+    ).order_by('-valor')[:20]
+
+    # Recebimentos
+    recebimentos = RecebimentoCompra.objects.filter(
+        empresa=empresa,
+        data_recebimento__gte=data_inicio,
+        data_recebimento__lte=data_fim
+    ).select_related('pedido', 'fornecedor')
+
+    if fornecedor_ids:
+        recebimentos = recebimentos.filter(
+            Q(pedido__fornecedor_id__in=fornecedor_ids) | Q(fornecedor_id__in=fornecedor_ids)
+        )
+
+    recebimentos_total = recebimentos.count()
+    recebimentos_valor = recebimentos.aggregate(total=Sum('valor_total_nf'))['total'] or 0
+    recebimento_status_labels = dict(RecebimentoCompra.STATUS_CHOICES)
+    recebimentos_por_status_raw = recebimentos.values('status').annotate(
+        total=Count('id'),
+        valor=Sum('valor_total_nf')
+    ).order_by('-total')
+    recebimentos_por_status = [
+        {
+            'status': r['status'],
+            'label': recebimento_status_labels.get(r['status'], r['status']),
+            'total': r['total'],
+            'valor': r['valor'] or 0,
+        }
+        for r in recebimentos_por_status_raw
+    ]
+
+    # Listas de filtros
+    fornecedores = Fornecedor.objects.filter(empresa=empresa, ativa=True).order_by('nome')
+    User = get_user_model()
+    compradores = User.objects.filter(pedidos_realizados__empresa=empresa).distinct().order_by('username')
+
+    context = {
+        'title': 'Relatório Geral de Compras',
+        'data_inicio': data_inicio.strftime('%Y-%m-%d'),
+        'data_fim': data_fim.strftime('%Y-%m-%d'),
+        'fornecedores': fornecedores,
+        'compradores': compradores,
+        'status_choices': PedidoCompra.STATUS_CHOICES,
+        'status_labels': status_labels,
+        'filtros': {
+            'fornecedor': list(map(int, fornecedor_ids)) if fornecedor_ids else [],
+            'comprador': list(map(int, comprador_ids)) if comprador_ids else [],
+            'status': status_list,
+        },
+        'total_pedidos': total_pedidos,
+        'total_valor': total_valor,
+        'ticket_medio': ticket_medio,
+        'total_itens': total_itens,
+        'total_qtd': total_qtd,
+        'pedidos_atrasados': pedidos_atrasados[:50],
+        'por_status': por_status,
+        'por_fornecedor': por_fornecedor,
+        'por_comprador': por_comprador,
+        'top_produtos': top_produtos,
+        'recebimentos_total': recebimentos_total,
+        'recebimentos_valor': recebimentos_valor,
+        'recebimentos_por_status': recebimentos_por_status,
+        'recebimentos_lista': recebimentos.order_by('-data_recebimento')[:50],
+    }
+    return render(request, 'compras/relatorio_compras_geral.html', context)
 
 
 def processar_relatorio_compras(request, form):

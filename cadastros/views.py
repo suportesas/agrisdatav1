@@ -7,6 +7,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
+from django.template.loader import render_to_string
 from django.core.exceptions import ValidationError, PermissionDenied
 from django.db.models import Q, Count, Sum, Avg
 from django.core.paginator import Paginator
@@ -31,7 +32,7 @@ from .forms import (
     FazendaForm, EnderecoFazendaForm, ContatoFazendaForm,
     ContaBancariaFazendaForm, DocumentoFazendaForm, DocumentoFornecedorForm,
     
-    AreaForm, TalhaoForm, CulturaForm, PragaForm, HistoricoTalhaoForm, SafraForm, PortoForm, NCMForm, EmpresaNCMForm, CFOPForm,
+    AreaForm, TalhaoForm, CulturaForm, PragaForm, HistoricoTalhaoForm, SafraForm, SafraPlanForm, PortoForm, NCMForm, EmpresaNCMForm, CFOPForm,
 
     # Cliente-related forms
     ClienteForm, EnderecoClienteForm, ContatoClienteForm, ContaBancariaClienteForm, DocumentoClienteForm,
@@ -2342,8 +2343,108 @@ def safra_update(request, pk):
 def safra_detail(request, pk):
     safra = get_object_or_404(Safra, pk=pk, fazenda__empresa=request.user.empresa)
     # Prepare comparativo
-    context = {'safra': safra}
+    form = SafraPlanForm(safra=safra)
+    context = {'safra': safra, 'form': form}
     return render(request, 'cadastros/safra/safra_detail.html', context)
+
+
+@login_required
+def safra_plan_create(request, safra_pk):
+    safra = get_object_or_404(Safra, pk=safra_pk, fazenda__empresa=request.user.empresa)
+    # If already has a plan, redirect to edit
+    if hasattr(safra, 'plano'):
+        messages.info(request, 'Já existe um planejamento para esta safra. Você pode editá-lo.')
+        return redirect('cadastros:safra_plan_update', safra_pk=safra.pk)
+
+    is_ajax = request.headers.get('x-requested-with') == 'XMLHttpRequest'
+
+    if request.method == 'POST':
+        form = SafraPlanForm(request.POST, safra=safra)
+        if form.is_valid():
+            try:
+                plan = form.save()
+                if is_ajax:
+                    return JsonResponse({'success': True})
+                messages.success(request, '✅ Planejamento salvo com sucesso')
+                return redirect('cadastros:safra_detail', pk=safra.pk)
+            except Exception as e:
+                import traceback
+                traceback.print_exc()
+                if is_ajax:
+                    return JsonResponse({'success': False, 'html': f'<div class="alert alert-danger">Erro: {e}</div>'})
+                messages.error(request, f'❌ Erro ao salvar planejamento: {e}')
+        else:
+            if is_ajax:
+                html = render_to_string('cadastros/safra/partials/safra_plan_form_fields.html', {'form': form}, request=request)
+                return JsonResponse({'success': False, 'html': html})
+            messages.error(request, '❌ Corrija os erros do formulário de planejamento')
+    else:
+        form = SafraPlanForm(safra=safra)
+
+    return render(request, 'cadastros/safra/safra_plan_form.html', {'form': form, 'safra': safra, 'action': 'Cadastrar Planejamento'})
+
+
+@login_required
+def safra_plan_update(request, safra_pk):
+    safra = get_object_or_404(Safra, pk=safra_pk, fazenda__empresa=request.user.empresa)
+    plan = getattr(safra, 'plano', None)
+    if not plan:
+        messages.warning(request, 'Planejamento não encontrado. Crie um novo planejamento primeiro.')
+        return redirect('cadastros:safra_plan_create', safra_pk=safra.pk)
+
+    is_ajax = request.headers.get('x-requested-with') == 'XMLHttpRequest'
+
+    if request.method == 'GET' and is_ajax:
+        # Return partial form HTML for modal
+        form = SafraPlanForm(instance=plan, safra=safra)
+        html = render_to_string('cadastros/safra/partials/safra_plan_form_fields.html', {'form': form}, request=request)
+        return JsonResponse({'success': True, 'html': html})
+
+    if request.method == 'POST':
+        form = SafraPlanForm(request.POST, instance=plan, safra=safra)
+        if form.is_valid():
+            try:
+                form.save()
+                if is_ajax:
+                    return JsonResponse({'success': True})
+                messages.success(request, '✅ Planejamento atualizado com sucesso')
+                return redirect('cadastros:safra_detail', pk=safra.pk)
+            except Exception as e:
+                import traceback
+                traceback.print_exc()
+                if is_ajax:
+                    return JsonResponse({'success': False, 'html': f'<div class="alert alert-danger">Erro: {e}</div>'})
+                messages.error(request, f'❌ Erro ao atualizar planejamento: {e}')
+        else:
+            if is_ajax:
+                html = render_to_string('cadastros/safra/partials/safra_plan_form_fields.html', {'form': form}, request=request)
+                return JsonResponse({'success': False, 'html': html})
+            messages.error(request, '❌ Corrija os erros do formulário de planejamento')
+    else:
+        form = SafraPlanForm(instance=plan, safra=safra)
+
+    return render(request, 'cadastros/safra/safra_plan_form.html', {'form': form, 'safra': safra, 'action': 'Editar Planejamento'})
+
+
+@login_required
+def safra_plan_delete(request, safra_pk):
+    safra = get_object_or_404(Safra, pk=safra_pk, fazenda__empresa=request.user.empresa)
+    plan = getattr(safra, 'plano', None)
+    if not plan:
+        messages.warning(request, 'Planejamento não encontrado.')
+        return redirect('cadastros:safra_detail', pk=safra.pk)
+
+    is_ajax = request.headers.get('x-requested-with') == 'XMLHttpRequest'
+
+    if request.method == 'POST':
+        plan.delete()
+        if is_ajax:
+            return JsonResponse({'success': True})
+        messages.success(request, '🗑️ Planejamento excluído com sucesso')
+        return redirect('cadastros:safra_detail', pk=safra.pk)
+
+    # GET: show confirmation page
+    return render(request, 'cadastros/safra/safra_plan_confirm_delete.html', {'safra': safra, 'plan': plan})
 
 
 @login_required
@@ -3127,13 +3228,13 @@ def fornecedor_list(request):
             fornecedores = fornecedores.filter(is_exportador=False)
 
     # pagination
-    per_page = request.GET.get('per_page', '50')
+    per_page = request.GET.get('per_page', '10')
     try:
         per_page = int(per_page)
         if per_page not in [10, 25, 50, 100]:
-            per_page = 50
+            per_page = 10
     except ValueError:
-        per_page = 50
+        per_page = 10
     
     paginator = Paginator(fornecedores.distinct().order_by('nome'), per_page)
     page = request.GET.get('page')

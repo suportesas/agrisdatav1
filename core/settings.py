@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'corsheaders',  # Para API (instale: pip install django-cors-headers)
     
     # Apps do projeto
+    'core',  # Configurações do sistema
     'usuarios',
     'empresas',
     'dashboard',
@@ -80,6 +81,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'django.template.context_processors.media',  # Para upload de arquivos
+                'core.context_processors.alertas_estoque',  # Context processor customizado para alertas
             ],
         },
     },

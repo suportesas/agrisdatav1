@@ -2152,6 +2152,32 @@ class SafraForm(forms.ModelForm):
 
 
 
+class SafraPlanForm(forms.ModelForm):
+    """Formulário para criar/editar Planejamento de Safra"""
+
+    class Meta:
+        model = SafraPlan
+        fields = ['planned_area', 'planned_plantio', 'planned_colheita', 'planned_production']
+        widgets = {
+            'planned_area': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.0001'}),
+            'planned_production': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'planned_plantio': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'),
+            'planned_colheita': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'),
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.safra = kwargs.pop('safra', None)
+        super().__init__(*args, **kwargs)
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        if self.safra:
+            instance.safra = self.safra
+        if commit:
+            instance.save()
+        return instance
+
+
 class HistoricoTalhaoForm(forms.ModelForm):
     """Formulário para registrar histórico de cultivo"""
     

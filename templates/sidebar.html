@@ -34,11 +34,18 @@
     <ul class="nav-list">
       
       <!-- Dashboard -->
-      <li class="nav-item">
-        <a href="{% url 'dashboard:index' %}" class="nav-link {% if request.resolver_match.url_name == 'index' and request.resolver_match.namespace == 'dashboard' %}active{% endif %}">
+      <li class="nav-item has-submenu">
+        <a href="#" class="nav-link">
           <i class="bi bi-speedometer2"></i>
           <span>Dashboard</span>
+          <i class="bi bi-chevron-down submenu-arrow"></i>
         </a>
+        <ul class="nav-submenu">
+          <li><a href="{% url 'dashboard:index' %}"><i class="bi bi-speedometer2"></i> Geral</a></li>
+          <li><a href="{% url 'estoque:dashboard' %}"><i class="bi bi-box-seam"></i> Estoque</a></li>
+          <li><a href="{% url 'compras:dashboard_compras' %}"><i class="bi bi-cart-check"></i> Compras</a></li>
+          <li><a href="{% url 'estoque:relatorio_rastreamento_dashboard' %}"><i class="bi bi-activity"></i> Rastreamento</a></li>
+        </ul>
       </li>
 
       <li class="nav-divider"></li>
@@ -180,21 +187,38 @@
         <a href="#" class="nav-link">
           <i class="bi bi-archive-fill"></i>
           <span>Estoque</span>
-          <span class="badge-new">Fase 2</span>
+          {% if alertas_estoque.total_alertas > 0 %}
+          <span class="badge bg-danger ms-2">{{ alertas_estoque.total_alertas }}</span>
+          {% endif %}
           <i class="bi bi-chevron-down submenu-arrow"></i>
         </a>
         <ul class="nav-submenu">
-          <li><a href="{% url 'estoque:dashboard' %}"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
+          <li>
+            <a href="{% url 'estoque:estoque_produtos_list' %}">
+              <i class="bi bi-box-seam"></i> 
+              Estoque de Produtos
+              {% if alertas_estoque.total_alertas > 0 %}
+              <span class="badge bg-danger ms-2">{{ alertas_estoque.total_alertas }}</span>
+              {% endif %}
+            </a>
+          </li>
+          <li class="submenu-divider"></li>
+          <li><a href="{% url 'estoque:escolher_modo_estoque' %}"><i class="bi bi-toggle-on text-primary"></i> Escolher Modo</a></li>
+          <li><a href="{% url 'estoque:entrada_rapida' %}"><i class="bi bi-lightning-charge text-success"></i> Entrada Rápida</a></li>
+          <li><a href="{% url 'estoque:saida_rapida' %}"><i class="bi bi-lightning-charge text-warning"></i> Saída Rápida</a></li>
+          <li><a href="{% url 'estoque:ajuste_rapido' %}"><i class="bi bi-lightning-charge text-info"></i> Ajuste Rápido</a></li>
+          <li class="submenu-divider"></li>
           <li><a href="{% url 'estoque:armazem_list' %}"><i class="bi bi-building"></i> Armazéns</a></li>
           <li><a href="{% url 'estoque:local_list' %}"><i class="bi bi-pin-map"></i> Locais</a></li>
           <li><a href="{% url 'estoque:lote_list' %}"><i class="bi bi-box2"></i> Lotes</a></li>
           <li><a href="{% url 'estoque:movimentacao_list' %}"><i class="bi bi-arrow-left-right"></i> Movimentações</a></li>
           <li class="submenu-divider"></li>
+          <li><a href="{% url 'estoque:relatorio_alertas_estoque' %}"><i class="bi bi-exclamation-triangle text-danger"></i> Relatório de Alertas</a></li>
+          <li><a href="{% url 'estoque:inventario_ciclico_list' %}"><i class="bi bi-cube text-info"></i> Inventário</a></li>
+          <li class="submenu-divider"></li>
           <li><a href="{% url 'estoque:entrada_create' %}"><i class="bi bi-box-arrow-in-down text-success"></i> Entrada</a></li>
           <li><a href="{% url 'estoque:saida_create' %}"><i class="bi bi-box-arrow-up text-warning"></i> Saída</a></li>
           <li><a href="{% url 'estoque:transferencia_create' %}"><i class="bi bi-arrow-left-right text-info"></i> Transferência</a></li>
-          <li><a href="{% url 'estoque:estoque_produtos_list' %}"><i class="bi bi-box-seam"></i> Estoque de Produtos</a></li>
-          <li class="submenu-divider"></li>
         </ul>
       </li>
 
@@ -207,7 +231,10 @@
           <i class="bi bi-chevron-down submenu-arrow"></i>
         </a>
         <ul class="nav-submenu">
-          <li><a href="{% url 'compras:dashboard_compras' %}"><i class="bi bi-bar-chart-line"></i> Dashboard de Compras</a></li>
+          <li><a href="{% url 'compras:escolher_modo_compra' %}"><i class="bi bi-toggle-on text-primary"></i> Escolher Modo</a></li>
+          <li><a href="{% url 'compras:compra_rapida' %}"><i class="bi bi-lightning-charge text-success"></i> Compra Rápida</a></li>
+          <li><a href="{% url 'compras:recebimento_rapido' %}"><i class="bi bi-lightning-charge text-warning"></i> Recebimento Rápido</a></li>
+          <li class="submenu-divider"></li>
           <li><a href="{% url 'compras:solicitacao_list' %}"><i class="bi bi-file-text"></i> Solicitações</a></li>
           <li><a href="{% url 'compras:solicitacao_create' %}"><i class="bi bi-plus-circle"></i> Nova Solicitação</a></li>
           <li class="submenu-divider"></li>
@@ -217,6 +244,7 @@
           <li><a href="{% url 'compras:pedido_list' %}"><i class="bi bi-file-earmark-check"></i> Pedidos de Compra</a></li>
           <li class="submenu-divider"></li>
           <li><a href="{% url 'compras:recebimento_list' %}"><i class="bi bi-box-arrow-in-down text-success"></i> Recebimentos</a></li>
+          <li><a href="{% url 'compras:entrada_direta_nf' %}"><i class="bi bi-box-arrow-in-down"></i> Entrada Direta NF-e</a></li>
         </ul>
       </li>
 
@@ -272,12 +300,25 @@
             <ul class="nested-submenu">
               <li><a href="{% url 'estoque:relatorio_estoque' %}"><i class="bi bi-file-earmark-pdf"></i> Relatório por Lotes</a></li>
               <li><a href="{% url 'estoque:relatorio_produto' %}"><i class="bi bi-file-earmark-bar-graph"></i> Relatório por Produto</a></li>
-              <li><a href="#"><i class="bi bi-clipboard-check"></i> Relatório Inventário</a></li>
+              <li><a href="{% url 'estoque:relatorio_alertas_estoque' %}"><i class="bi bi-exclamation-triangle text-danger"></i> Alertas (Excel/PDF)</a></li>
+            </ul>
+          </li>
+          <li class="has-submenu">
+            <a href="#"><i class="bi bi-graph-up"></i> Estoque Avançado <i class="bi bi-chevron-right ms-auto"></i></a>
+            <ul class="nested-submenu">
+              <li><a href="{% url 'estoque:relatorio_abc' %}"><i class="bi bi-pie-chart"></i> Análise ABC</a></li>
+              <li><a href="{% url 'estoque:relatorio_comparativo' %}"><i class="bi bi-graph-up"></i> Comparativo</a></li>
+              <li><a href="{% url 'estoque:relatorio_auditoria' %}"><i class="bi bi-clock-history"></i> Auditoria</a></li>
+              <li><a href="{% url 'estoque:relatorio_rastreamento' %}"><i class="bi bi-barcode"></i> Rastreamento</a></li>
+              <li><a href="{% url 'estoque:relatorio_validacao_disponibilidade' %}"><i class="bi bi-check2-square"></i> Validação de Disponibilidade</a></li>
+              <li><a href="{% url 'estoque:relatorio_alertas_estoque' %}"><i class="bi bi-exclamation-triangle text-danger"></i> Alertas (Excel/PDF)</a></li>
             </ul>
           </li>
           <li class="has-submenu">
             <a href="#"><i class="bi bi-cart-check"></i> Compras <i class="bi bi-chevron-right ms-auto"></i></a>
             <ul class="nested-submenu">
+              <li><a href="{% url 'compras:relatorio_compras_simples' %}"><i class="bi bi-receipt"></i> Relatório de Compras</a></li>
+              <li><a href="{% url 'compras:relatorio_compras_geral' %}"><i class="bi bi-clipboard-data"></i> Visão Geral</a></li>
               <li><a href="{% url 'compras:relatorio_compras' %}"><i class="bi bi-file-earmark-bar-graph"></i> Compras por Período</a></li>
               <li><a href="{% url 'compras:relatorio_pedidos_pendentes' %}"><i class="bi bi-file-earmark-excel"></i> Pedidos Pendentes</a></li>
             </ul>

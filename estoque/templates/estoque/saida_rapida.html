@@ -1,0 +1,301 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Saída Rápida de Estoque{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-danger text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h4 class="mb-0">
+                                <i class="fas fa-sign-out-alt"></i> Saída Rápida de Estoque
+                            </h4>
+                            <small>Modo Simples - Baixe produtos do estoque rapidamente</small>
+                        </div>
+                        <a href="{% url 'estoque:movimentacao_list' %}" class="btn btn-light btn-sm">
+                            <i class="fas fa-arrow-left"></i> Voltar
+                        </a>
+                    </div>
+                </div>
+
+                <div class="card-body">
+                    <form method="post" id="formSaidaRapida">
+                        {% csrf_token %}
+
+                        <!-- Dados Gerais -->
+                        <div class="row mb-4">
+                            <div class="col-md-4">
+                                <label class="form-label">
+                                    <i class="fas fa-warehouse text-primary"></i> Local de Estoque *
+                                </label>
+                                <select name="local_estocagem" id="localEstoque" class="form-select" required>
+                                    <option value="">Selecione...</option>
+                                    {% for local in locais %}
+                                    <option value="{{ local.id }}">{{ local.codigo }} - {{ local.descricao }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="col-md-8">
+                                <label class="form-label">
+                                    <i class="fas fa-question-circle text-warning"></i> Motivo da Saída *
+                                </label>
+                                <select name="motivo" class="form-select" required>
+                                    <option value="">Selecione o motivo...</option>
+                                    <option value="Venda">Venda</option>
+                                    <option value="Uso interno">Uso Interno</option>
+                                    <option value="Transferência">Transferência</option>
+                                    <option value="Perda">Perda</option>
+                                    <option value="Devolução">Devolução</option>
+                                    <option value="Amostra">Amostra/Teste</option>
+                                    <option value="Outros">Outros</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Produtos -->
+                        <div class="card bg-light mb-3">
+                            <div class="card-header">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-box-open"></i> Produtos para Saída
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <table class="table table-hover" id="tabelaProdutos">
+                                    <thead class="table-danger">
+                                        <tr>
+                                            <th width="45%">Produto</th>
+                                            <th width="15%">Disponível</th>
+                                            <th width="15%">Quantidade</th>
+                                            <th width="15%">Unidade</th>
+                                            <th width="10%">Ação</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="linhasProdutos">
+                                        <!-- Linhas serão adicionadas via JavaScript -->
+                                    </tbody>
+                                    <tfoot>
+                                        <tr>
+                                            <td colspan="5">
+                                                <button type="button" class="btn btn-danger btn-sm" id="btnAdicionarLinha">
+                                                    <i class="fas fa-plus"></i> Adicionar Produto
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Observações -->
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <label class="form-label">
+                                    <i class="fas fa-comment"></i> Observações
+                                </label>
+                                <textarea name="observacao" class="form-control" rows="3" 
+                                          placeholder="Detalhes adicionais sobre esta saída..."></textarea>
+                            </div>
+                        </div>
+
+                        <!-- Alertas -->
+                        {% if not config.permitir_estoque_negativo %}
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <strong>Atenção:</strong> Estoque negativo não é permitido. 
+                            Verifique a disponibilidade antes de confirmar a saída.
+                        </div>
+                        {% endif %}
+
+                        <!-- Resumo -->
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i>
+                            <strong>Resumo:</strong>
+                            <span id="resumoItens">0 produtos</span> para saída
+                        </div>
+
+                        <!-- Botões -->
+                        <div class="d-flex justify-content-end gap-2">
+                            <a href="{% url 'estoque:movimentacao_list' %}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-danger btn-lg">
+                                <i class="fas fa-check"></i> Confirmar Saída
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Template para linha de produto -->
+<template id="templateLinhaProduto">
+    <tr>
+        <td>
+            <select name="produto_id" class="form-select form-select-sm produto-select" required>
+                <option value="">Selecione o produto...</option>
+                {% for produto in produtos %}
+                <option value="{{ produto.id }}" 
+                        data-unidade="{{ produto.unidade_compra.sigla }}"
+                        data-estoque="{{ produto.estoque_atual|default:'0' }}">
+                    {{ produto.codigo }} - {{ produto.descricao }}
+                </option>
+                {% endfor %}
+            </select>
+        </td>
+        <td>
+            <input type="text" class="form-control form-control-sm estoque-display bg-light" readonly>
+        </td>
+        <td>
+            <input type="number" name="quantidade" class="form-control form-control-sm quantidade-input" 
+                   step="0.01" min="0.01" placeholder="0,00" required>
+        </td>
+        <td>
+            <input type="text" class="form-control form-control-sm unidade-display" readonly>
+        </td>
+        <td>
+            <button type="button" class="btn btn-danger btn-sm btn-remover">
+                <i class="fas fa-trash"></i>
+            </button>
+        </td>
+    </tr>
+</template>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const tabelaProdutos = document.getElementById('linhasProdutos');
+    const btnAdicionarLinha = document.getElementById('btnAdicionarLinha');
+    const template = document.getElementById('templateLinhaProduto');
+    const permitirNegativo = {{ config.permitir_estoque_negativo|yesno:"true,false" }};
+    
+    // Adicionar primeira linha automaticamente
+    adicionarLinha();
+    
+    // Botão adicionar linha
+    btnAdicionarLinha.addEventListener('click', adicionarLinha);
+    
+    function adicionarLinha() {
+        const clone = template.content.cloneNode(true);
+        const tr = clone.querySelector('tr');
+        
+        // Eventos
+        const produtoSelect = tr.querySelector('.produto-select');
+        const quantidadeInput = tr.querySelector('.quantidade-input');
+        const unidadeDisplay = tr.querySelector('.unidade-display');
+        const estoqueDisplay = tr.querySelector('.estoque-display');
+        const btnRemover = tr.querySelector('.btn-remover');
+        
+        // Quando seleciona produto
+        produtoSelect.addEventListener('change', function() {
+            const option = this.options[this.selectedIndex];
+            const estoque = parseFloat(option.dataset.estoque) || 0;
+            const unidade = option.dataset.unidade || '';
+            
+            unidadeDisplay.value = unidade;
+            estoqueDisplay.value = estoque.toFixed(2) + ' ' + unidade;
+            
+            // Validar estoque
+            if (estoque <= 0 && !permitirNegativo) {
+                estoqueDisplay.classList.add('border-danger', 'text-danger');
+                alert('⚠️ Produto sem estoque disponível!');
+            } else {
+                estoqueDisplay.classList.remove('border-danger', 'text-danger');
+            }
+            
+            quantidadeInput.max = permitirNegativo ? '' : estoque;
+            quantidadeInput.focus();
+            atualizarResumo();
+        });
+        
+        // Validar quantidade ao digitar
+        quantidadeInput.addEventListener('input', function() {
+            const option = produtoSelect.options[produtoSelect.selectedIndex];
+            const estoque = parseFloat(option.dataset.estoque) || 0;
+            const qtd = parseFloat(this.value) || 0;
+            
+            if (!permitirNegativo && qtd > estoque) {
+                this.classList.add('border-danger');
+                alert('⚠️ Quantidade maior que o estoque disponível!');
+                this.value = estoque.toFixed(2);
+            } else {
+                this.classList.remove('border-danger');
+            }
+            
+            atualizarResumo();
+        });
+        
+        // Remover linha
+        btnRemover.addEventListener('click', function() {
+            if (tabelaProdutos.children.length > 1) {
+                tr.remove();
+                atualizarResumo();
+            } else {
+                alert('É necessário ter pelo menos um produto!');
+            }
+        });
+        
+        tabelaProdutos.appendChild(tr);
+    }
+    
+    function atualizarResumo() {
+        let totalItens = 0;
+        
+        document.querySelectorAll('#linhasProdutos tr').forEach(tr => {
+            const produtoSelect = tr.querySelector('.produto-select');
+            const quantidadeInput = tr.querySelector('.quantidade-input');
+            
+            if (produtoSelect.value && quantidadeInput.value) {
+                totalItens++;
+            }
+        });
+        
+        document.getElementById('resumoItens').textContent = totalItens + ' produto(s)';
+    }
+    
+    // Validação antes de submeter
+    document.getElementById('formSaidaRapida').addEventListener('submit', function(e) {
+        const linhas = document.querySelectorAll('#linhasProdutos tr');
+        let temProduto = false;
+        let temErro = false;
+        
+        linhas.forEach(tr => {
+            const produtoSelect = tr.querySelector('.produto-select');
+            const quantidadeInput = tr.querySelector('.quantidade-input');
+            
+            if (produtoSelect.value) {
+                temProduto = true;
+                
+                const option = produtoSelect.options[produtoSelect.selectedIndex];
+                const estoque = parseFloat(option.dataset.estoque) || 0;
+                const qtd = parseFloat(quantidadeInput.value) || 0;
+                
+                if (!permitirNegativo && qtd > estoque) {
+                    temErro = true;
+                }
+            }
+        });
+        
+        if (!temProduto) {
+            e.preventDefault();
+            alert('Adicione pelo menos um produto!');
+            return false;
+        }
+        
+        if (temErro) {
+            e.preventDefault();
+            alert('⚠️ Existem produtos com quantidade maior que o estoque disponível!');
+            return false;
+        }
+    });
+});
+</script>
+{% endblock %}

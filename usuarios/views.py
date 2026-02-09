@@ -575,3 +575,55 @@ def login_registros(request):
     
     return render(request, 'usuarios/login_registros.html', context)
 
+
+@login_required
+@user_passes_test(lambda u: u.is_superuser or u.perfil == 'ADMIN')
+def configuracao_sistema(request):
+    """
+    Configurações globais do sistema por empresa
+    """
+    from core.models import ConfiguracaoSistema
+    
+    config = ConfiguracaoSistema.get_config(request.user.empresa)
+    
+    if request.method == 'POST':
+        # Atualizar configurações
+        config.modo_compras = request.POST.get('modo_compras', config.modo_compras)
+        config.modo_estoque = request.POST.get('modo_estoque', config.modo_estoque)
+        
+        # Compras
+        config.exigir_aprovacao_solicitacao = request.POST.get('exigir_aprovacao_solicitacao') == 'on'
+        config.exigir_cotacao_obrigatoria = request.POST.get('exigir_cotacao_obrigatoria') == 'on'
+        config.permitir_recebimento_sem_pedido = request.POST.get('permitir_recebimento_sem_pedido') == 'on'
+        config.entrada_estoque_automatica = request.POST.get('entrada_estoque_automatica') == 'on'
+        
+        # Estoque
+        config.controle_lote_obrigatorio = request.POST.get('controle_lote_obrigatorio') == 'on'
+        config.gerar_lote_automatico = request.POST.get('gerar_lote_automatico') == 'on'
+        config.permitir_estoque_negativo = request.POST.get('permitir_estoque_negativo') == 'on'
+        config.validade_obrigatoria = request.POST.get('validade_obrigatoria') == 'on'
+        config.rastreamento_completo = request.POST.get('rastreamento_completo') == 'on'
+        config.exigir_numero_serie = request.POST.get('exigir_numero_serie') == 'on'
+        config.exigir_motivo_movimentacao = request.POST.get('exigir_motivo_movimentacao') == 'on'
+        config.ajuste_estoque_requer_aprovacao = request.POST.get('ajuste_estoque_requer_aprovacao') == 'on'
+        
+        # Produtos
+        config.ncm_obrigatorio = request.POST.get('ncm_obrigatorio') == 'on'
+        config.preco_custo_obrigatorio = request.POST.get('preco_custo_obrigatorio') == 'on'
+        
+        # Notificações
+        config.notificar_estoque_minimo = request.POST.get('notificar_estoque_minimo') == 'on'
+        config.notificar_solicitacao_pendente = request.POST.get('notificar_solicitacao_pendente') == 'on'
+        
+        config.atualizado_por = request.user
+        config.save()
+        
+        messages.success(request, '✅ Configurações atualizadas com sucesso!')
+        return redirect('configuracao_sistema')
+    
+    context = {
+        'config': config,
+        'title': 'Configurações do Sistema'
+    }
+    
+    return render(request, 'core/configuracao_sistema.html', context)

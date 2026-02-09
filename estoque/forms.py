@@ -4,6 +4,7 @@ Forms do módulo Estoque
 from django import forms
 from django.core.exceptions import ValidationError
 from .models import Armazem, LocalEstocagem, Lote, MovimentacaoEstoque
+from produtos.models import Produto, UnidadeMedida
 
 
 class ArmazemForm(forms.ModelForm):
@@ -240,10 +241,40 @@ class LoteForm(forms.ModelForm):
 class MovimentacaoEstoqueForm(forms.ModelForm):
     """Form para todas as movimentações de estoque"""
     
+    # Campo customizado para 'origem' com as choices definidas
+    origem = forms.ChoiceField(
+        label='Origem',
+        choices=[('', '---------')],
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-select'}),
+    )
+    
+    # Campo lote como opcional
+    lote = forms.ModelChoiceField(
+        queryset=Lote.objects.none(),
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-select'}),
+    )
+    
+    # Campos produto e unidade de medida
+    produto = forms.ModelChoiceField(
+        queryset=None,
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        label='Produto'
+    )
+    
+    unidade_medida = forms.ModelChoiceField(
+        queryset=None,
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        label='Unidade de Medida'
+    )
+    
     class Meta:
         model = MovimentacaoEstoque
         fields = [
-            'tipo', 'origem', 'lote', 'quantidade', 'armazem_origem', 'local_origem',
+            'tipo', 'origem', 'lote', 'produto', 'unidade_medida', 'quantidade', 'armazem_origem', 'local_origem',
             'armazem_destino', 'local_destino', 'documento',
             'observacao', 'justificativa'
         ]
@@ -251,27 +282,46 @@ class MovimentacaoEstoqueForm(forms.ModelForm):
             'tipo': forms.Select(attrs={'class': 'form-select'}),
             'origem': forms.Select(attrs={'class': 'form-select'}),
             'lote': forms.Select(attrs={'class': 'form-select'}),
-            'quantidade': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.001'}),
+            'produto': forms.Select(attrs={'class': 'form-select'}),
+            'unidade_medida': forms.Select(attrs={'class': 'form-select'}),
+            'quantidade': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': '0,00'}),
             'armazem_origem': forms.Select(attrs={'class': 'form-select'}),
             'local_origem': forms.Select(attrs={'class': 'form-select'}),
             'armazem_destino': forms.Select(attrs={'class': 'form-select'}),
             'local_destino': forms.Select(attrs={'class': 'form-select'}),
-            'documento': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'NF, Requisição, OS, etc'}),
+            'documento': forms.TextInput(attrs={'class': 'form-control'}),
             'observacao': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
-            'justificativa': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Obrigatório para ajustes e perdas'}),
+            'justificativa': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
         }
-    
+
     def __init__(self, *args, **kwargs):
-        self.empresa = kwargs.pop('empresa', None)
-        self.usuario = kwargs.pop('usuario', None)
-        self.tipo_movimentacao = kwargs.pop('tipo_movimentacao', None)
+        empresa = kwargs.pop('empresa', None)
+        usuario = kwargs.pop('usuario', None)
+        tipo_movimentacao = kwargs.pop('tipo_movimentacao', None)
         super().__init__(*args, **kwargs)
+        
+        self.empresa = empresa
+        self.usuario = usuario
+        self.tipo_movimentacao = tipo_movimentacao
+        
+        # Determina o tipo de movimentação
+        tipo_mov = self.tipo_movimentacao or self.initial.get('tipo') or self.data.get('tipo') or 'ENTRADA'
+        
+        # Seta o initial value GARANTIDAMENTE
+        self.initial['tipo'] = tipo_mov
+        if 'tipo' in self.fields:
+            self.fields['tipo'].initial = tipo_mov
+        
+        # Popular querysets de produto e unidade_medida
+        if 'produto' in self.fields:
+            self.fields['produto'].queryset = Produto.objects.filter(ativo=True).order_by('nome')
+        
+        if 'unidade_medida' in self.fields:
+            self.fields['unidade_medida'].queryset = UnidadeMedida.objects.all().order_by('sigla')
         
         if self.empresa:
             # Filtrar lotes da empresa
-            # Para ENTRADA: mostrar todos os lotes (inclusive esgotados que receberão estoque)
-            # Para SAIDA/TRANSFERENCIA: apenas lotes disponíveis com quantidade
-            if self.tipo_movimentacao == 'ENTRADA':
+            if tipo_mov == 'ENTRADA':
                 self.fields['lote'].queryset = Lote.objects.filter(
                     empresa=self.empresa
                 ).exclude(
@@ -285,40 +335,41 @@ class MovimentacaoEstoqueForm(forms.ModelForm):
                     quantidade_atual__gt=0
                 ).select_related('produto', 'armazem').order_by('produto__nome', 'numero_lote')
                 self.fields['lote'].help_text = 'Apenas lotes disponíveis com estoque'
-            
             # Filtrar armazéns e locais
-            self.fields['armazem_origem'].queryset = Armazem.objects.filter(empresa=self.empresa, ativo=True)
-            self.fields['armazem_destino'].queryset = Armazem.objects.filter(empresa=self.empresa, ativo=True)
-            self.fields['local_origem'].queryset = LocalEstocagem.objects.filter(
-                armazem__empresa=self.empresa, ativo=True, bloqueado=False
-            )
-            self.fields['local_destino'].queryset = LocalEstocagem.objects.filter(
-                armazem__empresa=self.empresa, ativo=True, bloqueado=False
-            )
-            
+            if 'armazem_origem' in self.fields:
+                self.fields['armazem_origem'].queryset = Armazem.objects.filter(empresa=self.empresa, ativo=True)
+            if 'armazem_destino' in self.fields:
+                self.fields['armazem_destino'].queryset = Armazem.objects.filter(empresa=self.empresa, ativo=True)
+            if 'local_origem' in self.fields:
+                self.fields['local_origem'].queryset = LocalEstocagem.objects.filter(
+                    armazem__empresa=self.empresa, ativo=True, bloqueado=False
+                )
+            if 'local_destino' in self.fields:
+                self.fields['local_destino'].queryset = LocalEstocagem.objects.filter(
+                    armazem__empresa=self.empresa, ativo=True, bloqueado=False
+                )
         # Ajustar campos baseado no tipo de movimentação
-        if self.tipo_movimentacao:
-            self.initial['tipo'] = self.tipo_movimentacao
-            
-            # Campos não necessários para certos tipos
-            if self.tipo_movimentacao in ['ENTRADA', 'SAIDA', 'AJUSTE', 'DEVOLUCAO']:
-                self.fields['armazem_destino'].required = False
-                self.fields['local_destino'].required = False
-            
-            # Filtrar origens relevantes por tipo
-            origens_por_tipo = {
-                'ENTRADA': ['COMPRA', 'PRODUCAO', 'DEVOLUCAO_CLIENTE', 'TRANSFERENCIA_ENTRADA', 'AJUSTE_ENTRADA'],
-                'SAIDA': ['REQUISICAO', 'CONSUMO_PRODUCAO', 'VENDA', 'PERDA', 'TRANSFERENCIA_SAIDA', 'AJUSTE_SAIDA', 'DEVOLUCAO_FORNECEDOR'],
-                'TRANSFERENCIA': ['TRANSFERENCIA_ENTRADA', 'TRANSFERENCIA_SAIDA'],
-                'AJUSTE': ['AJUSTE_ENTRADA', 'AJUSTE_SAIDA'],
-                'DEVOLUCAO': ['DEVOLUCAO_CLIENTE', 'DEVOLUCAO_FORNECEDOR'],
-            }
-            
+        if 'armazem_destino' in self.fields and tipo_mov in ['ENTRADA', 'SAIDA', 'AJUSTE', 'DEVOLUCAO']:
+            self.fields['armazem_destino'].required = False
+        if 'local_destino' in self.fields and tipo_mov in ['ENTRADA', 'SAIDA', 'AJUSTE', 'DEVOLUCAO']:
+            self.fields['local_destino'].required = False
+        # Filtrar origens relevantes por tipo
+        origens_por_tipo = {
+            'ENTRADA': ['COMPRA', 'PRODUCAO', 'DEVOLUCAO_CLIENTE', 'TRANSFERENCIA_ENTRADA', 'AJUSTE_ENTRADA'],
+            'SAIDA': ['REQUISICAO', 'CONSUMO_PRODUCAO', 'VENDA', 'PERDA', 'TRANSFERENCIA_SAIDA', 'AJUSTE_SAIDA', 'DEVOLUCAO_FORNECEDOR'],
+            'TRANSFERENCIA': ['TRANSFERENCIA_ENTRADA', 'TRANSFERENCIA_SAIDA'],
+            'AJUSTE': ['AJUSTE_ENTRADA', 'AJUSTE_SAIDA'],
+            'DEVOLUCAO': ['DEVOLUCAO_CLIENTE', 'DEVOLUCAO_FORNECEDOR'],
+        }
+        if 'origem' in self.fields:
             choices_filtradas = [
                 choice for choice in MovimentacaoEstoque.ORIGEM_CHOICES
-                if choice[0] in origens_por_tipo.get(self.tipo_movimentacao, [])
+                if choice[0] in origens_por_tipo.get(tipo_mov, [])
             ]
             self.fields['origem'].choices = [('', '---------')] + choices_filtradas
+            # Se houver apenas uma opção válida, seta como initial
+            if len(choices_filtradas) == 1:
+                self.fields['origem'].initial = choices_filtradas[0][0]
     
     def clean(self):
         cleaned_data = super().clean()
@@ -359,17 +410,69 @@ class MovimentacaoEstoqueForm(forms.ModelForm):
             movimentacao.requisitante = self.usuario
         if commit:
             movimentacao.save()
+            # Se for movimentação direta (sem lote), recalcula estoque do produto
+            if not movimentacao.lote and movimentacao.produto:
+                if movimentacao.tipo in ['ENTRADA', 'SAIDA']:
+                    self._atualizar_estoque_produto_direto(movimentacao)
         return movimentacao
+    
+    def _atualizar_estoque_produto_direto(self, movimentacao):
+        """Atualiza estoque_atual do produto quando é movimentação direta sem lote"""
+        from django.db.models import Sum, Q
+        from decimal import Decimal
+        
+        produto = movimentacao.produto
+        if not produto:
+            return
+        
+        # Calcula estoque: soma de entradas - soma de saídas
+        movimentacoes = MovimentacaoEstoque.objects.filter(
+            Q(produto=produto) | Q(lote__produto=produto)
+        )
+        
+        entrada = movimentacoes.filter(tipo='ENTRADA').aggregate(
+            total=Sum('quantidade')
+        )['total'] or Decimal('0.000')
+        
+        saida = movimentacoes.filter(tipo='SAIDA').aggregate(
+            total=Sum('quantidade')
+        )['total'] or Decimal('0.000')
+        
+        # Atualizar estoque do produto
+        produto.estoque_atual = Decimal(entrada) - Decimal(saida)
+        produto.save(update_fields=['estoque_atual'])
 
 
 class EntradaEstoqueForm(MovimentacaoEstoqueForm):
     """Form específico para entrada de estoque"""
     
     def __init__(self, *args, **kwargs):
-        kwargs['tipo_movimentacao'] = 'ENTRADA'
+        # Extrai tipo_val antes de chamar super
+        tipo_val = 'ENTRADA'
+        if 'data' in kwargs and kwargs['data']:
+            tipo_val = kwargs['data'].get('tipo', 'ENTRADA')
+        elif 'initial' in kwargs and kwargs['initial']:
+            tipo_val = kwargs['initial'].get('tipo', 'ENTRADA')
+        
+        # Garante que tipo_movimentacao seja passado para o formulário base
+        kwargs['tipo_movimentacao'] = tipo_val
+        
+        # Garante que initial tenha o tipo correto
+        if 'initial' not in kwargs:
+            kwargs['initial'] = {}
+        kwargs['initial']['tipo'] = tipo_val
+        
         super().__init__(*args, **kwargs)
         
-        # Remover campos desnecessários
+        # APÓS super().__init__(), garante que o campo 'tipo' tenha o valor inicial
+        # Este passo CRUCIAL acontece DEPOIS que MovimentacaoEstoqueForm.__init__ já processou
+        if 'tipo' in self.fields:
+            self.fields['tipo'].initial = tipo_val
+            # Força o valor no widget attrs se for um Select
+            if hasattr(self.fields['tipo'].widget, 'attrs'):
+                self.fields['tipo'].widget.attrs['data-initial'] = tipo_val
+        
+        # Remover apenas campos de localização não usados em entrada
         self.fields.pop('armazem_origem', None)
         self.fields.pop('local_origem', None)
         self.fields.pop('armazem_destino', None)

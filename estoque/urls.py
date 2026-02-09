@@ -3,10 +3,23 @@ URLs do módulo Estoque
 """
 from django.urls import path
 from . import views
+from . import views_simples
 
 app_name = 'estoque'
 
 urlpatterns = [
+    # ========================================
+    # 🚀 MODO SIMPLES - Movimentações Rápidas
+    # ========================================
+    path('entrada-rapida/', views_simples.entrada_rapida, name='entrada_rapida'),
+    path('saida-rapida/', views_simples.saida_rapida, name='saida_rapida'),
+    path('ajuste-rapido/', views_simples.ajuste_rapido, name='ajuste_rapido'),
+    path('escolher-modo-estoque/', views_simples.escolher_modo_estoque, name='escolher_modo_estoque'),
+    
+    # ========================================
+    # 📋 MODO FORMAL - Fluxo Completo
+    # ========================================
+    
     # Dashboard
     path('', views.dashboard, name='dashboard'),
     
@@ -49,9 +62,30 @@ urlpatterns = [
     # Relatórios
     path('relatorio/', views.relatorio_estoque, name='relatorio_estoque'),
     path('relatorio/produto/', views.relatorio_produto, name='relatorio_produto'),
+    path('relatorio/alertas/', views.relatorio_alertas_estoque, name='relatorio_alertas_estoque'),
+    
+    # Relatórios Avançados (FASE 3)
+    path('relatorio/abc/', views.relatorio_analise_abc, name='relatorio_abc'),
+    path('relatorio/comparativo/', views.relatorio_comparativo_periodos, name='relatorio_comparativo'),
+    path('relatorio/auditoria/', views.relatorio_auditoria, name='relatorio_auditoria'),
+    path('relatorio/rastreamento/', views.relatorio_rastreamento_lote, name='relatorio_rastreamento'),
+    path('relatorio/rastreamento/dashboard/', views.relatorio_rastreamento_dashboard, name='relatorio_rastreamento_dashboard'),
+    path('relatorio/rastreamento/<int:lote_id>/', views.relatorio_rastreamento_lote, name='relatorio_rastreamento_detalhes'),
+    path('relatorio/validacao-disponibilidade/', views.relatorio_validacao_disponibilidade, name='relatorio_validacao_disponibilidade'),
+    
+    # Inventário Cíclico (RF-056)
+    path('inventario-ciclico/', views.inventario_ciclico_list, name='inventario_ciclico_list'),
+    path('inventario-ciclico/create/', views.inventario_ciclico_create, name='inventario_ciclico_create'),
+    path('inventario-ciclico/<int:pk>/', views.inventario_ciclico_detail, name='inventario_ciclico_detail'),
+    path('inventario-ciclico/<int:pk>/registrar-contagem/', views.inventario_ciclico_registrar_contagem, name='inventario_ciclico_registrar_contagem'),
+    path('inventario-ciclico/<int:pk>/conciliar/', views.inventario_ciclico_conciliar, name='inventario_ciclico_conciliar'),
+    path('inventario-ciclico/<int:pk>/finalizar/', views.inventario_ciclico_finalizar, name='inventario_ciclico_finalizar'),
+    path('inventario-ciclico/relatorio/acuracia/', views.inventario_ciclico_relatorio_acuracia, name='inventario_ciclico_relatorio_acuracia'),
     
     # API
     path('api/lotes-disponiveis/', views.get_lotes_disponiveis, name='api_lotes_disponiveis'),
+    path('api/produto/<int:produto_id>/unidade/', views.get_produto_unidade, name='api_produto_unidade'),
+    path('api/dashboard/dados/', views.api_dashboard_dados, name='api_dashboard_dados'),
     
     # Produtos em Estoque
     path('produtos/', views.estoque_produtos_list, name='estoque_produtos_list'),

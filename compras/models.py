@@ -809,7 +809,10 @@ class PedidoCompra(models.Model):
         Cotacao,
         on_delete=models.PROTECT,
         related_name='pedidos',
-        verbose_name='Cotação Origem'
+        verbose_name='Cotação Origem',
+        null=True,  # Permite pedido sem cotação (modo simples)
+        blank=True,
+        help_text='Opcional no modo simples de compras'
     )
 
     fornecedor = models.ForeignKey(
@@ -1034,7 +1037,10 @@ class ItemPedidoCompra(models.Model):
         FornecedorCotacao,
         on_delete=models.PROTECT,
         related_name='itens_pedido',
-        verbose_name='Proposta Origem'
+        verbose_name='Proposta Origem',
+        null=True,  # Permite item sem proposta (modo simples)
+        blank=True,
+        help_text='Opcional no modo simples de compras'
     )
     
     # Produto
@@ -1600,6 +1606,17 @@ class ItemRecebimento(models.Model):
             ).exists()
             
             if existe_mov:
+                # Ainda atualiza preço de custo com o último preço comprado
+                if produto:
+                    preco_compra = None
+                    if self.item_pedido and self.item_pedido.preco_unitario:
+                        preco_compra = self.item_pedido.preco_unitario
+                    elif self.preco_unitario:
+                        preco_compra = self.preco_unitario
+                    if preco_compra is not None:
+                        produto.preco_custo = preco_compra
+                        produto.save(update_fields=['preco_custo'])
+                        logging.info(f"Preço de custo atualizado para {produto.nome}: {preco_compra}")
                 logging.info(f"Movimentação já registrada para ItemRecebimento #{self.id}")
                 return
             
@@ -1658,10 +1675,24 @@ class ItemRecebimento(models.Model):
                 lotes_disponiveis = produto.lotes.filter(status='DISPONIVEL')
                 for lote in lotes_disponiveis:
                     total_estoque += lote.quantidade_atual
-                
+
+                # Atualiza preço de custo com o último preço comprado
+                preco_compra = None
+                if self.item_pedido and self.item_pedido.preco_unitario:
+                    preco_compra = self.item_pedido.preco_unitario
+                elif self.preco_unitario:
+                    preco_compra = self.preco_unitario
+
                 produto.estoque_atual = total_estoque
-                produto.save(update_fields=['estoque_atual'])
+                update_fields = ['estoque_atual']
+                if preco_compra is not None:
+                    produto.preco_custo = preco_compra
+                    update_fields.append('preco_custo')
+
+                produto.save(update_fields=update_fields)
                 logging.info(f"Estoque atualizado para {produto.nome}: {total_estoque}")
+                if preco_compra is not None:
+                    logging.info(f"Preço de custo atualizado para {produto.nome}: {preco_compra}")
                 logging.info(f"Movimentação ENTRADA registrada para ItemRecebimento #{self.id}")
         
         except Exception as e:

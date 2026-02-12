@@ -1,0 +1,270 @@
+﻿{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{% if form.instance.id %}Editar{% else %}Novo{% endif %} Endereço | Armador{% endblock %}
+
+{% block extra_css %}
+<style>
+  .section-header {
+    background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);
+    color: white;
+    padding: 15px 20px;
+    border-radius: 10px 10px 0 0;
+    margin-bottom: 0;
+  }
+  .form-section {
+    background: white;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+    margin-bottom: 1rem;
+  }
+  .form-section-body { padding: 1.25rem; }
+  
+  /* Garantir visibilidade dos campos */
+  input[name="logradouro"],
+  input[name="numero"],
+  input[name="complemento"],
+  input[name="cep"],
+  input[name="bairro"],
+  input[name="cidade"],
+  select[name="uf"],
+  select[name="pais"],
+  select[name="tipo"] {
+    display: block !important;
+    visibility: visible !important;
+    width: 100%;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'cadastros:armador_list' %}">Armadores</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'cadastros:armador_detail' armador.id %}">{{ armador.nome }}</a></li>
+      <li class="breadcrumb-item active">{% if form.instance.id %}Editar{% else %}Novo{% endif %} Endereço</li>
+    </ol>
+  </nav>
+
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="fw-bold mb-1">
+        <i class="bi bi-{% if form.instance.id %}pencil-square{% else %}plus-circle{% endif %} text-primary"></i>
+        {% if form.instance.id %}Editar Endereço{% else %}Novo Endereço{% endif %}
+      </h2>
+      <p class="text-muted mb-0">Armador: <strong>{{ armador.nome }}</strong></p>
+    </div>
+    <a href="{% url 'cadastros:armador_detail' armador.id %}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left"></i> Voltar
+    </a>
+  </div>
+
+  <form method="post" enctype="multipart/form-data" id="enderecoForm">
+    {% csrf_token %}
+
+    <div class="form-section">
+      <div class="section-header">
+        <h5 class="mb-0">Informações do Endereço</h5>
+      </div>
+      <div class="form-section-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Tipo *</label>
+            {{ form.tipo }}
+            {% if form.tipo.errors %}<div class="invalid-feedback d-block">{{ form.tipo.errors.0 }}</div>{% endif %}
+          </div>
+          <div class="col-md-6">
+            <div class="form-check form-switch mt-4">
+              {{ form.padrao }}
+              <label class="form-check-label" for="{{ form.padrao.id_for_label }}">
+                <strong>Usar como endereço padrão</strong>
+              </label>
+            </div>
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">CEP</label>
+            <div class="input-group">
+              {{ form.cep }}
+              <button type="button" class="btn btn-primary btn-buscar-cep">
+                <i class="bi bi-search"></i>
+              </button>
+            </div>
+            {% if form.cep.errors %}<div class="invalid-feedback d-block">{{ form.cep.errors.0 }}</div>{% endif %}
+          </div>
+          <div class="col-md-9">
+            <label class="form-label fw-semibold">Endereço *</label>
+            {{ form.logradouro }}
+            {% if form.logradouro.errors %}<div class="invalid-feedback d-block">{{ form.logradouro.errors.0 }}</div>{% endif %}
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Número *</label>
+            {{ form.numero }}
+            {% if form.numero.errors %}<div class="invalid-feedback d-block">{{ form.numero.errors.0 }}</div>{% endif %}
+          </div>
+          <div class="col-md-9">
+            <label class="form-label fw-semibold">Complemento</label>
+            {{ form.complemento }}
+            {% if form.complemento.errors %}<div class="invalid-feedback d-block">{{ form.complemento.errors.0 }}</div>{% endif %}
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Bairro *</label>
+            {{ form.bairro }}
+            {% if form.bairro.errors %}<div class="invalid-feedback d-block">{{ form.bairro.errors.0 }}</div>{% endif %}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Cidade *</label>
+            {{ form.cidade }}
+            {% if form.cidade.errors %}<div class="invalid-feedback d-block">{{ form.cidade.errors.0 }}</div>{% endif %}
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">UF *</label>
+            <select name="uf" id="id_uf" class="form-control" required>
+              <option value="">Selecione...</option>
+              <option value="AC">AC</option>
+              <option value="AL">AL</option>
+              <option value="AP">AP</option>
+              <option value="AM">AM</option>
+              <option value="BA">BA</option>
+              <option value="CE">CE</option>
+              <option value="DF">DF</option>
+              <option value="ES">ES</option>
+              <option value="GO">GO</option>
+              <option value="MA">MA</option>
+              <option value="MT">MT</option>
+              <option value="MS">MS</option>
+              <option value="MG">MG</option>
+              <option value="PA">PA</option>
+              <option value="PB">PB</option>
+              <option value="PR">PR</option>
+              <option value="PE">PE</option>
+              <option value="PI">PI</option>
+              <option value="RJ">RJ</option>
+              <option value="RN">RN</option>
+              <option value="RS">RS</option>
+              <option value="RO">RO</option>
+              <option value="RR">RR</option>
+              <option value="SC">SC</option>
+              <option value="SP">SP</option>
+              <option value="SE">SE</option>
+              <option value="TO">TO</option>
+            </select>
+            {% if form.uf.errors %}<div class="invalid-feedback d-block">{{ form.uf.errors.0 }}</div>{% endif %}
+          </div>
+          <div class="col-md-9">
+            <label class="form-label fw-semibold">País *</label>
+            {{ form.pais }}
+            {% if form.pais.errors %}<div class="invalid-feedback d-block">{{ form.pais.errors.0 }}</div>{% endif %}
+          </div>
+
+          {% if form.preenchido_via_api %}
+          <div class="col-md-12">
+            <div class="form-check">
+              {{ form.preenchido_via_api }}
+              <label class="form-check-label" for="{{ form.preenchido_via_api.id_for_label }}">
+                Preenchido via API ViaCEP
+              </label>
+            </div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="d-flex justify-content-between gap-3 mt-4">
+      <a href="{% url 'cadastros:armador_detail' armador.id %}" class="btn btn-outline-secondary btn-lg px-5">
+        <i class="bi bi-x-circle"></i> Cancelar
+      </a>
+      <button type="submit" class="btn btn-success btn-lg px-5">
+        <i class="bi bi-check-circle"></i> Salvar Endereço
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Busca CEP para formulário de endereço do armador
+  const btnBuscarCEP = document.querySelector('.btn-buscar-cep');
+  if (btnBuscarCEP) {
+    btnBuscarCEP.addEventListener('click', async function(e) {
+      e.preventDefault();
+      
+      const form = document.querySelector('form');
+      const cepInput = form.querySelector('input[name="cep"]');
+      
+      if (!cepInput) {
+        alert('Campo CEP não encontrado');
+        return;
+      }
+
+      const cep = (cepInput.value || '').replace(/\D/g, '');
+      if (cep.length !== 8) {
+        alert('Digite um CEP válido (8 dígitos)');
+        return;
+      }
+
+      const csrf = form.querySelector('input[name=csrfmiddlewaretoken]').value;
+      
+      try {
+        btnBuscarCEP.disabled = true;
+        const originalHTML = btnBuscarCEP.innerHTML;
+        btnBuscarCEP.innerHTML = '<i class="bi bi-hourglass-split"></i>';
+
+        const resp = await fetch('/cadastros/api/buscar-cep/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+            'X-CSRFToken': csrf,
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+          },
+          body: `cep=${cep}`
+        });
+
+        if (!resp.ok) {
+          const json = await resp.json().catch(() => ({}));
+          alert(json.erro || 'Erro ao buscar CEP');
+          return;
+        }
+
+        const data = await resp.json();
+        const d = (data && data.dados) ? data.dados : data;
+
+        if (d && d.logradouro) {
+          // Mapear os campos corretos
+          const logradouroInput = form.querySelector('input[name="logradouro"]') || form.querySelector('textarea[name="logradouro"]');
+          const bairroInput = form.querySelector('input[name="bairro"]') || form.querySelector('textarea[name="bairro"]');
+          const cidadeInput = form.querySelector('input[name="cidade"]') || form.querySelector('textarea[name="cidade"]');
+          const ufInput = form.querySelector('select[name="uf"]') || form.querySelector('input[name="uf"]');
+
+          if (logradouroInput) logradouroInput.value = d.logradouro || '';
+          if (bairroInput) bairroInput.value = d.bairro || '';
+          if (cidadeInput) cidadeInput.value = d.cidade || d.localidade || '';
+          if (ufInput) ufInput.value = (d.uf || '').toUpperCase();
+
+          alert('CEP carregado com sucesso!');
+        } else {
+          alert(d.erro || 'CEP não encontrado');
+        }
+      } catch (err) {
+        console.error('Erro ao buscar CEP:', err);
+        alert('Erro ao buscar CEP. Verifique a conexão.');
+      } finally {
+        btnBuscarCEP.disabled = false;
+        btnBuscarCEP.innerHTML = '<i class="bi bi-search"></i>';
+      }
+    });
+  }
+});
+</script>
+{% endblock %}
+

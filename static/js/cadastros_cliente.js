@@ -848,12 +848,11 @@ window.addEventListener('error', function(e){ try { console.error('Uncaught erro
       }
 
       // Strong client-side validation: show clear alert if form invalid and focus first invalid field
+      // Do not block submit here; server-side validation is authoritative.
       clienteForm.addEventListener('submit', function(ev){
         try {
           syncFormBeforeSubmit();
           if (!clienteForm.checkValidity()) {
-            ev.preventDefault();
-            ev.stopPropagation();
             const invalids = Array.from(clienteForm.querySelectorAll(':invalid'));
             const msgs = invalids.map(i => {
               try {
@@ -869,7 +868,7 @@ window.addEventListener('error', function(e){ try { console.error('Uncaught erro
               try { invalids[0].focus(); } catch(e){}
             }
             try { const btn = document.getElementById('clienteSaveBtn'); if (btn) btn.disabled = false; } catch(e){}
-            return false;
+            return;
           }
           try { const btn = document.getElementById('clienteSaveBtn'); if (btn) { btn.disabled = true; showClientAlert('Enviando formulário...', 'info'); } } catch(e){}
         } catch(err) { console.error('submit-validation error', err); }
@@ -899,8 +898,9 @@ window.addEventListener('error', function(e){ try { console.error('Uncaught erro
             clienteForm._submitting = true;
             try { saveBtn.disabled = true; } catch(e){}
             try {
-              if (typeof clienteForm.requestSubmit === 'function') { console.log('using requestSubmit'); clienteForm.requestSubmit(); }
-              else { console.log('using form.submit'); clienteForm.submit(); }
+              try { if (typeof syncFormBeforeSubmit === 'function') syncFormBeforeSubmit(); } catch(e) { console.warn('sync before submit failed', e); }
+              console.log('using form.submit (bypass HTML5 validation)');
+              clienteForm.submit();
             } catch (err) {
               console.error('programmatic submit failed', err);
               clienteForm._submitting = false;
@@ -916,6 +916,7 @@ window.addEventListener('error', function(e){ try { console.error('Uncaught erro
             if (b) {
               console.log('global save click fallback');
               cleanupModalBackdrops();
+              try { if (typeof syncFormBeforeSubmit === 'function') syncFormBeforeSubmit(); } catch(e) { console.warn('sync before submit failed', e); }
               try { document.getElementById('clienteForm').submit(); } catch(err){ console.error('global fallback submit failed', err); }
             }
           } catch(e){}
@@ -929,7 +930,8 @@ window.addEventListener('error', function(e){ try { console.error('Uncaught erro
           // Ensure the button is clickable
           try { topBtn.style.pointerEvents = 'auto'; topBtn.disabled = false; } catch(e){}
           topBtn.addEventListener('click', function(ev){
-            try { if (clienteForm && typeof clienteForm.requestSubmit === 'function') clienteForm.requestSubmit(); else if (clienteForm) clienteForm.submit(); } catch(e){ console.error('fallback submit failed', e); }
+            try { if (typeof syncFormBeforeSubmit === 'function') syncFormBeforeSubmit(); } catch(e) { console.warn('sync before submit failed', e); }
+            try { if (clienteForm) clienteForm.submit(); } catch(e){ console.error('fallback submit failed', e); }
 
             setTimeout(async function(){
               try {

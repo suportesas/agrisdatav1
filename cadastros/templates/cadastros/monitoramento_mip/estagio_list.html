@@ -1,0 +1,296 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Estágios de Desenvolvimento | ERP Agrícola{% endblock %}
+{% block page_title %}
+  <div class="d-flex align-items-center gap-2">
+    <span>Estágios de Desenvolvimento de Pragas</span>
+    <button type="button" class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#helpEstagio" title="Ajuda">
+      <i class="bi bi-question-circle"></i>
+    </button>
+  </div>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+  <div class="row">
+    <div class="col-lg-12">
+      
+      <!-- Header com Estatísticas -->
+      <div class="row mb-4">
+        <div class="col-md-4">
+          <div class="card shadow-sm border-0 rounded-4 bg-primary text-white">
+            <div class="card-body">
+              <p class="mb-1"><small>TOTAL DE ESTÁGIOS</small></p>
+              <h3 class="mb-0">{{ estagios|length }}</h3>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card shadow-sm border-0 rounded-4 bg-success text-white">
+            <div class="card-body">
+              <p class="mb-1"><small>FASES CRÍTICAS</small></p>
+              <h3 class="mb-0">{{ fases_criticas }}</h3>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card shadow-sm border-0 rounded-4 bg-info text-white">
+            <div class="card-body">
+              <p class="mb-1"><small>PRAGAS MONITORADAS</small></p>
+              <h3 class="mb-0">{{ pragas_count }}</h3>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Botão Novo Estágio -->
+      <div class="mb-4">
+        <a href="{% url 'cadastros:estagio_create' %}" class="btn btn-success btn-lg">
+          <i class="bi bi-plus-circle"></i> Novo Estágio
+        </a>
+      </div>
+
+      <!-- Filtros -->
+      <div class="card shadow-sm border-0 rounded-4 mb-4">
+        <div class="card-header bg-light">
+          <h6 class="mb-0"><i class="bi bi-funnel"></i> Filtros</h6>
+        </div>
+        <div class="card-body">
+          <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-4">
+              <label for="praga_filter" class="form-label">Praga</label>
+              <select class="form-select" id="praga_filter" name="praga">
+                <option value="">Todas as pragas</option>
+                {% for praga in pragas %}
+                  <option value="{{ praga.id }}" {% if request.GET.praga == praga.id|stringformat:"s" %}selected{% endif %}>
+                    {{ praga.nome_comum }}
+                  </option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label for="tipo_filter" class="form-label">Tipo de Estágio</label>
+              <select class="form-select" id="tipo_filter" name="tipo">
+                <option value="">Todos os tipos</option>
+                <option value="OVO" {% if request.GET.tipo == 'OVO' %}selected{% endif %}>Ovo</option>
+                <option value="NINFA" {% if request.GET.tipo == 'NINFA' %}selected{% endif %}>Ninfa</option>
+                <option value="LARVA" {% if request.GET.tipo == 'LARVA' %}selected{% endif %}>Larva</option>
+                <option value="PUPA" {% if request.GET.tipo == 'PUPA' %}selected{% endif %}>Pupa</option>
+                <option value="ADULTO" {% if request.GET.tipo == 'ADULTO' %}selected{% endif %}>Adulto</option>
+                <option value="ESPORO" {% if request.GET.tipo == 'ESPORO' %}selected{% endif %}>Esporo</option>
+                <option value="LESAO" {% if request.GET.tipo == 'LESAO' %}selected{% endif %}>Lesão</option>
+                <option value="OUTRO" {% if request.GET.tipo == 'OUTRO' %}selected{% endif %}>Outro</option>
+              </select>
+            </div>
+            <div class="col-md-2">
+              <button type="submit" class="btn btn-primary w-100">
+                <i class="bi bi-search"></i> Filtrar
+              </button>
+            </div>
+            <div class="col-md-2">
+              <a href="{% url 'cadastros:estagio_list' %}" class="btn btn-outline-secondary w-100">
+                <i class="bi bi-arrow-clockwise"></i> Limpar
+              </a>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Accordion de Pragas e Estágios -->
+      {% regroup estagios by praga as estagios_por_praga %}
+      
+      {% if estagios_por_praga %}
+        <div class="accordion shadow-sm border-0 rounded-4" id="accordionEstagios">
+          {% for praga_group in estagios_por_praga %}
+            {% with praga=praga_group.grouper estagios_da_praga=praga_group.list %}
+              <div class="accordion-item border-bottom-0 mb-3 rounded-3 shadow-sm" style="border: 1px solid #dee2e6;">
+                
+                <!-- Header do Accordion (Praga) -->
+                <h2 class="accordion-header">
+                  <button class="accordion-button collapsed fw-bold" type="button" data-bs-toggle="collapse" 
+                          data-bs-target="#collapse-praga-{{ praga.id }}" aria-expanded="false">
+                    <i class="bi bi-bug me-2 text-danger"></i>
+                    <span class="flex-grow-1">{{ praga.nome_comum }}</span>
+                    <span class="badge bg-secondary me-3">{{ estagios_da_praga|length }} estágios</span>
+                    <small class="text-muted d-none d-sm-inline-block">{{ praga.nome_cientifico }}</small>
+                  </button>
+                </h2>
+
+                <!-- Content do Accordion (Estágios da Praga) -->
+                <div id="collapse-praga-{{ praga.id }}" class="accordion-collapse collapse" data-bs-parent="#accordionEstagios">
+                  <div class="accordion-body p-0">
+                    {% if estagios_da_praga %}
+                      <div class="table-responsive">
+                        <table class="table table-sm table-hover mb-0">
+                          <thead class="table-light">
+                            <tr>
+                              <th style="width: 15%;"><i class="bi bi-diagram-3"></i> Tipo</th>
+                              <th style="width: 35%;">Descrição</th>
+                              <th style="width: 15%;"><i class="bi bi-clock-history"></i> Duração</th>
+                              <th style="width: 10%;"><i class="bi bi-list-check"></i> Ordem</th>
+                              <th style="width: 12%;"><i class="bi bi-exclamation-triangle"></i> Crítico</th>
+                              <th style="width: 13%;"><i class="bi bi-pencil-square"></i> Ações</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {% for estagio in estagios_da_praga %}
+                              <tr>
+                                <td>
+                                  <span class="badge bg-info text-dark">
+                                    {% if estagio.tipo_estagio == 'OVO' %}
+                                      <i class="bi bi-circle"></i> Ovo
+                                    {% elif estagio.tipo_estagio == 'NINFA' %}
+                                      <i class="bi bi-bacteria"></i> Ninfa
+                                    {% elif estagio.tipo_estagio == 'LARVA' %}
+                                      <i class="bi bi-bug"></i> Larva
+                                    {% elif estagio.tipo_estagio == 'PUPA' %}
+                                      <i class="bi bi-egg"></i> Pupa
+                                    {% elif estagio.tipo_estagio == 'ADULTO' %}
+                                      <i class="bi bi-butterfly"></i> Adulto
+                                    {% elif estagio.tipo_estagio == 'ESPORO' %}
+                                      <i class="bi bi-cloud"></i> Esporo
+                                    {% elif estagio.tipo_estagio == 'LESAO' %}
+                                      <i class="bi bi-exclamation-circle"></i> Lesão
+                                    {% else %}
+                                      <i class="bi bi-question-circle"></i> Outro
+                                    {% endif %}
+                                  </span>
+                                </td>
+                                <td>
+                                  <small>{{ estagio.descricao|truncatewords:8 }}</small>
+                                </td>
+                                <td>
+                                  {% if estagio.duracao_minima_dias and estagio.duracao_maxima_dias %}
+                                    <small>{{ estagio.duracao_minima_dias }}-{{ estagio.duracao_maxima_dias }} dias</small>
+                                  {% elif estagio.duracao_minima_dias %}
+                                    <small>Mín: {{ estagio.duracao_minima_dias }}d</small>
+                                  {% elif estagio.duracao_maxima_dias %}
+                                    <small>Máx: {{ estagio.duracao_maxima_dias }}d</small>
+                                  {% else %}
+                                    <span class="text-muted">-</span>
+                                  {% endif %}
+                                </td>
+                                <td>
+                                  {% if estagio.ordem_ciclo %}
+                                    <span class="badge bg-secondary">{{ estagio.ordem_ciclo }}º</span>
+                                  {% else %}
+                                    <span class="text-muted">-</span>
+                                  {% endif %}
+                                </td>
+                                <td>
+                                  {% if estagio.eh_fase_critica %}
+                                    <span class="badge bg-danger">
+                                      <i class="bi bi-exclamation-triangle-fill"></i> Sim
+                                    </span>
+                                  {% else %}
+                                    <span class="badge bg-success">
+                                      <i class="bi bi-check-circle"></i> Não
+                                    </span>
+                                  {% endif %}
+                                </td>
+                                <td>
+                                  <div class="btn-group btn-group-sm" role="group">
+                                    <a href="{% url 'cadastros:estagio_update' estagio.pk %}" 
+                                       class="btn btn-sm btn-outline-primary" title="Editar">
+                                      <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <a href="#" class="btn btn-sm btn-outline-danger" 
+                                       data-bs-toggle="modal" data-bs-target="#deleteModal{{ estagio.pk }}" 
+                                       title="Excluir">
+                                      <i class="bi bi-trash"></i>
+                                    </a>
+                                  </div>
+
+                                  <!-- Modal de Confirmação de Exclusão -->
+                                  <div class="modal fade" id="deleteModal{{ estagio.pk }}" tabindex="-1">
+                                    <div class="modal-dialog">
+                                      <div class="modal-content">
+                                        <div class="modal-header">
+                                          <h5 class="modal-title">Confirmar Exclusão</h5>
+                                          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                          <p>Tem certeza que deseja excluir este estágio?</p>
+                                          <p class="text-muted"><small>
+                                            <strong>{{ estagio.praga.nome_comum }}</strong> - 
+                                            {{ estagio.get_tipo_estagio_display }}
+                                          </small></p>
+                                        </div>
+                                        <div class="modal-footer">
+                                          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                          <a href="{% url 'cadastros:estagio_delete' estagio.pk %}" class="btn btn-danger">Excluir</a>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </td>
+                              </tr>
+                            {% endfor %}
+                          </tbody>
+                        </table>
+                      </div>
+                    {% else %}
+                      <div class="p-3 text-center text-muted">
+                        <i class="bi bi-inbox"></i> Nenhum estágio para esta praga
+                      </div>
+                    {% endif %}
+                  </div>
+                </div>
+
+              </div>
+            {% endwith %}
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="alert alert-info text-center" role="alert">
+          <i class="bi bi-inbox"></i> Nenhum estágio registrado<br>
+          <a href="{% url 'cadastros:estagio_create' %}" class="alert-link">
+            Criar primeiro estágio →
+          </a>
+        </div>
+      {% endif %}
+
+      <!-- Paginação -->
+      {% if is_paginated %}
+        <nav aria-label="Paginação" class="mt-4">
+          <ul class="pagination justify-content-center">
+            {% if page_obj.has_previous %}
+              <li class="page-item">
+                <a class="page-link" href="?page=1{% if request.GET.praga %}&praga={{ request.GET.praga }}{% endif %}{% if request.GET.tipo %}&tipo={{ request.GET.tipo }}{% endif %}">Primeira</a>
+              </li>
+              <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.praga %}&praga={{ request.GET.praga }}{% endif %}{% if request.GET.tipo %}&tipo={{ request.GET.tipo }}{% endif %}">Anterior</a>
+              </li>
+            {% endif %}
+
+            {% for num in page_obj.paginator.page_range %}
+              {% if page_obj.number == num %}
+                <li class="page-item active">
+                  <span class="page-link">{{ num }}</span>
+                </li>
+              {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                <li class="page-item">
+                  <a class="page-link" href="?page={{ num }}{% if request.GET.praga %}&praga={{ request.GET.praga }}{% endif %}{% if request.GET.tipo %}&tipo={{ request.GET.tipo }}{% endif %}">{{ num }}</a>
+                </li>
+              {% endif %}
+            {% endfor %}
+
+            {% if page_obj.has_next %}
+              <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.praga %}&praga={{ request.GET.praga }}{% endif %}{% if request.GET.tipo %}&tipo={{ request.GET.tipo }}{% endif %}">Próxima</a>
+              </li>
+              <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.praga %}&praga={{ request.GET.praga }}{% endif %}{% if request.GET.tipo %}&tipo={{ request.GET.tipo }}{% endif %}">Última</a>
+              </li>
+            {% endif %}
+          </ul>
+        </nav>
+      {% endif %}
+
+    </div>
+  </div>
+</div>
+{% include 'cadastros/monitoramento_mip/_help_modals.html' %}
+
+{% endblock %}

@@ -181,6 +181,28 @@
     backdrop-filter: blur(10px);
     font-weight: 500;
   }
+
+  /* View toggle */
+  .view-toggle .btn {
+    border: 2px solid rgba(255,255,255,0.8);
+    color: white;
+    background: rgba(255,255,255,0.12);
+    font-weight: 600;
+    border-radius: 10px;
+    padding: 0.45rem 0.9rem;
+  }
+
+  .view-toggle .btn.active {
+    background: white;
+    color: #0d6efd;
+    border-color: white;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  }
+
+  .view-toggle .btn:hover {
+    background: rgba(255,255,255,0.25);
+    border-color: white;
+  }
   
   #toggle-hide:hover {
     background: rgba(255,255,255,0.2);
@@ -447,6 +469,14 @@
         {% endif %}
       </div>
       <div class="d-flex gap-2 align-items-center">
+        <div class="btn-group view-toggle" role="group" aria-label="Modo de visualizacao">
+          <button type="button" class="btn btn-sm btn-light" id="roles-view-cards" aria-pressed="true">
+            <i class="bi bi-grid-3x3-gap"></i> Cards
+          </button>
+          <button type="button" class="btn btn-sm btn-light" id="roles-view-list" aria-pressed="false">
+            <i class="bi bi-list"></i> Lista
+          </button>
+        </div>
         <button id="toggle-hide" type="button" class="btn btn-sm" aria-pressed="false" title="Ocultar outras funções">
           <i class="bi bi-eye-slash"></i> Ocultar outras
         </button>
@@ -572,6 +602,21 @@ function applyFilters(){
       card.style.display = 'none';
     }
   });
+
+  document.querySelectorAll('.role-row').forEach(row=>{
+    const name = (row.dataset.name || '').toLowerCase();
+    const builtin = row.dataset.builtin === 'true';
+    let show = name.includes(q);
+    if(filter === 'builtin' && !builtin) show = false;
+    if(filter === 'custom' && builtin) show = false;
+
+    if(show) {
+      row.style.display = '';
+      visibleCount++;
+    } else {
+      row.style.display = 'none';
+    }
+  });
   
   // Mostra mensagem se nenhum resultado
   const emptyMsg = document.getElementById('no-results-msg');
@@ -588,6 +633,11 @@ function applyFilters(){
 }
 
 document.addEventListener('DOMContentLoaded', function(){
+  const viewKey = 'roles_view_mode';
+  const viewCardsBtn = document.getElementById('roles-view-cards');
+  const viewListBtn = document.getElementById('roles-view-list');
+  const cardsView = document.querySelector('.roles-view-cards');
+  const listView = document.querySelector('.roles-view-list');
   const search = document.getElementById('role-search');
   const filter = document.getElementById('role-filter');
   const resetBtn = document.getElementById('reset-filters');
@@ -612,12 +662,38 @@ document.addEventListener('DOMContentLoaded', function(){
     const sel = document.querySelector('.role-card.selected');
     document.querySelectorAll('.role-card').forEach(r=>{
       if(!sel){ r.classList.remove('dimmed'); r.classList.remove('d-none'); return; }
-      if(r === sel){ r.classList.remove('dimmed'); r.classList.remove('d-none'); } 
-      else { 
-        if(hideState) r.classList.add('d-none'); 
-        else r.classList.add('dimmed'); 
+      if(r === sel){ r.classList.remove('dimmed'); r.classList.remove('d-none'); }
+      else {
+        if(hideState) r.classList.add('d-none');
+        else r.classList.add('dimmed');
       }
     });
+
+    const selRow = document.querySelector('.role-row.selected');
+    document.querySelectorAll('.role-row').forEach(r=>{
+      if(!selRow){ r.classList.remove('table-active'); r.classList.remove('d-none'); return; }
+      if(r === selRow){ r.classList.add('table-active'); r.classList.remove('d-none'); }
+      else {
+        if(hideState) r.classList.add('d-none');
+        else r.classList.remove('table-active');
+      }
+    });
+  }
+
+  function applyViewMode(mode){
+    if(!cardsView || !listView) return;
+    if(mode === 'list'){
+      cardsView.classList.add('d-none');
+      listView.classList.remove('d-none');
+      if(viewListBtn) viewListBtn.classList.add('active');
+      if(viewCardsBtn) viewCardsBtn.classList.remove('active');
+    } else {
+      listView.classList.add('d-none');
+      cardsView.classList.remove('d-none');
+      if(viewCardsBtn) viewCardsBtn.classList.add('active');
+      if(viewListBtn) viewListBtn.classList.remove('active');
+    }
+    localStorage.setItem(viewKey, mode);
   }
   
   // Expose for external use
@@ -667,6 +743,13 @@ document.addEventListener('DOMContentLoaded', function(){
       applyFilters();
     });
   }
+
+  if(viewCardsBtn){
+    viewCardsBtn.addEventListener('click', function(){ applyViewMode('cards'); });
+  }
+  if(viewListBtn){
+    viewListBtn.addEventListener('click', function(){ applyViewMode('list'); });
+  }
   
   // Toggle hide button
   if(hideBtn){
@@ -681,6 +764,7 @@ document.addEventListener('DOMContentLoaded', function(){
   // Initialize hide state
   updateHideBtn(); 
   applyHideState();
+  applyViewMode(localStorage.getItem(viewKey) || 'cards');
 
   // Use event delegation so handlers persist even if #roles-area is replaced
   const rolesArea = document.getElementById('roles-area');
@@ -708,6 +792,25 @@ document.addEventListener('DOMContentLoaded', function(){
       card.classList.add('selected');
       applyHideState();
       loadPermissions(card.dataset.roleId);
+    });
+
+    rolesArea.addEventListener('click', function(e){
+      const row = e.target.closest('.role-row');
+      if(!row) return;
+      if(e.target.tagName.toLowerCase() === 'a' || e.target.closest('button')) return;
+
+      const alreadySelected = row.classList.contains('selected');
+      document.querySelectorAll('.role-row').forEach(r=>r.classList.remove('selected', 'table-active'));
+      if(alreadySelected){
+        document.querySelectorAll('.role-row').forEach(r=>r.classList.remove('d-none'));
+        return;
+      }
+
+      row.classList.add('selected', 'table-active');
+      document.querySelectorAll('.role-row').forEach(r=>{
+        if(r !== row) r.classList.add('d-none');
+      });
+      loadPermissions(row.dataset.roleId);
     });
 
     // Support keyboard selection (Enter / Space)

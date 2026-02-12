@@ -1,0 +1,46 @@
+﻿{% extends 'base.html' %}
+
+{% block title %}Deletar Navio{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-exclamation-triangle"></i> Confirmar ExclusÃ£o
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="mb-3">
+                        Tem certeza que deseja deletar o navio <strong>{{ navio.nome }}</strong>?
+                    </p>
+
+                    {% if navio.armador %}
+                    <div class="alert alert-info">
+                        <strong>Armador Associado:</strong><br>
+                        {{ navio.armador.nome }}
+                    </div>
+                    {% endif %}
+
+                    <p class="text-muted mb-4">Esta aÃ§Ã£o Ã© irreversÃ­vel.</p>
+
+                    <form method="post" class="d-inline">
+                        {% csrf_token %}
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{% url 'cadastros:navio_detail' navio.id %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-x-circle"></i> Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-trash"></i> Deletar Navio
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

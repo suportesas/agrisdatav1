@@ -1,0 +1,286 @@
+﻿{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ action }} Armador | ERP Agrícola{% endblock %}
+
+{% block extra_css %}
+<style>
+  .section-header {
+    background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);
+    color: white;
+    padding: 15px 20px;
+    border-radius: 10px 10px 0 0;
+    margin-bottom: 0;
+  }
+  .form-section {
+    background: white;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+    margin-bottom: 1rem;
+  }
+  .form-section-body { padding: 1.25rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'cadastros:armador_list' %}">Armadores</a></li>
+      <li class="breadcrumb-item active">{% if form.instance.id %}Editar{% else %}Novo{% endif %} Armador</li>
+    </ol>
+  </nav>
+
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="fw-bold mb-1">
+        <i class="bi bi-{% if form.instance.id %}pencil-square{% else %}plus-circle{% endif %} text-primary"></i>
+        {% if form.instance.id %}Editar Armador{% else %}Novo Armador{% endif %}
+      </h2>
+      {% if form.instance.id %}
+        <p class="text-muted mb-0">Editando: <strong>{{ form.instance.nome }}</strong></p>
+      {% else %}
+        <p class="text-muted mb-0">Preencha os dados do armador</p>
+      {% endif %}
+    </div>
+    <a href="{% url 'cadastros:armador_list' %}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left"></i> Voltar
+    </a>
+  </div>
+
+  <form method="post" enctype="multipart/form-data" id="armadorForm">
+        {% csrf_token %}
+
+    <div class="form-section">
+      <div class="section-header">
+        <h5 class="mb-0">Identidade</h5>
+      </div>
+      <div class="form-section-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Código *</label>
+            {{ form.codigo }}
+            {% if form.codigo.errors %}<div class="invalid-feedback d-block">{{ form.codigo.errors.0 }}</div>{% endif %}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Nome *</label>
+            {{ form.nome }}
+            {% if form.nome.errors %}<div class="invalid-feedback d-block">{{ form.nome.errors.0 }}</div>{% endif %}
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Nome Fantasia</label>
+            {{ form.nome_fantasia }}
+            {% if form.nome_fantasia.errors %}<div class="invalid-feedback d-block">{{ form.nome_fantasia.errors.0 }}</div>{% endif %}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">CNPJ</label>
+            <div class="input-group">
+              {{ form.cnpj }}
+              <button type="button" class="btn btn-primary" id="buscarCNPJ">
+                <i class="bi bi-search"></i> Buscar
+              </button>
+            </div>
+            {% if form.cnpj.errors %}<div class="invalid-feedback d-block">{{ form.cnpj.errors.0 }}</div>{% endif %}
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Página Web</label>
+            {{ form.website }}
+            {% if form.website.errors %}<div class="invalid-feedback d-block">{{ form.website.errors.0 }}</div>{% endif %}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">País *</label>
+            {{ form.pais }}
+            {% if form.pais.errors %}<div class="invalid-feedback d-block">{{ form.pais.errors.0 }}</div>{% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="section-header">
+        <h5 class="mb-0">Contato Principal</h5>
+      </div>
+      <div class="form-section-body">
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">E-mail</label>
+            {{ form.email }}
+            {% if form.email.errors %}<div class="invalid-feedback d-block">{{ form.email.errors.0 }}</div>{% endif %}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Telefone</label>
+            {{ form.telefone }}
+            {% if form.telefone.errors %}<div class="invalid-feedback d-block">{{ form.telefone.errors.0 }}</div>{% endif %}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Celular</label>
+            {{ form.celular }}
+            {% if form.celular.errors %}<div class="invalid-feedback d-block">{{ form.celular.errors.0 }}</div>{% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="section-header">
+        <h5 class="mb-0">Endereço Principal</h5>
+      </div>
+      <div class="form-section-body">
+        <div class="row g-3">
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">CEP</label>
+            <div class="input-group">
+              {{ form.cep }}
+              <button type="button" class="btn btn-primary" id="buscarCEP">
+                <i class="bi bi-search"></i> Buscar
+              </button>
+            </div>
+            {% if form.cep.errors %}<div class="invalid-feedback d-block">{{ form.cep.errors.0 }}</div>{% endif %}
+          </div>
+          <div class="col-md-9">
+            <label class="form-label fw-semibold">Endereço</label>
+            {{ form.endereco }}
+            {% if form.endereco.errors %}<div class="invalid-feedback d-block">{{ form.endereco.errors.0 }}</div>{% endif %}
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Número</label>
+            {{ form.numero }}
+            {% if form.numero.errors %}<div class="invalid-feedback d-block">{{ form.numero.errors.0 }}</div>{% endif %}
+          </div>
+          <div class="col-md-9">
+            <label class="form-label fw-semibold">Bairro</label>
+            {{ form.bairro }}
+            {% if form.bairro.errors %}<div class="invalid-feedback d-block">{{ form.bairro.errors.0 }}</div>{% endif %}
+          </div>
+
+          <div class="col-md-8">
+            <label class="form-label fw-semibold">Cidade</label>
+            {{ form.cidade }}
+            {% if form.cidade.errors %}<div class="invalid-feedback d-block">{{ form.cidade.errors.0 }}</div>{% endif %}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">UF</label>
+            {{ form.uf }}
+            {% if form.uf.errors %}<div class="invalid-feedback d-block">{{ form.uf.errors.0 }}</div>{% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="section-header">
+        <h5 class="mb-0">Operacional</h5>
+      </div>
+      <div class="form-section-body">
+        <div class="row g-3">
+          <div class="col-md-12">
+            <label class="form-label fw-semibold">Tipos de Navio</label>
+            <div class="border rounded p-3 bg-light">
+              {{ form.tipos_navio }}
+            </div>
+            {% if form.tipos_navio.errors %}<div class="invalid-feedback d-block">{{ form.tipos_navio.errors.0 }}</div>{% endif %}
+            <small class="form-text text-muted d-block mt-2">
+              <i class="bi bi-info-circle"></i> Selecione todos os tipos de navio operados por este armador
+            </small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="section-header">
+        <h5 class="mb-0">Indicadores de Desempenho (RF-808)</h5>
+      </div>
+      <div class="form-section-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Confiabilidade (%)</label>
+            {{ form.confiabilidade_percentual }}
+            {% if form.confiabilidade_percentual.errors %}<div class="invalid-feedback d-block">{{ form.confiabilidade_percentual.errors.0 }}</div>{% endif %}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">% Rolagem Histórico</label>
+            {{ form.percentual_rolagem_historico }}
+            {% if form.percentual_rolagem_historico.errors %}<div class="invalid-feedback d-block">{{ form.percentual_rolagem_historico.errors.0 }}</div>{% endif %}
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Custo Médio Rolagem</label>
+            {{ form.custo_medio_rolagem }}
+            {% if form.custo_medio_rolagem.errors %}<div class="invalid-feedback d-block">{{ form.custo_medio_rolagem.errors.0 }}</div>{% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="section-header">
+        <h5 class="mb-0">Status</h5>
+      </div>
+      <div class="form-section-body">
+        <div class="form-check form-switch">
+          {{ form.ativo }}
+          <label class="form-check-label" for="{{ form.ativo.id_for_label }}">
+            <strong>Ativo</strong> - Marque para ativar este armador
+          </label>
+        </div>
+        {% if form.ativo.errors %}<div class="invalid-feedback d-block">{{ form.ativo.errors.0 }}</div>{% endif %}
+      </div>
+    </div>
+
+    <div class="d-flex justify-content-between gap-3 mt-4">
+      <a href="{% url 'cadastros:armador_list' %}" class="btn btn-outline-secondary btn-lg px-5">
+        <i class="bi bi-x-circle"></i> Cancelar
+      </a>
+      <button type="submit" class="btn btn-success btn-lg px-5">
+        <i class="bi bi-check-circle"></i> {% if form.instance.id %}Atualizar{% else %}Criar{% endif %} Armador
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/cadastros_armador.js' %}"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function(){
+    // Estilizar checkboxes de tipos_navio
+    try {
+      const container = document.getElementById('id_tipos_navio');
+      if (container) {
+        container.style.display = 'flex';
+        container.style.flexDirection = 'column';
+        container.style.gap = '0.75rem';
+        
+        const labels = container.querySelectorAll('label');
+        labels.forEach(label => {
+          label.style.display = 'flex';
+          label.style.alignItems = 'center';
+          label.style.gap = '0.5rem';
+          label.style.marginBottom = '0';
+          label.style.cursor = 'pointer';
+          label.style.padding = '0.5rem';
+          label.style.borderRadius = '0.25rem';
+          label.style.transition = 'background-color 0.2s';
+          
+          label.addEventListener('mouseenter', () => label.style.backgroundColor = '#e9ecef');
+          label.addEventListener('mouseleave', () => label.style.backgroundColor = '');
+        });
+        
+        const inputs = container.querySelectorAll('input[type="checkbox"]');
+        inputs.forEach(input => {
+          input.style.margin = '0';
+          input.style.width = '1.25rem';
+          input.style.height = '1.25rem';
+          input.style.cursor = 'pointer';
+        });
+      }
+    } catch(e){}
+  });
+</script>
+{% endblock %}

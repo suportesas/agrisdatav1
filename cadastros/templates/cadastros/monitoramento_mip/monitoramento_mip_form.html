@@ -1,0 +1,479 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{% if form.instance.pk %}Editar Monitoramento{% else %}Novo Monitoramento MIP{% endif %} | ERP Agrícola{% endblock %}
+{% block page_title %}
+  <div class="d-flex align-items-center gap-2">
+    <span>{% if form.instance.pk %}Editar Monitoramento {{ form.instance.numero }}{% else %}Novo Monitoramento MIP{% endif %}</span>
+    <button type="button" class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#helpMonitoramentoMIP" title="Ajuda">
+      <i class="bi bi-question-circle"></i>
+    </button>
+  </div>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+  <div class="row">
+    <div class="col-lg-8 offset-lg-2">
+      <div class="card shadow-sm border-0 rounded-4">
+        <div class="card-body p-4">
+          
+          <!-- Breadcrumb -->
+          <nav aria-label="breadcrumb" class="mb-4">
+            <ol class="breadcrumb mb-0">
+              <li class="breadcrumb-item">
+                <a href="{% url 'cadastros:monitoramento_mip_list' %}" class="text-decoration-none">
+                  <i class="bi bi-graph-up"></i> Monitoramentos MIP
+                </a>
+              </li>
+              <li class="breadcrumb-item active">
+                {% if form.instance.pk %}Editar{% else %}Novo{% endif %}
+              </li>
+            </ol>
+          </nav>
+
+          <form method="post" class="needs-validation" novalidate>
+            {% csrf_token %}
+
+            <!-- Informações Básicas -->
+            <div class="mb-4">
+              <h5 class="fw-bold text-secondary mb-3">
+                <i class="bi bi-info-circle"></i> Informações Básicas
+              </h5>
+
+              <div class="row mb-3">
+                <div class="col-md-6">
+                  <label for="id_talhao_search" class="form-label">
+                    <i class="bi bi-search"></i> Buscar Talhão (Código)
+                  </label>
+                  <input 
+                    type="text" 
+                    id="id_talhao_search" 
+                    class="form-control" 
+                    placeholder="Ex: 0101"
+                    autocomplete="off"
+                  >
+                  <small class="text-muted">Digite o código ou nome do talhão</small>
+                  <div id="talhao_results" class="mt-2" style="max-height: 250px; overflow-y: auto; display: none;">
+                    <!-- Resultados da busca aparecem aqui -->
+                  </div>
+                </div>
+
+                <div class="col-md-6">
+                  <label for="{{ form.talhao.id_for_label }}" class="form-label">
+                    <i class="bi bi-grid-3x3-gap"></i> Talhão Selecionado *
+                  </label>
+                  {{ form.talhao }}
+                  {% if form.instance.pk %}
+                    <small class="text-muted d-block mt-2">Talhão atual: {{ form.instance.talhao.nome }}</small>
+                  {% endif %}
+                  {% if form.talhao.errors %}
+                    <div class="invalid-feedback d-block">{{ form.talhao.errors.0 }}</div>
+                  {% endif %}
+                </div>
+              </div>
+
+              <div class="row mb-3">
+                <div class="col-md-6">
+                  <label for="{{ form.cultura.id_for_label }}" class="form-label">
+                    <i class="bi bi-leaf"></i> Cultura *
+                  </label>
+                  {{ form.cultura }}
+                  {% if form.cultura.errors %}
+                    <div class="invalid-feedback d-block">{{ form.cultura.errors.0 }}</div>
+                  {% endif %}
+                  <small class="text-muted">Preenchida automaticamente do talhão</small>
+                </div>
+
+                <div class="col-md-6">
+                  <label for="{{ form.safra.id_for_label }}" class="form-label">
+                    <i class="bi bi-calendar-check"></i> Safra Ativa *
+                  </label>
+                  {{ form.safra }}
+                  {% if form.safra.errors %}
+                    <div class="invalid-feedback d-block">{{ form.safra.errors.0 }}</div>
+                  {% endif %}
+                  <small class="text-muted">Selecione a safra em andamento</small>
+                </div>
+              </div>
+
+              <div class="row mb-3">
+                <div class="col-md-6">
+                  <label for="{{ form.data_monitoramento.id_for_label }}" class="form-label">
+                    <i class="bi bi-calendar"></i> Data do Monitoramento *
+                  </label>
+                  {{ form.data_monitoramento }}
+                  {% if form.data_monitoramento.errors %}
+                    <div class="invalid-feedback d-block">{{ form.data_monitoramento.errors.0 }}</div>
+                  {% endif %}
+                </div>
+
+                <div class="col-md-6">
+                  <label for="{{ form.tipo_monitoramento.id_for_label }}" class="form-label">
+                    <i class="bi bi-list-check"></i> Tipo de Monitoramento *
+                  </label>
+                  {{ form.tipo_monitoramento }}
+                  {% if form.tipo_monitoramento.errors %}
+                    <div class="invalid-feedback d-block">{{ form.tipo_monitoramento.errors.0 }}</div>
+                  {% endif %}
+                  <small class="text-muted">Selecione o tipo de monitoramento</small>
+                </div>
+              </div>
+
+              <div class="row mb-3">
+                <div class="col-md-6">
+                  <label for="{{ form.responsavel.id_for_label }}" class="form-label">
+                    <i class="bi bi-person"></i> Responsável (Pragueiro) *
+                  </label>
+                  {{ form.responsavel }}
+                  {% if form.responsavel.errors %}
+                    <div class="invalid-feedback d-block">{{ form.responsavel.errors.0 }}</div>
+                  {% endif %}
+                </div>
+
+                <div class="col-md-6">
+                  <label for="{{ form.quantidade_pontos.id_for_label }}" class="form-label">
+                    <i class="bi bi-crosshair2"></i> Quantidade de Pontos *
+                  </label>
+                  {{ form.quantidade_pontos }}
+                  <small class="text-muted">Padrão: 20 pontos</small>
+                  {% if form.quantidade_pontos.errors %}
+                    <div class="invalid-feedback d-block">{{ form.quantidade_pontos.errors.0 }}</div>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+
+            <!-- Condições Climáticas -->
+            <div class="mb-4">
+              <h5 class="fw-bold text-secondary mb-3">
+                <i class="bi bi-cloud-sun"></i> Condições Climáticas
+              </h5>
+
+              <div class="row mb-3">
+                <div class="col-md-4">
+                  <label for="{{ form.temperatura_media.id_for_label }}" class="form-label">
+                    Temperatura Média (°C)
+                  </label>
+                  {{ form.temperatura_media }}
+                  {% if form.temperatura_media.errors %}
+                    <div class="invalid-feedback d-block">{{ form.temperatura_media.errors.0 }}</div>
+                  {% endif %}
+                </div>
+
+                <div class="col-md-4">
+                  <label for="{{ form.umidade_media.id_for_label }}" class="form-label">
+                    Umidade Média (%)
+                  </label>
+                  {{ form.umidade_media }}
+                  {% if form.umidade_media.errors %}
+                    <div class="invalid-feedback d-block">{{ form.umidade_media.errors.0 }}</div>
+                  {% endif %}
+                </div>
+
+                <div class="col-md-4">
+                  <label for="{{ form.velocidade_vento_media.id_for_label }}" class="form-label">
+                    Velocidade do Vento (km/h)
+                  </label>
+                  {{ form.velocidade_vento_media }}
+                  {% if form.velocidade_vento_media.errors %}
+                    <div class="invalid-feedback d-block">{{ form.velocidade_vento_media.errors.0 }}</div>
+                  {% endif %}
+                </div>
+              </div>
+
+              <div class="mb-3">
+                <label for="{{ form.condicoes_tempo.id_for_label }}" class="form-label">
+                  Condições do Tempo
+                </label>
+                {{ form.condicoes_tempo }}
+                <small class="text-muted d-block mt-1">Ex: Nublado, ensolarado, chuva iminente</small>
+                {% if form.condicoes_tempo.errors %}
+                  <div class="invalid-feedback d-block">{{ form.condicoes_tempo.errors.0 }}</div>
+                {% endif %}
+              </div>
+            </div>
+
+            <!-- Observações -->
+            <div class="mb-4">
+              <label for="{{ form.observacoes_gerais.id_for_label }}" class="form-label">
+                <i class="bi bi-chat-dots"></i> Observações Gerais
+              </label>
+              {{ form.observacoes_gerais }}
+              {% if form.observacoes_gerais.errors %}
+                <div class="invalid-feedback d-block">{{ form.observacoes_gerais.errors.0 }}</div>
+              {% endif %}
+            </div>
+
+            <!-- Botões -->
+            <div class="d-flex gap-2 justify-content-end">
+              <a href="{% url 'cadastros:monitoramento_mip_list' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-x-circle"></i> Cancelar
+              </a>
+              <button type="submit" class="btn btn-success">
+                <i class="bi bi-check-circle"></i> {% if form.instance.pk %}Atualizar{% else %}Criar{% endif %} Monitoramento
+              </button>
+            </div>
+
+          </form>
+
+        </div>
+      </div>
+
+      <!-- Ajuda -->
+      <div class="alert alert-info mt-4" role="alert">
+        <i class="bi bi-lightbulb"></i> <strong>Dica:</strong> 
+        Preencha as informações básicas e condições climáticas. Após criar o monitoramento, 
+        você poderá adicionar as pragas detectadas e registrar os pontos de amostragem.
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Adicionar estilos personalizados para o formulário -->
+<!-- Adicionar estilos personalizados para o formulário -->
+<style>
+  .form-select, .form-control {
+    border-radius: 0.5rem;
+    border: 1px solid #dee2e6;
+  }
+
+  .form-select:focus, .form-control:focus {
+    border-color: #80bdff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+  }
+
+  .talhao-result-item {
+    padding: 12px;
+    border-bottom: 1px solid #ddd;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+  
+  .talhao-result-item:hover {
+    background-color: #f0f0f0;
+  }
+  
+  .talhao-codigo {
+    font-weight: bold;
+    color: #0066cc;
+    margin-right: 10px;
+  }
+  
+  .talhao-nome {
+    color: #333;
+  }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  console.log('🔍 Iniciando script de monitoramento MIP...');
+  
+  const searchInput = document.getElementById('id_talhao_search');
+  const talhaoSelect = document.getElementById('id_talhao');
+  const culturaSelect = document.getElementById('id_cultura');
+  const safraSelect = document.getElementById('id_safra');
+  const resultsDiv = document.getElementById('talhao_results');
+  
+  console.log('🔹 Elementos encontrados:', {
+    searchInput: !!searchInput,
+    talhaoSelect: !!talhaoSelect,
+    culturaSelect: !!culturaSelect,
+    safraSelect: !!safraSelect,
+    resultsDiv: !!resultsDiv
+  });
+  
+  if (!searchInput || !talhaoSelect) {
+    console.error('❌ Elementos críticos do formulário não encontrados!');
+    return;
+  }
+  
+  // ================================================================
+  // PREENCHER CULTURA E SAFRA AUTOMATICAMENTE
+  // ================================================================
+  function preencherCulturaESafra(talhao) {
+    console.log('📝 Preenchendo dados do talhão:', talhao);
+    
+    // Preencher cultura
+    if (culturaSelect && talhao.cultura_id) {
+      console.log(`Tentando preencher cultura com ID: ${talhao.cultura_id}`);
+      culturaSelect.value = talhao.cultura_id;
+      culturaSelect.dispatchEvent(new Event('change'));
+      console.log(`✅ Cultura preenchida: ${talhao.cultura_nome}`);
+    } else {
+      console.warn('⚠️ Não foi possível preencher cultura', {
+        culturaSelectExists: !!culturaSelect,
+        cultureId: talhao.cultura_id
+      });
+    }
+    
+    // Preencher safra automaticamente
+    if (safraSelect && talhao.safras_ativas) {
+      console.log(`Safras ativas encontradas: ${talhao.safras_ativas.length}`);
+      if (talhao.safras_ativas.length === 1) {
+        // Se houver apenas uma safra ativa, preencher automaticamente
+        const safra = talhao.safras_ativas[0];
+        safraSelect.value = safra.id;
+        safraSelect.dispatchEvent(new Event('change'));
+        console.log(`✅ Safra preenchida automaticamente: ${safra.nome}`);
+        mostraNotificacaoSafra(`Safra selecionada: ${safra.nome}`, 'success');
+      } else if (talhao.safras_ativas.length > 1) {
+        console.warn('⚠️ Múltiplas safras ativas encontradas');
+        mostraNotificacaoSafra(
+          `Aviso: Este talhão possui ${talhao.safras_ativas.length} safras ativas. Selecione a correta.`,
+          'warning'
+        );
+      } else {
+        console.warn('⚠️ Nenhuma safra ativa encontrada para este talhão');
+        mostraNotificacaoSafra('Aviso: Este talhão não possui safras ativas', 'warning');
+      }
+    }
+  }
+  
+  // Função helper para mostrar notificação de safra
+  function mostraNotificacaoSafra(mensagem, tipo) {
+    const alertClass = tipo === 'success' ? 'alert-success' : 'alert-warning';
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert ${alertClass} alert-dismissible fade show mt-2`;
+    alertDiv.role = 'alert';
+    alertDiv.innerHTML = `
+      <i class="bi bi-info-circle"></i> ${mensagem}
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    const form = document.querySelector('form');
+    if (form) {
+      form.insertAdjacentElement('afterbegin', alertDiv);
+      setTimeout(() => alertDiv.remove(), 5000);
+    }
+  }
+  
+  // ================================================================
+  // BUSCA DE TALHÕES COM DEBOUNCE
+  // ================================================================
+  let timeoutId;
+  
+  searchInput.addEventListener('keyup', function() {
+    clearTimeout(timeoutId);
+    const termo = this.value.trim();
+    
+    if (termo.length < 1) {
+      resultsDiv.style.display = 'none';
+      resultsDiv.innerHTML = '';
+      return;
+    }
+    
+    console.log(`🔎 Buscando talhões com termo: "${termo}"`);
+    
+    timeoutId = setTimeout(() => {
+      fetch(`/cadastros/ajax/buscar-talhoes/?q=${encodeURIComponent(termo)}`)
+        .then(response => response.json())
+        .then(data => {
+          console.log('📦 Resposta AJAX recebida:', data);
+          resultsDiv.innerHTML = '';
+          
+          if (!data.talhoes || data.talhoes.length === 0) {
+            resultsDiv.innerHTML = '<div class="p-3 text-muted">Nenhum talhão encontrado</div>';
+            resultsDiv.style.display = 'block';
+            return;
+          }
+          
+          console.log(`✅ ${data.talhoes.length} talhão(ões) encontrado(s)`);
+          
+          data.talhoes.forEach(talhao => {
+            const item = document.createElement('div');
+            item.className = 'talhao-result-item border bg-white';
+            
+            const culturaBadge = talhao.cultura_nome 
+              ? `<span class="badge bg-info ms-2"><i class="bi bi-leaf"></i> ${talhao.cultura_nome}</span>` 
+              : '<span class="badge bg-secondary ms-2">Sem cultura</span>';
+            
+            // Mostrar status de safra
+            let safraInfo = '';
+            if (talhao.safras_ativas && talhao.safras_ativas.length > 0) {
+              safraInfo = `<span class="badge bg-success ms-1"><i class="bi bi-calendar-check"></i> ${talhao.safras_ativas.length} safra(s) ativa(s)</span>`;
+            } else {
+              safraInfo = '<span class="badge bg-danger ms-1"><i class="bi bi-exclamation-circle"></i> Sem safra ativa</span>';
+            }
+            
+            item.innerHTML = `
+              <span class="talhao-codigo">${talhao.codigo}</span>
+              <span class="talhao-nome">${talhao.simples}</span>
+              ${culturaBadge}
+              ${safraInfo}
+            `;
+            
+            item.addEventListener('click', function() {
+              console.log('🖱️ Talhão clicado:', talhao);
+              talhaoSelect.value = talhao.id;
+              searchInput.value = `${talhao.codigo} - ${talhao.simples}`;
+              
+              // Preencher cultura e safra automaticamente
+              preencherCulturaESafra(talhao);
+              
+              resultsDiv.style.display = 'none';
+              resultsDiv.innerHTML = '';
+              
+              talhaoSelect.dispatchEvent(new Event('change'));
+            });
+            
+            resultsDiv.appendChild(item);
+          });
+          
+          resultsDiv.style.display = 'block';
+        })
+        .catch(error => {
+          console.error('❌ Erro ao buscar talhões:', error);
+          resultsDiv.innerHTML = '<div class="p-3 text-danger">Erro ao buscar talhões</div>';
+          resultsDiv.style.display = 'block';
+        });
+    }, 300);
+  });
+  
+  // Fechar resultados ao clicar fora
+  document.addEventListener('click', function(event) {
+    if (!event.target.closest('#id_talhao_search') && !event.target.closest('#talhao_results')) {
+      resultsDiv.style.display = 'none';
+    }
+  });
+  
+  // ================================================================
+  // SELEÇÃO DIRETA DO DROPDOWN
+  // ================================================================
+  talhaoSelect.addEventListener('change', function() {
+    console.log('📋 Dropdown de talhão alterado:', this.value);
+    
+    if (this.value) {
+      const selectedOption = this.options[this.selectedIndex];
+      const talhaoId = this.value;
+      searchInput.value = selectedOption.text;
+      
+      console.log(`📡 Buscando dados do talhão ID: ${talhaoId} via AJAX...`);
+      
+      // Buscar dados completos do talhão para preencher safra e cultura
+      fetch(`/cadastros/ajax/buscar-talhoes/?q=${encodeURIComponent(selectedOption.text)}`)
+        .then(response => response.json())
+        .then(data => {
+          console.log('📦 Resposta AJAX do dropdown:', data);
+          if (data.talhoes && data.talhoes.length > 0) {
+            const talhaoData = data.talhoes.find(t => t.id == talhaoId);
+            if (talhaoData) {
+              console.log('✅ Dados do talhão encontrados:', talhaoData);
+              preencherCulturaESafra(talhaoData);
+            } else {
+              console.warn('⚠️ Talhão não encontrado na resposta', { talhaoId, ids: data.talhoes.map(t => t.id) });
+            }
+          }
+        })
+        .catch(error => console.error('❌ Erro ao buscar dados do talhão:', error));
+    }
+  });
+  
+  console.log('✅ Script de monitoramento MIP carregado com sucesso!');
+});
+</script>
+
+{% include 'cadastros/monitoramento_mip/_help_modals.html' %}
+
+{% endblock %}

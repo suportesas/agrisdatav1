@@ -1,0 +1,251 @@
+﻿{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ navio.nome }} - Navio{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Melhorar visibilidade das abas não selecionadas */
+    .nav-tabs .nav-link {
+        color: #495057 !important;
+        font-weight: 600;
+        border-color: #dee2e6;
+        transition: all 0.3s ease;
+    }
+    
+    .nav-tabs .nav-link:hover {
+        color: #212529 !important;
+        background-color: #f8f9fa;
+        border-color: #dee2e6;
+    }
+    
+    .nav-tabs .nav-link.active {
+        color: #f8f9fa !important;
+        font-weight: 700 !important;
+        background-color: #0d6efd !important;
+        border-radius: 5px 5px 0 0;
+        border-color: #0d6efd !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1 class="mb-1">
+                <i class="bi bi-sailboat"></i> {{ navio.nome }}
+            </h1>
+            <p class="text-muted mb-0">Código: <span class="badge bg-info">{{ navio.codigo }}</span></p>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{% url 'cadastros:navio_update' navio.id %}" class="btn btn-warning btn-sm">
+                <i class="bi bi-pencil"></i> Editar
+            </a>
+            <a href="{% url 'cadastros:navio_delete' navio.id %}" class="btn btn-danger btn-sm">
+                <i class="bi bi-trash"></i> Deletar
+            </a>
+            <a href="{% url 'cadastros:navio_list' %}" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-arrow-left"></i> Voltar
+            </a>
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <ul class="nav nav-tabs mb-4" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="info-tab" data-bs-toggle="tab" data-bs-target="#info" type="button" role="tab" aria-controls="info" aria-selected="true">
+                <i class="bi bi-info-circle"></i> Informações
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="portos-tab" data-bs-toggle="tab" data-bs-target="#portos" type="button" role="tab" aria-controls="portos" aria-selected="false">
+                <i class="bi bi-water"></i> Portos ({{ navio.portos_operacao.count }})
+            </button>
+        </li>
+    </ul>
+
+    <!-- Tab Content -->
+    <div class="tab-content">
+        <!-- Informações -->
+        <div class="tab-pane fade show active" id="info" role="tabpanel" aria-labelledby="info-tab">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card mb-3">
+                        <div class="card-header bg-light">
+                            <h5 class="mb-0"><i class="bi bi-clipboard-data"></i> Identificação</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <strong>Nome:</strong><br>
+                                {{ navio.nome }}
+                            </div>
+                            <div class="mb-3">
+                                <strong>Código:</strong><br>
+                                <span class="badge bg-info">{{ navio.codigo }}</span>
+                            </div>
+                            <div class="mb-3">
+                                <strong>IMO:</strong><br>
+                                {{ navio.imo|default:"Não informado" }}
+                            </div>
+                            <div class="mb-3">
+                                <strong>Bandeira:</strong><br>
+                                {{ navio.bandeira|default:"Não informado" }}
+                            </div>
+                            <div class="mb-3">
+                                <strong>Ano de Construção:</strong><br>
+                                {{ navio.ano_construcao|default:"Não informado" }}
+                            </div>
+                            <div class="mb-0">
+                                <strong>Status:</strong><br>
+                                {% if navio.status == 'ATIVO' %}
+                                <span class="badge bg-success">Ativo</span>
+                                {% elif navio.status == 'INATIVO' %}
+                                <span class="badge bg-danger">Inativo</span>
+                                {% elif navio.status == 'MANUTENCAO' %}
+                                <span class="badge bg-warning">Manutenção</span>
+                                {% else %}
+                                <span class="badge bg-dark">Descarte</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="card mb-3">
+                        <div class="card-header bg-light">
+                            <h5 class="mb-0"><i class="bi bi-boxes"></i> Especificações</h5>
+                        </div>
+                        <div class="card-body">
+                            {% if navio.tipo %}
+                            <div class="mb-3">
+                                <strong>Tipo de Navio:</strong><br>
+                                <span class="badge bg-secondary">{{ navio.get_tipo_display }}</span>
+                            </div>
+                            {% endif %}
+
+                            {% if navio.capacidade_containers %}
+                            <div class="mb-3">
+                                <strong>Capacidade (TEU):</strong><br>
+                                {{ navio.capacidade_containers }} TEU
+                            </div>
+                            {% endif %}
+
+                            {% if navio.capacidade_toneladas %}
+                            <div class="mb-3">
+                                <strong>Capacidade (Toneladas):</strong><br>
+                                {{ navio.capacidade_toneladas }} ton
+                            </div>
+                            {% endif %}
+
+                            {% if navio.comprimento_metros %}
+                            <div class="mb-3">
+                                <strong>Comprimento:</strong><br>
+                                {{ navio.comprimento_metros }} metros
+                            </div>
+                            {% endif %}
+
+                            {% if navio.velocidade_media_nos %}
+                            <div class="mb-0">
+                                <strong>Velocidade Média:</strong><br>
+                                {{ navio.velocidade_media_nos }} nós
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header bg-light">
+                            <h5 class="mb-0"><i class="bi bi-ship"></i> Armador</h5>
+                        </div>
+                        <div class="card-body">
+                            {% if navio.armador %}
+                            <p class="mb-0">
+                                <strong>{{ navio.armador.nome }}</strong><br>
+                                <small class="text-muted">{{ navio.armador.pais }}</small><br>
+                                <a href="{% url 'cadastros:armador_detail' navio.armador.id %}" class="btn btn-sm btn-outline-primary mt-2">
+                                    <i class="bi bi-arrow-right"></i> Ver Armador
+                                </a>
+                            </p>
+                            {% else %}
+                            <p class="mb-0 text-muted">Navio sem armador associado</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header bg-light">
+                            <h5 class="mb-0"><i class="bi bi-toggle-on"></i> Status</h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="mb-2"><strong>Ativo no Sistema:</strong></p>
+                            {% if navio.ativo %}
+                            <span class="badge bg-success">Sim</span>
+                            {% else %}
+                            <span class="badge bg-danger">Não</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Portos -->
+        <div class="tab-pane fade" id="portos" role="tabpanel" aria-labelledby="portos-tab">
+            {% if navio.portos_operacao.all %}
+            <div class="row">
+                {% for porto in navio.portos_operacao.all %}
+                <div class="col-md-6 mb-3">
+                    <div class="card">
+                        <div class="card-body">
+                            <h6 class="card-title">
+                                <i class="bi bi-water"></i> {{ porto.nome }}
+                            </h6>
+                            <p class="card-text small mb-2">
+                                <strong>Código:</strong> <span class="badge bg-info">{{ porto.codigo }}</span><br>
+                                <strong>País:</strong> {{ porto.pais }}<br>
+                                <strong>UF:</strong> {{ porto.uf|default:"-" }}
+                            </p>
+                            <a href="{% url 'cadastros:porto_detail' porto.id %}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-eye"></i> Ver
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle"></i> Nenhum porto associado a este navio.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Auditoria -->
+    <div class="card mt-4">
+        <div class="card-header bg-light">
+            <h5 class="mb-0"><i class="bi bi-info-circle"></i> Auditoria</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <strong>Criado em:</strong> {{ navio.data_criacao|date:"d/m/Y H:i" }}
+                </div>
+                <div class="col-md-6">
+                    <strong>Última Atualização:</strong> {{ navio.data_atualizacao|date:"d/m/Y H:i" }}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

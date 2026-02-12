@@ -4,6 +4,8 @@ URLs do módulo Fazendas/Cadastros
 
 from django.urls import path
 from . import views
+from . import views_motorista
+from . import views_monitoramento_mip
 
 app_name = 'cadastros'
 
@@ -46,6 +48,7 @@ urlpatterns = [
     path('funcoes/', views.funcao_list, name='funcao_list'),
     path('funcoes/novo/', views.funcao_create, name='funcao_create'),
     path('funcoes/criar-ajax/', views.funcao_create_ajax, name='funcao_create_ajax'),
+    path('funcoes/get-salario/', views.funcao_get_salario, name='funcao_get_salario'),
     path('funcoes/<int:pk>/editar/', views.funcao_update, name='funcao_update'),
     path('funcoes/<int:pk>/excluir/', views.funcao_delete, name='funcao_delete'),
     
@@ -129,8 +132,11 @@ urlpatterns = [
     path('fornecedores/', views.fornecedor_list, name='fornecedor_list'),
     path('fornecedores/novo/', views.fornecedor_create, name='fornecedor_create'),
     path('fornecedores/<int:pk>/', views.fornecedor_detail, name='fornecedor_detail'),
+    path('fornecedores/<int:pk>/pdf/', views.fornecedor_pdf, name='fornecedor_pdf'),
     path('fornecedores/<int:pk>/editar/', views.fornecedor_update, name='fornecedor_update'),
     path('fornecedores/<int:pk>/excluir/', views.fornecedor_delete, name='fornecedor_delete'),
+    path('fornecedores/relatorio/', views.relatorio_fornecedor, name='relatorio_fornecedor'),
+    path('fornecedores/relatorio-ranking/', views.relatorio_fornecedor_ranking, name='relatorio_fornecedor_ranking'),
 
     # Transportadoras
     path('transportadoras/', views.transportadora_list, name='transportadora_list'),
@@ -182,9 +188,11 @@ urlpatterns = [
     path('clientes/', views.cliente_list, name='cliente_list'),
     path('clientes/novo/', views.cliente_create, name='cliente_create'),
     path('clientes/<int:pk>/', views.cliente_detail, name='cliente_detail'),
+    path('clientes/<int:pk>/pdf/', views.cliente_pdf, name='cliente_pdf'),
     path('clientes/<int:pk>/editar/', views.cliente_update, name='cliente_update'),
     path('clientes/<int:pk>/excluir/', views.cliente_delete, name='cliente_delete'),
     path('clientes/<int:pk>/reativar/', views.cliente_activate, name='cliente_activate'),
+    path('clientes/relatorio/', views.relatorio_cliente, name='relatorio_cliente'),
 
     # AJAX endpoints
     path('moedas/novo-ajax/', views.moeda_create_ajax, name='moeda_create_ajax'),
@@ -235,5 +243,83 @@ urlpatterns = [
     path('portos/<int:pk>/', views.porto_detail, name='porto_detail'),
     path('portos/<int:pk>/editar/', views.porto_update, name='porto_update'),
     path('portos/<int:pk>/excluir/', views.porto_delete, name='porto_delete'),
+
+    # ==================== ARMADORES ====================
+    path('armadores/', views.armador_list, name='armador_list'),
+    path('armadores/create/', views.armador_create, name='armador_create'),
+    path('armadores/<int:pk>/', views.armador_detail, name='armador_detail'),
+    path('armadores/<int:pk>/edit/', views.armador_update, name='armador_update'),
+    path('armadores/<int:pk>/delete/', views.armador_delete, name='armador_delete'),
+    
+    # Armador Endereço
+    path('armadores/<int:armador_pk>/endereco/create/', views.armador_endereco_create, name='armador_endereco_create'),
+    path('armadores/<int:armador_pk>/endereco/<int:pk>/edit/', views.armador_endereco_update, name='armador_endereco_update'),
+    path('armadores/<int:armador_pk>/endereco/<int:pk>/delete/', views.armador_endereco_delete, name='armador_endereco_delete'),
+    
+    # Armador Contato
+    path('armadores/<int:armador_pk>/contato/create/', views.armador_contato_create, name='armador_contato_create'),
+    path('armadores/<int:armador_pk>/contato/<int:pk>/edit/', views.armador_contato_update, name='armador_contato_update'),
+    path('armadores/<int:armador_pk>/contato/<int:pk>/delete/', views.armador_contato_delete, name='armador_contato_delete'),
+    
+    # Armador Banco
+    path('armadores/<int:armador_pk>/banco/create/', views.armador_banco_create, name='armador_banco_create'),
+    path('armadores/<int:armador_pk>/banco/<int:pk>/edit/', views.armador_banco_update, name='armador_banco_update'),
+    path('armadores/<int:armador_pk>/banco/<int:pk>/delete/', views.armador_banco_delete, name='armador_banco_delete'),
+
+    # ==================== NAVIOS ====================
+    path('navios/', views.navio_list, name='navio_list'),
+    path('navios/create/', views.navio_create, name='navio_create'),
+    path('navios/<int:pk>/', views.navio_detail, name='navio_detail'),
+    path('navios/<int:pk>/edit/', views.navio_update, name='navio_update'),
+    path('navios/<int:pk>/delete/', views.navio_delete, name='navio_delete'),
+
+    # ==================== MOTORISTAS ====================
+    path('motoristas/', views_motorista.motorista_list, name='motorista_list'),
+    path('motoristas/criar/', views_motorista.motorista_create, name='motorista_create'),
+    path('motoristas/<int:pk>/', views_motorista.motorista_detail, name='motorista_detail'),
+    path('motoristas/<int:pk>/editar/', views_motorista.motorista_update, name='motorista_update'),
+    path('motoristas/<int:pk>/deletar/', views_motorista.motorista_delete, name='motorista_delete'),
+    
+    # Documentos do Motorista
+    path('motoristas/<int:motorista_pk>/documentos/criar/', views_motorista.motorista_documento_create, name='motorista_documento_create'),
+    path('motoristas/<int:motorista_pk>/documentos/<int:documento_pk>/deletar/', views_motorista.motorista_documento_delete, name='motorista_documento_delete'),
+    
+    # API Motorista
+    path('api/buscar-cep-motorista/', views_motorista.buscar_cep_motorista, name='buscar_cep_motorista'),
+    
+    # ==================== PRAZOS DE PAGAMENTO ====================
+    path('prazos-pagamento/', views.prazo_pagamento_list, name='prazo_pagamento_list'),
+    path('prazos-pagamento/novo/', views.prazo_pagamento_create, name='prazo_pagamento_create'),
+    path('prazos-pagamento/<int:pk>/', views.prazo_pagamento_detail, name='prazo_pagamento_detail'),
+    path('prazos-pagamento/<int:pk>/editar/', views.prazo_pagamento_update, name='prazo_pagamento_update'),
+    path('prazos-pagamento/<int:pk>/excluir/', views.prazo_pagamento_delete, name='prazo_pagamento_delete'),
+    
+    # ==================== MONITORAMENTO MIP (Manejo Integrado de Pragas) ====================
+    # Estágios de Desenvolvimento
+    path('estagios/', views_monitoramento_mip.estagio_list, name='estagio_list'),
+    path('estagios/novo/', views_monitoramento_mip.estagio_create, name='estagio_create'),
+    path('estagios/<int:pk>/editar/', views_monitoramento_mip.estagio_update, name='estagio_update'),
+    path('estagios/<int:pk>/excluir/', views_monitoramento_mip.estagio_delete, name='estagio_delete'),
+    
+    # Monitoramentos MIP
+    path('monitoramento-mip/', views_monitoramento_mip.monitoramento_mip_list, name='monitoramento_mip_list'),
+    path('monitoramento-mip/novo/', views_monitoramento_mip.monitoramento_mip_create, name='monitoramento_mip_create'),
+    path('monitoramento-mip/<int:pk>/', views_monitoramento_mip.monitoramento_mip_detail, name='monitoramento_mip_detail'),
+    path('monitoramento-mip/<int:pk>/pdf/', views_monitoramento_mip.monitoramento_mip_pdf, name='monitoramento_mip_pdf'),
+    path('monitoramento-mip/<int:pk>/adicionar-praga/', views_monitoramento_mip.monitoramento_mip_add_praga, name='monitoramento_mip_add_praga'),
+    path('monitoramento-mip/praga/<int:pk>/', views_monitoramento_mip.monitoramento_mip_praga_detail, name='monitoramento_mip_praga_detail'),
+    path('monitoramento-mip/praga/<int:pk>/adicionar-ponto/', views_monitoramento_mip.monitoramento_mip_add_ponto, name='monitoramento_mip_add_ponto'),
+    
+    # AJAX endpoints
+    path('ajax/estagios-praga/', views_monitoramento_mip.ajax_get_estagios_praga, name='ajax_get_estagios_praga'),
+    path('ajax/pragas-cultura/', views_monitoramento_mip.ajax_get_pragas_cultura, name='ajax_get_pragas_cultura'),
+    path('ajax/calcular-incidencia/', views_monitoramento_mip.ajax_calcular_incidencia, name='ajax_calcular_incidencia'),
+    
+    # Cadastro em Lote de Estágios
+    path('estagios/cadastro-lote/', views_monitoramento_mip.estagio_cadastro_em_lote, name='estagio_cadastro_em_lote'),
+    path('ajax/adicionar-estagio/', views_monitoramento_mip.ajax_adicionar_estagio, name='ajax_adicionar_estagio'),
+    path('ajax/carregar-estagios/', views_monitoramento_mip.ajax_carregar_estagios, name='ajax_carregar_estagios'),
+    path('ajax/deletar-estagio/<int:pk>/', views_monitoramento_mip.ajax_deletar_estagio, name='ajax_deletar_estagio'),
+    path('ajax/buscar-talhoes/', views_monitoramento_mip.ajax_buscar_talhoes, name='ajax_buscar_talhoes'),
 
 ]

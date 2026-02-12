@@ -2,6 +2,7 @@ import json
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
+from .forms import EmpresaLogoForm
 from django.utils import timezone
 from django.db.models import Count, Q
 from django.db.models.deletion import ProtectedError
@@ -32,6 +33,8 @@ def painel_admin(request):
         total_usuarios=Count('usuarios'),
         logins_recentes=Count('usuarios', filter=Q(usuarios__last_login__gte=seven_days_ago))
     )
+
+
 
     if q:
         empresas = empresas.filter(Q(nome__icontains=q) | Q(cnpj__icontains=q))
@@ -197,6 +200,31 @@ def minha_empresa(request):
     }
     
     return render(request, 'empresas/minha_empresa.html', context)
+
+
+@login_required
+def empresa_logo_update(request):
+    """Atualiza apenas a logo da empresa do usuario logado"""
+    if not request.user.empresa:
+        messages.warning(request, 'Nenhuma empresa vinculada a sua conta.')
+        return redirect('dashboard:index')
+
+    empresa = request.user.empresa
+
+    if request.method == 'POST':
+        form = EmpresaLogoForm(request.POST, request.FILES, instance=empresa)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Logo atualizada com sucesso.')
+            return redirect('empresas:minha_empresa')
+        messages.error(request, 'Corrija os erros do formulario.')
+    else:
+        form = EmpresaLogoForm(instance=empresa)
+
+    return render(request, 'empresas/empresa_logo_form.html', {
+        'form': form,
+        'empresa': empresa,
+    })
 
 
 @login_required

@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Deletar Motorista{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-exclamation-triangle"></i> Confirmar Exclusão
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="mb-3">
+                        Tem certeza que deseja deletar o motorista <strong>{{ motorista.nome }}</strong>?
+                    </p>
+                    <p class="text-muted mb-3">
+                        <i class="bi bi-info-circle"></i> Esta ação é irreversível.
+                    </p>
+                    
+                    <div class="alert alert-info">
+                        <strong>CPF:</strong> {{ motorista.cpf }}<br>
+                        <strong>CNH:</strong> {{ motorista.cnh }}<br>
+                        <strong>Tipo:</strong> {% if motorista.tipo == 'PROPRIO' %}Próprio{% else %}Terceirizado{% endif %}
+                    </div>
+
+                    <form method="post" class="d-flex gap-2">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger flex-grow-1">
+                            <i class="bi bi-trash"></i> Deletar
+                        </button>
+                        <a href="{% url 'cadastros:motorista_detail' motorista.id %}" class="btn btn-outline-secondary flex-grow-1">
+                            <i class="bi bi-x-circle"></i> Cancelar
+                        </a>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

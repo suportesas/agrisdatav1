@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Adicionar Documento - {{ motorista.nome }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-section {
+        margin-bottom: 2rem;
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .section-header {
+        background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);
+        color: white;
+        padding: 1rem;
+    }
+
+    .form-section-body {
+        padding: 1.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1 class="mb-1">
+                <i class="bi bi-file-earmark-text"></i> Adicionar Documento
+            </h1>
+            <p class="text-muted">Motorista: <strong>{{ motorista.nome }}</strong></p>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{% url 'cadastros:motorista_detail' motorista.id %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Voltar
+            </a>
+        </div>
+    </div>
+
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+
+        <div class="col-md-8">
+            <div class="form-section">
+                <div class="section-header">
+                    <h5 class="mb-0">Dados do Documento</h5>
+                </div>
+                <div class="form-section-body">
+                    <div class="row g-3">
+                        <div class="col-md-12">
+                            <label class="form-label fw-semibold">Tipo de Documento</label>
+                            {{ form.tipo }}
+                            {% if form.tipo.errors %}<div class="invalid-feedback d-block">{{ form.tipo.errors.0 }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Número do Documento</label>
+                            {{ form.numero }}
+                            {% if form.numero.errors %}<div class="invalid-feedback d-block">{{ form.numero.errors.0 }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Data de Emissão</label>
+                            {{ form.data_emissao }}
+                            {% if form.data_emissao.errors %}<div class="invalid-feedback d-block">{{ form.data_emissao.errors.0 }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Data de Validade</label>
+                            {{ form.data_validade }}
+                            {% if form.data_validade.errors %}<div class="invalid-feedback d-block">{{ form.data_validade.errors.0 }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-12">
+                            <label class="form-label">Arquivo</label>
+                            {{ form.arquivo }}
+                            {% if form.arquivo.errors %}<div class="invalid-feedback d-block">{{ form.arquivo.errors.0 }}</div>{% endif %}
+                            <small class="form-text text-muted d-block mt-2">
+                                <i class="bi bi-info-circle"></i> Formatos aceitos: PDF, JPG, PNG (máx 5MB)
+                            </small>
+                        </div>
+                        <div class="col-md-12">
+                            <label class="form-label">Observações</label>
+                            {{ form.observacoes }}
+                            {% if form.observacoes.errors %}<div class="invalid-feedback d-block">{{ form.observacoes.errors.0 }}</div>{% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-success">
+                    <i class="bi bi-check-circle"></i> Salvar Documento
+                </button>
+                <a href="{% url 'cadastros:motorista_detail' motorista.id %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-x-circle"></i> Cancelar
+                </a>
+            </div>
+        </div>
+    </form>
+</div>
+
+<style>
+    input[type="text"],
+    input[type="email"],
+    input[type="date"],
+    input[type="tel"],
+    input[type="file"],
+    select,
+    textarea {
+        display: block !important;
+        visibility: visible !important;
+    }
+</style>
+{% endblock %}

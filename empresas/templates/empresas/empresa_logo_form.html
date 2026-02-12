@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Atualizar Logo | {{ empresa.nome }}{% endblock %}
+{% block page_title %}Atualizar Logo{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <div class="card shadow-sm border-0 rounded-4">
+    <div class="card-body p-4">
+      <h4 class="mb-4 fw-bold text-secondary">
+        <i class="bi bi-image"></i> Atualizar Logo da Empresa
+      </h4>
+
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Logo da Empresa</label>
+          {{ form.logo }}
+          {% if form.logo.errors %}
+            <div class="text-danger small">{{ form.logo.errors|join:", " }}</div>
+          {% endif %}
+          <small class="form-text text-muted d-block mt-1">
+            Formatos aceitos: JPG, PNG. Recomendado: 300x300px.
+          </small>
+        </div>
+
+        {% if empresa.logo %}
+          <div class="mb-3">
+            <div class="text-muted mb-1">Logo atual:</div>
+            <img src="{{ empresa.logo.url }}" alt="Logo atual" style="max-height: 140px;" class="img-thumbnail">
+          </div>
+        {% endif %}
+
+        <div class="d-flex justify-content-between">
+          <a href="{% url 'empresas:minha_empresa' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Voltar
+          </a>
+          <button type="submit" class="btn btn-success px-4">
+            <i class="bi bi-check-circle"></i> Salvar Logo
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,531 @@
+{% extends 'base.html' %}
+{% block title %}{{ armador.nome }} | Armador{% endblock %}
+
+{% block extra_css %}
+<style>
+  .info-card {
+    border-left: 4px solid #0d6efd;
+    transition: all 0.3s ease;
+  }
+  .info-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+  }
+  .tab-content {
+    background: white;
+    border-radius: 0 0 10px 10px;
+    padding: 25px;
+  }
+  .nav-tabs .nav-link {
+    color: #6c757d !important;
+    font-weight: 500;
+    border-bottom: 2px solid transparent;
+    transition: all 0.3s ease;
+  }
+  .nav-tabs .nav-link:hover {
+    color: #0d6efd !important;
+  }
+  .nav-tabs .nav-link.active {
+    color: #f8f9fa !important;
+    font-weight: 700 !important;
+    border-bottom: 3px solid #0d6efd !important;
+    background-color: #0d6efd !important;
+    padding: 0.5rem 1rem;
+    border-radius: 5px 5px 0 0;
+  }
+</style>
+{% endblock %}
+
+{% block content %} 
+<div class="container py-4">
+  <nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'cadastros:armador_list' %}">Armadores</a></li>
+      <li class="breadcrumb-item active">{{ armador.nome }}</li>
+    </ol>
+  </nav>
+
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="fw-bold mb-1">
+        <i class="bi bi-ship text-primary"></i> {{ armador.nome }}
+      </h2>
+      {% if armador.nome_fantasia %}
+      <p class="text-muted mb-0">{{ armador.nome_fantasia }}</p>
+      {% endif %}
+    </div>
+    <div>
+      <a href="{% url 'cadastros:armador_update' armador.id %}" class="btn btn-warning">
+        <i class="bi bi-pencil"></i> Editar
+      </a>
+      <a href="{% url 'cadastros:armador_delete' armador.id %}" class="btn btn-danger">
+        <i class="bi bi-trash"></i> Deletar
+      </a>
+      <a href="{% url 'cadastros:armador_list' %}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Voltar
+      </a>
+    </div>
+  </div>
+
+  <!-- Cards de Informações Rápidas -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-3">
+      <div class="card info-card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="bg-info bg-opacity-10 text-info rounded-circle p-3 me-3">
+              <i class="bi bi-geo-alt fs-4"></i>
+            </div>
+            <div>
+              <h6 class="text-muted mb-0 small">Endereços</h6>
+              <h4 class="mb-0 fw-bold" id="count_enderecos">{{ armador.enderecos.count }}</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-3">
+      <div class="card info-card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="bg-success bg-opacity-10 text-success rounded-circle p-3 me-3">
+              <i class="bi bi-people fs-4"></i>
+            </div>
+            <div>
+              <h6 class="text-muted mb-0 small">Contatos</h6>
+              <h4 class="mb-0 fw-bold" id="count_contatos">{{ armador.contatos.count }}</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-3">
+      <div class="card info-card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="bg-primary bg-opacity-10 text-primary rounded-circle p-3 me-3">
+              <i class="bi bi-bank fs-4"></i>
+            </div>
+            <div>
+              <h6 class="text-muted mb-0 small">Contas Bancárias</h6>
+              <h4 class="mb-0 fw-bold" id="count_bancos">{{ armador.dados_bancarios.count }}</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-3">
+      <div class="card info-card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="bg-warning bg-opacity-10 text-warning rounded-circle p-3 me-3">
+              <i class="bi bi-sailboat fs-4"></i>
+            </div>
+            <div>
+              <h6 class="text-muted mb-0 small">Navios</h6>
+              <h4 class="mb-0 fw-bold" id="count_navios">{{ armador.navio_set.count }}</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabs de Conteúdo -->
+  <div class="card border-0 shadow-sm">
+    <div class="card-header bg-white border-0 pt-3">
+      <ul class="nav nav-tabs card-header-tabs" role="tablist">
+        <li class="nav-item">
+          <a class="nav-link active" data-bs-toggle="tab" href="#geral">
+            <i class="bi bi-info-circle"></i> Informações Gerais
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" data-bs-toggle="tab" href="#enderecos">
+            <i class="bi bi-geo-alt"></i> Endereços <span class="badge bg-info">{{ armador.enderecos.count }}</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" data-bs-toggle="tab" href="#contatos">
+            <i class="bi bi-person"></i> Contatos <span class="badge bg-info">{{ armador.contatos.count }}</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" data-bs-toggle="tab" href="#bancos">
+            <i class="bi bi-bank"></i> Contas Bancárias <span class="badge bg-info">{{ armador.dados_bancarios.count }}</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" data-bs-toggle="tab" href="#navios">
+            <i class="bi bi-sailboat"></i> Navios <span class="badge bg-info">{{ armador.navio_set.count }}</span>
+          </a>
+        </li>
+      </ul>
+    </div>
+
+    <div class="tab-content">
+      <!-- Informações Gerais -->
+      <div class="tab-pane fade show active" id="geral">
+        <div class="row">
+          <div class="col-md-6">
+            <h5 class="fw-bold mb-3 text-primary">Identidade</h5>
+            <table class="table table-borderless">
+              <tr>
+                <td class="text-muted"><strong>Código:</strong></td>
+                <td><span class="badge bg-info">{{ armador.codigo }}</span></td>
+              </tr>
+              <tr>
+                <td class="text-muted"><strong>País:</strong></td>
+                <td>{{ armador.pais }}</td>
+              </tr>
+              <tr>
+                <td class="text-muted"><strong>Status:</strong></td>
+                <td>
+                  {% if armador.ativo %}
+                  <span class="badge bg-success">Ativo</span>
+                  {% else %}
+                  <span class="badge bg-danger">Inativo</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% if armador.website %}
+              <tr>
+                <td class="text-muted"><strong>Website:</strong></td>
+                <td><a href="{{ armador.website }}" target="_blank">{{ armador.website }}</a></td>
+              </tr>
+              {% endif %}
+            </table>
+          </div>
+
+          <div class="col-md-6">
+            <h5 class="fw-bold mb-3 text-success">Contato Principal</h5>
+            <table class="table table-borderless">
+              {% if armador.email %}
+              <tr>
+                <td class="text-muted"><strong>Email:</strong></td>
+                <td><a href="mailto:{{ armador.email }}">{{ armador.email }}</a></td>
+              </tr>
+              {% endif %}
+              {% if armador.telefone %}
+              <tr>
+                <td class="text-muted"><strong>Telefone:</strong></td>
+                <td>{{ armador.telefone }}</td>
+              </tr>
+              {% endif %}
+              {% if armador.celular %}
+              <tr>
+                <td class="text-muted"><strong>Celular:</strong></td>
+                <td>{{ armador.celular }}</td>
+              </tr>
+              {% endif %}
+              {% if armador.cnpj %}
+              <tr>
+                <td class="text-muted"><strong>CNPJ:</strong></td>
+                <td>{{ armador.cnpj }}</td>
+              </tr>
+              {% endif %}
+            </table>
+          </div>
+        </div>
+
+        <div class="row mt-4" style="border-top: 1px solid #dee2e6; padding-top: 1rem;">
+          <div class="col-md-12">
+            <h5 class="fw-bold mb-3 text-secondary">Operacional</h5>
+          </div>
+          <div class="col-md-6">
+            <strong>Tipos de Navio:</strong>
+            {% if armador.tipos_navio.all %}
+            <div class="mt-2">
+              {% for tipo in armador.tipos_navio.all %}
+              <span class="badge bg-info me-2 mb-2">
+                <i class="bi bi-tag"></i> {{ tipo.nome }}
+              </span>
+              {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-muted mt-2">Nenhum tipo de navio registrado</p>
+            {% endif %}
+          </div>
+
+          <div class="col-md-6">
+            <strong>Indicadores de Desempenho (RF-808):</strong>
+            <div class="mt-2">
+              {% if armador.confiabilidade_percentual %}
+              <div class="mb-2">
+                <small class="text-muted">Confiabilidade</small>
+                <div class="progress" style="height: 20px;">
+                  <div class="progress-bar" role="progressbar" style="width: {{ armador.confiabilidade_percentual }}%" aria-valuenow="{{ armador.confiabilidade_percentual }}" aria-valuemin="0" aria-valuemax="100">
+                    {{ armador.confiabilidade_percentual }}%
+                  </div>
+                </div>
+              </div>
+              {% endif %}
+              {% if armador.percentual_rolagem_historico %}
+              <small class="text-muted">Rolagem Histórico:</small> {{ armador.percentual_rolagem_historico }}%<br>
+              {% endif %}
+              {% if armador.custo_medio_rolagem %}
+              <small class="text-muted">Custo Médio Rolagem:</small> R$ {{ armador.custo_medio_rolagem }}
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-4" style="border-top: 1px solid #dee2e6; padding-top: 1rem;">
+          <small class="text-muted">
+            <div><strong>Criado por:</strong> {{ armador.criado_por|default:'—' }}</div>
+            <div><strong>Data de criação:</strong> {{ armador.data_criacao|date:"d/m/Y H:i" }}</div>
+            <div><strong>Última atualização:</strong> {{ armador.data_atualizacao|date:"d/m/Y H:i" }}</div>
+          </small>
+        </div>
+      </div>
+
+      <!-- Endereços -->
+      <div class="tab-pane fade" id="enderecos">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="fw-bold mb-0">Endereços Cadastrados</h5>
+          <a href="{% url 'cadastros:armador_endereco_create' armador.id %}" class="btn btn-sm btn-success">
+            <i class="bi bi-plus-circle"></i> Adicionar Endereço
+          </a>
+        </div>
+
+        {% if armador.enderecos.all %}
+          <div class="row g-3">
+            {% for e in armador.enderecos.all %}
+              <div class="col-md-6">
+                <div class="card h-100">
+                  <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                      <h6 class="fw-bold text-primary mb-0">
+                        <i class="bi bi-geo-alt-fill"></i> {{ e.get_tipo_display }}
+                      </h6>
+                      {% if e.padrao %}
+                        <span class="badge bg-success">Padrão</span>
+                      {% endif %}
+                    </div>
+                    <p class="mb-1 small">{{ e.logradouro }}, {{ e.numero }}{% if e.complemento %} - {{ e.complemento }}{% endif %}<br>
+                    {{ e.bairro }}, {{ e.cidade }} - {{ e.uf }}<br>
+                    CEP: {{ e.cep }}</p>
+                    <div class="d-flex gap-2 mt-3">
+                      <a href="{% url 'cadastros:armador_endereco_update' armador.id e.id %}" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-pencil"></i> Editar
+                      </a>
+                      <a href="{% url 'cadastros:armador_endereco_delete' armador.id e.id %}" class="btn btn-sm btn-outline-danger">
+                        <i class="bi bi-trash"></i>
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i> Nenhum endereço cadastrado
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- Contatos -->
+      <div class="tab-pane fade" id="contatos">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="fw-bold mb-0">Contatos Cadastrados</h5>
+          <a href="{% url 'cadastros:armador_contato_create' armador.id %}" class="btn btn-sm btn-success">
+            <i class="bi bi-plus-circle"></i> Adicionar Contato
+          </a>
+        </div>
+
+        {% if armador.contatos.all %}
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead class="table-light">
+                <tr>
+                  <th>Nome</th>
+                  <th>Cargo</th>
+                  <th>Telefone</th>
+                  <th>Email</th>
+                  <th>Tipo</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for contato in armador.contatos.all %}
+                <tr>
+                  <td>{{ contato.nome }}</td>
+                  <td>{{ contato.cargo|default:"-" }}</td>
+                  <td>{{ contato.telefone|default:"-" }}</td>
+                  <td>{{ contato.email|default:"-" }}</td>
+                  <td>
+                    <span class="badge bg-info">{{ contato.get_tipo_display }}</span>
+                    {% if contato.preferencial %}<span class="badge bg-warning">Preferencial</span>{% endif %}
+                    {% if contato.whatsapp %}<span class="badge bg-success">WhatsApp</span>{% endif %}
+                  </td>
+                  <td>
+                    <div class="btn-group btn-group-sm" role="group">
+                      <a href="{% url 'cadastros:armador_contato_update' armador.id contato.id %}" class="btn btn-outline-primary">
+                        <i class="bi bi-pencil"></i>
+                      </a>
+                      <a href="{% url 'cadastros:armador_contato_delete' armador.id contato.id %}" class="btn btn-outline-danger">
+                        <i class="bi bi-trash"></i>
+                      </a>
+                    </div>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i> Nenhum contato cadastrado
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- Contas Bancárias -->
+      <div class="tab-pane fade" id="bancos">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="fw-bold mb-0">Contas Bancárias Cadastradas</h5>
+          <a href="{% url 'cadastros:armador_banco_create' armador.id %}" class="btn btn-sm btn-success">
+            <i class="bi bi-plus-circle"></i> Adicionar Conta Bancária
+          </a>
+        </div>
+
+        {% if armador.dados_bancarios.all %}
+          <div class="row g-3">
+            {% for banco in armador.dados_bancarios.all %}
+              <div class="col-md-6">
+                <div class="card h-100">
+                  <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                      <h6 class="fw-bold text-primary mb-0">
+                        <i class="bi bi-bank"></i> {{ banco.get_tipo_conta_display }}
+                      </h6>
+                      {% if banco.padrao %}
+                        <span class="badge bg-success">Padrão</span>
+                      {% endif %}
+                    </div>
+                    <table class="table table-sm table-borderless mb-2">
+                      <tr>
+                        <td class="text-muted small"><strong>Banco:</strong></td>
+                        <td class="small">{{ banco.nome_banco }} ({{ banco.codigo_banco }})</td>
+                      </tr>
+                      <tr>
+                        <td class="text-muted small"><strong>Agência:</strong></td>
+                        <td class="small">{{ banco.agencia }}{% if banco.agencia_dv %}-{{ banco.agencia_dv }}{% endif %}</td>
+                      </tr>
+                      <tr>
+                        <td class="text-muted small"><strong>Conta:</strong></td>
+                        <td class="small">{{ banco.conta }}{% if banco.conta_dv %}-{{ banco.conta_dv }}{% endif %}</td>
+                      </tr>
+                      <tr>
+                        <td class="text-muted small"><strong>Titular:</strong></td>
+                        <td class="small">{{ banco.nome_titular }}</td>
+                      </tr>
+                    </table>
+                    {% if banco.chave_pix %}
+                    <div class="alert alert-info py-2 mb-2 small">
+                      <strong><i class="bi bi-qr-code"></i> Chave PIX ({{ banco.get_tipo_pix_display }}):</strong>
+                      <br>{{ banco.chave_pix }}
+                    </div>
+                    {% endif %}
+                    <div class="d-flex gap-2 mt-3">
+                      <a href="{% url 'cadastros:armador_banco_update' armador.id banco.id %}" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-pencil"></i> Editar
+                      </a>
+                      <a href="{% url 'cadastros:armador_banco_delete' armador.id banco.id %}" class="btn btn-sm btn-outline-danger">
+                        <i class="bi bi-trash"></i>
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i> Nenhuma conta bancária cadastrada
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- Navios -->
+      <div class="tab-pane fade" id="navios">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="fw-bold mb-0">Navios Cadastrados</h5>
+          <a href="{% url 'cadastros:navio_create' %}" class="btn btn-sm btn-success">
+            <i class="bi bi-plus-circle"></i> Novo Navio
+          </a>
+        </div>
+
+        {% if armador.navio_set.all %}
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead class="table-light">
+                <tr>
+                  <th>Código</th>
+                  <th>Nome</th>
+                  <th>Tipo</th>
+                  <th>Capacidade</th>
+                  <th>Status</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for navio in armador.navio_set.all %}
+                <tr>
+                  <td><span class="badge bg-info">{{ navio.codigo }}</span></td>
+                  <td>{{ navio.nome }}</td>
+                  <td><span class="badge bg-secondary">{{ navio.get_tipo_display }}</span></td>
+                  <td>
+                    {% if navio.capacidade_containers %}
+                    {{ navio.capacidade_containers }} TEU
+                    {% elif navio.capacidade_toneladas %}
+                    {{ navio.capacidade_toneladas }} ton
+                    {% else %}
+                    -
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if navio.status == 'ATIVO' %}
+                    <span class="badge bg-success">Ativo</span>
+                    {% elif navio.status == 'INATIVO' %}
+                    <span class="badge bg-danger">Inativo</span>
+                    {% elif navio.status == 'MANUTENCAO' %}
+                    <span class="badge bg-warning">Manutenção</span>
+                    {% else %}
+                    <span class="badge bg-dark">Descarte</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    <div class="btn-group btn-group-sm" role="group">
+                      <a href="{% url 'cadastros:navio_detail' navio.id %}" class="btn btn-outline-primary">
+                        <i class="bi bi-eye"></i>
+                      </a>
+                      <a href="{% url 'cadastros:navio_update' navio.id %}" class="btn btn-outline-warning">
+                        <i class="bi bi-pencil"></i>
+                      </a>
+                      <a href="{% url 'cadastros:navio_delete' navio.id %}" class="btn btn-outline-danger">
+                        <i class="bi bi-trash"></i>
+                      </a>
+                    </div>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i> Nenhum navio cadastrado para este armador
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,415 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Detalhes da Praga | ERP Agrícola{% endblock %}
+{% block page_title %}
+  <div class="d-flex align-items-center gap-2">
+    <span>Detalhes da Praga: {{ praga_monitoramento.praga.nome_comum }}</span>
+    <button type="button" class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#helpPragaForm" title="Ajuda">
+      <i class="bi bi-question-circle"></i>
+    </button>
+  </div>
+{% endblock %}
+
+{% block extra_css %}
+<!-- Leaflet CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.css" />
+<style>
+  #mapa-pontos {
+    width: 100%;
+    height: 400px;
+    border-radius: 8px;
+    margin-top: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+  <div class="row">
+    <div class="col-lg-12">
+      
+      <!-- Breadcrumb -->
+      <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item"><a href="{% url 'cadastros:monitoramento_mip_list' %}">Monitoramentos</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'cadastros:monitoramento_mip_detail' praga_monitoramento.monitoramento.pk %}">{{ praga_monitoramento.monitoramento.numero }}</a></li>
+          <li class="breadcrumb-item active">{{ praga_monitoramento.praga.nome_comum }}</li>
+        </ol>
+      </nav>
+
+      <!-- Header com Informações da Praga -->
+      <div class="card shadow-sm border-0 rounded-4 mb-4">
+        <div class="card-body p-4">
+          <div class="row align-items-center">
+            <div class="col">
+              <h3 class="mb-0">
+                <i class="bi bi-bug"></i> {{ praga_monitoramento.praga.nome_comum }}
+              </h3>
+              <p class="text-muted mb-0">{{ praga_monitoramento.praga.nome_cientifico }}</p>
+            </div>
+            <div class="col-auto">
+              <span class="badge bg-{% if praga_monitoramento.ned_atingido %}danger{% else %}warning{% endif %} fs-6">
+                {% if praga_monitoramento.ned_atingido %}
+                  <i class="bi bi-exclamation-triangle-fill"></i> NED ATINGIDO
+                {% else %}
+                  <i class="bi bi-check-circle"></i> MONITORAR
+                {% endif %}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Grid de Informações -->
+      <div class="row mb-4">
+        <!-- Métricas Principais -->
+        <div class="col-md-3 mb-3">
+          <div class="card shadow-sm border-0 rounded-4 h-100">
+            <div class="card-body">
+              <p class="text-muted mb-1"><small>INCIDÊNCIA</small></p>
+              <h4 class="mb-0">{{ praga_monitoramento.incidencia_percentual|floatformat:1 }}%</h4>
+              <p class="text-muted mb-0"><small>{{ praga_monitoramento.quantidade_pontos_com_praga }}/{{ praga_monitoramento.monitoramento.quantidade_pontos }} pontos</small></p>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-3 mb-3">
+          <div class="card shadow-sm border-0 rounded-4 h-100">
+            <div class="card-body">
+              <p class="text-muted mb-1"><small>SEVERIDADE</small></p>
+              <h4 class="mb-0">
+                {% if praga_monitoramento.severidade == 1 %}
+                  <i class="bi bi-emoji-smile text-success"></i>
+                {% elif praga_monitoramento.severidade == 2 %}
+                  <i class="bi bi-emoji-neutral text-info"></i>
+                {% elif praga_monitoramento.severidade == 3 %}
+                  <i class="bi bi-emoji-frown text-warning"></i>
+                {% elif praga_monitoramento.severidade == 4 %}
+                  <i class="bi bi-exclamation-triangle text-danger"></i>
+                {% elif praga_monitoramento.severidade == 5 %}
+                  <i class="bi bi-exclamation-triangle-fill text-danger"></i>
+                {% endif %}
+                Nível {{ praga_monitoramento.severidade }}
+              </h4>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-3 mb-3">
+          <div class="card shadow-sm border-0 rounded-4 h-100">
+            <div class="card-body">
+              <p class="text-muted mb-1"><small>NED</small></p>
+              <h4 class="mb-0">{{ praga_monitoramento.ned_valor|floatformat:1 }}%</h4>
+              <p class="text-muted mb-0">
+                <small>
+                  {% if praga_monitoramento.incidencia_percentual >= praga_monitoramento.ned_valor %}
+                    <i class="bi bi-check-lg text-danger"></i> Atingido
+                  {% else %}
+                    <i class="bi bi-dash-circle text-success"></i> Não atingido
+                  {% endif %}
+                </small>
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-3 mb-3">
+          <div class="card shadow-sm border-0 rounded-4 h-100">
+            <div class="card-body">
+              <p class="text-muted mb-1"><small>AÇÃO RECOMENDADA</small></p>
+              <h5 class="mb-0">
+                {% if praga_monitoramento.resultado_acao == 'RECOMENDA_DEFENSIVO' %}
+                  <span class="badge bg-danger"><i class="bi bi-shield-exclamation"></i> Defensivo</span>
+                {% elif praga_monitoramento.resultado_acao == 'MONITORAR' %}
+                  <span class="badge bg-warning"><i class="bi bi-binoculars"></i> Monitorar</span>
+                {% else %}
+                  <span class="badge bg-success"><i class="bi bi-check-circle"></i> Sem Ação</span>
+                {% endif %}
+              </h5>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Estágio Principal e Detalhes -->
+      <div class="row mb-4">
+        <div class="col-md-6">
+          <div class="card shadow-sm border-0 rounded-4">
+            <div class="card-header bg-info text-white">
+              <h6 class="mb-0"><i class="bi bi-diagram-3"></i> Estágio Principal</h6>
+            </div>
+            <div class="card-body">
+              {% if praga_monitoramento.estagio_principal %}
+                <p class="mb-0">
+                  <strong>{{ praga_monitoramento.estagio_principal.get_tipo_estagio_display }}</strong><br>
+                  <small class="text-muted">{{ praga_monitoramento.estagio_principal.observacoes }}</small>
+                </p>
+              {% else %}
+                <p class="text-muted mb-0">Não informado</p>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <div class="card shadow-sm border-0 rounded-4">
+            <div class="card-header bg-success text-white">
+              <h6 class="mb-0"><i class="bi bi-layers-fill"></i> Detalhes de Estágios</h6>
+            </div>
+            <div class="card-body">
+              {% if praga_monitoramento.detalhes_estagios %}
+                <div class="row g-2">
+                  {% for estagio, quantidade in praga_monitoramento.detalhes_estagios.items %}
+                    {% if quantidade > 0 %}
+                      <div class="col-auto">
+                        <span class="badge bg-secondary">{{ estagio }}: {{ quantidade }}</span>
+                      </div>
+                    {% endif %}
+                  {% endfor %}
+                </div>
+              {% else %}
+                <p class="text-muted mb-0">Não informado</p>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Grid de Pontos de Amostragem (20 pontos) -->
+      <div class="card shadow-sm border-0 rounded-4 mb-4">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+          <h5 class="mb-0">
+            <i class="bi bi-crosshair2"></i> Pontos de Amostragem ({{ pontos|length }}/{{ praga_monitoramento.monitoramento.quantidade_pontos }})
+          </h5>
+          {% if pontos|length < praga_monitoramento.monitoramento.quantidade_pontos %}
+            <a href="{% url 'cadastros:monitoramento_mip_add_ponto' praga_monitoramento.pk %}" class="btn btn-light btn-sm">
+              <i class="bi bi-plus-circle"></i> Adicionar Ponto
+            </a>
+          {% endif %}
+        </div>
+
+        {% if pontos %}
+          <!-- Mapa com Leaflet (se houver coordenadas) -->
+          {% if pontos|length > 0 %}
+            <div class="card-body">
+              <h6><i class="bi bi-geo-alt"></i> Mapa de Localização dos Pontos</h6>
+              <div id="mapa-pontos"></div>
+            </div>
+          {% endif %}
+        {% endif %}
+
+        <div class="card-body p-4">
+          {% if pontos %}
+            <div class="grid-pontos">
+              <div class="row g-3">
+                {% for ponto in pontos %}
+                  <div class="col-md-6 col-lg-4">
+                    <div class="card border-{% if ponto.praga_presente %}danger{% else %}success{% endif %} h-100">
+                      <div class="card-header bg-{% if ponto.praga_presente %}danger{% else %}success{% endif %} text-white">
+                        <div class="d-flex justify-content-between align-items-center">
+                          <h6 class="mb-0">Ponto {{ ponto.numero_ponto }}</h6>
+                          {% if ponto.praga_presente %}
+                            <span class="badge bg-white text-danger">Presente</span>
+                          {% else %}
+                            <span class="badge bg-white text-success">Ausente</span>
+                          {% endif %}
+                        </div>
+                      </div>
+                      <div class="card-body">
+                        {% if ponto.praga_presente %}
+                          <p class="mb-2">
+                            <strong>Quantidade:</strong> {{ ponto.quantidade }}
+                          </p>
+                          <p class="mb-2">
+                            <strong>Estágio:</strong> 
+                            {% if ponto.estagio %}
+                              {{ ponto.estagio.get_tipo_estagio_display }}
+                            {% else %}
+                              <span class="text-muted">-</span>
+                            {% endif %}
+                          </p>
+                          <p class="mb-2">
+                            <strong>Severidade:</strong>
+                            {% if ponto.severidade %}
+                              Nível {{ ponto.severidade }}
+                            {% else %}
+                              <span class="text-muted">-</span>
+                            {% endif %}
+                          </p>
+                          {% if ponto.latitude and ponto.longitude %}
+                            <p class="mb-2">
+                              <strong>GPS:</strong> 
+                              <small>{{ ponto.latitude }}, {{ ponto.longitude }}</small>
+                            </p>
+                          {% endif %}
+                          {% if ponto.foto %}
+                            <p class="mb-0">
+                              <strong>Foto:</strong><br>
+                              <img src="{{ ponto.foto.url }}" alt="Ponto {{ ponto.numero_ponto }}" class="img-fluid rounded mt-2" style="max-width: 200px;">
+                            </p>
+                          {% endif %}
+                        {% else %}
+                          <p class="text-muted text-center mb-0">Nenhuma praga detectada</p>
+                        {% endif %}
+                      </div>
+                      <div class="card-footer bg-light">
+                        <a href="{% url 'cadastros:monitoramento_mip_add_ponto' praga_monitoramento.pk %}?numero={{ ponto.numero_ponto }}" 
+                           class="btn btn-sm btn-outline-primary">
+                          <i class="bi bi-pencil"></i> Editar
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                {% endfor %}
+              </div>
+            </div>
+          {% else %}
+            <div class="alert alert-info text-center" role="alert">
+              <i class="bi bi-info-circle"></i> Nenhum ponto de amostragem registrado ainda.<br>
+              <a href="{% url 'cadastros:monitoramento_mip_add_ponto' praga_monitoramento.pk %}" class="alert-link">
+                Começar a adicionar pontos →
+              </a>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Resumo de Pontos -->
+      {% if pontos %}
+        <div class="row mb-4">
+          <div class="col-md-4">
+            <div class="card shadow-sm border-0 rounded-4 bg-light">
+              <div class="card-body">
+                <p class="text-muted mb-1"><small>PONTOS REGISTRADOS</small></p>
+                <h4 class="mb-0">{{ pontos|length }}/{{ praga_monitoramento.monitoramento.quantidade_pontos }}</h4>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="card shadow-sm border-0 rounded-4 bg-light">
+              <div class="card-body">
+                <p class="text-muted mb-1"><small>PONTOS COM PRAGA</small></p>
+                <h4 class="mb-0">{{ praga_monitoramento.quantidade_pontos_com_praga }}</h4>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="card shadow-sm border-0 rounded-4 bg-light">
+              <div class="card-body">
+                <p class="text-muted mb-1"><small>PONTOS SEM PRAGA</small></p>
+                <h4 class="mb-0">{{ pontos_sem_praga|length }}</h4>
+              </div>
+            </div>
+          </div>
+        </div>
+      {% endif %}
+
+      <!-- Botões de Ação -->
+      <div class="d-flex gap-2 mb-4">
+        <a href="{% url 'cadastros:monitoramento_mip_detail' praga_monitoramento.monitoramento.pk %}" 
+           class="btn btn-outline-secondary">
+          <i class="bi bi-arrow-left"></i> Voltar ao Monitoramento
+        </a>
+        {% if pontos|length < praga_monitoramento.monitoramento.quantidade_pontos %}
+          <a href="{% url 'cadastros:monitoramento_mip_add_ponto' praga_monitoramento.pk %}" 
+             class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Adicionar Próximo Ponto ({{ pontos|length|add:1 }}/{{ praga_monitoramento.monitoramento.quantidade_pontos }})
+          </a>
+        {% else %}
+          <div class="alert alert-success mb-0" role="alert">
+            <i class="bi bi-check-circle-fill"></i> Todos os {{ praga_monitoramento.monitoramento.quantidade_pontos }} pontos foram registrados!
+          </div>
+        {% endif %}
+      </div>
+
+    </div>
+  </div>
+</div>
+
+{% include 'cadastros/monitoramento_mip/_help_modals.html' %}
+
+<!-- Estilo para Grid de Pontos -->
+<style>
+  .grid-pontos .card {
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .grid-pontos .card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+  }
+  .grid-pontos .card-header {
+    padding: 1rem;
+  }
+</style>
+
+<!-- Leaflet JS -->
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Inicializar mapa se houver pontos com GPS
+  const pontos = [
+    {% for ponto in pontos %}
+      {% if ponto.latitude and ponto.longitude %}
+        {
+          numero: {{ ponto.numero_ponto }},
+          lat: {{ ponto.latitude }},
+          lng: {{ ponto.longitude }},
+          praga: {{ ponto.praga_presente|lower }},
+          severidade: {{ ponto.severidade|default:0 }}
+        },
+      {% endif %}
+    {% endfor %}
+  ];
+
+  if (pontos.length > 0 && document.getElementById('mapa-pontos')) {
+    // Calcular centro do mapa
+    const lats = pontos.map(p => p.lat);
+    const lngs = pontos.map(p => p.lng);
+    const centerLat = (Math.max(...lats) + Math.min(...lats)) / 2;
+    const centerLng = (Math.max(...lngs) + Math.min(...lngs)) / 2;
+
+    // Inicializar mapa
+    const mapa = L.map('mapa-pontos').setView([centerLat, centerLng], 14);
+
+    // Adicionar tile layer (OpenStreetMap)
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors',
+      maxZoom: 19,
+    }).addTo(mapa);
+
+    // Adicionar marcadores
+    pontos.forEach(function(ponto) {
+      const cor = ponto.praga ? '#dc3545' : '#28a745';
+      const icon = L.icon({
+        iconUrl: `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='${encodeURIComponent(cor)}'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm0-14c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6-2.69-6-6-6z'/%3E%3C/svg%3E`,
+        iconSize: [32, 32],
+        iconAnchor: [16, 32],
+        popupAnchor: [0, -32],
+      });
+
+      const popup = `
+        <div style="text-align: center;">
+          <strong>Ponto ${ponto.numero}</strong><br>
+          <span class="badge bg-${ponto.praga ? 'danger' : 'success'}">
+            ${ponto.praga ? 'Praga Presente' : 'Sem Praga'}
+          </span>
+          ${ponto.praga && ponto.severidade ? `<br>Severidade: Nível ${ponto.severidade}` : ''}
+        </div>
+      `;
+
+      L.marker([ponto.lat, ponto.lng], { icon: icon })
+        .bindPopup(popup)
+        .addTo(mapa);
+    });
+
+    // Ajustar para mostrar todos os pontos
+    if (pontos.length > 0) {
+      const bounds = L.latLngBounds(pontos.map(p => [p.lat, p.lng]));
+      mapa.fitBounds(bounds.pad(0.1));
+    }
+  }
+});
+</script>

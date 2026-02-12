@@ -1,0 +1,207 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Relatorio de Fornecedores{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+  <div class="row">
+    <div class="col-12">
+      <h2 class="mb-4">
+        <i class="bi bi-truck"></i> Relatorio de Fornecedores
+      </h2>
+
+      <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+          <h5 class="mb-0"><i class="bi bi-funnel"></i> Filtros e Configuracoes</h5>
+        </div>
+        <div class="card-body">
+          <form method="post" id="relatorio-fornecedor-form">
+            {% csrf_token %}
+
+            <div class="row">
+              <div class="col-lg-8">
+                <div class="card mb-3" style="border-left: 4px solid #0d6efd;">
+                  <div class="card-header">
+                    <h6 class="mb-0"><i class="bi bi-filter"></i> Filtros de Dados</h6>
+                  </div>
+                  <div class="card-body">
+                    <div class="mb-3">
+                      <label class="form-label"><strong>{{ form.status.label }}</strong></label>
+                      {{ form.status }}
+                      {% if form.status.errors %}
+                        <div class="text-danger small">{{ form.status.errors }}</div>
+                      {% endif %}
+                      <small class="text-muted">Deixe em "Todos" para incluir ativos e inativos</small>
+                    </div>
+                    <div class="row">
+                      <div class="col-md-6 mb-3">
+                        <label class="form-label"><strong>{{ form.cidade.label }}</strong></label>
+                        {{ form.cidade }}
+                        {% if form.cidade.errors %}
+                          <div class="text-danger small">{{ form.cidade.errors }}</div>
+                        {% endif %}
+                      </div>
+                      <div class="col-md-6 mb-3">
+                        <label class="form-label"><strong>{{ form.uf.label }}</strong></label>
+                        {{ form.uf }}
+                        {% if form.uf.errors %}
+                          <div class="text-danger small">{{ form.uf.errors }}</div>
+                        {% endif %}
+                      </div>
+                    </div>
+                    <div class="row">
+                      <div class="col-md-6 mb-3">
+                        <label class="form-label"><strong>{{ form.categoria.label }}</strong></label>
+                        {{ form.categoria }}
+                        {% if form.categoria.errors %}
+                          <div class="text-danger small">{{ form.categoria.errors }}</div>
+                        {% endif %}
+                      </div>
+                      <div class="col-md-6 mb-3">
+                        <label class="form-label"><strong>{{ form.classificacao_risco.label }}</strong></label>
+                        {{ form.classificacao_risco }}
+                        {% if form.classificacao_risco.errors %}
+                          <div class="text-danger small">{{ form.classificacao_risco.errors }}</div>
+                        {% endif %}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-lg-4">
+                <div class="card mb-3" style="border-left: 4px solid #198754;">
+                  <div class="card-header">
+                    <h6 class="mb-0"><i class="bi bi-file-earmark"></i> Formato</h6>
+                  </div>
+                  <div class="card-body">
+                    {% for choice in form.formato %}
+                      <div class="form-check">
+                        {{ choice.tag }}
+                        <label class="form-check-label">{{ choice.choice_label }}</label>
+                      </div>
+                    {% endfor %}
+                  </div>
+                </div>
+
+                <div class="card mb-3" style="border-left: 4px solid #ffc107;">
+                  <div class="card-header">
+                    <h6 class="mb-0"><i class="bi bi-send"></i> Envio</h6>
+                  </div>
+                  <div class="card-body">
+                    {% for choice in form.enviar_para %}
+                      <div class="form-check">
+                        {{ choice.tag }}
+                        <label class="form-check-label">{{ choice.choice_label }}</label>
+                      </div>
+                    {% endfor %}
+                  </div>
+                </div>
+
+                <div class="card" id="contatos-section" style="display: none;">
+                  <div class="card-header">
+                    <h6 class="mb-0"><i class="bi bi-phone"></i> Contatos</h6>
+                  </div>
+                  <div class="card-body">
+                    <div class="mb-3" id="email-field" style="display: none;">
+                      {{ form.email_destino }}
+                      <small class="form-text text-muted d-block">{{ form.email_destino.help_text }}</small>
+                      {% if form.email_destino.errors %}
+                        <div class="text-danger small">{{ form.email_destino.errors }}</div>
+                      {% endif %}
+                    </div>
+
+                    <div class="mb-3" id="whatsapp-field" style="display: none;">
+                      {{ form.whatsapp_destino }}
+                      <small class="form-text text-muted d-block">{{ form.whatsapp_destino.help_text }}</small>
+                      {% if form.whatsapp_destino.errors %}
+                        <div class="text-danger small">{{ form.whatsapp_destino.errors }}</div>
+                      {% endif %}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="row mt-4">
+              <div class="col-12">
+                <button type="submit" class="btn btn-primary btn-lg">
+                  <i class="bi bi-download"></i> Gerar Relatorio
+                </button>
+              </div>
+            </div>
+
+            {% if form.non_field_errors %}
+              <div class="alert alert-danger mt-3" role="alert">
+                <i class="bi bi-exclamation-triangle"></i>
+                {% for error in form.non_field_errors %}
+                  <div>{{ error }}</div>
+                {% endfor %}
+              </div>
+            {% endif %}
+          </form>
+        </div>
+      </div>
+
+      {% if fornecedores is not None %}
+        <div class="card shadow-sm mt-4">
+          <div class="card-header bg-light">
+            <h6 class="mb-0"><i class="bi bi-table"></i> Resultado</h6>
+          </div>
+          <div class="card-body">
+            {% if fornecedores %}
+              <div class="table-responsive">
+                <table class="table table-striped">
+                  <thead>
+                    <tr>
+                      <th>Razao Social</th>
+                      <th>CNPJ/CPF</th>
+                      <th>Cidade/UF</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for fornecedor in fornecedores %}
+                      <tr>
+                        <td>{{ fornecedor.nome }}</td>
+                        <td>{{ fornecedor.cnpj_cpf }}</td>
+                        <td>{% if fornecedor.cidade and fornecedor.uf %}{{ fornecedor.cidade }}/{{ fornecedor.uf }}{% elif fornecedor.cidade %}{{ fornecedor.cidade }}{% elif fornecedor.uf %}{{ fornecedor.uf }}{% else %}—{% endif %}</td>
+                        <td>{% if fornecedor.ativa %}Ativo{% else %}Inativo{% endif %}</td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            {% else %}
+              <div class="text-muted">Nenhum fornecedor encontrado.</div>
+            {% endif %}
+          </div>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const enviarParaInputs = document.querySelectorAll('input[name="enviar_para"]');
+  const contatosSection = document.getElementById('contatos-section');
+  const emailField = document.getElementById('email-field');
+  const whatsappField = document.getElementById('whatsapp-field');
+
+  function atualizarVisibilidade() {
+    const selected = document.querySelector('input[name="enviar_para"]:checked');
+    if (!selected) return;
+
+    const enviarPara = selected.value;
+    contatosSection.style.display = enviarPara === 'tela' || enviarPara === 'nenhum' ? 'none' : 'block';
+    emailField.style.display = (enviarPara === 'email' || enviarPara === 'ambos') ? 'block' : 'none';
+    whatsappField.style.display = (enviarPara === 'whatsapp' || enviarPara === 'ambos') ? 'block' : 'none';
+  }
+
+  atualizarVisibilidade();
+  enviarParaInputs.forEach(input => input.addEventListener('change', atualizarVisibilidade));
+});
+</script>
+{% endblock %}

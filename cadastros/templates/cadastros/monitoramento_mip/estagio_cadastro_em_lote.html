@@ -1,0 +1,533 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Cadastro em Lote de Estágios | ERP Agrícola{% endblock %}
+{% block page_title %}
+  <div class="d-flex align-items-center gap-2">
+    <span>Cadastro em Lote de Estágios</span>
+    <button type="button" class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#helpEstagio" title="Ajuda">
+      <i class="bi bi-question-circle"></i>
+    </button>
+  </div>
+{% endblock %}
+
+{% block content %}
+<!-- Toast Container para Notificações -->
+<div id="toastContainer" style="position: fixed; top: 20px; right: 20px; z-index: 9999; max-width: 400px;"></div>
+
+<div class="container-fluid mt-4">
+  <div class="row">
+    <div class="col-lg-12">
+
+      <!-- Botão Voltar -->
+      <div class="mb-3">
+        <a href="{% url 'cadastros:estagio_list' %}" class="btn btn-outline-secondary">
+          <i class="bi bi-arrow-left"></i> Voltar para Lista de Estágios
+        </a>
+      </div>
+
+      <!-- Seleção de Praga -->
+      <div class="card shadow-sm border-0 rounded-4 mb-4">
+        <div class="card-header bg-primary text-white rounded-top-4">
+          <h5 class="mb-0">
+            <i class="bi bi-bug"></i> Selecione a Praga
+          </h5>
+        </div>
+        <div class="card-body">
+          <form method="get" id="formSelecionarPraga">
+            <div class="row">
+              <div class="col-md-6">
+                <label for="pragaSelect" class="form-label">Praga:</label>
+                <select class="form-select form-select-lg" id="pragaSelect" name="praga" required>
+                  <option value="">-- Selecione uma praga --</option>
+                  {% for praga in pragas %}
+                    <option value="{{ praga.id }}" {% if praga_selecionada.id == praga.id %}selected{% endif %}>
+                      {{ praga.nome_comum }}
+                      {% if praga.nome_cientifico %}
+                        <small>({{ praga.nome_cientifico }})</small>
+                      {% endif %}
+                    </option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="col-md-6 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100">
+                  <i class="bi bi-search"></i> Carregar Estágios
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      {% if praga_selecionada %}
+
+        <!-- Estágios Existentes -->
+        <div class="card shadow-sm border-0 rounded-4 mb-4">
+          <div class="card-header bg-success text-white rounded-top-4 d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+              <i class="bi bi-list-check"></i> Estágios Cadastrados ({{ estagios.count }})
+            </h5>
+            <button type="button" class="btn btn-sm btn-light" data-bs-toggle="modal" data-bs-target="#modalAdicionarEstagio">
+              <i class="bi bi-plus-circle"></i> Adicionar +
+            </button>
+          </div>
+          <div class="card-body">
+            {% if estagios %}
+              <div class="row" id="listaEstagios">
+                {% for estagio in estagios %}
+                  <div class="col-md-6 col-lg-4 mb-3 estagio-card" data-estagio-id="{{ estagio.id }}">
+                    <div class="card h-100 border-2 {% if estagio.eh_fase_critica %}border-danger{% else %}border-success{% endif %}">
+                      <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                          <div>
+                            <h6 class="card-title mb-1">
+                              {{ estagio.get_tipo_estagio_display }}
+                            </h6>
+                            <small class="text-muted">Ordem: {{ estagio.ordem_ciclo }}</small>
+                          </div>
+                          {% if estagio.eh_fase_critica %}
+                            <span class="badge bg-danger">⭐ Crítico</span>
+                          {% endif %}
+                        </div>
+                        
+                        <p class="card-text small mb-2">
+                          <strong>{{ estagio.descricao }}</strong>
+                        </p>
+                        
+                        <div class="d-flex gap-1 flex-wrap mb-3">
+                          <span class="badge bg-info">
+                            <i class="bi bi-calendar-event"></i>
+                            {{ estagio.duracao_minima_dias|default:"?" }}-{{ estagio.duracao_maxima_dias|default:"?" }} dias
+                          </span>
+                          {% if estagio.ativo %}
+                            <span class="badge bg-success">✓ Ativo</span>
+                          {% else %}
+                            <span class="badge bg-secondary">✗ Inativo</span>
+                          {% endif %}
+                        </div>
+
+                        {% if estagio.observacoes %}
+                          <p class="text-muted small mb-2">
+                            <em>{{ estagio.observacoes|truncatewords:15 }}</em>
+                          </p>
+                        {% endif %}
+                      </div>
+                      <div class="card-footer border-top-0 bg-white pt-2">
+                        <div class="d-flex gap-2 justify-content-end">
+                          <a href="{% url 'cadastros:estagio_update' estagio.pk %}" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-pencil"></i> Editar
+                          </a>
+                          <button type="button" class="btn btn-sm btn-outline-danger" onclick="deletarEstagio({{ estagio.id }})">
+                            <i class="bi bi-trash"></i> Deletar
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                {% endfor %}
+              </div>
+            {% else %}
+              <div class="alert alert-info" role="alert">
+                <i class="bi bi-info-circle"></i> Nenhum estágio cadastrado para esta praga.
+              </div>
+            {% endif %}
+          </div>
+        </div>
+
+      {% else %}
+        <div class="alert alert-secondary mt-4">
+          <i class="bi bi-arrow-up"></i> Selecione uma praga acima para começar o cadastro em lote.
+        </div>
+      {% endif %}
+
+    </div>
+  </div>
+</div>
+
+<!-- Modal para Adicionar Novo Estágio -->
+<div class="modal fade" id="modalAdicionarEstagio" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-success text-white rounded-top">
+        <h5 class="modal-title">
+          <i class="bi bi-plus-circle"></i> Adicionar Novo Estágio
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="formAdicionarEstagio">
+          {% csrf_token %}
+          <input type="hidden" name="praga_id" value="{{ praga_selecionada.id }}">
+          
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label for="tipoEstagio" class="form-label">Tipo de Estágio *</label>
+              <select class="form-select" name="tipo_estagio" id="tipoEstagio" required>
+                <option value="">-- Selecione --</option>
+                <option value="OVO">Ovo</option>
+                <option value="NINFA">Ninfa</option>
+                <option value="LARVA">Larva</option>
+                <option value="PUPA">Pupa</option>
+                <option value="ADULTO">Adulto</option>
+                <option value="ESPORO">Esporo (Fungo)</option>
+                <option value="LESAO">Lesão (Doença)</option>
+                <option value="OUTRO">Outro</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label for="ordemCiclo" class="form-label">Ordem no Ciclo *</label>
+              <input type="number" class="form-control" name="ordem_ciclo" id="ordemCiclo" min="1" required>
+            </div>
+          </div>
+
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label for="duracaoMin" class="form-label">Duração Mínima (dias)</label>
+              <input type="number" class="form-control" name="duracao_minima_dias" id="duracaoMin" min="0">
+            </div>
+            <div class="col-md-6">
+              <label for="duracaoMax" class="form-label">Duração Máxima (dias)</label>
+              <input type="number" class="form-control" name="duracao_maxima_dias" id="duracaoMax" min="0">
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label for="descricao" class="form-label">Descrição / Detalhe</label>
+            <input type="text" class="form-control" name="descricao" id="descricao" 
+                   placeholder="Ex: Larva de 3º ínstar, Lesão necrótica em expansão">
+          </div>
+
+          <div class="mb-3">
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" name="eh_fase_critica" id="ehCritico" value="true">
+              <label class="form-check-label" for="ehCritico">
+                <strong>⭐ É Fase Crítica?</strong>
+              </label>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" name="ativo" id="ativo" value="true" checked>
+              <label class="form-check-label" for="ativo">
+                <strong>✓ Estágio Ativo?</strong>
+              </label>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-success" onclick="adicionarEstagio()">
+          <i class="bi bi-plus-circle"></i> Adicionar Estágio
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% include 'cadastros/monitoramento_mip/_help_modals.html' %}
+
+<script>
+// Função para mostrar Toast Notification
+function mostrarToast(mensagem, tipo = 'success') {
+  const toastContainer = document.getElementById('toastContainer');
+  
+  const toast = document.createElement('div');
+  toast.className = `alert alert-${tipo} alert-dismissible fade show toast-notif`;
+  toast.innerHTML = `
+    ${tipo === 'success' ? '<i class="bi bi-check-circle"></i>' : '<i class="bi bi-exclamation-circle"></i>'}
+    ${mensagem}
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  `;
+  
+  toastContainer.appendChild(toast);
+  
+  // Auto-desaparecer em 4 segundos
+  setTimeout(() => {
+    toast.classList.remove('show');
+    setTimeout(() => toast.remove(), 300);
+  }, 4000);
+}
+
+// Função para atualizar contador de estágios
+function atualizarContadorEstagios() {
+  const cards = document.querySelectorAll('.estagio-card').length;
+  const header = document.querySelector('.card-header:has(h5)');
+  if (header) {
+    const h5 = header.querySelector('h5');
+    h5.innerHTML = h5.innerHTML.replace(/\(\d+\)/, `(${cards})`);
+  }
+}
+
+// Função para criar HTML do card
+function criarCardEstagioHTML(estagio) {
+  const criticoClass = estagio.eh_fase_critica ? 'border-danger' : 'border-success';
+  const criticoBadge = estagio.eh_fase_critica ? '<span class="badge bg-danger">⭐ Crítico</span>' : '';
+  const ativoBadge = estagio.ativo ? '<span class="badge bg-success">✓ Ativo</span>' : '<span class="badge bg-secondary">✗ Inativo</span>';
+  
+  return `
+    <div class="col-md-6 col-lg-4 mb-3 estagio-card" data-estagio-id="${estagio.id}">
+      <div class="card h-100 border-2 ${criticoClass} card-animate">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <div>
+              <h6 class="card-title mb-1">
+                ${estagio.get_tipo_estagio_display || estagio.tipo_estagio}
+              </h6>
+              <small class="text-muted">Ordem: ${estagio.ordem_ciclo}</small>
+            </div>
+            ${criticoBadge}
+          </div>
+          
+          <p class="card-text small mb-2">
+            <strong>${estagio.descricao || 'Sem descrição'}</strong>
+          </p>
+          
+          <div class="d-flex gap-1 flex-wrap mb-3">
+            <span class="badge bg-info">
+              <i class="bi bi-calendar-event"></i>
+              ${estagio.duracao_minima_dias || '?'}-${estagio.duracao_maxima_dias || '?'} dias
+            </span>
+            ${ativoBadge}
+          </div>
+
+          ${estagio.observacoes ? `<p class="text-muted small mb-2"><em>${estagio.observacoes.substring(0, 50)}...</em></p>` : ''}
+        </div>
+        <div class="card-footer border-top-0 bg-white pt-2">
+          <div class="d-flex gap-2 justify-content-end">
+            <a href="/cadastros/estagios/${estagio.id}/editar/" class="btn btn-sm btn-outline-primary">
+              <i class="bi bi-pencil"></i> Editar
+            </a>
+            <button type="button" class="btn btn-sm btn-outline-danger" onclick="deletarEstagio(${estagio.id})">
+              <i class="bi bi-trash"></i> Deletar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function adicionarEstagio() {
+  const form = document.getElementById('formAdicionarEstagio');
+  const formData = new FormData(form);
+  
+  // Validação básica
+  if (!formData.get('praga_id')) {
+    mostrarToast('Selecione uma praga primeiro', 'danger');
+    return;
+  }
+  
+  if (!formData.get('tipo_estagio') || !formData.get('ordem_ciclo')) {
+    mostrarToast('Tipo de Estágio e Ordem no Ciclo são obrigatórios', 'danger');
+    return;
+  }
+
+  // Desabilitar botão durante envio
+  const btnSubmit = event.target;
+  const btnOriginal = document.querySelector('[onclick="adicionarEstagio()"]');
+  if (btnOriginal) {
+    btnOriginal.disabled = true;
+    btnOriginal.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Adicionando...';
+  }
+
+  // AJAX request
+  fetch('{% url "cadastros:ajax_adicionar_estagio" %}', {
+    method: 'POST',
+    body: formData,
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      // Criar objeto estagio com dados retornados
+      const novoEstagio = data;
+      
+      // Adicionar card ao DOM sem reload
+      const container = document.getElementById('listaEstagios');
+      if (container) {
+        container.insertAdjacentHTML('beforeend', criarCardEstagioHTML(novoEstagio));
+        
+        // Animar entrada do novo card
+        const novoCard = container.querySelector(`[data-estagio-id="${novoEstagio.id}"]`);
+        if (novoCard) {
+          novoCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+      }
+      
+      // Atualizar contador
+      atualizarContadorEstagios();
+      
+      // Limpar form
+      form.reset();
+      
+      // Fechar modal
+      const modal = bootstrap.Modal.getInstance(document.getElementById('modalAdicionarEstagio'));
+      modal.hide();
+      
+      // Mostrar notificação
+      const tipoDisplay = form.querySelector('select[name="tipo_estagio"]').options[form.querySelector('select[name="tipo_estagio"]').selectedIndex].text;
+      mostrarToast(`✅ Estágio "${tipoDisplay}" criado com sucesso!`, 'success');
+    } else {
+      mostrarToast('❌ Erro: ' + data.error, 'danger');
+    }
+  })
+  .catch(error => {
+    console.error('Erro:', error);
+    mostrarToast('❌ Erro ao adicionar estágio', 'danger');
+  })
+  .finally(() => {
+    // Reabilitar botão
+    if (btnOriginal) {
+      btnOriginal.disabled = false;
+      btnOriginal.innerHTML = '<i class="bi bi-plus-circle"></i> Adicionar Estágio';
+    }
+  });
+}
+
+function deletarEstagio(estagioId) {
+  // Dialog customizado em vez de confirm()
+  const card = document.querySelector(`[data-estagio-id="${estagioId}"]`);
+  const tipoEstagio = card?.querySelector('.card-title')?.textContent || 'este estágio';
+  
+  if (!confirm(`Tem certeza que deseja deletar "${tipoEstagio}"?`)) {
+    return;
+  }
+
+  fetch(`{% url "cadastros:ajax_deletar_estagio" 0 %}`.replace('0', estagioId), {
+    method: 'POST',
+    headers: {
+      'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || '',
+    }
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      // Animar remoção do card
+      const card = document.querySelector(`[data-estagio-id="${estagioId}"]`);
+      if (card) {
+        card.classList.add('fade-out');
+        setTimeout(() => {
+          card.remove();
+          atualizarContadorEstagios();
+          mostrarToast('✅ Estágio deletado com sucesso', 'success');
+        }, 300);
+      }
+    } else {
+      mostrarToast('❌ Erro: ' + data.message, 'danger');
+    }
+  })
+  .catch(error => {
+    console.error('Erro:', error);
+    mostrarToast('❌ Erro ao deletar estágio', 'danger');
+  });
+}
+
+// Ao clicar em "Adicionar +" button
+document.addEventListener('click', function(e) {
+  if (e.target.closest('[data-bs-toggle="modal"][data-bs-target="#modalAdicionarEstagio"]')) {
+    if (!document.getElementById('pragaSelect').value) {
+      mostrarToast('Selecione uma praga primeiro', 'warning');
+      e.preventDefault();
+    }
+  }
+});
+
+// Limpar form ao fechar modal
+document.getElementById('modalAdicionarEstagio')?.addEventListener('hidden.bs.modal', function () {
+  document.getElementById('formAdicionarEstagio').reset();
+});
+</script>
+
+<style>
+/* Toast Notifications */
+.toast-notif {
+  position: relative;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  margin-bottom: 10px;
+  border: none;
+  border-radius: 8px;
+  animation: slideInRight 0.3s ease-out;
+}
+
+.toast-notif.show {
+  animation: slideInRight 0.3s ease-out;
+}
+
+.toast-notif:not(.show) {
+  animation: slideOutRight 0.3s ease-in;
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOutRight {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+}
+
+/* Card Animations */
+.card-animate {
+  animation: fadeInUp 0.5s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.estagio-card.fade-out {
+  animation: fadeOutDown 0.3s ease-in forwards;
+}
+
+@keyframes fadeOutDown {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+}
+
+/* Card Hover Effects */
+.estagio-card .card {
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.estagio-card .card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.border-danger {
+  border-color: #dc3545 !important;
+}
+
+.border-success {
+  border-color: #198754 !important;
+}
+</style>
+{% endblock %}

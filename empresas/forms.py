@@ -32,6 +32,17 @@ class EmpresaForm(forms.ModelForm):
         }
 
 
+class EmpresaLogoForm(forms.ModelForm):
+    """Formulario simples para atualizar apenas a logo da empresa"""
+
+    class Meta:
+        model = Empresa
+        fields = ['logo']
+        widgets = {
+            'logo': forms.FileInput(attrs={'class': 'form-control', 'accept': 'image/*'}),
+        }
+
+
 class PlanoForm(forms.ModelForm):
     """Formulário para criar/editar planos"""
     

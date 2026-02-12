@@ -27,6 +27,213 @@
     font-size: 0.9rem;
     padding: 8px 15px;
   }
+
+  /* Visualização em Lista */
+  .fazendas-container.lista-view .row {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .fazendas-container.lista-view .col-md-6,
+  .fazendas-container.lista-view .col-lg-4 {
+    width: 100%;
+    margin-bottom: 0;
+    padding: 0 !important;
+  }
+
+  /* Header da tabela */
+  .lista-table-header {
+    display: grid;
+    grid-template-columns: 1.5fr 1.2fr 1fr 1.2fr 0.8fr 0.8fr;
+    gap: 12px;
+    padding: 12px 15px;
+    background: linear-gradient(to right, #f8f9fa 0%, #f0f2f5 100%);
+    border-bottom: 2px solid #dee2e6;
+    border-radius: 8px 8px 0 0;
+    font-weight: 700;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    color: #495057;
+    margin-bottom: 0;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  .lista-table-header > * {
+    display: flex;
+    align-items: center;
+  }
+
+  /* Cards em forma de linha */
+  .fazendas-container.lista-view .fazenda-card {
+    margin-bottom: 0;
+    border: 1px solid #dee2e6;
+    border-left: 4px solid #28a745;
+    border-radius: 0;
+    box-shadow: none;
+    transition: all 0.2s ease;
+  }
+
+  .fazendas-container.lista-view .fazenda-card:hover {
+    background-color: #f8f9fa;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    border-left-color: #20c997;
+  }
+
+  .fazendas-container.lista-view .fazenda-card.inativa {
+    border-left-color: #dc3545;
+    opacity: 0.85;
+    background-color: #fff5f5;
+  }
+
+  .fazendas-container.lista-view .fazenda-card .card-body {
+    display: grid;
+    grid-template-columns: 1.5fr 1.2fr 1fr 1.2fr 0.8fr 0.8fr;
+    gap: 12px;
+    align-items: center;
+    padding: 12px 15px !important;
+    border-radius: 0;
+    height: 70px;
+  }
+
+  /* Coluna Nome */
+  .fazendas-container.lista-view .col-nome {
+    grid-column: 1;
+    overflow: hidden;
+  }
+
+  .fazendas-container.lista-view .col-nome h5 {
+    font-size: 0.95rem;
+    margin-bottom: 2px !important;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .fazendas-container.lista-view .col-nome p {
+    font-size: 0.8rem;
+    color: #6c757d;
+    margin-bottom: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Coluna CNPJ/CPF */
+  .fazendas-container.lista-view .col-cnpj {
+    grid-column: 2;
+    font-size: 0.9rem;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Coluna Área */
+  .fazendas-container.lista-view .col-area {
+    grid-column: 3;
+    font-size: 0.9rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Coluna Regime */
+  .fazendas-container.lista-view .col-regime {
+    grid-column: 4;
+    font-size: 0.9rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Coluna Status */
+  .fazendas-container.lista-view .col-status {
+    grid-column: 5;
+    justify-self: center;
+  }
+
+  .fazendas-container.lista-view .col-status .badge {
+    font-size: 0.75rem;
+    padding: 4px 8px;
+  }
+
+  /* Coluna Ações */
+  .fazendas-container.lista-view .col-acoes {
+    grid-column: 6;
+    display: flex;
+    gap: 2px;
+    justify-self: end;
+  }
+
+  .fazendas-container.lista-view .col-acoes .btn {
+    padding: 4px 6px;
+    font-size: 0.75rem;
+  }
+
+  /* Grid View Styling */
+  .fazendas-container.grid-view .row {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .fazendas-container.grid-view .col-md-6,
+  .fazendas-container.grid-view .col-lg-4 {
+    width: 100%;
+  }
+
+  .fazendas-container.grid-view .fazenda-card {
+    border-radius: 10px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  }
+
+  /* Grid view */
+  .fazendas-container.lista-view .grid-view-only {
+    display: none !important;
+  }
+
+  .fazendas-container.grid-view .lista-table-header {
+    display: none;
+  }
+
+  .fazendas-container.grid-view .col-nome,
+  .fazendas-container.grid-view .col-cnpj,
+  .fazendas-container.grid-view .col-area,
+  .fazendas-container.grid-view .col-regime,
+  .fazendas-container.grid-view .col-status,
+  .fazendas-container.grid-view .col-acoes {
+    display: none !important;
+  }
+
+  .fazendas-container.grid-view .grid-view-only {
+    display: block !important;
+  }
+
+  .view-toggle {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+  }
+
+  .view-toggle .btn {
+    padding: 8px 12px;
+    font-size: 0.9rem;
+  }
+
+  .view-toggle .btn.active {
+    background-color: #28a745;
+    color: white;
+    border-color: #28a745;
+  }
+
+  .view-toggle .btn:not(.active) {
+    background-color: #fff;
+    border-color: #dee2e6;
+    color: #6c757d;
+  }
 </style>
 {% endblock %}
 
@@ -176,97 +383,177 @@
           </button>
         </div>
       </form>
+      <div class="row mt-3">
+        <div class="col-12">
+          <div class="view-toggle">
+            <span class="text-muted small me-2">Visualizar:</span>
+            <button type="button" class="btn btn-sm view-btn" id="btn-grid-view" data-view="grid" title="Visualização em Cards">
+              <i class="bi bi-grid-3x2-gap"></i> Cards
+            </button>
+            <button type="button" class="btn btn-sm view-btn" id="btn-list-view" data-view="list" title="Visualização em Lista">
+              <i class="bi bi-list-ul"></i> Lista
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
   <!-- Lista de Fazendas -->
   {% if page_obj %}
-    <div class="row g-4">
+    <div class="fazendas-container grid-view" id="fazendas-container">
+      <!-- Header da Tabela (apenas lista) -->
+      <div class="lista-table-header">
+        <div>Nome / CNPJ</div>
+        <div>CNPJ/CPF</div>
+        <div>Área Total</div>
+        <div>Regime</div>
+        <div>Status</div>
+        <div>Ações</div>
+      </div>
+
+      <div class="row g-4">
       {% for fazenda in page_obj %}
         <div class="col-md-6 col-lg-4">
           <div class="card fazenda-card border-0 shadow-sm h-100 {% if not fazenda.ativa %}inativa{% endif %}">
-            <div class="card-body">
-              <!-- Header do Card -->
-              <div class="d-flex justify-content-between align-items-start mb-3">
-                <div class="flex-grow-1">
-                  <h5 class="card-title fw-bold mb-1">
-                    <a href="{% url 'cadastros:fazenda_detail' fazenda.pk %}" class="text-decoration-none text-dark">
-                      {{ fazenda.nome|truncatewords:4 }}
-                    </a>
-                  </h5>
-                  {% if fazenda.nome_fantasia %}
-                    <p class="text-muted small mb-0">{{ fazenda.nome_fantasia }}</p>
-                  {% endif %}
-                </div>
-                <div>
-                  {% if fazenda.ativa %}
-                    <span class="badge bg-success">Ativa</span>
-                  {% else %}
-                    <span class="badge bg-danger">Inativa</span>
-                  {% endif %}
-                </div>
-              </div>
-
-              <!-- Informações -->
-              <div class="mb-3">
-                <p class="mb-2 small">
-                  <i class="bi bi-file-text text-primary"></i>
-                  <strong>CNPJ/CPF:</strong> {{ fazenda.get_cnpj_cpf_formatado }}
-                </p>
-                
-                <p class="mb-2 small">
-                  <i class="bi bi-rulers text-success"></i>
-                  <strong>Área Total:</strong> {{ fazenda.area_total }} ha
-                </p>
-
-                {% if fazenda.area_agricultavel %}
-                  <p class="mb-2 small">
-                    <i class="bi bi-flower1 text-warning"></i>
-                    <strong>Agricultável:</strong> {{ fazenda.area_agricultavel }} ha
-                  </p>
+            <div class="card-body p-4">
+              
+              <!-- Coluna Nome -->
+              <div class="col-nome">
+                <h5 class="mb-1 fw-bold">
+                  <a href="{% url 'cadastros:fazenda_detail' fazenda.pk %}" class="text-decoration-none text-dark">
+                    {{ fazenda.nome|truncatewords:4 }}
+                  </a>
+                </h5>
+                {% if fazenda.nome_fantasia %}
+                  <p class="text-muted">{{ fazenda.nome_fantasia|truncatewords:3 }}</p>
                 {% endif %}
-
-                <p class="mb-2 small">
-                  <i class="bi bi-receipt text-info"></i>
-                  <strong>Regime:</strong> {{ fazenda.get_regime_tributario_display }}
-                </p>
               </div>
 
-              <!-- Estatísticas -->
-              <div class="d-flex justify-content-between text-center py-2 border-top">
-                <div>
-                  <small class="text-muted d-block">Endereços</small>
-                  <strong>{{ fazenda.enderecos.count }}</strong>
-                </div>
-                <div class="border-start px-3">
-                  <small class="text-muted d-block">Contatos</small>
-                  <strong>{{ fazenda.contatos.count }}</strong>
-                </div>
-                <div class="border-start px-3">
-                  <small class="text-muted d-block">Documentos</small>
-                  <strong>{{ fazenda.documentos.count }}</strong>
-                </div>
+              <!-- Coluna CNPJ/CPF -->
+              <div class="col-cnpj">
+                <i class="bi bi-file-text text-primary me-1"></i>{{ fazenda.get_cnpj_cpf_formatado }}
               </div>
 
-              <!-- Ações -->
-              <div class="d-flex gap-2 mt-3">
+              <!-- Coluna Área -->
+              <div class="col-area">
+                <i class="bi bi-rulers text-success me-1"></i>{{ fazenda.area_total }} ha
+              </div>
+
+              <!-- Coluna Regime -->
+              <div class="col-regime">
+                <i class="bi bi-receipt text-info me-1"></i>{{ fazenda.get_regime_tributario_display|truncatewords:2 }}
+              </div>
+
+              <!-- Coluna Status -->
+              <div class="col-status">
+                {% if fazenda.ativa %}
+                  <span class="badge bg-success">Ativa</span>
+                {% else %}
+                  <span class="badge bg-danger">Inativa</span>
+                {% endif %}
+              </div>
+
+              <!-- Coluna Ações -->
+              <div class="col-acoes">
                 <a href="{% url 'cadastros:fazenda_detail' fazenda.pk %}" 
-                   class="btn btn-sm btn-outline-primary flex-fill">
-                  <i class="bi bi-eye"></i> Ver
+                   class="btn btn-sm btn-outline-primary" title="Ver">
+                  <i class="bi bi-eye"></i>
                 </a>
                 <a href="{% url 'cadastros:fazenda_update' fazenda.pk %}" 
-                   class="btn btn-sm btn-outline-secondary">
+                   class="btn btn-sm btn-outline-secondary" title="Editar">
                   <i class="bi bi-pencil"></i>
                 </a>
                 <a href="{% url 'cadastros:fazenda_delete' fazenda.pk %}" 
-                   class="btn btn-sm btn-outline-danger">
+                   class="btn btn-sm btn-outline-danger" title="Deletar">
                   <i class="bi bi-trash"></i>
                 </a>
+              </div>
+
+              <!-- Informações Card (apenas grid) -->
+              <div class="grid-view-only">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                  <div class="flex-grow-1">
+                    <h5 class="card-title fw-bold mb-1">
+                      <a href="{% url 'cadastros:fazenda_detail' fazenda.pk %}" class="text-decoration-none text-dark">
+                        {{ fazenda.nome|truncatewords:4 }}
+                      </a>
+                    </h5>
+                    {% if fazenda.nome_fantasia %}
+                      <p class="text-muted small mb-0">{{ fazenda.nome_fantasia }}</p>
+                    {% endif %}
+                  </div>
+                  <div>
+                    {% if fazenda.ativa %}
+                      <span class="badge bg-success">Ativa</span>
+                    {% else %}
+                      <span class="badge bg-danger">Inativa</span>
+                    {% endif %}
+                  </div>
+                </div>
+
+                <!-- Informações -->
+                <div class="mb-3">
+                  <p class="mb-2 small">
+                    <i class="bi bi-file-text text-primary"></i>
+                    <strong>CNPJ/CPF:</strong> {{ fazenda.get_cnpj_cpf_formatado }}
+                  </p>
+                  
+                  <p class="mb-2 small">
+                    <i class="bi bi-rulers text-success"></i>
+                    <strong>Área Total:</strong> {{ fazenda.area_total }} ha
+                  </p>
+
+                  {% if fazenda.area_agricultavel %}
+                    <p class="mb-2 small">
+                      <i class="bi bi-flower1 text-warning"></i>
+                      <strong>Agricultável:</strong> {{ fazenda.area_agricultavel }} ha
+                    </p>
+                  {% endif %}
+
+                  <p class="mb-2 small">
+                    <i class="bi bi-receipt text-info"></i>
+                    <strong>Regime:</strong> {{ fazenda.get_regime_tributario_display }}
+                  </p>
+                </div>
+
+                <!-- Estatísticas -->
+                <div class="d-flex justify-content-between text-center py-2 border-top">
+                  <div>
+                    <small class="text-muted d-block">Endereços</small>
+                    <strong>{{ fazenda.enderecos.count }}</strong>
+                  </div>
+                  <div class="border-start px-3">
+                    <small class="text-muted d-block">Contatos</small>
+                    <strong>{{ fazenda.contatos.count }}</strong>
+                  </div>
+                  <div class="border-start px-3">
+                    <small class="text-muted d-block">Documentos</small>
+                    <strong>{{ fazenda.documentos.count }}</strong>
+                  </div>
+                </div>
+
+                <!-- Ações -->
+                <div class="d-flex gap-2 mt-3">
+                  <a href="{% url 'cadastros:fazenda_detail' fazenda.pk %}" 
+                     class="btn btn-sm btn-outline-primary flex-fill">
+                    <i class="bi bi-eye"></i> Ver
+                  </a>
+                  <a href="{% url 'cadastros:fazenda_update' fazenda.pk %}" 
+                     class="btn btn-sm btn-outline-secondary">
+                    <i class="bi bi-pencil"></i>
+                  </a>
+                  <a href="{% url 'cadastros:fazenda_delete' fazenda.pk %}" 
+                     class="btn btn-sm btn-outline-danger">
+                    <i class="bi bi-trash"></i>
+                  </a>
+                </div>
               </div>
             </div>
           </div>
         </div>
       {% endfor %}
+      </div>
     </div>
 
     <!-- Paginação -->
@@ -325,4 +612,40 @@
   {% endif %}
 
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const container = document.getElementById('fazendas-container');
+    const gridBtn = document.getElementById('btn-grid-view');
+    const listBtn = document.getElementById('btn-list-view');
+    
+    // Recuperar visualização salva
+    const savedView = localStorage.getItem('fazendas-view') || 'grid';
+    
+    // Aplicar visualização salva
+    function applyView(view) {
+      if (view === 'list') {
+        container.classList.remove('grid-view');
+        container.classList.add('lista-view');
+        gridBtn.classList.remove('active');
+        listBtn.classList.add('active');
+      } else {
+        container.classList.remove('lista-view');
+        container.classList.add('grid-view');
+        gridBtn.classList.add('active');
+        listBtn.classList.remove('active');
+      }
+      localStorage.setItem('fazendas-view', view);
+    }
+    
+    // Aplicar visualização inicial
+    applyView(savedView);
+    
+    // Event listeners
+    gridBtn.addEventListener('click', () => applyView('grid'));
+    listBtn.addEventListener('click', () => applyView('list'));
+  });
+</script>
 {% endblock %}

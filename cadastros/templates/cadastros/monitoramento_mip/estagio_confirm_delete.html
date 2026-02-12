@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Confirmar Exclusão de Estágio | ERP Agrícola{% endblock %}
+{% block page_title %}Confirmar Exclusão{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+  <div class="row">
+    <div class="col-lg-6 offset-lg-3">
+      <div class="card border-danger">
+        <div class="card-header bg-danger text-white">
+          <h4 class="mb-0">
+            <i class="bi bi-exclamation-triangle-fill"></i> Confirmar Exclusão
+          </h4>
+        </div>
+        <div class="card-body">
+          <p>Tem certeza que deseja deletar o seguinte estágio?</p>
+          
+          <div class="alert alert-light border-2 border-secondary">
+            <strong>Praga:</strong> {{ estagio.praga.nome_comum }}<br>
+            <strong>Tipo:</strong> {{ estagio.get_tipo_estagio_display }}<br>
+            <strong>Descrição:</strong> {{ estagio.descricao }}<br>
+          </div>
+          
+          <div class="alert alert-warning">
+            <i class="bi bi-info-circle"></i>
+            <strong>Atenção:</strong> Esta ação é irreversível. Se este estágio já foi usado em monitoramentos, 
+            isso pode afetar os registros históricos.
+          </div>
+          
+          <form method="post" action="{% url 'cadastros:estagio_delete' estagio.pk %}">
+            {% csrf_token %}
+            <div class="d-flex gap-2">
+              <a href="{% url 'cadastros:estagio_list' %}" class="btn btn-secondary">
+                <i class="bi bi-x-circle"></i> Cancelar
+              </a>
+              <button type="submit" class="btn btn-danger ms-auto">
+                <i class="bi bi-trash"></i> Confirmar Exclusão
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

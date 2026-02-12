@@ -1,0 +1,155 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ action }} Preset de Prazo | ERP Agrícola{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="row justify-content-center">
+    <div class="col-md-8">
+      
+      <!-- Header -->
+      <div class="d-flex align-items-center mb-4">
+        <a href="{% url 'cadastros:prazo_pagamento_list' %}" class="btn btn-outline-secondary me-3">
+          <i class="bi bi-arrow-left"></i>
+        </a>
+        <div>
+          <h2 class="fw-bold mb-0">
+            <i class="bi bi-calendar-event text-primary"></i> {{ action }} Preset de Prazo
+          </h2>
+          <p class="text-muted mb-0">Preencha os dados do preset de prazo de pagamento</p>
+        </div>
+      </div>
+
+      <!-- Form Card -->
+      <div class="card border-0 shadow-sm">
+        <div class="card-body p-4">
+          <form method="post" novalidate>
+            {% csrf_token %}
+
+            <!-- Dados Básicos -->
+            <div class="mb-4">
+              <h5 class="fw-bold border-bottom pb-2 mb-3">
+                <i class="bi bi-info-circle text-primary"></i> Dados do Preset
+              </h5>
+
+              <div class="mb-3">
+                <label for="{{ form.nome.id_for_label }}" class="form-label fw-bold">
+                  Nome <span class="text-danger">*</span>
+                </label>
+                {{ form.nome }}
+                {% if form.nome.errors %}
+                  <div class="invalid-feedback d-block">
+                    {{ form.nome.errors }}
+                  </div>
+                {% endif %}
+                <small class="form-text text-muted">Ex: 30 Dias, 30/60 Dias, À Vista</small>
+              </div>
+
+              <div class="mb-3">
+                <label for="{{ form.termos.id_for_label }}" class="form-label fw-bold">
+                  Termos (dias) <span class="text-danger">*</span>
+                </label>
+                {{ form.termos }}
+                {% if form.termos.errors %}
+                  <div class="invalid-feedback d-block">
+                    {{ form.termos.errors }}
+                  </div>
+                {% endif %}
+                <small class="form-text text-muted">
+                  Valores separados por vírgula. Ex: <strong>0,30,60,90</strong> ou <strong>30</strong> para um único termo
+                </small>
+              </div>
+
+              <div class="mb-3">
+                <div class="form-check form-switch">
+                  {{ form.ativo }}
+                  <label class="form-check-label fw-bold" for="{{ form.ativo.id_for_label }}">
+                    Preset Ativo
+                  </label>
+                  {% if form.ativo.errors %}
+                    <div class="invalid-feedback d-block">
+                      {{ form.ativo.errors }}
+                    </div>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+
+            <!-- Preview dos Termos -->
+            <div class="alert alert-info" id="previewTermos" style="display:none;">
+              <h6 class="mb-2"><i class="bi bi-eye"></i> Preview dos Termos:</h6>
+              <div id="previewBadges"></div>
+            </div>
+
+            <!-- Erros Gerais -->
+            {% if form.non_field_errors %}
+              <div class="alert alert-danger">
+                {{ form.non_field_errors }}
+              </div>
+            {% endif %}
+
+            <!-- Botões -->
+            <div class="d-flex gap-2 justify-content-end">
+              <a href="{% url 'cadastros:prazo_pagamento_list' %}" class="btn btn-secondary">
+                <i class="bi bi-x-circle"></i> Cancelar
+              </a>
+              <button type="submit" class="btn btn-success">
+                <i class="bi bi-check-circle"></i> Salvar Preset
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const termoInput = document.getElementById('id_termos');
+  const previewDiv = document.getElementById('previewTermos');
+  const previewBadges = document.getElementById('previewBadges');
+
+  function atualizarPreview() {
+    const valor = termoInput.value.trim();
+    
+    if (!valor) {
+      previewDiv.style.display = 'none';
+      return;
+    }
+    
+    try {
+      // Separar por vírgula
+      const termos = valor.split(',')
+        .map(t => t.trim())
+        .filter(t => t && /^\d+$/.test(t))
+        .map(t => parseInt(t));
+      
+      if (termos.length === 0) {
+        previewDiv.style.display = 'none';
+        return;
+      }
+      
+      previewBadges.innerHTML = '';
+      termos.forEach(termo => {
+        const badge = document.createElement('span');
+        badge.className = 'badge bg-info me-2 mb-2';
+        badge.textContent = termo + ' dias';
+        previewBadges.appendChild(badge);
+      });
+      
+      previewDiv.style.display = 'block';
+    } catch (e) {
+      previewDiv.style.display = 'none';
+    }
+  }
+
+  // Chamar ao carregar
+  atualizarPreview();
+  
+  // Chamar ao mudar
+  termoInput.addEventListener('input', atualizarPreview);
+});
+</script>
+{% endblock %}

@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Deletar Documento{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-exclamation-triangle"></i> Confirmar Exclusão
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="mb-3">
+                        Tem certeza que deseja deletar este documento?
+                    </p>
+                    
+                    <div class="alert alert-info">
+                        <strong>Motorista:</strong> {{ motorista.nome }}<br>
+                        <strong>Tipo:</strong> {{ documento.get_tipo_display }}<br>
+                        {% if documento.numero %}<strong>Número:</strong> {{ documento.numero }}<br>{% endif %}
+                        {% if documento.data_emissao %}<strong>Emissão:</strong> {{ documento.data_emissao|date:"d/m/Y" }}<br>{% endif %}
+                        {% if documento.data_validade %}<strong>Validade:</strong> {{ documento.data_validade|date:"d/m/Y" }}{% endif %}
+                    </div>
+
+                    <form method="post" class="d-flex gap-2">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger flex-grow-1">
+                            <i class="bi bi-trash"></i> Deletar
+                        </button>
+                        <a href="{% url 'cadastros:motorista_detail' motorista.id %}" class="btn btn-outline-secondary flex-grow-1">
+                            <i class="bi bi-x-circle"></i> Cancelar
+                        </a>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

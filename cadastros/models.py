@@ -998,7 +998,7 @@ class Cliente(models.Model):
     inscricao_suframa = models.CharField('Inscrição SUFRAMA', max_length=50, blank=True, null=True)
 
     # Comerciais
-    limite_credito = models.DecimalField('Limite de Crédito', max_digits=14, decimal_places=2, default=0)
+    limite_credito = models.DecimalField('Limite de Crédito', max_digits=14, decimal_places=2, default=0, blank=True, null=True)
     prazo_pagamento = models.IntegerField('Prazo de Pagamento (dias)', null=True, blank=True)
     # Link para prazos de pagamento predefinidos (ex.: 30,60,90)
     prazo_pagamento_padrao = models.ForeignKey('PrazoPagamentoPadrao', on_delete=models.SET_NULL, null=True, blank=True, related_name='clientes')
@@ -1007,7 +1007,7 @@ class Cliente(models.Model):
         ('BOLETO','Boleto'),('PIX','PIX'),('TRANSFERENCIA','Transferência'),('CARTAO','Cartão'),('CREDITO','Crédito'),('INVOICE','Invoice'),('OUTRO','Outro')
     ]
     forma_pagamento_padrao = models.CharField('Forma de Pagamento Padrão', max_length=20, choices=FORMA_PGTO, blank=True, null=True)
-    desconto_padrao = models.DecimalField('Desconto Padrão (%)', max_digits=5, decimal_places=2, default=0)
+    desconto_padrao = models.DecimalField('Desconto Padrão (%)', max_digits=5, decimal_places=2, default=0, blank=True, null=True)
 
     vendedor_responsavel = models.ForeignKey('cadastros.Vendedor', on_delete=models.SET_NULL, null=True, blank=True, related_name='clientes')
     observacoes_comerciais = models.TextField('Observações Comerciais', blank=True, null=True)
@@ -1173,6 +1173,18 @@ class Cliente(models.Model):
             self.codigo = f"{prefix}-{(num+1):05d}"
 
         super().save(*args, **kwargs)
+
+    def get_cnpj_cpf_formatado(self):
+        """Formata CNPJ/CPF do cliente para exibição"""
+        import re
+        if not self.cnpj_cpf:
+            return ''
+        doc = re.sub(r'\D', '', (self.cnpj_cpf or ''))
+        if len(doc) == 14:  # CNPJ
+            return f"{doc[:2]}.{doc[2:5]}.{doc[5:8]}/{doc[8:12]}-{doc[12:]}"
+        elif len(doc) == 11:  # CPF
+            return f"{doc[:3]}.{doc[3:6]}.{doc[6:9]}-{doc[9:]}"
+        return self.cnpj_cpf or ''
 
 
 class Moeda(models.Model):
@@ -1437,10 +1449,6 @@ class PrazoPagamentoPadrao(models.Model):
     def get_termos_list(self):
         """Retorna lista de inteiros dos termos"""
         return [int(x) for x in self.termos.split(',') if x.strip().isdigit()]
-
-
-    def __str__(self):
-        return f"{self.banco} - {self.conta}-{self.conta_digito}"
 
 
 class DocumentoCliente(models.Model):
@@ -2289,6 +2297,15 @@ class Praga(models.Model):
         help_text='Nome científico da praga/doença'
     )
     
+    # Foto
+    foto = models.ImageField(
+        'Foto da Praga',
+        upload_to='pragas/%Y/%m/',
+        blank=True,
+        null=True,
+        help_text='Foto ou imagem identificativa da praga (JPG, PNG)'
+    )
+    
     # Status
     ativa = models.BooleanField(
         'Praga Ativa',
@@ -2335,6 +2352,607 @@ class Praga(models.Model):
         if self.nome_cientifico:
             return f"{self.nome_comum} ({self.nome_cientifico})"
         return self.nome_comum
+
+
+# ============================================
+# MÓDULO: MONITORAMENTO MIP (Manejo Integrado de Pragas)
+# ============================================
+
+class EstagioDesenvolvimento(models.Model):
+    """
+    Estágios do ciclo de vida de uma praga
+    Ex: Lagarta-do-cartucho tem: Ovo → Larva → Pupa → Adulto
+    Cada praga pode ter múltiplos estágios
+    """
+    
+    TIPO_ESTAGIO_CHOICES = [
+        ('OVO', 'Ovo'),
+        ('NINFA', 'Ninfa'),
+        ('LARVA', 'Larva'),
+        ('PUPA', 'Pupa'),
+        ('ADULTO', 'Adulto'),
+        ('ESPORO', 'Esporo (Fungo)'),
+        ('LESAO', 'Lesão (Doença)'),
+        ('OUTRO', 'Outro'),
+    ]
+    
+    empresa = models.ForeignKey(
+        'empresas.Empresa',
+        on_delete=models.CASCADE,
+        related_name='estagios_desenvolvimento',
+        verbose_name='Empresa',
+        null=True,
+        blank=True,
+        help_text='Deixar em branco para criar um template padrão'
+    )
+    
+    praga = models.ForeignKey(
+        'cadastros.Praga',
+        on_delete=models.CASCADE,
+        related_name='estagios',
+        verbose_name='Praga'
+    )
+    
+    tipo_estagio = models.CharField(
+        'Tipo de Estágio',
+        max_length=20,
+        choices=TIPO_ESTAGIO_CHOICES,
+        help_text='Ex: Ovo, Larva, Adulto, etc'
+    )
+    
+    descricao = models.CharField(
+        'Descrição',
+        max_length=200,
+        blank=True,
+        help_text='Ex: "Larva de 3º ínstar" ou "Ninfa 4 (pseudopupa)"'
+    )
+    
+    duracao_minima_dias = models.IntegerField(
+        'Duração Mínima (dias)',
+        null=True,
+        blank=True,
+        help_text='Duração mínima deste estágio'
+    )
+    
+    duracao_maxima_dias = models.IntegerField(
+        'Duração Máxima (dias)',
+        null=True,
+        blank=True,
+        help_text='Duração máxima deste estágio'
+    )
+    
+    ordem_ciclo = models.IntegerField(
+        'Ordem no Ciclo',
+        default=1,
+        help_text='1=Ovo, 2=Larva1, 3=Larva2, etc'
+    )
+    
+    eh_fase_critica = models.BooleanField(
+        'É Fase Crítica?',
+        default=False,
+        help_text='Marcar se é a fase mais sensível/danosa'
+    )
+    
+    observacoes = models.TextField(
+        'Observações',
+        blank=True,
+        help_text='Notas sobre este estágio'
+    )
+    
+    ativo = models.BooleanField('Ativo', default=True)
+    
+    # Template de estágios padrão
+    eh_template = models.BooleanField(
+        'É Estágio Template?',
+        default=False,
+        help_text='Marcar para estágios padrão que serão copiados para novas empresas'
+    )
+    
+    template_original = models.ForeignKey(
+        'self',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='copias',
+        verbose_name='Template Original',
+        help_text='Se preenchido, este estágio foi copiado de um template'
+    )
+    
+    data_criacao = models.DateTimeField('Data de Criação', auto_now_add=True)
+    data_atualizacao = models.DateTimeField('Última Atualização', auto_now=True)
+    
+    class Meta:
+        verbose_name = 'Estágio de Desenvolvimento'
+        verbose_name_plural = 'Estágios de Desenvolvimento'
+        ordering = ['praga', 'ordem_ciclo']
+        indexes = [
+            models.Index(fields=['empresa', 'praga']),
+            models.Index(fields=['tipo_estagio']),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=['empresa', 'praga', 'tipo_estagio', 'ordem_ciclo'],
+                name='unique_estagio_praga_empresa'
+            )
+        ]
+    
+    def __str__(self):
+        return f"{self.praga.nome_comum} - {self.get_tipo_estagio_display()}"
+
+
+class MonitoramentoMIP(models.Model):
+    """
+    Monitoramento MIP (Manejo Integrado de Pragas)
+    Representa UMA VISITA ao talhão para avaliação de pragas
+    Pode registrar múltiplas pragas na mesma visita
+    """
+    
+    TIPO_MONITORAMENTO_CHOICES = [
+        ('REGULAR', 'Monitoramento Regular'),
+        ('PREVENTIVO', 'Monitoramento Preventivo'),
+        ('EMERGENCIAL', 'Monitoramento Emergencial'),
+    ]
+    
+    STATUS_CHOICES = [
+        ('RASCUNHO', 'Rascunho'),
+        ('COMPLETO', 'Monitoramento Completo'),
+        ('ANALISADO', 'Analisado e Avaliado'),
+        ('CANCELADO', 'Cancelado'),
+    ]
+    
+    empresa = models.ForeignKey(
+        'empresas.Empresa',
+        on_delete=models.CASCADE,
+        related_name='monitoramentos_mip',
+        verbose_name='Empresa'
+    )
+    
+    numero = models.CharField(
+        'Número',
+        max_length=20,
+        unique=True,
+        help_text='Auto-gerado: MIP-YYYY-NNNNN'
+    )
+    
+    # Contexto agrícola
+    talhao = models.ForeignKey(
+        'cadastros.Talhao',
+        on_delete=models.PROTECT,
+        related_name='monitoramentos_mip',
+        verbose_name='Talhão'
+    )
+    
+    safra = models.ForeignKey(
+        'cadastros.Safra',
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name='monitoramentos_mip',
+        verbose_name='Safra',
+        help_text='Selecione a safra ativa em que o monitoramento foi realizado'
+    )
+    
+    cultura = models.ForeignKey(
+        'cadastros.Cultura',
+        on_delete=models.PROTECT,
+        related_name='monitoramentos_mip',
+        verbose_name='Cultura',
+        help_text='Auto-preenchida do talhão'
+    )
+    
+    # Identificação da visita
+    data_monitoramento = models.DateField(
+        'Data do Monitoramento',
+        help_text='Data da visita ao talhão'
+    )
+    
+    tipo_monitoramento = models.CharField(
+        'Tipo de Monitoramento',
+        max_length=20,
+        choices=TIPO_MONITORAMENTO_CHOICES,
+        default='REGULAR'
+    )
+    
+    responsavel = models.ForeignKey(
+        'usuarios.Usuario',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='monitoramentos_mip_realizados',
+        verbose_name='Responsável (Pragueiro)'
+    )
+    
+    # Amostragem
+    quantidade_pontos = models.IntegerField(
+        'Quantidade de Pontos',
+        default=20,
+        help_text='Padrão: 20 pontos por monitoramento'
+    )
+    
+    # Condições climáticas no momento da visita
+    condicoes_tempo = models.CharField(
+        'Condições do Tempo',
+        max_length=100,
+        blank=True,
+        help_text='Ex: Nublado, ensolarado, chuva iminente'
+    )
+    
+    temperatura_media = models.DecimalField(
+        'Temperatura Média (°C)',
+        max_digits=5,
+        decimal_places=1,
+        null=True,
+        blank=True
+    )
+    
+    umidade_media = models.IntegerField(
+        'Umidade Média (%)',
+        null=True,
+        blank=True,
+        validators=[
+            MinValueValidator(0),
+            MaxValueValidator(100)
+        ]
+    )
+    
+    velocidade_vento_media = models.DecimalField(
+        'Velocidade do Vento Média (km/h)',
+        max_digits=5,
+        decimal_places=1,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(0)]
+    )
+    
+    # Evidências
+    foto_area_geral = models.ImageField(
+        'Foto da Área Geral',
+        upload_to='monitoramento_mip/%Y/%m/',
+        null=True,
+        blank=True
+    )
+    
+    # Status
+    status = models.CharField(
+        'Status',
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='RASCUNHO'
+    )
+    
+    observacoes_gerais = models.TextField(
+        'Observações Gerais',
+        blank=True,
+        help_text='Notas gerais sobre a visita'
+    )
+    
+    # Auditoria
+    data_criacao = models.DateTimeField('Data de Criação', auto_now_add=True)
+    data_atualizacao = models.DateTimeField('Última Atualização', auto_now=True)
+    criado_por = models.ForeignKey(
+        'usuarios.Usuario',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='monitoramentos_mip_criados',
+        verbose_name='Criado Por'
+    )
+    
+    class Meta:
+        verbose_name = 'Monitoramento MIP'
+        verbose_name_plural = 'Monitoramentos MIP'
+        ordering = ['-data_monitoramento']
+        indexes = [
+            models.Index(fields=['empresa', 'data_monitoramento']),
+            models.Index(fields=['talhao', 'data_monitoramento']),
+            models.Index(fields=['status']),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=['talhao', 'data_monitoramento'],
+                name='unique_monitoramento_talhao_data',
+                condition=models.Q(status__in=['COMPLETO', 'ANALISADO'])
+            )
+        ]
+    
+    def __str__(self):
+        return f"{self.numero} - {self.talhao.nome} ({self.data_monitoramento})"
+    
+    def save(self, *args, **kwargs):
+        """Auto-gera número se não tiver"""
+        if not self.numero:
+            from datetime import datetime
+            from django.utils import timezone
+            ano = timezone.now().year
+            ultima = MonitoramentoMIP.objects.filter(
+                numero__startswith=f'MIP-{ano}'
+            ).order_by('numero').last()
+            
+            if ultima:
+                numero_seq = int(ultima.numero.split('-')[-1]) + 1
+            else:
+                numero_seq = 1
+            
+            self.numero = f'MIP-{ano}-{numero_seq:05d}'
+        
+        # Auto-carrega cultura do talhão se não tiver
+        if self.talhao and not self.cultura:
+            self.cultura = self.talhao.cultura_atual
+        
+        super().save(*args, **kwargs)
+
+
+class PragaNoMonitoramento(models.Model):
+    """
+    Customized M2M: Liga Praga ao Monitoramento MIP
+    Um monitoramento pode ter N pragas
+    Cada praga tem seus próprios dados de incidência, estágio, etc
+    """
+    
+    RESULTADO_ACAO_CHOICES = [
+        ('SEM_ACAO', 'Sem Ação Necessária'),
+        ('MONITORAR', 'Continuar Monitorando'),
+        ('RECOMENDA_DEFENSIVO', 'Recomenda Defensivo'),
+    ]
+    
+    SEVERIDADE_CHOICES = [
+        (1, 'Muito Baixa'),
+        (2, 'Baixa'),
+        (3, 'Média'),
+        (4, 'Alta'),
+        (5, 'Muito Alta'),
+    ]
+    
+    monitoramento = models.ForeignKey(
+        'cadastros.MonitoramentoMIP',
+        on_delete=models.CASCADE,
+        related_name='pragas_detectadas',
+        verbose_name='Monitoramento MIP'
+    )
+    
+    praga = models.ForeignKey(
+        'cadastros.Praga',
+        on_delete=models.PROTECT,
+        related_name='monitoramentos',
+        verbose_name='Praga/Doença'
+    )
+    
+    # AMOSTRAGEM
+    quantidade_pontos_com_praga = models.IntegerField(
+        'Quantidade de Pontos com Praga',
+        help_text='Quantos dos 20 pontos tinham esta praga'
+    )
+    
+    incidencia_percentual = models.DecimalField(
+        'Incidência (%)',
+        max_digits=5,
+        decimal_places=2,
+        blank=True,
+        default=0,
+        help_text='Calculado automaticamente: (qty_pontos/20)*100'
+    )
+    
+    # ESTÁGIOS ENCONTRADOS
+    estagio_principal = models.ForeignKey(
+        'cadastros.EstagioDesenvolvimento',
+        on_delete=models.PROTECT,
+        related_name='praga_monitoramento_estagio_principal',
+        verbose_name='Estágio Principal',
+        help_text='Estágio mais crítico encontrado'
+    )
+    
+    detalhes_estagios = models.JSONField(
+        'Detalhes por Estágio',
+        default=dict,
+        blank=True,
+        help_text='Ex: {"L3": 5, "L4": 3, "Adulto": 2}'
+    )
+    
+    # INDICADORES
+    severidade = models.IntegerField(
+        'Severidade (1-5)',
+        choices=SEVERIDADE_CHOICES,
+        default=3,
+        help_text='1=Muito Baixa, 5=Muito Alta'
+    )
+    
+    quantidade_total_pragas = models.IntegerField(
+        'Quantidade Total de Pragas Encontradas',
+        null=True,
+        blank=True,
+        help_text='Soma de todos os insetos/lesões encontradas'
+    )
+    
+    # COMPARAÇÃO COM NED
+    ned_valor = models.DecimalField(
+        'Nível Econômico de Dano (%)',
+        max_digits=5,
+        decimal_places=2,
+        default=5.0,
+        help_text='NED recomendado para esta praga+cultura+estágio'
+    )
+    
+    ned_atingido = models.BooleanField(
+        'NED Atingido?',
+        help_text='Incidência >= NED?'
+    )
+    
+    # RESULTADO
+    resultado_acao = models.CharField(
+        'Resultado da Ação',
+        max_length=20,
+        choices=RESULTADO_ACAO_CHOICES,
+        default='MONITORAR'
+    )
+    
+    # EVIDÊNCIAS
+    fotos = models.JSONField(
+        'Fotos da Praga',
+        default=list,
+        blank=True,
+        help_text='URLs das fotos tiradas desta praga'
+    )
+    
+    observacoes = models.TextField(
+        'Observações',
+        blank=True,
+        help_text='Notas específicas sobre esta praga'
+    )
+    
+    # Auditoria
+    data_criacao = models.DateTimeField('Data de Criação', auto_now_add=True)
+    data_atualizacao = models.DateTimeField('Última Atualização', auto_now=True)
+    
+    class Meta:
+        verbose_name = 'Praga no Monitoramento'
+        verbose_name_plural = 'Pragas no Monitoramento'
+        ordering = ['monitoramento', 'resultado_acao', '-incidencia_percentual']
+        indexes = [
+            models.Index(fields=['monitoramento', 'ned_atingido']),
+            models.Index(fields=['resultado_acao']),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=['monitoramento', 'praga'],
+                name='unique_praga_por_monitoramento'
+            )
+        ]
+    
+    def __str__(self):
+        return f"{self.monitoramento.numero} - {self.praga.nome_comum} ({self.incidencia_percentual}%)"
+    
+    def save(self, *args, **kwargs):
+        """Auto-calcula incidência e outras informações"""
+        if not self.incidencia_percentual:
+            self.incidencia_percentual = (
+                (self.quantidade_pontos_com_praga / 
+                 self.monitoramento.quantidade_pontos) * 100
+            )
+        
+        # Auto-determina se NED foi atingido
+        if self.ned_valor is not None:
+            self.ned_atingido = self.incidencia_percentual >= self.ned_valor
+            
+            # Define resultado com base no NED
+            if self.ned_atingido:
+                self.resultado_acao = 'RECOMENDA_DEFENSIVO'
+            elif self.incidencia_percentual > 0 and self.incidencia_percentual < self.ned_valor:
+                self.resultado_acao = 'MONITORAR'
+            else:
+                self.resultado_acao = 'SEM_ACAO'
+        
+        super().save(*args, **kwargs)
+
+
+class PontoMonitoramento(models.Model):
+    """
+    Detalhe de cada um dos 20 pontos no monitoramento de uma praga
+    Registra qual praga foi encontrada em qual ponto
+    """
+    
+    praga_monitoramento = models.ForeignKey(
+        'cadastros.PragaNoMonitoramento',
+        on_delete=models.CASCADE,
+        related_name='pontos',
+        verbose_name='Praga no Monitoramento'
+    )
+    
+    numero_ponto = models.IntegerField(
+        'Número do Ponto',
+        validators=[
+            MinValueValidator(1),
+            MaxValueValidator(20)
+        ],
+        help_text='Qual dos 20 pontos (1-20)'
+    )
+    
+    # Localização (opcional - para talhões grandes)
+    latitude = models.DecimalField(
+        'Latitude',
+        max_digits=9,
+        decimal_places=6,
+        null=True,
+        blank=True,
+        help_text='Coordenada GPS do ponto'
+    )
+    
+    longitude = models.DecimalField(
+        'Longitude',
+        max_digits=9,
+        decimal_places=6,
+        null=True,
+        blank=True,
+        help_text='Coordenada GPS do ponto'
+    )
+    
+    # Avaliação do ponto
+    praga_presente = models.BooleanField(
+        'Praga Presente?',
+        default=False,
+        help_text='Foi encontrada praga neste ponto?'
+    )
+    
+    quantidade = models.IntegerField(
+        'Quantidade',
+        default=0,
+        validators=[MinValueValidator(0)],
+        help_text='Quantos insetos/lesões encontrados neste ponto'
+    )
+    
+    estagio = models.ForeignKey(
+        'cadastros.EstagioDesenvolvimento',
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        verbose_name='Estágio Encontrado'
+    )
+    
+    severidade = models.IntegerField(
+        'Severidade Neste Ponto',
+        choices=[
+            (0, 'Nenhuma'),
+            (1, 'Muito Leve'),
+            (2, 'Leve'),
+            (3, 'Média'),
+            (4, 'Severa'),
+            (5, 'Muito Severa'),
+        ],
+        default=0
+    )
+    
+    # Evidência fotográfica
+    foto = models.ImageField(
+        'Foto do Ponto',
+        upload_to='monitoramento_pontos/%Y/%m/',
+        null=True,
+        blank=True
+    )
+    
+    observacoes = models.TextField(
+        'Observações',
+        blank=True,
+        help_text='Notas sobre este ponto específico'
+    )
+    
+    # Auditoria
+    data_criacao = models.DateTimeField('Data de Criação', auto_now_add=True)
+    
+    class Meta:
+        verbose_name = 'Ponto de Monitoramento'
+        verbose_name_plural = 'Pontos de Monitoramento'
+        ordering = ['praga_monitoramento', 'numero_ponto']
+        indexes = [
+            models.Index(fields=['praga_monitoramento', 'numero_ponto']),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=['praga_monitoramento', 'numero_ponto'],
+                name='unique_ponto_por_praga_monitoramento'
+            )
+        ]
+    
+    def __str__(self):
+        return f"Ponto {self.numero_ponto} - {self.praga_monitoramento}"
 
 
 # ============================================
@@ -2777,7 +3395,7 @@ class Talhao(models.Model):
         ]
     
     def __str__(self):
-        return f"{self.fazenda.nome} - {self.area.nome} - {self.nome}"
+        return f"{self.area.nome} - {self.nome}"
     
     def save(self, *args, **kwargs):
         """Preenche fazenda automaticamente pela área"""
@@ -4042,6 +4660,501 @@ class CategoriaFornecedor(models.Model):
         return self.nome
 
 
+class Armador(models.Model):
+    """Cadastro de Armadores (Shipping Companies) - RF-028, RF-308, RF-805, RF-808"""
+    
+    empresa = models.ForeignKey(
+        'empresas.Empresa',
+        on_delete=models.CASCADE,
+        related_name='armadores',
+        verbose_name='Empresa'
+    )
+    
+    # Identidade
+    codigo = models.CharField(
+        'Código',
+        max_length=20,
+        help_text='Código único do armador por empresa'
+    )
+    nome = models.CharField('Nome da Armadora', max_length=200)
+    nome_fantasia = models.CharField(
+        'Nome Fantasia',
+        max_length=200,
+        blank=True
+    )
+    cnpj = models.CharField(
+        'CNPJ',
+        max_length=20,
+        blank=True,
+        help_text='CNPJ (opcional para armadores estrangeiros)'
+    )
+    
+    # Localização
+    pais = models.CharField('País de Origem', max_length=100, default='Brasil')
+    website = models.URLField('Website', blank=True)
+    
+    # Endereço Principal (espelhado para conveniência)
+    cep = models.CharField('CEP', max_length=10, blank=True)
+    endereco = models.CharField('Endereço', max_length=200, blank=True)
+    numero = models.CharField('Número', max_length=10, blank=True)
+    complemento = models.CharField('Complemento', max_length=100, blank=True)
+    bairro = models.CharField('Bairro', max_length=100, blank=True)
+    cidade = models.CharField('Cidade', max_length=100, blank=True)
+    uf = models.CharField('UF', max_length=2, blank=True, choices=UF_CHOICES, default='')
+    
+    # Contato Principal (espelhado para conveniência)
+    email = models.EmailField('Email', blank=True)
+    telefone = models.CharField('Telefone', max_length=20, blank=True)
+    celular = models.CharField('Celular/WhatsApp', max_length=20, blank=True)
+    
+    # Operacional
+    tipos_navio = models.ManyToManyField(
+        'cadastros.TipoNavio',
+        related_name='armadores',
+        blank=True,
+        verbose_name='Tipos de Navio'
+    )
+    
+    # Indicadores (RF-808: Indicadores por armador)
+    confiabilidade_percentual = models.FloatField(
+        'Confiabilidade (%)',
+        default=100.0,
+        validators=[MinValueValidator(0), MaxValueValidator(100)],
+        help_text='Percentual de confiabilidade do armador'
+    )
+    percentual_rolagem_historico = models.FloatField(
+        'Percentual de Rolagem Histórico (%)',
+        default=0.0,
+        validators=[MinValueValidator(0)],
+        help_text='Percentual histórico de rolagens de containers'
+    )
+    custo_medio_rolagem = models.DecimalField(
+        'Custo Médio por Rolagem (USD)',
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True
+    )
+    
+    # Status
+    ativo = models.BooleanField('Ativo', default=True)
+    data_criacao = models.DateTimeField('Data de Criação', auto_now_add=True)
+    data_atualizacao = models.DateTimeField('Última Atualização', auto_now=True)
+    
+    criado_por = models.ForeignKey(
+        'usuarios.Usuario',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='armadores_criados',
+        verbose_name='Criado por'
+    )
+    
+    class Meta:
+        verbose_name = 'Armador'
+        verbose_name_plural = 'Armadores'
+        ordering = ['nome']
+        indexes = [
+            models.Index(fields=['empresa', 'codigo']),
+            models.Index(fields=['empresa', 'ativo']),
+            models.Index(fields=['cnpj']),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=['empresa', 'codigo'],
+                name='unique_armador_por_empresa'
+            ),
+            models.UniqueConstraint(
+                fields=['empresa', 'cnpj'],
+                condition=models.Q(cnpj__gt=''),
+                name='unique_cnpj_armador_por_empresa'
+            )
+        ]
+    
+    def __str__(self):
+        return f"{self.nome} ({self.codigo})"
+    
+    def get_nome_exibicao(self):
+        """Retorna nome de exibição: prefere `nome_fantasia` se disponível"""
+        return self.nome_fantasia or self.nome
+    
+    def get_cnpj_formatado(self):
+        """Formata CNPJ como XX.XXX.XXX/XXXX-XX"""
+        import re
+        doc = re.sub(r'\D', '', (self.cnpj or ''))
+        if len(doc) == 14:
+            return f"{doc[:2]}.{doc[2:5]}.{doc[5:8]}/{doc[8:12]}-{doc[12:]}"
+        return self.cnpj or ''
+
+
+class Navio(models.Model):
+    """Cadastro de Navios - RF-028"""
+    
+    TIPO_CHOICES = [
+        ('CONTAINER', 'Container'),
+        ('REEFER', 'Refrigerado'),
+        ('BREAKBULK', 'Break Bulk'),
+        ('MULTIPURPOSE', 'Multipropósito'),
+        ('GENERAL', 'Carga Geral'),
+        ('TANKER', 'Tanque'),
+        ('RoRo', 'Roll On Roll Off'),
+    ]
+    
+    STATUS_CHOICES = [
+        ('ATIVO', 'Ativo'),
+        ('INATIVO', 'Inativo'),
+        ('MANUTENCAO', 'Em Manutenção'),
+        ('DESCARTE', 'Para Descarte'),
+    ]
+    
+    empresa = models.ForeignKey(
+        'empresas.Empresa',
+        on_delete=models.CASCADE,
+        related_name='navios',
+        verbose_name='Empresa'
+    )
+    
+    armador = models.ForeignKey(
+        'cadastros.Armador',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='navios',
+        verbose_name='Armador'
+    )
+    
+    # Identidade
+    codigo = models.CharField(
+        'Código/Nome do Navio',
+        max_length=50,
+        help_text='Nome ou código único do navio'
+    )
+    nome = models.CharField('Nome do Navio', max_length=200)
+    imo = models.CharField(
+        'IMO (International Maritime Organization)',
+        max_length=10,
+        blank=True,
+        help_text='Número IMO do navio'
+    )
+    bandeira = models.CharField(
+        'País de Bandeira',
+        max_length=100,
+        help_text='País de registro da embarcação'
+    )
+    
+    # Características
+    tipo = models.CharField(
+        'Tipo de Navio',
+        max_length=20,
+        choices=TIPO_CHOICES,
+        default='CONTAINER'
+    )
+    capacidade_containers = models.IntegerField(
+        'Capacidade (TEUs)',
+        blank=True,
+        null=True,
+        help_text='Capacidade em Twenty-foot Equivalent Units'
+    )
+    capacidade_toneladas = models.DecimalField(
+        'Capacidade (Toneladas)',
+        max_digits=12,
+        decimal_places=2,
+        blank=True,
+        null=True
+    )
+    ano_construcao = models.IntegerField(
+        'Ano de Construção',
+        blank=True,
+        null=True
+    )
+    comprimento_metros = models.DecimalField(
+        'Comprimento (metros)',
+        max_digits=6,
+        decimal_places=2,
+        blank=True,
+        null=True
+    )
+    
+    # Operacional
+    velocidade_media_nós = models.DecimalField(
+        'Velocidade Média (nós)',
+        max_digits=5,
+        decimal_places=2,
+        blank=True,
+        null=True
+    )
+    portos_operacao = models.ManyToManyField(
+        'cadastros.Porto',
+        related_name='navios_operacao',
+        blank=True,
+        verbose_name='Portos de Operação'
+    )
+    
+    # Status
+    status = models.CharField(
+        'Status',
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='ATIVO'
+    )
+    ativo = models.BooleanField('Ativo', default=True)
+    
+    # Auditoria
+    data_criacao = models.DateTimeField('Data de Criação', auto_now_add=True)
+    data_atualizacao = models.DateTimeField('Última Atualização', auto_now=True)
+    
+    class Meta:
+        verbose_name = 'Navio'
+        verbose_name_plural = 'Navios'
+        ordering = ['nome']
+        indexes = [
+            models.Index(fields=['empresa', 'codigo']),
+            models.Index(fields=['empresa', 'armador']),
+            models.Index(fields=['empresa', 'ativo']),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=['empresa', 'codigo'],
+                name='unique_navio_por_empresa'
+            )
+        ]
+    
+    def __str__(self):
+        return f"{self.nome} ({self.codigo})"
+
+
+class ArmadorEndereco(models.Model):
+    """Endereços múltiplos para Armador (matriz, filial, operacional)"""
+
+    TIPO_ENDERECO = [
+        ('MATRIZ', 'Matriz'),
+        ('FILIAL', 'Filial'),
+        ('OPERACIONAL', 'Operacional'),
+        ('FATURAMENTO', 'Faturamento'),
+        ('ENTREGA', 'Entrega'),
+    ]
+
+    armador = models.ForeignKey(
+        'cadastros.Armador',
+        on_delete=models.CASCADE,
+        related_name='enderecos',
+        verbose_name='Armador'
+    )
+
+    tipo = models.CharField(
+        'Tipo',
+        max_length=20,
+        choices=TIPO_ENDERECO,
+        default='OPERACIONAL'
+    )
+
+    cep = models.CharField('CEP', max_length=10, blank=True)
+    logradouro = models.CharField('Logradouro', max_length=200, blank=True)
+    numero = models.CharField('Número', max_length=10, blank=True)
+    complemento = models.CharField('Complemento', max_length=100, blank=True)
+    bairro = models.CharField('Bairro', max_length=100, blank=True)
+    cidade = models.CharField('Cidade', max_length=100, blank=True)
+    uf = models.CharField('UF', max_length=2, blank=True)
+    pais = models.CharField('País', max_length=100, default='Brasil')
+
+    padrao = models.BooleanField('Endereço Padrão', default=False)
+    preenchido_via_api = models.BooleanField('Preenchido via API (ViaCEP)', default=False)
+
+    data_cadastro = models.DateTimeField('Data de Cadastro', auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Endereço do Armador'
+        verbose_name_plural = 'Endereços do Armador'
+        ordering = ['-padrao', 'cidade', 'tipo']
+        indexes = [
+            models.Index(fields=['armador', 'padrao']),
+        ]
+
+    def __str__(self):
+        return f"{self.get_tipo_display()} - {self.cidade}/{self.uf} - {self.armador.nome}"
+
+    def save(self, *args, **kwargs):
+        """Garante apenas um endereço padrão por armador"""
+        if self.padrao:
+            ArmadorEndereco.objects.filter(armador=self.armador, padrao=True).update(padrao=False)
+        super().save(*args, **kwargs)
+
+    def to_dict(self):
+        return {
+            'cep': self.cep or '',
+            'logradouro': self.logradouro or '',
+            'numero': self.numero or '',
+            'complemento': self.complemento or '',
+            'bairro': self.bairro or '',
+            'cidade': self.cidade or '',
+            'uf': self.uf or '',
+            'pais': self.pais or ''
+        }
+
+
+class ArmadorContato(models.Model):
+    """Contatos múltiplos para Armador"""
+
+    TIPO_CONTATO = [
+        ('PRINCIPAL', 'Contato Principal'),
+        ('FINANCEIRO', 'Financeiro'),
+        ('OPERACIONAL', 'Operacional'),
+        ('COMERCIAL', 'Comercial'),
+        ('TÉCNICO', 'Técnico'),
+        ('EMERGÊNCIA', 'Emergência'),
+    ]
+
+    armador = models.ForeignKey(
+        'cadastros.Armador',
+        on_delete=models.CASCADE,
+        related_name='contatos',
+        verbose_name='Armador'
+    )
+
+    tipo = models.CharField(
+        'Tipo de Contato',
+        max_length=20,
+        choices=TIPO_CONTATO,
+        default='PRINCIPAL'
+    )
+
+    nome = models.CharField('Nome Completo', max_length=150)
+    cargo = models.CharField('Cargo/Função', max_length=100, blank=True)
+
+    telefone = models.CharField('Telefone', max_length=20, blank=True)
+    celular = models.CharField('Celular/WhatsApp', max_length=20, blank=True)
+    email = models.EmailField('E-mail', blank=True)
+
+    whatsapp = models.BooleanField('WhatsApp', default=False)
+    preferencial = models.BooleanField('Contato Preferencial', default=False)
+
+    observacoes = models.TextField('Observações', blank=True)
+
+    data_cadastro = models.DateTimeField('Data de Cadastro', auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Contato do Armador'
+        verbose_name_plural = 'Contatos do Armador'
+        ordering = ['-preferencial', 'tipo', 'nome']
+
+    def __str__(self):
+        return f"{self.nome} - {self.get_tipo_display()}"
+
+
+class ArmadorDadoBancario(models.Model):
+    """Contas bancárias do Armador"""
+
+    TIPO_CONTA = [
+        ('CORRENTE', 'Conta Corrente'),
+        ('POUPANCA', 'Poupança'),
+        ('SALARIO', 'Conta Salário'),
+    ]
+
+    TIPO_PIX = [
+        ('CPF', 'CPF'),
+        ('CNPJ', 'CNPJ'),
+        ('EMAIL', 'E-mail'),
+        ('TELEFONE', 'Telefone'),
+        ('CHAVE_ALEATORIA', 'Chave Aleatória'),
+    ]
+
+    armador = models.ForeignKey(
+        'cadastros.Armador',
+        on_delete=models.CASCADE,
+        related_name='dados_bancarios',
+        verbose_name='Armador'
+    )
+
+    # Banco
+    codigo_banco = models.CharField(
+        'Código do Banco',
+        max_length=10,
+        help_text='Ex: 001 (BB), 033 (Santander)'
+    )
+    nome_banco = models.CharField('Nome do Banco', max_length=100)
+    agencia = models.CharField('Agência', max_length=20)
+    agencia_dv = models.CharField('DV Agência', max_length=2, blank=True)
+    conta = models.CharField('Conta', max_length=20)
+    conta_dv = models.CharField('DV Conta', max_length=2, blank=True)
+    
+    tipo_conta = models.CharField(
+        'Tipo de Conta',
+        max_length=20,
+        choices=TIPO_CONTA,
+        default='CORRENTE'
+    )
+
+    # PIX
+    tem_pix = models.BooleanField('Tem PIX', default=False)
+    tipo_pix = models.CharField(
+        'Tipo de Chave PIX',
+        max_length=20,
+        choices=TIPO_PIX,
+        blank=True
+    )
+    chave_pix = models.CharField('Chave PIX', max_length=255, blank=True)
+
+    # Complemento
+    nome_titular = models.CharField('Nome do Titular', max_length=150)
+    cpf_cnpj_titular = models.CharField(
+        'CPF/CNPJ do Titular',
+        max_length=20,
+        blank=True
+    )
+    
+    padrao = models.BooleanField('Dado Bancário Padrão', default=False)
+    ativo = models.BooleanField('Ativo', default=True)
+    
+    data_cadastro = models.DateTimeField('Data de Cadastro', auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Dado Bancário do Armador'
+        verbose_name_plural = 'Dados Bancários do Armador'
+        ordering = ['-padrao', 'nome_banco']
+
+    def __str__(self):
+        return f"{self.nome_banco} - {self.agencia}/{self.conta} - {self.armador.nome}"
+
+    def save(self, *args, **kwargs):
+        """Garante apenas um dado bancário padrão por armador"""
+        if self.padrao:
+            ArmadorDadoBancario.objects.filter(armador=self.armador, padrao=True).update(padrao=False)
+        super().save(*args, **kwargs)
+
+
+class TipoNavio(models.Model):
+    """Tipos de Navio - permite que armadores operem múltiplos tipos"""
+    
+    codigo = models.CharField(
+        'Código',
+        max_length=20,
+        unique=True,
+        help_text='Código único do tipo (ex: CONTAINER, REEFER)'
+    )
+    nome = models.CharField(
+        'Nome',
+        max_length=100,
+        help_text='Nome do tipo de navio'
+    )
+    descricao = models.TextField(
+        'Descrição',
+        blank=True,
+        help_text='Descrição detalhada do tipo de navio'
+    )
+    ativo = models.BooleanField('Ativo', default=True)
+    
+    data_criacao = models.DateTimeField('Data de Criação', auto_now_add=True)
+    data_atualizacao = models.DateTimeField('Última Atualização', auto_now=True)
+    
+    class Meta:
+        verbose_name = 'Tipo de Navio'
+        verbose_name_plural = 'Tipos de Navio'
+        ordering = ['nome']
+    
+    def __str__(self):
+        return f"{self.nome} ({self.codigo})"
+
+
 class Porto(models.Model):
     """Portos / Pontos de Entrada (Marítimo, Aéreo, Terrestre)"""
 
@@ -4602,6 +5715,205 @@ def validity_is_past(validade_date, compare_dt):
         return validade_date < compare_dt.date() if hasattr(compare_dt, 'date') else validade_date < compare_dt
     except Exception:
         return False
+
+
+# ==========================
+# MODELO DE MOTORISTA
+# ==========================
+
+class Motorista(models.Model):
+    """Cadastro de motoristas (próprios, terceirizados ou agregados)"""
+    
+    TIPO_CHOICES = [
+        ('PROPRIO', 'Próprio'),
+        ('TERCEIRO', 'Terceirizado'),
+        ('AGREGADO', 'Agregado'),
+    ]
+    
+    CATEGORIA_CNH_CHOICES = [
+        ('A', 'Categoria A'),
+        ('B', 'Categoria B'),
+        ('C', 'Categoria C'),
+        ('D', 'Categoria D'),
+        ('E', 'Categoria E'),
+        ('AB', 'Categoria AB'),
+        ('AC', 'Categoria AC'),
+        ('AD', 'Categoria AD'),
+        ('AE', 'Categoria AE'),
+        ('BC', 'Categoria BC'),
+        ('BD', 'Categoria BD'),
+        ('BE', 'Categoria BE'),
+        ('CD', 'Categoria CD'),
+        ('CE', 'Categoria CE'),
+        ('DE', 'Categoria DE'),
+    ]
+
+    empresa = models.ForeignKey(
+        'empresas.Empresa',
+        on_delete=models.CASCADE,
+        related_name='motoristas',
+        verbose_name='Empresa'
+    )
+    
+    tipo = models.CharField(
+        'Tipo de Motorista',
+        max_length=10,
+        choices=TIPO_CHOICES,
+        default='PROPRIO',
+        help_text='Selecione se é motorista próprio ou terceirizado'
+    )
+    
+    transportadora = models.ForeignKey(
+        'cadastros.Transportadora',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='motoristas',
+        verbose_name='Transportadora',
+        help_text='Obrigatório para motoristas terceirizados'
+    )
+    
+    # Dados pessoais
+    nome = models.CharField('Nome Completo', max_length=200)
+    cpf = models.CharField(
+        'CPF',
+        max_length=14,
+        unique=True,
+        help_text='Formato: 000.000.000-00'
+    )
+    data_nascimento = models.DateField('Data de Nascimento', null=True, blank=True)
+    foto = models.ImageField(
+        'Foto',
+        upload_to='motorista_fotos/',
+        null=True,
+        blank=True,
+        help_text='Foto do motorista (opcional, recomendado para motoristas próprios e agregados)'
+    )
+    
+    # Documentação - CNH
+    cnh = models.CharField(
+        'Número CNH',
+        max_length=20,
+        unique=True,
+        help_text='Número da Carteira Nacional de Habilitação'
+    )
+    categoria_cnh = models.CharField(
+        'Categoria CNH',
+        max_length=5,
+        choices=CATEGORIA_CNH_CHOICES,
+        help_text='Categoria da CNH'
+    )
+    data_emissao_cnh = models.DateField('Data Emissão CNH', null=True, blank=True)
+    data_validade_cnh = models.DateField('Data Validade CNH')
+    uf_cnh = models.CharField('UF CNH', max_length=2, blank=True, help_text='Estado emissor da CNH')
+    
+    # Contatos
+    telefone = models.CharField('Telefone', max_length=20, blank=True)
+    celular = models.CharField('Celular/WhatsApp', max_length=20)
+    email = models.EmailField('Email', blank=True)
+    
+    # Endereço
+    cep = models.CharField('CEP', max_length=10, blank=True)
+    logradouro = models.CharField('Logradouro', max_length=200, blank=True)
+    numero = models.CharField('Número', max_length=10, blank=True)
+    complemento = models.CharField('Complemento', max_length=100, blank=True)
+    bairro = models.CharField('Bairro', max_length=100, blank=True)
+    cidade = models.CharField('Cidade', max_length=100, blank=True)
+    uf = models.CharField('UF', max_length=2, blank=True)
+    pais = models.CharField('País', max_length=100, default='Brasil')
+    
+    # Status
+    ativo = models.BooleanField('Ativo', default=True)
+    motivo_inativacao = models.TextField('Motivo da Inativação', blank=True)
+    data_inativacao = models.DateField('Data Inativação', null=True, blank=True)
+    
+    # Auditoria
+    data_criacao = models.DateTimeField('Data de Criação', auto_now_add=True)
+    data_atualizacao = models.DateTimeField('Última Atualização', auto_now=True)
+
+    class Meta:
+        verbose_name = 'Motorista'
+        verbose_name_plural = 'Motoristas'
+        ordering = ['nome']
+        indexes = [
+            models.Index(fields=['empresa', 'ativo']),
+            models.Index(fields=['cpf']),
+            models.Index(fields=['cnh']),
+        ]
+        constraints = [
+            models.CheckConstraint(
+                check=~models.Q(tipo__in=['TERCEIRO', 'AGREGADO']) | models.Q(transportadora__isnull=False),
+                name='motorista_terceiro_agregado_requer_transportadora'
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.nome} ({self.cpf})"
+    
+    def clean(self):
+        """Valida lógicas de negócio do motorista"""
+        from django.core.exceptions import ValidationError
+        
+        # Motorista terceirizado e agregado devem ter transportadora
+        if self.tipo in ['TERCEIRO', 'AGREGADO'] and not self.transportadora:
+            raise ValidationError({
+                'transportadora': f'Transportadora é obrigatória para motoristas {self.get_tipo_display().lower()}.'
+            })
+    
+    @property
+    def cnh_vencida(self):
+        """Retorna True se a CNH está vencida"""
+        from django.utils import timezone
+        return self.data_validade_cnh < timezone.now().date() if self.data_validade_cnh else False
+    
+    @property
+    def dias_para_vencer_cnh(self):
+        """Retorna dias restantes para vencimento da CNH"""
+        from django.utils import timezone
+        if not self.data_validade_cnh:
+            return None
+        dias = (self.data_validade_cnh - timezone.now().date()).days
+        return dias if dias >= 0 else None
+
+
+class MotoristadoDocumento(models.Model):
+    """Documentos adicionais do motorista (exames, certificados, etc)"""
+    
+    TIPO_DOCUMENTO_CHOICES = [
+        ('EXAME_PSICO', 'Exame Psicotécnico'),
+        ('EXAME_MEDICO', 'Exame Médico'),
+        ('CERTIFICADO_ETEA', 'Certificado ETEA'),
+        ('OUTRO', 'Outro'),
+    ]
+    
+    motorista = models.ForeignKey(
+        'cadastros.Motorista',
+        on_delete=models.CASCADE,
+        related_name='documentos',
+        verbose_name='Motorista'
+    )
+    
+    tipo = models.CharField(
+        'Tipo de Documento',
+        max_length=20,
+        choices=TIPO_DOCUMENTO_CHOICES
+    )
+    
+    numero = models.CharField('Número', max_length=100, blank=True)
+    data_emissao = models.DateField('Data Emissão', null=True, blank=True)
+    data_validade = models.DateField('Data Validade', null=True, blank=True)
+    arquivo = models.FileField('Arquivo', upload_to='motorista_docs/', null=True, blank=True)
+    observacoes = models.TextField('Observações', blank=True)
+    
+    data_criacao = models.DateTimeField('Data de Criação', auto_now_add=True)
+    
+    class Meta:
+        verbose_name = 'Documento do Motorista'
+        verbose_name_plural = 'Documentos do Motorista'
+        ordering = ['-data_emissao']
+
+    def __str__(self):
+        return f"{self.motorista.nome} - {self.get_tipo_display()}"
 
 
 """

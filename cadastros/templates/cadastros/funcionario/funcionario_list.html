@@ -29,6 +29,233 @@
     font-size: 0.85rem;
     padding: 6px 12px;
   }
+
+  /* Visualização em Lista */
+  .funcionarios-container.lista-view .row {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .funcionarios-container.lista-view .col-md-6,
+  .funcionarios-container.lista-view .col-lg-4 {
+    width: 100%;
+    margin-bottom: 0;
+    padding: 0 !important;
+  }
+
+  /* Header da tabela */
+  .lista-table-header {
+    display: grid;
+    grid-template-columns: 40px 1.5fr 1fr 1.2fr 1fr 0.8fr 0.8fr;
+    gap: 12px;
+    padding: 12px 15px;
+    background: linear-gradient(to right, #f8f9fa 0%, #f0f2f5 100%);
+    border-bottom: 2px solid #dee2e6;
+    border-radius: 8px 8px 0 0;
+    font-weight: 700;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    color: #495057;
+    margin-bottom: 0;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  .lista-table-header > * {
+    display: flex;
+    align-items: center;
+  }
+
+  /* Cards em forma de linha */
+  .funcionarios-container.lista-view .funcionario-card {
+    margin-bottom: 0;
+    border: 1px solid #dee2e6;
+    border-left: 4px solid #3b82f6;
+    border-radius: 0;
+    box-shadow: none;
+    transition: all 0.2s ease;
+  }
+
+  .funcionarios-container.lista-view .funcionario-card:hover {
+    background-color: #f8f9fa;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    border-left-color: #0d6efd;
+  }
+
+  .funcionarios-container.lista-view .funcionario-card.inativo {
+    border-left-color: #dc3545;
+    opacity: 0.85;
+    background-color: #fff5f5;
+  }
+
+  .funcionarios-container.lista-view .funcionario-card .card-body {
+    display: grid;
+    grid-template-columns: 40px 1.5fr 1fr 1.2fr 1fr 0.8fr 0.8fr;
+    gap: 12px;
+    align-items: center;
+    padding: 12px 15px !important;
+    border-radius: 0;
+    height: 70px;
+  }
+
+  /* Coluna Foto */
+  .funcionarios-container.lista-view .col-foto {
+    grid-column: 1;
+    justify-self: center;
+  }
+
+  .funcionarios-container.lista-view .col-foto .foto-funcionario {
+    width: 40px;
+    height: 40px;
+  }
+
+  /* Coluna Nome */
+  .funcionarios-container.lista-view .col-nome {
+    grid-column: 2;
+    overflow: hidden;
+  }
+
+  .funcionarios-container.lista-view .col-nome h5 {
+    font-size: 0.95rem;
+    margin-bottom: 2px !important;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .funcionarios-container.lista-view .col-nome p {
+    font-size: 0.8rem;
+    color: #6c757d;
+    margin-bottom: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Coluna Função */
+  .funcionarios-container.lista-view .col-funcao {
+    grid-column: 3;
+    font-size: 0.9rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Coluna Fazenda */
+  .funcionarios-container.lista-view .col-fazenda {
+    grid-column: 4;
+    font-size: 0.9rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Coluna Salário */
+  .funcionarios-container.lista-view .col-salario {
+    grid-column: 5;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #28a745;
+  }
+
+  /* Coluna Status */
+  .funcionarios-container.lista-view .col-status {
+    grid-column: 6;
+    justify-self: center;
+  }
+
+  .funcionarios-container.lista-view .col-status .badge {
+    font-size: 0.75rem;
+    padding: 4px 8px;
+  }
+
+  /* Coluna Ações */
+  .funcionarios-container.lista-view .col-acoes {
+    grid-column: 7;
+    display: flex;
+    gap: 2px;
+    justify-self: end;
+  }
+
+  .funcionarios-container.lista-view .col-acoes .btn {
+    padding: 4px 6px;
+    font-size: 0.75rem;
+  }
+
+  /* Grid View Styling */
+  .funcionarios-container.grid-view .row {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .funcionarios-container.grid-view .col-md-6,
+  .funcionarios-container.grid-view .col-lg-4 {
+    width: 100%;
+  }
+
+  .funcionarios-container.grid-view .funcionario-card {
+    border-radius: 10px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  }
+
+  .funcionarios-container.grid-view .d-flex.align-items-center.mb-3 {
+    display: flex;
+  }
+
+  .funcionarios-container.grid-view .mb-3 {
+    display: block;
+  }
+
+  .funcionarios-container.grid-view .d-flex.gap-2 {
+    display: flex;
+  }
+
+  /* Lista view */
+  .funcionarios-container.lista-view .grid-view-only {
+    display: none !important;
+  }
+
+  .funcionarios-container.grid-view .lista-table-header {
+    display: none;
+  }
+
+  .funcionarios-container.grid-view .col-foto,
+  .funcionarios-container.grid-view .col-nome,
+  .funcionarios-container.grid-view .col-funcao,
+  .funcionarios-container.grid-view .col-fazenda,
+  .funcionarios-container.grid-view .col-salario,
+  .funcionarios-container.grid-view .col-status,
+  .funcionarios-container.grid-view .col-acoes {
+    display: none !important;
+  }
+
+  .funcionarios-container.grid-view .grid-view-only {
+    display: block !important;
+  }
+    display: flex;
+    gap: 5px;
+    align-items: center;
+  }
+
+  .view-toggle .btn {
+    padding: 8px 12px;
+    font-size: 0.9rem;
+  }
+
+  .view-toggle .btn.active {
+    background-color: #3b82f6;
+    color: white;
+    border-color: #3b82f6;
+  }
+
+  .view-toggle .btn:not(.active) {
+    background-color: #fff;
+    border-color: #dee2e6;
+    color: #6c757d;
+  }
 </style>
 {% endblock %}
 
@@ -176,19 +403,109 @@
           </button>
         </div>
       </form>
+      <div class="row mt-3">
+        <div class="col-12">
+          <div class="view-toggle">
+            <span class="text-muted small me-2">Visualizar:</span>
+            <button type="button" class="btn btn-sm view-btn" id="btn-grid-view" data-view="grid" title="Visualização em Cards">
+              <i class="bi bi-grid-3x2-gap"></i> Cards
+            </button>
+            <button type="button" class="btn btn-sm view-btn" id="btn-list-view" data-view="list" title="Visualização em Lista">
+              <i class="bi bi-list-ul"></i> Lista
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
   <!-- Lista de Funcionários -->
   {% if page_obj %}
-    <div class="row g-4">
+    <div class="funcionarios-container grid-view" id="funcionarios-container">
+      <!-- Header da Tabela (apenas lista) -->
+      <div class="lista-table-header">
+        <div></div>
+        <div>Nome / CPF</div>
+        <div>Função</div>
+        <div>Fazenda</div>
+        <div>Salário</div>
+        <div>Status</div>
+        <div>Ações</div>
+      </div>
+
+      <div class="row g-4">
       {% for funcionario in page_obj %}
         <div class="col-md-6 col-lg-4">
           <div class="card funcionario-card border-0 shadow-sm h-100 {% if not funcionario.ativo %}inativo{% endif %}">
             <div class="card-body p-4">
               
-              <!-- Header com Foto -->
-              <div class="d-flex align-items-center mb-3">
+              <!-- Coluna Foto -->
+              <div class="col-foto">
+                {% if funcionario.foto %}
+                  <img src="{{ funcionario.foto.url }}" alt="{{ funcionario.nome_completo }}" class="foto-funcionario">
+                {% else %}
+                  <div class="foto-funcionario bg-primary bg-opacity-10 d-flex align-items-center justify-content-center">
+                    <i class="bi bi-person-fill fs-1 text-primary"></i>
+                  </div>
+                {% endif %}
+              </div>
+
+              <!-- Coluna Nome -->
+              <div class="col-nome">
+                <h5 class="mb-1 fw-bold">
+                  <a href="{% url 'cadastros:funcionario_detail' funcionario.pk %}" class="text-decoration-none text-dark">
+                    {{ funcionario.nome_completo }}
+                  </a>
+                </h5>
+                <p class="text-muted">{{ funcionario.get_cpf_formatado }}</p>
+              </div>
+
+              <!-- Coluna Função -->
+              <div class="col-funcao">
+                <i class="bi bi-briefcase text-primary me-2"></i>{{ funcionario.funcao.nome }}
+              </div>
+
+              <!-- Coluna Fazenda -->
+              <div class="col-fazenda">
+                {% if funcionario.fazenda %}
+                  <i class="bi bi-geo-alt text-success me-2"></i>{{ funcionario.fazenda.nome }}
+                {% else %}
+                  <span class="text-muted">—</span>
+                {% endif %}
+              </div>
+
+              <!-- Coluna Salário -->
+              <div class="col-salario">
+                <i class="bi bi-currency-dollar text-success me-1"></i>R$ {{ funcionario.salario|floatformat:2 }}
+              </div>
+
+              <!-- Coluna Status -->
+              <div class="col-status">
+                {% if funcionario.ativo %}
+                  <span class="badge bg-success">Ativo</span>
+                {% else %}
+                  <span class="badge bg-danger">Inativo</span>
+                {% endif %}
+              </div>
+
+              <!-- Coluna Ações -->
+              <div class="col-acoes">
+                <a href="{% url 'cadastros:funcionario_detail' funcionario.pk %}" 
+                   class="btn btn-sm btn-outline-primary" title="Ver">
+                  <i class="bi bi-eye"></i>
+                </a>
+                <a href="{% url 'cadastros:funcionario_update' funcionario.pk %}" 
+                   class="btn btn-sm btn-outline-secondary" title="Editar">
+                  <i class="bi bi-pencil"></i>
+                </a>
+                <a href="{% url 'cadastros:funcionario_delete' funcionario.pk %}" 
+                   class="btn btn-sm btn-outline-danger" title="Deletar">
+                  <i class="bi bi-trash"></i>
+                </a>
+              </div>
+
+              <!-- Informações Card (apenas grid) -->
+              <div class="d-flex align-items-center mb-3 grid-view-only">
                 <div class="flex-shrink-0">
                   {% if funcionario.foto %}
                     <img src="{{ funcionario.foto.url }}" alt="{{ funcionario.nome_completo }}" class="foto-funcionario">
@@ -217,8 +534,18 @@
                 </div>
               </div>
 
-              <!-- Informações -->
-              <div class="mb-3">
+              <!-- Coluna Fazenda (apenas card) -->
+              <div class="info-coluna grid-view-only">
+                <label>Fazenda</label>
+                {% if funcionario.fazenda %}
+                  <p>{{ funcionario.fazenda.nome }}</p>
+                {% else %}
+                  <p class="text-muted">Sem fazenda</p>
+                {% endif %}
+              </div>
+
+              <!-- Informações Card -->
+              <div class="mb-3 grid-view-only">
                 <p class="mb-2 small">
                   <i class="bi bi-file-text text-primary"></i>
                   <strong>CPF:</strong> {{ funcionario.get_cpf_formatado }}
@@ -255,7 +582,7 @@
               </div>
 
               <!-- Badges de Info -->
-              <div class="d-flex gap-2 flex-wrap mb-3">
+              <div class="d-flex gap-2 flex-wrap mb-3 grid-view-only">
                 <span class="badge bg-light text-dark stat-badge">
                   {{ funcionario.get_tipo_contrato_display }}
                 </span>
@@ -266,8 +593,8 @@
                 {% endif %}
               </div>
 
-              <!-- Ações -->
-              <div class="d-flex gap-2">
+              <!-- Ações Grid (apenas cards) -->
+              <div class="d-flex gap-2 grid-view-only">
                 <a href="{% url 'cadastros:funcionario_detail' funcionario.pk %}" 
                    class="btn btn-sm btn-outline-primary flex-fill">
                   <i class="bi bi-eye"></i> Ver
@@ -286,6 +613,7 @@
           </div>
         </div>
       {% endfor %}
+      </div>
     </div>
 
     <!-- Paginação -->
@@ -332,4 +660,47 @@
   {% endif %}
 
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const container = document.getElementById('funcionarios-container');
+    const btnGridView = document.getElementById('btn-grid-view');
+    const btnListView = document.getElementById('btn-list-view');
+    const viewBtns = document.querySelectorAll('.view-btn');
+
+    // Recuperar visualização salva ou usar padrão (grid)
+    const savedView = localStorage.getItem('funcionarios-view') || 'grid';
+    
+    // Aplicar visualização salva
+    applyView(savedView);
+
+    // Listeners dos botões
+    btnGridView.addEventListener('click', function() {
+      applyView('grid');
+    });
+
+    btnListView.addEventListener('click', function() {
+      applyView('list');
+    });
+
+    function applyView(viewType) {
+      if (viewType === 'grid') {
+        container.classList.remove('lista-view');
+        container.classList.add('grid-view');
+        btnGridView.classList.add('active');
+        btnListView.classList.remove('active');
+      } else if (viewType === 'list') {
+        container.classList.remove('grid-view');
+        container.classList.add('lista-view');
+        btnListView.classList.add('active');
+        btnGridView.classList.remove('active');
+      }
+      
+      // Salvar preferência
+      localStorage.setItem('funcionarios-view', viewType);
+    }
+  });
+</script>
 {% endblock %}

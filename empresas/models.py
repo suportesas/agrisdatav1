@@ -8,6 +8,8 @@ from django.utils import timezone
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.core.exceptions import ValidationError
 from decimal import Decimal
+import os
+import uuid
 import re
 from django.contrib.auth.models import Group, Permission
 from django.utils.text import slugify
@@ -204,6 +206,13 @@ class Plano(models.Model):
         pass
 
 
+def empresa_logo_upload_to(instance, filename):
+    base, ext = os.path.splitext(filename or '')
+    ext = ext or '.png'
+    empresa_id = instance.id or f'tmp-{uuid.uuid4().hex[:12]}'
+    return f'empresas/logos/{empresa_id}/logo{ext}'
+
+
 class Empresa(models.Model):
     """
     Modelo central para Multi-tenant (Multiempresa)
@@ -269,7 +278,7 @@ class Empresa(models.Model):
     # Logo da empresa
     logo = models.ImageField(
         'Logo da Empresa',
-        upload_to='empresas/logos/',
+        upload_to=empresa_logo_upload_to,
         blank=True,
         null=True,
         help_text='Logo para documentos (PDF, relatórios, etc.)'

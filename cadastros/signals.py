@@ -126,3 +126,47 @@ def fornecedor_endereco_post_delete(sender, instance, **kwargs):
             Fornecedor.objects.filter(pk=instance.fornecedor_id).update(
                 cep='', endereco='', numero='', complemento='', bairro='', cidade='', uf='', pais=''
             )
+
+
+# ============================================================================
+# AUTO-CÓPIA DE ESTÁGIOS TEMPLATE PARA NOVAS EMPRESAS
+# ============================================================================
+
+@receiver(post_save, sender='empresas.Empresa')
+def copiar_estagios_template_para_nova_empresa(sender, instance, created, **kwargs):
+    """
+    Quando uma nova empresa é criada, copia automaticamente os estágios template
+    para que a empresa já comece com estágios padrão pré-configurados.
+    """
+    if not created:
+        return  # Só executa na criação, não em atualizações
+    
+    # Import aqui para evitar circular imports
+    from cadastros.models import EstagioDesenvolvimento
+    
+    # Buscar todos os estágios template (sem empresa específica)
+    estagios_template = EstagioDesenvolvimento.objects.filter(
+        eh_template=True,
+        empresa__isnull=True  # Estágios de sistema (templates)
+    )
+    
+    if not estagios_template.exists():
+        return  # Se não houver templates, não faz nada
+    
+    # Copiar cada template para a nova empresa
+    for estagio_template in estagios_template:
+        EstagioDesenvolvimento.objects.create(
+            empresa=instance,
+            praga=estagio_template.praga,
+            tipo_estagio=estagio_template.tipo_estagio,
+            descricao=estagio_template.descricao,
+            duracao_minima_dias=estagio_template.duracao_minima_dias,
+            duracao_maxima_dias=estagio_template.duracao_maxima_dias,
+            ordem_ciclo=estagio_template.ordem_ciclo,
+            eh_fase_critica=estagio_template.eh_fase_critica,
+            observacoes=estagio_template.observacoes,
+            ativo=estagio_template.ativo,
+            eh_template=False,  # Cópia não é template
+            template_original=estagio_template,  # Rastrear origem
+        )
+

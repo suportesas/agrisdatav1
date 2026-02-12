@@ -1,0 +1,60 @@
+﻿{% extends 'base.html' %}
+
+{% block title %}Deletar Armador{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-exclamation-triangle"></i> Confirmar ExclusÃ£o
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="mb-3">
+                        Tem certeza que deseja deletar o armador <strong>{{ armador.nome }}</strong>?
+                    </p>
+
+                    {% if armador.armadorendereco_set.count > 0 or armador.armadorcontato_set.count > 0 or armador.armadordadobancario_set.count > 0 or armador.navio_set.count > 0 %}
+                    <div class="alert alert-warning">
+                        <strong><i class="bi bi-exclamation-triangle"></i> AtenÃ§Ã£o!</strong>
+                        <p class="mb-2">Este armador possui dados relacionados que tambÃ©m serÃ£o deletados:</p>
+                        <ul class="mb-0">
+                            {% if armador.armadorendereco_set.count > 0 %}
+                            <li>{{ armador.armadorendereco_set.count }} endereÃ§o(s)</li>
+                            {% endif %}
+                            {% if armador.armadorcontato_set.count > 0 %}
+                            <li>{{ armador.armadorcontato_set.count }} contato(s)</li>
+                            {% endif %}
+                            {% if armador.armadordadobancario_set.count > 0 %}
+                            <li>{{ armador.armadordadobancario_set.count }} dado(s) bancÃ¡rio(s)</li>
+                            {% endif %}
+                            {% if armador.navio_set.count > 0 %}
+                            <li>{{ armador.navio_set.count }} navio(s)</li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                    {% endif %}
+
+                    <p class="text-muted mb-4">Esta aÃ§Ã£o Ã© irreversÃ­vel.</p>
+
+                    <form method="post" class="d-inline">
+                        {% csrf_token %}
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{% url 'cadastros:armador_detail' armador.id %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-x-circle"></i> Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-trash"></i> Deletar Armador
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

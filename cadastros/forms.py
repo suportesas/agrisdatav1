@@ -12,7 +12,7 @@ from .models import (
 
 # Modelos de Cliente
 from .models import (
-    Cliente, EnderecoCliente, ContatoCliente, ContaBancariaCliente, DocumentoCliente
+    Cliente, EnderecoCliente, ContatoCliente, ContaBancariaCliente, DocumentoCliente, PrazoPagamentoPadrao
 )
 
 from .models import Funcionario, FuncaoFuncionario
@@ -20,8 +20,12 @@ from django.utils import timezone
 import re
 
 
-from .models import Area, Talhao, HistoricoTalhao,  Cultura, Praga
+from .models import Area, Talhao, HistoricoTalhao, Cultura, Praga
 from .models import Safra, SafraPlan, SafraReal
+from .models import (
+    EstagioDesenvolvimento, MonitoramentoMIP, 
+    PragaNoMonitoramento, PontoMonitoramento
+)
 from decimal import Decimal
 from .models import Vendedor, ComissaoVendedor
 
@@ -29,6 +33,31 @@ from .models import Vendedor, ComissaoVendedor
 from .models import Fornecedor, FornecedorContato, FornecedorDadoBancario, FornecedorEndereco, Transportadora
 
 
+# ============================================
+# WIDGETS CUSTOMIZADOS
+# ============================================
+
+class TalhaoSelectWidget(forms.Select):
+    """Widget customizado para exibição de Talhão"""
+    template_name = 'widgets/talhao_select.html'
+    
+    def create_option(self, name, value, label, selected, index, subindex=None, attrs=None):
+        """Customiza como cada opção é exibida"""
+        if value:
+            try:
+                talhao = Talhao.objects.get(pk=value)
+                # Display customizado: "Sede - Lote 01 Seção 01"
+                label = f"{talhao.area.nome} - {talhao.nome}"
+            except Talhao.DoesNotExist:
+                pass
+        
+        option = super().create_option(name, value, label, selected, index, subindex, attrs)
+        return option
+
+
+# ============================================
+# CLASSES DE FORMULÁRIO
+# ============================================
 
 class FazendaForm(forms.ModelForm):
     """Formulário principal de cadastro de fazenda"""
@@ -417,6 +446,24 @@ class ClienteForm(forms.ModelForm):
         help_text='Preencher automaticamente via API ReceitaWS'
     )
 
+    # Opções para Regime Tributário
+    REGIME_TRIBUTARIO_CHOICES = [
+        ('', '-- Selecione --'),
+        ('Simples Nacional', 'Simples Nacional'),
+        ('Lucro Presumido', 'Lucro Presumido'),
+        ('Lucro Real', 'Lucro Real'),
+        ('MEI', 'MEI'),
+        ('Isento', 'Isento'),
+        ('Outro', 'Outro'),
+    ]
+
+    regime_tributario = forms.ChoiceField(
+        choices=REGIME_TRIBUTARIO_CHOICES,
+        required=False,
+        label='Regime Tributário',
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+
     class Meta:
         model = Cliente
         fields = [
@@ -443,21 +490,22 @@ class ClienteForm(forms.ModelForm):
             'inscricao_municipal': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_inscricao_municipal'}),
             'inscricao_suframa': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_inscricao_suframa'}),
             'eori': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_eori'}),
+            'contribuinte_icms': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'pais': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_pais'}),
             'contato_principal_nome': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_contato_principal_nome'}),
             'contato_principal_telefone': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_contato_principal_telefone', 'data-auto': 'true'}),
             'contato_principal_email': forms.EmailInput(attrs={'class': 'form-control', 'id': 'id_contato_principal_email', 'data-auto': 'true'}),
-            'limite_credito': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
-            'prazo_pagamento': forms.NumberInput(attrs={'class': 'form-control', 'id': 'id_prazo_pagamento'}),
-            'desconto_padrao': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'limite_credito': forms.TextInput(attrs={'class': 'form-control', 'inputmode': 'decimal'}),
+            'prazo_pagamento': forms.HiddenInput(),
+            'desconto_padrao': forms.TextInput(attrs={'class': 'form-control', 'inputmode': 'decimal'}),
             'forma_pagamento_padrao': forms.Select(attrs={'class': 'form-select'}),
-            'prazo_pagamento_padrao': forms.Select(attrs={'class': 'form-select', 'id': 'id_prazo_pagamento_padrao'}),
+            'prazo_pagamento_padrao': forms.HiddenInput(),
             'vendedor_responsavel': forms.Select(attrs={'class': 'form-select'}),
             'porto_destino': forms.Select(attrs={'class': 'form-select'}),
             'moeda_padrao': forms.Select(attrs={'class': 'form-select'}),
             'observacoes_comerciais': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'acesso_portal': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-            'usuario_vinculado': forms.Select(attrs={'class': 'form-select'})
+            'usuario_vinculado': forms.HiddenInput()  # MUDADO: HiddenInput ao invés de Select
         }
 
     def __init__(self, *args, **kwargs):
@@ -466,6 +514,17 @@ class ClienteForm(forms.ModelForm):
         self.empresa = kwargs.pop('empresa', None)
         self.usuario = kwargs.pop('usuario', None)
         super().__init__(*args, **kwargs)
+
+        # Normalize decimal inputs to avoid browser locale issues (comma vs dot)
+        if self.data:
+            try:
+                data = self.data.copy()
+                for field_name in ('limite_credito', 'desconto_padrao'):
+                    if field_name in data:
+                        data[field_name] = self._normalize_decimal_input(data.get(field_name))
+                self.data = data
+            except Exception:
+                pass
 
         # Ensure cnpj_cpf is not required at HTML level (we validate per tipo_cliente)
         if 'cnpj_cpf' in self.fields:
@@ -516,11 +575,32 @@ class ClienteForm(forms.ModelForm):
                 from .models import PrazoPagamentoPadrao
                 self.fields['prazo_pagamento_padrao'].queryset = PrazoPagamentoPadrao.objects.filter(empresa=self.empresa, ativo=True)
             else:
-                self.fields['prazo_pagamento_padrao'].queryset = Vendedor.objects.none()
+                from .models import PrazoPagamentoPadrao
+                self.fields['prazo_pagamento_padrao'].queryset = PrazoPagamentoPadrao.objects.none()
+
+        # Limit porto_destino to ports of the current empresa
+        if 'porto_destino' in self.fields:
+            if self.empresa:
+                from .models import Porto
+                self.fields['porto_destino'].queryset = Porto.objects.filter(empresa=self.empresa)
+            else:
+                from .models import Porto
+                self.fields['porto_destino'].queryset = Porto.objects.none()
 
         # Make certain numeric fields optional in the form (model has defaults)
         if 'limite_credito' in self.fields:
             self.fields['limite_credito'].required = False
+        
+        # ✅ AUTO-FILL: usuario_vinculado com usuário logado se não estiver preenchido
+        if 'usuario_vinculado' in self.fields and self.usuario:
+            # Se é uma criação nova (instance.pk é None) ou o cliente já existe
+            # Se o cliente não tem um usuário vinculado, preencha automaticamente
+            if not self.instance.pk or not self.instance.usuario_vinculado:
+                # Set initial value to current user
+                self.fields['usuario_vinculado'].initial = self.usuario
+                # Also set the instance
+                if not self.instance.usuario_vinculado:
+                    self.instance.usuario_vinculado = self.usuario
         if 'desconto_padrao' in self.fields:
             self.fields['desconto_padrao'].required = False
 
@@ -553,6 +633,23 @@ class ClienteForm(forms.ModelForm):
             if qs.exists():
                 raise ValidationError('Este CNPJ/CPF já está cadastrado para a empresa.')
         return cnpj_cpf_limpo
+
+    @staticmethod
+    def _normalize_decimal_input(value):
+        if value is None:
+            return ''
+        text = str(value).strip()
+        if not text:
+            return ''
+        # Handle both thousands and decimal separators.
+        if ',' in text and '.' in text:
+            if text.rfind(',') > text.rfind('.'):
+                text = text.replace('.', '').replace(',', '.')
+            else:
+                text = text.replace(',', '')
+        elif ',' in text:
+            text = text.replace('.', '').replace(',', '.')
+        return text
 
     def clean(self):
         cleaned = super().clean()
@@ -604,6 +701,9 @@ class EnderecoClienteForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        if 'recebedor_notify' in self.fields:
+            self.fields['recebedor_notify'].label = 'Destinatario'
+            self.fields['recebedor_notify'].required = False
 
     def clean_cep(self):
         cep = self.cleaned_data.get('cep', '')
@@ -1736,7 +1836,7 @@ class PragaForm(forms.ModelForm):
     
     class Meta:
         model = Praga
-        fields = ['nome_comum', 'nome_cientifico', 'ativa']
+        fields = ['nome_comum', 'nome_cientifico', 'foto', 'ativa']
         widgets = {
             'nome_comum': forms.TextInput(attrs={
                 'class': 'form-control',
@@ -1746,6 +1846,10 @@ class PragaForm(forms.ModelForm):
             'nome_cientifico': forms.TextInput(attrs={
                 'class': 'form-control',
                 'placeholder': 'Nome científico (opcional)'
+            }),
+            'foto': forms.FileInput(attrs={
+                'class': 'form-control',
+                'accept': 'image/*',
             }),
         }
     
@@ -1790,6 +1894,66 @@ class PragaForm(forms.ModelForm):
             praga.save()
         
         return praga
+
+
+class PrazoPagamentoPadraoForm(forms.ModelForm):
+    """Formulário para criar/editar presets de prazo de pagamento"""
+    
+    class Meta:
+        model = PrazoPagamentoPadrao
+        fields = ['nome', 'termos', 'ativo']
+        widgets = {
+            'nome': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ex: 30 Dias, 30/60 Dias, À Vista',
+                'required': True
+            }),
+            'termos': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Valores separados por vírgula: 0,30,60,90',
+                'required': True,
+                'help': 'Use números inteiros separados por vírgula'
+            }),
+            'ativo': forms.CheckboxInput(attrs={
+                'class': 'form-check-input'
+            })
+        }
+    
+    def __init__(self, *args, **kwargs):
+        self.empresa = kwargs.pop('empresa', None)
+        super().__init__(*args, **kwargs)
+    
+    def clean_termos(self):
+        """Valida se os termos são números válidos separados por vírgula"""
+        termos_str = self.cleaned_data.get('termos', '').strip()
+        
+        if not termos_str:
+            raise ValidationError('Informe pelo menos um termo.')
+        
+        # Tentar converter para lista de inteiros
+        try:
+            termos_list = [int(t.strip()) for t in termos_str.split(',') if t.strip()]
+            if not termos_list:
+                raise ValidationError('Nenhum termo válido encontrado.')
+            # Validar que todos são números não-negativos
+            if any(t < 0 for t in termos_list):
+                raise ValidationError('Todos os termos devem ser números não-negativos.')
+        except ValueError:
+            raise ValidationError('Todos os termos devem ser números inteiros. Use vírgula para separar.')
+        
+        return termos_str
+    
+    def save(self, commit=True):
+        """Salva preset com empresa"""
+        preset = super().save(commit=False)
+        
+        if self.empresa:
+            preset.empresa = self.empresa
+        
+        if commit:
+            preset.save()
+        
+        return preset
 
 
 """
@@ -2907,6 +3071,403 @@ class VehiclePlateForm(forms.ModelForm):
         if self.vehicle:
             obj.vehicle = self.vehicle
 
+
+
+# =============================================================================
+# FORMULÁRIOS: MONITORAMENTO MIP (Manejo Integrado de Pragas)
+# =============================================================================
+
+class MonitoramentoMIPForm(forms.ModelForm):
+    """Formulário para criar/editar monitoramento MIP"""
+    
+    class Meta:
+        model = MonitoramentoMIP
+        fields = [
+            'talhao', 'safra', 'cultura', 'data_monitoramento', 'tipo_monitoramento',
+            'responsavel', 'quantidade_pontos',
+            'condicoes_tempo', 'temperatura_media', 'umidade_media',
+            'velocidade_vento_media', 'foto_area_geral',
+            'observacoes_gerais'
+        ]
+        widgets = {
+            'talhao': forms.Select(attrs={'class': 'form-control'}),
+            'safra': forms.Select(attrs={'class': 'form-control'}),
+            'cultura': forms.Select(attrs={'class': 'form-control'}),
+            'data_monitoramento': forms.DateInput(attrs={
+                'type': 'date',
+                'class': 'form-control'
+            }),
+            'tipo_monitoramento': forms.Select(attrs={'class': 'form-control'}),
+            'responsavel': forms.Select(attrs={'class': 'form-control'}),
+            'quantidade_pontos': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'value': '20'
+            }),
+            'condicoes_tempo': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ex: Nublado, ensolarado, chuva'
+            }),
+            'temperatura_media': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.1',
+                'placeholder': '°C'
+            }),
+            'umidade_media': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': '0',
+                'max': '100',
+                'placeholder': '%'
+            }),
+            'velocidade_vento_media': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.1',
+                'placeholder': 'km/h'
+            }),
+            'foto_area_geral': forms.FileInput(attrs={'class': 'form-control'}),
+            'observacoes_gerais': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'Notas gerais sobre a visita'
+            }),
+        }
+        labels = {
+            'talhao': 'Talhão',
+            'safra': 'Safra',
+            'cultura': 'Cultura',
+            'data_monitoramento': 'Data do Monitoramento',
+            'tipo_monitoramento': 'Tipo de Monitoramento',
+            'responsavel': 'Responsável (Pragueiro)',
+            'quantidade_pontos': 'Quantidade de Pontos',
+            'condicoes_tempo': 'Condições do Tempo',
+            'temperatura_media': 'Temperatura Média (°C)',
+            'umidade_media': 'Umidade Média (%)',
+            'velocidade_vento_media': 'Velocidade do Vento Média (km/h)',
+            'foto_area_geral': 'Foto da Área Geral',
+            'observacoes_gerais': 'Observações Gerais',
+        }
+    
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        self.empresa = kwargs.pop('empresa', None)
+        super().__init__(*args, **kwargs)
+        
+        # Se não tiver empresa, preencher com a do usuário
+        if self.empresa:
+            # Configurar campo Talhão com widget padrão do Django
+            self.fields['talhao'].queryset = Talhao.objects.filter(
+                area__fazenda__empresa=self.empresa,
+                ativo=True
+            ).select_related('area', 'fazenda').distinct().order_by('codigo')
+            
+            # Aplicar CSS Bootstrap ao select
+            self.fields['talhao'].widget.attrs.update({
+                'class': 'form-control form-select-lg',
+            })
+            
+            # Mostrar apenas safras ATIVAS (não finalizadas)
+            self.fields['safra'].queryset = Safra.objects.filter(
+                fazenda__empresa=self.empresa,
+                status__in=['PLANEJADA', 'EM_ANDAMENTO']
+            ).select_related('fazenda', 'cultura').order_by('-ano', 'nome')
+            
+            # Marcar safra como obrigatória
+            self.fields['safra'].required = True
+            
+            self.fields['cultura'].queryset = Cultura.objects.filter(
+                empresa=self.empresa
+            )
+        
+        # Auto-preencher responsável
+        if self.user:
+            self.fields['responsavel'].initial = self.user.id
+            self.fields['responsavel'].widget = forms.HiddenInput()
+    
+    def clean(self):
+        cleaned = super().clean()
+        dt = cleaned.get('data_monitoramento')
+        if dt and dt > timezone.now().date():
+            raise ValidationError(
+                'Data do monitoramento não pode ser no futuro'
+            )
+        
+        talhao = cleaned.get('talhao')
+        safra = cleaned.get('safra')
+        cultura = cleaned.get('cultura')
+        
+        # Validar que tem cultura (pela safra ou direto)
+        if not cultura and safra and safra.cultura:
+            # OK - cultura virá da safra
+            pass
+        elif not cultura and talhao and talhao.cultura_atual:
+            # OK - cultura virá do talhão
+            pass
+        elif not cultura:
+            raise ValidationError(
+                'Selecione uma cultura ou escolha um talhão/safra com cultura associada.'
+            )
+        
+        return cleaned
+
+
+class PragaNoMonitoramentoForm(forms.ModelForm):
+    """Formulário para adicionar uma praga ao monitoramento"""
+    
+    class Meta:
+        model = PragaNoMonitoramento
+        fields = [
+            'praga', 'quantidade_pontos_com_praga', 'incidencia_percentual',
+            'estagio_principal', 'detalhes_estagios', 'severidade', 
+            'quantidade_total_pragas', 'ned_valor', 'observacoes'
+        ]
+        widgets = {
+            'praga': forms.Select(attrs={'class': 'form-control'}),
+            'quantidade_pontos_com_praga': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': '0',
+                'max': '20'
+            }),
+            'incidencia_percentual': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.01',
+                'readonly': 'readonly',
+                'disabled': 'disabled'
+            }),
+            'estagio_principal': forms.Select(attrs={'class': 'form-control'}),
+            'detalhes_estagios': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 2,
+                'placeholder': 'JSON: {"L3": 5, "L4": 3}'
+            }),
+            'severidade': forms.RadioSelect(attrs={'class': 'form-check-input'}),
+            'quantidade_total_pragas': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': '0'
+            }),
+            'ned_valor': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.01',
+                'min': '0',
+                'value': '5.0'
+            }),
+            'observacoes': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 2
+            }),
+        }
+        labels = {
+            'praga': 'Praga/Doença',
+            'quantidade_pontos_com_praga': 'Quantidade de Pontos com Praga (0-20)',
+            'incidencia_percentual': 'Incidência (%)',
+            'estagio_principal': 'Estágio Principal Encontrado',
+            'detalhes_estagios': 'Detalhes por Estágio (JSON)',
+            'severidade': 'Severidade (1-5)',
+            'quantidade_total_pragas': 'Quantidade Total de Pragas',
+            'ned_valor': 'Nível Econômico de Dano (NED) %',
+            'observacoes': 'Observações',
+        }
+    
+    def __init__(self, *args, **kwargs):
+        self.monitoramento = kwargs.pop('monitoramento', None)
+        self.empresa = kwargs.pop('empresa', None)
+        super().__init__(*args, **kwargs)
+        
+        if self.empresa:
+            self.fields['praga'].queryset = Praga.objects.filter(
+                empresa=self.empresa,
+                ativa=True
+            )
+        
+        if self.monitoramento and self.monitoramento.cultura:
+            # Filtrar estágios apenas da praga selecionada
+            self.fields['estagio_principal'].queryset = \
+                EstagioDesenvolvimento.objects.none()
+    
+    def clean(self):
+        cleaned = super().clean()
+        qty = cleaned.get('quantidade_pontos_com_praga')
+        
+        if qty and qty > 20:
+            raise ValidationError(
+                'Quantidade de pontos não pode exceder 20'
+            )
+        
+        if qty and qty < 0:
+            raise ValidationError(
+                'Quantidade de pontos não pode ser negativa'
+            )
+        
+        return cleaned
+    
+    def save(self, commit=True):
+        obj = super().save(commit=False)
+        
+        # Auto-calcular incidência
+        if obj.quantidade_pontos_com_praga and self.monitoramento:
+            obj.incidencia_percentual = (
+                (obj.quantidade_pontos_com_praga / 
+                 self.monitoramento.quantidade_pontos) * 100
+            )
+        
+        # Auto-carregar NED (buscar recomendação)
+        if obj.praga and self.monitoramento and obj.estagio_principal:
+            try:
+                from produtos.models import RecomendacaoDefensivo
+                rec = RecomendacaoDefensivo.objects.filter(
+                    empresa=self.monitoramento.empresa,
+                    praga=obj.praga
+                ).first()
+                if rec:
+                    obj.ned_valor = Decimal('5.0')  # Padrão (será dinâmico)
+            except:
+                pass
+        
+        if commit:
+            obj.save()
+        return obj
+
+
+class PontoMonitoramentoForm(forms.ModelForm):
+    """Formulário para registrar dados de um ponto"""
+    
+    class Meta:
+        model = PontoMonitoramento
+        fields = [
+            'numero_ponto', 'praga_presente', 'quantidade', 'estagio',
+            'severidade', 'foto', 'observacoes',
+            'latitude', 'longitude'
+        ]
+        widgets = {
+            'numero_ponto': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': '1',
+                'max': '20',
+                'readonly': 'readonly'
+            }),
+            'praga_presente': forms.CheckboxInput(attrs={
+                'class': 'form-check-input'
+            }),
+            'quantidade': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': '0'
+            }),
+            'estagio': forms.Select(attrs={'class': 'form-control'}),
+            'severidade': forms.RadioSelect(attrs={'class': 'form-check-input'}),
+            'foto': forms.FileInput(attrs={'class': 'form-control'}),
+            'observacoes': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 2
+            }),
+            'latitude': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.000001',
+                'placeholder': 'GPS (opcional)'
+            }),
+            'longitude': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.000001',
+                'placeholder': 'GPS (opcional)'
+            }),
+        }
+        labels = {
+            'numero_ponto': 'Número do Ponto',
+            'praga_presente': 'Praga Presente?',
+            'quantidade': 'Quantidade de Insetos/Lesões',
+            'estagio': 'Estágio Encontrado',
+            'severidade': 'Severidade',
+            'foto': 'Foto do Ponto',
+            'observacoes': 'Observações',
+            'latitude': 'Latitude (GPS)',
+            'longitude': 'Longitude (GPS)',
+        }
+    
+    def clean(self):
+        cleaned = super().clean()
+        praga_presente = cleaned.get('praga_presente')
+        quantidade = cleaned.get('quantidade')
+        
+        if praga_presente and not quantidade:
+            raise ValidationError(
+                'Se praga está presente, informar quantidade'
+            )
+        
+        if praga_presente and not cleaned.get('estagio'):
+            raise ValidationError(
+                'Se praga está presente, informar o estágio'
+            )
+        
+        return cleaned
+
+
+class EstagioDesenvolvimentoForm(forms.ModelForm):
+    """Formulário para cadastrar estágios de desenvolvimento de praga"""
+    
+    class Meta:
+        model = EstagioDesenvolvimento
+        fields = [
+            'praga', 'tipo_estagio', 'descricao',
+            'duracao_minima_dias', 'duracao_maxima_dias',
+            'ordem_ciclo', 'eh_fase_critica', 'observacoes', 'ativo'
+        ]
+        widgets = {
+            'praga': forms.Select(attrs={'class': 'form-control'}),
+            'tipo_estagio': forms.Select(attrs={'class': 'form-control'}),
+            'descricao': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ex: Larva de 3º ínstar'
+            }),
+            'duracao_minima_dias': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': '0'
+            }),
+            'duracao_maxima_dias': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': '0'
+            }),
+            'ordem_ciclo': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': '1'
+            }),
+            'eh_fase_critica': forms.CheckboxInput(attrs={
+                'class': 'form-check-input'
+            }),
+            'observacoes': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 2
+            }),
+            'ativo': forms.CheckboxInput(attrs={
+                'class': 'form-check-input'
+            }),
+        }
+        labels = {
+            'praga': 'Praga',
+            'tipo_estagio': 'Tipo de Estágio',
+            'descricao': 'Descrição',
+            'duracao_minima_dias': 'Duração Mínima (dias)',
+            'duracao_maxima_dias': 'Duração Máxima (dias)',
+            'ordem_ciclo': 'Ordem no Ciclo',
+            'eh_fase_critica': 'É Fase Crítica?',
+            'observacoes': 'Observações',
+            'ativo': 'Ativo',
+        }
+    
+    def __init__(self, *args, **kwargs):
+        self.empresa = kwargs.pop('empresa', None)
+        super().__init__(*args, **kwargs)
+        
+        if self.empresa:
+            # Filtro padrão: pragas da empresa
+            queryset = Praga.objects.filter(
+                empresa=self.empresa,
+                ativa=True
+            ).order_by('nome_comum')
+            
+            # Se editando (instance), garantir que a praga atual fica visível
+            # mesmo que não tenha uma empresa específica (pode ser um template)
+            if self.instance and self.instance.pk and self.instance.praga:
+                if self.instance.praga not in queryset:
+                    queryset = queryset | Praga.objects.filter(pk=self.instance.praga.pk)
+                    
+            self.fields['praga'].queryset = queryset
 
 
 # =============================================================================

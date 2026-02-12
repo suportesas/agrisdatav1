@@ -3,6 +3,7 @@ document.addEventListener('DOMContentLoaded', function () {
   const modalNovaFuncao = new bootstrap.Modal(document.getElementById('modalNovaFuncao'));
   const loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'));
   const selectFuncao = document.getElementById('id_funcao');
+  const inputSalario = document.getElementById('id_salario');
 
   function clearFuncaoModalErrors(form) {
     if (!form) return;
@@ -48,6 +49,57 @@ document.addEventListener('DOMContentLoaded', function () {
     if (first) first.focus();
   }
 
+  // Preenchimento automático de salário pela função
+  if (selectFuncao && inputSalario) {
+    selectFuncao.addEventListener('change', async function () {
+      const funcaoId = selectFuncao.value;
+      
+      console.log('🔍 Função selecionada:', funcaoId);
+      
+      if (!funcaoId) {
+        inputSalario.value = '';
+        console.log('❌ Nenhuma função selecionada');
+        return;
+      }
+
+      try {
+        const url = `/cadastros/funcoes/get-salario/?funcao_id=${funcaoId}`;
+        console.log('📡 Buscando salário em:', url);
+        
+        const response = await fetch(url, {
+          method: 'GET',
+          credentials: 'same-origin',
+          headers: {
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+          }
+        });
+
+        console.log('📊 Status da resposta:', response.status);
+
+        if (response.ok) {
+          const data = await response.json();
+          console.log('✅ Dados recebidos:', data);
+          
+          if (data.sucesso && data.salario_base !== undefined) {
+            const salarioFormatado = parseFloat(data.salario_base).toFixed(2);
+            inputSalario.value = salarioFormatado;
+            console.log(`💰 Salário preenchido: R$ ${salarioFormatado}`);
+          } else if (data.erro) {
+            console.warn('⚠️ Erro na resposta:', data.erro);
+          }
+        } else {
+          const text = await response.text();
+          console.error('❌ Erro HTTP:', response.status, text);
+        }
+      } catch (error) {
+        console.error('❌ Erro ao buscar salário:', error);
+      }
+    });
+  } else {
+    console.warn('⚠️ Elementos não encontrados - selectFuncao:', !!selectFuncao, 'inputSalario:', !!inputSalario);
+  }
+
   // Cadastrar nova função via AJAX
   const btnSalvarFuncao = document.getElementById('btnSalvarFuncao');
   if (btnSalvarFuncao) {
@@ -66,7 +118,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const csrfToken = (form.querySelector('input[name="csrfmiddlewaretoken"]') || {}).value || '';
         const formData = new FormData(form);
 
-        const response = await fetch(cfg.funcao_create_url || '{% url "cadastros:funcao_create_ajax" %}', {
+        const response = await fetch(cfg.funcao_create_url || '/cadastros/funcoes/criar-ajax/', {
           method: 'POST',
           credentials: 'same-origin',
           headers: { 'X-CSRFToken': csrfToken, 'Accept': 'application/json' },
@@ -89,6 +141,9 @@ document.addEventListener('DOMContentLoaded', function () {
             const option = new Option(data.nome, data.id, true, true);
             try { selectFuncao.add(option); } catch (e) { selectFuncao.append(option); }
             selectFuncao.value = data.id;
+            
+            // Trigger change event para preencher salário
+            selectFuncao.dispatchEvent(new Event('change', { bubbles: true }));
           }
 
           form.reset();
@@ -138,7 +193,7 @@ document.addEventListener('DOMContentLoaded', function () {
       loadingModal.show();
 
       try {
-        const response = await fetch(cfg.buscar_cep_url || '{% url "cadastros:buscar_cep" %}', {
+        const response = await fetch(cfg.buscar_cep_url || '/cadastros/buscar-cep/', {
           method: 'POST',
           credentials: 'same-origin',
           headers: {

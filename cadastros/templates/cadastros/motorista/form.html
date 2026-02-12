@@ -1,0 +1,386 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }} - Motorista{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-section {
+        margin-bottom: 2rem;
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .section-header {
+        background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);
+        color: white;
+        padding: 1rem;
+    }
+
+    .form-section-body {
+        padding: 1.5rem;
+    }
+
+    .nav-tabs .nav-link {
+        color: #495057 !important;
+        font-weight: 600;
+    }
+
+    .nav-tabs .nav-link.active {
+        color: #f8f9fa !important;
+        background-color: #0d6efd !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1 class="mb-1">
+                <i class="bi bi-person-badge"></i> {{ title }}
+            </h1>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{% url 'cadastros:motorista_list' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Voltar
+            </a>
+        </div>
+    </div>
+
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'cadastros:motorista_list' %}">Motoristas</a></li>
+            <li class="breadcrumb-item active">{{ title }}</li>
+        </ol>
+    </nav>
+
+    <form method="post" enctype="multipart/form-data" class="row">
+        {% csrf_token %}
+
+        <!-- Dados Pessoais -->
+        <div class="col-md-12">
+            <div class="form-section">
+                <div class="section-header">
+                    <h5 class="mb-0">Dados Pessoais</h5>
+                </div>
+                <div class="form-section-body">
+                    <div class="row g-3">
+                        <div class="col-md-8">
+                            <label class="form-label fw-semibold">Nome Completo</label>
+                            {{ form.nome }}
+                            {% if form.nome.errors %}<div class="invalid-feedback d-block">{{ form.nome.errors.0 }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Data de Nascimento</label>
+                            {{ form.data_nascimento }}
+                            {% if form.data_nascimento.errors %}<div class="invalid-feedback d-block">{{ form.data_nascimento.errors.0 }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Foto</label>
+                            {{ form.foto }}
+                            {% if form.foto.errors %}<div class="invalid-feedback d-block">{{ form.foto.errors.0 }}</div>{% endif %}
+                            <small class="form-text text-muted d-block mt-2">
+                                <i class="bi bi-info-circle"></i> Foto do motorista (opcional, recomendado para motoristas próprios e agregados)
+                            </small>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">CPF</label>
+                            {{ form.cpf }}
+                            {% if form.cpf.errors %}<div class="invalid-feedback d-block">{{ form.cpf.errors.0 }}</div>{% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tipo e Transportadora -->
+        <div class="col-md-12">
+            <div class="form-section">
+                <div class="section-header">
+                    <h5 class="mb-0">Categoria</h5>
+                </div>
+                <div class="form-section-body">
+                    <div class="row g-3">
+                        <div class="col-md-12">
+                            <label class="form-label fw-semibold">Tipo de Motorista</label>
+                            <div class="btn-group w-100 flex-wrap" role="group">
+                                <input type="radio" class="btn-check" name="tipo" id="tipo_proprio" value="PROPRIO" {% if form.tipo.value == 'PROPRIO' or not form.tipo.value %}checked{% endif %}>
+                                <label class="btn btn-outline-primary" for="tipo_proprio">
+                                    <i class="bi bi-building"></i> Próprio
+                                </label>
+
+                                <input type="radio" class="btn-check" name="tipo" id="tipo_terceiro" value="TERCEIRO" {% if form.tipo.value == 'TERCEIRO' %}checked{% endif %}>
+                                <label class="btn btn-outline-primary" for="tipo_terceiro">
+                                    <i class="bi bi-truck"></i> Terceirizado
+                                </label>
+
+                                <input type="radio" class="btn-check" name="tipo" id="tipo_agregado" value="AGREGADO" {% if form.tipo.value == 'AGREGADO' %}checked{% endif %}>
+                                <label class="btn btn-outline-primary" for="tipo_agregado">
+                                    <i class="bi bi-person-badge"></i> Agregado
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-12" id="transportadora_div" style="display: none;">
+                            <label class="form-label fw-semibold">Transportadora</label>
+                            {{ form.transportadora }}
+                            {% if form.transportadora.errors %}<div class="invalid-feedback d-block">{{ form.transportadora.errors.0 }}</div>{% endif %}
+                            <small class="form-text text-muted d-block mt-2">
+                                <i class="bi bi-info-circle"></i> Selecione a transportadora à qual este motorista está vinculado
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CNH -->
+        <div class="col-md-12">
+            <div class="form-section">
+                <div class="section-header">
+                    <h5 class="mb-0">Documento de Habilitação (CNH)</h5>
+                </div>
+                <div class="form-section-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Número CNH</label>
+                            {{ form.cnh }}
+                            {% if form.cnh.errors %}<div class="invalid-feedback d-block">{{ form.cnh.errors.0 }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Categoria</label>
+                            {{ form.categoria_cnh }}
+                            {% if form.categoria_cnh.errors %}<div class="invalid-feedback d-block">{{ form.categoria_cnh.errors.0 }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Data de Emissão</label>
+                            {{ form.data_emissao_cnh }}
+                            {% if form.data_emissao_cnh.errors %}<div class="invalid-feedback d-block">{{ form.data_emissao_cnh.errors.0 }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Data de Validade</label>
+                            {{ form.data_validade_cnh }}
+                            {% if form.data_validade_cnh.errors %}<div class="invalid-feedback d-block">{{ form.data_validade_cnh.errors.0 }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">UF Emissor</label>
+                            {{ form.uf_cnh }}
+                            {% if form.uf_cnh.errors %}<div class="invalid-feedback d-block">{{ form.uf_cnh.errors.0 }}</div>{% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contatos -->
+        <div class="col-md-12">
+            <div class="form-section">
+                <div class="section-header">
+                    <h5 class="mb-0">Contatos</h5>
+                </div>
+                <div class="form-section-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Telefone</label>
+                            {{ form.telefone }}
+                            {% if form.telefone.errors %}<div class="invalid-feedback d-block">{{ form.telefone.errors.0 }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Celular/WhatsApp</label>
+                            {{ form.celular }}
+                            {% if form.celular.errors %}<div class="invalid-feedback d-block">{{ form.celular.errors.0 }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-12">
+                            <label class="form-label fw-semibold">Email</label>
+                            {{ form.email }}
+                            {% if form.email.errors %}<div class="invalid-feedback d-block">{{ form.email.errors.0 }}</div>{% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Endereço -->
+        <div class="col-md-12">
+            <div class="form-section">
+                <div class="section-header">
+                    <h5 class="mb-0">Endereço</h5>
+                </div>
+                <div class="form-section-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">CEP</label>
+                            <div class="input-group">
+                                {{ form.cep }}
+                                <button class="btn btn-outline-secondary btn-buscar-cep" type="button">
+                                    <i class="bi bi-search"></i> Buscar
+                                </button>
+                            </div>
+                            {% if form.cep.errors %}<div class="invalid-feedback d-block">{{ form.cep.errors.0 }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label fw-semibold">Logradouro</label>
+                            {{ form.logradouro }}
+                            {% if form.logradouro.errors %}<div class="invalid-feedback d-block">{{ form.logradouro.errors.0 }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-semibold">Número</label>
+                            {{ form.numero }}
+                            {% if form.numero.errors %}<div class="invalid-feedback d-block">{{ form.numero.errors.0 }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Complemento</label>
+                            {{ form.complemento }}
+                            {% if form.complemento.errors %}<div class="invalid-feedback d-block">{{ form.complemento.errors.0 }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Bairro</label>
+                            {{ form.bairro }}
+                            {% if form.bairro.errors %}<div class="invalid-feedback d-block">{{ form.bairro.errors.0 }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Cidade</label>
+                            {{ form.cidade }}
+                            {% if form.cidade.errors %}<div class="invalid-feedback d-block">{{ form.cidade.errors.0 }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-semibold">UF</label>
+                            {{ form.uf }}
+                            {% if form.uf.errors %}<div class="invalid-feedback d-block">{{ form.uf.errors.0 }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">País</label>
+                            {{ form.pais }}
+                            {% if form.pais.errors %}<div class="invalid-feedback d-block">{{ form.pais.errors.0 }}</div>{% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Status -->
+        <div class="col-md-12">
+            <div class="form-section">
+                <div class="section-header">
+                    <h5 class="mb-0">Status</h5>
+                </div>
+                <div class="form-section-body">
+                    <div class="row g-3">
+                        <div class="col-md-12">
+                            <div class="form-check form-switch">
+                                {{ form.ativo }}
+                                <label class="form-check-label" for="{{ form.ativo.id_for_label }}">
+                                    Motorista Ativo
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-12" id="motivo_inativacao_div" style="display: none;">
+                            <label class="form-label fw-semibold">Motivo da Inativação</label>
+                            {{ form.motivo_inativacao }}
+                            {% if form.motivo_inativacao.errors %}<div class="invalid-feedback d-block">{{ form.motivo_inativacao.errors.0 }}</div>{% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Botões -->
+        <div class="col-md-12 mt-4">
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-success">
+                    <i class="bi bi-check-circle"></i> Salvar
+                </button>
+                <a href="{% url 'cadastros:motorista_list' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-x-circle"></i> Cancelar
+                </a>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Estilos para inputs -->
+<style>
+    input[type="text"],
+    input[type="email"],
+    input[type="date"],
+    input[type="tel"],
+    select,
+    textarea {
+        display: block !important;
+        visibility: visible !important;
+    }
+</style>
+
+<script>
+    // Mostrar/ocultar transportadora baseado no tipo
+    document.querySelectorAll('input[name="tipo"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            const div = document.getElementById('transportadora_div');
+            if (this.value === 'TERCEIRO' || this.value === 'AGREGADO') {
+                div.style.display = 'block';
+            } else {
+                div.style.display = 'none';
+            }
+        });
+    });
+
+    // Inicializar visibilidade
+    const tipoSelecionado = document.querySelector('input[name="tipo"]:checked').value;
+    if (tipoSelecionado === 'TERCEIRO' || tipoSelecionado === 'AGREGADO') {
+        document.getElementById('transportadora_div').style.display = 'block';
+    }
+
+    // Mostrar/ocultar motivo de inativação
+    const ativoCheckbox = document.getElementById('{{ form.ativo.id_for_label }}');
+    if (ativoCheckbox) {
+        ativoCheckbox.addEventListener('change', function() {
+            const div = document.getElementById('motivo_inativacao_div');
+            if (!this.checked) {
+                div.style.display = 'block';
+            } else {
+                div.style.display = 'none';
+            }
+        });
+
+        // Inicializar
+        if (!ativoCheckbox.checked) {
+            document.getElementById('motivo_inativacao_div').style.display = 'block';
+        }
+    }
+
+    // CEP Lookup
+    document.querySelector('.btn-buscar-cep').addEventListener('click', async function() {
+        const cep = document.getElementById('id_cep').value.trim();
+        
+        if (!cep || cep.length < 8) {
+            alert('Digite um CEP válido (8 dígitos)');
+            return;
+        }
+
+        this.innerHTML = '<i class="bi bi-hourglass-split"></i> Buscando...';
+        this.disabled = true;
+
+        try {
+            const response = await fetch(`/cadastros/api/buscar-cep-motorista/?cep=${cep}`);
+            const data = await response.json();
+
+            if (response.ok) {
+                document.getElementById('id_logradouro').value = data.logradouro || '';
+                document.getElementById('id_bairro').value = data.bairro || '';
+                document.getElementById('id_cidade').value = data.cidade || '';
+                document.getElementById('id_uf').value = data.uf || '';
+                alert('Endereço preenchido com sucesso!');
+            } else {
+                alert(data.erro || 'CEP não encontrado');
+            }
+        } catch (error) {
+            alert('Erro ao buscar CEP: ' + error.message);
+        } finally {
+            this.innerHTML = '<i class="bi bi-search"></i> Buscar';
+            this.disabled = false;
+        }
+    });
+</script>
+{% endblock %}

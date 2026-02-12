@@ -5,12 +5,19 @@ Admin do módulo Fazendas e Culturas
 from django.contrib import admin
 from .models import (
     Fazenda, EnderecoFazenda, ContatoFazenda,
-    ContaBancariaFazenda, DocumentoFazenda, Cultura, Praga
+    ContaBancariaFazenda, DocumentoFazenda, Cultura, Praga,
+    EstagioDesenvolvimento, MonitoramentoMIP, PragaNoMonitoramento, PontoMonitoramento
 )
 from .models import Area, Talhao, HistoricoTalhao, Safra, SafraPlan, SafraReal, FuncaoFuncionario
 from .models import Vendedor, ComissaoVendedor
 
-from .models import Fornecedor, FornecedorEndereco, FornecedorContato, FornecedorDadoBancario, Transportadora, Viagem, Porto, Moeda, NCM, EmpresaNCM, Vehicle, VehiclePlate, VehicleDocument, VehicleValueHistory, CFOP, EmpresaCFOP
+from .models import (
+    Fornecedor, FornecedorEndereco, FornecedorContato, FornecedorDadoBancario, 
+    Transportadora, Viagem, Porto, Moeda, NCM, EmpresaNCM, Vehicle, VehiclePlate, 
+    VehicleDocument, VehicleValueHistory, CFOP, EmpresaCFOP,
+    Armador, ArmadorEndereco, ArmadorContato, ArmadorDadoBancario,
+    Navio, TipoNavio
+)
 
 class EnderecoFazendaInline(admin.TabularInline):
     """Inline para endereços"""
@@ -280,6 +287,30 @@ class SafraRealAdmin(admin.ModelAdmin):
 
 
 
+@admin.register(TipoNavio)
+class TipoNavioAdmin(admin.ModelAdmin):
+    list_display = ['nome', 'codigo', 'ativo']
+    list_filter = ['ativo']
+    search_fields = ['nome', 'codigo']
+    readonly_fields = ['data_criacao', 'data_atualizacao']
+    
+    fieldsets = (
+        ('Identificação', {
+            'fields': ('codigo', 'nome')
+        }),
+        ('Descrição', {
+            'fields': ('descricao',)
+        }),
+        ('Status', {
+            'fields': ('ativo',)
+        }),
+        ('Auditoria', {
+            'fields': ('data_criacao', 'data_atualizacao'),
+            'classes': ('collapse',)
+        }),
+    )
+
+
 @admin.register(Porto)
 class PortoAdmin(admin.ModelAdmin):
     list_display = ['codigo', 'nome', 'pais', 'cidade', 'tipo', 'ativo', 'empresa']
@@ -533,3 +564,399 @@ class FornecedorEnderecoAdmin(admin.ModelAdmin):
     list_filter = ['tipo', 'uf', 'padrao']
     search_fields = ['fornecedor__nome', 'cidade', 'logradouro']
     readonly_fields = ['data_cadastro']
+
+# ============================================
+# ARMADOR - Admin registrations
+# ============================================
+
+class ArmadorEnderecoInline(admin.TabularInline):
+    """Inline para endereços do armador"""
+    model = ArmadorEndereco
+    extra = 0
+    fields = ['tipo', 'cep', 'logradouro', 'numero', 'cidade', 'uf', 'padrao', 'preenchido_via_api']
+    readonly_fields = ['preenchido_via_api']
+
+
+class ArmadorContatoInline(admin.TabularInline):
+    """Inline para contatos do armador"""
+    model = ArmadorContato
+    extra = 0
+    fields = ['tipo', 'nome', 'cargo', 'telefone', 'email', 'whatsapp', 'preferencial']
+
+
+class ArmadorDadoBancarioInline(admin.TabularInline):
+    """Inline para contas bancárias do armador"""
+    model = ArmadorDadoBancario
+    extra = 0
+    fields = ['nome_banco', 'agencia', 'conta', 'tipo_conta', 'tem_pix', 'padrao']
+
+
+@admin.register(Armador)
+class ArmadorAdmin(admin.ModelAdmin):
+    """Admin principal de Armadores - RF-028, RF-308, RF-805, RF-808"""
+    list_display = [
+        'nome', 'codigo', 'get_cnpj_formatado', 'pais', 
+        'confiabilidade_percentual', 'percentual_rolagem_historico', 'ativo'
+    ]
+    list_filter = ['ativo', 'empresa', 'pais']
+    search_fields = ['nome', 'nome_fantasia', 'cnpj', 'codigo', 'email']
+    readonly_fields = ['data_criacao', 'data_atualizacao', 'criado_por', 'get_cnpj_formatado']
+    
+    fieldsets = (
+        ('Identificação', {
+            'fields': ('empresa', 'codigo', 'nome', 'nome_fantasia', 'ativo')
+        }),
+        ('Documentação', {
+            'fields': ('cnpj', 'pais', 'website')
+        }),
+        ('Endereço Principal', {
+            'fields': ('cep', 'endereco', 'numero', 'complemento', 'bairro', 'cidade', 'uf')
+        }),
+        ('Contato Principal', {
+            'fields': ('email', 'telefone', 'celular')
+        }),
+        ('Operacional', {
+            'fields': ('tipos_navio',)
+        }),
+        ('Indicadores (RF-808)', {
+            'fields': ('confiabilidade_percentual', 'percentual_rolagem_historico', 'custo_medio_rolagem'),
+            'description': 'Métricas de desempenho e confiabilidade do armador'
+        }),
+        ('Auditoria', {
+            'fields': ('criado_por', 'data_criacao', 'data_atualizacao'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    inlines = [ArmadorEnderecoInline, ArmadorContatoInline, ArmadorDadoBancarioInline]
+
+    def get_queryset(self, request):
+        """Filtra por empresa se não for superusuário"""
+        qs = super().get_queryset(request)
+        if request.user.is_superuser:
+            return qs
+        if hasattr(request.user, 'empresa') and request.user.empresa:
+            return qs.filter(empresa=request.user.empresa)
+        return qs.none()
+
+
+@admin.register(ArmadorEndereco)
+class ArmadorEnderecoAdmin(admin.ModelAdmin):
+    """Admin de Endereços do Armador"""
+    list_display = ['armador', 'get_tipo_display', 'cidade', 'uf', 'padrao']
+    list_filter = ['tipo', 'uf', 'padrao', 'preenchido_via_api']
+    search_fields = ['armador__nome', 'cidade', 'logradouro']
+    readonly_fields = ['data_cadastro', 'preenchido_via_api']
+
+
+@admin.register(ArmadorContato)
+class ArmadorContatoAdmin(admin.ModelAdmin):
+    """Admin de Contatos do Armador"""
+    list_display = ['armador', 'nome', 'get_tipo_display', 'telefone', 'email', 'preferencial']
+    list_filter = ['tipo', 'preferencial', 'whatsapp']
+    search_fields = ['armador__nome', 'nome', 'email', 'telefone']
+    readonly_fields = ['data_cadastro']
+
+
+@admin.register(ArmadorDadoBancario)
+class ArmadorDadoBancarioAdmin(admin.ModelAdmin):
+    """Admin de Contas Bancárias do Armador"""
+    list_display = ['armador', 'nome_banco', 'agencia', 'conta', 'tipo_conta', 'tem_pix', 'padrao', 'ativo']
+    list_filter = ['tem_pix', 'tipo_conta', 'ativo', 'padrao']
+    search_fields = ['armador__nome', 'nome_banco', 'agencia', 'conta']
+    readonly_fields = ['data_cadastro']
+    
+    fieldsets = (
+        ('Armador', {
+            'fields': ('armador',)
+        }),
+        ('Banco', {
+            'fields': ('codigo_banco', 'nome_banco', 'agencia', 'agencia_dv', 'conta', 'conta_dv', 'tipo_conta')
+        }),
+        ('PIX', {
+            'fields': ('tem_pix', 'tipo_pix', 'chave_pix')
+        }),
+        ('Titular', {
+            'fields': ('nome_titular', 'cpf_cnpj_titular')
+        }),
+        ('Status', {
+            'fields': ('padrao', 'ativo')
+        }),
+        ('Auditoria', {
+            'fields': ('data_cadastro',),
+            'classes': ('collapse',)
+        }),
+    )
+
+
+@admin.register(Navio)
+class NavioAdmin(admin.ModelAdmin):
+    """Admin de Navios - RF-028"""
+    list_display = [
+        'nome', 'codigo', 'armador', 'tipo', 'capacidade_containers', 
+        'bandeira', 'status', 'ativo'
+    ]
+    list_filter = ['tipo', 'status', 'ativo', 'empresa', 'bandeira']
+    search_fields = ['nome', 'codigo', 'imo', 'armador__nome']
+    readonly_fields = ['data_criacao', 'data_atualizacao']
+    
+    fieldsets = (
+        ('Identificação', {
+            'fields': ('empresa', 'codigo', 'nome', 'imo', 'bandeira', 'ativo')
+        }),
+        ('Armador', {
+            'fields': ('armador',)
+        }),
+        ('Tipo e Capacidade', {
+            'fields': ('tipo', 'capacidade_containers', 'capacidade_toneladas')
+        }),
+        ('Características Físicas', {
+            'fields': ('ano_construcao', 'comprimento_metros', 'velocidade_media_nós'),
+            'classes': ('collapse',)
+        }),
+        ('Operacional', {
+            'fields': ('status', 'portos_operacao')
+        }),
+        ('Auditoria', {
+            'fields': ('data_criacao', 'data_atualizacao'),
+            'classes': ('collapse',)
+        }),
+    )
+
+    def get_queryset(self, request):
+        """Filtra por empresa se não for superusuário"""
+        qs = super().get_queryset(request)
+        if request.user.is_superuser:
+            return qs
+        if hasattr(request.user, 'empresa') and request.user.empresa:
+            return qs.filter(empresa=request.user.empresa)
+        return qs.none()
+
+
+# ======================== MONITORAMENTO MIP (Manejo Integrado de Pragas) =====================
+
+class PontoMonitoramentoInline(admin.TabularInline):
+    """Inline para pontos de monitoramento (samplings 1-20)"""
+    model = PontoMonitoramento
+    extra = 0
+    fields = [
+        'numero_ponto', 'praga_presente', 'quantidade', 'estagio', 
+        'severidade', 'latitude', 'longitude'
+    ]
+    readonly_fields = ['data_criacao']
+
+
+class PragaNoMonitoramentoInline(admin.TabularInline):
+    """Inline para pragas detectadas em um monitoramento"""
+    model = PragaNoMonitoramento
+    extra = 0
+    fields = [
+        'praga', 'quantidade_pontos_com_praga', 'incidencia_percentual',
+        'severidade', 'estagio_principal', 'ned_atingido', 'resultado_acao'
+    ]
+    readonly_fields = ['incidencia_percentual', 'ned_atingido', 'resultado_acao', 'data_criacao', 'data_atualizacao']
+
+
+@admin.register(EstagioDesenvolvimento)
+class EstagioDesenvolvimentoAdmin(admin.ModelAdmin):
+    """Admin para Estágios de Desenvolvimento de Pragas"""
+    list_display = [
+        'praga', 'tipo_estagio', 'ordem_ciclo', 'duracao_minima_dias',
+        'duracao_maxima_dias', 'eh_fase_critica', 'empresa', 'eh_template_icon', 'ativo'
+    ]
+    list_filter = ['tipo_estagio', 'eh_fase_critica', 'ativo', 'empresa', 'praga', 'eh_template']
+    search_fields = ['praga__nome', 'tipo_estagio', 'descricao']
+    readonly_fields = ['data_criacao', 'data_atualizacao', 'template_original']
+    
+    fieldsets = (
+        ('Identificação', {
+            'fields': ('empresa', 'praga', 'tipo_estagio', 'ordem_ciclo', 'ativo')
+        }),
+        ('Descrição', {
+            'fields': ('descricao',)
+        }),
+        ('Duração do Estágio', {
+            'fields': ('duracao_minima_dias', 'duracao_maxima_dias')
+        }),
+        ('Características', {
+            'fields': ('eh_fase_critica',)
+        }),
+        ('Templates', {
+            'fields': ('eh_template', 'template_original'),
+            'description': 'Marque "É Estágio Template?" para criar um template padrão que será copiado para novas empresas',
+            'classes': ('collapse',)
+        }),
+        ('Observações', {
+            'fields': ('observacoes',),
+            'classes': ('collapse',)
+        }),
+        ('Auditoria', {
+            'fields': ('data_criacao', 'data_atualizacao'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    def eh_template_icon(self, obj):
+        """Mostra ícone se é template"""
+        if obj.eh_template:
+            return '⭐ Template'
+        elif obj.template_original:
+            return '🔗 Cópia'
+        return '-'
+    eh_template_icon.short_description = 'Tipo'
+
+    def get_queryset(self, request):
+        """Filtra por empresa do usuário"""
+        qs = super().get_queryset(request)
+        if request.user.is_superuser:
+            return qs
+        if hasattr(request.user, 'empresa') and request.user.empresa:
+            return qs.filter(empresa=request.user.empresa)
+        return qs.none()
+
+
+@admin.register(MonitoramentoMIP)
+class MonitoramentoMIPAdmin(admin.ModelAdmin):
+    """Admin para Monitoramentos MIP (Manejo Integrado de Pragas)"""
+    list_display = [
+        'numero', 'talhao', 'data_monitoramento', 'responsavel',
+        'quantidade_pontos', 'status', 'empresa', 'data_criacao'
+    ]
+    list_filter = ['status', 'data_monitoramento', 'empresa', 'talhao', 'safra']
+    search_fields = ['numero', 'talhao__nome', 'responsavel__username']
+    readonly_fields = ['numero', 'data_criacao', 'data_atualizacao', 'criado_por']
+    date_hierarchy = 'data_monitoramento'
+    inlines = [PragaNoMonitoramentoInline]
+    
+    fieldsets = (
+        ('Identificação', {
+            'fields': ('numero', 'empresa', 'talhao', 'safra', 'cultura')
+        }),
+        ('Monitoramento', {
+            'fields': (
+                'data_monitoramento', 'responsavel', 'quantidade_pontos',
+                'condicoes_tempo'
+            )
+        }),
+        ('Condições Ambientais', {
+            'fields': (
+                'temperatura_media', 'umidade_media', 'velocidade_vento',
+                'chuva_ultimas_24h'
+            ),
+            'classes': ('collapse',)
+        }),
+        ('Status', {
+            'fields': ('status',)
+        }),
+        ('Observações', {
+            'fields': ('observacoes',),
+            'classes': ('collapse',)
+        }),
+        ('Auditoria', {
+            'fields': ('data_criacao', 'data_atualizacao', 'criado_por'),
+            'classes': ('collapse',)
+        }),
+    )
+
+    def get_queryset(self, request):
+        """Filtra por empresa do usuário"""
+        qs = super().get_queryset(request)
+        if request.user.is_superuser:
+            return qs
+        if hasattr(request.user, 'empresa') and request.user.empresa:
+            return qs.filter(empresa=request.user.empresa)
+        return qs.none()
+
+    def save_model(self, request, obj, form, change):
+        """Atribui empresa e usuário na criação"""
+        if not change:
+            obj.empresa = request.user.empresa
+            obj.criado_por = request.user
+        super().save_model(request, obj, form, change)
+
+
+@admin.register(PragaNoMonitoramento)
+class PragaNoMonitoramentoAdmin(admin.ModelAdmin):
+    """Admin para Pragas Detectadas em Monitoramentos"""
+    list_display = [
+        'monitoramento', 'praga', 'incidencia_percentual', 'severidade',
+        'ned_atingido', 'resultado_acao', 'estagio_principal'
+    ]
+    list_filter = ['ned_atingido', 'resultado_acao', 'severidade', 'monitoramento__data_monitoramento']
+    search_fields = ['monitoramento__numero', 'praga__nome']
+    readonly_fields = ['incidencia_percentual', 'ned_atingido', 'resultado_acao', 'data_criacao', 'data_atualizacao']
+    inlines = [PontoMonitoramentoInline]
+    
+    fieldsets = (
+        ('Identificação', {
+            'fields': ('monitoramento', 'praga', 'estagio_principal')
+        }),
+        ('Sampling', {
+            'fields': ('quantidade_pontos_com_praga',)
+        }),
+        ('Incidência', {
+            'fields': ('incidencia_percentual',)
+        }),
+        ('Análise NED', {
+            'fields': ('ned_atingido', 'resultado_acao')
+        }),
+        ('Severidade', {
+            'fields': ('severidade', 'detalhes_estagios'),
+            'classes': ('collapse',)
+        }),
+        ('Auditoria', {
+            'fields': ('data_criacao', 'data_atualizacao'),
+            'classes': ('collapse',)
+        }),
+    )
+
+    def get_queryset(self, request):
+        """Filtra por empresa do usuário"""
+        qs = super().get_queryset(request)
+        if request.user.is_superuser:
+            return qs
+        if hasattr(request.user, 'empresa') and request.user.empresa:
+            return qs.filter(monitoramento__empresa=request.user.empresa)
+        return qs.none()
+
+
+@admin.register(PontoMonitoramento)
+class PontoMonitoramentoAdmin(admin.ModelAdmin):
+    """Admin para Pontos de Amostragem (Sampling Points)"""
+    list_display = [
+        'numero_ponto', 'praga_monitoramento', 'praga_presente',
+        'quantidade', 'severidade', 'estagio', 'data_criacao'
+    ]
+    list_filter = ['praga_presente', 'severidade', 'numero_ponto']
+    search_fields = ['praga_monitoramento__monitoramento__numero', 'praga_monitoramento__praga__nome']
+    readonly_fields = ['data_criacao']
+    
+    fieldsets = (
+        ('Ponto de Amostragem', {
+            'fields': ('praga_monitoramento', 'numero_ponto', 'praga_presente')
+        }),
+        ('Dados da Praga', {
+            'fields': ('quantidade', 'estagio', 'severidade')
+        }),
+        ('Localização', {
+            'fields': ('latitude', 'longitude'),
+            'classes': ('collapse',)
+        }),
+        ('Foto/Evidência', {
+            'fields': ('foto',),
+            'classes': ('collapse',)
+        }),
+        ('Auditoria', {
+            'fields': ('data_criacao',),
+            'classes': ('collapse',)
+        }),
+    )
+
+    def get_queryset(self, request):
+        """Filtra por empresa do usuário"""
+        qs = super().get_queryset(request)
+        if request.user.is_superuser:
+            return qs
+        if hasattr(request.user, 'empresa') and request.user.empresa:
+            return qs.filter(praga_monitoramento__monitoramento__empresa=request.user.empresa)
+        return qs.none()

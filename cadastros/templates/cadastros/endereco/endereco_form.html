@@ -54,6 +54,12 @@
             {% endif %}
           </div>
 
+          <div class="col-md-4" id="notify-receiver-group" style="display:none;">
+            <label class="form-label fw-semibold">Destinatário</label>
+            {{ form.recebedor_notify }}
+            <small class="text-muted">Obrigatório apenas para endereço Notify</small>
+          </div>
+
           <!-- CEP com busca -->
           <div class="col-md-4">
             <label class="form-label fw-semibold">CEP *</label>
@@ -180,5 +186,24 @@
   </div>
 </div>
 
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  const tipo = document.getElementById('id_tipo');
+  const notifyGroup = document.getElementById('notify-receiver-group');
+
+  function toggleNotify(){
+    if (!tipo || !notifyGroup) return;
+    notifyGroup.style.display = (tipo.value === 'NOTIFY') ? '' : 'none';
+  }
+
+  if (tipo) {
+    tipo.addEventListener('change', toggleNotify);
+    toggleNotify();
+  }
+});
+</script>
 {% endblock %}
 

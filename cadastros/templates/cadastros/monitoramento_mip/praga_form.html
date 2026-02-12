@@ -1,0 +1,308 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Adicionar Praga | ERP Agrícola{% endblock %}
+{% block page_title %}
+  <div class="d-flex align-items-center gap-2">
+    <span>Adicionar Praga ao Monitoramento {{ monitoramento.numero }}</span>
+    <button type="button" class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#helpPragaForm" title="Ajuda">
+      <i class="bi bi-question-circle"></i>
+    </button>
+  </div>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+  <div class="row">
+    <div class="col-lg-8 offset-lg-2">
+      
+      <!-- Informações do Monitoramento -->
+      <div class="card shadow-sm border-0 rounded-4 mb-4 bg-light">
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-4">
+              <p class="mb-1 text-muted"><small>Monitoramento</small></p>
+              <p class="fw-bold mb-0">{{ monitoramento.numero }}</p>
+            </div>
+            <div class="col-md-4">
+              <p class="mb-1 text-muted"><small>Talhão</small></p>
+              <p class="fw-bold mb-0">{{ monitoramento.talhao.nome }}</p>
+            </div>
+            <div class="col-md-4">
+              <p class="mb-1 text-muted"><small>Pontos Total</small></p>
+              <p class="fw-bold mb-0">{{ monitoramento.quantidade_pontos }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Formulário de Praga -->
+      <div class="card shadow-sm border-0 rounded-4">
+        <div class="card-header bg-success text-white rounded-top-4">
+          <h5 class="mb-0">
+            <i class="bi bi-plus-circle"></i> Adicionar Praga
+          </h5>
+        </div>
+
+        <div class="card-body p-4">
+          <form method="post" class="needs-validation" novalidate>
+            {% csrf_token %}
+
+            <!-- Seleção de Praga -->
+            <div class="mb-4">
+              <label for="{{ form.praga.id_for_label }}" class="form-label">
+                <i class="bi bi-bug"></i> Praga *
+              </label>
+              {{ form.praga }}
+              {% if form.praga.errors %}
+                <div class="invalid-feedback d-block">{{ form.praga.errors.0 }}</div>
+              {% endif %}
+              <small class="text-muted d-block mt-2">
+                Selecione a praga detectada no monitoramento
+              </small>
+            </div>
+
+            <!-- Quantidade de Pontos com Praga -->
+            <div class="mb-4">
+              <label for="{{ form.quantidade_pontos_com_praga.id_for_label }}" class="form-label">
+                <i class="bi bi-crosshair2"></i> Quantidade de Pontos com Praga *
+              </label>
+              <div class="input-group">
+                {{ form.quantidade_pontos_com_praga }}
+                <span class="input-group-text">/ {{ monitoramento.quantidade_pontos }} pontos</span>
+              </div>
+              {% if form.quantidade_pontos_com_praga.errors %}
+                <div class="invalid-feedback d-block">{{ form.quantidade_pontos_com_praga.errors.0 }}</div>
+              {% endif %}
+              <small class="text-muted d-block mt-2">
+                Informe em quantos dos {{ monitoramento.quantidade_pontos }} pontos a praga foi encontrada
+              </small>
+            </div>
+
+            <!-- Incidência Auto-Calculada -->
+            <div class="mb-4">
+              <label for="{{ form.incidencia_percentual.id_for_label }}" class="form-label">
+                <i class="bi bi-percent"></i> Incidência Estimada %
+              </label>
+              {{ form.incidencia_percentual }}
+              {% if form.incidencia_percentual.errors %}
+                <div class="invalid-feedback d-block">{{ form.incidencia_percentual.errors.0 }}</div>
+              {% endif %}
+              <small class="text-muted d-block mt-2">
+                Cálculo automático: (Pontos com Praga / Total Pontos) × 100
+              </small>
+            </div>
+
+            <!-- Estágio Principal (Com Cascading) -->
+            <div class="mb-4">
+              <label for="{{ form.estagio_principal.id_for_label }}" class="form-label">
+                <i class="bi bi-diagram-3"></i> Estágio Principal *
+              </label>
+              <div id="estagio-loading" class="spinner-border spinner-border-sm text-primary d-none" role="status">
+                <span class="visually-hidden">Carregando estágios...</span>
+              </div>
+              {{ form.estagio_principal }}
+              {% if form.estagio_principal.errors %}
+                <div class="invalid-feedback d-block">{{ form.estagio_principal.errors.0 }}</div>
+              {% endif %}
+              <small class="text-muted d-block mt-2">
+                Selecione o estágio predominante da praga (carregado automaticamente)
+              </small>
+            </div>
+
+            <!-- Severidade -->
+            <div class="mb-4">
+              <label for="{{ form.severidade.id_for_label }}" class="form-label">
+                <i class="bi bi-exclamation-triangle"></i> Severidade *
+              </label>
+              <div class="row g-2">
+                {% for value, label in form.severidade.field.choices %}
+                  <div class="col-auto">
+                    <input type="radio" class="btn-check" name="{{ form.severidade.name }}" 
+                           id="severidade_{{ value }}" value="{{ value }}"
+                           {% if form.severidade.value == value|stringformat:"s" %}checked{% endif %}>
+                    <label class="btn btn-outline-warning" for="severidade_{{ value }}">
+                      {% if value == '1' %}
+                        <i class="bi bi-emoji-smile"></i> Muito Baixa
+                      {% elif value == '2' %}
+                        <i class="bi bi-emoji-neutral"></i> Baixa
+                      {% elif value == '3' %}
+                        <i class="bi bi-emoji-frown"></i> Média
+                      {% elif value == '4' %}
+                        <i class="bi bi-exclamation-triangle"></i> Alta
+                      {% elif value == '5' %}
+                        <i class="bi bi-exclamation-triangle-fill"></i> Muito Alta
+                      {% endif %}
+                    </label>
+                  </div>
+                {% endfor %}
+              </div>
+              {% if form.severidade.errors %}
+                <div class="invalid-feedback d-block">{{ form.severidade.errors.0 }}</div>
+              {% endif %}
+            </div>
+
+            <!-- NED Valor (Com sugestão automática) -->
+            <div class="mb-4">
+              <label for="{{ form.ned_valor.id_for_label }}" class="form-label">
+                <i class="bi bi-percent"></i> Nível Econômico de Dano (NED) %
+              </label>
+              <div class="d-flex gap-2">
+                {{ form.ned_valor }}
+                <button type="button" class="btn btn-sm btn-outline-info" id="btn-reset-ned" title="Recarregar padrão (5.0%)">
+                  <i class="bi bi-arrow-counterclockwise"></i>
+                </button>
+              </div>
+              {% if form.ned_valor.errors %}
+                <div class="invalid-feedback d-block">{{ form.ned_valor.errors.0 }}</div>
+              {% endif %}
+              <small class="text-muted d-block mt-2">
+                Padrão: 5.0%. Você pode ajustar este valor conforme recomendação agronômica.
+              </small>
+            </div>
+
+            <!-- Detalhes de Estágios -->
+            <div class="mb-4">
+              <label for="{{ form.detalhes_estagios.id_for_label }}" class="form-label">
+                <i class="bi bi-diagram-3"></i> Detalhes de Estágios (JSON)
+              </label>
+              {{ form.detalhes_estagios }}
+              <small class="text-muted d-block mt-2">
+                Formato: {"OVO": 0, "NINFA": 1, "LARVA": 5, "PUPA": 2, "ADULTO": 0}
+              </small>
+              {% if form.detalhes_estagios.errors %}
+                <div class="invalid-feedback d-block">{{ form.detalhes_estagios.errors.0 }}</div>
+              {% endif %}
+            </div>
+
+            <!-- Resumo de Cálculo NED -->
+            <div class="alert alert-warning" role="alert">
+              <h6 class="alert-heading">
+                <i class="bi bi-lightbulb"></i> Análise Automática
+              </h6>
+              <p class="mb-0">
+                <strong id="resultado-acao">Será calculada quando form for preenchido</strong><br>
+                Se Incidência ≥ NED → Sistema recomenda defensivo
+              </p>
+            </div>
+
+            <!-- Botões -->
+            <div class="d-flex gap-2 justify-content-end">
+              <a href="{% url 'cadastros:monitoramento_mip_detail' monitoramento.pk %}" class="btn btn-outline-secondary">
+                <i class="bi bi-x-circle"></i> Cancelar
+              </a>
+              <button type="submit" class="btn btn-success">
+                <i class="bi bi-check-circle"></i> Adicionar Praga
+              </button>
+            </div>
+
+          </form>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Script para cálculos automáticos e cascading select -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const pragaSelect = document.querySelector('[name="{{ form.praga.name }}"]');
+  const estagioSelect = document.querySelector('[name="{{ form.estagio_principal.name }}"]');
+  const estagioLoading = document.getElementById('estagio-loading');
+  const quantidadeInput = document.getElementById('{{ form.quantidade_pontos_com_praga.id_for_label }}');
+  const incidenciaInput = document.getElementById('{{ form.incidencia_percentual.id_for_label }}');
+  const nedInput = document.getElementById('{{ form.ned_valor.id_for_label }}');
+  const resultadoDiv = document.getElementById('resultado-acao');
+  const btnResetNed = document.getElementById('btn-reset-ned');
+  const totalPontos = {{ monitoramento.quantidade_pontos }};
+
+  // Cascading Select: Praga → Estágios
+  function carregarEstagios(pragaId) {
+    if (!pragaId) {
+      estagioSelect.innerHTML = '<option value="">-- Selecione um estágio --</option>';
+      return;
+    }
+
+    estagioLoading.classList.remove('d-none');
+    
+    fetch(`{% url 'cadastros:ajax_get_estagios_praga' %}?praga_id=${pragaId}`)
+      .then(response => response.json())
+      .then(data => {
+        estagioLoading.classList.add('d-none');
+        let html = '<option value="">-- Selecione um estágio --</option>';
+        
+        if (data.estagios && data.estagios.length > 0) {
+          data.estagios.forEach(estagio => {
+            html += `<option value="${estagio.id}">${estagio.tipo_estagio}</option>`;
+          });
+        } else {
+          html += '<option disabled>Nenhum estágio encontrado</option>';
+        }
+        
+        estagioSelect.innerHTML = html;
+      })
+      .catch(error => {
+        console.error('❌ Erro ao carregar estágios:', error);
+        estagioLoading.classList.add('d-none');
+        estagioSelect.innerHTML = '<option value="">Erro ao carregar estágios</option>';
+      });
+  }
+
+  // Event listener para mudança de praga
+  if (pragaSelect) {
+    pragaSelect.addEventListener('change', function() {
+      carregarEstagios(this.value);
+    });
+    
+    // Carregar estágios inicialmente se praga já foi selecionada
+    if (pragaSelect.value) {
+      carregarEstagios(pragaSelect.value);
+    }
+  }
+
+  // Calculo automático de incidência
+  function atualizarCálculos() {
+    const qtdPragas = parseFloat(quantidadeInput.value) || 0;
+    const ned = parseFloat(nedInput.value) || 5.0;
+    
+    // Atualizar incidencia_percentual
+    let incidencia = 0;
+    if (qtdPragas > 0 && totalPontos > 0) {
+      incidencia = (qtdPragas / totalPontos) * 100;
+    }
+    incidenciaInput.value = incidencia.toFixed(2);
+    
+    // Atualizar resultado da ação
+    if (incidencia > 0) {
+      if (incidencia >= ned) {
+        resultadoDiv.innerHTML = '<span class="badge bg-danger">RECOMENDA DEFENSIVO</span> - Incidência ' + incidencia.toFixed(1) + '% ≥ NED ' + ned.toFixed(1) + '%';
+      } else {
+        resultadoDiv.innerHTML = '<span class="badge bg-warning">MONITORAR</span> - Incidência ' + incidencia.toFixed(1) + '% < NED ' + ned.toFixed(1) + '%';
+      }
+    } else {
+      resultadoDiv.innerHTML = '<span class="badge bg-secondary">SEM AÇÃO</span> - Nenhuma praga detectada';
+    }
+  }
+
+  // Event listeners para cálculos
+  if (quantidadeInput) quantidadeInput.addEventListener('keyup', atualizarCálculos);
+  if (quantidadeInput) quantidadeInput.addEventListener('change', atualizarCálculos);
+  if (nedInput) nedInput.addEventListener('change', atualizarCálculos);
+  
+  // Reset NED para padrão
+  if (btnResetNed) {
+    btnResetNed.addEventListener('click', function() {
+      nedInput.value = '5.0';
+      atualizarCálculos();
+    });
+  }
+  
+  atualizarCálculos();
+});
+</script>
+
+<!-- Modals de Ajuda -->
+{% include 'cadastros/monitoramento_mip/_help_modals.html' %}
+
+{% endblock %}

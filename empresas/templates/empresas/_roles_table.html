@@ -1,8 +1,9 @@
-<div class="row g-3">
-  {% if roles %}
-    {% for role in roles %}
-      <div class="col-md-6 col-lg-4">
-        <div class="role-card h-100" role="button" tabindex="0" data-role-id="{{ role.id }}" data-builtin="{{ role.builtin|yesno:'true,false' }}">
+<div class="roles-view roles-view-cards">
+  <div class="row g-3">
+    {% if roles %}
+      {% for role in roles %}
+        <div class="col-md-6 col-lg-4">
+          <div class="role-card h-100" role="button" tabindex="0" data-role-id="{{ role.id }}" data-builtin="{{ role.builtin|yesno:'true,false' }}">
           
           <!-- Header com checkbox e ícone -->
           <div class="d-flex align-items-start mb-3">
@@ -72,21 +73,85 @@
             </div>
           </div>
           
+          </div>
+        </div>
+      {% endfor %}
+    {% else %}
+      <div class="col-12">
+        <div class="empty-state py-5">
+          <i class="bi bi-person-x" style="font-size: 4rem; color: #dee2e6;"></i>
+          <h5 class="mt-3 text-muted">Nenhuma função encontrada</h5>
+          <p class="text-muted mb-3">Crie uma nova função para gerenciar permissões de usuários</p>
+          {% if request.user.is_superuser or request.user.is_admin_empresa %}
+          <a href="{% url 'empresas:role_create' %}" class="btn btn-success">
+            <i class="bi bi-plus-circle"></i> Criar Primeira Função
+          </a>
+          {% endif %}
         </div>
       </div>
-    {% endfor %}
+    {% endif %}
+  </div>
+</div>
+
+<div class="roles-view roles-view-list d-none">
+  {% if roles %}
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead class="table-light">
+          <tr>
+            <th style="width: 40px;"></th>
+            <th>Funcao</th>
+            <th>Tipo</th>
+            <th>Usuarios</th>
+            <th>Cadastro</th>
+            <th class="text-end">Acoes</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for role in roles %}
+            <tr class="role-row" data-role-id="{{ role.id }}" data-builtin="{{ role.builtin|yesno:'true,false' }}" data-name="{{ role.name|lower }}">
+              <td>
+                <input type="checkbox" class="role-select" data-role-id="{{ role.id }}" aria-label="Selecionar função {{ role.name }}">
+              </td>
+              <td>
+                <strong class="role-name">{{ role.name }}</strong>
+                <div class="text-muted small">{{ role.description|default:'Sem descricao'|truncatewords:12 }}</div>
+              </td>
+              <td>
+                {% if role.builtin %}
+                  <span class="badge bg-success-subtle text-success border border-success-subtle">
+                    <i class="bi bi-patch-check-fill"></i> Padrao
+                  </span>
+                {% else %}
+                  <span class="badge bg-primary-subtle text-primary border border-primary-subtle">
+                    <i class="bi bi-pencil-square"></i> Personalizada
+                  </span>
+                {% endif %}
+              </td>
+              <td>{{ role.usuarios.count }}</td>
+              <td>{{ role.data_criacao|date:"d/m/Y" }}</td>
+              <td class="text-end">
+                <a href="#" class="btn btn-primary btn-sm btn-permissions" data-role-id="{{ role.id }}" aria-label="Editar permissões de {{ role.name }}">
+                  <i class="bi bi-shield-lock"></i>
+                </a>
+                <a href="{% url 'empresas:role_update' role_id=role.id %}" class="btn btn-outline-secondary btn-sm" aria-label="Editar função {{ role.name }}">
+                  <i class="bi bi-pencil-square"></i>
+                </a>
+                {% if not role.builtin %}
+                <button type="button" class="btn btn-outline-danger btn-sm" onclick="confirmDelete({{ role.id }}, '{{ role.name }}')" aria-label="Excluir função {{ role.name }}">
+                  <i class="bi bi-trash"></i>
+                </button>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
   {% else %}
-    <div class="col-12">
-      <div class="empty-state py-5">
-        <i class="bi bi-person-x" style="font-size: 4rem; color: #dee2e6;"></i>
-        <h5 class="mt-3 text-muted">Nenhuma função encontrada</h5>
-        <p class="text-muted mb-3">Crie uma nova função para gerenciar permissões de usuários</p>
-        {% if request.user.is_superuser or request.user.is_admin_empresa %}
-        <a href="{% url 'empresas:role_create' %}" class="btn btn-success">
-          <i class="bi bi-plus-circle"></i> Criar Primeira Função
-        </a>
-        {% endif %}
-      </div>
+    <div class="empty-state py-4">
+      <i class="bi bi-person-x" style="font-size: 3rem; color: #dee2e6;"></i>
+      <h6 class="mt-2 text-muted">Nenhuma funcao encontrada</h6>
     </div>
   {% endif %}
 </div>

@@ -7,6 +7,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
+from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.core.exceptions import ValidationError, PermissionDenied
 from django.db.models import Q, Count, Sum, Avg
@@ -23,7 +24,7 @@ from .models import (
     ContaBancariaFazenda, DocumentoFazenda, DocumentoFornecedor,
     Area, Talhao, Cultura, Praga, HistoricoTalhao, Safra,
     Vendedor, ComissaoVendedor, Fornecedor, FornecedorContato, FornecedorDadoBancario, Porto, NCM, EmpresaNCM, CFOP,
-    Cliente, EnderecoCliente, ContatoCliente, ContaBancariaCliente, DocumentoCliente
+    Cliente, EnderecoCliente, ContatoCliente, ContaBancariaCliente, DocumentoCliente, PrazoPagamentoPadrao
 )
 
 from .forms import VendedorForm, VendedorFiltroForm, ComissaoVendedorForm, FornecedorForm, FornecedorContatoForm, FornecedorDadoBancarioForm, TransportadoraForm
@@ -36,6 +37,9 @@ from .forms import (
 
     # Cliente-related forms
     ClienteForm, EnderecoClienteForm, ContatoClienteForm, ContaBancariaClienteForm, DocumentoClienteForm,
+    
+    # Prazo de Pagamento
+    PrazoPagamentoPadraoForm,
 )
 
 # Transportadora views (moved to a dedicated module for clarity)
@@ -43,6 +47,24 @@ from .views_transportadora import (
     transportadora_list, transportadora_detail,
     transportadora_create, transportadora_update, transportadora_delete,
     transportadora_update_frete
+)
+
+# Armador e Navio views
+from .views_armador import (
+    # Armador
+    armador_list, armador_detail, armador_create, armador_update, armador_delete,
+    
+    # Armador Endereço
+    armador_endereco_create, armador_endereco_update, armador_endereco_delete,
+    
+    # Armador Contato
+    armador_contato_create, armador_contato_update, armador_contato_delete,
+    
+    # Armador Banco
+    armador_banco_create, armador_banco_update, armador_banco_delete,
+    
+    # Navio
+    navio_list, navio_detail, navio_create, navio_update, navio_delete,
 )
 
 # API views
@@ -1190,7 +1212,8 @@ def buscar_cep(request):
             dados = response.json()
 
             if dados.get('erro'):
-                return JsonResponse({'erro': 'CEP não encontrado'}, status=404)
+                # Tentar API alternativa (Brasil API) como fallback
+                return buscar_cep_brasil_api(cep)
 
             resultado = {
                 'cep': dados.get('cep', ''),
@@ -1207,12 +1230,46 @@ def buscar_cep(request):
             cache.set(cache_key, resp_payload, timeout=60 * 60 * 24)
             return JsonResponse(resp_payload)
         else:
-            return JsonResponse({'erro': 'Erro ao consultar API'}, status=500)
+            # Tentar API alternativa se ViaCEP falhar
+            return buscar_cep_brasil_api(cep)
 
     except requests.exceptions.Timeout:
-        return JsonResponse({'erro': 'Timeout na consulta'}, status=500)
+        return JsonResponse({'erro': 'Timeout na consulta (ViaCEP demorou para responder). Tente preencher manualmente.'}, status=500)
+    except requests.exceptions.ConnectionError:
+        # Tentar API alternativa
+        return buscar_cep_brasil_api(cep)
     except Exception as e:
-        return JsonResponse({'erro': str(e)}, status=500)
+        # Log do erro para debug
+        import logging
+        logging.error(f'Erro ao buscar CEP: {str(e)}', exc_info=True)
+        return JsonResponse({'erro': 'Erro ao buscar CEP. Tente novamente ou preencha manualmente.'}, status=500)
+
+
+def buscar_cep_brasil_api(cep):
+    """API alternativa usando Brasil API como fallback"""
+    try:
+        url = f'https://brasilapi.com.br/api/cep/v1/{cep}'
+        response = requests.get(url, timeout=10)
+        
+        if response.status_code == 200:
+            dados = response.json()
+            resultado = {
+                'cep': cep,
+                'logradouro': dados.get('street', ''),
+                'complemento': '',
+                'bairro': dados.get('neighborhood', ''),
+                'cidade': dados.get('city', ''),
+                'uf': dados.get('state', ''),
+            }
+            resp_payload = {'sucesso': True, 'dados': resultado}
+            resp_payload.update(resultado)
+            cache_key = f'buscar_cep:{cep}'
+            cache.set(cache_key, resp_payload, timeout=60 * 60 * 24)
+            return JsonResponse(resp_payload)
+        else:
+            return JsonResponse({'erro': 'CEP não encontrado'}, status=404)
+    except:
+        return JsonResponse({'erro': 'APIs de CEP não estão acessíveis. Preencha os dados manualmente.'}, status=500)
 
 
 # ==================== ENDEREÇOS ====================
@@ -1658,6 +1715,33 @@ def funcao_create(request):
     return render(request, 'cadastros/funcao/funcao_form.html', {'form': form, 'action': 'Cadastrar'})
 
 
+@login_required
+@login_required
+def funcao_get_salario(request):
+    """Retorna o salário base de uma função via AJAX"""
+    if request.method == 'GET':
+        funcao_id = request.GET.get('funcao_id')
+        
+        if not funcao_id:
+            return JsonResponse({'erro': 'ID da função não fornecido'}, status=400)
+        
+        try:
+            funcao = FuncaoFuncionario.objects.get(
+                id=funcao_id,
+                empresa=request.user.empresa
+            )
+            return JsonResponse({
+                'sucesso': True,
+                'salario_base': float(funcao.salario_base) if funcao.salario_base else 0
+            })
+        except FuncaoFuncionario.DoesNotExist:
+            return JsonResponse({'erro': 'Função não encontrada'}, status=404)
+        except Exception as e:
+            return JsonResponse({'erro': str(e)}, status=500)
+    
+    return JsonResponse({'erro': 'Método não permitido'}, status=405)
+
+
 def funcao_update(request, pk):
     """Editar função de funcionário"""
     funcao = get_object_or_404(FuncaoFuncionario, pk=pk, empresa=request.user.empresa)
@@ -2080,6 +2164,7 @@ def praga_create(request):
     if request.method == 'POST':
         form = PragaForm(
             request.POST,
+            request.FILES,
             empresa=request.user.empresa,
             usuario=request.user
         )
@@ -2107,6 +2192,7 @@ def praga_update(request, pk):
     if request.method == 'POST':
         form = PragaForm(
             request.POST,
+            request.FILES,
             instance=praga,
             empresa=request.user.empresa,
             usuario=request.user
@@ -2141,6 +2227,185 @@ def praga_delete(request, pk):
         return redirect('cadastros:praga_list')
     
     return render(request, 'cadastros/praga/praga_confirm_delete.html', {'praga': praga})
+
+
+# ==================== PRAZOS DE PAGAMENTO ====================
+
+@login_required
+def prazo_pagamento_list(request):
+    """Lista presets de prazo de pagamento da empresa"""
+    prazos = PrazoPagamentoPadrao.objects.filter(
+        empresa=request.user.empresa
+    ).order_by('nome')
+    
+    # Filtros
+    q = request.GET.get('q', '').strip()
+    status = request.GET.get('status', '')
+    
+    if q:
+        prazos = prazos.filter(Q(nome__icontains=q) | Q(termos__icontains=q))
+    
+    if status == 'ativos':
+        prazos = prazos.filter(ativo=True)
+    elif status == 'inativos':
+        prazos = prazos.filter(ativo=False)
+    
+    context = {
+        'prazos': prazos,
+        'total_prazos': prazos.count(),
+    }
+    
+    return render(request, 'cadastros/prazo_pagamento/prazo_pagamento_list.html', context)
+
+
+@login_required
+def prazo_pagamento_detail(request, pk):
+    """Detalhes do preset de prazo de pagamento"""
+    prazo = get_object_or_404(
+        PrazoPagamentoPadrao,
+        pk=pk,
+        empresa=request.user.empresa
+    )
+    
+    # Contar quantos clientes usam este preset
+    clientes_count = Cliente.objects.filter(
+        empresa=request.user.empresa,
+        prazo_pagamento_padrao=prazo
+    ).count()
+    
+    context = {
+        'prazo': prazo,
+        'clientes_count': clientes_count,
+        'termos_list': prazo.get_termos_list(),
+    }
+    
+    return render(request, 'cadastros/prazo_pagamento/prazo_pagamento_detail.html', context)
+
+
+@login_required
+def prazo_pagamento_create(request):
+    """Cria novo preset de prazo de pagamento"""
+    if request.method == 'POST':
+        # Verificar se é uma requisição AJAX com JSON
+        if request.headers.get('Content-Type') == 'application/json':
+            import json
+            try:
+                data = json.loads(request.body)
+                nome = data.get('nome', '').strip()
+                termos = data.get('termos', '').strip()
+                
+                # Validar dados
+                if not nome or not termos:
+                    return JsonResponse({
+                        'success': False,
+                        'message': 'Nome e termos são obrigatórios'
+                    }, status=400)
+                
+                # Validar formato dos termos
+                try:
+                    termos_list = [int(t.strip()) for t in termos.split(',') if t.strip()]
+                    if not termos_list:
+                        raise ValueError()
+                except (ValueError, TypeError):
+                    return JsonResponse({
+                        'success': False,
+                        'message': 'Formato inválido para termos. Digite números separados por vírgula'
+                    }, status=400)
+                
+                # Criar o preset
+                prazo = PrazoPagamentoPadrao.objects.create(
+                    empresa=request.user.empresa,
+                    nome=nome,
+                    termos=termos,
+                    ativo=True
+                )
+                
+                return JsonResponse({
+                    'success': True,
+                    'preset_id': prazo.id,
+                    'nome': prazo.nome,
+                    'termos': prazo.termos,
+                    'message': f'Preset "{prazo.nome}" criado com sucesso!'
+                }, status=201)
+                
+            except json.JSONDecodeError:
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Dados JSON inválidos'
+                }, status=400)
+        
+        # Requisição POST tradicional (não AJAX)
+        form = PrazoPagamentoPadraoForm(
+            request.POST,
+            empresa=request.user.empresa
+        )
+        if form.is_valid():
+            prazo = form.save()
+            messages.success(request, f'✅ Preset "{prazo.nome}" criado com sucesso!')
+            return redirect('cadastros:prazo_pagamento_detail', pk=prazo.pk)
+    else:
+        form = PrazoPagamentoPadraoForm(empresa=request.user.empresa)
+    
+    return render(request, 'cadastros/prazo_pagamento/prazo_pagamento_form.html', {
+        'form': form,
+        'action': 'Criar'
+    })
+
+
+@login_required
+def prazo_pagamento_update(request, pk):
+    """Edita preset de prazo de pagamento"""
+    prazo = get_object_or_404(
+        PrazoPagamentoPadrao,
+        pk=pk,
+        empresa=request.user.empresa
+    )
+    
+    if request.method == 'POST':
+        form = PrazoPagamentoPadraoForm(
+            request.POST,
+            instance=prazo,
+            empresa=request.user.empresa
+        )
+        if form.is_valid():
+            prazo = form.save()
+            messages.success(request, f'✅ Preset "{prazo.nome}" atualizado!')
+            return redirect('cadastros:prazo_pagamento_detail', pk=prazo.pk)
+    else:
+        form = PrazoPagamentoPadraoForm(instance=prazo, empresa=request.user.empresa)
+    
+    return render(request, 'cadastros/prazo_pagamento/prazo_pagamento_form.html', {
+        'form': form,
+        'prazo': prazo,
+        'action': 'Editar'
+    })
+
+
+@login_required
+def prazo_pagamento_delete(request, pk):
+    """Deleta preset de prazo de pagamento"""
+    prazo = get_object_or_404(
+        PrazoPagamentoPadrao,
+        pk=pk,
+        empresa=request.user.empresa
+    )
+    
+    # Contar quantos clientes usam este preset
+    clientes_count = Cliente.objects.filter(
+        empresa=request.user.empresa,
+        prazo_pagamento_padrao=prazo
+    ).count()
+    
+    if request.method == 'POST':
+        nome = prazo.nome
+        prazo.delete()
+        messages.success(request, f'🗑️ Preset "{nome}" excluído com sucesso!')
+        return redirect('cadastros:prazo_pagamento_list')
+    
+    return render(request, 'cadastros/prazo_pagamento/prazo_pagamento_confirm_delete.html', {
+        'prazo': prazo,
+        'clientes_count': clientes_count
+    })
 
 
 @login_required
@@ -3288,6 +3553,26 @@ def fornecedor_detail(request, pk):
 
 
 @login_required
+def fornecedor_pdf(request, pk):
+    from .relatorio_utils_fornecedor import RelatorioFornecedorPDF
+
+    fornecedor = get_object_or_404(
+        Fornecedor.objects.prefetch_related('enderecos', 'contatos', 'contas_bancarias'),
+        pk=pk,
+        empresa=request.user.empresa
+    )
+
+    relatorio = RelatorioFornecedorPDF(request.user.empresa, fornecedor)
+    relatorio.adicionar_cabecalho()
+    relatorio.adicionar_conteudo()
+    arquivo_bytes = relatorio.gerar()
+
+    response = HttpResponse(arquivo_bytes, content_type='application/pdf')
+    response['Content-Disposition'] = f'inline; filename="fornecedor_{fornecedor.pk}.pdf"'
+    return response
+
+
+@login_required
 def fornecedor_create(request):
     if request.method == 'POST':
         form = FornecedorForm(request.POST, empresa=request.user.empresa, usuario=request.user)
@@ -3432,6 +3717,26 @@ def cliente_detail(request, pk):
 
 
 @login_required
+def cliente_pdf(request, pk):
+    from .relatorio_utils_cliente import RelatorioClientePDF
+
+    cliente = get_object_or_404(
+        Cliente.objects.prefetch_related('enderecos', 'contatos'),
+        pk=pk,
+        empresa=request.user.empresa
+    )
+
+    relatorio = RelatorioClientePDF(request.user.empresa, cliente)
+    relatorio.adicionar_cabecalho()
+    relatorio.adicionar_conteudo()
+    arquivo_bytes = relatorio.gerar()
+
+    response = HttpResponse(arquivo_bytes, content_type='application/pdf')
+    response['Content-Disposition'] = f'inline; filename="cliente_{cliente.pk}.pdf"'
+    return response
+
+
+@login_required
 def cliente_create(request):
     if request.method == 'POST':
         form = ClienteForm(request.POST, empresa=request.user.empresa, usuario=request.user)
@@ -3497,6 +3802,7 @@ def moeda_create_ajax(request):
 
 
 @login_required
+@login_required
 def cliente_update(request, pk):
     cliente = get_object_or_404(Cliente, pk=pk, empresa=request.user.empresa)
     if request.method == 'POST':
@@ -3558,6 +3864,330 @@ def cliente_activate(request, pk):
         messages.success(request, f'✅ Cliente "{cliente.razao_social}" reativado!')
         return redirect('cadastros:cliente_detail', pk=cliente.pk)
     return render(request, 'cadastros/cliente/cliente_confirm_activate.html', {'cliente': cliente})
+
+
+@login_required
+def relatorio_cliente(request):
+    from .forms_relatorio_cliente import FiltroRelatorioClienteForm
+    from .relatorio_utils_cliente import RelatorioClientesPDF, RelatorioClientesExcel
+    from .enviador import EnviadorRelatorioClientes
+    from datetime import datetime
+
+    if request.method == 'POST':
+        form = FiltroRelatorioClienteForm(request.POST)
+        if form.is_valid():
+            empresa = request.user.empresa
+            clientes = Cliente.objects.filter(empresa=empresa).order_by('razao_social')
+
+            mercado = form.cleaned_data.get('mercado')
+            if mercado:
+                clientes = clientes.filter(tipo_cliente=mercado)
+
+            filtros_desc = []
+            if mercado:
+                mercado_label = dict(Cliente.TIPO_CLIENTE).get(mercado, mercado)
+                filtros_desc.append(f"Mercado: {mercado_label}")
+
+            filtros_str = ' | '.join(filtros_desc) if filtros_desc else 'Nenhum filtro aplicado'
+
+            enviar_para = form.cleaned_data.get('enviar_para')
+            formato = form.cleaned_data.get('formato')
+            nome_arquivo = f"relatorio_clientes_{datetime.now().strftime('%d%m%Y_%H%M%S')}"
+
+            if formato == 'pdf':
+                relatorio = RelatorioClientesPDF(empresa)
+                relatorio.adicionar_cabecalho(filtros_str)
+                relatorio.adicionar_tabela(clientes)
+                arquivo_bytes = relatorio.gerar()
+                content_type = 'application/pdf'
+                nome_completo = f"{nome_arquivo}.pdf"
+                tipo_arquivo = 'pdf'
+            else:
+                relatorio = RelatorioClientesExcel(empresa)
+                relatorio.adicionar_cabecalho(filtros_str)
+                relatorio.adicionar_tabela(clientes)
+                arquivo_bytes = relatorio.gerar()
+                content_type = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                nome_completo = f"{nome_arquivo}.xlsx"
+                tipo_arquivo = 'excel'
+
+            if enviar_para == 'tela':
+                response = HttpResponse(arquivo_bytes, content_type=content_type)
+                response['Content-Disposition'] = f'inline; filename="{nome_completo}"'
+                return response
+
+            if enviar_para == 'nenhum':
+                response = HttpResponse(arquivo_bytes, content_type=content_type)
+                response['Content-Disposition'] = f'attachment; filename="{nome_completo}"'
+                return response
+
+            empresa_nome = empresa.nome
+            if enviar_para in ['email', 'ambos']:
+                email = form.cleaned_data.get('email_destino')
+                sucesso, msg = EnviadorRelatorioClientes.enviar(
+                    'email', email, empresa_nome, arquivo_bytes, nome_completo, tipo_arquivo
+                )
+                if not sucesso:
+                    messages.error(request, msg)
+                    return redirect('cadastros:relatorio_cliente')
+
+            if enviar_para in ['whatsapp', 'ambos']:
+                whatsapp = form.cleaned_data.get('whatsapp_destino')
+                sucesso, msg = EnviadorRelatorioClientes.enviar(
+                    'whatsapp', whatsapp, empresa_nome, arquivo_bytes, nome_completo, tipo_arquivo
+                )
+                if not sucesso:
+                    messages.error(request, msg)
+                    return redirect('cadastros:relatorio_cliente')
+
+            messages.success(request, 'Relatorio enviado com sucesso!')
+            return redirect('cadastros:relatorio_cliente')
+    else:
+        form = FiltroRelatorioClienteForm()
+
+    context = {
+        'form': form,
+        'clientes': None,
+    }
+    return render(request, 'cadastros/relatorios/relatorio_cliente.html', context)
+
+
+@login_required
+def relatorio_fornecedor(request):
+    from .forms_relatorio_fornecedor import FiltroRelatorioFornecedorForm
+    from .relatorio_utils_fornecedor import RelatorioFornecedoresPDF, RelatorioFornecedoresExcel
+    from .enviador import EnviadorRelatorioFornecedores
+    from datetime import datetime
+
+    if request.method == 'POST':
+        form = FiltroRelatorioFornecedorForm(request.POST, empresa=request.user.empresa)
+        if form.is_valid():
+            empresa = request.user.empresa
+            fornecedores = Fornecedor.objects.filter(empresa=empresa).order_by('nome')
+
+            status = form.cleaned_data.get('status')
+            if status == 'ATIVO':
+                fornecedores = fornecedores.filter(ativa=True)
+            elif status == 'INATIVO':
+                fornecedores = fornecedores.filter(ativa=False)
+
+            cidade = form.cleaned_data.get('cidade')
+            if cidade:
+                fornecedores = fornecedores.filter(cidade__icontains=cidade)
+
+            uf = form.cleaned_data.get('uf')
+            if uf:
+                fornecedores = fornecedores.filter(uf=uf)
+
+            categoria = form.cleaned_data.get('categoria')
+            if categoria:
+                fornecedores = fornecedores.filter(categorias=categoria)
+
+            classificacao_risco = form.cleaned_data.get('classificacao_risco')
+            if classificacao_risco:
+                fornecedores = fornecedores.filter(classificacao_risco=classificacao_risco)
+
+            filtros_desc = []
+            if status:
+                status_label = 'Ativo' if status == 'ATIVO' else 'Inativo'
+                filtros_desc.append(f"Status: {status_label}")
+
+            if cidade:
+                filtros_desc.append(f"Cidade: {cidade}")
+
+            if uf:
+                filtros_desc.append(f"UF: {uf}")
+
+            if categoria:
+                filtros_desc.append(f"Categoria: {categoria.nome}")
+
+            if classificacao_risco:
+                risco_label = dict(Fornecedor._meta.get_field('classificacao_risco').choices).get(classificacao_risco, classificacao_risco)
+                filtros_desc.append(f"Risco: {risco_label}")
+
+            filtros_str = ' | '.join(filtros_desc) if filtros_desc else 'Nenhum filtro aplicado'
+
+            enviar_para = form.cleaned_data.get('enviar_para')
+            formato = form.cleaned_data.get('formato')
+            nome_arquivo = f"relatorio_fornecedores_{datetime.now().strftime('%d%m%Y_%H%M%S')}"
+
+            if formato == 'pdf':
+                relatorio = RelatorioFornecedoresPDF(empresa)
+                relatorio.adicionar_cabecalho(filtros_str)
+                relatorio.adicionar_tabela(fornecedores)
+                arquivo_bytes = relatorio.gerar()
+                content_type = 'application/pdf'
+                nome_completo = f"{nome_arquivo}.pdf"
+                tipo_arquivo = 'pdf'
+            else:
+                relatorio = RelatorioFornecedoresExcel(empresa)
+                relatorio.adicionar_cabecalho(filtros_str)
+                relatorio.adicionar_tabela(fornecedores)
+                arquivo_bytes = relatorio.gerar()
+                content_type = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                nome_completo = f"{nome_arquivo}.xlsx"
+                tipo_arquivo = 'excel'
+
+            if enviar_para == 'tela':
+                response = HttpResponse(arquivo_bytes, content_type=content_type)
+                response['Content-Disposition'] = f'inline; filename="{nome_completo}"'
+                return response
+
+            if enviar_para == 'nenhum':
+                response = HttpResponse(arquivo_bytes, content_type=content_type)
+                response['Content-Disposition'] = f'attachment; filename="{nome_completo}"'
+                return response
+
+            empresa_nome = empresa.nome
+            if enviar_para in ['email', 'ambos']:
+                email = form.cleaned_data.get('email_destino')
+                sucesso, msg = EnviadorRelatorioFornecedores.enviar(
+                    'email', email, empresa_nome, arquivo_bytes, nome_completo, tipo_arquivo
+                )
+                if not sucesso:
+                    messages.error(request, msg)
+                    return redirect('cadastros:relatorio_fornecedor')
+
+            if enviar_para in ['whatsapp', 'ambos']:
+                whatsapp = form.cleaned_data.get('whatsapp_destino')
+                sucesso, msg = EnviadorRelatorioFornecedores.enviar(
+                    'whatsapp', whatsapp, empresa_nome, arquivo_bytes, nome_completo, tipo_arquivo
+                )
+                if not sucesso:
+                    messages.error(request, msg)
+                    return redirect('cadastros:relatorio_fornecedor')
+
+            messages.success(request, 'Relatorio enviado com sucesso!')
+            return redirect('cadastros:relatorio_fornecedor')
+    else:
+        form = FiltroRelatorioFornecedorForm(empresa=request.user.empresa)
+
+    context = {
+        'form': form,
+        'fornecedores': None,
+    }
+    return render(request, 'cadastros/relatorios/relatorio_fornecedor.html', context)
+
+
+@login_required
+def relatorio_fornecedor_ranking(request):
+    from .forms_relatorio_fornecedor_ranking import FiltroRelatorioFornecedorRankingForm
+    from .relatorio_utils_fornecedor_ranking import RelatorioRankingFornecedoresPDF, RelatorioRankingFornecedoresExcel
+    from .enviador import EnviadorRelatorioFornecedores
+    from compras.models import RecebimentoCompra
+    from datetime import datetime
+    from decimal import Decimal
+
+    if request.method == 'POST':
+        form = FiltroRelatorioFornecedorRankingForm(request.POST)
+        if form.is_valid():
+            empresa = request.user.empresa
+            recebimentos = RecebimentoCompra.objects.filter(empresa=empresa).select_related(
+                'pedido__fornecedor',
+                'fornecedor'
+            )
+
+            data_inicio = form.cleaned_data.get('data_inicio')
+            data_fim = form.cleaned_data.get('data_fim')
+            if data_inicio:
+                recebimentos = recebimentos.filter(data_emissao_nf__gte=data_inicio)
+            if data_fim:
+                recebimentos = recebimentos.filter(data_emissao_nf__lte=data_fim)
+
+            total_por_fornecedor = {}
+            for rec in recebimentos:
+                fornecedor = rec.pedido.fornecedor if rec.pedido else rec.fornecedor
+                if not fornecedor:
+                    continue
+                total = rec.valor_total_nf or Decimal('0')
+                total_por_fornecedor[fornecedor.pk] = {
+                    'fornecedor': fornecedor.nome,
+                    'total': total_por_fornecedor.get(fornecedor.pk, {}).get('total', Decimal('0')) + total,
+                }
+
+            total_geral = sum((item['total'] for item in total_por_fornecedor.values()), Decimal('0'))
+
+            ranking = []
+            for item in total_por_fornecedor.values():
+                percentual = (item['total'] / total_geral * 100) if total_geral else Decimal('0')
+                ranking.append({
+                    'fornecedor': item['fornecedor'],
+                    'total': item['total'],
+                    'percentual': percentual,
+                    'total_formatado': f"R$ {item['total']:,.2f}",
+                    'percentual_formatado': f"{percentual:.2f}%",
+                })
+
+            ranking.sort(key=lambda x: x['total'], reverse=True)
+
+            filtros_desc = []
+            if data_inicio:
+                filtros_desc.append(f"De: {data_inicio.strftime('%d/%m/%Y')}")
+            if data_fim:
+                filtros_desc.append(f"Ate: {data_fim.strftime('%d/%m/%Y')}")
+
+            filtros_str = ' | '.join(filtros_desc) if filtros_desc else 'Nenhum filtro aplicado'
+
+            enviar_para = form.cleaned_data.get('enviar_para')
+            formato = form.cleaned_data.get('formato')
+            nome_arquivo = f"ranking_fornecedores_{datetime.now().strftime('%d%m%Y_%H%M%S')}"
+
+            if formato == 'pdf':
+                relatorio = RelatorioRankingFornecedoresPDF(empresa)
+                relatorio.adicionar_cabecalho(filtros_str)
+                relatorio.adicionar_tabela(ranking)
+                arquivo_bytes = relatorio.gerar()
+                content_type = 'application/pdf'
+                nome_completo = f"{nome_arquivo}.pdf"
+                tipo_arquivo = 'pdf'
+            else:
+                relatorio = RelatorioRankingFornecedoresExcel(empresa)
+                relatorio.adicionar_cabecalho(filtros_str)
+                relatorio.adicionar_tabela(ranking)
+                arquivo_bytes = relatorio.gerar()
+                content_type = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                nome_completo = f"{nome_arquivo}.xlsx"
+                tipo_arquivo = 'excel'
+
+            if enviar_para == 'tela':
+                response = HttpResponse(arquivo_bytes, content_type=content_type)
+                response['Content-Disposition'] = f'inline; filename="{nome_completo}"'
+                return response
+
+            if enviar_para == 'nenhum':
+                response = HttpResponse(arquivo_bytes, content_type=content_type)
+                response['Content-Disposition'] = f'attachment; filename="{nome_completo}"'
+                return response
+
+            empresa_nome = empresa.nome
+            if enviar_para in ['email', 'ambos']:
+                email = form.cleaned_data.get('email_destino')
+                sucesso, msg = EnviadorRelatorioFornecedores.enviar(
+                    'email', email, empresa_nome, arquivo_bytes, nome_completo, tipo_arquivo
+                )
+                if not sucesso:
+                    messages.error(request, msg)
+                    return redirect('cadastros:relatorio_fornecedor_ranking')
+
+            if enviar_para in ['whatsapp', 'ambos']:
+                whatsapp = form.cleaned_data.get('whatsapp_destino')
+                sucesso, msg = EnviadorRelatorioFornecedores.enviar(
+                    'whatsapp', whatsapp, empresa_nome, arquivo_bytes, nome_completo, tipo_arquivo
+                )
+                if not sucesso:
+                    messages.error(request, msg)
+                    return redirect('cadastros:relatorio_fornecedor_ranking')
+
+            messages.success(request, 'Relatorio enviado com sucesso!')
+            return redirect('cadastros:relatorio_fornecedor_ranking')
+    else:
+        form = FiltroRelatorioFornecedorRankingForm()
+
+    context = {
+        'form': form,
+        'ranking': None,
+    }
+    return render(request, 'cadastros/relatorios/relatorio_fornecedor_ranking.html', context)
 
 
 # ==================== ENDEREÇOS DO CLIENTE ====================

@@ -1,0 +1,245 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{% if form.instance.pk %}Editar{% else %}Novo{% endif %} Estágio | ERP Agrícola{% endblock %}
+{% block page_title %}
+  <div class="d-flex align-items-center gap-2">
+    <span>{% if form.instance.pk %}Editar{% else %}Criar Novo{% endif %} Estágio de Desenvolvimento</span>
+    <button type="button" class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#helpEstagio" title="Ajuda">
+      <i class="bi bi-question-circle"></i>
+    </button>
+  </div>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+  <div class="row">
+    <div class="col-lg-8 offset-lg-2">
+      
+      <!-- Breadcrumb -->
+      <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item"><a href="{% url 'cadastros:estagio_list' %}">Estágios</a></li>
+          <li class="breadcrumb-item active">
+            {% if form.instance.pk %}Editar{% else %}Novo{% endif %}
+          </li>
+        </ol>
+      </nav>
+
+      <!-- Formulário -->
+      <div class="card shadow-sm border-0 rounded-4">
+        <div class="card-header {% if form.instance.pk %}bg-info{% else %}bg-success{% endif %} text-white rounded-top-4">
+          <h5 class="mb-0">
+            <i class="bi bi-diagram-3"></i>
+            {% if form.instance.pk %}
+              Editar Estágio
+            {% else %}
+              Novo Estágio de Desenvolvimento
+            {% endif %}
+          </h5>
+        </div>
+
+        <div class="card-body p-4">
+          <form method="post" class="needs-validation" novalidate>
+            {% csrf_token %}
+
+            <!-- Seção 1: Informações Básicas -->
+            <div class="mb-4">
+              <h6 class="text-uppercase text-muted border-bottom pb-2 mb-3">
+                <i class="bi bi-info-circle"></i> Informações Básicas
+              </h6>
+
+              <!-- Praga -->
+              <div class="mb-3">
+                <label for="{{ form.praga.id_for_label }}" class="form-label">
+                  <i class="bi bi-bug"></i> Praga *
+                </label>
+                {{ form.praga }}
+                {% if form.praga.errors %}
+                  <div class="invalid-feedback d-block">{{ form.praga.errors.0 }}</div>
+                {% endif %}
+                <small class="text-muted d-block mt-2">
+                  Selecione a praga para a qual você está definindo este estágio
+                </small>
+              </div>
+
+              <!-- Tipo de Estágio -->
+              <div class="mb-3">
+                <label for="{{ form.tipo_estagio.id_for_label }}" class="form-label">
+                  <i class="bi bi-layers-fill"></i> Tipo de Estágio *
+                </label>
+                {{ form.tipo_estagio }}
+                {% if form.tipo_estagio.errors %}
+                  <div class="invalid-feedback d-block">{{ form.tipo_estagio.errors.0 }}</div>
+                {% endif %}
+                <small class="text-muted d-block mt-2">
+                  Escolha o estágio do ciclo de vida da praga
+                </small>
+              </div>
+            </div>
+
+            <!-- Seção 2: Duração e Ciclo -->
+            <div class="mb-4">
+              <h6 class="text-uppercase text-muted border-bottom pb-2 mb-3">
+                <i class="bi bi-clock-history"></i> Duração e Ciclo
+              </h6>
+
+              <div class="row">
+                <!-- Duração Mínima -->
+                <div class="col-md-6 mb-3">
+                  <label for="{{ form.duracao_minima_dias.id_for_label }}" class="form-label">
+                    <i class="bi bi-hourglass-start"></i> Duração Mínima (dias)
+                  </label>
+                  {{ form.duracao_minima_dias }}
+                  {% if form.duracao_minima_dias.errors %}
+                    <div class="invalid-feedback d-block">{{ form.duracao_minima_dias.errors.0 }}</div>
+                  {% endif %}
+                  <small class="text-muted d-block mt-2">
+                    Mínimo de dias nesta fase
+                  </small>
+                </div>
+
+                <!-- Duração Máxima -->
+                <div class="col-md-6 mb-3">
+                  <label for="{{ form.duracao_maxima_dias.id_for_label }}" class="form-label">
+                    <i class="bi bi-hourglass-end"></i> Duração Máxima (dias)
+                  </label>
+                  {{ form.duracao_maxima_dias }}
+                  {% if form.duracao_maxima_dias.errors %}
+                    <div class="invalid-feedback d-block">{{ form.duracao_maxima_dias.errors.0 }}</div>
+                  {% endif %}
+                  <small class="text-muted d-block mt-2">
+                    Máximo de dias nesta fase
+                  </small>
+                </div>
+              </div>
+
+              <!-- Ordem no Ciclo -->
+              <div class="mb-3">
+                <label for="{{ form.ordem_ciclo.id_for_label }}" class="form-label">
+                  <i class="bi bi-list-ol"></i> Ordem no Ciclo
+                </label>
+                {{ form.ordem_ciclo }}
+                {% if form.ordem_ciclo.errors %}
+                  <div class="invalid-feedback d-block">{{ form.ordem_ciclo.errors.0 }}</div>
+                {% endif %}
+                <small class="text-muted d-block mt-2">
+                  Posição deste estágio no ciclo de vida (ex: 1º, 2º, 3º)
+                </small>
+              </div>
+            </div>
+
+            <!-- Seção 3: Classificação -->
+            <div class="mb-4">
+              <h6 class="text-uppercase text-muted border-bottom pb-2 mb-3">
+                <i class="bi bi-tag"></i> Classificação
+              </h6>
+
+              <!-- Fase Crítica -->
+              <div class="form-check form-switch mb-3">
+                <input class="form-check-input" type="checkbox" id="{{ form.eh_fase_critica.id_for_label }}" 
+                       name="{{ form.eh_fase_critica.name }}"
+                       {% if form.eh_fase_critica.value %}checked{% endif %}>
+                <label class="form-check-label" for="{{ form.eh_fase_critica.id_for_label }}">
+                  <i class="bi bi-exclamation-triangle-fill"></i>
+                  <strong>Este é um estágio crítico para o manejo?</strong>
+                </label>
+              </div>
+              <small class="text-muted d-block">
+                Marque se este estágio requer atenção especial no monitoramento e controle
+              </small>
+
+              {% if form.eh_fase_critica.errors %}
+                <div class="invalid-feedback d-block">{{ form.eh_fase_critica.errors.0 }}</div>
+              {% endif %}
+            </div>
+
+            <!-- Seção 4: Observações -->
+            <div class="mb-4">
+              <h6 class="text-uppercase text-muted border-bottom pb-2 mb-3">
+                <i class="bi bi-pencil-square"></i> Detalhes
+              </h6>
+
+              <div class="mb-3">
+                <label for="{{ form.observacoes.id_for_label }}" class="form-label">
+                  Observações
+                </label>
+                {{ form.observacoes }}
+                {% if form.observacoes.errors %}
+                  <div class="invalid-feedback d-block">{{ form.observacoes.errors.0 }}</div>
+                {% endif %}
+                <small class="text-muted d-block mt-2">
+                  Adicione informações úteis como condições climáticas favoráveis, sinais de reconhecimento, etc.
+                </small>
+              </div>
+
+              <!-- Ativo -->
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="{{ form.ativo.id_for_label }}" 
+                       name="{{ form.ativo.name }}"
+                       {% if form.instance.pk %}
+                         {% if form.ativo.value %}checked{% endif %}
+                       {% else %}
+                         checked
+                       {% endif %}>
+                <label class="form-check-label" for="{{ form.ativo.id_for_label }}">
+                  <strong>Estágio ativo</strong>
+                </label>
+              </div>
+              <small class="text-muted d-block">
+                Desmarque para desativar este estágio sem excluir
+              </small>
+
+              {% if form.ativo.errors %}
+                <div class="invalid-feedback d-block">{{ form.ativo.errors.0 }}</div>
+              {% endif %}
+            </div>
+
+            <!-- Card de Informação -->
+            {% if form.instance.pk %}
+              <div class="alert alert-info" role="alert">
+                <h6 class="alert-heading">
+                  <i class="bi bi-info-circle"></i> Informações de Auditoria
+                </h6>
+                <p class="mb-1">
+                  <strong>Criado em:</strong> {{ form.instance.created_at|date:"d/m/Y H:i" }}<br>
+                  <strong>Atualizado em:</strong> {{ form.instance.updated_at|date:"d/m/Y H:i" }}
+                </p>
+              </div>
+            {% endif %}
+
+            <!-- Botões -->
+            <div class="d-flex gap-2 justify-content-end">
+              <a href="{% url 'cadastros:estagio_list' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-x-circle"></i> Cancelar
+              </a>
+              <button type="submit" class="btn btn-{% if form.instance.pk %}info{% else %}success{% endif %}">
+                <i class="bi bi-check-circle"></i>
+                {% if form.instance.pk %}Atualizar{% else %}Criar{% endif %} Estágio
+              </button>
+            </div>
+
+          </form>
+        </div>
+      </div>
+
+      <!-- Exemplos de Estágios -->
+      {% if not form.instance.pk %}
+        <div class="alert alert-light border mt-4" role="alert">
+          <h6 class="alert-heading">
+            <i class="bi bi-lightbulb"></i> Exemplo de Estágios
+          </h6>
+          <p class="mb-2">
+            <strong>Para uma broca-do-fruto:</strong> Ovo (3-5 dias) → Larva (10-15 dias) → Pupa (5-7 dias) → Adulto
+          </p>
+          <p class="mb-0">
+            <strong>Fase crítica:</strong> Geralmente a fase larval, pois é quando o inseto causa dano ao fruto
+          </p>
+        </div>
+      {% endif %}
+
+    </div>
+  </div>
+</div>{% include 'cadastros/monitoramento_mip/_help_modals.html' %}
+
+{% endblock %}

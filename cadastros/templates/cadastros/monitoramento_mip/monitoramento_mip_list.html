@@ -1,0 +1,251 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Monitoramentos MIP | ERP Agrícola{% endblock %}
+{% block page_title %}
+  <div class="d-flex align-items-center gap-2">
+    <span>Monitoramento MIP - Manejo Integrado de Pragas</span>
+    <button type="button" class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#helpMonitoramentoMIP" title="Ajuda">
+      <i class="bi bi-question-circle"></i>
+    </button>
+  </div>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+  <!-- Cabeçalho com Estatísticas -->
+  <div class="row mb-4">
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm bg-primary text-white">
+        <div class="card-body">
+          <div class="d-flex justify-content-between">
+            <div>
+              <h6 class="opacity-75">Total de Monitoramentos</h6>
+              <h2 class="mb-0">{{ monitoramentos.paginator.count }}</h2>
+            </div>
+            <div class="fs-1 opacity-50">
+              <i class="bi bi-graph-up"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm bg-success text-white">
+        <div class="card-body">
+          <div class="d-flex justify-content-between">
+            <div>
+              <h6 class="opacity-75">Completos</h6>
+              <h2 class="mb-0">{{ completos_count }}</h2>
+            </div>
+            <div class="fs-1 opacity-50">
+              <i class="bi bi-check-circle"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm bg-warning text-dark">
+        <div class="card-body">
+          <div class="d-flex justify-content-between">
+            <div>
+              <h6 class="opacity-75">Com Defensivos</h6>
+              <h2 class="mb-0">{{ com_defensivos_count }}</h2>
+            </div>
+            <div class="fs-1 opacity-50">
+              <i class="bi bi-exclamation-triangle"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm bg-info text-white">
+        <div class="card-body">
+          <div class="d-flex justify-content-between">
+            <div>
+              <h6 class="opacity-75">Este Mês</h6>
+              <h2 class="mb-0">{{ este_mes_count }}</h2>
+            </div>
+            <div class="fs-1 opacity-50">
+              <i class="bi bi-calendar"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Ações e Filtros -->
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="fw-bold text-secondary mb-0">
+      <i class="bi bi-graph-up text-success"></i> Monitoramentos Realizados
+    </h4>
+    <a href="{% url 'cadastros:monitoramento_mip_create' %}" class="btn btn-success">
+      <i class="bi bi-plus-circle"></i> Novo Monitoramento
+    </a>
+  </div>
+
+  <!-- Filtros -->
+  <div class="card shadow-sm border-0 rounded-4 mb-4">
+    <div class="card-body">
+      <form method="get" class="row g-3">
+        <!-- Busca por Número -->
+        <div class="col-md-4">
+          <div class="input-group">
+            <span class="input-group-text bg-light border-end-0">
+              <i class="bi bi-search"></i>
+            </span>
+            <input type="text" class="form-control border-start-0" name="numero" 
+                   placeholder="Buscar por Nº MIP..." value="{{ request.GET.numero }}">
+          </div>
+        </div>
+
+        <!-- Filtro Talhão -->
+        <div class="col-md-2">
+          <select class="form-select" name="talhao">
+            <option value="">Todos os Talhões</option>
+            {% for talhao in talhoes %}
+              <option value="{{ talhao.id }}" {% if request.GET.talhao|stringformat:"s" == talhao.id|stringformat:"s" %}selected{% endif %}>
+                {{ talhao.nome }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Filtro Status -->
+        <div class="col-md-2">
+          <select class="form-select" name="status">
+            <option value="">Todos os Status</option>
+            <option value="RASCUNHO" {% if request.GET.status == "RASCUNHO" %}selected{% endif %}>Rascunho</option>
+            <option value="COMPLETO" {% if request.GET.status == "COMPLETO" %}selected{% endif %}>Completo</option>
+            <option value="ANALISADO" {% if request.GET.status == "ANALISADO" %}selected{% endif %}>Analisado</option>
+          </select>
+        </div>
+
+        <!-- Botão Filtrar -->
+        <div class="col-md-2">
+          <button type="submit" class="btn btn-primary w-100">
+            <i class="bi bi-funnel"></i> Filtrar
+          </button>
+          <a href="{% url 'cadastros:monitoramento_mip_list' %}" class="btn btn-outline-secondary w-100 mt-2">
+            <i class="bi bi-x-circle"></i> Limpar
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Tabela de Monitoramentos -->
+  <div class="card shadow-sm border-0 rounded-4">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead class="table-light">
+          <tr>
+            <th style="width: 15%;"><i class="bi bi-hash"></i> Nº Monitoramento</th>
+            <th style="width: 15%;"><i class="bi bi-grid-3x3-gap"></i> Talhão</th>
+            <th style="width: 12%;"><i class="bi bi-calendar"></i> Data</th>
+            <th style="width: 12%;"><i class="bi bi-person"></i> Responsável</th>
+            <th style="width: 10%;"><i class="bi bi-bug"></i> Pragas</th>
+            <th style="width: 10%;"><i class="bi bi-exclamation-triangle"></i> Defensivos</th>
+            <th style="width: 12%;"><span class="badge bg-light text-dark">Status</span></th>
+            <th style="width: 14%;" class="text-center">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for mon in monitoramentos %}
+            <tr>
+              <td>
+                <strong class="text-primary">{{ mon.numero }}</strong>
+              </td>
+              <td>{{ mon.talhao.nome }}</td>
+              <td>{{ mon.data_monitoramento|date:"d/m/Y" }}</td>
+              <td>{{ mon.responsavel.username|default:"N/A" }}</td>
+              <td>
+                <span class="badge bg-info">{{ mon.pragas_detectadas.count }}</span>
+              </td>
+              <td>
+                {% with recomendacoes=mon.pragas_detectadas|dictsort:"resultado_acao" %}
+                  {% if mon.pragas_detectadas|dictsort:"resultado_acao"|first in "RECOMENDA_DEFENSIVO" %}
+                    <span class="badge bg-danger">
+                      {{ mon.pragas_detectadas|dictsort:"resultado_acao"|first }}
+                    </span>
+                  {% else %}
+                    <span class="badge bg-success">
+                      <i class="bi bi-check"></i> OK
+                    </span>
+                  {% endif %}
+                {% endwith %}
+              </td>
+              <td>
+                {% if mon.status == "COMPLETO" %}
+                  <span class="badge bg-success">Completo</span>
+                {% elif mon.status == "ANALISADO" %}
+                  <span class="badge bg-info">Analisado</span>
+                {% else %}
+                  <span class="badge bg-warning text-dark">Rascunho</span>
+                {% endif %}
+              </td>
+              <td class="text-center">
+                <div class="btn-group btn-group-sm" role="group">
+                  <a href="{% url 'cadastros:monitoramento_mip_detail' mon.pk %}" 
+                     class="btn btn-outline-primary" title="Visualizar">
+                    <i class="bi bi-eye"></i>
+                  </a>
+                  <a href="{% url 'cadastros:monitoramento_mip_add_praga' mon.pk %}" 
+                     class="btn btn-outline-success" title="Adicionar Praga">
+                    <i class="bi bi-plus"></i>
+                  </a>
+                </div>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="8" class="text-center py-4 text-muted">
+                <i class="bi bi-inbox"></i> Nenhum monitoramento realizado
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Paginação -->
+    {% if monitoramentos.has_other_pages %}
+      <nav aria-label="Paginação" class="d-flex justify-content-center mt-4 mb-3">
+        <ul class="pagination">
+          {% if monitoramentos.has_previous %}
+            <li class="page-item">
+              <a class="page-link" href="?page=1{{ request.GET.urlencode }}">Primeira</a>
+            </li>
+            <li class="page-item">
+              <a class="page-link" href="?page={{ monitoramentos.previous_page_number }}{{ request.GET.urlencode }}">Anterior</a>
+            </li>
+          {% endif %}
+
+          <li class="page-item active">
+            <span class="page-link">Página {{ monitoramentos.number }} de {{ monitoramentos.paginator.num_pages }}</span>
+          </li>
+
+          {% if monitoramentos.has_next %}
+            <li class="page-item">
+              <a class="page-link" href="?page={{ monitoramentos.next_page_number }}{{ request.GET.urlencode }}">Próxima</a>
+            </li>
+            <li class="page-item">
+              <a class="page-link" href="?page={{ monitoramentos.paginator.num_pages }}{{ request.GET.urlencode }}">Última</a>
+            </li>
+          {% endif %}
+        </ul>
+      </nav>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Modals de Ajuda -->
+{% include 'cadastros/monitoramento_mip/_help_modals.html' %}
+
+{% endblock %}

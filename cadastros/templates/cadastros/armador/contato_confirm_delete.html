@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+
+{% block title %}Deletar Contato{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-exclamation-triangle"></i> Confirmar Exclusão
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="mb-3">
+                        Tem certeza que deseja deletar este contato?
+                    </p>
+
+                    <div class="alert alert-info mb-3">
+                        <strong>Contato:</strong><br>
+                        <strong>Nome:</strong> {{ contato.nome }}<br>
+                        {% if contato.cargo %}<strong>Cargo:</strong> {{ contato.cargo }}<br>{% endif %}
+                        {% if contato.email %}<strong>Email:</strong> {{ contato.email }}<br>{% endif %}
+                        {% if contato.telefone %}<strong>Telefone:</strong> {{ contato.telefone }}<br>{% endif %}
+                        {% if contato.celular %}<strong>Celular:</strong> {{ contato.celular }}<br>{% endif %}
+                    </div>
+
+                    <p class="text-muted mb-4">Esta ação é irreversível.</p>
+
+                    <form method="post" class="d-inline">
+                        {% csrf_token %}
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{% url 'cadastros:armador_detail' armador.id %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-x-circle"></i> Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-trash"></i> Deletar Contato
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

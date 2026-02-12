@@ -1,0 +1,113 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ prazo.nome }} | Preset de Prazo{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  
+  <!-- Header -->
+  <div class="d-flex align-items-center justify-content-between mb-4">
+    <div class="d-flex align-items-center">
+      <a href="{% url 'cadastros:prazo_pagamento_list' %}" class="btn btn-outline-secondary me-3">
+        <i class="bi bi-arrow-left"></i>
+      </a>
+      <div>
+        <h2 class="fw-bold mb-0">
+          <i class="bi bi-calendar-event text-primary"></i> {{ prazo.nome }}
+        </h2>
+        <p class="text-muted mb-0">Detalhes do preset de prazo de pagamento</p>
+      </div>
+    </div>
+    <div>
+      {% if prazo.ativo %}
+        <span class="badge bg-success fs-6">Ativo</span>
+      {% else %}
+        <span class="badge bg-secondary fs-6">Inativo</span>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Ações -->
+  <div class="mb-4">
+    <a href="{% url 'cadastros:prazo_pagamento_update' prazo.pk %}" class="btn btn-primary">
+      <i class="bi bi-pencil"></i> Editar
+    </a>
+    <a href="{% url 'cadastros:prazo_pagamento_delete' prazo.pk %}" class="btn btn-danger">
+      <i class="bi bi-trash"></i> Excluir
+    </a>
+  </div>
+
+  <!-- Informações -->
+  <div class="row g-4">
+    
+    <!-- Dados Básicos -->
+    <div class="col-md-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header bg-primary bg-opacity-10 border-0">
+          <h5 class="mb-0 fw-bold">
+            <i class="bi bi-info-circle text-primary"></i> Informações
+          </h5>
+        </div>
+        <div class="card-body">
+          <table class="table table-borderless mb-0">
+            <tbody>
+              <tr>
+                <td class="fw-bold" width="40%">Nome:</td>
+                <td>{{ prazo.nome }}</td>
+              </tr>
+              <tr>
+                <td class="fw-bold">Status:</td>
+                <td>
+                  {% if prazo.ativo %}
+                    <span class="badge bg-success">Ativo</span>
+                  {% else %}
+                    <span class="badge bg-secondary">Inativo</span>
+                  {% endif %}
+                </td>
+              </tr>
+              <tr>
+                <td class="fw-bold">Termos (dias):</td>
+                <td>
+                  {% for termo in termos_list %}
+                    <span class="badge bg-info">{{ termo }}</span>
+                  {% endfor %}
+                </td>
+              </tr>
+              <tr>
+                <td class="fw-bold">Total de Termos:</td>
+                <td><strong>{{ termos_list|length }}</strong></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Utilização -->
+    <div class="col-md-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header bg-info bg-opacity-10 border-0">
+          <h5 class="mb-0 fw-bold">
+            <i class="bi bi-bar-chart text-info"></i> Utilização
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="bg-info bg-opacity-10 text-info rounded-circle p-3 me-3">
+              <i class="bi bi-people fs-4"></i>
+            </div>
+            <div>
+              <h6 class="text-muted mb-1">Clientes que usam este preset</h6>
+              <h3 class="mb-0 fw-bold">{{ clientes_count }}</h3>
+              <small class="text-muted">clientes</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+{% endblock %}

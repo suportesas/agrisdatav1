@@ -1,0 +1,467 @@
+<!-- Modais de Ajuda para Sistema MIP -->
+
+<!-- AJUDA: Monitoramento MIP -->
+<div class="modal fade" id="helpMonitoramentoMIP" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-info text-white">
+        <h5 class="modal-title">
+          <i class="bi bi-question-circle"></i> Ajuda: Monitoramento MIP
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <h6><i class="bi bi-info-circle"></i> O que é Monitoramento MIP?</h6>
+        <p>
+          O MIP (Manejo Integrado de Pragas) é um método científico para monitorar e controlar pragas 
+          em culturas agrícolas. Um monitoramento consiste em:
+        </p>
+        <ul>
+          <li><strong>20 pontos de amostragem</strong> distribuídos no talhão</li>
+          <li><strong>Registro de pragas</strong> encontradas em cada ponto</li>
+          <li><strong>Cálculo de incidência</strong> (% de pontos com praga)</li>
+          <li><strong>Comparação com NED</strong> (Nível Econômico de Dano)</li>
+          <li><strong>Recomendação automática</strong> de defensivos</li>
+        </ul>
+
+        <h6 class="mt-3"><i class="bi bi-play-circle"></i> Como Começar?</h6>
+        <ol>
+          <li>Clique em <strong>"Novo Monitoramento"</strong></li>
+          <li>Selecione o <strong>talhão</strong> a monitorar</li>
+          <li>Registre <strong>condições climáticas</strong></li>
+          <li>Clique <strong>"Salvar"</strong></li>
+          <li>Adicione <strong>pragas detectadas</strong></li>
+          <li>Registre os <strong>20 pontos de amostragem</strong></li>
+        </ol>
+
+        <h6 class="mt-3"><i class="bi bi-hourglass-split"></i> Tempo Médio?</h6>
+        <p>
+          <strong>15-30 minutos</strong> por monitoramento em campo:
+          <ul>
+            <li>Caminhada pelos 20 pontos: 15 min</li>
+            <li>Registro de dados: 10-15 min</li>
+          </ul>
+        </p>
+
+        <div class="alert alert-success" role="alert">
+          <i class="bi bi-lightbulb"></i> <strong>Dica:</strong> 
+          Distribua os 20 pontos uniformemente no talhão em formato de grid (4x5 ou 5x4) para melhor representatividade.
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- AJUDA: Praga Form -->
+<div class="modal fade" id="helpPragaForm" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-info text-white">
+        <h5 class="modal-title">
+          <i class="bi bi-question-circle"></i> Ajuda: Adicionar Praga
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <h6><i class="bi bi-bug"></i> Campos Obrigatórios</h6>
+        <div class="table-responsive">
+          <table class="table table-sm">
+            <thead class="table-light">
+              <tr>
+                <th>Campo</th>
+                <th>Descrição</th>
+                <th>Exemplo</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Praga</strong></td>
+                <td>Tipo de praga detectada</td>
+                <td>Broca-do-fruto</td>
+              </tr>
+              <tr>
+                <td><strong>Quantidade de Pontos</strong></td>
+                <td>Em quantos dos 20 pontos a praga foi encontrada</td>
+                <td>8 (= 40% incidência)</td>
+              </tr>
+              <tr>
+                <td><strong>Estágio Principal</strong></td>
+                <td>Fase de vida predominante (carrega automaticamente)</td>
+                <td>Larva</td>
+              </tr>
+              <tr>
+                <td><strong>Severidade</strong></td>
+                <td>Nível de dano (1=muito baixa, 5=muito alta)</td>
+                <td>3 (média)</td>
+              </tr>
+              <tr>
+                <td><strong>NED (Nível Econômico de Dano)</strong></td>
+                <td>Limite de infestação que requer controle</td>
+                <td>5% (padrão)</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h6 class="mt-3"><i class="bi bi-percent"></i> Cálculo de Incidência</h6>
+        <p>
+          A <strong>incidência</strong> é calculada automaticamente:
+        </p>
+        <div class="bg-light p-3 rounded">
+          <code>Incidência (%) = (Pontos com Praga ÷ Total de Pontos) × 100</code><br><br>
+          <small class="text-muted">
+            Exemplo: 8 pontos ÷ 20 pontos × 100 = <strong>40%</strong>
+          </small>
+        </div>
+
+        <h6 class="mt-3"><i class="bi bi-shield-check"></i> Recomendação de Ação</h6>
+        <p>
+          O sistema recomenda automaticamente:
+        </p>
+        <ul>
+          <li>
+            <span class="badge bg-danger">RECOMENDA DEFENSIVO</span> 
+            se Incidência <strong>≥</strong> NED
+          </li>
+          <li>
+            <span class="badge bg-warning">MONITORAR</span>
+            se Incidência <strong>&lt;</strong> NED
+          </li>
+        </ul>
+
+        <div class="alert alert-info" role="alert">
+          <i class="bi bi-lightbulb"></i> <strong>Dica:</strong> 
+          Diferencie as pragas por estágio para aplicar controle direcionado!
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- AJUDA: Ponto de Amostragem -->
+<div class="modal fade" id="helpPontoForm" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-info text-white">
+        <h5 class="modal-title">
+          <i class="bi bi-question-circle"></i> Ajuda: Registrar Ponto de Amostragem
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <h6><i class="bi bi-crosshair2"></i> O que é um Ponto de Amostragem?</h6>
+        <p>
+          É um local específico no talhão onde você verifica a presença/ausência de pragas.
+          O padrão MIP recomenda <strong>20 pontos</strong> distribuídos de forma a cobrir toda a área.
+        </p>
+
+        <h6 class="mt-3"><i class="bi bi-layout-split"></i> Distribuição dos Pontos</h6>
+        <div class="bg-light p-3 rounded">
+          <p class="mb-0">
+            <strong>Padrão em Grid:</strong><br>
+            Para um talhão retangular, distribua em 4×5 ou 5×4:
+          </p>
+          <pre>
+20 pontos em grid 4x5:
+[ ● ● ● ● ● ]
+[ ● ● ● ● ● ]
+[ ● ● ● ● ● ]
+[ ● ● ● ● ● ]
+          </pre>
+        </div>
+
+        <h6 class="mt-3"><i class="bi bi-info-circle"></i> Registrando Cada Ponto</h6>
+        <ol>
+          <li><strong>Vá ao ponto #1</strong> do talhão</li>
+          <li><strong>Procure pragas</strong> (olhe plantas, solo, etc)</li>
+          <li><strong>Marque "Praga Presente"</strong> SIM ou NÃO</li>
+          <li>Se Sim:
+            <ul>
+              <li>Digite <strong>quantidade</strong> de indivíduos</li>
+              <li>Selecione <strong>estágio</strong> (ovo, larva, adulto, etc)</li>
+              <li>Avalie <strong>severidade</strong> (1-5)</li>
+            </ul>
+          </li>
+          <li>Registre <strong>GPS</strong> (latitude, longitude) - opcional mas recomendado</li>
+          <li>Tire uma <strong>foto</strong> - opcional mas recomendado</li>
+          <li>Clique <strong>"Salvar e Próximo"</strong></li>
+        </ol>
+
+        <h6 class="mt-3"><i class="bi bi-geo-alt"></i> Coordenadas GPS</h6>
+        <p>
+          Usar GPS ajuda a:
+        </p>
+        <ul>
+          <li>Validar que os pontos foram realmente coletados</li>
+          <li>Visualizar distribuição das pragas no mapa</li>
+          <li>Identificar "hot spots" de infestação</li>
+          <li>Retornar ao mesmo ponto em próximas visitas</li>
+        </ul>
+
+        <div class="alert alert-success" role="alert">
+          <i class="bi bi-lightbulb"></i> <strong>Dica:</strong> 
+          Use a câmera do smartphone para tirar foto de cada ponto ou da praga encontrada.
+          Isso cria documentação visual do monitoramento.
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- AJUDA: Estágios de Desenvolvimento -->
+<div class="modal fade" id="helpEstagio" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-info text-white">
+        <h5 class="modal-title">
+          <i class="bi bi-question-circle"></i> Ajuda: Estágios de Desenvolvimento
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <h6><i class="bi bi-diagram-3"></i> Por que Registrar Estágios?</h6>
+        <p>
+          Cada praga passa por diferentes fases de vida (ciclo de vida). Identificar o estágio
+          é importante para:
+        </p>
+        <ul>
+          <li><strong>Controle direcionado:</strong> Diferentes estágios exigem diferentes defensivos</li>
+          <li><strong>Previsão:</strong> Saber qual estágio vem a seguir</li>
+          <li><strong>Timing:</strong> Aplicar defensivo no momento certo</li>
+          <li><strong>Monitoramento:</strong> Acompanhar progresso do ciclo</li>
+        </ul>
+
+        <h6 class="mt-3"><i class="bi bi-list-check"></i> Principais Estágios</h6>
+        <div class="table-responsive">
+          <table class="table table-sm">
+            <thead class="table-light">
+              <tr>
+                <th>Estágio</th>
+                <th>Duração Típica</th>
+                <th>Como Reconhecer</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>OVO</strong></td>
+                <td>3-5 dias</td>
+                <td>Pequenos, ovais, geralmente em clusters</td>
+              </tr>
+              <tr>
+                <td><strong>LARVA</strong></td>
+                <td>10-15 dias</td>
+                <td>Pequenos vermes, comem folhas/frutos</td>
+              </tr>
+              <tr>
+                <td><strong>PUPA</strong></td>
+                <td>5-7 dias</td>
+                <td>Casulo/casca dura, imóvel</td>
+              </tr>
+              <tr>
+                <td><strong>ADULTO</strong></td>
+                <td>20-30 dias</td>
+                <td>Inseto alado, consegue voar/se dispersar</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h6 class="mt-3"><i class="bi bi-exclamation-triangle"></i> Fases Críticas</h6>
+        <p>
+          Algumas fases requerem atenção especial. Marque como <strong>"Fase Crítica"</strong>
+          se aquele estágio exigir controle imediato.
+        </p>
+
+        <div class="alert alert-info" role="alert">
+          <i class="bi bi-lightbulb"></i> <strong>Exemplo:</strong> 
+          Para uma broca-do-fruto, a fase larval é crítica porque causa dano ao fruto.
+          Registre como crítica = requer monitoramento mais frequente.
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- AJUDA: NED -->
+<div class="modal fade" id="helpNED" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-info text-white">
+        <h5 class="modal-title">
+          <i class="bi bi-question-circle"></i> Ajuda: Nível Econômico de Dano (NED)
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <h6><i class="bi bi-percent"></i> O que é NED?</h6>
+        <p>
+          <strong>NED (Nível Econômico de Dano)</strong> é o nível de infestação de praga
+          que justifica economicamente a aplicação de um controle (defensivo).
+        </p>
+
+        <h6 class="mt-3"><i class="bi bi-calculator"></i> Como Funciona?</h6>
+        <div class="bg-light p-3 rounded">
+          <p><strong>Decisão Automática do Sistema:</strong></p>
+          <ul class="mb-0">
+            <li>SE Incidência <strong>≥</strong> NED → <span class="badge bg-danger">RECOMENDA DEFENSIVO</span></li>
+            <li>SE Incidência <strong>&lt;</strong> NED → <span class="badge bg-warning">MONITORAR</span> (não trata ainda)</li>
+          </ul>
+        </div>
+
+        <h6 class="mt-3"><i class="bi bi-example"></i> Exemplos Práticos</h6>
+        <div class="table-responsive">
+          <table class="table table-sm">
+            <tbody>
+              <tr>
+                <td><strong>Broca-do-fruto</strong></td>
+                <td><strong>NED: 2-3%</strong></td>
+                <td>Muito sensível = controla cedo</td>
+              </tr>
+              <tr>
+                <td><strong>Ácaros</strong></td>
+                <td><strong>NED: 5%</strong></td>
+                <td>Tolerância média</td>
+              </tr>
+              <tr>
+                <td><strong>Afídios</strong></td>
+                <td><strong>NED: 10%</strong></td>
+                <td>Maior tolerância</td>
+              </tr>
+              <tr>
+                <td><strong>Lagarta-da-soja</strong></td>
+                <td><strong>NED: 15%</strong></td>
+                <td>Planta consegue tolerar mais</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h6 class="mt-3"><i class="bi bi-info-circle"></i> Valores Padrão</h6>
+        <p>
+          O sistema usa <strong>5%</strong> como padrão, mas cada praga pode ter seu próprio NED.
+          Consulte um agrônomo ou pesquisa regional para ajustar.
+        </p>
+
+        <div class="alert alert-success" role="alert">
+          <i class="bi bi-lightbulb"></i> <strong>Benefício:</strong> 
+          Usar NED economiza dinheiro aplicando defensivos apenas quando realmente necessário,
+          reduzindo custos e impacto ambiental.
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- AJUDA: Geral do Sistema -->
+<div class="modal fade" id="helpGeral" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title">
+          <i class="bi bi-question-circle"></i> Guia Rápido - Sistema MIP
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <h6><i class="bi bi-book"></i> Fluxo Principal</h6>
+        <ol>
+          <li><strong>Criar Monitoramento:</strong> Escolha talhão, data, responsável</li>
+          <li><strong>Registrar Pragas:</strong> Para cada praga encontrada, indique quantidade</li>
+          <li><strong>Registrar Pontos:</strong> Visite 20 pontos e anote presença/ausência</li>
+          <li><strong>Analisar Resultados:</strong> Sistema calcula incidência e recomenda ação</li>
+          <li><strong>Tomar Decisão:</strong> Aplique defensivo ou continua monitorando</li>
+        </ol>
+
+        <h6 class="mt-3"><i class="bi bi-lightning-charge"></i> Atalhos Úteis</h6>
+        <ul>
+          <li><strong class="text-success">Menu Agro</strong> → Monitoramento MIP</li>
+          <li><strong class="text-success">Menu Agro</strong> → Estágios de Desenvolvimento</li>
+          <li>Botão <strong class="text-info">?</strong> em cada página para ajuda contextual</li>
+        </ul>
+
+        <h6 class="mt-3"><i class="bi bi-file-earmark-pdf"></i> Exportar Dados</h6>
+        <ul>
+          <li>Clique em <strong>"Exportar PDF"</strong> para gerar relatório</li>
+          <li>Documentação completa para arquivo e auditoria</li>
+          <li>Compartilhe com consultores/agrônomos</li>
+        </ul>
+
+        <h6 class="mt-3"><i class="bi bi-map"></i> Visualizar Mapa</h6>
+        <ul>
+          <li>Clique em uma praga para ver <strong>mapa interativo</strong></li>
+          <li>Pontos vermelhos = praga presente</li>
+          <li>Pontos verdes = sem praga</li>
+          <li>Identifique clusters de infestação</li>
+        </ul>
+
+        <h6 class="mt-3"><i class="bi bi-question-diamond"></i> Dúvidas Frequentes</h6>
+        <div class="accordion accordion-flush">
+          <div class="accordion-item">
+            <h2 class="accordion-header">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
+                Por que não detectei praga mas o sistema alerta?
+              </button>
+            </h2>
+            <div id="faq1" class="accordion-collapse collapse">
+              <div class="accordion-body">
+                Pode haver erro de digitação. Verifique os dados. Se incidência está realmente abaixo do NED,
+                verá aviso "Monitorar" (não "Recomenda Defensivo").
+              </div>
+            </div>
+          </div>
+          <div class="accordion-item">
+            <h2 class="accordion-header">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">
+                Posso editar um monitoramento depois de criado?
+              </button>
+            </h2>
+            <div id="faq2" class="accordion-collapse collapse">
+              <div class="accordion-body">
+                Sim! Clique em editar ao lado do talhão (campo é readonly após criação, mas pragas podem ser adicionadas/removidas).
+              </div>
+            </div>
+          </div>
+          <div class="accordion-item">
+            <h2 class="accordion-header">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">
+                Qual é o intervalo recomendado entre monitoramentos?
+              </button>
+            </h2>
+            <div id="faq3" class="accordion-collapse collapse">
+              <div class="accordion-body">
+                Geralmente a cada 7-10 dias durante a safra, mas depende da praga e clima.
+                Consulte um agrônomo para sua região.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="alert alert-primary mt-3" role="alert">
+          <i class="bi bi-info-circle"></i> <strong>Precisa de mais ajuda?</strong><br>
+          Use os botões <strong class="text-info">?</strong> em cada seção para ajuda específica.
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+        <button type="button" class="btn btn-success" data-bs-dismiss="modal">
+          <i class="bi bi-check-circle"></i> Entendi!
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

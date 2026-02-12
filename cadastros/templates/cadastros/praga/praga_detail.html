@@ -43,8 +43,24 @@
   <!-- Informações -->
   <div class="row g-4">
     
+    <!-- Foto -->
+    {% if praga.foto %}
+      <div class="col-md-6">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-header bg-info bg-opacity-10 border-0">
+            <h5 class="mb-0 fw-bold">
+              <i class="bi bi-image text-info"></i> Foto da Praga
+            </h5>
+          </div>
+          <div class="card-body d-flex justify-content-center align-items-center">
+            <img src="{{ praga.foto.url }}" alt="{{ praga.nome_comum }}" style="max-width: 100%; max-height: 400px; border-radius: 8px;" class="img-fluid">
+          </div>
+        </div>
+      </div>
+    {% endif %}
+    
     <!-- Dados Básicos -->
-    <div class="col-md-6">
+    <div class="col-md-{% if praga.foto %}6{% else %}6{% endif %}">
       <div class="card border-0 shadow-sm h-100">
         <div class="card-header bg-danger bg-opacity-10 border-0">
           <h5 class="mb-0 fw-bold">

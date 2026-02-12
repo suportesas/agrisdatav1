@@ -1,4 +1,4 @@
-minha_empresa.html{% extends 'base.html' %}
+{% extends 'base.html' %}
 {% block title %}Minha Empresa | ERP Agrícola{% endblock %}
 {% block page_title %}Informações da Minha Empresa{% endblock %}
 
@@ -95,6 +95,9 @@ minha_empresa.html{% extends 'base.html' %}
       <hr class="my-4">
 
       <div class="d-flex gap-2">
+        <a href="{% url 'empresas:empresa_logo_update' %}" class="btn btn-outline-primary">
+          <i class="bi bi-image"></i> Atualizar Logo
+        </a>
         <a href="{% url 'empresas:roles_list' %}" class="btn btn-outline-success">
           <i class="bi bi-people"></i> Gerenciar Funções (Permissões)
         </a>

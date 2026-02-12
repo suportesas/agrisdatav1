@@ -21,8 +21,10 @@
     font-weight: 600;
   }
   .nav-tabs .nav-link.active {
-    color: #0d6efd;
+    color: #000000;
+    background-color: #f5f5f5;
     border-bottom: 3px solid #0d6efd;
+    border-radius: 8px 8px 0 0;
   }
   .alert-doc {
     border-left: 4px solid #ffc107;
@@ -47,7 +49,13 @@
   {% url 'cadastros:cliente_update' cliente.pk as cliente_update_url %}
   {% url 'cadastros:cliente_delete' cliente.pk as cliente_delete_url %}
   {% url 'cadastros:cliente_activate' cliente.pk as cliente_activate_url %}
+  {% url 'cadastros:cliente_pdf' cliente.pk as cliente_pdf_url %}
   {% include 'cadastros/partials/entity_header.html' with title=cliente.razao_social subtitle=cliente.nome_comercial icon="<i class='bi bi-people text-primary'></i>" edit_url=cliente_update_url delete_url=cliente_delete_url %}
+  <div class="d-flex justify-content-end mb-3">
+    <a class="btn btn-outline-primary" href="{{ cliente_pdf_url }}" target="_blank" rel="noopener">
+      <i class="bi bi-file-earmark-pdf"></i> Ver PDF
+    </a>
+  </div>
   {% if cliente.status == 'INATIVO' %}
     <div class="mt-2">
       <form method="post" action="{{ cliente_activate_url }}" style="display:inline">{% csrf_token %}<button class="btn btn-sm btn-success">Reativar</button></form>

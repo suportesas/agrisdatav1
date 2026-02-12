@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+
+{% block title %}Confirmar Exclusão | Preset de Prazo{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-md-6">
+      <div class="card border-danger shadow-sm">
+        <div class="card-header bg-danger bg-opacity-10 border-bottom border-danger">
+          <h5 class="mb-0 fw-bold text-danger">
+            <i class="bi bi-exclamation-triangle"></i> Confirmar Exclusão
+          </h5>
+        </div>
+        <div class="card-body">
+          <p class="mb-3">
+            Tem certeza de que deseja <strong>excluir</strong> o preset de prazo de pagamento?
+          </p>
+          
+          <div class="alert alert-light border border-warning">
+            <h6 class="fw-bold mb-2">Preset a ser excluído:</h6>
+            <p class="mb-0">
+              <strong>{{ prazo.nome }}</strong> - {{ prazo.termos }}
+            </p>
+          </div>
+
+          <div class="alert alert-warning">
+            <i class="bi bi-exclamation-circle"></i>
+            <strong>Aviso:</strong> Esta ação não pode ser desfeita. {% if clientes_count > 0 %}Existem clientes utilizando este preset.{% endif %}
+          </div>
+
+          <div class="d-grid gap-2">
+            <form method="post" onsubmit="return confirm('Tem certeza que deseja excluir este preset?');">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-danger btn-lg">
+                <i class="bi bi-trash"></i> Sim, Excluir
+              </button>
+            </form>
+            <a href="{% url 'cadastros:prazo_pagamento_list' %}" class="btn btn-secondary btn-lg">
+              <i class="bi bi-x-circle"></i> Cancelar
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

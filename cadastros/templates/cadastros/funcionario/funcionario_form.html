@@ -429,17 +429,72 @@
 <script src="{% static 'js/cadastros_funcionario.js' %}"></script>
 
 <script>
-  // Toggle CNH fields visibility based on selected função
+  // Debug e Auto-preenchimento de salário
   document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 DOMContentLoaded - Inicializando');
+    
     const funcaoSelect = document.getElementById('id_funcao');
+    const salarioInput = document.getElementById('id_salario');
     const motoristaFields = document.getElementById('motorista_fields');
     const motoristaFieldsVal = document.getElementById('motorista_fields_validade');
 
+    console.log('🔍 Elementos encontrados:', {
+      funcaoSelect: !!funcaoSelect,
+      salarioInput: !!salarioInput,
+      motoristaFields: !!motoristaFields,
+      motoristaFieldsVal: !!motoristaFieldsVal
+    });
+
+    // Preenchimento de Salário
+    if (funcaoSelect && salarioInput) {
+      funcaoSelect.addEventListener('change', function() {
+        const funcaoId = this.value;
+        console.log('✅ Mudança detectada. Função ID:', funcaoId);
+        
+        if (!funcaoId) {
+          salarioInput.value = '';
+          console.log('⚪ Nenhuma função selecionada');
+          return;
+        }
+
+        const url = `/cadastros/funcoes/get-salario/?funcao_id=${funcaoId}`;
+        console.log('📡 Chamando:', url);
+
+        fetch(url, {
+          method: 'GET',
+          credentials: 'same-origin',
+          headers: {
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+          }
+        })
+        .then(response => {
+          console.log('📊 Response status:', response.status);
+          return response.json();
+        })
+        .then(data => {
+          console.log('📦 Dados recebidos:', data);
+          if (data.sucesso && data.salario_base !== undefined) {
+            const valor = parseFloat(data.salario_base).toFixed(2);
+            salarioInput.value = valor;
+            console.log('💰 Salário preenchido:', valor);
+          }
+        })
+        .catch(error => {
+          console.error('❌ Erro na requisição:', error);
+        });
+      });
+    } else {
+      console.warn('⚠️ Elementos não encontrados!');
+    }
+
+    // Toggle CNH fields visibility based on selected função
     function toggleMotoristaFields() {
       if (!funcaoSelect) return;
       const opt = funcaoSelect.options[funcaoSelect.selectedIndex];
       const txt = (opt && opt.text) ? opt.text.toLowerCase() : '';
       const isMotorista = txt.indexOf('motorista') !== -1;
+      console.log('🔄 Toggle motorista - Função selecionada:', txt, 'É motorista?', isMotorista);
       if (isMotorista) {
         motoristaFields && motoristaFields.classList.remove('d-none');
         motoristaFieldsVal && motoristaFieldsVal.classList.remove('d-none');

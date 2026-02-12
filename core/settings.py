@@ -140,6 +140,10 @@ USE_I18N = True
 USE_L10N = True
 USE_TZ = True
 
+# Encoding configuration - UTF-8 para suportar caracteres especiais
+FILE_CHARSET = 'utf-8'
+DEFAULT_CHARSET = 'utf-8'
+
 # Formato de data brasileiro
 DATE_FORMAT = 'd/m/Y'
 DATETIME_FORMAT = 'd/m/Y H:i:s'

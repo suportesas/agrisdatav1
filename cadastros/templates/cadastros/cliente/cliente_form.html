@@ -129,6 +129,10 @@
             {{ form.eori }}
           </div>
           <div class="col-md-4">
+            <label class="form-label fw-semibold">Regime Tributário</label>
+            {{ form.regime_tributario }}
+          </div>
+          <div class="col-md-4">
             <label class="form-label fw-semibold">VAT / Número Registro (Exterior)</label>
             {{ form.vat }}
           </div>
@@ -180,7 +184,7 @@
                   <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                  <form id="moedaForm">
+                  <div id="moedaForm">
                     <div class="mb-3">
                       <label class="form-label">Código (ex: JPY)</label>
                       <input type="text" class="form-control" id="moeda_codigo" maxlength="4" required>
@@ -190,7 +194,7 @@
                       <input type="text" class="form-control" id="moeda_nome" required>
                     </div>
                     <div id="moedaFeedback" class="text-danger small"></div>
-                  </form>
+                  </div>
                 </div>
                 <div class="modal-footer">
                   <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
@@ -218,29 +222,62 @@
             {{ form.limite_credito }}
           </div>
           <div class="col-md-3">
-            <label class="form-label fw-semibold">Prazo Pagamento (dias)</label>
-            {{ form.prazo_pagamento }}
-            <div class="form-text small text-muted">Ou escolha um <strong>preset</strong> de termos</div>
-          </div>
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">Preset Prazo</label>
-            <select id="id_prazo_pagamento_padrao_select" class="form-select" name="prazo_pagamento_padrao">
-              <option value="">-- Nenhum --</option>
-              {% for p in presets %}
-                <option value="{{ p.pk }}" data-terms="{{ p.termos|escape }}" {% if selected_preset and selected_preset == p.pk|stringformat:"s" %}selected{% endif %}>{{ p.nome }} ({{ p.termos }})</option>
-              {% endfor %}
-            </select>
-            <select id="id_prazo_pagamento_padrao_terms" class="form-select mt-2" style="display:none;"></select>
-          </div>
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">Vendedor Responsável</label>
-            {{ form.vendedor_responsavel }}
+            <label class="form-label fw-semibold">Forma de Pagamento Padrão</label>
+            {{ form.forma_pagamento_padrao }}
           </div>
           <div class="col-md-3">
             <label class="form-label fw-semibold">Desconto Padrão (%)</label>
             {{ form.desconto_padrao }}
           </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Vendedor Responsável</label>
+            {{ form.vendedor_responsavel }}
+          </div>
         </div>
+
+        <div class="row g-3 mt-3">
+          <div class="col-md-6">
+            <div class="d-flex align-items-center gap-2">
+              <label class="form-label fw-semibold mb-0">Preset Prazo <span class="text-danger">*</span></label>
+              <button type="button" class="btn btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#novoPresetModal" title="Adicionar novo preset prazo">
+                <i class="bi bi-plus-circle"></i>
+              </button>
+            </div>
+            <select id="id_prazo_pagamento_padrao_select" class="form-select mt-2">
+              <option value="">-- Selecione um preset --</option>
+              {% for p in presets %}
+                <option value="{{ p.pk }}" data-terms="{{ p.termos|escape }}">{{ p.nome }} ({{ p.termos }})</option>
+              {% endfor %}
+            </select>
+            <select id="id_prazo_pagamento_padrao_terms" class="form-select mt-2" style="display:none;"></select>
+            <small class="form-text text-muted d-block mt-2">Selecione um preset para escolher os termos de prazo</small>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Observações Comerciais</label>
+            {{ form.observacoes_comerciais }}
+          </div>
+        </div>
+
+        <div class="row g-3 mt-3">
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Usuario Vinculado (Portal)</label>
+            <!-- Mostrar apenas o nome do usuario logado em um campo readonly -->
+            <input type="text" class="form-control" readonly value="{{ user.get_full_name|default:user.username }}" title="Usuario automaticamente vinculado ao cliente">
+            <!-- Ambos os hidden inputs: o que foi setado automaticamente no __init__ do form -->
+            {{ form.usuario_vinculado }}
+          </div>
+          <div class="col-md-2 d-flex align-items-end">
+            <div class="form-check form-check-lg">
+              <label class="form-check-label fw-semibold" for="id_acesso_portal">
+                {{ form.acesso_portal }}
+                Acesso ao Portal
+              </label>
+            </div>
+          </div>
+        </div>
+        <!-- Hidden fields para sincronização via JavaScript -->
+        {{ form.prazo_pagamento }}
+        {{ form.prazo_pagamento_padrao }}
       </div>
     </div>
 
@@ -268,23 +305,283 @@ document.addEventListener('DOMContentLoaded', function(){
     toAuto.forEach(id => { const el = document.getElementById(id); if (el) el.setAttribute('data-auto','true'); });
   } catch(e){}
 
-  // If a prazo preset was selected on the server, trigger change to populate terms and set prazo input
+  // Gerenciar seleção de Preset Prazo
   try {
     const presetSelect = document.getElementById('id_prazo_pagamento_padrao_select');
     const prazoTermsSelect = document.getElementById('id_prazo_pagamento_padrao_terms');
     const prazoInput = document.getElementById('id_prazo_pagamento');
-    const selectedPreset = "{{ selected_preset|default:'' }}";
-    if (presetSelect && selectedPreset) {
-      // ensure select has the value and dispatch change to populate options
-      presetSelect.value = selectedPreset;
-      presetSelect.dispatchEvent(new Event('change'));
-      // if prazo already set (editing), try to select matching term
-      if (prazoInput && prazoInput.value && prazoTermsSelect) {
-        const opt = Array.from(prazoTermsSelect.options).find(o=>o.value==String(prazoInput.value));
-        if (opt) prazoTermsSelect.value = String(prazoInput.value);
+    const hiddenPresetInput = document.getElementById('id_prazo_pagamento_padrao');
+    
+    if (presetSelect) {
+      // Função para atualizar termos quando um preset muda
+      function atualizarTermos() {
+        const selectedOption = presetSelect.options[presetSelect.selectedIndex];
+        const termsStr = selectedOption.getAttribute('data-terms') || '';
+        
+        // Preencher o hidden input com o ID do preset selecionado
+        if (hiddenPresetInput) {
+          hiddenPresetInput.value = presetSelect.value;
+        }
+        
+        // Limpar termos anteriores
+        prazoTermsSelect.innerHTML = '';
+        
+        if (termsStr && termsStr.trim()) {
+          // Mostrar o select de termos
+          prazoTermsSelect.style.display = 'block';
+          
+          // Parsear os termos (esperado formato: "30,60,90" ou "30/60/90")
+          let terms = [];
+          if (termsStr.includes(',')) {
+            terms = termsStr.split(',').map(t => t.trim()).filter(t => t);
+          } else if (termsStr.includes('/')) {
+            terms = termsStr.split('/').map(t => t.trim()).filter(t => t);
+          } else {
+            terms = [termsStr.trim()];
+          }
+          
+          // Adicionar opção padrão
+          const optDefault = document.createElement('option');
+          optDefault.value = '';
+          optDefault.textContent = '-- Selecione um termo --';
+          prazoTermsSelect.appendChild(optDefault);
+          
+          // Adicionar cada termo como opção
+          terms.forEach(term => {
+            const opt = document.createElement('option');
+            opt.value = term;
+            opt.textContent = term + ' dias';
+            prazoTermsSelect.appendChild(opt);
+          });
+          
+          // Se houver valor atual no prazoInput, tentar selecionar termo correspondente
+          if (prazoInput && prazoInput.value) {
+            prazoTermsSelect.value = prazoInput.value;
+          } else if (terms.length > 0) {
+            // Selecionar o primeiro termo por padrão
+            prazoTermsSelect.value = terms[0];
+            if (prazoInput) {
+              prazoInput.value = terms[0];
+            }
+          }
+        } else {
+          // Nenhum termo, ocultar o select
+          prazoTermsSelect.style.display = 'none';
+          if (prazoInput) prazoInput.value = '';
+        }
       }
+      
+      // Event listener para quando o preset muda
+      presetSelect.addEventListener('change', atualizarTermos);
+      
+      // Event listener para quando um termo é selecionado
+      prazoTermsSelect.addEventListener('change', function() {
+        if (this.value && prazoInput) {
+          prazoInput.value = this.value;
+        }
+      });
+      
+      // Na inicialização, sincronizar com valores salvos
+      // Se há um preset salvo (no hidden input), atualizar o select visível
+      if (hiddenPresetInput && hiddenPresetInput.value) {
+        // Esperar um pouco para garantir que o DOM esteja pronto
+        setTimeout(() => {
+          presetSelect.value = hiddenPresetInput.value;
+          console.log('Sincronizado preset:', hiddenPresetInput.value);
+        }, 10);
+      }
+      
+      // Chamar uma vez na inicialização para popular termos se houver preset pré-selecionado
+      setTimeout(atualizarTermos, 50);
+      
+      // Se há um prazo já salvo, selecionar o termo correspondente
+      if (prazoInput && prazoInput.value) {
+        // Usar setTimeout para garantir que as opções foram criadas
+        setTimeout(function() {
+          if (prazoTermsSelect.offsetParent !== null) {
+            prazoTermsSelect.value = prazoInput.value;
+            console.log('Sincronizado prazo:', prazoInput.value);
+          }
+        }, 150);
+      }
+      
+      // ⚡ IMPORTANTE: Sincronizar valores antes de submeter o formulário (SEM BLOQUEAR)
+      document.getElementById('clienteForm').addEventListener('submit', function(e) {
+        // Sincronizar preset_id do select visível para hidden input (se preenchido)
+        if (presetSelect && presetSelect.value && hiddenPresetInput) {
+          hiddenPresetInput.value = presetSelect.value;
+          console.log('✓ Form submit - Sincronizado preset:', hiddenPresetInput.value);
+        }
+        
+        // Sincronizar prazo_pagamento do terms select para hidden input (se preenchido)
+        if (prazoTermsSelect && prazoTermsSelect.value && prazoInput) {
+          prazoInput.value = prazoTermsSelect.value;
+          console.log('✓ Form submit - Sincronizado prazo:', prazoInput.value);
+        }
+        
+        // NÃO bloquear submit - deixar o usuário salvar mesmo sem preencher prazo
+        console.log('✓ Formulário permitido para submission');
+        // return true; // Permitir submit normalmente
+      });
     }
-  } catch(e){}
+  } catch(e) {
+    console.error('Erro ao inicializar Preset Prazo:', e);
+  }
 });
 </script>
+
+<!-- Modal para criar novo Preset Prazo -->
+<div class="modal fade" id="novoPresetModal" tabindex="-1" aria-labelledby="novoPresetModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title" id="novoPresetModalLabel">
+          <i class="bi bi-plus-circle"></i> Novo Preset Prazo
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body">
+        <form id="novoPresetForm">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label for="presetNome" class="form-label fw-semibold">Nome do Preset</label>
+            <input type="text" class="form-control" id="presetNome" placeholder="Ex: 30/60/90 Dias" required>
+            <small class="form-text text-muted">Nome descritivo para o preset (ex: Entrada, À Vista, 30 Dias)</small>
+          </div>
+          <div class="mb-3">
+            <label for="presetTermos" class="form-label fw-semibold">Termos (dias)</label>
+            <input type="text" class="form-control" id="presetTermos" placeholder="Ex: 30,60,90" required>
+            <small class="form-text text-muted">Digite os dias separados por vírgula (ex: 15,30,45 ou apenas 30 para prazo único)</small>
+          </div>
+          <div id="presetPreview" class="alert alert-info" style="display:none;">
+            <strong>Preview:</strong> <span id="presetPreviewText"></span>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          <i class="bi bi-x-circle"></i> Cancelar
+        </button>
+        <button type="button" class="btn btn-success" id="salvarPresetBtn">
+          <i class="bi bi-check-circle"></i> Salvar Preset
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Gerenciar modal para novo Preset Prazo
+document.addEventListener('DOMContentLoaded', function() {
+  try {
+    const presetNomeInput = document.getElementById('presetNome');
+    const presetTermosInput = document.getElementById('presetTermos');
+    const presetPreview = document.getElementById('presetPreview');
+    const presetPreviewText = document.getElementById('presetPreviewText');
+    const salvarPresetBtn = document.getElementById('salvarPresetBtn');
+    const novoPresetModal = document.getElementById('novoPresetModal');
+    const presetSelectElement = document.getElementById('id_prazo_pagamento_padrao_select');
+    
+    // Atualizar preview enquanto digita
+    function atualizarPreviewPreset() {
+      const nome = presetNomeInput.value.trim();
+      const termos = presetTermosInput.value.trim();
+      
+      if (nome && termos) {
+        const displayText = `<strong>${nome}</strong> (${termos})`;
+        presetPreviewText.innerHTML = displayText;
+        presetPreview.style.display = 'block';
+      } else {
+        presetPreview.style.display = 'none';
+      }
+    }
+    
+    presetNomeInput.addEventListener('input', atualizarPreviewPreset);
+    presetTermosInput.addEventListener('input', atualizarPreviewPreset);
+    
+    // Salvar novo preset via AJAX
+    salvarPresetBtn.addEventListener('click', function() {
+      const nome = presetNomeInput.value.trim();
+      const termos = presetTermosInput.value.trim();
+      
+      if (!nome || !termos) {
+        alert('Por favor, preencha o nome e os termos');
+        return;
+      }
+      
+      // Validar formato dos termos (deve ser números separados por vírgula)
+      const termosArray = termos.split(',').map(t => t.trim());
+      if (!termosArray.every(t => /^\d+$/.test(t))) {
+        alert('Formato inválido! Digite apenas números separados por vírgula (ex: 30,60,90)');
+        return;
+      }
+      
+      // Desabilitar botão enquanto processa
+      salvarPresetBtn.disabled = true;
+      salvarPresetBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Salvando...';
+      
+      // Enviar dados via AJAX
+      fetch('{% url "cadastros:prazo_pagamento_create" %}', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        body: JSON.stringify({
+          nome: nome,
+          termos: termos,
+          ajax: true
+        })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          // Adicionar nova opção ao select
+          const novaOpcao = document.createElement('option');
+          novaOpcao.value = data.preset_id;
+          novaOpcao.setAttribute('data-terms', data.termos);
+          novaOpcao.textContent = `${data.nome} (${data.termos})`;
+          presetSelectElement.appendChild(novaOpcao);
+          
+          // Selecionar o novo preset
+          presetSelectElement.value = data.preset_id;
+          presetSelectElement.dispatchEvent(new Event('change'));
+          
+          // Fechar modal e limpar form
+          const modal = bootstrap.Modal.getInstance(novoPresetModal);
+          modal.hide();
+          
+          presetNomeInput.value = '';
+          presetTermosInput.value = '';
+          presetPreview.style.display = 'none';
+          
+          // Mostrar mensagem de sucesso
+          const alertDiv = document.createElement('div');
+          alertDiv.className = 'alert alert-success alert-dismissible fade show';
+          alertDiv.role = 'alert';
+          alertDiv.innerHTML = `
+            <i class="bi bi-check-circle"></i> Novo preset "${data.nome}" criado com sucesso!
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
+          `;
+          document.querySelector('.container').insertBefore(alertDiv, document.querySelector('form'));
+          setTimeout(() => alertDiv.remove(), 5000);
+        } else {
+          alert('Erro ao criar preset: ' + data.message);
+        }
+      })
+      .catch(error => {
+        console.error('Erro:', error);
+        alert('Erro ao criar preset. Tente novamente.');
+      })
+      .finally(() => {
+        salvarPresetBtn.disabled = false;
+        salvarPresetBtn.innerHTML = '<i class="bi bi-check-circle"></i> Salvar Preset';
+      });
+    });
+  } catch(e) {
+    console.error('Erro ao inicializar modal de novo preset:', e);
+  }
+});
+</script>
+
 {% endblock %}

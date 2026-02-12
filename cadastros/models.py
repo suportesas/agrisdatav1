@@ -5557,6 +5557,15 @@ class Vehicle(models.Model):
     tara_kg = models.IntegerField('Tara (kg)', null=True, blank=True)
     eixos = models.IntegerField('Eixos', null=True, blank=True)
     cor = models.CharField('Cor', max_length=50, blank=True)
+    descricao = models.CharField('Nome/Descrição', max_length=150, blank=True, help_text='Ex: Trator Amarelo, Implemento XX, Caminhão Branco')
+
+    foto = models.ImageField(
+        'Foto do Veiculo',
+        upload_to='veiculos/fotos/%Y/%m/',
+        blank=True,
+        null=True,
+        help_text='Foto do veiculo/implemento'
+    )
 
     # Novos campos opcionais solicitados
     RENAVAM_CHOICES = []  # placeholder if needed in future

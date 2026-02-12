@@ -533,7 +533,8 @@ class ClienteForm(forms.ModelForm):
         # Limit vendedor_responsavel to vendedores da empresa and by tipo_cliente
         if 'vendedor_responsavel' in self.fields:
             if self.empresa:
-                qs = Vendedor.objects.filter(empresa=self.empresa)
+                # Filter only ATIVO vendedores
+                qs = Vendedor.objects.filter(empresa=self.empresa, status='ATIVO')
                 # Determine tipo_cliente from POST data, initial or instance
                 tipo = None
                 if self.data and self.data.get('tipo_cliente'):
@@ -548,7 +549,7 @@ class ClienteForm(forms.ModelForm):
                 else:
                     qs = qs.filter(tipo_mercado__in=['INTERNO', 'AMBOS'])
 
-                self.fields['vendedor_responsavel'].queryset = qs
+                self.fields['vendedor_responsavel'].queryset = qs.order_by('nome_completo')
             else:
                 self.fields['vendedor_responsavel'].queryset = Vendedor.objects.none()
 
@@ -2938,6 +2939,12 @@ from .models import Vehicle, VehiclePlate
 
 
 class VehicleForm(forms.ModelForm):
+    origem = forms.ChoiceField(
+        choices=[('PROPRIO', 'Proprio'), ('TERCEIRO', 'Terceiro')],
+        initial='PROPRIO',
+        label='Origem do Veiculo',
+        widget=forms.Select(attrs={'class': 'form-select', 'data-toggle-transportadora': '1'})
+    )
     aplicar_variacao_agora = forms.BooleanField(required=False, initial=False, label='Aplicar variação agora')
 
     class Meta:
@@ -2947,12 +2954,14 @@ class VehicleForm(forms.ModelForm):
             'tipo': forms.Select(attrs={'class': 'form-select'}),
             'marca': forms.TextInput(attrs={'class': 'form-control'}),
             'modelo': forms.TextInput(attrs={'class': 'form-control'}),
+            'descricao': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Trator Amarelo, Implemento XX'}),
             'ano_fabricacao': forms.NumberInput(attrs={'class': 'form-control'}),
             'ano_modelo': forms.NumberInput(attrs={'class': 'form-control'}),
             'capacidade_ton': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'tara_kg': forms.NumberInput(attrs={'class': 'form-control'}),
             'eixos': forms.NumberInput(attrs={'class': 'form-control'}),
             'cor': forms.TextInput(attrs={'class': 'form-control'}),
+            'foto': forms.ClearableFileInput(attrs={'class': 'form-control'}),
             'renavam': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'RENAVAM'}),
             'chassis': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Chassi'}),
             'numero_motor': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Número do Motor'}),
@@ -2977,14 +2986,23 @@ class VehicleForm(forms.ModelForm):
             self.fields['empresa'].required = False
         if self.empresa:
             self.initial['empresa'] = self.empresa
+        if self.instance and self.instance.pk:
+            self.initial['origem'] = 'TERCEIRO' if self.instance.transportadora else 'PROPRIO'
 
     def clean(self):
         from decimal import Decimal
         cleaned = super().clean()
+        origem = cleaned.get('origem')
+        transportadora = cleaned.get('transportadora')
         aplicar = cleaned.get('aplicar_variacao_agora')
         perc = cleaned.get('percentual_variacao')
         tipo = cleaned.get('tipo_variacao')
         valor = cleaned.get('valor_atual')
+
+        if origem == 'TERCEIRO' and not transportadora:
+            raise ValidationError({'transportadora': 'Selecione a transportadora para veiculo de terceiro.'})
+        if origem == 'PROPRIO':
+            cleaned['transportadora'] = None
 
         if aplicar:
             if valor is None:
@@ -3001,6 +3019,9 @@ class VehicleForm(forms.ModelForm):
         obj = super().save(commit=False)
         if self.empresa:
             obj.empresa = self.empresa
+
+        if self.cleaned_data.get('origem') == 'PROPRIO':
+            obj.transportadora = None
 
         aplicar = self.cleaned_data.get('aplicar_variacao_agora')
         perc = self.cleaned_data.get('percentual_variacao')
@@ -3070,6 +3091,9 @@ class VehiclePlateForm(forms.ModelForm):
         obj = super().save(commit=False)
         if self.vehicle:
             obj.vehicle = self.vehicle
+        if commit:
+            obj.save()
+        return obj
 
 
 

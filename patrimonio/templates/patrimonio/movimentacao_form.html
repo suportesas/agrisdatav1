@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+
+{% block title %}Movimentação de {{ patrimonio.numero_patrimonio }} | ERP Agrícola{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="fw-bold mb-1">{{ action }}</h2>
+      <p class="text-muted mb-0">Patrimônio: <strong>{{ patrimonio.numero_patrimonio }}</strong></p>
+    </div>
+    <a href="{% url 'patrimonio:patrimonio_detail' patrimonio.pk %}" class="btn btn-outline-secondary">Voltar</a>
+  </div>
+
+  <div class="card p-4">
+    <form method="post">
+      {% csrf_token %}
+
+      <div class="row g-3">
+        <div class="col-md-6">{{ form.tipo.label_tag }}{{ form.tipo }}</div>
+        <div class="col-md-6">{{ form.responsavel_anterior.label_tag }}{{ form.responsavel_anterior }}</div>
+        <div class="col-md-6">{{ form.responsavel_novo.label_tag }}{{ form.responsavel_novo }}</div>
+        <div class="col-md-6">{{ form.localizacao_anterior.label_tag }}{{ form.localizacao_anterior }}</div>
+        <div class="col-md-6">{{ form.localizacao_nova.label_tag }}{{ form.localizacao_nova }}</div>
+        <div class="col-12">{{ form.observacoes.label_tag }}{{ form.observacoes }}</div>
+
+        <div class="col-12 d-flex justify-content-end gap-2 mt-4">
+          <a href="{% url 'patrimonio:patrimonio_detail' patrimonio.pk %}" class="btn btn-outline-secondary">Cancelar</a>
+          <button type="submit" class="btn btn-success">Registrar Movimentação</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

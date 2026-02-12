@@ -28,12 +28,13 @@ class Plano(models.Model):
         ('PEQUENO', 'Pequeno Produtor'),
         ('MEDIO', 'Médio Produtor'),
         ('GRANDE', 'Grande Produtor'),
+        ('ENTERPRISE_PLUS', 'Enterprise Plus'),
     ]
     
     # Identificação do plano
     codigo = models.CharField(
         'Código',
-        max_length=10,
+        max_length=20,
         unique=True,
         choices=CODIGO_CHOICES,
         help_text='Identificador único do plano'
@@ -213,6 +214,116 @@ def empresa_logo_upload_to(instance, filename):
     return f'empresas/logos/{empresa_id}/logo{ext}'
 
 
+class GrupoCorporativo(models.Model):
+    """
+    Grupo Corporativo para agrupar múltiplas empresas (holding/grupo)
+    Permite consolidação de dados e gerenciamento centralizado
+    Plano Enterprise Plus
+    """
+    
+    STATUS_CHOICES = [
+        ('ATIVO', 'Ativo'),
+        ('INATIVO', 'Inativo'),
+        ('SUSPENSO', 'Suspenso'),
+    ]
+    
+    # Identificação
+    nome = models.CharField(
+        'Nome do Grupo',
+        max_length=150,
+        unique=True,
+        help_text='Nome da holding/grupo corporativo'
+    )
+    
+    cnpj = models.CharField(
+        'CNPJ do Grupo',
+        max_length=18,
+        blank=True,
+        null=True,
+        unique=True,
+        help_text='CNPJ da holding/matriz'
+    )
+    
+    descricao = models.TextField(
+        'Descrição',
+        blank=True,
+        help_text='Informações adicionais sobre o grupo'
+    )
+    
+    # Contato
+    email = models.EmailField(
+        'E-mail do Grupo',
+        blank=True,
+        null=True,
+        help_text='E-mail centralizado para suporte'
+    )
+    
+    telefone = models.CharField(
+        'Telefone',
+        max_length=20,
+        blank=True,
+        null=True
+    )
+    
+    # Logo do grupo
+    logo = models.ImageField(
+        'Logo do Grupo',
+        upload_to='grupos/logos/',
+        blank=True,
+        null=True,
+        help_text='Logo para documentos consolidados'
+    )
+    
+    # Status
+    status = models.CharField(
+        'Status',
+        max_length=10,
+        choices=STATUS_CHOICES,
+        default='ATIVO',
+        help_text='Status do grupo corporativo'
+    )
+    
+    # Administrador do grupo
+    administrador = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='grupos_corporativos_admin',
+        verbose_name='Administrador do Grupo',
+        help_text='Usuário administrador do grupo'
+    )
+    
+    # Controle
+    data_criacao = models.DateTimeField(
+        'Data de Criação',
+        auto_now_add=True
+    )
+    
+    data_atualizacao = models.DateTimeField(
+        'Última Atualização',
+        auto_now=True
+    )
+    
+    class Meta:
+        verbose_name = 'Grupo Corporativo'
+        verbose_name_plural = 'Grupos Corporativos'
+        ordering = ['nome']
+    
+    def __str__(self):
+        return f"{self.nome} ({self.get_status_display()})"
+    
+    @property
+    def total_empresas(self):
+        """Retorna total de empresas no grupo"""
+        return self.empresas.count()
+    
+    @property
+    def total_empresas_ativas(self):
+        """Retorna total de empresas ativas no grupo"""
+        return self.empresas.filter(ativa=True).count()
+
+
 class Empresa(models.Model):
     """
     Modelo central para Multi-tenant (Multiempresa)
@@ -249,6 +360,17 @@ class Empresa(models.Model):
         blank=True,
         null=True,
         help_text='E-mail institucional'
+    )
+    
+    # ✅ NOVO: Grupo Corporativo (Enterprise Plus)
+    grupo_corporativo = models.ForeignKey(
+        GrupoCorporativo,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='empresas',
+        verbose_name='Grupo Corporativo',
+        help_text='Holding/Grupo corporativo (opcional)'
     )
     
     # Endereço

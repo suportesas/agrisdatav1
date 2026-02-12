@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1>{{ titulo }}</h1>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{% url 'empresas:ajuda_grupos_corporativos' %}" class="btn btn-info me-2">
+                <i class="fas fa-question-circle"></i> Ajuda
+            </a>
+            <a href="{% url 'empresas:grupo_create' %}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Novo Grupo
+            </a>
+        </div>
+    </div>
+
+    {% if messages %}
+        <div class="alert-messages">
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    {% if grupos %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Nome</th>
+                        <th>CNPJ</th>
+                        <th>Admin</th>
+                        <th>Empresas</th>
+                        <th>Status</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for grupo in grupos %}
+                        <tr>
+                            <td><strong>{{ grupo.nome }}</strong></td>
+                            <td>
+                                {% if grupo.cnpj %}
+                                    {{ grupo.cnpj }}
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {{ grupo.administrador.get_full_name|default:grupo.administrador.username }}
+                            </td>
+                            <td>
+                                <span class="badge bg-info">{{ grupo.num_empresas }}</span>
+                            </td>
+                            <td>
+                                {% if grupo.status == 'ATIVO' %}
+                                    <span class="badge bg-success">Ativo</span>
+                                {% elif grupo.status == 'INATIVO' %}
+                                    <span class="badge bg-secondary">Inativo</span>
+                                {% else %}
+                                    <span class="badge bg-warning">Suspenso</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{% url 'empresas:grupo_detail' grupo.pk %}" class="btn btn-sm btn-info" title="Detalhes">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="{% url 'empresas:grupo_update' grupo.pk %}" class="btn btn-sm btn-warning" title="Editar">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="{% url 'empresas:grupo_delete' grupo.pk %}" class="btn btn-sm btn-danger" title="Deletar">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle"></i> Nenhum grupo corporativo criado ainda.
+            <a href="{% url 'empresas:grupo_create' %}">Criar novo grupo</a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

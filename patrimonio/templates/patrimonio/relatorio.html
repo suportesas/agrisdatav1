@@ -1,0 +1,146 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Relatório de Patrimônios | ERP Agrícola{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="fw-bold mb-1"><i class="bi bi-file-earmark-bar-graph text-info"></i> Relatório de Patrimônios</h2>
+      <p class="text-muted mb-0">Análise consolidada de ativos</p>
+    </div>
+    <a href="{% url 'patrimonio:patrimonio_list' %}" class="btn btn-outline-secondary">Voltar</a>
+  </div>
+
+  <!-- Totais Gerais -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-3">
+      <div class="card text-center p-3">
+        <h6 class="text-muted mb-0">Total de Bens</h6>
+        <h3 class="fw-bold text-primary">{{ totais.total_bens|default:0 }}</h3>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card text-center p-3">
+        <h6 class="text-muted mb-0">Valor Total</h6>
+        <h3 class="fw-bold text-success">R$ {% if totais.valor_inicial_total %}{{ totais.valor_inicial_total|floatformat:2 }}{% else %}0,00{% endif %}</h3>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card text-center p-3">
+        <h6 class="text-muted mb-0">Valor Residual</h6>
+        <h3 class="fw-bold text-info">R$ {% if totais.valor_atual_total %}{{ totais.valor_atual_total|floatformat:2 }}{% else %}0,00{% endif %}</h3>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card text-center p-3">
+        <h6 class="text-muted mb-0">Total Deprec.</h6>
+        <h3 class="fw-bold text-warning">R$ {% if totais.depreciacao_total %}{{ totais.depreciacao_total|floatformat:2 }}{% else %}0,00{% endif %}</h3>
+      </div>
+    </div>
+  </div>
+
+  <!-- Por Categoria -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-6">
+      <div class="card p-4">
+        <h5 class="mb-3">Patrimônios por Categoria</h5>
+        <div class="table-responsive">
+          <table class="table table-sm">
+            <thead class="table-light">
+              <tr>
+                <th>Categoria</th>
+                <th class="text-center">Quantidade</th>
+                <th class="text-end">Valor Inicial</th>
+                <th class="text-end">Valor Atual</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for cat in por_categoria %}
+              <tr>
+                <td><strong>{{ cat.categoria }}</strong></td>
+                <td class="text-center">{{ cat.total_bens }}</td>
+                <td class="text-end">R$ {{ cat.valor_inicial_total|floatformat:2 }}</td>
+                <td class="text-end">R$ {{ cat.valor_atual_total|floatformat:2 }}</td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="4" class="text-center text-muted py-3">Sem dados</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Por Estado -->
+    <div class="col-md-6">
+      <div class="card p-4">
+        <h5 class="mb-3">Patrimônios por Estado</h5>
+        <div class="table-responsive">
+          <table class="table table-sm">
+            <thead class="table-light">
+              <tr>
+                <th>Estado</th>
+                <th class="text-center">Quantidade</th>
+                <th class="text-end">Valor Inicial</th>
+                <th class="text-end">Valor Atual</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for est in por_estado %}
+              <tr>
+                <td><strong>{{ est.estado }}</strong></td>
+                <td class="text-center">{{ est.total_bens }}</td>
+                <td class="text-end">R$ {{ est.valor_inicial_total|floatformat:2 }}</td>
+                <td class="text-end">R$ {{ est.valor_atual_total|floatformat:2 }}</td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="4" class="text-center text-muted py-3">Sem dados</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Patrimônios que Precisam Atenção -->
+  {% if patrimonios_atencao %}
+  <div class="card p-4">
+    <h5 class="mb-3">
+      <i class="bi bi-exclamation-circle text-danger"></i> Bens em Ruim Estado ou Sucata
+    </h5>
+    <div class="table-responsive">
+      <table class="table table-sm">
+        <thead class="table-light">
+          <tr>
+            <th>Número</th>
+            <th>Descrição</th>
+            <th>Estado</th>
+            <th class="text-end">Valor Inicial</th>
+            <th class="text-end">Valor Atual</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for pat in patrimonios_atencao %}
+          <tr>
+            <td><strong>{{ pat.numero_patrimonio }}</strong></td>
+            <td>{{ pat.descricao }}</td>
+            <td><span class="badge bg-danger">{{ pat.get_estado_display }}</span></td>
+            <td class="text-end">R$ {{ pat.valor_inicial|floatformat:2 }}</td>
+            <td class="text-end">R$ {{ pat.valor_atual|floatformat:2 }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

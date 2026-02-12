@@ -1,0 +1,790 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Guia: Usuários e Grupos Corporativos{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-3">
+                    <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
+                    <li class="breadcrumb-item active">Ajuda</li>
+                </ol>
+            </nav>
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <h1 class="mb-0"><i class="fas fa-users-cog"></i> Usuários e Grupos Corporativos</h1>
+                    <p class="text-muted mt-2">Guia completo sobre criação e gerenciamento de usuários</p>
+                </div>
+                <img src="{% static 'images/help-illustration.svg' %}" alt="Help" style="max-width: 150px; opacity: 0.7;" onerror="this.style.display='none'">
+            </div>
+        </div>
+    </div>
+
+    <!-- Menu de Navegação -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card bg-light">
+                <div class="card-body">
+                    <h6 class="text-muted mb-3"><i class="fas fa-list"></i> Tópicos</h6>
+                    <div class="row">
+                        <div class="col-md-3">
+                            <a href="#arquitetura" class="btn btn-sm btn-outline-primary w-100 text-start">
+                                <i class="fas fa-sitemap"></i> Arquitetura
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="#criar-usuarios" class="btn btn-sm btn-outline-primary w-100 text-start">
+                                <i class="fas fa-user-plus"></i> Criar Usuários
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="#permissoes" class="btn btn-sm btn-outline-primary w-100 text-start">
+                                <i class="fas fa-lock"></i> Permissões
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="#faq" class="btn btn-sm btn-outline-primary w-100 text-start">
+                                <i class="fas fa-question-circle"></i> FAQ
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 1. Arquitetura -->
+    <div class="row mb-4" id="arquitetura">
+        <div class="col-md-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-sitemap"></i> 1. Arquitetura de Usuários e Grupos</h5>
+                </div>
+                <div class="card-body">
+                    <p class="lead">Como o sistema organiza usuários, empresas e grupos corporativos:</p>
+
+                    <!-- Arquitetura Visual em Cards -->
+                    <div class="architecture-diagram mb-4">
+                        <!-- GRUPO CORPORATIVO -->
+                        <div class="architecture-level" style="background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%); padding: 20px; border-radius: 8px; border: 2px solid #1976d2; margin-bottom: 30px;">
+                            <div style="text-align: center; margin-bottom: 20px;">
+                                <i class="fas fa-building" style="font-size: 2rem; color: #1565c0;"></i>
+                                <h5 class="mt-2 mb-1" style="color: #0d47a1;">🏛️ GRUPO CORPORATIVO</h5>
+                                <p class="text-muted mb-0" style="font-size: 0.9rem;">Holding/Matriz - Enterprise Plus</p>
+                            </div>
+                            <div class="alert alert-light" style="margin: 0; border: 1px dashed #1976d2;">
+                                <p class="mb-0"><strong>Exemplo:</strong> TerraCoop</p>
+                                <p class="mb-0"><strong>Administrador:</strong> admin_terracoorp</p>
+                                <p class="mb-0"><strong>Permissão:</strong> Ver dados consolidados de todas as empresas</p>
+                            </div>
+                        </div>
+
+                        <!-- Seta de Relacionamento -->
+                        <div style="text-align: center; margin: 15px 0; color: #1976d2;">
+                            <i class="fas fa-arrow-down" style="font-size: 1.5rem;"></i>
+                            <p style="margin: 5px 0; font-weight: bold; color: #1976d2;">Contém múltiplas empresas</p>
+                        </div>
+
+                        <!-- EMPRESAS -->
+                        <div class="row" style="margin-bottom: 20px;">
+                            <!-- Empresa 1 -->
+                            <div class="col-md-6 mb-3">
+                                <div class="architecture-level" style="background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%); padding: 15px; border-radius: 8px; border: 2px solid #f57c00;">
+                                    <div style="text-align: center; margin-bottom: 15px;">
+                                        <i class="fas fa-building" style="font-size: 1.5rem; color: #e65100;"></i>
+                                        <h6 class="mt-2 mb-0" style="color: #bf360c;">🏢 EMPRESA 1</h6>
+                                    </div>
+                                    <div class="alert alert-light" style="margin-bottom: 12px; border: 1px dashed #f57c00; padding: 10px;">
+                                        <p class="mb-0"><strong>Nome:</strong> Agricola Salutaris S.A</p>
+                                        <p class="mb-0"><strong>Grupo:</strong> TerraCoop</p>
+                                    </div>
+                                    <p style="margin-bottom: 10px; font-size: 0.9rem; font-weight: bold; color: #e65100;">👥 Usuários:</p>
+                                    <div class="user-list" style="background: white; padding: 10px; border-radius: 5px;">
+                                        <span class="badge bg-success mb-2" style="display: block; margin-bottom: 5px;">
+                                            <i class="fas fa-user-shield"></i> admin_agricola (ADMIN)
+                                        </span>
+                                        <span class="badge bg-info mb-2" style="display: block; margin-bottom: 5px;">
+                                            <i class="fas fa-user-tie"></i> gerente_campo (GERENTE)
+                                        </span>
+                                        <span class="badge bg-secondary" style="display: block;">
+                                            <i class="fas fa-user"></i> func_estoque (FUNCIONÁRIO)
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Empresa 2 -->
+                            <div class="col-md-6 mb-3">
+                                <div class="architecture-level" style="background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%); padding: 15px; border-radius: 8px; border: 2px solid #f57c00;">
+                                    <div style="text-align: center; margin-bottom: 15px;">
+                                        <i class="fas fa-building" style="font-size: 1.5rem; color: #e65100;"></i>
+                                        <h6 class="mt-2 mb-0" style="color: #bf360c;">🏢 EMPRESA 2</h6>
+                                    </div>
+                                    <div class="alert alert-light" style="margin-bottom: 12px; border: 1px dashed #f57c00; padding: 10px;">
+                                        <p class="mb-0"><strong>Nome:</strong> Potiguar Fruit</p>
+                                        <p class="mb-0"><strong>Grupo:</strong> TerraCoop</p>
+                                    </div>
+                                    <p style="margin-bottom: 10px; font-size: 0.9rem; font-weight: bold; color: #e65100;">👥 Usuários:</p>
+                                    <div class="user-list" style="background: white; padding: 10px; border-radius: 5px;">
+                                        <span class="badge bg-success mb-2" style="display: block; margin-bottom: 5px;">
+                                            <i class="fas fa-user-shield"></i> admin_potiguar (ADMIN)
+                                        </span>
+                                        <span class="badge bg-warning mb-2" style="display: block; margin-bottom: 5px;">
+                                            <i class="fas fa-briefcase"></i> vendedor_fruta (VENDEDOR)
+                                        </span>
+                                        <span class="badge bg-secondary" style="display: block;">
+                                            <i class="fas fa-calculator"></i> fin_finance (FINANCEIRO)
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Seta de Isolamento -->
+                        <div style="background: #fff3cd; border-left: 4px solid #ff9800; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
+                            <p class="mb-0">
+                                <i class="fas fa-lock"></i> <strong>Isolamento Multi-tenant:</strong>
+                                Usuários de Empresa 1 só veem dados da Empresa 1. Não conseguem acessar Empresa 2 mesmo que tentem.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Tabela Resumida -->
+                    <div class="mb-4">
+                        <h6 class="fw-bold mb-3"><i class="fas fa-table"></i> Resumo da Hierarquia</h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-bordered">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="background: #e3f2fd; color: #0d47a1;">Nível</th>
+                                        <th style="background: #e3f2fd; color: #0d47a1;">Exemplos</th>
+                                        <th style="background: #e3f2fd; color: #0d47a1;">Quantidade</th>
+                                        <th style="background: #e3f2fd; color: #0d47a1;">Acesso</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><strong>🏛️ Grupo Corporativo</strong></td>
+                                        <td>TerraCoop, GrupoAgro, etc</td>
+                                        <td>1 por grupo</td>
+                                        <td>Consolidado de todas as empresas</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>🏢 Empresa</strong></td>
+                                        <td>Agricola Salutaris, Potiguar Fruit</td>
+                                        <td>N empresas por grupo</td>
+                                        <td>Dados isolados da empresa</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>👤 Usuário</strong></td>
+                                        <td>admin_agricola, gerente_campo</td>
+                                        <td>N usuários por empresa</td>
+                                        <td>Conforme tipo (ADMIN, GERENTE, etc)</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Banco de Dados -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card bg-light">
+                                <div class="card-header bg-info text-white">
+                                    <h6 class="mb-0"><i class="fas fa-database"></i> Modelos Django</h6>
+                                </div>
+                                <div class="card-body">
+                                    <ul class="mb-0">
+                                        <li><code>GrupoCorporativo</code> - Holding/Matriz</li>
+                                        <li><code>Empresa</code> - Filial vinculada</li>
+                                        <li><code>Usuario</code> - Cada usuário</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card bg-light">
+                                <div class="card-header bg-success text-white">
+                                    <h6 class="mb-0"><i class="fas fa-link"></i> Relacionamentos</h6>
+                                </div>
+                                <div class="card-body">
+                                    <ul class="mb-0">
+                                        <li><strong>1 Grupo</strong> → <strong>N Empresas</strong></li>
+                                        <li><strong>1 Empresa</strong> → <strong>N Usuários</strong></li>
+                                        <li><strong>1 Usuário</strong> → <strong>1 Empresa</strong></li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. Como Criar Usuários -->
+    <div class="row mb-4" id="criar-usuarios">
+        <div class="col-md-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-user-plus"></i> 2. Como Criar Usuários</h5>
+                </div>
+                <div class="card-body">
+                    <!-- Cenário 1 -->
+                    <div class="mb-4">
+                        <h6 class="fw-bold mb-3"><span class="badge bg-primary">Cenário 1</span> Admin de Empresa Criando Usuários</h6>
+                        
+                        <div class="timeline">
+                            <div class="timeline-item mb-3">
+                                <div class="timeline-marker bg-primary text-white">1</div>
+                                <div class="timeline-content">
+                                    <h6>Acesso ao Menu</h6>
+                                    <p class="text-muted mb-0">Faça login como Admin da Empresa → Menu Lateral → <strong>Usuários</strong></p>
+                                </div>
+                            </div>
+
+                            <div class="timeline-item mb-3">
+                                <div class="timeline-marker bg-primary text-white">2</div>
+                                <div class="timeline-content">
+                                    <h6>Novo Usuário</h6>
+                                    <p class="text-muted mb-0">Clique em <strong>"Adicionar Novo Usuário"</strong> ou <strong>"+"</strong></p>
+                                </div>
+                            </div>
+
+                            <div class="timeline-item mb-3">
+                                <div class="timeline-marker bg-primary text-white">3</div>
+                                <div class="timeline-content">
+                                    <h6>Preencher Formulário</h6>
+                                    <p class="text-muted">Campos a preencher:</p>
+                                    <div class="bg-light p-2 rounded" style="font-size: 0.9rem;">
+                                        <strong>Username:</strong> gerente_campo<br>
+                                        <strong>Email:</strong> gerente@empresa.com.br<br>
+                                        <strong>Senha:</strong> SenhaForte123!@#<br>
+                                        <strong>Nome Completo:</strong> João Silva<br>
+                                        <strong>Tipo:</strong> GERENTE, VENDEDOR, FINANCEIRO, etc<br>
+                                        <strong>Empresa:</strong> 🔒 <span class="badge bg-danger">BLOQUEADO</span> = Sua Empresa
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="timeline-item">
+                                <div class="timeline-marker bg-success text-white">✅</div>
+                                <div class="timeline-content">
+                                    <h6>Salvar</h6>
+                                    <p class="text-muted mb-0">Clique em <strong>"Salvar"</strong> → Usuário criado com sucesso!</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-info mt-3 mb-0">
+                            <i class="fas fa-lock"></i> <strong>Importante:</strong> O campo "Empresa" está BLOQUEADO. Você só pode criar usuários para sua empresa.
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <!-- Cenário 2 -->
+                    <div class="mt-4">
+                        <h6 class="fw-bold mb-3"><span class="badge bg-warning">Cenário 2</span> Superusuário Criando Usuários</h6>
+                        
+                        <div class="timeline">
+                            <div class="timeline-item mb-3">
+                                <div class="timeline-marker bg-warning text-dark">1</div>
+                                <div class="timeline-content">
+                                    <h6>Acesso ao Admin</h6>
+                                    <p class="text-muted mb-0">Acesse: <strong>/admin/</strong> com sua conta superusuário</p>
+                                </div>
+                            </div>
+
+                            <div class="timeline-item mb-3">
+                                <div class="timeline-marker bg-warning text-dark">2</div>
+                                <div class="timeline-content">
+                                    <h6>Seção Usuarios</h6>
+                                    <p class="text-muted mb-0">Clique em <strong>"Usuarios"</strong> → <strong>"Add Usuario"</strong></p>
+                                </div>
+                            </div>
+
+                            <div class="timeline-item mb-3">
+                                <div class="timeline-marker bg-warning text-dark">3</div>
+                                <div class="timeline-content">
+                                    <h6>Preencher Formulário (COM PRIVILÉGIOS)</h6>
+                                    <p class="text-muted">Diferença: Campo "Empresa" está ABERTO</p>
+                                    <div class="bg-light p-2 rounded" style="font-size: 0.9rem;">
+                                        <strong>Username:</strong> admin_potiguar<br>
+                                        <strong>Email:</strong> admin@potiguar.com.br<br>
+                                        <strong>Tipo:</strong> ADMIN<br>
+                                        <strong>Empresa:</strong> 🟢 <span class="badge bg-success">ABERTO</span> = Escolha qualquer empresa
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="timeline-item">
+                                <div class="timeline-marker bg-success text-white">✅</div>
+                                <div class="timeline-content">
+                                    <h6>Configurar Permissões</h6>
+                                    <p class="text-muted mb-0">
+                                        ✅ <strong>Staff status</strong> (acesso ao admin)<br>
+                                        ❌ <strong>Superuser status</strong> (deixe desmarcado)
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-info mt-3 mb-0">
+                            <i class="fas fa-key"></i> <strong>Privilégio Superusuário:</strong> Você pode escolher para qual empresa criar o usuário, diferente dos admins de empresa.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. Permissões e Tipos de Usuário -->
+    <div class="row mb-4" id="permissoes">
+        <div class="col-md-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0"><i class="fas fa-lock"></i> 3. Permissões e Tipos de Usuário</h5>
+                </div>
+                <div class="card-body">
+                    <p class="lead">Cada tipo de usuário tem permissões diferentes:</p>
+
+                    <!-- Tabela de Permissões -->
+                    <div class="table-responsive mb-4">
+                        <table class="table table-striped table-hover">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Permissão</th>
+                                    <th class="text-center"><i class="fas fa-crown"></i> Superuser</th>
+                                    <th class="text-center"><i class="fas fa-user-shield"></i> Admin</th>
+                                    <th class="text-center"><i class="fas fa-user-tie"></i> Gerente</th>
+                                    <th class="text-center"><i class="fas fa-user"></i> Funcionário</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Ver dashboard própria empresa</td>
+                                    <td class="text-center"><span class="badge bg-success">✅</span></td>
+                                    <td class="text-center"><span class="badge bg-success">✅</span></td>
+                                    <td class="text-center"><span class="badge bg-success">✅</span></td>
+                                    <td class="text-center"><span class="badge bg-success">✅</span></td>
+                                </tr>
+                                <tr>
+                                    <td>Ver relatório consolidado (grupo)</td>
+                                    <td class="text-center"><span class="badge bg-success">✅</span></td>
+                                    <td class="text-center"><span class="badge bg-success">✅</span></td>
+                                    <td class="text-center"><span class="badge bg-danger">❌</span></td>
+                                    <td class="text-center"><span class="badge bg-danger">❌</span></td>
+                                </tr>
+                                <tr>
+                                    <td>Criar usuário em sua empresa</td>
+                                    <td class="text-center"><span class="badge bg-success">✅</span></td>
+                                    <td class="text-center"><span class="badge bg-success">✅</span></td>
+                                    <td class="text-center"><span class="badge bg-danger">❌</span></td>
+                                    <td class="text-center"><span class="badge bg-danger">❌</span></td>
+                                </tr>
+                                <tr>
+                                    <td>Criar usuário em outra empresa</td>
+                                    <td class="text-center"><span class="badge bg-success">✅</span></td>
+                                    <td class="text-center"><span class="badge bg-danger">❌</span></td>
+                                    <td class="text-center"><span class="badge bg-danger">❌</span></td>
+                                    <td class="text-center"><span class="badge bg-danger">❌</span></td>
+                                </tr>
+                                <tr>
+                                    <td>Acessar admin do Django (/admin/)</td>
+                                    <td class="text-center"><span class="badge bg-success">✅</span></td>
+                                    <td class="text-center"><span class="badge bg-success">✅</span></td>
+                                    <td class="text-center"><span class="badge bg-danger">❌</span></td>
+                                    <td class="text-center"><span class="badge bg-danger">❌</span></td>
+                                </tr>
+                                <tr>
+                                    <td>Ver dados de outras empresas</td>
+                                    <td class="text-center"><span class="badge bg-info">Relatórios</span></td>
+                                    <td class="text-center"><span class="badge bg-danger">❌</span></td>
+                                    <td class="text-center"><span class="badge bg-danger">❌</span></td>
+                                    <td class="text-center"><span class="badge bg-danger">❌</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Descrição dos Tipos -->
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <div class="card bg-light">
+                                <div class="card-header bg-danger text-white">
+                                    <h6 class="mb-0"><i class="fas fa-crown"></i> Superusuário</h6>
+                                </div>
+                                <div class="card-body">
+                                    <p class="small mb-2"><strong>Uso:</strong> Administrador do sistema inteiro</p>
+                                    <p class="small mb-2"><strong>Acesso:</strong> Todas as empresas</p>
+                                    <p class="small mb-0"><strong>Exemplo:</strong> Seu admin principal da plataforma</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <div class="card bg-light">
+                                <div class="card-header bg-primary text-white">
+                                    <h6 class="mb-0"><i class="fas fa-user-shield"></i> Administrador</h6>
+                                </div>
+                                <div class="card-body">
+                                    <p class="small mb-2"><strong>Uso:</strong> Admin de uma empresa específica</p>
+                                    <p class="small mb-2"><strong>Acesso:</strong> Apenas sua empresa</p>
+                                    <p class="small mb-0"><strong>Exemplo:</strong> admin_agricola, admin_potiguar</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <div class="card bg-light">
+                                <div class="card-header bg-info text-white">
+                                    <h6 class="mb-0"><i class="fas fa-user-tie"></i> Gerente</h6>
+                                </div>
+                                <div class="card-body">
+                                    <p class="small mb-2"><strong>Uso:</strong> Gerencia operações da empresa</p>
+                                    <p class="small mb-2"><strong>Acesso:</strong> Módulos específicos (vendas, estoque)</p>
+                                    <p class="small mb-0"><strong>Exemplo:</strong> gerente_vendas, gerente_estoque</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <div class="card bg-light">
+                                <div class="card-header bg-secondary text-white">
+                                    <h6 class="mb-0"><i class="fas fa-user"></i> Funcionário</h6>
+                                </div>
+                                <div class="card-body">
+                                    <p class="small mb-2"><strong>Uso:</strong> Acesso limitado a tarefas específicas</p>
+                                    <p class="small mb-2"><strong>Acesso:</strong> Apenas função atribuída</p>
+                                    <p class="small mb-0"><strong>Exemplo:</strong> operacional, técnico</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-success mt-3" role="alert">
+                        <i class="fas fa-lightbulb"></i> <strong>Dica:</strong> Use o tipo de usuário mais restritivo possível. Assim você garante a segurança da sua plataforma.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. FAQ -->
+    <div class="row mb-4" id="faq">
+        <div class="col-md-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-question-circle"></i> 4. Perguntas Frequentes</h5>
+                </div>
+                <div class="card-body">
+                    <div class="accordion" id="faqAccordion">
+                        <!-- FAQ 1 -->
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="headingOne">
+                                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne">
+                                    <i class="fas fa-question"></i> Como um usuário de Empresa 1 vê dados de Empresa 2?
+                                </button>
+                            </h2>
+                            <div id="collapseOne" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    <p><strong>Ele NÃO consegue!</strong> O sistema está isolado por empresa (isolamento multi-tenant).</p>
+                                    <p>Se um usuário pertence à Empresa 1:</p>
+                                    <ul class="mb-0">
+                                        <li>✅ Vê dados da Empresa 1</li>
+                                        <li>❌ Não vê dados de Empresa 2, 3, etc</li>
+                                        <li>❌ Nem consegue fazer login se tentar mudar a empresa</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- FAQ 2 -->
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="headingTwo">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo">
+                                    <i class="fas fa-question"></i> E o Relatório Consolidado do Grupo? Como funciona?
+                                </button>
+                            </h2>
+                            <div id="collapseTwo" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    <p><strong>Apenas Admins do Grupo conseguem acessar:</strong></p>
+                                    <ul class="mb-3">
+                                        <li>Vendas totais de todas as empresas</li>
+                                        <li>Estoque consolidado</li>
+                                        <li>Faturamento por empresa</li>
+                                        <li>Comparativos de desempenho</li>
+                                    </ul>
+                                    <p class="mb-0"><strong>Como acessar:</strong> Menu Lateral → Grupos Corporativos → Selecione o Grupo → "Relatório Consolidado"</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- FAQ 3 -->
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="headingThree">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree">
+                                    <i class="fas fa-question"></i> Um Admin de Empresa pode criar outro Admin?
+                                </button>
+                            </h2>
+                            <div id="collapseThree" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    <p><strong>SIM!</strong> Um Admin pode criar outros Admins para sua empresa.</p>
+                                    <p>Passos:</p>
+                                    <ol class="mb-0">
+                                        <li>Faça login como Admin</li>
+                                        <li>Menu → Usuários → Novo Usuário</li>
+                                        <li>Tipo: selecione "ADMIN"</li>
+                                        <li>Empresa: será sua empresa automaticamente</li>
+                                        <li>Salve</li>
+                                    </ol>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- FAQ 4 -->
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="headingFour">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFour">
+                                    <i class="fas fa-question"></i> Posso deletar um usuário? O que acontece com os dados dele?
+                                </button>
+                            </h2>
+                            <div id="collapseFour" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    <p><strong>SIM, você pode deletar,</strong> mas com cuidado:</p>
+                                    <p><strong>O que acontece:</strong></p>
+                                    <ul class="mb-3">
+                                        <li>O usuário é marcado como "inativo" (geralmente não deletado)</li>
+                                        <li>Dados dele não são perdidos</li>
+                                        <li>Registros continuam associados a ele</li>
+                                        <li>Ele não consegue mais fazer login</li>
+                                    </ul>
+                                    <p class="mb-0"><strong>Alternativa:</strong> Em vez de deletar, desative o usuário. Vá em Usuários → Editar → Desmarque "Ativo"</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- FAQ 5 -->
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="headingFive">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFive">
+                                    <i class="fas fa-question"></i> Esqueci a senha de um usuário. Como reseto?
+                                </button>
+                            </h2>
+                            <div id="collapseFive" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    <p><strong>Opção 1 - Como Admin:</strong></p>
+                                    <ul class="mb-3">
+                                        <li>Vá em Usuários</li>
+                                        <li>Clique no usuário</li>
+                                        <li>Clique em "Alterar Senha"</li>
+                                        <li>Digite uma nova senha</li>
+                                        <li>O usuário pode mudar depois no primeiro login</li>
+                                    </ul>
+                                    <p><strong>Opção 2 - Como Próprio Usuário:</strong></p>
+                                    <ul class="mb-0">
+                                        <li>Na página de login, clique "Esqueci minha senha"</li>
+                                        <li>Um email será enviado com link para reset</li>
+                                        <li>Clique no link e defina nova senha</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- FAQ 6 -->
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="headingSix">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSix">
+                                    <i class="fas fa-question"></i> Qual a diferença entre "Tipo" e "Staff Status"?
+                                </button>
+                            </h2>
+                            <div id="collapseSix" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    <p><strong>Tipo de Usuário:</strong> Define o papel dentro da empresa (ADMIN, GERENTE, FUNCIONÁRIO, etc)</p>
+                                    <p><strong>Staff Status (is_staff):</strong> Define se pode ou não acessar o painel de admin (/admin/)</p>
+                                    <p><strong>Resumo:</strong></p>
+                                    <ul class="mb-0">
+                                        <li><strong>Tipo:</strong> O quê faz? (Gerencia vendas, estoque, etc)</li>
+                                        <li><strong>Staff:</strong> Acesso ao painel técnico Django? (SIM/NÃO)</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- FAQ 7 -->
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="headingSeven">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSeven">
+                                    <i class="fas fa-question"></i> Como funciona a segurança de dados entre empresas?
+                                </button>
+                            </h2>
+                            <div id="collapseSeven" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    <p><strong>O sistema é 100% isolado por empresa:</strong></p>
+                                    <ul class="mb-3">
+                                        <li>Cada usuário tem um campo "empresa" que o identifica</li>
+                                        <li>Toda query SQL filtra automaticamente por empresa</li>
+                                        <li>Um usuário de Empresa 1 NUNCA consegue acessar dados de Empresa 2</li>
+                                        <li>Mesmo que tente "hackear", o sistema bloqueia</li>
+                                    </ul>
+                                    <p class="mb-0"><strong>Exemplo de proteção:</strong> Se um usuário de Empresa 1 tenta acessar a URL de um produto de Empresa 2, recebe erro "Acesso Negado"</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 5. Boas Práticas -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card shadow-sm border-success">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-star"></i> Boas Práticas</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <div class="d-flex">
+                                <div class="me-3">
+                                    <i class="fas fa-check-circle text-success" style="font-size: 1.5rem;"></i>
+                                </div>
+                                <div>
+                                    <h6>✅ Use Senhas Fortes</h6>
+                                    <p class="small text-muted mb-0">Mínimo 8 caracteres, com números e símbolos</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <div class="d-flex">
+                                <div class="me-3">
+                                    <i class="fas fa-check-circle text-success" style="font-size: 1.5rem;"></i>
+                                </div>
+                                <div>
+                                    <h6>✅ Revise Permissões Regularmente</h6>
+                                    <p class="small text-muted mb-0">Remova acesso de usuários inativos</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <div class="d-flex">
+                                <div class="me-3">
+                                    <i class="fas fa-check-circle text-success" style="font-size: 1.5rem;"></i>
+                                </div>
+                                <div>
+                                    <h6>✅ Use Tipo Mais Restritivo</h6>
+                                    <p class="small text-muted mb-0">NÃO crie ADMIN desnecessariamente, use GERENTE</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <div class="d-flex">
+                                <div class="me-3">
+                                    <i class="fas fa-check-circle text-success" style="font-size: 1.5rem;"></i>
+                                </div>
+                                <div>
+                                    <h6>✅ Documente Usuários</h6>
+                                    <p class="small text-muted mb-0">Mantenha registro de quem tem acesso a quê</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="d-flex">
+                                <div class="me-3">
+                                    <i class="fas fa-check-circle text-success" style="font-size: 1.5rem;"></i>
+                                </div>
+                                <div>
+                                    <h6>✅ Realize Auditorias</h6>
+                                    <p class="small text-muted mb-0">Verifique logs de acesso regularmente</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="d-flex">
+                                <div class="me-3">
+                                    <i class="fas fa-check-circle text-success" style="font-size: 1.5rem;"></i>
+                                </div>
+                                <div>
+                                    <h6>✅ Ative 2FA (Se Disponível)</h6>
+                                    <p class="small text-muted mb-0">Autenticação em dois fatores para mais segurança</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Botão Voltar -->
+    <div class="row">
+        <div class="col-md-12">
+            <a href="javascript:history.back()" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Voltar
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+    .timeline {
+        position: relative;
+        padding: 20px 0;
+    }
+
+    .timeline-item {
+        display: flex;
+        gap: 20px;
+    }
+
+    .timeline-marker {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        font-weight: bold;
+        flex-shrink: 0;
+    }
+
+    .timeline-content {
+        flex: 1;
+    }
+
+    .timeline-content h6 {
+        margin-bottom: 8px;
+    }
+
+    .border-left-primary {
+        border-left: 4px solid #0d6efd !important;
+    }
+
+    .accordion-button:not(.collapsed) {
+        background-color: #e7f3ff;
+        color: #0c5394;
+        font-weight: 500;
+    }
+
+    .accordion-button:focus {
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+    }
+
+    .card-header {
+        font-weight: 500;
+    }
+</style>
+{% endblock %}

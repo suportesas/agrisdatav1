@@ -1,0 +1,224 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ patrimonio.numero_patrimonio }} - {{ patrimonio.descricao }} | ERP Agrícola{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <!-- Breadcrumb -->
+  <nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'patrimonio:patrimonio_list' %}">Patrimônios</a></li>
+      <li class="breadcrumb-item active">{{ patrimonio.numero_patrimonio }}</li>
+    </ol>
+  </nav>
+
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="fw-bold mb-1">{{ patrimonio.descricao }}</h2>
+      <p class="text-muted mb-0">
+        <strong>{{ patrimonio.numero_patrimonio }}</strong> • 
+        {{ patrimonio.get_categoria_display }} • 
+        <span class="badge bg-{% if patrimonio.estado == 'NOVO' %}success{% elif patrimonio.estado == 'BOM' %}info{% elif patrimonio.estado == 'REGULAR' %}warning{% else %}danger{% endif %}">
+          {{ patrimonio.get_estado_display }}
+        </span>
+      </p>
+    </div>
+    <div>
+      <a href="{% url 'patrimonio:patrimonio_edit' patrimonio.pk %}" class="btn btn-outline-secondary me-2">Editar</a>
+      {% if patrimonio.veiculo %}
+      <a href="{% url 'cadastros:vehicle_detail' patrimonio.veiculo.pk %}" class="btn btn-info me-2">
+        <i class="bi bi-link-45deg"></i> Ver Veículo
+      </a>
+      {% endif %}
+      <a href="{% url 'patrimonio:patrimonio_list' %}" class="btn btn-outline-secondary">Voltar</a>
+    </div>
+  </div>
+
+  <div class="row">
+    <!-- Dados Principais -->
+    <div class="col-md-6">
+      <div class="card p-4 mb-4">
+        <h5 class="mb-3">Informações Básicas</h5>
+        <dl class="row">
+          <dt class="col-4">Número</dt><dd class="col-8"><strong>{{ patrimonio.numero_patrimonio }}</strong></dd>
+          <dt class="col-4">Descrição</dt><dd class="col-8">{{ patrimonio.descricao }}</dd>
+          <dt class="col-4">Categoria</dt><dd class="col-8">{{ patrimonio.get_categoria_display }}</dd>
+          <dt class="col-4">Estado</dt><dd class="col-8">{{ patrimonio.get_estado_display }}</dd>
+          {% if patrimonio.veiculo %}
+          <dt class="col-4">Veículo</dt><dd class="col-8">{{ patrimonio.veiculo }}</dd>
+          {% endif %}
+          <dt class="col-4">Localização</dt><dd class="col-8">{{ patrimonio.localizacao|default:"—" }}</dd>
+          <dt class="col-4">Responsável</dt><dd class="col-8">{{ patrimonio.responsavel|default:"—" }}</dd>
+        </dl>
+      </div>
+
+      <!-- Datas -->
+      <div class="card p-4 mb-4">
+        <h5 class="mb-3">Cronograma</h5>
+        <dl class="row">
+          <dt class="col-4">Aquisição</dt><dd class="col-8">{{ patrimonio.data_aquisicao|date:"d/m/Y" }}</dd>
+          <dt class="col-4">Cadastro</dt><dd class="col-8">{{ patrimonio.data_cadastro|date:"d/m/Y H:i" }}</dd>
+          {% if patrimonio.data_baixa %}
+          <dt class="col-4">Baixa</dt><dd class="col-8">{{ patrimonio.data_baixa|date:"d/m/Y" }}</dd>
+          {% endif %}
+          <dt class="col-4">Dias</dt><dd class="col-8">{{ patrimonio.dias_desde_aquisicao }} dias</dd>
+        </dl>
+      </div>
+    </div>
+
+    <!-- Valores e Depreciação -->
+    <div class="col-md-6">
+      <div class="card p-4 mb-4">
+        <h5 class="mb-3">Valores Financeiros</h5>
+        <dl class="row">
+          <dt class="col-4">Valor Inicial</dt>
+          <dd class="col-8 fw-bold text-success">R$ {{ patrimonio.valor_inicial|floatformat:2 }}</dd>
+          
+          <dt class="col-4">Valor Atual</dt>
+          <dd class="col-8 fw-bold text-info">R$ {{ patrimonio.valor_atual|floatformat:2 }}</dd>
+          
+          <dt class="col-4">Depreciação</dt>
+          <dd class="col-8 fw-bold text-warning">R$ {{ depreciacao_acumulada|floatformat:2 }}</dd>
+          
+          <dt class="col-4">% Deprec.</dt>
+          <dd class="col-8 fw-bold">{{ percentual_depreciacao|floatformat:2 }}%</dd>
+        </dl>
+
+        <!-- Progress bar -->
+        <div class="mt-3">
+          <small class="text-muted">Depreciação acumulada</small>
+          <div class="progress mt-2">
+            <div class="progress-bar bg-warning" role="progressbar" style="width: {{ percentual_depreciacao }}%;" 
+                 aria-valuenow="{{ percentual_depreciacao }}" aria-valuemin="0" aria-valuemax="100">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Depreciação -->
+      <div class="card p-4">
+        <h5 class="mb-3">Parâmetros de Depreciação</h5>
+        <dl class="row">
+          <dt class="col-4">Tipo</dt><dd class="col-8">{{ patrimonio.get_tipo_depreciacao_display }}</dd>
+          <dt class="col-4">Vida Útil</dt><dd class="col-8">{{ patrimonio.vida_util_anos|default:"—" }} anos</dd>
+          <dt class="col-4">Taxa Anual</dt><dd class="col-8">{{ patrimonio.percentual_depreciacao_anual|default:"—" }}%</dd>
+          <dt class="col-4">Residual</dt>
+          <dd class="col-8">R$ {{ patrimonio.valor_residual|default:"—"|floatformat:2 }}</dd>
+        </dl>
+
+        <!-- Botão Toggle para Fórmula de Depreciação -->
+        <hr class="my-3">
+        <input type="checkbox" id="toggleFormula" style="display: none;">
+        <label for="toggleFormula" class="btn btn-sm btn-outline-primary" style="cursor: pointer; margin-bottom: 0;">
+          <i class="bi bi-calculator"></i> Ver Fórmula de Cálculo
+        </label>
+
+        <!-- Fórmula de Depreciação (Colapsável) -->
+        <div id="depreciacaoFormula" style="display: none; margin-top: 1rem;">
+          {% if patrimonio.tipo_depreciacao == 'LINEAR' %}
+          <div class="alert alert-info small mb-0">
+            <strong><i class="bi bi-info-circle"></i> Método Linear:</strong>
+            <p class="mb-2 mt-2">
+              <code>Depreciação Anual = Valor Inicial ÷ Vida Útil</code>
+            </p>
+            <p class="mb-2">
+              <code>Depreciação Acumulada = Depreciação Anual × Anos Transcorridos</code>
+            </p>
+            <p class="mb-3">
+              <code>Valor Atual = Valor Inicial - Depreciação Acumulada</code>
+            </p>
+            <hr class="my-2">
+            <strong><i class="bi bi-calculator"></i> Exemplo com seus dados:</strong>
+            <p class="mb-0 mt-2">
+              Depreciação Anual = R$ {{ patrimonio.valor_inicial|floatformat:2 }} ÷ {{ patrimonio.vida_util_anos }} = 
+              <strong>R$ {% widthratio patrimonio.valor_inicial patrimonio.vida_util_anos 1 %}</strong>
+            </p>
+          </div>
+          {% elif patrimonio.tipo_depreciacao == 'ACELERADA' %}
+          <div class="alert alert-warning small mb-0">
+            <strong><i class="bi bi-exclamation-triangle"></i> Método Acelerado (20% ao ano):</strong>
+            <p class="mb-2 mt-2">
+              <code>Depreciação = Valor Inicial × 20% × Anos Transcorridos</code>
+            </p>
+            <p class="mb-3">
+              <code>Valor Atual = Valor Inicial - Depreciação</code>
+            </p>
+            <hr class="my-2">
+            <strong><i class="bi bi-calculator"></i> Informação:</strong>
+            <p class="mb-0 mt-2">
+              Taxa de depreciação acelerada: 20% ao ano (mais rápida que linear)
+            </p>
+          </div>
+          {% else %}
+          <div class="alert alert-secondary small mb-0">
+            <strong><i class="bi bi-info-circle"></i> Sem Depreciação:</strong> O valor inicial será mantido como valor atual.
+          </div>
+          {% endif %}
+        </div>
+
+        <style>
+          #toggleFormula:checked ~ #depreciacaoFormula {
+            display: block !important;
+          }
+          
+          #toggleFormula:checked ~ label {
+            background-color: #0d6efd;
+            color: white;
+            border-color: #0d6efd;
+          }
+        </style>
+      </div>
+    </div>
+  </div>
+
+  <!-- Movimentações -->
+  <div class="card mt-4 p-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h5 class="mb-0">Movimentações</h5>
+      <a href="{% url 'patrimonio:patrimonio_movimentacao_add' patrimonio.pk %}" class="btn btn-sm btn-success">
+        <i class="bi bi-plus"></i> Nova Movimentação
+      </a>
+    </div>
+
+    {% if movimentacoes %}
+    <div class="table-responsive">
+      <table class="table table-sm mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Data</th>
+            <th>Tipo</th>
+            <th>Responsável Ant.</th>
+            <th>Responsável Novo</th>
+            <th>Observações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for mov in movimentacoes %}
+          <tr>
+            <td>{{ mov.data|date:"d/m/Y H:i" }}</td>
+            <td><span class="badge bg-secondary">{{ mov.get_tipo_display }}</span></td>
+            <td>{{ mov.responsavel_anterior|default:"—" }}</td>
+            <td>{{ mov.responsavel_novo|default:"—" }}</td>
+            <td class="small">{{ mov.observacoes|truncatewords:5 }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="text-muted text-center py-3 mb-0">Nenhuma movimentação registrada</p>
+    {% endif %}
+  </div>
+
+  <!-- Observações -->
+  {% if patrimonio.observacoes %}
+  <div class="card mt-4 p-4">
+    <h5 class="mb-3">Observações</h5>
+    <p class="mb-0">{{ patrimonio.observacoes }}</p>
+  </div>
+  {% endif %}
+</div>
+
+{% endblock %}

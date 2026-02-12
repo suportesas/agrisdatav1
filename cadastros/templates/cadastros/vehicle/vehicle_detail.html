@@ -19,6 +19,15 @@
     </div>
     <div class="d-flex gap-2">
       <a href="{% url 'cadastros:vehicle_update' vehicle.pk %}" class="btn btn-outline-secondary">Editar</a>
+      {% if not vehicle.patrimonio %}
+      <a href="{% url 'patrimonio:patrimonio_from_veiculo' vehicle.pk %}" class="btn btn-success">
+        <i class="bi bi-plus-circle"></i> Registrar como Patrimônio
+      </a>
+      {% else %}
+      <a href="{% url 'patrimonio:patrimonio_detail' vehicle.patrimonio.pk %}" class="btn btn-info">
+        <i class="bi bi-link-45deg"></i> Ver Patrimônio
+      </a>
+      {% endif %}
       <a href="{% url 'cadastros:vehicle_delete' vehicle.pk %}" class="btn btn-outline-danger">Excluir</a>
     </div>
   </div>
@@ -26,7 +35,19 @@
   <div class="row">
     <div class="col-md-6">
       <div class="card p-3 mb-3">
-        <h5>Placas</h5>
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h5 class="mb-0">Placas</h5>
+          <span class="badge bg-secondary">{{ plates|length }} placa{{ plates|length|pluralize }}</span>
+        </div>
+        
+        {% if not plates %}
+        <div class="alert alert-info small mb-3">
+          <i class="bi bi-info-circle"></i>
+          <strong>Veículos sem placa:</strong> Tratores e implementos agrícolas não precisam de placa. 
+          Use o campo "Nome/Descrição" ou "Código de Patrimônio" para identificá-los.
+        </div>
+        {% endif %}
+        
         <ul class="list-group mt-2">
           {% for p in plates %}
             <li class="list-group-item d-flex justify-content-between align-items-center">
@@ -68,12 +89,19 @@
     </div>
 
     <div class="col-md-6">
+      {% if vehicle.foto %}
+      <div class="card p-3 mb-3">
+        <h5>Foto</h5>
+        <img src="{{ vehicle.foto.url }}" alt="Foto do veiculo" class="img-fluid rounded">
+      </div>
+      {% endif %}
       <div class="card p-3">
         <h5>Detalhes</h5>
         <dl class="row">
           <dt class="col-4">Marca</dt><dd class="col-8">{{ vehicle.marca }}</dd>
           <dt class="col-4">Modelo</dt><dd class="col-8">{{ vehicle.modelo }}</dd>
           <dt class="col-4">Tipo</dt><dd class="col-8">{{ vehicle.get_tipo_display }}</dd>
+          <dt class="col-4">Nome/Descrição</dt><dd class="col-8">{{ vehicle.descricao|default:"—" }}</dd>
           <dt class="col-4">Capacidade</dt><dd class="col-8">{{ vehicle.capacidade_ton }}</dd>
           <dt class="col-4">Tara (kg)</dt><dd class="col-8">{{ vehicle.tara_kg }}</dd>
           <dt class="col-4">RENAVAM</dt><dd class="col-8">{{ vehicle.renavam }}</dd>

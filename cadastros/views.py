@@ -196,7 +196,7 @@ def vehicle_create(request):
         return redirect('dashboard:index')
 
     if request.method == 'POST':
-        form = VehicleForm(request.POST, empresa=request.user.empresa)
+        form = VehicleForm(request.POST, request.FILES, empresa=request.user.empresa)
         if form.is_valid():
             v = form.save(user=request.user)
             messages.success(request, f'✅ Veículo "{v}" cadastrado com sucesso!')
@@ -213,7 +213,7 @@ def vehicle_create(request):
 def vehicle_update(request, pk):
     vehicle = get_object_or_404(Vehicle, pk=pk, empresa=request.user.empresa)
     if request.method == 'POST':
-        form = VehicleForm(request.POST, instance=vehicle, empresa=request.user.empresa)
+        form = VehicleForm(request.POST, request.FILES, instance=vehicle, empresa=request.user.empresa)
         if form.is_valid():
             v = form.save(user=request.user)
             messages.success(request, f'✅ Veículo "{v}" atualizado!')

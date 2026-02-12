@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ action }} Patrimônio | ERP Agrícola{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <!-- Breadcrumb -->
+  <nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'patrimonio:patrimonio_list' %}">Patrimônios</a></li>
+      <li class="breadcrumb-item active">{{ action }}</li>
+    </ol>
+  </nav>
+
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="fw-bold mb-1">{{ action }} Patrimônio</h2>
+      <p class="text-muted mb-0">Preencha os dados do bem</p>
+    </div>
+    <a href="{% url 'patrimonio:patrimonio_list' %}" class="btn btn-outline-secondary">Voltar</a>
+  </div>
+
+  <!-- Card -->
+  <div class="card p-4">
+    <form method="post" class="needs-validation">
+      {% csrf_token %}
+
+      <div class="row g-3">
+        <!-- Informações Básicas -->
+        <div class="col-md-6">{{ form.numero_patrimonio.label_tag }}{{ form.numero_patrimonio }}</div>
+        <div class="col-md-6">{{ form.categoria.label_tag }}{{ form.categoria }}</div>
+        
+        <div class="col-12">{{ form.descricao.label_tag }}{{ form.descricao }}</div>
+        
+        <!-- Link com Veículo -->
+        <div class="col-md-6">{{ form.veiculo.label_tag }}{{ form.veiculo }}<small class="text-muted">Se for um veículo já cadastrado</small></div>
+        <div class="col-md-6">{{ form.estado.label_tag }}{{ form.estado }}</div>
+
+        <!-- Valores -->
+        <div class="col-md-4">{{ form.valor_inicial.label_tag }}{{ form.valor_inicial }}</div>
+        <div class="col-md-4">{{ form.valor_residual.label_tag }}{{ form.valor_residual }}<small class="text-muted">Valor esperado ao final da vida útil</small></div>
+        <div class="col-md-4">{{ form.valor_atual.label_tag }}{{ form.valor_atual }}<small class="text-muted">Calculado automaticamente</small></div>
+
+        <!-- Depreciação -->
+        <div class="col-md-4">{{ form.tipo_depreciacao.label_tag }}{{ form.tipo_depreciacao }}</div>
+        <div class="col-md-4">{{ form.vida_util_anos.label_tag }}{{ form.vida_util_anos }}<small class="text-muted">Em anos</small></div>
+        <div class="col-md-4">{{ form.percentual_depreciacao_anual.label_tag }}{{ form.percentual_depreciacao_anual }}</div>
+
+        <!-- Datas -->
+        <div class="col-md-6">{{ form.data_aquisicao.label_tag }}{{ form.data_aquisicao }}</div>
+        <div class="col-md-6">{{ form.data_baixa.label_tag }}{{ form.data_baixa }}<small class="text-muted">Se foi descartado</small></div>
+
+        <!-- Localização -->
+        <div class="col-md-6">{{ form.localizacao.label_tag }}{{ form.localizacao }}<small class="text-muted">Galpão, Fazenda, etc</small></div>
+        <div class="col-md-6">{{ form.responsavel.label_tag }}{{ form.responsavel }}</div>
+
+        <!-- Status -->
+        <div class="col-12 d-flex align-items-center">
+          <div class="form-check">
+            {{ form.ativo }} <label for="id_ativo" class="form-check-label">Patrimônio Ativo</label>
+          </div>
+        </div>
+
+        <!-- Observações -->
+        <div class="col-12">{{ form.observacoes.label_tag }}{{ form.observacoes }}</div>
+
+        <!-- Botões -->
+        <div class="col-12 d-flex justify-content-end gap-2 mt-4">
+          <a href="{% url 'patrimonio:patrimonio_list' %}" class="btn btn-outline-secondary">Cancelar</a>
+          <button type="submit" class="btn btn-success">{{ action }}</button>
+        </div>
+      </div>
+
+      <!-- Erros de formulário -->
+      {% if form.non_field_errors %}
+      <div class="alert alert-danger mt-3">
+        {{ form.non_field_errors }}
+      </div>
+      {% endif %}
+    </form>
+  </div>
+</div>
+
+<style>
+  .form-control, .form-select {
+    border-color: #e0e0e0;
+  }
+  .form-control:focus, .form-select:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+  }
+</style>
+{% endblock %}

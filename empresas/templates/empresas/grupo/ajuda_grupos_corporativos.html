@@ -1,0 +1,537 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Ajuda - Grupos Corporativos{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="alert alert-info" role="alert">
+                <i class="fas fa-lightbulb"></i>
+                <strong>Bem-vindo ao Tutorial de Grupos Corporativos!</strong>
+                <p class="mb-0 mt-2">Esta página descreve como criar e gerenciar grupos corporativos para sua organização.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Menu Lateral -->
+        <div class="col-md-3">
+            <div class="list-group sticky-top" style="top: 20px;">
+                <a href="#o-que-eh" class="list-group-item list-group-item-action">
+                    <i class="fas fa-question-circle"></i> O que é?
+                </a>
+                <a href="#quando-usar" class="list-group-item list-group-item-action">
+                    <i class="fas fa-calendar"></i> Quando Usar?
+                </a>
+                <a href="#passo1" class="list-group-item list-group-item-action">
+                    <i class="fas fa-plus"></i> Passo 1: Criar Grupo
+                </a>
+                <a href="#passo2" class="list-group-item list-group-item-action">
+                    <i class="fas fa-link"></i> Passo 2: Vincular Empresas
+                </a>
+                <a href="#passo3" class="list-group-item list-group-item-action">
+                    <i class="fas fa-chart-bar"></i> Passo 3: Ver Relatórios
+                </a>
+                <a href="#permissoes" class="list-group-item list-group-item-action">
+                    <i class="fas fa-lock"></i> Permissões
+                </a>
+                <a href="#duvidas" class="list-group-item list-group-item-action">
+                    <i class="fas fa-comments"></i> Dúvidas Frequentes
+                </a>
+            </div>
+        </div>
+
+        <!-- Conteúdo Principal -->
+        <div class="col-md-9">
+
+            <!-- O que é um Grupo Corporativo -->
+            <div id="o-que-eh" class="mb-5">
+                <div class="card border-primary">
+                    <div class="card-header bg-primary text-white">
+                        <h4 class="mb-0"><i class="fas fa-question-circle"></i> O que é um Grupo Corporativo?</h4>
+                    </div>
+                    <div class="card-body">
+                        <p>Um <strong>Grupo Corporativo</strong> é um container administrativo que permite agrupar múltiplas empresas sob uma mesma holding ou corporação.</p>
+                        
+                        <div class="alert alert-light" style="border-left: 4px solid #0d6efd;">
+                            <h6 class="fw-bold mb-3">Exemplos de uso:</h6>
+                            <ul class="mb-0">
+                                <li><strong>Holding Agrícola:</strong> Várias fazendas em diferentes estados (SC, PR, SP)</li>
+                                <li><strong>Grupo de Exportadores:</strong> Múltiplos packings em diferentes regiões</li>
+                                <li><strong>Franquia:</strong> Várias filiais da mesma empresa em cidades diferentes</li>
+                                <li><strong>Conglomerado:</strong> Empresas relacionadas que precisam de consolidação</li>
+                            </ul>
+                        </div>
+
+                        <p class="mt-3"><strong>Benefícios:</strong></p>
+                        <ul>
+                            <li>✅ Visualizar dados consolidados de todas as empresas</li>
+                            <li>✅ Gerar relatórios agrupados</li>
+                            <li>✅ Gerenciamento centralizado</li>
+                            <li>✅ Controle de acesso por grupo</li>
+                            <li>✅ Facilitar auditoria e compliance</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quando Usar -->
+            <div id="quando-usar" class="mb-5">
+                <div class="card border-success">
+                    <div class="card-header bg-success text-white">
+                        <h4 class="mb-0"><i class="fas fa-calendar"></i> Quando Usar Grupos Corporativos?</h4>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>Use Grupos Corporativos quando você tem:</strong></p>
+                        <table class="table table-bordered">
+                            <tr class="table-light">
+                                <td><i class="fas fa-check text-success"></i> <strong>Múltiplas Empresas</strong></td>
+                                <td>Mais de uma empresa relacionada</td>
+                            </tr>
+                            <tr>
+                                <td><i class="fas fa-check text-success"></i> <strong>Mesma Holding</strong></td>
+                                <td>Empresas sob o mesmo grupo corporativo</td>
+                            </tr>
+                            <tr class="table-light">
+                                <td><i class="fas fa-check text-success"></i> <strong>Necessidade de Consolidar</strong></td>
+                                <td>Precisa de relatórios agrupados</td>
+                            </tr>
+                            <tr>
+                                <td><i class="fas fa-check text-success"></i> <strong>Gerenciamento Centralizado</strong></td>
+                                <td>Um admin gerencia várias empresas</td>
+                            </tr>
+                        </table>
+
+                        <div class="alert alert-warning mt-3">
+                            <i class="fas fa-info-circle"></i>
+                            <strong>Nota:</strong> Grupos Corporativos são <strong>opcionais</strong>. Você pode continuar usando apenas empresas individuais se preferir.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Passo 1: Criar Grupo -->
+            <div id="passo1" class="mb-5">
+                <div class="card border-warning">
+                    <div class="card-header bg-warning text-dark">
+                        <h4 class="mb-0"><i class="fas fa-plus-circle"></i> Passo 1: Criar um Novo Grupo Corporativo</h4>
+                    </div>
+                    <div class="card-body">
+                        <ol class="fs-5">
+                            <li class="mb-3">
+                                <strong>Acesse o Menu:</strong>
+                                <blockquote class="blockquote">
+                                    Menu Principal → GESTÃO DO SISTEMA → Grupos Corporativos → <span class="badge bg-success">Novo Grupo</span>
+                                </blockquote>
+                            </li>
+
+                            <li class="mb-3">
+                                <strong>Preencha os Dados:</strong>
+                                <table class="table table-sm table-bordered mt-2">
+                                    <tr class="table-light">
+                                        <td style="width: 30%;"><strong>Campo</strong></td>
+                                        <td><strong>Descrição</strong></td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Nome</strong> <span class="text-danger">*</span></td>
+                                        <td>Ex: "Carrefour Brasil S.A." - Nome da holding/grupo</td>
+                                    </tr>
+                                    <tr class="table-light">
+                                        <td><strong>CNPJ</strong></td>
+                                        <td>Ex: "12.345.678/0001-99" - Opcional, para referência</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Descrição</strong></td>
+                                        <td>Uma breve descrição do grupo (opcional)</td>
+                                    </tr>
+                                    <tr class="table-light">
+                                        <td><strong>Email</strong></td>
+                                        <td>Email para contato da holding</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Telefone</strong></td>
+                                        <td>Telefone de contato</td>
+                                    </tr>
+                                    <tr class="table-light">
+                                        <td><strong>Logo</strong></td>
+                                        <td>Imagem da logomarca (PNG/JPG até 2MB)</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Status</strong> <span class="text-danger">*</span></td>
+                                        <td>ATIVO, INATIVO ou SUSPENSO</td>
+                                    </tr>
+                                    <tr class="table-light">
+                                        <td><strong>Administrador</strong></td>
+                                        <td>Usuário responsável pelo grupo</td>
+                                    </tr>
+                                </table>
+                            </li>
+
+                            <li class="mb-3">
+                                <strong>Clique em "Salvar"</strong> <br/>
+                                <span class="text-muted">Seu grupo corporativo foi criado com sucesso!</span>
+                            </li>
+                        </ol>
+
+                        <div class="alert alert-info">
+                            <strong>Dica:</strong> Você pode editar essas informações depois clicando em "Editar" na página de detalhes.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Passo 2: Vincular Empresas -->
+            <div id="passo2" class="mb-5">
+                <div class="card border-info">
+                    <div class="card-header bg-info text-white">
+                        <h4 class="mb-0"><i class="fas fa-link"></i> Passo 2: Vincular Empresas ao Grupo</h4>
+                    </div>
+                    <div class="card-body">
+                        <ol class="fs-5">
+                            <li class="mb-3">
+                                <strong>Acesse o Grupo:</strong>
+                                <blockquote class="blockquote">
+                                    Menu principal → Grupos Corporativos → Listar → Clique no nome do grupo
+                                </blockquote>
+                            </li>
+
+                            <li class="mb-3">
+                                <strong>Clique em "Adicionar Empresas"</strong> <br/>
+                                <span class="badge bg-success">Adicionar Empresas</span>
+                            </li>
+
+                            <li class="mb-3">
+                                <strong>Selecione as Empresas:</strong>
+                                <div class="alert alert-light mt-2">
+                                    <p class="mb-2">Uma lista aparecerá mostrando todas as empresas <strong>não vinculadas</strong> a nenhum grupo.</p>
+                                    <p class="mb-0">
+                                        <i class="fas fa-keyboard"></i> 
+                                        <strong>Dica:</strong> Use <strong>Ctrl + Click</strong> (ou <strong>Cmd + Click</strong> no Mac) 
+                                        para selecionar <strong>múltiplas empresas</strong> de uma vez.
+                                    </p>
+                                </div>
+                            </li>
+
+                            <li class="mb-3">
+                                <strong>Clique em "Adicionar Selecionadas"</strong> <br/>
+                                <span class="text-muted">As empresas foram vinculadas ao grupo!</span>
+                            </li>
+                        </ol>
+
+                        <div class="alert alert-warning">
+                            <strong>⚠️ Atenção:</strong>
+                            <ul class="mb-0 mt-2">
+                                <li>Uma empresa só pode estar vinculada a UM grupo</li>
+                                <li>Ao vincular, a empresa deixa de ser "solta" e passa a fazer parte do grupo</li>
+                                <li>Você pode remover uma empresa do grupo depois se precisar</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Passo 3: Ver Relatórios -->
+            <div id="passo3" class="mb-5">
+                <div class="card border-success">
+                    <div class="card-header bg-success text-white">
+                        <h4 class="mb-0"><i class="fas fa-chart-bar"></i> Passo 3: Visualizar Consolidados e Relatórios</h4>
+                    </div>
+                    <div class="card-body">
+                        <ol class="fs-5">
+                            <li class="mb-3">
+                                <strong>Na página de Detalhes do Grupo:</strong>
+                                <p class="mt-2">Você verá automaticamente:</p>
+                                <ul>
+                                    <li><i class="fas fa-cube"></i> <strong>Logo/Informações</strong> - Dados do grupo</li>
+                                    <li><i class="fas fa-chart-pie"></i> <strong>Consolidado</strong> - Número de empresas, usuários, fazendas, produtos</li>
+                                    <li><i class="fas fa-building"></i> <strong>Empresas Vinculadas</strong> - Tabela com cada empresa</li>
+                                </ul>
+                            </li>
+
+                            <li class="mb-3">
+                                <strong>Clique em "Relatório"</strong> para ver um resumo consolidado
+                                <div class="alert alert-light mt-2">
+                                    <p class="mb-0">O relatório mostra dados agregados de todas as empresas do grupo, facilitando a visualização de KPIs consolidados.</p>
+                                </div>
+                            </li>
+
+                            <li class="mb-3">
+                                <strong>Remover Empresa (se necessário):</strong>
+                                <p class="mt-2">Na tabela de empresas, clique no ícone <span class="badge bg-danger">X</span> para remover uma empresa do grupo.</p>
+                                <div class="alert alert-info mt-2">
+                                    <strong>Nota:</strong> Remover do grupo não deleta a empresa, apenas desvincula-a.
+                                </div>
+                            </li>
+                        </ol>
+
+                        <h6 class="fw-bold mt-4">Dados Consolidados Disponíveis:</h6>
+                        <table class="table table-sm">
+                            <tr class="table-light">
+                                <td><i class="fas fa-users"></i> <strong>Empresas</strong></td>
+                                <td>Quantidade de empresas no grupo</td>
+                            </tr>
+                            <tr>
+                                <td><i class="fas fa-person"></i> <strong>Usuários</strong></td>
+                                <td>Soma de limite de usuários de todas as empresas</td>
+                            </tr>
+                            <tr class="table-light">
+                                <td><i class="fas fa-tractor"></i> <strong>Fazendas</strong></td>
+                                <td>Soma de limite de fazendas</td>
+                            </tr>
+                            <tr>
+                                <td><i class="fas fa-box"></i> <strong>Produtos</strong></td>
+                                <td>Soma de limite de produtos</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Permissões -->
+            <div id="permissoes" class="mb-5">
+                <div class="card border-danger">
+                    <div class="card-header bg-danger text-white">
+                        <h4 class="mb-0"><i class="fas fa-lock"></i> Permissões e Acesso</h4>
+                    </div>
+                    <div class="card-body">
+                        <h6 class="fw-bold mb-3">Quem pode fazer o quê:</h6>
+                        
+                        <div class="accordion" id="permissoes-accordion">
+                            <!-- Superusuário -->
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#super">
+                                        👨‍💼 <strong>Superusuário / Admin</strong>
+                                    </button>
+                                </h2>
+                                <div id="super" class="accordion-collapse collapse show" data-bs-parent="#permissoes-accordion">
+                                    <div class="accordion-body">
+                                        <p CLASS="mb-2"><strong>Permissões:</strong></p>
+                                        <ul>
+                                            <li>✅ Criar novos grupos</li>
+                                            <li>✅ Editar QUALQUERgrupo</li>
+                                            <li>✅ Deletar grupos (sem empresas)</li>
+                                            <li>✅ Ver todos os grupos</li>
+                                            <li>✅ Adicionar/remover empresas</li>
+                                            <li>✅ Ver consolidados de qualquer grupo</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Admin do Grupo -->
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#admin-grupo">
+                                        👤 <strong>Admin do Grupo (Administrador)</strong>
+                                    </button>
+                                </h2>
+                                <div id="admin-grupo" class="accordion-collapse collapse" data-bs-parent="#permissoes-accordion">
+                                    <div class="accordion-body">
+                                        <p class="mb-2"><strong>Permissões:</strong></p>
+                                        <ul>
+                                            <li>✅ Editar SEU grupo</li>
+                                            <li>✅ Adicionar empresas ao SEU grupo</li>
+                                            <li>✅ Remover empresas do SEU grupo</li>
+                                            <li>✅ Ver relatório do SEU grupo</li>
+                                            <li>❌ Ver dados de outros grupos</li>
+                                            <li>❌ Criar novos grupos</li>
+                                        </ul>
+                                        <div class="alert alert-info mt-3 mb-0">
+                                            <strong>Exemplo:</strong> João Silva é admin de "Carrefour Brasil" e só pode gerenciar esse grupo.
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Usuário Normal -->
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#normal">
+                                        👥 <strong>Usuário Normal</strong>
+                                    </button>
+                                </h2>
+                                <div id="normal" class="accordion-collapse collapse" data-bs-parent="#permissoes-accordion">
+                                    <div class="accordion-body">
+                                        <p class="mb-2"><strong>Permissões:</strong></p>
+                                        <ul>
+                                            <li>❌ Acessar Grupos Corporativos</li>
+                                            <li>✅ Usar a empresa normalmente</li>
+                                            <li>✅ Ver dados da empresa (não do grupo)</li>
+                                        </ul>
+                                        <div class="alert alert-info mt-3 mb-0">
+                                            <strong>Nota:</strong> Usuários normais trabalham nas empresas individuais. Grupos são gerenciados apenas por Admins.
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dúvidas Frequentes -->
+            <div id="duvidas">
+                <div class="card border-secondary">
+                    <div class="card-header bg-secondary text-white">
+                        <h4 class="mb-0"><i class="fas fa-comments"></i> Dúvidas Frequentes (FAQ)</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="accordion" id="faq">
+                            <!-- FAQ 1 -->
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
+                                        <strong>Posso vincular uma empresa a múltiplos grupos?</strong>
+                                    </button>
+                                </h2>
+                                <div id="faq1" class="accordion-collapse collapse" data-bs-parent="#faq">
+                                    <div class="accordion-body">
+                                        <strong>Não.</strong> Uma empresa só pode estar em um grupo. Se você vincular a outro, será automaticamente removida do anterior.
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- FAQ 2 -->
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">
+                                        <strong>Se eu deletar um grupo, as empresas também são deletadas?</strong>
+                                    </button>
+                                </h2>
+                                <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faq">
+                                    <div class="accordion-body">
+                                        <strong>Não.</strong> Ao deletar um grupo, as empresas são desvinculadas, não deletadas. Elas voltam a serem empresas "soltas".
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- FAQ 3 -->
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">
+                                        <strong>Como remover uma empresa do grupo sem deletá-la?</strong>
+                                    </button>
+                                </h2>
+                                <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faq">
+                                    <div class="accordion-body">
+                                        <strong>Simples!</strong> Na página de Detalhes do Grupo, localize a empresa na tabela e clique no botão <span class="badge bg-danger">X</span> (Remover).
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- FAQ 4 -->
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq4">
+                                        <strong>Grupos Corporativos são obrigatórios?</strong>
+                                    </button>
+                                </h2>
+                                <div id="faq4" class="accordion-collapse collapse" data-bs-parent="#faq">
+                                    <div class="accordion-body">
+                                        <strong>Não!</strong> Grupos são <strong>completamente opcionais</strong>. Se você tem apenas uma empresa ou não precisa de consolidação, não precisa usar grupos.
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- FAQ 5 -->
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq5">
+                                        <strong>Como transferir admin de um grupo para outro usuário?</strong>
+                                    </button>
+                                </h2>
+                                <div id="faq5" class="accordion-collapse collapse" data-bs-parent="#faq">
+                                    <div class="accordion-body">
+                                        <strong>Clique em "Editar"</strong> e altere o campo <strong>"Administrador"</strong> para o novo usuário. Salve as mudanças.
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- FAQ 6 -->
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq6">
+                                        <strong>Qual a diferença entre ATIVO, INATIVO e SUSPENSO?</strong>
+                                    </button>
+                                </h2>
+                                <div id="faq6" class="accordion-collapse collapse" data-bs-parent="#faq">
+                                    <div class="accordion-body">
+                                        <ul>
+                                            <li><strong>ATIVO:</strong> Grupo funcionando normalmente</li>
+                                            <li><strong>INATIVO:</strong> Grupo pausado/desativado</li>
+                                            <li><strong>SUSPENSO:</strong> Grupo em possível suspensão/auditoria</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- FAQ 7 -->
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq7">
+                                        <strong>Quando vejo dados consolidados?</strong>
+                                    </button>
+                                </h2>
+                                <div id="faq7" class="accordion-collapse collapse" data-bs-parent="#faq">
+                                    <div class="accordion-body">
+                                        <strong>Na página de Detalhes</strong> do grupo, existe uma seção "Consolidado" mostrando totais de usuários, fazendas, produtos. Um botão "Relatório" também está disponível para mais detalhes.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="row mt-5">
+                <div class="col-md-12">
+                    <div class="alert alert-success">
+                        <i class="fas fa-check-circle"></i>
+                        <strong>Pronto para começar?</strong>
+                        <a href="{% url 'empresas:grupo_list' %}" class="btn btn-success btn-sm ms-2">
+                            <i class="fas fa-arrow-right"></i> Ir para Grupos Corporativos
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .footer-link {
+        font-size: 0.9rem;
+        color: #6c757d;
+    }
+    
+    .card {
+        margin-bottom: 2rem;
+        transition: all 0.3s ease;
+    }
+    
+    .card:hover {
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    
+    .sticky-top {
+        padding: 0;
+    }
+    
+    .list-group-item.active {
+        background-color: #0d6efd;
+        border-color: #0d6efd;
+    }
+    
+    blockquote {
+        background: #f8f9fa;
+        border-left: 4px solid #0d6efd;
+        padding: 10px 15px;
+        border-radius: 3px;
+    }
+</style>
+{% endblock %}

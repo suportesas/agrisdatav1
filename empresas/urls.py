@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+from . import views_grupo
 
 app_name = 'empresas'
 
@@ -30,4 +31,16 @@ urlpatterns = [
     path('planos/<int:pk>/editar/', views.plano_update, name='plano_update'),
     path('planos/<int:pk>/excluir/', views.plano_delete, name='plano_delete'),
     path('planos/inicializar/', views.inicializar_planos_padrao, name='inicializar_planos'),
+
+    # Grupos Corporativos (Enterprise Plus)
+    path('grupos/', views_grupo.grupo_list, name='grupo_list'),
+    path('grupos/novo/', views_grupo.grupo_create, name='grupo_create'),
+    path('grupos/<int:pk>/', views_grupo.grupo_detail, name='grupo_detail'),
+    path('grupos/<int:pk>/editar/', views_grupo.grupo_update, name='grupo_update'),
+    path('grupos/<int:pk>/deletar/', views_grupo.grupo_delete, name='grupo_delete'),
+    path('grupos/<int:pk>/adicionar-empresas/', views_grupo.grupo_adicionar_empresas, name='grupo_adicionar_empresas'),
+    path('grupos/<int:grupo_id>/empresas/<int:empresa_id>/remover/', views_grupo.remover_empresa_do_grupo, name='remover_empresa_do_grupo'),
+    path('grupos/<int:pk>/relatorio/', views_grupo.grupo_relatorio_consolidado, name='grupo_relatorio_consolidado'),
+    path('grupos/ajuda/', views_grupo.ajuda_grupos_corporativos, name='ajuda_grupos_corporativos'),
+    path('ajuda/usuarios-grupos/', views_grupo.ajuda_usuarios_grupos, name='ajuda_usuarios_grupos'),
 ]

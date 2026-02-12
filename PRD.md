@@ -4,6 +4,7 @@ Versão 1.0 - Documento Consolidado
 ## Release Notes
 
 - 2025-12-15 — Safra: adicionado CRUD de `Safra` (modelos `Safra`, `SafraPlan`, `SafraReal`), views, forms e templates; comparativo Planejado x Real; correção em `SafraForm.save` para remover referência a campo inexistente; adicionados testes unitários e de integração (`cadastros.tests.*`). PR: https://github.com/EMSSousa/erp_agricola/pull/3
+- 2026-02-12 — Enterprise Plus / Grupos Corporativos: criado modelo `GrupoCorporativo`, vínculo `Empresa.grupo_corporativo`, CRUD completo (listas, detalhes, edição, exclusão, adicionar/remover empresas), relatório consolidado; plano `ENTERPRISE_PLUS` adicionado; limpeza de planos de teste; páginas de ajuda para Grupos Corporativos e para Usuários/Grupos; melhorias de templates em fluxos de grupos.
 
 
 1. VISÃO GERAL DO PRODUTO
@@ -682,12 +683,21 @@ RF-806 Regras de negócio configuráveis
 RF-807 Motor de regras
 RF-808 Parâmetros fiscais
 
+### Status de Implementação (Atualizado em 2026-02-12)
+
+- ✅ Gestão de planos SaaS: adicionado `ENTERPRISE_PLUS`; ampliado `Plano.codigo` para `max_length=20`; padronização e limpeza de planos de teste.
+- ✅ Grupos Corporativos (Enterprise Plus): modelo `GrupoCorporativo`, vínculo com `Empresa`, CRUD completo e relatório consolidado.
+
 3.31 Suporte e Ajuda
 RF-900 Sistema de chat
 RF-901 Gestão de tickets
 RF-902 Base de conhecimento
 RF-903 Tutoriais em vídeo
 RF-904 Documentação técnica
+
+### Status de Implementação (Atualizado em 2026-02-12)
+
+- ✅ Base de conhecimento: páginas de ajuda para Grupos Corporativos e para Usuários/Grupos (arquitetura, fluxo de criação de usuários e permissões).
 
 3.32 Aplicativo Mobile
 RF-950 Atividades de campo offline
@@ -882,9 +892,78 @@ Performance < 2s
 Mobile offline funcional
 Integrações testadas
 
+
 ## 📋 PRÓXIMOS PASSOS - ROADMAP 2026
 
+### STATUS DE IMPLEMENTAÇÃO - ATUALIZADO EM 2026-02-12
+
+#### ✅ **Funcionalidades Implementadas na Semana de 10-02-2026**
+
+**3.2 Cadastros Base - Relatórios de Clientes e Fornecedores**
+- ✅ **RF-025 Cadastro de clientes**: Novo relatório consolidado (PDF/Excel)
+  - ✅ Filtro por tipo de cliente (MERCADO_INTERNO / IMPORTADOR)
+  - ✅ Geração de PDF com header customizado contendo logo da empresa
+  - ✅ Exportação para Excel com estilo profissional
+  - ✅ Envio automático por Email e WhatsApp
+  - ✅ Criação de classe `RelatorioClientesPDF` e `RelatorioClientesExcel`
+  - ✅ Formulário de filtros com validação
+  - ✅ Template responsivo com Bootstrap
+
+- ✅ **RF-026 Cadastro de fornecedores**: Novo relatório completo e ranking
+  - ✅ Filtros avançados:
+    - ✅ Status (ATIVO / INATIVO / Todos)
+    - ✅ Cidade (texto livre)
+    - ✅ UF (dropdown)
+    - ✅ Categoria (select da empresa)
+    - ✅ Classificação de Risco (BAIXO / MÉDIO / ALTO)
+  - ✅ Relatório de Fornecedores em PDF/Excel com tabela formatada
+  - ✅ **Ranking de Compras**: Análise de compras por fornecedor baseado em `RecebimentoCompra`
+    - ✅ Filtro por data (data_início / data_fim)
+    - ✅ Agregação automática de valor total por fornecedor
+    - ✅ Cálculo de percentual por fornecedor
+    - ✅ Ordenação descrescente por valor
+    - ✅ Geração em PDF e Excel
+  - ✅ **PDF Individual de Fornecedor**:
+    - ✅ 7 seções de dados (documentação, contatos, comercial, etc)
+    - ✅ Endereços formatados com ocultação automática de CEP/UF para fornecedores internacionais
+    - ✅ Botão "Ver PDF" na página de detalhe do fornecedor
+    - ✅ Preservação de aspect ratio do logo em PDF via `ImageReader`
+  - ✅ Envio por Email e WhatsApp
+  - ✅ Menu da sidebar com links para ambos os relatórios
+
+- ✅ **3.2 Gestão de Usuários - Campo "Vendedor Responsável"**
+  - ✅ Fix: Dropdown de vendedor agora filtra apenas por `status='ATIVO'`
+  - ✅ Fix: Ordenação alfabética por `nome_completo`
+  - ✅ Fix: Filtro dinâmico por `tipo_mercado` baseado em `tipo_cliente` do cliente
+  - ✅ Modificação em `ClienteForm.__init__()` para aplicar filtros corretos
+  - ✅ Criação de vendor EXTERNO ("Carlos Silva - Exportação") para empresa que faltava
+
+**Arquivos Criados/Modificados:**
+- ✅ `cadastros/forms_relatorio_fornecedor.py` (novo formulário com filtros)
+- ✅ `cadastros/forms_relatorio_fornecedor_ranking.py` (novo formulário para ranking)
+- ✅ `cadastros/relatorio_utils_fornecedor.py` (geração PDF/Excel de lista e individual)
+- ✅ `cadastros/relatorio_utils_fornecedor_ranking.py` (geração PDF/Excel de ranking)
+- ✅ `cadastros/templates/cadastros/relatorios/relatorio_fornecedor.html` (template)
+- ✅ `cadastros/templates/cadastros/relatorios/relatorio_fornecedor_ranking.html` (template)
+- ✅ `cadastros/views.py`: Funções `relatorio_fornecedor()`, `relatorio_fornecedor_ranking()`, `fornecedor_pdf()`
+- ✅ `cadastros/urls.py`: Rotas adicionadas
+- ✅ `cadastros/enviador.py`: Classe `EnviadorRelatorioFornecedores` para envio de relatórios
+- ✅ `templates/sidebar.html`: Menu items para relatórios de fornecedores
+- ✅ `cadastros/forms.py`: Fix do filtro de `vendedor_responsavel` em `ClienteForm`
+
+**Testes Realizados:**
+- ✅ Relatório de clientes filtra corretamente por tipo_cliente
+- ✅ Relatório de fornecedores com todos os filtros funcionando
+- ✅ Ranking de compras calcula corretamente percentuais
+- ✅ PDF individual exibe endereço internacional sem CEP/UF
+- ✅ Envio por Email e WhatsApp funciona
+- ✅ Dropdown de vendedor exibe opciones corretas
+- ✅ Filtro dinâmico por tipo_mercado funciona
+
+
+
 ### FASE 1: MELHORIAS DE ESTOQUE (Semana de 03-02-2026)
+
 
 #### 1.1 Aprimoramentos do RF-055 (Alertas)
 - [ ] **Filtros avançados**: Por tipo de alerta, categoria, faixa de preço

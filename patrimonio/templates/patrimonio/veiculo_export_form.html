@@ -1,0 +1,165 @@
+{% extends 'base.html' %}
+
+{% block title %}Registrar {{ veiculo }} como Patrimônio | ERP Agrícola{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <!-- Breadcrumb -->
+  <nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'cadastros:vehicle_list' %}">Veículos</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'cadastros:vehicle_detail' veiculo.pk %}">{{ veiculo }}</a></li>
+      <li class="breadcrumb-item active">{{ action }}</li>
+    </ol>
+  </nav>
+
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="fw-bold mb-1">Registrar como Patrimônio</h2>
+      <p class="text-muted mb-0">Veículo: <strong>{{ veiculo.descricao }}</strong></p>
+    </div>
+    <a href="{% url 'cadastros:vehicle_detail' veiculo.pk %}" class="btn btn-outline-secondary">Voltar</a>
+  </div>
+
+  <!-- Info Box -->
+  <div class="alert alert-info mb-4">
+    <i class="bi bi-info-circle"></i>
+    <strong>Informações importantes:</strong>
+    <p class="mb-0 mt-2">
+      Preencha abaixo os dados para registrar este veículo/implemento como patrimônio da empresa.
+      Assim você poderá controlar sua depreciação e movimentações.
+    </p>
+  </div>
+
+  <!-- Card -->
+  <div class="row">
+    <!-- Formulário -->
+    <div class="col-md-7">
+      <div class="card p-4">
+        <form method="post">
+          {% csrf_token %}
+
+          <div class="row g-3">
+            <!-- Número de Patrimônio -->
+            <div class="col-12">
+              {{ form.numero_patrimonio.label_tag }}
+              {{ form.numero_patrimonio }}
+              <small class="text-muted d-block mt-1">Código único do ativo (ex: VEI-0001, PAT-250-2024)</small>
+              {% if form.numero_patrimonio.errors %}
+              <div class="invalid-feedback d-block">{{ form.numero_patrimonio.errors }}</div>
+              {% endif %}
+            </div>
+
+            <!-- Valor Inicial -->
+            <div class="col-md-6">
+              {{ form.valor_inicial.label_tag }}
+              {{ form.valor_inicial }}
+              {% if form.valor_inicial.errors %}
+              <div class="invalid-feedback d-block">{{ form.valor_inicial.errors }}</div>
+              {% endif %}
+            </div>
+
+            <!-- Data de Aquisição -->
+            <div class="col-md-6">
+              {{ form.data_aquisicao.label_tag }}
+              {{ form.data_aquisicao }}
+              {% if form.data_aquisicao.errors %}
+              <div class="invalid-feedback d-block">{{ form.data_aquisicao.errors }}</div>
+              {% endif %}
+            </div>
+
+            <!-- Vida Útil -->
+            <div class="col-md-6">
+              {{ form.vida_util_anos.label_tag }}
+              {{ form.vida_util_anos }}
+              <small class="text-muted d-block mt-1">Para calcular a depreciação</small>
+              {% if form.vida_util_anos.errors %}
+              <div class="invalid-feedback d-block">{{ form.vida_util_anos.errors }}</div>
+              {% endif %}
+            </div>
+
+            <!-- Localização (Fazenda) -->
+            <div class="col-12">
+              {{ form.fazenda.label_tag }}
+              {{ form.fazenda }}
+              <small class="text-muted d-block mt-1">Selecione a fazenda onde o ativo será localizado</small>
+              {% if form.fazenda.errors %}
+              <div class="invalid-feedback d-block">{{ form.fazenda.errors }}</div>
+              {% endif %}
+            </div>
+
+            <!-- Localização Detalhada -->
+            <div class="col-12">
+              {{ form.localizacao_detalhada.label_tag }}
+              {{ form.localizacao_detalhada }}
+              <small class="text-muted d-block mt-1">Informações adicionais (ex: Galpão A, Campo Norte)</small>
+              {% if form.localizacao_detalhada.errors %}
+              <div class="invalid-feedback d-block">{{ form.localizacao_detalhada.errors }}</div>
+              {% endif %}
+            </div>
+
+            <!-- Botões -->
+            <div class="col-12 d-flex justify-content-end gap-2 mt-4">
+              <a href="{% url 'cadastros:vehicle_detail' veiculo.pk %}" class="btn btn-outline-secondary">Cancelar</a>
+              <button type="submit" class="btn btn-success">
+                <i class="bi bi-check-circle"></i> Registrar como Patrimônio
+              </button>
+            </div>
+          </div>
+
+          {% if form.non_field_errors %}
+          <div class="alert alert-danger mt-3">
+            {{ form.non_field_errors }}
+          </div>
+          {% endif %}
+        </form>
+      </div>
+    </div>
+
+    <!-- Resumo do Veículo -->
+    <div class="col-md-5">
+      <div class="card p-4">
+        <h6 class="text-muted mb-3">Dados do Veículo</h6>
+
+        <dl class="row small">
+          <dt class="col-6 fw-bold">Marca</dt>
+          <dd class="col-6">{{ veiculo.marca }}</dd>
+
+          <dt class="col-6 fw-bold">Modelo</dt>
+          <dd class="col-6">{{ veiculo.modelo }}</dd>
+
+          <dt class="col-6 fw-bold">Tipo</dt>
+          <dd class="col-6">{{ veiculo.get_tipo_display }}</dd>
+
+          <dt class="col-6 fw-bold">Descrição</dt>
+          <dd class="col-6">{{ veiculo.descricao|default:"—" }}</dd>
+
+          <dt class="col-6 fw-bold">Placa Atual</dt>
+          <dd class="col-6">{{ veiculo.get_current_plate|default:"—" }}</dd>
+
+          {% if veiculo.valor_atual %}
+          <dt class="col-6 fw-bold">Valor</dt>
+          <dd class="col-6">R$ {{ veiculo.valor_atual|floatformat:2 }}</dd>
+          {% endif %}
+
+          {% if veiculo.codigo_patrimonio %}
+          <dt class="col-6 fw-bold">Código</dt>
+          <dd class="col-6">{{ veiculo.codigo_patrimonio }}</dd>
+          {% endif %}
+        </dl>
+      </div>
+
+      <!-- Dica -->
+      <div class="alert alert-light border mt-3 p-3">
+        <h6 class="text-primary mb-2"><i class="bi bi-lightbulb"></i> Dica</h6>
+        <small>
+          <strong>Número de Patrimônio:</strong> Use um código consistente na sua empresa.
+          Por exemplo: VEI-0001 para veículos, IMP-0001 para implementos.
+        </small>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

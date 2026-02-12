@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'empresas',
     'dashboard',
     'cadastros',
+    'patrimonio',  # Módulo de Patrimônio
     'produtos',
     'estoque',
     'compras',

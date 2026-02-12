@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-md-6 offset-md-3">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <i class="fas fa-exclamation-triangle"></i> {{ titulo }}
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning mb-4">
+                        <h5 class="alert-heading">Atenção!</h5>
+                        <p class="mb-0">
+                            Você está prestes a deletar o grupo corporativo <strong>{{ grupo.nome }}</strong>.
+                        </p>
+                        <p class="mb-0">
+                            Esta ação é <strong>irreversível</strong>.
+                        </p>
+                    </div>
+
+                    {% if grupo.empresas.exists %}
+                        <div class="alert alert-danger">
+                            <i class="fas fa-times-circle"></i>
+                            <strong>Não é possível deletar este grupo</strong> pois contém {{ grupo.empresas.count }} empresa(s) vinculada(s).
+                        </div>
+                        <p>Remova todas as empresas antes de deletar o grupo.</p>
+                    {% else %}
+                        <p>Deseja realmente continuar?</p>
+                        
+                        <form method="POST" class="d-inline">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-trash"></i> Sim, Deletar
+                            </button>
+                        </form>
+                    {% endif %}
+
+                    <a href="{% url 'empresas:grupo_detail' grupo.pk %}" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Cancelar
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -65,7 +65,11 @@ def dashboard(request):
 def get_produto_unidade(request, produto_id):
     """Retorna a unidade de medida de um produto em JSON"""
     try:
-        produto = Produto.objects.get(pk=produto_id, ativo=True)
+        produto = Produto.objects.get(
+            pk=produto_id,
+            ativo=True,
+            categoria__empresa=request.user.empresa
+        )
         return JsonResponse({
             'success': True,
             'unidade_medida_id': produto.unidade_medida.id,
@@ -648,7 +652,7 @@ def estoque_produtos_list(request):
 @login_required
 def produto_historico(request, pk):
     """Histórico do produto"""
-    produto = get_object_or_404(Produto, pk=pk)
+    produto = get_object_or_404(Produto, pk=pk, categoria__empresa=request.user.empresa)
     empresa = request.user.empresa
 
     # Filtros
@@ -724,7 +728,7 @@ def produto_historico(request, pk):
 @login_required
 def produto_historico_pdf(request, pk):
     """Gera PDF do histórico do produto"""
-    produto = get_object_or_404(Produto, pk=pk)
+    produto = get_object_or_404(Produto, pk=pk, categoria__empresa=request.user.empresa)
     # Aqui você pode adicionar lógica para buscar o histórico real do produto, se necessário
     context = {
         'produto': produto,
@@ -1893,7 +1897,10 @@ def inventario_ciclico_create(request):
             itens_criados = 0
             
             for prod_data in produtos_finais:
-                produto = Produto.objects.get(id=prod_data['produto_id'])
+                produto = Produto.objects.get(
+                    id=prod_data['produto_id'],
+                    categoria__empresa=empresa
+                )
                 valor_total = prod_data['valor_total']
                 valor_acumulado += valor_total
                 

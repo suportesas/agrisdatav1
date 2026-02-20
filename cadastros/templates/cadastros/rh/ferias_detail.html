@@ -1,0 +1,164 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Detalhes Férias | ERP Agrícola{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h1 class="h3 mb-1">
+        <i class="fas fa-umbrella-beach text-primary me-2"></i>
+        Detalhes das Férias
+      </h1>
+      <p class="text-muted mb-0">{{ ferias.funcionario.nome_completo }}</p>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{% url 'cadastros:ferias_list' %}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left me-2"></i>Voltar
+      </a>
+      <a href="{% url 'cadastros:ferias_update' ferias.pk %}" class="btn btn-primary">
+        <i class="fas fa-edit me-2"></i>Editar
+      </a>
+      <a href="{% url 'cadastros:ferias_delete' ferias.pk %}" class="btn btn-danger">
+        <i class="fas fa-trash me-2"></i>Excluir
+      </a>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-lg-8">
+      <!-- Dados do Funcionário -->
+      <div class="card mb-3">
+        <div class="card-header bg-primary text-white">
+          <h5 class="mb-0"><i class="fas fa-user me-2"></i>Funcionário</h5>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-6">
+              <p><strong>Nome:</strong> {{ ferias.funcionario.nome_completo }}</p>
+              <p><strong>Função:</strong> {{ ferias.funcionario.funcao.nome }}</p>
+            </div>
+            <div class="col-md-6">
+              <p><strong>CPF:</strong> {{ ferias.funcionario.cpf }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Períodos -->
+      <div class="card mb-3">
+        <div class="card-header">
+          <h5 class="mb-0"><i class="fas fa-calendar me-2"></i>Períodos</h5>
+        </div>
+        <div class="card-body">
+          <div class="row mb-3">
+            <div class="col-md-12">
+              <h6 class="text-muted">Período Aquisitivo</h6>
+              <p><strong>{{ ferias.periodo_aquisitivo_inicio|date:"d/m/Y" }}</strong> até <strong>{{ ferias.periodo_aquisitivo_fim|date:"d/m/Y" }}</strong></p>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-12">
+              <h6 class="text-muted">Período de Gozo (Férias)</h6>
+              <p><strong>{{ ferias.data_inicio|date:"d/m/Y" }}</strong> até <strong>{{ ferias.data_fim|date:"d/m/Y" }}</strong></p>
+              <span class="badge bg-primary">{{ ferias.dias_ferias }} dias</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Valores -->
+      <div class="card mb-3">
+        <div class="card-header bg-success text-white">
+          <h5 class="mb-0"><i class="fas fa-dollar-sign me-2"></i>Valores</h5>
+        </div>
+        <div class="card-body">
+          <table class="table table-sm">
+            <tr>
+              <td>Valor Bruto:</td>
+              <td class="text-end"><strong>R$ {{ ferias.valor_bruto|floatformat:2|default:"0,00" }}</strong></td>
+            </tr>
+            <tr>
+              <td>1/3 Constitucional:</td>
+              <td class="text-end"><strong>R$ {{ ferias.valor_terco_constitucional|floatformat:2|default:"0,00" }}</strong></td>
+            </tr>
+            {% if ferias.dias_abono > 0 %}
+            <tr>
+              <td>Abono Pecuniário ({{ ferias.dias_abono }} dias):</td>
+              <td class="text-end"><strong>R$ {{ ferias.valor_abono|floatformat:2|default:"0,00" }}</strong></td>
+            </tr>
+            {% endif %}
+            <tr>
+              <td>Descontos:</td>
+              <td class="text-end text-danger"><strong>R$ {{ ferias.valor_descontos|floatformat:2|default:"0,00" }}</strong></td>
+            </tr>
+          </table>
+        </div>
+      </div>
+
+      {% if ferias.observacoes %}
+      <div class="card mb-3">
+        <div class="card-header">
+          <h5 class="mb-0"><i class="fas fa-comment me-2"></i>Observações</h5>
+        </div>
+        <div class="card-body">
+          <p>{{ ferias.observacoes }}</p>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="col-lg-4">
+      <!-- Status -->
+      <div class="card mb-3">
+        <div class="card-header">
+          <h5 class="mb-0"><i class="fas fa-flag me-2"></i>Status</h5>
+        </div>
+        <div class="card-body text-center">
+          {% if ferias.status == 'AGENDADA' %}
+          <span class="badge bg-info fs-5">{{ ferias.get_status_display }}</span>
+          {% elif ferias.status == 'EM_GOZO' %}
+          <span class="badge bg-warning fs-5">{{ ferias.get_status_display }}</span>
+          {% elif ferias.status == 'CONCLUIDA' %}
+          <span class="badge bg-success fs-5">{{ ferias.get_status_display }}</span>
+          {% else %}
+          <span class="badge bg-secondary fs-5">{{ ferias.get_status_display }}</span>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Documentos -->
+      {% if ferias.recibo_ferias %}
+      <div class="card mb-3">
+        <div class="card-header">
+          <h5 class="mb-0"><i class="fas fa-file-pdf me-2"></i>Documentos</h5>
+        </div>
+        <div class="card-body">
+          <a href="{{ ferias.recibo_ferias.url }}" target="_blank" class="btn btn-outline-primary w-100">
+            <i class="fas fa-download me-2"></i>Baixar Recibo
+          </a>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Auditoria -->
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Informações</h5>
+        </div>
+        <div class="card-body">
+          <p class="small mb-2">
+            <strong>Cadastrado por:</strong><br>
+            {{ ferias.cadastrado_por.get_full_name|default:ferias.cadastrado_por.username }}
+          </p>
+          <p class="small mb-0">
+            <strong>Data de cadastro:</strong><br>
+            {{ ferias.data_cadastro|date:"d/m/Y H:i" }}
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

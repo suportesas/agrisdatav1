@@ -1,0 +1,234 @@
+{% extends 'base.html' %}
+
+{% block title %}Detalhes Rescisão | ERP Agrícola{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h1 class="h3 mb-1">
+        <i class="fas fa-user-times text-secondary me-2"></i>
+        Detalhes da Rescisão
+      </h1>
+      <p class="text-muted mb-0">{{ rescisao.funcionario.nome_completo }}</p>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{% url 'cadastros:rescisao_list' %}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left me-2"></i>Voltar
+      </a>
+      <a href="{% url 'cadastros:rescisao_update' rescisao.pk %}" class="btn btn-warning">
+        <i class="fas fa-edit me-2"></i>Editar
+      </a>
+      <a href="{% url 'cadastros:rescisao_delete' rescisao.pk %}" class="btn btn-danger">
+        <i class="fas fa-trash me-2"></i>Excluir
+      </a>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-lg-8">
+      <!-- Dados Principais -->
+      <div class="card mb-3">
+        <div class="card-header bg-secondary text-white">
+          <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Informações da Rescisão</h5>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-6">
+              <p><strong>Funcionário:</strong> {{ rescisao.funcionario.nome_completo }}</p>
+              <p><strong>CPF:</strong> {{ rescisao.funcionario.cpf }}</p>
+            </div>
+            <div class="col-md-6">
+              <p><strong>Tipo:</strong> <span class="badge bg-danger">{{ rescisao.get_tipo_rescisao_display }}</span></p>
+              <p><strong>Data Desligamento:</strong> {{ rescisao.data_desligamento|date:"d/m/Y" }}</p>
+            </div>
+          </div>
+          {% if rescisao.motivo_detalhado %}
+          <div class="alert alert-light mt-2">
+            <small><strong>Motivo:</strong> {{ rescisao.motivo_detalhado }}</small>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Aviso Prévio -->
+      {% if rescisao.data_aviso_previo %}
+      <div class="card mb-3">
+        <div class="card-header bg-warning">
+          <h5 class="mb-0"><i class="fas fa-bell me-2"></i>Aviso Prévio</h5>
+        </div>
+        <div class="card-body">
+          <p><strong>Data:</strong> {{ rescisao.data_aviso_previo|date:"d/m/Y" }}</p>
+          <p><strong>Dias:</strong> {{ rescisao.dias_aviso_previo }} dias</p>
+          <p><strong>Tipo:</strong> 
+            {% if rescisao.aviso_previo_indenizado %}
+            <span class="badge bg-warning">Indenizado</span>
+            {% else %}
+            <span class="badge bg-info">Trabalhado</span>
+            {% endif %}
+          </p>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Verbas Rescisórias -->
+      <div class="card mb-3">
+        <div class="card-header bg-success text-white">
+          <h5 class="mb-0"><i class="fas fa-dollar-sign me-2"></i>Verbas Rescisórias</h5>
+        </div>
+        <div class="card-body">
+          <table class="table table-sm">
+            <tr>
+              <td>Saldo de Salário:</td>
+              <td class="text-end"><strong>R$ {{ rescisao.saldo_salario|floatformat:2|default:"0,00" }}</strong></td>
+            </tr>
+            <tr>
+              <td>Férias Vencidas:</td>
+              <td class="text-end"><strong>R$ {{ rescisao.ferias_vencidas|floatformat:2|default:"0,00" }}</strong></td>
+            </tr>
+            <tr>
+              <td>Férias Proporcionais:</td>
+              <td class="text-end"><strong>R$ {{ rescisao.ferias_proporcionais|floatformat:2|default:"0,00" }}</strong></td>
+            </tr>
+            <tr>
+              <td>1/3 Férias:</td>
+              <td class="text-end"><strong>R$ {{ rescisao.terco_ferias|floatformat:2|default:"0,00" }}</strong></td>
+            </tr>
+            <tr>
+              <td>13º Proporcional:</td>
+              <td class="text-end"><strong>R$ {{ rescisao.decimo_terceiro_proporcional|floatformat:2|default:"0,00" }}</strong></td>
+            </tr>
+            {% if rescisao.aviso_previo_indenizado_valor %}
+            <tr>
+              <td>Aviso Prévio Indenizado:</td>
+              <td class="text-end"><strong>R$ {{ rescisao.aviso_previo_indenizado_valor|floatformat:2 }}</strong></td>
+            </tr>
+            {% endif %}
+            {% if rescisao.outras_verbas %}
+            <tr>
+              <td>Outras Verbas:</td>
+              <td class="text-end"><strong>R$ {{ rescisao.outras_verbas|floatformat:2 }}</strong></td>
+            </tr>
+            {% endif %}
+            <tr class="table-active">
+              <td><strong>Subtotal:</strong></td>
+              <td class="text-end"><strong>R$ {{ rescisao.valor_total|floatformat:2 }}</strong></td>
+            </tr>
+          </table>
+        </div>
+      </div>
+
+      <!-- FGTS -->
+      <div class="card mb-3">
+        <div class="card-header bg-info text-white">
+          <h5 class="mb-0"><i class="fas fa-university me-2"></i>FGTS</h5>
+        </div>
+        <div class="card-body">
+          <p><strong>Saldo FGTS:</strong> R$ {{ rescisao.saldo_fgts|floatformat:2|default:"0,00" }}</p>
+          <p><strong>Multa {{ rescisao.multa_fgts_percentual }}%:</strong> R$ {{ rescisao.multa_fgts_valor|floatformat:2|default:"0,00" }}</p>
+        </div>
+      </div>
+
+      <!-- Descontos e Total -->
+      <div class="card mb-3">
+        <div class="card-header">
+          <h5 class="mb-0"><i class="fas fa-calculator me-2"></i>Descontos e Total Líquido</h5>
+        </div>
+        <div class="card-body">
+          <table class="table table-sm">
+            <tr>
+              <td>INSS:</td>
+              <td class="text-end text-danger"><strong>R$ {{ rescisao.desconto_inss|floatformat:2|default:"0,00" }}</strong></td>
+            </tr>
+            <tr>
+              <td>IRRF:</td>
+              <td class="text-end text-danger"><strong>R$ {{ rescisao.desconto_irrf|floatformat:2|default:"0,00" }}</strong></td>
+            </tr>
+            {% if rescisao.outros_descontos %}
+            <tr>
+              <td>Outros Descontos:</td>
+              <td class="text-end text-danger"><strong>R$ {{ rescisao.outros_descontos|floatformat:2 }}</strong></td>
+            </tr>
+            {% endif %}
+            <tr class="table-success">
+              <td><strong>VALOR LÍQUIDO:</strong></td>
+              <td class="text-end"><strong class="text-success fs-5">R$ {{ rescisao.valor_liquido|floatformat:2 }}</strong></td>
+            </tr>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <!-- Status -->
+      <div class="card mb-3">
+        <div class="card-header">
+          <h5 class="mb-0"><i class="fas fa-flag me-2"></i>Status</h5>
+        </div>
+        <div class="card-body text-center">
+          {% if rescisao.status == 'EM_PROCESSO' %}
+          <span class="badge bg-warning fs-5">{{ rescisao.get_status_display }}</span>
+          {% elif rescisao.status == 'CONCLUIDA' %}
+          <span class="badge bg-success fs-5">{{ rescisao.get_status_display }}</span>
+          {% else %}
+          <span class="badge bg-secondary fs-5">{{ rescisao.get_status_display }}</span>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Documentos -->
+      <div class="card mb-3">
+        <div class="card-header">
+          <h5 class="mb-0"><i class="fas fa-file-pdf me-2"></i>Documentos</h5>
+        </div>
+        <div class="card-body">
+          {% if rescisao.documento_trct %}
+          <a href="{{ rescisao.documento_trct.url }}" target="_blank" class="btn btn-outline-primary w-100 mb-2">
+            <i class="fas fa-download me-1"></i>TRCT
+          </a>
+          {% endif %}
+          {% if rescisao.documento_exame_demissional %}
+          <a href="{{ rescisao.documento_exame_demissional.url }}" target="_blank" class="btn btn-outline-secondary w-100 mb-2">
+            <i class="fas fa-download me-1"></i>Exame Demissional
+          </a>
+          {% endif %}
+          {% if not rescisao.documento_trct and not rescisao.documento_exame_demissional %}
+          <p class="text-muted text-center mb-0">Nenhum documento anexado</p>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Datas Importantes -->
+      <div class="card mb-3">
+        <div class="card-header">
+          <h5 class="mb-0"><i class="fas fa-calendar me-2"></i>Datas</h5>
+        </div>
+        <div class="card-body">
+          {% if rescisao.data_exame_demissional %}
+          <p class="small mb-2"><strong>Exame Demissional:</strong><br>{{ rescisao.data_exame_demissional|date:"d/m/Y" }}</p>
+          {% endif %}
+          {% if rescisao.data_homologacao %}
+          <p class="small mb-2"><strong>Homologação:</strong><br>{{ rescisao.data_homologacao|date:"d/m/Y" }}</p>
+          {% endif %}
+          {% if rescisao.direito_seguro_desemprego %}
+          <div class="alert alert-info py-2">
+            <small><i class="fas fa-check-circle me-1"></i>Direito a Seguro Desemprego</small>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Auditoria -->
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Informações</h5>
+        </div>
+        <div class="card-body">
+          <p class="small mb-2"><strong>Cadastrado por:</strong><br>{{ rescisao.cadastrado_por.get_full_name|default:rescisao.cadastrado_por.username }}</p>
+          <p class="small mb-0"><strong>Data cadastro:</strong><br>{{ rescisao.data_cadastro|date:"d/m/Y H:i" }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

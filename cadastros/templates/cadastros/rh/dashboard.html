@@ -1,0 +1,363 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Dashboard RH | ERP Agrícola{% endblock %}
+
+{% block extra_css %}
+<style>
+  .stat-card {
+    transition: all 0.3s ease;
+    border-left: 4px solid #3b82f6;
+  }
+  .stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+  }
+  .stat-card.warning {
+    border-left-color: #f59e0b;
+  }
+  .stat-card.danger {
+    border-left-color: #dc3545;
+  }
+  .stat-card.success {
+    border-left-color: #10b981;
+  }
+  .stat-number {
+    font-size: 2.5rem;
+    font-weight: bold;
+    line-height: 1;
+  }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Verificar localStorage para alertas dismissidos
+  const now = new Date().getTime();
+  const feriasDismissTime = localStorage.getItem('feriasDismissTime');
+  const afastamentosDismissTime = localStorage.getItem('afastamentosDismissTime');
+  
+  // Se foi dismissido há menos de 24 horas, esconder
+  if (feriasDismissTime && (now - feriasDismissTime) < 24 * 60 * 60 * 1000) {
+    const feriasAlert = document.getElementById('ferias-alert');
+    if (feriasAlert) feriasAlert.style.display = 'none';
+  }
+  
+  if (afastamentosDismissTime && (now - afastamentosDismissTime) < 24 * 60 * 60 * 1000) {
+    const afastamentosAlert = document.getElementById('afastamentos-alert');
+    if (afastamentosAlert) afastamentosAlert.style.display = 'none';
+  }
+  
+  // Adicionar evento para gravar quando o usuário fechar o alerta
+  const feriasAlert = document.getElementById('ferias-alert');
+  const afastamentosAlert = document.getElementById('afastamentos-alert');
+  
+  if (feriasAlert) {
+    feriasAlert.addEventListener('close.bs.alert', function() {
+      localStorage.setItem('feriasDismissTime', new Date().getTime());
+    });
+  }
+  
+  if (afastamentosAlert) {
+    afastamentosAlert.addEventListener('close.bs.alert', function() {
+      localStorage.setItem('afastamentosDismissTime', new Date().getTime());
+    });
+  }
+});
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h1 class="h3 mb-1">
+        <i class="fas fa-user-tie text-primary me-2"></i>
+        Dashboard RH
+      </h1>
+      <p class="text-muted mb-0">Visão geral de Recursos Humanos</p>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{% url 'cadastros:ferias_create' %}" class="btn btn-primary">
+        <i class="fas fa-umbrella-beach me-2"></i>Cadastrar Férias
+      </a>
+      <a href="{% url 'cadastros:afastamento_create' %}" class="btn btn-warning">
+        <i class="fas fa-medkit me-2"></i>Registrar Afastamento
+      </a>
+      <a href="{% url 'cadastros:rescisao_create' %}" class="btn btn-danger">
+        <i class="fas fa-user-minus me-2"></i>Registrar Rescisão
+      </a>
+      <a href="{% url 'cadastros:relatorio_rh' %}" class="btn btn-info">
+        <i class="fas fa-file-alt me-2"></i>Relatório RH
+      </a>
+    </div>
+  </div>
+
+  <!-- Alertas -->
+  {% if proximas_ferias %}
+  <div class="alert alert-warning alert-dismissible fade show mb-4" id="ferias-alert" role="alert">
+    <div class="d-flex align-items-center">
+      <i class="fas fa-exclamation-triangle me-2"></i>
+      <div>
+        <strong>Atenção!</strong> Existem <strong>{{ proximas_ferias|length }}</strong> férias agendadas para os próximos 30 dias.
+        <a href="{% url 'cadastros:ferias_list' %}?status=AGENDADA" class="alert-link">Visualizar</a>
+      </div>
+    </div>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  </div>
+  {% endif %}
+
+  {% if afastamentos_lista %}
+  <div class="alert alert-danger alert-dismissible fade show mb-4" id="afastamentos-alert" role="alert">
+    <div class="d-flex align-items-center">
+      <i class="fas fa-medkit me-2"></i>
+      <div>
+        <strong>Aviso!</strong> Existem <strong>{{ afastamentos_lista|length }}</strong> afastamentos ativos no momento.
+        <a href="{% url 'cadastros:afastamento_list' %}?status=ATIVO" class="alert-link">Visualizar</a>
+      </div>
+    </div>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  </div>
+  {% endif %}
+
+  <!-- Cards de Estatísticas -->
+  <div class="row g-3 mb-4">
+    <!-- Funcionários Ativos -->
+    <div class="col-md-3">
+      <div class="card stat-card success">
+        <div class="card-body">
+          <div class="d-flex align-items-center justify-content-between">
+            <div>
+              <p class="text-muted mb-1">Funcionários Ativos</p>
+              <h2 class="stat-number text-success mb-0">{{ total_funcionarios }}</h2>
+            </div>
+            <div class="bg-success bg-opacity-10 p-3 rounded">
+              <i class="fas fa-users fa-2x text-success"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Férias Agendadas -->
+    <div class="col-md-3">
+      <div class="card stat-card">
+        <div class="card-body">
+          <div class="d-flex align-items-center justify-content-between">
+            <div>
+              <p class="text-muted mb-1">Férias Agendadas</p>
+              <h2 class="stat-number text-primary mb-0">{{ ferias_agendadas }}</h2>
+            </div>
+            <div class="bg-primary bg-opacity-10 p-3 rounded">
+              <i class="fas fa-calendar-check fa-2x text-primary"></i>
+            </div>
+          </div>
+          <a href="{% url 'cadastros:ferias_list' %}?status=AGENDADA" class="btn btn-sm btn-link p-0 mt-2">
+            Ver todas <i class="fas fa-arrow-right ms-1"></i>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Férias em Gozo -->
+    <div class="col-md-3">
+      <div class="card stat-card warning">
+        <div class="card-body">
+          <div class="d-flex align-items-center justify-content-between">
+            <div>
+              <p class="text-muted mb-1">Férias em Gozo</p>
+              <h2 class="stat-number text-warning mb-0">{{ ferias_em_gozo }}</h2>
+            </div>
+            <div class="bg-warning bg-opacity-10 p-3 rounded">
+              <i class="fas fa-umbrella-beach fa-2x text-warning"></i>
+            </div>
+          </div>
+          <a href="{% url 'cadastros:ferias_list' %}?status=EM_GOZO" class="btn btn-sm btn-link p-0 mt-2">
+            Ver todas <i class="fas fa-arrow-right ms-1"></i>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Afastamentos Ativos -->
+    <div class="col-md-3">
+      <div class="card stat-card danger">
+        <div class="card-body">
+          <div class="d-flex align-items-center justify-content-between">
+            <div>
+              <p class="text-muted mb-1">Afastamentos Ativos</p>
+              <h2 class="stat-number text-danger mb-0">{{ afastamentos_ativos }}</h2>
+            </div>
+            <div class="bg-danger bg-opacity-10 p-3 rounded">
+              <i class="fas fa-medkit fa-2x text-danger"></i>
+            </div>
+          </div>
+          <a href="{% url 'cadastros:afastamento_list' %}?status=ATIVO" class="btn btn-sm btn-link p-0 mt-2">
+            Ver todos <i class="fas fa-arrow-right ms-1"></i>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3">
+    <!-- Próximas Férias -->
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header bg-primary text-white">
+          <h5 class="mb-0">
+            <i class="fas fa-calendar-alt me-2"></i>
+            Próximas Férias (30 dias)
+          </h5>
+        </div>
+        <div class="card-body p-0">
+          {% if proximas_ferias %}
+          <div class="list-group list-group-flush">
+            {% for ferias in proximas_ferias %}
+            <a href="{% url 'cadastros:ferias_detail' ferias.pk %}" class="list-group-item list-group-item-action">
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  <h6 class="mb-1">{{ ferias.funcionario.nome_completo }}</h6>
+                  <p class="mb-0 text-muted small">
+                    <i class="fas fa-calendar me-1"></i>
+                    {{ ferias.data_inicio|date:"d/m/Y" }} - {{ ferias.data_fim|date:"d/m/Y" }}
+                    ({{ ferias.dias_ferias }} dias)
+                  </p>
+                </div>
+                <span class="badge bg-info">{{ ferias.get_status_display }}</span>
+              </div>
+            </a>
+            {% endfor %}
+          </div>
+          {% else %}
+          <div class="p-4 text-center text-muted">
+            <i class="fas fa-calendar-times fa-3x mb-3"></i>
+            <p>Nenhuma férias agendada para os próximos 30 dias</p>
+          </div>
+          {% endif %}
+        </div>
+        <div class="card-footer text-center">
+          <a href="{% url 'cadastros:ferias_list' %}" class="btn btn-sm btn-outline-primary">
+            Ver todas as férias <i class="fas fa-arrow-right ms-1"></i>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Afastamentos Ativos -->
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header bg-danger text-white">
+          <h5 class="mb-0">
+            <i class="fas fa-medkit me-2"></i>
+            Afastamentos Ativos
+          </h5>
+        </div>
+        <div class="card-body p-0">
+          {% if afastamentos_lista %}
+          <div class="list-group list-group-flush">
+            {% for afastamento in afastamentos_lista %}
+            <a href="{% url 'cadastros:afastamento_detail' afastamento.pk %}" class="list-group-item list-group-item-action">
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  <h6 class="mb-1">{{ afastamento.funcionario.nome_completo }}</h6>
+                  <p class="mb-0 text-muted small">
+                    <i class="fas fa-calendar me-1"></i>
+                    Desde {{ afastamento.data_inicio|date:"d/m/Y" }}
+                    {% if afastamento.data_prevista_retorno %}
+                    | Retorno: {{ afastamento.data_prevista_retorno|date:"d/m/Y" }}
+                    {% endif %}
+                  </p>
+                </div>
+                <div class="text-end">
+                  <span class="badge bg-warning">{{ afastamento.get_tipo_afastamento_display }}</span>
+                </div>
+              </div>
+            </a>
+            {% endfor %}
+          </div>
+          {% else %}
+          <div class="p-4 text-center text-muted">
+            <i class="fas fa-check-circle fa-3x mb-3"></i>
+            <p>Nenhum afastamento ativo</p>
+          </div>
+          {% endif %}
+        </div>
+        <div class="card-footer text-center">
+          <a href="{% url 'cadastros:afastamento_list' %}" class="btn btn-sm btn-outline-danger">
+            Ver todos os afastamentos <i class="fas fa-arrow-right ms-1"></i>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Afastamentos por Tipo -->
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0">
+            <i class="fas fa-chart-pie me-2"></i>
+            Afastamentos por Tipo
+          </h5>
+        </div>
+        <div class="card-body">
+          {% if afastamentos_por_tipo %}
+          {% for item in afastamentos_por_tipo %}
+          <div class="mb-3">
+            <div class="d-flex justify-content-between mb-1">
+              <span class="text-muted">{{ item.tipo_afastamento }}</span>
+              <strong>{{ item.total }}</strong>
+            </div>
+            <div class="progress" style="height: 20px;">
+              <div class="progress-bar bg-info" role="progressbar" 
+                   style="width: {% widthratio item.total afastamentos_ativos 100 %}%">
+                {{ item.total }}
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+          {% else %}
+          <div class="text-center text-muted">
+            <i class="fas fa-chart-bar fa-3x mb-3"></i>
+            <p>Nenhum dado disponível</p>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Rescisões -->
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header bg-secondary text-white">
+          <h5 class="mb-0">
+            <i class="fas fa-user-times me-2"></i>
+            Rescisões
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="row text-center">
+            <div class="col-6">
+              <div class="border-end">
+                <h3 class="text-warning mb-1">{{ rescisoes_em_processo }}</h3>
+                <p class="text-muted mb-0">Em Processo</p>
+                <a href="{% url 'cadastros:rescisao_list' %}?status=EM_PROCESSO" class="btn btn-sm btn-link">Ver</a>
+              </div>
+            </div>
+            <div class="col-6">
+              <h3 class="text-danger mb-1">{{ rescisoes_mes }}</h3>
+              <p class="text-muted mb-0">Este Mês</p>
+              <a href="{% url 'cadastros:rescisao_list' %}" class="btn btn-sm btn-link">Ver</a>
+            </div>
+          </div>
+        </div>
+        <div class="card-footer text-center">
+          <a href="{% url 'cadastros:rescisao_list' %}" class="btn btn-sm btn-outline-secondary">
+            Ver todas as rescisões <i class="fas fa-arrow-right ms-1"></i>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

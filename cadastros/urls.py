@@ -7,6 +7,7 @@ from . import views
 from . import views_motorista
 from . import views_monitoramento_mip
 from . import views_requisicao
+from . import views_rh
 
 app_name = 'cadastros'
 
@@ -346,5 +347,34 @@ urlpatterns = [
     path('ajax/carregar-estagios/', views_monitoramento_mip.ajax_carregar_estagios, name='ajax_carregar_estagios'),
     path('ajax/deletar-estagio/<int:pk>/', views_monitoramento_mip.ajax_deletar_estagio, name='ajax_deletar_estagio'),
     path('ajax/buscar-talhoes/', views_monitoramento_mip.ajax_buscar_talhoes, name='ajax_buscar_talhoes'),
+
+    # ==================== RH - RECURSOS HUMANOS ====================
+    # Dashboard
+    path('rh/', views_rh.rh_dashboard, name='rh_dashboard'),
+    
+    # Férias
+    path('rh/ferias/', views_rh.ferias_list, name='ferias_list'),
+    path('rh/ferias/novo/', views_rh.ferias_create, name='ferias_create'),
+    path('rh/ferias/<int:pk>/', views_rh.ferias_detail, name='ferias_detail'),
+    path('rh/ferias/<int:pk>/editar/', views_rh.ferias_update, name='ferias_update'),
+    path('rh/ferias/<int:pk>/excluir/', views_rh.ferias_delete, name='ferias_delete'),
+    
+    # Afastamentos
+    path('rh/afastamentos/', views_rh.afastamento_list, name='afastamento_list'),
+    path('rh/afastamentos/novo/', views_rh.afastamento_create, name='afastamento_create'),
+    path('rh/afastamentos/<int:pk>/', views_rh.afastamento_detail, name='afastamento_detail'),
+    path('rh/afastamentos/<int:pk>/editar/', views_rh.afastamento_update, name='afastamento_update'),
+    path('rh/afastamentos/<int:pk>/excluir/', views_rh.afastamento_delete, name='afastamento_delete'),
+    
+    # Rescisões
+    path('rh/rescisoes/', views_rh.rescisao_list, name='rescisao_list'),
+    path('rh/rescisoes/novo/', views_rh.rescisao_create, name='rescisao_create'),
+    path('rh/rescisoes/<int:pk>/', views_rh.rescisao_detail, name='rescisao_detail'),
+    path('rh/rescisoes/<int:pk>/editar/', views_rh.rescisao_update, name='rescisao_update'),
+    path('rh/rescisoes/<int:pk>/excluir/', views_rh.rescisao_delete, name='rescisao_delete'),
+    
+    # Relatórios RH
+    path('rh/relatorio/', views_rh.relatorio_rh, name='relatorio_rh'),
+    path('rh/relatorio/pdf/', views_rh.relatorio_rh_pdf, name='relatorio_rh_pdf'),
 
 ]

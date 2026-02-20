@@ -112,7 +112,13 @@
           </div>
           <div class="col-md-6 mb-3">
             {{ form.tipo_produto.label_tag }}
-            {{ form.tipo_produto }}
+            <div class="input-group">
+              {{ form.tipo_produto }}
+              <a href="{% url 'produtos:tipo_produto_create' %}" class="btn btn-outline-primary" title="Cadastrar novo tipo de produto" target="_blank">
+                <i class="bi bi-plus-lg"></i>
+              </a>
+            </div>
+            {% if form.tipo_produto.errors %}<div class="text-danger">{{ form.tipo_produto.errors }}</div>{% endif %}
           </div>
         </div>
         <div class="mb-3">
@@ -2481,6 +2487,52 @@ function excluirFornecedor(id) {
 function editarFornecedor(id) {
   alert('Funcionalidade de edição em desenvolvimento. Use excluir e adicionar novamente por enquanto.');
 }
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const tipoProdutoSelect = document.getElementById('id_tipo_produto');
+  if (!tipoProdutoSelect) return;
+
+  let lastRefreshAt = 0;
+
+  function atualizarTiposProduto() {
+    const now = Date.now();
+    if (now - lastRefreshAt < 1500) return;
+    lastRefreshAt = now;
+
+    const valorSelecionado = tipoProdutoSelect.value;
+
+    fetch("{% url 'produtos:tipo_produto_listar_ajax' %}")
+      .then(response => response.json())
+      .then(result => {
+        if (!result.success) return;
+
+        tipoProdutoSelect.innerHTML = '<option value="">---------</option>';
+
+        result.tipos.forEach(tipo => {
+          const option = document.createElement('option');
+          option.value = String(tipo.id);
+          option.textContent = tipo.label;
+          tipoProdutoSelect.appendChild(option);
+        });
+
+        if (valorSelecionado) {
+          tipoProdutoSelect.value = valorSelecionado;
+        }
+      })
+      .catch(error => {
+        console.error('Erro ao atualizar tipos de produto:', error);
+      });
+  }
+
+  window.addEventListener('focus', atualizarTiposProduto);
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'visible') {
+      atualizarTiposProduto();
+    }
+  });
+});
 </script>
 
 {% endblock %}

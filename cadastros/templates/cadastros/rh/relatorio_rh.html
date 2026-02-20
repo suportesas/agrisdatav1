@@ -1,0 +1,184 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Relatório RH | ERP Agrícola{% endblock %}
+
+{% block extra_css %}
+<style>
+  .table-hover tbody tr:hover {
+    background-color: #f5f5f5;
+  }
+  .badge-group {
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+  }
+  .stat-summary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+  }
+  .stat-item {
+    display: inline-block;
+    margin-right: 30px;
+  }
+  .stat-value {
+    font-size: 1.8rem;
+    font-weight: bold;
+  }
+  .stat-label {
+    font-size: 0.9rem;
+    opacity: 0.9;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h1 class="h3 mb-1">
+        <i class="fas fa-file-alt text-primary me-2"></i>
+        Relatório de RH
+      </h1>
+      <p class="text-muted mb-0">Visão consolidada de funcionários, férias e afastamentos</p>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{% url 'cadastros:rh_dashboard' %}" class="btn btn-outline-primary">
+        <i class="fas fa-arrow-left me-2"></i>Dashboard
+      </a>
+      <button onclick="window.print()" class="btn btn-primary">
+        <i class="fas fa-print me-2"></i>Imprimir
+      </button>
+      <a href="{% url 'cadastros:relatorio_rh_pdf' %}" class="btn btn-danger">
+        <i class="fas fa-file-pdf me-2"></i>Download PDF
+      </a>
+    </div>
+  </div>
+
+  <!-- Resumo -->
+  <div class="stat-summary">
+    <div class="stat-item">
+      <div class="stat-value">{{ total_funcionarios }}</div>
+      <div class="stat-label">Funcionários Ativos</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value">{{ total_ferias_agendadas }}</div>
+      <div class="stat-label">Férias Agendadas</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value">{{ total_afastamentos_ativos }}</div>
+      <div class="stat-label">Afastamentos Ativos</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value">{{ total_rescisoes }}</div>
+      <div class="stat-label">Rescisões em Processo</div>
+    </div>
+  </div>
+
+  <!-- Tabela Relatório -->
+  <div class="card">
+    <div class="card-body">
+      {% if relatorio %}
+      <div class="table-responsive">
+        <table class="table table-hover table-striped">
+          <thead class="table-light">
+            <tr>
+              <th style="width: 25%;">Nome do Funcionário</th>
+              <th style="width: 12%;">Data Admissão</th>
+              <th style="width: 8%;">Idade</th>
+              <th style="width: 12%;">Férias Agendadas</th>
+              <th style="width: 12%;">Férias em Gozo</th>
+              <th style="width: 15%;">Afastamentos Ativos</th>
+              <th style="width: 10%;">Rescisões</th>
+              <th style="width: 6%;">Ação</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in relatorio %}
+            <tr>
+              <td>
+                <strong>{{ item.funcionario.nome_completo }}</strong>
+                <br>
+                <small class="text-muted">{{ item.funcionario.funcao.nome }}</small>
+              </td>
+              <td>
+                {{ item.data_admissao|date:"d/m/Y" }}
+              </td>
+              <td>
+                <span class="badge bg-info">{{ item.idade }} anos</span>
+              </td>
+              <td>
+                {% if item.ferias_agendadas > 0 %}
+                <span class="badge bg-primary">{{ item.ferias_agendadas }}</span>
+                {% else %}
+                <span class="text-muted">—</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if item.ferias_em_gozo > 0 %}
+                <span class="badge bg-warning">{{ item.ferias_em_gozo }}</span>
+                {% else %}
+                <span class="text-muted">—</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if item.afastamentos_ativos > 0 %}
+                <span class="badge bg-danger">{{ item.afastamentos_ativos }}</span>
+                {% else %}
+                <span class="text-muted">—</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if item.rescisoes > 0 %}
+                <span class="badge bg-secondary">{{ item.rescisoes }}</span>
+                {% else %}
+                <span class="text-muted">—</span>
+                {% endif %}
+              </td>
+              <td>
+                <a href="{% url 'cadastros:funcionario_detail' item.funcionario.pk %}" 
+                   class="btn btn-sm btn-outline-primary" title="Ver detalhes">
+                  <i class="fas fa-eye"></i>
+                </a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="text-center py-5">
+        <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+        <p class="text-muted">Nenhum funcionário ativo encontrado</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Legenda -->
+  <div class="mt-4">
+    <div class="alert alert-info">
+      <strong>Legenda:</strong>
+      <ul class="mb-0 mt-2">
+        <li><strong>Férias Agendadas:</strong> Férias que estão marcadas para o futuro (status AGENDADA)</li>
+        <li><strong>Férias em Gozo:</strong> Férias que o funcionário está usufruindo no momento (status EM_GOZO)</li>
+        <li><strong>Afastamentos Ativos:</strong> Afastamentos médicos, acidentes, etc. que estão em andamento (status ATIVO)</li>
+        <li><strong>Rescisões:</strong> Rescisões de contrato aguardando conclusão (status EM_PROCESSO)</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<style media="print">
+  .btn, .no-print {
+    display: none !important;
+  }
+  body {
+    background: white;
+  }
+</style>
+{% endblock %}

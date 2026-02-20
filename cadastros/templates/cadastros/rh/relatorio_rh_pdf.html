@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Relatório de RH</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #3b82f6;
+        }
+        
+        .header h1 {
+            color: #3b82f6;
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+        
+        .header p {
+            color: #666;
+            font-size: 12px;
+            margin: 3px 0;
+        }
+        
+        .summary {
+            display: table;
+            width: 100%;
+            margin-bottom: 30px;
+            background: #f5f5f5;
+            border-collapse: collapse;
+        }
+        
+        .summary-item {
+            display: table-cell;
+            border: 1px solid #ddd;
+            padding: 15px;
+            text-align: center;
+            width: 25%;
+        }
+        
+        .summary-value {
+            font-size: 20px;
+            font-weight: bold;
+            color: #3b82f6;
+        }
+        
+        .summary-label {
+            font-size: 11px;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        
+        th {
+            background-color: #3b82f6;
+            color: white;
+            padding: 10px;
+            text-align: left;
+            font-weight: bold;
+            font-size: 11px;
+        }
+        
+        td {
+            padding: 8px 10px;
+            border-bottom: 1px solid #ddd;
+            font-size: 10px;
+        }
+        
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        
+        .footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+            font-size: 10px;
+            color: #666;
+            text-align: right;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 9px;
+            font-weight: bold;
+            color: white;
+        }
+        
+        .badge-badge-primary {
+            background-color: #3b82f6;
+        }
+        
+        .badge-warning {
+            background-color: #f59e0b;
+        }
+        
+        .badge-danger {
+            background-color: #dc3545;
+        }
+        
+        .badge-secondary {
+            background-color: #6c757d;
+        }
+        
+        .badge-info {
+            background-color: #17a2b8;
+        }
+        
+        .text-muted {
+            color: #999;
+            font-size: 9px;
+        }
+        
+        .page-break {
+            page-break-after: always;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <h1>Relatório de RH</h1>
+        <p><strong>Empresa:</strong> {{ empresa_nome }}</p>
+        <p><strong>Data do Relatório:</strong> {{ data_relatorio|date:"d/m/Y" }}</p>
+    </div>
+    
+    <!-- Resumo -->
+    <div class="summary">
+        <div class="summary-item">
+            <div class="summary-value">{{ total_funcionarios }}</div>
+            <div class="summary-label">Funcionários Ativos</div>
+        </div>
+        <div class="summary-item">
+            <div class="summary-value">{{ total_ferias_agendadas }}</div>
+            <div class="summary-label">Férias Agendadas</div>
+        </div>
+        <div class="summary-item">
+            <div class="summary-value">{{ total_afastamentos_ativos }}</div>
+            <div class="summary-label">Afastamentos Ativos</div>
+        </div>
+        <div class="summary-item">
+            <div class="summary-value">{{ total_rescisoes }}</div>
+            <div class="summary-label">Rescisões em Processo</div>
+        </div>
+    </div>
+    
+    <!-- Tabela de Dados -->
+    {% if relatorio %}
+    <table>
+        <thead>
+            <tr>
+                <th>Nome do Funcionário</th>
+                <th>Data Admissão</th>
+                <th>Idade</th>
+                <th>Férias Agendadas</th>
+                <th>Férias em Gozo</th>
+                <th>Afastamentos Ativos</th>
+                <th>Rescisões</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in relatorio %}
+            <tr>
+                <td>
+                    <strong>{{ item.funcionario.nome_completo }}</strong><br>
+                    <span class="text-muted">{{ item.funcionario.funcao.nome }}</span>
+                </td>
+                <td>{{ item.data_admissao|date:"d/m/Y" }}</td>
+                <td><span class="badge badge-info">{{ item.idade }} anos</span></td>
+                <td>
+                    {% if item.ferias_agendadas > 0 %}
+                        <span class="badge badge-badge-primary">{{ item.ferias_agendadas }}</span>
+                    {% else %}
+                        <span class="text-muted">—</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if item.ferias_em_gozo > 0 %}
+                        <span class="badge badge-warning">{{ item.ferias_em_gozo }}</span>
+                    {% else %}
+                        <span class="text-muted">—</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if item.afastamentos_ativos > 0 %}
+                        <span class="badge badge-danger">{{ item.afastamentos_ativos }}</span>
+                    {% else %}
+                        <span class="text-muted">—</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if item.rescisoes > 0 %}
+                        <span class="badge badge-secondary">{{ item.rescisoes }}</span>
+                    {% else %}
+                        <span class="text-muted">—</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+    
+    <!-- Footer -->
+    <div class="footer">
+        <p>Relatório gerado em {{ data_relatorio|date:"d/m/Y H:i" }}</p>
+    </div>
+</body>
+</html>

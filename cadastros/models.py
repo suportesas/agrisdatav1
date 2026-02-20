@@ -1923,6 +1923,674 @@ class Funcionario(models.Model):
                 })
 
 
+# ============================================================================
+# CONTROLE DE RH - FÉRIAS, AFASTAMENTOS E RESCISÕES
+# ============================================================================
+
+class FeriasFuncionario(models.Model):
+    """
+    Controle de férias dos funcionários
+    """
+    
+    STATUS_FERIAS = [
+        ('AGENDADA', 'Agendada'),
+        ('EM_GOZO', 'Em Gozo'),
+        ('CONCLUIDA', 'Concluída'),
+        ('CANCELADA', 'Cancelada'),
+    ]
+    
+    TIPO_FERIAS = [
+        ('INTEGRAL', 'Férias Integrais (30 dias)'),
+        ('FRACIONADA', 'Férias Fracionadas'),
+        ('COLETIVA', 'Férias Coletivas'),
+    ]
+    
+    empresa = models.ForeignKey(
+        'empresas.Empresa',
+        on_delete=models.CASCADE,
+        related_name='ferias_funcionarios',
+        verbose_name='Empresa'
+    )
+    
+    funcionario = models.ForeignKey(
+        Funcionario,
+        on_delete=models.CASCADE,
+        related_name='ferias',
+        verbose_name='Funcionário'
+    )
+    
+    # Período Aquisitivo
+    periodo_aquisitivo_inicio = models.DateField(
+        'Início do Período Aquisitivo',
+        help_text='Data de início do período que dá direito às férias'
+    )
+    
+    periodo_aquisitivo_fim = models.DateField(
+        'Fim do Período Aquisitivo',
+        help_text='Data de fim do período aquisitivo (12 meses após início)'
+    )
+    
+    # Período de Gozo
+    data_inicio = models.DateField(
+        'Data de Início das Férias'
+    )
+    
+    data_fim = models.DateField(
+        'Data de Fim das Férias'
+    )
+    
+    dias_ferias = models.PositiveIntegerField(
+        'Quantidade de Dias',
+        default=30,
+        help_text='Dias de férias (máximo 30)'
+    )
+    
+    tipo_ferias = models.CharField(
+        'Tipo de Férias',
+        max_length=20,
+        choices=TIPO_FERIAS,
+        default='INTEGRAL'
+    )
+    
+    # Abono Pecuniário (venda de férias)
+    abono_pecuniario = models.BooleanField(
+        'Abono Pecuniário (Venda de 10 dias)',
+        default=False,
+        help_text='Funcionário optou por vender 10 dias de férias'
+    )
+    
+    dias_abono = models.PositiveIntegerField(
+        'Dias de Abono',
+        default=0,
+        help_text='Quantidade de dias vendidos (máximo 10)'
+    )
+    
+    # Valores
+    valor_ferias = models.DecimalField(
+        'Valor das Férias (R$)',
+        max_digits=10,
+        decimal_places=2,
+        default=0,
+        help_text='Valor total pago nas férias (salário + 1/3)'
+    )
+    
+    valor_abono = models.DecimalField(
+        'Valor do Abono (R$)',
+        max_digits=10,
+        decimal_places=2,
+        default=0,
+        help_text='Valor pago pelos dias vendidos'
+    )
+    
+    # Status e Controle
+    status = models.CharField(
+        'Status',
+        max_length=20,
+        choices=STATUS_FERIAS,
+        default='AGENDADA'
+    )
+    
+    data_pagamento = models.DateField(
+        'Data de Pagamento',
+        null=True,
+        blank=True,
+        help_text='Data do pagamento das férias (deve ser até 2 dias antes do início)'
+    )
+    
+    observacoes = models.TextField(
+        'Observações',
+        blank=True
+    )
+    
+    # Documentos
+    recibo_ferias = models.FileField(
+        'Recibo de Férias',
+        upload_to='rh/ferias/%Y/%m/',
+        null=True,
+        blank=True
+    )
+    
+    # Auditoria
+    cadastrado_por = models.ForeignKey(
+        'usuarios.Usuario',
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='ferias_cadastradas',
+        verbose_name='Cadastrado por'
+    )
+    
+    data_cadastro = models.DateTimeField('Data de Cadastro', auto_now_add=True)
+    data_atualizacao = models.DateTimeField('Última Atualização', auto_now=True)
+    
+    class Meta:
+        verbose_name = 'Férias de Funcionário'
+        verbose_name_plural = 'Férias de Funcionários'
+        ordering = ['-data_inicio']
+        indexes = [
+            models.Index(fields=['empresa', 'status']),
+            models.Index(fields=['funcionario', 'status']),
+            models.Index(fields=['data_inicio', 'data_fim']),
+        ]
+    
+    def __str__(self):
+        return f"{self.funcionario.nome_completo} - {self.data_inicio} a {self.data_fim}"
+    
+    def get_dias_corridos(self):
+        """Retorna quantidade de dias corridos de férias"""
+        return (self.data_fim - self.data_inicio).days + 1
+    
+    def clean(self):
+        """Validações"""
+        from django.core.exceptions import ValidationError
+        
+        if self.data_fim < self.data_inicio:
+            raise ValidationError({
+                'data_fim': 'Data de fim não pode ser anterior à data de início'
+            })
+        
+        if self.dias_ferias > 30:
+            raise ValidationError({
+                'dias_ferias': 'Máximo de 30 dias de férias'
+            })
+        
+        if self.abono_pecuniario and self.dias_abono > 10:
+            raise ValidationError({
+                'dias_abono': 'Máximo de 10 dias de abono pecuniário'
+            })
+        
+        if self.periodo_aquisitivo_fim < self.periodo_aquisitivo_inicio:
+            raise ValidationError({
+                'periodo_aquisitivo_fim': 'Período aquisitivo inválido'
+            })
+
+
+class AfastamentoFuncionario(models.Model):
+    """
+    Controle de afastamentos de funcionários
+    (Atestados médicos, acidentes de trabalho, licenças)
+    """
+    
+    TIPO_AFASTAMENTO = [
+        ('ATESTADO_MEDICO', 'Atestado Médico'),
+        ('ACIDENTE_TRABALHO', 'Acidente de Trabalho'),
+        ('LICENCA_MATERNIDADE', 'Licença Maternidade'),
+        ('LICENCA_PATERNIDADE', 'Licença Paternidade'),
+        ('LICENCA_SAUDE', 'Licença Saúde (INSS)'),
+        ('SUSPENSAO', 'Suspensão'),
+        ('OUTROS', 'Outros'),
+    ]
+    
+    STATUS_AFASTAMENTO = [
+        ('ATIVO', 'Ativo/Em Andamento'),
+        ('CONCLUIDO', 'Concluído'),
+        ('CANCELADO', 'Cancelado'),
+    ]
+    
+    empresa = models.ForeignKey(
+        'empresas.Empresa',
+        on_delete=models.CASCADE,
+        related_name='afastamentos_funcionarios',
+        verbose_name='Empresa'
+    )
+    
+    funcionario = models.ForeignKey(
+        Funcionario,
+        on_delete=models.CASCADE,
+        related_name='afastamentos',
+        verbose_name='Funcionário'
+    )
+    
+    tipo_afastamento = models.CharField(
+        'Tipo de Afastamento',
+        max_length=30,
+        choices=TIPO_AFASTAMENTO
+    )
+    
+    # Datas
+    data_inicio = models.DateField(
+        'Data de Início do Afastamento'
+    )
+    
+    data_prevista_retorno = models.DateField(
+        'Data Prevista de Retorno'
+    )
+    
+    data_retorno_efetivo = models.DateField(
+        'Data de Retorno Efetivo',
+        null=True,
+        blank=True,
+        help_text='Data real que o funcionário retornou'
+    )
+    
+    dias_afastamento = models.PositiveIntegerField(
+        'Dias de Afastamento',
+        default=1
+    )
+    
+    # Detalhes
+    motivo = models.TextField(
+        'Motivo/Descrição',
+        help_text='Descreva o motivo do afastamento'
+    )
+    
+    cid = models.CharField(
+        'CID (Código Internacional de Doenças)',
+        max_length=10,
+        blank=True,
+        help_text='CID informado no atestado médico'
+    )
+    
+    # Documentação
+    numero_atestado = models.CharField(
+        'Número do Atestado/Documento',
+        max_length=50,
+        blank=True
+    )
+    
+    medico_responsavel = models.CharField(
+        'Médico Responsável',
+        max_length=200,
+        blank=True
+    )
+    
+    crm_medico = models.CharField(
+        'CRM do Médico',
+        max_length=20,
+        blank=True
+    )
+    
+    arquivo_atestado = models.FileField(
+        'Arquivo do Atestado/Documento',
+        upload_to='rh/afastamentos/%Y/%m/',
+        null=True,
+        blank=True,
+        help_text='PDF ou imagem do atestado'
+    )
+    
+    # Acidente de Trabalho
+    e_acidente_trabalho = models.BooleanField(
+        'É Acidente de Trabalho?',
+        default=False
+    )
+    
+    cat_emitida = models.BooleanField(
+        'CAT Emitida?',
+        default=False,
+        help_text='Comunicação de Acidente de Trabalho'
+    )
+    
+    numero_cat = models.CharField(
+        'Número da CAT',
+        max_length=50,
+        blank=True
+    )
+    
+    arquivo_cat = models.FileField(
+        'Arquivo da CAT',
+        upload_to='rh/cat/%Y/%m/',
+        null=True,
+        blank=True
+    )
+    
+    # INSS
+    requer_inss = models.BooleanField(
+        'Requer Auxílio INSS?',
+        default=False,
+        help_text='Afastamento superior a 15 dias'
+    )
+    
+    numero_beneficio_inss = models.CharField(
+        'Número do Benefício INSS',
+        max_length=50,
+        blank=True
+    )
+    
+    # Status
+    status = models.CharField(
+        'Status',
+        max_length=20,
+        choices=STATUS_AFASTAMENTO,
+        default='ATIVO'
+    )
+    
+    observacoes = models.TextField(
+        'Observações',
+        blank=True
+    )
+    
+    # Auditoria
+    cadastrado_por = models.ForeignKey(
+        'usuarios.Usuario',
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='afastamentos_cadastrados',
+        verbose_name='Cadastrado por'
+    )
+    
+    data_cadastro = models.DateTimeField('Data de Cadastro', auto_now_add=True)
+    data_atualizacao = models.DateTimeField('Última Atualização', auto_now=True)
+    
+    class Meta:
+        verbose_name = 'Afastamento de Funcionário'
+        verbose_name_plural = 'Afastamentos de Funcionários'
+        ordering = ['-data_inicio']
+        indexes = [
+            models.Index(fields=['empresa', 'status']),
+            models.Index(fields=['funcionario', 'status']),
+            models.Index(fields=['tipo_afastamento']),
+            models.Index(fields=['data_inicio', 'data_prevista_retorno']),
+        ]
+    
+    def __str__(self):
+        return f"{self.funcionario.nome_completo} - {self.get_tipo_afastamento_display()} ({self.data_inicio})"
+    
+    def get_dias_corridos(self):
+        """Retorna quantidade de dias corridos de afastamento"""
+        data_final = self.data_retorno_efetivo or self.data_prevista_retorno
+        return (data_final - self.data_inicio).days + 1
+    
+    def clean(self):
+        """Validações"""
+        from django.core.exceptions import ValidationError
+        
+        if self.data_prevista_retorno < self.data_inicio:
+            raise ValidationError({
+                'data_prevista_retorno': 'Data de retorno não pode ser anterior à data de início'
+            })
+        
+        if self.data_retorno_efetivo and self.data_retorno_efetivo < self.data_inicio:
+            raise ValidationError({
+                'data_retorno_efetivo': 'Data de retorno efetivo não pode ser anterior à data de início'
+            })
+        
+        # Se acidente de trabalho, CAT é obrigatória
+        if self.e_acidente_trabalho and not self.cat_emitida:
+            raise ValidationError({
+                'cat_emitida': 'CAT deve ser emitida para acidentes de trabalho'
+            })
+
+
+class RescisaoContrato(models.Model):
+    """
+    Controle de rescisões/desligamentos de funcionários
+    """
+    
+    TIPO_RESCISAO = [
+        ('DEMISSAO_SEM_JUSTA_CAUSA', 'Demissão Sem Justa Causa'),
+        ('DEMISSAO_COM_JUSTA_CAUSA', 'Demissão Com Justa Causa'),
+        ('PEDIDO_DEMISSAO', 'Pedido de Demissão'),
+        ('ACORDO_TRABALHISTA', 'Acordo Trabalhista'),
+        ('TERMINO_CONTRATO', 'Término de Contrato (Temporário)'),
+        ('APOSENTADORIA', 'Aposentadoria'),
+        ('FALECIMENTO', 'Falecimento'),
+    ]
+    
+    STATUS_RESCISAO = [
+        ('EM_PROCESSO', 'Em Processo'),
+        ('CONCLUIDA', 'Concluída'),
+        ('CANCELADA', 'Cancelada'),
+    ]
+    
+    empresa = models.ForeignKey(
+        'empresas.Empresa',
+        on_delete=models.CASCADE,
+        related_name='rescisoes',
+        verbose_name='Empresa'
+    )
+    
+    funcionario = models.ForeignKey(
+        Funcionario,
+        on_delete=models.CASCADE,
+        related_name='rescisoes',
+        verbose_name='Funcionário'
+    )
+    
+    tipo_rescisao = models.CharField(
+        'Tipo de Rescisão',
+        max_length=40,
+        choices=TIPO_RESCISAO
+    )
+    
+    # Datas
+    data_aviso = models.DateField(
+        'Data do Aviso',
+        help_text='Data em que o aviso prévio foi dado'
+    )
+    
+    data_desligamento = models.DateField(
+        'Data do Desligamento',
+        help_text='Último dia de trabalho'
+    )
+    
+    trabalhou_aviso_previo = models.BooleanField(
+        'Trabalhou o Aviso Prévio?',
+        default=True
+    )
+    
+    dias_aviso_previo = models.PositiveIntegerField(
+        'Dias de Aviso Prévio',
+        default=30,
+        help_text='Quantidade de dias de aviso prévio'
+    )
+    
+    # Motivo
+    motivo_detalhado = models.TextField(
+        'Motivo Detalhado da Rescisão',
+        help_text='Descreva o motivo do desligamento'
+    )
+    
+    # Valores da Rescisão
+    saldo_salario = models.DecimalField(
+        'Saldo de Salário (R$)',
+        max_digits=10,
+        decimal_places=2,
+        default=0
+    )
+    
+    ferias_vencidas = models.DecimalField(
+        'Férias Vencidas (R$)',
+        max_digits=10,
+        decimal_places=2,
+        default=0
+    )
+    
+    ferias_proporcionais = models.DecimalField(
+        'Férias Proporcionais (R$)',
+        max_digits=10,
+        decimal_places=2,
+        default=0
+    )
+    
+    decimo_terceiro_proporcional = models.DecimalField(
+        '13º Proporcional (R$)',
+        max_digits=10,
+        decimal_places=2,
+        default=0
+    )
+    
+    aviso_previo_indenizado = models.DecimalField(
+        'Aviso Prévio Indenizado (R$)',
+        max_digits=10,
+        decimal_places=2,
+        default=0
+    )
+    
+    multa_fgts = models.DecimalField(
+        'Multa FGTS 40% (R$)',
+        max_digits=10,
+        decimal_places=2,
+        default=0,
+        help_text='Multa de 40% sobre FGTS (apenas em demissão sem justa causa)'
+    )
+    
+    outros_valores = models.DecimalField(
+        'Outros Valores (R$)',
+        max_digits=10,
+        decimal_places=2,
+        default=0
+    )
+    
+    descontos = models.DecimalField(
+        'Descontos (R$)',
+        max_digits=10,
+        decimal_places=2,
+        default=0,
+        help_text='Faltas, adiantamentos, etc.'
+    )
+    
+    valor_liquido = models.DecimalField(
+        'Valor Líquido a Pagar (R$)',
+        max_digits=10,
+        decimal_places=2,
+        default=0
+    )
+    
+    # Direitos
+    tem_direito_seguro_desemprego = models.BooleanField(
+        'Tem Direito a Seguro Desemprego?',
+        default=False
+    )
+    
+    liberar_fgts = models.BooleanField(
+        'Liberar Saque FGTS?',
+        default=False
+    )
+    
+    # Exames e Documentos
+    exame_demissional_realizado = models.BooleanField(
+        'Exame Demissional Realizado?',
+        default=False
+    )
+    
+    data_exame_demissional = models.DateField(
+        'Data do Exame Demissional',
+        null=True,
+        blank=True
+    )
+    
+    trct_emitido = models.BooleanField(
+        'TRCT Emitido?',
+        default=False,
+        help_text='Termo de Rescisão do Contrato de Trabalho'
+    )
+    
+    chave_conectividade_social = models.CharField(
+        'Chave Conectividade Social',
+        max_length=50,
+        blank=True
+    )
+    
+    # Arquivos
+    arquivo_trct = models.FileField(
+        'Arquivo TRCT',
+        upload_to='rh/rescisoes/%Y/%m/',
+        null=True,
+        blank=True
+    )
+    
+    arquivo_exame = models.FileField(
+        'Arquivo Exame Demissional',
+        upload_to='rh/rescisoes/%Y/%m/',
+        null=True,
+        blank=True
+    )
+    
+    # Homologação
+    data_homologacao = models.DateField(
+        'Data da Homologação',
+        null=True,
+        blank=True,
+        help_text='Data de homologação no sindicato (se aplicável)'
+    )
+    
+    local_homologacao = models.CharField(
+        'Local da Homologação',
+        max_length=200,
+        blank=True
+    )
+    
+    # Pagamento
+    data_pagamento = models.DateField(
+        'Data do Pagamento',
+        null=True,
+        blank=True
+    )
+    
+    forma_pagamento = models.CharField(
+        'Forma de Pagamento',
+        max_length=50,
+        blank=True,
+        help_text='Dinheiro, Transferência, Cheque, etc.'
+    )
+    
+    # Status
+    status = models.CharField(
+        'Status',
+        max_length=20,
+        choices=STATUS_RESCISAO,
+        default='EM_PROCESSO'
+    )
+    
+    observacoes = models.TextField(
+        'Observações',
+        blank=True
+    )
+    
+    # Auditoria
+    cadastrado_por = models.ForeignKey(
+        'usuarios.Usuario',
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='rescisoes_cadastradas',
+        verbose_name='Cadastrado por'
+    )
+    
+    data_cadastro = models.DateTimeField('Data de Cadastro', auto_now_add=True)
+    data_atualizacao = models.DateTimeField('Última Atualização', auto_now=True)
+    
+    class Meta:
+        verbose_name = 'Rescisão de Contrato'
+        verbose_name_plural = 'Rescisões de Contratos'
+        ordering = ['-data_desligamento']
+        indexes = [
+            models.Index(fields=['empresa', 'status']),
+            models.Index(fields=['funcionario']),
+            models.Index(fields=['tipo_rescisao']),
+            models.Index(fields=['data_desligamento']),
+        ]
+    
+    def __str__(self):
+        return f"{self.funcionario.nome_completo} - {self.get_tipo_rescisao_display()} ({self.data_desligamento})"
+    
+    def calcular_valor_liquido(self):
+        """Calcula valor líquido da rescisão"""
+        total = (
+            self.saldo_salario +
+            self.ferias_vencidas +
+            self.ferias_proporcionais +
+            self.decimo_terceiro_proporcional +
+            self.aviso_previo_indenizado +
+            self.multa_fgts +
+            self.outros_valores -
+            self.descontos
+        )
+        return total
+    
+    def clean(self):
+        """Validações"""
+        from django.core.exceptions import ValidationError
+        
+        if self.data_desligamento < self.data_aviso:
+            raise ValidationError({
+                'data_desligamento': 'Data de desligamento não pode ser anterior ao aviso'
+            })
+        
+        # Valida multa FGTS apenas para demissão sem justa causa
+        if self.tipo_rescisao != 'DEMISSAO_SEM_JUSTA_CAUSA' and self.multa_fgts > 0:
+            raise ValidationError({
+                'multa_fgts': 'Multa FGTS apenas para demissão sem justa causa'
+            })
+
 
 # CULTURA
 

@@ -6,6 +6,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db.models import Q
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 
 from .models import TipoProduto
@@ -103,4 +104,25 @@ def tipo_produto_delete(request, pk):
     
     return render(request, 'produtos/tipo_produto/confirm_delete.html', {
         'tipo': tipo,
+    })
+
+
+@login_required
+def tipo_produto_listar_ajax(request):
+    empresa = getattr(request.user, 'empresa', None)
+    if not empresa:
+        return JsonResponse({'success': False, 'tipos': []})
+
+    tipos = TipoProduto.objects.filter(empresa=empresa, ativo=True).order_by('nome')
+    return JsonResponse({
+        'success': True,
+        'tipos': [
+            {
+                'id': tipo.id,
+                'nome': tipo.nome,
+                'codigo': tipo.codigo,
+                'label': f'{tipo.nome} ({tipo.codigo})',
+            }
+            for tipo in tipos
+        ]
     })

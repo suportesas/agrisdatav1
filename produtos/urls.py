@@ -13,6 +13,7 @@ urlpatterns = [
     path('tipos-produto/cadastrar/', views_tipo_produto.tipo_produto_create, name='tipo_produto_create'),
     path('tipos-produto/<int:pk>/editar/', views_tipo_produto.tipo_produto_update, name='tipo_produto_update'),
     path('tipos-produto/<int:pk>/excluir/', views_tipo_produto.tipo_produto_delete, name='tipo_produto_delete'),
+    path('tipos-produto/ajax/listar/', views_tipo_produto.tipo_produto_listar_ajax, name='tipo_produto_listar_ajax'),
     
     # Unidade de Medida
     path('unidades/', views.unidademedida_list, name='unidademedida_list'),

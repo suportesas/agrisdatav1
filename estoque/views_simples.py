@@ -57,7 +57,7 @@ def entrada_rapida(request):
                     if not produto_id or not quantidade:
                         continue
                     
-                    produto = get_object_or_404(Produto, pk=produto_id)
+                    produto = get_object_or_404(Produto, pk=produto_id, categoria__empresa=request.user.empresa)
                     qtd = Decimal(quantidade)
                     preco_unit = Decimal(preco) if preco else Decimal('0.00')
                     
@@ -162,7 +162,7 @@ def saida_rapida(request):
                     if not produto_id or not quantidade:
                         continue
                     
-                    produto = get_object_or_404(Produto, pk=produto_id)
+                    produto = get_object_or_404(Produto, pk=produto_id, categoria__empresa=request.user.empresa)
                     qtd_solicitada = Decimal(quantidade)
                     
                     # Buscar lotes disponíveis (FIFO - First In, First Out)

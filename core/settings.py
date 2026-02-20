@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',
     'corsheaders',  # Para API (instale: pip install django-cors-headers)
+    'widget_tweaks',  # Para customização de widgets de formulários
     
     # Apps do projeto
     'core',  # Configurações do sistema

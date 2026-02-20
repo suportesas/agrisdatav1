@@ -3633,5 +3633,315 @@ class EstagioDesenvolvimentoForm(forms.ModelForm):
 
 
 # =============================================================================
+# CONTROLE DE RH - FÉRIAS, AFASTAMENTOS E RESCISÕES
+# =============================================================================
+
+from .models import FeriasFuncionario, AfastamentoFuncionario, RescisaoContrato
+
+
+class FeriasFuncionarioForm(forms.ModelForm):
+    """Formulário para cadastro de férias"""
+    
+    class Meta:
+        model = FeriasFuncionario
+        fields = [
+            'funcionario', 'periodo_aquisitivo_inicio', 'periodo_aquisitivo_fim',
+            'data_inicio', 'data_fim', 'dias_ferias', 'tipo_ferias',
+            'abono_pecuniario', 'dias_abono', 'valor_ferias', 'valor_abono',
+            'status', 'data_pagamento', 'observacoes', 'recibo_ferias'
+        ]
+        widgets = {
+            'funcionario': forms.Select(attrs={'class': 'form-select'}),
+            'periodo_aquisitivo_inicio': forms.DateInput(attrs={
+                'class': 'form-control',
+                'type': 'date'
+            }),
+            'periodo_aquisitivo_fim': forms.DateInput(attrs={
+                'class': 'form-control',
+                'type': 'date'
+            }),
+            'data_inicio': forms.DateInput(attrs={
+                'class': 'form-control',
+                'type': 'date'
+            }),
+            'data_fim': forms.DateInput(attrs={
+                'class': 'form-control',
+                'type': 'date'
+            }),
+            'dias_ferias': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': '1',
+                'max': '30'
+            }),
+            'tipo_ferias': forms.Select(attrs={'class': 'form-select'}),
+            'abono_pecuniario': forms.CheckboxInput(attrs={
+                'class': 'form-check-input'
+            }),
+            'dias_abono': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': '0',
+                'max': '10'
+            }),
+            'valor_ferias': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.01'
+            }),
+            'valor_abono': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.01'
+            }),
+            'status': forms.Select(attrs={'class': 'form-select'}),
+            'data_pagamento': forms.DateInput(attrs={
+                'class': 'form-control',
+                'type': 'date'
+            }),
+            'observacoes': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3
+            }),
+            'recibo_ferias': forms.FileInput(attrs={
+                'class': 'form-control'
+            }),
+        }
+    
+    def __init__(self, *args, **kwargs):
+        self.empresa = kwargs.pop('empresa', None)
+        super().__init__(*args, **kwargs)
+        
+        if self.empresa:
+            self.fields['funcionario'].queryset = Funcionario.objects.filter(
+                empresa=self.empresa,
+                ativo=True
+            ).order_by('nome_completo')
+
+
+class AfastamentoFuncionarioForm(forms.ModelForm):
+    """Formulário para cadastro de afastamentos"""
+    
+    class Meta:
+        model = AfastamentoFuncionario
+        fields = [
+            'funcionario', 'tipo_afastamento', 'data_inicio',
+            'data_prevista_retorno', 'data_retorno_efetivo', 'dias_afastamento',
+            'motivo', 'cid', 'numero_atestado', 'medico_responsavel', 'crm_medico',
+            'arquivo_atestado', 'e_acidente_trabalho', 'cat_emitida', 'numero_cat',
+            'arquivo_cat', 'requer_inss', 'numero_beneficio_inss', 'status', 'observacoes'
+        ]
+        widgets = {
+            'funcionario': forms.Select(attrs={'class': 'form-select'}),
+            'tipo_afastamento': forms.Select(attrs={'class': 'form-select'}),
+            'data_inicio': forms.DateInput(attrs={
+                'class': 'form-control',
+                'type': 'date'
+            }),
+            'data_prevista_retorno': forms.DateInput(attrs={
+                'class': 'form-control',
+                'type': 'date'
+            }),
+            'data_retorno_efetivo': forms.DateInput(attrs={
+                'class': 'form-control',
+                'type': 'date'
+            }),
+            'dias_afastamento': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': '1'
+            }),
+            'motivo': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'Descreva o motivo do afastamento'
+            }),
+            'cid': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ex: M54.5'
+            }),
+            'numero_atestado': forms.TextInput(attrs={
+                'class': 'form-control'
+            }),
+            'medico_responsavel': forms.TextInput(attrs={
+                'class': 'form-control'
+            }),
+            'crm_medico': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ex: CRM/SP 123456'
+            }),
+            'arquivo_atestado': forms.FileInput(attrs={
+                'class': 'form-control'
+            }),
+            'e_acidente_trabalho': forms.CheckboxInput(attrs={
+                'class': 'form-check-input'
+            }),
+            'cat_emitida': forms.CheckboxInput(attrs={
+                'class': 'form-check-input'
+            }),
+            'numero_cat': forms.TextInput(attrs={
+                'class': 'form-control'
+            }),
+            'arquivo_cat': forms.FileInput(attrs={
+                'class': 'form-control'
+            }),
+            'requer_inss': forms.CheckboxInput(attrs={
+                'class': 'form-check-input'
+            }),
+            'numero_beneficio_inss': forms.TextInput(attrs={
+                'class': 'form-control'
+            }),
+            'status': forms.Select(attrs={'class': 'form-select'}),
+            'observacoes': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3
+            }),
+        }
+    
+    def __init__(self, *args, **kwargs):
+        self.empresa = kwargs.pop('empresa', None)
+        super().__init__(*args, **kwargs)
+        
+        if self.empresa:
+            self.fields['funcionario'].queryset = Funcionario.objects.filter(
+                empresa=self.empresa,
+                ativo=True
+            ).order_by('nome_completo')
+
+
+class RescisaoContratoForm(forms.ModelForm):
+    """Formulário para cadastro de rescisões"""
+    
+    class Meta:
+        model = RescisaoContrato
+        fields = [
+            'funcionario', 'tipo_rescisao', 'data_aviso', 'data_desligamento',
+            'trabalhou_aviso_previo', 'dias_aviso_previo', 'motivo_detalhado',
+            'saldo_salario', 'ferias_vencidas', 'ferias_proporcionais',
+            'decimo_terceiro_proporcional', 'aviso_previo_indenizado',
+            'multa_fgts', 'outros_valores', 'descontos', 'valor_liquido',
+            'tem_direito_seguro_desemprego', 'liberar_fgts',
+            'exame_demissional_realizado', 'data_exame_demissional',
+            'trct_emitido', 'chave_conectividade_social',
+            'arquivo_trct', 'arquivo_exame', 'data_homologacao',
+            'local_homologacao', 'data_pagamento', 'forma_pagamento',
+            'status', 'observacoes'
+        ]
+        widgets = {
+            'funcionario': forms.Select(attrs={'class': 'form-select'}),
+            'tipo_rescisao': forms.Select(attrs={'class': 'form-select'}),
+            'data_aviso': forms.DateInput(attrs={
+                'class': 'form-control',
+                'type': 'date'
+            }),
+            'data_desligamento': forms.DateInput(attrs={
+                'class': 'form-control',
+                'type': 'date'
+            }),
+            'trabalhou_aviso_previo': forms.CheckboxInput(attrs={
+                'class': 'form-check-input'
+            }),
+            'dias_aviso_previo': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': '0'
+            }),
+            'motivo_detalhado': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3
+            }),
+            'saldo_salario': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.01'
+            }),
+            'ferias_vencidas': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.01'
+            }),
+            'ferias_proporcionais': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.01'
+            }),
+            'decimo_terceiro_proporcional': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.01'
+            }),
+            'aviso_previo_indenizado': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.01'
+            }),
+            'multa_fgts': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.01'
+            }),
+            'outros_valores': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.01'
+            }),
+            'descontos': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.01'
+            }),
+            'valor_liquido': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.01',
+                'readonly': 'readonly'
+            }),
+            'tem_direito_seguro_desemprego': forms.CheckboxInput(attrs={
+                'class': 'form-check-input'
+            }),
+            'liberar_fgts': forms.CheckboxInput(attrs={
+                'class': 'form-check-input'
+            }),
+            'exame_demissional_realizado': forms.CheckboxInput(attrs={
+                'class': 'form-check-input'
+            }),
+            'data_exame_demissional': forms.DateInput(attrs={
+                'class': 'form-control',
+                'type': 'date'
+            }),
+            'trct_emitido': forms.CheckboxInput(attrs={
+                'class': 'form-check-input'
+            }),
+            'chave_conectividade_social': forms.TextInput(attrs={
+                'class': 'form-control'
+            }),
+            'arquivo_trct': forms.FileInput(attrs={
+                'class': 'form-control'
+            }),
+            'arquivo_exame': forms.FileInput(attrs={
+                'class': 'form-control'
+            }),
+            'data_homologacao': forms.DateInput(attrs={
+                'class': 'form-control',
+                'type': 'date'
+            }),
+            'local_homologacao': forms.TextInput(attrs={
+                'class': 'form-control'
+            }),
+            'data_pagamento': forms.DateInput(attrs={
+                'class': 'form-control',
+                'type': 'date'
+            }),
+            'forma_pagamento': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ex: Transferência bancária'
+            }),
+            'status': forms.Select(attrs={'class': 'form-select'}),
+            'observacoes': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3
+            }),
+        }
+    
+    def __init__(self, *args, **kwargs):
+        self.empresa = kwargs.pop('empresa', None)
+        super().__init__(*args, **kwargs)
+        
+        if self.empresa:
+            self.fields['funcionario'].queryset = Funcionario.objects.filter(
+                empresa=self.empresa
+            ).order_by('nome_completo')
+        
+        # Calcular valor líquido automaticamente quando salvando
+        if self.instance and self.instance.pk:
+            self.initial['valor_liquido'] = self.instance.calcular_valor_liquido()
+
+
+# =============================================================================
 # ✅ FIM DO CÓDIGO - TESTADO E FUNCIONANDO
 # =============================================================================

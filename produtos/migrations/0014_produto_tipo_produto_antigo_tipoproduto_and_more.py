@@ -4,6 +4,58 @@ import django.db.models.deletion
 from django.db import migrations, models
 
 
+def migrar_tipo_produto_legado(apps, schema_editor):
+    Produto = apps.get_model('produtos', 'Produto')
+    TipoProduto = apps.get_model('produtos', 'TipoProduto')
+    Empresa = apps.get_model('empresas', 'Empresa')
+
+    tipos_padrao = {
+        'REVENDA': 'Revenda',
+        'CONSUMO': 'Consumo',
+        'MATERIA_PRIMA': 'Matéria Prima',
+        'PRODUTO_ACABADO': 'Produto Acabado',
+    }
+
+    tipos_por_empresa = {}
+    for empresa in Empresa.objects.all():
+        tipos_empresa = {}
+        for codigo, nome in tipos_padrao.items():
+            tipo, _ = TipoProduto.objects.get_or_create(
+                empresa=empresa,
+                codigo=codigo,
+                defaults={'nome': nome, 'ativo': True},
+            )
+            tipos_empresa[codigo] = tipo
+        tipo_outro, _ = TipoProduto.objects.get_or_create(
+            empresa=empresa,
+            codigo='OUTROS',
+            defaults={'nome': 'Outros', 'ativo': True},
+        )
+        tipos_empresa['OUTROS'] = tipo_outro
+        tipos_por_empresa[empresa.id] = tipos_empresa
+
+    for produto in Produto.objects.select_related('categoria').all():
+        codigo_legado = produto.tipo_produto
+        if not codigo_legado:
+            continue
+
+        codigo_legado = str(codigo_legado).strip().upper()
+        produto.tipo_produto_antigo = codigo_legado
+
+        empresa_id = None
+        if produto.categoria_id and getattr(produto.categoria, 'empresa_id', None):
+            empresa_id = produto.categoria.empresa_id
+
+        if not empresa_id or empresa_id not in tipos_por_empresa:
+            produto.tipo_produto = None
+            produto.save(update_fields=['tipo_produto_antigo', 'tipo_produto'])
+            continue
+
+        tipo = tipos_por_empresa[empresa_id].get(codigo_legado) or tipos_por_empresa[empresa_id]['OUTROS']
+        produto.tipo_produto = str(tipo.id)
+        produto.save(update_fields=['tipo_produto_antigo', 'tipo_produto'])
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -33,6 +85,7 @@ class Migration(migrations.Migration):
                 'unique_together': {('empresa', 'codigo')},
             },
         ),
+        migrations.RunPython(migrar_tipo_produto_legado, migrations.RunPython.noop),
         migrations.AlterField(
             model_name='produto',
             name='tipo_produto',

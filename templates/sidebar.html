@@ -183,6 +183,19 @@
               <li><a href="{% url 'cadastros:funcao_list' %}"><i class="bi bi-person-workspace"></i> Funções/Cargos</a></li>
             </ul>
           </li>
+          
+          <!-- RH - Recursos Humanos (Submenu) -->
+          <li class="has-submenu">
+            <a href="#"><i class="bi bi-person-tie"></i> RH <i class="bi bi-chevron-right ms-auto"></i></a>
+            <ul class="nested-submenu">
+              <li><a href="{% url 'cadastros:rh_dashboard' %}"><i class="bi bi-speedometer2"></i> Dashboard RH</a></li>
+              <li><a href="{% url 'cadastros:ferias_list' %}"><i class="bi bi-umbrella-beach"></i> Férias</a></li>
+              <li><a href="{% url 'cadastros:afastamento_list' %}"><i class="bi bi-medkit"></i> Afastamentos</a></li>
+              <li><a href="{% url 'cadastros:rescisao_list' %}"><i class="bi bi-person-dash"></i> Rescisões</a></li>
+              <li><a href="{% url 'cadastros:relatorio_rh' %}"><i class="bi bi-file-earmark-text"></i> Relatório RH</a></li>
+            </ul>
+          </li>
+          
           <li><a href="{% url 'cadastros:cliente_list' %}"><i class="bi bi-person-check"></i> Clientes</a></li>
           <li><a href="{% url 'cadastros:fornecedor_list' %}"><i class="bi bi-shop"></i> Fornecedores</a></li>
           <li><a href="{% url 'cadastros:transportadora_list' %}"><i class="bi bi-truck"></i> Transportadoras</a></li>
@@ -246,6 +259,7 @@
           <li><a href="{% url 'produtos:dashboard' %}"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
           <li><a href="{% url 'produtos:produto_list' %}"><i class="bi bi-list-ul"></i> Listar Produtos</a></li>
           <li><a href="{% url 'produtos:produto_create' %}"><i class="bi bi-plus-circle"></i> Novo Produto</a></li>
+          <li><a href="{% url 'produtos:tipo_produto_list' %}"><i class="bi bi-tag"></i> Tipos de Produto</a></li>
           <li><a href="{% url 'produtos:categoria_list' %}"><i class="bi bi-tags"></i> Categorias</a></li>
           <li><a href="{% url 'produtos:subcategoria_list' %}"><i class="bi bi-bookmark"></i> Subcategorias</a></li>
           <li><a href="{% url 'produtos:unidademedida_list' %}"><i class="bi bi-rulers"></i> Unidades</a></li>

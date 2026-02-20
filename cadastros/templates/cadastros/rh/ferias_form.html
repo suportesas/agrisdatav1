@@ -1,0 +1,260 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block title %}{{ title }} | ERP Agrícola{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <!-- Header -->
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+          <h1 class="h3 mb-1">
+            <i class="fas fa-umbrella-beach text-primary me-2"></i>
+            {{ title }}
+          </h1>
+          <p class="text-muted mb-0">Preencha os dados das férias</p>
+        </div>
+        <a href="{% url 'cadastros:ferias_list' %}" class="btn btn-outline-secondary">
+          <i class="fas fa-arrow-left me-2"></i>Voltar
+        </a>
+      </div>
+
+      <!-- Formulário -->
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        
+        <!-- Erros Gerais -->
+        {% if form.non_field_errors %}
+        <div class="alert alert-danger alert-dismissible fade show">
+          <i class="fas fa-exclamation-triangle me-2"></i>
+          {{ form.non_field_errors }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endif %}
+
+        <!-- Dados do Funcionário -->
+        <div class="card mb-3">
+          <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="fas fa-user me-2"></i>Funcionário</h5>
+          </div>
+          <div class="card-body">
+            <div class="mb-3">
+              <label class="form-label">{{ form.funcionario.label }} <span class="text-danger">*</span></label>
+              {{ form.funcionario|add_class:"form-select" }}
+              {% if form.funcionario.errors %}
+              <div class="text-danger small mt-1">{{ form.funcionario.errors }}</div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <!-- Período Aquisitivo -->
+        <div class="card mb-3">
+          <div class="card-header">
+            <h5 class="mb-0"><i class="fas fa-calendar-alt me-2"></i>Período Aquisitivo</h5>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label">{{ form.periodo_aquisitivo_inicio.label }} <span class="text-danger">*</span></label>
+                {{ form.periodo_aquisitivo_inicio|add_class:"form-control" }}
+                {% if form.periodo_aquisitivo_inicio.errors %}
+                <div class="text-danger small mt-1">{{ form.periodo_aquisitivo_inicio.errors }}</div>
+                {% endif %}
+                <small class="text-muted">Início do período de 12 meses trabalhados</small>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label">{{ form.periodo_aquisitivo_fim.label }} <span class="text-danger">*</span></label>
+                {{ form.periodo_aquisitivo_fim|add_class:"form-control" }}
+                {% if form.periodo_aquisitivo_fim.errors %}
+                <div class="text-danger small mt-1">{{ form.periodo_aquisitivo_fim.errors }}</div>
+                {% endif %}
+                <small class="text-muted">Fim do período de 12 meses trabalhados</small>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Período de Gozo -->
+        <div class="card mb-3">
+          <div class="card-header bg-info text-white">
+            <h5 class="mb-0"><i class="fas fa-calendar-check me-2"></i>Período de Gozo (Férias)</h5>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-4 mb-3">
+                <label class="form-label">{{ form.data_inicio.label }} <span class="text-danger">*</span></label>
+                {{ form.data_inicio|add_class:"form-control" }}
+                {% if form.data_inicio.errors %}
+                <div class="text-danger small mt-1">{{ form.data_inicio.errors }}</div>
+                {% endif %}
+              </div>
+              <div class="col-md-4 mb-3">
+                <label class="form-label">{{ form.data_fim.label }} <span class="text-danger">*</span></label>
+                {{ form.data_fim|add_class:"form-control" }}
+                {% if form.data_fim.errors %}
+                <div class="text-danger small mt-1">{{ form.data_fim.errors }}</div>
+                {% endif %}
+              </div>
+              <div class="col-md-4 mb-3">
+                <label class="form-label">{{ form.dias_ferias.label }} <span class="text-danger">*</span></label>
+                {{ form.dias_ferias|add_class:"form-control" }}
+                {% if form.dias_ferias.errors %}
+                <div class="text-danger small mt-1">{{ form.dias_ferias.errors }}</div>
+                {% endif %}
+                <small class="text-muted">Máximo 30 dias</small>
+              </div>
+            </div>
+
+            <div class="alert alert-info">
+              <i class="fas fa-info-circle me-2"></i>
+              <strong>Atenção:</strong> As férias devem ser tiradas dentro do período concessivo (12 meses após o fim do período aquisitivo).
+            </div>
+          </div>
+        </div>
+
+        <!-- Abono Pecuniário -->
+        <div class="card mb-3">
+          <div class="card-header">
+            <h5 class="mb-0"><i class="fas fa-coins me-2"></i>Abono Pecuniário (Venda de Férias)</h5>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-4 mb-3">
+                <label class="form-label">{{ form.dias_abono.label }}</label>
+                {{ form.dias_abono|add_class:"form-control" }}
+                {% if form.dias_abono.errors %}
+                <div class="text-danger small mt-1">{{ form.dias_abono.errors }}</div>
+                {% endif %}
+                <small class="text-muted">Máximo 10 dias (1/3 das férias)</small>
+              </div>
+              <div class="col-md-4 mb-3">
+                <label class="form-label">{{ form.valor_abono.label }}</label>
+                {{ form.valor_abono|add_class:"form-control" }}
+                {% if form.valor_abono.errors %}
+                <div class="text-danger small mt-1">{{ form.valor_abono.errors }}</div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Valores Financeiros -->
+        <div class="card mb-3">
+          <div class="card-header bg-success text-white">
+            <h5 class="mb-0"><i class="fas fa-dollar-sign me-2"></i>Valores</h5>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-4 mb-3">
+                <label class="form-label">{{ form.valor_bruto.label }}</label>
+                {{ form.valor_bruto|add_class:"form-control" }}
+                {% if form.valor_bruto.errors %}
+                <div class="text-danger small mt-1">{{ form.valor_bruto.errors }}</div>
+                {% endif %}
+              </div>
+              <div class="col-md-4 mb-3">
+                <label class="form-label">{{ form.valor_terco_constitucional.label }}</label>
+                {{ form.valor_terco_constitucional|add_class:"form-control" }}
+                {% if form.valor_terco_constitucional.errors %}
+                <div class="text-danger small mt-1">{{ form.valor_terco_constitucional.errors }}</div>
+                {% endif %}
+                <small class="text-muted">1/3 do valor das férias</small>
+              </div>
+              <div class="col-md-4 mb-3">
+                <label class="form-label">{{ form.valor_descontos.label }}</label>
+                {{ form.valor_descontos|add_class:"form-control" }}
+                {% if form.valor_descontos.errors %}
+                <div class="text-danger small mt-1">{{ form.valor_descontos.errors }}</div>
+                {% endif %}
+                <small class="text-muted">INSS, IR, etc.</small>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Documentação -->
+        <div class="card mb-3">
+          <div class="card-header">
+            <h5 class="mb-0"><i class="fas fa-file-pdf me-2"></i>Documentação</h5>
+          </div>
+          <div class="card-body">
+            <div class="mb-3">
+              <label class="form-label">{{ form.recibo_ferias.label }}</label>
+              {{ form.recibo_ferias|add_class:"form-control" }}
+              {% if form.recibo_ferias.errors %}
+              <div class="text-danger small mt-1">{{ form.recibo_ferias.errors }}</div>
+              {% endif %}
+              <small class="text-muted">Upload do recibo assinado (PDF)</small>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">{{ form.observacoes.label }}</label>
+              {{ form.observacoes|add_class:"form-control" }}
+              {% if form.observacoes.errors %}
+              <div class="text-danger small mt-1">{{ form.observacoes.errors }}</div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <!-- Status -->
+        <div class="card mb-4">
+          <div class="card-header">
+            <h5 class="mb-0"><i class="fas fa-flag me-2"></i>Status</h5>
+          </div>
+          <div class="card-body">
+            <div class="mb-3">
+              <label class="form-label">{{ form.status.label }} <span class="text-danger">*</span></label>
+              {{ form.status|add_class:"form-select" }}
+              {% if form.status.errors %}
+              <div class="text-danger small mt-1">{{ form.status.errors }}</div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <!-- Botões -->
+        <div class="d-flex gap-2 justify-content-end">
+          <a href="{% url 'cadastros:ferias_list' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-times me-2"></i>Cancelar
+          </a>
+          <button type="submit" class="btn btn-primary">
+            <i class="fas fa-save me-2"></i>Salvar Férias
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Calcular data fim baseado em dias
+  document.querySelector('[name="dias_ferias"]').addEventListener('change', function() {
+    const dataInicio = document.querySelector('[name="data_inicio"]').value;
+    const diasFerias = parseInt(this.value);
+    
+    if (dataInicio && diasFerias) {
+      const inicio = new Date(dataInicio + 'T00:00:00');
+      const fim = new Date(inicio);
+      fim.setDate(fim.getDate() + diasFerias - 1);
+      
+      const dataFim = fim.toISOString().split('T')[0];
+      document.querySelector('[name="data_fim"]').value = dataFim;
+    }
+  });
+
+  // Limitar dias de abono a 10
+  document.querySelector('[name="dias_abono"]').addEventListener('input', function() {
+    if (parseInt(this.value) > 10) {
+      this.value = 10;
+      alert('Abono pecuniário limitado a 10 dias (1/3 das férias)');
+    }
+  });
+</script>
+{% endblock %}

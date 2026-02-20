@@ -101,7 +101,7 @@ def unidademedida_create(request):
 
 @login_required
 def unidademedida_update(request, pk):
-    unidade = get_object_or_404(UnidadeMedida, pk=pk)
+    unidade = get_object_or_404(UnidadeMedida.objects.filter(empresa=request.user.empresa), pk=pk)
     if request.method == 'POST':
         form = UnidadeMedidaForm(request.POST, instance=unidade)
         if form.is_valid():
@@ -118,7 +118,7 @@ def unidademedida_update(request, pk):
 
 @login_required
 def unidademedida_delete(request, pk):
-    unidade = get_object_or_404(UnidadeMedida, pk=pk)
+    unidade = get_object_or_404(UnidadeMedida.objects.filter(empresa=request.user.empresa), pk=pk)
     if request.method == 'POST':
         unidade.delete()
         messages.success(request, 'Unidade de medida excluída com sucesso!')
@@ -165,7 +165,7 @@ def naturezaoperacao_create(request):
 
 @login_required
 def naturezaoperacao_update(request, pk):
-    natureza = get_object_or_404(NaturezaOperacao, pk=pk)
+    natureza = get_object_or_404(NaturezaOperacao.objects.filter(empresa=request.user.empresa), pk=pk)
     if request.method == 'POST':
         form = NaturezaOperacaoForm(request.POST, instance=natureza)
         if form.is_valid():
@@ -182,7 +182,7 @@ def naturezaoperacao_update(request, pk):
 
 @login_required
 def naturezaoperacao_delete(request, pk):
-    natureza = get_object_or_404(NaturezaOperacao, pk=pk)
+    natureza = get_object_or_404(NaturezaOperacao.objects.filter(empresa=request.user.empresa), pk=pk)
     if request.method == 'POST':
         natureza.delete()
         messages.success(request, 'Natureza da Operação excluída com sucesso!')
@@ -229,7 +229,7 @@ def categoria_create(request):
 
 @login_required
 def categoria_update(request, pk):
-    categoria = get_object_or_404(Categoria, pk=pk)
+    categoria = get_object_or_404(Categoria.objects.filter(empresa=request.user.empresa), pk=pk)
     if request.method == 'POST':
         form = CategoriaForm(request.POST, instance=categoria)
         if form.is_valid():
@@ -246,7 +246,7 @@ def categoria_update(request, pk):
 
 @login_required
 def categoria_delete(request, pk):
-    categoria = get_object_or_404(Categoria, pk=pk)
+    categoria = get_object_or_404(Categoria.objects.filter(empresa=request.user.empresa), pk=pk)
     if request.method == 'POST':
         categoria.delete()
         messages.success(request, 'Categoria excluída com sucesso!')
@@ -292,7 +292,7 @@ def subcategoria_create(request):
 
 @login_required
 def subcategoria_update(request, pk):
-    subcategoria = get_object_or_404(SubCategoria, pk=pk)
+    subcategoria = get_object_or_404(SubCategoria.objects.filter(categoria__empresa=request.user.empresa), pk=pk)
     if request.method == 'POST':
         form = SubCategoriaForm(request.POST, instance=subcategoria)
         if form.is_valid():
@@ -309,7 +309,7 @@ def subcategoria_update(request, pk):
 
 @login_required
 def subcategoria_delete(request, pk):
-    subcategoria = get_object_or_404(SubCategoria, pk=pk)
+    subcategoria = get_object_or_404(SubCategoria.objects.filter(categoria__empresa=request.user.empresa), pk=pk)
     if request.method == 'POST':
         subcategoria.delete()
         messages.success(request, 'Subcategoria excluída com sucesso!')
@@ -374,7 +374,7 @@ def produto_detail(request, pk):
         Produto.objects.select_related(
             'categoria', 'subcategoria', 'unidade_medida', 
             'unidade_compra', 'unidade_venda', 'ncm', 'fornecedor_padrao'
-        ).prefetch_related('tributacoes'),
+        ).prefetch_related('tributacoes').filter(categoria__empresa=request.user.empresa),
         pk=pk
     )
     return render(request, 'produtos/produto/produto_detail.html', {
@@ -400,7 +400,7 @@ def produto_create(request):
 
 @login_required
 def produto_update(request, pk):
-    produto = get_object_or_404(Produto, pk=pk)
+    produto = get_object_or_404(Produto.objects.filter(categoria__empresa=request.user.empresa), pk=pk)
     if request.method == 'POST':
         form = ProdutoForm(request.POST, request.FILES, instance=produto, empresa=request.user.empresa)
         if form.is_valid():
@@ -433,24 +433,44 @@ def produto_update(request, pk):
 
 
 @login_required
+@login_required
 def produto_delete(request, pk):
-    produto = get_object_or_404(Produto, pk=pk)
+    produto = get_object_or_404(Produto.objects.filter(categoria__empresa=request.user.empresa), pk=pk)
+    
     if request.method == 'POST':
-        produto.delete()
-        messages.success(request, 'Produto excluído com sucesso!')
-        return redirect('produtos:produto_list')
+        try:
+            # Em vez de deletar fisicamente, apenas desativar
+            # (protege integridade de lotes, compras, recebimentos vinculados)
+            produto.ativo = False
+            produto.save(update_fields=['ativo'])
+            messages.success(request, f'Produto "{produto.nome}" desativado com sucesso!')
+            return redirect('produtos:produto_list')
+        except Exception as e:
+            messages.error(request, f'Erro ao desativar produto: {str(e)}')
+            return redirect('produtos:produto_detail', pk=pk)
+    
+    # Verificar se tem dependências (apenas para avisar na tela)
+    has_lotes = produto.lotes.exists()
+    has_pedidos = produto.itens_pedido_compra.exists()
+    has_recebimentos = produto.itemrecebimento_set.exists()
+    
     return render(request, 'produtos/produto/produto_confirm_delete.html', {
-        'object': produto
+        'object': produto,
+        'has_dependencias': has_lotes or has_pedidos or has_recebimentos,
+        'has_lotes': has_lotes,
+        'has_pedidos': has_pedidos,
+        'has_recebimentos': has_recebimentos,
     })
+
 
 
 @login_required
 def produto_clone(request, pk):
     """Clona um produto com todos os seus dados relacionados"""
-    produto_original = get_object_or_404(Produto, pk=pk)
+    produto_original = get_object_or_404(Produto.objects.filter(categoria__empresa=request.user.empresa), pk=pk)
     
     # Criar cópia do produto
-    produto_clone = Produto.objects.get(pk=pk)
+    produto_clone = Produto.objects.filter(categoria__empresa=request.user.empresa).get(pk=pk)
     produto_clone.pk = None  # Remove o ID para criar novo registro
     produto_clone.codigo = f"{produto_original.codigo}-COPIA"
     produto_clone.nome = f"{produto_original.nome} (CÓPIA)"
@@ -479,7 +499,7 @@ def produto_clone(request, pk):
 
 @login_required
 def produtotributacao_create(request, produto_id):
-    produto = get_object_or_404(Produto, pk=produto_id)
+    produto = get_object_or_404(Produto.objects.filter(categoria__empresa=request.user.empresa), pk=produto_id)
     if request.method == 'POST':
         form = ProdutoTributacaoForm(request.POST, empresa=request.user.empresa)
         if form.is_valid():
@@ -499,7 +519,7 @@ def produtotributacao_create(request, produto_id):
 
 @login_required
 def produtotributacao_update(request, pk):
-    tributacao = get_object_or_404(ProdutoTributacao, pk=pk)
+    tributacao = get_object_or_404(ProdutoTributacao.objects.filter(produto__categoria__empresa=request.user.empresa), pk=pk)
     if request.method == 'POST':
         form = ProdutoTributacaoForm(request.POST, instance=tributacao, empresa=request.user.empresa)
         if form.is_valid():
@@ -517,7 +537,7 @@ def produtotributacao_update(request, pk):
 
 @login_required
 def produtotributacao_delete(request, pk):
-    tributacao = get_object_or_404(ProdutoTributacao, pk=pk)
+    tributacao = get_object_or_404(ProdutoTributacao.objects.filter(produto__categoria__empresa=request.user.empresa), pk=pk)
     produto_id = tributacao.produto.pk
     if request.method == 'POST':
         tributacao.delete()
@@ -805,7 +825,7 @@ def cfop_buscar_ajax(request):
 @login_required
 def defensivo_cultura_create(request, produto_pk):
     """Criar novo registro de cultura/praga para defensivo"""
-    produto = get_object_or_404(Produto, pk=produto_pk)
+    produto = get_object_or_404(Produto.objects.filter(categoria__empresa=request.user.empresa), pk=produto_pk)
     
     # Verificar se o produto pertence à empresa do usuário
     if produto.categoria.empresa != request.user.empresa:
@@ -900,7 +920,7 @@ def defensivo_cultura_edit(request, pk):
 def documento_upload(request, produto_pk):
     """Upload de documento para produto"""
     from .models import ProdutoDocumento
-    produto = get_object_or_404(Produto, pk=produto_pk)
+    produto = get_object_or_404(Produto.objects.filter(categoria__empresa=request.user.empresa), pk=produto_pk)
     
     # Verificar se o produto pertence à empresa do usuário
     if produto.categoria.empresa != request.user.empresa:
@@ -981,7 +1001,7 @@ def fornecedores_listar(request):
 def produto_fornecedor_create(request, produto_pk):
     """Adiciona um fornecedor a um produto via AJAX"""
     try:
-        produto = get_object_or_404(Produto, pk=produto_pk)
+        produto = get_object_or_404(Produto.objects.filter(categoria__empresa=request.user.empresa), pk=produto_pk)
         
         # Verificar se o produto pertence à empresa do usuário
         if produto.categoria.empresa != request.user.empresa:

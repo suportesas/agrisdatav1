@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+
+{% block title %}Auditorias de Patrimônio | ERP Agrícola{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="fw-bold mb-1"><i class="bi bi-clipboard-check"></i> Auditorias de Patrimônio</h2>
+      <p class="text-muted mb-0">Controle anual de inventário</p>
+    </div>
+    <a href="{% url 'patrimonio:auditoria_create' %}" class="btn btn-success">
+      <i class="bi bi-plus-circle"></i> Nova Auditoria
+    </a>
+  </div>
+
+  <div class="card">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Ano</th>
+            <th>Status</th>
+            <th>Início</th>
+            <th>Fechamento</th>
+            <th class="text-end">Itens</th>
+            <th class="text-center">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for auditoria in auditorias %}
+          <tr>
+            <td><strong>{{ auditoria.ano }}</strong></td>
+            <td>
+              <span class="badge bg-{% if auditoria.status == 'ABERTA' %}warning{% else %}success{% endif %}">
+                {{ auditoria.get_status_display }}
+              </span>
+            </td>
+            <td>{{ auditoria.data_inicio|date:"d/m/Y" }}</td>
+            <td>{% if auditoria.data_fechamento %}{{ auditoria.data_fechamento|date:"d/m/Y" }}{% else %}—{% endif %}</td>
+            <td class="text-end">{{ auditoria.itens.count }}</td>
+            <td class="text-center">
+              <a href="{% url 'patrimonio:auditoria_detail' auditoria.pk %}" class="btn btn-sm btn-outline-info">
+                <i class="bi bi-eye"></i>
+              </a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="6" class="text-center text-muted py-4">Nenhuma auditoria cadastrada</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

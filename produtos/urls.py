@@ -1,11 +1,18 @@
 from django.urls import path
 from . import views
+from . import views_tipo_produto
 
 app_name = 'produtos'
 
 urlpatterns = [
     # Dashboard
     path('dashboard/', views.dashboard, name='dashboard'),
+    
+    # Tipo de Produto
+    path('tipos-produto/', views_tipo_produto.tipo_produto_list, name='tipo_produto_list'),
+    path('tipos-produto/cadastrar/', views_tipo_produto.tipo_produto_create, name='tipo_produto_create'),
+    path('tipos-produto/<int:pk>/editar/', views_tipo_produto.tipo_produto_update, name='tipo_produto_update'),
+    path('tipos-produto/<int:pk>/excluir/', views_tipo_produto.tipo_produto_delete, name='tipo_produto_delete'),
     
     # Unidade de Medida
     path('unidades/', views.unidademedida_list, name='unidademedida_list'),

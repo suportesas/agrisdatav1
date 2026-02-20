@@ -188,7 +188,16 @@
           <li><a href="{% url 'cadastros:transportadora_list' %}"><i class="bi bi-truck"></i> Transportadoras</a></li>
           <li><a href="{% url 'cadastros:vendedor_list' %}"><i class="bi bi-person-lines-fill"></i> Vendedores</a></li>
           <li><a href="{% url 'cadastros:vehicle_list' %}"><i class="bi bi-car-front"></i> Veículos</a></li>
-          <li><a href="{% url 'cadastros:motorista_list' %}"><i class="bi bi-person-badge"></i> Motoristas</a></li>
+          
+          <!-- Motorista x Placa (Submenu) -->
+          <li class="has-submenu">
+            <a href="#"><i class="bi bi-link-45deg"></i> Motorista x Placa <i class="bi bi-chevron-right ms-auto"></i></a>
+            <ul class="nested-submenu">
+              <li><a href="{% url 'cadastros:motorista_list' %}"><i class="bi bi-person-badge"></i> Motoristas</a></li>
+              <li><a href="{% url 'cadastros:motorista_vinculo_list' %}"><i class="bi bi-list-ul"></i> Lista de Vínculos</a></li>
+              <li><a href="{% url 'cadastros:motorista_vinculo_consulta' %}"><i class="bi bi-search"></i> Consulta Histórico</a></li>
+            </ul>
+          </li>
           
           <!-- Configurações Comerciais (Submenu) -->
           <li class="has-submenu">
@@ -220,6 +229,7 @@
         <ul class="nav-submenu">
           <li><a href="{% url 'patrimonio:patrimonio_list' %}"><i class="bi bi-list-ul"></i> Listar Patrimônios</a></li>
           <li><a href="{% url 'patrimonio:patrimonio_create' %}"><i class="bi bi-plus-circle"></i> Novo Patrimônio</a></li>
+          <li><a href="{% url 'patrimonio:auditoria_list' %}"><i class="bi bi-clipboard-check"></i> Auditorias</a></li>
           <li class="submenu-divider"></li>
           <li><a href="{% url 'patrimonio:patrimonio_relatorio' %}"><i class="bi bi-file-earmark-bar-graph"></i> Relatório</a></li>
         </ul>
@@ -268,6 +278,12 @@
           <li><a href="{% url 'estoque:entrada_rapida' %}"><i class="bi bi-lightning-charge text-success"></i> Entrada Rápida</a></li>
           <li><a href="{% url 'estoque:saida_rapida' %}"><i class="bi bi-lightning-charge text-warning"></i> Saída Rápida</a></li>
           <li><a href="{% url 'estoque:ajuste_rapido' %}"><i class="bi bi-lightning-charge text-info"></i> Ajuste Rápido</a></li>
+          <li class="submenu-divider"></li>
+          <li><a href="{% url 'cadastros:requisicao_list' %}"><i class="bi bi-clipboard-check"></i> Requisições</a></li>
+          <li><a href="{% url 'cadastros:requisicao_create' %}"><i class="bi bi-plus-circle"></i> Nova Requisição</a></li>
+          {% if user.tipo in 'ADMIN,GERENTE' %}
+          <li><a href="{% url 'cadastros:requisicao_pendentes_aprovacao' %}" class="fw-bold text-danger"><i class="bi bi-hourglass-split text-warning"></i> <span class="badge bg-danger">Pendentes</span> Aprovação</a></li>
+          {% endif %}
           <li class="submenu-divider"></li>
           <li><a href="{% url 'estoque:armazem_list' %}"><i class="bi bi-building"></i> Armazéns</a></li>
           <li><a href="{% url 'estoque:local_list' %}"><i class="bi bi-pin-map"></i> Locais</a></li>
@@ -395,6 +411,12 @@
             <ul class="nested-submenu">
               <li><a href="{% url 'cadastros:relatorio_fornecedor' %}"><i class="bi bi-file-earmark-text"></i> Relatório Fornecedor</a></li>
               <li><a href="{% url 'cadastros:relatorio_fornecedor_ranking' %}"><i class="bi bi-bar-chart-line"></i> Ranking de Compras</a></li>
+            </ul>
+          </li>
+          <li class="has-submenu">
+            <a href="#"><i class="bi bi-tools"></i> Patrimônio <i class="bi bi-chevron-right ms-auto"></i></a>
+            <ul class="nested-submenu">
+              <li><a href="{% url 'patrimonio:patrimonio_relatorio' %}"><i class="bi bi-file-earmark-bar-graph"></i> Relatório de Patrimônios</a></li>
             </ul>
           </li>
         </ul>

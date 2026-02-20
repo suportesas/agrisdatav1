@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Auditoria Patrimonial {{ auditoria.ano }}</title>
+  <style>
+    body { font-family: Arial, sans-serif; font-size: 12px; color: #222; }
+    .header { margin-bottom: 12px; }
+    .title { font-size: 18px; font-weight: bold; }
+    .subtitle { color: #555; }
+    .summary { margin: 12px 0; padding: 8px; border: 1px solid #ddd; }
+    .summary span { display: inline-block; margin-right: 16px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+    th, td { border: 1px solid #ddd; padding: 6px; text-align: left; }
+    th { background: #f2f2f2; }
+    .small { font-size: 10px; color: #666; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="title">Auditoria Patrimonial {{ auditoria.ano }}</div>
+    <div class="subtitle">Status: {{ auditoria.get_status_display }}</div>
+    <div class="small">Gerado em: {{ gerado_em|date:"d/m/Y H:i" }}</div>
+  </div>
+
+  <div class="summary">
+    <span>Total: <strong>{{ total_itens }}</strong></span>
+    <span>Pendentes: <strong>{{ total_pendente }}</strong></span>
+    <span>OK: <strong>{{ total_ok }}</strong></span>
+    <span>Divergencias: <strong>{{ total_divergencias }}</strong></span>
+  </div>
+
+  <h3>Divergencias</h3>
+  {% if divergencias %}
+  <table>
+    <thead>
+      <tr>
+        <th>Numero</th>
+        <th>Descricao</th>
+        <th>Localizacao</th>
+        <th>Responsavel</th>
+        <th>Status</th>
+        <th>Observacoes</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in divergencias %}
+      <tr>
+        <td>{{ item.numero_patrimonio }}</td>
+        <td>{{ item.descricao }}</td>
+        <td>{{ item.localizacao|default:"-" }}</td>
+        <td>{{ item.responsavel_nome|default:"-" }}</td>
+        <td>{{ item.get_status_display }}</td>
+        <td>{{ item.observacoes|default:"-" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p>Nenhuma divergencia encontrada.</p>
+  {% endif %}
+</body>
+</html>

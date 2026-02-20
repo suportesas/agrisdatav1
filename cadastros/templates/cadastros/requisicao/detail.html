@@ -1,0 +1,177 @@
+{% extends 'base.html' %}
+
+{% block title %}Requisicao {{ requisicao.numero }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1 class="mb-0">
+                <i class="bi bi-clipboard-check"></i> Requisicao {{ requisicao.numero }}
+            </h1>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{% url 'cadastros:requisicao_list' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Voltar
+            </a>
+            {% if requisicao.status != 'ATENDIDA' and requisicao.status != 'CANCELADA' %}
+            <a href="{% url 'cadastros:requisicao_update' requisicao.id %}" class="btn btn-outline-warning">
+                <i class="bi bi-pencil"></i> Editar
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <strong>Tipo:</strong> {{ requisicao.get_tipo_display }}
+                </div>
+                <div class="col-md-3">
+                    <strong>Status:</strong>
+                    {% if requisicao.status == 'PENDENTE' %}
+                    <span class="badge bg-warning text-dark">Pendente</span>
+                    {% elif requisicao.status == 'APROVADA' %}
+                    <span class="badge bg-info text-dark">Aprovada</span>
+                    {% elif requisicao.status == 'ATENDIDA' %}
+                    <span class="badge bg-success">Atendida</span>
+                    {% else %}
+                    <span class="badge bg-danger">Cancelada</span>
+                    {% endif %}
+                </div>
+                <div class="col-md-3">
+                    <strong>Data:</strong> {{ requisicao.data_requisicao|date:'d/m/Y H:i' }}
+                </div>
+                <div class="col-md-3">
+                    <strong>Solicitante:</strong> {{ requisicao.solicitante|default:'-' }}
+                </div>
+
+                <div class="col-md-4">
+                    <strong>Safra:</strong> {{ requisicao.safra|default:'-' }}
+                </div>
+                <div class="col-md-4">
+                    <strong>Fazenda:</strong> {{ requisicao.fazenda|default:'-' }}
+                </div>
+                <div class="col-md-4">
+                    <strong>Talhao:</strong> {{ requisicao.talhao|default:'-' }}
+                </div>
+
+                <div class="col-md-4">
+                    <strong>Funcionario Destino:</strong> {{ requisicao.funcionario_destino|default:'-' }}
+                </div>
+                <div class="col-md-4">
+                    <strong>Parceiro:</strong> {{ requisicao.parceiro|default:'-' }}
+                </div>
+                <div class="col-md-4">
+                    <strong>Veiculo:</strong> {{ requisicao.veiculo|default:'-' }}
+                </div>
+
+                <div class="col-md-4">
+                    <strong>Horimetro:</strong> {{ requisicao.horimetro|default:'-' }}
+                </div>
+                <div class="col-md-4">
+                    <strong>Odometro:</strong> {{ requisicao.odometro|default:'-' }}
+                </div>
+                <div class="col-md-4">
+                    <strong>Centro de Custo:</strong> {{ requisicao.centro_custo_nome|default:'-' }}
+                </div>
+
+                <div class="col-md-12">
+                    <strong>Observacoes:</strong> {{ requisicao.observacoes|default:'-' }}
+                </div>
+            </div>
+
+            <div class="mt-3 d-flex gap-2 flex-wrap">
+                {% if requisicao.status == 'PENDENTE' %}
+                <form method="post" action="{% url 'cadastros:requisicao_aprovar' requisicao.id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-check-circle"></i> Aprovar
+                    </button>
+                </form>
+                {% endif %}
+
+                {% if requisicao.status == 'APROVADA' %}
+                <form method="post" action="{% url 'cadastros:requisicao_atender' requisicao.id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-check-lg"></i> Produto Entregue
+                    </button>
+                </form>
+                {% endif %}
+
+                {% if requisicao.status != 'CANCELADA' and requisicao.status != 'ATENDIDA' %}
+                <form method="post" action="{% url 'cadastros:requisicao_cancelar' requisicao.id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-outline-danger">
+                        <i class="bi bi-x-circle"></i> Cancelar
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <h4 class="mb-0">Itens</h4>
+        {% if requisicao.status != 'CANCELADA' %}
+        <a href="{% url 'cadastros:requisicao_item_create' requisicao.id %}" class="btn btn-outline-primary btn-sm">
+            <i class="bi bi-plus-circle"></i> Adicionar Item
+        </a>
+        {% endif %}
+    </div>
+
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Produto</th>
+                        <th>Unidade</th>
+                        <th>Qtd. Solicitada</th>
+                        <th>Qtd. Atendida</th>
+                        <th>Custo Estimado</th>
+                        <th class="text-center">Acoes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in itens %}
+                    <tr>
+                        <td>{{ item.produto }}</td>
+                        <td>{{ item.unidade_medida }}</td>
+                        <td>{{ item.quantidade_solicitada }}</td>
+                        <td>{{ item.quantidade_atendida }}</td>
+                        <td>{% if item.custo_estimado %}R$ {{ item.custo_estimado }}{% else %}-{% endif %}</td>
+                        <td class="text-center">
+                            <div class="btn-group btn-group-sm" role="group">
+                                <a href="{% url 'cadastros:requisicao_item_update' requisicao.id item.id %}" class="btn btn-outline-warning" title="Editar">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <a href="{% url 'cadastros:requisicao_item_delete' requisicao.id item.id %}" class="btn btn-outline-danger" title="Excluir">
+                                    <i class="bi bi-trash"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center text-muted">Nenhum item cadastrado.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card mt-3">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4"><strong>Total Solicitado:</strong> {{ totais.total_solicitado|default:0 }}</div>
+                <div class="col-md-4"><strong>Total Atendido:</strong> {{ totais.total_atendido|default:0 }}</div>
+                <div class="col-md-4"><strong>Total Estimado:</strong> {% if totais.total_estimado %}R$ {{ totais.total_estimado }}{% else %}-{% endif %}</div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

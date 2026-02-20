@@ -1,0 +1,188 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }} - Historico Motorista x Placa{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+  <div class="row mb-4">
+    <div class="col-md-8">
+      <h1 class="mb-0"><i class="bi bi-link-45deg"></i> {{ title }}</h1>
+    </div>
+    <div class="col-md-4 text-end">
+      <button type="button" class="btn btn-outline-info me-2" data-bs-toggle="modal" data-bs-target="#ajudaModal">
+        <i class="bi bi-question-circle"></i> Ajuda
+      </button>
+      <a href="{% url 'cadastros:motorista_vinculo_list' %}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Voltar
+      </a>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body">
+      <form method="post">
+        {% csrf_token %}
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Motorista</label>
+            {{ form.motorista }}
+            {% if form.motorista.errors %}<div class="invalid-feedback d-block">{{ form.motorista.errors.0 }}</div>{% endif %}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Placa Principal</label>
+            {{ form.placa_principal }}
+            {% if form.placa_principal.errors %}<div class="invalid-feedback d-block">{{ form.placa_principal.errors.0 }}</div>{% endif %}
+          </div>
+          <div class="col-md-12">
+            <label class="form-label fw-semibold">Placas de Reboque</label>
+            {{ form.reboques }}
+            {% if form.reboques.errors %}<div class="invalid-feedback d-block">{{ form.reboques.errors.0 }}</div>{% endif %}
+            <small class="form-text text-muted">{{ form.reboques.help_text }}</small>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Data Inicio</label>
+            {{ form.data_inicio }}
+            {% if form.data_inicio.errors %}<div class="invalid-feedback d-block">{{ form.data_inicio.errors.0 }}</div>{% endif %}
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Data Fim</label>
+            {{ form.data_fim }}
+            {% if form.data_fim.errors %}<div class="invalid-feedback d-block">{{ form.data_fim.errors.0 }}</div>{% endif %}
+            <small class="form-text text-muted">Deixe em branco se estiver ativo.</small>
+          </div>
+          <div class="col-md-6">
+            <div class="form-check mt-4">
+              {{ form.ativo }}
+              <label class="form-check-label fw-semibold" for="{{ form.ativo.id_for_label }}">
+                Vínculo Ativo
+              </label>
+              {% if form.ativo.errors %}<div class="invalid-feedback d-block">{{ form.ativo.errors.0 }}</div>{% endif %}
+              <small class="form-text text-muted d-block">Desmarque para desativar este vínculo</small>
+            </div>
+          </div>
+          <div class="col-md-12">
+            <label class="form-label fw-semibold">Observacoes</label>
+            {{ form.observacoes }}
+          </div>
+        </div>
+        <div class="d-flex justify-content-end mt-4">
+          <button type="submit" class="btn btn-success">
+            <i class="bi bi-check-circle"></i> {{ action }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de Ajuda -->
+<div class="modal fade" id="ajudaModal" tabindex="-1" aria-labelledby="ajudaModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-info text-white">
+        <h5 class="modal-title" id="ajudaModalLabel">
+          <i class="bi bi-question-circle"></i> Ajuda - Cadastro de Vínculo
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body">
+        <h6 class="fw-bold text-primary"><i class="bi bi-clipboard-check"></i> Como Preencher o Formulário</h6>
+        
+        <div class="mb-3">
+          <h6 class="fw-bold">1. Motorista <span class="text-danger">*</span></h6>
+          <p>Selecione o motorista que irá operar o veículo ou conjunto de veículos.</p>
+        </div>
+
+        <div class="mb-3">
+          <h6 class="fw-bold">2. Placa Principal <span class="text-danger">*</span></h6>
+          <p>Selecione a placa do veículo principal (ex: cavalo mecânico, caminhão, trator).</p>
+        </div>
+
+        <div class="mb-3">
+          <h6 class="fw-bold">3. Reboques</h6>
+          <p>
+            Se o motorista opera um <strong>conjunto de veículos</strong> (ex: cavalo + reboque), selecione aqui as placas dos reboques.
+            Você pode selecionar múltiplas placas segurando a tecla <kbd>Ctrl</kbd> (Windows) ou <kbd>Cmd</kbd> (Mac).
+          </p>
+          <div class="alert alert-info mb-0">
+            <strong>💡 Exemplo:</strong> Motorista opera caminhão ABC-1234 com reboque DEF-5678 e semi-reboque GHI-9012.
+            Selecione ABC-1234 como placa principal e DEF-5678 + GHI-9012 como reboques.
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <h6 class="fw-bold">4. Data Início <span class="text-danger">*</span></h6>
+          <p>Data em que o motorista assumiu a operação deste veículo/conjunto.</p>
+        </div>
+
+        <div class="mb-3">
+          <h6 class="fw-bold">5. Data Fim</h6>
+          <p>
+            Data em que o motorista parou de operar este veículo/conjunto.
+            <strong>Deixe em branco se o vínculo ainda estiver ativo.</strong>
+          </p>
+        </div>
+
+        <div class="mb-3">
+          <h6 class="fw-bold">6. Vínculo Ativo ☑️</h6>
+          <p>
+            Controla se este vínculo está <strong>ativo ou desativado</strong> no sistema.
+          </p>
+          <ul>
+            <li>✅ <strong>Marcado:</strong> O vínculo está <span class="badge bg-success">ATIVO</span> e aparecerá nas consultas</li>
+            <li>❌ <strong>Desmarcado:</strong> O vínculo está <span class="badge bg-secondary">INATIVO</span> e será ignorado nas consultas</li>
+          </ul>
+          <div class="alert alert-warning mb-0">
+            <strong>⚠️ Importante:</strong> Use este campo para desativar temporariamente um vínculo sem precisar deletá-lo. 
+            Útil quando há dúvidas sobre períodos ou para manter histórico sem afetar consultas.
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <h6 class="fw-bold">7. Observações</h6>
+          <p>Campo opcional para registrar informações adicionais (ex: motivo da troca, observações sobre o período).</p>
+        </div>
+
+        <hr>
+
+        <h6 class="fw-bold text-primary"><i class="bi bi-shield-check"></i> Validações Automáticas</h6>
+        <p>O sistema impede:</p>
+        <ul>
+          <li>Vínculos com <strong>períodos sobrepostos</strong> para o mesmo motorista</li>
+          <li>Vínculos com <strong>períodos sobrepostos</strong> para a mesma placa</li>
+          <li>Data fim <strong>anterior</strong> à data início</li>
+          <li>Selecionar a mesma placa como principal e reboque simultaneamente</li>
+        </ul>
+
+        <hr>
+
+        <h6 class="fw-bold text-primary"><i class="bi bi-truck"></i> Casos de Uso</h6>
+        
+        <div class="alert alert-success">
+          <strong>Exemplo 1 - Vínculo Simples:</strong><br>
+          Motorista João Silva opera caminhão ABC-1234 desde 01/01/2026 (ainda ativo).<br>
+          <small class="text-muted">Preencha: Motorista, Placa Principal, Data Início. Deixe Data Fim vazia.</small>
+        </div>
+
+        <div class="alert alert-success">
+          <strong>Exemplo 2 - Conjunto de Veículos:</strong><br>
+          Motorista Maria Santos opera cavalo DEF-5678 + reboque GHI-9012 desde 10/02/2026.<br>
+          <small class="text-muted">Preencha: Motorista, Placa Principal (DEF-5678), Reboques (GHI-9012), Data Início.</small>
+        </div>
+
+        <div class="alert alert-success mb-0">
+          <strong>Exemplo 3 - Encerrar Vínculo:</strong><br>
+          Motorista Pedro Costa parou de operar o veículo XYZ-3456 em 28/02/2026.<br>
+          <small class="text-muted">Edite o vínculo e preencha a Data Fim com 28/02/2026.</small>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          <i class="bi bi-x-circle"></i> Fechar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

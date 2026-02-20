@@ -202,7 +202,17 @@ def vehicle_create(request):
             messages.success(request, f'✅ Veículo "{v}" cadastrado com sucesso!')
             return redirect('cadastros:vehicle_detail', pk=v.pk)
         else:
-            messages.error(request, '❌ Corrija os erros no formulário.')
+            # Coletar campos com erro
+            campos_com_erro = []
+            for field_name, errors in form.errors.items():
+                if field_name == '__all__':
+                    campo_label = 'Formulário'
+                else:
+                    campo_label = form.fields[field_name].label if field_name in form.fields else field_name
+                campos_com_erro.append(f"{campo_label}: {', '.join(errors)}")
+            
+            erro_msg = '❌ Corrija os erros no formulário:<br>' + '<br>'.join(f'• {erro}' for erro in campos_com_erro)
+            messages.error(request, erro_msg)
     else:
         form = VehicleForm(empresa=request.user.empresa)
 
@@ -218,6 +228,18 @@ def vehicle_update(request, pk):
             v = form.save(user=request.user)
             messages.success(request, f'✅ Veículo "{v}" atualizado!')
             return redirect('cadastros:vehicle_list')
+        else:
+            # Coletar campos com erro
+            campos_com_erro = []
+            for field_name, errors in form.errors.items():
+                if field_name == '__all__':
+                    campo_label = 'Formulário'
+                else:
+                    campo_label = form.fields[field_name].label if field_name in form.fields else field_name
+                campos_com_erro.append(f"{campo_label}: {', '.join(errors)}")
+            
+            erro_msg = '❌ Corrija os erros no formulário:<br>' + '<br>'.join(f'• {erro}' for erro in campos_com_erro)
+            messages.error(request, erro_msg)
     else:
         form = VehicleForm(instance=vehicle, empresa=request.user.empresa)
 

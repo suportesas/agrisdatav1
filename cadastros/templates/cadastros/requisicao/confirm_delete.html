@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+
+{% block title %}Excluir Requisicao{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="card">
+        <div class="card-body">
+            <h4 class="mb-3">Excluir requisicao {{ requisicao.numero }}?</h4>
+            <p class="text-muted">Esta acao nao pode ser desfeita.</p>
+            <form method="post">
+                {% csrf_token %}
+                <a href="{% url 'cadastros:requisicao_detail' requisicao.id %}" class="btn btn-outline-secondary">Cancelar</a>
+                <button type="submit" class="btn btn-danger">Excluir</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

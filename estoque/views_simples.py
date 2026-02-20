@@ -95,6 +95,14 @@ def entrada_rapida(request):
                         quantidade=qtd,
                         data_movimentacao=timezone.now()
                     )
+
+                    # Atualiza preco de custo do produto com o ultimo valor informado
+                    if preco_unit and preco_unit > 0:
+                        produto.preco_custo = preco_unit
+                        produto.save(update_fields=['preco_custo'])
+
+                    # Recalcula estoque_atual com base nos lotes disponiveis
+                    produto.recalcular_estoque()
                     
                     total_itens += 1
                 
@@ -201,6 +209,9 @@ def saida_rapida(request):
                         
                         qtd_restante -= qtd_a_baixar
                     
+                    # Recalcula estoque_atual apos baixar dos lotes
+                    produto.recalcular_estoque()
+
                     total_itens += 1
                 
                 messages.success(
@@ -263,6 +274,9 @@ def ajuste_rapido(request):
                     quantidade=diferenca,
                     data_movimentacao=timezone.now()
                 )
+
+                # Recalcula estoque_atual do produto
+                lote.produto.recalcular_estoque()
                 
                 messages.success(
                     request,

@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Relatorio de Patrimonios</title>
+  <style>
+    body { font-family: Arial, sans-serif; font-size: 11px; color: #222; }
+    .header { margin-bottom: 12px; border-bottom: 2px solid #333; padding-bottom: 6px; }
+    .title { font-size: 16px; font-weight: bold; }
+    .subtitle { color: #555; }
+    .small { font-size: 10px; color: #666; }
+    .summary { margin: 10px 0; padding: 8px; border: 1px solid #ddd; }
+    .summary span { display: inline-block; margin-right: 14px; }
+    .filters { margin: 10px 0; padding: 8px; border-left: 3px solid #007bff; background: #f5f5f5; }
+    table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+    th, td { border: 1px solid #ddd; padding: 5px; text-align: left; }
+    th { background: #f2f2f2; }
+    .text-right { text-align: right; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="title">Relatorio de Patrimonios</div>
+    <div class="subtitle">Empresa: {{ empresa.nome_fantasia }}</div>
+    <div class="small">Gerado em: {{ data_geracao|date:"d/m/Y H:i" }}</div>
+  </div>
+
+  <div class="filters">
+    <strong>Filtros aplicados:</strong>
+    <div class="small">
+      Busca: {{ filtros.q|default:"-" }} | Categoria: {% if filtros.categoria_labels %}{{ filtros.categoria_labels|join:", " }}{% else %}-{% endif %} | Estado: {% if filtros.estado_labels %}{{ filtros.estado_labels|join:", " }}{% else %}-{% endif %} | Ativo: {% if filtros.ativo == '1' %}Sim{% elif filtros.ativo == '0' %}Nao{% else %}Todos{% endif %}
+      | Responsavel: {% if filtros.responsavel_nome %}{{ filtros.responsavel_nome }}{% else %}-{% endif %} | Data Aquisicao: {{ filtros.data_aquisicao_de|default:"-" }} ate {{ filtros.data_aquisicao_ate|default:"-" }} | Data Baixa: {{ filtros.data_baixa_de|default:"-" }} ate {{ filtros.data_baixa_ate|default:"-" }}
+      | Valor Inicial: {{ filtros.valor_inicial_de|default:"-" }} ate {{ filtros.valor_inicial_ate|default:"-" }} | Valor Atual: {{ filtros.valor_atual_de|default:"-" }} ate {{ filtros.valor_atual_ate|default:"-" }}
+    </div>
+  </div>
+
+  <div class="summary">
+    <span>Total de Bens: <strong>{{ totais.total_bens|default:0 }}</strong></span>
+    <span>Valor Total: <strong>R$ {% if totais.valor_inicial_total %}{{ totais.valor_inicial_total|floatformat:2 }}{% else %}0,00{% endif %}</strong></span>
+    <span>Valor Atual: <strong>R$ {% if totais.valor_atual_total %}{{ totais.valor_atual_total|floatformat:2 }}{% else %}0,00{% endif %}</strong></span>
+    <span>Depreciacao: <strong>R$ {% if totais.depreciacao_total %}{{ totais.depreciacao_total|floatformat:2 }}{% else %}0,00{% endif %}</strong></span>
+  </div>
+
+  <h3>Patrimonios</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>Numero</th>
+        <th>Descricao</th>
+        <th>Categoria</th>
+        <th>Estado</th>
+        <th>Data Aquisicao</th>
+        <th class="text-right">Valor Inicial</th>
+        <th class="text-right">Valor Atual</th>
+        <th>Responsavel</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for pat in patrimonios %}
+      <tr>
+        <td>{{ pat.numero_patrimonio }}</td>
+        <td>{{ pat.descricao }}</td>
+        <td>{{ pat.get_categoria_display }}</td>
+        <td>{{ pat.get_estado_display }}</td>
+        <td>{{ pat.data_aquisicao|date:"d/m/Y" }}</td>
+        <td class="text-right">R$ {{ pat.valor_inicial|floatformat:2 }}</td>
+        <td class="text-right">R$ {{ pat.valor_atual|floatformat:2 }}</td>
+        <td>{% if pat.responsavel %}{{ pat.responsavel.nome_completo }}{% else %}-{% endif %}</td>
+        <td>{% if pat.ativo %}Ativo{% else %}Inativo{% endif %}</td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="9" style="text-align:center; color:#777;">Nenhum patrimonio encontrado.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</body>
+</html>

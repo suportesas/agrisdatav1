@@ -1,0 +1,123 @@
+{% extends 'base.html' %}
+
+{% block title %}Requisições Pendentes de Aprovação{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1 class="mb-0">
+                <i class="bi bi-hourglass-split"></i> Requisições Pendentes de Aprovação
+                <span class="badge bg-danger ms-2">{{ total_pendentes }}</span>
+            </h1>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{% url 'cadastros:requisicao_list' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Voltar
+            </a>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-8">
+                    <input type="text" name="search" class="form-control" placeholder="Buscar por número, safra, fazenda, talhão, código ou solicitante..." value="{{ search }}">
+                </div>
+                <div class="col-md-4">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-search"></i> Buscar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {% if requisicoes %}
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Número</th>
+                        <th>Solicitante</th>
+                        <th>Tipo</th>
+                        <th>Talhão / Fazenda</th>
+                        <th>Safra</th>
+                        <th>Data Requisição</th>
+                        <th>Itens</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for requisicao in requisicoes %}
+                    <tr>
+                        <td>
+                            <strong>{{ requisicao.numero }}</strong>
+                        </td>
+                        <td>
+                            {{ requisicao.solicitante.nome_completo|default:'-' }}
+                        </td>
+                        <td>
+                            <span class="badge bg-info">{{ requisicao.get_tipo_display }}</span>
+                        </td>
+                        <td>
+                            {{ requisicao.talhao.codigo|default:'-' }} / {{ requisicao.fazenda.nome|default:'-' }}
+                        </td>
+                        <td>
+                            {{ requisicao.safra.nome|default:'-' }}
+                        </td>
+                        <td>
+                            <small>{{ requisicao.data_requisicao|date:'d/m/Y H:i' }}</small>
+                        </td>
+                        <td>
+                            <span class="badge bg-light text-dark">{{ requisicao.itens.count }} item(ns)</span>
+                        </td>
+                        <td>
+                            <a href="{% url 'cadastros:requisicao_detail' requisicao.id %}" class="btn btn-sm btn-outline-primary" title="Ver detalhes">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {% if is_paginated %}
+    <nav aria-label="Page navigation" class="mt-4">
+        <ul class="pagination justify-content-center">
+            {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page=1{% if search %}&search={{ search }}{% endif %}">Primeira</a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search %}&search={{ search }}{% endif %}">Anterior</a>
+            </li>
+            {% endif %}
+            
+            <li class="page-item active">
+                <span class="page-link">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+            </li>
+            
+            {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search %}&search={{ search }}{% endif %}">Próxima</a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if search %}&search={{ search }}{% endif %}">Última</a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+
+    {% else %}
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle"></i> Nenhuma requisição pendente de aprovação no momento.
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

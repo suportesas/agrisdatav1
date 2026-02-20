@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1 class="mb-0">
+                <i class="bi bi-list-check"></i> {{ titulo }}
+            </h1>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{% url 'cadastros:requisicao_detail' requisicao.id %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Voltar
+            </a>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Produto</label>
+                        {{ form.produto }}
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Unidade</label>
+                        {{ form.unidade_medida }}
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Qtd. Solicitada</label>
+                        {{ form.quantidade_solicitada }}
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Qtd. Atendida</label>
+                        {{ form.quantidade_atendida }}
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Custo Estimado</label>
+                        {{ form.custo_estimado }}
+                    </div>
+                    <div class="col-md-12">
+                        <label class="form-label">Observacoes</label>
+                        {{ form.observacoes }}
+                    </div>
+                </div>
+
+                {% if form.errors %}
+                <div class="alert alert-danger mt-3">
+                    <strong>Verifique os campos:</strong>
+                    {{ form.errors }}
+                </div>
+                {% endif %}
+
+                <div class="mt-4 text-end">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle"></i> Salvar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -3727,6 +3727,140 @@ class SafraReal(models.Model):
         return f"Real {self.safra}"
 
 
+class Requisicao(models.Model):
+    """Requisicao base para consumo interno e safra"""
+
+    TIPO_CHOICES = [
+        ('INSUMO_SAFRA', 'Insumo Safra'),
+        ('EPI', 'EPI'),
+        ('ABASTECIMENTO', 'Abastecimento'),
+        ('EXPEDIENTE', 'Material de Expediente'),
+        ('EMPRESTIMO', 'Emprestimo de Material'),
+    ]
+
+    STATUS_CHOICES = [
+        ('PENDENTE', 'Pendente'),
+        ('APROVADA', 'Aprovada'),
+        ('ATENDIDA', 'Atendida'),
+        ('CANCELADA', 'Cancelada'),
+    ]
+
+    empresa = models.ForeignKey(
+        'empresas.Empresa',
+        on_delete=models.CASCADE,
+        related_name='requisicoes',
+        verbose_name='Empresa'
+    )
+    numero = models.CharField('Numero', max_length=20, unique=True)
+    tipo = models.CharField('Tipo', max_length=20, choices=TIPO_CHOICES, default='INSUMO_SAFRA')
+    status = models.CharField('Status', max_length=20, choices=STATUS_CHOICES, default='PENDENTE')
+
+    # Vinculos agricolas
+    safra = models.ForeignKey('cadastros.Safra', on_delete=models.SET_NULL, null=True, blank=True)
+    fazenda = models.ForeignKey('cadastros.Fazenda', on_delete=models.SET_NULL, null=True, blank=True)
+    talhao = models.ForeignKey('cadastros.Talhao', on_delete=models.SET_NULL, null=True, blank=True)
+
+    # Campos opcionais para tipos especificos (podem ser refinados em detalhes futuros)
+    funcionario_destino = models.ForeignKey(
+        'cadastros.Funcionario',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='requisicoes_destino',
+        verbose_name='Funcionario Destino'
+    )
+    parceiro = models.ForeignKey(
+        'cadastros.Cliente',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='requisicoes_emprestimo',
+        verbose_name='Parceiro'
+    )
+    veiculo = models.ForeignKey(
+        'cadastros.Vehicle',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='requisicoes_abastecimento',
+        verbose_name='Veiculo'
+    )
+    horimetro = models.DecimalField('Horimetro', max_digits=10, decimal_places=2, null=True, blank=True)
+    odometro = models.DecimalField('Odometro', max_digits=10, decimal_places=2, null=True, blank=True)
+
+    # Centro de custo (opcional enquanto modulo nao existe)
+    centro_custo_nome = models.CharField('Centro de Custo', max_length=120, blank=True)
+
+    solicitante = models.ForeignKey(
+        'usuarios.Usuario',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='requisicoes_solicitadas',
+        verbose_name='Solicitante'
+    )
+    aprovador = models.ForeignKey(
+        'usuarios.Usuario',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='requisicoes_aprovadas',
+        verbose_name='Aprovador'
+    )
+    data_requisicao = models.DateTimeField('Data da Requisicao', auto_now_add=True)
+    data_aprovacao = models.DateTimeField('Data de Aprovacao', null=True, blank=True)
+    observacoes = models.TextField('Observacoes', blank=True)
+
+    class Meta:
+        verbose_name = 'Requisicao'
+        verbose_name_plural = 'Requisicoes'
+        ordering = ['-data_requisicao']
+        indexes = [
+            models.Index(fields=['empresa', 'status']),
+            models.Index(fields=['empresa', 'tipo']),
+        ]
+
+    def __str__(self):
+        return f"{self.numero} - {self.get_tipo_display()}"
+
+
+class RequisicaoItem(models.Model):
+    """Itens da requisicao"""
+
+    requisicao = models.ForeignKey(
+        'cadastros.Requisicao',
+        on_delete=models.CASCADE,
+        related_name='itens',
+        verbose_name='Requisicao'
+    )
+    produto = models.ForeignKey(
+        'produtos.Produto',
+        on_delete=models.PROTECT,
+        related_name='requisicoes_itens',
+        verbose_name='Produto'
+    )
+    unidade_medida = models.ForeignKey(
+        'produtos.UnidadeMedida',
+        on_delete=models.PROTECT,
+        related_name='requisicoes_itens',
+        verbose_name='Unidade'
+    )
+    quantidade_solicitada = models.DecimalField('Quantidade Solicitada', max_digits=15, decimal_places=3)
+    quantidade_atendida = models.DecimalField('Quantidade Atendida', max_digits=15, decimal_places=3, default=0)
+    custo_estimado = models.DecimalField('Custo Estimado', max_digits=15, decimal_places=2, null=True, blank=True)
+    observacoes = models.TextField('Observacoes', blank=True)
+
+    class Meta:
+        verbose_name = 'Item de Requisicao'
+        verbose_name_plural = 'Itens de Requisicao'
+        indexes = [
+            models.Index(fields=['produto']),
+        ]
+
+    def __str__(self):
+        return f"{self.requisicao.numero} - {self.produto.nome}"
+
+
 
 """
 ADICIONAR ESTE CÓDIGO AO FINAL DO ARQUIVO: cadastros/models.py
@@ -5923,6 +6057,66 @@ class MotoristadoDocumento(models.Model):
 
     def __str__(self):
         return f"{self.motorista.nome} - {self.get_tipo_display()}"
+
+
+class MotoristaVinculoPlaca(models.Model):
+    """Vinculo de motorista a conjunto de placas por periodo"""
+
+    empresa = models.ForeignKey(
+        'empresas.Empresa',
+        on_delete=models.CASCADE,
+        related_name='vinculos_motorista_placa',
+        verbose_name='Empresa'
+    )
+    motorista = models.ForeignKey(
+        'cadastros.Motorista',
+        on_delete=models.CASCADE,
+        related_name='vinculos_placas',
+        verbose_name='Motorista'
+    )
+    placa_principal = models.ForeignKey(
+        'cadastros.VehiclePlate',
+        on_delete=models.PROTECT,
+        related_name='vinculos_principal',
+        verbose_name='Placa Principal'
+    )
+    reboques = models.ManyToManyField(
+        'cadastros.VehiclePlate',
+        blank=True,
+        related_name='vinculos_reboque',
+        verbose_name='Placas de Reboque'
+    )
+    data_inicio = models.DateField('Data Inicio')
+    data_fim = models.DateField('Data Fim', null=True, blank=True)
+    ativo = models.BooleanField('Ativo', default=True, help_text='Vinculo ativo ou inativo')
+    observacoes = models.TextField('Observacoes', blank=True)
+    data_cadastro = models.DateTimeField('Data de Cadastro', auto_now_add=True)
+    data_atualizacao = models.DateTimeField('Ultima Atualizacao', auto_now=True)
+
+    class Meta:
+        verbose_name = 'Vinculo Motorista x Placa'
+        verbose_name_plural = 'Vinculos Motorista x Placa'
+        ordering = ['-data_inicio']
+        indexes = [
+            models.Index(fields=['empresa', 'motorista']),
+            models.Index(fields=['empresa', 'data_inicio']),
+        ]
+
+    def __str__(self):
+        return f"{self.motorista} - {self.placa_principal}"
+
+    @property
+    def periodo_ativo(self):
+        """Verifica se o vinculo esta dentro do periodo valido baseado na data_fim"""
+        from datetime import date
+        if not self.data_fim:
+            return True
+        return self.data_fim >= date.today()
+
+    def placas_conjunto(self):
+        placas = [self.placa_principal]
+        placas.extend(list(self.reboques.all()))
+        return placas
 
 
 """

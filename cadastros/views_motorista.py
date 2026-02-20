@@ -6,13 +6,19 @@ CRUD completo para motoristas próprios e terceirizados
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.views.decorators.http import require_http_methods
 from django.core.paginator import Paginator
-from .models import Motorista, MotoristadoDocumento
-from .forms_motorista import MotoristadoForm, MotoristadoDocumentoForm
+from django.db import models
+from django.db.models import Q
+from django.utils import timezone
+from django.template.loader import render_to_string
+from .models import Motorista, MotoristadoDocumento, MotoristaVinculoPlaca
+from .forms_motorista import MotoristadoForm, MotoristadoDocumentoForm, MotoristaVinculoPlacaForm, MotoristaVinculoConsultaForm
 import requests
 from django.core.cache import cache
+from xhtml2pdf import pisa
+from io import BytesIO
 
 
 @login_required
@@ -116,6 +122,102 @@ def motorista_update(request, pk):
         'action': 'Editar'
     }
     return render(request, 'cadastros/motorista/form.html', context)
+
+
+@login_required
+def motorista_vinculo_list(request):
+    """Lista de vinculos motorista x placa"""
+    empresa = request.user.empresa
+    vinculos = MotoristaVinculoPlaca.objects.filter(empresa=empresa).select_related(
+        'motorista', 'placa_principal', 'placa_principal__vehicle'
+    ).prefetch_related('reboques')
+
+    search = request.GET.get('search', '')
+    status = request.GET.get('status', '')
+
+    if search:
+        vinculos = vinculos.filter(
+            models.Q(motorista__nome__icontains=search) |
+            models.Q(placa_principal__placa__icontains=search) |
+            models.Q(reboques__placa__icontains=search)
+        ).distinct()
+
+    if status == 'ATIVO':
+        vinculos = vinculos.filter(ativo=True)
+    elif status == 'ENCERRADO':
+        vinculos = vinculos.filter(ativo=False)
+
+    paginator = Paginator(vinculos, 20)
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        'page_obj': page_obj,
+        'vinculos': page_obj.object_list,
+        'search': search,
+        'status': status,
+        'is_paginated': page_obj.has_other_pages(),
+    }
+
+    return render(request, 'cadastros/motorista_vinculo/list.html', context)
+
+
+@login_required
+def motorista_vinculo_create(request):
+    """Criar vinculo motorista x placa"""
+    empresa = request.user.empresa
+
+    if request.method == 'POST':
+        form = MotoristaVinculoPlacaForm(request.POST, empresa=empresa)
+        if form.is_valid():
+            vinculo = form.save()
+            messages.success(request, 'Vinculo criado com sucesso!')
+            return redirect('cadastros:motorista_vinculo_detail', pk=vinculo.pk)
+    else:
+        form = MotoristaVinculoPlacaForm(empresa=empresa)
+
+    context = {
+        'form': form,
+        'title': 'Novo Vinculo',
+        'action': 'Criar'
+    }
+    return render(request, 'cadastros/motorista_vinculo/form.html', context)
+
+
+@login_required
+def motorista_vinculo_detail(request, pk):
+    """Detalhe do vinculo"""
+    empresa = request.user.empresa
+    vinculo = get_object_or_404(MotoristaVinculoPlaca, pk=pk, empresa=empresa)
+    context = {
+        'vinculo': vinculo,
+        'reboques': vinculo.reboques.all(),
+    }
+    return render(request, 'cadastros/motorista_vinculo/detail.html', context)
+
+
+@login_required
+def motorista_vinculo_update(request, pk):
+    """Editar vinculo motorista x placa"""
+    empresa = request.user.empresa
+    vinculo = get_object_or_404(MotoristaVinculoPlaca, pk=pk, empresa=empresa)
+
+    if request.method == 'POST':
+        form = MotoristaVinculoPlacaForm(request.POST, instance=vinculo, empresa=empresa)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Vinculo atualizado com sucesso!')
+            return redirect('cadastros:motorista_vinculo_detail', pk=vinculo.pk)
+    else:
+        form = MotoristaVinculoPlacaForm(instance=vinculo, empresa=empresa)
+
+    context = {
+        'form': form,
+        'vinculo': vinculo,
+        'title': 'Editar Vinculo',
+        'action': 'Salvar'
+    }
+    return render(request, 'cadastros/motorista_vinculo/form.html', context)
 
 
 @login_required
@@ -249,4 +351,166 @@ def buscar_cep_motorista(request):
         return JsonResponse({'erro': str(e)}, status=500)
 
 
-from django.db import models
+# ===========================
+# CONSULTA DE VÍNCULOS HISTÓRICOS
+# ===========================
+
+@login_required
+def motorista_vinculo_consulta(request):
+    """
+    Painel de consulta histórica de vínculos Motorista x Placa
+    Permite buscar:
+    1. Placa + Data: Quem estava com determinada placa em certa data (para multas)
+    2. Motorista + Período: Quais placas um motorista operou em determinado período
+    """
+    empresa = request.user.empresa
+    form = MotoristaVinculoConsultaForm(empresa=empresa)
+    resultados = []
+    consulta_realizada = False
+    tipo_consulta = None
+    parametros = {}
+    
+    if request.method == 'POST':
+        form = MotoristaVinculoConsultaForm(request.POST, empresa=empresa)
+        
+        if form.is_valid():
+            consulta_realizada = True
+            tipo_consulta = form.cleaned_data['tipo_consulta']
+            
+            if tipo_consulta == 'placa_data':
+                # Consulta: Quem estava com a placa na data?
+                placa = form.cleaned_data['placa']
+                data_ref = form.cleaned_data['data_referencia']
+                
+                parametros = {
+                    'placa': placa,
+                    'data_referencia': data_ref
+                }
+                
+                # Buscar vínculos que cobrem esta data
+                # Vínculo cobre se: data_inicio <= data_ref E (data_fim >= data_ref OU data_fim é NULL)
+                resultados = MotoristaVinculoPlaca.objects.filter(
+                    empresa=empresa,
+                    ativo=True,
+                    data_inicio__lte=data_ref
+                ).filter(
+                    Q(data_fim__gte=data_ref) | Q(data_fim__isnull=True)
+                ).filter(
+                    Q(placa_principal=placa) | Q(reboques=placa)
+                ).select_related('motorista', 'placa_principal').prefetch_related('reboques').distinct()
+                
+            elif tipo_consulta == 'motorista_periodo':
+                # Consulta: Quais placas o motorista operou no período?
+                motorista = form.cleaned_data['motorista']
+                data_inicio = form.cleaned_data['data_inicio']
+                data_fim = form.cleaned_data.get('data_fim')
+                
+                parametros = {
+                    'motorista': motorista,
+                    'data_inicio': data_inicio,
+                    'data_fim': data_fim
+                }
+                
+                # Buscar vínculos que se sobrepõem ao período consultado
+                vinculos_filter = MotoristaVinculoPlaca.objects.filter(
+                    empresa=empresa,
+                    ativo=True,
+                    motorista=motorista,
+                    data_inicio__lte=data_fim if data_fim else timezone.now().date()
+                ).filter(
+                    Q(data_fim__gte=data_inicio) | Q(data_fim__isnull=True)
+                )
+                
+                resultados = vinculos_filter.select_related('motorista', 'placa_principal').prefetch_related('reboques').order_by('-data_inicio')
+    
+    context = {
+        'form': form,
+        'resultados': resultados,
+        'consulta_realizada': consulta_realizada,
+        'tipo_consulta': tipo_consulta,
+        'parametros': parametros,
+        'total_resultados': len(resultados) if resultados else 0,
+    }
+    
+    return render(request, 'cadastros/motorista_vinculo/consulta.html', context)
+
+
+@login_required
+def motorista_vinculo_consulta_pdf(request):
+    """
+    Exporta resultado da consulta em PDF
+    """
+    empresa = request.user.empresa
+    form = MotoristaVinculoConsultaForm(request.GET, empresa=empresa)
+    
+    if not form.is_valid():
+        messages.error(request, 'Parâmetros de consulta inválidos.')
+        return redirect('cadastros:motorista_vinculo_consulta')
+    
+    tipo_consulta = form.cleaned_data['tipo_consulta']
+    resultados = []
+    parametros = {}
+    
+    if tipo_consulta == 'placa_data':
+        placa = form.cleaned_data['placa']
+        data_ref = form.cleaned_data['data_referencia']
+        
+        parametros = {
+            'placa': placa,
+            'data_referencia': data_ref
+        }
+        
+        resultados = MotoristaVinculoPlaca.objects.filter(
+            empresa=empresa,
+            ativo=True,
+            data_inicio__lte=data_ref
+        ).filter(
+            Q(data_fim__gte=data_ref) | Q(data_fim__isnull=True)
+        ).filter(
+            Q(placa_principal=placa) | Q(reboques=placa)
+        ).select_related('motorista', 'placa_principal').prefetch_related('reboques').distinct()
+        
+    elif tipo_consulta == 'motorista_periodo':
+        motorista = form.cleaned_data['motorista']
+        data_inicio = form.cleaned_data['data_inicio']
+        data_fim = form.cleaned_data.get('data_fim')
+        
+        parametros = {
+            'motorista': motorista,
+            'data_inicio': data_inicio,
+            'data_fim': data_fim
+        }
+        
+        vinculos_filter = MotoristaVinculoPlaca.objects.filter(
+            empresa=empresa,
+            ativo=True,
+            motorista=motorista,
+            data_inicio__lte=data_fim if data_fim else timezone.now().date()
+        ).filter(
+            Q(data_fim__gte=data_inicio) | Q(data_fim__isnull=True)
+        )
+        
+        resultados = vinculos_filter.select_related('motorista', 'placa_principal').prefetch_related('reboques').order_by('-data_inicio')
+    
+    # Renderizar HTML
+    html_string = render_to_string('cadastros/motorista_vinculo/consulta_pdf.html', {
+        'empresa': empresa,
+        'tipo_consulta': tipo_consulta,
+        'parametros': parametros,
+        'resultados': resultados,
+        'total_resultados': len(resultados),
+        'data_geracao': timezone.now()
+    })
+    
+    # Gerar PDF
+    result = BytesIO()
+    pdf = pisa.pisaDocument(BytesIO(html_string.encode("UTF-8")), result)
+    
+    if not pdf.err:
+        response = HttpResponse(result.getvalue(), content_type='application/pdf')
+        filename = f'consulta_vinculos_{timezone.now().strftime("%Y%m%d_%H%M%S")}.pdf'
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        return response
+    
+    messages.error(request, 'Erro ao gerar PDF.')
+    return redirect('cadastros:motorista_vinculo_consulta')

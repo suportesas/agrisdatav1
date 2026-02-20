@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Consulta de Vínculos Motorista x Placa</title>
+  <style>
+    body { font-family: Arial, sans-serif; font-size: 12px; color: #222; }
+    .header { margin-bottom: 16px; border-bottom: 2px solid #333; padding-bottom: 8px; }
+    .title { font-size: 18px; font-weight: bold; color: #333; }
+    .empresa { font-size: 14px; color: #666; margin-top: 4px; }
+    .subtitle { color: #555; margin-top: 4px; }
+    .small { font-size: 10px; color: #888; }
+    
+    .parametros { 
+      margin: 16px 0; 
+      padding: 12px; 
+      background: #f5f5f5; 
+      border-left: 4px solid #0066cc; 
+    }
+    .parametros p { margin: 4px 0; }
+    .parametros strong { color: #0066cc; }
+    
+    .resumo { 
+      margin: 12px 0; 
+      padding: 8px; 
+      border: 1px solid #ddd; 
+      background: #fafafa; 
+    }
+    .resumo span { display: inline-block; margin-right: 20px; }
+    
+    table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; font-size: 11px; }
+    th { background: #e0e0e0; font-weight: bold; }
+    tr:nth-child(even) { background: #f9f9f9; }
+    
+    .badge { 
+      display: inline-block; 
+      padding: 2px 6px; 
+      background: #0066cc; 
+      color: white; 
+      border-radius: 3px; 
+      font-size: 10px; 
+      font-weight: bold;
+      margin: 2px;
+    }
+    .badge-secondary { background: #6c757d; }
+    .badge-success { background: #28a745; }
+    .badge-danger { background: #dc3545; }
+    
+    .footer { 
+      margin-top: 20px; 
+      padding-top: 8px; 
+      border-top: 1px solid #ddd; 
+      text-align: center; 
+      font-size: 10px; 
+      color: #888; 
+    }
+    
+    .no-results { 
+      padding: 16px; 
+      background: #fff3cd; 
+      border: 1px solid #ffc107; 
+      color: #856404; 
+      margin: 12px 0; 
+    }
+    
+    .conjunto-placas { font-size: 10px; }
+  </style>
+</head>
+<body>
+  <!-- Cabeçalho -->
+  <div class="header">
+    <div class="title">Consulta de Vínculos Motorista x Placa</div>
+    <div class="empresa">{{ empresa.nome_fantasia }}</div>
+    <div class="small">Gerado em: {{ data_geracao|date:"d/m/Y à\s H:i" }}</div>
+  </div>
+
+  <!-- Parâmetros da Consulta -->
+  <div class="parametros">
+    <p style="margin-top: 0; font-weight: bold; font-size: 13px;">📋 Parâmetros da Consulta</p>
+    {% if tipo_consulta == 'placa_data' %}
+      <p><strong>Tipo:</strong> Placa + Data (Identificar responsável por multa)</p>
+      <p><strong>Placa:</strong> {{ parametros.placa.placa }}</p>
+      <p><strong>Data de Referência:</strong> {{ parametros.data_referencia|date:"d/m/Y" }}</p>
+      <p><strong>Objetivo:</strong> Identificar qual motorista estava operando esta placa na data especificada.</p>
+    {% elif tipo_consulta == 'motorista_periodo' %}
+      <p><strong>Tipo:</strong> Motorista + Período (Histórico de operações)</p>
+      <p><strong>Motorista:</strong> {{ parametros.motorista.nome }}</p>
+      <p><strong>CPF:</strong> {{ parametros.motorista.cpf }}</p>
+      <p><strong>Período:</strong> {{ parametros.data_inicio|date:"d/m/Y" }} até {% if parametros.data_fim %}{{ parametros.data_fim|date:"d/m/Y" }}{% else %}Atual{% endif %}</p>
+      <p><strong>Objetivo:</strong> Listar todos os veículos que o motorista operou no período.</p>
+    {% endif %}
+  </div>
+
+  <!-- Resumo -->
+  <div class="resumo">
+    <span><strong>Total de Vínculos Encontrados:</strong> {{ total_resultados }}</span>
+  </div>
+
+  <!-- Resultados -->
+  {% if resultados %}
+  <h3 style="margin-top: 16px; border-bottom: 1px solid #ddd; padding-bottom: 4px;">Resultados</h3>
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 20%;">Motorista</th>
+        <th style="width: 12%;">Placa Principal</th>
+        <th style="width: 18%;">Reboques</th>
+        <th style="width: 20%;">Período do Vínculo</th>
+        <th style="width: 10%; text-align: center;">Status</th>
+        <th style="width: 20%;">Observações</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for vinculo in resultados %}
+      <tr>
+        <td>
+          <strong>{{ vinculo.motorista.nome }}</strong><br>
+          <span class="small">CPF: {{ vinculo.motorista.cpf }}</span>
+        </td>
+        <td>
+          <span class="badge">{{ vinculo.placa_principal.placa }}</span>
+        </td>
+        <td class="conjunto-placas">
+          {% for reb in vinculo.reboques.all %}
+            <span class="badge badge-secondary">{{ reb.placa }}</span>
+          {% empty %}
+            <span style="color: #999;">-</span>
+          {% endfor %}
+        </td>
+        <td>
+          <strong>Início:</strong> {{ vinculo.data_inicio|date:"d/m/Y" }}<br>
+          <strong>Fim:</strong> {% if vinculo.data_fim %}{{ vinculo.data_fim|date:"d/m/Y" }}{% else %}<span style="color: #28a745; font-weight: bold;">Atual</span>{% endif %}
+        </td>
+        <td style="text-align: center;">
+          {% if vinculo.ativo %}
+            <span class="badge badge-success">ATIVO</span>
+          {% else %}
+            <span class="badge badge-danger">ENCERRADO</span>
+          {% endif %}
+        </td>
+        <td class="small">
+          {% if tipo_consulta == 'placa_data' and vinculo.ativo %}
+            ⚠️ Vínculo ativo - motorista ainda opera este conjunto
+          {% endif %}
+          {% if vinculo.reboques.all %}
+            Conjunto completo: {{ vinculo.reboques.count|add:1 }} veículo{% if vinculo.reboques.count > 0 %}s{% endif %}
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <!-- Observações Finais -->
+  {% if tipo_consulta == 'placa_data' %}
+  <div style="margin-top: 16px; padding: 12px; background: #e7f3ff; border-left: 4px solid #0066cc;">
+    <p style="margin: 0; font-weight: bold;">💡 Interpretação dos Resultados:</p>
+    <p style="margin: 4px 0 0 0; font-size: 11px;">
+      {% if total_resultados == 0 %}
+        A placa <strong>{{ parametros.placa.placa }}</strong> não estava vinculada a nenhum motorista na data <strong>{{ parametros.data_referencia|date:"d/m/Y" }}</strong>. 
+        Verifique se a data está correta ou se o vínculo foi registrado no sistema.
+      {% elif total_resultados == 1 %}
+        Na data <strong>{{ parametros.data_referencia|date:"d/m/Y" }}</strong>, a placa <strong>{{ parametros.placa.placa }}</strong> estava sob responsabilidade de 
+        <strong>{{ resultados.0.motorista.nome }}</strong>. Este é o motorista que deve ser notificado sobre eventos/multas ocorridos nesta data.
+      {% else %}
+        ⚠️ ATENÇÃO: Foram encontrados {{ total_resultados }} vínculos para a mesma data. Isso pode indicar sobreposição de períodos.
+        Verifique os registros para identificar possíveis inconsistências.
+      {% endif %}
+    </p>
+  </div>
+  {% endif %}
+
+  {% else %}
+  <div class="no-results">
+    <strong>⚠️ Nenhum vínculo encontrado</strong><br>
+    Não há registros que correspondam aos parâmetros informados. Verifique se os dados estão corretos e se os vínculos foram cadastrados no sistema.
+  </div>
+  {% endif %}
+
+  <!-- Rodapé -->
+  <div class="footer">
+    <p>Este relatório foi gerado automaticamente pelo sistema ERP Agrícola.</p>
+    <p>Empresa: {{ empresa.nome_fantasia }} | CNPJ: {{ empresa.cnpj }}</p>
+    <p>Data de Geração: {{ data_geracao|date:"d/m/Y à\s H:i:s" }}</p>
+  </div>
+</body>
+</html>

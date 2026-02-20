@@ -1,0 +1,194 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Historico Motorista x Placa{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+  <div class="row mb-4">
+    <div class="col-md-8">
+      <h1 class="mb-0"><i class="bi bi-card-list"></i> Historico Motorista x Placa</h1>
+    </div>
+    <div class="col-md-4 text-end">
+      <button type="button" class="btn btn-outline-info me-2" data-bs-toggle="modal" data-bs-target="#ajudaModal">
+        <i class="bi bi-question-circle"></i> Ajuda
+      </button>
+      <a href="{% url 'cadastros:motorista_vinculo_consulta' %}" class="btn btn-info me-2">
+        <i class="bi bi-search"></i> Consulta Histórico
+      </a>
+      <a href="{% url 'cadastros:motorista_vinculo_create' %}" class="btn btn-primary">
+        <i class="bi bi-plus-circle"></i> Novo Vinculo
+      </a>
+    </div>
+  </div>
+
+  <div class="card mb-4">
+    <div class="card-body">
+      <form method="get" class="row g-3">
+        <div class="col-md-5">
+          <label class="form-label">Buscar (Motorista ou Placa)</label>
+          <input type="text" name="search" class="form-control" value="{{ search }}" placeholder="Nome do motorista ou placa">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Status</label>
+          <select name="status" class="form-select">
+            <option value="">-- Todos --</option>
+            <option value="ATIVO" {% if status == 'ATIVO' %}selected{% endif %}>Ativo</option>
+            <option value="ENCERRADO" {% if status == 'ENCERRADO' %}selected{% endif %}>Encerrado</option>
+          </select>
+        </div>
+        <div class="col-md-2 d-flex align-items-end gap-2">
+          <button type="submit" class="btn btn-outline-primary w-100">
+            <i class="bi bi-search"></i> Filtrar
+          </button>
+          <a href="{% url 'cadastros:motorista_vinculo_list' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-x"></i>
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  {% if vinculos %}
+  <div class="card">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Motorista</th>
+            <th>Placa Principal</th>
+            <th>Reboques</th>
+            <th>Periodo</th>
+            <th>Status</th>
+            <th class="text-center">Acoes</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for vinculo in vinculos %}
+          <tr>
+            <td><strong>{{ vinculo.motorista.nome }}</strong></td>
+            <td>{{ vinculo.placa_principal.placa }}</td>
+            <td>
+              {% for reb in vinculo.reboques.all %}
+                <span class="badge bg-secondary">{{ reb.placa }}</span>
+              {% empty %}
+                <span class="text-muted">-</span>
+              {% endfor %}
+            </td>
+            <td>
+              {{ vinculo.data_inicio|date:"d/m/Y" }}
+              {% if vinculo.data_fim %} - {{ vinculo.data_fim|date:"d/m/Y" }}{% else %} - Atual{% endif %}
+            </td>
+            <td>
+              {% if vinculo.ativo %}
+                <span class="badge bg-success">Ativo</span>
+              {% else %}
+                <span class="badge bg-danger">Encerrado</span>
+              {% endif %}
+            </td>
+            <td class="text-center">
+              <div class="btn-group btn-group-sm" role="group">
+                <a href="{% url 'cadastros:motorista_vinculo_detail' vinculo.id %}" class="btn btn-outline-primary" title="Ver">
+                  <i class="bi bi-eye"></i>
+                </a>
+                <a href="{% url 'cadastros:motorista_vinculo_update' vinculo.id %}" class="btn btn-outline-warning" title="Editar">
+                  <i class="bi bi-pencil"></i>
+                </a>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% else %}
+  <div class="alert alert-info">
+    Nenhum vinculo encontrado.
+  </div>
+  {% endif %}
+</div>
+
+<!-- Modal de Ajuda -->
+<div class="modal fade" id="ajudaModal" tabindex="-1" aria-labelledby="ajudaModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-info text-white">
+        <h5 class="modal-title" id="ajudaModalLabel">
+          <i class="bi bi-question-circle"></i> Ajuda - Vínculos Motorista x Placa
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body">
+        <h6 class="fw-bold text-primary"><i class="bi bi-info-circle"></i> O que são Vínculos?</h6>
+        <p>
+          Os vínculos registram <strong>qual motorista estava operando qual veículo (ou conjunto de veículos)</strong> em determinado período.
+          Este controle é essencial para rastreabilidade e responsabilização, especialmente em casos de multas de trânsito.
+        </p>
+
+        <hr>
+
+        <h6 class="fw-bold text-primary"><i class="bi bi-plus-circle"></i> Como Criar um Vínculo</h6>
+        <ol>
+          <li>Clique no botão <span class="badge bg-primary">Novo Vínculo</span></li>
+          <li>Selecione o <strong>motorista</strong></li>
+          <li>Selecione a <strong>placa principal</strong> (veículo que será operado)</li>
+          <li>Se houver, selecione os <strong>reboques</strong> que compõem o conjunto</li>
+          <li>Informe a <strong>data de início</strong> do vínculo</li>
+          <li>Deixe a <strong>data fim vazia</strong> se o vínculo ainda estiver ativo, ou preencha quando encerrar</li>
+          <li>Adicione observações se necessário</li>
+        </ol>
+
+        <div class="alert alert-warning">
+          <strong>⚠️ Importante:</strong> O sistema não permite vínculos sobrepostos. Se tentar vincular um motorista ou placa que já está vinculado no mesmo período, você receberá um erro.
+        </div>
+
+        <hr>
+
+        <h6 class="fw-bold text-primary"><i class="bi bi-search"></i> Consultar Vínculos Históricos</h6>
+        <p>
+          Use o botão <span class="badge bg-info">Consulta Histórico</span> para:
+        </p>
+        <ul>
+          <li><strong>Identificar responsável por multa:</strong> Informe a placa e a data da infração para descobrir qual motorista estava com o veículo</li>
+          <li><strong>Ver histórico de operações:</strong> Informe o motorista e o período para ver todos os veículos que ele operou</li>
+        </ul>
+
+        <hr>
+
+        <h6 class="fw-bold text-primary"><i class="bi bi-list-check"></i> Status dos Vínculos</h6>
+        <ul>
+          <li><span class="badge bg-success">ATIVO</span> - Vínculo habilitado no sistema e com checkbox "Ativo" marcado</li>
+          <li><span class="badge bg-secondary">INATIVO</span> - Vínculo desabilitado (checkbox "Ativo" desmarcado)</li>
+        </ul>
+        <p class="mb-0">
+          <strong>💡 Dica:</strong> Use o campo "Ativo" para desativar temporariamente vínculos sem deletá-los. 
+          Vínculos inativos não aparecem nas consultas históricas, mas permanecem no banco de dados para auditoria.
+        </p>
+
+        <hr>
+
+        <h6 class="fw-bold text-primary"><i class="bi bi-pencil"></i> Editar/Desativar Vínculo</h6>
+        <p>
+          Para desativar um vínculo, clique no ícone <i class="bi bi-pencil text-warning"></i> e <strong>desmarque o checkbox "Vínculo Ativo"</strong>.
+          Você também pode preencher a <strong>Data Fim</strong> para registrar quando o motorista parou de operar o veículo.
+        </p>
+        </p>
+
+        <hr>
+
+        <h6 class="fw-bold text-primary"><i class="bi bi-truck"></i> Conjuntos de Veículos</h6>
+        <p class="mb-0">
+          Você pode vincular não apenas a placa principal, mas também os <strong>reboques</strong>.
+          Isso é importante para operações com carretas compostas (cavalo mecânico + reboque), pois o sistema registrará todo o conjunto.
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          <i class="bi bi-x-circle"></i> Fechar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -6,6 +6,7 @@ from django.urls import path
 from . import views
 from . import views_motorista
 from . import views_monitoramento_mip
+from . import views_requisicao
 
 app_name = 'cadastros'
 
@@ -164,6 +165,22 @@ urlpatterns = [
     path('api/veiculos/', views.api_vehicles, name='api_vehicles'),
     path('veiculos/export/csv/', views.vehicle_export_csv, name='vehicle_export_csv'),
 
+    # ==================== REQUISICOES ====================
+    path('requisicoes/', views_requisicao.requisicao_list, name='requisicao_list'),
+    path('requisicoes/pendentes-aprovacao/', views_requisicao.requisicao_pendentes_aprovacao, name='requisicao_pendentes_aprovacao'),
+    path('requisicoes/nova/', views_requisicao.requisicao_create, name='requisicao_create'),
+    path('requisicoes/<int:pk>/', views_requisicao.requisicao_detail, name='requisicao_detail'),
+    path('requisicoes/<int:pk>/editar/', views_requisicao.requisicao_update, name='requisicao_update'),
+    path('requisicoes/<int:pk>/excluir/', views_requisicao.requisicao_delete, name='requisicao_delete'),
+    path('requisicoes/<int:pk>/aprovar/', views_requisicao.requisicao_aprovar, name='requisicao_aprovar'),
+    path('requisicoes/<int:pk>/atender/', views_requisicao.requisicao_atender, name='requisicao_atender'),
+    path('requisicoes/<int:pk>/cancelar/', views_requisicao.requisicao_cancelar, name='requisicao_cancelar'),
+    path('requisicoes/<int:requisicao_id>/itens/novo/', views_requisicao.requisicao_item_create, name='requisicao_item_create'),
+    path('requisicoes/<int:requisicao_id>/itens/<int:item_id>/editar/', views_requisicao.requisicao_item_update, name='requisicao_item_update'),
+    path('requisicoes/<int:requisicao_id>/itens/<int:item_id>/excluir/', views_requisicao.requisicao_item_delete, name='requisicao_item_delete'),
+    path('api/requisicoes/safras-por-talhao/<int:talhao_id>/', views_requisicao.ajax_safras_por_talhao, name='ajax_safras_por_talhao'),
+    path('api/requisicoes/talhao-por-codigo/', views_requisicao.ajax_talhao_por_codigo, name='ajax_talhao_por_codigo'),
+
     # Fornecedor: endereços
     path('fornecedores/<int:fornecedor_pk>/enderecos/novo/', views.fornecedor_endereco_create, name='fornecedor_endereco_create'),
     path('fornecedores/<int:fornecedor_pk>/enderecos/<int:endereco_pk>/editar/', views.fornecedor_endereco_update, name='fornecedor_endereco_update'),
@@ -279,6 +296,14 @@ urlpatterns = [
     path('motoristas/<int:pk>/', views_motorista.motorista_detail, name='motorista_detail'),
     path('motoristas/<int:pk>/editar/', views_motorista.motorista_update, name='motorista_update'),
     path('motoristas/<int:pk>/deletar/', views_motorista.motorista_delete, name='motorista_delete'),
+
+    # Historico Motorista x Placa
+    path('motoristas/vinculos/', views_motorista.motorista_vinculo_list, name='motorista_vinculo_list'),
+    path('motoristas/vinculos/novo/', views_motorista.motorista_vinculo_create, name='motorista_vinculo_create'),
+    path('motoristas/vinculos/<int:pk>/', views_motorista.motorista_vinculo_detail, name='motorista_vinculo_detail'),
+    path('motoristas/vinculos/<int:pk>/editar/', views_motorista.motorista_vinculo_update, name='motorista_vinculo_update'),
+    path('motoristas/vinculos/consulta/', views_motorista.motorista_vinculo_consulta, name='motorista_vinculo_consulta'),
+    path('motoristas/vinculos/consulta/pdf/', views_motorista.motorista_vinculo_consulta_pdf, name='motorista_vinculo_consulta_pdf'),
     
     # Documentos do Motorista
     path('motoristas/<int:motorista_pk>/documentos/criar/', views_motorista.motorista_documento_create, name='motorista_documento_create'),

@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Vinculo Motorista x Placa{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+  <div class="row mb-4">
+    <div class="col-md-8">
+      <h1 class="mb-1"><i class="bi bi-link-45deg"></i> Vinculo Motorista x Placa</h1>
+      <p class="text-muted mb-0">Motorista: <strong>{{ vinculo.motorista.nome }}</strong></p>
+    </div>
+    <div class="col-md-4 text-end">
+      <a href="{% url 'cadastros:motorista_vinculo_update' vinculo.id %}" class="btn btn-warning btn-sm">
+        <i class="bi bi-pencil"></i> Editar
+      </a>
+      <a href="{% url 'cadastros:motorista_vinculo_list' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left"></i> Voltar
+      </a>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-md-6">
+      <div class="card p-4">
+        <h5 class="mb-3">Dados do Vinculo</h5>
+        <dl class="row">
+          <dt class="col-4">Motorista</dt><dd class="col-8">{{ vinculo.motorista.nome }}</dd>
+          <dt class="col-4">Placa Principal</dt><dd class="col-8">{{ vinculo.placa_principal.placa }}</dd>
+          <dt class="col-4">Periodo</dt>
+          <dd class="col-8">
+            {{ vinculo.data_inicio|date:"d/m/Y" }}
+            {% if vinculo.data_fim %} - {{ vinculo.data_fim|date:"d/m/Y" }}{% else %} - Atual{% endif %}
+          </dd>
+          <dt class="col-4">Status</dt>
+          <dd class="col-8">
+            {% if vinculo.ativo %}<span class="badge bg-success">Ativo</span>{% else %}<span class="badge bg-danger">Encerrado</span>{% endif %}
+          </dd>
+        </dl>
+      </div>
+    </div>
+
+    <div class="col-md-6">
+      <div class="card p-4">
+        <h5 class="mb-3">Conjunto de Placas</h5>
+        <div class="mb-2">
+          <strong>Principal:</strong> <span class="badge bg-primary">{{ vinculo.placa_principal.placa }}</span>
+        </div>
+        <div class="mb-2">
+          <strong>Reboques:</strong>
+          {% for reb in reboques %}
+            <span class="badge bg-secondary">{{ reb.placa }}</span>
+          {% empty %}
+            <span class="text-muted">Nenhum reboque</span>
+          {% endfor %}
+        </div>
+        {% if vinculo.observacoes %}
+        <div class="mt-3">
+          <strong>Observacoes:</strong>
+          <p class="mb-0">{{ vinculo.observacoes }}</p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

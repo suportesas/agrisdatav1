@@ -1352,7 +1352,7 @@ class InventarioCiclicoItem(models.Model):
         
         tipo_movimento = 'AJUSTE_ENTRADA' if self.quantidade_diferenca > 0 else 'AJUSTE_SAIDA'
         
-        MovimentacaoEstoque.objects.create(
+        movimentacao = MovimentacaoEstoque.objects.create(
             empresa=self.inventario.empresa,
             produto=self.produto,
             lote=self.lote,
@@ -1361,9 +1361,12 @@ class InventarioCiclicoItem(models.Model):
             quantidade=abs(self.quantidade_diferenca),
             armazem_origem=self.inventario.armazem,
             motivo=f'Ajuste de inventário cíclico {self.inventario.numero}',
-            status='EXECUTADO',
+            status='PENDENTE',
             executado_por=self.inventario.responsavel,
         )
+
+        # Executa para atualizar lote e estoque_atual do produto
+        movimentacao.executar(self.inventario.responsavel)
     
     class Meta:
         ordering = ['classificacao_abc', 'produto__nome']

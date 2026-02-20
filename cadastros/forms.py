@@ -21,7 +21,7 @@ import re
 
 
 from .models import Area, Talhao, HistoricoTalhao, Cultura, Praga
-from .models import Safra, SafraPlan, SafraReal
+from .models import Safra, SafraPlan, SafraReal, Requisicao, RequisicaoItem
 from .models import (
     EstagioDesenvolvimento, MonitoramentoMIP, 
     PragaNoMonitoramento, PontoMonitoramento
@@ -31,6 +31,7 @@ from .models import Vendedor, ComissaoVendedor
 
 # Import fornecedor-related models to set ModelForm Meta.model directly
 from .models import Fornecedor, FornecedorContato, FornecedorDadoBancario, FornecedorEndereco, Transportadora
+from produtos.models import Produto, UnidadeMedida
 
 
 # ============================================
@@ -2239,6 +2240,13 @@ class SafraForm(forms.ModelForm):
         self.user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
 
+        def _safra_label(safra):
+            base = safra.nome or str(safra.ano or '')
+            cultura = safra.cultura.nome if safra.cultura else ''
+            if base and cultura:
+                return f"{base} - {cultura}"
+            return base or cultura or str(safra)
+
         if self.user and getattr(self.user, 'empresa', None):
             self.fields['fazenda'].queryset = Fazenda.objects.filter(empresa=self.user.empresa, ativa=True).order_by('nome')
             self.fields['cultura'].queryset = Cultura.objects.filter(empresa=self.user.empresa, ativa=True).order_by('nome')
@@ -2341,6 +2349,136 @@ class SafraPlanForm(forms.ModelForm):
         if commit:
             instance.save()
         return instance
+
+
+class RequisicaoForm(forms.ModelForm):
+    """Formulario de requisicao"""
+    
+    codigo_talhao = forms.CharField(
+        label='Código do Talhão',
+        max_length=20,
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'id': 'id_codigo_talhao',
+            'placeholder': 'Digite o código do talhão para buscar...',
+            'autocomplete': 'off'
+        })
+    )
+
+    class Meta:
+        model = Requisicao
+        fields = [
+            'numero', 'tipo',
+            'safra', 'fazenda', 'talhao',
+            'funcionario_destino', 'parceiro',
+            'veiculo', 'horimetro', 'odometro',
+            'centro_custo_nome', 'observacoes'
+        ]
+        widgets = {
+            'numero': forms.TextInput(attrs={'class': 'form-control', 'readonly': 'readonly'}),
+            'tipo': forms.Select(attrs={'class': 'form-select', 'id': 'id_tipo'}),
+            'safra': forms.Select(attrs={'class': 'form-select', 'id': 'id_safra'}),
+            'fazenda': forms.Select(attrs={'class': 'form-select', 'id': 'id_fazenda'}),
+            'talhao': forms.Select(attrs={'class': 'form-select', 'id': 'id_talhao'}),
+            'funcionario_destino': forms.Select(attrs={'class': 'form-select'}),
+            'parceiro': forms.Select(attrs={'class': 'form-select'}),
+            'veiculo': forms.Select(attrs={'class': 'form-select'}),
+            'horimetro': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'odometro': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'centro_custo_nome': forms.TextInput(attrs={'class': 'form-control'}),
+            'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+
+        if self.user and getattr(self.user, 'empresa', None):
+            def _safra_label(safra):
+                base = safra.nome or str(safra.ano or '')
+                cultura = safra.cultura.nome if safra.cultura else ''
+                if base and cultura:
+                    return f"{base} - {cultura}"
+                return base or cultura or str(safra)
+
+            empresa = self.user.empresa
+            self.fields['fazenda'].queryset = Fazenda.objects.filter(empresa=empresa, ativa=True).order_by('nome')
+            self.fields['talhao'].queryset = Talhao.objects.filter(empresa=empresa, ativo=True).order_by('codigo')
+            self.fields['safra'].queryset = Safra.objects.filter(fazenda__empresa=empresa).order_by('-ano', 'nome')
+            self.fields['safra'].label_from_instance = _safra_label
+            self.fields['funcionario_destino'].queryset = Funcionario.objects.filter(empresa=empresa, ativo=True).order_by('nome_completo')
+            self.fields['parceiro'].queryset = Cliente.objects.filter(empresa=empresa, status='ATIVO').order_by('razao_social')
+            self.fields['veiculo'].queryset = Vehicle.objects.filter(empresa=empresa, ativo=True).order_by('descricao')
+        else:
+            self.fields['fazenda'].queryset = Fazenda.objects.none()
+            self.fields['talhao'].queryset = Talhao.objects.none()
+            self.fields['safra'].queryset = Safra.objects.none()
+            self.fields['funcionario_destino'].queryset = Funcionario.objects.none()
+            self.fields['parceiro'].queryset = Cliente.objects.none()
+            self.fields['veiculo'].queryset = Vehicle.objects.none()
+
+        if self.instance and self.instance.pk:
+            self.fields['numero'].initial = self.instance.numero
+
+
+class RequisicaoItemForm(forms.ModelForm):
+    """Formulario de item da requisicao"""
+
+    class Meta:
+        model = RequisicaoItem
+        fields = [
+            'produto', 'unidade_medida',
+            'quantidade_solicitada', 'quantidade_atendida',
+            'custo_estimado', 'observacoes'
+        ]
+        widgets = {
+            'produto': forms.Select(attrs={'class': 'form-select'}),
+            'unidade_medida': forms.Select(attrs={'class': 'form-select'}),
+            'quantidade_solicitada': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.001'}),
+            'quantidade_atendida': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.001'}),
+            'custo_estimado': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.empresa = kwargs.pop('empresa', None)
+        super().__init__(*args, **kwargs)
+
+        if self.empresa:
+            self.fields['produto'].queryset = Produto.objects.filter(
+                categoria__empresa=self.empresa,
+                ativo=True
+            ).order_by('nome')
+            self.fields['unidade_medida'].queryset = UnidadeMedida.objects.filter(
+                empresa=self.empresa,
+                ativo=True
+            ).order_by('sigla')
+
+        self.fields['quantidade_atendida'].required = False
+        self.fields['quantidade_atendida'].initial = 0
+
+        if self.instance and self.instance.pk:
+            if self.instance.unidade_medida:
+                self.fields['unidade_medida'].initial = self.instance.unidade_medida
+
+    def clean(self):
+        cleaned = super().clean()
+        produto = cleaned.get('produto')
+        unidade = cleaned.get('unidade_medida')
+        custo = cleaned.get('custo_estimado')
+        quantidade_atendida = cleaned.get('quantidade_atendida')
+
+        if produto and not unidade:
+            cleaned['unidade_medida'] = produto.unidade_medida
+
+        if produto and custo in (None, ''):
+            cleaned['custo_estimado'] = produto.preco_custo
+
+        if quantidade_atendida in (None, ''):
+            cleaned['quantidade_atendida'] = 0
+
+        return cleaned
 
 
 class HistoricoTalhaoForm(forms.ModelForm):

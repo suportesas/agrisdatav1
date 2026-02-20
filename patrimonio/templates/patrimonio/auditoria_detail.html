@@ -1,0 +1,127 @@
+{% extends 'base.html' %}
+
+{% block title %}Auditoria {{ auditoria.ano }} | ERP Agrícola{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'patrimonio:auditoria_list' %}">Auditorias</a></li>
+      <li class="breadcrumb-item active">{{ auditoria.ano }}</li>
+    </ol>
+  </nav>
+
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="fw-bold mb-1">Auditoria {{ auditoria.ano }}</h2>
+      <p class="text-muted mb-0">
+        Status: <span class="badge bg-{% if auditoria.status == 'ABERTA' %}warning{% else %}success{% endif %}">
+          {{ auditoria.get_status_display }}
+        </span>
+      </p>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{% url 'patrimonio:auditoria_pdf' auditoria.pk %}" class="btn btn-outline-primary">
+        <i class="bi bi-file-earmark-pdf"></i> PDF
+      </a>
+      {% if auditoria.status == 'ABERTA' %}
+      <a href="{% url 'patrimonio:auditoria_list' %}" class="btn btn-outline-secondary">Voltar</a>
+      <form method="post" action="{% url 'patrimonio:auditoria_finalizar' auditoria.pk %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-success">Finalizar Auditoria</button>
+      </form>
+      {% else %}
+      <a href="{% url 'patrimonio:auditoria_list' %}" class="btn btn-outline-secondary">Voltar</a>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-3">
+      <div class="card text-center p-3">
+        <h6 class="text-muted mb-0">Total</h6>
+        <h3 class="fw-bold text-primary">{{ total_itens }}</h3>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card text-center p-3">
+        <h6 class="text-muted mb-0">Pendentes</h6>
+        <h3 class="fw-bold text-warning">{{ total_pendente }}</h3>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card text-center p-3">
+        <h6 class="text-muted mb-0">OK</h6>
+        <h3 class="fw-bold text-success">{{ total_ok }}</h3>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card text-center p-3">
+        <h6 class="text-muted mb-0">Divergências</h6>
+        <h3 class="fw-bold text-danger">{{ total_divergencias }}</h3>
+      </div>
+    </div>
+  </div>
+
+  <div class="card p-3 mb-4">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-md-4">
+        <label class="form-label">Filtrar por status</label>
+        <select name="status" class="form-select">
+          <option value="">Todos</option>
+          {% for val, label in status_choices %}
+          <option value="{{ val }}" {% if status_filtro == val %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2">
+        <button type="submit" class="btn btn-primary w-100">Filtrar</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="card">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Número</th>
+            <th>Descrição</th>
+            <th>Localização</th>
+            <th>Responsável</th>
+            <th class="text-end">Valor Atual</th>
+            <th>Status</th>
+            <th class="text-center">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in itens %}
+          <tr>
+            <td><strong>{{ item.numero_patrimonio }}</strong></td>
+            <td>{{ item.descricao }}</td>
+            <td>{{ item.localizacao|default:"—" }}</td>
+            <td>{{ item.responsavel_nome|default:"—" }}</td>
+            <td class="text-end">{% if item.valor_atual %}R$ {{ item.valor_atual|floatformat:2 }}{% else %}—{% endif %}</td>
+            <td>
+              <span class="badge bg-{% if item.status == 'OK' %}success{% elif item.status == 'PENDENTE' %}warning{% elif item.status == 'DANIFICADO' %}danger{% elif item.status == 'NAO_LOCALIZADO' %}secondary{% else %}dark{% endif %}">
+                {{ item.get_status_display }}
+              </span>
+            </td>
+            <td class="text-center">
+              <a href="{% url 'patrimonio:auditoria_item_update' auditoria.pk item.pk %}" class="btn btn-sm btn-outline-secondary">
+                Auditar
+              </a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="7" class="text-center text-muted py-4">Nenhum item para esta auditoria</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

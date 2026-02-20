@@ -14,9 +14,9 @@ from .models import Vendedor, ComissaoVendedor
 from .models import (
     Fornecedor, FornecedorEndereco, FornecedorContato, FornecedorDadoBancario, 
     Transportadora, Viagem, Porto, Moeda, NCM, EmpresaNCM, Vehicle, VehiclePlate, 
-    VehicleDocument, VehicleValueHistory, CFOP, EmpresaCFOP,
+    VehicleDocument, VehicleValueHistory, CFOP, EmpresaCFOP, MotoristaVinculoPlaca,
     Armador, ArmadorEndereco, ArmadorContato, ArmadorDadoBancario,
-    Navio, TipoNavio
+    Navio, TipoNavio, Requisicao, RequisicaoItem
 )
 
 class EnderecoFazendaInline(admin.TabularInline):
@@ -960,3 +960,25 @@ class PontoMonitoramentoAdmin(admin.ModelAdmin):
         if hasattr(request.user, 'empresa') and request.user.empresa:
             return qs.filter(praga_monitoramento__monitoramento__empresa=request.user.empresa)
         return qs.none()
+
+
+@admin.register(MotoristaVinculoPlaca)
+class MotoristaVinculoPlacaAdmin(admin.ModelAdmin):
+    list_display = ['motorista', 'placa_principal', 'data_inicio', 'data_fim', 'ativo', 'empresa']
+    list_filter = ['empresa', 'ativo', 'data_inicio']
+    search_fields = ['motorista__nome', 'placa_principal__placa']
+
+
+class RequisicaoItemInline(admin.TabularInline):
+    model = RequisicaoItem
+    extra = 0
+    fields = ['produto', 'unidade_medida', 'quantidade_solicitada', 'quantidade_atendida', 'custo_estimado']
+
+
+@admin.register(Requisicao)
+class RequisicaoAdmin(admin.ModelAdmin):
+    list_display = ['numero', 'tipo', 'status', 'empresa', 'data_requisicao']
+    list_filter = ['empresa', 'status', 'tipo']
+    search_fields = ['numero', 'fazenda__nome', 'safra__nome']
+    readonly_fields = ['data_requisicao', 'data_aprovacao']
+    inlines = [RequisicaoItemInline]

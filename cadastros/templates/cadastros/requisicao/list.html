@@ -1,0 +1,186 @@
+{% extends 'base.html' %}
+
+{% block title %}Requisicoes{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1 class="mb-0">
+                <i class="bi bi-clipboard-check"></i> Requisicoes
+            </h1>
+        </div>
+        <div class="col-md-4 text-end">
+            <button type="button" class="btn btn-outline-secondary me-2" data-bs-toggle="modal" data-bs-target="#ajudaRequisicoesModal">
+                <i class="bi bi-question-circle"></i> Ajuda
+            </button>
+            <a href="{% url 'cadastros:requisicao_create' %}" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Nova Requisicao
+            </a>
+        </div>
+    </div>
+
+    <div class="modal fade" id="ajudaRequisicoesModal" tabindex="-1" aria-labelledby="ajudaRequisicoesLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="ajudaRequisicoesLabel">
+                        <i class="bi bi-question-circle"></i> Ajuda: Requisicoes
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-2"><strong>O que e:</strong> Requisicoes registram solicitacoes de consumo interno (insumos, EPI, abastecimento, expediente ou emprestimo).</p>
+                    <p class="mb-2"><strong>Como usar:</strong></p>
+                    <ul>
+                        <li>Crie uma requisicao e preencha os dados basicos (safra, fazenda, talhao, destino).</li>
+                        <li>Abra a requisicao e adicione os itens com quantidade e custo estimado.</li>
+                        <li>Envie para aprovacao e, apos aprovada, marque como atendida.</li>
+                    </ul>
+                    <p class="mb-0"><strong>Dica:</strong> Use os filtros por tipo e status para encontrar rapidamente requisicoes pendentes.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-5">
+                    <label class="form-label">Buscar (Numero, Safra, Fazenda, Talhao)</label>
+                    <input type="text" name="search" class="form-control" value="{{ search }}" placeholder="Digite para buscar...">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Tipo</label>
+                    <select name="tipo" class="form-select">
+                        <option value="">-- Todos --</option>
+                        <option value="INSUMO_SAFRA" {% if tipo == 'INSUMO_SAFRA' %}selected{% endif %}>Insumo Safra</option>
+                        <option value="EPI" {% if tipo == 'EPI' %}selected{% endif %}>EPI</option>
+                        <option value="ABASTECIMENTO" {% if tipo == 'ABASTECIMENTO' %}selected{% endif %}>Abastecimento</option>
+                        <option value="EXPEDIENTE" {% if tipo == 'EXPEDIENTE' %}selected{% endif %}>Material de Expediente</option>
+                        <option value="EMPRESTIMO" {% if tipo == 'EMPRESTIMO' %}selected{% endif %}>Emprestimo de Material</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Status</label>
+                    <select name="status" class="form-select">
+                        <option value="">-- Todos --</option>
+                        <option value="PENDENTE" {% if status == 'PENDENTE' %}selected{% endif %}>Pendente</option>
+                        <option value="APROVADA" {% if status == 'APROVADA' %}selected{% endif %}>Aprovada</option>
+                        <option value="ATENDIDA" {% if status == 'ATENDIDA' %}selected{% endif %}>Atendida</option>
+                        <option value="CANCELADA" {% if status == 'CANCELADA' %}selected{% endif %}>Cancelada</option>
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex align-items-end gap-2">
+                    <button type="submit" class="btn btn-outline-primary w-100">
+                        <i class="bi bi-search"></i> Filtrar
+                    </button>
+                    <a href="{% url 'cadastros:requisicao_list' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-x"></i>
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {% if requisicoes %}
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Numero</th>
+                        <th>Tipo</th>
+                        <th>Safra</th>
+                        <th>Fazenda</th>
+                        <th>Talhao</th>
+                        <th>Data</th>
+                        <th>Status</th>
+                        <th class="text-center">Acoes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for requisicao in requisicoes %}
+                    <tr>
+                        <td><strong>{{ requisicao.numero }}</strong></td>
+                        <td>{{ requisicao.get_tipo_display }}</td>
+                        <td>{{ requisicao.safra|default:'-' }}</td>
+                        <td>{{ requisicao.fazenda|default:'-' }}</td>
+                        <td>{{ requisicao.talhao|default:'-' }}</td>
+                        <td>{{ requisicao.data_requisicao|date:'d/m/Y H:i' }}</td>
+                        <td>
+                            {% if requisicao.status == 'PENDENTE' %}
+                            <span class="badge bg-warning text-dark">Pendente</span>
+                            {% elif requisicao.status == 'APROVADA' %}
+                            <span class="badge bg-info text-dark">Aprovada</span>
+                            {% elif requisicao.status == 'ATENDIDA' %}
+                            <span class="badge bg-success">Atendida</span>
+                            {% else %}
+                            <span class="badge bg-danger">Cancelada</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            <div class="btn-group btn-group-sm" role="group">
+                                <a href="{% url 'cadastros:requisicao_detail' requisicao.id %}" class="btn btn-outline-primary" title="Ver">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <a href="{% url 'cadastros:requisicao_update' requisicao.id %}" class="btn btn-outline-warning" title="Editar">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <a href="{% url 'cadastros:requisicao_delete' requisicao.id %}" class="btn btn-outline-danger" title="Excluir">
+                                    <i class="bi bi-trash"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {% if is_paginated %}
+    <nav aria-label="Paginacao" class="mt-4">
+        <ul class="pagination justify-content-center">
+            {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page=1{% if search %}&search={{ search }}{% endif %}{% if status %}&status={{ status }}{% endif %}{% if tipo %}&tipo={{ tipo }}{% endif %}">Primeira</a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search %}&search={{ search }}{% endif %}{% if status %}&status={{ status }}{% endif %}{% if tipo %}&tipo={{ tipo }}{% endif %}">Anterior</a>
+            </li>
+            {% else %}
+            <li class="page-item disabled"><span class="page-link">Primeira</span></li>
+            <li class="page-item disabled"><span class="page-link">Anterior</span></li>
+            {% endif %}
+
+            <li class="page-item active">
+                <span class="page-link">Pagina {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+            </li>
+
+            {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search %}&search={{ search }}{% endif %}{% if status %}&status={{ status }}{% endif %}{% if tipo %}&tipo={{ tipo }}{% endif %}">Proxima</a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if search %}&search={{ search }}{% endif %}{% if status %}&status={{ status }}{% endif %}{% if tipo %}&tipo={{ tipo }}{% endif %}">Ultima</a>
+            </li>
+            {% else %}
+            <li class="page-item disabled"><span class="page-link">Proxima</span></li>
+            <li class="page-item disabled"><span class="page-link">Ultima</span></li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+
+    {% else %}
+    <div class="alert alert-info" role="alert">
+        <i class="bi bi-info-circle"></i> Nenhuma requisicao encontrada.
+        <a href="{% url 'cadastros:requisicao_create' %}" class="alert-link">Criar nova requisicao</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

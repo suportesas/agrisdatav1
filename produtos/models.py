@@ -19,6 +19,23 @@ from django.db import models
 from cadastros.models import NCM, Fornecedor, CFOP
 
 
+class TipoProduto(models.Model):
+    """Tipo de Produto (Revenda, Consumo, etc.) - Cadastro dinâmico"""
+    empresa = models.ForeignKey('empresas.Empresa', on_delete=models.CASCADE, related_name='tipos_produto', verbose_name='Empresa')
+    nome = models.CharField(max_length=100, verbose_name='Nome')
+    codigo = models.CharField(max_length=30, verbose_name='Código', help_text='Código interno para controle')
+    ativo = models.BooleanField(default=True, verbose_name='Ativo')
+    
+    class Meta:
+        verbose_name = 'Tipo de Produto'
+        verbose_name_plural = 'Tipos de Produto'
+        ordering = ['nome']
+        unique_together = [['empresa', 'codigo']]
+    
+    def __str__(self):
+        return self.nome
+
+
 class UnidadeMedida(models.Model):
     TIPO_CHOICES = [
         ('PESO', 'Peso'),
@@ -115,13 +132,6 @@ class NaturezaOperacao(models.Model):
 
 
 class Produto(models.Model):
-    TIPO_PRODUTO_CHOICES = [
-        ('REVENDA', 'Revenda'),
-        ('CONSUMO', 'Consumo'),
-        ('MATERIA_PRIMA', 'Matéria Prima'),
-        ('PRODUTO_ACABADO', 'Produto Acabado'),
-    ]
-    
     ORIGEM_MERCADORIA_CHOICES = [
         ('0', '0 - Nacional'),
         ('1', '1 - Estrangeira - Importação direta'),
@@ -214,7 +224,8 @@ class Produto(models.Model):
     # Classificação
     categoria = models.ForeignKey(Categoria, on_delete=models.PROTECT, verbose_name='Categoria')
     subcategoria = models.ForeignKey(SubCategoria, on_delete=models.PROTECT, blank=True, null=True, verbose_name='Subcategoria')
-    tipo_produto = models.CharField(max_length=20, choices=TIPO_PRODUTO_CHOICES, default='REVENDA', verbose_name='Tipo de Produto')
+    tipo_produto_antigo = models.CharField(max_length=20, blank=True, null=True, verbose_name='Tipo Antigo (migração)')
+    tipo_produto = models.ForeignKey(TipoProduto, on_delete=models.PROTECT, blank=True, null=True, verbose_name='Tipo de Produto')
     
     # Unidades
     unidade_medida = models.ForeignKey(UnidadeMedida, on_delete=models.PROTECT, related_name='produtos', verbose_name='Unidade de Medida')

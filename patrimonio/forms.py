@@ -5,7 +5,7 @@ Formulários do módulo Patrimônio
 from django import forms
 from django.core.exceptions import ValidationError
 from decimal import Decimal
-from .models import Patrimonio, PatrimonioMovimentacao
+from .models import Patrimonio, PatrimonioMovimentacao, PatrimonioAuditoria, PatrimonioAuditoriaItem
 from cadastros.models import Vehicle, Fazenda
 
 
@@ -25,8 +25,8 @@ class PatrimonioForm(forms.ModelForm):
             'tipo_depreciacao': forms.Select(attrs={'class': 'form-select'}),
             'vida_util_anos': forms.NumberInput(attrs={'class': 'form-control'}),
             'percentual_depreciacao_anual': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
-            'data_aquisicao': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'data_baixa': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'data_aquisicao': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'),
+            'data_baixa': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'),
             'localizacao': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Galpão A, Campo 1, etc'}),
             'responsavel': forms.Select(attrs={'class': 'form-select'}),
             'estado': forms.Select(attrs={'class': 'form-select'}),
@@ -101,7 +101,7 @@ class PatrimonioVeiculoExportForm(forms.Form):
     )
     data_aquisicao = forms.DateField(
         label='Data de Aquisição',
-        widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'})
+        widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d')
     )
     vida_util_anos = forms.IntegerField(
         label='Vida Útil (anos)',
@@ -142,4 +142,32 @@ class PatrimonioMovimentacaoForm(forms.ModelForm):
             'localizacao_anterior': forms.TextInput(attrs={'class': 'form-control'}),
             'localizacao_nova': forms.TextInput(attrs={'class': 'form-control'}),
             'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+        }
+
+
+class PatrimonioAuditoriaForm(forms.ModelForm):
+    """Formulário para criar auditoria anual"""
+
+    class Meta:
+        model = PatrimonioAuditoria
+        fields = ['ano']
+        widgets = {
+            'ano': forms.NumberInput(attrs={'class': 'form-control', 'min': 2000})
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.empresa = kwargs.pop('empresa', None)
+        super().__init__(*args, **kwargs)
+
+
+class PatrimonioAuditoriaItemForm(forms.ModelForm):
+    """Formulário para atualizar item da auditoria"""
+
+    class Meta:
+        model = PatrimonioAuditoriaItem
+        fields = ['status', 'observacoes', 'foto']
+        widgets = {
+            'status': forms.Select(attrs={'class': 'form-select'}),
+            'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'foto': forms.ClearableFileInput(attrs={'class': 'form-control'}),
         }

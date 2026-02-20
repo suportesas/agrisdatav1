@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+
+{% block title %}Auditar Item | Auditoria {{ auditoria.ano }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="fw-bold mb-1">Auditar Item</h2>
+      <p class="text-muted mb-0">Auditoria {{ auditoria.ano }}</p>
+    </div>
+    <a href="{% url 'patrimonio:auditoria_detail' auditoria.pk %}" class="btn btn-outline-secondary">Voltar</a>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-md-5">
+      <div class="card p-4">
+        <h5 class="mb-3">Dados do Patrimônio</h5>
+        <dl class="row">
+          <dt class="col-5">Número</dt><dd class="col-7"><strong>{{ item.numero_patrimonio }}</strong></dd>
+          <dt class="col-5">Descrição</dt><dd class="col-7">{{ item.descricao }}</dd>
+          <dt class="col-5">Localização</dt><dd class="col-7">{{ item.localizacao|default:"—" }}</dd>
+          <dt class="col-5">Responsável</dt><dd class="col-7">{{ item.responsavel_nome|default:"—" }}</dd>
+          <dt class="col-5">Estado</dt><dd class="col-7">{{ item.estado|default:"—" }}</dd>
+          <dt class="col-5">Valor Atual</dt><dd class="col-7">{% if item.valor_atual %}R$ {{ item.valor_atual|floatformat:2 }}{% else %}—{% endif %}</dd>
+        </dl>
+      </div>
+    </div>
+
+    <div class="col-md-7">
+      <div class="card p-4">
+        <form method="post" enctype="multipart/form-data">
+          {% csrf_token %}
+          <div class="row g-3">
+            <div class="col-12">
+              {{ form.status.label_tag }}
+              {{ form.status }}
+              {% if form.status.errors %}
+              <div class="invalid-feedback d-block">{{ form.status.errors }}</div>
+              {% endif %}
+            </div>
+            <div class="col-12">
+              {{ form.observacoes.label_tag }}
+              {{ form.observacoes }}
+            </div>
+            <div class="col-12">
+              {{ form.foto.label_tag }}
+              {{ form.foto }}
+              <div class="form-text small">Opcional. Use para evidências da auditoria.</div>
+            </div>
+          </div>
+          <div class="d-flex justify-content-end mt-4">
+            <button type="submit" class="btn btn-success">
+              <i class="bi bi-check-circle"></i> Salvar
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

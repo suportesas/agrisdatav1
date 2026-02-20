@@ -8,6 +8,7 @@ Permite registrar e controlar todos os bens da empresa, incluindo:
 - Móveis e imóveis
 """
 
+from django.conf import settings
 from django.db import models
 from django.utils import timezone
 from decimal import Decimal
@@ -205,3 +206,76 @@ class PatrimonioMovimentacao(models.Model):
     
     def __str__(self):
         return f"{self.patrimonio} - {self.get_tipo_display()} - {self.data}"
+
+
+class PatrimonioAuditoria(models.Model):
+    """Auditoria anual do patrimônio"""
+
+    STATUS_CHOICES = [
+        ('ABERTA', 'Aberta'),
+        ('FECHADA', 'Fechada'),
+    ]
+
+    empresa = models.ForeignKey(
+        'empresas.Empresa', on_delete=models.CASCADE, related_name='auditorias_patrimonio', verbose_name='Empresa'
+    )
+    ano = models.PositiveIntegerField('Ano')
+    status = models.CharField('Status', max_length=10, choices=STATUS_CHOICES, default='ABERTA')
+    data_inicio = models.DateField('Data de Início', auto_now_add=True)
+    data_fechamento = models.DateField('Data de Fechamento', null=True, blank=True)
+    criado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='auditorias_patrimonio_criadas', verbose_name='Criado por'
+    )
+
+    class Meta:
+        verbose_name = 'Auditoria de Patrimônio'
+        verbose_name_plural = 'Auditorias de Patrimônio'
+        ordering = ['-ano']
+        constraints = [
+            models.UniqueConstraint(fields=['empresa', 'ano'], name='unique_auditoria_por_empresa_ano')
+        ]
+
+    def __str__(self):
+        return f"Auditoria {self.ano} - {self.empresa}"
+
+
+class PatrimonioAuditoriaItem(models.Model):
+    """Itens auditados dentro de uma auditoria"""
+
+    STATUS_CHOICES = [
+        ('PENDENTE', 'Pendente'),
+        ('OK', 'OK'),
+        ('NAO_LOCALIZADO', 'Não Localizado'),
+        ('DANIFICADO', 'Danificado'),
+        ('BAIXA', 'Baixa'),
+    ]
+
+    auditoria = models.ForeignKey(
+        PatrimonioAuditoria, on_delete=models.CASCADE, related_name='itens', verbose_name='Auditoria'
+    )
+    patrimonio = models.ForeignKey(
+        Patrimonio, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='auditorias_itens', verbose_name='Patrimônio'
+    )
+
+    # Snapshot dos dados no momento da auditoria
+    numero_patrimonio = models.CharField('Número do Patrimônio', max_length=50)
+    descricao = models.CharField('Descrição', max_length=255)
+    localizacao = models.CharField('Localização', max_length=150, blank=True)
+    responsavel_nome = models.CharField('Responsável', max_length=150, blank=True)
+    valor_atual = models.DecimalField('Valor Atual (R$)', max_digits=12, decimal_places=2, null=True, blank=True)
+    estado = models.CharField('Estado', max_length=20, blank=True)
+
+    status = models.CharField('Status da Auditoria', max_length=20, choices=STATUS_CHOICES, default='PENDENTE')
+    observacoes = models.TextField('Observações', blank=True)
+    foto = models.ImageField('Foto', upload_to='patrimonio/auditorias/%Y/%m/', null=True, blank=True)
+    data_verificacao = models.DateTimeField('Data da Verificação', null=True, blank=True)
+
+    class Meta:
+        verbose_name = 'Item de Auditoria'
+        verbose_name_plural = 'Itens de Auditoria'
+        ordering = ['numero_patrimonio']
+
+    def __str__(self):
+        return f"{self.numero_patrimonio} - {self.status}"

@@ -1,6 +1,21 @@
 from django import forms
 from django.forms.widgets import Select
-from .models import UnidadeMedida, Categoria, SubCategoria, Produto, ProdutoTributacao, NaturezaOperacao, ProdutoDefensivoCultura
+from .models import UnidadeMedida, Categoria, SubCategoria, Produto, ProdutoTributacao, NaturezaOperacao, ProdutoDefensivoCultura, TipoProduto
+
+
+class TipoProdutoForm(forms.ModelForm):
+    class Meta:
+        model = TipoProduto
+        fields = ['nome', 'codigo', 'ativo']
+        widgets = {
+            'nome': forms.TextInput(attrs={'class': 'form-control'}),
+            'codigo': forms.TextInput(attrs={'class': 'form-control'}),
+            'ativo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
+    
+    def __init__(self, *args, empresa=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.empresa = empresa
 
 
 class SubCategoriaSelect(Select):

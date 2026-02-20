@@ -1,0 +1,360 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Consulta de Vínculos Motorista x Placa{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+  <div class="row mb-4">
+    <div class="col-md-8">
+      <h1 class="mb-0"><i class="bi bi-search"></i> Consulta de Vínculos Históricos</h1>
+      <p class="text-muted">Para identificar responsável por multas e rastreamento de operações</p>
+    </div>
+    <div class="col-md-4 text-end">
+      <button type="button" class="btn btn-info me-2" data-bs-toggle="modal" data-bs-target="#ajudaModal">
+        <i class="bi bi-question-circle"></i> Ajuda
+      </button>
+      <a href="{% url 'cadastros:motorista_vinculo_list' %}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Voltar para Lista
+      </a>
+    </div>
+  </div>
+
+  <!-- Formulário de Consulta -->
+  <div class="card mb-4">
+    <div class="card-header bg-primary text-white">
+      <h5 class="mb-0"><i class="bi bi-funnel"></i> Parâmetros de Consulta</h5>
+    </div>
+    <div class="card-body">
+      <form method="post">
+        {% csrf_token %}
+        
+        <!-- Tipo de Consulta -->
+        <div class="mb-4">
+          <label class="form-label fw-bold">Tipo de Consulta:</label>
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="tipo_consulta" id="tipo_placa_data" 
+                   value="placa_data" {% if not form.tipo_consulta.value or form.tipo_consulta.value == 'placa_data' %}checked{% endif %}
+                   onchange="toggleConsultaFields()">
+            <label class="form-check-label" for="tipo_placa_data">
+              <strong>Placa + Data:</strong> Quem estava com a placa em determinada data? (Para multas)
+            </label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="tipo_consulta" id="tipo_motorista_periodo" 
+                   value="motorista_periodo" {% if form.tipo_consulta.value == 'motorista_periodo' %}checked{% endif %}
+                   onchange="toggleConsultaFields()">
+            <label class="form-check-label" for="tipo_motorista_periodo">
+              <strong>Motorista + Período:</strong> Quais veículos o motorista operou no período?
+            </label>
+          </div>
+        </div>
+
+        <hr>
+
+        <!-- Campos para Placa + Data -->
+        <div id="campos_placa_data" style="{% if form.tipo_consulta.value == 'motorista_periodo' %}display:none;{% endif %}">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Placa do Veículo <span class="text-danger">*</span></label>
+              {{ form.placa }}
+              {% if form.placa.errors %}
+                <div class="text-danger small">{{ form.placa.errors }}</div>
+              {% endif %}
+              <small class="form-text text-muted">{{ form.placa.help_text }}</small>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Data de Referência <span class="text-danger">*</span></label>
+              {{ form.data_referencia }}
+              {% if form.data_referencia.errors %}
+                <div class="text-danger small">{{ form.data_referencia.errors }}</div>
+              {% endif %}
+              <small class="form-text text-muted">{{ form.data_referencia.help_text }}</small>
+            </div>
+          </div>
+        </div>
+
+        <!-- Campos para Motorista + Período -->
+        <div id="campos_motorista_periodo" style="{% if not form.tipo_consulta.value or form.tipo_consulta.value == 'placa_data' %}display:none;{% endif %}">
+          <div class="row g-3">
+            <div class="col-md-12">
+              <label class="form-label">Motorista <span class="text-danger">*</span></label>
+              {{ form.motorista }}
+              {% if form.motorista.errors %}
+                <div class="text-danger small">{{ form.motorista.errors }}</div>
+              {% endif %}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Data Início <span class="text-danger">*</span></label>
+              {{ form.data_inicio }}
+              {% if form.data_inicio.errors %}
+                <div class="text-danger small">{{ form.data_inicio.errors }}</div>
+              {% endif %}
+              <small class="form-text text-muted">{{ form.data_inicio.help_text }}</small>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Data Fim</label>
+              {{ form.data_fim }}
+              {% if form.data_fim.errors %}
+                <div class="text-danger small">{{ form.data_fim.errors }}</div>
+              {% endif %}
+              <small class="form-text text-muted">{{ form.data_fim.help_text }}</small>
+            </div>
+          </div>
+        </div>
+
+        <hr>
+
+        <!-- Botões -->
+        <div class="d-flex justify-content-between">
+          <button type="submit" class="btn btn-primary btn-lg">
+            <i class="bi bi-search"></i> Consultar
+          </button>
+          <a href="{% url 'cadastros:motorista_vinculo_consulta' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-x-circle"></i> Limpar
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Resultados -->
+  {% if consulta_realizada %}
+  <div class="card">
+    <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+      <h5 class="mb-0">
+        <i class="bi bi-list-check"></i> Resultados da Consulta
+        <span class="badge bg-white text-dark ms-2">{{ total_resultados }}</span>
+      </h5>
+      {% if resultados %}
+      <a href="{% url 'cadastros:motorista_vinculo_consulta_pdf' %}?{{ request.GET.urlencode }}&tipo_consulta={{ tipo_consulta }}&{% if tipo_consulta == 'placa_data' %}placa={{ parametros.placa.id }}&data_referencia={{ parametros.data_referencia|date:'Y-m-d' }}{% else %}motorista={{ parametros.motorista.id }}&data_inicio={{ parametros.data_inicio|date:'Y-m-d' }}{% if parametros.data_fim %}&data_fim={{ parametros.data_fim|date:'Y-m-d' }}{% endif %}{% endif %}" 
+         class="btn btn-light btn-sm" target="_blank">
+        <i class="bi bi-file-pdf"></i> Exportar PDF
+      </a>
+      {% endif %}
+    </div>
+    <div class="card-body">
+      <!-- Resumo da Consulta -->
+      <div class="alert alert-light border">
+        <h6 class="fw-bold">Parâmetros da Consulta:</h6>
+        {% if tipo_consulta == 'placa_data' %}
+          <p class="mb-0">
+            <strong>Tipo:</strong> Placa + Data<br>
+            <strong>Placa:</strong> {{ parametros.placa.placa }}<br>
+            <strong>Data de Referência:</strong> {{ parametros.data_referencia|date:"d/m/Y" }}
+          </p>
+        {% elif tipo_consulta == 'motorista_periodo' %}
+          <p class="mb-0">
+            <strong>Tipo:</strong> Motorista + Período<br>
+            <strong>Motorista:</strong> {{ parametros.motorista.nome }}<br>
+            <strong>Período:</strong> {{ parametros.data_inicio|date:"d/m/Y" }} 
+            até {% if parametros.data_fim %}{{ parametros.data_fim|date:"d/m/Y" }}{% else %}Atual{% endif %}
+          </p>
+        {% endif %}
+      </div>
+
+      {% if resultados %}
+        <!-- Tabela de Resultados -->
+        <div class="table-responsive">
+          <table class="table table-bordered table-hover">
+            <thead class="table-light">
+              <tr>
+                <th>Motorista</th>
+                <th>Placa Principal</th>
+                <th>Reboques</th>
+                <th>Período do Vínculo</th>
+                <th>Status</th>
+                <th class="text-center">Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for vinculo in resultados %}
+              <tr {% if vinculo.ativo %}class="table-success"{% endif %}>
+                <td>
+                  <strong>{{ vinculo.motorista.nome }}</strong><br>
+                  <small class="text-muted">CPF: {{ vinculo.motorista.cpf }}</small>
+                </td>
+                <td>
+                  <span class="badge bg-primary fs-6">{{ vinculo.placa_principal.placa }}</span>
+                </td>
+                <td>
+                  {% for reb in vinculo.reboques.all %}
+                    <span class="badge bg-secondary">{{ reb.placa }}</span>
+                  {% empty %}
+                    <span class="text-muted">Sem reboques</span>
+                  {% endfor %}
+                </td>
+                <td>
+                  <i class="bi bi-calendar-event"></i> {{ vinculo.data_inicio|date:"d/m/Y" }}
+                  <br>
+                  <i class="bi bi-calendar-x"></i> {% if vinculo.data_fim %}{{ vinculo.data_fim|date:"d/m/Y" }}{% else %}<strong class="text-success">Atual</strong>{% endif %}
+                </td>
+                <td>
+                  {% if vinculo.ativo %}
+                    <span class="badge bg-success"><i class="bi bi-check-circle"></i> Ativo</span>
+                  {% else %}
+                    <span class="badge bg-secondary">Encerrado</span>
+                  {% endif %}
+                </td>
+                <td class="text-center">
+                  <a href="{% url 'cadastros:motorista_vinculo_detail' vinculo.id %}" class="btn btn-sm btn-outline-primary" title="Ver Detalhes">
+                    <i class="bi bi-eye"></i>
+                  </a>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Timeline Simplificado (se mais de 1 resultado) -->
+        {% if total_resultados > 1 %}
+        <div class="mt-4">
+          <h6 class="fw-bold"><i class="bi bi-clock-history"></i> Linha do Tempo</h6>
+          <div class="timeline">
+            {% for vinculo in resultados %}
+            <div class="d-flex align-items-start mb-3">
+              <div class="me-3">
+                {% if vinculo.ativo %}
+                  <i class="bi bi-circle-fill text-success"></i>
+                {% else %}
+                  <i class="bi bi-circle text-secondary"></i>
+                {% endif %}
+              </div>
+              <div class="flex-grow-1">
+                <div class="card border-start border-3 {% if vinculo.ativo %}border-success{% else %}border-secondary{% endif %}">
+                  <div class="card-body py-2">
+                    <small class="text-muted">{{ vinculo.data_inicio|date:"d/m/Y" }} - {% if vinculo.data_fim %}{{ vinculo.data_fim|date:"d/m/Y" }}{% else %}Atual{% endif %}</small>
+                    <p class="mb-0">
+                      <strong>{{ vinculo.motorista.nome }}</strong> operou 
+                      <span class="badge bg-primary">{{ vinculo.placa_principal.placa }}</span>
+                      {% for reb in vinculo.reboques.all %}
+                        + <span class="badge bg-secondary">{{ reb.placa }}</span>
+                      {% endfor %}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+
+      {% else %}
+        <div class="alert alert-warning">
+          <i class="bi bi-exclamation-triangle"></i> 
+          <strong>Nenhum vínculo encontrado</strong> para os parâmetros informados.
+          {% if tipo_consulta == 'placa_data' %}
+            <p class="mb-0 mt-2">A placa <strong>{{ parametros.placa.placa }}</strong> não estava vinculada a nenhum motorista em <strong>{{ parametros.data_referencia|date:"d/m/Y" }}</strong>.</p>
+          {% endif %}
+        </div>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Modal de Ajuda -->
+<div class="modal fade" id="ajudaModal" tabindex="-1" aria-labelledby="ajudaModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-info text-white">
+        <h5 class="modal-title" id="ajudaModalLabel">
+          <i class="bi bi-question-circle"></i> Como Usar a Consulta de Vínculos
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body">
+        <h6 class="fw-bold text-primary"><i class="bi bi-info-circle"></i> O que é este módulo?</h6>
+        <p>
+          Este módulo permite consultar o histórico de vínculos entre motoristas e veículos (placas) em períodos específicos.
+          É especialmente útil para <strong>identificar qual motorista era responsável por um veículo quando ocorreu uma multa</strong>.
+        </p>
+
+        <hr>
+
+        <h6 class="fw-bold text-primary"><i class="bi bi-search"></i> Tipos de Consulta</h6>
+        
+        <div class="mb-3">
+          <h6 class="fw-bold">1. Placa + Data (Para Multas)</h6>
+          <p class="mb-2"><strong>Quando usar:</strong> Quando você recebeu uma multa e precisa saber qual motorista estava operando o veículo na data da infração.</p>
+          <p class="mb-2"><strong>Como funciona:</strong></p>
+          <ul>
+            <li>Selecione a <strong>placa do veículo</strong> que recebeu a multa</li>
+            <li>Informe a <strong>data da infração</strong></li>
+            <li>O sistema mostrará qual motorista estava com aquele veículo naquele dia</li>
+          </ul>
+          <div class="alert alert-success mb-0">
+            <strong>💡 Exemplo:</strong> Multa na placa ABC-1234 em 15/01/2026 → O sistema mostra que o motorista João Silva estava operando este veículo nesta data.
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <h6 class="fw-bold">2. Motorista + Período (Histórico de Operações)</h6>
+          <p class="mb-2"><strong>Quando usar:</strong> Quando você precisa saber quais veículos um motorista operou em determinado período.</p>
+          <p class="mb-2"><strong>Como funciona:</strong></p>
+          <ul>
+            <li>Selecione o <strong>motorista</strong></li>
+            <li>Informe o <strong>período</strong> (data início e data fim)</li>
+            <li>O sistema listará todos os conjuntos de veículos que ele operou neste período</li>
+          </ul>
+          <div class="alert alert-success mb-0">
+            <strong>💡 Exemplo:</strong> Motorista José Santos de 01/01/2026 a 31/01/2026 → O sistema mostra todos os veículos/conjuntos que ele operou no mês.
+          </div>
+        </div>
+
+        <hr>
+
+        <h6 class="fw-bold text-primary"><i class="bi bi-file-pdf"></i> Exportação PDF</h6>
+        <p>
+          Após realizar a consulta, você pode <strong>exportar os resultados em PDF</strong> clicando no botão "Exportar PDF".
+          O relatório incluirá:
+        </p>
+        <ul>
+          <li>Parâmetros da consulta</li>
+          <li>Todos os vínculos encontrados</li>
+          <li>Interpretação automática dos resultados</li>
+          <li>Data de geração do relatório</li>
+        </ul>
+
+        <hr>
+
+        <h6 class="fw-bold text-primary"><i class="bi bi-exclamation-triangle"></i> Observações Importantes</h6>
+        <ul class="mb-0">
+          <li>Os vínculos devem ser cadastrados previamente no menu "Lista de Vínculos"</li>
+          <li>Se nenhum resultado for encontrado, verifique se o vínculo foi registrado no sistema</li>
+          <li>Vínculos <span class="badge bg-success">ATIVOS</span> são aqueles sem data de término</li>
+          <li>O sistema alerta sobre sobreposições de períodos (quando houver)</li>
+        </ul>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          <i class="bi bi-x-circle"></i> Fechar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function toggleConsultaFields() {
+  const tipoPlacaData = document.getElementById('tipo_placa_data').checked;
+  const camposPlacaData = document.getElementById('campos_placa_data');
+  const camposMotoristaPeriodo = document.getElementById('campos_motorista_periodo');
+  
+  if (tipoPlacaData) {
+    camposPlacaData.style.display = 'block';
+    camposMotoristaPeriodo.style.display = 'none';
+  } else {
+    camposPlacaData.style.display = 'none';
+    camposMotoristaPeriodo.style.display = 'block';
+  }
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+  toggleConsultaFields();
+});
+</script>
+{% endblock %}

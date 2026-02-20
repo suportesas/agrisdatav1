@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+
+{% block title %}Excluir Tipo de Produto{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h1 class="mb-0">
+                <i class="bi bi-trash"></i> Excluir Tipo de Produto
+            </h1>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <div class="alert alert-warning">
+                <i class="bi bi-exclamation-triangle"></i>
+                Tem certeza que deseja excluir o tipo de produto <strong>{{ tipo.nome }}</strong> ({{ tipo.codigo }})?
+            </div>
+
+            <p class="text-muted">
+                <i class="bi bi-info-circle"></i> 
+                Esta ação não pode ser desfeita. Se houver produtos vinculados a este tipo, a exclusão falhará.
+            </p>
+
+            <form method="post">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger">
+                    <i class="bi bi-trash"></i> Sim, Excluir
+                </button>
+                <a href="{% url 'produtos:tipo_produto_list' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-x-lg"></i> Cancelar
+                </a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

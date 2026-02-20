@@ -23,4 +23,14 @@ urlpatterns = [
     
     # Relatórios
     path('relatorio/', views.patrimonio_relatorio, name='patrimonio_relatorio'),
+    path('relatorio/pdf/', views.patrimonio_relatorio_pdf, name='patrimonio_relatorio_pdf'),
+    path('relatorio/excel/', views.patrimonio_relatorio_excel, name='patrimonio_relatorio_excel'),
+
+    # Auditorias
+    path('auditorias/', views.patrimonio_auditoria_list, name='auditoria_list'),
+    path('auditorias/nova/', views.patrimonio_auditoria_create, name='auditoria_create'),
+    path('auditorias/<int:pk>/', views.patrimonio_auditoria_detail, name='auditoria_detail'),
+    path('auditorias/<int:pk>/finalizar/', views.patrimonio_auditoria_finalizar, name='auditoria_finalizar'),
+    path('auditorias/<int:pk>/pdf/', views.patrimonio_auditoria_pdf, name='auditoria_pdf'),
+    path('auditorias/<int:pk>/item/<int:item_pk>/', views.patrimonio_auditoria_item_update, name='auditoria_item_update'),
 ]

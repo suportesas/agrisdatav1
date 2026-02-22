@@ -6,6 +6,17 @@
 
 {% block content %}
 <div class="container mt-4">
+  <!-- Alerta de erros -->
+  {% if form.non_field_errors %}
+  <div class="alert alert-danger alert-dismissible fade show" role="alert">
+    <h5 class="alert-heading"><i class="bi bi-exclamation-triangle"></i> Erros ao salvar</h5>
+    {% for error in form.non_field_errors %}
+      <div>• {{ error }}</div>
+    {% endfor %}
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  {% endif %}
+
   <div class="card shadow-sm border-0 rounded-4">
     <div class="card-body p-4">
       <h4 class="mb-4 fw-bold text-secondary">
@@ -22,22 +33,31 @@
         <!-- SEÇÃO: Dados Básicos -->
         <div class="row g-3 mb-4">
           <div class="col-12">
-            <h5 class="text-primary border-bottom pb-2">📋 Dados Básicos</h5>
+            <h5 class="text-primary border-bottom pb-2">📋 Dados Básicos <small class="text-danger">* campos obrigatórios</small></h5>
           </div>
           
           <div class="col-md-6">
-            <label class="form-label fw-semibold">Nome</label>
+            <label class="form-label fw-semibold">
+              Nome <span class="text-danger" title="Campo obrigatório">*</span>
+            </label>
             {{ form.nome }}
             {% if form.nome.errors %}
-              <div class="text-danger small">{{ form.nome.errors|join:", " }}</div>
+              <div class="text-danger small"><i class="bi bi-exclamation-circle"></i> {{ form.nome.errors|join:", " }}</div>
             {% endif %}
           </div>
 
           <div class="col-md-6">
-            <label class="form-label fw-semibold">CNPJ</label>
-            {{ form.cnpj }}
+            <label class="form-label fw-semibold">
+              CNPJ <span class="text-danger" title="Campo obrigatório">*</span>
+            </label>
+            <div class="input-group">
+              {{ form.cnpj }}
+              <button type="button" class="btn btn-outline-primary" id="buscarCNPJ" title="Buscar CNPJ na ReceitaWS">
+                <i class="bi bi-search"></i> Buscar
+              </button>
+            </div>
             {% if form.cnpj.errors %}
-              <div class="text-danger small">{{ form.cnpj.errors|join:", " }}</div>
+              <div class="text-danger small"><i class="bi bi-exclamation-circle"></i> {{ form.cnpj.errors|join:", " }}</div>
             {% endif %}
           </div>
 
@@ -51,9 +71,24 @@
             {{ form.email }}
           </div>
 
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">CEP</label>
+            <div class="input-group">
+              <input type="text" id="cep" class="form-control" placeholder="00000-000" maxlength="9">
+              <button type="button" class="btn btn-outline-primary" id="buscarCEP" title="Buscar CEP no ViaCEP">
+                <i class="bi bi-search"></i> Buscar
+              </button>
+            </div>
+          </div>
+
           <div class="col-md-8">
             <label class="form-label fw-semibold">Endereço</label>
             {{ form.endereco }}
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Bairro</label>
+            {{ form.bairro }}
           </div>
 
           <div class="col-md-6">
@@ -89,30 +124,48 @@
         <!-- SEÇÃO: Plano e Assinatura -->
         <div class="row g-3 mb-4">
           <div class="col-12">
-            <h5 class="text-success border-bottom pb-2">📦 Plano e Assinatura</h5>
+            <h5 class="text-success border-bottom pb-2">📦 Plano e Assinatura <small class="text-danger">* campos obrigatórios</small></h5>
           </div>
 
           <div class="col-md-4">
-            <label class="form-label fw-semibold">Plano Contratado</label>
+            <label class="form-label fw-semibold">
+              Plano Contratado <span class="text-danger" title="Campo obrigatório">*</span>
+            </label>
             {{ form.plano }}
             {% if form.plano.errors %}
-              <div class="text-danger small">{{ form.plano.errors|join:", " }}</div>
+              <div class="text-danger small"><i class="bi bi-exclamation-circle"></i> {{ form.plano.errors|join:", " }}</div>
             {% endif %}
           </div>
 
           <div class="col-md-4">
-            <label class="form-label fw-semibold">Valor Mensalidade (R$)</label>
+            <label class="form-label fw-semibold">
+              Valor Mensalidade (R$) <span class="text-danger" title="Campo obrigatório">*</span>
+            </label>
             {{ form.valor_mensalidade }}
+            <small class="form-text text-muted d-block mt-1">Preenchido automaticamente ao selecionar plano</small>
+            {% if form.valor_mensalidade.errors %}
+              <div class="text-danger small"><i class="bi bi-exclamation-circle"></i> {{ form.valor_mensalidade.errors|join:", " }}</div>
+            {% endif %}
           </div>
 
           <div class="col-md-2">
-            <label class="form-label fw-semibold">Dia Vencimento</label>
+            <label class="form-label fw-semibold">
+              Dia Vencimento <span class="text-danger" title="Campo obrigatório">*</span>
+            </label>
             {{ form.dia_vencimento }}
+            {% if form.dia_vencimento.errors %}
+              <div class="text-danger small"><i class="bi bi-exclamation-circle"></i> {{ form.dia_vencimento.errors|join:", " }}</div>
+            {% endif %}
           </div>
 
           <div class="col-md-4">
-            <label class="form-label fw-semibold">Data de Expiração</label>
+            <label class="form-label fw-semibold">
+              Data de Expiração <span class="text-danger" title="Campo obrigatório">*</span>
+            </label>
             {{ form.data_expiracao }}
+            {% if form.data_expiracao.errors %}
+              <div class="text-danger small"><i class="bi bi-exclamation-circle"></i> {{ form.data_expiracao.errors|join:", " }}</div>
+            {% endif %}
           </div>
         </div>
 
@@ -203,28 +256,203 @@
   {% endif %}
 </div>
 
-<script>
-  document.addEventListener("DOMContentLoaded", () => {
-    // Adiciona classe form-control em todos os inputs
-    document.querySelectorAll('input:not([type="checkbox"]), select, textarea').forEach(el => {
-      if (!el.classList.contains('form-control') && !el.classList.contains('form-select')) {
-        if (el.tagName === 'SELECT') {
-          el.classList.add('form-select');
-        } else {
-          el.classList.add('form-control');
-        }
-      }
-    });
+<!-- Modal de Carregamento -->
+<div class="modal fade" id="loadingModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-body text-center p-4">
+        <div class="spinner-border text-primary mb-3" role="status">
+          <span class="visually-hidden">Carregando...</span>
+        </div>
+        <h5>Buscando dados...</h5>
+        <p class="text-muted small">Aguarde enquanto consultamos os dados nos serviços.</p>
+      </div>
+    </div>
+  </div>
+</div>
 
-    // Quando mudar o plano, atualiza informações
-    const planoSelect = document.getElementById('id_plano');
-    if (planoSelect) {
-      planoSelect.addEventListener('change', function() {
-        // Aqui você pode adicionar AJAX para buscar valores do plano
-        console.log('Plano selecionado:', this.value);
+<script>
+  window.CADASTROS_BUSCAR_CNPJ_URL = '{% url "cadastros:buscar_cnpj" %}';
+  window.CADASTROS_BUSCAR_CEP_URL = '{% url "cadastros:buscar_cep" %}';
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  
+  // Referências aos elementos
+  const btnBuscarCNPJ = document.getElementById('buscarCNPJ');
+  const inputCNPJ = document.getElementById('id_cnpj');
+  const btnBuscarCEP = document.getElementById('buscarCEP');
+  const inputCEP = document.getElementById('cep');
+  const loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'));
+
+  // ========== BUSCA POR CNPJ ==========
+  if (btnBuscarCNPJ) {
+    btnBuscarCNPJ.addEventListener('click', function() {
+      const cnpj = inputCNPJ.value.replace(/\D/g, '');
+      
+      if (cnpj.length !== 14) {
+        alert('Por favor, digite um CNPJ válido (14 dígitos)');
+        return;
+      }
+
+      loadingModal.show();
+
+      fetch(window.CADASTROS_BUSCAR_CNPJ_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: `cnpj=${cnpj}`
+      })
+      .then(response => response.json())
+      .then(data => {
+        loadingModal.hide();
+        
+        if (data.sucesso) {
+          const d = data.dados;
+          document.getElementById('id_nome').value = d.nome || '';
+          document.getElementById('id_telefone').value = d.telefone || '';
+          document.getElementById('id_email').value = d.email || '';
+          document.getElementById('id_endereco').value = d.logradouro || '';
+          document.getElementById('id_cidade').value = d.cidade || '';
+          document.getElementById('id_uf').value = (d.uf || '').toUpperCase();
+          
+          if (d.cep) {
+            document.getElementById('cep').value = d.cep.replace(/(\d{5})(\d{3})/, '$1-$2');
+          }
+          
+          alert('✅ Dados preenchidos com sucesso!');
+        } else {
+          alert('❌ ' + (data.erro || 'Erro ao buscar CNPJ'));
+        }
+      })
+      .catch(error => {
+        loadingModal.hide();
+        console.error('Erro:', error);
+        alert('❌ Erro ao buscar dados. Verifique sua conexão.');
       });
+    });
+  }
+
+  // ========== BUSCA POR CEP ==========
+  if (btnBuscarCEP) {
+    btnBuscarCEP.addEventListener('click', function() {
+      const cep = inputCEP.value.replace(/\D/g, '');
+      
+      if (cep.length !== 8) {
+        alert('Por favor, digite um CEP válido (8 dígitos)');
+        return;
+      }
+
+      loadingModal.show();
+
+      fetch(window.CADASTROS_BUSCAR_CEP_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: `cep=${cep}`
+      })
+      .then(response => response.json())
+      .then(data => {
+        loadingModal.hide();
+        
+        if (data.sucesso) {
+          const d = data.dados;
+          document.getElementById('id_endereco').value = d.logradouro || '';
+          document.getElementById('id_bairro').value = d.bairro || '';
+          document.getElementById('id_cidade').value = d.localidade || '';
+          document.getElementById('id_uf').value = (d.uf || '').toUpperCase();
+          
+          alert('✅ Dados de CEP preenchidos com sucesso!');
+        } else {
+          alert('❌ ' + (data.erro || 'Erro ao buscar CEP'));
+        }
+      })
+      .catch(error => {
+        loadingModal.hide();
+        console.error('Erro:', error);
+        alert('❌ Erro ao buscar CEP. Verifique sua conexão.');
+      });
+    });
+  }
+
+  // ========== MÁSCARAS ==========
+  // Máscara para CNPJ/CPF
+  if (inputCNPJ) {
+    inputCNPJ.addEventListener('input', function(e) {
+      let value = e.target.value.replace(/\D/g, '');
+      
+      if (value.length <= 11) {
+        // Máscara CPF: 000.000.000-00
+        value = value.replace(/(\d{3})(\d)/, '$1.$2');
+        value = value.replace(/(\d{3})(\d)/, '$1.$2');
+        value = value.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+      } else {
+        // Máscara CNPJ: 00.000.000/0000-00
+        value = value.replace(/^(\d{2})(\d)/, '$1.$2');
+        value = value.replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3');
+        value = value.replace(/\.(\d{3})(\d)/, '.$1/$2');
+        value = value.replace(/(\d{4})(\d)/, '$1-$2');
+      }
+      
+      e.target.value = value;
+    });
+  }
+
+  // Máscara para CEP
+  if (inputCEP) {
+    inputCEP.addEventListener('input', function(e) {
+      let value = e.target.value.replace(/\D/g, '');
+      value = value.replace(/(\d{5})(\d)/, '$1-$2');
+      e.target.value = value;
+    });
+  }
+
+  // Adiciona classe form-control em todos os inputs
+  document.querySelectorAll('input:not([type="checkbox"]), select, textarea').forEach(el => {
+    if (!el.classList.contains('form-control') && !el.classList.contains('form-select')) {
+      if (el.tagName === 'SELECT') {
+        el.classList.add('form-select');
+      } else {
+        el.classList.add('form-control');
+      }
     }
   });
+
+  // Quando mudar o plano, atualiza informações
+  const planoSelect = document.getElementById('id_plano');
+  if (planoSelect) {
+    planoSelect.addEventListener('change', function() {
+      if (!this.value) return;
+      
+      // Buscar dados do plano via API
+      fetch(`{% url 'empresas:api_plano_dados' 999 %}`.replace('999', this.value), {
+        method: 'GET',
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+          'Accept': 'application/json'
+        }
+      })
+      .then(response => {
+        if (!response.ok) throw new Error('Erro ao buscar plano');
+        return response.json();
+      })
+      .then(data => {
+        if (data.valor_mensal) {
+          document.getElementById('id_valor_mensalidade').value = parseFloat(data.valor_mensal).toFixed(2);
+        }
+        console.log('Plano atualizado:', data);
+      })
+      .catch(error => {
+        console.error('Erro ao buscar dados do plano:', error);
+      });
+    });
+  }
+});
 </script>
 
 <style>

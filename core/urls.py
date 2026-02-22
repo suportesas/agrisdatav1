@@ -87,6 +87,7 @@ urlpatterns = [
     # APPS PRINCIPAIS (COM NAMESPACE)
     # ============================================
     path('dashboard/', include(('dashboard.urls', 'dashboard'))),
+    path('dashboard-executivo/', include(('metricas.urls', 'metricas'))),
     path('empresas/', include(('empresas.urls', 'empresas'))),
     path('usuarios/', include(('usuarios.urls', 'usuarios'))),
     path('cadastros/', include(('cadastros.urls', 'cadastros'))),

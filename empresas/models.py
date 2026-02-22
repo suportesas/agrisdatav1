@@ -382,6 +382,13 @@ class Empresa(models.Model):
         help_text='Rua, número, complemento'
     )
     
+    bairro = models.CharField(
+        'Bairro',
+        max_length=100,
+        blank=True,
+        null=True
+    )
+    
     cidade = models.CharField(
         'Cidade',
         max_length=100,

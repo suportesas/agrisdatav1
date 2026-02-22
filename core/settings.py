@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'usuarios',
     'empresas',
     'dashboard',
+    'metricas',  # Dashboard Executivo e Métricas
     'cadastros',
     'patrimonio',  # Módulo de Patrimônio
     'produtos',

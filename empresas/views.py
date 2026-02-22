@@ -710,3 +710,31 @@ def inicializar_planos_padrao(request):
         messages.info(request, "ℹ️ Planos padrão já existem e estão atualizados.")
     
     return redirect('empresas:plano_list')
+
+
+@login_required
+def api_plano_dados(request, plano_id):
+    """API para retornar dados do plano (AJAX)"""
+    try:
+        plano = Plano.objects.get(id=plano_id)
+        dados = {
+            'id': plano.id,
+            'codigo': plano.codigo,
+            'nome': plano.nome,
+            'valor_mensal': str(plano.valor_mensal),
+            'valor_anual': str(plano.valor_anual) if plano.valor_anual else None,
+            'desconto_anual': str(plano.desconto_anual),
+            'limite_fazendas': plano.limite_fazendas,
+            'limite_usuarios': plano.limite_usuarios,
+            'limite_talhoes': plano.limite_talhoes,
+            'limite_produtos': plano.limite_produtos,
+            'acesso_relatorios_avancados': plano.acesso_relatorios_avancados,
+            'acesso_api': plano.acesso_api,
+            'acesso_app_mobile': plano.acesso_app_mobile,
+            'acesso_suporte_prioritario': plano.acesso_suporte_prioritario,
+        }
+        return JsonResponse(dados)
+    except Plano.DoesNotExist:
+        return JsonResponse({'erro': 'Plano não encontrado'}, status=404)
+    except Exception as e:
+        return JsonResponse({'erro': str(e)}, status=500)

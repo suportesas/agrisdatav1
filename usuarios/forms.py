@@ -185,10 +185,46 @@ class UsuarioCreateForm(UserCreationForm):
         # Configura queryset de roles
         from empresas.models import Role
         if 'roles' in self.fields:
-            if self.user and not self.user.is_superuser and self.user.empresa:
+            # PRIORIDADE 1: Se o usuário sendo CRIADO tem empresa, filtrar por ela
+            if self.instance and self.instance.empresa:
+                self.fields['roles'].queryset = Role.objects.filter(empresa=self.instance.empresa)
+            # PRIORIDADE 2: Se quem está criando é admin de empresa, filtrar pela sua empresa
+            elif self.user and not self.user.is_superuser and self.user.empresa:
                 self.fields['roles'].queryset = Role.objects.filter(empresa=self.user.empresa)
+            # PRIORIDADE 3: Caso contrário (superuser criando novo), mostrar todas
             else:
                 self.fields['roles'].queryset = Role.objects.all()
+    
+    def clean_roles(self):
+        """Valida que as roles selecionadas pertencem à empresa correta"""
+        roles = self.cleaned_data.get('roles')
+        
+        # Se o usuário sendo criado tem empresa, valida contra ela
+        if roles and self.instance and self.instance.empresa:
+            invalid_roles = []
+            for role in roles:
+                if role.empresa != self.instance.empresa:
+                    invalid_roles.append(role.name)
+            
+            if invalid_roles:
+                raise ValidationError(
+                    f'❌ Você não pode atribuir funções de outras empresas. '
+                    f'Funções inválidas: {", ".join(invalid_roles)}'
+                )
+        # Senão, se quem está criando é admin de empresa, valida contra sua empresa
+        elif roles and self.user and not self.user.is_superuser and self.user.empresa:
+            invalid_roles = []
+            for role in roles:
+                if role.empresa != self.user.empresa:
+                    invalid_roles.append(role.name)
+            
+            if invalid_roles:
+                raise ValidationError(
+                    f'❌ Você não pode atribuir funções de outras empresas. '
+                    f'Funções inválidas: {", ".join(invalid_roles)}'
+                )
+        
+        return roles
     
     def clean_email(self):
         email = self.cleaned_data.get('email')
@@ -351,8 +387,13 @@ class UsuarioUpdateForm(UserChangeForm):
         # Configura queryset de roles
         from empresas.models import Role
         if 'roles' in self.fields:
-            if self.user and not self.user.is_superuser and self.user.empresa:
+            # PRIORIDADE 1: Se o usuário sendo EDITADO tem empresa, filtrar por ela
+            if self.instance and self.instance.empresa:
+                self.fields['roles'].queryset = Role.objects.filter(empresa=self.instance.empresa)
+            # PRIORIDADE 2: Se quem está editando é admin de empresa, filtrar pela sua empresa
+            elif self.user and not self.user.is_superuser and self.user.empresa:
                 self.fields['roles'].queryset = Role.objects.filter(empresa=self.user.empresa)
+            # PRIORIDADE 3: Caso contrário (superuser editando superuser), mostrar todas
             else:
                 self.fields['roles'].queryset = Role.objects.all()
     
@@ -362,6 +403,37 @@ class UsuarioUpdateForm(UserChangeForm):
         if Usuario.objects.exclude(pk=self.instance.pk).filter(email=email).exists():
             raise ValidationError('Este e-mail já está cadastrado em outro usuário.')
         return email
+    
+    def clean_roles(self):
+        """Valida que as roles selecionadas pertencem à empresa correta"""
+        roles = self.cleaned_data.get('roles')
+        
+        # Se o usuário sendo editado tem empresa, valida contra ela
+        if roles and self.instance and self.instance.empresa:
+            invalid_roles = []
+            for role in roles:
+                if role.empresa != self.instance.empresa:
+                    invalid_roles.append(role.name)
+            
+            if invalid_roles:
+                raise ValidationError(
+                    f'❌ Você não pode atribuir funções de outras empresas. '
+                    f'Funções inválidas: {", ".join(invalid_roles)}'
+                )
+        # Senão, se quem está editando é admin de empresa, valida contra sua empresa
+        elif roles and self.user and not self.user.is_superuser and self.user.empresa:
+            invalid_roles = []
+            for role in roles:
+                if role.empresa != self.user.empresa:
+                    invalid_roles.append(role.name)
+            
+            if invalid_roles:
+                raise ValidationError(
+                    f'❌ Você não pode atribuir funções de outras empresas. '
+                    f'Funções inválidas: {", ".join(invalid_roles)}'
+                )
+        
+        return roles
 
 
 class AlterarSenhaForm(forms.Form):

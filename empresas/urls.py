@@ -31,6 +31,7 @@ urlpatterns = [
     path('planos/<int:pk>/editar/', views.plano_update, name='plano_update'),
     path('planos/<int:pk>/excluir/', views.plano_delete, name='plano_delete'),
     path('planos/inicializar/', views.inicializar_planos_padrao, name='inicializar_planos'),
+    path('api/plano/<int:plano_id>/', views.api_plano_dados, name='api_plano_dados'),
 
     # Grupos Corporativos (Enterprise Plus)
     path('grupos/', views_grupo.grupo_list, name='grupo_list'),

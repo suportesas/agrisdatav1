@@ -5,11 +5,25 @@ from .models import Empresa, Plano, Role
 class EmpresaForm(forms.ModelForm):
     """Formulário para criar/editar empresas"""
     
+    buscar_cnpj = forms.BooleanField(
+        required=False,
+        initial=False,
+        label='Buscar CNPJ',
+        help_text='Preencher automaticamente via API ReceitaWS'
+    )
+    
+    buscar_cep = forms.BooleanField(
+        required=False,
+        initial=False,
+        label='Buscar CEP',
+        help_text='Preencher automaticamente via API ViaCEP'
+    )
+    
     class Meta:
         model = Empresa
         fields = [
             'nome', 'cnpj', 'telefone', 'email',
-            'endereco', 'cidade', 'uf', 'logo',
+            'endereco', 'bairro', 'cidade', 'uf', 'logo',
             'plano',  # Campo de plano
             'valor_mensalidade', 'dia_vencimento', 'data_expiracao',
             'ativa', 'bloqueada', 'bloqueada_ate', 'motivo_bloqueio',
@@ -20,6 +34,7 @@ class EmpresaForm(forms.ModelForm):
             'telefone': forms.TextInput(attrs={'class': 'form-control'}),
             'email': forms.EmailInput(attrs={'class': 'form-control'}),
             'endereco': forms.TextInput(attrs={'class': 'form-control'}),
+            'bairro': forms.TextInput(attrs={'class': 'form-control'}),
             'cidade': forms.TextInput(attrs={'class': 'form-control'}),
             'uf': forms.TextInput(attrs={'class': 'form-control', 'maxlength': 2}),
             'logo': forms.FileInput(attrs={'class': 'form-control', 'accept': 'image/*'}),

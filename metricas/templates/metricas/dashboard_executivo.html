@@ -1,0 +1,448 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Dashboard Executivo - {{ block.super }}{% endblock %}
+
+{% block extra_css %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+    .metric-card {
+        border-left: 4px solid #0d6efd;
+        transition: transform 0.2s;
+    }
+    .metric-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 16px rgba(0,0,0,0.15) !important;
+    }
+    .metric-value {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #0d6efd;
+    }
+    .metric-label {
+        font-size: 0.9rem;
+        color: #6c757d;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    .alert-badge {
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+    .badge-critica {
+        background-color: #dc3545;
+        color: white;
+    }
+    .badge-alta {
+        background-color: #fd7e14;
+        color: white;
+    }
+    .badge-media {
+        background-color: #ffc107;
+        color: #000;
+    }
+    .badge-baixa {
+        background-color: #28a745;
+        color: white;
+    }
+    .chart-container {
+        position: relative;
+        height: 300px;
+        margin-top: 20px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h2">📊 Dashboard Executivo</h1>
+                    <p class="text-muted">Visão geral do sistema ERP Agrícola</p>
+                </div>
+                <div>
+                    <small class="text-muted">Última atualização: {% now "d/m/Y H:i" %}</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- KPIs Principais -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card metric-card">
+                <div class="card-body">
+                    <div class="metric-label">Empresas Total</div>
+                    <div class="metric-value">{{ total_empresas }}</div>
+                    <small class="text-muted">
+                        <strong class="text-success">{{ empresas_ativas }}</strong> ativas
+                        / <strong class="text-danger">{{ empresas_inativas }}</strong> inativas
+                    </small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card metric-card">
+                <div class="card-body">
+                    <div class="metric-label">Usuários Total</div>
+                    <div class="metric-value">{{ total_usuarios }}</div>
+                    <small class="text-muted">
+                        <strong class="text-success">{{ usuarios_ativos }}</strong> ativos
+                    </small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card metric-card">
+                <div class="card-body">
+                    <div class="metric-label">Receita Mensal</div>
+                    <div class="metric-value">R$ {{ receita_mensal|floatformat:0 }}</div>
+                    <small class="text-muted">
+                        Anual: R$ {{ receita_anual|floatformat:0 }}
+                    </small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card metric-card">
+                <div class="card-body">
+                    <div class="metric-label">Alertas Ativos</div>
+                    <div class="metric-value text-danger">{{ alertas_ativos }}</div>
+                    <small class="text-muted">
+                        <strong class="badge-critica">{{ alertas_criticos }}</strong> críticos
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráficos -->
+    <div class="row mb-4">
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">📈 Distribuição por Plano</h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="chartPlanos"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">💰 Receita por Plano</h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="chartReceita"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alertas Críticos -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">⚠️ Alertas Críticos e Altos</h5>
+                        <a href="{% url 'metricas:alertas_lista' %}" class="btn btn-sm btn-outline-primary">
+                            Ver todos →
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if alertas_criticos_altos %}
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Severidade</th>
+                                    <th>Tipo</th>
+                                    <th>Título</th>
+                                    <th>Empresa</th>
+                                    <th>Data</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for alerta in alertas_criticos_altos %}
+                                <tr>
+                                    <td>
+                                        {% if alerta.severidade == 'CRÍTICA' %}
+                                        <span class="alert-badge badge-critica">{{ alerta.get_severidade_display }}</span>
+                                        {% elif alerta.severidade == 'ALTA' %}
+                                        <span class="alert-badge badge-alta">{{ alerta.get_severidade_display }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td><small>{{ alerta.get_tipo_display }}</small></td>
+                                    <td><strong>{{ alerta.titulo }}</strong></td>
+                                    <td>
+                                        {% if alerta.empresa %}
+                                        <a href="{% url 'metricas:consumo_detail' alerta.empresa.id %}">
+                                            {{ alerta.empresa.razao_social }}
+                                        </a>
+                                        {% else %}
+                                        <span class="text-muted">Sistema</span>
+                                        {% endif %}
+                                    </td>
+                                    <td><small>{{ alerta.data_criacao|date:"d/m/Y H:i" }}</small></td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-success">
+                        ✅ Nenhum alerta crítico ou alto no momento
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Limite de Recursos -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">🚨 Empresas com Limite Próximo</h5>
+                        <a href="{% url 'metricas:consumo_lista' %}" class="btn btn-sm btn-outline-primary">
+                            Ver todos →
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if consumos_alerta %}
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Empresa</th>
+                                    <th>Fazendas</th>
+                                    <th>Usuários</th>
+                                    <th>Talhões</th>
+                                    <th>Produtos</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for consumo in consumos_alerta %}
+                                <tr>
+                                    <td>
+                                        <a href="{% url 'metricas:consumo_detail' consumo.empresa.id %}">
+                                            {{ consumo.empresa.razao_social }}
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <div class="progress" style="height: 20px;">
+                                            <div class="progress-bar {% if consumo.percentual_fazendas >= 80 %}bg-danger{% elif consumo.percentual_fazendas >= 60 %}bg-warning{% else %}bg-success{% endif %}" 
+                                                 role="progressbar" 
+                                                 style="width: {{ consumo.percentual_fazendas }}%"
+                                                 aria-valuenow="{{ consumo.percentual_fazendas }}" 
+                                                 aria-valuemin="0" 
+                                                 aria-valuemax="100">
+                                                {{ consumo.fazendas_usadas }}/{{ consumo.limite_fazendas }} ({{ consumo.percentual_fazendas|floatformat:0 }}%)
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="progress" style="height: 20px;">
+                                            <div class="progress-bar {% if consumo.percentual_usuarios >= 80 %}bg-danger{% elif consumo.percentual_usuarios >= 60 %}bg-warning{% else %}bg-success{% endif %}" 
+                                                 role="progressbar" 
+                                                 style="width: {{ consumo.percentual_usuarios }}%"
+                                                 aria-valuenow="{{ consumo.percentual_usuarios }}" 
+                                                 aria-valuemin="0" 
+                                                 aria-valuemax="100">
+                                                {{ consumo.usuarios_ativos }}/{{ consumo.limite_usuarios }} ({{ consumo.percentual_usuarios|floatformat:0 }}%)
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="progress" style="height: 20px;">
+                                            <div class="progress-bar {% if consumo.percentual_talhoes >= 80 %}bg-danger{% elif consumo.percentual_talhoes >= 60 %}bg-warning{% else %}bg-success{% endif %}" 
+                                                 role="progressbar" 
+                                                 style="width: {{ consumo.percentual_talhoes }}%"
+                                                 aria-valuenow="{{ consumo.percentual_talhoes }}" 
+                                                 aria-valuemin="0" 
+                                                 aria-valuemax="100">
+                                                {{ consumo.talhoes_cadastrados }}/{{ consumo.limite_talhoes }} ({{ consumo.percentual_talhoes|floatformat:0 }}%)
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="progress" style="height: 20px;">
+                                            <div class="progress-bar {% if consumo.percentual_produtos >= 80 %}bg-danger{% elif consumo.percentual_produtos >= 60 %}bg-warning{% else %}bg-success{% endif %}" 
+                                                 role="progressbar" 
+                                                 style="width: {{ consumo.percentual_produtos }}%"
+                                                 aria-valuenow="{{ consumo.percentual_produtos }}" 
+                                                 aria-valuemin="0" 
+                                                 aria-valuemax="100">
+                                                {{ consumo.produtos_cadastrados }}/{{ consumo.limite_produtos }} ({{ consumo.percentual_produtos|floatformat:0 }}%)
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info">
+                        ℹ️ Todas as empresas possuem recursos disponíveis
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Acessos Recentes -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">🔍 Acessos Recentes</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Usuário</th>
+                                    <th>Módulo</th>
+                                    <th>IP</th>
+                                    <th>Data/Hora</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for log in acessos_recentes %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ log.usuario.usuario.username }}</strong>
+                                        <br><small class="text-muted">{{ log.usuario.usuario.first_name }} {{ log.usuario.usuario.last_name }}</small>
+                                    </td>
+                                    <td><span class="badge bg-primary">{{ log.get_modulo_display }}</span></td>
+                                    <td><code>{{ log.ip_address }}</code></td>
+                                    <td>{{ log.data_acesso|date:"d/m/Y H:i" }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Scripts dos Gráficos -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Gráfico de Distribuição por Plano
+    const ctxPlanos = document.getElementById('chartPlanos').getContext('2d');
+    const planData = {{ plano_json|safe }};
+    
+    new Chart(ctxPlanos, {
+        type: 'doughnut',
+        data: {
+            labels: ['Pequeno', 'Médio', 'Grande', 'Enterprise'],
+            datasets: [{
+                data: [
+                    planData.pequeno,
+                    planData.medio,
+                    planData.grande,
+                    planData.enterprise
+                ],
+                backgroundColor: [
+                    '#28a745',
+                    '#17a2b8',
+                    '#ffc107',
+                    '#dc3545'
+                ],
+                borderColor: '#fff',
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        padding: 15,
+                        font: {
+                            size: 12
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // Gráfico de Receita
+    const ctxReceita = document.getElementById('chartReceita').getContext('2d');
+    new Chart(ctxReceita, {
+        type: 'bar',
+        data: {
+            labels: ['Pequeno', 'Médio', 'Grande', 'Enterprise'],
+            datasets: [{
+                label: 'Receita Mensal (R$)',
+                data: [
+                    planData.receita_pequeno,
+                    planData.receita_medio,
+                    planData.receita_grande,
+                    planData.receita_enterprise
+                ],
+                backgroundColor: [
+                    '#28a745',
+                    '#17a2b8',
+                    '#ffc107',
+                    '#dc3545'
+                ],
+                borderColor: '#fff',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            indexAxis: 'y',
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        padding: 15,
+                        font: {
+                            size: 12
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return 'R$ ' + value.toLocaleString('pt-BR', {maximumFractionDigits: 0});
+                        }
+                    }
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

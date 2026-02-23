@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load widget_tweaks %}
 
 {% block title %}{{ action }} Funcionário | ERP Agrícola{% endblock %}
 
@@ -209,6 +210,27 @@
               <div class="text-danger small">{{ form.cnh_validade.errors|striptags }}</div>
             {% endif %}
           </div>
+
+          <!-- Escolaridade e CREA -->
+          <div class="col-md-7">
+            <label class="form-label fw-semibold">
+              <i class="bi bi-book text-info"></i> Escolaridade
+            </label>
+            {% include 'widgets/select_field.html' with field=form.escolaridade %}
+            {% if form.escolaridade.errors %}
+              <div class="text-danger small">{{ form.escolaridade.errors|striptags }}</div>
+            {% endif %}
+          </div>
+          <div class="col-md-5">
+            <label class="form-label fw-semibold">
+              <i class="bi bi-certificate text-success"></i> Número CREA
+            </label>
+            {% include 'widgets/text_field.html' with field=form.numero_crea %}
+            {% if form.numero_crea.errors %}
+              <div class="text-danger small">{{ form.numero_crea.errors|striptags }}</div>
+            {% endif %}
+          </div>
+
           <div class="col-md-4">
             <label class="form-label fw-semibold">Tipo de Contrato *</label>
             {{ form.tipo_contrato }}
@@ -340,6 +362,20 @@
       </div>
     </div>
 
+    <!-- Seção 8: Documentos -->
+
+      <!-- Seção 8: Documentos -->
+      <div class="card section-card border-0 shadow-sm">
+        <div class="card-header bg-success text-white">
+          <h5 class="mb-0"><i class="bi bi-file-earmark-pdf"></i> Documentos de Contratação</h5>
+        </div>
+        <div class="card-body p-4">
+          <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i> Após cadastrar o funcionário, utilize o botão "Anexar Documento" na página de detalhes para anexar arquivos.
+          </div>
+        </div>
+      </div>
+
     <!-- Botões -->
     <div class="d-flex justify-content-between gap-3">
       <a href="{% url 'cadastros:funcionario_list' %}" class="btn btn-outline-secondary btn-lg px-5">
@@ -350,6 +386,59 @@
       </button>
     </div>
 
+    <!-- JavaScript para adicionar/remover documentos dinamicamente -->
+    <script>
+    {% if form.instance.pk %}
+    function adicionarFormDocumento() {
+      const formset = document.getElementById('formset_documentos');
+      const totalForms = document.getElementById('id_documentofuncionario_set-TOTAL_FORMS');
+      const numForms = parseInt(totalForms.value);
+      
+      // Cria novo formulário baseado no template
+      const novoForm = document.querySelector('.form-documento').cloneNode(true);
+      
+      // Atualiza IDs e names para o novo índice
+      novoForm.setAttribute('data-form-index', numForms);
+      
+      // Limpa valores do formulário clonado
+      novoForm.querySelectorAll('input[type="text"], input[type="date"], select, textarea, input[type="file"]').forEach(field => {
+        field.value = '';
+        // Remove erros
+        const errorDiv = field.parentElement.querySelector('.text-danger');
+        if (errorDiv) errorDiv.remove();
+      });
+      
+      // Remove checkbox de delete para novo formulário
+      const deleteCheckbox = novoForm.querySelector('input[type="checkbox"]');
+      if (deleteCheckbox && deleteCheckbox.name.includes('DELETE')) {
+        deleteCheckbox.parentElement.parentElement.remove();
+      }
+      
+      // Atualiza números do formulário
+      novoForm.querySelectorAll('[name*="documentofuncionario_set-"]').forEach(field => {
+        const oldName = field.name;
+        const newName = oldName.replace(/-\d+-/, `-${numForms}-`);
+        field.name = newName;
+        field.id = `id_${newName}`;
+        
+        // Atualiza labels
+        const label = novoForm.querySelector(`label[for="${field.id.replace(newName, oldName.match(/-\d+-(.+)$/)[1])}"]`);
+        if (label && label.htmlFor) {
+          label.htmlFor = field.id;
+        }
+      });
+      
+      // Atualiza título do documento
+      novoForm.querySelector('h6').textContent = `Documento #${numForms + 1}`;
+      
+      // Adiciona novo formulário
+      formset.appendChild(novoForm);
+      
+      // Incrementa contador de formas
+      totalForms.value = numForms + 1;
+    }
+    {% endif %}
+    </script>
   </form>
 
 </div>

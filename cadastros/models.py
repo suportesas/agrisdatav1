@@ -1594,6 +1594,18 @@ class Funcionario(models.Model):
         ('OUTRO', 'Outro'),
     ]
     
+    ESCOLARIDADE = [
+        ('ANALFABETO', 'Analfabeto'),
+        ('FUNDAMENTAL_INCOMPLETO', 'Fundamental Incompleto'),
+        ('FUNDAMENTAL_COMPLETO', 'Fundamental Completo'),
+        ('MEDIO_INCOMPLETO', 'Ensino Médio Incompleto'),
+        ('MEDIO_COMPLETO', 'Ensino Médio Completo'),
+        ('TECNICO', 'Ensino Técnico'),
+        ('SUPERIOR_INCOMPLETO', 'Superior Incompleto'),
+        ('SUPERIOR_COMPLETO', 'Superior Completo'),
+        ('POS_GRADUACAO', 'Pós-Graduação'),
+    ]
+    
     # Empresa e Fazenda
     empresa = models.ForeignKey(
         'empresas.Empresa',
@@ -1765,7 +1777,22 @@ class Funcionario(models.Model):
     cnh = models.CharField('CNH', max_length=20, blank=True)
     cnh_validade = models.DateField('Validade CNH', null=True, blank=True)
 
+    # Educação e Profissionais
+    escolaridade = models.CharField(
+        'Escolaridade',
+        max_length=30,
+        choices=ESCOLARIDADE,
+        blank=True,
+        help_text='Nível de escolaridade do funcionário'
+    )
     
+    numero_crea = models.CharField(
+        'Número CREA',
+        max_length=50,
+        blank=True,
+        help_text='Número de registro no Conselho Regional de Engenharia e Agronomia'
+    )
+
     # Dados Bancários
     banco = models.CharField(
         'Banco',
@@ -1921,6 +1948,166 @@ class Funcionario(models.Model):
                 raise ValidationError({
                     'data_demissao': 'Data de demissão não pode ser anterior à admissão'
                 })
+
+
+# ============================================================================
+# DOCUMENTOS DO FUNCIONÁRIO
+# ============================================================================
+
+class DocumentoFuncionario(models.Model):
+    """
+    Documentos anexados ao funcionário
+    Contratação, certificados, CREA, diplomas, etc.
+    """
+    
+    TIPO_DOCUMENTO = [
+        ('CONTRATACAO', 'Contratação'),
+        ('RESCISAO', 'Rescisão'),
+        ('CREA', 'Registro CREA'),
+        ('CERTIFICADO', 'Certificado/Treinamento'),
+        ('DIPLOMA', 'Diploma/Formação'),
+        ('CNH', 'CNH'),
+        ('CTPS', 'CTPS'),
+        ('COMPROVANTE_ENDERECO', 'Comprovante de Endereço'),
+        ('COMPROVANTE_BANCARIO', 'Comprovante Bancário'),
+        ('DECLARACAO_IMPOSTO_RENDA', 'Declaração de Imposto de Renda'),
+        ('CONTRATO_EMERGENCIA', 'Contato de Emergência'),
+        ('ASSINATURA', 'Termo de Assinatura'),
+        ('OUTROS', 'Outros'),
+    ]
+    
+    funcionario = models.ForeignKey(
+        Funcionario,
+        on_delete=models.CASCADE,
+        related_name='documentos',
+        verbose_name='Funcionário'
+    )
+    
+    empresa = models.ForeignKey(
+        'empresas.Empresa',
+        on_delete=models.CASCADE,
+        related_name='documentos_funcionario',
+        verbose_name='Empresa'
+    )
+    
+    tipo = models.CharField(
+        'Tipo de Documento',
+        max_length=30,
+        choices=TIPO_DOCUMENTO,
+        help_text='Tipo de documento'
+    )
+    
+    titulo = models.CharField(
+        'Título/Descrição',
+        max_length=200,
+        help_text='Descrição do documento'
+    )
+    
+    numero_documento = models.CharField(
+        'Número do Documento',
+        max_length=100,
+        blank=True,
+        help_text='Número de registro, protocolo, CREA, etc.'
+    )
+    
+    arquivo = models.FileField(
+        'Arquivo',
+        upload_to='funcionarios/documentos/%Y/%m/',
+        validators=[
+            FileExtensionValidator(
+                allowed_extensions=['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx', 'xls', 'xlsx']
+            )
+        ],
+        help_text='Formatos permitidos: PDF, JPG, PNG, DOC, DOCX, XLS, XLSX'
+    )
+    
+    # Datas
+    data_emissao = models.DateField(
+        'Data de Emissão',
+        blank=True,
+        null=True
+    )
+    
+    data_validade = models.DateField(
+        'Data de Validade',
+        blank=True,
+        null=True,
+        help_text='Deixe em branco se não houver validade'
+    )
+    
+    # Controle de alertas de vencimento
+    gerar_alerta_vencimento = models.BooleanField(
+        'Gerar Alerta de Vencimento',
+        default=True,
+        help_text='Notificar quando próximo do vencimento'
+    )
+    
+    dias_antecedencia_alerta = models.IntegerField(
+        'Dias de Antecedência para Alerta',
+        default=30,
+        help_text='Quantos dias antes do vencimento alertar'
+    )
+    
+    # Observações
+    observacoes = models.TextField(
+        'Observações',
+        blank=True
+    )
+    
+    # Auditoria
+    data_upload = models.DateTimeField(
+        'Data do Upload',
+        auto_now_add=True
+    )
+    
+    enviado_por = models.ForeignKey(
+        'usuarios.Usuario',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='documentos_funcionario_enviados',
+        verbose_name='Enviado por'
+    )
+    
+    class Meta:
+        verbose_name = 'Documento do Funcionário'
+        verbose_name_plural = 'Documentos dos Funcionários'
+        ordering = ['-data_upload']
+        indexes = [
+            models.Index(fields=['funcionario', '-data_upload']),
+            models.Index(fields=['empresa', 'tipo']),
+        ]
+    
+    def __str__(self):
+        return f"{self.funcionario.nome_completo} - {self.get_tipo_display()}: {self.titulo}"
+    
+    def esta_vencido(self):
+        """Verifica se documento está vencido"""
+        if self.data_validade:
+            return timezone.now().date() > self.data_validade
+        return False
+    
+    def dias_para_vencimento(self):
+        """Retorna dias restantes até vencimento"""
+        if self.data_validade:
+            dias = (self.data_validade - timezone.now().date()).days
+            return dias
+        return None
+    
+    def precisa_alerta(self):
+        """Verifica se deve gerar alerta de vencimento"""
+        if not self.gerar_alerta_vencimento or not self.data_validade:
+            return False
+        
+        dias_restantes = self.dias_para_vencimento()
+        if dias_restantes is not None:
+            return 0 <= dias_restantes <= self.dias_antecedencia_alerta
+        
+        return False
+    
+    def get_nome_arquivo(self):
+        """Retorna apenas o nome do arquivo sem o caminho"""
+        return os.path.basename(self.arquivo.name)
 
 
 # ============================================================================

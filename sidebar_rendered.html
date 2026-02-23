@@ -1,0 +1,388 @@
+<div class="sidebar-modern" id="sidebar">
+  <!-- Logo e Empresa -->
+  <div class="sidebar-brand">
+    <div class="brand-logo">
+      <i class="bi bi-diagram-3-fill"></i>
+    </div>
+    <div class="brand-text">
+      <h4>ERP Agrícola</h4>
+      
+    </div>
+    <button class="sidebar-collapse-btn" id="collapseBtn">
+      <i class="bi bi-chevron-left"></i>
+    </button>
+  </div>
+
+  <!-- User Info -->
+  <div class="sidebar-user">
+    <div class="user-avatar">
+      <i class="bi bi-person-circle"></i>
+    </div>
+    <div class="user-details">
+      <span class="user-name">admin</span>
+      <span class="user-role">Administrador</span>
+    </div>
+  </div>
+
+  <!-- Menu Navigation -->
+  <nav class="sidebar-nav">
+    <ul class="nav-list">
+      
+      <!-- Dashboard -->
+      <li class="nav-item has-submenu">
+        <a href="#" class="nav-link">
+          <i class="bi bi-speedometer2"></i>
+          <span>Dashboard</span>
+          <i class="bi bi-chevron-down submenu-arrow"></i>
+        </a>
+        <ul class="nav-submenu">
+          <li><a href="/dashboard/"><i class="bi bi-speedometer2"></i> Geral</a></li>
+          <li><a href="/estoque/"><i class="bi bi-box-seam"></i> Estoque</a></li>
+          <li><a href="/compras/dashboard-compras/"><i class="bi bi-cart-check"></i> Compras</a></li>
+          <li><a href="/estoque/relatorio/rastreamento/dashboard/"><i class="bi bi-activity"></i> Rastreamento</a></li>
+        </ul>
+      </li>
+
+      <li class="nav-divider"></li>
+
+      <!-- GESTÃO (Superusuário) -->
+      
+      <li class="nav-section">
+        <span>GESTÃO DO SISTEMA</span>
+      </li>
+
+      <li class="nav-item has-submenu">
+        <a href="#" class="nav-link">
+          <i class="bi bi-buildings"></i>
+          <span>Empresas</span>
+          <i class="bi bi-chevron-down submenu-arrow"></i>
+        </a>
+        <ul class="nav-submenu">
+          <li><a href="/empresas/"><i class="bi bi-list-ul"></i> Listar</a></li>
+          <li><a href="/empresas/nova/"><i class="bi bi-plus-circle"></i> Nova Empresa</a></li>
+          <li><a href="/empresas/planos/"><i class="bi bi-card-checklist"></i> Planos</a></li>
+          <li><a href="/empresas/roles/"><i class="bi bi-shield-lock"></i> Funções/Roles</a></li>
+        </ul>
+      </li>
+
+      <li class="nav-item has-submenu">
+        <a href="#" class="nav-link">
+          <i class="bi bi-diagram-3-fill"></i>
+          <span>Grupos Corporativos</span>
+          <i class="bi bi-chevron-down submenu-arrow"></i>
+        </a>
+        <ul class="nav-submenu">
+          <li><a href="/empresas/grupos/"><i class="bi bi-list-ul"></i> Listar</a></li>
+          <li><a href="/empresas/grupos/novo/"><i class="bi bi-plus-circle"></i> Novo Grupo</a></li>
+          <li class="submenu-divider"></li>
+          <li><a href="/empresas/grupos/ajuda/"><i class="bi bi-question-circle"></i> Ajuda</a></li>
+        </ul>
+      </li>
+
+      <li class="nav-item has-submenu">
+        <a href="#" class="nav-link">
+          <i class="bi bi-chart-line"></i>
+          <span>Dashboard Executivo</span>
+          <i class="bi bi-chevron-down submenu-arrow"></i>
+        </a>
+        <ul class="nav-submenu">
+          <li><a href="/dashboard-executivo/"><i class="bi bi-graph-up"></i> KPIs Principais</a></li>
+          <li><a href="/dashboard-executivo/consumo/"><i class="bi bi-hourglass-split"></i> Consumo de Recursos</a></li>
+          <li><a href="/dashboard-executivo/alertas/"><i class="bi bi-exclamation-triangle"></i> Alertas</a></li>
+        </ul>
+      </li>
+      
+
+      <!-- Usuários -->
+      
+      <li class="nav-item has-submenu">
+        <a href="#" class="nav-link">
+          <i class="bi bi-people"></i>
+          <span>Usuários</span>
+          <i class="bi bi-chevron-down submenu-arrow"></i>
+        </a>
+        <ul class="nav-submenu">
+          <li><a href="/usuarios/"><i class="bi bi-list-ul"></i> Listar</a></li>
+          <li><a href="/usuarios/novo/"><i class="bi bi-person-plus"></i> Novo Usuário</a></li>
+          <li><a href="/usuarios/registros/"><i class="bi bi-clock-history"></i> Logs de Login</a></li>
+          <li class="submenu-divider"></li>
+          <li><a href="/empresas/ajuda/usuarios-grupos/"><i class="bi bi-question-circle"></i> Ajuda: Usuários e Grupos</a></li>
+        </ul>
+      </li>
+      
+
+      
+
+      <li class="nav-divider"></li>
+      <li class="nav-section">
+        <span>OPERACIONAL</span>
+      </li>
+
+      <!-- Agro -->
+      <li class="nav-item has-submenu">
+        <a href="#" class="nav-link">
+          <i class="bi bi-brightness-high"></i>
+          <span>Agro</span>
+          <span class="badge-count">6</span>
+          <i class="bi bi-chevron-down submenu-arrow"></i>
+        </a>
+        <ul class="nav-submenu">
+          <li><a href="/cadastros/fazendas/"><i class="bi bi-geo-alt"></i> Fazendas</a></li>
+          <li><a href="/cadastros/areas/"><i class="bi bi-map"></i> Áreas</a></li>
+          <li><a href="/cadastros/talhoes/"><i class="bi bi-grid-3x3"></i> Talhões</a></li>
+          <li><a href="/cadastros/culturas/"><i class="bi bi-flower2"></i> Culturas</a></li>
+          
+          <!-- Pragas e Doenças (Submenu) -->
+          <li class="has-submenu">
+            <a href="#"><i class="bi bi-bug"></i> Pragas e Doenças <i class="bi bi-chevron-right ms-auto"></i></a>
+            <ul class="nested-submenu">
+              <li><a href="/cadastros/pragas/"><i class="bi bi-bug"></i> Pragas</a></li>
+              <li><a href="/cadastros/estagios/"><i class="bi bi-diagram-3"></i> Estágios</a></li>
+              <li><a href="/cadastros/estagios/cadastro-lote/"><i class="bi bi-plus-square"></i> Cadastro em Lote</a></li>
+            </ul>
+          </li>
+          
+          <li class="submenu-divider"></li>
+          <li><a href="/cadastros/monitoramento-mip/"><i class="bi bi-crosshair2"></i> Monitoramento MIP</a></li>
+        </ul>
+      </li>
+
+      <!-- Cadastros -->
+      <li class="nav-item has-submenu">
+        <a href="#" class="nav-link">
+          <i class="bi bi-folder-fill"></i>
+          <span>Cadastros</span>
+          <span class="badge-count">7</span>
+          <i class="bi bi-chevron-down submenu-arrow"></i>
+        </a>
+        <ul class="nav-submenu">
+          <li class="has-submenu">
+            <a href="#"><i class="bi bi-person-badge"></i> Funcionários <i class="bi bi-chevron-right ms-auto"></i></a>
+            <ul class="nested-submenu">
+              <li><a href="/cadastros/funcionarios/"><i class="bi bi-list-ul"></i> Listar Funcionários</a></li>
+              <li><a href="/cadastros/funcoes/"><i class="bi bi-person-workspace"></i> Funções/Cargos</a></li>
+            </ul>
+          </li>
+          <li><a href="/cadastros/clientes/"><i class="bi bi-person-check"></i> Clientes</a></li>
+          <li><a href="/cadastros/fornecedores/"><i class="bi bi-shop"></i> Fornecedores</a></li>
+          <li><a href="/cadastros/transportadoras/"><i class="bi bi-truck"></i> Transportadoras</a></li>
+          <li><a href="/cadastros/vendedores/"><i class="bi bi-person-lines-fill"></i> Vendedores</a></li>
+          <li><a href="/cadastros/veiculos/"><i class="bi bi-car-front"></i> Veículos</a></li>
+          <li><a href="/cadastros/motoristas/"><i class="bi bi-person-badge"></i> Motoristas</a></li>
+          
+          <!-- Configurações Comerciais (Submenu) -->
+          <li class="has-submenu">
+            <a href="#"><i class="bi bi-gear"></i> Configurações <i class="bi bi-chevron-right ms-auto"></i></a>
+            <ul class="nested-submenu">
+              <li><a href="/cadastros/prazos-pagamento/"><i class="bi bi-calendar-event"></i> Prazos de Pagamento</a></li>
+            </ul>
+          </li>
+          
+          <!-- Logística Marítima (Submenu) -->
+          <li class="has-submenu">
+            <a href="#"><i class="bi bi-shop-window"></i> Logística Marítima <i class="bi bi-chevron-right ms-auto"></i></a>
+            <ul class="nested-submenu">
+              <li><a href="/cadastros/portos/"><i class="bi bi-water"></i> Portos</a></li>
+              <li><a href="/cadastros/armadores/"><i class="bi bi-ship"></i> Armadores</a></li>
+              <li><a href="/cadastros/navios/"><i class="bi bi-sailboat"></i> Navios</a></li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+
+      <!-- Patrimônio / Ativos -->
+      <li class="nav-item has-submenu">
+        <a href="#" class="nav-link">
+          <i class="bi bi-house-fill"></i>
+          <span>Patrimônio</span>
+          <i class="bi bi-chevron-down submenu-arrow"></i>
+        </a>
+        <ul class="nav-submenu">
+          <li><a href="/patrimonio/"><i class="bi bi-list-ul"></i> Listar Patrimônios</a></li>
+          <li><a href="/patrimonio/novo/"><i class="bi bi-plus-circle"></i> Novo Patrimônio</a></li>
+          <li class="submenu-divider"></li>
+          <li><a href="/patrimonio/relatorio/"><i class="bi bi-file-earmark-bar-graph"></i> Relatório</a></li>
+        </ul>
+      </li>
+
+      <!-- Produtos -->
+      <li class="nav-item has-submenu">
+        <a href="#" class="nav-link">
+          <i class="bi bi-box-seam-fill"></i>
+          <span>Produtos</span>
+          <i class="bi bi-chevron-down submenu-arrow"></i>
+        </a>
+        <ul class="nav-submenu">
+          <li><a href="/produtos/dashboard/"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
+          <li><a href="/produtos/"><i class="bi bi-list-ul"></i> Listar Produtos</a></li>
+          <li><a href="/produtos/cadastrar/"><i class="bi bi-plus-circle"></i> Novo Produto</a></li>
+          <li><a href="/produtos/categorias/"><i class="bi bi-tags"></i> Categorias</a></li>
+          <li><a href="/produtos/subcategorias/"><i class="bi bi-bookmark"></i> Subcategorias</a></li>
+          <li><a href="/produtos/unidades/"><i class="bi bi-rulers"></i> Unidades</a></li>
+          <li><a href="/produtos/naturezas/"><i class="bi bi-file-text"></i> Naturezas</a></li>
+        </ul>
+      </li>
+
+      <!-- Estoque -->
+      <li class="nav-item has-submenu">
+        <a href="#" class="nav-link">
+          <i class="bi bi-archive-fill"></i>
+          <span>Estoque</span>
+          
+          <i class="bi bi-chevron-down submenu-arrow"></i>
+        </a>
+        <ul class="nav-submenu">
+          <li>
+            <a href="/estoque/produtos/">
+              <i class="bi bi-box-seam"></i> 
+              Estoque de Produtos
+              
+            </a>
+          </li>
+          <li class="submenu-divider"></li>
+          <li><a href="/estoque/escolher-modo-estoque/"><i class="bi bi-toggle-on text-primary"></i> Escolher Modo</a></li>
+          <li><a href="/estoque/entrada-rapida/"><i class="bi bi-lightning-charge text-success"></i> Entrada Rápida</a></li>
+          <li><a href="/estoque/saida-rapida/"><i class="bi bi-lightning-charge text-warning"></i> Saída Rápida</a></li>
+          <li><a href="/estoque/ajuste-rapido/"><i class="bi bi-lightning-charge text-info"></i> Ajuste Rápido</a></li>
+          <li class="submenu-divider"></li>
+          <li><a href="/estoque/armazens/"><i class="bi bi-building"></i> Armazéns</a></li>
+          <li><a href="/estoque/locais/"><i class="bi bi-pin-map"></i> Locais</a></li>
+          <li><a href="/estoque/lotes/"><i class="bi bi-box2"></i> Lotes</a></li>
+          <li><a href="/estoque/movimentacoes/"><i class="bi bi-arrow-left-right"></i> Movimentações</a></li>
+          <li class="submenu-divider"></li>
+          <li><a href="/estoque/relatorio/alertas/"><i class="bi bi-exclamation-triangle text-danger"></i> Relatório de Alertas</a></li>
+          <li><a href="/estoque/inventario-ciclico/"><i class="bi bi-cube text-info"></i> Inventário</a></li>
+          <li class="submenu-divider"></li>
+          <li><a href="/estoque/entrada/"><i class="bi bi-box-arrow-in-down text-success"></i> Entrada</a></li>
+          <li><a href="/estoque/saida/"><i class="bi bi-box-arrow-up text-warning"></i> Saída</a></li>
+          <li><a href="/estoque/transferencia/"><i class="bi bi-arrow-left-right text-info"></i> Transferência</a></li>
+        </ul>
+      </li>
+
+      <!-- Compras -->
+      <li class="nav-item has-submenu">
+        <a href="#" class="nav-link">
+          <i class="bi bi-cart-check-fill"></i>
+          <span>Compras</span>
+          <span class="badge-new">Novo</span>
+          <i class="bi bi-chevron-down submenu-arrow"></i>
+        </a>
+        <ul class="nav-submenu">
+          <li><a href="/compras/escolher-modo/"><i class="bi bi-toggle-on text-primary"></i> Escolher Modo</a></li>
+          <li><a href="/compras/compra-rapida/"><i class="bi bi-lightning-charge text-success"></i> Compra Rápida</a></li>
+          <li><a href="/compras/recebimento-rapido/"><i class="bi bi-lightning-charge text-warning"></i> Recebimento Rápido</a></li>
+          <li class="submenu-divider"></li>
+          <li><a href="/compras/solicitacoes/"><i class="bi bi-file-text"></i> Solicitações</a></li>
+          <li><a href="/compras/solicitacoes/nova/"><i class="bi bi-plus-circle"></i> Nova Solicitação</a></li>
+          <li class="submenu-divider"></li>
+          <li><a href="/compras/cotacoes/"><i class="bi bi-cart3"></i> Cotações</a></li>
+          <li><a href="/compras/cotacoes-inteligentes/"><i class="bi bi-calculator text-primary"></i> Cotações Inteligentes</a></li>
+          <li class="submenu-divider"></li>
+          <li><a href="/compras/pedidos/"><i class="bi bi-file-earmark-check"></i> Pedidos de Compra</a></li>
+          <li class="submenu-divider"></li>
+          <li><a href="/compras/recebimentos/"><i class="bi bi-box-arrow-in-down text-success"></i> Recebimentos</a></li>
+          <li><a href="/compras/recebimentos/entrada-direta/"><i class="bi bi-box-arrow-in-down"></i> Entrada Direta NF-e</a></li>
+        </ul>
+      </li>
+
+      <!-- Fiscal -->
+      <li class="nav-item has-submenu">
+        <a href="#" class="nav-link">
+          <i class="bi bi-receipt-cutoff"></i>
+          <span>Fiscal</span>
+          <i class="bi bi-chevron-down submenu-arrow"></i>
+        </a>
+        <ul class="nav-submenu">
+          <li><a href="/cadastros/ncm/"><i class="bi bi-upc-scan"></i> NCMs</a></li>
+          <li><a href="/cadastros/cfop/"><i class="bi bi-journal-code"></i> CFOP</a></li>
+          
+          <li><a href="/cadastros/cfop/importar/"><i class="bi bi-download"></i> Importar CFOP</a></li>
+          
+        </ul>
+      </li>
+
+      <!-- Safra -->
+      <li class="nav-item has-submenu">
+        <a href="#" class="nav-link">
+          <i class="bi bi-calendar-event"></i>
+          <span>Safra</span>
+          <i class="bi bi-chevron-down submenu-arrow"></i>
+        </a>
+        <ul class="nav-submenu">
+          <li><a href="/cadastros/safras/"><i class="bi bi-list-ul"></i> Safras</a></li>
+          <li><a href="/cadastros/safras/nova/"><i class="bi bi-plus-circle"></i> Nova Safra</a></li>
+        </ul>
+      </li>
+
+      <!-- Financeiro -->
+      <li class="nav-item has-submenu disabled">
+        <a href="#" class="nav-link">
+          <i class="bi bi-cash-stack"></i>
+          <span>Financeiro</span>
+          <span class="badge-soon">Em breve</span>
+          <i class="bi bi-chevron-down submenu-arrow"></i>
+        </a>
+      </li>
+
+      <!-- Relatórios -->
+      <li class="nav-item has-submenu">
+        <a href="#" class="nav-link">
+          <i class="bi bi-clipboard-data"></i>
+          <span>Relatórios</span>
+          <i class="bi bi-chevron-down submenu-arrow"></i>
+        </a>
+        <ul class="nav-submenu">
+          <li class="has-submenu">
+            <a href="#"><i class="bi bi-archive"></i> Estoque <i class="bi bi-chevron-right ms-auto"></i></a>
+            <ul class="nested-submenu">
+              <li><a href="/estoque/relatorio/"><i class="bi bi-file-earmark-pdf"></i> Relatório por Lotes</a></li>
+              <li><a href="/estoque/relatorio/produto/"><i class="bi bi-file-earmark-bar-graph"></i> Relatório por Produto</a></li>
+              <li><a href="/estoque/relatorio/alertas/"><i class="bi bi-exclamation-triangle text-danger"></i> Alertas (Excel/PDF)</a></li>
+            </ul>
+          </li>
+          <li class="has-submenu">
+            <a href="#"><i class="bi bi-graph-up"></i> Estoque Avançado <i class="bi bi-chevron-right ms-auto"></i></a>
+            <ul class="nested-submenu">
+              <li><a href="/estoque/relatorio/abc/"><i class="bi bi-pie-chart"></i> Análise ABC</a></li>
+              <li><a href="/estoque/relatorio/comparativo/"><i class="bi bi-graph-up"></i> Comparativo</a></li>
+              <li><a href="/estoque/relatorio/auditoria/"><i class="bi bi-clock-history"></i> Auditoria</a></li>
+              <li><a href="/estoque/relatorio/rastreamento/"><i class="bi bi-barcode"></i> Rastreamento</a></li>
+              <li><a href="/estoque/relatorio/validacao-disponibilidade/"><i class="bi bi-check2-square"></i> Validação de Disponibilidade</a></li>
+              <li><a href="/estoque/relatorio/alertas/"><i class="bi bi-exclamation-triangle text-danger"></i> Alertas (Excel/PDF)</a></li>
+            </ul>
+          </li>
+          <li class="has-submenu">
+            <a href="#"><i class="bi bi-cart-check"></i> Compras <i class="bi bi-chevron-right ms-auto"></i></a>
+            <ul class="nested-submenu">
+              <li><a href="/compras/relatorios/"><i class="bi bi-receipt"></i> Relatório de Compras</a></li>
+              <li><a href="/compras/relatorios/geral/"><i class="bi bi-clipboard-data"></i> Visão Geral</a></li>
+              <li><a href="/compras/relatorios/compras/"><i class="bi bi-file-earmark-bar-graph"></i> Compras por Período</a></li>
+              <li><a href="/compras/relatorios/pedidos-pendentes/"><i class="bi bi-file-earmark-excel"></i> Pedidos Pendentes</a></li>
+            </ul>
+          </li>
+          <li class="has-submenu">
+            <a href="#"><i class="bi bi-people"></i> Clientes <i class="bi bi-chevron-right ms-auto"></i></a>
+            <ul class="nested-submenu">
+              <li><a href="/cadastros/clientes/relatorio/"><i class="bi bi-file-earmark-text"></i> Relatório Cliente</a></li>
+            </ul>
+          </li>
+          <li class="has-submenu">
+            <a href="#"><i class="bi bi-truck"></i> Fornecedores <i class="bi bi-chevron-right ms-auto"></i></a>
+            <ul class="nested-submenu">
+              <li><a href="/cadastros/fornecedores/relatorio/"><i class="bi bi-file-earmark-text"></i> Relatório Fornecedor</a></li>
+              <li><a href="/cadastros/fornecedores/relatorio-ranking/"><i class="bi bi-bar-chart-line"></i> Ranking de Compras</a></li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+
+    </ul>
+  </nav>
+
+  <!-- Footer -->
+  <div class="sidebar-footer">
+    <a href="/logout/" class="btn-logout">
+      <i class="bi bi-box-arrow-left"></i>
+      <span>Sair</span>
+    </a>
+  </div>

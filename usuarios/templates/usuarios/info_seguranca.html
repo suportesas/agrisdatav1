@@ -1,0 +1,187 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard de Segurança | ERP Agrícola{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+  <!-- Header -->
+  <div class="mb-4">
+    <h2 class="fw-bold text-dark">
+      <i class="bi bi-shield-check"></i> Centro de Segurança
+    </h2>
+    <p class="text-muted">Gerencie as configurações de segurança da sua conta</p>
+  </div>
+
+  <!-- Cards de Status -->
+  <div class="row g-3 mb-4">
+    
+    <!-- Status 2FA -->
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <h6 class="card-title mb-0">Autenticação Dois Fatores</h6>
+            {% if usuario_2fa.ativo %}
+            <span class="badge bg-success">Ativo</span>
+            {% else %}
+            <span class="badge bg-secondary">Inativo</span>
+            {% endif %}
+          </div>
+          <p class="text-muted small mb-3">Proteção extra para sua conta</p>
+          
+          {% if usuario_2fa.ativo %}
+          <div class="small mb-3">
+            <strong>Método:</strong> {{ usuario_2fa.get_metodo_primario_display }}<br>
+            <strong>Desde:</strong> {{ usuario_2fa.data_habilitacao|date:"d/m/Y" }}
+          </div>
+          <div class="d-grid gap-2">
+            <a href="{% url 'usuarios:listar_codigos_backup' %}" class="btn btn-outline-primary btn-sm">
+              <i class="bi bi-shield-lock"></i> Códigos Backup
+            </a>
+            <a href="#" class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#desabilitar2fa">
+              <i class="bi bi-x-circle"></i> Desabilitar
+            </a>
+          </div>
+          {% else %}
+          <p class="text-muted small mb-3">Aumente a segurança ativando 2FA</p>
+          <a href="{% url 'usuarios:configurar_2fa' %}" class="btn btn-primary btn-sm w-100">
+            <i class="bi bi-plus-circle"></i> Ativar Agora
+          </a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Senha -->
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <h6 class="card-title mb-2">Senha da Conta</h6>
+          <p class="text-muted small mb-3">Altere sua senha regularmente</p>
+          <a href="{% url 'usuarios:alterar_senha' %}" class="btn btn-primary btn-sm w-100">
+            <i class="bi bi-key"></i> Alterar Senha
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Perfil -->
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <h6 class="card-title mb-2">Informações Pessoais</h6>
+          <p class="text-muted small mb-3">Atualize seus dados</p>
+          <a href="{% url 'usuarios:meu_perfil' %}" class="btn btn-primary btn-sm w-100">
+            <i class="bi bi-person"></i> Editar Perfil
+          </a>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Atividades Recentes -->
+  <div class="row">
+    <div class="col-lg-8">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-light border-bottom py-3">
+          <h6 class="card-title mb-0">
+            <i class="bi bi-clock-history"></i> Atividades Recentes
+          </h6>
+        </div>
+        <div class="card-body p-0">
+          {% if logins_recentes %}
+          <div class="list-group list-group-flush">
+            {% for login in logins_recentes %}
+            <div class="list-group-item px-4 py-3">
+              <div class="d-flex justify-content-between align-items-start">
+                <div>
+                  <p class="mb-2">
+                    {% if login.sucesso %}
+                    <span class="badge bg-success mb-1">Sucesso</span>
+                    {% else %}
+                    <span class="badge bg-danger mb-1">Falha</span>
+                    {% endif %}
+                    <strong>Login realizado</strong>
+                  </p>
+                  <small class="text-muted">
+                    <i class="bi bi-geo-alt"></i> {{ login.ip_address }}<br>
+                    <i class="bi bi-display"></i> {{ login.get_navegador }}
+                  </small>
+                </div>
+                <small class="text-muted">{{ login.data_login|date:"d/m/Y H:i" }}</small>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <div class="p-4 text-center text-muted">
+            <p>Nenhuma atividade registrada</p>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Anomalias Detectadas -->
+    <div class="col-lg-4">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-light border-bottom py-3">
+          <h6 class="card-title mb-0">
+            <i class="bi bi-exclamation-triangle"></i> Anomalias Recentes
+          </h6>
+        </div>
+        <div class="card-body p-0">
+          {% if anomalias_recentes %}
+          <div class="list-group list-group-flush">
+            {% for anomalia in anomalias_recentes %}
+            <div class="list-group-item px-4 py-3 border-start border-danger">
+              <p class="mb-2">
+                <span class="badge bg-danger">{{ anomalia.get_tipo_display }}</span>
+              </p>
+              <small>{{ anomalia.descricao }}</small><br>
+              <small class="text-muted d-block mt-2">{{ anomalia.data_deteccao|date:"d/m/Y H:i" }}</small>
+            </div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <div class="p-4 text-center text-muted">
+            <i class="bi bi-check-circle" style="font-size: 2rem; opacity: 0.5;"></i>
+            <p class="mt-2 mb-0">Nenhuma anomalia detectada</p>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Modal Desabilitar 2FA -->
+<div class="modal fade" id="desabilitar2fa" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title">Desabilitar Autenticação Dois Fatores</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p>Tem certeza que deseja desabilitar 2FA? Sua conta ficará menos segura.</p>
+        <p class="mb-0">Para confirmar, digite sua senha:</p>
+      </div>
+      <form method="post" action="{% url 'usuarios:desabilitar_2fa' %}">
+        {% csrf_token %}
+        <div class="modal-body pt-0">
+          <input type="password" name="senha" class="form-control" placeholder="Sua Senha" required>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-danger">Desabilitar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

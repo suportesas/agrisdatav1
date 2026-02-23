@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alerta de Segurança - ERP Agrícola</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 24px;
+            text-align: center;
+        }
+        .header h2 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 700;
+        }
+        .body {
+            padding: 32px;
+        }
+        .alert-box {
+            border-left: 4px solid;
+            padding: 16px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            background-color: #f9f9f9;
+        }
+        .alert-critico {
+            border-left-color: #dc2626;
+            background-color: #fee2e2;
+        }
+        .alert-alto {
+            border-left-color: #f97316;
+            background-color: #ffedd5;
+        }
+        .alert-medio {
+            border-left-color: #eab308;
+            background-color: #fefce8;
+        }
+        .alert-baixo {
+            border-left-color: #3b82f6;
+            background-color: #eff6ff;
+        }
+        .alert-box h3 {
+            margin: 0 0 10px 0;
+            color: #1f2937;
+        }
+        .alert-box p {
+            margin: 0;
+            color: #4b5563;
+        }
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin: 20px 0;
+            background-color: #f9fafb;
+            padding: 16px;
+            border-radius: 6px;
+        }
+        .info-item {
+            display: flex;
+            flex-direction: column;
+        }
+        .info-label {
+            font-weight: 600;
+            color: #6b7280;
+            font-size: 12px;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+        .info-value {
+            color: #1f2937;
+            font-size: 14px;
+        }
+        .button-container {
+            text-align: center;
+            margin: 32px 0;
+        }
+        .btn {
+            display: inline-block;
+            padding: 12px 32px;
+            background-color: #667eea;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 14px;
+            transition: background-color 0.2s;
+        }
+        .btn:hover {
+            background-color: #5568d3;
+        }
+        .warning-box {
+            background-color: #fff3cd;
+            border: 1px solid #ffecb5;
+            border-radius: 6px;
+            padding: 16px;
+            margin: 20px 0;
+            color: #856404;
+        }
+        .warning-box strong {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        .footer {
+            background-color: #f9fafb;
+            border-top: 1px solid #e5e7eb;
+            padding: 16px;
+            text-align: center;
+            font-size: 12px;
+            color: #6b7280;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h2>🚨 Alerta de Segurança</h2>
+            <p style="margin: 8px 0 0 0; opacity: 0.9;">ERP Agrícola</p>
+        </div>
+
+        <!-- Body -->
+        <div class="body">
+            <!-- Alerta -->
+            <div class="alert-box alert-{{ alerta.get_nivel_display|lower }}">
+                <h3>{{ alerta.titulo }}</h3>
+                <p>{{ alerta.descricao }}</p>
+                <div style="margin-top: 12px;">
+                    <span style="display: inline-block; background: rgba(0,0,0,0.1); padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600;">
+                        {{ alerta.get_nivel_display }}
+                    </span>
+                </div>
+            </div>
+
+            <!-- Informações -->
+            <div class="info-grid">
+                <div class="info-item">
+                    <span class="info-label">Usuário Afetado</span>
+                    <span class="info-value">{{ alerta.usuario.get_full_name|default:alerta.usuario.username }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Empresa</span>
+                    <span class="info-value">{{ alerta.empresa.nome }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Data e Hora</span>
+                    <span class="info-value">{{ alerta.data_criacao|date:"d/m/Y H:i" }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Status</span>
+                    <span class="info-value">{{ alerta.get_status_display }}</span>
+                </div>
+            </div>
+
+            <!-- Warning -->
+            {% if alerta.get_nivel_display in "ALTO|CRITICO" %}
+            <div class="warning-box">
+                <strong>⚠️ Ação Recomendada</strong>
+                Revise imediatamente as atividades recentes deste usuário. Se não foi você, altere sua senha imediatamente e entre em contato com o suporte.
+            </div>
+            {% endif %}
+
+            <!-- Dados Adicionais -->
+            {% if alerta.dados_adicionais %}
+            <div style="margin: 20px 0; padding: 16px; background-color: #f9fafb; border-radius: 6px;">
+                <h4 style="margin-top: 0; color: #1f2937;">Detalhes</h4>
+                {% if alerta.dados_adicionais.ip_address %}
+                <p><strong>IP:</strong> {{ alerta.dados_adicionais.ip_address }}</p>
+                {% endif %}
+                {% if alerta.dados_adicionais.user_agent %}
+                <p><strong>Navegador:</strong> {{ alerta.dados_adicionais.user_agent }}</p>
+                {% endif %}
+                {% if alerta.dados_adicionais.tipo_anomalia %}
+                <p><strong>Tipo:</strong> {{ alerta.dados_adicionais.tipo_anomalia }}</p>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            <!-- Botão -->
+            <div class="button-container">
+                <a href="{{ url_admin }}" class="btn">Acessar Painel de Administração</a>
+            </div>
+
+            <!-- Mensagem de segurança -->
+            <div style="background-color: #eff6ff; border-left: 4px solid #3b82f6; padding: 16px; border-radius: 4px; margin-top: 20px;">
+                <p style="margin: 0; color: #1e40af; font-size: 13px;">
+                    <strong>💡 Dica de Segurança:</strong> Se você não reconhece essa atividade, considere habilitar Autenticação de Dois Fatores (2FA) para proteger melhor sua conta.
+                </p>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p style="margin: 8px 0;">
+                Este é um email automático de segurança. Não responda este email.<br>
+                <strong>ERP Agrícola - Sistema de Gestão Agrícola</strong>
+            </p>
+        </div>
+    </div>
+</body>
+</html>

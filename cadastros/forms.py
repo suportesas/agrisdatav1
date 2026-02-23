@@ -15,7 +15,7 @@ from .models import (
     Cliente, EnderecoCliente, ContatoCliente, ContaBancariaCliente, DocumentoCliente, PrazoPagamentoPadrao
 )
 
-from .models import Funcionario, FuncaoFuncionario
+from .models import Funcionario, FuncaoFuncionario, DocumentoFuncionario
 from django.utils import timezone
 import re
 
@@ -1234,6 +1234,7 @@ class FuncionarioForm(forms.ModelForm):
             'bairro', 'cidade', 'uf',
             'funcao', 'tipo_contrato', 'data_admissao', 'data_demissao',
             'salario', 'ctps', 'pis', 'cnh', 'cnh_validade',
+            'escolaridade', 'numero_crea',
             'banco', 'agencia', 'conta', 'tipo_conta', 'pix_habilitado', 'tipo_chave_pix', 'chave_pix',
             'contato_emergencia_nome', 'contato_emergencia_telefone',
             'contato_emergencia_parentesco',
@@ -1281,6 +1282,13 @@ class FuncionarioForm(forms.ModelForm):
             'cnh_validade': forms.DateInput(attrs={
                 'class': 'form-control',
                 'type': 'date'
+            }),
+            'escolaridade': forms.Select(attrs={
+                'class': 'form-select'
+            }),
+            'numero_crea': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Número CREA (ex: 12345/XX-00)'
             }),
             'cep': forms.TextInput(attrs={
                 'class': 'form-control',
@@ -1443,6 +1451,52 @@ class FuncionarioForm(forms.ModelForm):
             funcionario.save()
         
         return funcionario
+
+
+class DocumentoFuncionarioForm(forms.ModelForm):
+    """Formulário para upload de documentos do funcionário"""
+    
+    class Meta:
+        model = DocumentoFuncionario
+        fields = ['tipo', 'titulo', 'numero_documento', 'arquivo', 'data_emissao', 'data_validade', 'gerar_alerta_vencimento', 'dias_antecedencia_alerta', 'observacoes']
+        widgets = {
+            'tipo': forms.Select(attrs={
+                'class': 'form-select'
+            }),
+            'titulo': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ex: Contrato de Trabalho, Certificado de Treinamento'
+            }),
+            'numero_documento': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ex: Número CREA, Protocolo, etc.'
+            }),
+            'arquivo': forms.FileInput(attrs={
+                'class': 'form-control',
+                'accept': '.pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx'
+            }),
+            'data_emissao': forms.DateInput(attrs={
+                'class': 'form-control',
+                'type': 'date'
+            }),
+            'data_validade': forms.DateInput(attrs={
+                'class': 'form-control',
+                'type': 'date'
+            }),
+            'gerar_alerta_vencimento': forms.CheckboxInput(attrs={
+                'class': 'form-check-input'
+            }),
+            'dias_antecedencia_alerta': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': '1',
+                'max': '365'
+            }),
+            'observacoes': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'Observações adicionais'
+            }),
+        }
 
 
 class FornecedorForm(forms.ModelForm):
@@ -1719,7 +1773,7 @@ class CulturaForm(forms.ModelForm):
             'tipo': forms.Select(attrs={'class': 'form-select'}),
             'variedade': forms.TextInput(attrs={
                 'class': 'form-control',
-                'placeholder': 'Ex: Amarelo, Pele de Sapo'
+                'placeholder': 'Ex: Goldex, Quetzali, Asturia, Gália...'
             }),
             'codigo_interno': forms.TextInput(attrs={
                 'class': 'form-control',
@@ -2012,7 +2066,7 @@ class AreaForm(forms.ModelForm):
                 'class': 'form-control',
                 'step': '0.0000001'
             }),
-            'tipo_solo': forms.TextInput(attrs={'class': 'form-control'}),
+            'tipo_solo': forms.Select(attrs={'class': 'form-select'}),
             'ph_solo': forms.NumberInput(attrs={
                 'class': 'form-control',
                 'step': '0.01',
@@ -3940,6 +3994,24 @@ class RescisaoContratoForm(forms.ModelForm):
         # Calcular valor líquido automaticamente quando salvando
         if self.instance and self.instance.pk:
             self.initial['valor_liquido'] = self.instance.calcular_valor_liquido()
+
+
+# =============================================================================
+# FORMSETS PARA MÚLTIPLOS DOCUMENTOS
+# =============================================================================
+
+from django.forms import inlineformset_factory, formset_factory
+
+# Formset para múltiplos DocumentoFuncionario (permite adicionar vários documentos no mesmo formulário)
+DocumentoFuncionarioFormSet = inlineformset_factory(
+    Funcionario,
+    DocumentoFuncionario,
+    form=DocumentoFuncionarioForm,
+    extra=1,  # Mostra apenas 1 formulário em branco; clique em "Adicionar Mais" para adicionar outros
+    can_delete=True,  # Permite deletar documentos existentes
+    min_num=0,
+    validate_min=False
+)
 
 
 # =============================================================================

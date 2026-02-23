@@ -24,7 +24,7 @@ class Migration(migrations.Migration):
                 ('nome', models.CharField(help_text='Ex: Melão, Melancia, Milho', max_length=100, verbose_name='Nome da Cultura')),
                 ('nome_cientifico', models.CharField(blank=True, help_text='Nome científico da espécie', max_length=150, verbose_name='Nome Científico')),
                 ('tipo', models.CharField(choices=[('FRUTA', 'Fruta'), ('HORTALICA', 'Hortaliça'), ('GRAOS', 'Grãos'), ('TUBEROSAS', 'Tuberosas'), ('OLEAGINOSAS', 'Oleaginosas'), ('OUTROS', 'Outros')], default='FRUTA', max_length=20, verbose_name='Tipo de Cultura')),
-                ('variedade', models.CharField(blank=True, help_text='Ex: Amarelo, Pele de Sapo, Gália', max_length=100, verbose_name='Variedade')),
+                ('variedade', models.CharField(blank=True, help_text='Ex: Goldex, Quetzali, Asturia, Gália...', max_length=100, verbose_name='Variedade')),
                 ('codigo_interno', models.CharField(blank=True, help_text='Código de identificação interno', max_length=20, verbose_name='Código Interno')),
                 ('ciclo_cultivo', models.CharField(choices=[('CURTO', 'Curto (até 90 dias)'), ('MEDIO', 'Médio (90 a 180 dias)'), ('LONGO', 'Longo (mais de 180 dias)')], default='MEDIO', help_text='Tempo médio até colheita', max_length=10, verbose_name='Ciclo de Cultivo')),
                 ('dias_colheita', models.IntegerField(default=90, help_text='Dias do plantio até colheita', validators=[django.core.validators.MinValueValidator(1)], verbose_name='Dias até Colheita')),

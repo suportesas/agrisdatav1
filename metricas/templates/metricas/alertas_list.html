@@ -1,0 +1,289 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Alertas - {{ block.super }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .alerta-card {
+        border-left: 4px solid #6c757d;
+        padding: 15px;
+        margin-bottom: 10px;
+        background-color: #f8f9fa;
+        border-radius: 4px;
+    }
+    .alerta-card.critica {
+        border-left-color: #dc3545;
+        background-color: rgba(220, 53, 69, 0.1);
+    }
+    .alerta-card.alta {
+        border-left-color: #fd7e14;
+        background-color: rgba(253, 126, 20, 0.1);
+    }
+    .alerta-card.media {
+        border-left-color: #ffc107;
+        background-color: rgba(255, 193, 7, 0.1);
+    }
+    .alerta-card.baixa {
+        border-left-color: #28a745;
+        background-color: rgba(40, 167, 69, 0.1);
+    }
+    .badge-severidade {
+        padding: 5px 10px;
+        border-radius: 12px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: white;
+    }
+    .badge-critica {
+        background-color: #dc3545;
+    }
+    .badge-alta {
+        background-color: #fd7e14;
+    }
+    .badge-media {
+        background-color: #ffc107;
+        color: #000;
+    }
+    .badge-baixa {
+        background-color: #28a745;
+    }
+    .alerta-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+    .alerta-title {
+        font-weight: 600;
+        font-size: 1rem;
+        margin: 0;
+    }
+    .alerta-description {
+        font-size: 0.95rem;
+        color: #555;
+        margin: 10px 0;
+    }
+    .alerta-meta {
+        font-size: 0.85rem;
+        color: #6c757d;
+        display: flex;
+        gap: 15px;
+        margin-top: 10px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h2">⚠️ Alertas do Sistema</h1>
+                    <p class="text-muted">Monitoramento de eventos e incidentes</p>
+                </div>
+                <div>
+                    <a href="{% url 'metricas:dashboard_executivo' %}" class="btn btn-outline-secondary">
+                        ← Voltar ao Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sumário de Alertas -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">Total de Alertas</h5>
+                    <p class="h3 text-primary">{{ total_alertas }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">Alertas Ativos</h5>
+                    <p class="h3 text-danger">{{ alertas_ativos }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">Críticos</h5>
+                    <p class="h3 text-warning">{{ alertas_criticos }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">Lidos</h5>
+                    <p class="h3 text-success">{{ alertas_lidos }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <form method="get" class="form-inline gap-3 flex-wrap">
+                        <div>
+                            <label class="form-label me-2">Status:</label>
+                            <select name="status" class="form-select form-select-sm d-inline-block w-auto">
+                                <option value="">Todos</option>
+                                <option value="ativo" {% if status == "ativo" %}selected{% endif %}>Ativos</option>
+                                <option value="lidos" {% if status == "lidos" %}selected{% endif %}>Lidos</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="form-label me-2">Tipo:</label>
+                            <select name="tipo" class="form-select form-select-sm d-inline-block w-auto">
+                                <option value="">Todos os Tipos</option>
+                                {% for value, label in tipo_choices %}
+                                <option value="{{ value }}" {% if tipo == value %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="form-label me-2">Severidade:</label>
+                            <select name="severidade" class="form-select form-select-sm d-inline-block w-auto">
+                                <option value="">Todas</option>
+                                {% for value, label in severidade_choices %}
+                                <option value="{{ value }}" {% if severidade == value %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-sm btn-primary">🔍 Filtrar</button>
+                        <a href="{% url 'metricas:alertas_lista' %}" class="btn btn-sm btn-secondary">Limpar</a>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lista de Alertas -->
+    <div class="row">
+        <div class="col-12">
+            {% if alertas %}
+                {% for alerta in alertas %}
+                <div class="alerta-card {% if alerta.severidade == 'CRÍTICA' %}critica{% elif alerta.severidade == 'ALTA' %}alta{% elif alerta.severidade == 'MÉDIA' %}media{% else %}baixa{% endif %}">
+                    <div class="alerta-header">
+                        <h5 class="alerta-title">{{ alerta.titulo }}</h5>
+                        <div>
+                            <span class="badge-severidade badge-{{ alerta.severidade|lower }}">
+                                {{ alerta.get_severidade_display }}
+                            </span>
+                            {% if alerta.ativo %}
+                            <span class="badge bg-danger ms-2">Ativo</span>
+                            {% else %}
+                            <span class="badge bg-secondary ms-2">Inativo</span>
+                            {% endif %}
+                            {% if alerta.lido %}
+                            <span class="badge bg-success ms-2">✓ Lido</span>
+                            {% else %}
+                            <span class="badge bg-warning text-dark ms-2">⚫ Não lido</span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="alerta-description">
+                        {{ alerta.descricao }}
+                    </div>
+
+                    <div class="alerta-meta">
+                        <span>
+                            <strong>Tipo:</strong> {{ alerta.get_tipo_display }}
+                        </span>
+                        {% if alerta.empresa %}
+                        <span>
+                            <strong>Empresa:</strong>
+                            <a href="{% url 'metricas:consumo_detail' alerta.empresa.id %}">
+                                {{ alerta.empresa.razao_social }}
+                            </a>
+                        </span>
+                        {% endif %}
+                        <span>
+                            <strong>Criado:</strong> {{ alerta.data_criacao|date:"d/m/Y H:i" }}
+                        </span>
+                        {% if alerta.data_leitura %}
+                        <span>
+                            <strong>Lido em:</strong> {{ alerta.data_leitura|date:"d/m/Y H:i" }}
+                        </span>
+                        {% endif %}
+                    </div>
+
+                    <div class="mt-3">
+                        {% if not alerta.lido %}
+                        <a href="#" class="btn btn-sm btn-primary" data-alerta-id="{{ alerta.id }}">
+                            Marcar como lido
+                        </a>
+                        {% endif %}
+                        {% if alerta.ativo %}
+                        <a href="#" class="btn btn-sm btn-outline-danger" data-alerta-id="{{ alerta.id }}">
+                            Desativar
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+
+                {% if is_paginated %}
+                <nav class="d-flex justify-content-center mt-4">
+                    <ul class="pagination">
+                        {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page=1">Primeira</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Anterior</a>
+                        </li>
+                        {% endif %}
+
+                        <li class="page-item active">
+                            <span class="page-link">
+                                Página {{ page_obj.number }} de {{ paginator.num_pages }}
+                            </span>
+                        </li>
+
+                        {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}">Próxima</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ paginator.num_pages }}">Última</a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            {% else %}
+                <div class="alert alert-info" role="alert">
+                    ℹ️ Nenhum alerta encontrado com os filtros aplicados
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+</div>
+
+<script>
+// Script para marcar alertas como lido (exemplo - implementar backend)
+document.querySelectorAll('[data-alerta-id]').forEach(btn => {
+    if (btn.textContent.includes('Marcar como lido')) {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            console.log('Marcar alerta como lido:', this.dataset.alertaId);
+            // Implementar chamada AJAX aqui
+        });
+    }
+});
+</script>
+{% endblock %}

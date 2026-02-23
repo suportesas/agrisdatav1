@@ -1,49 +1,554 @@
 {% extends 'base.html' %}
+{% load static %}
+
 {% block title %}Registros de Login | ERP Agrícola{% endblock %}
-{% block page_title %}Registros de Login{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.css">
+<style>
+  .stat-card {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    transition: transform 0.2s, box-shadow 0.2s;
+    border-left: 4px solid;
+  }
+
+  .stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+  }
+
+  .stat-card.success { border-left-color: #10b981; }
+  .stat-card.danger { border-left-color: #ef4444; }
+  .stat-card.warning { border-left-color: #f59e0b; }
+  .stat-card.info { border-left-color: #3b82f6; }
+
+  .stat-value {
+    font-size: 32px;
+    font-weight: 700;
+    color: #1f2937;
+    margin: 8px 0;
+  }
+
+  .stat-label {
+    font-size: 13px;
+    color: #6b7280;
+    font-weight: 500;
+    text-transform: uppercase;
+  }
+
+  .stat-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    margin-bottom: 12px;
+  }
+
+  .stat-card.success .stat-icon { background: #d1fae5; color: #059669; }
+  .stat-card.danger .stat-icon { background: #fee2e2; color: #dc2626; }
+  .stat-card.warning .stat-icon { background: #fef3c7; color: #d97706; }
+  .stat-card.info .stat-icon { background: #dbeafe; color: #0284c7; }
+
+  .anomalia-badge {
+    display: inline-block;
+    padding: 6px 12px;
+    background: #fee2e2;
+    color: #dc2626;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    margin-right: 8px;
+  }
+
+  .alerta-badge {
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    margin-right: 8px;
+  }
+
+  .alerta-critico { background: #fee2e2; color: #dc2626; }
+  .alerta-alto { background: #ffedd5; color: #d97706; }
+  .alerta-medio { background: #fefce8; color: #b45309; }
+  .alerta-baixo { background: #dbeafe; color: #0284c7; }
+
+  .chart-container {
+    position: relative;
+    height: 300px;
+    margin-bottom: 20px;
+  }
+
+  .tabs-container {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 24px;
+    border-bottom: 2px solid #e5e7eb;
+  }
+
+  .tab-btn {
+    padding: 12px 20px;
+    background: transparent;
+    border: none;
+    color: #6b7280;
+    font-weight: 600;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    transition: all 0.2s;
+    position: relative;
+    top: 2px;
+  }
+
+  .tab-btn.active {
+    color: #3b82f6;
+    border-bottom-color: #3b82f6;
+  }
+
+  .tab-content {
+    display: none;
+  }
+
+  .tab-content.active {
+    display: block;
+  }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-  <h4 class="fw-bold text-secondary mb-3">Histórico de Logins</h4>
-  <div class="card shadow-sm border-0 rounded-4">
-    <div class="table-responsive">
-      <table class="table table-hover align-middle">
-        <thead class="table-light">
-          <tr>
-            <th>Data/Hora</th>
-            <th>Usuário</th>
-            <th>Empresa</th>
-            <th>IP</th>
-            <th>Status</th>
-            <th>Mensagem</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for log in registros %}
-          <tr>
-            <td>{{ log.data_hora|date:"d/m/Y H:i" }}</td>
-            <td>{{ log.usuario.username|default:"—" }}</td>
-            <td>{{ log.empresa.nome|default:"—" }}</td>
-            <td>{{ log.ip }}</td>
-            <td>
-              {% if log.status == 'SUCESSO' %}
-                <span class="badge bg-success">Sucesso</span>
-              {% elif log.status == 'BLOQUEADO' %}
-                <span class="badge bg-danger">Bloqueado</span>
-              {% else %}
-                <span class="badge bg-warning text-dark">Falha</span>
-              {% endif %}
-            </td>
-            <td>{{ log.mensagem|default:"—" }}</td>
-          </tr>
-          {% empty %}
-          <tr>
-            <td colspan="6" class="text-center text-muted">Nenhum registro encontrado.</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+<div class="container-fluid py-4">
+  
+  <!-- Header -->
+  <div class="mb-4">
+    <h2 class="fw-bold text-dark mb-2">
+      <i class="bi bi-shield-check text-primary"></i> Segurança e Auditoria de Acesso
+    </h2>
+    <p class="text-muted mb-0">Monitore todos os logins, anomalias e alertas de segurança do sistema</p>
+  </div>
+
+  <!-- Cards de Estatísticas -->
+  <div class="row g-4 mb-4">
+    <div class="col-md-3">
+      <div class="stat-card success">
+        <div class="stat-icon">
+          <i class="bi bi-check-circle"></i>
+        </div>
+        <div class="stat-label">Logins com Sucesso</div>
+        <div class="stat-value">{{ logins_sucesso }}</div>
+        <small class="text-muted">{{ taxa_sucesso }}% de taxa de sucesso</small>
+      </div>
+    </div>
+    
+    <div class="col-md-3">
+      <div class="stat-card danger">
+        <div class="stat-icon">
+          <i class="bi bi-x-circle"></i>
+        </div>
+        <div class="stat-label">Logins Falhados</div>
+        <div class="stat-value">{{ logins_falha }}</div>
+        <small class="text-muted">Tentativas rejeitadas</small>
+      </div>
+    </div>
+    
+    <div class="col-md-3">
+      <div class="stat-card warning">
+        <div class="stat-icon">
+          <i class="bi bi-exclamation-triangle"></i>
+        </div>
+        <div class="stat-label">Anomalias Detectadas</div>
+        <div class="stat-value">
+          {% if dados_graficos %}
+            {{ dados_graficos.totais.anomalias_detectadas }}
+          {% else %}
+            0
+          {% endif %}
+        </div>
+        <small class="text-muted">Eventos suspeitos</small>
+      </div>
+    </div>
+    
+    <div class="col-md-3">
+      <div class="stat-card info">
+        <div class="stat-icon">
+          <i class="bi bi-diagram-3"></i>
+        </div>
+        <div class="stat-label">Total de Logins</div>
+        <div class="stat-value">{{ total_logins }}</div>
+        <small class="text-muted">Últimos 30 dias</small>
+      </div>
     </div>
   </div>
+
+  <!-- Gráficos -->
+  {% if dados_graficos %}
+  <div class="row g-4 mb-4">
+    <div class="col-lg-6">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title mb-4">
+            <i class="bi bi-graph-up text-primary"></i> Tendência de Logins
+          </h5>
+          <div class="chart-container">
+            <canvas id="graficoTendencia"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-lg-6">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title mb-4">
+            <i class="bi bi-pie-chart text-success"></i> Taxa de Sucesso vs Falha
+          </h5>
+          <div class="chart-container">
+            <canvas id="graficoSucesso"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Filtros -->
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+      <h5 class="card-title mb-3">Filtros</h5>
+      <form method="get" class="row g-3">
+        {% if user.is_superuser %}
+        <div class="col-md-3">
+          <label class="form-label">Empresa</label>
+          <select name="empresa" class="form-select">
+            <option value="">Todas</option>
+            {% for empresa in empresas %}
+            <option value="{{ empresa.id }}" {% if empresa_filtro.id == empresa.id %}selected{% endif %}>
+              {{ empresa.nome }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+        {% endif %}
+
+        <div class="col-md-3">
+          <label class="form-label">Usuário</label>
+          <select name="usuario" class="form-select">
+            <option value="">Todos</option>
+            {% for usuario in usuarios %}
+            <option value="{{ usuario.id }}">{{ usuario.get_full_name|default:usuario.username }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-md-2">
+          <label class="form-label">Período</label>
+          <select name="periodo" class="form-select">
+            <option value="hoje" {% if request.GET.periodo == "hoje" %}selected{% endif %}>Hoje</option>
+            <option value="semana" {% if request.GET.periodo == "semana" or not request.GET.periodo %}selected{% endif %}>Última Semana</option>
+            <option value="mes" {% if request.GET.periodo == "mes" %}selected{% endif %}>Último Mês</option>
+          </select>
+        </div>
+
+        <div class="col-md-2">
+          <label class="form-label">Status</label>
+          <select name="sucesso" class="form-select">
+            <option value="">Todos</option>
+            <option value="sim">Sucesso</option>
+            <option value="nao">Falha</option>
+          </select>
+        </div>
+
+        <div class="col-md-2 d-flex align-items-end">
+          <button type="submit" class="btn btn-primary w-100">
+            <i class="bi bi-funnel"></i> Filtrar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs-container">
+    <button class="tab-btn active" onclick="mostrarTab('logins')">
+      <i class="bi bi-list-ul"></i> Registros de Login
+    </button>
+    <button class="tab-btn" onclick="mostrarTab('anomalias')">
+      <i class="bi bi-exclamation-triangle"></i> Anomalias
+      {% if anomalias_recentes %}<span class="badge bg-danger ms-2">{{ anomalias_recentes|length }}</span>{% endif %}
+    </button>
+    <button class="tab-btn" onclick="mostrarTab('alertas')">
+      <i class="bi bi-bell"></i> Alertas
+      {% if alertas_recentes %}<span class="badge bg-danger ms-2">{{ alertas_recentes|length }}</span>{% endif %}
+    </button>
+  </div>
+
+  <!-- TAB: Registros de Login -->
+  <div id="tab-logins" class="tab-content active">
+    <div class="card border-0 shadow-sm">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th class="ps-4">Data/Hora</th>
+              <th>Usuário</th>
+              <th>Empresa</th>
+              <th>IP Endereço</th>
+              <th>Navegador</th>
+              <th class="text-center">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for login in page_obj %}
+            <tr class="{% if not login.sucesso %}table-danger{% endif %}">
+              <td class="ps-4">
+                <small class="text-muted">{{ login.data_login|date:"d/m/Y H:i:s" }}</small>
+              </td>
+              <td>
+                <strong>{{ login.usuario.get_full_name|default:login.usuario.username }}</strong><br>
+                <small class="text-muted">@{{ login.usuario.username }}</small>
+              </td>
+              <td>{{ login.empresa.nome|default:"—" }}</td>
+              <td>
+                <code class="text-muted">{{ login.ip_address|default:"—" }}</code>
+              </td>
+              <td>
+                <small>{{ login.get_navegador }}</small>
+              </td>
+              <td class="text-center">
+                {% if login.sucesso %}
+                  <span class="badge bg-success"><i class="bi bi-check-circle"></i> Sucesso</span>
+                {% else %}
+                  <span class="badge bg-danger"><i class="bi bi-x-circle"></i> Falha</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="6" class="text-center py-4 text-muted">
+                <i class="bi bi-inbox" style="font-size: 2rem; opacity: 0.5;"></i><br>
+                Nenhum registro encontrado
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      
+      <!-- Paginação -->
+      {% if page_obj.has_other_pages %}
+      <div class="card-footer bg-light border-top">
+        <nav aria-label="Paginação">
+          <ul class="pagination justify-content-center mb-0">
+            {% if page_obj.has_previous %}
+            <li class="page-item">
+              <a class="page-link" href="?page=1">Primeira</a>
+            </li>
+            <li class="page-item">
+              <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Anterior</a>
+            </li>
+            {% endif %}
+
+            <li class="page-item active">
+              <span class="page-link">{{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+            </li>
+
+            {% if page_obj.has_next %}
+            <li class="page-item">
+              <a class="page-link" href="?page={{ page_obj.next_page_number }}">Próxima</a>
+            </li>
+            <li class="page-item">
+              <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Última</a>
+            </li>
+            {% endif %}
+          </ul>
+        </nav>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- TAB: Anomalias -->
+  <div id="tab-anomalias" class="tab-content">
+    {% if anomalias_recentes %}
+    <div class="row g-4">
+      {% for anomalia in anomalias_recentes %}
+      <div class="col-lg-6">
+        <div class="card border-left border-danger shadow-sm">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+              <div>
+                <h6 class="card-title mb-1">
+                  <span class="anomalia-badge">{{ anomalia.get_tipo_display }}</span>
+                </h6>
+                <small class="text-muted">{{ anomalia.usuario.get_full_name|default:anomalia.usuario.username }}</small>
+              </div>
+              <small class="text-muted">{{ anomalia.data_deteccao|date:"d/m/Y H:i" }}</small>
+            </div>
+            
+            <p class="text-dark mb-2">{{ anomalia.descricao }}</p>
+            
+            {% if anomalia.ip_address %}
+            <div class="mb-2">
+              <strong>IP:</strong> <code>{{ anomalia.ip_address }}</code>
+            </div>
+            {% endif %}
+            
+            <div class="d-flex gap-2">
+              {% if not anomalia.confirmada %}
+              <button class="btn btn-sm btn-outline-danger">
+                <i class="bi bi-flag"></i> Confirmar como Suspeita
+              </button>
+              <button class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-check"></i> Marcar como Seguro
+              </button>
+              {% else %}
+              <span class="badge bg-danger">Confirmada como Suspeita</span>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+      <i class="bi bi-check-circle"></i> <strong>Nenhuma anomalia detectada!</strong> Seu sistema está seguro.
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- TAB: Alertas -->
+  <div id="tab-alertas" class="tab-content">
+    {% if alertas_recentes %}
+    <div class="row g-4">
+      {% for alerta in alertas_recentes %}
+      <div class="col-lg-6">
+        <div class="card shadow-sm">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+              <div>
+                <h6 class="card-title mb-2">{{ alerta.titulo }}</h6>
+                <span class="alerta-badge alerta-{{ alerta.get_nivel_display|lower }}">
+                  {{ alerta.get_nivel_display }}
+                </span>
+              </div>
+              <small class="text-muted">{{ alerta.data_criacao|date:"d/m/Y H:i" }}</small>
+            </div>
+            
+            <p class="text-dark mb-3">{{ alerta.descricao }}</p>
+            
+            <div class="mb-3 pb-3 border-bottom">
+              <small><strong>Usuário:</strong> {{ alerta.usuario.get_full_name|default:alerta.usuario.username }}</small><br>
+              <small><strong>Status:</strong> {{ alerta.get_status_display }}</small>
+            </div>
+            
+            <div class="d-flex gap-2">
+              <button class="btn btn-sm btn-primary">
+                <i class="bi bi-check"></i> Marcar como Lido
+              </button>
+              <a href="#" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-eye"></i> Detalhes
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="alert alert-info alert-dismissible fade show" role="alert">
+      <i class="bi bi-info-circle"></i> <strong>Nenhum alerta pendente.</strong> Todos os alertas foram resolvidos ou descartados.
+    </div>
+    {% endif %}
+  </div>
+
 </div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+<script>
+  function mostrarTab(nome) {
+    // Esconder todos
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+    
+    // Mostrar selecionado
+    document.getElementById('tab-' + nome).classList.add('active');
+    event.target.classList.add('active');
+  }
+
+  // Gráficos
+  {% if dados_graficos %}
+  const dadosGraficos = {{ dados_graficos.dados_para_json|safe }};
+  
+  // Gráfico de Tendência
+  const ctxTendencia = document.getElementById('graficoTendencia').getContext('2d');
+  new Chart(ctxTendencia, {
+    type: 'line',
+    data: {
+      labels: dadosGraficos.map(d => new Date(d.data).toLocaleDateString('pt-BR')),
+      datasets: [
+        {
+          label: 'Logins com Sucesso',
+          data: dadosGraficos.map(d => d.logins_sucesso),
+          borderColor: '#10b981',
+          backgroundColor: 'rgba(16, 185, 129, 0.1)',
+          tension: 0.4,
+          fill: true
+        },
+        {
+          label: 'Logins Falhados',
+          data: dadosGraficos.map(d => d.logins_falha),
+          borderColor: '#ef4444',
+          backgroundColor: 'rgba(239, 68, 68, 0.1)',
+          tension: 0.4,
+          fill: true
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'top'
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true
+        }
+      }
+    }
+  });
+
+  // Gráfico de Taxa
+  const ctxSucesso = document.getElementById('graficoSucesso').getContext('2d');
+  new Chart(ctxSucesso, {
+    type: 'doughnut',
+    data: {
+      labels: ['Sucesso', 'Falha'],
+      datasets: [{
+        data: [{{ logins_sucesso }}, {{ logins_falha }}],
+        backgroundColor: ['#10b981', '#ef4444'],
+        borderColor: ['#047857', '#dc2626'],
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'bottom'
+        }
+      }
+    }
+  });
+  {% endif %}
+</script>
 {% endblock %}

@@ -15,10 +15,15 @@ from django.utils import timezone
 from datetime import timedelta
 from django.core.cache import cache
 
-from .models import Usuario, LoginRegistro, PerfilUsuario
+from .models import Usuario, LoginRegistro, PerfilUsuario, LoginAnomalia, AlertaSeguranca
 from .forms import (
     UsuarioCreateForm, UsuarioUpdateForm, LoginForm,
     AlterarSenhaForm, PerfilUsuarioForm
+)
+from .utils_login import (
+    get_client_ip, get_user_agent, detectar_anomalias_login,
+    notificar_anomalia, criar_alerta, atualizar_grafico_acesso,
+    obter_estatisticas_acesso
 )
 
 
@@ -162,13 +167,29 @@ def login_view(request):
             login(request, user)
             
             # Registra o login para auditoria
-            LoginRegistro.objects.create(
+            login_record = LoginRegistro.objects.create(
                 usuario=user,
                 empresa=user.empresa if user.empresa else None,
                 ip_address=ip,
                 user_agent=get_user_agent(request),
                 sucesso=True
             )
+            
+            # 🔍 Detecta anomalias e cria alertas
+            if user.empresa:
+                anomalias = detectar_anomalias_login(
+                    user, 
+                    user.empresa,
+                    ip,
+                    get_user_agent(request)
+                )
+                
+                # Notificar proprietário sobre anomalias
+                for anomalia in anomalias:
+                    notificar_anomalia(anomalia)
+                
+                # Atualizar gráfico de acesso
+                atualizar_grafico_acesso(user.empresa)
             
             # Mensagem de boas-vindas
             nome = user.get_full_name() or user.username
@@ -498,22 +519,25 @@ def alterar_senha(request):
 @user_passes_test(is_admin)
 def login_registros(request):
     """
-    Exibe histórico de logins no sistema
+    Exibe histórico de logins com gráficos, anomalias e alertas
     Filtrado por empresa se não for superusuário
     """
     registros = LoginRegistro.objects.select_related('usuario', 'empresa').all()
     
-    # Filtro por empresa
+    # Determinar empresa a filtrar
+    empresa_filtro = None
     if not request.user.is_superuser:
         if request.user.empresa:
             registros = registros.filter(empresa=request.user.empresa)
+            empresa_filtro = request.user.empresa
         else:
             registros = LoginRegistro.objects.none()
-    
-    # Filtro por empresa (para superusuário)
-    empresa_id = request.GET.get('empresa', '')
-    if empresa_id:
-        registros = registros.filter(empresa_id=empresa_id)
+    else:
+        # Superusuário pode filtrar
+        empresa_id = request.GET.get('empresa', '')
+        if empresa_id:
+            registros = registros.filter(empresa_id=empresa_id)
+            empresa_filtro = get_object_or_404('empresas.Empresa', id=empresa_id) if empresa_id.isdigit() else None
     
     # Filtro por usuário
     usuario_id = request.GET.get('usuario', '')
@@ -521,7 +545,7 @@ def login_registros(request):
         registros = registros.filter(usuario_id=usuario_id)
     
     # Filtro por período
-    periodo = request.GET.get('periodo', '')
+    periodo = request.GET.get('periodo', 'semana')
     hoje = timezone.now().date()
     
     if periodo == 'hoje':
@@ -548,15 +572,57 @@ def login_registros(request):
     elif sucesso == 'nao':
         registros = registros.filter(sucesso=False)
     
-    # Estatísticas
+    # Estatísticas básicas
     total_logins = registros.count()
     logins_sucesso = registros.filter(sucesso=True).count()
     logins_falha = registros.filter(sucesso=False).count()
+    taxa_sucesso = round((logins_sucesso / total_logins * 100), 2) if total_logins > 0 else 0
+    
+    # 📊 Obter estatísticas e gráficos
+    dados_graficos = None
+    if empresa_filtro:
+        dados_graficos = obter_estatisticas_acesso(empresa_filtro, dias=30)
+    
+    # 🚨 Obter anomalias recentes
+    anomalias_recentes = LoginAnomalia.objects.select_related('usuario').filter(
+        confirmada=False  # Apenas não confirmadas
+    ).order_by('-data_deteccao')[:10]
+    
+    if not request.user.is_superuser and empresa_filtro:
+        anomalias_recentes = anomalias_recentes.filter(usuario__empresa=empresa_filtro)
+    
+    # 🔔 Obter alertas recentes
+    alertas_recentes = AlertaSeguranca.objects.select_related('usuario').filter(
+        status__in=['NOVO', 'EM_INVESTIGACAO']
+    ).order_by('-data_criacao')[:10]
+    
+    if not request.user.is_superuser and empresa_filtro:
+        alertas_recentes = alertas_recentes.filter(empresa=empresa_filtro)
     
     # Paginação
     paginator = Paginator(registros, 50)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
+    
+    # Para os filtros
+    from empresas.models import Empresa
+    empresas = Empresa.objects.all() if request.user.is_superuser else []
+    usuarios = Usuario.objects.filter(empresa=request.user.empresa) if not request.user.is_superuser else Usuario.objects.all()
+    
+    context = {
+        'page_obj': page_obj,
+        'empresas': empresas,
+        'usuarios': usuarios,
+        'total_logins': total_logins,
+        'logins_sucesso': logins_sucesso,
+        'logins_falha': logins_falha,
+        'taxa_sucesso': taxa_sucesso,
+        'anomalias_recentes': anomalias_recentes,
+        'alertas_recentes': alertas_recentes,
+        'dados_graficos': dados_graficos,
+        'title': 'Registros de Login',
+        'empresa_filtro': empresa_filtro,
+    }
     
     # Para os filtros
     from empresas.models import Empresa

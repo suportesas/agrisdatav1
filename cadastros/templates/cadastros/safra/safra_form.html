@@ -354,18 +354,33 @@
 
         <!-- Filtros -->
         <div class="talhoes-filters" id="talhoes-filters" style="display: none;">
-          <button type="button" class="filter-btn active" data-filter="todos">
-            <i class="bi bi-grid"></i> Todos
-          </button>
-          <button type="button" class="filter-btn" data-filter="DISPONIVEL">
-            <i class="bi bi-check-circle"></i> Disponíveis
-          </button>
-          <button type="button" class="filter-btn" data-filter="PLANTADO">
-            <i class="bi bi-tree"></i> Plantados
-          </button>
-          <button type="button" class="filter-btn" data-filter="PREPARACAO">
-            <i class="bi bi-tools"></i> Em Preparação
-          </button>
+          <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap; width: 100%;">
+            <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+              <button type="button" class="filter-btn active" data-filter="todos">
+                <i class="bi bi-grid"></i> Todos
+              </button>
+              <button type="button" class="filter-btn" data-filter="DISPONIVEL">
+                <i class="bi bi-check-circle"></i> Disponíveis
+              </button>
+              <button type="button" class="filter-btn" data-filter="PLANTADO">
+                <i class="bi bi-tree"></i> Plantados
+              </button>
+              <button type="button" class="filter-btn" data-filter="PREPARACAO">
+                <i class="bi bi-tools"></i> Em Preparação
+              </button>
+            </div>
+            
+            <!-- Botão de Ajuda -->
+            <button 
+              type="button" 
+              class="btn btn-sm btn-outline-info ms-auto" 
+              data-bs-toggle="tooltip" 
+              data-bs-title="Clique nas abas para filtrar os talhões por status. Você pode selecionar múltiplos talhões de diferentes abas!"
+              id="talhoes-help-btn"
+            >
+              <i class="bi bi-question-circle"></i> Ajuda
+            </button>
+          </div>
         </div>
 
         <!-- Loading State -->
@@ -385,6 +400,8 @@
         <div id="talhoes-grid" class="talhoes-grid" style="display: none;"></div>
 
         <!-- Campo hidden para enviar IDs selecionados -->
+        <!-- ℹ️ Envia IDs separados por vírgula: "1,2,3" -->
+        <!-- O formulário Django deve processar este campo e converter para Many-to-Many -->
         <input type="hidden" name="talhoes" id="talhoes-input" value="">
 
         <!-- Resumo da Seleção -->
@@ -448,13 +465,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
   let talhoesData = [];
   let selectedIds = new Set();
+  let currentFilter = 'todos'; // 🔥 Rastreia o filtro atualmente selecionado
 
-  // Carregar talhões selecionados do backend (se estiver editando)
-  {% if safra and safra.talhoes.all %}
-    selectedIds = new Set([{% for t in safra.talhoes.all %}{{ t.id }}{% if not forloop.last %},{% endif %}{% endfor %}]);
-    updateHiddenInput();
-    updateSummary();
-  {% endif %}
+  // 🔥 DADOS INICIAIS DA SAFRA SENDO EDITADA (renderizado pelo Django UMA VEZ)
+  const initialSelectedIds = [{% if safra and safra.talhoes.all %}{% for t in safra.talhoes.all %}{{ t.id }}{% if not forloop.last %},{% endif %}{% endfor %}{% endif %}];
 
   // Listener de mudança de fazenda
   if (fazendaSelect) {
@@ -473,6 +487,26 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
+  // 🔥 Após carregarTalhoes completar e renderizar, aplicar seleção inicial (se editando)
+  // Usando setTimeout para garantir que renderTalhoes já executou
+  setTimeout(() => {
+    if (initialSelectedIds.length > 0) {
+      selectedIds = new Set(initialSelectedIds);
+      
+      // Marcar os cards como selecionados
+      selectedIds.forEach(id => {
+        const card = document.querySelector(`.talhao-card[data-id="${id}"]`);
+        if (card) {
+          card.classList.add('selected');
+        }
+      });
+      
+      // Atualizar UI
+      updateHiddenInput();
+      updateSummary();
+    }
+  }, 100);
+
   // Função para carregar talhões via AJAX
   async function carregarTalhoes(fazendaId) {
     showLoading();
@@ -484,7 +518,7 @@ document.addEventListener('DOMContentLoaded', function() {
       if (!response.ok) throw new Error('Erro ao carregar talhões');
       
       talhoesData = await response.json();
-      renderTalhoes(talhoesData);
+      renderTalhoes(talhoesData, currentFilter); // 🔥 Usa o filtro atualmente selecionado
       filters.style.display = 'flex';
       
     } catch (error) {
@@ -525,13 +559,25 @@ document.addEventListener('DOMContentLoaded', function() {
       const statusClass = getStatusClass(talhao.status || 'DISPONIVEL');
       const culturaAtual = talhao.cultura_atual || 'Sem cultura';
 
+      // Escapar valores para evitar XSS
+      const escaparHTML = (str) => {
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+      };
+
+      const nomeSafra = escaparHTML(talhao.nome || '');
+      const codigoSafra = escaparHTML(talhao.codigo || 'S/N');
+      const culturaSafra = escaparHTML(culturaAtual);
+      const statusLabel = getStatusLabel(talhao.status || 'DISPONIVEL');
+
       card.innerHTML = `
         <div class="checkbox-icon"></div>
-        <div class="talhao-nome">${talhao.nome}</div>
+        <div class="talhao-nome">${nomeSafra}</div>
         <div class="talhao-info">
           <div class="talhao-info-item">
             <i class="bi bi-hash"></i>
-            <span>${talhao.codigo || 'S/N'}</span>
+            <span>${codigoSafra}</span>
           </div>
           <div class="talhao-info-item">
             <i class="bi bi-rulers"></i>
@@ -540,11 +586,11 @@ document.addEventListener('DOMContentLoaded', function() {
           ${!isDisabled ? `
             <div class="talhao-info-item">
               <i class="bi bi-tree"></i>
-              <span>${culturaAtual}</span>
+              <span>${culturaSafra}</span>
             </div>
           ` : ''}
         </div>
-        <span class="talhao-status ${statusClass}">${getStatusLabel(talhao.status || 'DISPONIVEL')}</span>
+        <span class="talhao-status ${statusClass}">${statusLabel}</span>
       `;
 
       talhoesGrid.appendChild(card);
@@ -622,12 +668,15 @@ document.addEventListener('DOMContentLoaded', function() {
     selectedIds.forEach(id => {
       const card = document.querySelector(`.talhao-card[data-id="${id}"]`);
       if (card) {
-        totalArea += parseFloat(card.dataset.area || 0);
+        const area = parseFloat(card.dataset.area || 0);
+        totalArea += area;
+        
+        // Busca a produtividade do talhão (padrão: 25 ton/ha)
+        const talhao = talhoesData.find(t => t.id === id);
+        const produtividade = (talhao && talhao.produtividade_estimada) ? parseFloat(talhao.produtividade_estimada) : 25;
+        totalProd += area * produtividade;
       }
     });
-
-    // Calcula produção estimada (25 ton/ha como exemplo - ajuste conforme sua cultura)
-    totalProd = totalArea * 25;
 
     document.getElementById('summary-count').textContent = count;
     document.getElementById('summary-area').textContent = totalArea.toFixed(2);
@@ -649,12 +698,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Filtros
   document.querySelectorAll('.filter-btn').forEach(btn => {
-    btn.addEventListener('click', function() {
+    btn.addEventListener('click', function(e) {
+      e.preventDefault();
       document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
       this.classList.add('active');
       
-      const filtro = this.dataset.filter;
-      renderTalhoes(talhoesData, filtro);
+      currentFilter = this.dataset.filter; // 🔥 Salva o filtro selecionado
+      renderTalhoes(talhoesData, currentFilter);
     });
   });
 
@@ -715,6 +765,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
   if (periodoInicio) periodoInicio.addEventListener('change', atualizarNomeSafra);
   if (periodoFim) periodoFim.addEventListener('change', atualizarNomeSafra);
+
+  // 🔥 Inicializar Tooltip do botão de ajuda (Bootstrap)
+  const helpBtn = document.getElementById('talhoes-help-btn');
+  if (helpBtn) {
+    new bootstrap.Tooltip(helpBtn);
+  }
 });
 </script>
 {% endblock %}

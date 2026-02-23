@@ -60,6 +60,9 @@ urlpatterns = [
     path('funcionarios/<int:pk>/', views.funcionario_detail, name='funcionario_detail'),
     path('funcionarios/<int:pk>/editar/', views.funcionario_update, name='funcionario_update'),
     path('funcionarios/<int:pk>/excluir/', views.funcionario_delete, name='funcionario_delete'),
+
+        # Documentos Funcionário
+        path('funcionarios/<int:funcionario_pk>/documentos/novo/', views.funcionario_documento_create, name='funcionario_documento_create'),
     
 
     # ==================== CULTURAS ====================

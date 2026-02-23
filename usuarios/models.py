@@ -397,3 +397,320 @@ class PerfilUsuario(models.Model):
     
     def __str__(self):
         return f"Perfil de {self.usuario.username}"
+
+
+class DoisFatoresAutenticacao(models.Model):
+    """
+    Autenticação de Dois Fatores (2FA) via TOTP (Time-based One-Time Password)
+    Aumenta segurança do acesso ao sistema
+    """
+    
+    METODOS = (
+        ('TOTP', 'Autenticador (Google Authenticator, Authy, Microsoft Authenticator)'),
+        ('SMS', 'SMS (texto)'),
+        ('EMAIL', 'E-mail'),
+        ('BACKUP', 'Códigos de Backup'),
+    )
+    
+    usuario = models.OneToOneField(
+        Usuario,
+        on_delete=models.CASCADE,
+        related_name='autenticacao_dois_fatores',
+        verbose_name='Usuário'
+    )
+    
+    ativo = models.BooleanField(
+        '2FA Ativo',
+        default=False,
+        help_text='Se o 2FA está habilitado para este usuário'
+    )
+    
+    metodo_primario = models.CharField(
+        'Método Primário',
+        max_length=10,
+        choices=METODOS,
+        default='TOTP'
+    )
+    
+    chave_secreta = models.CharField(
+        'Chave Secreta',
+        max_length=32,
+        blank=True,
+        help_text='Chave para gerar códigos TOTP'
+    )
+    
+    codigos_backup = models.JSONField(
+        'Códigos de Backup',
+        default=list,
+        blank=True,
+        help_text='Lista de códigos de backup para emergências'
+    )
+    
+    telefone_2fa = models.CharField(
+        'Telefone para 2FA',
+        max_length=20,
+        blank=True,
+        help_text='Telefone para receber SMS com código'
+    )
+    
+    data_habilitacao = models.DateTimeField(
+        'Data de Habilitação',
+        null=True,
+        blank=True,
+        auto_now_add=True
+    )
+    
+    ultimo_uso = models.DateTimeField(
+        'Último Uso',
+        null=True,
+        blank=True
+    )
+    
+    class Meta:
+        verbose_name = "Autenticação de Dois Fatores"
+        verbose_name_plural = "Autenticações de Dois Fatores"
+    
+    def __str__(self):
+        status = "✓ Ativo" if self.ativo else "✗ Inativo"
+        return f"2FA {self.usuario.username} - {status}"
+
+
+class LoginAnomalia(models.Model):
+    """
+    Detecta e registra anomalias em logins
+    Identifica IPs, navegadores ou horários suspeitos
+    """
+    
+    TIPO_ANOMALIA = (
+        ('IP_NOVO', 'IP Novo'),
+        ('NAVEGADOR_NOVO', 'Navegador Novo'),
+        ('LOCALIZACAO_NOVA', 'Localização Nova'),
+        ('HORARIO_SUSPEITO', 'Horário Suspeito'),
+        ('MULTIPLOS_IPS', 'Múltiplos IPs em Curto Tempo'),
+        ('FORCA_BRUTA', 'Tentativa de Força Bruta'),
+    )
+    
+    usuario = models.ForeignKey(
+        Usuario,
+        on_delete=models.CASCADE,
+        related_name='anomalias_login',
+        verbose_name='Usuário'
+    )
+    
+    tipo = models.CharField(
+        'Tipo de Anomalia',
+        max_length=20,
+        choices=TIPO_ANOMALIA
+    )
+    
+    ip_address = models.GenericIPAddressField(
+        'Endereço IP',
+        blank=True,
+        null=True
+    )
+    
+    user_agent = models.CharField(
+        'User Agent',
+        max_length=500,
+        blank=True
+    )
+    
+    descricao = models.TextField(
+        'Descrição',
+        help_text='Detalhes da anomalia detectada'
+    )
+    
+    data_deteccao = models.DateTimeField(
+        'Data de Detecção',
+        auto_now_add=True,
+        db_index=True
+    )
+    
+    confirmada = models.BooleanField(
+        'Confirmada como Suspeita',
+        default=False
+    )
+    
+    resolucao = models.CharField(
+        'Resolução',
+        max_length=200,
+        blank=True,
+        choices=[
+            ('aprovada', 'Aprovada pelo usuário'),
+            ('bloqueada', 'Bloqueada pelo admin'),
+            ('falso_positivo', 'Falso positivo (ignorar)'),
+        ]
+    )
+    
+    class Meta:
+        verbose_name = "Anomalia de Login"
+        verbose_name_plural = "Anomalias de Login"
+        ordering = ['-data_deteccao']
+        indexes = [
+            models.Index(fields=['usuario', '-data_deteccao']),
+            models.Index(fields=['confirmada', '-data_deteccao']),
+        ]
+    
+    def __str__(self):
+        return f"{self.usuario.username} - {self.get_tipo_display()} ({self.data_deteccao:%d/%m/%Y %H:%M})"
+
+
+class AlertaSeguranca(models.Model):
+    """
+    Alertas de segurança para proprietários e admins
+    Notifica sobre eventos suspeitos no sistema
+    """
+    
+    NIVEL = (
+        ('BAIXO', 'Baixo'),
+        ('MEDIO', 'Médio'),
+        ('ALTO', 'Alto'),
+        ('CRITICO', 'Crítico'),
+    )
+    
+    STATUS = (
+        ('NOVO', 'Novo'),
+        ('LIDO', 'Lido'),
+        ('EM_INVESTIGACAO', 'Em Investigação'),
+        ('RESOLVIDO', 'Resolvido'),
+    )
+    
+    usuario = models.ForeignKey(
+        Usuario,
+        on_delete=models.CASCADE,
+        related_name='alertas_seguranca',
+        verbose_name='Usuário'
+    )
+    
+    empresa = models.ForeignKey(
+        'empresas.Empresa',
+        on_delete=models.CASCADE,
+        related_name='alertas_seguranca',
+        verbose_name='Empresa'
+    )
+    
+    titulo = models.CharField(
+        'Título',
+        max_length=200
+    )
+    
+    descricao = models.TextField(
+        'Descrição'
+    )
+    
+    nivel = models.CharField(
+        'Nível de Severidade',
+        max_length=10,
+        choices=NIVEL,
+        default='MEDIO'
+    )
+    
+    status = models.CharField(
+        'Status',
+        max_length=20,
+        choices=STATUS,
+        default='NOVO'
+    )
+    
+    data_criacao = models.DateTimeField(
+        'Data de Criação',
+        auto_now_add=True,
+        db_index=True
+    )
+    
+    data_leitura = models.DateTimeField(
+        'Data de Leitura',
+        null=True,
+        blank=True
+    )
+    
+    data_resolucao = models.DateTimeField(
+        'Data de Resolução',
+        null=True,
+        blank=True
+    )
+    
+    enviado_email = models.BooleanField(
+        'Email Enviado',
+        default=False
+    )
+    
+    dados_adicionais = models.JSONField(
+        'Dados Adicionais',
+        default=dict,
+        blank=True
+    )
+    
+    class Meta:
+        verbose_name = "Alerta de Segurança"
+        verbose_name_plural = "Alertas de Segurança"
+        ordering = ['-data_criacao']
+        indexes = [
+            models.Index(fields=['empresa', '-data_criacao']),
+            models.Index(fields=['status', '-data_criacao']),
+            models.Index(fields=['nivel', '-data_criacao']),
+        ]
+    
+    def __str__(self):
+        return f"[{self.get_nivel_display()}] {self.titulo} - {self.usuario.username}"
+
+
+class GraficoAcesso(models.Model):
+    """
+    Agregação diária de dados de login para exibir em gráficos
+    Otimiza queries para análises de tendências
+    """
+    
+    empresa = models.ForeignKey(
+        'empresas.Empresa',
+        on_delete=models.CASCADE,
+        related_name='graficos_acesso',
+        verbose_name='Empresa'
+    )
+    
+    data = models.DateField(
+        'Data',
+        db_index=True
+    )
+    
+    total_logins = models.IntegerField(
+        'Total de Logins',
+        default=0
+    )
+    
+    logins_sucesso = models.IntegerField(
+        'Logins com Sucesso',
+        default=0
+    )
+    
+    logins_falha = models.IntegerField(
+        'Logins Falhados',
+        default=0
+    )
+    
+    usuarios_unicos = models.IntegerField(
+        'Usuários Únicos',
+        default=0
+    )
+    
+    ips_unicos = models.IntegerField(
+        'IPs Únicos',
+        default=0
+    )
+    
+    anomalias_detectadas = models.IntegerField(
+        'Anomalias Detectadas',
+        default=0
+    )
+    
+    class Meta:
+        verbose_name = "Gráfico de Acesso"
+        verbose_name_plural = "Gráficos de Acesso"
+        ordering = ['-data']
+        unique_together = ('empresa', 'data')
+        indexes = [
+            models.Index(fields=['empresa', '-data']),
+        ]
+    
+    def __str__(self):
+        return f"{self.empresa.nome} - {self.data:%d/%m/%Y}"

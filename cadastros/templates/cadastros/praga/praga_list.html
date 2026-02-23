@@ -3,6 +3,164 @@
 
 {% block title %}Pragas | ERP Agrícola{% endblock %}
 
+{% block extra_css %}
+<style>
+  .view-toggle {
+    display: flex;
+    gap: 8px;
+    background: #f3f4f6;
+    padding: 6px;
+    border-radius: 8px;
+    width: fit-content;
+  }
+
+  .view-toggle .btn {
+    padding: 6px 12px;
+    font-size: 14px;
+    border: none;
+    background: transparent;
+    color: #6b7280;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.2s;
+  }
+
+  .view-toggle .btn.active {
+    background: white;
+    color: #1f2937;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    font-weight: 600;
+  }
+
+  .toggle-group {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .praga-card {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 20px;
+    transition: all 0.2s;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .praga-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    border-color: #d1d5db;
+  }
+
+  .praga-card-icon {
+    width: 48px;
+    height: 48px;
+    background: #fee2e2;
+    color: #dc2626;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    margin-bottom: 12px;
+  }
+
+  .praga-card-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 6px;
+    word-break: break-word;
+  }
+
+  .praga-card-scientific {
+    font-size: 13px;
+    color: #6b7280;
+    font-style: italic;
+    margin-bottom: 12px;
+    min-height: 20px;
+  }
+
+  .praga-card-info {
+    flex: 1;
+    font-size: 13px;
+    color: #6b7280;
+    margin-bottom: 12px;
+  }
+
+  .praga-card-footer {
+    display: flex;
+    gap: 8px;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 12px;
+    border-top: 1px solid #f3f4f6;
+  }
+
+  .praga-card-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .praga-card-actions {
+    display: flex;
+    gap: 4px;
+  }
+
+  .praga-card-actions a {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    color: #6b7280;
+    text-decoration: none;
+    transition: all 0.2s;
+    font-size: 14px;
+  }
+
+  .praga-card-actions a:hover {
+    background: #f3f4f6;
+    color: #1f2937;
+  }
+
+  #cardsView {
+    display: none;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+  }
+
+  #cardsView.active {
+    display: grid;
+  }
+
+  @media (max-width: 1200px) {
+    #cardsView {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (max-width: 768px) {
+    #cardsView {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  #tableView {
+    display: block;
+  }
+
+  #tableView.hidden {
+    display: none;
+  }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid py-4">
   
@@ -47,7 +205,7 @@
   <div class="card border-0 shadow-sm mb-4">
     <div class="card-body">
       <form method="get" class="row g-3">
-        <div class="col-md-8">
+        <div class="col-md-6">
           <div class="input-group">
             <span class="input-group-text bg-light border-0">
               <i class="bi bi-search"></i>
@@ -68,10 +226,22 @@
             <option value="inativas" {% if request.GET.status == 'inativas' %}selected{% endif %}>Inativas</option>
           </select>
         </div>
-        <div class="col-md-2">
-          <button type="submit" class="btn btn-primary w-100">
+        <div class="col-md-2 d-flex gap-2">
+          <button type="submit" class="btn btn-primary flex-grow-1">
             <i class="bi bi-funnel"></i> Filtrar
           </button>
+        </div>
+        <div class="col-md-2 d-flex justify-content-end">
+          <div class="toggle-group">
+            <div class="view-toggle">
+              <button type="button" class="btn active" id="tableViewBtn" onclick="switchView('table')" title="Visualização em tabela">
+                <i class="bi bi-list-ul"></i>
+              </button>
+              <button type="button" class="btn" id="cardsViewBtn" onclick="switchView('cards')" title="Visualização em cards">
+                <i class="bi bi-grid-3x2-gap"></i>
+              </button>
+            </div>
+          </div>
         </div>
       </form>
     </div>
@@ -79,7 +249,8 @@
 
   <!-- Lista de Pragas -->
   {% if page_obj %}
-    <div class="card border-0 shadow-sm">
+    <!-- TABLE VIEW -->
+    <div id="tableView" class="card border-0 shadow-sm">
       <div class="card-body p-0">
         <div class="table-responsive">
           <table class="table table-hover align-middle mb-0">
@@ -141,6 +312,57 @@
           </table>
         </div>
       </div>
+    </div>
+
+    <!-- CARDS VIEW -->
+    <div id="cardsView">
+      {% for praga in page_obj %}
+        <div class="praga-card-item">
+          <div class="praga-card {% if not praga.ativa %}opacity-50{% endif %}">
+            <div class="praga-card-icon">
+              <i class="bi bi-bug"></i>
+            </div>
+            <div class="praga-card-title">
+              <a href="{% url 'cadastros:praga_detail' praga.pk %}" class="text-decoration-none text-dark">
+                {{ praga.nome_comum }}
+              </a>
+            </div>
+            <div class="praga-card-scientific">
+              {% if praga.nome_cientifico %}
+                <em>{{ praga.nome_cientifico }}</em>
+              {% else %}
+                <span class="text-muted">-</span>
+              {% endif %}
+            </div>
+            <div class="praga-card-info">
+              <small>
+                <i class="bi bi-calendar-event text-muted"></i>
+                Cadastrado em: {{ praga.data_cadastro|date:"d/m/Y" }}
+              </small>
+            </div>
+            <div class="praga-card-footer">
+              <div class="praga-card-status">
+                {% if praga.ativa %}
+                  <span class="badge bg-success">Ativa</span>
+                {% else %}
+                  <span class="badge bg-secondary">Inativa</span>
+                {% endif %}
+              </div>
+              <div class="praga-card-actions">
+                <a href="{% url 'cadastros:praga_detail' praga.pk %}" title="Visualizar" class="text-primary">
+                  <i class="bi bi-eye"></i>
+                </a>
+                <a href="{% url 'cadastros:praga_update' praga.pk %}" title="Editar" class="text-warning">
+                  <i class="bi bi-pencil"></i>
+                </a>
+                <a href="{% url 'cadastros:praga_delete' praga.pk %}" title="Excluir" class="text-danger">
+                  <i class="bi bi-trash"></i>
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
     </div>
 
     <!-- Paginação -->
@@ -414,4 +636,37 @@
     </div>
   </div>
 </div>
+
+<script>
+  function switchView(view) {
+    const tableView = document.getElementById('tableView');
+    const cardsView = document.getElementById('cardsView');
+    const tableViewBtn = document.getElementById('tableViewBtn');
+    const cardsViewBtn = document.getElementById('cardsViewBtn');
+
+    if (view === 'table') {
+      tableView.classList.remove('hidden');
+      cardsView.classList.remove('active');
+      tableViewBtn.classList.add('active');
+      cardsViewBtn.classList.remove('active');
+      localStorage.setItem('pragasView', 'table');
+    } else if (view === 'cards') {
+      tableView.classList.add('hidden');
+      cardsView.classList.add('active');
+      tableViewBtn.classList.remove('active');
+      cardsViewBtn.classList.add('active');
+      localStorage.setItem('pragasView', 'cards');
+    }
+  }
+
+  // Restaurar visualização anterior
+  document.addEventListener('DOMContentLoaded', function() {
+    const savedView = localStorage.getItem('pragasView') || 'table';
+    if (savedView === 'cards') {
+      switchView('cards');
+    } else {
+      switchView('table');
+    }
+  });
+</script>
 {% endblock %}

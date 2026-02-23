@@ -1,0 +1,117 @@
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+
+{% block title %}Configurar Autenticação Dois Fatores | ERP Agrícola{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      
+      <!-- Atalho para voltar -->
+      <a href="{% url 'usuarios:info_seguranca' %}" class="btn btn-outline-secondary btn-sm mb-3">
+        <i class="bi bi-arrow-left"></i> Voltar
+      </a>
+
+      <!-- Card Principal -->
+      <div class="card border-0 shadow-lg">
+        <div class="card-body p-5">
+          
+          <h2 class="card-title mb-1 fw-bold">
+            <i class="bi bi-shield-check text-primary"></i> Configurar Autenticação Dois Fatores
+          </h2>
+          <p class="text-muted mb-4">Aumente a segurança da sua conta usando um aplicativo autenticador</p>
+
+          <div class="alert alert-info mb-4">
+            <i class="bi bi-info-circle"></i>
+            <strong>O que é 2FA?</strong> A autenticação de dois fatores adiciona uma camada extra de segurança exigindo um código gerado por seu telefone, além de sua senha.
+          </div>
+
+          <!-- Etapa 1: Escanear QR Code -->
+          <div class="mb-5">
+            <h5 class="mb-3 fw-bold">
+              <span class="badge bg-primary me-2">1</span> Instale um Autenticador
+            </h5>
+            <p class="text-muted mb-3">
+              Use um destes aplicativos no seu telefone:
+            </p>
+            <div class="row g-3 mb-4">
+              <div class="col-sm-6">
+                <div class="text-center p-3 border rounded">
+                  <i class="bi bi-phone" style="font-size: 2rem; color: #6c757d;"></i><br>
+                  <small><strong>Google Authenticator</strong><br>iOS • Android</small>
+                </div>
+              </div>
+              <div class="col-sm-6">
+                <div class="text-center p-3 border rounded">
+                  <i class="bi bi-phone" style="font-size: 2rem; color: #6c757d;"></i><br>
+                  <small><strong>Microsoft Authenticator</strong><br>iOS • Android</small>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Etapa 2: QR Code -->
+          {% if qrcode_img %}
+          <div class="mb-5">
+            <h5 class="mb-3 fw-bold">
+              <span class="badge bg-primary me-2">2</span> Escaneie Este Código QR
+            </h5>
+            <div class="text-center mb-4">
+              <div class="p-4 bg-light rounded d-inline-block">
+                <img src="data:image/png;base64,{{ qrcode_img }}" alt="QR Code 2FA" style="width: 250px; height: 250px;">
+              </div>
+            </div>
+            <p class="text-muted text-center mb-0">
+              Abra seu app de autenticação e escaneie o código acima
+            </p>
+          </div>
+
+          <!-- Ou inserir chave manualmente -->
+          <div class="mb-5 p-3 bg-light rounded">
+            <strong>Ou insira a chave manualmente:</strong>
+            <div class="mt-2 p-3 bg-white rounded border" style="font-family: monospace; word-break: break-all;">
+              {{ chave_secreta }}
+            </div>
+          </div>
+
+          <!-- Etapa 3: Verificar Código -->
+          <div class="mb-5">
+            <h5 class="mb-3 fw-bold">
+              <span class="badge bg-primary me-2">3</span> Verifique o Código
+            </h5>
+            <form method="post" class="needs-validation">
+              {% csrf_token %}
+              <div class="mb-3">
+                <label class="form-label">Digite o código de 6 dígitos do seu app:</label>
+                {{ form.codigo|add_class:"form-control form-control-lg text-center font-monospace"|attrs:"placeholder:000000;autocomplete:off;maxlength:6" }}
+                {% if form.codigo.errors %}
+                <div class="invalid-feedback d-block">
+                  {{ form.codigo.errors.0 }}
+                </div>
+                {% endif %}
+              </div>
+              <button type="submit" class="btn btn-primary btn-lg w-100">
+                <i class="bi bi-check-circle"></i> Verificar e Ativar 2FA
+              </button>
+            </form>
+          </div>
+
+          <!-- Aviso sobre Backup -->
+          <div class="alert alert-warning">
+            <i class="bi bi-exclamation-triangle"></i>
+            <strong>Salve seus códigos de backup!</strong> Se perder acesso ao seu telefone, você usará esses códigos para entrar.
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Rodapé -->
+      <div class="mt-4 text-center text-muted small">
+        <p>Já tem 2FA configurado? <a href="{% url 'usuarios:info_seguranca' %}">Volte ao Dashboard de Segurança</a></p>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}

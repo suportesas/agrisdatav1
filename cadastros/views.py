@@ -17,7 +17,8 @@ import requests
 import re
 from django.core.cache import cache
 from .models import FornecedorEndereco, Funcionario, FuncaoFuncionario
-from .forms import FornecedorEnderecoForm, FuncionarioForm, FuncaoFuncionarioForm
+from .forms import FornecedorEnderecoForm, FuncionarioForm, FuncaoFuncionarioForm, DocumentoFuncionarioFormSet
+from .forms import DocumentoFuncionarioForm
 
 from .models import (
     Fazenda, EnderecoFazenda, ContatoFazenda,
@@ -1679,6 +1680,28 @@ def dashboard_alertas(request):
 ADICIONE ESTAS VIEWS AO FINAL DO ARQUIVO cadastros/views.py
 """
 
+@login_required
+def funcionario_documento_create(request, funcionario_pk):
+    """Adiciona documento ao funcionário"""
+    funcionario = get_object_or_404(Funcionario, pk=funcionario_pk, empresa=request.user.empresa)
+    if request.method == 'POST':
+        form = DocumentoFuncionarioForm(request.POST, request.FILES)
+        if form.is_valid():
+            documento = form.save(commit=False)
+            documento.funcionario = funcionario
+            documento.empresa = request.user.empresa
+            documento.enviado_por = request.user
+            documento.save()
+            messages.success(request, '✅ Documento anexado ao funcionário!')
+            return redirect('cadastros:funcionario_detail', pk=funcionario.pk)
+    else:
+        form = DocumentoFuncionarioForm()
+    return render(request, 'cadastros/funcionario/documento_form.html', {
+        'form': form,
+        'funcionario': funcionario,
+        'action': 'Adicionar'
+    })
+
 
 
 
@@ -1865,7 +1888,7 @@ def funcionario_detail(request, pk):
 
 @login_required
 def funcionario_create(request):
-    """Cria funcionário"""
+    """Cria funcionário com múltiplos documentos via formset"""
     if request.method == 'POST':
         form = FuncionarioForm(
             request.POST,
@@ -1873,12 +1896,30 @@ def funcionario_create(request):
             empresa=request.user.empresa,
             usuario=request.user
         )
+        
         if form.is_valid():
             funcionario = form.save()
-            messages.success(request, f'✅ Funcionário "{funcionario.nome_completo}" cadastrado!')
-            return redirect('cadastros:funcionario_detail', pk=funcionario.pk)
+            
+            # Processa formset de documentos (se houver anexos na criação)
+            formset = DocumentoFuncionarioFormSet(request.POST, request.FILES, instance=funcionario)
+            if formset.is_valid():
+                # Atribui empresa e enviado_por a cada documento
+                for form_doc in formset:
+                    if form_doc.cleaned_data and not form_doc.cleaned_data.get('DELETE', False):
+                        # Se há dados e não é uma exclusão
+                        doc = form_doc.save(commit=False)
+                        doc.funcionario = funcionario
+                        doc.empresa = request.user.empresa
+                        doc.enviado_por = request.user
+                        doc.save()
+                
+                messages.success(request, f'✅ Funcionário "{funcionario.nome_completo}" cadastrado com sucesso!')
+                return redirect('cadastros:funcionario_detail', pk=funcionario.pk)
+            else:
+                # Se formset tem erros, mantém display de erros
+                messages.warning(request, 'Funcionário cadastrado mas há erros nos documentos. Você pode adicioná-los depois.')
+                return redirect('cadastros:funcionario_detail', pk=funcionario.pk)
         else:
-            # Surface validation errors to the top to help debugging in the UI
             try:
                 errors_text = '\n'.join([f"{k}: {', '.join(v)}" for k, v in form.errors.items()])
             except Exception:
@@ -1889,12 +1930,14 @@ def funcionario_create(request):
             empresa=request.user.empresa,
             usuario=request.user
         )
+        formset = DocumentoFuncionarioFormSet()
     
     # Para o modal de nova função
     form_funcao = FuncaoFuncionarioForm()
     
     return render(request, 'cadastros/funcionario/funcionario_form.html', {
         'form': form,
+        'formset': formset,
         'form_funcao': form_funcao,
         'action': 'Cadastrar'
     })
@@ -1902,7 +1945,7 @@ def funcionario_create(request):
 
 @login_required
 def funcionario_update(request, pk):
-    """Edita funcionário"""
+    """Edita funcionário com múltiplos documentos via formset"""
     funcionario = get_object_or_404(Funcionario, pk=pk, empresa=request.user.empresa)
     
     if request.method == 'POST':
@@ -1913,12 +1956,31 @@ def funcionario_update(request, pk):
             empresa=request.user.empresa,
             usuario=request.user
         )
+        
         if form.is_valid():
             funcionario = form.save()
-            messages.success(request, f'✅ Funcionário "{funcionario.nome_completo}" atualizado!')
-            return redirect('cadastros:funcionario_detail', pk=funcionario.pk)
+            
+            # Processa formset de documentos
+            formset = DocumentoFuncionarioFormSet(request.POST, request.FILES, instance=funcionario)
+            if formset.is_valid():
+                # Salva formset (dele)
+                instances = formset.save(commit=False)
+                for instance in instances:
+                    instance.empresa = request.user.empresa
+                    instance.enviado_por = request.user
+                    instance.save()
+                
+                # Processa exclusões (DELETE)
+                for form_doc in formset.deleted_forms:
+                    form_doc.instance.delete()
+                
+                messages.success(request, f'✅ Funcionário "{funcionario.nome_completo}" atualizado!')
+                return redirect('cadastros:funcionario_detail', pk=funcionario.pk)
+            else:
+                # Se formset tem erros, mostra mensagem mas salva funcionário
+                messages.warning(request, 'Funcionário atualizado mas há erros nos documentos.')
+                return redirect('cadastros:funcionario_detail', pk=funcionario.pk)
         else:
-            # Surface validation errors to the top to help debugging in the UI
             try:
                 errors_text = '\n'.join([f"{k}: {', '.join(v)}" for k, v in form.errors.items()])
             except Exception:
@@ -1930,11 +1992,13 @@ def funcionario_update(request, pk):
             empresa=request.user.empresa,
             usuario=request.user
         )
+        formset = DocumentoFuncionarioFormSet(instance=funcionario)
     
     form_funcao = FuncaoFuncionarioForm()
     
     return render(request, 'cadastros/funcionario/funcionario_form.html', {
         'form': form,
+        'formset': formset,
         'form_funcao': form_funcao,
         'funcionario': funcionario,
         'action': 'Editar'
@@ -2629,9 +2693,30 @@ def safra_update(request, pk):
 @login_required
 def safra_detail(request, pk):
     safra = get_object_or_404(Safra, pk=pk, fazenda__empresa=request.user.empresa)
+    
+    # 🔥 Calcular resumo de áreas
+    talhoes = safra.talhoes.all()
+    total_talhoes = talhoes.count()
+    
+    # Calcular áreas
+    from django.db.models import Sum, F, ExpressionWrapper, DecimalField
+    from decimal import Decimal
+    
+    area_total = talhoes.aggregate(
+        total=Sum(F('area_hac'), output_field=DecimalField())
+    )['total'] or Decimal('0.00')
+    
+    area_media = (area_total / total_talhoes) if total_talhoes > 0 else Decimal('0.00')
+    
     # Prepare comparativo
     form = SafraPlanForm(safra=safra)
-    context = {'safra': safra, 'form': form}
+    context = {
+        'safra': safra, 
+        'form': form,
+        'area_total': area_total,
+        'area_media': area_media,
+        'total_talhoes': total_talhoes,
+    }
     return render(request, 'cadastros/safra/safra_detail.html', context)
 
 

@@ -1825,50 +1825,45 @@ def funcao_delete(request, pk):
 @login_required
 def funcionario_list(request):
     """Lista funcionários"""
-    funcionarios = Funcionario.objects.filter(
-        empresa=request.user.empresa
-    ).select_related('funcao', 'fazenda')
-    
-    # Busca
+    # Busca e filtros
     q = request.GET.get('q', '').strip()
+    fazenda_id = request.GET.get('fazenda', '')
+    funcao_id = request.GET.get('funcao', '')
+
+    # Todos funcionários (ativos e inativos juntos)
+    funcionarios = Funcionario.objects.filter(empresa=request.user.empresa)
+    total_ativos = funcionarios.filter(ativo=True).count()
+
+    # Filtro de status (ativos/inativos)
+    status = request.GET.get('status', '').strip()
+    if status == 'ativos':
+        funcionarios = funcionarios.filter(ativo=True)
+    elif status == 'inativos':
+        funcionarios = funcionarios.filter(ativo=False)
+
     if q:
         funcionarios = funcionarios.filter(
             Q(nome_completo__icontains=q) |
             Q(cpf__icontains=q) |
             Q(funcao__nome__icontains=q)
         )
-    
-    # Filtros
-    status = request.GET.get('status', '')
-    if status == 'ativos':
-        funcionarios = funcionarios.filter(ativo=True)
-    elif status == 'inativos':
-        funcionarios = funcionarios.filter(ativo=False)
-    
-    fazenda_id = request.GET.get('fazenda', '')
     if fazenda_id:
         funcionarios = funcionarios.filter(fazenda_id=fazenda_id)
-    
-    funcao_id = request.GET.get('funcao', '')
     if funcao_id:
         funcionarios = funcionarios.filter(funcao_id=funcao_id)
-    
-    # Paginação
     paginator = Paginator(funcionarios, 25)
-    page_number = request.GET.get('page')
+    page_number = request.GET.get('page') or 1
     page_obj = paginator.get_page(page_number)
-    
-    # Para filtros
+
     fazendas = Fazenda.objects.filter(empresa=request.user.empresa, ativa=True)
     funcoes = FuncaoFuncionario.objects.filter(empresa=request.user.empresa, ativa=True)
-    
     context = {
         'page_obj': page_obj,
         'fazendas': fazendas,
         'funcoes': funcoes,
         'total_funcionarios': funcionarios.count(),
+        'total_ativos': total_ativos,
     }
-    
     return render(request, 'cadastros/funcionario/funcionario_list.html', context)
 
 

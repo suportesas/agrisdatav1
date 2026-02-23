@@ -24,6 +24,25 @@
     padding-left: 1rem;
     margin-bottom: 1.5rem;
   }
+  .profile-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 2rem;
+    border-radius: 0;
+  }
+  .foto-perfil {
+    width: 120px;
+    height: 120px;
+    object-fit: cover;
+    border-radius: 50%;
+    border: 5px solid white;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+  }
+  .info-section {
+    border-left: 4px solid #3b82f6;
+    padding-left: 1rem;
+    margin-bottom: 1.5rem;
+  }
 </style>
 {% endblock %}
 
@@ -70,6 +89,9 @@
             {% if funcionario.get_idade %}
               <span class="badge bg-light text-dark">{{ funcionario.get_idade }} anos</span>
             {% endif %}
+            <span class="badge bg-warning text-dark" title="Quantidade de suspensões">
+              <i class="bi bi-exclamation-triangle"></i> Suspensões: {{ funcionario.get_qtd_suspensoes }}
+            </span>
           </div>
         </div>
         <div class="col-auto">
@@ -88,10 +110,8 @@
     <div class="card-body p-4">
       
       <div class="row">
-        
         <!-- Coluna Esquerda -->
         <div class="col-md-6">
-          
           <!-- Dados Pessoais -->
           <div class="info-section">
             <h5 class="fw-bold text-primary mb-3">
@@ -187,12 +207,10 @@
               </table>
             </div>
           {% endif %}
-
         </div>
 
         <!-- Coluna Direita -->
         <div class="col-md-6">
-          
           <!-- Dados Profissionais -->
           <div class="info-section">
             <h5 class="fw-bold text-warning mb-3">
@@ -284,8 +302,8 @@
             </div>
           {% endif %}
 
-          <!-- Documentos Anexados -->
-          <div class="info-section">
+          <!-- Documentos Anexados (Expandido) -->
+          <div class="info-section" style="width:100%;max-width:none;padding-left:0;padding-right:0;">
             <div class="d-flex justify-content-between align-items-center mb-2">
               <h5 class="fw-bold text-primary mb-0">
                 <i class="bi bi-file-earmark-pdf"></i> Documentos Anexados
@@ -298,15 +316,15 @@
               </a>
             </div>
             {% if funcionario.documentos.all %}
-              <div class="table-responsive">
-                <table class="table table-sm table-hover">
+              <div class="table-responsive" style="width:100%;max-width:none;">
+                <table class="table table-sm table-hover w-100" style="min-width:900px;">
                   <thead class="table-light">
                     <tr>
-                      <th>Tipo</th>
-                      <th>Título</th>
-                      <th>Validade</th>
-                      <th>Status</th>
-                      <th class="text-end">Ações</th>
+                      <th style="min-width:120px;">Tipo</th>
+                      <th style="min-width:220px;">Título</th>
+                      <th style="min-width:120px;">Validade</th>
+                      <th style="min-width:120px;">Status</th>
+                      <th style="min-width:120px;" class="text-end">Ações</th>
                     </tr>
                   </thead>
                   <tbody>

@@ -24,3 +24,5 @@ openpyxl==3.1.5
 twilio==9.6.0
 xhtml2pdf==0.2.16
 xmltodict
+pyotp==2.9.0
+qrcode==7.4.2

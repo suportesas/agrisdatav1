@@ -25,6 +25,77 @@ UF_CHOICES = [
 # MANAGERS CUSTOMIZADOS PARA MULTI-TENANCY
 # ============================================
 
+class HistoricoFuncionario(models.Model):
+    """
+    Histórico de recontratações, promoções, mudanças de salário, suspensões, etc.
+    """
+    TIPO_EVENTO = [
+        ("RECONTRATACAO", "Recontratação"),
+        ("PROMOCAO", "Promoção"),
+        ("MUDANCA_SALARIO", "Mudança de Salário"),
+        ("SUSPENSAO", "Suspensão"),
+        ("OUTRO", "Outro"),
+    ]
+
+    funcionario = models.ForeignKey(
+        'Funcionario',
+        on_delete=models.CASCADE,
+        related_name='historicos',
+        verbose_name='Funcionário'
+    )
+    data_evento = models.DateField('Data do Evento', auto_now_add=True)
+    tipo_evento = models.CharField('Tipo de Evento', max_length=30, choices=TIPO_EVENTO)
+    funcao = models.ForeignKey(
+        'FuncaoFuncionario',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name='Função/Cargo'
+    )
+    salario = models.DecimalField('Salário (R$)', max_digits=10, decimal_places=2, null=True, blank=True)
+    motivo = models.TextField('Motivo/Observação', blank=True)
+    usuario = models.ForeignKey(
+        'usuarios.Usuario',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name='Usuário Responsável'
+    )
+
+    class Meta:
+        verbose_name = 'Histórico do Funcionário'
+        verbose_name_plural = 'Históricos dos Funcionários'
+        ordering = ['-data_evento']
+
+    def __str__(self):
+        return f"{self.funcionario.nome_completo} - {self.get_tipo_evento_display()} ({self.data_evento})"
+"""
+Módulo de Cadastro de Fazendas - ERP Agrícola
+Sistema completo com endereços, contatos, bancos e documentos
+"""
+from django.db import models
+from django.core.validators import MinValueValidator, FileExtensionValidator
+from django.core.exceptions import ValidationError
+from django.utils import timezone
+from decimal import Decimal
+import os
+from django.core.validators import MaxValueValidator, RegexValidator
+import re
+import random
+import time
+
+# Lista de UFs (inclui 'EX' para Exterior)
+UF_CHOICES = [
+    ('AC','AC'), ('AL','AL'), ('AP','AP'), ('AM','AM'), ('BA','BA'), ('CE','CE'), ('DF','DF'),
+    ('ES','ES'), ('GO','GO'), ('MA','MA'), ('MT','MT'), ('MS','MS'), ('MG','MG'), ('PA','PA'),
+    ('PB','PB'), ('PR','PR'), ('PE','PE'), ('PI','PI'), ('RJ','RJ'), ('RN','RN'), ('RS','RS'),
+    ('RO','RO'), ('RR','RR'), ('SC','SC'), ('SE','SE'), ('SP','SP'), ('TO','TO'), ('EX','Exterior'),
+]
+
+# ============================================
+# MANAGERS CUSTOMIZADOS PARA MULTI-TENANCY
+# ============================================
+
 class EmpresaQuerySet(models.QuerySet):
     """QuerySet customizado para filtrar por empresa (Multi-tenant)"""
     
@@ -1566,8 +1637,10 @@ class FuncaoFuncionario(models.Model):
         """Retorna total de funcionários nesta função"""
         return self.funcionarios.filter(ativo=True).count()
 
-
 class Funcionario(models.Model):
+    def get_qtd_suspensoes(self):
+        """Retorna o número de suspensões registradas para o funcionário"""
+        return self.afastamentos.filter(tipo_afastamento='SUSPENSAO').count() + self.historicos.filter(tipo_evento='SUSPENSAO').count()
     """
     Cadastro de Funcionários da fazenda
     """

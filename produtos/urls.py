@@ -36,6 +36,7 @@ urlpatterns = [
     
     # Categoria
     path('categorias/', views.categoria_list, name='categoria_list'),
+    path('categorias/popular/', views.categoria_seed, name='categoria_seed'),
     path('categorias/cadastrar/', views.categoria_create, name='categoria_create'),
     path('categorias/<int:pk>/editar/', views.categoria_update, name='categoria_update'),
     path('categorias/<int:pk>/excluir/', views.categoria_delete, name='categoria_delete'),
@@ -73,6 +74,8 @@ urlpatterns = [
     path('fornecedores/listar/', views.fornecedores_listar, name='fornecedores_listar'),
     path('<int:produto_pk>/fornecedor/criar/', views.produto_fornecedor_create, name='produto_fornecedor_create'),
     path('fornecedor/<int:pk>/excluir/', views.produto_fornecedor_delete, name='produto_fornecedor_delete'),
+    path('fornecedor/<int:pk>/json/', views.produto_fornecedor_json, name='produto_fornecedor_json'),
+    path('fornecedor/<int:pk>/editar/', views.produto_fornecedor_editar, name='produto_fornecedor_editar'),
     
     # Documentos do Produto
     path('<int:produto_pk>/documentos/upload/', views.documento_upload, name='documento_upload'),

@@ -7,6 +7,24 @@ def cotacao_item_comparativo(request, pk):
     cotacao = get_object_or_404(Cotacao, pk=pk, empresa=request.user.empresa)
     if request.method == 'POST':
         from decimal import Decimal, InvalidOperation
+        
+        # Validação: verificar se há propostas com valor zero
+        todas_propostas = FornecedorCotacao.objects.filter(
+            item_cotacao__cotacao=cotacao
+        )
+        propostas_zeradas = todas_propostas.filter(preco_unitario=0)
+        
+        if propostas_zeradas.exists():
+            from django.contrib import messages
+            messages.error(
+                request, 
+                f'❌ Não é permitido salvar o comparativo com propostas de valor R$ 0,00. '
+                f'Encontradas {propostas_zeradas.count()} proposta(s) com valor zerado. '
+                f'Edite as propostas e informe valores válidos.'
+            )
+            from django.urls import reverse
+            return redirect(reverse('compras:cotacao_item_comparativo', args=[pk]))
+        
         for item in cotacao.itens.select_related('produto', 'unidade_medida').all():
             propostas = list(item.propostas.select_related('fornecedor').all())
             selecionada_pk = request.POST.get(f'selecionada_{item.pk}')
@@ -185,14 +203,48 @@ def solicitacao_create(request):
                     f'Solicitação {solicitacao.numero} criada com sucesso!'
                 )
             return redirect('compras:solicitacao_detail', pk=solicitacao.pk)
+        else:
+            messages.error(
+                request,
+                'Não foi possível salvar a solicitação. Verifique os campos obrigatórios e os itens informados.'
+            )
+
+            if form.errors:
+                for field, errors in form.errors.items():
+                    label = form.fields[field].label if field in form.fields else field
+                    for error in errors:
+                        messages.warning(request, f'{label}: {error}')
+
+            non_form_errors = formset.non_form_errors()
+            if non_form_errors:
+                for error in non_form_errors:
+                    messages.warning(request, f'Itens: {error}')
+
+            for index, item_form in enumerate(formset.forms, start=1):
+                if not item_form.errors:
+                    continue
+
+                if item_form.cleaned_data.get('DELETE', False) if hasattr(item_form, 'cleaned_data') else False:
+                    continue
+
+                for field, errors in item_form.errors.items():
+                    field_label = item_form.fields[field].label if field in item_form.fields else field
+                    for error in errors:
+                        messages.warning(request, f'Item {index} - {field_label}: {error}')
     else:
         form = SolicitacaoCompraForm()
         formset = ItemSolicitacaoFormSet(empresa=request.user.empresa)
     
+    from produtos.models import Produto
+    produtos = Produto.objects.filter(
+        categoria__empresa=request.user.empresa,
+        ativo=True
+    ).order_by('nome')
     context = {
         'form': form,
         'formset': formset,
         'title': 'Nova Solicitação de Compra',
+        'produtos': produtos,
     }
     return render(request, 'compras/solicitacao_form.html', context)
 
@@ -727,6 +779,60 @@ def get_produto_estoque(request, produto_id):
         }, status=404)
 
 
+@login_required
+def get_produto_unidades(request, produto_id):
+    """API: Retorna as unidades de medida disponíveis para um produto"""
+    from produtos.models import Produto, UnidadeMedida
+    
+    try:
+        # Busca o produto na empresa atual
+        produto = Produto.objects.get(
+            id=produto_id,
+            categoria__empresa=request.user.empresa
+        )
+        
+        # Busca todas as unidades de medida da empresa
+        unidades = UnidadeMedida.objects.filter(
+            empresa=request.user.empresa
+        ).values('id', 'nome', 'sigla').order_by('nome')
+        
+        return JsonResponse({
+            'success': True,
+            'unidades': list(unidades),
+            'unidade_padrao_id': produto.unidade_medida.id,
+            'unidade_padrao_nome': produto.unidade_medida.nome,
+        })
+        
+    except Produto.DoesNotExist:
+        return JsonResponse({
+            'success': False,
+            'error': 'Produto não encontrado'
+        }, status=404)
+
+
+@login_required
+def get_empresa_unidades(request):
+    """API: Retorna todas as unidades de medida da empresa"""
+    from produtos.models import UnidadeMedida
+    
+    try:
+        # Busca todas as unidades de medida da empresa
+        unidades = UnidadeMedida.objects.filter(
+            empresa=request.user.empresa
+        ).values('id', 'nome', 'sigla').order_by('nome')
+        
+        return JsonResponse({
+            'success': True,
+            'unidades': list(unidades),
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
 # ========================================
 # PEDIDOS DE COMPRA
 # ========================================
@@ -818,11 +924,20 @@ def pedido_detail(request, pk):
     # Buscar recebimentos deste pedido
     recebimentos = pedido.recebimentos.all().order_by('-data_recebimento')
 
+    limite_credito = pedido.fornecedor.limite_credito or 0
+    valor_pedido = pedido.valor_final or pedido.valor_total or 0
+    excede_limite_credito = bool(limite_credito and valor_pedido > limite_credito)
+    valor_excedente_credito = (valor_pedido - limite_credito) if excede_limite_credito else 0
+
     context = {
         'pedido': pedido,
         'itens': itens,
         'status_recebimento': status_recebimento,
         'recebimentos': recebimentos,
+        'limite_credito_fornecedor': limite_credito,
+        'valor_pedido_atual': valor_pedido,
+        'excede_limite_credito': excede_limite_credito,
+        'valor_excedente_credito': valor_excedente_credito,
     }
     return render(request, 'compras/pedido_detail.html', context)
 
@@ -905,7 +1020,19 @@ def pedido_gerar(request, cotacao_pk):
             )
         
         # Calcula o total do pedido
-        pedido.calcular_total()
+        total_pedido = pedido.calcular_total()
+
+        limite_credito = dados['fornecedor'].limite_credito or 0
+        if limite_credito and total_pedido > limite_credito:
+            messages.warning(
+                request,
+                (
+                    f'⚠️ Alerta de crédito: o pedido {pedido.numero} para "{dados["fornecedor"].nome}" '
+                    f'(R$ {total_pedido:,.2f}) ultrapassa o limite aprovado '
+                    f'de R$ {limite_credito:,.2f}.'
+                )
+            )
+
         pedidos_criados.append(pedido)
     
     # Atualiza status dos itens da solicitação para APROVADO apenas se enviados no pedido
@@ -2094,8 +2221,8 @@ def recebimento_detail(request, pk):
 
 @login_required
 def recebimento_conferir(request, pk):
-    """Marca recebimento como conferido"""
-    from .models import RecebimentoCompra
+    """Marca recebimento como conferido com suporte a divergências estruturadas"""
+    from .models import RecebimentoCompra, TipoDivergencia, DivergenciaRecebimento
     
     recebimento = get_object_or_404(
         RecebimentoCompra,
@@ -2110,19 +2237,79 @@ def recebimento_conferir(request, pk):
     if request.method == 'POST':
         tem_divergencia = request.POST.get('tem_divergencia') == 'sim'
         
-        if tem_divergencia:
-            recebimento.status = 'DIVERGENTE'
-            recebimento.divergencias = request.POST.get('divergencias', '')
-        else:
+        if not tem_divergencia:
+            # Sem divergência - marcar como CONFERIDO
             recebimento.status = 'CONFERIDO'
+            recebimento.save()
+            messages.success(request, f'✅ Recebimento {recebimento.numero} conferido com sucesso!')
+            return redirect('compras:recebimento_detail', pk=recebimento.pk)
         
-        recebimento.save()
-        
-        messages.success(request, f'Recebimento {recebimento.numero} conferido com sucesso!')
-        return redirect('compras:recebimento_detail', pk=recebimento.pk)
+        else:
+            # COM divergências - processa registros estruturados
+            recebimento.status = 'DIVERGENTE'
+            recebimento.divergencias = request.POST.get('divergencias_texto', '')
+            recebimento.save()
+            
+            # Salva divergências estruturadas
+            num_divergencias = int(request.POST.get('num_divergencias', 0))
+            
+            for i in range(num_divergencias):
+                tipo_id = request.POST.get(f'divergencia_{i}_tipo')
+                if not tipo_id:
+                    continue
+                
+                try:
+                    tipo_divergencia = TipoDivergencia.objects.get(
+                        pk=tipo_id,
+                        empresa=request.user.empresa
+                    )
+                except TipoDivergencia.DoesNotExist:
+                    messages.warning(request, f'Tipo de divergência #{i+1} não encontrado')
+                    continue
+                
+                # Criar registro de divergência
+                divergencia = DivergenciaRecebimento(
+                    recebimento=recebimento,
+                    tipo_divergencia=tipo_divergencia,
+                    descricao_detalhes=request.POST.get(f'divergencia_{i}_descricao', ''),
+                    acao_proposta=request.POST.get(f'divergencia_{i}_acao', ''),
+                    registrado_por=request.user,
+                )
+                
+                # Item opcional
+                item_id = request.POST.get(f'divergencia_{i}_item')
+                if item_id:
+                    try:
+                        from .models import ItemRecebimento
+                        divergencia.item_recebimento = ItemRecebimento.objects.get(pk=item_id)
+                    except:
+                        pass
+                
+                # Quantidade afetada opcional
+                qtd = request.POST.get(f'divergencia_{i}_quantidade')
+                if qtd:
+                    try:
+                        divergencia.quantidade_afetada = float(qtd)
+                    except:
+                        pass
+                
+                divergencia.save()
+            
+            messages.success(
+                request,
+                f'⚠️ Recebimento {recebimento.numero} registrado com {num_divergencias} divergência(s)!'
+            )
+            return redirect('compras:recebimento_detail', pk=recebimento.pk)
+    
+    # GET - mostrar formulário
+    tipos_divergencia = TipoDivergencia.objects.filter(
+        empresa=request.user.empresa,
+        ativo=True
+    ).order_by('severidade', 'nome')
     
     context = {
         'recebimento': recebimento,
+        'tipos_divergencia': tipos_divergencia,
     }
     
     return render(request, 'compras/recebimento_conferir.html', context)
@@ -2134,9 +2321,16 @@ def recebimento_entrada_estoque(request, pk):
     from .models import RecebimentoCompra, ItemRecebimento
     from estoque.models import MovimentacaoEstoque
     recebimento = get_object_or_404(RecebimentoCompra, pk=pk, empresa=request.user.empresa)
-    if recebimento.status != 'CONFERIDO':
+    # Permite entrada para recebimentos CONFERIDO ou DIVERGENTE (já conferidos)
+    if recebimento.status not in ['CONFERIDO', 'DIVERGENTE']:
         from django.contrib import messages
-        messages.error(request, 'Só é possível dar entrada no estoque para recebimentos conferidos.')
+        alertas = {
+            'PENDENTE': '⏳ Este recebimento ainda não foi conferido.',
+            'FINALIZADO': '✅ Este recebimento já foi finalizado e entrado em estoque.',
+            'CANCELADO': '❌ Este recebimento foi cancelado.',
+        }
+        msg = alertas.get(recebimento.status, f'Status inválido: {recebimento.status}')
+        messages.error(request, msg)
         from django.urls import reverse
         return redirect(reverse('compras:recebimento_detail', args=[recebimento.pk]))
     if request.method == 'POST':
@@ -2152,6 +2346,64 @@ def recebimento_entrada_estoque(request, pk):
         return redirect(reverse('compras:recebimento_detail', args=[recebimento.pk]))
     from django.urls import reverse
     return redirect(reverse('compras:recebimento_detail', args=[recebimento.pk]))
+
+
+@login_required
+def avaliar_fornecedor(request, pk):
+    """Avalia o fornecedor após finalização do recebimento"""
+    from .models import RecebimentoCompra, AvaliacaoFornecedor
+    
+    recebimento = get_object_or_404(RecebimentoCompra, pk=pk, empresa=request.user.empresa)
+    
+    # Só permite avaliar se recebimento foi finalizado
+    if recebimento.status != 'FINALIZADO':
+        messages.error(request, '❌ Só é possível avaliar após a entrada no estoque.')
+        return redirect('compras:recebimento_detail', pk=recebimento.pk)
+    
+    # Tenta recuperar avaliação existente
+    avaliacao, criada = AvaliacaoFornecedor.objects.get_or_create(
+        recebimento=recebimento,
+        defaults={
+            'empresa': request.user.empresa,
+            'fornecedor': recebimento.pedido.fornecedor if recebimento.pedido else recebimento.fornecedor,
+            'avaliador': request.user,
+            'qualidade_produto': 3,
+            'prazo_entrega': 3,
+            'documentacao': 3,
+            'atendimento': 3,
+            'preco': 3,
+        }
+    )
+    
+    if request.method == 'POST':
+        # Atualizar avaliação
+        avaliacao.qualidade_produto = int(request.POST.get('qualidade_produto', 3))
+        avaliacao.prazo_entrega = int(request.POST.get('prazo_entrega', 3))
+        avaliacao.documentacao = int(request.POST.get('documentacao', 3))
+        avaliacao.atendimento = int(request.POST.get('atendimento', 3))
+        avaliacao.preco = int(request.POST.get('preco', 3))
+        
+        avaliacao.pontos_positivos = request.POST.get('pontos_positivos', '')
+        avaliacao.pontos_negativos = request.POST.get('pontos_negativos', '')
+        avaliacao.recomendacao = request.POST.get('recomendacao', '')
+        avaliacao.recomenda = request.POST.get('recomenda') == 'sim'
+        
+        avaliacao.save()
+        
+        messages.success(
+            request,
+            f'⭐ Obrigado! Fornecedor avaliado com nota {avaliacao.nota_media:.1f}/5.'
+        )
+        return redirect('compras:recebimento_detail', pk=recebimento.pk)
+    
+    context = {
+        'recebimento': recebimento,
+        'avaliacao': avaliacao,
+        'fornecedor': recebimento.pedido.fornecedor if recebimento.pedido else recebimento.fornecedor,
+        'estrelas_choices': range(1, 6),
+    }
+    
+    return render(request, 'compras/avaliar_fornecedor.html', context)
 
 
 @login_required

@@ -1,0 +1,255 @@
+{% extends 'base.html' %}
+
+{% block title %}Criar Parcelas - {{ conta.numero }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="bi bi-receipt"></i> Criar Parcelas Automaticamente</h1>
+            <p class="text-muted">Conta: <strong>{{ conta.numero }}</strong> | Fornecedor: <strong>{{ conta.fornecedor.nome }}</strong></p>
+        </div>
+    </div>
+
+    <!-- Alerta -->
+    <div class="alert alert-info alert-dismissible fade show" role="alert">
+        <i class="bi bi-lightbulb"></i>
+        <strong>💡 Sistema Inteligente:</strong> Informe a condição de pagamento e forma de pagamento. 
+        O sistema gerará automaticamente todas as parcelas com datas e valores calculados!
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+
+    <!-- Formulário -->
+    <form method="post" class="needs-validation" novalidate>
+        {% csrf_token %}
+        
+        <!-- Seção 1: Informações da Conta -->
+        <div class="card mb-3">
+            <div class="card-header bg-light">
+                <h5 class="mb-0"><i class="bi bi-file-earmark"></i> Informações da Conta</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <label class="form-label">Número</label>
+                        <input type="text" class="form-control" value="{{ conta.numero }}" disabled>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Fornecedor</label>
+                        <input type="text" class="form-control" value="{{ conta.fornecedor.nome }}" disabled>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Valor Total <strong>R$ {{ conta.valor_total|floatformat:2 }}</strong></label>
+                        <div class="alert alert-success mb-0 py-2">
+                            <strong>R$ {{ conta.valor_total|floatformat:2 }}</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Seção 2: Condição de Pagamento -->
+        <div class="card mb-3">
+            <div class="card-header bg-light">
+                <h5 class="mb-0"><i class="bi bi-calendar-check"></i> Condição de Pagamento</h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label"><strong>Escolha uma Condição *</strong></label>
+                        <div>
+                            {% for condicao in condicoes %}
+                            <div class="form-check">
+                                <input class="form-check-input condicao-radio" type="radio" name="condicao_pagamento" 
+                                       id="cond_{{ condicao.valor }}" value="{{ condicao.valor }}"
+                                       onchange="atualizarParcelas()" 
+                                       {% if condicao.valor == '30' %}checked{% endif %}>
+                                <label class="form-check-label" for="cond_{{ condicao.valor }}">
+                                    {{ condicao.label }}
+                                    {% if condicao.valor != 'custom' %}<small class="text-muted">({{ condicao.dias|join:', ' }} dias)</small>{% endif %}
+                                </label>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label"><strong>Forma de Pagamento</strong></label>
+                        <select class="form-select" id="forma_pagamento_padrao" name="forma_pagamento_padrao" onchange="atualizarParcelas()">
+                            <option value="">-- Padrão (sem forma específica) --</option>
+                            {% for forma in formas_pagamento %}
+                                <option value="{{ forma.id }}">
+                                    {{ forma.nome }}
+                                    {% if forma.taxa_administrativa > 0 %}({{ forma.taxa_administrativa }}% taxa){% endif %}
+                                </option>
+                            {% endfor %}
+                        </select>
+                        <small class="text-muted">Será aplicada a todas as parcelas</small>
+                    </div>
+                </div>
+
+                <!-- Opção Customizada (oculta) -->
+                <div id="custom_dias" style="display: none;" class="mt-3">
+                    <label class="form-label"><strong>Dias de Vencimento (customizado)</strong></label>
+                    <small class="text-muted d-block mb-2">Informe os dias para cada parcela, separados por vírgula</small>
+                    <input type="text" class="form-control" id="input_custom" placeholder="Ex: 30, 60, 90"
+                           onchange="processarCustomizado()">
+                    <small class="text-muted mt-2 d-block">Será criada uma parcela para cada valor informado</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Seção 3: Preview das Parcelas -->
+        <div class="card mb-3">
+            <div class="card-header bg-light">
+                <h5 class="mb-0"><i class="bi bi-list-check"></i> Parcelas que Serão Criadas</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 8%;">Parc.</th>
+                                <th style="width: 20%;">Vencimento</th>
+                                <th style="width: 18%; text-align: right;">Valor (R$)</th>
+                                <th style="width: 40%;">Forma de Pagamento</th>
+                                <th style="width: 14%;">Dias</th>
+                            </tr>
+                        </thead>
+                        <tbody id="parcelas_preview">
+                            <!-- Preenchido por JavaScript -->
+                        </tbody>
+                        <tfoot class="table-light">
+                            <tr style="font-weight: bold;">
+                                <td colspan="2">TOTAL:</td>
+                                <td style="text-align: right;" id="total_preview">R$ 0,00</td>
+                                <td colspan="2"></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Seção 4: Resumo -->
+        <div class="alert alert-light border border-secondary">
+            <h6>📊 Resumo</h6>
+            <small>
+                Será criada uma <strong>parcela automática</strong> para cada período definido na condição de pagamento.
+                O valor será dividido igualmente entre as parcelas. A última parcela será ajustada para cobrir eventuais centavos.
+            </small>
+        </div>
+
+        <!-- Botões -->
+        <div class="d-flex gap-3 mb-4">
+            <button type="submit" class="btn btn-success btn-lg flex-grow-1">
+                <i class="bi bi-check-circle"></i> <strong>Criar Parcelas</strong>
+            </button>
+            <a href="{% url 'financeiro:conta_pagar_detail' conta.id %}" class="btn btn-outline-secondary btn-lg">
+                <i class="bi bi-x-circle"></i> Cancelar
+            </a>
+        </div>
+    </form>
+</div>
+
+<!-- Dados para JavaScript -->
+<script>
+const contaValor = parseFloat('{{ conta.valor_total }}');
+const dataEmissao = new Date('{{ conta.data_emissao|date:"Y-m-d" }}');
+const formasPagamento = {
+    {% for forma in formas_pagamento %}
+        {{ forma.id }}: '{{ forma.nome }}',
+    {% endfor %}
+};
+const condicoes = {
+    {% for condicao in condicoes %}
+        '{{ condicao.valor }}': [{% for dia in condicao.dias %}{{ dia }}, {% endfor %}],
+    {% endfor %}
+};
+
+let diasCustomizado = [];
+
+function processarCustomizado() {
+    const input = document.getElementById('input_custom').value;
+    diasCustomizado = input.split(',').map(d => {
+        const num = parseInt(d.trim());
+        return !isNaN(num) ? num : 0;
+    }).filter(d => d >= 0);
+    atualizarParcelas();
+}
+
+function atualizarParcelas() {
+    const condicao = document.querySelector('input[name="condicao_pagamento"]:checked').value;
+    const formaPadraoId = document.getElementById('forma_pagamento_padrao').value;
+    
+    // Mostrar/ocultar campo customizado
+    document.getElementById('custom_dias').style.display = condicao === 'custom' ? 'block' : 'none';
+    
+    // Determinar dias
+    let dias = [];
+    if (condicao === 'custom') {
+        dias = diasCustomizado;
+        if (dias.length === 0) {
+            document.getElementById('parcelas_preview').innerHTML = 
+                '<tr><td colspan="5" class="text-center text-muted">Informe os dias no campo acima</td></tr>';
+            return;
+        }
+    } else {
+        dias = condicoes[condicao] || [0];
+    }
+    
+    // Gerar linhas
+    const tbody = document.getElementById('parcelas_preview');
+    tbody.innerHTML = '';
+    
+    const numParcelas = dias.length;
+    const valorParcela = contaValor / numParcelas;
+    let valorAcumulado = 0;
+    let totalParcelas = 0;
+    
+    for (let i = 0; i < numParcelas; i++) {
+        const valor = (i === numParcelas - 1) ? 
+            (contaValor - valorAcumulado) : 
+            parseFloat(valorParcela.toFixed(2));
+        
+        valorAcumulado += valor;
+        totalParcelas += valor;
+        
+        const dataVenc = new Date(dataEmissao);
+        dataVenc.setDate(dataVenc.getDate() + dias[i]);
+        
+        const dataStr = dataVenc.toLocaleDateString('pt-BR');
+        const formaTexto = formaPadraoId ? (formasPagamento[formaPadraoId] || 'Não definida') : 'Não definida';
+        
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td><strong>#${i + 1}</strong></td>
+            <td>${dataStr}</td>
+            <td style="text-align: right;"><strong>R$ ${valor.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</strong></td>
+            <td>${formaTexto}</td>
+            <td>${dias[i]} dias</td>
+        `;
+        tbody.appendChild(tr);
+    }
+    
+    document.getElementById('total_preview').textContent = 
+        `R$ ${totalParcelas.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+}
+
+// Inicializar na carga
+document.addEventListener('DOMContentLoaded', function() {
+    atualizarParcelas();
+});
+</script>
+
+<style>
+    .form-check {
+        margin-bottom: 12px;
+    }
+    
+    .table-hover tbody tr:hover {
+        background-color: #f8f9fa;
+    }
+</style>
+
+{% endblock %}

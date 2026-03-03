@@ -245,6 +245,10 @@
                   <strong class="text-success">R$ {{ fornecedor.total_comprado|floatformat:2 }}</strong>
                   <br><small class="text-muted">Total Comprado</small>
                 </div>
+                <div class="mb-1">
+                  <strong class="text-primary">R$ {{ fornecedor.limite_credito|default:0|floatformat:2 }}</strong>
+                  <br><small class="text-muted">Limite Aprovado</small>
+                </div>
                 <div>
                   <strong>{{ fornecedor.numero_pedidos }}</strong>
                   <br><small class="text-muted">Pedidos</small>

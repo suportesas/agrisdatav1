@@ -64,6 +64,8 @@
     </div>
     {% endif %}
 
+    {% include 'compras/includes/fluxo_compras_simples.html' with etapa_atual='recebimento' pedido=pedido %}
+
     <form method="POST" id="recebimentoForm">
         {% csrf_token %}
 

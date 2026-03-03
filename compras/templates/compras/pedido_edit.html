@@ -1,0 +1,307 @@
+{% extends 'base.html' %}
+
+{% block title %}Editar Pedido {{ pedido.numero }}{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row mb-4">
+        <div class="col">
+            <h1>
+                <i class="fas fa-edit"></i> Editar Pedido
+            </h1>
+            <p class="text-muted">Pedido: <strong>{{ pedido.numero }}</strong></p>
+        </div>
+        <div class="col-auto">
+            <a href="{% url 'compras:pedido_detail' pedido.pk %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Voltar
+            </a>
+        </div>
+    </div>
+
+    {% if messages %}
+    <div class="alert alert-info alert-dismissible fade show" role="alert">
+        {% for message in messages %}
+            <strong>{{ message }}</strong>
+        {% endfor %}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endif %}
+
+    <form method="POST" id="pedidoForm">
+        {% csrf_token %}
+
+        <!-- Seção: Informações Principais -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-info-circle"></i> Informações do Pedido</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="fornecedor" class="form-label">Fornecedor *</label>
+                            <select name="fornecedor" id="fornecedor" class="form-select" required>
+                                <option value="">-- Selecione um fornecedor --</option>
+                                {% for fornecedor in fornecedores %}
+                                <option value="{{ fornecedor.id }}" {% if fornecedor.id == pedido.fornecedor.id %}selected{% endif %}>
+                                    {{ fornecedor.nome }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label">Data do Pedido</label>
+                            <input type="text" class="form-control" value="{{ pedido.data_pedido|date:'d/m/Y' }}" disabled>
+                            <small class="text-muted">Data fixa, não pode ser alterada</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="mb-0">
+                            <label for="observacoes" class="form-label">Observações</label>
+                            <textarea name="observacoes" id="observacoes" class="form-control" rows="2" placeholder="Adicione observações sobre o pedido...">{{ pedido.observacoes }}</textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Seção: Produtos -->
+        <div class="card mb-4">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="fas fa-cube"></i> Itens do Pedido</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-bordered cart-table" id="produtosTable">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 35%;">Produto</th>
+                            <th style="width: 15%;">Quantidade</th>
+                            <th style="width: 15%;">Preço Unit.</th>
+                            <th style="width: 20%;">Subtotal</th>
+                            <th style="width: 15%;">Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody id="produtosBody">
+                        {% for item in pedido.itens.all %}
+                        <tr class="produto-row">
+                            <input type="hidden" name="item_id[]" value="{{ item.id }}">
+                            <td>
+                                <select name="produto_id[]" class="form-select produto-select" onchange="atualizarPreco(this)">
+                                    <option value="">-- Selecione um produto --</option>
+                                    {% for produto in produtos %}
+                                    <option value="{{ produto.id }}" 
+                                            data-preco="{{ produto.preco_custo|default:0 }}"
+                                            {% if produto.id == item.produto.id %}selected{% endif %}>
+                                        {{ produto.nome }} ({{ produto.unidade_medida }})
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </td>
+                            <td>
+                                <input type="number" name="quantidade[]" class="form-control quantidade-input" 
+                                       min="0.01" step="0.01" value="{{ item.quantidade_pedida }}" 
+                                       onchange="calcularSubtotal(this)">
+                            </td>
+                            <td>
+                                <input type="number" name="preco[]" class="form-control preco-input" 
+                                       min="0" step="0.01" value="{{ item.preco_unitario }}" 
+                                       onchange="calcularSubtotal(this)">
+                            </td>
+                            <td>
+                                <input type="text" class="form-control subtotal-input" readonly 
+                                       data-valor="{{ item.preco_total }}"
+                                       value="R$ {{ item.preco_total|floatformat:2 }}">
+                            </td>
+                            <td class="text-center">
+                                <span class="btn-remove-row" onclick="removerProduto(this)">
+                                    <i class="fas fa-trash"></i>
+                                </span>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr class="produto-row">
+                            <input type="hidden" name="item_id[]" value="">
+                            <td>
+                                <select name="produto_id[]" class="form-select produto-select" onchange="atualizarPreco(this)">
+                                    <option value="">-- Selecione um produto --</option>
+                                    {% for produto in produtos %}
+                                    <option value="{{ produto.id }}" data-preco="{{ produto.preco_custo|default:0 }}">
+                                        {{ produto.nome }} ({{ produto.unidade_medida }})
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </td>
+                            <td>
+                                <input type="number" name="quantidade[]" class="form-control quantidade-input" min="0.01" step="0.01" placeholder="0" onchange="calcularSubtotal(this)">
+                            </td>
+                            <td>
+                                <input type="number" name="preco[]" class="form-control preco-input" min="0" step="0.01" placeholder="0,00" onchange="calcularSubtotal(this)">
+                            </td>
+                            <td>
+                                <input type="text" class="form-control subtotal-input" readonly placeholder="0,00">
+                            </td>
+                            <td class="text-center">
+                                <span class="btn-remove-row" onclick="removerProduto(this)">
+                                    <i class="fas fa-trash"></i>
+                                </span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                <button type="button" class="btn btn-outline-primary" onclick="adicionarProduto()">
+                    <i class="fas fa-plus"></i> Adicionar Produto
+                </button>
+            </div>
+        </div>
+
+        <!-- Seção: Totais -->
+        <div class="total-section">
+            <div class="total-row">
+                <span>Total do Pedido:</span>
+                <span id="totalCompra">R$ {{ pedido.valor_total|floatformat:2 }}</span>
+            </div>
+        </div>
+
+        <!-- Botões de Ação -->
+        <div class="d-flex gap-2 justify-content-between mt-4">
+            <a href="{% url 'compras:pedido_detail' pedido.pk %}" class="btn btn-secondary">
+                <i class="fas fa-times"></i> Cancelar
+            </a>
+            <button type="submit" class="btn btn-primary btn-lg" onclick="return validarFormulario()">
+                <i class="fas fa-save"></i> Salvar Alterações
+            </button>
+        </div>
+    </form>
+</div>
+
+<style>
+    .cart-table tbody tr:hover {
+        background-color: #f5f5f5;
+    }
+    .btn-remove-row {
+        color: #dc3545;
+        cursor: pointer;
+        font-weight: bold;
+    }
+    .btn-remove-row:hover {
+        color: #c82333;
+    }
+    .input-group-number {
+        max-width: 150px;
+    }
+    .total-section {
+        background-color: #f9f9f9;
+        border-top: 2px solid #dee2e6;
+        padding: 15px;
+        margin-top: 15px;
+        border-radius: 4px;
+    }
+    .total-row {
+        display: flex;
+        justify-content: space-between;
+        font-size: 18px;
+        font-weight: bold;
+        color: #2c3e50;
+    }
+</style>
+
+<script>
+function adicionarProduto() {
+    const tableBody = document.getElementById('produtosBody');
+    const row = document.querySelector('.produto-row').cloneNode(true);
+    
+    // Limpar valores da nova linha
+    row.querySelector('input[name="item_id[]"]').value = '';
+    row.querySelector('.produto-select').value = '';
+    row.querySelector('.quantidade-input').value = '';
+    row.querySelector('.preco-input').value = '';
+    row.querySelector('.subtotal-input').value = '';
+    row.querySelector('.subtotal-input').dataset.valor = '0';
+    
+    tableBody.appendChild(row);
+}
+
+function removerProduto(btn) {
+    const rows = document.querySelectorAll('.produto-row');
+    if (rows.length > 1) {
+        btn.closest('tr').remove();
+        calcularTotal();
+    } else {
+        alert('Você deve manter pelo menos um produto no pedido.');
+    }
+}
+
+function atualizarPreco(select) {
+    const preco = select.options[select.selectedIndex].dataset.preco || 0;
+    const row = select.closest('tr');
+    row.querySelector('.preco-input').value = parseFloat(preco).toFixed(2);
+    calcularSubtotal(row.querySelector('.quantidade-input'));
+}
+
+function calcularSubtotal(input) {
+    const row = input.closest('tr');
+    const quantidade = parseFloat(row.querySelector('.quantidade-input').value) || 0;
+    const preco = parseFloat(row.querySelector('.preco-input').value) || 0;
+    const subtotal = quantidade * preco;
+    
+    row.querySelector('.subtotal-input').dataset.valor = subtotal.toFixed(2);
+    row.querySelector('.subtotal-input').value = formatarMoeda(subtotal);
+    calcularTotal();
+}
+
+function calcularTotal() {
+    let total = 0;
+    document.querySelectorAll('.produto-row').forEach(row => {
+        const subtotal = parseFloat(row.querySelector('.subtotal-input').dataset.valor || '0') || 0;
+        total += subtotal;
+    });
+    
+    document.getElementById('totalCompra').textContent = formatarMoeda(total);
+}
+
+function formatarMoeda(valor) {
+    return 'R$ ' + Number(valor || 0).toLocaleString('pt-BR', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
+}
+
+function validarFormulario() {
+    const fornecedor = document.getElementById('fornecedor').value;
+    if (!fornecedor) {
+        alert('Por favor, selecione um fornecedor.');
+        return false;
+    }
+    
+    const rows = document.querySelectorAll('.produto-row');
+    let temProduto = false;
+    
+    rows.forEach(row => {
+        const produto = row.querySelector('.produto-select').value;
+        const quantidade = row.querySelector('.quantidade-input').value;
+        
+        if (produto && quantidade) {
+            temProduto = true;
+        }
+    });
+    
+    if (!temProduto) {
+        alert('Por favor, adicione pelo menos um produto com quantidade.');
+        return false;
+    }
+    
+    return true;
+}
+
+// Calcular total ao carregar a página
+document.addEventListener('DOMContentLoaded', function() {
+    calcularTotal();
+});
+</script>
+
+{% endblock %}

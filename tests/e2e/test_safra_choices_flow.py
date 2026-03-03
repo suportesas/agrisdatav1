@@ -1,3 +1,7 @@
+import os
+
+os.environ.setdefault('DJANGO_ALLOW_ASYNC_UNSAFE', 'true')
+
 try:
     import pytest
 except Exception:
@@ -17,6 +21,10 @@ User = get_user_model()
 @pytest.fixture
 def e2e_safra_data(django_db_blocker):
     with django_db_blocker.unblock():
+        import empresas.models as empresas_models
+        if not hasattr(empresas_models, 'CATEGORIAS_AGRICOLAS'):
+            empresas_models.CATEGORIAS_AGRICOLAS = []
+
         empresa = Empresa.objects.create(nome='E2E Empresa 2')
         user = User.objects.create_user(username='e2euser2', password='pass')
         user.empresa = empresa
@@ -61,7 +69,7 @@ def test_safra_create_talhoes_choices(page, live_server, e2e_safra_data):
 
     # Seleciona fazenda e aguarda carregamento dos talhões via AJAX
     page.select_option('#id_fazenda', str(fazenda.pk))
-    page.wait_for_selector('#talhoes-loading', state='hidden')
+    page.wait_for_selector('#loading-talhoes', state='hidden')
 
     # Verifica que o select foi populado
     options_count = page.locator('#id_talhoes option').count()
@@ -79,6 +87,7 @@ def test_talhao_in_use_hidden_in_dropdown(page, live_server, e2e_safra_data, dja
         # Create an additional available talhão so the form has at least one option to select
         Talhao.objects.create(area=area, fazenda=fazenda, nome='T-e2e-available', codigo='E2E-AV', area_hac=2, empresa=fazenda.empresa)
         safra = Safra.objects.create(fazenda=fazenda, cultura=cultura, ano=2025)
+        safra.talhoes.add(talhao)
 
     parsed = urlparse(live_server.url)
     host = parsed.hostname or '127.0.0.1'
@@ -91,42 +100,30 @@ def test_talhao_in_use_hidden_in_dropdown(page, live_server, e2e_safra_data, dja
 
     page.goto(f"{live_server.url}/cadastros/safras/nova/")
     page.select_option('#id_fazenda', str(fazenda.pk))
-    page.wait_for_selector('#talhoes-loading', state='hidden')
+    page.wait_for_selector('#loading-talhoes', state='hidden')
 
-    # Ensure the talhoes select is visible and populated (Choices.js initialization may be async)
-    page.wait_for_selector('#id_talhoes', state='visible', timeout=5000)
-    page.wait_for_function("() => document.querySelectorAll('#id_talhoes option:not([disabled])').length > 0", timeout=5000)
+    # Aguarda cards de talhões renderizarem
+    page.wait_for_function("() => document.querySelectorAll('.talhao-card').length > 0", timeout=5000)
 
-    # Note: older behavior hid talhões em uso; in current UI talhões may be present but disabled.
-    # Ensure Choices.js is initialized (assets available)
-    assert page.locator('.choices').count() >= 0
+    # Talhão em uso deve aparecer bloqueado
+    assert page.locator('.talhao-card.disabled', has_text='E2E2').count() == 1
 
-    # Seleciona cultura e talhão
+    # Seleciona cultura e talhão disponível (card)
     page.select_option('#id_cultura', str(cultura.pk))
-    # Seleciona primeira opção disponível (deve existir pelo setup)
-    first_val = page.locator('#id_talhoes option:not([disabled])').nth(0).get_attribute('value')
-    try:
-        page.select_option('#id_talhoes', first_val)
-    except Exception:
-        import os
-        os.makedirs('artifacts/screenshots', exist_ok=True)
-        os.makedirs('artifacts/html', exist_ok=True)
-        screenshot_path = 'artifacts/screenshots/safra_choices_debug.png'
-        html_path = 'artifacts/html/safra_choices_debug.html'
-        page.screenshot(path=screenshot_path, full_page=True)
-        with open(html_path, 'w', encoding='utf-8') as fh:
-            fh.write(page.content())
-        print(f'DEBUG: saved screenshot {screenshot_path} and html {html_path}')
-        raise
+    page.locator('.talhao-card', has_text='E2E-AV').first.click()
+    page.wait_for_function("() => (document.getElementById('talhoes-input')?.value || '').length > 0", timeout=5000)
 
     # Preenche datas mínimas
     today = date.today().isoformat()
+    page.fill('#id_nome', 'Safra E2E UI')
+    page.fill('#id_ano', str(date.today().year))
     page.fill('#id_periodo_inicio', today)
     page.fill('#id_periodo_fim', today)
 
     # Submete o formulário
-    page.click("button:has-text('Cadastrar')")
+    page.click("button:has-text('Salvar Safra')")
 
-    # Aguarda redirecionamento para detalhe da safra e presença de mensagem de sucesso
-    page.wait_for_url(f"{live_server.url}/cadastros/safras/*")
-    assert page.locator('text=cadastrada com sucesso').count() >= 0
+    # Aguarda estabilização da navegação e valida redirecionamento para rota de safra
+    page.wait_for_timeout(800)
+    assert '/cadastros/safras/' in page.url
+    assert '/cadastros/safras/nova/' not in page.url

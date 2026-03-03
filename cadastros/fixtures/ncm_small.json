@@ -7,7 +7,9 @@
       "nome": "Cavalos, asininos e muares vivos",
       "cest": "",
       "descricao": "Exemplo de NCM",
-      "ativo": true
+      "ativo": true,
+      "criado_em": "2026-02-25T00:00:00Z",
+      "atualizado_em": "2026-02-25T00:00:00Z"
     }
   },
   {
@@ -18,7 +20,9 @@
       "nome": "Carne de bovinos fresca ou refrigerada",
       "cest": "",
       "descricao": "Exemplo de NCM 2",
-      "ativo": true
+      "ativo": true,
+      "criado_em": "2026-02-25T00:00:00Z",
+      "atualizado_em": "2026-02-25T00:00:00Z"
     }
   }
 ]

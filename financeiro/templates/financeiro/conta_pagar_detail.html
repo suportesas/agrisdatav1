@@ -1,0 +1,251 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Detalhes da Conta {{ conta.numero }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1><i class="bi bi-file-earmark-check"></i> {{ conta.numero }}</h1>
+                    <p class="text-muted">{{ conta.fornecedor.nome }} | {{ conta.data_emissao|date:'d/m/Y' }}</p>
+                </div>
+                <div>
+                    <span class="badge bg-{% if conta.status == 'PAGA' %}success{% elif conta.status == 'ABERTA' %}warning{% elif conta.status == 'APROVADA' %}info{% else %}secondary{% endif %} fs-6">
+                        {{ conta.get_status_display }}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Resumo de Valores -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="text-muted small">Valor Total</div>
+                    <div class="fs-5 fw-bold">R$ {{ conta.valor_total|floatformat:2 }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="text-muted small">Desconto</div>
+                    <div class="fs-5 fw-bold text-success">-R$ {{ conta.desconto_negociado|floatformat:2 }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="text-muted small">Valor Ajustado</div>
+                    <div class="fs-5 fw-bold">R$ {{ conta.valor_ajustado|floatformat:2 }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="text-muted small">Pago</div>
+                    <div class="fs-5 fw-bold text-primary">R$ {{ total_pago|floatformat:2 }}</div>
+                    <div class="small text-muted">Saldo: R$ {{ saldo_devedor|floatformat:2 }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Abas -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <ul class="nav nav-tabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="parcelas-tab" data-bs-toggle="tab" data-bs-target="#parcelas" type="button">
+                        <i class="bi bi-calendar-check"></i> Parcelas ({{ parcelas.count }})
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="pagamentos-tab" data-bs-toggle="tab" data-bs-target="#pagamentos" type="button">
+                        <i class="bi bi-check-circle"></i> Pagamentos ({{ pagamentos.count }})
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="ajustes-tab" data-bs-toggle="tab" data-bs-target="#ajustes" type="button">
+                        <i class="bi bi-arrow-repeat"></i> Ajustes ({{ ajustes.count }})
+                    </button>
+                </li>
+            </ul>
+
+            <div class="tab-content mt-3">
+                <!-- Parcelas -->
+                <div class="tab-pane fade show active" id="parcelas" role="tabpanel">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Parcela</th>
+                                    <th>Vencimento</th>
+                                    <th>Valor</th>
+                                    <th>Juros</th>
+                                    <th>Multa</th>
+                                    <th>Total</th>
+                                    <th>Status</th>
+                                    <th>Ação</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for parcela in parcelas %}
+                                <tr>
+                                    <td><strong>{{ parcela.numero_parcela }}</strong></td>
+                                    <td>{{ parcela.data_vencimento|date:'d/m/Y' }}</td>
+                                    <td>R$ {{ parcela.valor_parcela|floatformat:2 }}</td>
+                                    <td>R$ {{ parcela.juros_parcela|floatformat:2 }}</td>
+                                    <td>R$ {{ parcela.multa_parcela|floatformat:2 }}</td>
+                                    <td><strong>R$ {{ parcela.valor_total_parcela|floatformat:2 }}</strong></td>
+                                    <td>
+                                        <span class="badge bg-{% if parcela.status == 'PAGA' %}success{% elif parcela.status == 'VENCIDA' %}danger{% else %}warning{% endif %}">
+                                            {{ parcela.get_status_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if parcela.status == 'ABERTA' or parcela.status == 'VENCIDA' %}
+                                        <a href="{% url 'financeiro:parcela_pagar' parcela.id %}" class="btn btn-sm btn-primary">
+                                            Pagar
+                                        </a>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="8" class="text-center text-muted">Nenhuma parcela registrada</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <a href="{% url 'financeiro:parcela_criar' conta.id %}" class="btn btn-sm btn-outline-primary mt-3">
+                        <i class="bi bi-plus-circle"></i> Nova Parcela
+                    </a>
+                </div>
+
+                <!-- Pagamentos -->
+                <div class="tab-pane fade" id="pagamentos" role="tabpanel">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Data</th>
+                                    <th>Forma</th>
+                                    <th>Valor</th>
+                                    <th>Status</th>
+                                    <th>Comprovante</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for pagamento in pagamentos %}
+                                <tr>
+                                    <td>{{ pagamento.data_pagamento|date:'d/m/Y' }}</td>
+                                    <td>{{ pagamento.get_forma_pagamento_display }}</td>
+                                    <td>R$ {{ pagamento.valor_pago|floatformat:2 }}</td>
+                                    <td>
+                                        <span class="badge bg-{% if pagamento.status == 'COMPENSADO' %}success{% elif pagamento.status == 'PENDENTE' %}warning{% else %}danger{% endif %}">
+                                            {{ pagamento.get_status_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if pagamento.comprovante %}
+                                        <a href="{{ pagamento.comprovante.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-file-pdf"></i>
+                                        </a>
+                                        {% else %}
+                                        <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted">Nenhum pagamento registrado</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Ajustes -->
+                <div class="tab-pane fade" id="ajustes" role="tabpanel">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Tipo</th>
+                                    <th>Motivo</th>
+                                    <th>Valor</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for ajuste in ajustes %}
+                                <tr>
+                                    <td>{{ ajuste.get_tipo_display }}</td>
+                                    <td>{{ ajuste.motivo }}</td>
+                                    <td class="{% if ajuste.valor_ajuste > 0 %}text-danger{% else %}text-success{% endif %}">
+                                        {% if ajuste.valor_ajuste > 0 %}+{% endif %}R$ {{ ajuste.valor_ajuste|floatformat:2 }}
+                                    </td>
+                                    <td>
+                                        {% if ajuste.aprovado %}
+                                        <span class="badge bg-success">Aprovado</span>
+                                        {% else %}
+                                        <span class="badge bg-warning">Pendente</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center text-muted">Nenhum ajuste registrado</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Informações Adicionais -->
+    {% if conta.observacoes %}
+    <div class="card">
+        <div class="card-header">
+            <i class="bi bi-sticky"></i> Observações
+        </div>
+        <div class="card-body">
+            {{ conta.observacoes }}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Ações -->
+    <div class="mt-4">
+        {% if conta.status == 'ABERTA' and conta.requer_aprovacao %}
+        <a href="{% url 'financeiro:conta_pagar_aprovar' conta.id %}" class="btn btn-success">
+            <i class="bi bi-check-circle"></i> Aprovar Conta
+        </a>
+        {% endif %}
+        
+        {% if conta.status == 'ABERTA' %}
+        <a href="{% url 'financeiro:conta_pagar_edit' conta.id %}" class="btn btn-secondary">
+            <i class="bi bi-pencil"></i> Editar
+        </a>
+        {% endif %}
+
+        <a href="{% url 'financeiro:conta_pagar_list' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+    </div>
+</div>
+{% endblock %}

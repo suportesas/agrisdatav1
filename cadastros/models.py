@@ -426,10 +426,14 @@ class Fazenda(models.Model):
 
 
 class EnderecoFazenda(models.Model):
-    """
-    Endereços múltiplos da fazenda
-    Tipos: Faturamento, Cobrança, Entrega, Notify
-    """
+    recebedor_notify = models.CharField(
+        'Destinatário (Notify Party)',
+        max_length=255,
+        blank=True,
+        null=True,
+        help_text='Obrigatório apenas para endereço Notify Party'
+    )
+    # Endereços múltiplos da fazenda. Tipos: Faturamento, Cobrança, Entrega, Notify
     
     TIPO_ENDERECO = [
         ('PRINCIPAL', 'Endereço Principal'),
@@ -1338,6 +1342,7 @@ class CFOP(models.Model):
     codigo = models.CharField('Código CFOP', max_length=4, unique=True, help_text='Código CFOP (p. ex. 5102)')
     nome = models.CharField('Descrição', max_length=255)
     descricao = models.TextField('Observações', blank=True)
+    natureza_operacao = models.ForeignKey('produtos.NaturezaOperacao', on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Natureza da Operação', help_text='Natureza da Operação vinculada a este CFOP')
     ativo = models.BooleanField('Ativo', default=True)
     criado_em = models.DateTimeField('Data de criação', auto_now_add=True)
     atualizado_em = models.DateTimeField('Última atualização', auto_now=True)
@@ -5696,6 +5701,7 @@ class Fornecedor(models.Model):
     classificacao_risco = models.CharField('Classificação de Risco', max_length=10, choices=[('BAIXO','Baixo'), ('MEDIO','Médio'), ('ALTO','Alto')], blank=True)
     data_homologacao = models.DateField('Data de Homologação', null=True, blank=True)
     validade_homologacao = models.DateField('Validade da Homologação', null=True, blank=True)
+    limite_credito = models.DecimalField('Limite de Crédito Aprovado', max_digits=14, decimal_places=2, default=0, blank=True, null=True)
     prazo_pagamento_padrao = models.IntegerField('Prazo de Pagamento Padrão (dias)', null=True, blank=True)
     prazo_entrega_medio = models.IntegerField('Prazo de Entrega Médio (dias)', null=True, blank=True)
     observacoes = models.TextField('Observações Gerais', blank=True)

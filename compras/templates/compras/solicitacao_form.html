@@ -5,12 +5,39 @@
 {% block extra_css %}
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+<style>
+    #items-table th:nth-child(2),
+    #items-table td:nth-child(2) {
+        min-width: 340px;
+        width: 38%;
+    }
+
+    #items-table .select2-container {
+        width: 100% !important;
+        min-width: 320px;
+    }
+
+    #items-table .select2-selection {
+        min-height: calc(1.8125rem + 2px);
+    }
+</style>
 {% endblock %}
 
 {% block content %}
 <div class="alert alert-primary mx-3 mt-3">
     <i class="bi bi-clipboard-plus"></i> <strong>Nova Solicitação de Compra:</strong> Adicione os produtos que precisa comprar. Após criar, você poderá gerar cotações com fornecedores.
 </div>
+
+{% if messages %}
+<div class="container-fluid">
+    {% for message in messages %}
+    <div class="alert alert-{% if message.tags == 'error' %}danger{% elif message.tags == 'warning' %}warning{% elif message.tags == 'success' %}success{% else %}info{% endif %} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
 
 <div class="container-fluid">
     <div class="row">
@@ -172,14 +199,16 @@
                                 </td>
                             </tr>
                             {% endfor %}
-                            <!-- Template para novo item (usado pelo JavaScript) -->
-                            <tr class="item-form empty-form d-none" data-form-index="__prefix__">
+                        </tbody>
+                        <!-- Template para novo item (usado pelo JavaScript) -->
+                        <tbody id="empty-form-container" class="d-none" style="display: none !important;">
+                            <tr class="item-form empty-form" data-form-index="__prefix__">
                                 <td class="text-center">
                                     <strong class="item-number">X</strong>
-                                    <input type="hidden" name="itemsolicitacaocompra_set-__prefix__-id">
+                                    <input type="hidden" name="itens-__prefix__-id">
                                 </td>
                                 <td>
-                                    <select name="itemsolicitacaocompra_set-__prefix__-produto" class="form-select">
+                                    <select name="itens-__prefix__-produto" class="form-select form-select-sm produto-select">
                                         <option value="">Selecione um produto</option>
                                         {% for produto in produtos %}
                                             <option value="{{ produto.id }}">{{ produto.nome }}</option>
@@ -190,19 +219,21 @@
                                     <span class="estoque-atual-value">-</span>
                                 </td>
                                 <td>
-                                    <input type="number" name="itemsolicitacaocompra_set-__prefix__-quantidade" class="form-control" step="0.01" min="0">
+                                    <input type="number" name="itens-__prefix__-quantidade" class="form-control form-control-sm quantidade-input" step="0.001" min="0.001" placeholder="0,000">
                                 </td>
                                 <td>
-                                    <select name="itemsolicitacaocompra_set-__prefix__-unidade_medida" class="form-select"></select>
+                                    <select name="itens-__prefix__-unidade_medida" class="form-select form-select-sm unidade-select">
+                                        <option value="">Selecione uma unidade</option>
+                                    </select>
                                 </td>
                                 <td>
-                                    <textarea name="itemsolicitacaocompra_set-__prefix__-especificacao" class="form-control" rows="1"></textarea>
+                                    <textarea name="itens-__prefix__-especificacao" class="form-control form-control-sm especificacao-textarea" rows="2" placeholder="Detalhes técnicos, marca, modelo..."></textarea>
                                 </td>
                                 <td class="text-center">
                                     <button type="button" class="btn btn-sm btn-danger remove-item" title="Remover item">
                                         <i class="bi bi-trash"></i>
                                     </button>
-                                    <input type="hidden" name="itemsolicitacaocompra_set-__prefix__-DELETE">
+                                    <input type="hidden" name="itens-__prefix__-DELETE">
                                 </td>
                             </tr>
                         </tbody>
@@ -225,107 +256,314 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Inicializa Select2 para campos de produto
-    function initSelect2() {
-        $('[name$="produto"]').select2({
-            theme: 'bootstrap-5',
-            width: '100%',
-            language: {
-                noResults: function() {
-                    return 'Nenhum produto encontrado';
+    // Dados de unidades por produto (será preenchido quando necessário)
+    const unidadesPorProduto = {};
+    let unidadesEmpresa = null; // Cache de todas as unidades da empresa
+    
+    // Carregar todas as unidades da empresa (uma única vez)
+    async function carregarUnidadesEmpresa() {
+        if (unidadesEmpresa !== null) {
+            return unidadesEmpresa;
+        }
+        
+        try {
+            console.log('Carregando unidades da empresa via API...');
+            const response = await fetch('/compras/api/empresa/unidades/');
+            const data = await response.json();
+            
+            if (data.success && data.unidades) {
+                unidadesEmpresa = data.unidades;
+                console.log('✓ Unidades da empresa carregadas:', unidadesEmpresa.length, 'unidades');
+                console.log('  IDs:', unidadesEmpresa.map(u => u.id + ': ' + u.nome));
+                return unidadesEmpresa;
+            }
+        } catch (error) {
+            console.error('✗ Erro ao carregar unidades da empresa:', error);
+        }
+        return [];
+    }
+    
+    // Preencher select de unidade com todas as opcões disponíveis
+    function preencherSelectUnidade(unidadeSelect) {
+        if (!unidadeSelect || !unidadesEmpresa) {
+            return;
+        }
+        
+        console.log('Preenchendo select de unidade com', unidadesEmpresa.length, 'opções');
+        
+        // Limpar opções existentes, exceto a primeira (vazia)
+        while (unidadeSelect.options.length > 1) {
+            unidadeSelect.remove(1);
+        }
+        
+        // Adicionar todas as unidades da empresa
+        unidadesEmpresa.forEach(unidade => {
+            const option = document.createElement('option');
+            option.value = unidade.id;
+            option.text = `${unidade.nome} (${unidade.sigla})`;
+            unidadeSelect.appendChild(option);
+        });
+        
+        console.log('Select de unidade preenchido com', unidadeSelect.options.length - 1, 'opções');
+    }
+    
+    // API para buscar unidades de um produto
+    async function carregarUnidadesMedida(produtoId) {
+        if (unidadesPorProduto[produtoId]) {
+            console.log('Dados em cache para produto:', produtoId);
+            return unidadesPorProduto[produtoId];
+        }
+        
+        try {
+            const url = '/compras/api/produto/' + produtoId + '/unidades/';
+            console.log('Buscando dados do produto:', url);
+            
+            const response = await fetch(url);
+            console.log('Response status:', response.status);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            console.log('Dados completos da API:', data);
+            
+            if (data.success) {
+                // Armazenar o objeto completo, não apenas array
+                unidadesPorProduto[produtoId] = {
+                    unidades: data.unidades,
+                    unidade_padrao_id: data.unidade_padrao_id,
+                    unidade_padrao_nome: data.unidade_padrao_nome
+                };
+                console.log('Dados armazenados em cache:', unidadesPorProduto[produtoId]);
+                return unidadesPorProduto[produtoId];
+            } else {
+                console.warn('API retornou success=false:', data);
+                return null;
+            }
+        } catch (error) {
+            console.error('Erro ao carregar dados do produto:', error);
+            return null;
+        }
+    }
+    
+    // Atualizar select de unidades e estoque quando produto muda
+    async function atualizarAoMudarProduto(select) {
+        const row = select.closest('tr.item-form');
+        if (!row) {
+            console.warn('Linha do item não encontrada');
+            return;
+        }
+        
+        const produtoId = select.value;
+        console.log('=== Produto selecionado ===');
+        console.log('Produto ID:', produtoId);
+        
+        // Encontrar o select de unidade
+        let unidadeSelect = row.querySelector('select[name$="unidade_medida"]');
+        if (!unidadeSelect) {
+            const selects = row.querySelectorAll('select');
+            if (selects.length >= 2) {
+                unidadeSelect = selects[1];
+            }
+        }
+        
+        const estoqueCell = row.querySelector('.estoque-atual-cell');
+        const estoqueValue = estoqueCell ? estoqueCell.querySelector('.estoque-atual-value') : null;
+        
+        console.log('Select unidade encontrado:', !!unidadeSelect);
+        console.log('Estoque cell encontrado:', !!estoqueCell);
+        
+        if (!produtoId) {
+            // Limpar
+            if (unidadeSelect) {
+                unidadeSelect.value = '';
+            }
+            if (estoqueValue) {
+                estoqueValue.textContent = '-';
+            }
+            return;
+        }
+        
+        // Carregar dados do produto (incluindo unidade padrão)
+        try {
+            const dadosProduto = await carregarUnidadesMedida(produtoId);
+            console.log('Dados do produto:', dadosProduto);
+            
+            if (unidadeSelect && dadosProduto && dadosProduto.unidade_padrao_id) {
+                // Garantir que o select tem todas as opções disponíveis
+                preencherSelectUnidade(unidadeSelect);
+                
+                // Setar a unidade padrão do produto
+                unidadeSelect.value = dadosProduto.unidade_padrao_id;
+                console.log('Unidade padrão selecionada:', dadosProduto.unidade_padrao_nome, '(ID:', dadosProduto.unidade_padrao_id + ')');
+                
+                // Trigger change event para Select2 atualizar visualmente
+                if ($(unidadeSelect).data('select2')) {
+                    $(unidadeSelect).trigger('change');
+                    console.log('Select2 atualizado');
                 }
+            } else {
+                console.warn('Não foi possível setar unidade padrão');
+            }
+        } catch (error) {
+            console.error('Erro ao carregar dados do produto:', error);
+        }
+        
+        // Buscar e mostrar estoque
+        try {
+            const response = await fetch('/compras/api/produto/' + produtoId + '/estoque/');
+            const data = await response.json();
+            console.log('Resposta estoque:', data);
+            if (data.success && estoqueValue) {
+                estoqueValue.textContent = data.estoque_atual.toFixed(2) + ' ' + data.unidade;
+                console.log('Estoque atualizado');
+            }
+        } catch (error) {
+            console.error('Erro ao buscar estoque:', error);
+        }
+    }
+    
+    // Inicializa Select2 para campos de produto (excluindo empty-form)
+    function initSelect2() {
+        $('[name$="produto"]:not([name*="__prefix__"])').each(function() {
+            if (!$(this).data('select2')) {
+                console.log('Inicializando Select2 para:', this.name);
+                $(this).select2({
+                    theme: 'bootstrap-5',
+                    width: '100%',
+                    language: {
+                        noResults: function() {
+                            return 'Nenhum produto encontrado';
+                        }
+                    }
+                });
             }
         });
     }
     
-    // Busca estoque do produto via API
-    function atualizarEstoque(produtoId, row) {
-        if (!produtoId) {
-            row.querySelector('.estoque-atual-value').textContent = '-';
-            return;
-        }
+    // Event listener para mudança de produto (compatível com Select2 e selects dinâmicos)
+    $(document).on('change', '[name$="produto"]', function() {
+        console.log('\n>>> CHANGE EVENT DETECTADO - Produto foi alterado');
+        console.log('Select element:', this.name);
+        console.log('Valor selecionado:', this.value);
         
-        fetch('/compras/api/produto/' + produtoId + '/estoque/')
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    const estoqueCell = row.querySelector('.estoque-atual-cell');
-                    const unidadeSelect = row.querySelector('select[name$="unidade_medida"]');
-                    
-                    // Atualiza estoque atual
-                    estoqueCell.querySelector('.estoque-atual-value').textContent = 
-                        data.estoque_atual.toFixed(2) + ' ' + data.unidade;
-                    
-                    // Atualiza unidade de medida
-                    if (unidadeSelect && data.unidade_id) {
-                        unidadeSelect.value = data.unidade_id;
-                    }
-                } else {
-                    row.querySelector('.estoque-atual-value').textContent = '-';
-                }
-            })
-            .catch(error => {
-                console.error('Erro ao buscar estoque:', error);
-                row.querySelector('.estoque-atual-value').textContent = '-';
-            });
-    }
-    
-    // Atualiza unidade de medida quando produto é selecionado
-    function atualizarUnidade(select, row) {
-        const produtoId = select.value;
-        if (produtoId) {
-            atualizarEstoque(produtoId, row);
-        }
-    }
-    
-    // Event listener para mudança de produto
-    document.addEventListener('change', function(e) {
-        const select = e.target;
-        
-        // Verifica se é um select de produto
-        if (select.name && select.name.includes('produto')) {
-            const row = select.closest('tr.item-form');
-            if (row) {
-                const produtoId = select.value;
-                atualizarUnidade(select, row);
-            }
+        if (this.value) {
+            atualizarAoMudarProduto(this);
+        } else {
+            console.log('Valor vazio - limpando campos');
         }
     });
     
     // Adicionar item
     document.getElementById('add-item').addEventListener('click', function() {
-        const formCount = document.querySelectorAll('[name$="DELETE"]').length;
-        const emptyForm = document.querySelector('.empty-form');
+        const totalFormsInput = document.getElementById('id_itens-TOTAL_FORMS');
+        const formCount = totalFormsInput ? parseInt(totalFormsInput.value, 10) : 0;
+        const emptyFormContainer = document.getElementById('empty-form-container');
+        const tbody = document.getElementById('item-forms');
         
-        if (emptyForm) {
-            const newForm = emptyForm.cloneNode(true);
-            const tbody = document.getElementById('item-forms');
-            
-            // Atualizar índices
-            newForm.innerHTML = newForm.innerHTML.replace(/__prefix__/g, formCount);
-            newForm.classList.remove('empty-form');
-            newForm.classList.add('item-form');
-            newForm.setAttribute('data-form-index', formCount);
-            
-            // Atualizar número do item
-            const itemNumber = newForm.querySelector('.item-number');
-            if (itemNumber) {
-                itemNumber.textContent = tbody.querySelectorAll('tr.item-form').length + 1;
+        console.log('Adicionando novo item - formCount:', formCount);
+        
+        if (emptyFormContainer && tbody) {
+            const emptyForm = emptyFormContainer.querySelector('.empty-form');
+            if (emptyForm) {
+                // Clone profundo apenas da linha (tr)
+                const newForm = emptyForm.cloneNode(true);
+                
+                // Remover classe 'empty-form' IMEDIATAMENTE após clone
+                newForm.classList.remove('empty-form');
+                newForm.setAttribute('data-form-index', formCount);
+                
+                // Atualizar índices de todos os campos
+                const fieldsToUpdate = [
+                    'id', 'produto', 'quantidade', 'unidade_medida', 
+                    'especificacao', 'DELETE'
+                ];
+                
+                fieldsToUpdate.forEach(fieldName => {
+                    const newName = `itens-${formCount}-${fieldName}`;
+                    const elements = newForm.querySelectorAll(`[name*="__prefix__-${fieldName}"]`);
+                    
+                    elements.forEach(el => {
+                        const oldName = el.name;
+                        if (oldName && oldName.includes('__prefix__')) {
+                            el.name = newName;
+                            console.log(`Renomeado: ${oldName} → ${newName}`);
+                        }
+                    });
+                });
+                
+                // Atualizar número do item
+                const itemNumber = newForm.querySelector('.item-number');
+                if (itemNumber) {
+                    const currentCount = tbody.querySelectorAll('tr.item-form').length;
+                    itemNumber.textContent = currentCount + 1;
+                }
+
+                // Resetar valores de inputs e textareas (não selects ainda)
+                newForm.querySelectorAll('input:not([type="hidden"]), textarea').forEach(field => {
+                    field.value = '';
+                });
+                
+                // Adicionar atributo required aos campos obrigatórios
+                const quantidadeInput = newForm.querySelector('input[name$="quantidade"]');
+                const unidadeSelect = newForm.querySelector('select[name$="unidade_medida"]');
+                if (quantidadeInput) quantidadeInput.setAttribute('required', 'required');
+                if (unidadeSelect) unidadeSelect.setAttribute('required', 'required');
+
+                // Adicionar à tabela ANTES de inicializar Select2
+                tbody.appendChild(newForm);
+                console.log('Nova linha adicionada ao tbody');
+
+                if (totalFormsInput) {
+                    totalFormsInput.value = formCount + 1;
+                }
+
+                atualizarTotalItens();
+
+                // Pré-preencher select de unidade com opções disponíveis
+                if (unidadeSelect && unidadesEmpresa && unidadesEmpresa.length > 0) {
+                    console.log(`[Item ${formCount}] Preenchendo unidades`);
+                    preencherSelectUnidade(unidadeSelect);
+                }
+
+                // Inicializar Select2 para o novo campo de produto
+                const produtoSelect = newForm.querySelector('select[name$="produto"]');
+                if (produtoSelect && !$(produtoSelect).data('select2')) {
+                    console.log(`[Item ${formCount}] Inicializando Select2 para produto`);
+                    $(produtoSelect).select2({
+                        theme: 'bootstrap-5',
+                        width: '100%',
+                        language: {
+                            noResults: function() {
+                                return 'Nenhum produto encontrado';
+                            }
+                        }
+                    });
+                    
+                    // Adicionar event listener para quando produto é selecionado
+                    $(produtoSelect).on('select2:select', function(e) {
+                        console.log(`[Item ${formCount}] Select2 select event:`, e.params.data);
+                        atualizarAoMudarProduto(this);
+                    });
+                    
+                    console.log(`[Item ${formCount}] Select2 inicializado e listener adicionado`);
+                } else if (produtoSelect) {
+                    console.log(`[Item ${formCount}] Select2 já estava inicializado`);
+                }
+
+                // Adicionar event listener ao botão remover
+                const removeBtn = newForm.querySelector('.remove-item');
+                if (removeBtn) {
+                    removeBtn.addEventListener('click', removerItem);
+                }
+                
+                console.log(`Item ${formCount} adicionado com sucesso`);
             }
-            
-            tbody.appendChild(newForm);
-            
-            // Atualizar total de itens
-            atualizarTotalItens();
-            
-            // Reinicializar Select2
-            initSelect2();
-            
-            // Adicionar event listener ao botão remover
-            newForm.querySelector('.remove-item').addEventListener('click', removerItem);
         }
     });
     
@@ -344,7 +582,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Atualizar contador de itens
     function atualizarTotalItens() {
-        const visibleItems = document.querySelectorAll('tr.item-form:not([style*="display: none"])').length;
+        const visibleItems = document.querySelectorAll(
+            'tr.item-form:not(.empty-form):not([style*="display: none"]):not(.d-none)'
+        ).length;
         const itemCount = document.getElementById('item-count');
         if (itemCount) {
             itemCount.textContent = visibleItems + ' item' + (visibleItems !== 1 ? 'ns' : '');
@@ -368,13 +608,158 @@ document.addEventListener('DOMContentLoaded', function() {
         btn.addEventListener('click', removerItem);
     });
     
-    // Se não houver nenhum item visível, adicionar um vazio
-    const visibleItems = document.querySelectorAll('tr.item-form:not([style*="display: none"])').length;
-    if (visibleItems === 0) {
-        document.getElementById('add-item').click();
-    }
-    
     atualizarTotalItens();
+
+    // PRIMEIRO: Carregar unidades da empresa
+    console.log('=== Inicializando sistema de unidades ===');
+    (async function() {
+        // Carregar as unidades da empresa uma única vez
+        const unidades = await carregarUnidadesEmpresa();
+        if (unidades && unidades.length > 0) {
+            unidadesEmpresa = unidades;
+            console.log('✓ Unidades da empresa carregadas:', unidades.length);
+            
+            // Pré-preencher TODOS os selects de unidade com as opções disponíveis
+            document.querySelectorAll('select[name$="unidade_medida"]').forEach(select => {
+                preencherSelectUnidade(select);
+            });
+        }
+        
+        // DEPOIS: verificar se há items e adicionar um vazio se necessário
+        const visibleItems = document.querySelectorAll(
+            'tr.item-form:not(.empty-form):not(.d-none):not([style*="display: none"])'
+        ).length;
+        
+        console.log('Items visíveis após carregar unidades:', visibleItems);
+        
+        if (visibleItems === 0) {
+            console.log('Adicionando primeiro item...');
+            document.getElementById('add-item').click();
+        }
+    })();
+
+    // Validação amigável antes de enviar
+    const solicitacaoForm = document.getElementById('solicitacao-form');
+    if (solicitacaoForm) {
+        console.log('✓ Form listener configurado');
+        solicitacaoForm.addEventListener('submit', function(e) {
+            console.log('\n========== VALIDAÇÃO DO FORMULÁRIO ==========');
+            const erros = [];
+            
+            // ===== VALIDAÇÕES DA SOLICITAÇÃO =====
+            const dataNecessidade = document.getElementById('id_data_necessidade');
+            const justificativa = document.getElementById('id_justificativa');
+            const emergencial = document.getElementById('id_emergencial');
+            const justificativaEmergencial = document.getElementById('id_justificativa_emergencial');
+
+            console.log('Data necessidade:', dataNecessidade?.value ? 'SIM' : 'NÃO');
+            console.log('Justificativa:', justificativa?.value?.trim() ? 'SIM' : 'NÃO');
+
+            // Data de necessidade
+            if (dataNecessidade && !dataNecessidade.value) {
+                erros.push('Data de necessidade é obrigatória');
+            }
+
+            // Justificativa
+            if (justificativa && !justificativa.value.trim()) {
+                erros.push('Justificativa é obrigatória');
+            }
+
+            // Justificativa de emergência
+            if (emergencial && emergencial.checked && justificativaEmergencial && !justificativaEmergencial.value.trim()) {
+                erros.push('Justificativa da emergência é obrigatória');
+            }
+
+            // ===== VALIDAÇÕES DOS ITENS =====
+            const tbody = document.getElementById('item-forms');
+            const allRows = tbody ? tbody.querySelectorAll('tr') : [];
+            
+            console.log('Total de linhas no tbody:', allRows.length);
+
+            let itemVisivel = 0;
+            let itemsValidos = [];
+            
+            allRows.forEach((row, idx) => {
+                // Verificar se é o empty-form
+                if (row.classList.contains('empty-form')) {
+                    console.log(`Linha ${idx}: empty-form (ignorada)`);
+                    return;
+                }
+                
+                // Verificar se está visível e não está deletada
+                const isHidden = row.style.display === 'none' || row.classList.contains('d-none');
+                const deleteCheckbox = row.querySelector('input[name$="DELETE"]');
+                const isDeleted = deleteCheckbox && deleteCheckbox.checked;
+                
+                console.log(`Linha ${idx}: visível=${!isHidden}, deletada=${isDeleted}`);
+                
+                if (isHidden || isDeleted) {
+                    return;
+                }
+                
+                itemVisivel++;
+                const itemNum = itemVisivel;
+                const produto = row.querySelector('select[name$="produto"]');
+                const quantidade = row.querySelector('input[name$="quantidade"]');
+                const unidade = row.querySelector('select[name$="unidade_medida"]');
+                
+                const produtoVal = produto?.value || '';
+                const qtdVal = quantidade?.value || '';
+                const unidadeVal = unidade?.value || '';
+                
+                console.log(`Item ${itemNum}: Produto='${produtoVal}', Qtd='${qtdVal}', Unidade='${unidadeVal}'`);
+
+                if (!produtoVal) {
+                    erros.push(`Item ${itemNum}: Selecione um produto`);
+                } else {
+                    itemsValidos.push('produto');
+                }
+
+                if (!qtdVal || Number(qtdVal) <= 0) {
+                    erros.push(`Item ${itemNum}: Quantidade deve ser maior que 0`);
+                } else {
+                    itemsValidos.push('quantidade');
+                }
+
+                if (!unidadeVal) {
+                    erros.push(`Item ${itemNum}: Selecione a unidade`);
+                } else {
+                    itemsValidos.push('unidade');
+                }
+            });
+            
+            console.log(`\nTotal items visíveis: ${itemVisivel}`);
+            console.log(`Campos válidos: ${itemsValidos.length}`);
+
+            if (itemVisivel === 0) {
+                erros.push('Adicione pelo menos 1 item à solicitação');
+            }
+
+            // Mostrar erros
+            console.log(`\n❌ ERROS ENCONTRADOS: ${erros.length}`);
+            erros.forEach(e => console.log('   - ' + e));
+            
+            if (erros.length > 0) {
+                e.preventDefault();
+                const mensagem = 'Verifique os seguintes campos:\n\n' + 
+                                erros.map(e => '• ' + e).join('\n');
+                alert(mensagem);
+                console.log('\n⛔ SUBMISSÃO BLOQUEADA\n');
+                return false;
+            } else {
+                console.log('\n✓ VALIDAÇÃO OK - enviando formulário\n');
+                // Atualizar TOTAL_FORMS com número correto
+                const totalFormsInput = document.getElementById('id_itens-TOTAL_FORMS');
+                if (totalFormsInput) {
+                    totalFormsInput.value = itemVisivel;
+                    console.log('TOTAL_FORMS atualizado para:', itemVisivel);
+                }
+                return true;
+            }
+        });
+    } else {
+        console.log('✗ Formulário NÃO encontrado');
+    }
 });
 </script>
 {% endblock %}

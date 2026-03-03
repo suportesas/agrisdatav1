@@ -4,9 +4,14 @@
 <div class="container mt-3">
   <div class="d-flex justify-content-between align-items-center mb-3">
     <h1>Categorias</h1>
-    <a href="{% url 'produtos:categoria_create' %}" class="btn btn-primary">
-      <i class="bi bi-plus-circle"></i> Nova Categoria
-    </a>
+    <div>
+      <a href="{% url 'produtos:categoria_create' %}" class="btn btn-primary">
+        <i class="bi bi-plus-circle"></i> Nova Categoria
+      </a>
+      <a href="{% url 'produtos:categoria_seed' %}" class="btn btn-outline-success ms-2">
+        <i class="bi bi-lightning-charge"></i> Popular padrões
+      </a>
+    </div>
   </div>
 
   <div class="card">

@@ -5,7 +5,8 @@ from django.urls import path
 from . import views
 from .views_cotacao import (
     cotacao_list, cotacao_create_step1, cotacao_create_step2,
-    cotacao_detail, proposta_create, proposta_selecionar, historico_precos
+    cotacao_detail, proposta_create, proposta_selecionar, historico_precos,
+    historico_precos_list
 )
 from .views_dashboard import dashboard_compras
 from . import views_simples
@@ -17,6 +18,7 @@ urlpatterns = [
     # 🚀 MODO SIMPLES - Compras Rápidas
     # ========================================
     path('compra-rapida/', views_simples.compra_rapida, name='compra_rapida'),
+    path('pedidos/<int:pk>/editar/', views_simples.pedido_edit, name='pedido_edit'),
     path('recebimento-rapido/', views_simples.recebimento_rapido, name='recebimento_rapido'),
     path('recebimento-rapido/<int:pedido_pk>/', views_simples.recebimento_rapido, name='recebimento_rapido_pedido'),
     path('escolher-modo/', views_simples.escolher_modo_compra, name='escolher_modo_compra'),
@@ -65,6 +67,8 @@ urlpatterns = [
     path('recebimentos/novo/<int:pedido_id>/', views.recebimento_create, name='recebimento_create'),
     path('recebimentos/<int:pk>/conferir/', views.recebimento_conferir, name='recebimento_conferir'),
     path('recebimentos/<int:pk>/entrada-estoque/', views.recebimento_entrada_estoque, name='recebimento_entrada_estoque'),
+    path('recebimentos/<int:pk>/avaliar-fornecedor/', views.avaliar_fornecedor, name='avaliar_fornecedor'),
+    path('recebimentos/<int:recebimento_pk>/faturar/', views_simples.faturar_recebimento, name='faturar_recebimento'),
     
     # Cotações Inteligentes (busca automática de fornecedores)
     path('cotacoes-inteligentes/', cotacao_list, name='cotacao_inteligente_list'),
@@ -74,9 +78,12 @@ urlpatterns = [
     path('cotacoes-inteligentes/<int:cotacao_pk>/item/<int:item_pk>/proposta/', proposta_create, name='proposta_inteligente_create'),
     path('cotacoes-inteligentes/proposta/<int:proposta_pk>/selecionar/', proposta_selecionar, name='proposta_inteligente_selecionar'),
     path('produtos/<int:produto_pk>/historico-precos/', historico_precos, name='historico_precos'),
+    path('historico-precos/', historico_precos_list, name='historico_precos_list'),
     
     # API
     path('api/produto/<int:produto_id>/estoque/', views.get_produto_estoque, name='get_produto_estoque'),
+    path('api/produto/<int:produto_id>/unidades/', views.get_produto_unidades, name='get_produto_unidades'),
+    path('api/empresa/unidades/', views.get_empresa_unidades, name='get_empresa_unidades'),
     path('dashboard-compras/', dashboard_compras, name='dashboard_compras'),
     path('cotacoes/teste-template/',
          lambda request: __import__('compras.views_template_teste').views_template_teste.template_teste(request),

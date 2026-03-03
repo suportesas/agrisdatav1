@@ -123,7 +123,8 @@
           <div class="col-md-4">
             <label class="form-label fw-semibold">Densidade (plantas/ha)</label>
             {{ form.densidade_plantio }}
-            <small class="text-muted">Quantidade por hectare</small>
+            <small class="text-muted d-block">Quantidade por hectare</small>
+            <small id="densidade-formula" class="text-primary d-block mt-1">Fórmula: 10.000 ÷ (Espaçamento entre Linhas × Espaçamento entre Plantas)</small>
           </div>
 
           <div class="col-md-6">
@@ -319,4 +320,53 @@
   </form>
 
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const espacamentoLinhas = document.getElementById('id_espacamento_linhas');
+  const espacamentoPlantas = document.getElementById('id_espacamento_plantas');
+  const densidadePlantio = document.getElementById('id_densidade_plantio');
+  const formulaTexto = document.getElementById('densidade-formula');
+
+  function parseValor(valor) {
+    if (!valor) return 0;
+    return parseFloat(String(valor).replace(',', '.')) || 0;
+  }
+
+  function formatarInteiro(valor) {
+    return Number(valor).toLocaleString('pt-BR', { maximumFractionDigits: 0 });
+  }
+
+  function atualizarDensidade() {
+    if (!espacamentoLinhas || !espacamentoPlantas || !densidadePlantio) {
+      return;
+    }
+
+    const linhas = parseValor(espacamentoLinhas.value);
+    const plantas = parseValor(espacamentoPlantas.value);
+
+    if (linhas > 0 && plantas > 0) {
+      const resultado = 10000 / (linhas * plantas);
+      const densidadeArredondada = Math.round(resultado);
+      densidadePlantio.value = densidadeArredondada;
+
+      if (formulaTexto) {
+        formulaTexto.textContent = `Fórmula: 10.000 ÷ (${linhas.toFixed(2)} × ${plantas.toFixed(2)}) = ${formatarInteiro(densidadeArredondada)} plantas/ha`;
+      }
+      return;
+    }
+
+    densidadePlantio.value = '';
+    if (formulaTexto) {
+      formulaTexto.textContent = 'Fórmula: 10.000 ÷ (Espaçamento entre Linhas × Espaçamento entre Plantas)';
+    }
+  }
+
+  if (espacamentoLinhas && espacamentoPlantas) {
+    espacamentoLinhas.addEventListener('input', atualizarDensidade);
+    espacamentoPlantas.addEventListener('input', atualizarDensidade);
+    atualizarDensidade();
+  }
+});
+</script>
 {% endblock %}

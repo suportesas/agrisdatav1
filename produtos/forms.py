@@ -88,6 +88,25 @@ class SubCategoriaForm(forms.ModelForm):
         }
 
 
+class CategoriaSelect(Select):
+    """Widget personalizado para adicionar data-condiciona-campos nas opções"""
+    def create_option(self, name, value, label, selected, index, subindex=None, attrs=None):
+        option = super().create_option(name, value, label, selected, index, subindex, attrs)
+        if value:
+            try:
+                # Extrair o valor real se for um ModelChoiceIteratorValue
+                if hasattr(value, 'value'):
+                    value = value.value
+                # Converter para int se for string
+                if isinstance(value, str) and value.isdigit():
+                    value = int(value)
+                from .models import Categoria
+                categoria = Categoria.objects.get(pk=value)
+                option['attrs']['data-condiciona-campos'] = 'true' if getattr(categoria, 'condiciona_campos', False) else 'false'
+            except (Categoria.DoesNotExist, ValueError, TypeError):
+                pass
+        return option
+
 class ProdutoForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         empresa = kwargs.pop('empresa', None)
@@ -106,11 +125,14 @@ class ProdutoForm(forms.ModelForm):
     
     class Meta:
         model = Produto
+        widgets = {
+            'categoria': CategoriaSelect(attrs={'class': 'form-select'}),
+        }
         fields = [
             # Identificação
             'codigo', 'codigo_barras', 'nome', 'nome_resumido', 'descricao',
             # Classificação
-            'categoria', 'subcategoria', 'tipo_produto',
+            'categoria', 'subcategoria',
             # Unidades
             'unidade_medida', 'unidade_compra', 'unidade_venda', 'fator_conversao',
             # Fiscal
@@ -151,9 +173,8 @@ class ProdutoForm(forms.ModelForm):
             'descricao': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             
             # Classificação
-            'categoria': forms.Select(attrs={'class': 'form-select'}),
+            'categoria': CategoriaSelect(attrs={'class': 'form-select'}),
             'subcategoria': SubCategoriaSelect(attrs={'class': 'form-select'}),
-            'tipo_produto': forms.Select(attrs={'class': 'form-select'}),
             
             # Unidades
             'unidade_medida': forms.Select(attrs={'class': 'form-select'}),
@@ -243,10 +264,17 @@ class ProdutoTributacaoForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         empresa = kwargs.pop('empresa', None)
         super().__init__(*args, **kwargs)
-        
         # Filtrar por empresa
         if empresa:
             self.fields['natureza_operacao'].queryset = NaturezaOperacao.objects.filter(empresa=empresa)
+            # Importar EmpresaCFOP e CFOP aqui para evitar import circular
+            from cadastros.models import EmpresaCFOP, CFOP
+            empresa_cfop_codigos = list(EmpresaCFOP.objects.filter(empresa=empresa, ativo=True).values_list('codigo', flat=True))
+            print(f"[DEBUG] Empresa: {empresa}")
+            print(f"[DEBUG] Códigos EmpresaCFOP: {empresa_cfop_codigos}")
+            cfops_filtrados = list(CFOP.objects.filter(codigo__in=empresa_cfop_codigos, ativo=True))
+            print(f"[DEBUG] CFOPs filtrados: {cfops_filtrados}")
+            self.fields['cfop'].queryset = CFOP.objects.filter(codigo__in=empresa_cfop_codigos, ativo=True)
     
     class Meta:
         model = ProdutoTributacao

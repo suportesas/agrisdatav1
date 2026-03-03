@@ -703,12 +703,8 @@ def produto_historico(request, pk):
     except Exception:
         solicitacoes = []
 
-    # Empréstimos relacionados (se houver app de empréstimos)
-    try:
-        from emprestimos.models import ItemEmprestimo
-        emprestimos = ItemEmprestimo.objects.filter(produto=produto, emprestimo__empresa=empresa).select_related('emprestimo')
-    except Exception:
-        emprestimos = []
+    # Empréstimos relacionados removidos (app emprestimos excluído)
+    emprestimos = []
 
     context = {
         'produto': produto,
@@ -716,7 +712,7 @@ def produto_historico(request, pk):
         'stats': stats,
         'compras': compras,
         'solicitacoes': solicitacoes,
-        'emprestimos': emprestimos,
+        'emprestimos': emprestimos,  # Mantido vazio para compatibilidade de template
         'tipo_filtro': tipo_filtro,
         'origem_filtro': origem_filtro,
         'data_inicio': data_inicio,

@@ -61,6 +61,93 @@
     </div>
     {% endif %}
 
+    {% include 'compras/includes/fluxo_compras_simples.html' with etapa_atual='compra' %}
+
+    <!-- Seção: Pedidos Recentes (com ações editar/excluir) -->
+    {% if pedidos_recentes %}
+    <div class="card mb-4">
+        <div class="card-header bg-info text-white">
+            <h5 class="mb-0"><i class="fas fa-list"></i> Pedidos Recentes</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Número</th>
+                            <th>Fornecedor</th>
+                            <th>Data</th>
+                            <th>Valor</th>
+                            <th>Status</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for pedido in pedidos_recentes %}
+                        <tr>
+                            <td>
+                                <strong>{{ pedido.numero }}</strong>
+                            </td>
+                            <td>{{ pedido.fornecedor.nome }}</td>
+                            <td>{{ pedido.data_pedido|date:'d/m/Y' }}</td>
+                            <td>R$ {{ pedido.valor_total|floatformat:2 }}</td>
+                            <td>
+                                {% if pedido.status == 'PENDENTE_RECEBIMENTO' %}
+                                    <span class="badge bg-warning text-dark">Pendente</span>
+                                {% elif pedido.status == 'ADICIONANDO_ITENS' %}
+                                    <span class="badge bg-info text-dark">Editando</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ pedido.status }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <a href="{% url 'compras:pedido_edit' pedido.pk %}" class="btn btn-outline-primary" title="Editar">
+                                        <i class="fas fa-edit"></i> Editar
+                                    </a>
+                                    <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#modalExcluir{{ pedido.pk }}" title="Excluir">
+                                        <i class="fas fa-trash"></i> Excluir
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+
+                        <!-- Modal de Confirmação de Exclusão -->
+                        <div class="modal fade" id="modalExcluir{{ pedido.pk }}" tabindex="-1">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header bg-danger text-white">
+                                        <h5 class="modal-title">Confirmar Exclusão</h5>
+                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <p>Tem certeza que deseja excluir o pedido <strong>{{ pedido.numero }}</strong>?</p>
+                                        <p class="text-muted"><small>Esta ação não pode ser desfeita.</small></p>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                        <form method="POST" style="display: inline;">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="action" value="delete">
+                                            <input type="hidden" name="pedido_id" value="{{ pedido.pk }}">
+                                            <button type="submit" class="btn btn-danger">
+                                                <i class="fas fa-trash"></i> Excluir
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% include 'compras/includes/fluxo_compras_simples.html' with etapa_atual='compra' %}
+
     <form method="POST" id="compraForm">
         {% csrf_token %}
 
@@ -74,11 +161,11 @@
                     <div class="col-md-6">
                         <div class="mb-3">
                             <label for="fornecedor" class="form-label">Fornecedor *</label>
-                            <select name="fornecedor_id" id="fornecedor" class="form-select" required>
+                            <select name="fornecedor" id="fornecedor" class="form-select" required>
                                 <option value="">-- Selecione um fornecedor --</option>
                                 {% for fornecedor in fornecedores %}
                                 <option value="{{ fornecedor.id }}">
-                                    {{ fornecedor.razao_social }}
+                                    {{ fornecedor.nome }}
                                 </option>
                                 {% endfor %}
                             </select>
@@ -121,7 +208,7 @@
                     <tbody id="produtosBody">
                         <tr class="produto-row">
                             <td>
-                                <select name="produtos" class="form-select produto-select" onchange="atualizarPreco(this)">
+                                <select name="produto_id[]" class="form-select produto-select" onchange="atualizarPreco(this)">
                                     <option value="">-- Selecione um produto --</option>
                                     {% for produto in produtos %}
                                     <option value="{{ produto.id }}" data-preco="{{ produto.preco_custo|default:0 }}">
@@ -131,10 +218,10 @@
                                 </select>
                             </td>
                             <td>
-                                <input type="number" name="quantidades" class="form-control quantidade-input" min="0.01" step="0.01" placeholder="0" onchange="calcularSubtotal(this)">
+                                <input type="number" name="quantidade[]" class="form-control quantidade-input" min="0.01" step="0.01" placeholder="0" onchange="calcularSubtotal(this)">
                             </td>
                             <td>
-                                <input type="number" name="precos" class="form-control preco-input" min="0" step="0.01" placeholder="0,00" onchange="calcularSubtotal(this)">
+                                <input type="number" name="preco[]" class="form-control preco-input" min="0" step="0.01" placeholder="0,00" onchange="calcularSubtotal(this)">
                             </td>
                             <td>
                                 <input type="text" class="form-control subtotal-input" readonly placeholder="0,00">
@@ -183,6 +270,7 @@ function adicionarProduto() {
     row.querySelector('.quantidade-input').value = '';
     row.querySelector('.preco-input').value = '';
     row.querySelector('.subtotal-input').value = '';
+    row.querySelector('.subtotal-input').dataset.valor = '0';
     
     tableBody.appendChild(row);
 }
@@ -208,8 +296,9 @@ function calcularSubtotal(input) {
     const row = input.closest('tr');
     const quantidade = parseFloat(row.querySelector('.quantidade-input').value) || 0;
     const preco = parseFloat(row.querySelector('.preco-input').value) || 0;
-    const subtotal = (quantidade * preco).toFixed(2);
+    const subtotal = quantidade * preco;
     
+    row.querySelector('.subtotal-input').dataset.valor = subtotal.toFixed(2);
     row.querySelector('.subtotal-input').value = formatarMoeda(subtotal);
     calcularTotal();
 }
@@ -217,15 +306,15 @@ function calcularSubtotal(input) {
 function calcularTotal() {
     let total = 0;
     document.querySelectorAll('.produto-row').forEach(row => {
-        const subtotal = parseFloat(row.querySelector('.subtotal-input').value.replace('R$ ', '').replace(',', '.')) || 0;
+        const subtotal = parseFloat(row.querySelector('.subtotal-input').dataset.valor || '0') || 0;
         total += subtotal;
     });
     
-    document.getElementById('totalCompra').textContent = formatarMoeda(total.toFixed(2));
+    document.getElementById('totalCompra').textContent = formatarMoeda(total);
 }
 
 function formatarMoeda(valor) {
-    return 'R$ ' + parseFloat(valor).toLocaleString('pt-BR', {
+    return 'R$ ' + Number(valor || 0).toLocaleString('pt-BR', {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2
     });

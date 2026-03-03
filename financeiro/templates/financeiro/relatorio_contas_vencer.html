@@ -1,0 +1,185 @@
+{% extends 'base.html' %}
+
+{% block title %}Contas a Vencer{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1><i class="bi bi-calendar-event"></i> Contas a Vencer (Próximos 30 dias)</h1>
+        </div>
+    </div>
+
+    <!-- Resumo -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="text-muted small">Total de Parcelas</div>
+                    <div class="fs-5 fw-bold">{{ parcelas|length }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="text-muted small">Valor Total</div>
+                    <div class="fs-5 fw-bold">R$ {{ valor_total|floatformat:2 }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="text-muted small">Próximos 7 dias</div>
+                    <div class="fs-5 fw-bold text-danger">{{ parcelas_7_dias }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="text-muted small">De 8 a 30 dias</div>
+                    <div class="fs-5 fw-bold text-warning">{{ parcelas_30_dias }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabela de Contas -->
+    <div class="card">
+        <div class="card-header">
+            <h6 class="mb-0"><i class="bi bi-table"></i> Detalhamento</h6>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Conta</th>
+                        <th>Fornecedor</th>
+                        <th>Parcela</th>
+                        <th>Vencimento</th>
+                        <th>Dias</th>
+                        <th>Valor Original</th>
+                        <th>Juros</th>
+                        <th>Multa</th>
+                        <th>Total</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for parcela in parcelas %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'financeiro:conta_pagar_detail' parcela.conta_pagar.id %}">
+                                {{ parcela.conta_pagar.numero }}
+                            </a>
+                        </td>
+                        <td>{{ parcela.conta_pagar.fornecedor.nome }}</td>
+                        <td><strong>{{ parcela.numero_parcela }}</strong></td>
+                        <td>
+                            <strong>{{ parcela.data_vencimento|date:'d/m/Y' }}</strong>
+                            <br><small class="text-muted">({{ data_hoje|date:'d \d\e F' }})</small>
+                        </td>
+                        <td>
+                            {% if dias_ate_vencimento <= 7 %}
+                            <span class="badge bg-danger">{{ dias_ate_vencimento }}d</span>
+                            {% elif dias_ate_vencimento <= 14 %}
+                            <span class="badge bg-warning">{{ dias_ate_vencimento }}d</span>
+                            {% else %}
+                            <span class="badge bg-info">{{ dias_ate_vencimento }}d</span>
+                            {% endif %}
+                        </td>
+                        <td>R$ {{ parcela.valor_parcela|floatformat:2 }}</td>
+                        <td>
+                            {% if parcela.juros_parcela > 0 %}
+                            <strong class="text-danger">R$ {{ parcela.juros_parcela|floatformat:2 }}</strong>
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if parcela.multa_parcela > 0 %}
+                            <strong class="text-danger">R$ {{ parcela.multa_parcela|floatformat:2 }}</strong>
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td><strong>R$ {{ parcela.valor_total_parcela|floatformat:2 }}</strong></td>
+                        <td>
+                            <span class="badge bg-{% if parcela.status == 'PAGA' %}success{% else %}warning{% endif %}">
+                                {{ parcela.get_status_display }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="10" class="text-center py-4">
+                            <div class="text-muted">
+                                <i class="bi bi-inbox" style="font-size: 2rem;"></i>
+                                <p>Nenhuma conta vencendo nos próximos 30 dias</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Agrupamento por Data -->
+    <div class="card mt-4">
+        <div class="card-header">
+            <h6 class="mb-0"><i class="bi bi-calendar2-check"></i> Agrupado por Data de Vencimento</h6>
+        </div>
+        <div class="card-body">
+            {% for data, parcelas_data in parcelas_por_data.items %}
+            <div class="mb-4">
+                <div class="bg-light p-3 rounded mb-2">
+                    <strong>{{ data|date:'l, d \d\e F \d\e Y' }}</strong>
+                    <span class="badge bg-primary">{{ parcelas_data|length }} parcela{% if parcelas_data|length != 1 %}s{% endif %}</span>
+                    <span class="badge bg-success">R$ {{ parcelas_data_valor|first|floatformat:2 }}</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Fornecedor</th>
+                                <th>Conta</th>
+                                <th>Parcela</th>
+                                <th>Valor</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for parcela in parcelas_data %}
+                            <tr>
+                                <td>{{ parcela.conta_pagar.fornecedor.nome }}</td>
+                                <td>
+                                    <a href="{% url 'financeiro:conta_pagar_detail' parcela.conta_pagar.id %}">
+                                        {{ parcela.conta_pagar.numero }}
+                                    </a>
+                                </td>
+                                <td>{{ parcela.numero_parcela }}</td>
+                                <td><strong>R$ {{ parcela.valor_total_parcela|floatformat:2 }}</strong></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Exportar -->
+    <div class="mt-4">
+        <a href="?export=csv" class="btn btn-outline-secondary">
+            <i class="bi bi-download"></i> Exportar para CSV
+        </a>
+        <a href="?export=pdf" class="btn btn-outline-secondary">
+            <i class="bi bi-file-pdf"></i> Exportar para PDF
+        </a>
+    </div>
+</div>
+{% endblock %}

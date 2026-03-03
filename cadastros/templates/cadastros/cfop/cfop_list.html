@@ -2,7 +2,7 @@
 
 {% block content %}
 <div class="container mt-3">
-  <h1>CFOPs</h1>
+  <h1 class="mb-4"><i class="bi bi-list-columns"></i> CFOPs</h1>
   <div class="mb-3 d-flex justify-content-between">
     <form class="d-flex" method="get">
       <input name="q" class="form-control form-control-sm me-2" placeholder="Pesquisar por código ou nome" value="{{ q }}">
@@ -17,41 +17,51 @@
 
       <button class="btn btn-outline-secondary btn-sm">Pesquisar</button>
     </form>
-    {% if request.user.is_superuser %}
-      <a href="{% url 'cadastros:cfop_create' %}" class="btn btn-primary btn-sm">Novo CFOP</a>
-    {% endif %}
+    <div>
+      {% if request.user.is_superuser %}
+        <a href="{% url 'cadastros:cfop_create' %}" class="btn btn-primary btn-sm">Novo CFOP</a>
+      {% endif %}
+      <a href="{% url 'cadastros:cfop_seed' %}" class="btn btn-outline-success btn-sm ms-2">
+        <i class="bi bi-lightning-charge"></i> Popular padrões
+      </a>
+    </div>
   </div>
 
-  <table class="table table-striped table-sm">
-    <thead>
-      <tr>
-        <th>Código</th>
-        <th>Nome</th>
-        <th>Observações</th>
-        <th>Ativo</th>
-        <th></th>
-      </tr>
-    </thead>
-    <tbody>
+  <div class="table-responsive">
+    <table class="table table-hover align-middle border rounded shadow-sm">
+      <thead class="table-light">
+        <tr>
+          <th style="width: 90px;">Código</th>
+          <th>Nome</th>
+          <th>Observações</th>
+          <th style="width: 70px;">Status</th>
+          <th style="width: 120px;">Ações</th>
+        </tr>
+      </thead>
+      <tbody>
       {% for cf in page_obj.object_list %}
       <tr>
-        <td>{{ cf.codigo }}</td>
+        <td><span class="fw-bold text-primary">{{ cf.codigo }}</span></td>
         <td>{{ cf.nome }}</td>
-        <td>{{ cf.descricao|default_if_none:''|truncatechars:60 }}</td>
-        <td>{% if cf.ativo %}✅{% else %}❌{% endif %}</td>
+        <td class="text-muted small">{{ cf.descricao|default_if_none:''|truncatechars:60 }}</td>
         <td>
-          {% if request.user.is_superuser %}
-            <a href="{% url 'cadastros:cfop_update' cf.pk %}" class="btn btn-sm btn-outline-secondary">Editar</a>
-            <a href="{% url 'cadastros:cfop_delete' cf.pk %}" class="btn btn-sm btn-outline-danger">Excluir</a>
+          {% if cf.ativo %}
+            <span class="badge bg-success">Ativo</span>
+          {% else %}
+            <span class="badge bg-secondary">Inativo</span>
           {% endif %}
+        </td>
+        <td>
+          <a href="{% url 'cadastros:cfop_update' cf.pk %}" class="btn btn-sm btn-outline-primary me-1" title="Editar"><i class="bi bi-pencil"></i></a>
+          <a href="{% url 'cadastros:cfop_delete' cf.pk %}" class="btn btn-sm btn-outline-danger" title="Excluir"><i class="bi bi-trash"></i></a>
         </td>
       </tr>
       {% empty %}
-      <tr><td colspan="5" class="text-muted">Nenhum CFOP cadastrado.</td></tr>
+      <tr><td colspan="5" class="text-muted text-center">Nenhum CFOP cadastrado.</td></tr>
       {% endfor %}
     </tbody>
-  </table>
-
+    </table>
+  </div>
   {% include 'partials/pagination.html' with page_obj=page_obj %}
 </div>
 {% endblock %}

@@ -1,0 +1,121 @@
+{% extends 'base.html' %}
+
+{% block title %}Aprovar Conta {{ conta.numero }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1><i class="bi bi-check-circle"></i> Confirmar Aprovação</h1>
+        </div>
+    </div>
+
+    <div class="card border-warning">
+        <div class="card-body">
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle"></i> Você está prestes a aprovar a conta abaixo.
+                <br><strong>Esta ação é irreversível!</strong>
+            </div>
+
+            <!-- Detalhes da Conta -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="text-muted">Número</label>
+                        <div class="fs-5">{{ conta.numero }}</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="text-muted">Fornecedor</label>
+                        <div class="fs-5">{{ conta.fornecedor.nome }}</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="text-muted">Data Emissão</label>
+                        <div class="fs-5">{{ conta.data_emissao|date:'d/m/Y' }}</div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="text-muted">Valor Total</label>
+                        <div class="fs-5 fw-bold">R$ {{ conta.valor_total|floatformat:2 }}</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="text-muted">Desconto</label>
+                        <div class="fs-5">R$ {{ conta.desconto_negociado|floatformat:2 }}</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="text-muted">Valor Ajustado</label>
+                        <div class="fs-5 fw-bold">R$ {{ conta.valor_ajustado|floatformat:2 }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Parcelas -->
+            <div class="mb-4">
+                <h6><i class="bi bi-list-task"></i> Parcelas da Conta</h6>
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Parcela</th>
+                                <th>Vencimento</th>
+                                <th>Valor</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for parcela in parcelas %}
+                            <tr>
+                                <td>{{ parcela.numero_parcela }}</td>
+                                <td>{{ parcela.data_vencimento|date:'d/m/Y' }}</td>
+                                <td>R$ {{ parcela.valor_total_parcela|floatformat:2 }}</td>
+                                <td>
+                                    <span class="badge bg-warning">{{ parcela.get_status_display }}</span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Observações -->
+            {% if conta.observacoes %}
+            <div class="mb-4">
+                <h6><i class="bi bi-sticky"></i> Observações</h6>
+                <div class="alert alert-light">{{ conta.observacoes }}</div>
+            </div>
+            {% endif %}
+
+            <!-- Confirmação -->
+            <div class="alert alert-warning">
+                <strong><i class="bi bi-exclamation-triangle"></i> Atenção:</strong>
+                <br>Uma vez aprovada, a conta e suas parcelas ficarão disponíveis para pagamento.
+                <br>Certifique-se de que todos os dados estão corretos antes de prosseguir.
+            </div>
+
+            <!-- Formulário de Confirmação -->
+            <form method="post">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="confirm" name="confirm" required>
+                        <label class="form-check-label" for="confirm">
+                            Confirmo que os dados estão corretos e desejo aprovar esta conta
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Botões -->
+                <div>
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-check-circle"></i> Confirmar Aprovação
+                    </button>
+                    <a href="{% url 'financeiro:conta_pagar_detail' conta.id %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-x-circle"></i> Cancelar
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

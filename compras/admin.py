@@ -10,6 +10,9 @@ from .models import (
     FornecedorCotacao,
     RecebimentoCompra,
     ItemRecebimento,
+    TipoDivergencia,
+    DivergenciaRecebimento,
+    AvaliacaoFornecedor,
 )
 
 
@@ -152,4 +155,104 @@ class ItemRecebimentoAdmin(admin.ModelAdmin):
     list_display = ['recebimento', 'item_pedido', 'quantidade_recebida', 'local_estoque', 'lote']
     list_filter = ['local_estoque', 'data_cadastro']
     search_fields = ['item_pedido__produto__nome', 'lote', 'recebimento__numero']
+
+
+@admin.register(TipoDivergencia)
+class TipoDivergenciaAdmin(admin.ModelAdmin):
+    """Admin para CRUD de Tipos de Divergência"""
+    list_display = ['codigo', 'nome', 'severidade', 'ativo', 'empresa']
+    list_filter = ['severidade', 'ativo', 'empresa', 'data_criacao']
+    search_fields = ['codigo', 'nome', 'descricao']
+    readonly_fields = ['data_criacao', 'data_atualizacao']
+    
+    fieldsets = (
+        ('Identificação', {
+            'fields': ('empresa', 'codigo', 'nome')
+        }),
+        ('Detalhes', {
+            'fields': ('descricao', 'severidade', 'ativo')
+        }),
+        ('Auditoria', {
+            'fields': ('data_criacao', 'data_atualizacao'),
+            'classes': ('collapse',)
+        }),
+    )
+
+
+class DivergenciaRecebimentoInline(admin.TabularInline):
+    model = DivergenciaRecebimento
+    extra = 0
+    fields = ['tipo_divergencia', 'item_recebimento', 'quantidade_afetada', 'status_divergencia']
+    readonly_fields = ['data_criacao']
+
+
+@admin.register(DivergenciaRecebimento)
+class DivergenciaRecebimentoAdmin(admin.ModelAdmin):
+    """Admin para Divergências de Recebimento"""
+    list_display = ['recebimento', 'tipo_divergencia', 'status_divergencia', 'registrado_por', 'data_criacao']
+    list_filter = ['status_divergencia', 'tipo_divergencia__severidade', 'data_criacao']
+    search_fields = ['recebimento__numero', 'descricao_detalhes']
+    readonly_fields = ['data_criacao', 'data_atualizacao', 'registrado_por']
+    
+    fieldsets = (
+        ('Recebimento', {
+            'fields': ('recebimento', 'item_recebimento')
+        }),
+        ('Tipo de Divergência', {
+            'fields': ('tipo_divergencia', 'quantidade_afetada')
+        }),
+        ('Descrição', {
+            'fields': ('descricao_detalhes', 'acao_proposta')
+        }),
+        ('Fotos/Evidências', {
+            'fields': ('foto_1', 'foto_2'),
+            'classes': ('collapse',)
+        }),
+        ('Resolução', {
+            'fields': ('status_divergencia', 'data_resolucao', 'descricao_resolucao')
+        }),
+        ('Auditoria', {
+            'fields': ('registrado_por', 'data_criacao', 'data_atualizacao'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    def save_model(self, request, obj, form, change):
+        if not obj.registrado_por_id:
+            obj.registrado_por = request.user
+        super().save_model(request, obj, form, change)
+
+
+@admin.register(AvaliacaoFornecedor)
+class AvaliacaoFornecedorAdmin(admin.ModelAdmin):
+    """Admin para Avaliações de Fornecedor"""
+    list_display = ['fornecedor', 'recebimento', 'nota_media', 'recomenda', 'avaliador', 'data_avaliacao']
+    list_filter = ['nota_media', 'recomenda', 'data_avaliacao', 'empresa']
+    search_fields = ['fornecedor__nome', 'recebimento__numero']
+    readonly_fields = ['nota_media', 'data_avaliacao', 'avaliador']
+    
+    fieldsets = (
+        ('Identificação', {
+            'fields': ('empresa', 'recebimento', 'fornecedor', 'avaliador')
+        }),
+        ('Critérios de Avaliação', {
+            'fields': ('qualidade_produto', 'prazo_entrega', 'documentacao', 'atendimento', 'preco', 'nota_media'),
+            'description': 'Avalie em escala de 1 a 5 estrelas'
+        }),
+        ('Comentários', {
+            'fields': ('pontos_positivos', 'pontos_negativos', 'recomendacao')
+        }),
+        ('Recomendação', {
+            'fields': ('recomenda',)
+        }),
+        ('Auditoria', {
+            'fields': ('data_avaliacao',),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    def save_model(self, request, obj, form, change):
+        if not obj.avaliador_id:
+            obj.avaliador = request.user
+        super().save_model(request, obj, form, change)
 

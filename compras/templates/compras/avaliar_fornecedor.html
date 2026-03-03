@@ -1,0 +1,346 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Avaliar Fornecedor - {{ fornecedor.nome }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .star-rating {
+        display: flex;
+        gap: 10px;
+        margin: 10px 0;
+        font-size: 2rem;
+        width: fit-content;
+    }
+    .star-rating input {
+        display: none;
+    }
+    .star-rating label {
+        cursor: pointer;
+        color: #ddd;
+        transition: color 0.2s;
+    }
+    /* Estrela selecionada fica amarela */
+    .star-rating input:checked ~ label {
+        color: #ffc107;
+    }
+    /* Hover nas estrelas */
+    .star-rating label:hover,
+    .star-rating label:hover ~ label {
+        color: #ffc107;
+    }
+    
+    .criterio-avaliacao {
+        border-left: 4px solid #007bff;
+        padding-left: 15px;
+        margin-bottom: 20px;
+    }
+    
+    .nota-display {
+        font-size: 2.5rem;
+        font-weight: bold;
+        color: #ffc107;
+    }
+    
+    .score-preview {
+        display: inline-block;
+        padding: 5px 10px;
+        background: #f8f9fa;
+        border-radius: 5px;
+        font-weight: bold;
+        color: #666;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col">
+            <h2>
+                <i class="bi bi-star-fill me-2" style="color: #ffc107;"></i>
+                Avaliar Fornecedor
+            </h2>
+            <p class="text-muted mb-0">
+                Fornecedor: <strong>{{ fornecedor.nome }}</strong>
+            </p>
+            <p class="text-muted mb-0">
+                Recebimento: {{ recebimento.numero }} | NF-e: {{ recebimento.nota_fiscal }}
+            </p>
+        </div>
+    </div>
+
+    <!-- Informações do Recebimento -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3">
+                    <strong>Data Recebimento:</strong><br>
+                    {{ recebimento.data_recebimento|date:"d/m/Y" }}
+                </div>
+                <div class="col-md-3">
+                    <strong>Valor NF:</strong><br>
+                    R$ {{ recebimento.valor_total_nf|floatformat:2 }}
+                </div>
+                <div class="col-md-3">
+                    <strong>Pedido:</strong><br>
+                    {{ recebimento.pedido.numero }}
+                </div>
+                <div class="col-md-3">
+                    <strong>Itens:</strong><br>
+                    {{ recebimento.itens.count }} item(ns)
+                </div>
+            </div>
+            
+            {% if recebimento.divergencias_detalhes.exists %}
+            <hr>
+            <div class="alert alert-warning mb-0">
+                <i class="bi bi-exclamation-triangle me-2"></i>
+                <strong>Este recebimento teve divergências registradas.</strong>
+                Considere isso ao avaliar o fornecedor.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Formulário de Avaliação -->
+    <form method="post" class="needs-validation" novalidate>
+        {% csrf_token %}
+        
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-star-fill me-2"></i>
+                    Critérios de Avaliação (1 a 5 Estrelas)
+                </h5>
+            </div>
+            <div class="card-body">
+                <!-- 1. Qualidade do Produto -->
+                <div class="criterio-avaliacao">
+                    <label class="form-label mb-2">
+                        <strong>1. Qualidade do Produto</strong>
+                        <span class="score-preview" id="preview_qualidade">Não avaliado</span>
+                    </label>
+                    <p class="text-muted small mb-2">Como avalia a qualidade dos produtos entregues?</p>
+                    
+                    <div class="star-rating">
+                        {% for i in estrelas_choices reversed %}
+                        <input type="radio" name="qualidade_produto" value="{{ i }}" id="qualidade_{{ i }}" 
+                               {% if avaliacao.qualidade_produto == i %}checked{% endif %}>
+                        <label for="qualidade_{{ i }}">★</label>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- 2. Cumprimento de Prazos -->
+                <div class="criterio-avaliacao">
+                    <label class="form-label mb-2">
+                        <strong>2. Cumprimento de Prazos</strong>
+                        <span class="score-preview" id="preview_prazo">Não avaliado</span>
+                    </label>
+                    <p class="text-muted small mb-2">Os prazos acordados foram cumpridos?</p>
+                    
+                    <div class="star-rating">
+                        {% for i in estrelas_choices reversed %}
+                        <input type="radio" name="prazo_entrega" value="{{ i }}" id="prazo_{{ i }}"
+                               {% if avaliacao.prazo_entrega == i %}checked{% endif %}>
+                        <label for="prazo_{{ i }}">★</label>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- 3. Documentação -->
+                <div class="criterio-avaliacao">
+                    <label class="form-label mb-2">
+                        <strong>3. Documentação / NF-e</strong>
+                        <span class="score-preview" id="preview_doc">Não avaliado</span>
+                    </label>
+                    <p class="text-muted small mb-2">Como foi a qualidade da documentação e NF-e?</p>
+                    
+                    <div class="star-rating">
+                        {% for i in estrelas_choices reversed %}
+                        <input type="radio" name="documentacao" value="{{ i }}" id="doc_{{ i }}"
+                               {% if avaliacao.documentacao == i %}checked{% endif %}>
+                        <label for="doc_{{ i }}">★</label>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- 4. Atendimento -->
+                <div class="criterio-avaliacao">
+                    <label class="form-label mb-2">
+                        <strong>4. Qualidade do Atendimento</strong>
+                        <span class="score-preview" id="preview_atend">Não avaliado</span>
+                    </label>
+                    <p class="text-muted small mb-2">Como foi o atendimento e suporte do fornecedor?</p>
+                    
+                    <div class="star-rating">
+                        {% for i in estrelas_choices reversed %}
+                        <input type="radio" name="atendimento" value="{{ i }}" id="atendimento_{{ i }}"
+                               {% if avaliacao.atendimento == i %}checked{% endif %}>
+                        <label for="atendimento_{{ i }}">★</label>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- 5. Preço/Qualidade -->
+                <div class="criterio-avaliacao">
+                    <label class="form-label mb-2">
+                        <strong>5. Relação Preço / Qualidade</strong>
+                        <span class="score-preview" id="preview_preco">Não avaliado</span>
+                    </label>
+                    <p class="text-muted small mb-2">O preço estava compatível com a qualidade entregue?</p>
+                    
+                    <div class="star-rating">
+                        {% for i in estrelas_choices reversed %}
+                        <input type="radio" name="preco" value="{{ i }}" id="preco_{{ i }}"
+                               {% if avaliacao.preco == i %}checked{% endif %}>
+                        <label for="preco_{{ i }}">★</label>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Nota Média -->
+        {% if not avaliacao.pk or avaliacao.pk and avaliacao.qualidade_produto %}
+        <div class="card mb-4 bg-light">
+            <div class="card-body text-center">
+                <p class="text-muted mb-2">Nota Média Geral</p>
+                <div class="nota-display" id="media"
+                     data-qual="{{ avaliacao.qualidade_produto|default:0 }}"
+                     data-pra="{{ avaliacao.prazo_entrega|default:0 }}"
+                     data-doc="{{ avaliacao.documentacao|default:0 }}"
+                     data-ate="{{ avaliacao.atendimento|default:0 }}"
+                     data-pre="{{ avaliacao.preco|default:0 }}">
+                    {{ avaliacao.nota_media|floatformat:1 }}/5.0
+                </div>
+                <p class="text-muted mt-2 mb-0">⭐⭐⭐⭐⭐ Excelente | ⭐⭐⭐⭐ Muito Bom | ⭐⭐⭐ Bom | ⭐⭐ Ruim | ⭐ Péssimo</p>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Comentários -->
+        <div class="card mb-4">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-chat-dots me-2"></i>
+                    Sua Opinião (Opcional)
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label for="pontos_positivos" class="form-label">
+                        <i class="bi bi-check-circle text-success me-1"></i>
+                        <strong>Pontos Positivos</strong>
+                    </label>
+                    <textarea name="pontos_positivos" id="pontos_positivos" class="form-control" rows="3"
+                              placeholder="O que foi bom na entrega e atendimento...">{{ avaliacao.pontos_positivos }}</textarea>
+                </div>
+
+                <div class="mb-3">
+                    <label for="pontos_negativos" class="form-label">
+                        <i class="bi bi-x-circle text-danger me-1"></i>
+                        <strong>Pontos a Melhorar</strong>
+                    </label>
+                    <textarea name="pontos_negativos" id="pontos_negativos" class="form-control" rows="3"
+                              placeholder="O que pode ser melhorado...">{{ avaliacao.pontos_negativos }}</textarea>
+                </div>
+
+                <div class="mb-3">
+                    <label for="recomendacao" class="form-label">
+                        <i class="bi bi-hand-thumbs-up me-1"></i>
+                        <strong>Recomendação para Compras Futuras</strong>
+                    </label>
+                    <textarea name="recomendacao" id="recomendacao" class="form-control" rows="3"
+                              placeholder="Sua sugestão para trabalhos futuros...">{{ avaliacao.recomendacao }}</textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recomendação Final -->
+        <div class="card mb-4">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-heart-fill me-2"></i>
+                    Recomenda este Fornecedor?
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="recomenda" id="recomenda_sim" value="sim"
+                           {% if avaliacao.recomenda %}checked{% endif %}>
+                    <label class="form-check-label" for="recomenda_sim">
+                        <i class="bi bi-hand-thumbs-up text-success me-2"></i>
+                        <strong>Sim, recomendo!</strong> Voltaria a trabalhar com este fornecedor.
+                    </label>
+                </div>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="recomenda" id="recomenda_nao" value="nao"
+                           {% if not avaliacao.recomenda %}checked{% endif %}>
+                    <label class="form-check-label" for="recomenda_nao">
+                        <i class="bi bi-hand-thumbs-down text-danger me-2"></i>
+                        <strong>Não recomendo.</strong> Preferiria outro fornecedor.
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Botões -->
+        <div class="row mb-4">
+            <div class="col">
+                <button type="submit" class="btn btn-success btn-lg">
+                    <i class="bi bi-check-circle me-2"></i>
+                    Salvar Avaliação
+                </button>
+                <a href="{% url 'compras:recebimento_detail' recebimento.pk %}" class="btn btn-secondary btn-lg">
+                    <i class="bi bi-x-circle me-2"></i>
+                    Cancelar
+                </a>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+// Atualizar média em tempo real
+const inputs = document.querySelectorAll('input[type="radio"]');
+inputs.forEach(input => {
+    input.addEventListener('change', calcularMedia);
+});
+
+function calcularMedia() {
+    const qual = parseInt(document.querySelector('input[name="qualidade_produto"]:checked')?.value || 0);
+    const pra = parseInt(document.querySelector('input[name="prazo_entrega"]:checked')?.value || 0);
+    const doc = parseInt(document.querySelector('input[name="documentacao"]:checked')?.value || 0);
+    const ate = parseInt(document.querySelector('input[name="atendimento"]:checked')?.value || 0);
+    const pre = parseInt(document.querySelector('input[name="preco"]:checked')?.value || 0);
+    
+    // Atualizar labels
+    atualizarPreview('qualidade', qual);
+    atualizarPreview('prazo', pra);
+    atualizarPreview('doc', doc);
+    atualizarPreview('atend', ate);
+    atualizarPreview('preco', pre);
+    
+    // Calcular média
+    const media = (qual + pra + doc + ate + pre) / 5;
+    const mediaDiv = document.getElementById('media');
+    if (mediaDiv) {
+        mediaDiv.textContent = media.toFixed(1) + '/5.0';
+    }
+}
+
+function atualizarPreview(campo, valor) {
+    const preview = document.getElementById('preview_' + campo);
+    if (preview) {
+        const textos = ['Não avaliado', '⭐ Péssimo', '⭐⭐ Ruim', '⭐⭐⭐ Bom', '⭐⭐⭐⭐ Muito Bom', '⭐⭐⭐⭐⭐ Excelente'];
+        preview.textContent = textos[valor] || textos[0];
+    }
+}
+
+// Inicializar
+calcularMedia();
+</script>
+{% endblock %}

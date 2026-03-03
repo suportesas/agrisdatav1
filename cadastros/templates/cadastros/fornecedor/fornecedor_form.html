@@ -185,22 +185,6 @@
       </div>
       <div class="form-section-body">
         <div class="row g-3">
-          
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Categorias *</label>
-            {{ form.categorias }}
-            {% if form.categorias.errors %}
-              <div class="text-danger small">{{ form.categorias.errors|striptags }}</div>
-            {% endif %}
-            <small class="text-muted d-block">Segure Ctrl/Cmd para múltiplas seleções</small>
-          </div>
-
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Subcategorias</label>
-            {{ form.subcategorias }}
-            <small class="text-muted d-block">Filtra automaticamente pelas categorias</small>
-          </div>
-
           <div class="col-md-4">
             <label class="form-label fw-semibold">Classificação de Risco</label>
             {{ form.classificacao_risco }}
@@ -227,14 +211,22 @@
       </div>
       <div class="form-section-body">
         <div class="row g-3">
-          
-          <div class="col-md-6">
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Limite de Crédito Aprovado</label>
+            <div class="input-group">
+              <span class="input-group-text">R$</span>
+              {{ form.limite_credito }}
+            </div>
+            <small class="text-muted d-block">Valor aprovado para compras a prazo</small>
+          </div>
+
+          <div class="col-md-4">
             <label class="form-label fw-semibold">Prazo de Pagamento Padrão (dias) *</label>
             {{ form.prazo_pagamento_padrao }}
             <small class="text-muted d-block">Ex: 30 dias</small>
           </div>
 
-          <div class="col-md-6">
+          <div class="col-md-4">
             <label class="form-label fw-semibold">Prazo de Entrega Médio (dias) *</label>
             {{ form.prazo_entrega_medio }}
             <small class="text-muted d-block">Ex: 7 dias</small>

@@ -1,3 +1,45 @@
+
+from django.contrib.auth.decorators import login_required
+
+@login_required
+def ncm_seed(request):
+    empresa = request.user.empresa
+    from cadastros.tasks import seed_ncms_for_company
+    res = seed_ncms_for_company(empresa.pk)
+    from django.contrib import messages
+    messages.success(request, f'NCMs padrão populados! Criados: {res.get("created",0)}, já existentes: {res.get("skipped",0)}')
+    return redirect('cadastros:ncm_list')
+
+# ...existing code...
+
+from django.contrib.auth.decorators import login_required
+
+@login_required
+def cfop_seed(request):
+    empresa = request.user.empresa
+    from cadastros.models import CFOP, EmpresaCFOP
+    templates = CFOP.objects.filter(ativo=True).order_by('codigo')
+    bulk = []
+    for t in templates:
+        if not EmpresaCFOP.objects.filter(empresa=empresa, codigo=t.codigo).exists():
+            bulk.append(EmpresaCFOP(empresa=empresa, codigo=t.codigo, nome=t.nome, descricao=t.descricao, ativo=t.ativo, template=t))
+    if bulk:
+        EmpresaCFOP.objects.bulk_create(bulk)
+        from django.contrib import messages
+        messages.success(request, f'CFOPs padrão populados! Criados: {len(bulk)}')
+    else:
+        from django.contrib import messages
+        messages.info(request, 'Todos os CFOPs padrão já existem para esta empresa.')
+    return redirect('cadastros:cfop_list')
+
+@login_required
+def ncm_seed(request):
+    empresa = request.user.empresa
+    from cadastros.tasks import seed_ncms_for_company
+    res = seed_ncms_for_company(empresa.pk)
+    from django.contrib import messages
+    messages.success(request, f'NCMs padrão populados! Criados: {res.get("created",0)}, já existentes: {res.get("skipped",0)}')
+    return redirect('cadastros:ncm_list')
 """
 Views do módulo Fazendas
 CRUD completo + integração com APIs externas
@@ -3403,7 +3445,7 @@ def ajax_talhoes_por_fazenda(request, fazenda_id):
         fazenda=fazenda,
         empresa=empresa,
         ativo=True
-    ).values('id', 'nome', 'codigo', 'area_hac')
+    ).values('id', 'nome', 'codigo', 'area_hac', 'status', 'cultura_atual__nome')
     # Para cada talhão, informa se já está associado a uma safra não finalizada
     talhao_ids = [t['id'] for t in talhoes]
     safra_map = {}
@@ -3422,6 +3464,8 @@ def ajax_talhoes_por_fazenda(request, fazenda_id):
             'nome': t['nome'],
             'codigo': t.get('codigo'),
             'area_hac': t.get('area_hac'),
+            'status': t.get('status') or 'DISPONIVEL',
+            'cultura_atual': t.get('cultura_atual__nome') or '',
             'in_use': tid in safra_map,
             'in_use_by': safra_map.get(tid)
         })

@@ -220,6 +220,7 @@ urlpatterns = [
 
     # NCM (Nomenclatura Comum do Mercosul)
     path('ncm/', views.ncm_list, name='ncm_list'),
+    path('ncm/popular/', views.ncm_seed, name='ncm_seed'),
     path('ncm/novo/', views.ncm_create, name='ncm_create'),
     path('ncm/<int:pk>/editar/', views.ncm_update, name='ncm_update'),
     path('ncm/<int:pk>/excluir/', views.ncm_delete, name='ncm_delete'),
@@ -228,6 +229,7 @@ urlpatterns = [
 
     # CFOP (Código Fiscal de Operações e Prestações)
     path('cfop/', views.cfop_list, name='cfop_list'),
+    path('cfop/popular/', views.cfop_seed, name='cfop_seed'),
     path('cfop/novo/', views.cfop_create, name='cfop_create'),
     path('cfop/importar/', views.cfop_import, name='cfop_import'),
     path('cfop/<int:pk>/editar/', views.cfop_update, name='cfop_update'),

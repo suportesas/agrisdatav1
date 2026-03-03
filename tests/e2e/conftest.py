@@ -3,6 +3,8 @@ import time
 from pathlib import Path
 import pytest
 
+os.environ.setdefault('DJANGO_ALLOW_ASYNC_UNSAFE', 'true')
+
 ARTIFACTS_DIR = Path(__file__).parent / 'artifacts'
 ARTIFACTS_DIR.mkdir(parents=True, exist_ok=True)
 

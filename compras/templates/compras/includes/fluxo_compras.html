@@ -15,10 +15,17 @@ Etapas: solicitacao, cotacao, pedido, recebimento
             <!-- Step 1: Solicitação -->
             <div class="position-relative text-center flex-grow-1" style="z-index: 1;">
                 <div class="mx-auto mb-2" style="width: 50px; height: 50px;">
-                    <button type="button" class="btn rounded-circle w-100 h-100 {% if etapa_atual in 'solicitacao,cotacao,pedido,recebimento' %}btn-success{% else %}btn-light{% endif %}" 
-                            style="border: 2px solid {% if etapa_atual in 'solicitacao,cotacao,pedido,recebimento' %}#28a745{% else %}#dee2e6{% endif %}; font-size: 20px;">
+                    {% if solicitacao %}
+                    <a href="{% url 'compras:solicitacao_detail' solicitacao.pk %}" class="btn rounded-circle w-100 h-100 {% if etapa_atual in 'solicitacao,cotacao,pedido,recebimento' %}btn-success{% else %}btn-light{% endif %}"
+                       style="border: 2px solid {% if etapa_atual in 'solicitacao,cotacao,pedido,recebimento' %}#28a745{% else %}#dee2e6{% endif %}; font-size: 20px;">
                         📋
-                    </button>
+                    </a>
+                    {% else %}
+                    <a href="{% url 'compras:solicitacao_create' %}" class="btn rounded-circle w-100 h-100 {% if etapa_atual in 'solicitacao,cotacao,pedido,recebimento' %}btn-success{% else %}btn-light{% endif %}"
+                       style="border: 2px solid {% if etapa_atual in 'solicitacao,cotacao,pedido,recebimento' %}#28a745{% else %}#dee2e6{% endif %}; font-size: 20px;">
+                        📋
+                    </a>
+                    {% endif %}
                 </div>
                 <small class="d-block text-muted">Solicitação</small>
                 {% if solicitacao %}
@@ -29,10 +36,22 @@ Etapas: solicitacao, cotacao, pedido, recebimento
             <!-- Step 2: Cotação -->
             <div class="position-relative text-center flex-grow-1" style="z-index: 1;">
                 <div class="mx-auto mb-2" style="width: 50px; height: 50px;">
-                    <button type="button" class="btn rounded-circle w-100 h-100 {% if etapa_atual in 'cotacao,pedido,recebimento' %}btn-success{% else %}btn-light{% endif %}" 
-                            style="border: 2px solid {% if etapa_atual in 'cotacao,pedido,recebimento' %}#28a745{% else %}#dee2e6{% endif %}; font-size: 20px;">
+                    {% if cotacao %}
+                    <a href="{% url 'compras:cotacao_detail' cotacao.pk %}" class="btn rounded-circle w-100 h-100 {% if etapa_atual in 'cotacao,pedido,recebimento' %}btn-success{% else %}btn-light{% endif %}"
+                       style="border: 2px solid {% if etapa_atual in 'cotacao,pedido,recebimento' %}#28a745{% else %}#dee2e6{% endif %}; font-size: 20px;">
                         📊
-                    </button>
+                    </a>
+                    {% elif solicitacao %}
+                    <a href="{% url 'compras:cotacao_create' solicitacao.pk %}" class="btn rounded-circle w-100 h-100 {% if etapa_atual in 'cotacao,pedido,recebimento' %}btn-success{% else %}btn-light{% endif %}"
+                       style="border: 2px solid {% if etapa_atual in 'cotacao,pedido,recebimento' %}#28a745{% else %}#dee2e6{% endif %}; font-size: 20px;">
+                        📊
+                    </a>
+                    {% else %}
+                    <a href="{% url 'compras:cotacao_list' %}" class="btn rounded-circle w-100 h-100 {% if etapa_atual in 'cotacao,pedido,recebimento' %}btn-success{% else %}btn-light{% endif %}"
+                       style="border: 2px solid {% if etapa_atual in 'cotacao,pedido,recebimento' %}#28a745{% else %}#dee2e6{% endif %}; font-size: 20px;">
+                        📊
+                    </a>
+                    {% endif %}
                 </div>
                 <small class="d-block text-muted">Cotação</small>
                 {% if cotacao %}
@@ -43,10 +62,22 @@ Etapas: solicitacao, cotacao, pedido, recebimento
             <!-- Step 3: Pedido -->
             <div class="position-relative text-center flex-grow-1" style="z-index: 1;">
                 <div class="mx-auto mb-2" style="width: 50px; height: 50px;">
-                    <button type="button" class="btn rounded-circle w-100 h-100 {% if etapa_atual in 'pedido,recebimento' %}btn-success{% else %}btn-light{% endif %}" 
-                            style="border: 2px solid {% if etapa_atual in 'pedido,recebimento' %}#28a745{% else %}#dee2e6{% endif %}; font-size: 20px;">
+                    {% if pedido %}
+                    <a href="{% url 'compras:pedido_detail' pedido.pk %}" class="btn rounded-circle w-100 h-100 {% if etapa_atual in 'pedido,recebimento' %}btn-success{% else %}btn-light{% endif %}"
+                       style="border: 2px solid {% if etapa_atual in 'pedido,recebimento' %}#28a745{% else %}#dee2e6{% endif %}; font-size: 20px;">
                         📦
-                    </button>
+                    </a>
+                    {% elif cotacao %}
+                    <a href="{% url 'compras:cotacao_detail' cotacao.pk %}" class="btn rounded-circle w-100 h-100 {% if etapa_atual in 'pedido,recebimento' %}btn-success{% else %}btn-light{% endif %}"
+                       style="border: 2px solid {% if etapa_atual in 'pedido,recebimento' %}#28a745{% else %}#dee2e6{% endif %}; font-size: 20px;">
+                        📦
+                    </a>
+                    {% else %}
+                    <a href="{% url 'compras:pedido_list' %}" class="btn rounded-circle w-100 h-100 {% if etapa_atual in 'pedido,recebimento' %}btn-success{% else %}btn-light{% endif %}"
+                       style="border: 2px solid {% if etapa_atual in 'pedido,recebimento' %}#28a745{% else %}#dee2e6{% endif %}; font-size: 20px;">
+                        📦
+                    </a>
+                    {% endif %}
                 </div>
                 <small class="d-block text-muted">Pedido</small>
                 {% if pedido %}
@@ -57,16 +88,71 @@ Etapas: solicitacao, cotacao, pedido, recebimento
             <!-- Step 4: Recebimento -->
             <div class="position-relative text-center flex-grow-1" style="z-index: 1;">
                 <div class="mx-auto mb-2" style="width: 50px; height: 50px;">
-                    <button type="button" class="btn rounded-circle w-100 h-100 {% if etapa_atual == 'recebimento' %}btn-success{% else %}btn-light{% endif %}" 
-                            style="border: 2px solid {% if etapa_atual == 'recebimento' %}#28a745{% else %}#dee2e6{% endif %}; font-size: 20px;">
+                    {% if recebimento %}
+                    <a href="{% url 'compras:recebimento_detail' recebimento.pk %}" class="btn rounded-circle w-100 h-100 {% if etapa_atual == 'recebimento' %}btn-success{% else %}btn-light{% endif %}"
+                       style="border: 2px solid {% if etapa_atual == 'recebimento' %}#28a745{% else %}#dee2e6{% endif %}; font-size: 20px;">
                         ✓
-                    </button>
+                    </a>
+                    {% elif pedido and pedido.status == 'ENVIADO' or pedido and pedido.status == 'PARCIALMENTE_RECEBIDO' %}
+                    <a href="{% url 'compras:recebimento_create' pedido.pk %}" class="btn rounded-circle w-100 h-100 {% if etapa_atual == 'recebimento' %}btn-success{% else %}btn-light{% endif %}"
+                       style="border: 2px solid {% if etapa_atual == 'recebimento' %}#28a745{% else %}#dee2e6{% endif %}; font-size: 20px;">
+                        ✓
+                    </a>
+                    {% else %}
+                    <a href="{% url 'compras:recebimento_list' %}" class="btn rounded-circle w-100 h-100 {% if etapa_atual == 'recebimento' %}btn-success{% else %}btn-light{% endif %}"
+                       style="border: 2px solid {% if etapa_atual == 'recebimento' %}#28a745{% else %}#dee2e6{% endif %}; font-size: 20px;">
+                        ✓
+                    </a>
+                    {% endif %}
                 </div>
                 <small class="d-block text-muted">Entrada Estoque</small>
                 {% if recebimento %}
                     <small class="d-block text-success fw-bold">{{ recebimento.numero }}</small>
                 {% endif %}
             </div>
+        </div>
+
+        <!-- Ação sequencial recomendada -->
+        <div class="d-flex justify-content-end mt-3">
+            {% if etapa_atual == 'solicitacao' %}
+                {% if cotacao %}
+                    <a href="{% url 'compras:cotacao_detail' cotacao.pk %}" class="btn btn-primary btn-sm">
+                        Próxima Etapa: Abrir Cotação <i class="bi bi-arrow-right ms-1"></i>
+                    </a>
+                {% elif solicitacao %}
+                    <a href="{% url 'compras:cotacao_create' solicitacao.pk %}" class="btn btn-primary btn-sm">
+                        Próxima Etapa: Criar Cotação <i class="bi bi-arrow-right ms-1"></i>
+                    </a>
+                {% endif %}
+            {% elif etapa_atual == 'cotacao' %}
+                {% if pedido %}
+                    <a href="{% url 'compras:pedido_detail' pedido.pk %}" class="btn btn-primary btn-sm">
+                        Próxima Etapa: Abrir Pedido <i class="bi bi-arrow-right ms-1"></i>
+                    </a>
+                {% elif cotacao %}
+                    <a href="{% url 'compras:cotacao_detail' cotacao.pk %}" class="btn btn-primary btn-sm">
+                        Próxima Etapa: Concluir Cotação e Gerar Pedido <i class="bi bi-arrow-right ms-1"></i>
+                    </a>
+                {% endif %}
+            {% elif etapa_atual == 'pedido' %}
+                {% if recebimento %}
+                    <a href="{% url 'compras:recebimento_detail' recebimento.pk %}" class="btn btn-primary btn-sm">
+                        Próxima Etapa: Abrir Recebimento <i class="bi bi-arrow-right ms-1"></i>
+                    </a>
+                {% elif pedido and pedido.status == 'ENVIADO' or pedido and pedido.status == 'PARCIALMENTE_RECEBIDO' %}
+                    <a href="{% url 'compras:recebimento_create' pedido.pk %}" class="btn btn-primary btn-sm">
+                        Próxima Etapa: Registrar Recebimento <i class="bi bi-arrow-right ms-1"></i>
+                    </a>
+                {% elif pedido %}
+                    <a href="{% url 'compras:pedido_detail' pedido.pk %}" class="btn btn-outline-secondary btn-sm">
+                        Envie o pedido para liberar o recebimento <i class="bi bi-arrow-right ms-1"></i>
+                    </a>
+                {% endif %}
+            {% elif etapa_atual == 'recebimento' %}
+                <a href="{% url 'compras:recebimento_list' %}" class="btn btn-outline-primary btn-sm">
+                    Ver Todos os Recebimentos <i class="bi bi-arrow-right ms-1"></i>
+                </a>
+            {% endif %}
         </div>
     </div>
 </div>

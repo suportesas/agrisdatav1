@@ -80,7 +80,7 @@
             <div class="text-muted small">
                 <i class="bi bi-info-circle"></i> Se selecionar uma proposta diferente do menor preço, justifique o motivo.
             </div>
-            <button type="submit" class="btn btn-success px-4 shadow">
+            <button type="submit" class="btn btn-success px-4 shadow" id="btnSalvarSelecao">
                 <i class="bi bi-save"></i> Salvar Seleção
             </button>
         </div>
@@ -112,4 +112,31 @@
     .card-body { padding: 1.25rem !important; }
 }
 </style>
+
+<script>
+document.getElementById('btnSalvarSelecao').addEventListener('click', function(e) {
+  // Buscar todas as propostas com valor zero
+  const propostas = document.querySelectorAll('table tbody tr');
+  let propostas_zeradas = [];
+  
+  propostas.forEach(tr => {
+    if (tr.className.includes('table-info') || !tr.className.includes('table-info')) {
+      const precoCell = tr.querySelector('td:nth-child(2)');
+      if (precoCell) {
+        const preco = precoCell.textContent.replace('R$ ', '').replace(',', '.').trim();
+        if (parseFloat(preco) === 0) {
+          const fornecedor = tr.querySelector('td:first-child').textContent.trim();
+          propostas_zeradas.push(fornecedor);
+        }
+      }
+    }
+  });
+  
+  if (propostas_zeradas.length > 0) {
+    e.preventDefault();
+    alert('❌ Não é permitido salvar o comparativo com propostas de valor R$ 0,00.\n\nFornecedores com valores zerados:\n' + propostas_zeradas.join('\n') + '\n\nEdite as propostas e informe valores válidos.');
+    return false;
+  }
+});
+</script>
 {% endblock %}

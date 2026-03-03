@@ -116,6 +116,23 @@
     border-radius: 15px;
     font-size: 0.9rem;
   }
+
+  .nav-tabs .nav-link {
+    color: #495057;
+    font-weight: 600;
+  }
+
+  .nav-tabs .nav-link:hover {
+    color: #212529;
+    background-color: #f8f9fa;
+  }
+
+  .nav-tabs .nav-link.active {
+    color: #f8f9fa;
+    background-color: #0d6efd;
+    border-color: #0d6efd #0d6efd #ffffff;
+    font-weight: 700;
+  }
 </style>
 {% endblock %}
 
@@ -284,6 +301,10 @@
 
           <div class="info-card">
             <h5 class="section-title"><i class="bi bi-cash-coin"></i> Condições Comerciais</h5>
+            <div class="info-row">
+              <span class="info-label">Limite de Crédito Aprovado:</span>
+              <span class="info-value">R$ {{ fornecedor.limite_credito|default:0|floatformat:2 }}</span>
+            </div>
             <div class="info-row">
               <span class="info-label">Prazo de Pagamento:</span>
               <span class="info-value">{{ fornecedor.prazo_pagamento_padrao }} dias</span>

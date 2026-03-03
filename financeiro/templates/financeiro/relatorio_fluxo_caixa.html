@@ -1,0 +1,325 @@
+{% extends 'base.html' %}
+
+{% block title %}Fluxo de Caixa{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1><i class="bi bi-cash-flow"></i> Fluxo de Caixa - Contas a Pagar</h1>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-6">
+                    <label for="mes_inicio" class="form-label">Mês Inicial</label>
+                    <input type="month" name="mes_inicio" id="mes_inicio" class="form-control" 
+                           value="{{ mes_inicio }}" max="{{ mes_fim }}">
+                </div>
+                <div class="col-md-6">
+                    <label for="mes_fim" class="form-label">Mês Final</label>
+                    <input type="month" name="mes_fim" id="mes_fim" class="form-control" 
+                           value="{{ mes_fim }}" min="{{ mes_inicio }}">
+                </div>
+                <div class="col-auto">
+                    <label class="form-label">&nbsp;</label>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-search"></i> Filtrar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Resumo Geral -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="text-muted small">Valor Total a Pagar</div>
+                    <div class="fs-5 fw-bold">R$ {{ valor_total|floatformat:2 }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="text-muted small">Já Pago</div>
+                    <div class="fs-5 fw-bold text-success">R$ {{ valor_pago|floatformat:2 }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="text-muted small">A Pagar</div>
+                    <div class="fs-5 fw-bold text-warning">R$ {{ valor_a_pagar|floatformat:2 }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="text-muted small">Saldo Pendente</div>
+                    <div class="fs-5 fw-bold text-danger">R$ {{ valor_vencido|floatformat:2 }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabela de Fluxo Mensal -->
+    <div class="card overflow-auto">
+        <div class="table-responsive">
+            <table class="table mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Mês</th>
+                        <th>Parcelas</th>
+                        <th>Valor Previsto</th>
+                        <th>Já Pago</th>
+                        <th>A Pagar</th>
+                        <th>Vencido</th>
+                        <th>Percentual Pago</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for mes, dados in fluxo_mensal.items %}
+                    <tr>
+                        <td>
+                            <strong>{{ mes|date:'F \d\e Y' }}</strong>
+                        </td>
+                        <td>
+                            <span class="badge bg-info">{{ dados.parcelas }}</span>
+                        </td>
+                        <td>
+                            R$ {{ dados.valor_total|floatformat:2 }}
+                        </td>
+                        <td>
+                            <strong class="text-success">R$ {{ dados.valor_pago|floatformat:2 }}</strong>
+                        </td>
+                        <td>
+                            <strong class="text-warning">R$ {{ dados.valor_a_pagar|floatformat:2 }}</strong>
+                        </td>
+                        <td>
+                            {% if dados.valor_vencido > 0 %}
+                            <strong class="text-danger">R$ {{ dados.valor_vencido|floatformat:2 }}</strong>
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="progress" style="min-width: 100px;">
+                                {% if dados.percentual_pago > 0 %}
+                                <div class="progress-bar bg-success" style="width: {{ dados.percentual_pago }}%">
+                                    {{ dados.percentual_pago|floatformat:0 }}%
+                                </div>
+                                {% else %}
+                                <div class="progress-bar bg-danger" style="width: 100%">
+                                    0%
+                                </div>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center py-4">
+                            <div class="text-muted">
+                                <i class="bi bi-inbox" style="font-size: 2rem;"></i>
+                                <p>Nenhum dado disponível para o período selecionado</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                {% if fluxo_mensal %}
+                <tfoot>
+                    <tr class="table-light fw-bold">
+                        <td>TOTAL</td>
+                        <td>
+                            <span class="badge bg-info">{{ total_parcelas }}</span>
+                        </td>
+                        <td>R$ {{ total_valor|floatformat:2 }}</td>
+                        <td class="text-success">R$ {{ total_pago|floatformat:2 }}</td>
+                        <td class="text-warning">R$ {{ total_a_pagar|floatformat:2 }}</td>
+                        <td class="text-danger">R$ {{ total_vencido|floatformat:2 }}</td>
+                        <td>
+                            <strong>
+                                {% if total_valor > 0 %}
+                                    {{ percentual_total_pago|floatformat:0 }}%
+                                {% else %}
+                                    0%
+                                {% endif %}
+                            </strong>
+                        </td>
+                    </tr>
+                </tfoot>
+                {% endif %}
+            </table>
+        </div>
+    </div>
+
+    <!-- Gráfico de Tendência -->
+    {% if fluxo_mensal %}
+    <div class="card mt-4">
+        <div class="card-header">
+            <h6 class="mb-0"><i class="bi bi-graph-up"></i> Tendência de Saída de Caixa</h6>
+        </div>
+        <div class="card-body">
+            <div id="grafico-fluxo"></div>
+            <p class="text-muted small mt-3">
+                Este gráfico mostra o valor previsto a sair do caixa por mês (parcelas com vencimento naquele período).
+            </p>
+        </div>
+    </div>
+
+    <!-- Análise por Fornecedor -->
+    <div class="card mt-4">
+        <div class="card-header">
+            <h6 class="mb-0"><i class="bi bi-pie-chart"></i> Distribuição por Fornecedor</h6>
+        </div>
+        <div class="card-body">
+            <div class="row mb-3">
+                {% for fornecedor, valor in top_fornecedores %}
+                <div class="col-md-6 mb-3">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>{{ fornecedor.nome }}</span>
+                        <strong>R$ {{ valor|floatformat:2 }}</strong>
+                    </div>
+                    <div class="progress">
+                        {% widthratio valor total_valor 100 as percentual %}
+                        <div class="progress-bar" style="width: {{ percentual }}%"></div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Análise por Status -->
+    <div class="card mt-4">
+        <div class="card-header">
+            <h6 class="mb-0"><i class="bi bi-info-circle"></i> Análise por Status</h6>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <div class="alert alert-light">
+                        <div class="fw-bold">Aberta</div>
+                        <div class="fs-5">R$ {{ valor_aberta|floatformat:2 }}</div>
+                        <small class="text-muted">Aguardando aprovação</small>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <div class="alert alert-info">
+                        <div class="fw-bold">Aprovada</div>
+                        <div class="fs-5">R$ {{ valor_aprovada|floatformat:2 }}</div>
+                        <small>Pronta para pagamento</small>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <div class="alert alert-success">
+                        <div class="fw-bold">Paga</div>
+                        <div class="fs-5">R$ {{ valor_paga|floatformat:2 }}</div>
+                        <small>Já foi paga</small>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <div class="alert alert-danger">
+                        <div class="fw-bold">Vencida</div>
+                        <div class="fs-5">R$ {{ valor_vencida|floatformat:2 }}</div>
+                        <small>Passou da data de vencimento</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Exportar -->
+    <div class="mt-4">
+        <a href="?export=csv" class="btn btn-outline-secondary">
+            <i class="bi bi-download"></i> Exportar para CSV
+        </a>
+        <a href="?export=pdf" class="btn btn-outline-secondary">
+            <i class="bi bi-file-pdf"></i> Exportar para PDF
+        </a>
+        <a href="?export=excel" class="btn btn-outline-secondary">
+            <i class="bi bi-file-earmark-spreadsheet"></i> Exportar para Excel
+        </a>
+    </div>
+</div>
+
+<!-- Chart.js para gráfico -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Dados para o gráfico
+    const dados = {
+        meses: [
+            {% for mes in meses_list %}
+            '{{ mes|date:"M/y" }}'{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        ],
+        valores: [
+            {% for mes, dados in fluxo_mensal.items %}
+            {{ dados.valor_total }}{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        ],
+        pagos: [
+            {% for mes, dados in fluxo_mensal.items %}
+            {{ dados.valor_pago }}{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        ]
+    };
+
+    const ctx = document.getElementById('grafico-fluxo');
+    if (ctx && dados.meses.length > 0) {
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: dados.meses,
+                datasets: [
+                    {
+                        label: 'Valor Previsto',
+                        data: dados.valores,
+                        backgroundColor: 'rgba(255, 193, 7, 0.7)',
+                        borderColor: 'rgba(255, 193, 7, 1)',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Já Pago',
+                        data: dados.pagos,
+                        backgroundColor: 'rgba(40, 167, 69, 0.7)',
+                        borderColor: 'rgba(40, 167, 69, 1)',
+                        borderWidth: 1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return 'R$ ' + value.toLocaleString('pt-BR', {maximumFractionDigits: 0});
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

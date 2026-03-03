@@ -154,6 +154,29 @@ class FazendaForm(forms.ModelForm):
         self.empresa = kwargs.pop('empresa', None)
         self.usuario = kwargs.pop('usuario', None)
         super().__init__(*args, **kwargs)
+
+        if (
+            self.empresa
+            and not self.is_bound
+            and not getattr(self.instance, 'pk', None)
+            and 'tipo_irrigacao' in self.fields
+            and not self.initial.get('tipo_irrigacao')
+        ):
+            area_referencia = (
+                Area.objects
+                .filter(
+                    empresa=self.empresa,
+                    possui_irrigacao=True,
+                )
+                .exclude(tipo_irrigacao='')
+                .order_by('-id')
+                .first()
+            )
+
+            if area_referencia and area_referencia.tipo_irrigacao:
+                self.fields['tipo_irrigacao'].initial = area_referencia.tipo_irrigacao
+                if 'irrigacao_necessaria' in self.fields:
+                    self.fields['irrigacao_necessaria'].initial = True
         
         # ✅ ADICIONA campo empresa como hidden (não editável)
         if self.empresa:
@@ -322,11 +345,12 @@ class CFOPForm(forms.ModelForm):
 
     class Meta:
         model = CFOP
-        fields = ['codigo', 'nome', 'descricao', 'ativo']
+        fields = ['codigo', 'nome', 'descricao', 'natureza_operacao', 'ativo']
         widgets = {
             'codigo': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: 5102'}),
             'nome': forms.TextInput(attrs={'class': 'form-control'}),
             'descricao': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'natureza_operacao': forms.Select(attrs={'class': 'form-select'}),
             'ativo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
 
@@ -365,48 +389,55 @@ class EnderecoFazendaForm(forms.ModelForm):
         label='Buscar CEP',
         help_text='Preencher automaticamente via ViaCEP'
     )
-    
     class Meta:
         model = EnderecoFazenda
         fields = [
             'tipo', 'cep', 'logradouro', 'numero',
             'complemento', 'bairro', 'cidade', 'uf',
-            'pais', 'padrao'
+            'pais', 'recebedor_notify', 'padrao'
         ]
         widgets = {
-            'tipo': forms.Select(attrs={'class': 'form-select'}),
-            'cep': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': '00000-000',
-                'data-mask': 'cep'
-            }),
-            'logradouro': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Rua, Avenida, Estrada...'
-            }),
-            'numero': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Nº ou S/N'
-            }),
-            'complemento': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Apto, Bloco, Sala...'
-            }),
-            'bairro': forms.TextInput(attrs={
-                'class': 'form-control'
-            }),
-            'cidade': forms.TextInput(attrs={
-                'class': 'form-control'
-            }),
-            'uf': forms.TextInput(attrs={
-                'class': 'form-control',
-                'maxlength': 2,
-                'style': 'text-transform: uppercase;'
-            }),
-            'pais': forms.TextInput(attrs={
-                'class': 'form-control'
-            }),
-        }
+                'tipo': forms.Select(attrs={'class': 'form-select'}),
+                'cep': forms.TextInput(attrs={
+                    'class': 'form-control',
+                    'placeholder': '00000-000',
+                    'data-mask': 'cep'
+                }),
+                'logradouro': forms.TextInput(attrs={
+                    'class': 'form-control',
+                    'placeholder': 'Rua, Avenida, Estrada...'
+                }),
+                'numero': forms.TextInput(attrs={
+                    'class': 'form-control',
+                    'placeholder': 'Nº ou S/N'
+                }),
+                'complemento': forms.TextInput(attrs={
+                    'class': 'form-control',
+                    'placeholder': 'Apto, Bloco, Sala...'
+                }),
+                'bairro': forms.TextInput(attrs={
+                    'class': 'form-control'
+                }),
+                'cidade': forms.TextInput(attrs={
+                    'class': 'form-control'
+                }),
+                'uf': forms.TextInput(attrs={
+                    'class': 'form-control',
+                    'id': 'id_endereco_uf',
+                    'maxlength': 2
+                }),
+                'pais': forms.TextInput(attrs={
+                    'class': 'form-control'
+                }),
+                'recebedor_notify': forms.TextInput(attrs={'class': 'form-control'}),
+                'padrao': forms.CheckboxInput(attrs={'class': 'form-check-input'})
+            }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if 'recebedor_notify' in self.fields:
+            self.fields['recebedor_notify'].label = 'Destinatário'
+            self.fields['recebedor_notify'].required = False
     
     def clean_cep(self):
         """Remove formatação do CEP"""
@@ -1502,6 +1533,18 @@ class DocumentoFuncionarioForm(forms.ModelForm):
 class FornecedorForm(forms.ModelForm):
     """Formulário de Fornecedor"""
 
+    def clean(self):
+        cleaned_data = super().clean()
+        cnpj_cpf = cleaned_data.get('cnpj_cpf')
+        empresa = getattr(self, 'empresa', None)
+        if cnpj_cpf and empresa:
+            qs = self._meta.model.objects.filter(empresa=empresa, cnpj_cpf=cnpj_cpf)
+            if self.instance.pk:
+                qs = qs.exclude(pk=self.instance.pk)
+            if qs.exists():
+                self.add_error('cnpj_cpf', 'Já existe um fornecedor com este CNPJ/CPF para esta empresa.')
+        return cleaned_data
+
     class Meta:
         model = Fornecedor
         fields = [
@@ -1509,8 +1552,8 @@ class FornecedorForm(forms.ModelForm):
             'telefone', 'celular', 'email', 'website',
             'cep', 'endereco', 'numero', 'complemento', 'bairro', 'cidade', 'uf', 'pais',
             'is_exportador', 'moeda_padrao', 'porto_preferencial',
-            'categorias', 'subcategorias', 'classificacao_risco', 'data_homologacao', 'validade_homologacao',
-            'prazo_pagamento_padrao', 'prazo_entrega_medio', 'observacoes', 'portal_enabled', 'ativa'
+            'classificacao_risco', 'data_homologacao', 'validade_homologacao',
+            'limite_credito', 'prazo_pagamento_padrao', 'prazo_entrega_medio', 'observacoes', 'portal_enabled', 'ativa'
         ]
         widgets = {
             'nome': forms.TextInput(attrs={'class': 'form-control'}),
@@ -1534,11 +1577,10 @@ class FornecedorForm(forms.ModelForm):
             'uf': forms.TextInput(attrs={'class': 'form-control'}),
             'pais': forms.TextInput(attrs={'class': 'form-control'}),
             'porto_preferencial': forms.TextInput(attrs={'class': 'form-control'}),
-            'categorias': forms.SelectMultiple(attrs={'class': 'form-select'}),
-            'subcategorias': forms.SelectMultiple(attrs={'class': 'form-select'}),
             'classificacao_risco': forms.Select(attrs={'class': 'form-select'}),
             'data_homologacao': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'validade_homologacao': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'limite_credito': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'step': '0.01'}),
             'prazo_pagamento_padrao': forms.NumberInput(attrs={'class': 'form-control', 'min': 0}),
             'prazo_entrega_medio': forms.NumberInput(attrs={'class': 'form-control', 'min': 0}),
             'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
@@ -1796,7 +1838,8 @@ class CulturaForm(forms.ModelForm):
             }),
             'densidade_plantio': forms.NumberInput(attrs={
                 'class': 'form-control',
-                'placeholder': 'Plantas por hectare'
+                'placeholder': 'Plantas por hectare',
+                'readonly': 'readonly'
             }),
             'temperatura_ideal_min': forms.NumberInput(attrs={
                 'class': 'form-control',
@@ -2026,6 +2069,19 @@ class AreaForm(forms.ModelForm):
     🔒 FILTRA FAZENDAS PELA EMPRESA DO USUÁRIO
     """
     
+    SOLO_CHOICES = [
+        ('', '---------'),
+        ('Arenoso', 'Arenoso'),
+        ('Argiloso', 'Argiloso'),
+        ('Siltoso', 'Siltoso'),
+        ('Humoso', 'Humoso'),
+        ('Calcário', 'Calcário'),
+        ('Gleissolo', 'Gleissolo'),
+        ('Latossolo', 'Latossolo'),
+        ('Cambissolo', 'Cambissolo'),
+        ('Neossolo', 'Neossolo'),
+        ('Outro', 'Outro'),
+    ]
     class Meta:
         model = Area
         fields = [
@@ -2066,7 +2122,7 @@ class AreaForm(forms.ModelForm):
                 'class': 'form-control',
                 'step': '0.0000001'
             }),
-            'tipo_solo': forms.Select(attrs={'class': 'form-select'}),
+            'tipo_solo': forms.Select(attrs={'class': 'form-select'}),  # choices será setado no __init__
             'ph_solo': forms.NumberInput(attrs={
                 'class': 'form-control',
                 'step': '0.01',
@@ -2086,7 +2142,10 @@ class AreaForm(forms.ModelForm):
         # Recebe o usuário logado
         self.user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
-        
+
+        # Setar choices do tipo_solo
+        self.fields['tipo_solo'].widget.choices = self.SOLO_CHOICES
+
         # 🔒 FILTRO CRÍTICO: Apenas fazendas da empresa do usuário
         if self.user and self.user.empresa:
             self.fields['fazenda'].queryset = Fazenda.objects.filter(
@@ -2095,7 +2154,7 @@ class AreaForm(forms.ModelForm):
             ).order_by('nome')
         else:
             self.fields['fazenda'].queryset = Fazenda.objects.none()
-        
+
         # Torna campos condicionais
         if not self.instance.pk or not self.instance.possui_irrigacao:
             self.fields['tipo_irrigacao'].required = False

@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="2" time="154.456" timestamp="2026-03-02T09:37:18.269567-03:00" hostname="COMPRAS"><testcase classname="tests.e2e.test_safra_choices_flow" name="test_safra_create_talhoes_choices[chromium]" time="133.954" /><testcase classname="tests.e2e.test_safra_choices_flow" name="test_talhao_in_use_hidden_in_dropdown[chromium]" time="19.861"><failure message="playwright._impl._errors.TimeoutError: Page.wait_for_selector: Timeout 5000ms exceeded.&#10;Call log:&#10;  - waiting for locator(&quot;#id_talhoes&quot;) to be visible&#10;    14 × locator resolved to hidden &lt;select id=&quot;id_talhoes&quot; name=&quot;id_talhoes&quot;&gt;…&lt;/select&gt;">page = &lt;Page url='http://localhost:53120/cadastros/safras/nova/'&gt;
+live_server = &lt;LiveServer listening at http://localhost:53120&gt;
+e2e_safra_data = {'area': &lt;Area: Fazenda E2E 2 - Area E2E 2&gt;, 'cultura': &lt;Cultura: E2E Cultura 2&gt;, 'empresa': &lt;Empresa: E2E Empresa 2&gt;, 'fazenda': &lt;Fazenda: Fazenda E2E 2 - &gt;, ...}
+django_db_blocker = &lt;pytest_django.plugin.DjangoDbBlocker object at 0x00000223A06B5BE0&gt;
+
+    def test_talhao_in_use_hidden_in_dropdown(page, live_server, e2e_safra_data, django_db_blocker):
+        # Cria safra que usa o talhao e verifica que ele não aparece no dropdown
+        with django_db_blocker.unblock():
+            from cadastros.models import Safra, Talhao
+            fazenda = e2e_safra_data['fazenda']
+            area = e2e_safra_data['area']
+            talhao = e2e_safra_data['talhao']
+            cultura = e2e_safra_data['cultura']
+            # Create an additional available talhão so the form has at least one option to select
+            Talhao.objects.create(area=area, fazenda=fazenda, nome='T-e2e-available', codigo='E2E-AV', area_hac=2, empresa=fazenda.empresa)
+            safra = Safra.objects.create(fazenda=fazenda, cultura=cultura, ano=2025)
+    
+        parsed = urlparse(live_server.url)
+        host = parsed.hostname or '127.0.0.1'
+        page.context.add_cookies([{
+            'name': 'sessionid',
+            'value': e2e_safra_data['sessionid'],
+            'domain': host,
+            'path': '/',
+        }])
+    
+        page.goto(f"{live_server.url}/cadastros/safras/nova/")
+        page.select_option('#id_fazenda', str(fazenda.pk))
+        page.wait_for_selector('#loading-talhoes', state='hidden')
+    
+        # Ensure the talhoes select is visible and populated (Choices.js initialization may be async)
+&gt;       page.wait_for_selector('#id_talhoes', state='visible', timeout=5000)
+
+tests\e2e\test_safra_choices_flow.py:105: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+venv\Lib\site-packages\playwright\sync_api\_generated.py:8213: in wait_for_selector
+    self._sync(
+venv\Lib\site-packages\playwright\_impl\_page.py:419: in wait_for_selector
+    return await self._main_frame.wait_for_selector(**locals_to_params(locals()))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\playwright\_impl\_frame.py:369: in wait_for_selector
+    await self._channel.send(
+venv\Lib\site-packages\playwright\_impl\_connection.py:69: in send
+    return await self._connection.wrap_api_call(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;playwright._impl._connection.Connection object at 0x00000223A2AAFA10&gt;
+cb = &lt;function Channel.send.&lt;locals&gt;.&lt;lambda&gt; at 0x00000223AA16A3E0&gt;
+is_internal = False, title = None
+
+    async def wrap_api_call(
+        self, cb: Callable[[], Any], is_internal: bool = False, title: str = None
+    ) -&gt; Any:
+        if self._api_zone.get():
+            return await cb()
+        task = asyncio.current_task(self._loop)
+        st: List[inspect.FrameInfo] = getattr(
+            task, "__pw_stack__", None
+        ) or inspect.stack(0)
+    
+        parsed_st = _extract_stack_trace_information_from_stack(st, is_internal, title)
+        self._api_zone.set(parsed_st)
+        try:
+            return await cb()
+        except Exception as error:
+&gt;           raise rewrite_error(error, f"{parsed_st['apiName']}: {error}") from None
+E           playwright._impl._errors.TimeoutError: Page.wait_for_selector: Timeout 5000ms exceeded.
+E           Call log:
+E             - waiting for locator("#id_talhoes") to be visible
+E               14 × locator resolved to hidden &lt;select id="id_talhoes" name="id_talhoes"&gt;…&lt;/select&gt;
+
+venv\Lib\site-packages\playwright\_impl\_connection.py:559: TimeoutError</failure></testcase></testsuite></testsuites>

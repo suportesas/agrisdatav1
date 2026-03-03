@@ -1,0 +1,196 @@
+{% extends 'base.html' %}
+
+{% block title %}Parcelas a Pagar{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1><i class="bi bi-calendar-check"></i> Parcelas a Pagar</h1>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-4">
+                    <label for="status" class="form-label">Status</label>
+                    <select name="status" id="status" class="form-select">
+                        <option value="">-- Todos --</option>
+                        <option value="ABERTA" {% if request.GET.status == 'ABERTA' %}selected{% endif %}>Abertas</option>
+                        <option value="VENCIDA" {% if request.GET.status == 'VENCIDA' %}selected{% endif %}>Vencidas</option>
+                        <option value="PAGA" {% if request.GET.status == 'PAGA' %}selected{% endif %}>Pagas</option>
+                        <option value="RENEGOCIADA" {% if request.GET.status == 'RENEGOCIADA' %}selected{% endif %}>Renegociadas</option>
+                    </select>
+                </div>
+
+                <div class="col-md-4">
+                    <label for="tipo_vencimento" class="form-label">Período</label>
+                    <select name="tipo_vencimento" id="tipo_vencimento" class="form-select">
+                        <option value="">-- Todos --</option>
+                        <option value="vencidas" {% if request.GET.tipo_vencimento == 'vencidas' %}selected{% endif %}>Vencidas</option>
+                        <option value="proximas_7" {% if request.GET.tipo_vencimento == 'proximas_7' %}selected{% endif %}>Próximos 7 dias</option>
+                        <option value="proximas_30" {% if request.GET.tipo_vencimento == 'proximas_30' %}selected{% endif %}>Próximos 30 dias</option>
+                    </select>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">&nbsp;</label>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-funnel"></i> Filtrar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="text-muted small">Total de Parcelas</div>
+                    <div class="fs-5 fw-bold">{{ total_parcelas }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="text-muted small">Abertas</div>
+                    <div class="fs-5 fw-bold text-warning">{{ parcelas_abertas }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="text-muted small">Vencidas</div>
+                    <div class="fs-5 fw-bold text-danger">{{ parcelas_vencidas }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="text-muted small">Pagas</div>
+                    <div class="fs-5 fw-bold text-success">{{ parcelas_pagas }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabela de Parcelas -->
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Conta</th>
+                        <th>Fornecedor</th>
+                        <th>Parcela</th>
+                        <th>Vencimento</th>
+                        <th>Valor</th>
+                        <th>Juros</th>
+                        <th>Multa</th>
+                        <th>Total</th>
+                        <th>Dias Atraso</th>
+                        <th>Status</th>
+                        <th>Ação</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for parcela in parcelas %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'financeiro:conta_pagar_detail' parcela.conta_pagar.id %}">
+                                {{ parcela.conta_pagar.numero }}
+                            </a>
+                        </td>
+                        <td>{{ parcela.conta_pagar.fornecedor.nome }}</td>
+                        <td><strong>{{ parcela.numero_parcela }}</strong></td>
+                        <td>
+                            <strong>{{ parcela.data_vencimento|date:'d/m/Y' }}</strong>
+                            {% if parcela.status == 'VENCIDA' %}
+                            <br><small class="text-danger">
+                                {% if parcela.dias_atraso > 0 %}
+                                    {{ parcela.dias_atraso }} dias de atraso
+                                {% endif %}
+                            </small>
+                            {% endif %}
+                        </td>
+                        <td>R$ {{ parcela.valor_parcela|floatformat:2 }}</td>
+                        <td>{% if parcela.juros_parcela > 0 %}<strong class="text-danger">R$ {{ parcela.juros_parcela|floatformat:2 }}</strong>{% else %}-{% endif %}</td>
+                        <td>{% if parcela.multa_parcela > 0 %}<strong class="text-danger">R$ {{ parcela.multa_parcela|floatformat:2 }}</strong>{% else %}-{% endif %}</td>
+                        <td><strong>R$ {{ parcela.valor_total_parcela|floatformat:2 }}</strong></td>
+                        <td>
+                            {% if parcela.dias_atraso > 0 %}
+                            <span class="badge bg-danger">{{ parcela.dias_atraso }}d</span>
+                            {% else %}
+                            <span class="badge bg-light text-dark">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge bg-{% if parcela.status == 'PAGA' %}success{% elif parcela.status == 'VENCIDA' %}danger{% elif parcela.status == 'ABERTA' %}warning{% else %}secondary{% endif %}">
+                                {{ parcela.get_status_display }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if parcela.status == 'ABERTA' or parcela.status == 'VENCIDA' %}
+                            <a href="{% url 'financeiro:parcela_pagar' parcela.id %}" class="btn btn-sm btn-primary">
+                                Pagar
+                            </a>
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="11" class="text-center py-4">
+                            <div class="text-muted">
+                                <i class="bi bi-inbox" style="font-size: 2rem;"></i>
+                                <p>Nenhuma parcela encontrada</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Paginação -->
+        {% if is_paginated %}
+        <nav aria-label="Page navigation" class="border-top p-3">
+            <ul class="pagination mb-0">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page=1{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.tipo_vencimento %}&tipo_vencimento={{ request.GET.tipo_vencimento }}{% endif %}">Primeira</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.tipo_vencimento %}&tipo_vencimento={{ request.GET.tipo_vencimento }}{% endif %}">Anterior</a>
+                </li>
+                {% endif %}
+
+                {% for num in page_obj.paginator.page_range %}
+                <li class="page-item {% if page_obj.number == num %}active{% endif %}">
+                    <a class="page-link" href="?page={{ num }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.tipo_vencimento %}&tipo_vencimento={{ request.GET.tipo_vencimento }}{% endif %}">{{ num }}</a>
+                </li>
+                {% endfor %}
+
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.tipo_vencimento %}&tipo_vencimento={{ request.GET.tipo_vencimento }}{% endif %}">Próxima</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.tipo_vencimento %}&tipo_vencimento={{ request.GET.tipo_vencimento }}{% endif %}">Última</a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

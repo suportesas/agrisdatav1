@@ -1,6 +1,59 @@
+from django.views.decorators.http import require_POST
+from django.contrib.auth.decorators import login_required
+import json
+from decimal import Decimal
+# ============== PRODUTO FORNECEDOR ==============
+@login_required
+def produto_fornecedor_json(request, pk):
+    """Retorna dados do fornecedor relacionado ao produto em JSON"""
+    try:
+        pf = get_object_or_404(ProdutoFornecedor, pk=pk)
+        if pf.produto.categoria.empresa != request.user.empresa:
+            return JsonResponse({'success': False, 'error': 'Não autorizado'}, status=403)
+        return JsonResponse({
+            'success': True,
+            'fornecedor_id': pf.fornecedor_id,
+            'codigo_fornecedor': pf.codigo_fornecedor,
+            'preco_compra': float(pf.preco_compra) if pf.preco_compra else 0,
+            'prazo_entrega': pf.prazo_entrega,
+            'quantidade_minima': float(pf.quantidade_minima) if pf.quantidade_minima else 0,
+            'fornecedor_preferencial': pf.fornecedor_preferencial,
+            'observacoes': pf.observacoes or ''
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+@login_required
+@require_POST
+def produto_fornecedor_editar(request, pk):
+    """Edita dados do fornecedor relacionado ao produto via AJAX"""
+    try:
+        pf = get_object_or_404(ProdutoFornecedor, pk=pk)
+        if pf.produto.categoria.empresa != request.user.empresa:
+            return JsonResponse({'success': False, 'error': 'Não autorizado'}, status=403)
+        data = json.loads(request.body)
+        pf.fornecedor_id = data.get('fornecedor_id')
+        pf.codigo_fornecedor = data.get('codigo_fornecedor', '').strip()
+        pf.preco_compra = Decimal(data.get('preco_compra', 0))
+        pf.prazo_entrega = data.get('prazo_entrega') or None
+        pf.quantidade_minima = Decimal(data.get('quantidade_minima', 0))
+        pf.fornecedor_preferencial = data.get('fornecedor_preferencial', False)
+        pf.observacoes = data.get('observacoes', '')
+        pf.save()
+        return JsonResponse({'success': True, 'message': 'Fornecedor editado com sucesso!'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+
+@login_required
+def categoria_seed(request):
+    empresa = request.user.empresa
+    from produtos.categoria_seed import seed_categorias_for_empresa
+    criados, ignorados = seed_categorias_for_empresa(empresa)
+    messages.success(request, f'Categorias padrão populadas! Criadas: {criados}, já existentes: {ignorados}')
+    return redirect('produtos:categoria_list')
 from django.db.models import Q, Count
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
@@ -372,13 +425,17 @@ def produto_list(request):
 def produto_detail(request, pk):
     produto = get_object_or_404(
         Produto.objects.select_related(
-            'categoria', 'subcategoria', 'unidade_medida', 
+            'categoria', 'subcategoria', 'unidade_medida',
             'unidade_compra', 'unidade_venda', 'ncm', 'fornecedor_padrao'
-        ).prefetch_related('tributacoes').filter(categoria__empresa=request.user.empresa),
+        ).prefetch_related('tributacoes', 'documentos').filter(categoria__empresa=request.user.empresa),
         pk=pk
     )
+    # Buscar fornecedores relacionados ao produto
+    fornecedores_produto = ProdutoFornecedor.objects.filter(produto=produto).select_related('fornecedor')
+    
     return render(request, 'produtos/produto/produto_detail.html', {
-        'produto': produto
+        'produto': produto,
+        'fornecedores_produto': fornecedores_produto
     })
 
 
@@ -392,9 +449,13 @@ def produto_create(request):
             return redirect('produtos:produto_list')
     else:
         form = ProdutoForm(empresa=request.user.empresa)
+    # Adiciona o dicionário de categorias condicionais
+    categorias = Categoria.objects.filter(empresa=request.user.empresa)
+    categorias_condicionais = {str(cat.pk): cat.condiciona_campos for cat in categorias}
     return render(request, 'produtos/produto/produto_form.html', {
         'form': form,
-        'action': 'Cadastrar'
+        'action': 'Cadastrar',
+        'categorias_condicionais': categorias_condicionais
     })
 
 
@@ -409,17 +470,17 @@ def produto_update(request, pk):
             return redirect('produtos:produto_list')
     else:
         form = ProdutoForm(instance=produto, empresa=request.user.empresa)
-    
     # Buscar culturas, pragas e unidades para os modais
     from cadastros.models import Cultura, Praga
     culturas = Cultura.objects.filter(empresa=request.user.empresa).order_by('nome')
     pragas = Praga.objects.filter(empresa=request.user.empresa, ativa=True).order_by('nome_comum')
     unidades = UnidadeMedida.objects.filter(empresa=request.user.empresa).order_by('sigla')
-    
     # Buscar fornecedores e fornecedores relacionados ao produto
     fornecedores = Fornecedor.objects.filter(empresa=request.user.empresa, ativa=True).order_by('nome')
     fornecedores_produto = ProdutoFornecedor.objects.filter(produto=produto).select_related('fornecedor')
-    
+    # Adiciona o dicionário de categorias condicionais
+    categorias = Categoria.objects.filter(empresa=request.user.empresa)
+    categorias_condicionais = {str(cat.pk): cat.condiciona_campos for cat in categorias}
     return render(request, 'produtos/produto/produto_form.html', {
         'form': form,
         'action': 'Editar',
@@ -429,6 +490,7 @@ def produto_update(request, pk):
         'unidades_dosagem': unidades,
         'fornecedores': fornecedores,
         'fornecedores_produto': fornecedores_produto,
+        'categorias_condicionais': categorias_condicionais
     })
 
 
@@ -528,10 +590,25 @@ def produtotributacao_update(request, pk):
             return redirect('produtos:produto_detail', pk=tributacao.produto.pk)
     else:
         form = ProdutoTributacaoForm(instance=tributacao, empresa=request.user.empresa)
+    # Buscar o código CFOP salvo
+    cfop_codigo = ''
+    natureza_descricao = ''
+    if form.instance.cfop_id:
+        try:
+            cfop_codigo = form.fields['cfop'].queryset.get(pk=form.instance.cfop_id).codigo
+        except Exception:
+            cfop_codigo = ''
+    if form.instance.natureza_operacao_id:
+        try:
+            natureza_descricao = form.fields['natureza_operacao'].queryset.get(pk=form.instance.natureza_operacao_id).descricao
+        except Exception:
+            natureza_descricao = ''
     return render(request, 'produtos/tributacao/tributacao_form.html', {
         'form': form,
         'produto': tributacao.produto,
-        'action': 'Editar'
+        'action': 'Editar',
+        'cfop_codigo': cfop_codigo,
+        'natureza_descricao': natureza_descricao,
     })
 
 
@@ -717,11 +794,12 @@ def unidademedida_create_ajax(request):
             
             sigla = data.get('sigla', '').strip()
             nome = data.get('nome', '').strip()
+            tipo = data.get('tipo', '').strip()
             
-            if not sigla or not nome:
+            if not sigla or not nome or not tipo:
                 return JsonResponse({
                     'success': False,
-                    'error': 'Sigla e nome são obrigatórios'
+                    'error': 'Sigla, nome e tipo são obrigatórios'
                 }, status=400)
             
             # Verifica se já existe
@@ -735,7 +813,8 @@ def unidademedida_create_ajax(request):
             unidade = UnidadeMedida.objects.create(
                 empresa=request.user.empresa,
                 sigla=sigla,
-                nome=nome
+                nome=nome,
+                tipo=tipo
             )
             
             return JsonResponse({
@@ -804,17 +883,36 @@ def cfop_buscar_ajax(request):
         if not codigo:
             return JsonResponse({'success': False, 'error': 'Codigo nao fornecido'}, status=400)
         try:
-            cfop = CFOP.objects.filter(codigo=codigo, ativo=True).first()
-            if cfop:
-                return JsonResponse({
-                    'success': True, 
-                    'id': cfop.id, 
-                    'codigo': cfop.codigo, 
-                    'nome': cfop.nome,
-                    'descricao': cfop.nome  # Retornar nome como descricao para compatibilidade
-                })
+            empresa = getattr(request.user, 'empresa', None)
+            if not empresa:
+                return JsonResponse({'success': False, 'error': 'Empresa não encontrada para o usuário.'}, status=400)
+            from cadastros.models import EmpresaCFOP
+            empresa_cfop = EmpresaCFOP.objects.filter(empresa=empresa, codigo=codigo, ativo=True).first()
+            if not empresa_cfop:
+                return JsonResponse({'success': False, 'error': 'CFOP não permitido para esta empresa.'}, status=404)
+            cfop = empresa_cfop.template
+            natureza = cfop.natureza_operacao if cfop else None
+            natureza_dict = None
+            if natureza:
+                natureza_dict = {
+                    'id': natureza.id,
+                    'descricao': natureza.descricao
+                }
             else:
-                return JsonResponse({'success': False, 'error': 'CFOP nao encontrado'}, status=404)
+                # Se não houver Natureza vinculada, usar observação do CFOP
+                natureza_dict = {
+                    'id': None,
+                    'descricao': cfop.descricao if cfop else empresa_cfop.descricao or ''
+                }
+            return JsonResponse({
+                'success': True,
+                'id': cfop.id if cfop else empresa_cfop.id,
+                'codigo': cfop.codigo if cfop else empresa_cfop.codigo,
+                'nome': cfop.nome if cfop else empresa_cfop.nome,
+                'descricao': cfop.nome if cfop else empresa_cfop.nome,
+                'observacao': cfop.descricao if cfop else empresa_cfop.descricao or '',
+                'natureza_operacao': natureza_dict
+            })
         except Exception as e:
             return JsonResponse({'success': False, 'error': str(e)}, status=500)
     return JsonResponse({'success': False, 'error': 'Metodo nao permitido'}, status=405)

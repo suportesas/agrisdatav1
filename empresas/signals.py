@@ -1,3 +1,30 @@
+@receiver(post_save, sender=Empresa)
+def seed_tipos_produto_on_create(sender, instance, created, **kwargs):
+    """Cria tipos de produto padrão quando uma Empresa é criada."""
+    if not created:
+        return
+
+    try:
+        from produtos.tipo_produto_seed import seed_tipos_produto_for_empresa
+        criados, ignorados = seed_tipos_produto_for_empresa(instance)
+        # Log silencioso
+    except Exception as e:
+        pass
+
+
+# --- NOVO: Seed de categorias padrão ao criar empresa ---
+@receiver(post_save, sender=Empresa)
+def seed_categorias_on_create(sender, instance, created, **kwargs):
+    """Cria categorias padrão quando uma Empresa é criada."""
+    if not created:
+        return
+    try:
+        from produtos.categoria_seed import seed_categorias_for_empresa
+        criados, ignorados = seed_categorias_for_empresa(instance)
+        # Log silencioso
+    except Exception:
+        pass
+
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
@@ -38,6 +65,26 @@ def seed_ncms_on_create(sender, instance, created, **kwargs):
         from cadastros.tasks import seed_ncms_for_company_async
         if getattr(instance, 'auto_seed_ncm', False):
             seed_ncms_for_company_async(instance.pk)
+    except Exception:
+        # Fail silently; admin can trigger via action
+        pass
+
+
+# --- NEW: Seed CFOPs for Empresa on creation ---
+@receiver(post_save, sender=Empresa)
+def seed_cfops_on_create(sender, instance, created, **kwargs):
+    """Seeds company CFOPs when empresa is created."""
+    if not created:
+        return
+
+    try:
+        from cadastros.models import CFOP, EmpresaCFOP
+        templates = CFOP.objects.filter(ativo=True).order_by('codigo')
+        bulk = []
+        for t in templates:
+            bulk.append(EmpresaCFOP(empresa=instance, codigo=t.codigo, nome=t.nome, descricao=t.descricao, ativo=t.ativo, template=t))
+        if bulk:
+            EmpresaCFOP.objects.bulk_create(bulk)
     except Exception:
         # Fail silently; admin can trigger via action
         pass

@@ -353,9 +353,9 @@ class EmpresaNCMAdmin(admin.ModelAdmin):
 
 @admin.register(CFOP)
 class CFOPAdmin(admin.ModelAdmin):
-    list_display = ['codigo', 'nome', 'ativo']
+    list_display = ['codigo', 'nome', 'natureza_operacao', 'ativo']
     search_fields = ['codigo', 'nome']
-    list_filter = ['ativo']
+    list_filter = ['ativo', 'natureza_operacao']
     ordering = ['codigo']
 
 

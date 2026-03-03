@@ -3,6 +3,32 @@
 
 {% block title %}Conferir Recebimento {{ recebimento.numero }}{% endblock %}
 
+{% block extra_css %}
+<style>
+    .divergencia-card {
+        border-left: 4px solid #dc3545;
+        background-color: #fff5f5;
+        margin-bottom: 15px;
+    }
+    .divergencia-card.leve {
+        border-left-color: #ffc107;
+        background-color: #fffbf0;
+    }
+    .divergencia-card.medio {
+        border-left-color: #ff8c00;
+        background-color: #fff8f5;
+    }
+    .divergencia-card.grave {
+        border-left-color: #dc3545;
+        background-color: #ffe5e5;
+    }
+    .badge-severity {
+        font-size: 0.85rem;
+        padding: 0.35rem 0.65rem;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid mt-4">
     <!-- Header -->
@@ -19,7 +45,7 @@
     </div>
 
     <!-- Formulário de Conferência -->
-    <form method="post">
+    <form method="post" id="formConferencia">
         {% csrf_token %}
         
         <div class="card mb-4">
@@ -31,10 +57,12 @@
             </div>
             <div class="card-body">
                 <!-- Itens Recebidos -->
+                <h6 class="mb-3"><i class="bi bi-box-seam me-2"></i>Itens Recebidos:</h6>
                 <div class="table-responsive mb-4">
                     <table class="table table-bordered">
                         <thead>
                             <tr>
+                                <th>ID</th>
                                 <th>Produto</th>
                                 <th class="text-end">Qtd. Recebida</th>
                                 <th>Local</th>
@@ -44,6 +72,9 @@
                         <tbody>
                             {% for item in recebimento.itens.all %}
                             <tr>
+                                <td>
+                                    <small class="text-muted">{{ item.pk }}</small>
+                                </td>
                                 <td>
                                     {% if item.item_pedido %}
                                         {{ item.item_pedido.produto.nome }}
@@ -82,33 +113,54 @@
                 </div>
 
                 <!-- Pergunta sobre Divergências -->
-                <div class="form-check form-check-inline mb-3">
+                <h6 class="mb-3"><i class="bi bi-question-circle me-2"></i>Status da Conferência:</h6>
+                <div class="form-check mb-3">
                     <input class="form-check-input" type="radio" name="tem_divergencia" 
                            id="semDivergencia" value="nao" checked>
                     <label class="form-check-label" for="semDivergencia">
                         <i class="bi bi-check-circle text-success me-1"></i>
-                        Recebimento Conferido - Tudo OK
+                        <strong>Tudo OK</strong> - Recebimento conferido sem problemas
                     </label>
                 </div>
-                <div class="form-check form-check-inline mb-3">
+                <div class="form-check mb-4">
                     <input class="form-check-input" type="radio" name="tem_divergencia" 
                            id="comDivergencia" value="sim">
                     <label class="form-check-label" for="comDivergencia">
                         <i class="bi bi-exclamation-triangle text-danger me-1"></i>
-                        Há Divergências
+                        <strong>Há Divergências</strong> - Encontrei problemas no recebimento
                     </label>
                 </div>
 
-                <!-- Campo de Divergências (inicialmente oculto) -->
-                <div id="campoDivergencias" style="display: none;">
-                    <div class="alert alert-warning">
-                        <strong>Descreva as divergências encontradas:</strong>
+                <!-- Seção de Divergências (inicialmente oculta) -->
+                <div id="secaoDivergencias" style="display: none;" class="alert alert-light border">
+                    <div class="alert alert-warning mb-3">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        <strong>Registre cada divergência encontrada:</strong>
                     </div>
-                    <textarea name="divergencias" class="form-control" rows="4" 
-                              placeholder="Exemplos: quantidade diferente, produto danificado, etc."></textarea>
+
+                    <!-- Divergências Estruturadas -->
+                    <div id="listaDivergencias" class="mb-3"></div>
+
+                    <!-- Botão para Adicionar Divergência -->
+                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="adicionarDivergencia()">
+                        <i class="bi bi-plus-circle me-1"></i>
+                        Adicionar Divergência
+                    </button>
+
+                    <!-- Observações Gerais -->
+                    <div class="mt-3">
+                        <label for="divergencias_texto" class="form-label">
+                            <strong>Observações Gerais:</strong>
+                        </label>
+                        <textarea name="divergencias_texto" id="divergencias_texto" class="form-control" 
+                                  rows="3" placeholder="Observações adicionais sobre o recebimento..."></textarea>
+                    </div>
                 </div>
             </div>
         </div>
+
+        <!-- Campo hidden para contar divergências -->
+        <input type="hidden" id="num_divergencias" name="num_divergencias" value="0">
 
         <!-- Botões -->
         <div class="row mb-4">
@@ -126,22 +178,293 @@
     </form>
 </div>
 
+<!-- Modal template para Divergência -->
+<template id="templateDivergencia">
+    <div class="card divergencia-card" id="divergencia-INDICE">
+        <div class="card-header d-flex justify-content-between align-items-center bg-light" style="padding: 0.75rem">
+            <div>
+                <label class="form-label mb-0">
+                    <strong class="titulo-divergencia">Novo Tipo de Divergência</strong>
+                </label>
+            </div>
+            <button type="button" class="btn btn-sm btn-outline-danger" onclick="removerDivergencia(INDICE)">
+                <i class="bi bi-trash"></i> Remover
+            </button>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label"><strong>Tipo de Divergência *</strong></label>
+                    <select name="divergencia_INDICE_tipo" class="form-select tipo-select" onchange="atualizarTipoDivergencia(INDICE)">
+                        <option value="">-- Selecione um tipo --</option>
+                        {% for tipo in tipos_divergencia %}
+                        <option value="{{ tipo.pk }}" data-severity="{{ tipo.severidade }}" data-name="{{ tipo.nome }}">
+                            [{{ tipo.get_severidade_display }}] {{ tipo.nome }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    {% if not tipos_divergencia %}
+                    <div class="alert alert-info mt-2 mb-0">
+                        <small>Nenhum tipo configurado. <a href="{% url 'admin:compras_tipodivergencia_add' %}" target="_blank">Cadastre aqui</a>.</small>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Item (Opcional)</label>
+                    <select name="divergencia_INDICE_item" class="form-select">
+                        <option value="">-- Todos os Itens --</option>
+                        {% for item in recebimento.itens.all %}
+                        <option value="{{ item.pk }}">
+                            {% if item.item_pedido %}
+                                {{ item.item_pedido.produto.nome }}
+                            {% else %}
+                                {{ item.produto.nome }}
+                            {% endif %}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Quantidade Afetada (Opcional)</label>
+                    <input type="number" name="divergencia_INDICE_quantidade" class="form-control" 
+                           step="0.01" placeholder="Ex: 10 caixas">
+                </div>
+                <div class="col-md-6 mb-3" id="severidade-display-INDICE">
+                    <label class="form-label">Nível de Severidade</label>
+                    <div class="mt-2">
+                        <span class="badge badge-severity bg-secondary">Não selecionado</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label"><strong>Descrição Detalhada *</strong></label>
+                <textarea name="divergencia_INDICE_descricao" class="form-control" rows="3"
+                          placeholder="Descreva exatamente o problema encontrado..."></textarea>
+                <small class="text-muted d-block mt-1">Seja específico para facilitar a resolução.</small>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Ação Proposta (Opcional)</label>
+                <textarea name="divergencia_INDICE_acao" class="form-control" rows="2"
+                          placeholder="Ex: Devolver 100%, devolver 50%, ajustar preço, etc."></textarea>
+            </div>
+        </div>
+    </div>
+</template>
+
 <script>
+let contadorDivergencias = 0;
+
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('✅ DOMContentLoaded iniciado');
+    
     const semDivergencia = document.getElementById('semDivergencia');
     const comDivergencia = document.getElementById('comDivergencia');
-    const campoDivergencias = document.getElementById('campoDivergencias');
+    const secaoDivergencias = document.getElementById('secaoDivergencias');
+    const listaDivergencias = document.getElementById('listaDivergencias');
+    const templateDivergencia = document.getElementById('templateDivergencia');
     
-    function toggleDivergencias() {
-        if (comDivergencia.checked) {
-            campoDivergencias.style.display = 'block';
-        } else {
-            campoDivergencias.style.display = 'none';
+    console.log('Elementos encontrados:', {
+        semDivergencia: !!semDivergencia,
+        comDivergencia: !!comDivergencia,
+        secaoDivergencias: !!secaoDivergencias,
+        listaDivergencias: !!listaDivergencias,
+        templateDivergencia: !!templateDivergencia
+    });
+    
+    if (!listaDivergencias) {
+        console.error('❌ ERRO: listaDivergencias não existe no DOM!');
+        console.log('Filhos de secaoDivergencias:', secaoDivergencias ? secaoDivergencias.innerHTML : 'secaoDivergencias também não existe');
+    }
+    
+    if (!templateDivergencia) {
+        console.error('❌ ERRO: templateDivergencia não existe no DOM!');
+    }
+    
+    // Restaurar estado do localStorage
+    const temDivergenciaArmazenada = localStorage.getItem('recebimento-tem-divergencia');
+    if (temDivergenciaArmazenada === 'sim') {
+        console.log('Restaurando estado: tinha divergências');
+        comDivergencia.checked = true;
+        semDivergencia.checked = false;
+        secaoDivergencias.style.display = 'block';
+        if (contadorDivergencias === 0) {
+            adicionarDivergencia();
         }
     }
     
-    semDivergencia.addEventListener('change', toggleDivergencias);
-    comDivergencia.addEventListener('change', toggleDivergencias);
+    function toggleDivergencias() {
+        console.log('toggleDivergencias chamado, comDivergencia.checked:', comDivergencia.checked);
+        if (comDivergencia.checked) {
+            console.log('Mostrando seção de divergências');
+            secaoDivergencias.style.display = 'block';
+            localStorage.setItem('recebimento-tem-divergencia', 'sim');
+            
+            // Se não tiver divergências, adiciona uma
+            if (contadorDivergencias === 0) {
+                console.log('Adicionando primeira divergência');
+                adicionarDivergencia();
+            }
+        } else {
+            console.log('Ocultando seção de divergências');
+            secaoDivergencias.style.display = 'none';
+            localStorage.setItem('recebimento-tem-divergencia', 'nao');
+        }
+    }
+    
+    if (semDivergencia) {
+        semDivergencia.addEventListener('change', toggleDivergencias);
+    }
+    if (comDivergencia) {
+        comDivergencia.addEventListener('change', toggleDivergencias);
+    }
+    
+    console.log('✅ Event listeners adicionados');
+    
+    // Validar que campos obrigatórios estão preenchidos no submit
+    const formConferencia = document.getElementById('formConferencia');
+    if (formConferencia) {
+        formConferencia.addEventListener('submit', function(e) {
+            console.log('Form submit detectado');
+            if (document.getElementById('comDivergencia').checked) {
+                const divergenciasValidas = [];
+                const divs = document.querySelectorAll('[id^="divergencia-"]');
+                
+                divs.forEach(div => {
+                    const tipoSelect = div.querySelector('[name*="_tipo"]');
+                    const descricao = div.querySelector('[name*="_descricao"]');
+                    
+                    if (tipoSelect && descricao && tipoSelect.value && descricao.value.trim()) {
+                        divergenciasValidas.push(div);
+                    }
+                });
+                
+                if (divergenciasValidas.length === 0) {
+                    e.preventDefault();
+                    alert('❌ Selecione pelo menos um tipo de divergência e descreva o problema.');
+                    return false;
+                }
+            }
+            // Limpar localStorage ao submeter com sucesso
+            localStorage.removeItem('recebimento-tem-divergencia');
+        });
+    }
 });
+
+function adicionarDivergencia() {
+    console.log('adicionarDivergencia chamado');
+    
+    const template = document.getElementById('templateDivergencia');
+    const secaoDivergencias = document.getElementById('secaoDivergencias');
+    
+    if (!template) {
+        console.error('❌ Template não encontrado!');
+        return;
+    }
+    
+    if (!secaoDivergencias) {
+        console.error('❌ secaoDivergencias não encontrado!');
+        return;
+    }
+    
+    // Procurar listaDivergencias dentro de secaoDivergencias
+    let listaDivergencias = secaoDivergencias.querySelector('#listaDivergencias');
+    
+    if (!listaDivergencias) {
+        console.log('⚠️ listaDivergencias não encontrado por querySelector, criando...');
+        listaDivergencias = document.createElement('div');
+        listaDivergencias.id = 'listaDivergencias';
+        listaDivergencias.className = 'mb-3';
+        
+        // Inserir após o alert de warning
+        const alertWarning = secaoDivergencias.querySelector('.alert-warning');
+        if (alertWarning) {
+            alertWarning.parentNode.insertBefore(listaDivergencias, alertWarning.nextSibling);
+        } else {
+            secaoDivergencias.insertBefore(listaDivergencias, secaoDivergencias.firstChild);
+        }
+        console.log('✅ listaDivergencias criado dinamicamente');
+    }
+    
+    const clone = template.content.cloneNode(true);
+    const indice = contadorDivergencias++;
+    
+    // Converter DOM nodes para string para fazer replace
+    const tempDiv = document.createElement('div');
+    tempDiv.appendChild(clone.cloneNode(true));
+    let html = tempDiv.innerHTML;
+    
+    // Substituir todos INDICE por número
+    html = html.replace(/INDICE/g, indice);
+    
+    const novoDiv = document.createElement('div');
+    novoDiv.innerHTML = html;
+    
+    listaDivergencias.appendChild(novoDiv.firstElementChild);
+    console.log('✅ Divergência adicionada com índice:', indice);
+    
+    // Atualizar contador
+    const campoNum = document.getElementById('num_divergencias');
+    if (campoNum) {
+        campoNum.value = contadorDivergencias;
+    }
+}
+
+function removerDivergencia(indice) {
+    console.log('Removendo divergência:', indice);
+    const elemento = document.getElementById('divergencia-' + indice);
+    if (elemento) {
+        elemento.remove();
+        console.log('✅ Divergência removida');
+    }
+}
+
+function atualizarTipoDivergencia(indice) {
+    const select = document.querySelector(`select[name="divergencia_${indice}_tipo"]`);
+    if (!select) {
+        console.error('Select não encontrado para índice:', indice);
+        return;
+    }
+    
+    const option = select.options[select.selectedIndex];
+    
+    const titulo = document.querySelector(`#divergencia-${indice} .titulo-divergencia`);
+    const displayDiv = document.getElementById(`severidade-display-${indice}`);
+    
+    if (option.value) {
+        titulo.textContent = option.getAttribute('data-name');
+        const severity = option.getAttribute('data-severity');
+        const severityLabels = {
+            'LEVE': 'Leve',
+            'MEDIO': 'Médio',
+            'GRAVE': 'Grave'
+        };
+        const severityColors = {
+            'LEVE': 'warning',
+            'MEDIO': 'orange',
+            'GRAVE': 'danger'
+        };
+        const color = severityColors[severity] || 'secondary';
+        const label = severityLabels[severity] || severity;
+        displayDiv.innerHTML = `
+            <label class="form-label">Nível de Severidade</label>
+            <div class="mt-2">
+                <span class="badge badge-severity bg-${color}">${label}</span>
+            </div>
+        `;
+    } else {
+        titulo.textContent = 'Novo Tipo de Divergência';
+        displayDiv.innerHTML = `
+            <label class="form-label">Nível de Severidade</label>
+            <div class="mt-2">
+                <span class="badge badge-severity bg-secondary">Não selecionado</span>
+            </div>
+        `;
+    }
+}
 </script>
 {% endblock %}

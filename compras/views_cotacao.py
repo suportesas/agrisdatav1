@@ -373,6 +373,84 @@ def proposta_selecionar(request, proposta_pk):
 
 
 @login_required
+def historico_precos_list(request):
+    """Lista histórico de preços de todos os produtos da empresa"""
+    empresa = request.user.empresa
+    
+    # Filtros
+    search = request.GET.get('search', '')
+    fornecedor_id = request.GET.get('fornecedor', '')
+    data_inicio = request.GET.get('data_inicio', '')
+    data_fim = request.GET.get('data_fim', '')
+    
+    # Query base - garantir que o produto pertence à empresa
+    historico = HistoricoPrecoFornecedor.objects.filter(
+        produto__categoria__empresa=empresa
+    ).select_related('produto', 'fornecedor', 'cotacao').order_by('-data_cotacao')
+    
+    # Filtro por busca (produto ou código)
+    if search:
+        historico = historico.filter(
+            Q(produto__nome__icontains=search) |
+            Q(produto__codigo__icontains=search) |
+            Q(fornecedor__nome__icontains=search)
+        )
+    
+    # Filtro por fornecedor
+    if fornecedor_id:
+        historico = historico.filter(fornecedor_id=fornecedor_id)
+    
+    # Filtro por período
+    if data_inicio:
+        try:
+            data_inicio_dt = datetime.strptime(data_inicio, '%Y-%m-%d').date()
+            historico = historico.filter(data_cotacao__gte=data_inicio_dt)
+        except:
+            pass
+    
+    if data_fim:
+        try:
+            data_fim_dt = datetime.strptime(data_fim, '%Y-%m-%d').date()
+            historico = historico.filter(data_cotacao__lte=data_fim_dt)
+        except:
+            pass
+    
+    # Paginação
+    from django.core.paginator import Paginator
+    paginator = Paginator(historico, 50)
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+    
+    # Fornecedores para filtro
+    fornecedores = Fornecedor.objects.filter(
+        empresa=empresa,
+        ativa=True
+    ).values_list('id', 'nome').order_by('nome')
+    
+    # Estatísticas
+    total_registros = historico.count()
+    preco_medio = historico.aggregate(Avg('preco_unitario'))['preco_unitario__avg']
+    preco_minimo = historico.aggregate(Min('preco_unitario'))['preco_unitario__min']
+    preco_maximo = historico.aggregate(Max('preco_unitario'))['preco_unitario__max']
+    
+    context = {
+        'page_obj': page_obj,
+        'historico': page_obj.object_list,
+        'fornecedores': fornecedores,
+        'search': search,
+        'fornecedor_id': fornecedor_id,
+        'data_inicio': data_inicio,
+        'data_fim': data_fim,
+        'total_registros': total_registros,
+        'preco_medio': preco_medio,
+        'preco_minimo': preco_minimo,
+        'preco_maximo': preco_maximo,
+    }
+    
+    return render(request, 'compras/historico_precos_list.html', context)
+
+
+@login_required
 def historico_precos(request, produto_pk):
     """Exibe histórico de preços de um produto por fornecedor"""
     produto = get_object_or_404(Produto, pk=produto_pk)

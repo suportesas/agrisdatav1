@@ -1,0 +1,650 @@
+cfop;descricao;tipo;natureza
+1.000;ENTRADAS OU AQUISIÇÕES DE SERVIÇOS DO ESTADO;GRUPO;ENTRADA
+1.100;COMPRAS PARA INDUSTRIALIZAÇÃO, PRODUÇÃO RURAL, COMERCIALIZAÇÃO OU PRESTAÇÃO DE SERVIÇOS;SUBGRUPO;ENTRADA
+1.101;Compra para industrialização ou produção rural;CODIGO;ENTRADA
+1.102;Compra para comercialização;CODIGO;ENTRADA
+1.111;Compra para industrialização de mercadoria recebida anteriormente em consignação industrial;CODIGO;ENTRADA
+1.113;Compra para industrialização, de mercadoria recebida anteriormente em outras hipóteses;CODIGO;ENTRADA
+1.116;Compra para industrialização por encomenda;CODIGO;ENTRADA
+1.117;Compra para comercialização por encomenda;CODIGO;ENTRADA
+1.118;Compra de mercadoria para comercialização pelo adquirente originário, entregue pelo vendedor remetente ao destinatário, em venda à ordem;CODIGO;ENTRADA
+1.120;Compra para industrialização, em venda à ordem, já recebida do vendedor remetente;CODIGO;ENTRADA
+1.121;Compra para comercialização, em venda à ordem, já recebida do vendedor remetente;CODIGO;ENTRADA
+1.122;Compra para industrialização em que a mercadoria foi remetida pelo fornecedor ao industrializador sem transitar pelo estabelecimento adquirente;CODIGO;ENTRADA
+1.124;Industrialização efetuada por outra empresa;CODIGO;ENTRADA
+1.125;Industrialização efetuada por outra empresa quando a mercadoria remetida para utilização no processo de industrialização não transitou pelo estabelecimento adquirente da mercadoria;CODIGO;ENTRADA
+1.126;Compra para utilização na prestação de serviço sujeita ao ISSQN;CODIGO;ENTRADA
+1.128;Compra para utilização na prestação de serviço sujeita ao ICMS;CODIGO;ENTRADA
+1.150;TRANSFERÊNCIAS PARA INDUSTRIALIZAÇÃO, PRODUÇÃO RURAL OU COMERCIALIZAÇÃO;CODIGO;ENTRADA
+1.151;Transferência para industrialização ou produção rural;CODIGO;ENTRADA
+1.152;Transferência para comercialização;CODIGO;ENTRADA
+1.153;Transferência de energia elétrica para distribuição;CODIGO;ENTRADA
+1.154;Transferência para utilização na prestação de serviço;CODIGO;ENTRADA
+1.200;DEVOLUÇÕES DE VENDAS DE PRODUÇÃO PRÓPRIA, DE TERCEIROS OU ANULAÇÕES DE VALORES;SUBGRUPO;ENTRADA
+1.201;Devolução de venda de produção do estabelecimento;CODIGO;ENTRADA
+1.202;Devolução de venda de mercadoria adquirida ou recebida de terceiros;CODIGO;ENTRADA
+1.203;Devolução de venda de produção do estabelecimento, destinada à Zona Franca de Manaus ou Áreas de Livre Comércio;CODIGO;ENTRADA
+1.204;Devolução de venda de mercadoria adquirida ou recebida de terceiros, destinada à Zona Franca de Manaus ou Áreas de Livre Comércio;CODIGO;ENTRADA
+1.205;Anulação de valor relativo à prestação de serviço de comunicação;CODIGO;ENTRADA
+1.206;Anulação de valor relativo à prestação de serviço de transporte;CODIGO;ENTRADA
+1.207;Anulação de valor relativo à venda de energia elétrica;CODIGO;ENTRADA
+1.208;Devolução de produção do estabelecimento, remetida em transferência;CODIGO;ENTRADA
+1.209;Devolução de mercadoria adquirida ou recebida de terceiros, remetida em transferência;CODIGO;ENTRADA
+1.210;Devolução de compra para recuperação de combustíveis;CODIGO;ENTRADA
+1.211;Devolução de venda de produção do estabelecimento sob o regime de drawback;CODIGO;ENTRADA
+1.212;Devolução de venda no mercado interno de mercadoria industrializada e insumo importado sob o regime de drawback;CODIGO;ENTRADA
+1.250;COMPRAS DE ENERGIA ELÉTRICA;CODIGO;ENTRADA
+1.251;Compra de energia elétrica para distribuição ou comercialização;CODIGO;ENTRADA
+1.252;Compra de energia elétrica por estabelecimento industrial;CODIGO;ENTRADA
+1.253;Compra de energia elétrica por estabelecimento comercial;CODIGO;ENTRADA
+1.254;Compra de energia elétrica por estabelecimento prestador de serviço de transporte;CODIGO;ENTRADA
+1.255;Compra de energia elétrica por estabelecimento prestador de serviço de comunicação;CODIGO;ENTRADA
+1.256;Compra de energia elétrica por estabelecimento de produtor rural;CODIGO;ENTRADA
+1.257;Compra de energia elétrica para consumo por demanda contratada;CODIGO;ENTRADA
+1.300;AQUISIÇÕES DE SERVIÇOS DE COMUNICAÇÃO;SUBGRUPO;ENTRADA
+1.301;Aquisição de serviço de comunicação para execução de serviço da mesma natureza;CODIGO;ENTRADA
+1.302;Aquisição de serviço de comunicação por estabelecimento industrial;CODIGO;ENTRADA
+1.303;Aquisição de serviço de comunicação por estabelecimento comercial;CODIGO;ENTRADA
+1.304;Aquisição de serviço de comunicação por estabelecimento de prestador de serviço de transporte;CODIGO;ENTRADA
+1.305;Aquisição de serviço de comunicação por estabelecimento de geradora ou de distribuidora de energia elétrica;CODIGO;ENTRADA
+1.306;Aquisição de serviço de comunicação por estabelecimento de produtor rural;CODIGO;ENTRADA
+1.350;AQUISIÇÕES DE SERVIÇOS DE TRANSPORTE;CODIGO;ENTRADA
+1.351;Aquisição de serviço de transporte para execução de serviço da mesma natureza;CODIGO;ENTRADA
+1.352;Aquisição de serviço de transporte por estabelecimento industrial;CODIGO;ENTRADA
+1.353;Aquisição de serviço de transporte por estabelecimento comercial;CODIGO;ENTRADA
+1.354;Aquisição de serviço de transporte por estabelecimento de prestador de serviço de comunicação;CODIGO;ENTRADA
+1.355;Aquisição de serviço de transporte por estabelecimento de geradora ou de distribuidora de energia elétrica;CODIGO;ENTRADA
+1.356;Aquisição de serviço de transporte por estabelecimento de produtor rural;CODIGO;ENTRADA
+1.400;ENTRADAS DE MERCADORIAS SUJEITAS AO REGIME DE SUBSTITUIÇÃO TRIBUTÁRIA;SUBGRUPO;ENTRADA
+1.401;Compra para industrialização ou produção rural em operação com mercadoria sujeita ao regime de substituição tributária;CODIGO;ENTRADA
+1.403;Compra para comercialização em operação com mercadoria sujeita ao regime de substituição tributária;CODIGO;ENTRADA
+1.406;Compra de bem para o ativo imobilizado cuja mercadoria está sujeita ao regime de substituição tributária;CODIGO;ENTRADA
+1.407;Compra de mercadoria para uso ou consumo cuja mercadoria está sujeita ao regime de substituição tributária;CODIGO;ENTRADA
+1.408;Transferência para industrialização ou produção rural em operação com mercadoria sujeita ao regime de substituição tributária;CODIGO;ENTRADA
+1.409;Transferência para comercialização em operação com mercadoria sujeita ao regime de substituição tributária;CODIGO;ENTRADA
+1.410;Devolução de venda de produção do estabelecimento em operação com mercadoria sujeita ao regime de substituição tributária;CODIGO;ENTRADA
+1.411;Devolução de venda de mercadoria adquirida ou recebida de terceiros em operação com mercadoria sujeita ao regime de substituição tributária;CODIGO;ENTRADA
+1.414;Retorno de produção do estabelecimento, remetida para venda fora do estabelecimento;CODIGO;ENTRADA
+1.415;Retorno de mercadoria adquirida ou recebida de terceiros, remetida para venda fora do estabelecimento;CODIGO;ENTRADA
+1.450;SISTEMAS DE INTEGRAÇÃO E PARCERIA RURAL;CODIGO;ENTRADA
+1.451;Retorno de animal ao estabelecimento rural do parceiro ou do integrado;CODIGO;ENTRADA
+1.452;Retorno de insumos não utilizados na produção;CODIGO;ENTRADA
+1.500;ENTRADAS DE MERCADORIAS REMETIDAS COM FIM ESPECÍFICO DE EXPORTAÇÃO E EVENTUAIS DEVOLUÇÕES;SUBGRUPO;ENTRADA
+1.501;Entrada de mercadoria recebida com fim específico de exportação;CODIGO;ENTRADA
+1.503;Entrada decorrente de devolução de produto remetido com fim específico de exportação, de produção do estabelecimento;CODIGO;ENTRADA
+1.504;Entrada decorrente de devolução de mercadoria remetida com fim específico de exportação, adquirida ou recebida de terceiros;CODIGO;ENTRADA
+1.505;Entrada decorrente de devolução de mercadoria remetida para formação de lote de exportação, de produção do estabelecimento;CODIGO;ENTRADA
+1.506;Entrada decorrente de devolução de mercadoria remetida para formação de lote de exportação, adquirida ou recebida de terceiros;CODIGO;ENTRADA
+1.550;OPERAÇÕES COM BENS DE ATIVO IMOBILIZADO E MATERIAIS PARA USO OU CONSUMO;CODIGO;ENTRADA
+1.551;Compra de bem para o ativo imobilizado;CODIGO;ENTRADA
+1.552;Transferência de bem do ativo imobilizado;CODIGO;ENTRADA
+1.553;Devolução de venda de bem do ativo imobilizado;CODIGO;ENTRADA
+1.554;Retorno de bem do ativo imobilizado remetido para uso fora do estabelecimento;CODIGO;ENTRADA
+1.555;Entrada de bem do ativo imobilizado de terceiro, remetido para uso no estabelecimento;CODIGO;ENTRADA
+1.556;Compra de material para uso ou consumo;CODIGO;ENTRADA
+1.557;Transferência de material para uso ou consumo;CODIGO;ENTRADA
+1.600;CRÉDITOS E RESSARCIMENTOS DE ICMS;SUBGRUPO;ENTRADA
+1.601;Recebimento, por transferência, de crédito de ICMS;CODIGO;ENTRADA
+1.602;Recebimento, por transferência, de saldo credor de ICMS de outro estabelecimento da mesma empresa, para compensação de saldo devedor do imposto;CODIGO;ENTRADA
+1.603;Ressarcimento de ICMS retido por substituição tributária;CODIGO;ENTRADA
+1.604;Lançamento do crédito relativo à compra de bem para o ativo imobilizado;CODIGO;ENTRADA
+1.605;Recebimento, por transferência, de saldo devedor de ICMS de outro estabelecimento da mesma empresa;CODIGO;ENTRADA
+1.650;ENTRADAS DE COMBUSTÍVEIS, DERIVADOS OU NÃO DE PETRÓLEO, E LUBRIFICANTES;CODIGO;ENTRADA
+1.651;Compra de combustível ou lubrificante para industrialização subsequente;CODIGO;ENTRADA
+1.652;Compra de combustível ou lubrificante para comercialização;CODIGO;ENTRADA
+1.653;Compra de combustível ou lubrificante por consumidor ou usuário final;CODIGO;ENTRADA
+1.658;Transferência de combustível ou lubrificante para industrialização;CODIGO;ENTRADA
+1.659;Transferência de combustível ou lubrificante para comercialização;CODIGO;ENTRADA
+1.660;Devolução de venda de combustível ou lubrificante destinados à industrialização subsequente;CODIGO;ENTRADA
+1.661;Devolução de venda de combustível ou lubrificante destinados à comercialização;CODIGO;ENTRADA
+1.662;Devolução de venda de combustível ou lubrificante destinados a consumidor ou usuário final;CODIGO;ENTRADA
+1.663;Entrada de combustível ou lubrificante para armazenagem;CODIGO;ENTRADA
+1.664;Retorno de combustível ou lubrificante remetidos para armazenagem;CODIGO;ENTRADA
+1.700;ENTRADAS DE MERCADORIAS EM BONIFICAÇÃO, DOAÇÃO OU BRINDE;SUBGRUPO;ENTRADA
+1.901;Entrada para industrialização por encomenda;CODIGO;ENTRADA
+1.902;Retorno de mercadoria remetida para industrialização por encomenda;CODIGO;ENTRADA
+1.903;Entrada de mercadoria remetida para industrialização e não aplicada no referido processo;CODIGO;ENTRADA
+1.904;Retorno de remessa para venda fora do estabelecimento;CODIGO;ENTRADA
+1.905;Entrada de mercadoria recebida para depósito em depósito fechado, armazém geral ou outro estabelecimento da mesma empresa ou de terceiro;CODIGO;ENTRADA
+1.906;Retorno de mercadoria remetida para armazém geral ou depósito fechado;CODIGO;ENTRADA
+1.907;Retorno simbólico de mercadoria remetida para armazém geral ou depósito fechado;CODIGO;ENTRADA
+1.908;Entrada de bem por conta de contrato de comodato;CODIGO;ENTRADA
+1.909;Retorno de bem remetido por conta de contrato de comodato;CODIGO;ENTRADA
+1.910;Entrada de bonificação, doação ou brinde;CODIGO;ENTRADA
+1.911;Entrada de amostra grátis;CODIGO;ENTRADA
+1.912;Entrada de mercadoria ou bem recebido para demonstração;CODIGO;ENTRADA
+1.913;Retorno de mercadoria ou bem remetido para demonstração;CODIGO;ENTRADA
+1.914;Retorno de mercadoria ou bem remetido para exposição ou feira;CODIGO;ENTRADA
+1.915;Entrada de mercadoria ou bem recebido para conserto ou reparo;CODIGO;ENTRADA
+1.916;Retorno de mercadoria ou bem remetido para conserto ou reparo;CODIGO;ENTRADA
+1.917;Entrada de mercadoria recebida em consignação mercantil ou industrial;CODIGO;ENTRADA
+1.918;Devolução de mercadoria remetida em consignação mercantil ou industrial;CODIGO;ENTRADA
+1.919;Devolução simbólica de mercadoria vendida ou utilizada em processo industrial, remetida anteriormente em consignação mercantil ou industrial;CODIGO;ENTRADA
+1.920;Entrada de vasilhame ou sacaria;CODIGO;ENTRADA
+1.921;Retorno de vasilhame ou sacaria;CODIGO;ENTRADA
+1.922;Lançamento efetuado a título de simples faturamento decorrente de compra para recebimento futuro;CODIGO;ENTRADA
+1.923;Entrada de mercadoria recebida do vendedor remetente, em venda à ordem;CODIGO;ENTRADA
+1.924;Entrada para industrialização por conta e ordem do adquirente da mercadoria, quando esta não transitar pelo estabelecimento do adquirente;CODIGO;ENTRADA
+1.925;Retorno de mercadoria remetida para industrialização por conta e ordem do adquirente da mercadoria, quando esta não transitar pelo estabelecimento do adquirente;CODIGO;ENTRADA
+1.926;Lançamento efetuado a título de reclassificação de mercadoria decorrente de formação de kit ou de sua desagregação;CODIGO;ENTRADA
+1.932;Aquisição de serviços de transporte por contribuinte substituto em relação ao serviço de transporte;CODIGO;ENTRADA
+1.933;Aquisição de serviço tributado pelo Imposto Sobre Serviços de Qualquer Natureza;CODIGO;ENTRADA
+1.934;Entrada simbólica de mercadoria recebida para depósito fechado ou armazém geral;CODIGO;ENTRADA
+1.949;Outra entrada de mercadoria ou prestação de serviço não especificada;CODIGO;ENTRADA
+2.000;ENTRADAS OU AQUISIÇÕES DE SERVIÇOS DE OUTROS ESTADOS;GRUPO;ENTRADA
+2.100;COMPRAS PARA INDUSTRIALIZAÇÃO, PRODUÇÃO RURAL, COMERCIALIZAÇÃO OU PRESTAÇÃO DE SERVIÇOS;SUBGRUPO;ENTRADA
+2.101;Compra para industrialização ou produção rural;CODIGO;ENTRADA
+2.102;Compra para comercialização;CODIGO;ENTRADA
+2.111;Compra para industrialização de mercadoria recebida anteriormente em consignação industrial;CODIGO;ENTRADA
+2.113;Compra para industrialização, de mercadoria recebida anteriormente em outras hipóteses;CODIGO;ENTRADA
+2.116;Compra para industrialização por encomenda;CODIGO;ENTRADA
+2.117;Compra para comercialização por encomenda;CODIGO;ENTRADA
+2.118;Compra de mercadoria para comercialização pelo adquirente originário, entregue pelo vendedor remetente ao destinatário, em venda à ordem;CODIGO;ENTRADA
+2.120;Compra para industrialização, em venda à ordem, já recebida do vendedor remetente;CODIGO;ENTRADA
+2.121;Compra para comercialização, em venda à ordem, já recebida do vendedor remetente;CODIGO;ENTRADA
+2.122;Compra para industrialização em que a mercadoria foi remetida pelo fornecedor ao industrializador sem transitar pelo estabelecimento adquirente;CODIGO;ENTRADA
+2.124;Industrialização efetuada por outra empresa;CODIGO;ENTRADA
+2.125;Industrialização efetuada por outra empresa quando a mercadoria remetida para utilização no processo de industrialização não transitou pelo estabelecimento adquirente da mercadoria;CODIGO;ENTRADA
+2.126;Compra para utilização na prestação de serviço sujeita ao ISSQN;CODIGO;ENTRADA
+2.128;Compra para utilização na prestação de serviço sujeita ao ICMS;CODIGO;ENTRADA
+2.150;TRANSFERÊNCIAS PARA INDUSTRIALIZAÇÃO, PRODUÇÃO RURAL OU COMERCIALIZAÇÃO;CODIGO;ENTRADA
+2.151;Transferência para industrialização ou produção rural;CODIGO;ENTRADA
+2.152;Transferência para comercialização;CODIGO;ENTRADA
+2.153;Transferência de energia elétrica para distribuição;CODIGO;ENTRADA
+2.154;Transferência para utilização na prestação de serviço;CODIGO;ENTRADA
+2.200;DEVOLUÇÕES DE VENDAS DE PRODUÇÃO PRÓPRIA, DE TERCEIROS OU ANULAÇÕES DE VALORES;SUBGRUPO;ENTRADA
+2.201;Devolução de venda de produção do estabelecimento;CODIGO;ENTRADA
+2.202;Devolução de venda de mercadoria adquirida ou recebida de terceiros;CODIGO;ENTRADA
+2.203;Devolução de venda de produção do estabelecimento, destinada à Zona Franca de Manaus ou Áreas de Livre Comércio;CODIGO;ENTRADA
+2.204;Devolução de venda de mercadoria adquirida ou recebida de terceiros, destinada à Zona Franca de Manaus ou Áreas de Livre Comércio;CODIGO;ENTRADA
+2.205;Anulação de valor relativo à prestação de serviço de comunicação;CODIGO;ENTRADA
+2.206;Anulação de valor relativo à prestação de serviço de transporte;CODIGO;ENTRADA
+2.207;Anulação de valor relativo à venda de energia elétrica;CODIGO;ENTRADA
+2.208;Devolução de produção do estabelecimento, remetida em transferência;CODIGO;ENTRADA
+2.209;Devolução de mercadoria adquirida ou recebida de terceiros, remetida em transferência;CODIGO;ENTRADA
+2.210;Devolução de compra para recuperação de combustíveis;CODIGO;ENTRADA
+2.211;Devolução de venda de produção do estabelecimento sob o regime de drawback;CODIGO;ENTRADA
+2.212;Devolução de venda no mercado interno de mercadoria industrializada e insumo importado sob o regime de drawback;CODIGO;ENTRADA
+2.250;COMPRAS DE ENERGIA ELÉTRICA;CODIGO;ENTRADA
+2.251;Compra de energia elétrica para distribuição ou comercialização;CODIGO;ENTRADA
+2.252;Compra de energia elétrica por estabelecimento industrial;CODIGO;ENTRADA
+2.253;Compra de energia elétrica por estabelecimento comercial;CODIGO;ENTRADA
+2.254;Compra de energia elétrica por estabelecimento prestador de serviço de transporte;CODIGO;ENTRADA
+2.255;Compra de energia elétrica por estabelecimento prestador de serviço de comunicação;CODIGO;ENTRADA
+2.256;Compra de energia elétrica por estabelecimento de produtor rural;CODIGO;ENTRADA
+2.257;Compra de energia elétrica para consumo por demanda contratada;CODIGO;ENTRADA
+2.300;AQUISIÇÕES DE SERVIÇOS DE COMUNICAÇÃO;SUBGRUPO;ENTRADA
+2.301;Aquisição de serviço de comunicação para execução de serviço da mesma natureza;CODIGO;ENTRADA
+2.302;Aquisição de serviço de comunicação por estabelecimento industrial;CODIGO;ENTRADA
+2.303;Aquisição de serviço de comunicação por estabelecimento comercial;CODIGO;ENTRADA
+2.304;Aquisição de serviço de comunicação por estabelecimento de prestador de serviço de transporte;CODIGO;ENTRADA
+2.305;Aquisição de serviço de comunicação por estabelecimento de geradora ou de distribuidora de energia elétrica;CODIGO;ENTRADA
+2.306;Aquisição de serviço de comunicação por estabelecimento de produtor rural;CODIGO;ENTRADA
+2.350;AQUISIÇÕES DE SERVIÇOS DE TRANSPORTE;CODIGO;ENTRADA
+2.351;Aquisição de serviço de transporte para execução de serviço da mesma natureza;CODIGO;ENTRADA
+2.352;Aquisição de serviço de transporte por estabelecimento industrial;CODIGO;ENTRADA
+2.353;Aquisição de serviço de transporte por estabelecimento comercial;CODIGO;ENTRADA
+2.354;Aquisição de serviço de transporte por estabelecimento de prestador de serviço de comunicação;CODIGO;ENTRADA
+2.355;Aquisição de serviço de transporte por estabelecimento de geradora ou de distribuidora de energia elétrica;CODIGO;ENTRADA
+2.356;Aquisição de serviço de transporte por estabelecimento de produtor rural;CODIGO;ENTRADA
+2.400;ENTRADAS DE MERCADORIAS SUJEITAS AO REGIME DE SUBSTITUIÇÃO TRIBUTÁRIA;SUBGRUPO;ENTRADA
+2.401;Compra para industrialização ou produção rural em operação com mercadoria sujeita ao regime de substituição tributária;CODIGO;ENTRADA
+2.403;Compra para comercialização em operação com mercadoria sujeita ao regime de substituição tributária;CODIGO;ENTRADA
+2.406;Compra de bem para o ativo imobilizado cuja mercadoria está sujeita ao regime de substituição tributária;CODIGO;ENTRADA
+2.407;Compra de mercadoria para uso ou consumo cuja mercadoria está sujeita ao regime de substituição tributária;CODIGO;ENTRADA
+2.408;Transferência para industrialização ou produção rural em operação com mercadoria sujeita ao regime de substituição tributária;CODIGO;ENTRADA
+2.409;Transferência para comercialização em operação com mercadoria sujeita ao regime de substituição tributária;CODIGO;ENTRADA
+2.410;Devolução de venda de produção do estabelecimento em operação com mercadoria sujeita ao regime de substituição tributária;CODIGO;ENTRADA
+2.411;Devolução de venda de mercadoria adquirida ou recebida de terceiros em operação com mercadoria sujeita ao regime de substituição tributária;CODIGO;ENTRADA
+2.414;Retorno de produção do estabelecimento, remetida para venda fora do estabelecimento;CODIGO;ENTRADA
+2.415;Retorno de mercadoria adquirida ou recebida de terceiros, remetida para venda fora do estabelecimento;CODIGO;ENTRADA
+2.450;SISTEMAS DE INTEGRAÇÃO E PARCERIA RURAL;CODIGO;ENTRADA
+2.451;Retorno de animal ao estabelecimento rural do parceiro ou do integrado;CODIGO;ENTRADA
+2.452;Retorno de insumos não utilizados na produção;CODIGO;ENTRADA
+2.500;ENTRADAS DE MERCADORIAS REMETIDAS COM FIM ESPECÍFICO DE EXPORTAÇÃO E EVENTUAIS DEVOLUÇÕES;SUBGRUPO;ENTRADA
+2.501;Entrada de mercadoria recebida com fim específico de exportação;CODIGO;ENTRADA
+2.503;Entrada decorrente de devolução de produto remetido com fim específico de exportação, de produção do estabelecimento;CODIGO;ENTRADA
+2.504;Entrada decorrente de devolução de mercadoria remetida com fim específico de exportação, adquirida ou recebida de terceiros;CODIGO;ENTRADA
+2.505;Entrada decorrente de devolução de mercadoria remetida para formação de lote de exportação, de produção do estabelecimento;CODIGO;ENTRADA
+2.506;Entrada decorrente de devolução de mercadoria remetida para formação de lote de exportação, adquirida ou recebida de terceiros;CODIGO;ENTRADA
+2.550;OPERAÇÕES COM BENS DE ATIVO IMOBILIZADO E MATERIAIS PARA USO OU CONSUMO;CODIGO;ENTRADA
+2.551;Compra de bem para o ativo imobilizado;CODIGO;ENTRADA
+2.552;Transferência de bem do ativo imobilizado;CODIGO;ENTRADA
+2.553;Devolução de venda de bem do ativo imobilizado;CODIGO;ENTRADA
+2.554;Retorno de bem do ativo imobilizado remetido para uso fora do estabelecimento;CODIGO;ENTRADA
+2.555;Entrada de bem do ativo imobilizado de terceiro, remetido para uso no estabelecimento;CODIGO;ENTRADA
+2.556;Compra de material para uso ou consumo;CODIGO;ENTRADA
+2.557;Transferência de material para uso ou consumo;CODIGO;ENTRADA
+2.600;CRÉDITOS E RESSARCIMENTOS DE ICMS;SUBGRUPO;ENTRADA
+2.601;Recebimento, por transferência, de crédito de ICMS;CODIGO;ENTRADA
+2.602;Recebimento, por transferência, de saldo credor de ICMS de outro estabelecimento da mesma empresa, para compensação de saldo devedor do imposto;CODIGO;ENTRADA
+2.603;Ressarcimento de ICMS retido por substituição tributária;CODIGO;ENTRADA
+2.650;ENTRADAS DE COMBUSTÍVEIS, DERIVADOS OU NÃO DE PETRÓLEO, E LUBRIFICANTES;CODIGO;ENTRADA
+2.651;Compra de combustível ou lubrificante para industrialização subsequente;CODIGO;ENTRADA
+2.652;Compra de combustível ou lubrificante para comercialização;CODIGO;ENTRADA
+2.653;Compra de combustível ou lubrificante por consumidor ou usuário final;CODIGO;ENTRADA
+2.658;Transferência de combustível ou lubrificante para industrialização;CODIGO;ENTRADA
+2.659;Transferência de combustível ou lubrificante para comercialização;CODIGO;ENTRADA
+2.660;Devolução de venda de combustível ou lubrificante destinados à industrialização subsequente;CODIGO;ENTRADA
+2.661;Devolução de venda de combustível ou lubrificante destinados à comercialização;CODIGO;ENTRADA
+2.662;Devolução de venda de combustível ou lubrificante destinados a consumidor ou usuário final;CODIGO;ENTRADA
+2.663;Entrada de combustível ou lubrificante para armazenagem;CODIGO;ENTRADA
+2.664;Retorno de combustível ou lubrificante remetidos para armazenagem;CODIGO;ENTRADA
+2.900;OUTRAS ENTRADAS DE MERCADORIAS OU AQUISIÇÕES DE SERVIÇOS;SUBGRUPO;ENTRADA
+2.901;Entrada para industrialização por encomenda;CODIGO;ENTRADA
+2.902;Retorno de mercadoria remetida para industrialização por encomenda;CODIGO;ENTRADA
+2.903;Entrada de mercadoria remetida para industrialização e não aplicada no referido processo;CODIGO;ENTRADA
+2.904;Retorno de remessa para venda fora do estabelecimento;CODIGO;ENTRADA
+2.905;Entrada de mercadoria recebida para depósito em depósito fechado, armazém geral ou outro estabelecimento da mesma empresa ou de terceiro;CODIGO;ENTRADA
+2.906;Retorno de mercadoria remetida para armazém geral ou depósito fechado;CODIGO;ENTRADA
+2.907;Retorno simbólico de mercadoria remetida para armazém geral ou depósito fechado;CODIGO;ENTRADA
+2.908;Entrada de bem por conta de contrato de comodato;CODIGO;ENTRADA
+2.909;Retorno de bem remetido por conta de contrato de comodato;CODIGO;ENTRADA
+2.910;Entrada de bonificação, doação ou brinde;CODIGO;ENTRADA
+2.911;Entrada de amostra grátis;CODIGO;ENTRADA
+2.912;Entrada de mercadoria ou bem recebido para demonstração;CODIGO;ENTRADA
+2.913;Retorno de mercadoria ou bem remetido para demonstração;CODIGO;ENTRADA
+2.914;Retorno de mercadoria ou bem remetido para exposição ou feira;CODIGO;ENTRADA
+2.915;Entrada de mercadoria ou bem recebido para conserto ou reparo;CODIGO;ENTRADA
+2.916;Retorno de mercadoria ou bem remetido para conserto ou reparo;CODIGO;ENTRADA
+2.917;Entrada de mercadoria recebida em consignação mercantil ou industrial;CODIGO;ENTRADA
+2.918;Devolução de mercadoria remetida em consignação mercantil ou industrial;CODIGO;ENTRADA
+2.919;Devolução simbólica de mercadoria vendida ou utilizada em processo industrial, remetida anteriormente em consignação mercantil ou industrial;CODIGO;ENTRADA
+2.920;Entrada de vasilhame ou sacaria;CODIGO;ENTRADA
+2.921;Retorno de vasilhame ou sacaria;CODIGO;ENTRADA
+2.922;Lançamento efetuado a título de simples faturamento decorrente de compra para recebimento futuro;CODIGO;ENTRADA
+2.923;Entrada de mercadoria recebida do vendedor remetente, em venda à ordem;CODIGO;ENTRADA
+2.924;Entrada para industrialização por conta e ordem do adquirente da mercadoria, quando esta não transitar pelo estabelecimento do adquirente;CODIGO;ENTRADA
+2.925;Retorno de mercadoria remetida para industrialização por conta e ordem do adquirente da mercadoria, quando esta não transitar pelo estabelecimento do adquirente;CODIGO;ENTRADA
+2.926;Lançamento efetuado a título de reclassificação de mercadoria decorrente de formação de kit ou de sua desagregação;CODIGO;ENTRADA
+2.932;Aquisição de serviços de transporte por contribuinte substituto em relação ao serviço de transporte;CODIGO;ENTRADA
+2.933;Aquisição de serviço tributado pelo Imposto Sobre Serviços de Qualquer Natureza;CODIGO;ENTRADA
+2.934;Entrada simbólica de mercadoria recebida para depósito fechado ou armazém geral;CODIGO;ENTRADA
+2.949;Outra entrada de mercadoria ou prestação de serviço não especificada;CODIGO;ENTRADA
+3.000;ENTRADAS OU AQUISIÇÕES DE SERVIÇOS DO EXTERIOR;GRUPO;ENTRADA
+3.100;COMPRAS PARA INDUSTRIALIZAÇÃO, PRODUÇÃO RURAL, COMERCIALIZAÇÃO OU PRESTAÇÃO DE SERVIÇOS;SUBGRUPO;ENTRADA
+3.101;Compra para industrialização ou produção rural;CODIGO;ENTRADA
+3.102;Compra para comercialização;CODIGO;ENTRADA
+3.126;Compra para utilização na prestação de serviço sujeita ao ISSQN;CODIGO;ENTRADA
+3.127;Compra para utilização na prestação de serviço sujeita ao ICMS;CODIGO;ENTRADA
+3.200;DEVOLUÇÕES DE VENDAS DE PRODUÇÃO PRÓPRIA, DE TERCEIROS OU ANULAÇÕES DE VALORES;SUBGRUPO;ENTRADA
+3.201;Devolução de venda de produção do estabelecimento;CODIGO;ENTRADA
+3.202;Devolução de venda de mercadoria adquirida ou recebida de terceiros;CODIGO;ENTRADA
+3.205;Anulação de valor relativo à prestação de serviço de comunicação;CODIGO;ENTRADA
+3.206;Anulação de valor relativo à prestação de serviço de transporte;CODIGO;ENTRADA
+3.207;Anulação de valor relativo à venda de energia elétrica;CODIGO;ENTRADA
+3.211;Devolução de venda de produção do estabelecimento sob o regime de drawback;CODIGO;ENTRADA
+3.250;COMPRAS DE ENERGIA ELÉTRICA;CODIGO;ENTRADA
+3.251;Compra de energia elétrica para distribuição ou comercialização;CODIGO;ENTRADA
+3.300;AQUISIÇÕES DE SERVIÇOS DE COMUNICAÇÃO;SUBGRUPO;ENTRADA
+3.301;Aquisição de serviço de comunicação para execução de serviço da mesma natureza;CODIGO;ENTRADA
+3.350;AQUISIÇÕES DE SERVIÇOS DE TRANSPORTE;CODIGO;ENTRADA
+3.351;Aquisição de serviço de transporte para execução de serviço da mesma natureza;CODIGO;ENTRADA
+3.352;Aquisição de serviço de transporte por estabelecimento industrial;CODIGO;ENTRADA
+3.353;Aquisição de serviço de transporte por estabelecimento comercial;CODIGO;ENTRADA
+3.354;Aquisição de serviço de transporte por estabelecimento de prestador de serviço de comunicação;CODIGO;ENTRADA
+3.355;Aquisição de serviço de transporte por estabelecimento de geradora ou de distribuidora de energia elétrica;CODIGO;ENTRADA
+3.356;Aquisição de serviço de transporte por estabelecimento de produtor rural;CODIGO;ENTRADA
+3.500;ENTRADAS DE MERCADORIAS REMETIDAS COM FIM ESPECÍFICO DE EXPORTAÇÃO E EVENTUAIS DEVOLUÇÕES;SUBGRUPO;ENTRADA
+3.503;Entrada decorrente de devolução de produto remetido com fim específico de exportação, de produção do estabelecimento;CODIGO;ENTRADA
+3.504;Entrada decorrente de devolução de mercadoria remetida com fim específico de exportação, adquirida ou recebida de terceiros;CODIGO;ENTRADA
+3.550;OPERAÇÕES COM BENS DE ATIVO IMOBILIZADO E MATERIAIS PARA USO OU CONSUMO;CODIGO;ENTRADA
+3.551;Compra de bem para o ativo imobilizado;CODIGO;ENTRADA
+3.553;Devolução de venda de bem do ativo imobilizado;CODIGO;ENTRADA
+3.556;Compra de material para uso ou consumo;CODIGO;ENTRADA
+3.650;ENTRADAS DE COMBUSTÍVEIS, DERIVADOS OU NÃO DE PETRÓLEO, E LUBRIFICANTES;CODIGO;ENTRADA
+3.651;Compra de combustível ou lubrificante para industrialização subsequente;CODIGO;ENTRADA
+3.652;Compra de combustível ou lubrificante para comercialização;CODIGO;ENTRADA
+3.653;Compra de combustível ou lubrificante por consumidor ou usuário final;CODIGO;ENTRADA
+3.900;OUTRAS ENTRADAS DE MERCADORIAS OU AQUISIÇÕES DE SERVIÇOS;SUBGRUPO;ENTRADA
+3.949;Outra entrada de mercadoria ou prestação de serviço não especificada;CODIGO;ENTRADA
+5.000;SAÍDAS OU PRESTAÇÕES DE SERVIÇOS PARA O ESTADO;GRUPO;SAÍDA
+5.100;VENDAS DE PRODUÇÃO PRÓPRIA OU DE TERCEIROS;SUBGRUPO;SAÍDA
+5.101;Venda de produção do estabelecimento;CODIGO;SAÍDA
+5.102;Venda de mercadoria adquirida ou recebida de terceiros;CODIGO;SAÍDA
+5.103;Venda de produção do estabelecimento, efetuada fora do estabelecimento;CODIGO;SAÍDA
+5.104;Venda de mercadoria adquirida ou recebida de terceiros, efetuada fora do estabelecimento;CODIGO;SAÍDA
+5.105;Venda de produção do estabelecimento que não deva por ela transitar;CODIGO;SAÍDA
+5.106;Venda de mercadoria adquirida ou recebida de terceiros, que não deva por ela transitar;CODIGO;SAÍDA
+5.109;Venda de produção do estabelecimento, destinada à Zona Franca de Manaus ou Áreas de Livre Comércio;CODIGO;SAÍDA
+5.110;Venda de mercadoria adquirida ou recebida de terceiros, destinada à Zona Franca de Manaus ou Áreas de Livre Comércio;CODIGO;SAÍDA
+5.111;Venda de produção do estabelecimento remetida anteriormente em consignação industrial;CODIGO;SAÍDA
+5.112;Venda de mercadoria adquirida ou recebida de terceiros remetida anteriormente em consignação mercantil;CODIGO;SAÍDA
+5.113;Venda de produção do estabelecimento remetida anteriormente em consignação mercantil;CODIGO;SAÍDA
+5.114;Venda de mercadoria adquirida ou recebida de terceiros remetida anteriormente em consignação industrial;CODIGO;SAÍDA
+5.115;Venda de mercadoria adquirida ou recebida de terceiros, recebida anteriormente em consignação mercantil;CODIGO;SAÍDA
+5.116;Venda de produção do estabelecimento originada de encomenda para entrega futura;CODIGO;SAÍDA
+5.117;Venda de mercadoria adquirida ou recebida de terceiros, originada de encomenda para entrega futura;CODIGO;SAÍDA
+5.118;Venda de produção do estabelecimento entregue ao destinatário por conta e ordem do adquirente originário, em venda à ordem;CODIGO;SAÍDA
+5.119;Venda de mercadoria adquirida ou recebida de terceiros entregue ao destinatário por conta e ordem do adquirente originário, em venda à ordem;CODIGO;SAÍDA
+5.120;Venda de mercadoria adquirida ou recebida de terceiros entregue ao destinatário pelo vendedor remetente, em venda à ordem;CODIGO;SAÍDA
+5.121;Venda de produção do estabelecimento, cujo icms foi recolhido antecipadamente em operação com o veículo usado;CODIGO;SAÍDA
+5.122;Venda de mercadoria de terceiro, cujo icms foi recolhido antecipadamente em operação com o veículo usado;CODIGO;SAÍDA
+5.123;Venda de mercadoria adquirida ou recebida de terceiros para industrialização, submetida a processo de industrialização no próprio estabelecimento;CODIGO;SAÍDA
+5.124;Industrialização efetuada para outra empresa;CODIGO;SAÍDA
+5.125;Industrialização efetuada para outra empresa quando a mercadoria remetida para utilização no processo de industrialização não transitou pelo estabelecimento adquirente da mercadoria;CODIGO;SAÍDA
+5.126;Venda de mercadoria adquirida ou recebida de terceiros para industrialização, submetida a processo de industrialização no próprio estabelecimento, quando o produto resultante do processo for objeto de operação de saída de combustível;CODIGO;SAÍDA
+5.127;Venda de insumo importado e de mercadoria industrializada sob o regime de drawback;CODIGO;SAÍDA
+5.128;Venda de mercadoria, adquirida ou recebida de terceiros, no âmbito do programa Aprendiz Legal, destinada a entidade sem fins lucrativos;CODIGO;SAÍDA
+5.150;TRANSFERÊNCIAS DE PRODUÇÃO PRÓPRIA OU DE TERCEIROS;CODIGO;SAÍDA
+5.151;Transferência de produção do estabelecimento;CODIGO;SAÍDA
+5.152;Transferência de mercadoria adquirida ou recebida de terceiros;CODIGO;SAÍDA
+5.153;Transferência de energia elétrica;CODIGO;SAÍDA
+5.155;Transferência de produção do estabelecimento, que não deva por ela transitar;CODIGO;SAÍDA
+5.156;Transferência de mercadoria adquirida ou recebida de terceiros, que não deva por ela transitar;CODIGO;SAÍDA
+5.200;DEVOLUÇÕES DE COMPRAS PARA INDUSTRIALIZAÇÃO, PRODUÇÃO RURAL, COMERCIALIZAÇÃO OU ANULAÇÕES DE VALORES;SUBGRUPO;SAÍDA
+5.201;Devolução de compra para industrialização ou produção rural;CODIGO;SAÍDA
+5.202;Devolução de compra para comercialização;CODIGO;SAÍDA
+5.205;Anulação de valor relativo à aquisição de serviço de comunicação;CODIGO;SAÍDA
+5.206;Anulação de valor relativo à aquisição de serviço de transporte;CODIGO;SAÍDA
+5.207;Anulação de valor relativo à compra de energia elétrica;CODIGO;SAÍDA
+5.208;Devolução de mercadoria recebida em transferência para industrialização ou produção rural;CODIGO;SAÍDA
+5.209;Devolução de mercadoria recebida em transferência para comercialização;CODIGO;SAÍDA
+5.210;Devolução de compra para utilização na prestação de serviço;CODIGO;SAÍDA
+5.211;Devolução de compras para industrialização sob o regime de drawback;CODIGO;SAÍDA
+5.250;VENDAS DE ENERGIA ELÉTRICA;CODIGO;SAÍDA
+5.251;Venda de energia elétrica para distribuição ou comercialização;CODIGO;SAÍDA
+5.252;Venda de energia elétrica para estabelecimento industrial;CODIGO;SAÍDA
+5.253;Venda de energia elétrica para estabelecimento comercial;CODIGO;SAÍDA
+5.254;Venda de energia elétrica para estabelecimento prestador de serviço de transporte;CODIGO;SAÍDA
+5.255;Venda de energia elétrica para estabelecimento prestador de serviço de comunicação;CODIGO;SAÍDA
+5.256;Venda de energia elétrica para estabelecimento de produtor rural;CODIGO;SAÍDA
+5.257;Venda de energia elétrica para consumo por demanda contratada;CODIGO;SAÍDA
+5.258;Venda de energia elétrica a não contribuinte;CODIGO;SAÍDA
+5.300;PRESTAÇÕES DE SERVIÇOS DE COMUNICAÇÃO;SUBGRUPO;SAÍDA
+5.301;Prestação de serviço de comunicação para execução de serviço da mesma natureza;CODIGO;SAÍDA
+5.302;Prestação de serviço de comunicação a estabelecimento industrial;CODIGO;SAÍDA
+5.303;Prestação de serviço de comunicação a estabelecimento comercial;CODIGO;SAÍDA
+5.304;Prestação de serviço de comunicação a estabelecimento de prestador de serviço de transporte;CODIGO;SAÍDA
+5.305;Prestação de serviço de comunicação a estabelecimento de geradora ou de distribuidora de energia elétrica;CODIGO;SAÍDA
+5.306;Prestação de serviço de comunicação a estabelecimento de produtor rural;CODIGO;SAÍDA
+5.307;Prestação de serviço de comunicação a não contribuinte;CODIGO;SAÍDA
+5.350;PRESTAÇÕES DE SERVIÇOS DE TRANSPORTE;CODIGO;SAÍDA
+5.351;Prestação de serviço de transporte para execução de serviço da mesma natureza;CODIGO;SAÍDA
+5.352;Prestação de serviço de transporte a estabelecimento industrial;CODIGO;SAÍDA
+5.353;Prestação de serviço de transporte a estabelecimento comercial;CODIGO;SAÍDA
+5.354;Prestação de serviço de transporte a estabelecimento de prestador de serviço de comunicação;CODIGO;SAÍDA
+5.355;Prestação de serviço de transporte a estabelecimento de geradora ou de distribuidora de energia elétrica;CODIGO;SAÍDA
+5.356;Prestação de serviço de transporte a estabelecimento de produtor rural;CODIGO;SAÍDA
+5.357;Prestação de serviço de transporte a não contribuinte;CODIGO;SAÍDA
+5.358;Prestação de serviço de transporte a contribuinte ou a não contribuinte quando o transportador for o próprio remetente ou quando a responsabilidade de retenção do imposto for atribuída ao tomador do serviço;CODIGO;SAÍDA
+5.359;Prestação de serviço de transporte a contribuinte substituto em relação ao serviço de transporte;CODIGO;SAÍDA
+5.360;Prestação de serviço de transporte a contribuinte substituto em relação ao serviço de transporte, quando a responsabilidade de retenção do imposto for atribuída ao tomador do serviço;CODIGO;SAÍDA
+5.400;SAÍDAS DE MERCADORIAS SUJEITAS AO REGIME DE SUBSTITUIÇÃO TRIBUTÁRIA;SUBGRUPO;SAÍDA
+5.401;Venda de produção do estabelecimento em operação com produto sujeito ao regime de substituição tributária, na condição de contribuinte substituto;CODIGO;SAÍDA
+5.402;Venda de produção do estabelecimento de produto sujeito ao regime de substituição tributária, em operação entre contribuintes substitutos do mesmo produto;CODIGO;SAÍDA
+5.403;Venda de mercadoria adquirida ou recebida de terceiros em operação com mercadoria sujeita ao regime de substituição tributária, na condição de contribuinte substituto;CODIGO;SAÍDA
+5.405;Venda de mercadoria adquirida ou recebida de terceiros em operação com mercadoria sujeita ao regime de substituição tributária, na condição de contribuinte substituído;CODIGO;SAÍDA
+5.408;Transferência de produção do estabelecimento em operação com produto sujeito ao regime de substituição tributária;CODIGO;SAÍDA
+5.409;Transferência de mercadoria adquirida ou recebida de terceiros em operação com mercadoria sujeita ao regime de substituição tributária;CODIGO;SAÍDA
+5.410;Devolução de compra para industrialização ou produção rural em operação com mercadoria sujeita ao regime de substituição tributária;CODIGO;SAÍDA
+5.411;Devolução de compra para comercialização em operação com mercadoria sujeita ao regime de substituição tributária;CODIGO;SAÍDA
+5.412;Devolução de bem do ativo imobilizado, em operação com mercadoria sujeita ao regime de substituição tributária;CODIGO;SAÍDA
+5.413;Devolução de mercadoria destinada ao uso ou consumo, em operação com mercadoria sujeita ao regime de substituição tributária;CODIGO;SAÍDA
+5.414;Remessa de produção do estabelecimento para venda fora do estabelecimento em operação com produto sujeito ao regime de substituição tributária;CODIGO;SAÍDA
+5.415;Remessa de mercadoria adquirida ou recebida de terceiros para venda fora do estabelecimento, em operação com mercadoria sujeita ao regime de substituição tributária;CODIGO;SAÍDA
+5.450;SISTEMAS DE INTEGRAÇÃO E PARCERIA RURAL;CODIGO;SAÍDA
+5.451;Remessa de animal para o estabelecimento rural do parceiro ou do integrado;CODIGO;SAÍDA
+5.452;Remessa de insumos para produção;CODIGO;SAÍDA
+5.500;REMESSAS COM FIM ESPECÍFICO DE EXPORTAÇÃO E PARA FORMAÇÃO DE LOTES;SUBGRUPO;SAÍDA
+5.501;Remessa de produção do estabelecimento, com fim específico de exportação;CODIGO;SAÍDA
+5.502;Remessa de mercadoria adquirida ou recebida de terceiros, com fim específico de exportação;CODIGO;SAÍDA
+5.503;Devolução de mercadoria recebida com fim específico de exportação;CODIGO;SAÍDA
+5.504;Remessa de mercadorias para formação de lote de exportação, de produção do estabelecimento;CODIGO;SAÍDA
+5.505;Remessa de mercadorias para formação de lote de exportação, de mercadorias adquiridas ou recebidas de terceiros;CODIGO;SAÍDA
+5.550;OPERAÇÕES COM BENS DE ATIVO IMOBILIZADO E MATERIAIS PARA USO OU CONSUMO;CODIGO;SAÍDA
+5.551;Venda de bem do ativo imobilizado;CODIGO;SAÍDA
+5.552;Transferência de bem do ativo imobilizado;CODIGO;SAÍDA
+5.553;Devolução de compra de bem para o ativo imobilizado;CODIGO;SAÍDA
+5.554;Remessa de bem do ativo imobilizado para uso fora do estabelecimento;CODIGO;SAÍDA
+5.555;Remessa de bem do ativo imobilizado de terceiro, remetido para uso no estabelecimento;CODIGO;SAÍDA
+5.556;Devolução de compra de material de uso ou consumo;CODIGO;SAÍDA
+5.557;Transferência de material de uso ou consumo;CODIGO;SAÍDA
+5.600;CRÉDITOS E RESSARCIMENTOS DE ICMS;SUBGRUPO;SAÍDA
+5.601;Transferência de crédito de ICMS acumulado;CODIGO;SAÍDA
+5.602;Transferência de saldo credor de ICMS para outro estabelecimento da mesma empresa, destinado à compensação de saldo devedor do imposto;CODIGO;SAÍDA
+5.603;Ressarcimento de ICMS retido por substituição tributária;CODIGO;SAÍDA
+5.605;Transferência de saldo devedor de ICMS de outro estabelecimento da mesma empresa;CODIGO;SAÍDA
+5.606;Utilização de saldo credor de ICMS para extinção por compensação de débitos fiscais;CODIGO;SAÍDA
+5.650;SAÍDAS DE COMBUSTÍVEIS, DERIVADOS OU NÃO DE PETRÓLEO, E LUBRIFICANTES;CODIGO;SAÍDA
+5.651;Venda de combustível ou lubrificante de produção do estabelecimento destinado à industrialização subsequente;CODIGO;SAÍDA
+5.652;Venda de combustível ou lubrificante de produção do estabelecimento destinado à comercialização;CODIGO;SAÍDA
+5.653;Venda de combustível ou lubrificante de produção do estabelecimento destinado a consumidor ou usuário final;CODIGO;SAÍDA
+5.654;Venda de combustível ou lubrificante adquirido ou recebido de terceiros destinado à industrialização subsequente;CODIGO;SAÍDA
+5.655;Venda de combustível ou lubrificante adquirido ou recebido de terceiros destinado à comercialização;CODIGO;SAÍDA
+5.656;Venda de combustível ou lubrificante adquirido ou recebido de terceiros destinado a consumidor ou usuário final;CODIGO;SAÍDA
+5.657;Remessa de combustível ou lubrificante adquirido ou recebido de terceiros para venda fora do estabelecimento;CODIGO;SAÍDA
+5.658;Transferência de combustível ou lubrificante de produção do estabelecimento;CODIGO;SAÍDA
+5.659;Transferência de combustível ou lubrificante adquirido ou recebido de terceiros;CODIGO;SAÍDA
+5.660;Devolução de compra de combustível ou lubrificante adquirido para industrialização subsequente;CODIGO;SAÍDA
+5.661;Devolução de compra de combustível ou lubrificante adquirido para comercialização;CODIGO;SAÍDA
+5.662;Devolução de compra de combustível ou lubrificante adquirido por consumidor ou usuário final;CODIGO;SAÍDA
+5.663;Remessa para armazenagem de combustível ou lubrificante;CODIGO;SAÍDA
+5.664;Retorno de combustível ou lubrificante remetidos para armazenagem;CODIGO;SAÍDA
+5.665;Retorno simbólico de combustível ou lubrificante remetidos para armazenagem;CODIGO;SAÍDA
+5.666;Remessa por conta e ordem de terceiros de combustível ou lubrificante recebido para armazenagem;CODIGO;SAÍDA
+5.900;OUTRAS SAÍDAS DE MERCADORIAS OU PRESTAÇÕES DE SERVIÇOS;SUBGRUPO;SAÍDA
+5.901;Remessa para industrialização por encomenda;CODIGO;SAÍDA
+5.902;Retorno de mercadoria utilizada na industrialização por encomenda;CODIGO;SAÍDA
+5.903;Retorno de mercadoria recebida para industrialização e não aplicada no referido processo;CODIGO;SAÍDA
+5.904;Remessa para venda fora do estabelecimento;CODIGO;SAÍDA
+5.905;Remessa para depósito fechado, armazém geral ou outro estabelecimento da mesma empresa ou de terceiro;CODIGO;SAÍDA
+5.906;Retorno de mercadoria depositada em armazém geral ou depósito fechado;CODIGO;SAÍDA
+5.907;Retorno simbólico de mercadoria depositada em armazém geral ou depósito fechado;CODIGO;SAÍDA
+5.908;Remessa de bem por conta de contrato de comodato;CODIGO;SAÍDA
+5.909;Retorno de bem recebido por conta de contrato de comodato;CODIGO;SAÍDA
+5.910;Remessa em bonificação, doação ou brinde;CODIGO;SAÍDA
+5.911;Remessa de amostra grátis;CODIGO;SAÍDA
+5.912;Remessa de mercadoria ou bem para demonstração;CODIGO;SAÍDA
+5.913;Retorno de mercadoria ou bem recebido para demonstração;CODIGO;SAÍDA
+5.914;Remessa de mercadoria ou bem para exposição ou feira;CODIGO;SAÍDA
+5.915;Remessa de mercadoria ou bem para conserto ou reparo;CODIGO;SAÍDA
+5.916;Retorno de mercadoria ou bem recebido para conserto ou reparo;CODIGO;SAÍDA
+5.917;Remessa de mercadoria em consignação mercantil ou industrial;CODIGO;SAÍDA
+5.918;Devolução de mercadoria recebida em consignação mercantil ou industrial;CODIGO;SAÍDA
+5.919;Devolução simbólica de mercadoria vendida ou utilizada em processo industrial, remetida anteriormente em consignação mercantil ou industrial;CODIGO;SAÍDA
+5.920;Remessa de vasilhame ou sacaria;CODIGO;SAÍDA
+5.921;Devolução de vasilhame ou sacaria;CODIGO;SAÍDA
+5.922;Lançamento efetuado a título de simples faturamento decorrente de venda para entrega futura;CODIGO;SAÍDA
+5.923;Remessa de mercadoria por conta e ordem de terceiros, em venda à ordem ou em operações com armazém geral ou depósito fechado;CODIGO;SAÍDA
+5.924;Remessa para industrialização por conta e ordem do adquirente da mercadoria, quando esta não transitar pelo estabelecimento do adquirente;CODIGO;SAÍDA
+5.925;Retorno de mercadoria remetida para industrialização por conta e ordem do adquirente da mercadoria, quando esta não transitar pelo estabelecimento do adquirente;CODIGO;SAÍDA
+5.926;Lançamento efetuado a título de reclassificação de mercadoria decorrente de formação de kit ou de sua desagregação;CODIGO;SAÍDA
+5.927;Lançamento efetuado a título de baixa de estoque decorrente de perda, roubo ou deterioração;CODIGO;SAÍDA
+5.928;Lançamento efetuado a título de baixa de estoque decorrente do encerramento da atividade da empresa;CODIGO;SAÍDA
+5.929;Lançamento efetuado em decorrência de emissão de documento fiscal relativo à operação ou prestação também registrada em equipamento Emissor de Cupom Fiscal - ECF;CODIGO;SAÍDA
+5.931;Lançamento efetuado em decorrência da responsabilidade de retenção do imposto por substituição tributária, atribuída ao remetente ou alienante da mercadoria, pelo serviço de transporte realizado por transportador autônomo ou por transportador não inscrito na unidade da Federação onde iniciado o serviço;CODIGO;SAÍDA
+5.932;Prestação de serviço de transporte iniciada em unidade da Federação diversa daquela onde inscrito o prestador;CODIGO;SAÍDA
+5.933;Prestação de serviço tributado pelo Imposto Sobre Serviços de Qualquer Natureza;CODIGO;SAÍDA
+5.934;Remessa simbólica de mercadoria depositada em armazém geral ou depósito fechado;CODIGO;SAÍDA
+5.949;Outra saída de mercadoria ou prestação de serviço não especificada;CODIGO;SAÍDA
+6.000;SAÍDAS OU PRESTAÇÕES DE SERVIÇOS PARA OUTROS ESTADOS;GRUPO;SAÍDA
+6.100;VENDAS DE PRODUÇÃO PRÓPRIA OU DE TERCEIROS;SUBGRUPO;SAÍDA
+6.101;Venda de produção do estabelecimento;CODIGO;SAÍDA
+6.102;Venda de mercadoria adquirida ou recebida de terceiros;CODIGO;SAÍDA
+6.103;Venda de produção do estabelecimento, efetuada fora do estabelecimento;CODIGO;SAÍDA
+6.104;Venda de mercadoria adquirida ou recebida de terceiros, efetuada fora do estabelecimento;CODIGO;SAÍDA
+6.105;Venda de produção do estabelecimento que não deva por ela transitar;CODIGO;SAÍDA
+6.106;Venda de mercadoria adquirida ou recebida de terceiros, que não deva por ela transitar;CODIGO;SAÍDA
+6.107;Venda de produção do estabelecimento, destinada à Zona Franca de Manaus ou Áreas de Livre Comércio;CODIGO;SAÍDA
+6.108;Venda de mercadoria adquirida ou recebida de terceiros, destinada à Zona Franca de Manaus ou Áreas de Livre Comércio;CODIGO;SAÍDA
+6.109;Venda de produção do estabelecimento destinada à Zona Franca de Manaus ou Áreas de Livre Comércio a contribuinte credenciado como substituto tributário;CODIGO;SAÍDA
+6.110;Venda de mercadoria adquirida ou recebida de terceiros, destinada à Zona Franca de Manaus ou Áreas de Livre Comércio a contribuinte credenciado como substituto tributário;CODIGO;SAÍDA
+6.111;Venda de produção do estabelecimento remetida anteriormente em consignação industrial;CODIGO;SAÍDA
+6.112;Venda de mercadoria adquirida ou recebida de terceiros remetida anteriormente em consignação mercantil;CODIGO;SAÍDA
+6.113;Venda de produção do estabelecimento remetida anteriormente em consignação mercantil;CODIGO;SAÍDA
+6.114;Venda de mercadoria adquirida ou recebida de terceiros remetida anteriormente em consignação industrial;CODIGO;SAÍDA
+6.115;Venda de mercadoria adquirida ou recebida de terceiros, recebida anteriormente em consignação mercantil;CODIGO;SAÍDA
+6.116;Venda de produção do estabelecimento originada de encomenda para entrega futura;CODIGO;SAÍDA
+6.117;Venda de mercadoria adquirida ou recebida de terceiros, originada de encomenda para entrega futura;CODIGO;SAÍDA
+6.118;Venda de produção do estabelecimento entregue ao destinatário por conta e ordem do adquirente originário, em venda à ordem;CODIGO;SAÍDA
+6.119;Venda de mercadoria adquirida ou recebida de terceiros entregue ao destinatário por conta e ordem do adquirente originário, em venda à ordem;CODIGO;SAÍDA
+6.120;Venda de mercadoria adquirida ou recebida de terceiros entregue ao destinatário pelo vendedor remetente, em venda à ordem;CODIGO;SAÍDA
+6.122;Venda de produção do estabelecimento remetida para industrialização, por conta e ordem do adquirente, sem transitar pelo estabelecimento do adquirente;CODIGO;SAÍDA
+6.123;Venda de mercadoria adquirida ou recebida de terceiros remetida para industrialização, por conta e ordem do adquirente, sem transitar pelo estabelecimento do adquirente;CODIGO;SAÍDA
+6.124;Industrialização efetuada para outra empresa;CODIGO;SAÍDA
+6.125;Industrialização efetuada para outra empresa quando a mercadoria remetida para utilização no processo de industrialização não transitou pelo estabelecimento adquirente da mercadoria;CODIGO;SAÍDA
+6.126;Venda de mercadoria adquirida ou recebida de terceiros para industrialização, submetida a processo de industrialização no próprio estabelecimento, quando o produto resultante do processo for objeto de operação de saída de combustível;CODIGO;SAÍDA
+6.127;Venda de insumo importado e de mercadoria industrializada sob o regime de drawback;CODIGO;SAÍDA
+6.129;Venda de insumo importado e de mercadoria industrializada sob o regime de drawback, destinadas à Zona Franca de Manaus;CODIGO;SAÍDA
+6.150;TRANSFERÊNCIAS DE PRODUÇÃO PRÓPRIA OU DE TERCEIROS;CODIGO;SAÍDA
+6.151;Transferência de produção do estabelecimento;CODIGO;SAÍDA
+6.152;Transferência de mercadoria adquirida ou recebida de terceiros;CODIGO;SAÍDA
+6.153;Transferência de energia elétrica;CODIGO;SAÍDA
+6.155;Transferência de produção do estabelecimento, que não deva por ela transitar;CODIGO;SAÍDA
+6.156;Transferência de mercadoria adquirida ou recebida de terceiros, que não deva por ela transitar;CODIGO;SAÍDA
+6.200;DEVOLUÇÕES DE COMPRAS PARA INDUSTRIALIZAÇÃO, PRODUÇÃO RURAL, COMERCIALIZAÇÃO OU ANULAÇÕES DE VALORES;SUBGRUPO;SAÍDA
+6.201;Devolução de compra para industrialização ou produção rural;CODIGO;SAÍDA
+6.202;Devolução de compra para comercialização;CODIGO;SAÍDA
+6.205;Anulação de valor relativo à aquisição de serviço de comunicação;CODIGO;SAÍDA
+6.206;Anulação de valor relativo à aquisição de serviço de transporte;CODIGO;SAÍDA
+6.207;Anulação de valor relativo à compra de energia elétrica;CODIGO;SAÍDA
+6.208;Devolução de mercadoria recebida em transferência para industrialização ou produção rural;CODIGO;SAÍDA
+6.209;Devolução de mercadoria recebida em transferência para comercialização;CODIGO;SAÍDA
+6.210;Devolução de compra para utilização na prestação de serviço;CODIGO;SAÍDA
+6.211;Devolução de compras para industrialização sob o regime de drawback;CODIGO;SAÍDA
+6.250;VENDAS DE ENERGIA ELÉTRICA;CODIGO;SAÍDA
+6.251;Venda de energia elétrica para distribuição ou comercialização;CODIGO;SAÍDA
+6.252;Venda de energia elétrica para estabelecimento industrial;CODIGO;SAÍDA
+6.253;Venda de energia elétrica para estabelecimento comercial;CODIGO;SAÍDA
+6.254;Venda de energia elétrica para estabelecimento prestador de serviço de transporte;CODIGO;SAÍDA
+6.255;Venda de energia elétrica para estabelecimento prestador de serviço de comunicação;CODIGO;SAÍDA
+6.256;Venda de energia elétrica para estabelecimento de produtor rural;CODIGO;SAÍDA
+6.257;Venda de energia elétrica para consumo por demanda contratada;CODIGO;SAÍDA
+6.258;Venda de energia elétrica a não contribuinte;CODIGO;SAÍDA
+6.300;PRESTAÇÕES DE SERVIÇOS DE COMUNICAÇÃO;SUBGRUPO;SAÍDA
+6.301;Prestação de serviço de comunicação para execução de serviço da mesma natureza;CODIGO;SAÍDA
+6.302;Prestação de serviço de comunicação a estabelecimento industrial;CODIGO;SAÍDA
+6.303;Prestação de serviço de comunicação a estabelecimento comercial;CODIGO;SAÍDA
+6.304;Prestação de serviço de comunicação a estabelecimento de prestador de serviço de transporte;CODIGO;SAÍDA
+6.305;Prestação de serviço de comunicação a estabelecimento de geradora ou de distribuidora de energia elétrica;CODIGO;SAÍDA
+6.306;Prestação de serviço de comunicação a estabelecimento de produtor rural;CODIGO;SAÍDA
+6.307;Prestação de serviço de comunicação a não contribuinte;CODIGO;SAÍDA
+6.350;PRESTAÇÕES DE SERVIÇOS DE TRANSPORTE;CODIGO;SAÍDA
+6.351;Prestação de serviço de transporte para execução de serviço da mesma natureza;CODIGO;SAÍDA
+6.352;Prestação de serviço de transporte a estabelecimento industrial;CODIGO;SAÍDA
+6.353;Prestação de serviço de transporte a estabelecimento comercial;CODIGO;SAÍDA
+6.354;Prestação de serviço de transporte a estabelecimento de prestador de serviço de comunicação;CODIGO;SAÍDA
+6.355;Prestação de serviço de transporte a estabelecimento de geradora ou de distribuidora de energia elétrica;CODIGO;SAÍDA
+6.356;Prestação de serviço de transporte a estabelecimento de produtor rural;CODIGO;SAÍDA
+6.357;Prestação de serviço de transporte a não contribuinte;CODIGO;SAÍDA
+6.358;Prestação de serviço de transporte a contribuinte ou a não contribuinte quando o transportador for o próprio remetente ou quando a responsabilidade de retenção do imposto for atribuída ao tomador do serviço;CODIGO;SAÍDA
+6.359;Prestação de serviço de transporte a contribuinte substituto em relação ao serviço de transporte;CODIGO;SAÍDA
+6.360;Prestação de serviço de transporte a contribuinte substituto em relação ao serviço de transporte, quando a responsabilidade de retenção do imposto for atribuída ao tomador do serviço;CODIGO;SAÍDA
+6.400;SAÍDAS DE MERCADORIAS SUJEITAS AO REGIME DE SUBSTITUIÇÃO TRIBUTÁRIA;SUBGRUPO;SAÍDA
+6.401;Venda de produção do estabelecimento em operação com produto sujeito ao regime de substituição tributária, na condição de contribuinte substituto;CODIGO;SAÍDA
+6.402;Venda de produção do estabelecimento de produto sujeito ao regime de substituição tributária, em operação entre contribuintes substitutos do mesmo produto;CODIGO;SAÍDA
+6.403;Venda de mercadoria adquirida ou recebida de terceiros em operação com mercadoria sujeita ao regime de substituição tributária, na condição de contribuinte substituto;CODIGO;SAÍDA
+6.404;Venda de mercadoria sujeita ao regime de substituição tributária, cujo imposto já tenha sido retido anteriormente;CODIGO;SAÍDA
+6.408;Transferência de produção do estabelecimento em operação com produto sujeito ao regime de substituição tributária;CODIGO;SAÍDA
+6.409;Transferência de mercadoria adquirida ou recebida de terceiros em operação com mercadoria sujeita ao regime de substituição tributária;CODIGO;SAÍDA
+6.410;Devolução de compra para industrialização ou produção rural em operação com mercadoria sujeita ao regime de substituição tributária;CODIGO;SAÍDA
+6.411;Devolução de compra para comercialização em operação com mercadoria sujeita ao regime de substituição tributária;CODIGO;SAÍDA
+6.412;Devolução de bem do ativo imobilizado, em operação com mercadoria sujeita ao regime de substituição tributária;CODIGO;SAÍDA
+6.413;Devolução de mercadoria destinada ao uso ou consumo, em operação com mercadoria sujeita ao regime de substituição tributária;CODIGO;SAÍDA
+6.414;Remessa de produção do estabelecimento para venda fora do estabelecimento em operação com produto sujeito ao regime de substituição tributária;CODIGO;SAÍDA
+6.415;Remessa de mercadoria adquirida ou recebida de terceiros para venda fora do estabelecimento, em operação com mercadoria sujeita ao regime de substituição tributária;CODIGO;SAÍDA
+6.450;SISTEMAS DE INTEGRAÇÃO E PARCERIA RURAL;CODIGO;SAÍDA
+6.451;Remessa de animal para o estabelecimento rural do parceiro ou do integrado;CODIGO;SAÍDA
+6.452;Remessa de insumos para produção;CODIGO;SAÍDA
+6.500;REMESSAS COM FIM ESPECÍFICO DE EXPORTAÇÃO E PARA FORMAÇÃO DE LOTES;SUBGRUPO;SAÍDA
+6.501;Remessa de produção do estabelecimento, com fim específico de exportação;CODIGO;SAÍDA
+6.502;Remessa de mercadoria adquirida ou recebida de terceiros, com fim específico de exportação;CODIGO;SAÍDA
+6.503;Devolução de mercadoria recebida com fim específico de exportação;CODIGO;SAÍDA
+6.504;Remessa de mercadorias para formação de lote de exportação, de produção do estabelecimento;CODIGO;SAÍDA
+6.505;Remessa de mercadorias para formação de lote de exportação, de mercadorias adquiridas ou recebidas de terceiros;CODIGO;SAÍDA
+6.550;OPERAÇÕES COM BENS DE ATIVO IMOBILIZADO E MATERIAIS PARA USO OU CONSUMO;CODIGO;SAÍDA
+6.551;Venda de bem do ativo imobilizado;CODIGO;SAÍDA
+6.552;Transferência de bem do ativo imobilizado;CODIGO;SAÍDA
+6.553;Devolução de compra de bem para o ativo imobilizado;CODIGO;SAÍDA
+6.554;Remessa de bem do ativo imobilizado para uso fora do estabelecimento;CODIGO;SAÍDA
+6.555;Remessa de bem do ativo imobilizado de terceiro, remetido para uso no estabelecimento;CODIGO;SAÍDA
+6.556;Devolução de compra de material de uso ou consumo;CODIGO;SAÍDA
+6.557;Transferência de material de uso ou consumo;CODIGO;SAÍDA
+6.600;CRÉDITOS E RESSARCIMENTOS DE ICMS;SUBGRUPO;SAÍDA
+6.601;Transferência de crédito de ICMS acumulado;CODIGO;SAÍDA
+6.602;Transferência de saldo credor de ICMS para outro estabelecimento da mesma empresa, destinado à compensação de saldo devedor do imposto;CODIGO;SAÍDA
+6.603;Ressarcimento de ICMS retido por substituição tributária;CODIGO;SAÍDA
+6.605;Transferência de saldo devedor de ICMS de outro estabelecimento da mesma empresa;CODIGO;SAÍDA
+6.650;SAÍDAS DE COMBUSTÍVEIS, DERIVADOS OU NÃO DE PETRÓLEO, E LUBRIFICANTES;CODIGO;SAÍDA
+6.651;Venda de combustível ou lubrificante de produção do estabelecimento destinado à industrialização subsequente;CODIGO;SAÍDA
+6.652;Venda de combustível ou lubrificante de produção do estabelecimento destinado à comercialização;CODIGO;SAÍDA
+6.653;Venda de combustível ou lubrificante de produção do estabelecimento destinado a consumidor ou usuário final;CODIGO;SAÍDA
+6.654;Venda de combustível ou lubrificante adquirido ou recebido de terceiros destinado à industrialização subsequente;CODIGO;SAÍDA
+6.655;Venda de combustível ou lubrificante adquirido ou recebido de terceiros destinado à comercialização;CODIGO;SAÍDA
+6.656;Venda de combustível ou lubrificante adquirido ou recebido de terceiros destinado a consumidor ou usuário final;CODIGO;SAÍDA
+6.657;Remessa de combustível ou lubrificante adquirido ou recebido de terceiros para venda fora do estabelecimento;CODIGO;SAÍDA
+6.658;Transferência de combustível ou lubrificante de produção do estabelecimento;CODIGO;SAÍDA
+6.659;Transferência de combustível ou lubrificante adquirido ou recebido de terceiros;CODIGO;SAÍDA
+6.660;Devolução de compra de combustível ou lubrificante adquirido para industrialização subsequente;CODIGO;SAÍDA
+6.661;Devolução de compra de combustível ou lubrificante adquirido para comercialização;CODIGO;SAÍDA
+6.662;Devolução de compra de combustível ou lubrificante adquirido por consumidor ou usuário final;CODIGO;SAÍDA
+6.663;Remessa para armazenagem de combustível ou lubrificante;CODIGO;SAÍDA
+6.664;Retorno de combustível ou lubrificante remetidos para armazenagem;CODIGO;SAÍDA
+6.665;Retorno simbólico de combustível ou lubrificante remetidos para armazenagem;CODIGO;SAÍDA
+6.666;Remessa por conta e ordem de terceiros de combustível ou lubrificante recebido para armazenagem;CODIGO;SAÍDA
+6.900;OUTRAS SAÍDAS DE MERCADORIAS OU PRESTAÇÕES DE SERVIÇOS;SUBGRUPO;SAÍDA
+6.901;Remessa para industrialização por encomenda;CODIGO;SAÍDA
+6.902;Retorno de mercadoria utilizada na industrialização por encomenda;CODIGO;SAÍDA
+6.903;Retorno de mercadoria recebida para industrialização e não aplicada no referido processo;CODIGO;SAÍDA
+6.904;Remessa para venda fora do estabelecimento;CODIGO;SAÍDA
+6.905;Remessa para depósito fechado, armazém geral ou outro estabelecimento da mesma empresa ou de terceiro;CODIGO;SAÍDA
+6.906;Retorno de mercadoria depositada em armazém geral ou depósito fechado;CODIGO;SAÍDA
+6.907;Retorno simbólico de mercadoria depositada em armazém geral ou depósito fechado;CODIGO;SAÍDA
+6.908;Remessa de bem por conta de contrato de comodato;CODIGO;SAÍDA
+6.909;Retorno de bem recebido por conta de contrato de comodato;CODIGO;SAÍDA
+6.910;Remessa em bonificação, doação ou brinde;CODIGO;SAÍDA
+6.911;Remessa de amostra grátis;CODIGO;SAÍDA
+6.912;Remessa de mercadoria ou bem para demonstração;CODIGO;SAÍDA
+6.913;Retorno de mercadoria ou bem recebido para demonstração;CODIGO;SAÍDA
+6.914;Remessa de mercadoria ou bem para exposição ou feira;CODIGO;SAÍDA
+6.915;Remessa de mercadoria ou bem para conserto ou reparo;CODIGO;SAÍDA
+6.916;Retorno de mercadoria ou bem recebido para conserto ou reparo;CODIGO;SAÍDA
+6.917;Remessa de mercadoria em consignação mercantil ou industrial;CODIGO;SAÍDA
+6.918;Devolução de mercadoria recebida em consignação mercantil ou industrial;CODIGO;SAÍDA
+6.919;Devolução simbólica de mercadoria vendida ou utilizada em processo industrial, remetida anteriormente em consignação mercantil ou industrial;CODIGO;SAÍDA
+6.920;Remessa de vasilhame ou sacaria;CODIGO;SAÍDA
+6.921;Devolução de vasilhame ou sacaria;CODIGO;SAÍDA
+6.922;Lançamento efetuado a título de simples faturamento decorrente de venda para entrega futura;CODIGO;SAÍDA
+6.923;Remessa de mercadoria por conta e ordem de terceiros, em venda à ordem ou em operações com armazém geral ou depósito fechado;CODIGO;SAÍDA
+6.924;Remessa para industrialização por conta e ordem do adquirente da mercadoria, quando esta não transitar pelo estabelecimento do adquirente;CODIGO;SAÍDA
+6.925;Retorno de mercadoria remetida para industrialização por conta e ordem do adquirente da mercadoria, quando esta não transitar pelo estabelecimento do adquirente;CODIGO;SAÍDA
+6.929;Lançamento efetuado em decorrência de emissão de documento fiscal relativo à operação ou prestação também registrada em equipamento Emissor de Cupom Fiscal - ECF;CODIGO;SAÍDA
+6.931;Lançamento efetuado em decorrência da responsabilidade de retenção do imposto por substituição tributária, atribuída ao remetente ou alienante da mercadoria, pelo serviço de transporte realizado por transportador autônomo ou por transportador não inscrito na unidade da Federação onde iniciado o serviço;CODIGO;SAÍDA
+6.932;Prestação de serviço de transporte iniciada em unidade da Federação diversa daquela onde inscrito o prestador;CODIGO;SAÍDA
+6.933;Prestação de serviço tributado pelo Imposto Sobre Serviços de Qualquer Natureza;CODIGO;SAÍDA
+6.934;Remessa simbólica de mercadoria depositada em armazém geral ou depósito fechado;CODIGO;SAÍDA
+6.949;Outra saída de mercadoria ou prestação de serviço não especificada;CODIGO;SAÍDA
+7.000;SAÍDAS OU PRESTAÇÕES DE SERVIÇOS PARA O EXTERIOR;GRUPO;SAÍDA
+7.100;VENDAS DE PRODUÇÃO PRÓPRIA OU DE TERCEIROS;SUBGRUPO;SAÍDA
+7.101;Venda de produção do estabelecimento;CODIGO;SAÍDA
+7.102;Venda de mercadoria adquirida ou recebida de terceiros;CODIGO;SAÍDA
+7.105;Venda de produção do estabelecimento, que não deva por ela transitar;CODIGO;SAÍDA
+7.106;Venda de mercadoria adquirida ou recebida de terceiros, que não deva por ela transitar;CODIGO;SAÍDA
+7.127;Venda de insumo importado e de mercadoria industrializada sob o regime de drawback;CODIGO;SAÍDA
+7.200;DEVOLUÇÕES DE COMPRAS PARA INDUSTRIALIZAÇÃO, PRODUÇÃO RURAL, COMERCIALIZAÇÃO OU ANULAÇÕES DE VALORES;SUBGRUPO;SAÍDA
+7.201;Devolução de compra para industrialização ou produção rural;CODIGO;SAÍDA
+7.202;Devolução de compra para comercialização;CODIGO;SAÍDA
+7.205;Anulação de valor relativo à aquisição de serviço de comunicação;CODIGO;SAÍDA
+7.206;Anulação de valor relativo à aquisição de serviço de transporte;CODIGO;SAÍDA
+7.207;Anulação de valor relativo à compra de energia elétrica;CODIGO;SAÍDA
+7.210;Devolução de compra para utilização na prestação de serviço;CODIGO;SAÍDA
+7.211;Devolução de compras para industrialização sob o regime de drawback;CODIGO;SAÍDA
+7.250;VENDAS DE ENERGIA ELÉTRICA;CODIGO;SAÍDA
+7.251;Venda de energia elétrica para o exterior;CODIGO;SAÍDA
+7.300;PRESTAÇÕES DE SERVIÇOS DE COMUNICAÇÃO;SUBGRUPO;SAÍDA
+7.301;Prestação de serviço de comunicação para execução de serviço da mesma natureza;CODIGO;SAÍDA
+7.350;PRESTAÇÕES DE SERVIÇOS DE TRANSPORTE;CODIGO;SAÍDA
+7.358;Prestação de serviço de transporte;CODIGO;SAÍDA
+7.500;EXPORTAÇÕES DE MERCADORIAS REMETIDAS COM FIM ESPECÍFICO DE EXPORTAÇÃO;SUBGRUPO;SAÍDA
+7.501;Exportação de mercadorias recebidas com fim específico de exportação;CODIGO;SAÍDA
+7.550;OPERAÇÕES COM BENS DE ATIVO IMOBILIZADO E MATERIAIS PARA USO OU CONSUMO;CODIGO;SAÍDA
+7.551;Venda de bem do ativo imobilizado;CODIGO;SAÍDA
+7.553;Devolução de compra de bem para o ativo imobilizado;CODIGO;SAÍDA
+7.556;Devolução de compra de material de uso ou consumo;CODIGO;SAÍDA
+7.650;SAÍDAS DE COMBUSTÍVEIS, DERIVADOS OU NÃO DE PETRÓLEO, E LUBRIFICANTES;CODIGO;SAÍDA
+7.651;Venda de combustível ou lubrificante de produção do estabelecimento;CODIGO;SAÍDA
+7.654;Venda de combustível ou lubrificante adquirido ou recebido de terceiros;CODIGO;SAÍDA
+7.900;OUTRAS SAÍDAS DE MERCADORIAS OU PRESTAÇÕES DE SERVIÇOS;SUBGRUPO;SAÍDA
+7.930;Lançamento efetuado a título de devolução de bem cuja operação anterior foi acobertada por Nota Fiscal de Produtor;CODIGO;SAÍDA
+7.949;Outra saída de mercadoria ou prestação de serviço não especificada;CODIGO;SAÍDA

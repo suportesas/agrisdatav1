@@ -39,6 +39,10 @@
                     Conferir Recebimento
                 </a>
             {% elif recebimento.status == 'CONFERIDO' %}
+                <a href="{% url 'compras:faturar_recebimento' recebimento.pk %}" class="btn btn-warning">
+                    <i class="bi bi-file-earmark-invoice me-2"></i>
+                    Registrar Nota Fiscal
+                </a>
                 <form method="post" action="{% url 'compras:recebimento_entrada_estoque' recebimento.pk %}" style="display:inline;">
                     {% csrf_token %}
                     <button type="submit" class="btn btn-primary">
@@ -46,15 +50,46 @@
                         Dar entrada no estoque
                     </button>
                 </form>
+            {% elif recebimento.status == 'DIVERGENTE' %}
+                <form method="post" action="{% url 'compras:recebimento_entrada_estoque' recebimento.pk %}" style="display:inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-warning">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        Dar entrada (com divergência)
+                    </button>
+                </form>
             {% elif recebimento.status == 'FINALIZADO' %}
                 <div class="alert alert-success d-inline-flex align-items-center me-2" role="alert" style="margin-bottom:0;">
                     <i class="bi bi-check-circle me-2"></i>
                     Entrada no estoque já realizada.
                 </div>
+                {% if recebimento.nota_fiscal and not recebimento.nota_fiscal_faturada %}
+                <a href="{% url 'compras:faturar_recebimento' recebimento.pk %}" class="btn btn-success">
+                    <i class="bi bi-file-earmark-invoice me-2"></i>
+                    Gerar Conta a Pagar
+                </a>
+                {% elif not recebimento.nota_fiscal %}
+                <a href="{% url 'compras:faturar_recebimento' recebimento.pk %}" class="btn btn-warning">
+                    <i class="bi bi-file-earmark-invoice me-2"></i>
+                    Registrar Nota Fiscal
+                </a>
+                {% else %}
                 <button type="button" class="btn btn-outline-secondary" disabled>
                     <i class="bi bi-lock me-2"></i>
-                    Entrada já realizada
+                    Já faturado
                 </button>
+                {% endif %}
+                {% if not recebimento.avaliacao_fornecedor %}
+                <a href="{% url 'compras:avaliar_fornecedor' recebimento.pk %}" class="btn btn-outline-warning">
+                    <i class="bi bi-star-fill me-2" style="color: #ffc107;"></i>
+                    Avaliar Fornecedor
+                </a>
+                {% else %}
+                <a href="{% url 'compras:avaliar_fornecedor' recebimento.pk %}" class="btn btn-outline-info">
+                    <i class="bi bi-pencil me-2"></i>
+                    Editar Avaliação ({{ recebimento.avaliacao_fornecedor.nota_media }})
+                </a>
+                {% endif %}
                 <a href="{% url 'estoque:estoque_produtos_list' %}" class="btn btn-outline-success">
                     <i class="bi bi-boxes me-2"></i>
                     Ver estoque
@@ -91,12 +126,12 @@
                     <small class="text-muted">Aguardando conferência</small>
                 </div>
                 
-                <!-- Etapa 2: CONFERIDO -->
+                <!-- Etapa 2: CONFERIDO / DIVERGENTE -->
                 <div class="text-center position-relative" style="z-index: 1; flex: 1;">
                     <div class="mb-2">
-                        {% if recebimento.status == 'CONFERIDO' %}
-                        <span class="badge rounded-circle bg-primary p-3" style="width: 50px; height: 50px; display: inline-flex; align-items: center; justify-content: center; font-size: 1.2rem;">
-                            <i class="bi bi-check-circle"></i>
+                        {% if recebimento.status in 'CONFERIDO,DIVERGENTE' %}
+                        <span class="badge rounded-circle {% if recebimento.status == 'DIVERGENTE' %}bg-warning{% else %}bg-primary{% endif %} p-3" style="width: 50px; height: 50px; display: inline-flex; align-items: center; justify-content: center; font-size: 1.2rem;">
+                            <i class="bi bi-{% if recebimento.status == 'DIVERGENTE' %}exclamation-circle{% else %}check-circle{% endif %}"></i>
                         </span>
                         {% elif recebimento.status == 'FINALIZADO' %}
                         <span class="badge rounded-circle bg-success p-3" style="width: 50px; height: 50px; display: inline-flex; align-items: center; justify-content: center; font-size: 1.2rem;">
@@ -108,7 +143,7 @@
                         </span>
                         {% endif %}
                     </div>
-                    <small class="fw-bold d-block">2. CONFERIDO</small>
+                    <small class="fw-bold d-block">2. CONFERIDO{% if recebimento.status == 'DIVERGENTE' %} (com Divergência){% endif %}</small>
                     <small class="text-muted">Pronto para entrada</small>
                 </div>
                 
@@ -143,6 +178,23 @@
                 <i class="bi bi-arrow-right-circle fs-4"></i>
                 <div>
                     <strong>Próxima ação:</strong> Clique em <strong>"Dar entrada no estoque"</strong> para atualizar o estoque.
+                </div>
+            </div>
+            {% elif recebimento.status == 'DIVERGENTE' %}
+            <div class="alert alert-warning mt-3 mb-0">
+                <div class="d-flex align-items-start gap-2 mb-2">
+                    <i class="bi bi-exclamation-triangle fs-4 mt-1 flex-shrink-0"></i>
+                    <div>
+                        <strong>⚠️ Recebimento com Divergência Registrada</strong><br>
+                        <small class="text-muted d-block mt-1">{{ recebimento.divergencias }}</small>
+                    </div>
+                </div>
+                <hr class="my-2">
+                <div class="d-flex align-items-start gap-2">
+                    <i class="bi bi-info-circle fs-5 mt-1 flex-shrink-0"></i>
+                    <div>
+                        <strong>Próximo passo:</strong> Clique em <strong>"Dar entrada (com divergência)"</strong> para registrar a quantidade recebida no estoque conforme documentado. A divergência fica registrada no sistema.
+                    </div>
                 </div>
             </div>
             {% elif recebimento.status == 'FINALIZADO' %}
@@ -338,16 +390,142 @@
             </h5>
         </div>
         <div class="card-body">
+            {% if recebimento.observacoes %}
             <div class="mb-3">
-                <strong>Observações:</strong>
-                <p class="mb-0">{{ recebimento.observacoes|default:'Nenhuma observação registrada.' }}</p>
+                <strong>Observações Gerais:</strong>
+                <p class="mb-0">{{ recebimento.observacoes }}</p>
             </div>
-            <div class="alert alert-warning mb-0 alerta-fixa-divergencia">
-                <strong><i class="bi bi-exclamation-triangle me-2"></i>Divergências:</strong>
-                <p class="mb-0">{{ recebimento.divergencias|default:'Nenhuma divergência registrada.' }}</p>
+            {% endif %}
+            
+            {% if recebimento.divergencias_detalhes.exists %}
+            <div class="alert alert-warning mb-3">
+                <i class="bi bi-exclamation-triangle me-2"></i>
+                <strong>Divergências Detalhadas ({{ recebimento.divergencias_detalhes.count }}):</strong>
             </div>
+            
+            {% for divergencia in recebimento.divergencias_detalhes.all %}
+            <div class="card mb-3 border-warning">
+                <div class="card-header bg-light">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="badge bg-{{ divergencia.tipo_divergencia.severidade|lower }}">
+                                {{ divergencia.tipo_divergencia.get_severidade_display }}
+                            </span>
+                            <strong class="ms-2">{{ divergencia.tipo_divergencia.nome }}</strong>
+                        </div>
+                        <span class="badge bg-{{ divergencia.status_divergencia|dictsort:'0'|dictsort:'0'|first }}">
+                            {{ divergencia.get_status_divergencia_display }}
+                        </span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if divergencia.item_recebimento %}
+                    <small class="text-muted d-block mb-2">
+                        <i class="bi bi-box me-1"></i>
+                        Item: {% if divergencia.item_recebimento.item_pedido %}{{ divergencia.item_recebimento.item_pedido.produto.nome }}{% else %}{{ divergencia.item_recebimento.produto.nome }}{% endif %}
+                    </small>
+                    {% endif %}
+                    
+                    {% if divergencia.quantidade_afetada %}
+                    <small class="text-muted d-block mb-2">
+                        <i class="bi bi-speedometer me-1"></i>
+                        Quantidade Afetada: {{ divergencia.quantidade_afetada }}
+                    </small>
+                    {% endif %}
+                    
+                    <div class="mb-2">
+                        <strong>Descrição:</strong><br>
+                        {{ divergencia.descricao_detalhes }}
+                    </div>
+                    
+                    {% if divergencia.acao_proposta %}
+                    <div class="mb-2">
+                        <strong>Ação Proposta:</strong><br>
+                        {{ divergencia.acao_proposta }}
+                    </div>
+                    {% endif %}
+                    
+                    {% if divergencia.descricao_resolucao %}
+                    <div class="alert alert-success mb-0">
+                        <strong>✅ Resolvido em {{ divergencia.data_resolucao|date:"d/m/Y" }}:</strong><br>
+                        {{ divergencia.descricao_resolucao }}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+            {% elif recebimento.divergencias %}
+            <!-- Divergências antigas (texto simples) -->
+            <div class="alert alert-warning mb-0">
+                <strong><i class="bi bi-exclamation-triangle me-2"></i>Divergências Registradas:</strong>
+                <p class="mb-0">{{ recebimento.divergencias }}</p>
+            </div>
+            {% else %}
+            <p class="text-muted mb-0">✅ Nenhuma divergência registrada neste recebimento.</p>
+            {% endif %}
         </div>
     </div>
+
+    <!-- Avaliação do Fornecedor -->
+    {% if recebimento.avaliacao_fornecedor %}
+    <div class="card mb-4 border-success">
+        <div class="card-header bg-success text-white">
+            <h5 class="mb-0">
+                <i class="bi bi-star-fill me-2"></i>
+                Avaliação do Fornecedor
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3 text-center">
+                    <div style="font-size: 2.5rem; color: #ffc107; font-weight: bold;">
+                        {{ recebimento.avaliacao_fornecedor.nota_media|floatformat:1 }}
+                    </div>
+                    <small class="text-muted">Nota Média</small>
+                </div>
+                <div class="col-md-9">
+                    <div class="row small mb-2">
+                        <div class="col-6"><strong>Qualidade Produto:</strong> {{ recebimento.avaliacao_fornecedor.qualidade_produto }}/5</div>
+                        <div class="col-6"><strong>Prazo Entrega:</strong> {{ recebimento.avaliacao_fornecedor.prazo_entrega }}/5</div>
+                    </div>
+                    <div class="row small mb-2">
+                        <div class="col-6"><strong>Documentação:</strong> {{ recebimento.avaliacao_fornecedor.documentacao }}/5</div>
+                        <div class="col-6"><strong>Atendimento:</strong> {{ recebimento.avaliacao_fornecedor.atendimento }}/5</div>
+                    </div>
+                    <div class="row small">
+                        <div class="col-6"><strong>Preço/Qualidade:</strong> {{ recebimento.avaliacao_fornecedor.preco }}/5</div>
+                        <div class="col-6">
+                            <strong>Recomenda:</strong>
+                            {% if recebimento.avaliacao_fornecedor.recomenda %}
+                                <span class="badge bg-success">Sim</span>
+                            {% else %}
+                                <span class="badge bg-danger">Não</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            {% if recebimento.avaliacao_fornecedor.pontos_positivos or recebimento.avaliacao_fornecedor.pontos_negativos or recebimento.avaliacao_fornecedor.recomendacao %}
+            <hr>
+            <div class="row small">
+                {% if recebimento.avaliacao_fornecedor.pontos_positivos %}
+                <div class="col-md-6">
+                    <strong class="text-success"><i class="bi bi-check-circle me-1"></i>Pontos Positivos:</strong>
+                    <p class="mb-0" style="font-size: 0.9rem;">{{ recebimento.avaliacao_fornecedor.pontos_positivos }}</p>
+                </div>
+                {% endif %}
+                {% if recebimento.avaliacao_fornecedor.pontos_negativos %}
+                <div class="col-md-6">
+                    <strong class="text-danger"><i class="bi bi-x-circle me-1"></i>Pontos a Melhorar:</strong>
+                    <p class="mb-0" style="font-size: 0.9rem;">{{ recebimento.avaliacao_fornecedor.pontos_negativos }}</p>
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
 
     <!-- Auditoria -->
     <div class="card mb-4">

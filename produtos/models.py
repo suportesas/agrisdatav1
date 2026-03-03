@@ -71,6 +71,8 @@ class Categoria(models.Model):
     nome = models.CharField(max_length=100, verbose_name='Nome')
     descricao = models.TextField(blank=True, verbose_name='Descrição')
     ativo = models.BooleanField(default=True, verbose_name='Ativo')
+    condiciona_campos = models.BooleanField(default=False, verbose_name='Condiciona Campos')
+    patrimonial = models.BooleanField(default=False, verbose_name='Categoria Patrimonial')
     
     class Meta:
         verbose_name = 'Categoria'

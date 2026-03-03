@@ -35,6 +35,8 @@
 <div class="container mt-3">
   <h1>{{ action }} Tributação - {{ produto.nome }}</h1>
   
+
+  
   {% if form.errors %}
   <div class="alert alert-danger alert-dismissible fade show" role="alert">
     <strong><i class="bi bi-exclamation-triangle-fill me-2"></i>Erro ao salvar!</strong>
@@ -74,13 +76,16 @@
             <label for="cfopCodigoInput" class="form-label required-label">{{ form.cfop.label }}</label>
             <div class="input-group">
               <input type="text" 
-                     id="cfopCodigoInput" 
-                     class="form-control" 
-                     placeholder="Digite o código CFOP"
-                     maxlength="4">
+                id="cfopCodigoInput" 
+                class="form-control" 
+                placeholder="Digite o código CFOP"
+                maxlength="4"
+                style="display: inline-block !important; border: 2px solid #b30000; background: #fffbe6;"
+                value="{{ cfop_codigo }}">
               <button type="button" 
-                      class="btn btn-primary" 
-                      id="btnBuscarCfop">
+                 class="btn btn-primary" 
+                 id="btnBuscarCfop"
+                 style="display: inline-block !important; border: 2px solid #b30000; background: #ffe6e6; color: #b30000; font-weight: bold;">
                 <i class="bi bi-search"></i> Buscar
               </button>
             </div>
@@ -92,7 +97,7 @@
               </small>
             </div>
             <!-- Select CFOP oculto (necessário para o formulário) -->
-            <div style="position: absolute; left: -9999px;">
+            <div style="display: none;">
               {{ form.cfop }}
             </div>
             {% if form.cfop.errors %}
@@ -102,13 +107,14 @@
             {% endif %}
           </div>
           <div class="col-md-4 mb-3">
-            <label for="id_natureza_operacao" class="form-label">{{ form.natureza_operacao.label }}</label>
-            {{ form.natureza_operacao }}
-            {% if form.natureza_operacao.errors %}
-              <div class="invalid-feedback d-block">{{ form.natureza_operacao.errors.0 }}</div>
-            {% else %}
-              <small class="form-text text-muted">Selecione a natureza da operação (opcional)</small>
-            {% endif %}
+            <label for="id_natureza_operacao_text" class="form-label">Natureza da Operação</label>
+            <input type="text" name="natureza_operacao_text" id="id_natureza_operacao" class="form-control" placeholder="Natureza da Operação" autocomplete="off" readonly>
+                            value="{{ natureza_descricao }}"
+            <small class="form-text text-muted">Preenchido automaticamente pela busca do CFOP</small>
+            <!-- Select oculto para envio do ID -->
+            <div style="display: none;">
+              {{ form.natureza_operacao }}
+            </div>
           </div>
           <div class="col-md-4 mb-3">
             <label for="id_descricao" class="form-label">{{ form.descricao.label }}</label>
@@ -377,6 +383,16 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+  // Garantir que o select oculto de Natureza da Operação mantenha o valor salvo ao carregar
+  const naturezaSelect = document.querySelector('select[name="natureza_operacao"]');
+  const naturezaInput = document.getElementById('id_natureza_operacao');
+  if (naturezaSelect && naturezaSelect.value) {
+    // Buscar a descrição da opção selecionada e preencher o input texto
+    const selectedOption = naturezaSelect.options[naturezaSelect.selectedIndex];
+    if (selectedOption && naturezaInput) {
+      naturezaInput.value = selectedOption.text;
+    }
+  }
     const tributacaoForm = document.getElementById('tributacaoForm');
     const btnSalvar = document.getElementById('btnSalvarTributacao');
     const debugAlert = document.getElementById('debugAlert');
@@ -468,49 +484,65 @@ document.addEventListener('DOMContentLoaded', function() {
     // Buscar CFOP ao clicar no botão
     if (btnBuscarCfop && cfopCodigoInput) {
         btnBuscarCfop.addEventListener('click', function() {
-            const codigo = cfopCodigoInput.value.trim();
-            
-            if (!codigo) {
-                alert('Digite o código do CFOP');
-                cfopCodigoInput.focus();
-                return;
-            }
-            
-            // Desabilitar botão durante a busca
-            btnBuscarCfop.disabled = true;
-            btnBuscarCfop.innerHTML = '<i class="bi bi-hourglass-split"></i> Buscando...';
-            
-            // Fazer a busca via AJAX
-            fetch(`/produtos/cfop/buscar/?codigo=${codigo}`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        // CFOP encontrado - atualizar select hidden
-                        cfopSelect.value = data.id;
-                        
-                        // Mostrar descrição
-                        cfopDescricaoTexto.textContent = `${data.codigo} - ${data.descricao}`;
-                        cfopDescricao.classList.remove('d-none');
-                        
-                        logDebug(`CFOP encontrado: ${data.codigo} - ${data.descricao}`, 'success');
-                    } else {
-                        alert(`CFOP não encontrado: ${data.error}`);
-                        cfopDescricao.classList.add('d-none');
-                        logDebug(`CFOP não encontrado: ${codigo}`, 'error');
-                    }
-                })
-                .catch(error => {
-                    console.error('Erro na busca:', error);
-                    alert('Erro ao buscar CFOP. Verifique o console.');
-                    logDebug(`Erro na busca: ${error}`, 'error');
-                })
-                .finally(() => {
-                    // Reabilitar botão
-                    btnBuscarCfop.disabled = false;
-                    btnBuscarCfop.innerHTML = '<i class="bi bi-search"></i> Buscar';
-                });
+          const codigo = cfopCodigoInput.value.trim();
+          if (!codigo) {
+            alert('Digite o código CFOP.');
+            cfopCodigoInput.focus();
+            return;
+          }
+          btnBuscarCfop.disabled = true;
+          btnBuscarCfop.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Buscando...';
+          fetch(`/produtos/cfop/buscar/?codigo=${codigo}`)
+            .then(response => response.json())
+            .then(data => {
+              if (data.success) {
+                // Preencher select oculto do CFOP
+                if (cfopSelect) {
+                  cfopSelect.value = data.id;
+                }
+                // Exibir descrição
+                cfopDescricaoTexto.textContent = `${data.codigo} - ${data.nome}`;
+                cfopDescricao.classList.remove('d-none');
+                logDebug(`CFOP encontrado: ${data.codigo} - ${data.nome}`);
+
+                // Preencher Natureza da Operação (input texto e select oculto)
+                // Só sobrescreve ao buscar CFOP
+                if (naturezaInput && data.natureza_operacao && data.natureza_operacao.descricao) {
+                  naturezaInput.value = data.natureza_operacao.descricao;
+                }
+                if (naturezaSelect && data.natureza_operacao && data.natureza_operacao.id) {
+                  naturezaSelect.value = data.natureza_operacao.id;
+                }
+
+                // Preencher Descrição
+                const descricaoInput = document.getElementById('id_descricao');
+                if (descricaoInput && data.descricao) {
+                  descricaoInput.value = data.descricao;
+                }
+
+                // Preencher Tipo (se existir)
+                const tipoInput = document.getElementById('id_tipo');
+                if (tipoInput && data.tipo) {
+                  tipoInput.value = data.tipo;
+                }
+              } else {
+                alert(`CFOP não encontrado: ${data.error}`);
+                cfopDescricao.classList.add('d-none');
+                logDebug(`CFOP não encontrado: ${codigo}`, 'error');
+              }
+            })
+            .catch(error => {
+              console.error('Erro na busca:', error);
+              alert('Erro ao buscar CFOP. Verifique o console.');
+              logDebug(`Erro na busca: ${error}`, 'error');
+            })
+            .finally(() => {
+              // Reabilitar botão
+              btnBuscarCfop.disabled = false;
+              btnBuscarCfop.innerHTML = '<i class="bi bi-search"></i> Buscar';
+            });
         });
-        
+
         // Buscar ao pressionar Enter
         cfopCodigoInput.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
@@ -519,38 +551,10 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-    
-    // ========================================
     // NATUREZA DA OPERAÇÃO
     // ========================================
-    const naturezaSelect = document.getElementById('id_natureza_operacao');
-    const descricaoInput = document.getElementById('id_descricao');
-    
-    if (naturezaSelect && descricaoInput) {
-        // Guardar descrições das naturezas
-        const naturezasData = {};
-        Array.from(naturezaSelect.options).forEach(option => {
-            if (option.value) {
-                naturezasData[option.value] = option.text.split(' - ')[1] || option.text;
-            }
-        });
-        
-        // Atualizar descrição ao mudar natureza
-        naturezaSelect.addEventListener('change', function() {
-            const naturezaId = this.value;
-            if (naturezaId && naturezasData[naturezaId]) {
-                descricaoInput.value = naturezasData[naturezaId];
-                descricaoInput.setAttribute('readonly', 'readonly');
-            } else {
-                descricaoInput.removeAttribute('readonly');
-            }
-        });
-        
-        // Se já tiver uma natureza selecionada, aplicar ao carregar
-        if (naturezaSelect.value) {
-            naturezaSelect.dispatchEvent(new Event('change'));
-        }
-    }
+    // Não é mais necessário manipular select para Natureza da Operação
+    // O campo agora é input texto e será preenchido pela busca do CFOP
 });
 </script>
 {% endblock %}

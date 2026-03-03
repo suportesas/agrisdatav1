@@ -257,19 +257,7 @@
 </div>
 
 <!-- Modal de Carregamento -->
-<div class="modal fade" id="loadingModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-body text-center p-4">
-        <div class="spinner-border text-primary mb-3" role="status">
-          <span class="visually-hidden">Carregando...</span>
-        </div>
-        <h5>Buscando dados...</h5>
-        <p class="text-muted small">Aguarde enquanto consultamos os dados nos serviços.</p>
-      </div>
-    </div>
-  </div>
-</div>
+<!-- Modal de loading removido -->
 
 <script>
   window.CADASTROS_BUSCAR_CNPJ_URL = '{% url "cadastros:buscar_cnpj" %}';
@@ -284,7 +272,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const inputCNPJ = document.getElementById('id_cnpj');
   const btnBuscarCEP = document.getElementById('buscarCEP');
   const inputCEP = document.getElementById('cep');
-  const loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'));
+  // loadingModal removido
 
   // ========== BUSCA POR CNPJ ==========
   if (btnBuscarCNPJ) {
@@ -296,7 +284,15 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
       }
 
-      loadingModal.show();
+      // loadingModal removido
+
+      // Adiciona timeout de 10 segundos
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => {
+        controller.abort();
+        loadingModal.hide();
+        alert('❌ Tempo excedido ao buscar dados do CNPJ. Tente novamente ou preencha manualmente.');
+      }, 10000);
 
       fetch(window.CADASTROS_BUSCAR_CNPJ_URL, {
         method: 'POST',
@@ -304,12 +300,12 @@ document.addEventListener('DOMContentLoaded', function() {
           'Content-Type': 'application/x-www-form-urlencoded',
           'X-CSRFToken': '{{ csrf_token }}'
         },
-        body: `cnpj=${cnpj}`
+        body: `cnpj=${cnpj}`,
+        signal: controller.signal
       })
       .then(response => response.json())
       .then(data => {
-        loadingModal.hide();
-        
+        clearTimeout(timeoutId);
         if (data.sucesso) {
           const d = data.dados;
           document.getElementById('id_nome').value = d.nome || '';
@@ -318,18 +314,16 @@ document.addEventListener('DOMContentLoaded', function() {
           document.getElementById('id_endereco').value = d.logradouro || '';
           document.getElementById('id_cidade').value = d.cidade || '';
           document.getElementById('id_uf').value = (d.uf || '').toUpperCase();
-          
           if (d.cep) {
             document.getElementById('cep').value = d.cep.replace(/(\d{5})(\d{3})/, '$1-$2');
           }
-          
           alert('✅ Dados preenchidos com sucesso!');
         } else {
           alert('❌ ' + (data.erro || 'Erro ao buscar CNPJ'));
         }
       })
       .catch(error => {
-        loadingModal.hide();
+        clearTimeout(timeoutId);
         console.error('Erro:', error);
         alert('❌ Erro ao buscar dados. Verifique sua conexão.');
       });

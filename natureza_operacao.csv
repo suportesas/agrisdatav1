@@ -1,0 +1,79 @@
+codigo;natureza_operacao;tipo;cfop_sugerido;observacao
+1001;Venda de Mercadoria;SAÍDA;5.102 / 6.102;Venda de mercadoria adquirida ou recebida de terceiros
+1002;Venda de Produção Própria;SAÍDA;5.101 / 6.101;Venda de produto fabricado pelo próprio estabelecimento
+1003;Venda de Produção Própria para Exportação;SAÍDA;7.101;Exportação de produto fabricado pelo estabelecimento
+1004;Venda de Mercadoria para Exportação;SAÍDA;7.102;Exportação de mercadoria adquirida ou recebida de terceiros
+1005;Venda de Mercadoria Fora do Estabelecimento;SAÍDA;5.104 / 6.104;Venda realizada fora do estabelecimento (ambulante/feiras)
+1006;Venda a Não Contribuinte (Consumidor Final);SAÍDA;5.102 / 6.102;Venda direta ao consumidor final sem inscrição estadual
+1007;Venda com Substituição Tributária;SAÍDA;5.401 / 6.401;Venda de produto sujeito ao regime de ST na condição de substituto
+1008;Venda de Bem do Ativo Imobilizado;SAÍDA;5.551 / 6.551;Alienação de bem pertencente ao ativo fixo da empresa
+1009;Venda de Mercadoria para Zona Franca de Manaus;SAÍDA;6.107 / 6.108;Venda destinada à ZFM ou Áreas de Livre Comércio
+1010;Venda de Insumo sob Regime de Drawback;SAÍDA;6.127 / 7.127;Venda de insumo importado ou industrializado sob drawback
+1011;Venda de Energia Elétrica;SAÍDA;5.251 / 6.251;Venda de energia elétrica para distribuição ou comercialização
+1012;Venda de Combustível ou Lubrificante;SAÍDA;5.652 / 6.652;Venda de combustível destinado à comercialização
+1013;Venda de Serviço de Transporte;SAÍDA;5.352 / 6.352;Prestação de serviço de transporte a estabelecimento industrial
+1014;Venda de Serviço de Comunicação;SAÍDA;5.302 / 6.302;Prestação de serviço de comunicação a estabelecimento industrial
+1015;Venda em Consignação Mercantil;SAÍDA;5.917 / 6.917;Remessa de mercadoria em consignação mercantil
+1016;Venda de Mercadoria Recebida em Consignação;SAÍDA;5.112 / 6.112;Venda de mercadoria remetida anteriormente em consignação mercantil
+2001;Compra de Mercadoria para Revenda;ENTRADA;1.102 / 2.102;Compra destinada à comercialização
+2002;Compra de Mercadoria para Industrialização;ENTRADA;1.101 / 2.101;Compra destinada ao processo produtivo
+2003;Compra de Mercadoria para Uso ou Consumo;ENTRADA;1.556 / 2.556;Compra de material de uso interno não destinado à revenda
+2004;Compra de Bem para o Ativo Imobilizado;ENTRADA;1.551 / 2.551;Aquisição de bem para integrar o ativo fixo da empresa
+2005;Compra de Energia Elétrica;ENTRADA;1.252 / 2.252;Compra de energia elétrica por estabelecimento industrial
+2006;Compra de Combustível ou Lubrificante;ENTRADA;1.652 / 2.652;Compra de combustível para comercialização
+2007;Compra de Mercadoria com Substituição Tributária;ENTRADA;1.403 / 2.403;Compra para comercialização com mercadoria sujeita a ST
+2008;Compra para Produção Rural;ENTRADA;1.101 / 2.101;Compra de insumos destinados à produção rural
+2009;Compra de Serviço de Transporte;ENTRADA;1.352 / 2.352;Aquisição de serviço de transporte por estabelecimento industrial
+2010;Compra de Serviço de Comunicação;ENTRADA;1.302 / 2.302;Aquisição de serviço de comunicação por estabelecimento industrial
+2011;Importação de Mercadoria para Industrialização;ENTRADA;3.101;Compra do exterior para uso no processo produtivo
+2012;Importação de Mercadoria para Comercialização;ENTRADA;3.102;Compra do exterior destinada à revenda
+2013;Importação de Bem para o Ativo Imobilizado;ENTRADA;3.551;Importação de bem para integrar o ativo fixo da empresa
+2014;Importação de Material para Uso ou Consumo;ENTRADA;3.556;Importação de material de uso interno
+2015;Compra em Consignação Mercantil;ENTRADA;1.917 / 2.917;Recebimento de mercadoria em consignação mercantil
+3001;Devolução de Venda;ENTRADA;1.201 / 2.201;Retorno de mercadoria de produção própria vendida
+3002;Devolução de Venda de Terceiros;ENTRADA;1.202 / 2.202;Retorno de mercadoria adquirida e revendida
+3003;Devolução de Compra;SAÍDA;5.201 / 6.201;Devolução de compra para industrialização ou produção rural
+3004;Devolução de Compra para Comercialização;SAÍDA;5.202 / 6.202;Devolução de mercadoria comprada para revenda
+3005;Devolução de Venda para Zona Franca de Manaus;ENTRADA;1.203 / 2.203;Retorno de mercadoria destinada à ZFM
+3006;Devolução de Bem do Ativo Imobilizado;SAÍDA;5.553 / 6.553;Devolução de bem adquirido para o ativo imobilizado
+3007;Devolução de Venda com Substituição Tributária;ENTRADA;1.410 / 2.410;Retorno de venda com mercadoria sujeita ao regime de ST
+3008;Devolução de Importação;SAÍDA;7.201 / 7.202;Devolução de mercadoria importada
+4001;Transferência de Mercadoria para Comercialização;SAÍDA;5.152 / 6.152;Transferência entre filiais destinada à revenda
+4002;Transferência de Mercadoria para Industrialização;SAÍDA;5.151 / 6.151;Transferência entre filiais destinada ao processo produtivo
+4003;Transferência de Bem do Ativo Imobilizado;SAÍDA;5.552 / 6.552;Transferência de bem do ativo entre estabelecimentos
+4004;Transferência de Material de Uso ou Consumo;SAÍDA;5.557 / 6.557;Transferência de material de uso entre filiais
+4005;Transferência de Energia Elétrica;SAÍDA;5.153 / 6.153;Transferência de energia entre estabelecimentos distribuidores
+4006;Transferência de Combustível;SAÍDA;5.658 / 6.658;Transferência de combustível de produção própria
+5001;Remessa para Industrialização por Encomenda;SAÍDA;5.901 / 6.901;Envio de mercadoria para industrialização em terceiros
+5002;Retorno de Industrialização por Encomenda;ENTRADA;1.902 / 2.902;Recebimento de mercadoria industrializada por encomenda
+5003;Remessa para Conserto ou Reparo;SAÍDA;5.915 / 6.915;Envio de bem para conserto em terceiros
+5004;Retorno de Conserto ou Reparo;ENTRADA;1.916 / 2.916;Recebimento de bem após conserto ou reparo
+5005;Remessa para Demonstração;SAÍDA;5.912 / 6.912;Envio de mercadoria para demonstração ao cliente
+5006;Retorno de Demonstração;ENTRADA;1.913 / 2.913;Retorno de mercadoria enviada para demonstração
+5007;Remessa para Depósito em Armazém Geral;SAÍDA;5.905 / 6.905;Remessa de mercadoria para armazenagem em terceiros
+5008;Retorno de Armazém Geral;ENTRADA;1.906 / 2.906;Retorno de mercadoria depositada em armazém geral
+5009;Remessa para Depósito Fechado;SAÍDA;5.905 / 6.905;Remessa de mercadoria para depósito fechado da empresa
+5010;Retorno de Depósito Fechado;ENTRADA;1.906 / 2.906;Retorno de mercadoria depositada em depósito fechado
+5011;Remessa para Exportação com Fim Específico;SAÍDA;5.501 / 6.501;Envio de produção própria com fim específico de exportação
+5012;Remessa para Formação de Lote de Exportação;SAÍDA;5.504 / 6.504;Remessa de mercadoria para formação de lote exportável
+5013;Remessa em Comodato;SAÍDA;5.908 / 6.908;Envio de bem por conta de contrato de comodato
+5014;Retorno de Comodato;ENTRADA;1.909 / 2.909;Retorno de bem remetido em comodato
+5015;Remessa para Venda Fora do Estabelecimento;SAÍDA;5.904 / 6.904;Remessa de mercadoria para venda ambulante ou em feiras
+5016;Retorno de Venda Fora do Estabelecimento;ENTRADA;1.904 / 2.904;Retorno de mercadoria não vendida fora do estabelecimento
+6001;Doação ou Brinde;SAÍDA;5.910 / 6.910;Remessa de mercadoria em bonificação, doação ou brinde
+6002;Amostra Grátis;SAÍDA;5.911 / 6.911;Remessa de mercadoria como amostra grátis
+6003;Bonificação em Mercadoria;ENTRADA;1.910 / 2.910;Entrada de mercadoria recebida em bonificação
+6004;Baixa de Estoque por Perda ou Deterioração;SAÍDA;5.927;Lançamento de baixa por perda, roubo ou deterioração
+6005;Baixa de Estoque por Encerramento de Atividade;SAÍDA;5.928;Lançamento de baixa por encerramento da empresa
+6006;Simples Faturamento (Entrega Futura);SAÍDA;5.922 / 6.922;Faturamento antecipado sem entrega imediata da mercadoria
+6007;Entrega Futura (Complemento de Entrega);SAÍDA;5.116 / 6.116;Entrega de mercadoria faturada anteriormente
+6008;Venda à Ordem;SAÍDA;5.118 / 6.118;Entrega ao destinatário por conta do adquirente originário
+6009;Ressarcimento de ICMS Substituição Tributária;ENTRADA;1.603 / 2.603;Ressarcimento de ICMS retido por substituição tributária
+6010;Transferência de Crédito de ICMS;SAÍDA;5.601 / 6.601;Transferência de crédito acumulado de ICMS entre filiais
+6011;Prestação de Serviço sujeita ao ISSQN;SAÍDA;5.933 / 6.933;Serviço tributado pelo ISS (Imposto Sobre Serviços)
+6012;Lançamento por Equipamento ECF;SAÍDA;5.929 / 6.929;Operação registrada em Emissor de Cupom Fiscal
+6013;Remessa Simbólica – Venda em Armazém Geral;SAÍDA;5.934 / 6.934;Remessa simbólica de mercadoria depositada em armazém geral
+6014;Retorno Simbólico de Armazém Geral;ENTRADA;1.907 / 2.907;Retorno simbólico de mercadoria de armazém geral
+6015;Anulação de Valor de Venda;ENTRADA;1.207 / 2.207;Anulação de valor relativo à venda de energia elétrica
+6016;Integração e Parceria Rural – Remessa de Insumos;SAÍDA;5.452 / 6.452;Remessa de insumos para produção em parceria rural
+6017;Integração e Parceria Rural – Retorno de Animal;ENTRADA;1.451 / 2.451;Retorno de animal ao estabelecimento rural parceiro

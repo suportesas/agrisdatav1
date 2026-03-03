@@ -34,13 +34,41 @@
     opacity: 1;
     color: #ffffff !important;
   }
+
+  #produtoTabs {
+    flex-wrap: wrap;
+    gap: 0.25rem;
+  }
+
+  #produtoTabs .nav-item {
+    margin-bottom: 0.25rem;
+  }
+
+  @media (max-width: 767.98px) {
+    #produtoTabs .nav-item {
+      flex: 1 1 calc(50% - 0.25rem);
+    }
+
+    #produtoTabs .nav-link {
+      width: 100%;
+      margin-right: 0;
+      text-align: center;
+    }
+  }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container mt-3">
+<div class="container-fluid mt-3 px-3 px-xl-4">
   <h1>{{ action }} Produto</h1>
-  
+
+  {% if form.errors %}
+  <div class="alert alert-danger">
+    <strong>Verifique os campos:</strong>
+    {{ form.errors }}
+  </div>
+  {% endif %}
+
   <form method="post" enctype="multipart/form-data">
     {% csrf_token %}
     
@@ -58,7 +86,13 @@
         <button class="nav-link" id="estoque-tab" data-bs-toggle="tab" data-bs-target="#estoque" type="button">Estoque</button>
       </li>
       <li class="nav-item">
-        <button class="nav-link" id="fornecedores-tab" data-bs-toggle="tab" data-bs-target="#fornecedores" type="button">
+        <button
+          class="nav-link{% if not object.pk %} disabled text-muted{% endif %}"
+          id="fornecedores-tab"
+          data-bs-toggle="tab"
+          data-bs-target="#fornecedores"
+          type="button"
+          {% if not object.pk %}disabled aria-disabled="true" title="Salve o produto para habilitar fornecedores"{% endif %}>
           <i class="bi bi-shop me-1"></i>Fornecedores
         </button>
       </li>
@@ -84,7 +118,7 @@
       {% endif %}
     </ul>
 
-    <div class="tab-content border border-top-0 p-3" id="produtoTabContent">
+    <div class="tab-content border border-top-0 p-3 p-md-4" id="produtoTabContent">
       <!-- ABA GERAL -->
       <div class="tab-pane fade show active" id="geral">
         <h5 class="mb-3">Informações Gerais</h5>
@@ -109,16 +143,6 @@
           <div class="col-md-6 mb-3">
             {{ form.nome_resumido.label_tag }}
             {{ form.nome_resumido }}
-          </div>
-          <div class="col-md-6 mb-3">
-            {{ form.tipo_produto.label_tag }}
-            <div class="input-group">
-              {{ form.tipo_produto }}
-              <a href="{% url 'produtos:tipo_produto_create' %}" class="btn btn-outline-primary" title="Cadastrar novo tipo de produto" target="_blank">
-                <i class="bi bi-plus-lg"></i>
-              </a>
-            </div>
-            {% if form.tipo_produto.errors %}<div class="text-danger">{{ form.tipo_produto.errors }}</div>{% endif %}
           </div>
         </div>
         <div class="mb-3">
@@ -152,7 +176,7 @@
             {{ form.unidade_medida.label_tag }}
             <div class="input-group">
               {{ form.unidade_medida }}
-              <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalUnidadeMedida" title="Cadastrar nova unidade de medida">
+              <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalCadastroRapidoUnidadeDosagem" title="Cadastrar nova unidade de medida">
                 <i class="bi bi-plus-lg"></i>
               </button>
             </div>
@@ -162,7 +186,7 @@
             {{ form.unidade_compra.label_tag }}
             <div class="input-group">
               {{ form.unidade_compra }}
-              <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalUnidadeMedida" title="Cadastrar nova unidade de medida">
+              <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalCadastroRapidoUnidadeDosagem" title="Cadastrar nova unidade de medida">
                 <i class="bi bi-plus-lg"></i>
               </button>
             </div>
@@ -171,7 +195,7 @@
             {{ form.unidade_venda.label_tag }}
             <div class="input-group">
               {{ form.unidade_venda }}
-              <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalUnidadeMedida" title="Cadastrar nova unidade de medida">
+              <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalCadastroRapidoUnidadeDosagem" title="Cadastrar nova unidade de medida">
                 <i class="bi bi-plus-lg"></i>
               </button>
             </div>
@@ -248,9 +272,9 @@
             <h5 class="mb-0">
               <i class="bi bi-calculator me-2"></i>Tributações por CFOP
             </h5>
-            <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalTributacao">
+            <a href="{% url 'produtos:tributacao_create' object.pk %}" class="btn btn-primary btn-sm">
               <i class="bi bi-plus-circle me-1"></i>Adicionar Tributação
-            </button>
+            </a>
           </div>
 
           <!-- Tabela de Tributações -->
@@ -653,7 +677,7 @@
         {% endif %}
       </div>
       
-      <!-- ABA FERTILIZANTES -->
+      <!-- ABA FERTILIZANTE -->
       <div class="tab-pane fade" id="fertilizante">
         {% if object.pk %}
         <div class="d-flex justify-content-between align-items-center mb-3">
@@ -802,11 +826,11 @@
       {% endif %}
     </div>
 
-    <div class="mt-3">
+    <div class="mt-3 d-flex flex-wrap gap-2">
       <button type="submit" class="btn btn-primary" id="btnSalvarProduto">
         <i class="bi bi-save me-1"></i>Salvar
       </button>
-      <a href="{% url 'produtos:produto_list' %}" class="btn btn-secondary ms-2">
+      <a href="{% url 'produtos:produto_list' %}" class="btn btn-secondary">
         <i class="bi bi-x-circle me-1"></i>Cancelar
       </a>
     </div>
@@ -834,6 +858,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const isProdutoExistente = {% if object.pk %}true{% else %}false{% endif %};
     const defensivoTabLi = document.getElementById('defensivo-tab-li');
     const agricolaTabLi = document.getElementById('agricola-tab-li');
+    // Novo: mapping de categorias condicionais
+    const categoriasCondicionais = {{ categorias_condicionais|safe }};
     
     // ============== DEBUG INICIAL ==============
     console.log('🚀 Iniciando controle da aba defensivo...');
@@ -930,87 +956,31 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // ============== CONTROLE DA ABA DEFENSIVO ==============
-    // Função para verificar se a categoria é "Defensivo"
-    function verificarCategoriaDefensivo() {
-        if (!categoriaSelect) {
-            console.error('⚠️ categoriaSelect não encontrado');
-            return;
-        }
-        
-        const selectedOption = categoriaSelect.options[categoriaSelect.selectedIndex];
-        const categoriaText = selectedOption?.text || '';
-        const categoriaTextLower = categoriaText.toLowerCase();
-        
-        // Verifica se o texto contém "defensivo" ou "def" (código comum)
-        // Remove acentos para melhor compatibilidade
-        const textoNormalizado = categoriaTextLower
-            .normalize('NFD')
-            .replace(/[\u0300-\u036f]/g, '');
-        
-        const isDefensivo = textoNormalizado.includes('defensivo') || 
-                           textoNormalizado.includes('def -') ||
-                           textoNormalizado.startsWith('def') ||
-                           categoriaTextLower.match(/\bdef\b/i) ||
-                           (categoriaAgricolaInput && categoriaAgricolaInput.value === 'DEFENSIVO');
-        
-        console.log('🔍 VERIFICAÇÃO DETALHADA:');
-        console.log('   Texto original:', `"${categoriaText}"`);
-        console.log('   Texto normalizado:', `"${textoNormalizado}"`);
-        console.log('   categoria_agricola:', categoriaAgricolaInput?.value);
-        console.log('   É Defensivo?', isDefensivo);
-        console.log('   Produto existente?', isProdutoExistente);
-        console.log('   Deveria mostrar aba?', isDefensivo && isProdutoExistente);
-        
-        // Mostrar alerta na aba Agrícola se for defensivo e produto novo
-        if (alertDefensivoInfo) {
-            if (isDefensivo && !isProdutoExistente) {
-                alertDefensivoInfo.classList.remove('d-none');
-                console.log('✅ Alerta mostrado (produto novo)');
-            } else {
-                alertDefensivoInfo.classList.add('d-none');
-            }
-        }
-        
-        // Mostrar/ocultar aba Agrícola - só mostra se for defensivo
-        if (agricolaTabLi) {
-            if (isDefensivo) {
-                agricolaTabLi.style.display = 'block';
-                console.log('🌾 Aba Agrícola mostrada (categoria Defensivo)');
-            } else {
-                agricolaTabLi.style.display = 'none';
-                console.log('🌾 Aba Agrícola oculta (categoria não é Defensivo)');
-            }
-        }
-        
-        // Mostrar/ocultar aba - só mostra se for defensivo E produto já existir
-        if (defensivoTabLi) {
-            const shouldShow = isDefensivo && isProdutoExistente;
-            
-            if (shouldShow) {
-                defensivoTabLi.style.display = 'block';
-                console.log('🎯 ============================================');
-                console.log('🎯 ABA DEFENSIVO MOSTRADA COM SUCESSO!');
-                console.log('🎯 Display aplicado:', window.getComputedStyle(defensivoTabLi).display);
-                console.log('🎯 ============================================');
-            } else {
-                defensivoTabLi.style.display = 'none';
-                if (!isDefensivo) {
-                    console.warn('⚠️ Categoria não é defensivo');
-                }
-                if (!isProdutoExistente) {
-                    console.warn('⚠️ Produto novo - salve primeiro');
-                }
-            }
+    // ============== CONTROLE DA ABA AGRÍCOLA/DEFENSIVO ==============
+    // Função para verificar se a categoria selecionada condiciona campos agrícolas
+    function verificarCategoriaAgricolaCondicional() {
+      if (!categoriaSelect) {
+        console.error('⚠️ categoriaSelect não encontrado');
+        return;
+      }
+      const categoriaId = categoriaSelect.value;
+      const condiciona = categoriasCondicionais[categoriaId] === true || categoriasCondicionais[categoriaId] === 1;
+      // Mostrar/ocultar aba Agrícola
+      if (agricolaTabLi) {
+        agricolaTabLi.style.display = condiciona ? 'block' : 'none';
+      }
+      // Mostrar/ocultar aba Defensivo
+      if (defensivoTabLi) {
+        defensivoTabLi.style.display = (condiciona && isProdutoExistente) ? 'block' : 'none';
+      }
+      // Opcional: mostrar alerta na aba agrícola se for condicional e produto novo
+      if (alertDefensivoInfo) {
+        if (condiciona && !isProdutoExistente) {
+          alertDefensivoInfo.classList.remove('d-none');
         } else {
-            console.error('❌ Elemento defensivo-tab-li não encontrado no DOM!');
+          alertDefensivoInfo.classList.add('d-none');
         }
-        
-        // Definir categoria_agricola automaticamente
-        if (isDefensivo && categoriaAgricolaInput) {
-            categoriaAgricolaInput.value = 'DEFENSIVO';
-            console.log('✅ categoria_agricola = DEFENSIVO');
-        }
+      }
     }
     
     // ============== CONTROLE DA ABA FERTILIZANTE ==============
@@ -1081,14 +1051,12 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Verificar ao carregar e ao mudar categoria
     if (categoriaSelect) {
-        console.log('🎯 Executando verificação inicial...');
-        verificarCategoriaDefensivo();
-        verificarCategoriaFertilizante();
-        categoriaSelect.addEventListener('change', verificarCategoriaDefensivo);
-        categoriaSelect.addEventListener('change', verificarCategoriaFertilizante);
-        console.log('✅ Event listener adicionado');
+      verificarCategoriaAgricolaCondicional();
+      verificarCategoriaFertilizante();
+      categoriaSelect.addEventListener('change', verificarCategoriaAgricolaCondicional);
+      categoriaSelect.addEventListener('change', verificarCategoriaFertilizante);
     } else {
-        console.error('❌ categoriaSelect não encontrado - verificação não será executada');
+      console.error('❌ categoriaSelect não encontrado - verificação não será executada');
     }
 });
 
@@ -1652,22 +1620,24 @@ document.addEventListener('DOMContentLoaded', function() {
           <div class="row">
             <div class="col-md-6 mb-3">
               <label class="form-label required-label">CFOP</label>
-              <select name="cfop" class="form-select" required>
-                <option value="">Selecione...</option>
-                {% for cfop in form.fields.cfop.queryset %}
-                <option value="{{ cfop.id }}">{{ cfop.codigo }} - {{ cfop.descricao|truncatewords:8 }}</option>
-                {% endfor %}
-              </select>
+              <div class="input-group">
+                <input type="text" name="cfop_codigo" id="cfopCodigoInput" class="form-control" placeholder="Digite o código CFOP" maxlength="4" autocomplete="off" required>
+                <button type="button" class="btn btn-outline-primary" id="btnBuscarCFOP">
+                  <i class="bi bi-search"></i> Buscar
+                </button>
+              </div>
+              <input type="hidden" name="cfop" id="id_cfop">
+              <div id="cfopDescricaoDisplay" class="alert alert-success mt-2 d-none">
+                <span id="cfopDescricaoTexto"></span>
+              </div>
+              <div id="cfopObservacaoDisplay" class="alert alert-info mt-2 d-none">
+                <span id="cfopObservacaoTexto"></span>
+              </div>
+              <div id="cfopError" class="alert alert-danger mt-2 d-none"></div>
               <small class="text-muted">Código Fiscal de Operações e Prestações</small>
             </div>
             <div class="col-md-6 mb-3">
-              <label class="form-label required-label">Natureza da Operação</label>
-              <select name="natureza_operacao" class="form-select" required>
-                <option value="">Selecione...</option>
-                {% for nat in form.fields.natureza_operacao.queryset %}
-                <option value="{{ nat.id }}">{{ nat.codigo }} - {{ nat.descricao|truncatewords:8 }}</option>
-                {% endfor %}
-              </select>
+              <!-- Campo Natureza da Operação removido para evitar duplicidade -->
             </div>
           </div>
 
@@ -1815,7 +1785,7 @@ document.addEventListener('DOMContentLoaded', function() {
           </div>
           
           <div class="col-md-6">
-            <label class="form-label fw-semibold">Preço de Compra</label>
+            <label class="form-label">Preço de Compra</label>
             <div class="input-group">
               <span class="input-group-text">R$</span>
               <input type="number" class="form-control" id="preco_compra" 
@@ -2166,6 +2136,17 @@ function salvarNovaCultura() {
           <label for="novaUnidadeNome" class="form-label">Nome <span class="text-danger">*</span></label>
           <input type="text" class="form-control" id="novaUnidadeNome" placeholder="Ex: Litros por hectare" required>
         </div>
+        <div class="mb-3">
+          <label for="novaUnidadeTipo" class="form-label">Tipo <span class="text-danger">*</span></label>
+          <select class="form-select" id="novaUnidadeTipo" required>
+            <option value="">Selecione...</option>
+            <option value="PESO">Peso</option>
+            <option value="VOLUME">Volume</option>
+            <option value="UNIDADE">Unidade</option>
+            <option value="AREA">Área</option>
+            <option value="COMPRIMENTO">Comprimento</option>
+          </select>
+        </div>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
@@ -2242,53 +2223,62 @@ function salvarNovaCultura() {
 
 <script>
 function salvarNovaUnidadeDosagem() {
-    const sigla = document.getElementById('novaUnidadeSigla').value.trim();
-    const nome = document.getElementById('novaUnidadeNome').value.trim();
+  const sigla = document.getElementById('novaUnidadeSigla').value.trim();
+  const nome = document.getElementById('novaUnidadeNome').value.trim();
+  const tipo = document.getElementById('novaUnidadeTipo').value;
     
-    if (!sigla || !nome) {
-        alert('Por favor, preencha todos os campos obrigatórios');
-        return;
-    }
+  if (!sigla || !nome || !tipo) {
+    alert('Por favor, preencha todos os campos obrigatórios');
+    return;
+  }
     
-    fetch("{% url 'produtos:unidademedida_create_ajax' %}", {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': '{{ csrf_token }}',
-            'X-Requested-With': 'XMLHttpRequest'
-        },
-        body: JSON.stringify({
-            sigla: sigla,
-            nome: nome
-        })
+  fetch("{% url 'produtos:unidademedida_create_ajax' %}", {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': '{{ csrf_token }}',
+      'X-Requested-With': 'XMLHttpRequest'
+    },
+    body: JSON.stringify({
+      sigla: sigla,
+      nome: nome,
+      tipo: tipo
     })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // Adicionar nova opção ao select
-            const unidadeSelect = document.getElementById('unidadeDosagemSelect');
-            const option = document.createElement('option');
-            option.value = data.id;
-            option.text = data.sigla + ' - ' + data.nome;
-            option.selected = true;
-            unidadeSelect.add(option);
-            
-            // Limpar e fechar modal
-            document.getElementById('novaUnidadeSigla').value = '';
-            document.getElementById('novaUnidadeNome').value = '';
-            
-            const modal = bootstrap.Modal.getInstance(document.getElementById('modalCadastroRapidoUnidadeDosagem'));
-            modal.hide();
-            
-            alert('Unidade de medida cadastrada com sucesso!');
-        } else {
-            alert('Erro ao cadastrar unidade: ' + (data.error || 'Erro desconhecido'));
+  })
+  .then(response => {
+    // Tenta converter para JSON, mesmo em erro
+    return response.json().catch(() => ({ success: false, error: 'Resposta inválida do servidor' }));
+  })
+  .then(data => {
+    console.log('Resposta cadastro unidade:', data);
+    if (data.success) {
+      // Adicionar nova opção a todos os selects de unidade de medida relevantes
+      const selects = document.querySelectorAll('select[id^="unidadeDosagem"], select[name^="unidade_medida"], select[name^="unidade_dosagem"]');
+      selects.forEach(function(select) {
+        if (select) {
+          const option = document.createElement('option');
+          option.value = data.id;
+          option.text = data.sigla + ' - ' + data.nome;
+          option.selected = true;
+          select.add(option);
         }
-    })
-    .catch(error => {
-        console.error('Erro:', error);
-        alert('Erro ao cadastrar unidade de medida');
-    });
+      });
+      // Limpar campos
+      document.getElementById('novaUnidadeSigla').value = '';
+      document.getElementById('novaUnidadeNome').value = '';
+      document.getElementById('novaUnidadeTipo').value = '';
+      // Fechar modal
+      const modal = bootstrap.Modal.getInstance(document.getElementById('modalCadastroRapidoUnidadeDosagem'));
+      if (modal) modal.hide();
+      alert('Unidade de medida cadastrada com sucesso!');
+    } else {
+      alert('Erro ao cadastrar unidade: ' + (data.error || 'Erro desconhecido'));
+    }
+  })
+  .catch(error => {
+    console.error('Erro:', error);
+    alert('Erro inesperado ao cadastrar unidade de medida');
+  });
 }
 
 // Conversão de dosagem ml/ha para ml/100L
@@ -2418,7 +2408,6 @@ function salvarFornecedor() {
   const successDiv = document.getElementById('fornecedorSuccess');
   errorDiv.style.display = 'none';
   successDiv.style.display = 'none';
-  
   const data = {
     fornecedor_id: document.getElementById('fornecedor_id').value,
     codigo_fornecedor: document.getElementById('codigo_fornecedor').value,
@@ -2428,15 +2417,29 @@ function salvarFornecedor() {
     fornecedor_preferencial: document.getElementById('fornecedor_preferencial').checked,
     observacoes: document.getElementById('observacoes').value
   };
-  
   if (!data.fornecedor_id || !data.codigo_fornecedor) {
     errorDiv.textContent = 'Preencha os campos obrigatórios: Fornecedor e Código no Fornecedor';
     errorDiv.style.display = 'block';
     return;
   }
-  
+  // Verifica se está editando
+  const modalFornecedor = document.getElementById('modalFornecedor');
+  const editarId = modalFornecedor.getAttribute('data-editar-id');
+  let url = '';
   {% if object.pk %}
-  fetch("{% url 'produtos:produto_fornecedor_create' object.pk %}", {
+  url = "{% url 'produtos:produto_fornecedor_create' object.pk %}";
+  {% endif %}
+
+  if (!editarId && !url) {
+    errorDiv.textContent = 'Salve o produto primeiro para adicionar fornecedores.';
+    errorDiv.style.display = 'block';
+    return;
+  }
+
+  if (editarId) {
+    url = `/produtos/fornecedor/${editarId}/editar/`;
+  }
+  fetch(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -2447,11 +2450,11 @@ function salvarFornecedor() {
   .then(response => response.json())
   .then(result => {
     if (result.success) {
-      successDiv.textContent = 'Fornecedor adicionado com sucesso!';
+      successDiv.textContent = editarId ? 'Fornecedor editado com sucesso!' : 'Fornecedor adicionado com sucesso!';
       successDiv.style.display = 'block';
       setTimeout(() => location.reload(), 1000);
     } else {
-      errorDiv.textContent = result.error || 'Erro ao adicionar fornecedor';
+      errorDiv.textContent = result.error || 'Erro ao salvar fornecedor';
       errorDiv.style.display = 'block';
     }
   })
@@ -2459,7 +2462,8 @@ function salvarFornecedor() {
     errorDiv.textContent = 'Erro ao salvar: ' + error;
     errorDiv.style.display = 'block';
   });
-  {% endif %}
+  // Limpa o id de edição ao fechar
+  modalFornecedor.removeAttribute('data-editar-id');
 }
 
 function excluirFornecedor(id) {
@@ -2485,55 +2489,39 @@ function excluirFornecedor(id) {
 }
 
 function editarFornecedor(id) {
-  alert('Funcionalidade de edição em desenvolvimento. Use excluir e adicionar novamente por enquanto.');
+  // Buscar dados do fornecedor relacionado
+  fetch(`/produtos/fornecedor/${id}/json/`, {
+    method: 'GET',
+    headers: {
+      'X-Requested-With': 'XMLHttpRequest'
+    }
+  })
+    .then(response => response.json())
+    .then(data => {
+      if (!data.success) {
+        alert(data.error || 'Erro ao buscar fornecedor');
+        return;
+      }
+      // Preencher campos do modal
+      document.getElementById('fornecedor_id').value = data.fornecedor_id;
+      document.getElementById('codigo_fornecedor').value = data.codigo_fornecedor;
+      document.getElementById('preco_compra').value = data.preco_compra;
+      document.getElementById('prazo_entrega').value = data.prazo_entrega;
+      document.getElementById('quantidade_minima').value = data.quantidade_minima;
+      document.getElementById('fornecedor_preferencial').checked = !!data.fornecedor_preferencial;
+      document.getElementById('observacoes').value = data.observacoes || '';
+      // Guardar id para edição
+      document.getElementById('modalFornecedor').setAttribute('data-editar-id', id);
+      // Abrir modal
+      const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('modalFornecedor'));
+      modal.show();
+    })
+    .catch(error => {
+      alert('Erro ao buscar fornecedor: ' + error);
+    });
 }
 </script>
 
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-  const tipoProdutoSelect = document.getElementById('id_tipo_produto');
-  if (!tipoProdutoSelect) return;
-
-  let lastRefreshAt = 0;
-
-  function atualizarTiposProduto() {
-    const now = Date.now();
-    if (now - lastRefreshAt < 1500) return;
-    lastRefreshAt = now;
-
-    const valorSelecionado = tipoProdutoSelect.value;
-
-    fetch("{% url 'produtos:tipo_produto_listar_ajax' %}")
-      .then(response => response.json())
-      .then(result => {
-        if (!result.success) return;
-
-        tipoProdutoSelect.innerHTML = '<option value="">---------</option>';
-
-        result.tipos.forEach(tipo => {
-          const option = document.createElement('option');
-          option.value = String(tipo.id);
-          option.textContent = tipo.label;
-          tipoProdutoSelect.appendChild(option);
-        });
-
-        if (valorSelecionado) {
-          tipoProdutoSelect.value = valorSelecionado;
-        }
-      })
-      .catch(error => {
-        console.error('Erro ao atualizar tipos de produto:', error);
-      });
-  }
-
-  window.addEventListener('focus', atualizarTiposProduto);
-  document.addEventListener('visibilitychange', function () {
-    if (document.visibilityState === 'visible') {
-      atualizarTiposProduto();
-    }
-  });
-});
-</script>
 
 {% endblock %}
 

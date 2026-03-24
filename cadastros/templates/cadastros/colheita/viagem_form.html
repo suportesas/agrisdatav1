@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+
+{% block title %}Editar Pesagem — {{ viagem.numero_viagem }} | ERP Agrícola{% endblock %}
+{% block page_title %}Editar Pesagem #{{ viagem.numero_viagem }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4" style="max-width:680px;">
+  <div class="card border-0 shadow-sm">
+    <div class="card-header bg-primary text-white">
+      <h5 class="mb-0">
+        <i class="bi bi-speedometer me-2"></i>
+        Pesagem #{{ viagem.numero_viagem }} — {{ viagem.carrocao.numero_identificacao }}
+      </h5>
+    </div>
+    <div class="card-body">
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+          <div class="alert alert-danger small">{{ form.non_field_errors }}</div>
+        {% endif %}
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Peso Bruto (kg) <span class="text-danger">*</span></label>
+            {{ form.peso_bruto_kg }}
+            {% if form.peso_bruto_kg.errors %}<div class="text-danger small">{{ form.peso_bruto_kg.errors }}</div>{% endif %}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Tara (kg) <span class="text-danger">*</span></label>
+            {{ form.tara_usada_kg }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Desconto (kg)</label>
+            {{ form.desconto_kg }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Umidade (%)</label>
+            {{ form.umidade_pct }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Impureza (%)</label>
+            {{ form.impureza_pct }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Saída do Campo</label>
+            {{ form.hora_saida_campo }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Chegada na Balança</label>
+            {{ form.hora_chegada_balanca }}
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-semibold">Foto do Romaneio</label>
+            {{ form.foto_romaneio }}
+            {% if viagem.foto_romaneio %}
+              <div class="mt-1"><a href="{{ viagem.foto_romaneio.url }}" target="_blank">Ver foto atual</a></div>
+            {% endif %}
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-semibold">Observações</label>
+            {{ form.observacoes }}
+          </div>
+        </div>
+        <hr>
+        <div class="d-flex justify-content-end gap-2">
+           <a href="{% url 'cadastros:colheita_detalhe' os_pk=viagem.carrocao.frota.etapa.os_id etapa_pk=viagem.carrocao.frota.etapa.pk %}"
+             class="btn btn-secondary">Cancelar</a>
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-save me-1"></i>Salvar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

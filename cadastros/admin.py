@@ -16,7 +16,9 @@ from .models import (
     Transportadora, Viagem, Porto, Moeda, NCM, EmpresaNCM, Vehicle, VehiclePlate, 
     VehicleDocument, VehicleValueHistory, CFOP, EmpresaCFOP, MotoristaVinculoPlaca,
     Armador, ArmadorEndereco, ArmadorContato, ArmadorDadoBancario,
-    Navio, TipoNavio, Requisicao, RequisicaoItem
+    Navio, TipoNavio, Requisicao, RequisicaoItem,
+    CustoHoraMaquina, OrdemServico, OSFuncionario, OSMaquina, CustoTalhao,
+    TipoServicoOS, SubtipoServicoOS, ModalidadeExecucaoOS,
 )
 
 class EnderecoFazendaInline(admin.TabularInline):
@@ -321,9 +323,28 @@ class PortoAdmin(admin.ModelAdmin):
 
 @admin.register(Moeda)
 class MoedaAdmin(admin.ModelAdmin):
-    list_display = ['codigo', 'nome']
-    search_fields = ['codigo', 'nome']
+    list_display = ['codigo', 'nome', 'simbolo', 'pais', 'taxa_cambio', 'ativo', 'data_atualizacao']
+    search_fields = ['codigo', 'nome', 'pais']
+    list_filter = ['ativo', 'data_atualizacao']
     ordering = ['codigo']
+    readonly_fields = ['data_criacao', 'data_atualizacao']
+    
+    fieldsets = (
+        ('Identificação', {
+            'fields': ('codigo', 'nome', 'simbolo', 'pais')
+        }),
+        ('Valor da Moeda', {
+            'fields': ('taxa_cambio',),
+            'description': 'Taxa de conversão para Real Brasileiro (1 unidade desta moeda = X BRL)'
+        }),
+        ('Status', {
+            'fields': ('ativo',)
+        }),
+        ('Auditoria', {
+            'fields': ('data_criacao', 'data_atualizacao'),
+            'classes': ('collapse',)
+        }),
+    )
 
 
 @admin.register(NCM)
@@ -982,3 +1003,84 @@ class RequisicaoAdmin(admin.ModelAdmin):
     search_fields = ['numero', 'fazenda__nome', 'safra__nome']
     readonly_fields = ['data_requisicao', 'data_aprovacao']
     inlines = [RequisicaoItemInline]
+
+
+class OSFuncionarioInline(admin.TabularInline):
+    model = OSFuncionario
+    extra = 0
+    fields = ['funcionario', 'data_execucao', 'hora_inicio', 'hora_fim', 'observacoes']
+
+
+class OSMaquinaInline(admin.TabularInline):
+    model = OSMaquina
+    extra = 0
+    fields = [
+        'veiculo', 'operador', 'data_execucao',
+        'horimetro_inicial', 'horimetro_final', 'custo_hora_config',
+    ]
+
+
+@admin.register(CustoHoraMaquina)
+class CustoHoraMaquinaAdmin(admin.ModelAdmin):
+    list_display = [
+        'veiculo', 'empresa', 'data_referencia', 'preco_combustivel',
+        'reserva_manutencao_hora', 'horas_anuais_trabalho', 'ativo',
+    ]
+    list_filter = ['empresa', 'ativo', 'data_referencia']
+    search_fields = ['veiculo__marca', 'veiculo__modelo', 'veiculo__descricao']
+    readonly_fields = ['data_cadastro', 'data_atualizacao']
+
+
+@admin.register(OrdemServico)
+class OrdemServicoAdmin(admin.ModelAdmin):
+    list_display = [
+        'numero', 'descricao_servico', 'status', 'talhao', 'safra', 'responsavel',
+        'empresa', 'data_prevista', 'data_cadastro',
+    ]
+    list_filter = ['empresa', 'status', 'tipo_servico', 'data_prevista']
+    search_fields = ['numero', 'talhao__nome', 'safra__nome', 'responsavel__nome_completo']
+    readonly_fields = ['numero', 'data_cadastro', 'data_atualizacao', 'data_aprovacao']
+    inlines = [OSFuncionarioInline, OSMaquinaInline]
+
+
+@admin.register(CustoTalhao)
+class CustoTalhaoAdmin(admin.ModelAdmin):
+    list_display = [
+        'os', 'talhao', 'safra', 'empresa',
+        'custo_mao_obra', 'custo_maquinario', 'custo_insumos', 'custo_servico_externo',
+    ]
+    list_filter = ['empresa', 'safra']
+    search_fields = ['os__numero', 'talhao__nome', 'safra__nome']
+    readonly_fields = ['data_registro', 'data_atualizacao']
+
+
+# ---------------------------------------------------------------------------
+# Admin: Classificação estruturada de OS
+# ---------------------------------------------------------------------------
+
+class SubtipoServicoOSInline(admin.TabularInline):
+    model = SubtipoServicoOS
+    extra = 1
+    fields = ['nome', 'descricao', 'empresa', 'ordem', 'ativo']
+
+
+@admin.register(TipoServicoOS)
+class TipoServicoOSAdmin(admin.ModelAdmin):
+    list_display = ['nome', 'empresa', 'tipo_legado', 'ordem', 'ativo']
+    list_filter = ['ativo', 'empresa']
+    search_fields = ['nome']
+    inlines = [SubtipoServicoOSInline]
+
+
+@admin.register(SubtipoServicoOS)
+class SubtipoServicoOSAdmin(admin.ModelAdmin):
+    list_display = ['nome', 'tipo_servico', 'empresa', 'ordem', 'ativo']
+    list_filter = ['tipo_servico', 'ativo', 'empresa']
+    search_fields = ['nome']
+
+
+@admin.register(ModalidadeExecucaoOS)
+class ModalidadeExecucaoOSAdmin(admin.ModelAdmin):
+    list_display = ['nome', 'empresa', 'ordem', 'ativo']
+    list_filter = ['ativo', 'empresa']
+    search_fields = ['nome']

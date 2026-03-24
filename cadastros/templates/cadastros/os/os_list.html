@@ -1,0 +1,191 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Ordens de Serviço | ERP Agrícola{% endblock %}
+{% block page_title %}Ordens de Serviço{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+
+  <!-- Estatísticas -->
+  <div class="row mb-4 g-3">
+    <div class="col-6 col-md-2">
+      <div class="card border-0 shadow-sm bg-secondary text-white h-100">
+        <div class="card-body py-3">
+          <h6 class="opacity-75 mb-1">Total</h6>
+          <h3 class="mb-0">{{ stats.total }}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-2">
+      <div class="card border-0 shadow-sm bg-warning text-dark h-100">
+        <div class="card-body py-3">
+          <h6 class="opacity-75 mb-1">Abertas</h6>
+          <h3 class="mb-0">{{ stats.abertas }}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-2">
+      <div class="card border-0 shadow-sm text-white h-100" style="background:#0d6efd;">
+        <div class="card-body py-3">
+          <h6 class="opacity-75 mb-1">Aprovadas</h6>
+          <h3 class="mb-0">{{ stats.aprovadas }}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-2">
+      <div class="card border-0 shadow-sm text-white h-100" style="background:#0dcaf0;">
+        <div class="card-body py-3">
+          <h6 class="opacity-75 mb-1">Em Andamento</h6>
+          <h3 class="mb-0">{{ stats.em_andamento }}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-2">
+      <div class="card border-0 shadow-sm bg-success text-white h-100">
+        <div class="card-body py-3">
+          <h6 class="opacity-75 mb-1">Concluídas</h6>
+          <h3 class="mb-0">{{ stats.concluidas }}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-2">
+      <div class="card border-0 shadow-sm bg-danger text-white h-100">
+        <div class="card-body py-3">
+          <h6 class="opacity-75 mb-1">Canceladas</h6>
+          <h3 class="mb-0">{{ stats.canceladas }}</h3>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Header + Nova OS -->
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="fw-bold text-secondary mb-0">
+      <i class="bi bi-clipboard-check text-success"></i> Ordens de Serviço
+    </h4>
+    <a href="{% url 'cadastros:os_create' %}" class="btn btn-success">
+      <i class="bi bi-plus-circle me-1"></i> Nova OS
+    </a>
+  </div>
+
+  <!-- Filtros -->
+  <div class="card border-0 shadow-sm mb-3">
+    <div class="card-body py-2">
+      <form method="get" class="row g-2 align-items-end">
+        <div class="col-md-3">
+          <input type="text" name="q" value="{{ search }}" class="form-control form-control-sm"
+                 placeholder="Número, talhão, responsável...">
+        </div>
+        <div class="col-md-2">
+          <select name="status" class="form-select form-select-sm">
+            <option value="">Todos os status</option>
+            {% for val, label in status_choices %}
+              <option value="{{ val }}" {% if status_filter == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2">
+          <select name="tipo_servico" class="form-select form-select-sm">
+            <option value="">Todos os tipos</option>
+            {% for ts in tipos_servico %}
+              <option value="{{ ts.pk }}" {% if tipo_servico_filter == ts.pk|stringformat:"s" %}selected{% endif %}>{{ ts.nome }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2">
+          <select name="talhao" class="form-select form-select-sm">
+            <option value="">Todos os talhões</option>
+            {% for t in talhoes %}
+              <option value="{{ t.pk }}" {% if talhao_filter == t.pk|stringformat:"s" %}selected{% endif %}>{{ t.nome }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2">
+          <select name="safra" class="form-select form-select-sm">
+            <option value="">Todas as safras</option>
+            {% for s in safras %}
+              <option value="{{ s.pk }}" {% if safra_filter == s.pk|stringformat:"s" %}selected{% endif %}>{{ s.nome }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-1">
+          <button type="submit" class="btn btn-outline-secondary btn-sm w-100">
+            <i class="bi bi-search"></i>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Tabela -->
+  <div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Número</th>
+              <th>Tipo</th>
+              <th>Talhão</th>
+              <th>Safra</th>
+              <th>Responsável</th>
+              <th>Data Prevista</th>
+              <th>Status</th>
+              <th class="text-end">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for os in ordens %}
+            <tr>
+              <td>
+                <a href="{% url 'cadastros:os_detail' os.pk %}" class="fw-semibold text-decoration-none text-dark">
+                  {{ os.numero }}
+                </a>
+              </td>
+              <td>{{ os.descricao_servico }}</td>
+              <td>{{ os.talhao.nome }}</td>
+              <td>{{ os.safra.nome|default:"—" }}</td>
+              <td>{{ os.responsavel.nome_completo|default:"—" }}</td>
+              <td>{{ os.data_prevista|date:"d/m/Y"|default:"—" }}</td>
+              <td>
+                {% if os.status == 'ABERTA' %}
+                  <span class="badge bg-warning text-dark">Aberta</span>
+                {% elif os.status == 'APROVADA' %}
+                  <span class="badge bg-primary">Aprovada</span>
+                {% elif os.status == 'EM_ANDAMENTO' %}
+                  <span class="badge bg-info text-dark">Em Andamento</span>
+                {% elif os.status == 'CONCLUIDA' %}
+                  <span class="badge bg-success">Concluída</span>
+                {% elif os.status == 'CANCELADA' %}
+                  <span class="badge bg-danger">Cancelada</span>
+                {% endif %}
+              </td>
+              <td class="text-end">
+                <a href="{% url 'cadastros:os_detail' os.pk %}" class="btn btn-sm btn-outline-primary">
+                  <i class="bi bi-eye"></i>
+                </a>
+                {% if os.status not in 'CONCLUIDA,CANCELADA' %}
+                <a href="{% url 'cadastros:os_update' os.pk %}" class="btn btn-sm btn-outline-secondary">
+                  <i class="bi bi-pencil"></i>
+                </a>
+                {% endif %}
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="8" class="text-center text-muted py-4">
+                <i class="bi bi-inbox fs-2 d-block mb-2"></i>
+                Nenhuma ordem de serviço encontrada.
+                <a href="{% url 'cadastros:os_create' %}" class="d-block mt-2">Criar a primeira OS</a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

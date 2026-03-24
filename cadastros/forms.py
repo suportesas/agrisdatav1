@@ -1552,6 +1552,7 @@ class FornecedorForm(forms.ModelForm):
             'telefone', 'celular', 'email', 'website',
             'cep', 'endereco', 'numero', 'complemento', 'bairro', 'cidade', 'uf', 'pais',
             'is_exportador', 'moeda_padrao', 'porto_preferencial',
+            'categorias', 'subcategorias',
             'classificacao_risco', 'data_homologacao', 'validade_homologacao',
             'limite_credito', 'prazo_pagamento_padrao', 'prazo_entrega_medio', 'observacoes', 'portal_enabled', 'ativa'
         ]
@@ -1577,6 +1578,8 @@ class FornecedorForm(forms.ModelForm):
             'uf': forms.TextInput(attrs={'class': 'form-control'}),
             'pais': forms.TextInput(attrs={'class': 'form-control'}),
             'porto_preferencial': forms.TextInput(attrs={'class': 'form-control'}),
+            'categorias': forms.SelectMultiple(attrs={'class': 'form-select'}),
+            'subcategorias': forms.SelectMultiple(attrs={'class': 'form-select'}),
             'classificacao_risco': forms.Select(attrs={'class': 'form-select'}),
             'data_homologacao': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'validade_homologacao': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
@@ -1594,6 +1597,20 @@ class FornecedorForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.empresa = empresa
         self.usuario = usuario
+
+        try:
+            from .models import CategoriaFornecedor, SubcategoriaFornecedor
+            if 'categorias' in self.fields:
+                qs_cat = CategoriaFornecedor.objects.filter(empresa=empresa) if empresa else CategoriaFornecedor.objects.all()
+                self.fields['categorias'].queryset = qs_cat
+                self.fields['categorias'].required = False
+            if 'subcategorias' in self.fields:
+                qs_sub = SubcategoriaFornecedor.objects.filter(categoria__empresa=empresa).distinct() if empresa else SubcategoriaFornecedor.objects.all()
+                self.fields['subcategorias'].queryset = qs_sub
+                self.fields['subcategorias'].required = False
+        except Exception:
+            pass
+
         # make some fields optional to support minimal create payloads in tests
         for f in ['tipo_pessoa', 'pais', 'moeda_padrao', 'regime_tributario']:
             if f in self.fields:
@@ -1935,7 +1952,7 @@ class PragaForm(forms.ModelForm):
     
     class Meta:
         model = Praga
-        fields = ['nome_comum', 'nome_cientifico', 'foto', 'ativa']
+        fields = ['nome_comum', 'nome_cientifico', 'tipo_praga', 'foto', 'ativa']
         widgets = {
             'nome_comum': forms.TextInput(attrs={
                 'class': 'form-control',
@@ -1945,6 +1962,9 @@ class PragaForm(forms.ModelForm):
             'nome_cientifico': forms.TextInput(attrs={
                 'class': 'form-control',
                 'placeholder': 'Nome científico (opcional)'
+            }),
+            'tipo_praga': forms.Select(attrs={
+                'class': 'form-select'
             }),
             'foto': forms.FileInput(attrs={
                 'class': 'form-control',
@@ -3378,9 +3398,8 @@ class MonitoramentoMIPForm(forms.ModelForm):
                 'class': 'form-control',
                 'value': '20'
             }),
-            'condicoes_tempo': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Ex: Nublado, ensolarado, chuva'
+            'condicoes_tempo': forms.Select(attrs={
+                'class': 'form-select'
             }),
             'temperatura_media': forms.NumberInput(attrs={
                 'class': 'form-control',
@@ -3425,7 +3444,17 @@ class MonitoramentoMIPForm(forms.ModelForm):
         self.user = kwargs.pop('user', None)
         self.empresa = kwargs.pop('empresa', None)
         super().__init__(*args, **kwargs)
-        
+
+        # Campo em formato de lista para facilitar preenchimento no campo.
+        self.fields['condicoes_tempo'].required = False
+
+        # Compatibilidade com dados legados salvos antes de virar dropdown.
+        valor_legado = (getattr(self.instance, 'condicoes_tempo', '') or '').strip() if self.instance else ''
+        choices = [('', 'Selecione...')] + list(getattr(MonitoramentoMIP, 'CONDICOES_TEMPO_CHOICES', []))
+        if valor_legado and valor_legado not in {codigo for codigo, _ in choices}:
+            choices.append((valor_legado, f'Valor antigo: {valor_legado}'))
+        self.fields['condicoes_tempo'].choices = choices
+
         # Se não tiver empresa, preencher com a do usuário
         if self.empresa:
             # Configurar campo Talhão com widget padrão do Django
@@ -4076,3 +4105,357 @@ DocumentoFuncionarioFormSet = inlineformset_factory(
 # =============================================================================
 # ✅ FIM DO CÓDIGO - TESTADO E FUNCIONANDO
 # =============================================================================
+
+
+# =============================================================================
+# MÓDULO: ORDENS DE SERVIÇO AGRÍCOLAS
+# =============================================================================
+
+from .models import (
+    OrdemServico,
+    OrdemServicoInsumo,
+    OSFuncionario,
+    OSMaquina,
+    CustoHoraMaquina,
+    TipoServicoOS,
+    SubtipoServicoOS,
+    ModalidadeExecucaoOS,
+)
+
+
+class OrdemServicoForm(forms.ModelForm):
+    """Formulário principal de criação/edição de Ordem de Serviço"""
+
+    class Meta:
+        model = OrdemServico
+        fields = [
+            'tipo_servico', 'subtipo_servico', 'modalidade_execucao',
+            'talhao', 'safra', 'responsavel', 'data_prevista',
+            'area_executada_ha', 'fornecedor_servico', 'valor_servico_externo',
+            'unidade_cobranca', 'requisicao', 'observacoes', 'foto_evidencia',
+        ]
+        widgets = {
+            'tipo_servico': forms.Select(attrs={'class': 'form-select', 'id': 'id_tipo_servico'}),
+            'subtipo_servico': forms.Select(attrs={'class': 'form-select', 'id': 'id_subtipo_servico'}),
+            'modalidade_execucao': forms.Select(attrs={'class': 'form-select', 'id': 'id_modalidade_execucao'}),
+            'talhao': forms.Select(attrs={'class': 'form-select'}),
+            'safra': forms.Select(attrs={'class': 'form-select'}),
+            'responsavel': forms.Select(attrs={'class': 'form-select'}),
+            'data_prevista': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'area_executada_ha': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.0001'}),
+            'fornecedor_servico': forms.Select(attrs={'class': 'form-select'}),
+            'valor_servico_externo': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'unidade_cobranca': forms.Select(attrs={'class': 'form-select'}),
+            'requisicao': forms.Select(attrs={'class': 'form-select'}),
+            'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'foto_evidencia': forms.ClearableFileInput(attrs={'class': 'form-control'}),
+        }
+
+    def __init__(self, *args, empresa=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        from django.db.models import Q
+        if empresa:
+            self.fields['tipo_servico'].queryset = TipoServicoOS.objects.filter(
+                Q(empresa=empresa) | Q(empresa=None), ativo=True
+            ).order_by('ordem', 'nome')
+
+            self.fields['modalidade_execucao'].queryset = ModalidadeExecucaoOS.objects.filter(
+                Q(empresa=empresa) | Q(empresa=None), ativo=True
+            ).order_by('ordem', 'nome')
+
+            # Carrega subtipos: usa o tipo_servico da instância (edição) ou do POST
+            tipo_id = None
+            if self.instance and self.instance.pk and self.instance.tipo_servico_id:
+                tipo_id = self.instance.tipo_servico_id
+            elif self.data.get('tipo_servico'):
+                try:
+                    tipo_id = int(self.data.get('tipo_servico'))
+                except (TypeError, ValueError):
+                    tipo_id = None
+
+            if tipo_id:
+                self.fields['subtipo_servico'].queryset = SubtipoServicoOS.objects.filter(
+                    tipo_servico_id=tipo_id,
+                    ativo=True,
+                ).filter(Q(empresa=empresa) | Q(empresa=None)).order_by('ordem', 'nome')
+            else:
+                self.fields['subtipo_servico'].queryset = SubtipoServicoOS.objects.none()
+
+            self.fields['talhao'].queryset = Talhao.objects.filter(empresa=empresa, ativo=True)
+            self.fields['safra'].queryset = Safra.objects.filter(
+                fazenda__empresa=empresa,
+                status__in=['PLANEJADA', 'EM_ANDAMENTO']
+            ).order_by('-ano', 'nome')
+            from .models import Funcionario
+            self.fields['responsavel'].queryset = Funcionario.objects.filter(empresa=empresa, ativo=True)
+            from .models import Fornecedor
+            self.fields['fornecedor_servico'].queryset = Fornecedor.objects.filter(empresa=empresa, ativa=True)
+            self.fields['requisicao'].queryset = Requisicao.objects.filter(empresa=empresa).order_by('-data_requisicao')
+
+        # Campos opcionais
+        for f in [
+            'subtipo_servico', 'modalidade_execucao',
+            'safra', 'responsavel', 'fornecedor_servico', 'valor_servico_externo',
+            'unidade_cobranca', 'requisicao', 'foto_evidencia',
+        ]:
+            self.fields[f].required = False
+
+    def clean(self):
+        cleaned_data = super().clean()
+        tipo_servico = cleaned_data.get('tipo_servico')
+        subtipo_servico = cleaned_data.get('subtipo_servico')
+        if subtipo_servico and tipo_servico:
+            if subtipo_servico.tipo_servico_id != tipo_servico.pk:
+                self.add_error(
+                    'subtipo_servico',
+                    'A operação selecionada não pertence ao tipo de serviço escolhido.'
+                )
+        return cleaned_data
+
+
+class OrdemServicoInsumoForm(forms.ModelForm):
+    """Formulário para itens de insumo lançados diretamente na OS."""
+
+    class Meta:
+        model = OrdemServicoInsumo
+        fields = [
+            'produto',
+            'unidade_medida',
+            'quantidade_planejada',
+            'quantidade_aplicada',
+            'custo_unitario',
+            'observacoes',
+        ]
+        widgets = {
+            'produto': forms.Select(attrs={'class': 'form-select'}),
+            'unidade_medida': forms.Select(attrs={'class': 'form-select'}),
+            'quantidade_planejada': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.001'}),
+            'quantidade_aplicada': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.001'}),
+            'custo_unitario': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.0001'}),
+            'observacoes': forms.TextInput(attrs={'class': 'form-control'}),
+        }
+
+    def __init__(self, *args, empresa=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if empresa:
+            self.fields['produto'].queryset = Produto.objects.filter(empresa=empresa).order_by('nome')
+            self.fields['unidade_medida'].queryset = UnidadeMedida.objects.filter(empresa=empresa).order_by('nome')
+
+        self.fields['quantidade_planejada'].required = False
+        self.fields['custo_unitario'].required = False
+        self.fields['observacoes'].required = False
+
+    def clean(self):
+        cleaned = super().clean()
+        produto = cleaned.get('produto')
+        unidade_medida = cleaned.get('unidade_medida')
+        custo_unitario = cleaned.get('custo_unitario')
+
+        if not unidade_medida and produto and getattr(produto, 'unidade_medida_id', None):
+            cleaned['unidade_medida'] = produto.unidade_medida
+
+        if custo_unitario in (None, '') and produto and getattr(produto, 'preco_custo', None) not in (None, ''):
+            cleaned['custo_unitario'] = produto.preco_custo
+
+        return cleaned
+
+
+class OSFuncionarioForm(forms.ModelForm):
+    """Formulário para alocar funcionário em uma OS"""
+
+    class Meta:
+        model = OSFuncionario
+        fields = ['funcionario', 'data_execucao', 'hora_inicio', 'hora_fim', 'observacoes']
+        widgets = {
+            'funcionario': forms.Select(attrs={'class': 'form-select'}),
+            'data_execucao': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'hora_inicio': forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}),
+            'hora_fim': forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}),
+            'observacoes': forms.TextInput(attrs={'class': 'form-control'}),
+        }
+
+    def __init__(self, *args, empresa=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if empresa:
+            from .models import Funcionario
+            self.fields['funcionario'].queryset = Funcionario.objects.filter(empresa=empresa, ativo=True)
+
+
+OSFuncionarioFormSet = forms.inlineformset_factory(
+    OrdemServico,
+    OSFuncionario,
+    form=OSFuncionarioForm,
+    extra=1,
+    can_delete=True,
+    min_num=0,
+)
+
+
+class OSMaquinaForm(forms.ModelForm):
+    """Formulário para alocar máquina/veículo em uma OS"""
+
+    class Meta:
+        model = OSMaquina
+        fields = [
+            'veiculo', 'operador', 'data_execucao',
+            'horimetro_inicial', 'horimetro_final',
+            'custo_hora_config', 'observacoes',
+        ]
+        widgets = {
+            'veiculo': forms.Select(attrs={'class': 'form-select'}),
+            'operador': forms.Select(attrs={'class': 'form-select'}),
+            'data_execucao': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'horimetro_inicial': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'horimetro_final': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'custo_hora_config': forms.Select(attrs={'class': 'form-select'}),
+            'observacoes': forms.TextInput(attrs={'class': 'form-control'}),
+        }
+
+    def __init__(self, *args, empresa=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if empresa:
+            from cadastros.models import Vehicle
+            self.fields['veiculo'].queryset = Vehicle.objects.filter(empresa=empresa)
+            from .models import Funcionario
+            self.fields['operador'].queryset = Funcionario.objects.filter(empresa=empresa, ativo=True)
+            self.fields['custo_hora_config'].queryset = CustoHoraMaquina.objects.filter(empresa=empresa, ativo=True)
+        self.fields['operador'].required = False
+        self.fields['custo_hora_config'].required = False
+
+
+OSMaquinaFormSet = forms.inlineformset_factory(
+    OrdemServico,
+    OSMaquina,
+    form=OSMaquinaForm,
+    extra=1,
+    can_delete=True,
+    min_num=0,
+)
+
+
+class CustoHoraMaquinaForm(forms.ModelForm):
+    """Formulário para configurar custo/hora de uma máquina"""
+
+    class Meta:
+        model = CustoHoraMaquina
+        fields = [
+            'veiculo', 'data_referencia', 'preco_combustivel',
+            'reserva_manutencao_hora', 'horas_anuais_trabalho', 'ativo',
+        ]
+        widgets = {
+            'veiculo': forms.Select(attrs={'class': 'form-select'}),
+            'data_referencia': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'preco_combustivel': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.001'}),
+            'reserva_manutencao_hora': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'horas_anuais_trabalho': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'ativo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
+
+    def __init__(self, *args, empresa=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if empresa:
+            from cadastros.models import Vehicle
+            self.fields['veiculo'].queryset = Vehicle.objects.filter(empresa=empresa)
+
+
+# =============================================================================
+# MÓDULO: COLHEITA — EtapaColheita / FrotaColheita / CarrocaoFrota / ViagemColheita
+# =============================================================================
+
+from .models import EtapaColheita, FrotaColheita, CarrocaoFrota, ViagemColheita
+
+
+class EtapaColheitaForm(forms.ModelForm):
+    class Meta:
+        model = EtapaColheita
+        fields = ['supervisor', 'data_inicio', 'observacoes']
+        widgets = {
+            'supervisor': forms.Select(attrs={'class': 'form-select'}),
+            'data_inicio': forms.DateTimeInput(attrs={'class': 'form-control', 'type': 'datetime-local'}),
+            'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+        }
+
+    def __init__(self, *args, empresa=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        from .models import Funcionario
+        if empresa:
+            self.fields['supervisor'].queryset = Funcionario.objects.filter(empresa=empresa, ativo=True)
+        self.fields['supervisor'].required = False
+        self.fields['data_inicio'].required = False
+
+
+class FrotaColheitaForm(forms.ModelForm):
+    class Meta:
+        model = FrotaColheita
+        fields = ['trator', 'operador', 'horimetro_inicial', 'observacoes']
+        widgets = {
+            'trator': forms.Select(attrs={'class': 'form-select select-trator'}),
+            'operador': forms.Select(attrs={'class': 'form-select'}),
+            'horimetro_inicial': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1', 'placeholder': 'h'}),
+            'observacoes': forms.TextInput(attrs={'class': 'form-control'}),
+        }
+
+    def __init__(self, *args, empresa=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        from .models import Funcionario
+        from cadastros.models import Vehicle
+        if empresa:
+            self.fields['trator'].queryset = Vehicle.objects.filter(
+                empresa=empresa, ativo=True, tipo__in=['LEVE', 'MEDIO', 'PESADO']
+            )
+            self.fields['operador'].queryset = Funcionario.objects.filter(empresa=empresa, ativo=True)
+        self.fields['operador'].required = False
+        self.fields['horimetro_inicial'].required = False
+
+
+class CarrocaoFrotaForm(forms.ModelForm):
+    class Meta:
+        model = CarrocaoFrota
+        fields = ['veiculo', 'numero_identificacao', 'capacidade_ton', 'tara_kg']
+        widgets = {
+            'veiculo': forms.Select(attrs={'class': 'form-select select-carrocao'}),
+            'numero_identificacao': forms.TextInput(attrs={'class': 'form-control'}),
+            'capacidade_ton': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'tara_kg': forms.NumberInput(attrs={'class': 'form-control'}),
+        }
+
+    def __init__(self, *args, empresa=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        from cadastros.models import Vehicle
+        if empresa:
+            self.fields['veiculo'].queryset = Vehicle.objects.filter(
+                empresa=empresa, ativo=True, tipo='REBOQUE'
+            )
+        self.fields['capacidade_ton'].required = False
+        self.fields['tara_kg'].required = False
+
+
+class ViagemColheitaForm(forms.ModelForm):
+    class Meta:
+        model = ViagemColheita
+        fields = [
+            'peso_bruto_kg', 'tara_usada_kg',
+            'umidade_pct', 'impureza_pct', 'desconto_kg',
+            'hora_saida_campo', 'hora_chegada_balanca',
+            'foto_romaneio', 'observacoes',
+        ]
+        widgets = {
+            'peso_bruto_kg': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': 'kg'}),
+            'tara_usada_kg': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': 'kg'}),
+            'umidade_pct': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': '%'}),
+            'impureza_pct': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': '%'}),
+            'desconto_kg': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': 'kg'}),
+            'hora_saida_campo': forms.DateTimeInput(attrs={'class': 'form-control', 'type': 'datetime-local'}),
+            'hora_chegada_balanca': forms.DateTimeInput(attrs={'class': 'form-control', 'type': 'datetime-local'}),
+            'foto_romaneio': forms.ClearableFileInput(attrs={'class': 'form-control'}),
+            'observacoes': forms.TextInput(attrs={'class': 'form-control'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['umidade_pct'].required = False
+        self.fields['impureza_pct'].required = False
+        self.fields['desconto_kg'].required = False
+        self.fields['hora_saida_campo'].required = False
+        self.fields['hora_chegada_balanca'].required = False
+        self.fields['foto_romaneio'].required = False

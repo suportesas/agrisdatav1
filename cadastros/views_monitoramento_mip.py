@@ -878,3 +878,51 @@ def ajax_buscar_talhoes(request):
         })
     
     return JsonResponse({'talhoes': resultado})
+
+
+@login_required
+def ajax_talhao_info(request, talhao_id):
+    """AJAX endpoint para retornar cultura e safras ativas de um talhão pelo ID"""
+    empresa = request.user.empresa
+    try:
+        talhao = Talhao.objects.select_related(
+            'area', 'fazenda', 'cultura_atual'
+        ).get(pk=talhao_id, area__fazenda__empresa=empresa, ativo=True)
+    except Talhao.DoesNotExist:
+        return JsonResponse({'error': 'Talhão não encontrado'}, status=404)
+
+    safras_ativas = talhao.safras.filter(
+        status__in=['PLANEJADA', 'EM_ANDAMENTO']
+    ).select_related('cultura').order_by('-ano')
+
+    cultura_id = None
+    cultura_nome = None
+    safra_id_auto = None
+
+    if safras_ativas.exists():
+        primeira_safra = safras_ativas.first()
+        if primeira_safra.cultura:
+            cultura_id = primeira_safra.cultura.id
+            cultura_nome = primeira_safra.cultura.nome
+        if safras_ativas.count() == 1:
+            safra_id_auto = primeira_safra.id
+    elif talhao.cultura_atual:
+        cultura_id = talhao.cultura_atual.id
+        cultura_nome = talhao.cultura_atual.nome
+
+    return JsonResponse({
+        'talhao_id': talhao.id,
+        'talhao_nome': talhao.nome,
+        'cultura_id': cultura_id,
+        'cultura_nome': cultura_nome,
+        'safra_id_auto': safra_id_auto,
+        'safras_ativas': [
+            {
+                'id': s.id,
+                'nome': s.nome or f'Safra {s.ano} - {s.cultura.nome if s.cultura else ""}',
+                'cultura_nome': s.cultura.nome if s.cultura else '',
+                'status': s.status,
+            }
+            for s in safras_ativas
+        ],
+    })

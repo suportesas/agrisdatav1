@@ -8,6 +8,8 @@ from . import views_motorista
 from . import views_monitoramento_mip
 from . import views_requisicao
 from . import views_rh
+from . import views_os
+from . import views_colheita
 
 app_name = 'cadastros'
 
@@ -352,6 +354,7 @@ urlpatterns = [
     path('ajax/carregar-estagios/', views_monitoramento_mip.ajax_carregar_estagios, name='ajax_carregar_estagios'),
     path('ajax/deletar-estagio/<int:pk>/', views_monitoramento_mip.ajax_deletar_estagio, name='ajax_deletar_estagio'),
     path('ajax/buscar-talhoes/', views_monitoramento_mip.ajax_buscar_talhoes, name='ajax_buscar_talhoes'),
+    path('ajax/talhao-info/<int:talhao_id>/', views_monitoramento_mip.ajax_talhao_info, name='ajax_talhao_info'),
 
     # ==================== RH - RECURSOS HUMANOS ====================
     # Dashboard
@@ -381,5 +384,49 @@ urlpatterns = [
     # Relatórios RH
     path('rh/relatorio/', views_rh.relatorio_rh, name='relatorio_rh'),
     path('rh/relatorio/pdf/', views_rh.relatorio_rh_pdf, name='relatorio_rh_pdf'),
+
+    # ==================== ORDENS DE SERVIÇO ====================
+    path('ordens-servico/', views_os.os_list, name='os_list'),
+    path('ordens-servico/nova/', views_os.os_create, name='os_create'),
+    path('ordens-servico/custos-talhao/', views_os.custo_talhao_list, name='custo_talhao_list'),
+    path('ordens-servico/<int:pk>/', views_os.os_detail, name='os_detail'),
+    path('ordens-servico/<int:pk>/editar/', views_os.os_update, name='os_update'),
+    path('ordens-servico/<int:pk>/excluir/', views_os.os_delete, name='os_delete'),
+    path('ordens-servico/<int:pk>/aprovar/', views_os.os_aprovar, name='os_aprovar'),
+    path('ordens-servico/<int:pk>/iniciar/', views_os.os_iniciar, name='os_iniciar'),
+    path('ordens-servico/<int:pk>/concluir/', views_os.os_concluir, name='os_concluir'),
+    path('ordens-servico/<int:pk>/insumos/novo/', views_os.os_insumo_add, name='os_insumo_add'),
+    path('ordens-servico/<int:pk>/insumos/<int:insumo_pk>/editar/', views_os.os_insumo_edit, name='os_insumo_edit'),
+    path('ordens-servico/<int:pk>/insumos/<int:insumo_pk>/excluir/', views_os.os_insumo_delete, name='os_insumo_delete'),
+
+    # Custo/Hora de Máquinas
+    path('custos-maquina/', views_os.custo_maquina_list, name='custo_maquina_list'),
+    path('custos-maquina/novo/', views_os.custo_maquina_create, name='custo_maquina_create'),
+    path('custos-maquina/<int:pk>/editar/', views_os.custo_maquina_update, name='custo_maquina_update'),
+
+    # AJAX – Classificação de OS
+    path('ordens-servico/ajax/opcoes-servico/', views_os.ajax_opcoes_servico, name='os_ajax_opcoes_servico'),
+    path('ordens-servico/ajax/opcoes-talhao/', views_os.ajax_opcoes_talhao, name='os_ajax_opcoes_talhao'),
+
+    # ==================== COLHEITA ====================
+    path('ordens-servico/<int:os_pk>/colheita/nova-etapa/', views_colheita.etapa_nova, name='colheita_nova_etapa'),
+    path('ordens-servico/<int:os_pk>/colheita/<int:etapa_pk>/', views_colheita.etapa_detalhe, name='colheita_detalhe'),
+    path('ordens-servico/<int:os_pk>/colheita/<int:etapa_pk>/concluir/', views_colheita.etapa_concluir, name='colheita_concluir'),
+
+    # Frotas (tratores)
+    path('ordens-servico/<int:os_pk>/colheita/<int:etapa_pk>/frota/adicionar/', views_colheita.frota_adicionar, name='colheita_frota_adicionar'),
+    path('ordens-servico/<int:os_pk>/colheita/<int:etapa_pk>/frota/<int:frota_pk>/horimetro/', views_colheita.frota_horimetro_final, name='colheita_frota_horimetro'),
+
+    # Carroções
+    path('ordens-servico/<int:os_pk>/colheita/<int:etapa_pk>/frota/<int:frota_pk>/carrocao/adicionar/', views_colheita.carrocao_adicionar, name='colheita_carrocao_adicionar'),
+    path('ordens-servico/<int:os_pk>/colheita/<int:etapa_pk>/carrocao/<int:carrocao_pk>/remover/', views_colheita.carrocao_remover, name='colheita_carrocao_remover'),
+
+    # Viagens / Pesagens
+    path('ordens-servico/<int:os_pk>/colheita/<int:etapa_pk>/carrocao/<int:carrocao_pk>/viagem/nova/', views_colheita.viagem_nova, name='colheita_viagem_nova'),
+    path('ordens-servico/<int:os_pk>/colheita/<int:etapa_pk>/viagem/<int:viagem_pk>/editar/', views_colheita.viagem_editar, name='colheita_viagem_editar'),
+    path('ordens-servico/<int:os_pk>/colheita/<int:etapa_pk>/viagem/<int:viagem_pk>/excluir/', views_colheita.viagem_excluir, name='colheita_viagem_excluir'),
+
+    # AJAX
+    path('ordens-servico/<int:os_pk>/colheita/<int:etapa_pk>/ajax/carrocoes/', views_colheita.ajax_carrocoes_disponiveis, name='colheita_ajax_carrocoes'),
 
 ]

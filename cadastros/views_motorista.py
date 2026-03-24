@@ -17,7 +17,6 @@ from .models import Motorista, MotoristadoDocumento, MotoristaVinculoPlaca
 from .forms_motorista import MotoristadoForm, MotoristadoDocumentoForm, MotoristaVinculoPlacaForm, MotoristaVinculoConsultaForm
 import requests
 from django.core.cache import cache
-from xhtml2pdf import pisa
 from io import BytesIO
 
 
@@ -501,6 +500,16 @@ def motorista_vinculo_consulta_pdf(request):
         'total_resultados': len(resultados),
         'data_geracao': timezone.now()
     })
+
+    # Import tardio para evitar falha no carregamento global de URLs/check.
+    try:
+        from xhtml2pdf import pisa
+    except Exception:
+        messages.error(
+            request,
+            'Dependência de PDF indisponível no ambiente. Instale/atualize xhtml2pdf para exportar.',
+        )
+        return redirect('cadastros:motorista_vinculo_consulta')
     
     # Gerar PDF
     result = BytesIO()

@@ -1,0 +1,777 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ etapa.numero_etapa }}ª Colheita — {{ os.numero }} | ERP Agrícola{% endblock %}
+{% block page_title %}{{ etapa.numero_etapa }}ª Etapa de Colheita — {{ os.numero }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-3">
+
+  {# ── Cabeçalho da Etapa ─────────────────────────────────────────────── #}
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-header text-white d-flex justify-content-between align-items-center py-3"
+         style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+      <div>
+        <h5 class="mb-0">
+          <i class="bi bi-basket me-2"></i>
+          {{ etapa.numero_etapa }}ª Etapa · {{ os.talhao.nome }}
+          {% if os.safra %} · {{ os.safra }}{% endif %}
+        </h5>
+        <small class="opacity-75">
+          OS {{ os.numero }}
+          {% if etapa.supervisor %} · Supervisor: {{ etapa.supervisor.nome_completo }}{% endif %}
+          {% if etapa.data_inicio %} · Início: {{ etapa.data_inicio|date:"d/m H:i" }}{% endif %}
+        </small>
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        {% if etapa.status == 'ABERTA' %}
+          <span class="badge bg-warning text-dark">Em Andamento</span>
+        {% else %}
+          <span class="badge bg-success">Concluída</span>
+        {% endif %}
+        <div class="text-end">
+          <div class="fw-bold fs-5" id="etapa-total-top">{{ etapa.total_liquido_kg|floatformat:0 }} kg</div>
+          <small class="opacity-75">Total Líquido</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# ── Botão Adicionar Trator ──────────────────────────────────────────── #}
+  {% if etapa.status == 'ABERTA' %}
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h6 class="text-secondary mb-0"><i class="bi bi-truck me-1"></i>Frotas (Tratores)</h6>
+    <button class="btn btn-sm btn-outline-warning" data-bs-toggle="modal" data-bs-target="#modalAdicionarTrator">
+      <i class="bi bi-plus-circle me-1"></i>Adicionar Trator
+    </button>
+  </div>
+  {% endif %}
+
+  {# ── Lista de Tratores ───────────────────────────────────────────────── #}
+  {% for frota in frotas %}
+  <div class="card border-0 shadow-sm mb-4" id="frota-card-{{ frota.pk }}" data-frota-id="{{ frota.pk }}">
+    <div class="card-header bg-light d-flex justify-content-between align-items-center py-2">
+      <div>
+        <i class="bi bi-truck-front me-1 text-warning"></i>
+        <strong>{{ frota.trator }}</strong>
+        {% if frota.operador %}<span class="text-muted ms-2">· {{ frota.operador.nome_completo }}</span>{% endif %}
+      </div>
+      {% if etapa.status == 'ABERTA' %}
+      <div class="d-flex gap-2">
+        <button class="btn btn-xs btn-outline-secondary"
+                data-bs-toggle="modal"
+                data-bs-target="#modalHorimetro{{ frota.pk }}"
+                title="Registrar Horímetro Final">
+          <i class="bi bi-speedometer2 me-1"></i>Horímetro
+        </button>
+        <button class="btn btn-xs btn-outline-success btn-add-carrocao"
+                data-frota-id="{{ frota.pk }}"
+                data-frota-label="{{ frota.trator }}"
+                title="Adicionar Carroção">
+          <i class="bi bi-plus-square me-1"></i>+ Carroção
+        </button>
+      </div>
+      {% endif %}
+    </div>
+    <div class="card-body p-0" id="frota-carrocoes-{{ frota.pk }}">
+
+      {# Carroções ─────────────────────────────────────────────────────── #}
+      {% for carrocao in frota.carrocoes.all %}
+      <div class="border-bottom" id="carrocao-block-{{ carrocao.pk }}" data-carrocao-id="{{ carrocao.pk }}" data-frota-id="{{ frota.pk }}" data-carrocao-label="{{ carrocao.numero_identificacao|escape }}" data-tara="{{ carrocao.tara_kg|default:0 }}">
+        <div class="d-flex justify-content-between align-items-center px-3 py-2 bg-light bg-opacity-50">
+          <div>
+            <i class="bi bi-box-seam me-1 text-secondary"></i>
+            <strong>{{ carrocao.numero_identificacao }}</strong>
+            {% if carrocao.capacidade_ton %}
+              <span class="badge bg-secondary ms-1">{{ carrocao.capacidade_ton }} ton</span>
+            {% endif %}
+            {% if carrocao.tara_kg %}
+              <span class="text-muted small ms-1">Tara: {{ carrocao.tara_kg }} kg</span>
+            {% endif %}
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <span class="fw-bold text-success" id="carrocao-total-{{ carrocao.pk }}">{{ carrocao._total_viagens|floatformat:0 }} kg</span>
+            {% if etapa.status == 'ABERTA' %}
+            <button class="btn btn-xs btn-outline-primary btn-nova-viagem"
+                    data-carrocao-id="{{ carrocao.pk }}"
+                    data-tara="{{ carrocao.tara_kg|default:0 }}"
+                    data-label="{{ carrocao.numero_identificacao }}"
+                    title="Nova Pesagem">
+              <i class="bi bi-plus-circle me-1"></i>+ Viagem
+            </button>
+            {% if not carrocao.viagens.exists %}
+            <form method="post" action="{% url 'cadastros:colheita_carrocao_remover' os_pk=os.pk etapa_pk=etapa.pk carrocao_pk=carrocao.pk %}" class="d-inline">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-xs btn-outline-danger"
+                      onclick="return confirm('Remover {{ carrocao.numero_identificacao }}?')"
+                      title="Remover Carroção">
+                <i class="bi bi-trash"></i>
+              </button>
+            </form>
+            {% endif %}
+            {% endif %}
+          </div>
+        </div>
+
+        {# Tabela de viagens ──────────────────────────────────────────── #}
+        {% if carrocao.viagens.exists %}
+        <div class="table-responsive" id="viagens-wrap-{{ carrocao.pk }}">
+          <table class="table table-sm table-hover mb-0" style="font-size:.85rem;">
+            <thead class="table-light">
+              <tr>
+                <th>#</th>
+                <th>Bruto (kg)</th>
+                <th>Tara (kg)</th>
+                <th>Líquido (kg)</th>
+                <th>Umid.%</th>
+                <th>Imp.%</th>
+                <th>Desconto (kg)</th>
+                <th class="text-success">Final (kg)</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="viagens-body-{{ carrocao.pk }}">
+              {% for viagem in carrocao.viagens.all %}
+              <tr>
+                <td>{{ viagem.numero_viagem }}</td>
+                <td>{{ viagem.peso_bruto_kg|floatformat:0 }}</td>
+                <td>{{ viagem.tara_usada_kg|floatformat:0 }}</td>
+                <td>{{ viagem.peso_liquido_kg|floatformat:0 }}</td>
+                <td>{{ viagem.umidade_pct|default:"—" }}</td>
+                <td>{{ viagem.impureza_pct|default:"—" }}</td>
+                <td>{{ viagem.desconto_kg|floatformat:0 }}</td>
+                <td class="fw-bold text-success">{{ viagem.peso_final_kg|floatformat:0 }}</td>
+                <td>
+                  {% if etapa.status == 'ABERTA' %}
+                  <a href="{% url 'cadastros:colheita_viagem_editar' os_pk=os.pk etapa_pk=etapa.pk viagem_pk=viagem.pk %}"
+                     class="btn btn-xs btn-outline-secondary py-0 px-1" title="Editar">
+                    <i class="bi bi-pencil"></i>
+                  </a>
+                  <form method="post"
+                        action="{% url 'cadastros:colheita_viagem_excluir' os_pk=os.pk etapa_pk=etapa.pk viagem_pk=viagem.pk %}"
+                        class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-xs btn-outline-danger py-0 px-1"
+                            onclick="return confirm('Excluir viagem {{ viagem.numero_viagem }}?')"
+                            title="Excluir">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </form>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <p class="text-muted small px-3 py-2 mb-0 msg-sem-viagem" id="msg-sem-viagem-{{ carrocao.pk }}">Nenhuma viagem registrada ainda.</p>
+        {% endif %}
+      </div>
+      {% empty %}
+      <p class="text-muted small px-3 py-2 mb-0 msg-sem-carrocao" id="msg-sem-carrocao-{{ frota.pk }}">Nenhum carroção adicionado a este trator.</p>
+      {% endfor %}
+
+    </div>
+  </div>
+
+  {# Modal horímetro final ───────────────────────────────────────────── #}
+  <div class="modal fade" id="modalHorimetro{{ frota.pk }}" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h6 class="modal-title">Horímetro Final — {{ frota.trator }}</h6>
+          <button class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <form method="post" action="{% url 'cadastros:colheita_frota_horimetro' os_pk=os.pk etapa_pk=etapa.pk frota_pk=frota.pk %}">
+          {% csrf_token %}
+          <div class="modal-body">
+            <label class="form-label">Horímetro Final (h)</label>
+            <input type="number" name="horimetro_final" class="form-control"
+                   step="0.1" min="0"
+                   value="{{ frota.horimetro_final|default:'' }}">
+            {% if frota.horimetro_inicial %}
+            <div class="form-text">Inicial: {{ frota.horimetro_inicial }} h</div>
+            {% endif %}
+          </div>
+          <div class="modal-footer">
+            <button type="submit" class="btn btn-primary btn-sm">Salvar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+
+  {# ── Rodapé: Total e botão concluir ─────────────────────────────────── #}
+  <div class="card border-0 shadow-sm">
+    <div class="card-body d-flex justify-content-between align-items-center">
+      <div>
+        <strong class="fs-5">Total {{ etapa.numero_etapa }}ª Etapa:</strong>
+        <span class="fs-4 text-success fw-bold ms-2" id="etapa-total-bottom">{{ etapa.total_liquido_kg|floatformat:0 }} kg</span>
+      </div>
+      <div class="d-flex gap-2">
+        <a href="{% url 'cadastros:os_detail' pk=os.pk %}" class="btn btn-secondary">
+          <i class="bi bi-arrow-left me-1"></i>Voltar à OS
+        </a>
+        {% if pode_concluir %}
+        <form method="post" action="{% url 'cadastros:colheita_concluir' os_pk=os.pk etapa_pk=etapa.pk %}">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-success"
+                  onclick="return confirm('Concluir esta etapa? Esta ação não pode ser desfeita.')">
+            <i class="bi bi-check-circle me-1"></i>Concluir Etapa
+          </button>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+</div>
+
+{# ===== MODAIS ===== #}
+
+{# Modal Adicionar Trator ─────────────────────────────────────────────── #}
+<div class="modal fade" id="modalAdicionarTrator" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-truck-front me-2"></i>Adicionar Trator</h5>
+        <button class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="post" action="{% url 'cadastros:colheita_frota_adicionar' os_pk=os.pk etapa_pk=etapa.pk %}">
+        {% csrf_token %}
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label fw-semibold">Trator <span class="text-danger">*</span></label>
+              {{ frota_form.trator }}
+              {% if frota_form.trator.errors %}<div class="text-danger small">{{ frota_form.trator.errors }}</div>{% endif %}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Operador/Tratorista</label>
+              {{ frota_form.operador }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Horímetro Inicial (h)</label>
+              {{ frota_form.horimetro_inicial }}
+            </div>
+            <div class="col-12">
+              <label class="form-label fw-semibold">Observações</label>
+              {{ frota_form.observacoes }}
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-warning text-white">
+            <i class="bi bi-plus-circle me-1"></i>Adicionar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{# Modal Adicionar Carroção ───────────────────────────────────────────── #}
+<div class="modal fade" id="modalAdicionarCarrocao" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-box-seam me-2"></i>Adicionar Carroção</h5>
+        <button class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="post" id="formCarrocao"
+            action="">
+        {% csrf_token %}
+        <div class="modal-body">
+          <p class="text-muted small mb-3" id="carrocao-trator-label">—</p>
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label fw-semibold">Carroção <span class="text-danger">*</span></label>
+              {{ carrocao_form.veiculo }}
+              {% if carrocao_form.veiculo.errors %}<div class="text-danger small">{{ carrocao_form.veiculo.errors }}</div>{% endif %}
+            </div>
+            <div class="col-12">
+              <label class="form-label fw-semibold">Identificação <span class="text-danger">*</span></label>
+              {{ carrocao_form.numero_identificacao }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Capacidade (ton)</label>
+              {{ carrocao_form.capacidade_ton }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Tara (kg)</label>
+              {{ carrocao_form.tara_kg }}
+            </div>
+          </div>
+
+          {# Aviso de carroções em uso ───────────────────────────────── #}
+          {% if carrocoes_em_uso_ids %}
+          <div class="alert alert-warning mt-3 mb-0 py-2 small">
+            <i class="bi bi-exclamation-triangle me-1"></i>
+            Carroções em uso nesta etapa: {{ carrocoes_em_uso_ids|length }}
+            (marcados com <strong>[EM USO]</strong> na lista acima)
+          </div>
+          {% endif %}
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-success">
+            <i class="bi bi-plus-circle me-1"></i>Adicionar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{# Modal Nova Viagem ──────────────────────────────────────────────────── #}
+<div class="modal fade" id="modalNovaViagem" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-speedometer me-2"></i>Registrar Pesagem</h5>
+        <button class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="post" enctype="multipart/form-data" id="formViagem" action="">
+        {% csrf_token %}
+        <div class="modal-body">
+          <p class="text-muted small mb-3" id="viagem-carrocao-label">—</p>
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Peso Bruto (kg) <span class="text-danger">*</span></label>
+              {{ viagem_form.peso_bruto_kg }}
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Tara (kg) <span class="text-danger">*</span></label>
+              {{ viagem_form.tara_usada_kg }}
+              <div class="form-text" id="tara-hint">Herdada do carroção</div>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Desconto (kg)</label>
+              {{ viagem_form.desconto_kg }}
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Umidade (%)</label>
+              {{ viagem_form.umidade_pct }}
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Impureza (%)</label>
+              {{ viagem_form.impureza_pct }}
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Foto do Romaneio</label>
+              {{ viagem_form.foto_romaneio }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Saída do Campo</label>
+              {{ viagem_form.hora_saida_campo }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Chegada na Balança</label>
+              {{ viagem_form.hora_chegada_balanca }}
+            </div>
+            <div class="col-12">
+              <label class="form-label fw-semibold">Observações</label>
+              {{ viagem_form.observacoes }}
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-check-circle me-1"></i>Registrar Pesagem
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container position-fixed top-0 end-0 p-3" id="toastContainer" style="z-index:1080;"></div>
+
+{# ===== JS ===== #}
+<script>
+const EM_USO_IDS = new Set({{ carrocoes_em_uso_ids|safe }});
+const CARROCOES_AJAX_URL = "{% url 'cadastros:colheita_ajax_carrocoes' os_pk=os.pk etapa_pk=etapa.pk %}";
+const CARROCAO_REMOVE_URL_BASE = "{% url 'cadastros:colheita_carrocao_remover' os_pk=os.pk etapa_pk=etapa.pk carrocao_pk=0 %}";
+const VIAGEM_NOVA_URL_BASE = "{% url 'cadastros:colheita_viagem_nova' os_pk=os.pk etapa_pk=etapa.pk carrocao_pk=0 %}";
+
+const selectCarrocao = document.getElementById('{{ carrocao_form.veiculo.id_for_label }}');
+const formCarrocao = document.getElementById('formCarrocao');
+const formViagem = document.getElementById('formViagem');
+const modalCarrocaoEl = document.getElementById('modalAdicionarCarrocao');
+const modalViagemEl = document.getElementById('modalNovaViagem');
+
+let currentFrotaId = null;
+let currentCarrocaoId = null;
+
+function formatKg(valor) {
+  const n = Number(valor || 0);
+  return `${n.toLocaleString('pt-BR', { maximumFractionDigits: 0 })} kg`;
+}
+
+function updateEtapaTotals(totalEtapa) {
+  const texto = formatKg(totalEtapa);
+  const top = document.getElementById('etapa-total-top');
+  const bottom = document.getElementById('etapa-total-bottom');
+  if (top) top.textContent = texto;
+  if (bottom) bottom.textContent = texto;
+}
+
+function extractErrorText(payload) {
+  if (!payload) return 'Não foi possível concluir a operação.';
+  if (payload.erro) return payload.erro;
+  if (payload.errors) return payload.errors;
+  if (payload.erros) {
+    if (typeof payload.erros === 'string') return payload.erros;
+    const parts = [];
+    Object.keys(payload.erros).forEach(k => {
+      const v = payload.erros[k];
+      if (Array.isArray(v)) {
+        parts.push(`${k}: ${v.join(', ')}`);
+      } else {
+        parts.push(`${k}: ${v}`);
+      }
+    });
+    return parts.join(' | ');
+  }
+  return 'Não foi possível concluir a operação.';
+}
+
+function showToast(message, type = 'success') {
+  const container = document.getElementById('toastContainer');
+  if (!container) return;
+
+  const classes = {
+    success: 'text-bg-success',
+    error: 'text-bg-danger',
+    warning: 'text-bg-warning',
+    info: 'text-bg-info'
+  };
+
+  const toastEl = document.createElement('div');
+  toastEl.className = `toast align-items-center border-0 ${classes[type] || classes.info}`;
+  toastEl.setAttribute('role', 'alert');
+  toastEl.setAttribute('aria-live', 'assertive');
+  toastEl.setAttribute('aria-atomic', 'true');
+  toastEl.innerHTML = `
+    <div class="d-flex">
+      <div class="toast-body">${message}</div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Fechar"></button>
+    </div>
+  `;
+
+  container.appendChild(toastEl);
+  const toast = new bootstrap.Toast(toastEl, { delay: 3500 });
+  toast.show();
+
+  toastEl.addEventListener('hidden.bs.toast', () => toastEl.remove());
+}
+
+function getCsrfToken(form) {
+  const tokenInput = form ? form.querySelector('input[name="csrfmiddlewaretoken"]') : null;
+  return tokenInput ? tokenInput.value : '';
+}
+
+function limparTextoUso(texto) {
+  return (texto || '').replace(' [EM USO]', '').trim();
+}
+
+function clearFieldErrors(form) {
+  form.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+  form.querySelectorAll('.invalid-feedback.ajax-error').forEach(el => el.remove());
+}
+
+function showFieldErrors(form, erros) {
+  if (!erros || typeof erros !== 'object') return;
+  Object.keys(erros).forEach(fieldName => {
+    const input = form.querySelector(`[name="${fieldName}"]`);
+    if (!input) return;
+    input.classList.add('is-invalid');
+    const msgs = Array.isArray(erros[fieldName]) ? erros[fieldName] : [erros[fieldName]];
+    const fb = document.createElement('div');
+    fb.className = 'invalid-feedback ajax-error d-block';
+    fb.textContent = msgs.join(' ');
+    const anchor = input.closest('.input-group') || input;
+    anchor.after(fb);
+  });
+}
+
+function marcarCarrocoesEmUso() {
+  if (!selectCarrocao) return;
+  selectCarrocao.querySelectorAll('option').forEach(opt => {
+    if (!opt.value) return;
+    const id = parseInt(opt.value, 10);
+    const emUso = EM_USO_IDS.has(id);
+    opt.text = limparTextoUso(opt.text);
+    opt.disabled = emUso;
+    if (emUso) {
+      opt.text += ' [EM USO]';
+    }
+  });
+}
+
+function atualizarCarrocoesEmUsoAjax() {
+  if (!selectCarrocao) return Promise.resolve();
+
+  return fetch(CARROCOES_AJAX_URL, {
+    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+  })
+    .then(resp => {
+      if (!resp.ok) throw new Error('Falha ao carregar carroções em uso.');
+      return resp.json();
+    })
+    .then(data => {
+      if (!data || !Array.isArray(data.carrocoes)) return;
+
+      EM_USO_IDS.clear();
+      data.carrocoes.forEach(c => {
+        if (c.em_uso) EM_USO_IDS.add(Number(c.id));
+      });
+
+      marcarCarrocoesEmUso();
+    })
+    .catch(() => {
+      // Em caso de erro de rede, mantém o estado inicial da página.
+      marcarCarrocoesEmUso();
+    });
+}
+
+function bindNovaViagemButtons(root = document) {
+  root.querySelectorAll('.btn-nova-viagem').forEach(btn => {
+    if (btn.dataset.boundClick === '1') return;
+    btn.dataset.boundClick = '1';
+
+    btn.addEventListener('click', function() {
+      const carrocaoId = this.dataset.carrocaoId;
+      const tara = this.dataset.tara;
+      const label = this.dataset.label;
+      currentCarrocaoId = Number(carrocaoId);
+
+      formViagem.action = VIAGEM_NOVA_URL_BASE.replace('/0/', `/${carrocaoId}/`);
+      document.getElementById('viagem-carrocao-label').textContent = `Carroção: ${label}`;
+      const taraInput = formViagem.querySelector('[name="{{ viagem_form.tara_usada_kg.html_name }}"]');
+      if (taraInput && tara) taraInput.value = tara;
+      new bootstrap.Modal(modalViagemEl).show();
+    });
+  });
+}
+
+function ensureViagensTable(carrocaoId) {
+  let wrap = document.getElementById(`viagens-wrap-${carrocaoId}`);
+  if (wrap) return wrap;
+
+  const bloco = document.getElementById(`carrocao-block-${carrocaoId}`);
+  if (!bloco) return null;
+
+  const msg = document.getElementById(`msg-sem-viagem-${carrocaoId}`);
+  if (msg) msg.remove();
+
+  wrap = document.createElement('div');
+  wrap.className = 'table-responsive';
+  wrap.id = `viagens-wrap-${carrocaoId}`;
+  wrap.innerHTML = `
+    <table class="table table-sm table-hover mb-0" style="font-size:.85rem;">
+      <thead class="table-light">
+        <tr>
+          <th>#</th>
+          <th>Bruto (kg)</th>
+          <th>Tara (kg)</th>
+          <th>Líquido (kg)</th>
+          <th>Umid.%</th>
+          <th>Imp.%</th>
+          <th>Desconto (kg)</th>
+          <th class="text-success">Final (kg)</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="viagens-body-${carrocaoId}"></tbody>
+    </table>
+  `;
+  bloco.appendChild(wrap);
+  return wrap;
+}
+
+function addCarrocaoToDom(data) {
+  const frotaId = Number(data.frota_id || currentFrotaId);
+  const container = document.getElementById(`frota-carrocoes-${frotaId}`);
+  if (!container) return;
+
+  const msgSem = document.getElementById(`msg-sem-carrocao-${frotaId}`);
+  if (msgSem) msgSem.remove();
+
+  const carrocaoId = Number(data.carrocao_id);
+  const identificacao = data.identificacao || 'Carroção';
+  const capacidade = data.capacidade && data.capacidade !== '—' ? `${data.capacidade} ton` : '';
+  const tara = Number(data.tara || 0);
+
+  const bloco = document.createElement('div');
+  bloco.className = 'border-bottom';
+  bloco.id = `carrocao-block-${carrocaoId}`;
+  bloco.dataset.carrocaoId = String(carrocaoId);
+  bloco.dataset.frotaId = String(frotaId);
+  bloco.dataset.carrocaoLabel = identificacao;
+  bloco.dataset.tara = String(tara);
+  bloco.innerHTML = `
+    <div class="d-flex justify-content-between align-items-center px-3 py-2 bg-light bg-opacity-50">
+      <div>
+        <i class="bi bi-box-seam me-1 text-secondary"></i>
+        <strong>${identificacao}</strong>
+        ${capacidade ? `<span class="badge bg-secondary ms-1">${capacidade}</span>` : ''}
+        ${tara ? `<span class="text-muted small ms-1">Tara: ${tara} kg</span>` : ''}
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        <span class="fw-bold text-success" id="carrocao-total-${carrocaoId}">0 kg</span>
+        <button class="btn btn-xs btn-outline-primary btn-nova-viagem"
+                data-carrocao-id="${carrocaoId}"
+                data-tara="${tara}"
+                data-label="${identificacao}"
+                title="Nova Pesagem">
+          <i class="bi bi-plus-circle me-1"></i>+ Viagem
+        </button>
+        <form method="post" action="${CARROCAO_REMOVE_URL_BASE.replace('/0/', `/${carrocaoId}/`)}" class="d-inline">
+          <input type="hidden" name="csrfmiddlewaretoken" value="${getCsrfToken(formCarrocao)}">
+          <button type="submit" class="btn btn-xs btn-outline-danger"
+                  onclick="return confirm('Remover ${identificacao}?')"
+                  title="Remover Carroção">
+            <i class="bi bi-trash"></i>
+          </button>
+        </form>
+      </div>
+    </div>
+    <p class="text-muted small px-3 py-2 mb-0 msg-sem-viagem" id="msg-sem-viagem-${carrocaoId}">Nenhuma viagem registrada ainda.</p>
+  `;
+
+  container.appendChild(bloco);
+  bindNovaViagemButtons(bloco);
+}
+
+function addViagemToDom(data) {
+  const carrocaoId = Number(data.carrocao_id || currentCarrocaoId);
+  ensureViagensTable(carrocaoId);
+  const tbody = document.getElementById(`viagens-body-${carrocaoId}`);
+  if (!tbody) return;
+
+  const row = document.createElement('tr');
+  row.innerHTML = `
+    <td>${data.numero}</td>
+    <td>${Number(data.peso_bruto || 0).toLocaleString('pt-BR', { maximumFractionDigits: 0 })}</td>
+    <td>${Number(data.tara || 0).toLocaleString('pt-BR', { maximumFractionDigits: 0 })}</td>
+    <td>${Number(data.peso_liquido || 0).toLocaleString('pt-BR', { maximumFractionDigits: 0 })}</td>
+    <td>—</td>
+    <td>—</td>
+    <td>${Number(data.desconto || 0).toLocaleString('pt-BR', { maximumFractionDigits: 0 })}</td>
+    <td class="fw-bold text-success">${Number(data.peso_final || 0).toLocaleString('pt-BR', { maximumFractionDigits: 0 })}</td>
+    <td><span class="text-muted">—</span></td>
+  `;
+  tbody.appendChild(row);
+
+  const totalCarrocao = document.getElementById(`carrocao-total-${carrocaoId}`);
+  if (totalCarrocao) {
+    totalCarrocao.textContent = formatKg(data.total_carrocao || 0);
+  }
+
+  updateEtapaTotals(data.total_etapa || 0);
+}
+
+if (selectCarrocao) {
+  selectCarrocao.addEventListener('change', function() {
+    const opt = this.options[this.selectedIndex];
+    const idInput = document.querySelector('[name="{{ carrocao_form.numero_identificacao.html_name }}"]');
+    if (idInput && opt && opt.value && !idInput.value) {
+      idInput.value = limparTextoUso(opt.text);
+    }
+  });
+
+  marcarCarrocoesEmUso();
+}
+
+document.querySelectorAll('.btn-add-carrocao').forEach(btn => {
+  btn.addEventListener('click', function() {
+    const frotaId = this.dataset.frotaId;
+    const frotaLabel = this.dataset.frotaLabel;
+    currentFrotaId = Number(frotaId);
+    formCarrocao.action = `{% url 'cadastros:colheita_carrocao_adicionar' os_pk=os.pk etapa_pk=etapa.pk frota_pk=0 %}`.replace('/0/', `/${frotaId}/`);
+    document.getElementById('carrocao-trator-label').textContent = `Trator: ${frotaLabel}`;
+
+    atualizarCarrocoesEmUsoAjax().finally(() => {
+      new bootstrap.Modal(modalCarrocaoEl).show();
+    });
+  });
+});
+
+bindNovaViagemButtons();
+
+if (formCarrocao) {
+  formCarrocao.addEventListener('submit', function(ev) {
+    ev.preventDefault();
+    clearFieldErrors(this);
+
+    const submitBtn = this.querySelector('button[type="submit"]');
+    if (submitBtn) submitBtn.disabled = true;
+
+    fetch(this.action, {
+      method: 'POST',
+      headers: { 'X-Requested-With': 'XMLHttpRequest' },
+      body: new FormData(this)
+    })
+      .then(async resp => {
+        const payload = await resp.json().catch(() => ({}));
+        if (!resp.ok || !payload.ok) throw payload;
+        return payload;
+      })
+      .then(payload => {
+        addCarrocaoToDom(payload);
+        EM_USO_IDS.add(Number(payload.veiculo_id));
+        marcarCarrocoesEmUso();
+        bootstrap.Modal.getInstance(modalCarrocaoEl)?.hide();
+        this.reset();
+        showToast('Carroção adicionado com sucesso.', 'success');
+      })
+      .catch(err => {
+        showFieldErrors(this, err.erros);
+        showToast(extractErrorText(err), 'error');
+      })
+      .finally(() => {
+        if (submitBtn) submitBtn.disabled = false;
+      });
+  });
+}
+
+if (formViagem) {
+  formViagem.addEventListener('submit', function(ev) {
+    ev.preventDefault();
+    clearFieldErrors(this);
+
+    const submitBtn = this.querySelector('button[type="submit"]');
+    if (submitBtn) submitBtn.disabled = true;
+
+    fetch(this.action, {
+      method: 'POST',
+      headers: { 'X-Requested-With': 'XMLHttpRequest' },
+      body: new FormData(this)
+    })
+      .then(async resp => {
+        const payload = await resp.json().catch(() => ({}));
+        if (!resp.ok || !payload.ok) throw payload;
+        return payload;
+      })
+      .then(payload => {
+        addViagemToDom(payload);
+        bootstrap.Modal.getInstance(modalViagemEl)?.hide();
+        this.reset();
+        showToast('Pesagem registrada com sucesso.', 'success');
+      })
+      .catch(err => {
+        showFieldErrors(this, err.erros);
+        showToast(extractErrorText(err), 'error');
+      })
+      .finally(() => {
+        if (submitBtn) submitBtn.disabled = false;
+      });
+  });
+}
+</script>
+{% endblock %}

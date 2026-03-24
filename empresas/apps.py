@@ -12,7 +12,4 @@ class EmpresasConfig(AppConfig):
     
     def ready(self):
         """Importa signals do app para registrar handlers"""
-        try:
-            from . import signals  # noqa: F401
-        except Exception:
-            pass
+        from . import signals  # noqa: F401

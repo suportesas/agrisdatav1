@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% block title %}Excluir OS {{ os.numero }} | ERP Agrícola{% endblock %}
+{% block page_title %}Excluir Ordem de Serviço{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+  <div class="row justify-content-center">
+    <div class="col-md-6">
+      <div class="card border-0 shadow">
+        <div class="card-header bg-danger text-white">
+          <h5 class="mb-0"><i class="bi bi-exclamation-triangle me-2"></i>Confirmar Exclusão</h5>
+        </div>
+        <div class="card-body text-center py-4">
+          <i class="bi bi-clipboard-x text-danger" style="font-size: 3rem;"></i>
+          <h5 class="mt-3">Excluir OS <strong>{{ os.numero }}</strong>?</h5>
+          <p class="text-muted">
+            Tipo: <strong>{{ os.descricao_servico }}</strong><br>
+            Talhão: <strong>{{ os.talhao.nome }}</strong><br>
+            Status: <strong>{{ os.get_status_display }}</strong>
+          </p>
+          <p class="text-danger small">Esta ação não pode ser desfeita.</p>
+        </div>
+        <div class="card-footer d-flex gap-2 justify-content-end">
+          <a href="{% url 'cadastros:os_detail' os.pk %}" class="btn btn-secondary">
+            <i class="bi bi-x-circle me-1"></i>Cancelar
+          </a>
+          <form method="post">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger">
+              <i class="bi bi-trash me-1"></i>Sim, Excluir
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

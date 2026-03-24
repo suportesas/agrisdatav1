@@ -1,0 +1,399 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ titulo }} | ERP Agrícola{% endblock %}
+{% block page_title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+  <div class="row justify-content-center">
+    <div class="col-xl-10">
+
+      <form method="post" enctype="multipart/form-data" novalidate>
+        {% csrf_token %}
+
+        <!-- Identificação -->
+        <div class="card border-0 shadow-sm mb-4">
+          <div class="card-header text-white py-3"
+               style="background: linear-gradient(135deg, #10b981, #059669); border-radius: .5rem .5rem 0 0;">
+            <h5 class="mb-0"><i class="bi bi-clipboard-plus me-2"></i>Identificação da OS</h5>
+          </div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-md-4">
+                <label class="form-label fw-semibold">Tipo de Serviço <span class="text-danger">*</span></label>
+                {{ form.tipo_servico }}
+                {% if form.tipo_servico.errors %}<div class="text-danger small mt-1">{{ form.tipo_servico.errors }}</div>{% endif %}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-semibold">Operação</label>
+                {{ form.subtipo_servico }}
+                {% if form.subtipo_servico.errors %}<div class="text-danger small mt-1">{{ form.subtipo_servico.errors }}</div>{% endif %}
+                <div class="form-text text-muted" id="subtipo-hint">Selecione o Tipo de Serviço primeiro</div>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-semibold">Modalidade de Execução</label>
+                {{ form.modalidade_execucao }}
+                {% if form.modalidade_execucao.errors %}<div class="text-danger small mt-1">{{ form.modalidade_execucao.errors }}</div>{% endif %}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-semibold">Talhão <span class="text-danger">*</span></label>
+                {{ form.talhao }}
+                {% if form.talhao.errors %}<div class="text-danger small mt-1">{{ form.talhao.errors }}</div>{% endif %}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-semibold">Safra <small class="text-muted">(auto-preenchida)</small></label>
+                {{ form.safra }}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-semibold">Cultura Atual <small class="text-muted">(do talhão)</small></label>
+                <input type="text" id="id_cultura_display" class="form-control" disabled placeholder="—">
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-semibold">Responsável pela Execução</label>
+                {{ form.responsavel }}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-semibold">Data Prevista</label>
+                {{ form.data_prevista }}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-semibold">Área Executada (ha)</label>
+                {{ form.area_executada_ha }}
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Requisição de Insumos</label>
+                {{ form.requisicao }}
+              </div>
+              <div class="col-12">
+                <label class="form-label fw-semibold">Observações</label>
+                {{ form.observacoes }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Serviço Externo (Terceirizado) -->
+        <div class="card border-0 shadow-sm mb-4">
+          <div class="card-header bg-light py-3">
+            <h5 class="mb-0 text-secondary"><i class="bi bi-building me-2"></i>Serviço Terceirizado (Opcional)</h5>
+          </div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-md-5">
+                <label class="form-label fw-semibold">Fornecedor do Serviço</label>
+                {{ form.fornecedor_servico }}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-semibold">Valor do Serviço (R$)</label>
+                {{ form.valor_servico_externo }}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label fw-semibold">Unidade de Cobrança</label>
+                {{ form.unidade_cobranca }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mão de Obra -->
+        <div class="card border-0 shadow-sm mb-4">
+          <div class="card-header bg-light py-3 d-flex justify-content-between align-items-center">
+            <h5 class="mb-0 text-secondary"><i class="bi bi-people me-2"></i>Mão de Obra (Funcionários)</h5>
+            <button type="button" class="btn btn-sm btn-outline-success" id="add-func">
+              <i class="bi bi-plus-circle me-1"></i>Adicionar Funcionário
+            </button>
+          </div>
+          <div class="card-body">
+            {{ func_formset.management_form }}
+            <div id="func-formset-container">
+              {% for f in func_formset %}
+              <div class="func-form row g-2 align-items-end border-bottom pb-3 mb-3">
+                {{ f.id }}
+                {% if func_formset.can_delete %}
+                  <div class="d-none">{{ f.DELETE }}</div>
+                {% endif %}
+                <div class="col-md-3">
+                  <label class="form-label small">Funcionário</label>
+                  {{ f.funcionario }}
+                </div>
+                <div class="col-md-2">
+                  <label class="form-label small">Data</label>
+                  {{ f.data_execucao }}
+                </div>
+                <div class="col-md-2">
+                  <label class="form-label small">Início</label>
+                  {{ f.hora_inicio }}
+                </div>
+                <div class="col-md-2">
+                  <label class="form-label small">Término</label>
+                  {{ f.hora_fim }}
+                </div>
+                <div class="col-md-2">
+                  <label class="form-label small">Observações</label>
+                  {{ f.observacoes }}
+                </div>
+                <div class="col-md-1 d-flex align-items-end">
+                  <button type="button" class="btn btn-sm btn-outline-danger remove-form" title="Remover">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+
+        <!-- Maquinário -->
+        <div class="card border-0 shadow-sm mb-4">
+          <div class="card-header bg-light py-3 d-flex justify-content-between align-items-center">
+            <h5 class="mb-0 text-secondary"><i class="bi bi-truck me-2"></i>Maquinário Utilizado</h5>
+            <button type="button" class="btn btn-sm btn-outline-success" id="add-maq">
+              <i class="bi bi-plus-circle me-1"></i>Adicionar Máquina
+            </button>
+          </div>
+          <div class="card-body">
+            {{ maq_formset.management_form }}
+            <div id="maq-formset-container">
+              {% for m in maq_formset %}
+              <div class="maq-form row g-2 align-items-end border-bottom pb-3 mb-3">
+                {{ m.id }}
+                {% if maq_formset.can_delete %}
+                  <div class="d-none">{{ m.DELETE }}</div>
+                {% endif %}
+                <div class="col-md-3">
+                  <label class="form-label small">Veículo/Máquina</label>
+                  {{ m.veiculo }}
+                </div>
+                <div class="col-md-2">
+                  <label class="form-label small">Operador</label>
+                  {{ m.operador }}
+                </div>
+                <div class="col-md-2">
+                  <label class="form-label small">Data</label>
+                  {{ m.data_execucao }}
+                </div>
+                <div class="col-md-1">
+                  <label class="form-label small">Horímetro Ini.</label>
+                  {{ m.horimetro_inicial }}
+                </div>
+                <div class="col-md-1">
+                  <label class="form-label small">Horímetro Fim</label>
+                  {{ m.horimetro_final }}
+                </div>
+                <div class="col-md-2">
+                  <label class="form-label small">Config. Custo/h</label>
+                  {{ m.custo_hora_config }}
+                </div>
+                <div class="col-md-1 d-flex align-items-end">
+                  <button type="button" class="btn btn-sm btn-outline-danger remove-form" title="Remover">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+
+        <!-- Evidência Fotográfica (RN-03) -->
+        <div class="card border-0 shadow-sm mb-4">
+          <div class="card-header bg-light py-3">
+            <h5 class="mb-0 text-secondary">
+              <i class="bi bi-camera me-2"></i>Evidência Fotográfica
+              <small class="text-muted fw-normal">(Obrigatória para conclusão — RN-03)</small>
+            </h5>
+          </div>
+          <div class="card-body">
+            {{ form.foto_evidencia }}
+            {% if form.foto_evidencia.errors %}
+              <div class="text-danger small mt-1">{{ form.foto_evidencia.errors }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Botões -->
+        <div class="d-flex gap-2 justify-content-end">
+          <a href="{% url 'cadastros:os_list' %}" class="btn btn-secondary">
+            <i class="bi bi-x-circle me-1"></i>Cancelar
+          </a>
+          <button type="submit" class="btn btn-success px-4">
+            <i class="bi bi-check-circle me-1"></i>{{ action }} OS
+          </button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+// Adicionar linha de funcionário
+document.getElementById('add-func').addEventListener('click', function () {
+  const container = document.getElementById('func-formset-container');
+  const totalForms = document.getElementById('id_func-TOTAL_FORMS');
+  const count = parseInt(totalForms.value);
+  const lastForm = container.querySelector('.func-form:last-child');
+  if (!lastForm) return;
+  const newForm = lastForm.cloneNode(true);
+  newForm.querySelectorAll('input, select, textarea').forEach(el => {
+    el.name = el.name.replace(/-\d+-/, `-${count}-`);
+    el.id = el.id.replace(/-\d+-/, `-${count}-`);
+    if (el.type !== 'checkbox') el.value = '';
+    if (el.tagName === 'SELECT') el.selectedIndex = 0;
+  });
+  container.appendChild(newForm);
+  totalForms.value = count + 1;
+  attachRemove(newForm);
+});
+
+// Adicionar linha de máquina
+document.getElementById('add-maq').addEventListener('click', function () {
+  const container = document.getElementById('maq-formset-container');
+  const totalForms = document.getElementById('id_maq-TOTAL_FORMS');
+  const count = parseInt(totalForms.value);
+  const lastForm = container.querySelector('.maq-form:last-child');
+  if (!lastForm) return;
+  const newForm = lastForm.cloneNode(true);
+  newForm.querySelectorAll('input, select, textarea').forEach(el => {
+    el.name = el.name.replace(/-\d+-/, `-${count}-`);
+    el.id = el.id.replace(/-\d+-/, `-${count}-`);
+    if (el.type !== 'checkbox') el.value = '';
+    if (el.tagName === 'SELECT') el.selectedIndex = 0;
+  });
+  container.appendChild(newForm);
+  totalForms.value = count + 1;
+  attachRemove(newForm);
+});
+
+// Remover linha
+function attachRemove(row) {
+  const btn = row.querySelector('.remove-form');
+  if (btn) {
+    btn.addEventListener('click', function () {
+      const deleteInput = row.querySelector('input[type="checkbox"][name$="-DELETE"]');
+      if (deleteInput) {
+        deleteInput.checked = true;
+        row.style.display = 'none';
+      } else {
+        row.remove();
+      }
+    });
+  }
+}
+document.querySelectorAll('.remove-form').forEach(btn => {
+  attachRemove(btn.closest('.func-form, .maq-form'));
+});
+
+// Carregamento dinâmico de subtipos e modalidades
+const AJAX_URL = "{% url 'cadastros:os_ajax_opcoes_servico' %}";
+const tipoSelect = document.getElementById('id_tipo_servico');
+const subtipoSelect = document.getElementById('id_subtipo_servico');
+const modalidadeSelect = document.getElementById('id_modalidade_execucao');
+const subtipoHint = document.getElementById('subtipo-hint');
+
+function populateSelect(sel, items, selectedId) {
+  if (!sel) return;
+  const prev = String(selectedId || sel.value || '');
+  sel.innerHTML = '<option value="">---------</option>';
+  items.forEach(item => {
+    const opt = document.createElement('option');
+    opt.value = item.id;
+    opt.textContent = item.nome;
+    if (String(item.id) === prev) opt.selected = true;
+    sel.appendChild(opt);
+  });
+}
+
+function loadOpcoes(tipoId, keepSubtipo, keepModalidade) {
+  if (!tipoId) {
+    if (subtipoSelect) { subtipoSelect.innerHTML = '<option value="">---------</option>'; }
+    if (subtipoHint) subtipoHint.textContent = 'Selecione o Tipo de Serviço primeiro';
+    return;
+  }
+  fetch(AJAX_URL + '?tipo_id=' + tipoId)
+    .then(r => r.json())
+    .then(data => {
+      populateSelect(subtipoSelect, data.subtipos, keepSubtipo);
+      populateSelect(modalidadeSelect, data.modalidades, keepModalidade);
+      if (subtipoHint) subtipoHint.textContent = '';
+    })
+    .catch(() => {});
+}
+
+if (tipoSelect) {
+  tipoSelect.addEventListener('change', function () {
+    loadOpcoes(this.value, '', '');
+  });
+  // Carga inicial (edição): preserva valores já selecionados
+  const initSubtipo = subtipoSelect ? subtipoSelect.value : '';
+  const initModalidade = modalidadeSelect ? modalidadeSelect.value : '';
+  if (tipoSelect.value) {
+    loadOpcoes(tipoSelect.value, initSubtipo, initModalidade);
+  }
+}
+
+// ============== AUTO-PREENCHIMENTO DE SAFRA PELO TALHÃO ==============
+const AJAX_TALHAO_URL = "{% url 'cadastros:os_ajax_opcoes_talhao' %}";
+const talhaoSelect = document.getElementById('id_talhao');
+const safraSelect = document.getElementById('id_safra');
+const culturaInput = document.getElementById('id_cultura_display');
+
+function carregarSafrasTalhao(talhaoId, preservarSafra) {
+  if (!talhaoId) {
+    if (safraSelect) {
+      safraSelect.innerHTML = '<option value="">---------</option>';
+    }
+    if (culturaInput) {
+      culturaInput.value = '';
+      culturaInput.placeholder = 'Selecione um Talhão';
+    }
+    return;
+  }
+
+  fetch(AJAX_TALHAO_URL + '?talhao_id=' + talhaoId)
+    .then(r => r.json())
+    .then(data => {
+      // Atualiza campo cultura
+      if (culturaInput) {
+        culturaInput.value = data.cultura ? data.cultura.nome : '';
+        culturaInput.placeholder = data.cultura ? '' : 'Sem cultura plantada';
+      }
+
+      // Filtra safras do talhão
+      if (safraSelect) {
+        const valorAtual = preservarSafra || safraSelect.value || '';
+        safraSelect.innerHTML = '<option value="">---------</option>';
+        
+        if (data.safras.length > 0) {
+          data.safras.forEach(s => {
+            const opt = document.createElement('option');
+            opt.value = s.id;
+            opt.textContent = s.nome;
+            if (String(s.id) === String(valorAtual)) opt.selected = true;
+            safraSelect.appendChild(opt);
+          });
+          
+          // Auto-seleciona se houver apenas 1 safra
+          if (data.safras.length === 1 && !valorAtual) {
+            safraSelect.value = data.safras[0].id;
+          }
+        }
+      }
+    })
+    .catch(err => console.error('Erro ao carregar safras:', err));
+}
+
+if (talhaoSelect) {
+  talhaoSelect.addEventListener('change', function() {
+    carregarSafrasTalhao(this.value, '');
+  });
+
+  // Na edição: carrega safras iniciais se talhão já está selecionado
+  const safraAtual = safraSelect ? safraSelect.value : '';
+  if (talhaoSelect.value) {
+    carregarSafrasTalhao(talhaoSelect.value, safraAtual);
+  }
+}
+</script>
+{% endblock %}

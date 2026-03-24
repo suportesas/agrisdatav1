@@ -69,13 +69,10 @@ def dashboard_executivo(request):
     usuarios_ativos = Usuario.objects.filter(empresa__ativa=True).count()
     usuarios_superuser = Usuario.objects.filter(is_superuser=True).count()
     
-    # Receita estimada
-    receita_mensal = Decimal('0')
-    for empresa in Empresa.objects.filter(ativa=True):
-        if empresa.plano:
-            receita_mensal += empresa.plano.valor_mensal
-        if empresa.valor_mensalidade:
-            receita_mensal += empresa.valor_mensalidade
+    # Receita estimada (usar valor_mensalidade que é customizável por empresa)
+    receita_mensal = Empresa.objects.filter(ativa=True).aggregate(
+        total=Sum('valor_mensalidade')
+    )['total'] or Decimal('0')
     
     receita_anual_projetada = receita_mensal * 12
     

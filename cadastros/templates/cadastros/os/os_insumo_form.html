@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ titulo }} | ERP Agricola{% endblock %}
+{% block page_title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-8 col-xl-7">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header py-3" style="background: linear-gradient(135deg, #10b981, #059669); border-radius: .5rem .5rem 0 0;">
+          <h5 class="text-white mb-0"><i class="bi bi-box-seam me-2"></i>{{ titulo }}</h5>
+        </div>
+        <div class="card-body">
+          <div class="mb-3 text-muted small">
+            OS: <strong>{{ os.numero }}</strong>
+          </div>
+
+          <form method="post" novalidate>
+            {% csrf_token %}
+            <div class="row g-3">
+              <div class="col-md-8">
+                <label class="form-label fw-semibold">Produto</label>
+                {{ form.produto }}
+                {% if form.produto.errors %}<div class="text-danger small mt-1">{{ form.produto.errors }}</div>{% endif %}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-semibold">Unidade</label>
+                {{ form.unidade_medida }}
+                {% if form.unidade_medida.errors %}<div class="text-danger small mt-1">{{ form.unidade_medida.errors }}</div>{% endif %}
+              </div>
+
+              <div class="col-md-4">
+                <label class="form-label fw-semibold">Qtd. Planejada</label>
+                {{ form.quantidade_planejada }}
+                {% if form.quantidade_planejada.errors %}<div class="text-danger small mt-1">{{ form.quantidade_planejada.errors }}</div>{% endif %}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-semibold">Qtd. Aplicada</label>
+                {{ form.quantidade_aplicada }}
+                {% if form.quantidade_aplicada.errors %}<div class="text-danger small mt-1">{{ form.quantidade_aplicada.errors }}</div>{% endif %}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-semibold">Custo Unitario (R$)</label>
+                {{ form.custo_unitario }}
+                {% if form.custo_unitario.errors %}<div class="text-danger small mt-1">{{ form.custo_unitario.errors }}</div>{% endif %}
+              </div>
+
+              <div class="col-12">
+                <label class="form-label fw-semibold">Observacoes</label>
+                {{ form.observacoes }}
+                {% if form.observacoes.errors %}<div class="text-danger small mt-1">{{ form.observacoes.errors }}</div>{% endif %}
+              </div>
+            </div>
+
+            {% if form.non_field_errors %}
+            <div class="alert alert-danger mt-3 mb-0">{{ form.non_field_errors }}</div>
+            {% endif %}
+
+            <div class="d-flex justify-content-end gap-2 mt-4">
+              <a href="{% url 'cadastros:os_detail' pk=os.pk %}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left me-1"></i>Voltar
+              </a>
+              <button type="submit" class="btn btn-success">
+                <i class="bi bi-check2-circle me-1"></i>{{ action }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -114,7 +114,9 @@ document.addEventListener('DOMContentLoaded', function() {
       // Open parent submenu if exists
       const parentItem = link.closest('.nav-item.has-submenu');
       if (parentItem) {
-        parentItem.classList.add('open');
+        if (!parentItem.hasAttribute('data-start-collapsed')) {
+          parentItem.classList.add('open');
+        }
       }
       
       // Open parent nested submenu if exists

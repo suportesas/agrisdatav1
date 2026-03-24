@@ -187,7 +187,7 @@
                   Condições do Tempo
                 </label>
                 {{ form.condicoes_tempo }}
-                <small class="text-muted d-block mt-1">Ex: Nublado, ensolarado, chuva iminente</small>
+                <small class="text-muted d-block mt-1">Selecione a condição observada durante a visita</small>
                 {% if form.condicoes_tempo.errors %}
                   <div class="invalid-feedback d-block">{{ form.condicoes_tempo.errors.0 }}</div>
                 {% endif %}
@@ -409,13 +409,11 @@ document.addEventListener('DOMContentLoaded', function() {
               talhaoSelect.value = talhao.id;
               searchInput.value = `${talhao.codigo} - ${talhao.simples}`;
               
-              // Preencher cultura e safra automaticamente
-              preencherCulturaESafra(talhao);
-              
               resultsDiv.style.display = 'none';
               resultsDiv.innerHTML = '';
               
-              talhaoSelect.dispatchEvent(new Event('change'));
+              // Preencher cultura e safra usando o endpoint por ID
+              carregarInfoTalhao(talhao.id);
             });
             
             resultsDiv.appendChild(item);
@@ -441,32 +439,49 @@ document.addEventListener('DOMContentLoaded', function() {
   // ================================================================
   // SELEÇÃO DIRETA DO DROPDOWN
   // ================================================================
-  talhaoSelect.addEventListener('change', function() {
-    console.log('📋 Dropdown de talhão alterado:', this.value);
-    
-    if (this.value) {
-      const selectedOption = this.options[this.selectedIndex];
-      const talhaoId = this.value;
-      searchInput.value = selectedOption.text;
-      
-      console.log(`📡 Buscando dados do talhão ID: ${talhaoId} via AJAX...`);
-      
-      // Buscar dados completos do talhão para preencher safra e cultura
-      fetch(`/cadastros/ajax/buscar-talhoes/?q=${encodeURIComponent(selectedOption.text)}`)
-        .then(response => response.json())
-        .then(data => {
-          console.log('📦 Resposta AJAX do dropdown:', data);
-          if (data.talhoes && data.talhoes.length > 0) {
-            const talhaoData = data.talhoes.find(t => t.id == talhaoId);
-            if (talhaoData) {
-              console.log('✅ Dados do talhão encontrados:', talhaoData);
-              preencherCulturaESafra(talhaoData);
-            } else {
-              console.warn('⚠️ Talhão não encontrado na resposta', { talhaoId, ids: data.talhoes.map(t => t.id) });
-            }
+  function carregarInfoTalhao(talhaoId) {
+    if (!talhaoId) return;
+    fetch(`/cadastros/ajax/talhao-info/${talhaoId}/`)
+      .then(response => {
+        if (!response.ok) throw new Error('Talhão não encontrado');
+        return response.json();
+      })
+      .then(data => {
+        console.log('📦 Info do talhão:', data);
+
+        // Preencher Cultura
+        if (culturaSelect && data.cultura_id) {
+          culturaSelect.value = data.cultura_id;
+          culturaSelect.dispatchEvent(new Event('change'));
+          console.log(`✅ Cultura preenchida: ${data.cultura_nome}`);
+        }
+
+        // Preencher Safra
+        if (safraSelect) {
+          if (data.safra_id_auto) {
+            // Uma única safra ativa — preencher automaticamente
+            safraSelect.value = data.safra_id_auto;
+            safraSelect.dispatchEvent(new Event('change'));
+            console.log(`✅ Safra preenchida automaticamente (ID ${data.safra_id_auto})`);
+            mostraNotificacaoSafra('Safra selecionada automaticamente.', 'success');
+          } else if (data.safras_ativas && data.safras_ativas.length > 1) {
+            mostraNotificacaoSafra(
+              `Este talhão possui ${data.safras_ativas.length} safras ativas. Selecione a correta.`,
+              'warning'
+            );
+          } else if (!data.safras_ativas || data.safras_ativas.length === 0) {
+            mostraNotificacaoSafra('Este talhão não possui safras ativas.', 'warning');
           }
-        })
-        .catch(error => console.error('❌ Erro ao buscar dados do talhão:', error));
+        }
+      })
+      .catch(error => console.error('❌ Erro ao buscar info do talhão:', error));
+  }
+
+  talhaoSelect.addEventListener('change', function() {
+    const talhaoId = this.value;
+    console.log('📋 Dropdown de talhão alterado:', talhaoId);
+    if (talhaoId) {
+      carregarInfoTalhao(talhaoId);
     }
   });
   

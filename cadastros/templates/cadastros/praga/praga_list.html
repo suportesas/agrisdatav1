@@ -258,6 +258,7 @@
               <tr>
                 <th class="ps-4">Nome Comum</th>
                 <th>Nome Científico</th>
+                <th>Tipo</th>
                 <th class="text-center">Status</th>
                 <th class="text-center">Data Cadastro</th>
                 <th class="text-end pe-4">Ações</th>
@@ -282,6 +283,9 @@
                     {% else %}
                       <span class="text-muted">-</span>
                     {% endif %}
+                  </td>
+                  <td>
+                    <span class="badge bg-light text-dark border">{{ praga.get_tipo_praga_display }}</span>
                   </td>
                   <td class="text-center">
                     {% if praga.ativa %}
@@ -335,6 +339,10 @@
               {% endif %}
             </div>
             <div class="praga-card-info">
+              <small class="d-block mb-1">
+                <i class="bi bi-tags text-muted"></i>
+                Tipo: <strong>{{ praga.get_tipo_praga_display }}</strong>
+              </small>
               <small>
                 <i class="bi bi-calendar-event text-muted"></i>
                 Cadastrado em: {{ praga.data_cadastro|date:"d/m/Y" }}

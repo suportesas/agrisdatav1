@@ -325,42 +325,6 @@ class GrupoCorporativo(models.Model):
 
 
 class Empresa(models.Model):
-    from django.db.models.signals import post_save
-    from django.dispatch import receiver
-    from produtos.models import Categoria
-
-    CATEGORIAS_AGRICOLAS = [
-        {"codigo": "DEF", "nome": "Defensivo Agrícola", "condiciona_campos": True},
-        {"codigo": "FERT", "nome": "Fertilizante", "condiciona_campos": True},
-        {"codigo": "SEM", "nome": "Semente", "condiciona_campos": True},
-        {"codigo": "ADUB", "nome": "Adubo", "condiciona_campos": True},
-        {"codigo": "CORR", "nome": "Corretivo de Solo", "condiciona_campos": True},
-        {"codigo": "INOC", "nome": "Inoculante", "condiciona_campos": True},
-        {"codigo": "ADJV", "nome": "Adjuvante", "condiciona_campos": True},
-        {"codigo": "MAQ", "nome": "Máquina Agrícola", "condiciona_campos": False},
-        {"codigo": "VEIC", "nome": "Veículo", "condiciona_campos": False},
-        {"codigo": "FERR", "nome": "Ferramenta", "condiciona_campos": False},
-        {"codigo": "EQUIP", "nome": "Equipamento", "condiciona_campos": False},
-        {"codigo": "MOB", "nome": "Mobiliário", "condiciona_campos": False},
-        {"codigo": "IMOV", "nome": "Imóvel", "condiciona_campos": False},
-        {"codigo": "ATIV", "nome": "Ativo Imobilizado", "condiciona_campos": False, "patrimonial": True},
-        {"codigo": "OUT", "nome": "Outros", "condiciona_campos": False}
-    ]
-
-    @receiver(post_save, sender='empresas.Empresa')
-    def popular_categorias_empresa(sender, instance, created, **kwargs):
-        if created:
-            for cat in CATEGORIAS_AGRICOLAS:
-                Categoria.objects.get_or_create(
-                    codigo=cat["codigo"],
-                    empresa=instance,
-                    defaults={
-                        "nome": cat["nome"],
-                        "condiciona_campos": cat.get("condiciona_campos", False),
-                        "patrimonial": cat.get("patrimonial", False),
-                        "ativo": True
-                    }
-                )
     """
     Modelo central para Multi-tenant (Multiempresa)
     Cada empresa é um tenant isolado no sistema
@@ -885,4 +849,44 @@ class PermissionTemplate(models.Model):
 
     def __str__(self):
         return f"{self.nome} ({self.empresa.nome})"
+
+
+# ===== SIGNAL para popular categorias ao criar empresa =====
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+from produtos.models import Categoria
+
+CATEGORIAS_AGRICOLAS = [
+    {"codigo": "DEF", "nome": "Defensivo Agrícola", "condiciona_campos": True},
+    {"codigo": "FERT", "nome": "Fertilizante", "condiciona_campos": True},
+    {"codigo": "SEM", "nome": "Semente", "condiciona_campos": True},
+    {"codigo": "ADUB", "nome": "Adubo", "condiciona_campos": True},
+    {"codigo": "CORR", "nome": "Corretivo de Solo", "condiciona_campos": True},
+    {"codigo": "INOC", "nome": "Inoculante", "condiciona_campos": True},
+    {"codigo": "ADJV", "nome": "Adjuvante", "condiciona_campos": True},
+    {"codigo": "MAQ", "nome": "Máquina Agrícola", "condiciona_campos": False},
+    {"codigo": "VEIC", "nome": "Veículo", "condiciona_campos": False},
+    {"codigo": "FERR", "nome": "Ferramenta", "condiciona_campos": False},
+    {"codigo": "EQUIP", "nome": "Equipamento", "condiciona_campos": False},
+    {"codigo": "MOB", "nome": "Mobiliário", "condiciona_campos": False},
+    {"codigo": "IMOV", "nome": "Imóvel", "condiciona_campos": False},
+    {"codigo": "ATIV", "nome": "Ativo Imobilizado", "condiciona_campos": False, "patrimonial": True},
+    {"codigo": "OUT", "nome": "Outros", "condiciona_campos": False}
+]
+
+@receiver(post_save, sender=Empresa)
+def popular_categorias_empresa(sender, instance, created, **kwargs):
+    """Popula as categorias padrão ao criar uma nova empresa"""
+    if created:
+        for cat in CATEGORIAS_AGRICOLAS:
+            Categoria.objects.get_or_create(
+                codigo=cat["codigo"],
+                empresa=instance,
+                defaults={
+                    "nome": cat["nome"],
+                    "condiciona_campos": cat.get("condiciona_campos", False),
+                    "patrimonial": cat.get("patrimonial", False),
+                    "ativo": True
+                }
+            )
         

@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ titulo }} | ERP Agrícola{% endblock %}
+{% block page_title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+  <div class="row justify-content-center">
+    <div class="col-xl-7">
+
+      <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header text-white py-3"
+             style="background: linear-gradient(135deg, #f59e0b, #d97706); border-radius: .5rem .5rem 0 0;">
+          <h5 class="mb-0">
+            <i class="bi bi-basket me-2"></i>
+            {{ num_existentes|add:1 }}ª Etapa de Colheita — {{ os.numero }}
+          </h5>
+          <div class="small mt-1 opacity-75">
+            Talhão: {{ os.talhao.nome }}
+            {% if os.safra %} · Safra: {{ os.safra }}{% endif %}
+            · Máx. etapas desta cultura: {{ max_etapas }}
+          </div>
+        </div>
+        <div class="card-body">
+          <form method="post" novalidate>
+            {% csrf_token %}
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Supervisor de Campo</label>
+                {{ form.supervisor }}
+                {% if form.supervisor.errors %}<div class="text-danger small">{{ form.supervisor.errors }}</div>{% endif %}
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Data/Hora de Início</label>
+                {{ form.data_inicio }}
+                <div class="form-text">Deixe em branco para usar o horário atual.</div>
+              </div>
+              <div class="col-12">
+                <label class="form-label fw-semibold">Observações</label>
+                {{ form.observacoes }}
+              </div>
+            </div>
+            <div class="d-flex gap-2 justify-content-end mt-4">
+              <a href="{% url 'cadastros:os_detail' pk=os.pk %}" class="btn btn-secondary">
+                <i class="bi bi-x-circle me-1"></i>Cancelar
+              </a>
+              <button type="submit" class="btn btn-warning text-white px-4">
+                <i class="bi bi-play-circle me-1"></i>Iniciar Etapa
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}

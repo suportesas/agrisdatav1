@@ -1,0 +1,453 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ os.numero }} | ERP Agrícola{% endblock %}
+{% block page_title %}OS {{ os.numero }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+
+  <!-- Cabeçalho -->
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+      <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
+        <div>
+          <h4 class="fw-bold mb-1">{{ os.numero }}</h4>
+          <p class="text-muted mb-0">{{ os.descricao_servico }} — {{ os.talhao.nome }}
+            {% if os.safra %} / {{ os.safra.nome }}{% endif %}
+          </p>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+          <!-- Ações de status -->
+          {% if os.status == 'ABERTA' %}
+            <form method="post" action="{% url 'cadastros:os_aprovar' os.pk %}">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-primary">
+                <i class="bi bi-check2-circle me-1"></i>Aprovar
+              </button>
+            </form>
+          {% elif os.status == 'APROVADA' %}
+            <form method="post" action="{% url 'cadastros:os_iniciar' os.pk %}">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-info text-white">
+                <i class="bi bi-play-circle me-1"></i>Iniciar
+              </button>
+            </form>
+          {% elif os.status == 'EM_ANDAMENTO' %}
+            <a href="{% url 'cadastros:os_concluir' os.pk %}" class="btn btn-success">
+              <i class="bi bi-flag-fill me-1"></i>Concluir
+            </a>
+          {% endif %}
+
+          {% if os.status not in 'CONCLUIDA,CANCELADA' %}
+            <a href="{% url 'cadastros:os_update' os.pk %}" class="btn btn-outline-secondary">
+              <i class="bi bi-pencil me-1"></i>Editar
+            </a>
+          {% endif %}
+          <a href="{% url 'cadastros:os_list' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i>Voltar
+          </a>
+        </div>
+      </div>
+
+      <!-- Status badge -->
+      <div class="mt-3">
+        {% if os.status == 'ABERTA' %}
+          <span class="badge bg-warning text-dark fs-6 px-3">Aberta</span>
+        {% elif os.status == 'APROVADA' %}
+          <span class="badge bg-primary fs-6 px-3">Aprovada</span>
+        {% elif os.status == 'EM_ANDAMENTO' %}
+          <span class="badge bg-info text-dark fs-6 px-3">Em Andamento</span>
+        {% elif os.status == 'CONCLUIDA' %}
+          <span class="badge bg-success fs-6 px-3">Concluída</span>
+        {% elif os.status == 'CANCELADA' %}
+          <span class="badge bg-danger fs-6 px-3">Cancelada</span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <!-- Coluna esquerda: informações gerais -->
+    <div class="col-lg-7">
+
+      <!-- Dados da OS -->
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header py-3" style="background: linear-gradient(135deg, #10b981, #059669); border-radius: .5rem .5rem 0 0;">
+          <h6 class="text-white mb-0"><i class="bi bi-info-circle me-2"></i>Informações Gerais</h6>
+        </div>
+        <div class="card-body">
+          <dl class="row mb-0">
+            <dt class="col-sm-4 text-muted">Talhão</dt>
+            <dd class="col-sm-8">{{ os.talhao.nome }} ({{ os.talhao.area_hac }} ha)</dd>
+
+            <dt class="col-sm-4 text-muted">Safra</dt>
+            <dd class="col-sm-8">{{ os.safra.nome|default:"—" }}</dd>
+
+            <dt class="col-sm-4 text-muted">Responsável</dt>
+            <dd class="col-sm-8">{{ os.responsavel.nome_completo|default:"—" }}</dd>
+
+            <dt class="col-sm-4 text-muted">Solicitante</dt>
+            <dd class="col-sm-8">{{ os.solicitante|default:"—" }}</dd>
+
+            <dt class="col-sm-4 text-muted">Aprovador</dt>
+            <dd class="col-sm-8">{{ os.aprovador|default:"—" }}</dd>
+
+            <dt class="col-sm-4 text-muted">Data Prevista</dt>
+            <dd class="col-sm-8">{{ os.data_prevista|date:"d/m/Y"|default:"—" }}</dd>
+
+            <dt class="col-sm-4 text-muted">Início</dt>
+            <dd class="col-sm-8">{{ os.data_inicio|date:"d/m/Y H:i"|default:"—" }}</dd>
+
+            <dt class="col-sm-4 text-muted">Conclusão</dt>
+            <dd class="col-sm-8">{{ os.data_fim|date:"d/m/Y H:i"|default:"—" }}</dd>
+
+            <dt class="col-sm-4 text-muted">Área Executada</dt>
+            <dd class="col-sm-8">{% if os.area_executada_ha %}{{ os.area_executada_ha }} ha{% else %}—{% endif %}</dd>
+
+            {% if os.observacoes %}
+            <dt class="col-sm-4 text-muted">Observações</dt>
+            <dd class="col-sm-8">{{ os.observacoes }}</dd>
+            {% endif %}
+          </dl>
+        </div>
+      </div>
+
+      <!-- Mão de obra -->
+      {% if funcionarios %}
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-light py-2">
+          <h6 class="mb-0 text-secondary"><i class="bi bi-people me-2"></i>Mão de Obra</h6>
+        </div>
+        <div class="card-body p-0">
+          <table class="table table-sm align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Funcionário</th>
+                <th>Data</th>
+                <th>Início</th>
+                <th>Fim</th>
+                <th class="text-end">Horas</th>
+                <th class="text-end">Custo (R$)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for f in funcionarios %}
+              <tr>
+                <td>{{ f.funcionario.nome_completo }}</td>
+                <td>{{ f.data_execucao|date:"d/m/Y" }}</td>
+                <td>{{ f.hora_inicio|time:"H:i" }}</td>
+                <td>{{ f.hora_fim|time:"H:i" }}</td>
+                <td class="text-end">{{ f.horas_trabalhadas|floatformat:2 }}h</td>
+                <td class="text-end">R$ {{ f.custo_calculado|floatformat:2 }}</td>
+              </tr>
+              {% endfor %}
+              <tr class="table-light fw-bold">
+                <td colspan="5" class="text-end">Total Mão de Obra:</td>
+                <td class="text-end">R$ {{ custo_mo|floatformat:2 }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Maquinário -->
+      {% if maquinas %}
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-light py-2">
+          <h6 class="mb-0 text-secondary"><i class="bi bi-truck me-2"></i>Maquinário</h6>
+        </div>
+        <div class="card-body p-0">
+          <table class="table table-sm align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Veículo</th>
+                <th>Operador</th>
+                <th>Data</th>
+                <th class="text-end">Horas</th>
+                <th class="text-end">Litros</th>
+                <th class="text-end">Custo (R$)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for m in maquinas %}
+              <tr>
+                <td>{{ m.veiculo }}</td>
+                <td>{{ m.operador.nome_completo|default:"—" }}</td>
+                <td>{{ m.data_execucao|date:"d/m/Y" }}</td>
+                <td class="text-end">{{ m.horas_trabalhadas|floatformat:2 }}h</td>
+                <td class="text-end">{{ m.litros_consumidos|floatformat:1 }}L</td>
+                <td class="text-end">R$ {{ m.custo_calculado|floatformat:2 }}</td>
+              </tr>
+              {% endfor %}
+              <tr class="table-light fw-bold">
+                <td colspan="5" class="text-end">Total Maquinário:</td>
+                <td class="text-end">R$ {{ custo_maq|floatformat:2 }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Insumos lançados direto na OS -->
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-light py-2 d-flex justify-content-between align-items-center">
+          <h6 class="mb-0 text-secondary"><i class="bi bi-box-seam me-2"></i>Insumos da OS</h6>
+          {% if os.status != 'CONCLUIDA' and os.status != 'CANCELADA' %}
+          <a href="{% url 'cadastros:os_insumo_add' pk=os.pk %}" class="btn btn-sm btn-outline-primary">
+            <i class="bi bi-plus-circle me-1"></i>Adicionar Insumo
+          </a>
+          {% endif %}
+        </div>
+        <div class="card-body p-0">
+          {% if insumos_os %}
+          <table class="table table-sm align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Produto</th>
+                <th class="text-end">Planejado</th>
+                <th class="text-end">Aplicado</th>
+                <th class="text-end">Custo Unit.</th>
+                <th class="text-end">Total</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in insumos_os %}
+              <tr>
+                <td>
+                  <div class="fw-semibold">{{ item.produto.nome }}</div>
+                  <small class="text-muted">{{ item.unidade_medida.sigla|default:item.unidade_medida.nome|default:'—' }}</small>
+                </td>
+                <td class="text-end">{{ item.quantidade_planejada|default:'—' }}</td>
+                <td class="text-end">{{ item.quantidade_aplicada|floatformat:3 }}</td>
+                <td class="text-end">R$ {{ item.custo_unitario|default:0|floatformat:4 }}</td>
+                <td class="text-end fw-semibold">R$ {{ item.custo_total|floatformat:2 }}</td>
+                <td class="text-end">
+                  {% if os.status != 'CONCLUIDA' and os.status != 'CANCELADA' %}
+                  <a href="{% url 'cadastros:os_insumo_edit' pk=os.pk insumo_pk=item.pk %}" class="btn btn-outline-warning btn-sm" title="Editar">
+                    <i class="bi bi-pencil"></i>
+                  </a>
+                  <a href="{% url 'cadastros:os_insumo_delete' pk=os.pk insumo_pk=item.pk %}" class="btn btn-outline-danger btn-sm" title="Excluir">
+                    <i class="bi bi-trash"></i>
+                  </a>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+              <tr class="table-light fw-bold">
+                <td colspan="4" class="text-end">Total de Insumos:</td>
+                <td class="text-end">R$ {{ custo_ins|floatformat:2 }}</td>
+                <td></td>
+              </tr>
+            </tbody>
+          </table>
+          {% else %}
+          <div class="p-3 text-muted small">
+            Nenhum insumo lançado diretamente nesta OS.
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Coluna direita: custos e evidência -->
+    <div class="col-lg-5">
+
+      <!-- Resumo de Custos -->
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header py-3" style="background: linear-gradient(135deg, #10b981, #059669); border-radius: .5rem .5rem 0 0;">
+          <h6 class="text-white mb-0"><i class="bi bi-currency-dollar me-2"></i>Resumo de Custos</h6>
+        </div>
+        <div class="card-body">
+          <table class="table table-borderless table-sm mb-0">
+            <tr>
+              <td class="text-muted">Mão de Obra</td>
+              <td class="text-end fw-semibold">R$ {{ custo_mo|floatformat:2 }}</td>
+            </tr>
+            <tr>
+              <td class="text-muted">Maquinário</td>
+              <td class="text-end fw-semibold">R$ {{ custo_maq|floatformat:2 }}</td>
+            </tr>
+            <tr>
+              <td class="text-muted">Insumos</td>
+              <td class="text-end fw-semibold">R$ {{ custo_ins|floatformat:2 }}</td>
+            </tr>
+            <tr>
+              <td class="text-muted">Serviço Externo</td>
+              <td class="text-end fw-semibold">R$ {{ custo_serv|floatformat:2 }}</td>
+            </tr>
+            <tr class="border-top">
+              <td class="fw-bold fs-6">Total</td>
+              <td class="text-end fw-bold fs-6 text-success">R$ {{ custo_total|floatformat:2 }}</td>
+            </tr>
+            {% if os.area_executada_ha %}
+            <tr>
+              <td class="text-muted small">Custo/Hectare</td>
+              <td class="text-end fw-semibold small">R$ {{ custo_ha|floatformat:2 }}/ha</td>
+            </tr>
+            {% endif %}
+          </table>
+        </div>
+      </div>
+
+      {% if movimentacoes_os %}
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-light py-2">
+          <h6 class="mb-0 text-secondary"><i class="bi bi-box-arrow-up-right me-2"></i>Baixas de Estoque da OS</h6>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-sm table-hover mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Produto</th>
+                  <th class="text-end">Quantidade</th>
+                  <th>Executado por</th>
+                  <th>Data</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for mov in movimentacoes_os %}
+                <tr>
+                  <td>{{ mov.produto.nome|default:"—" }}</td>
+                  <td class="text-end">
+                    {{ mov.quantidade|floatformat:3 }}
+                    {{ mov.unidade_medida.sigla|default:mov.unidade_medida.nome|default:"" }}
+                  </td>
+                  <td>{{ mov.executado_por|default:"—" }}</td>
+                  <td>{{ mov.data_execucao|date:"d/m/Y H:i"|default:"—" }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Serviço Externo -->
+      {% if os.fornecedor_servico %}
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-light py-2">
+          <h6 class="mb-0 text-secondary"><i class="bi bi-building me-2"></i>Serviço Terceirizado</h6>
+        </div>
+        <div class="card-body">
+          <dl class="row mb-0">
+            <dt class="col-5 text-muted">Fornecedor</dt>
+            <dd class="col-7">{{ os.fornecedor_servico.nome }}</dd>
+            <dt class="col-5 text-muted">Valor</dt>
+            <dd class="col-7">R$ {{ os.valor_servico_externo|floatformat:2 }}</dd>
+            <dt class="col-5 text-muted">Cobrança</dt>
+            <dd class="col-7">{{ os.get_unidade_cobranca_display|default:"—" }}</dd>
+          </dl>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Foto de Evidência -->
+      {% if os.foto_evidencia %}
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-light py-2">
+          <h6 class="mb-0 text-secondary"><i class="bi bi-camera me-2"></i>Evidência Fotográfica (RN-03)</h6>
+        </div>
+        <div class="card-body text-center">
+          <img src="{{ os.foto_evidencia.url }}" class="img-fluid rounded" style="max-height: 300px;" alt="Evidência">
+        </div>
+      </div>
+      {% endif %}
+
+      {% if os.status == 'CONCLUIDA' and not os.foto_evidencia %}
+      <div class="alert alert-danger">
+        <i class="bi bi-exclamation-triangle me-2"></i>
+        <strong>RN-03:</strong> Evidência fotográfica não registrada.
+      </div>
+      {% endif %}
+
+    </div>
+  </div>
+
+  <!-- ===== Colheita ===== -->
+  {% if tipo_legado == 'COLHEITA' %}
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center py-3"
+         style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+      <h6 class="text-white mb-0"><i class="bi bi-basket me-2"></i>Controle de Colheita</h6>
+      {% if os.status == 'EM_ANDAMENTO' %}
+        <a href="{% url 'cadastros:colheita_nova_etapa' os_pk=os.pk %}"
+           class="btn btn-sm btn-light text-warning fw-semibold">
+          <i class="bi bi-plus-circle me-1"></i>Nova Etapa de Colheita
+        </a>
+      {% endif %}
+    </div>
+    <div class="card-body p-0">
+      {% if etapas_colheita %}
+      <table class="table table-sm table-hover mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Etapa</th>
+            <th>Status</th>
+            <th>Início</th>
+            <th class="text-end">Total (kg)</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for etapa in etapas_colheita %}
+          <tr>
+            <td>{{ etapa.numero_etapa }}ª Etapa</td>
+            <td>
+              {% if etapa.status == 'ABERTA' %}
+                <span class="badge bg-warning text-dark">Em Andamento</span>
+              {% else %}
+                <span class="badge bg-success">Concluída</span>
+              {% endif %}
+            </td>
+            <td>{{ etapa.data_inicio|date:"d/m H:i"|default:"—" }}</td>
+            <td class="text-end fw-bold">{{ etapa.total_liquido_kg|floatformat:0 }} kg</td>
+            <td>
+              <a href="{% url 'cadastros:colheita_detalhe' os_pk=os.pk etapa_pk=etapa.pk %}"
+                 class="btn btn-xs btn-outline-warning py-0 px-2">
+                <i class="bi bi-arrow-right"></i> Abrir
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot class="table-light">
+          <tr>
+            <td colspan="3" class="text-end fw-bold">Total Colhido:</td>
+            <td class="text-end fw-bold text-success">{{ total_colheita_kg|floatformat:0 }} kg</td>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table>
+      {% else %}
+      <div class="p-4 text-muted text-center">
+        <i class="bi bi-basket display-6 opacity-25"></i>
+        <p class="mt-2 mb-0">Nenhuma etapa de colheita registrada ainda.</p>
+        {% if os.status == 'EM_ANDAMENTO' %}
+          <a href="{% url 'cadastros:colheita_nova_etapa' os_pk=os.pk %}" class="btn btn-warning mt-3">
+            <i class="bi bi-plus-circle me-1"></i>Iniciar 1ª Etapa de Colheita
+          </a>
+        {% endif %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Ações de exclusão -->
+  {% if os.status != 'CONCLUIDA' %}
+  <div class="mt-2 text-end">
+    <a href="{% url 'cadastros:os_delete' os.pk %}" class="btn btn-outline-danger btn-sm">
+      <i class="bi bi-trash me-1"></i>Excluir OS
+    </a>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

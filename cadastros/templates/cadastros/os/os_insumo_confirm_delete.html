@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+
+{% block title %}Remover Insumo | ERP Agricola{% endblock %}
+{% block page_title %}Remover Insumo{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-6">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <h5 class="mb-3">Remover insumo da OS {{ os.numero }}?</h5>
+          <p class="text-muted mb-3">
+            Produto: <strong>{{ insumo.produto.nome }}</strong><br>
+            Qtd. aplicada: <strong>{{ insumo.quantidade_aplicada }}</strong>
+          </p>
+
+          <form method="post" class="d-flex justify-content-end gap-2">
+            {% csrf_token %}
+            <a href="{% url 'cadastros:os_detail' pk=os.pk %}" class="btn btn-outline-secondary">Cancelar</a>
+            <button type="submit" class="btn btn-danger">Remover</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

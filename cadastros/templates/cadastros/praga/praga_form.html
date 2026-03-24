@@ -59,6 +59,19 @@
               </div>
 
               <div class="mb-3">
+                <label for="{{ form.tipo_praga.id_for_label }}" class="form-label fw-bold">
+                  Tipo de Praga <span class="text-danger">*</span>
+                </label>
+                {{ form.tipo_praga }}
+                {% if form.tipo_praga.errors %}
+                  <div class="invalid-feedback d-block">
+                    {{ form.tipo_praga.errors }}
+                  </div>
+                {% endif %}
+                <small class="form-text text-muted">Classifique conforme a natureza da praga</small>
+              </div>
+
+              <div class="mb-3">
                 <label for="{{ form.foto.id_for_label }}" class="form-label fw-bold">
                   <i class="bi bi-image text-info"></i> Foto da Praga
                 </label>

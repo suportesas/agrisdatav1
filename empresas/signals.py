@@ -1,41 +1,20 @@
-@receiver(post_save, sender=Empresa)
-def seed_tipos_produto_on_create(sender, instance, created, **kwargs):
-    """Cria tipos de produto padrão quando uma Empresa é criada."""
-    if not created:
-        return
-
-    try:
-        from produtos.tipo_produto_seed import seed_tipos_produto_for_empresa
-        criados, ignorados = seed_tipos_produto_for_empresa(instance)
-        # Log silencioso
-    except Exception as e:
-        pass
-
-
-# --- NOVO: Seed de categorias padrão ao criar empresa ---
-@receiver(post_save, sender=Empresa)
-def seed_categorias_on_create(sender, instance, created, **kwargs):
-    """Cria categorias padrão quando uma Empresa é criada."""
-    if not created:
-        return
-    try:
-        from produtos.categoria_seed import seed_categorias_for_empresa
-        criados, ignorados = seed_categorias_for_empresa(instance)
-        # Log silencioso
-    except Exception:
-        pass
-
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from django.conf import settings
+from django.core.management import call_command
+import os
+import logging
 
 from .models import Empresa, Role
+
+logger = logging.getLogger(__name__)
 
 # Reuse DEFAULT_ROLES from management command to keep a single source
 try:
     from .management.commands.seed_roles import DEFAULT_ROLES
 except Exception:
     DEFAULT_ROLES = [
-        'Proprietário',
+        'Proprietario',
         'Almoxarife',
         'Operacional do Campo',
         'Financeiro',
@@ -46,7 +25,7 @@ except Exception:
 
 @receiver(post_save, sender=Empresa)
 def create_default_roles(sender, instance, created, **kwargs):
-    """Cria roles padrão quando uma Empresa é criada (idempotente)."""
+    """Cria roles padrao quando uma Empresa e criada (idempotente)."""
     if not created:
         return
 
@@ -56,67 +35,119 @@ def create_default_roles(sender, instance, created, **kwargs):
 
 @receiver(post_save, sender=Empresa)
 def seed_ncms_on_create(sender, instance, created, **kwargs):
-    """Seeds company NCMs when empresa is created and auto_seed_ncm is True."""
+    """Seed de NCMs da empresa ao criar empresa."""
     if not created:
         return
 
-    # Lazy import to avoid circular imports
     try:
-        from cadastros.tasks import seed_ncms_for_company_async
+        from cadastros.models import NCM
+        # Síncrono para garantir que os NCMs já existam após o cadastro da empresa.
+        from cadastros.tasks import seed_ncms_for_company
+
+        # Se templates globais estiverem vazios, tenta bootstrap via CSV local.
+        if NCM.objects.filter(ativo=True).count() == 0:
+            csv_path = os.path.join(settings.BASE_DIR, 'NCM_import.csv')
+            if os.path.exists(csv_path):
+                call_command('import_ncm', path=csv_path)
+
         if getattr(instance, 'auto_seed_ncm', False):
-            seed_ncms_for_company_async(instance.pk)
+            seed_ncms_for_company(instance.pk)
     except Exception:
-        # Fail silently; admin can trigger via action
-        pass
+        # Nao deve bloquear criacao de empresa
+        logger.exception('Falha ao seedar NCMs para empresa %s', instance.pk)
 
 
-# --- NEW: Seed CFOPs for Empresa on creation ---
 @receiver(post_save, sender=Empresa)
 def seed_cfops_on_create(sender, instance, created, **kwargs):
-    """Seeds company CFOPs when empresa is created."""
+    """Seed de CFOPs da empresa ao criar empresa."""
     if not created:
         return
 
     try:
         from cadastros.models import CFOP, EmpresaCFOP
+
+        # Se templates globais estiverem vazios, tenta bootstrap via CSV local.
+        if CFOP.objects.filter(ativo=True).count() == 0:
+            csv_path = os.path.join(settings.BASE_DIR, 'CFOP_import.csv')
+            if os.path.exists(csv_path):
+                call_command('importa_cfop', file=csv_path)
+
         templates = CFOP.objects.filter(ativo=True).order_by('codigo')
         bulk = []
+        existing_codes = set(EmpresaCFOP.objects.filter(empresa=instance).values_list('codigo', flat=True))
+
         for t in templates:
-            bulk.append(EmpresaCFOP(empresa=instance, codigo=t.codigo, nome=t.nome, descricao=t.descricao, ativo=t.ativo, template=t))
+            if t.codigo in existing_codes:
+                continue
+            bulk.append(
+                EmpresaCFOP(
+                    empresa=instance,
+                    codigo=t.codigo,
+                    nome=t.nome,
+                    descricao=t.descricao,
+                    ativo=t.ativo,
+                    template=t,
+                )
+            )
+
         if bulk:
             EmpresaCFOP.objects.bulk_create(bulk)
     except Exception:
-        # Fail silently; admin can trigger via action
-        pass
+        # Nao deve bloquear criacao de empresa
+        logger.exception('Falha ao seedar CFOPs para empresa %s', instance.pk)
 
 
 @receiver(post_save, sender=Empresa)
 def seed_pragas_on_create(sender, instance, created, **kwargs):
-    """Cria pragas pré-definidas quando uma Empresa é criada."""
+    """Cria pragas pre-definidas quando uma Empresa e criada."""
     if not created:
         return
 
-    # Lazy import to avoid circular imports
     try:
         from cadastros.pragas_seed import seed_pragas_for_company
-        criadas, ignoradas = seed_pragas_for_company(instance)
-        # Log silencioso - pode adicionar logging se necessário
-    except Exception as e:
-        # Fail silently; não deve bloquear criação de empresa
+        seed_pragas_for_company(instance)
+    except Exception:
+        # Nao deve bloquear criacao de empresa
         pass
 
 
 @receiver(post_save, sender=Empresa)
 def seed_defensivos_on_create(sender, instance, created, **kwargs):
-    """Cria defensivos pré-definidos quando uma Empresa é criada."""
+    """Cria defensivos pre-definidos quando uma Empresa e criada."""
     if not created:
         return
 
-    # Lazy import to avoid circular imports
     try:
         from produtos.defensivos_seed import seed_defensivos_for_empresa
-        criados, ignorados = seed_defensivos_for_empresa(instance)
-        # Log silencioso - pode adicionar logging se necessário
-    except Exception as e:
-        # Fail silently; não deve bloquear criação de empresa
+        seed_defensivos_for_empresa(instance)
+    except Exception:
+        # Nao deve bloquear criacao de empresa
+        pass
+
+
+@receiver(post_save, sender=Empresa)
+def seed_categorias_on_create(sender, instance, created, **kwargs):
+    """Cria categorias padrao quando uma Empresa e criada."""
+    if not created:
+        return
+
+    try:
+        from produtos.categoria_seed import seed_categorias_for_empresa
+        seed_categorias_for_empresa(instance)
+    except Exception:
+        # Nao deve bloquear criacao de empresa
+        pass
+
+
+@receiver(post_save, sender=Empresa)
+def seed_tipos_produto_on_create(sender, instance, created, **kwargs):
+    """Cria tipos de produto padrao quando uma Empresa e criada."""
+    if not created:
+        return
+
+    try:
+        from produtos.tipo_produto_seed import seed_tipos_produto_for_empresa
+        seed_tipos_produto_for_empresa(instance)
+    except Exception:
+        # Nao deve bloquear criacao de empresa
         pass

@@ -1,4 +1,5 @@
 from django import forms
+from django.core.exceptions import ValidationError
 from django.forms.widgets import Select
 from .models import UnidadeMedida, Categoria, SubCategoria, Produto, ProdutoTributacao, NaturezaOperacao, ProdutoDefensivoCultura, TipoProduto
 
@@ -122,6 +123,7 @@ class ProdutoForm(forms.ModelForm):
             self.fields['unidade_medida'].queryset = UnidadeMedida.objects.filter(empresa=empresa)
             self.fields['unidade_compra'].queryset = UnidadeMedida.objects.filter(empresa=empresa)
             self.fields['unidade_venda'].queryset = UnidadeMedida.objects.filter(empresa=empresa)
+            self.fields['unidade_dosagem'].queryset = UnidadeMedida.objects.filter(empresa=empresa)
     
     class Meta:
         model = Produto
@@ -258,6 +260,28 @@ class ProdutoForm(forms.ModelForm):
             'corrosivo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'toxico': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
+
+    def clean(self):
+        cleaned_data = super().clean()
+
+        for campo, valor in cleaned_data.items():
+            setattr(self.instance, campo, valor)
+
+        try:
+            self.instance.clean()
+        except ValidationError as exc:
+            if hasattr(exc, 'message_dict'):
+                for campo, mensagens in exc.message_dict.items():
+                    if campo in self.fields:
+                        for mensagem in mensagens:
+                            self.add_error(campo, mensagem)
+                    else:
+                        for mensagem in mensagens:
+                            self.add_error(None, mensagem)
+            else:
+                self.add_error(None, exc)
+
+        return cleaned_data
 
 
 class ProdutoTributacaoForm(forms.ModelForm):

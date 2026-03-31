@@ -1,5 +1,6 @@
 # Método utilitário para recalcular estoque do produto
 from decimal import Decimal
+from django.core.exceptions import ValidationError
 from django.db import models
 
 def recalcular_estoque(self):
@@ -317,9 +318,150 @@ class Produto(models.Model):
         verbose_name = 'Produto'
         verbose_name_plural = 'Produtos'
         ordering = ['nome']
+
+    CAMPOS_DEFENSIVO = [
+        'classe_agronomica',
+        'ingrediente_ativo',
+        'concentracao',
+        'registro_mapa',
+        'classe_toxicologica',
+        'classe_ambiental',
+        'periodo_carencia',
+        'intervalo_reaplicacao',
+        'periodo_reentrada',
+        'paises_proibidos',
+    ]
+
+    CAMPOS_FERTILIZANTE = [
+        'tipo_fertilizante',
+        'formula_npk',
+        'nitrogenio_n',
+        'fosforo_p2o5',
+        'potassio_k2o',
+        'enxofre_s',
+        'calcio_ca',
+        'magnesio_mg',
+        'micronutrientes',
+    ]
+
+    CAMPOS_DOSAGEM_APLICACAO = [
+        'dosagem_minima',
+        'dosagem_maxima',
+        'unidade_dosagem',
+        'modo_aplicacao',
+    ]
+
+    CAMPOS_SEGURANCA_AGRICOLA = [
+        'culturas_registradas',
+        'intervalo_seguranca',
+        'epi_obrigatorio',
+        'incompatibilidades',
+        'temperatura_armazenamento',
+        'inflamavel',
+        'corrosivo',
+        'toxico',
+    ]
     
     def __str__(self):
         return f"{self.codigo} - {self.nome}"
+
+    def clean(self):
+        super().clean()
+
+        errors = {}
+
+        if self.subcategoria and self.categoria_id and self.subcategoria.categoria_id != self.categoria_id:
+            errors['subcategoria'] = 'A subcategoria selecionada não pertence à categoria informada.'
+
+        self._validar_unidades(errors)
+        self._validar_campos_agricolas(errors)
+
+        if self.validade_obrigatoria and not self.dias_validade:
+            errors['dias_validade'] = 'Informe os dias de validade quando a validade for obrigatória.'
+
+        if self.dias_validade is not None and self.dias_validade < 0:
+            errors['dias_validade'] = 'Os dias de validade não podem ser negativos.'
+
+        if self.estoque_minimo and self.estoque_maximo and self.estoque_minimo > self.estoque_maximo:
+            errors['estoque_maximo'] = 'O estoque máximo deve ser maior ou igual ao estoque mínimo.'
+
+        if self.dosagem_minima is not None and self.dosagem_maxima is not None and self.dosagem_minima > self.dosagem_maxima:
+            errors['dosagem_maxima'] = 'A dosagem máxima deve ser maior ou igual à dosagem mínima.'
+
+        if errors:
+            raise ValidationError(errors)
+
+    def _validar_unidades(self, errors):
+        unidades = [
+            ('unidade_medida', self.unidade_medida),
+            ('unidade_compra', self.unidade_compra),
+            ('unidade_venda', self.unidade_venda),
+        ]
+
+        tipos = {unidade.tipo for _, unidade in unidades if unidade}
+        if len(tipos) > 1:
+            mensagem = 'As unidades de medida, compra e venda devem possuir o mesmo tipo.'
+            for campo, unidade in unidades:
+                if unidade:
+                    errors[campo] = mensagem
+
+        if self.fator_conversao is not None and self.fator_conversao <= 0:
+            errors['fator_conversao'] = 'O fator de conversão deve ser maior que zero.'
+
+    def _validar_campos_agricolas(self, errors):
+        categoria_agricola = (self.categoria_agricola or '').strip()
+
+        if not categoria_agricola:
+            self._limpar_campos_nao_agricolas()
+            return
+
+        if categoria_agricola == 'DEFENSIVO':
+            if not self.classe_agronomica:
+                errors['classe_agronomica'] = 'Classe agronômica é obrigatória para defensivos.'
+            if not (self.ingrediente_ativo or '').strip():
+                errors['ingrediente_ativo'] = 'Ingrediente ativo é obrigatório para defensivos.'
+            if not (self.registro_mapa or '').strip():
+                errors['registro_mapa'] = 'Registro MAPA é obrigatório para defensivos.'
+            self._limpar_campos_fertilizante()
+            return
+
+        if categoria_agricola == 'FERTILIZANTE':
+            possui_npk = any(
+                valor is not None and valor > 0
+                for valor in [self.nitrogenio_n, self.fosforo_p2o5, self.potassio_k2o]
+            )
+            if not self.tipo_fertilizante:
+                errors['tipo_fertilizante'] = 'Tipo de fertilizante é obrigatório para fertilizantes.'
+            if not (self.formula_npk or '').strip() and not possui_npk:
+                errors['formula_npk'] = 'Informe a fórmula NPK ou ao menos um teor principal de N, P2O5 ou K2O.'
+            self._limpar_campos_defensivo()
+            return
+
+        self._limpar_campos_defensivo()
+        self._limpar_campos_fertilizante()
+
+    def _limpar_campos_nao_agricolas(self):
+        self._limpar_campos_defensivo()
+        self._limpar_campos_fertilizante()
+        for campo in self.CAMPOS_DOSAGEM_APLICACAO + self.CAMPOS_SEGURANCA_AGRICOLA:
+            self._limpar_campo(campo)
+
+    def _limpar_campos_defensivo(self):
+        for campo in self.CAMPOS_DEFENSIVO:
+            self._limpar_campo(campo)
+
+    def _limpar_campos_fertilizante(self):
+        for campo in self.CAMPOS_FERTILIZANTE:
+            self._limpar_campo(campo)
+
+    def _limpar_campo(self, campo):
+        field = self._meta.get_field(campo)
+        if isinstance(field, (models.BooleanField, models.NullBooleanField)):
+            setattr(self, campo, False)
+        elif getattr(field, 'null', False):
+            setattr(self, campo, None)
+        else:
+            setattr(self, campo, '')
     
     def get_paises_proibidos_list(self):
         """Retorna lista de países proibidos"""
@@ -331,6 +473,8 @@ class Produto(models.Model):
         # Normalizar nome: Title Case e remover espaços extras
         if self.nome:
             self.nome = self.nome.strip().title()
+
+        self.full_clean()
         
         # Gerar código automático se não foi fornecido
         if not self.codigo:

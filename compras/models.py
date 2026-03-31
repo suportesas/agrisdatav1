@@ -1846,7 +1846,19 @@ class DivergenciaRecebimento(models.Model):
         blank=True,
         help_text='Detalhe como a divergência foi solucionada'
     )
-    
+
+    resposta_fornecedor = models.TextField(
+        'Resposta do Fornecedor',
+        blank=True,
+        help_text='Justificativa ou resposta do fornecedor sobre esta divergência'
+    )
+
+    data_resposta_fornecedor = models.DateTimeField(
+        'Data da Resposta do Fornecedor',
+        blank=True,
+        null=True
+    )
+
     registrado_por = models.ForeignKey(
         'usuarios.Usuario',
         on_delete=models.PROTECT,
@@ -2009,3 +2021,36 @@ class AvaliacaoFornecedor(models.Model):
     
     def __str__(self):
         return f"Avaliação {self.fornecedor.nome} - {self.recebimento.numero} ({self.nota_media})"
+
+
+class PedidoCompraMensagem(models.Model):
+    """Mensagens de interação entre fornecedor e equipe de compras por pedido."""
+
+    pedido = models.ForeignKey(
+        'PedidoCompra',
+        on_delete=models.CASCADE,
+        related_name='mensagens',
+        verbose_name='Pedido'
+    )
+
+    autor = models.ForeignKey(
+        'usuarios.Usuario',
+        on_delete=models.PROTECT,
+        related_name='mensagens_pedido_compra',
+        verbose_name='Autor'
+    )
+
+    mensagem = models.TextField('Mensagem')
+
+    data_envio = models.DateTimeField(
+        'Data de Envio',
+        auto_now_add=True
+    )
+
+    class Meta:
+        verbose_name = 'Mensagem do Pedido de Compra'
+        verbose_name_plural = 'Mensagens dos Pedidos de Compra'
+        ordering = ['data_envio']
+
+    def __str__(self):
+        return f"{self.pedido.numero} - {self.autor} ({self.data_envio:%d/%m/%Y %H:%M})"

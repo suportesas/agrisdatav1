@@ -1,0 +1,119 @@
+{% extends 'portal_fornecedor/base.html' %}
+
+{% block title %}Portal do Fornecedor | Proposta {{ cotacao.numero }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h4 class="mb-0">Proposta para {{ cotacao.numero }}</h4>
+    {% if cotacao.data_limite_resposta %}
+    <small class="text-muted">Prazo limite: {{ cotacao.data_limite_resposta|date:'d/m/Y' }}</small>
+    {% endif %}
+  </div>
+  <a href="{% url 'portal_fornecedor:cotacoes_list' %}" class="btn btn-outline-secondary btn-sm">Voltar</a>
+</div>
+
+{% if cotacao.observacoes %}
+<div class="alert alert-info py-2">
+  <strong>Observações do comprador:</strong> {{ cotacao.observacoes }}
+</div>
+{% endif %}
+
+<div class="card portal-card">
+  <div class="card-header bg-white">
+    <strong>Itens da Cotação</strong>
+    <small class="text-muted ms-2">Preencha o preço unitário para os itens que você pode fornecer. Deixe em branco os que não fornece.</small>
+  </div>
+  <div class="card-body p-0">
+    <form method="post">
+      {% csrf_token %}
+      <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th style="min-width:180px">Produto</th>
+              <th class="text-end" style="min-width:90px">Qtd.</th>
+              <th style="min-width:130px">Preço Unit. (R$) <span class="text-danger">*</span></th>
+              <th style="min-width:90px">Prazo (dias)</th>
+              <th style="min-width:130px">Cond. Pagamento</th>
+              <th style="min-width:100px">Marca</th>
+              <th style="min-width:130px">Observações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in items_data %}
+            {% with item=row.item proposta=row.proposta %}
+            <tr class="{% if proposta %}table-success bg-opacity-25{% endif %}">
+              <td>
+                <div class="fw-semibold">{{ item.produto.nome }}</div>
+                {% if item.especificacao %}
+                <small class="text-muted">{{ item.especificacao }}</small>
+                {% endif %}
+              </td>
+              <td class="text-end fw-semibold">
+                {{ item.quantidade|floatformat:3 }} {{ item.unidade_medida.sigla }}
+              </td>
+              <td>
+                <input type="number" step="0.01" min="0.01"
+                  name="preco_{{ item.pk }}"
+                  value="{{ proposta.preco_unitario|default:'' }}"
+                  class="form-control form-control-sm"
+                  placeholder="0,00">
+              </td>
+              <td>
+                <input type="number" step="1" min="0"
+                  name="prazo_{{ item.pk }}"
+                  value="{{ proposta.prazo_entrega|default:'' }}"
+                  class="form-control form-control-sm"
+                  placeholder="Ex: 7">
+              </td>
+              <td>
+                <input type="text" maxlength="200"
+                  name="condicao_{{ item.pk }}"
+                  value="{{ proposta.condicao_pagamento|default:'' }}"
+                  class="form-control form-control-sm"
+                  placeholder="Ex: 30 dias">
+              </td>
+              <td>
+                <input type="text" maxlength="100"
+                  name="marca_{{ item.pk }}"
+                  value="{{ proposta.marca|default:'' }}"
+                  class="form-control form-control-sm">
+              </td>
+              <td>
+                <input type="text" maxlength="200"
+                  name="obs_{{ item.pk }}"
+                  value="{{ proposta.observacoes|default:'' }}"
+                  class="form-control form-control-sm">
+              </td>
+            </tr>
+            {% if proposta %}
+            <tr class="table-success bg-opacity-10">
+              <td colspan="7" class="py-1">
+                <small class="text-success">
+                  <i class="bi bi-check-circle me-1"></i>
+                  Proposta enviada em {{ proposta.data_cadastro|date:'d/m/Y H:i' }}
+                  — Total: <strong>R$ {{ proposta.preco_total|floatformat:2 }}</strong>
+                </small>
+              </td>
+            </tr>
+            {% endif %}
+            {% endwith %}
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="d-flex justify-content-between align-items-center p-3 border-top">
+        <small class="text-muted">
+          <i class="bi bi-info-circle me-1"></i>
+          Você pode enviar a proposta parcialmente e editar depois enquanto a cotação estiver em andamento.
+        </small>
+        <button type="submit" class="btn btn-primary">
+          <i class="bi bi-send me-1"></i>Enviar proposta
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

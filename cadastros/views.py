@@ -48,6 +48,7 @@ CRUD completo + integração com APIs externas
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_POST
 from django.http import JsonResponse
 from django.http import HttpResponse
 from django.template.loader import render_to_string
@@ -3758,6 +3759,102 @@ def fornecedor_delete(request, pk):
         messages.success(request, f'🗑️ Fornecedor "{nome}" excluído!')
         return redirect('cadastros:fornecedor_list')
     return render(request, 'cadastros/fornecedor/fornecedor_confirm_delete.html', {'fornecedor': fornecedor})
+
+
+@login_required
+@require_POST
+def fornecedor_criar_acesso_portal(request, pk):
+    """Cria usuário de portal para o fornecedor e envia e-mail de primeiro acesso."""
+    from django.contrib.auth.forms import PasswordResetForm
+    from django.conf import settings
+    from usuarios.models import Usuario
+
+    fornecedor = get_object_or_404(Fornecedor, pk=pk, empresa=request.user.empresa)
+
+    if not fornecedor.email:
+        messages.error(request, '❌ Cadastre um e-mail no fornecedor antes de criar acesso ao portal.')
+        return redirect('cadastros:fornecedor_detail', pk=pk)
+
+    # Domínio público configurado via SITE_DOMAIN no .env (necessário quando o servidor
+    # não está publicado, ex: usando ngrok em desenvolvimento)
+    site_domain = getattr(settings, 'SITE_DOMAIN', '') or request.get_host()
+    use_https = getattr(settings, 'SITE_HTTPS', False) or request.is_secure()
+
+    def _enviar_reset(email):
+        form = PasswordResetForm(data={'email': email})
+        if form.is_valid():
+            form.save(
+                request=request,
+                domain_override=site_domain,
+                use_https=use_https,
+                from_email=None,
+                email_template_name='usuarios/password_reset_email.html',
+                subject_template_name='usuarios/password_reset_subject.txt',
+            )
+            return True
+        return False
+
+    # Já tem acesso: apenas reenvia convite
+    if fornecedor.portal_user_id:
+        user_portal = fornecedor.portal_user
+        if not user_portal.is_active:
+            user_portal.is_active = True
+            user_portal.save(update_fields=['is_active'])
+        _enviar_reset(user_portal.email)
+        messages.success(request, f'✅ Convite de acesso reenviado para {user_portal.email}.')
+        return redirect('cadastros:fornecedor_detail', pk=pk)
+
+    # Gera username único
+    cnpj_cpf = re.sub(r'\D', '', fornecedor.cnpj or fornecedor.cpf or '') if (hasattr(fornecedor, 'cnpj') or hasattr(fornecedor, 'cpf')) else ''
+    base_username = f'forn_{cnpj_cpf or pk}'
+    username = base_username
+    counter = 1
+    while Usuario.objects.filter(username=username).exists():
+        username = f'{base_username}_{counter}'
+        counter += 1
+
+    nome_display = ''
+    if hasattr(fornecedor, 'nome_fantasia') and fornecedor.nome_fantasia:
+        nome_display = fornecedor.nome_fantasia[:30]
+    elif hasattr(fornecedor, 'razao_social') and fornecedor.razao_social:
+        nome_display = fornecedor.razao_social[:30]
+
+    user_portal = Usuario.objects.create_user(
+        username=username,
+        email=fornecedor.email,
+        password=None,
+        first_name=nome_display,
+        empresa=fornecedor.empresa,
+        tipo='FUNC',
+        is_active=True,
+    )
+    user_portal.set_unusable_password()
+    user_portal.save(update_fields=['password'])
+
+    fornecedor.portal_user = user_portal
+    fornecedor.portal_enabled = True
+    fornecedor.save(update_fields=['portal_user', 'portal_enabled'])
+
+    if _enviar_reset(user_portal.email):
+        messages.success(request, f'✅ Acesso ao portal criado! E-mail enviado para {user_portal.email}.')
+    else:
+        messages.warning(request, f'✅ Acesso criado, mas não foi possível enviar o e-mail. Verifique o e-mail do fornecedor.')
+
+    return redirect('cadastros:fornecedor_detail', pk=pk)
+
+
+@login_required
+@require_POST
+def fornecedor_bloquear_portal(request, pk):
+    """Bloqueia ou desbloqueia o acesso ao portal do fornecedor."""
+    fornecedor = get_object_or_404(Fornecedor, pk=pk, empresa=request.user.empresa)
+    if fornecedor.portal_user_id:
+        user_portal = fornecedor.portal_user
+        user_portal.is_active = not user_portal.is_active
+        user_portal.save(update_fields=['is_active'])
+        acao = 'desbloqueado' if user_portal.is_active else 'bloqueado'
+        messages.success(request, f'✅ Acesso ao portal {acao}.')
+    return redirect('cadastros:fornecedor_detail', pk=pk)
 
 
 # ==================== ENDEREÇOS DO FORNECEDOR ====================

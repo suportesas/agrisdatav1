@@ -1,0 +1,75 @@
+{% extends 'portal_fornecedor/base.html' %}
+
+{% block title %}Portal do Fornecedor | Inicio{% endblock %}
+
+{% block content %}
+<div class="row g-3 mb-3">
+  <div class="col-md-3">
+    <div class="card portal-card p-3">
+      <h6 class="text-muted mb-1">Fornecedor</h6>
+      <div class="fw-bold">{{ fornecedor.nome }}</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card portal-card p-3">
+      <h6 class="text-muted mb-1">Pedidos em Aberto</h6>
+      <div class="display-6">{{ pedidos_abertos }}</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <a href="{% url 'portal_fornecedor:cotacoes_list' %}" class="text-decoration-none">
+      <div class="card portal-card p-3 {% if cotacoes_pendentes %}border-warning{% endif %}">
+        <h6 class="text-muted mb-1">Cota&ccedil;&otilde;es Pendentes</h6>
+        <div class="display-6 {% if cotacoes_pendentes %}text-warning{% endif %}">{{ cotacoes_pendentes }}</div>
+        {% if cotacoes_pendentes %}
+        <small class="text-warning fw-semibold">Aguardando sua proposta</small>
+        {% endif %}
+      </div>
+    </a>
+  </div>
+  <div class="col-md-3">
+    <div class="card portal-card p-3">
+      <h6 class="text-muted mb-1">Termo de Etica/Compliance</h6>
+      {% if termo_assinado %}
+      <span class="badge bg-success">Documento recebido</span>
+      {% else %}
+      <span class="badge bg-warning text-dark">Pendente de envio</span>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="card portal-card">
+  <div class="card-header bg-white">
+    <strong>Pedidos recentes</strong>
+  </div>
+  <div class="card-body p-0">
+    <table class="table mb-0">
+      <thead>
+        <tr>
+          <th>Numero</th>
+          <th>Data</th>
+          <th>Status</th>
+          <th class="text-end">Valor</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for pedido in pedidos_recentes %}
+        <tr>
+          <td>{{ pedido.numero }}</td>
+          <td>{{ pedido.data_pedido|date:'d/m/Y' }}</td>
+          <td><span class="badge bg-secondary">{{ pedido.get_status_display }}</span></td>
+          <td class="text-end">R$ {{ pedido.valor_final|floatformat:2 }}</td>
+          <td class="text-end">
+            <a href="{% url 'portal_fornecedor:pedido_detail' pedido.pk %}" class="btn btn-sm btn-outline-primary">Abrir</a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="text-center text-muted py-4">Sem pedidos para exibir.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

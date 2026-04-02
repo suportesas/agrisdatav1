@@ -267,6 +267,16 @@ class ProdutoForm(forms.ModelForm):
     def clean(self):
         cleaned_data = super().clean()
 
+        categoria_agricola = cleaned_data.get('categoria_agricola')
+        categoria = cleaned_data.get('categoria')
+        if not categoria_agricola and categoria:
+            codigo = (getattr(categoria, 'codigo', '') or '').strip().upper()
+            nome = (getattr(categoria, 'nome', '') or '').strip().lower()
+            if codigo.startswith('FERT') or 'fertiliz' in nome:
+                cleaned_data['categoria_agricola'] = 'FERTILIZANTE'
+            elif codigo.startswith('DEF') or 'defensiv' in nome:
+                cleaned_data['categoria_agricola'] = 'DEFENSIVO'
+
         for campo, valor in cleaned_data.items():
             setattr(self.instance, campo, valor)
 

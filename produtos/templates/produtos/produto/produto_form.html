@@ -963,6 +963,28 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // ============== CONTROLE DA ABA AGRÍCOLA/DEFENSIVO ==============
+    function sincronizarCategoriaAgricola() {
+      if (!categoriaAgricolaInput) {
+        return;
+      }
+      if (!categoriaSelect || !categoriaSelect.value) {
+        categoriaAgricolaInput.value = '';
+        return;
+      }
+
+      const isFertilizante = categoriaSelecionadaEhFertilizante();
+      const categoriaId = categoriaSelect.value;
+      const condiciona = categoriasCondicionais[categoriaId] === true || categoriasCondicionais[categoriaId] === 1;
+
+      if (isFertilizante) {
+        categoriaAgricolaInput.value = 'FERTILIZANTE';
+      } else if (condiciona) {
+        categoriaAgricolaInput.value = 'DEFENSIVO';
+      } else {
+        categoriaAgricolaInput.value = '';
+      }
+    }
+
     function categoriaSelecionadaEhFertilizante() {
       if (!categoriaSelect || !categoriaSelect.value) {
         return false;
@@ -1041,6 +1063,7 @@ document.addEventListener('DOMContentLoaded', function() {
       }
 
       garantirAbaVisivelAtiva();
+      sincronizarCategoriaAgricola();
     }
     
     // ============== CONTROLE DA ABA FERTILIZANTE ==============
@@ -1096,14 +1119,17 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
           garantirAbaVisivelAtiva();
+              sincronizarCategoriaAgricola();
     }
     
     // Verificar ao carregar e ao mudar categoria
     if (categoriaSelect) {
       verificarCategoriaAgricolaCondicional();
       verificarCategoriaFertilizante();
+      sincronizarCategoriaAgricola();
       categoriaSelect.addEventListener('change', verificarCategoriaAgricolaCondicional);
       categoriaSelect.addEventListener('change', verificarCategoriaFertilizante);
+      categoriaSelect.addEventListener('change', sincronizarCategoriaAgricola);
 
       // Se a URL vier com hash de aba (ex: #defensivo), ativa a aba após aplicar regras de visibilidade.
       const hash = window.location.hash;
@@ -1119,6 +1145,12 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     } else {
       console.error('❌ categoriaSelect não encontrado - verificação não será executada');
+    }
+
+    if (produtoForm) {
+      produtoForm.addEventListener('submit', function() {
+        sincronizarCategoriaAgricola();
+      });
     }
 });
 

@@ -451,7 +451,7 @@ def produto_create(request):
         form = ProdutoForm(empresa=request.user.empresa)
     # Adiciona o dicionário de categorias condicionais
     categorias = Categoria.objects.filter(empresa=request.user.empresa)
-    categorias_condicionais = {str(cat.pk): cat.condiciona_campos for cat in categorias}
+    categorias_condicionais = json.dumps({str(cat.pk): cat.condiciona_campos for cat in categorias})
     return render(request, 'produtos/produto/produto_form.html', {
         'form': form,
         'action': 'Cadastrar',
@@ -480,7 +480,7 @@ def produto_update(request, pk):
     fornecedores_produto = ProdutoFornecedor.objects.filter(produto=produto).select_related('fornecedor')
     # Adiciona o dicionário de categorias condicionais
     categorias = Categoria.objects.filter(empresa=request.user.empresa)
-    categorias_condicionais = {str(cat.pk): cat.condiciona_campos for cat in categorias}
+    categorias_condicionais = json.dumps({str(cat.pk): cat.condiciona_campos for cat in categorias})
     return render(request, 'produtos/produto/produto_form.html', {
         'form': form,
         'action': 'Editar',

@@ -677,9 +677,15 @@
           incluindo dosagens específicas, carência e limite de aplicações conforme bula.
         </div>
         {% else %}
-        <div class="alert alert-warning">
-          <i class="bi bi-exclamation-triangle me-2"></i>
-          <strong>Atenção:</strong> Salve o produto primeiro para cadastrar culturas e pragas.
+        <div class="text-center py-4">
+          <div class="alert alert-warning text-start mb-3">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            <strong>Atenção:</strong> Salve o produto primeiro para cadastrar culturas e pragas.
+          </div>
+          <p class="text-muted mb-3">Depois de salvar, o sistema volta automaticamente nesta aba para você continuar o cadastro.</p>
+          <button type="submit" class="btn btn-primary" name="continue_tab" value="defensivo">
+            <i class="bi bi-check-circle me-1"></i>Salvar e continuar em Defensivo
+          </button>
         </div>
         {% endif %}
       </div>
@@ -1098,6 +1104,19 @@ document.addEventListener('DOMContentLoaded', function() {
       verificarCategoriaFertilizante();
       categoriaSelect.addEventListener('change', verificarCategoriaAgricolaCondicional);
       categoriaSelect.addEventListener('change', verificarCategoriaFertilizante);
+
+      // Se a URL vier com hash de aba (ex: #defensivo), ativa a aba após aplicar regras de visibilidade.
+      const hash = window.location.hash;
+      if (hash && window.bootstrap && window.bootstrap.Tab) {
+        const targetButton = document.querySelector(`#produtoTabs .nav-link[data-bs-target="${hash}"]`);
+        if (targetButton) {
+          const li = targetButton.closest('li');
+          const isVisible = !li || window.getComputedStyle(li).display !== 'none';
+          if (isVisible) {
+            window.bootstrap.Tab.getOrCreateInstance(targetButton).show();
+          }
+        }
+      }
     } else {
       console.error('❌ categoriaSelect não encontrado - verificação não será executada');
     }

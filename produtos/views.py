@@ -58,6 +58,7 @@ from django.db.models import Q, Count
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.core.paginator import Paginator
+from django.urls import reverse
 import json
 from decimal import Decimal
 from .models import UnidadeMedida, Categoria, SubCategoria, Produto, ProdutoTributacao, NaturezaOperacao, ProdutoDefensivoCultura, ProdutoFornecedor
@@ -444,8 +445,13 @@ def produto_create(request):
     if request.method == 'POST':
         form = ProdutoForm(request.POST, request.FILES, empresa=request.user.empresa)
         if form.is_valid():
-            form.save()
+            produto = form.save()
             messages.success(request, 'Produto cadastrado com sucesso!')
+
+            continue_tab = request.POST.get('continue_tab')
+            if continue_tab in {'defensivo', 'fertilizante', 'fornecedores'}:
+                return redirect(f"{reverse('produtos:produto_update', args=[produto.pk])}#{continue_tab}")
+
             return redirect('produtos:produto_list')
     else:
         form = ProdutoForm(empresa=request.user.empresa)

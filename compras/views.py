@@ -2146,6 +2146,11 @@ def entrada_direta_nf(request):
                         item['unidade_medida_id'] = unidade.pk
                         break
 
+            item['pendente'] = item['produto_id'] is None
+
+        parsed_data['itens_pendentes'] = sum(
+            1 for item in parsed_data.get('produtos', []) if item.get('pendente')
+        )
         return parsed_data
 
     if request.method == 'POST':
@@ -2282,6 +2287,80 @@ def entrada_direta_nf(request):
         'xml_import_enabled': xml_import_enabled,
     }
     return render(request, 'compras/entrada_direta_nf.html', context)
+
+
+@login_required
+def produto_busca_ajax(request):
+    """AJAX: busca produtos para vinculação manual na importação XML."""
+    import json as _json
+    from django.http import JsonResponse
+    from django.db.models import Q
+    from produtos.models import Produto
+
+    q = request.GET.get('q', '').strip()
+    empresa = request.user.empresa
+    qs = Produto.objects.filter(ativo=True, categoria__empresa=empresa)
+    if q:
+        qs = qs.filter(
+            Q(nome__icontains=q) |
+            Q(codigo_barras__icontains=q) |
+            Q(codigo__icontains=q)
+        )
+    qs = qs.order_by('nome')[:20]
+    data = [
+        {
+            'id': p.pk,
+            'nome': p.nome,
+            'codigo_barras': p.codigo_barras or '',
+            'codigo': p.codigo or '',
+        }
+        for p in qs
+    ]
+    return JsonResponse({'produtos': data})
+
+
+@login_required
+def salvar_vinculo_xml_ajax(request):
+    """AJAX: persiste o vínculo produto-fornecedor para próximas importações XML."""
+    import json as _json
+    from django.http import JsonResponse
+    from produtos.models import Produto, ProdutoFornecedor
+    from cadastros.models import Fornecedor
+
+    if request.method != 'POST':
+        return JsonResponse({'ok': False, 'error': 'Método não permitido'}, status=405)
+
+    try:
+        payload = _json.loads(request.body)
+        fornecedor_id = int(payload.get('fornecedor_id', 0))
+        produto_id = int(payload.get('produto_id', 0))
+        codigo_fornecedor = str(payload.get('codigo_fornecedor', '')).strip()
+    except (ValueError, KeyError, _json.JSONDecodeError) as exc:
+        return JsonResponse({'ok': False, 'error': str(exc)}, status=400)
+
+    if not fornecedor_id or not produto_id or not codigo_fornecedor:
+        return JsonResponse({'ok': False, 'error': 'Dados incompletos'}, status=400)
+
+    empresa = request.user.empresa
+
+    forn = Fornecedor.objects.filter(pk=fornecedor_id, empresa=empresa).first()
+    if not forn:
+        return JsonResponse({'ok': False, 'error': 'Fornecedor não encontrado'}, status=404)
+
+    prod = Produto.objects.filter(pk=produto_id, categoria__empresa=empresa, ativo=True).first()
+    if not prod:
+        return JsonResponse({'ok': False, 'error': 'Produto não encontrado'}, status=404)
+
+    pf, created = ProdutoFornecedor.objects.get_or_create(
+        fornecedor=forn,
+        produto=prod,
+        defaults={'codigo_fornecedor': codigo_fornecedor, 'ativo': True},
+    )
+    if not created and pf.codigo_fornecedor != codigo_fornecedor:
+        pf.codigo_fornecedor = codigo_fornecedor
+        pf.save(update_fields=['codigo_fornecedor', 'updated_at'])
+
+    return JsonResponse({'ok': True, 'created': created})
 
 
 @login_required

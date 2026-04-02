@@ -423,3 +423,221 @@ class PedidoGerarViewTestCase(TestCase):
 
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, reverse('compras:cotacao_item_comparativo', args=[self.cotacao.pk]))
+
+
+# ---------------------------------------------------------------------------
+# Vinculação manual de produto (pendência assistida no XML import)
+# ---------------------------------------------------------------------------
+
+_NFE_XML_SEM_PRODUTO = """<?xml version="1.0" encoding="UTF-8"?>
+<nfeProc>
+    <NFe>
+        <infNFe Id="NFe35221111111111111111111111111111111111111111">
+            <ide>
+                <nNF>88888</nNF>
+                <serie>1</serie>
+                <dhEmi>2026-04-01T10:00:00-03:00</dhEmi>
+            </ide>
+            <emit>
+                <CNPJ>12345678000199</CNPJ>
+                <xNome>Fornecedor View Test</xNome>
+            </emit>
+            <det nItem="1">
+                <prod>
+                    <cProd>CODIGO-INEXISTENTE-9999</cProd>
+                    <xProd>Produto Desconhecido XYZ</xProd>
+                    <qCom>2.0000</qCom>
+                    <vUnCom>5.00</vUnCom>
+                    <uCom>UN</uCom>
+                    <NCM>12011000</NCM>
+                    <CFOP>5102</CFOP>
+                </prod>
+            </det>
+            <total>
+                <ICMSTot>
+                    <vNF>10.00</vNF>
+                    <vFrete>0.00</vFrete>
+                    <vDesc>0.00</vDesc>
+                </ICMSTot>
+            </total>
+        </infNFe>
+    </NFe>
+    <protNFe>
+        <infProt>
+            <chNFe>35221111111111111111111111111111111111111111</chNFe>
+        </infProt>
+    </protNFe>
+</nfeProc>"""
+
+
+class VincularProdutoTestCase(TestCase):
+    """Testes para o fluxo de vinculação manual assistida na importação XML."""
+
+    def setUp(self):
+        patcher = patch('empresas.signals.call_command')
+        self.addCleanup(patcher.stop)
+        patcher.start()
+
+        User = get_user_model()
+        self.empresa = Empresa.objects.create(nome='Empresa Vincular Test')
+        self.user = User.objects.create_user(
+            username='comprador_vincular',
+            password='senha123',
+            empresa=self.empresa,
+        )
+        self.fornecedor = Fornecedor.objects.create(
+            nome='Fornecedor View Test',
+            nome_fantasia='Fornecedor View Test',
+            cnpj_cpf='12345678000199',
+            empresa=self.empresa,
+            ativa=True,
+        )
+        self.unidade = UnidadeMedida.objects.create(
+            nome='Unidade', sigla='UN', tipo='UNIDADE', empresa=self.empresa,
+        )
+        self.categoria = Categoria.objects.create(
+            empresa=self.empresa, codigo='CAT-VIN', nome='Categoria Vincular',
+        )
+        self.ncm = NCM.objects.create(codigo='12011000', nome='NCM Vincular')
+        self.produto = Produto.objects.create(
+            nome='Produto Cadastrado',
+            categoria=self.categoria,
+            unidade_medida=self.unidade,
+            unidade_compra=self.unidade,
+            unidade_venda=self.unidade,
+            ncm=self.ncm,
+        )
+        self.client.force_login(self.user)
+
+    # ------------------------------------------------------------------
+    # 1. Produto sem match marcado como pendente no extract_xml
+    # ------------------------------------------------------------------
+    @override_settings(FEATURE_FLAGS={'COMPRAS_XML_IMPORT': True})
+    def test_item_sem_match_marcado_pendente(self):
+        xml_file = io.BytesIO(_NFE_XML_SEM_PRODUTO.encode('utf-8'))
+        xml_file.name = 'sem_produto.xml'
+        response = self.client.post(
+            _URL,
+            {'action': 'extract_xml', 'xml_file': xml_file},
+        )
+        self.assertEqual(response.status_code, 200)
+        xml_data = response.context['xml_data']
+        item = xml_data['produtos'][0]
+        self.assertIsNone(item['produto_id'])
+        self.assertTrue(item['pendente'])
+        self.assertEqual(xml_data['itens_pendentes'], 1)
+
+    # ------------------------------------------------------------------
+    # 2. Produto com cProd conhecido não é marcado como pendente
+    # ------------------------------------------------------------------
+    @override_settings(FEATURE_FLAGS={'COMPRAS_XML_IMPORT': True})
+    def test_item_com_cprod_conhecido_nao_pendente(self):
+        ProdutoFornecedor.objects.create(
+            produto=self.produto,
+            fornecedor=self.fornecedor,
+            codigo_fornecedor='CODIGO-INEXISTENTE-9999',
+            preco_compra=5,
+        )
+        xml_file = io.BytesIO(_NFE_XML_SEM_PRODUTO.encode('utf-8'))
+        xml_file.name = 'com_vinculo.xml'
+        response = self.client.post(
+            _URL,
+            {'action': 'extract_xml', 'xml_file': xml_file},
+        )
+        self.assertEqual(response.status_code, 200)
+        xml_data = response.context['xml_data']
+        item = xml_data['produtos'][0]
+        self.assertEqual(item['produto_id'], self.produto.pk)
+        self.assertFalse(item['pendente'])
+        self.assertEqual(xml_data['itens_pendentes'], 0)
+
+    # ------------------------------------------------------------------
+    # 3. produto_busca_ajax retorna produtos da empresa
+    # ------------------------------------------------------------------
+    def test_produto_busca_ajax_retorna_produtos(self):
+        response = self.client.get(
+            reverse('compras:produto_busca_ajax'),
+            {'q': 'Produto Cadastrado'},
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIn('produtos', data)
+        ids = [p['id'] for p in data['produtos']]
+        self.assertIn(self.produto.pk, ids)
+
+    # ------------------------------------------------------------------
+    # 4. produto_busca_ajax não retorna produtos de outra empresa
+    # ------------------------------------------------------------------
+    def test_produto_busca_ajax_isolamento_empresa(self):
+        with patch('empresas.signals.call_command'):
+            outra_empresa = Empresa.objects.create(nome='Outra Empresa')
+        outra_categoria = Categoria.objects.create(
+            empresa=outra_empresa, codigo='CAT-OUT', nome='Categoria Outra',
+        )
+        outro_ncm = NCM.objects.create(codigo='99990000', nome='NCM Outra')
+        Produto.objects.create(
+            nome='Produto Outra Empresa',
+            categoria=outra_categoria,
+            unidade_medida=self.unidade,
+            unidade_compra=self.unidade,
+            unidade_venda=self.unidade,
+            ncm=outro_ncm,
+        )
+        response = self.client.get(
+            reverse('compras:produto_busca_ajax'),
+            {'q': 'Produto'},
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        nomes = [p['nome'] for p in data['produtos']]
+        self.assertNotIn('Produto Outra Empresa', nomes)
+        self.assertIn('Produto Cadastrado', nomes)
+
+    # ------------------------------------------------------------------
+    # 5. salvar_vinculo_xml_ajax cria ProdutoFornecedor com codigo
+    # ------------------------------------------------------------------
+    def test_salvar_vinculo_cria_produto_fornecedor(self):
+        import json
+        response = self.client.post(
+            reverse('compras:salvar_vinculo_xml_ajax'),
+            data=json.dumps({
+                'fornecedor_id': self.fornecedor.pk,
+                'produto_id': self.produto.pk,
+                'codigo_fornecedor': 'COD-NOVO-123',
+            }),
+            content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data['ok'])
+        self.assertTrue(
+            ProdutoFornecedor.objects.filter(
+                fornecedor=self.fornecedor,
+                produto=self.produto,
+                codigo_fornecedor='COD-NOVO-123',
+            ).exists()
+        )
+
+    # ------------------------------------------------------------------
+    # 6. salvar_vinculo_xml_ajax rejeita fornecedor de outra empresa
+    # ------------------------------------------------------------------
+    def test_salvar_vinculo_rejeita_fornecedor_externo(self):
+        import json
+        with patch('empresas.signals.call_command'):
+            outra_empresa = Empresa.objects.create(nome='Empresa Invasora')
+        forn_externo = Fornecedor.objects.create(
+            nome='Fornecedor Externo',
+            nome_fantasia='Fornecedor Externo',
+            empresa=outra_empresa,
+            ativa=True,
+        )
+        response = self.client.post(
+            reverse('compras:salvar_vinculo_xml_ajax'),
+            data=json.dumps({
+                'fornecedor_id': forn_externo.pk,
+                'produto_id': self.produto.pk,
+                'codigo_fornecedor': 'COD-HACK',
+            }),
+            content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 404)

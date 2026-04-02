@@ -193,59 +193,27 @@
     box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
   }
   
-  .stat-box {
-    position: relative;
-    overflow: hidden;
-    text-align: left;
-    padding: 1.6rem;
-    color: white;
-    border-radius: 22px;
-    box-shadow: 0 18px 36px rgba(26, 52, 78, 0.16);
-    min-height: 160px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
+  .fornecedor-metric-card {
+    border: 0;
+    border-radius: 18px;
+    box-shadow: 0 12px 26px rgba(22, 48, 71, 0.08);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
   }
 
-  .stat-box::after {
-    content: "";
-    position: absolute;
-    right: -25px;
-    bottom: -35px;
-    width: 120px;
-    height: 120px;
-    border-radius: 28px;
-    background: rgba(255,255,255,0.12);
-    transform: rotate(20deg);
+  .fornecedor-metric-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 16px 32px rgba(22, 48, 71, 0.12);
   }
 
-  .stat-kicker {
+  .fornecedor-metric-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
     display: inline-flex;
     align-items: center;
-    gap: 0.45rem;
-    width: fit-content;
-    padding: 0.4rem 0.65rem;
-    border-radius: 999px;
-    background: rgba(255,255,255,0.14);
-    font-size: 0.76rem;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    font-weight: 700;
-  }
-  
-  .stat-box h3 {
-    margin: 1rem 0 0.35rem 0;
-    font-size: clamp(1.8rem, 2vw, 2.3rem);
-    font-weight: 700;
-    position: relative;
-    z-index: 1;
-  }
-  
-  .stat-box p {
-    margin: 0;
-    opacity: 0.88;
-    position: relative;
-    z-index: 1;
+    justify-content: center;
+    margin: 0 auto 0.75rem;
+    font-size: 1.25rem;
   }
   
   .doc-item {
@@ -451,26 +419,35 @@
   </div>
 
   <!-- Estatísticas -->
-  <div class="row mb-4">
+  <div class="row g-3 mb-4">
     <div class="col-md-4">
-      <div class="stat-box" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-        <span class="stat-kicker"><i class="bi bi-graph-up-arrow"></i> Volume</span>
-        <h3>R$ {{ fornecedor.total_comprado|floatformat:2 }}</h3>
-        <p>Total Comprado</p>
+      <div class="card text-center p-3 h-100 fornecedor-metric-card">
+        <div class="fornecedor-metric-icon" style="background: rgba(102, 126, 234, 0.12); color: #667eea;">
+          <i class="bi bi-graph-up-arrow"></i>
+        </div>
+        <h6 class="text-muted mb-1">Volume</h6>
+        <h3 class="fw-bold text-primary mb-1">R$ {{ total_comprado|floatformat:2 }}</h3>
+        <p class="text-muted mb-0">Total Comprado</p>
       </div>
     </div>
     <div class="col-md-4">
-      <div class="stat-box" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
-        <span class="stat-kicker"><i class="bi bi-bag-check"></i> Histórico</span>
-        <h3>{{ fornecedor.numero_pedidos }}</h3>
-        <p>Pedidos Realizados</p>
+      <div class="card text-center p-3 h-100 fornecedor-metric-card">
+        <div class="fornecedor-metric-icon" style="background: rgba(240, 147, 251, 0.16); color: #d63384;">
+          <i class="bi bi-bag-check"></i>
+        </div>
+        <h6 class="text-muted mb-1">Histórico</h6>
+        <h3 class="fw-bold text-danger mb-1">{{ numero_pedidos }}</h3>
+        <p class="text-muted mb-0">Pedidos Realizados</p>
       </div>
     </div>
     <div class="col-md-4">
-      <div class="stat-box" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
-        <span class="stat-kicker"><i class="bi bi-star-half"></i> Qualidade</span>
-        <h3>{{ total_avaliacoes }}</h3>
-        <p>Avaliações Registradas</p>
+      <div class="card text-center p-3 h-100 fornecedor-metric-card">
+        <div class="fornecedor-metric-icon" style="background: rgba(79, 172, 254, 0.14); color: #0d6efd;">
+          <i class="bi bi-star-half"></i>
+        </div>
+        <h6 class="text-muted mb-1">Qualidade</h6>
+        <h3 class="fw-bold text-info mb-1">{{ total_avaliacoes }}</h3>
+        <p class="text-muted mb-0">Avaliações Registradas</p>
       </div>
     </div>
   </div>

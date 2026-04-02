@@ -3685,12 +3685,19 @@ def fornecedor_detail(request, pk):
     total_avaliacoes = fornecedor.avaliacoes.count() if hasattr(fornecedor, 'avaliacoes') else 0
     avaliacoes_recentes = fornecedor.avaliacoes.order_by('-data_avaliacao')[:5] if hasattr(fornecedor, 'avaliacoes') else []
 
+    # Indicadores de compras
+    pedidos_qs = fornecedor.pedidos_compra.exclude(status='CANCELADO')
+    numero_pedidos = pedidos_qs.count()
+    total_comprado = pedidos_qs.aggregate(total=Sum('valor_final')).get('total') or 0
+
     # Contas bancárias
     contas = fornecedor.contas_bancarias.all()
 
     context = {
         'fornecedor': fornecedor,
         'docs_vencidos': docs_vencidos,
+        'numero_pedidos': numero_pedidos,
+        'total_comprado': total_comprado,
         'total_avaliacoes': total_avaliacoes,
         'avaliacoes_recentes': avaliacoes_recentes,
         'contas': contas,

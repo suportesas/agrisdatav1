@@ -1,5 +1,25 @@
 # Changelog
 
+## [Phase 2 Decision] - 02/04/2026
+
+### Strategic Decision
+- **Opção Escolhida**: Fase 2 XE (XML Enhancement)
+- **Escopo**: SEFAZ Validation + Rastreabilidade de Lote + Batch Operations
+- **Estimativa**: 22 horas (~2-3 semanas para 1 dev)
+- **Timeline**: Sprint 1 (Apr 4-8), Sprint 2 (Apr 11-15), Sprint 3 (Apr 18-22)
+- **Documentos**: 
+  - [Plano de Execução](./docs/fase2/PLANO_EXECUCAO_FASE2_XE.md)
+  - [Kickoff](./docs/fase2/KICKOFF_FASE2_XE.md)
+- **Bloqueadores**: Certificado A1, WSDL SEFAZ, Staging network access (a validar)
+
+### Status Fase 1 (Completed)
+- ✅ NF-e XML Parser implementado e testado (8 testes)
+- ✅ Feature flag `FF_COMPRAS_XML_IMPORT` ativa
+- ✅ Checklist de homologação manual criado
+- ✅ Commit 2f02267 merged to main
+
+---
+
 ## Unreleased
 
 ### Fixed

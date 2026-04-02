@@ -318,6 +318,38 @@ LIMITES_PLANO = {
 
 
 # ============================================
+# FEATURE FLAGS (FASE 0 - LIBERACAO SEGURA)
+# ============================================
+# Objetivo: habilitar releases graduais por modulo sem impactar fluxos estaveis.
+#
+# Uso recomendado no codigo:
+# from core.feature_flags import is_feature_enabled
+# if is_feature_enabled('COMPRAS_XML_IMPORT'):
+#     ... novo fluxo ...
+
+FEATURE_FLAGS = {
+    # Fase 1
+    'COMPRAS_XML_IMPORT': get_bool_env('FF_COMPRAS_XML_IMPORT', False),
+
+    # Fase 2
+    'ESTOQUE_QUARENTENA_BLOQUEIO': get_bool_env('FF_ESTOQUE_QUARENTENA_BLOQUEIO', False),
+    'ESTOQUE_DEVOLUCOES_FLUXO': get_bool_env('FF_ESTOQUE_DEVOLUCOES_FLUXO', False),
+
+    # Fase 3
+    'RASTREABILIDADE_FULL_CHAIN': get_bool_env('FF_RASTREABILIDADE_FULL_CHAIN', False),
+
+    # Fase 4
+    'FINANCEIRO_RENEGOCIACAO': get_bool_env('FF_FINANCEIRO_RENEGOCIACAO', False),
+
+    # Fase 6
+    'RECEITUARIO_AGRONOMICO_V1': get_bool_env('FF_RECEITUARIO_AGRONOMICO_V1', False),
+
+    # Fase 7
+    'ARMADOR_INTEGRACOES_EXTERNAS': get_bool_env('FF_ARMADOR_INTEGRACOES_EXTERNAS', False),
+}
+
+
+# ============================================
 # SEGURANÇA
 # ============================================
 # Sessão expira ao fechar navegador

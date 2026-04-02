@@ -964,30 +964,84 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // ============== CONTROLE DA ABA AGRÍCOLA/DEFENSIVO ==============
+    function categoriaSelecionadaEhFertilizante() {
+      if (!categoriaSelect || !categoriaSelect.value) {
+        return false;
+      }
+
+      const selectedOption = categoriaSelect.options[categoriaSelect.selectedIndex];
+      const categoriaText = selectedOption?.text || '';
+      const textoNormalizado = categoriaText
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '');
+
+      return (
+        textoNormalizado.includes('fertilizante') ||
+        textoNormalizado.includes('fert -') ||
+        textoNormalizado.startsWith('fert') ||
+        /\bfert\b/i.test(textoNormalizado)
+      );
+    }
+
+    function garantirAbaVisivelAtiva() {
+      const tabButtons = [
+        document.getElementById('fertilizante-tab'),
+        document.getElementById('agricola-tab'),
+        document.getElementById('defensivo-tab'),
+        document.getElementById('geral-tab')
+      ].filter(Boolean);
+
+      const activeButton = document.querySelector('#produtoTabs .nav-link.active');
+      if (!activeButton) {
+        return;
+      }
+
+      const activeLi = activeButton.closest('li');
+      const activeHidden = activeLi && window.getComputedStyle(activeLi).display === 'none';
+      if (!activeHidden) {
+        return;
+      }
+
+      const targetButton = tabButtons.find(btn => {
+        const li = btn.closest('li');
+        return li && window.getComputedStyle(li).display !== 'none';
+      });
+
+      if (targetButton && window.bootstrap && window.bootstrap.Tab) {
+        window.bootstrap.Tab.getOrCreateInstance(targetButton).show();
+      }
+    }
+
     // Função para verificar se a categoria selecionada condiciona campos agrícolas
     function verificarCategoriaAgricolaCondicional() {
       if (!categoriaSelect) {
         console.error('⚠️ categoriaSelect não encontrado');
         return;
       }
+
+      const isFertilizante = categoriaSelecionadaEhFertilizante();
       const categoriaId = categoriaSelect.value;
       const condiciona = categoriasCondicionais[categoriaId] === true || categoriasCondicionais[categoriaId] === 1;
+
       // Mostrar/ocultar aba Agrícola
       if (agricolaTabLi) {
-        agricolaTabLi.style.display = condiciona ? 'block' : 'none';
+        agricolaTabLi.style.display = (condiciona && !isFertilizante) ? 'block' : 'none';
       }
       // Mostrar/ocultar aba Defensivo
       if (defensivoTabLi) {
-        defensivoTabLi.style.display = (condiciona && isProdutoExistente) ? 'block' : 'none';
+        defensivoTabLi.style.display = (condiciona && isProdutoExistente && !isFertilizante) ? 'block' : 'none';
       }
       // Opcional: mostrar alerta na aba agrícola se for condicional e produto novo
       if (alertDefensivoInfo) {
-        if (condiciona && !isProdutoExistente) {
+        if (condiciona && !isProdutoExistente && !isFertilizante) {
           alertDefensivoInfo.classList.remove('d-none');
         } else {
           alertDefensivoInfo.classList.add('d-none');
         }
       }
+
+      garantirAbaVisivelAtiva();
     }
     
     // ============== CONTROLE DA ABA FERTILIZANTE ==============
@@ -1003,17 +1057,12 @@ document.addEventListener('DOMContentLoaded', function() {
         
         const selectedOption = categoriaSelect.options[categoriaSelect.selectedIndex];
         const categoriaText = selectedOption?.text || '';
-        const categoriaTextLower = categoriaText.toLowerCase();
-        
-        // Verifica se o texto contém "fertilizante" ou "fert" (código comum)
-        const textoNormalizado = categoriaTextLower
-            .normalize('NFD')
-            .replace(/[\u0300-\u036f]/g, '');
-        
-        const isFertilizante = textoNormalizado.includes('fertilizante') || 
-                               textoNormalizado.includes('fert -') ||
-                               textoNormalizado.startsWith('fert') ||
-                               categoriaTextLower.match(/\bfert\b/i);
+        const textoNormalizado = categoriaText
+          .toLowerCase()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '');
+
+        const isFertilizante = categoriaSelecionadaEhFertilizante();
         
         console.log('🌱 VERIFICAÇÃO FERTILIZANTE:');
         console.log('   Texto original:', `"${categoriaText}"`);
@@ -1054,6 +1103,8 @@ document.addEventListener('DOMContentLoaded', function() {
         } else {
             console.error('❌ Elemento fertilizante-tab-li não encontrado no DOM!');
         }
+
+          garantirAbaVisivelAtiva();
     }
     
     // Verificar ao carregar e ao mudar categoria

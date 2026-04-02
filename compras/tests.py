@@ -312,3 +312,80 @@ class EntradaDiretaNFViewTestCase(TestCase):
             any('chave' in str(m).lower() or 'duplicad' in str(m).lower() for m in messages_list),
             'Esperado mensagem de erro sobre chave NF-e duplicada',
         )
+
+
+class PedidoGerarViewTestCase(TestCase):
+    def setUp(self):
+        patcher = patch('empresas.signals.call_command')
+        self.addCleanup(patcher.stop)
+        patcher.start()
+
+        User = get_user_model()
+        self.empresa = Empresa.objects.create(nome='Empresa Pedido Teste')
+        self.user = User.objects.create_user(
+            username='comprador_pedido',
+            password='senha123',
+            empresa=self.empresa,
+        )
+        self.client.force_login(self.user)
+
+        self.fornecedor = Fornecedor.objects.create(
+            nome='Fornecedor Pedido',
+            nome_fantasia='Fornecedor Pedido',
+            empresa=self.empresa,
+            ativa=True,
+        )
+        self.unidade = UnidadeMedida.objects.create(nome='Unidade', sigla='UN', tipo='UNIDADE', empresa=self.empresa)
+        self.categoria = Categoria.objects.create(empresa=self.empresa, codigo='CAT-PED', nome='Categoria Pedido')
+        self.ncm = NCM.objects.create(codigo='22011000', nome='NCM Pedido')
+        self.produto = Produto.objects.create(
+            nome='Produto Pedido',
+            categoria=self.categoria,
+            unidade_medida=self.unidade,
+            unidade_compra=self.unidade,
+            unidade_venda=self.unidade,
+            ncm=self.ncm,
+        )
+
+        self.solicitacao = SolicitacaoCompra.objects.create(
+            empresa=self.empresa,
+            numero='SC-TEST-PED-001',
+            solicitante=self.user,
+            data_necessidade='2026-04-02',
+            status='APROVADA',
+        )
+        self.item_solicitacao = ItemSolicitacaoCompra.objects.create(
+            solicitacao=self.solicitacao,
+            produto=self.produto,
+            quantidade=5,
+            unidade_medida=self.unidade,
+            selecionado_para_cotar=True,
+            status_item='SELECIONADO',
+        )
+        self.cotacao = Cotacao.objects.create(
+            empresa=self.empresa,
+            solicitacao=self.solicitacao,
+            comprador=self.user,
+            status='EM_ANDAMENTO',
+        )
+        self.item_cotacao = ItemCotacao.objects.create(
+            cotacao=self.cotacao,
+            item_solicitacao=self.item_solicitacao,
+            produto=self.produto,
+            quantidade=5,
+            unidade_medida=self.unidade,
+        )
+        FornecedorCotacao.objects.create(
+            item_cotacao=self.item_cotacao,
+            fornecedor=self.fornecedor,
+            preco_unitario=Decimal('10.00'),
+            preco_total=Decimal('50.00'),
+            prazo_entrega=3,
+            selecionado=False,
+        )
+
+    def test_pedido_gerar_redireciona_em_vez_de_404_quando_cotacao_nao_concluida(self):
+        response = self.client.get(reverse('compras:pedido_gerar', args=[self.cotacao.pk]))
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse('compras:cotacao_item_comparativo', args=[self.cotacao.pk]))

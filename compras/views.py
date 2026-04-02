@@ -959,8 +959,23 @@ def pedido_gerar(request, cotacao_pk):
         Cotacao,
         pk=cotacao_pk,
         empresa=request.user.empresa,
-        status='CONCLUIDA'
     )
+
+    if cotacao.status != 'CONCLUIDA':
+        for item in cotacao.itens.all():
+            if hasattr(item, 'atualizar_status'):
+                item.atualizar_status()
+
+        if hasattr(cotacao, 'pode_concluir') and cotacao.pode_concluir():
+            cotacao.concluir()
+            cotacao.refresh_from_db()
+
+        if cotacao.status != 'CONCLUIDA':
+            messages.warning(
+                request,
+                'A cotação ainda não está concluída. Salve a seleção dos fornecedores antes de gerar o pedido de compra.'
+            )
+            return redirect('compras:cotacao_item_comparativo', pk=cotacao_pk)
 
     # Evita gerar pedidos duplicados para a mesma cotação
     if PedidoCompra.objects.filter(cotacao=cotacao).exists():

@@ -1023,7 +1023,7 @@ document.addEventListener('DOMContentLoaded', function() {
       }
       // Mostrar/ocultar aba Defensivo
       if (defensivoTabLi) {
-        defensivoTabLi.style.display = (condiciona && isProdutoExistente && !isFertilizante) ? 'block' : 'none';
+        defensivoTabLi.style.display = (condiciona && !isFertilizante) ? 'block' : 'none';
       }
       // Opcional: mostrar alerta na aba agrícola se for condicional e produto novo
       if (alertDefensivoInfo) {

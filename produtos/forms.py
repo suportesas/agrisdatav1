@@ -2,6 +2,7 @@ from django import forms
 from django.core.exceptions import ValidationError
 from django.forms.widgets import Select
 from .models import UnidadeMedida, Categoria, SubCategoria, Produto, ProdutoTributacao, NaturezaOperacao, ProdutoDefensivoCultura, TipoProduto
+from estoque.models import Armazem
 
 
 class TipoProdutoForm(forms.ModelForm):
@@ -124,6 +125,7 @@ class ProdutoForm(forms.ModelForm):
             self.fields['unidade_compra'].queryset = UnidadeMedida.objects.filter(empresa=empresa)
             self.fields['unidade_venda'].queryset = UnidadeMedida.objects.filter(empresa=empresa)
             self.fields['unidade_dosagem'].queryset = UnidadeMedida.objects.filter(empresa=empresa)
+            self.fields['armazem_padrao'].queryset = Armazem.objects.filter(empresa=empresa, ativo=True)
     
     class Meta:
         model = Produto
@@ -142,7 +144,7 @@ class ProdutoForm(forms.ModelForm):
             # Financeiro
             'preco_custo', 'preco_venda', 'margem_lucro', 'preco_minimo',
             # Estoque
-            'controla_estoque', 'estoque_minimo', 'estoque_maximo', 'estoque_atual', 'localizacao',
+            'controla_estoque', 'estoque_minimo', 'estoque_maximo', 'estoque_atual', 'localizacao', 'armazem_padrao',
             # Rastreabilidade
             'lote_obrigatorio', 'validade_obrigatoria', 'dias_validade',
             # Informações Adicionais
@@ -201,6 +203,7 @@ class ProdutoForm(forms.ModelForm):
             'estoque_maximo': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.001'}),
             'estoque_atual': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.001', 'readonly': 'readonly'}),
             'localizacao': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Prateleira A1'}),
+            'armazem_padrao': forms.Select(attrs={'class': 'form-select'}),
             
             # Rastreabilidade
             'lote_obrigatorio': forms.CheckboxInput(attrs={'class': 'form-check-input'}),

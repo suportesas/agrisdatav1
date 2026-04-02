@@ -254,6 +254,15 @@ class Produto(models.Model):
     estoque_maximo = models.DecimalField(max_digits=15, decimal_places=3, default=0, verbose_name='Estoque Máximo')
     estoque_atual = models.DecimalField(max_digits=15, decimal_places=3, default=0, verbose_name='Estoque Atual')
     localizacao = models.CharField(max_length=50, blank=True, verbose_name='Localização')
+    armazem_padrao = models.ForeignKey(
+        'estoque.Armazem',
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='produtos_padrao',
+        verbose_name='Armazém Padrão',
+        help_text='Armazém padrão para entrada de estoque deste produto'
+    )
     
     # Rastreabilidade
     lote_obrigatorio = models.BooleanField(default=False, verbose_name='Lote Obrigatório')

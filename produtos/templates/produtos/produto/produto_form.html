@@ -686,7 +686,6 @@
       
       <!-- ABA FERTILIZANTE -->
       <div class="tab-pane fade" id="fertilizante">
-        {% if object.pk %}
         <div class="d-flex justify-content-between align-items-center mb-3">
           <h5 class="mb-0">
             <i class="bi bi-droplet-fill me-2"></i>Informações de Fertilizante
@@ -744,12 +743,6 @@
             {% endif %}
           </div>
         </div>
-        {% else %}
-        <div class="alert alert-warning">
-          <i class="bi bi-exclamation-triangle me-2"></i>
-          <strong>Atenção:</strong> Salve o produto primeiro para cadastrar informações de fertilizante.
-        </div>
-        {% endif %}
       </div>
       
       <!-- ABA DOCUMENTOS -->
@@ -1071,19 +1064,14 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('   Produto existente?', isProdutoExistente);
         console.log('   Deveria mostrar aba?', isFertilizante && isProdutoExistente);
         
-        // Mostrar alerta na aba Agrícola se for fertilizante e produto novo
+        // Mantém alerta de fertilizante oculto: a aba já está disponível no cadastro novo.
         if (alertFertilizanteInfo) {
-            if (isFertilizante && !isProdutoExistente) {
-                alertFertilizanteInfo.classList.remove('d-none');
-                console.log('✅ Alerta fertilizante mostrado (produto novo)');
-            } else {
-                alertFertilizanteInfo.classList.add('d-none');
-            }
+          alertFertilizanteInfo.classList.add('d-none');
         }
         
-        // Mostrar/ocultar aba - só mostra se for fertilizante E produto já existir
+        // Mostrar/ocultar aba - fertilizante deve aparecer também no cadastro novo
         if (fertilizanteTabLi) {
-            const shouldShow = isFertilizante && isProdutoExistente;
+          const shouldShow = isFertilizante;
             
             if (shouldShow) {
                 fertilizanteTabLi.style.display = 'block';
@@ -1095,9 +1083,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 fertilizanteTabLi.style.display = 'none';
                 if (!isFertilizante) {
                     console.warn('⚠️ Categoria não é fertilizante');
-                }
-                if (!isProdutoExistente) {
-                    console.warn('⚠️ Produto novo - salve primeiro');
                 }
             }
         } else {

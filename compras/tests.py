@@ -105,6 +105,8 @@ class NFEParserTestCase(TestCase):
             </emit>
             <det nItem="1">
                 <prod>
+                    <cProd>0001</cProd>
+                    <cEAN>7891234567890</cEAN>
                     <xProd>Produto Teste</xProd>
                     <qCom>10.0000</qCom>
                     <vUnCom>25.50</vUnCom>
@@ -139,6 +141,8 @@ class NFEParserTestCase(TestCase):
                 self.assertEqual(parsed['data_emissao_nf'], '2026-03-31')
                 self.assertEqual(parsed['valor_total_nf'], '255.00')
                 self.assertEqual(len(parsed['produtos']), 1)
+                self.assertEqual(parsed['produtos'][0]['codigo_fornecedor'], '0001')
+                self.assertEqual(parsed['produtos'][0]['codigo_barras'], '7891234567890')
                 self.assertEqual(parsed['produtos'][0]['nome'], 'Produto Teste')
                 self.assertEqual(Decimal(parsed['produtos'][0]['quantidade']), Decimal('10.0000'))
 
@@ -165,6 +169,7 @@ _VALID_NFE_XML = """<?xml version="1.0" encoding="UTF-8"?>
             </emit>
             <det nItem="1">
                 <prod>
+                    <cProd>COD-XYZ-001</cProd>
                     <xProd>Produto View Test</xProd>
                     <qCom>5.0000</qCom>
                     <vUnCom>10.00</vUnCom>
@@ -212,6 +217,33 @@ class EntradaDiretaNFViewTestCase(TestCase):
             empresa=self.empresa,
             ativa=True,
         )
+        self.unidade = UnidadeMedida.objects.create(
+            nome='Unidade',
+            sigla='UN',
+            tipo='UNIDADE',
+            empresa=self.empresa,
+        )
+        self.categoria = Categoria.objects.create(
+            empresa=self.empresa,
+            codigo='CAT-VIEW',
+            nome='Categoria View',
+        )
+        self.ncm = NCM.objects.create(codigo='12011000', nome='NCM View Test')
+        self.produto = Produto.objects.create(
+            nome='Cola Adesiva Hotmelt',
+            categoria=self.categoria,
+            unidade_medida=self.unidade,
+            unidade_compra=self.unidade,
+            unidade_venda=self.unidade,
+            ncm=self.ncm,
+            codigo_barras='7891234567890',
+        )
+        ProdutoFornecedor.objects.create(
+            produto=self.produto,
+            fornecedor=self.fornecedor,
+            codigo_fornecedor='COD-XYZ-001',
+            preco_compra=10,
+        )
         self.client.force_login(self.user)
 
     # ------------------------------------------------------------------
@@ -252,6 +284,8 @@ class EntradaDiretaNFViewTestCase(TestCase):
         self.assertEqual(xml_data.get('nota_fiscal'), '99999')
         # Fornecedor must have been matched by CNPJ
         self.assertEqual(xml_data.get('fornecedor_id'), self.fornecedor.pk)
+        # Produto must have been matched by supplier code (cProd)
+        self.assertEqual(xml_data.get('produtos')[0].get('produto_id'), self.produto.pk)
 
     # ------------------------------------------------------------------
     # 4. POST extract_xml com XML inválido exibe erro, não quebra

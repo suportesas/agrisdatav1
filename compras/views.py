@@ -2052,7 +2052,7 @@ def entrada_direta_nf(request):
     from decimal import Decimal
     from django.db import transaction
     from cadastros.models import Fornecedor
-    from produtos.models import Produto, UnidadeMedida
+    from produtos.models import Produto, ProdutoFornecedor, UnidadeMedida
     from estoque.models import LocalEstocagem
     from .models import RecebimentoCompra, ItemRecebimento
 
@@ -2073,6 +2073,9 @@ def entrada_direta_nf(request):
     def normalize_document(value):
         return ''.join(char for char in str(value or '') if char.isdigit())
 
+    def normalize_code(value):
+        return str(value or '').strip().lower()
+
     def enrich_xml_data(parsed_data):
         fornecedor_id = None
         fornecedor_documento = normalize_document(parsed_data.get('fornecedor_documento'))
@@ -2092,11 +2095,46 @@ def entrada_direta_nf(request):
 
         parsed_data['fornecedor_id'] = fornecedor_id
 
+        produto_fornecedor_by_code = {}
+        if fornecedor_id:
+            relacoes = ProdutoFornecedor.objects.filter(
+                fornecedor_id=fornecedor_id,
+                produto__categoria__empresa=empresa,
+                produto__ativo=True,
+                ativo=True,
+            ).select_related('produto')
+            produto_fornecedor_by_code = {
+                normalize_code(relacao.codigo_fornecedor): relacao.produto
+                for relacao in relacoes
+                if normalize_code(relacao.codigo_fornecedor)
+            }
+
+        produtos_by_barcode = {
+            normalize_document(getattr(produto, 'codigo_barras', '')): produto
+            for produto in produtos
+            if normalize_document(getattr(produto, 'codigo_barras', ''))
+        }
+
         for item in parsed_data.get('produtos', []):
             item_nome = normalize_text(item.get('nome'))
+            item_codigo_fornecedor = normalize_code(item.get('codigo_fornecedor'))
+            item_codigo_barras = normalize_document(item.get('codigo_barras'))
             item['produto_id'] = None
             item['unidade_medida_id'] = None
+
+            produto_match = None
+            if item_codigo_fornecedor and item_codigo_fornecedor in produto_fornecedor_by_code:
+                produto_match = produto_fornecedor_by_code[item_codigo_fornecedor]
+            elif item_codigo_barras and item_codigo_barras in produtos_by_barcode:
+                produto_match = produtos_by_barcode[item_codigo_barras]
+
+            if produto_match:
+                item['produto_id'] = produto_match.pk
+                item['unidade_medida_id'] = getattr(produto_match, 'unidade_medida_id', None)
+
             for produto in produtos:
+                if item['produto_id']:
+                    break
                 if normalize_text(produto.nome) == item_nome:
                     item['produto_id'] = produto.pk
                     item['unidade_medida_id'] = getattr(produto, 'unidade_medida_id', None)

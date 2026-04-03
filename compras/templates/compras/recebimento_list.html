@@ -20,6 +20,12 @@
                 <i class="bi bi-plus-circle me-2"></i>
                 Novo Recebimento (com Pedido)
             </a>
+            {% if xml_import_enabled %}
+            <a href="{% url 'compras:entrada_direta_nf' %}" class="btn btn-outline-primary ms-2">
+                <i class="bi bi-file-earmark-xml me-2"></i>
+                Importar XML NF-e
+            </a>
+            {% endif %}
             <button type="button" class="btn btn-outline-secondary ms-2" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Legenda: 🟡 Pedido parcialmente recebido | ✅ Pedido recebido totalmente | — Sem recebimento parcial">
                 <i class="bi bi-question-circle"></i> Ajuda
             </button>

@@ -87,12 +87,12 @@
       </li>
       <li class="nav-item">
         <button
-          class="nav-link{% if not object.pk %} disabled text-muted{% endif %}"
+          class="nav-link{% if not object.pk %} text-muted{% endif %}"
           id="fornecedores-tab"
           data-bs-toggle="tab"
           data-bs-target="#fornecedores"
           type="button"
-          {% if not object.pk %}disabled aria-disabled="true" title="Salve o produto para habilitar fornecedores"{% endif %}>
+          {% if not object.pk %}title="Abra a aba para ver como habilitar fornecedores"{% endif %}>
           <i class="bi bi-shop me-1"></i>Fornecedores
         </button>
       </li>
@@ -392,6 +392,13 @@
             {{ form.localizacao }}
           </div>
         </div>
+        <div class="row mt-2">
+          <div class="col-md-6 mb-3">
+            {{ form.armazem_padrao.label_tag }}
+            {{ form.armazem_padrao }}
+            <div class="form-text">{{ form.armazem_padrao.help_text }}</div>
+          </div>
+        </div>
         <h5 class="mb-3 mt-4">Rastreabilidade</h5>
         <div class="row">
           <div class="col-md-4 mb-3">
@@ -670,16 +677,21 @@
           incluindo dosagens específicas, carência e limite de aplicações conforme bula.
         </div>
         {% else %}
-        <div class="alert alert-warning">
-          <i class="bi bi-exclamation-triangle me-2"></i>
-          <strong>Atenção:</strong> Salve o produto primeiro para cadastrar culturas e pragas.
+        <div class="text-center py-4">
+          <div class="alert alert-warning text-start mb-3">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            <strong>Atenção:</strong> Salve o produto primeiro para cadastrar culturas e pragas.
+          </div>
+          <p class="text-muted mb-3">Depois de salvar, o sistema volta automaticamente nesta aba para você continuar o cadastro.</p>
+          <button type="submit" class="btn btn-primary" name="continue_tab" value="defensivo">
+            <i class="bi bi-check-circle me-1"></i>Salvar e continuar em Defensivo
+          </button>
         </div>
         {% endif %}
       </div>
       
       <!-- ABA FERTILIZANTE -->
       <div class="tab-pane fade" id="fertilizante">
-        {% if object.pk %}
         <div class="d-flex justify-content-between align-items-center mb-3">
           <h5 class="mb-0">
             <i class="bi bi-droplet-fill me-2"></i>Informações de Fertilizante
@@ -737,12 +749,6 @@
             {% endif %}
           </div>
         </div>
-        {% else %}
-        <div class="alert alert-warning">
-          <i class="bi bi-exclamation-triangle me-2"></i>
-          <strong>Atenção:</strong> Salve o produto primeiro para cadastrar informações de fertilizante.
-        </div>
-        {% endif %}
       </div>
       
       <!-- ABA DOCUMENTOS -->
@@ -957,30 +963,107 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // ============== CONTROLE DA ABA AGRÍCOLA/DEFENSIVO ==============
+    function sincronizarCategoriaAgricola() {
+      if (!categoriaAgricolaInput) {
+        return;
+      }
+      if (!categoriaSelect || !categoriaSelect.value) {
+        categoriaAgricolaInput.value = '';
+        return;
+      }
+
+      const isFertilizante = categoriaSelecionadaEhFertilizante();
+      const categoriaId = categoriaSelect.value;
+      const condiciona = categoriasCondicionais[categoriaId] === true || categoriasCondicionais[categoriaId] === 1;
+
+      if (isFertilizante) {
+        categoriaAgricolaInput.value = 'FERTILIZANTE';
+      } else if (condiciona) {
+        categoriaAgricolaInput.value = 'DEFENSIVO';
+      } else {
+        categoriaAgricolaInput.value = '';
+      }
+    }
+
+    function categoriaSelecionadaEhFertilizante() {
+      if (!categoriaSelect || !categoriaSelect.value) {
+        return false;
+      }
+
+      const selectedOption = categoriaSelect.options[categoriaSelect.selectedIndex];
+      const categoriaText = selectedOption?.text || '';
+      const textoNormalizado = categoriaText
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '');
+
+      return (
+        textoNormalizado.includes('fertilizante') ||
+        textoNormalizado.includes('fert -') ||
+        textoNormalizado.startsWith('fert') ||
+        /\bfert\b/i.test(textoNormalizado)
+      );
+    }
+
+    function garantirAbaVisivelAtiva() {
+      const tabButtons = [
+        document.getElementById('fertilizante-tab'),
+        document.getElementById('agricola-tab'),
+        document.getElementById('defensivo-tab'),
+        document.getElementById('geral-tab')
+      ].filter(Boolean);
+
+      const activeButton = document.querySelector('#produtoTabs .nav-link.active');
+      if (!activeButton) {
+        return;
+      }
+
+      const activeLi = activeButton.closest('li');
+      const activeHidden = activeLi && window.getComputedStyle(activeLi).display === 'none';
+      if (!activeHidden) {
+        return;
+      }
+
+      const targetButton = tabButtons.find(btn => {
+        const li = btn.closest('li');
+        return li && window.getComputedStyle(li).display !== 'none';
+      });
+
+      if (targetButton && window.bootstrap && window.bootstrap.Tab) {
+        window.bootstrap.Tab.getOrCreateInstance(targetButton).show();
+      }
+    }
+
     // Função para verificar se a categoria selecionada condiciona campos agrícolas
     function verificarCategoriaAgricolaCondicional() {
       if (!categoriaSelect) {
         console.error('⚠️ categoriaSelect não encontrado');
         return;
       }
+
+      const isFertilizante = categoriaSelecionadaEhFertilizante();
       const categoriaId = categoriaSelect.value;
       const condiciona = categoriasCondicionais[categoriaId] === true || categoriasCondicionais[categoriaId] === 1;
+
       // Mostrar/ocultar aba Agrícola
       if (agricolaTabLi) {
-        agricolaTabLi.style.display = condiciona ? 'block' : 'none';
+        agricolaTabLi.style.display = (condiciona && !isFertilizante) ? 'block' : 'none';
       }
       // Mostrar/ocultar aba Defensivo
       if (defensivoTabLi) {
-        defensivoTabLi.style.display = (condiciona && isProdutoExistente) ? 'block' : 'none';
+        defensivoTabLi.style.display = (condiciona && !isFertilizante) ? 'block' : 'none';
       }
       // Opcional: mostrar alerta na aba agrícola se for condicional e produto novo
       if (alertDefensivoInfo) {
-        if (condiciona && !isProdutoExistente) {
+        if (condiciona && !isProdutoExistente && !isFertilizante) {
           alertDefensivoInfo.classList.remove('d-none');
         } else {
           alertDefensivoInfo.classList.add('d-none');
         }
       }
+
+      garantirAbaVisivelAtiva();
+      sincronizarCategoriaAgricola();
     }
     
     // ============== CONTROLE DA ABA FERTILIZANTE ==============
@@ -996,17 +1079,12 @@ document.addEventListener('DOMContentLoaded', function() {
         
         const selectedOption = categoriaSelect.options[categoriaSelect.selectedIndex];
         const categoriaText = selectedOption?.text || '';
-        const categoriaTextLower = categoriaText.toLowerCase();
-        
-        // Verifica se o texto contém "fertilizante" ou "fert" (código comum)
-        const textoNormalizado = categoriaTextLower
-            .normalize('NFD')
-            .replace(/[\u0300-\u036f]/g, '');
-        
-        const isFertilizante = textoNormalizado.includes('fertilizante') || 
-                               textoNormalizado.includes('fert -') ||
-                               textoNormalizado.startsWith('fert') ||
-                               categoriaTextLower.match(/\bfert\b/i);
+        const textoNormalizado = categoriaText
+          .toLowerCase()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '');
+
+        const isFertilizante = categoriaSelecionadaEhFertilizante();
         
         console.log('🌱 VERIFICAÇÃO FERTILIZANTE:');
         console.log('   Texto original:', `"${categoriaText}"`);
@@ -1015,19 +1093,14 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('   Produto existente?', isProdutoExistente);
         console.log('   Deveria mostrar aba?', isFertilizante && isProdutoExistente);
         
-        // Mostrar alerta na aba Agrícola se for fertilizante e produto novo
+        // Mantém alerta de fertilizante oculto: a aba já está disponível no cadastro novo.
         if (alertFertilizanteInfo) {
-            if (isFertilizante && !isProdutoExistente) {
-                alertFertilizanteInfo.classList.remove('d-none');
-                console.log('✅ Alerta fertilizante mostrado (produto novo)');
-            } else {
-                alertFertilizanteInfo.classList.add('d-none');
-            }
+          alertFertilizanteInfo.classList.add('d-none');
         }
         
-        // Mostrar/ocultar aba - só mostra se for fertilizante E produto já existir
+        // Mostrar/ocultar aba - fertilizante deve aparecer também no cadastro novo
         if (fertilizanteTabLi) {
-            const shouldShow = isFertilizante && isProdutoExistente;
+          const shouldShow = isFertilizante;
             
             if (shouldShow) {
                 fertilizanteTabLi.style.display = 'block';
@@ -1040,23 +1113,44 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (!isFertilizante) {
                     console.warn('⚠️ Categoria não é fertilizante');
                 }
-                if (!isProdutoExistente) {
-                    console.warn('⚠️ Produto novo - salve primeiro');
-                }
             }
         } else {
             console.error('❌ Elemento fertilizante-tab-li não encontrado no DOM!');
         }
+
+          garantirAbaVisivelAtiva();
+              sincronizarCategoriaAgricola();
     }
     
     // Verificar ao carregar e ao mudar categoria
     if (categoriaSelect) {
       verificarCategoriaAgricolaCondicional();
       verificarCategoriaFertilizante();
+      sincronizarCategoriaAgricola();
       categoriaSelect.addEventListener('change', verificarCategoriaAgricolaCondicional);
       categoriaSelect.addEventListener('change', verificarCategoriaFertilizante);
+      categoriaSelect.addEventListener('change', sincronizarCategoriaAgricola);
+
+      // Se a URL vier com hash de aba (ex: #defensivo), ativa a aba após aplicar regras de visibilidade.
+      const hash = window.location.hash;
+      if (hash && window.bootstrap && window.bootstrap.Tab) {
+        const targetButton = document.querySelector(`#produtoTabs .nav-link[data-bs-target="${hash}"]`);
+        if (targetButton) {
+          const li = targetButton.closest('li');
+          const isVisible = !li || window.getComputedStyle(li).display !== 'none';
+          if (isVisible) {
+            window.bootstrap.Tab.getOrCreateInstance(targetButton).show();
+          }
+        }
+      }
     } else {
       console.error('❌ categoriaSelect não encontrado - verificação não será executada');
+    }
+
+    if (produtoForm) {
+      produtoForm.addEventListener('submit', function() {
+        sincronizarCategoriaAgricola();
+      });
     }
 });
 

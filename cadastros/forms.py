@@ -1554,7 +1554,7 @@ class FornecedorForm(forms.ModelForm):
             'is_exportador', 'moeda_padrao', 'porto_preferencial',
             'categorias', 'subcategorias',
             'classificacao_risco', 'data_homologacao', 'validade_homologacao',
-            'limite_credito', 'prazo_pagamento_padrao', 'prazo_entrega_medio', 'observacoes', 'portal_enabled', 'ativa'
+            'limite_credito', 'prazo_pagamento_padrao', 'prazo_entrega_medio', 'observacoes', 'portal_enabled', 'portal_user', 'ativa'
         ]
         widgets = {
             'nome': forms.TextInput(attrs={'class': 'form-control'}),
@@ -1583,11 +1583,13 @@ class FornecedorForm(forms.ModelForm):
             'classificacao_risco': forms.Select(attrs={'class': 'form-select'}),
             'data_homologacao': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'validade_homologacao': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'limite_credito': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'step': '0.01'}),
+            'limite_credito': forms.TextInput(attrs={'class': 'form-control', 'inputmode': 'decimal', 'data-currency-mask': 'brl'}),
             'prazo_pagamento_padrao': forms.NumberInput(attrs={'class': 'form-control', 'min': 0}),
             'prazo_entrega_medio': forms.NumberInput(attrs={'class': 'form-control', 'min': 0}),
             'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'is_exportador': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'portal_enabled': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'portal_user': forms.Select(attrs={'class': 'form-select'}),
             'ativa': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
 
@@ -1608,6 +1610,23 @@ class FornecedorForm(forms.ModelForm):
                 qs_sub = SubcategoriaFornecedor.objects.filter(categoria__empresa=empresa).distinct() if empresa else SubcategoriaFornecedor.objects.all()
                 self.fields['subcategorias'].queryset = qs_sub
                 self.fields['subcategorias'].required = False
+        except Exception:
+            pass
+
+        try:
+            from usuarios.models import Usuario
+            if 'portal_user' in self.fields:
+                usuarios_qs = Usuario.objects.filter(is_active=True)
+                if empresa:
+                    usuarios_qs = usuarios_qs.filter(empresa=empresa)
+
+                # Permite reutilizar o usuário já vinculado ao fornecedor atual durante edição.
+                if self.instance.pk and self.instance.portal_user_id:
+                    usuarios_qs = usuarios_qs | Usuario.objects.filter(pk=self.instance.portal_user_id)
+
+                self.fields['portal_user'].queryset = usuarios_qs.order_by('first_name', 'last_name', 'username').distinct()
+                self.fields['portal_user'].required = False
+                self.fields['portal_user'].help_text = 'Selecione o usuário que fará login no portal deste fornecedor.'
         except Exception:
             pass
 

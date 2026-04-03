@@ -29,6 +29,16 @@
         A entrada será registrada no histórico como "Entrada Direta sem Processo de Pedido/Aprovação".
     </div>
 
+    {% if xml_data.itens_pendentes %}
+    <div class="alert alert-danger d-flex align-items-center" id="alertaPendentes">
+        <i class="bi bi-exclamation-circle-fill me-2 fs-5"></i>
+        <div>
+            <strong>{{ xml_data.itens_pendentes }} item(s) sem correspondência</strong> no cadastro de produtos.
+            Clique em <strong>"Vincular Produto"</strong> em cada item destacado antes de gravar a entrada.
+        </div>
+    </div>
+    {% endif %}
+
     <!-- Formulário -->
     <form method="post" id="entradaDiretaForm" enctype="multipart/form-data">
         {% csrf_token %}
@@ -50,7 +60,7 @@
                             <select name="fornecedor" class="form-select" required>
                                 <option value="">Selecione...</option>
                                 {% for fornecedor in fornecedores %}
-                                <option value="{{ fornecedor.pk }}" {% if xml_data.fornecedor_nome and fornecedor.nome == xml_data.fornecedor_nome %}selected{% endif %}>{{ fornecedor.nome }}</option>
+                                <option value="{{ fornecedor.pk }}" {% if xml_data.fornecedor_id == fornecedor.pk or xml_data.fornecedor_nome and fornecedor.nome == xml_data.fornecedor_nome %}selected{% endif %}>{{ fornecedor.nome }}</option>
                                 {% endfor %}
                             </select>
                         </div>
@@ -141,8 +151,26 @@
                 <div id="itensContainer">
                     {% if xml_data.produtos %}
                         {% for item in xml_data.produtos %}
-                            {% with prod=item.prod %}
-                            <div class="item-entrada border p-3 mb-3 rounded" data-index="{{ forloop.counter0 }}">
+                            <div class="item-entrada border p-3 mb-3 rounded{% if item.pendente %} border-warning bg-warning bg-opacity-10{% endif %}"
+                                 data-index="{{ forloop.counter0 }}"
+                                 data-pendente="{{ item.pendente|yesno:'true,false' }}"
+                                 data-nome-xml="{{ item.nome|default:'' }}"
+                                 data-codigo-fornecedor="{{ item.codigo_fornecedor|default:'' }}">
+
+                                {% if item.pendente %}
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="badge bg-warning text-dark fs-6">
+                                        <i class="bi bi-exclamation-triangle me-1"></i>
+                                        Não encontrado no cadastro — "{{ item.nome }}"
+                                    </span>
+                                    <button type="button" class="btn btn-warning btn-sm vincular-btn"
+                                            onclick="abrirModalVincular(this)">
+                                        <i class="bi bi-link-45deg me-1"></i>
+                                        Vincular Produto
+                                    </button>
+                                </div>
+                                {% endif %}
+
                                 <div class="row">
                                     <div class="col-md-4">
                                         <div class="mb-3">
@@ -150,7 +178,7 @@
                                             <select name="produto_{{ forloop.counter0 }}" class="form-select" required>
                                                 <option value="">Selecione...</option>
                                                 {% for produto in produtos %}
-                                                <option value="{{ produto.pk }}" {% if prod.xProd and produto.nome == prod.xProd %}selected{% endif %}>{{ produto.nome }}</option>
+                                                <option value="{{ produto.pk }}" {% if item.produto_id == produto.pk or item.nome and produto.nome == item.nome %}selected{% endif %}>{{ produto.nome }}</option>
                                                 {% endfor %}
                                             </select>
                                         </div>
@@ -160,7 +188,7 @@
                                             <label class="form-label">Unidade *</label>
                                             <select name="unidade_medida_{{ forloop.counter0 }}" class="form-select" required>
                                                 {% for unidade in unidades %}
-                                                <option value="{{ unidade.pk }}" {% if prod.uCom and unidade.sigla == prod.uCom %}selected{% endif %}>{{ unidade.sigla }}</option>
+                                                <option value="{{ unidade.pk }}" {% if item.unidade_medida_id == unidade.pk or item.unidade and unidade.sigla == item.unidade %}selected{% endif %}>{{ unidade.sigla }}</option>
                                                 {% endfor %}
                                             </select>
                                         </div>
@@ -168,13 +196,13 @@
                                     <div class="col-md-2">
                                         <div class="mb-3">
                                             <label class="form-label">Quantidade *</label>
-                                            <input type="number" name="quantidade_{{ forloop.counter0 }}" class="form-control" step="0.001" required value="{{ prod.qCom|default:'' }}">
+                                            <input type="number" name="quantidade_{{ forloop.counter0 }}" class="form-control" step="0.001" required value="{{ item.quantidade|default:'' }}">
                                         </div>
                                     </div>
                                     <div class="col-md-2">
                                         <div class="mb-3">
                                             <label class="form-label">Preço Unit. *</label>
-                                            <input type="number" name="preco_unitario_{{ forloop.counter0 }}" class="form-control" step="0.01" required value="{{ prod.vUnCom|default:'' }}">
+                                            <input type="number" name="preco_unitario_{{ forloop.counter0 }}" class="form-control" step="0.01" required value="{{ item.preco_unitario|default:'' }}">
                                         </div>
                                     </div>
                                     <div class="col-md-2">
@@ -226,7 +254,6 @@
                                     </div>
                                 </div>
                             </div>
-                            {% endwith %}
                         {% endfor %}
                         <input type="hidden" name="itens_count" id="itensCount" value="{{ xml_data.produtos|length }}">
                     {% else %}
@@ -325,6 +352,7 @@
             </div>
         </div>
 
+        {% if xml_import_enabled %}
         <!-- Upload XML -->
         <div class="card mb-4">
             <div class="card-header bg-primary text-white">
@@ -336,22 +364,31 @@
             <div class="card-body">
                 <div class="mb-3">
                     <label class="form-label">Selecione o arquivo XML da NF-e</label>
-                    <input type="file" name="xml_file" class="form-control" accept=".xml">
+                    {{ xml_upload_form.xml_file }}
+                    {% if xml_upload_form.xml_file.errors %}
+                    <div class="text-danger small mt-1">{{ xml_upload_form.xml_file.errors|join:', ' }}</div>
+                    {% endif %}
                 </div>
                 <div class="mb-3">
-                    <button type="button" class="btn btn-secondary" onclick="extrairDadosXML()">
+                    <button type="submit" name="action" value="extract_xml" formnovalidate class="btn btn-secondary">
                         <i class="bi bi-file-earmark-arrow-down me-2"></i>
                         Extrair Dados do XML
                     </button>
+                    <small class="text-muted d-block mt-2">A extração preenche fornecedor, NF e itens. Revise os dados antes de gravar a entrada.</small>
                 </div>
 
-                <!-- Preview dos dados extraídos -->
-                <div id="previewDadosXML" class="d-none">
-                    <h6>Dados Extraídos do XML:</h6>
-                    <div id="dadosXMLContent"></div>
+                {% if xml_data.xml_resumo %}
+                <div class="alert alert-info mb-0">
+                    <strong>XML carregado:</strong>
+                    Fornecedor {{ xml_data.xml_resumo.fornecedor }} |
+                    Documento {{ xml_data.xml_resumo.documento }} |
+                    Itens {{ xml_data.xml_resumo.itens }} |
+                    Total R$ {{ xml_data.xml_resumo.valor_total_nf }}
                 </div>
+                {% endif %}
             </div>
         </div>
+        {% endif %}
 
         <!-- Botões -->
         <div class="row mb-4">
@@ -369,9 +406,58 @@
     </form>
 </div>
 
-<!-- Modal de Ajuda -->
-<div class="modal fade" id="ajudaEntradaDiretaModal" tabindex="-1">
+<!-- Modal de Vinculação Manual -->
+<div class="modal fade" id="vincularProdutoModal" tabindex="-1" aria-labelledby="vincularProdutoModalLabel">
     <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title" id="vincularProdutoModalLabel">
+                    <i class="bi bi-link-45deg me-2"></i>
+                    Vincular Produto do XML ao Cadastro
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted small mb-1">Produto no XML (do fornecedor):</p>
+                <p class="fw-bold mb-3" id="vincularNomeXML"></p>
+
+                <div class="mb-3">
+                    <label class="form-label">Buscar produto no cadastro</label>
+                    <input type="text" id="vincularBuscaInput" class="form-control"
+                           placeholder="Digite nome, código interno ou código de barras..."
+                           autocomplete="off">
+                </div>
+
+                <div id="vincularResultados" class="list-group mb-3" style="max-height: 250px; overflow-y: auto;"></div>
+
+                <input type="hidden" id="vincularProdutoId" value="">
+                <div id="vincularProdutoSelecionado" class="alert alert-success d-none">
+                    <i class="bi bi-check-circle me-2"></i>
+                    Produto selecionado: <strong id="vincularProdutoNomeSelecionado"></strong>
+                </div>
+
+                <hr>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="vincularSalvarVinculo" checked>
+                    <label class="form-check-label" for="vincularSalvarVinculo">
+                        <strong>Salvar vínculo para próximas notas</strong> — o sistema reconhecerá automaticamente
+                        este código do fornecedor nas próximas importações.
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-warning" id="vincularConfirmarBtn" onclick="confirmarVinculo()" disabled>
+                    <i class="bi bi-check-lg me-1"></i>
+                    Confirmar Vínculo
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Ajuda -->
+<div class="modal fade" id="ajudaEntradaDiretaModal" tabindex="-1">    <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header bg-info text-white">
                 <h5 class="modal-title">
@@ -424,6 +510,8 @@
 let itemIndex = 1;
 
 document.addEventListener('DOMContentLoaded', function() {
+    itemIndex = document.querySelectorAll('.item-entrada').length;
+
     // Preenche data e hora atual
     const dataRecebimento = document.getElementById('dataRecebimento');
     const horaRecebimento = document.getElementById('horaRecebimento');
@@ -489,29 +577,6 @@ function removerItem(button) {
     }
 }
 
-function extrairDadosXML() {
-    const fileInput = document.querySelector('input[name="xml_file"]');
-    const previewContainer = document.getElementById('previewDadosXML');
-    const dadosXMLContent = document.getElementById('dadosXMLContent');
-    
-    if (fileInput.files.length === 0) {
-        alert('Selecione um arquivo XML primeiro.');
-        return;
-    }
-    
-    const file = fileInput.files[0];
-    const reader = new FileReader();
-    
-    reader.onload = function(e) {
-        const xmlContent = e.target.result;
-        // Aqui você pode fazer o parsing do XML e extrair os dados necessários
-        // Por enquanto, vamos apenas mostrar o conteúdo bruto do XML
-        dadosXMLContent.textContent = xmlContent;
-        previewContainer.classList.remove('d-none');
-    };
-    
-    reader.readAsText(file);
-}
 // Cálculo automático do Valor Total NF
 
 function calcularValorTotalNF() {
@@ -566,5 +631,172 @@ window.removerItem = function(btn) {
 
 // Inicializa cálculo ao carregar
 document.addEventListener('DOMContentLoaded', calcularValorTotalNF);
+
+// ─── Vinculação Manual de Produto ───────────────────────────────────────────
+
+let _vincularItemEl = null;      // elemento .item-entrada alvo
+let _vincularBuscaTimer = null;
+
+function abrirModalVincular(btn) {
+    _vincularItemEl = btn.closest('.item-entrada');
+    const nomeXml = _vincularItemEl.dataset.nomeXml || '';
+
+    document.getElementById('vincularNomeXML').textContent = nomeXml || '(sem nome no XML)';
+    document.getElementById('vincularBuscaInput').value = '';
+    document.getElementById('vincularResultados').innerHTML = '';
+    document.getElementById('vincularProdutoId').value = '';
+    document.getElementById('vincularProdutoSelecionado').classList.add('d-none');
+    document.getElementById('vincularConfirmarBtn').disabled = true;
+
+    const modal = new bootstrap.Modal(document.getElementById('vincularProdutoModal'));
+    modal.show();
+
+    // Se houver nome XML, faz busca imediata
+    if (nomeXml) {
+        document.getElementById('vincularBuscaInput').value = nomeXml;
+        buscarProdutos(nomeXml);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    const input = document.getElementById('vincularBuscaInput');
+    if (input) {
+        input.addEventListener('input', function () {
+            clearTimeout(_vincularBuscaTimer);
+            const q = this.value.trim();
+            if (q.length < 2) {
+                document.getElementById('vincularResultados').innerHTML = '';
+                return;
+            }
+            _vincularBuscaTimer = setTimeout(() => buscarProdutos(q), 300);
+        });
+    }
+});
+
+function buscarProdutos(q) {
+    const url = '{% url "compras:produto_busca_ajax" %}?q=' + encodeURIComponent(q);
+    fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(r => r.json())
+        .then(data => {
+            const lista = document.getElementById('vincularResultados');
+            lista.innerHTML = '';
+            if (!data.produtos || data.produtos.length === 0) {
+                lista.innerHTML = '<span class="list-group-item text-muted">Nenhum produto encontrado.</span>';
+                return;
+            }
+            data.produtos.forEach(p => {
+                const item = document.createElement('button');
+                item.type = 'button';
+                item.classList.add('list-group-item', 'list-group-item-action');
+                const extra = p.codigo ? ` — Cód. ${p.codigo}` : (p.codigo_barras ? ` — EAN ${p.codigo_barras}` : '');
+                item.textContent = p.nome + extra;
+                item.dataset.produtoId = p.id;
+                item.dataset.produtoNome = p.nome;
+                item.addEventListener('click', () => selecionarProdutoVinculo(p.id, p.nome));
+                lista.appendChild(item);
+            });
+        })
+        .catch(() => {
+            document.getElementById('vincularResultados').innerHTML =
+                '<span class="list-group-item text-danger">Erro ao buscar produtos.</span>';
+        });
+}
+
+function selecionarProdutoVinculo(id, nome) {
+    document.getElementById('vincularProdutoId').value = id;
+    document.getElementById('vincularProdutoNomeSelecionado').textContent = nome;
+    document.getElementById('vincularProdutoSelecionado').classList.remove('d-none');
+    document.getElementById('vincularConfirmarBtn').disabled = false;
+
+    // Destaca item ativo na lista
+    document.querySelectorAll('#vincularResultados .list-group-item').forEach(el => {
+        el.classList.toggle('active', el.dataset.produtoId == id);
+    });
+}
+
+function confirmarVinculo() {
+    const produtoId = parseInt(document.getElementById('vincularProdutoId').value, 10);
+    if (!produtoId || !_vincularItemEl) return;
+
+    const idx = _vincularItemEl.dataset.index;
+    const select = _vincularItemEl.querySelector(`select[name="produto_${idx}"]`);
+    if (select) {
+        select.value = produtoId;
+        // Aciona evento de change para auto-selecionar unidade
+        select.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+
+    // Remove badge de pendência
+    _vincularItemEl.classList.remove('border-warning', 'bg-warning', 'bg-opacity-10');
+    _vincularItemEl.dataset.pendente = 'false';
+    const badge = _vincularItemEl.querySelector('.badge.bg-warning');
+    if (badge) badge.closest('.d-flex')?.remove();
+
+    // Salvar vínculo no servidor se checkbox marcado
+    const salvar = document.getElementById('vincularSalvarVinculo').checked;
+    if (salvar) {
+        const codigoFornecedor = _vincularItemEl.dataset.codigoFornecedor || '';
+        const fornecedorSelect = document.querySelector('select[name="fornecedor"]');
+        const fornecedorId = fornecedorSelect ? parseInt(fornecedorSelect.value, 10) : 0;
+
+        if (codigoFornecedor && fornecedorId) {
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+            fetch('{% url "compras:salvar_vinculo_xml_ajax" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                body: JSON.stringify({
+                    produto_id: produtoId,
+                    fornecedor_id: fornecedorId,
+                    codigo_fornecedor: codigoFornecedor,
+                }),
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (!data.ok) console.warn('Vínculo não salvo:', data.error);
+            })
+            .catch(err => console.warn('Erro ao salvar vínculo:', err));
+        }
+    }
+
+    // Atualiza alerta de pendentes
+    atualizarAlertaPendentes();
+
+    bootstrap.Modal.getInstance(document.getElementById('vincularProdutoModal'))?.hide();
+}
+
+function atualizarAlertaPendentes() {
+    const total = document.querySelectorAll('.item-entrada[data-pendente="true"]').length;
+    const alerta = document.getElementById('alertaPendentes');
+    if (alerta) {
+        if (total === 0) {
+            alerta.remove();
+        } else {
+            const strong = alerta.querySelector('strong');
+            if (strong) strong.textContent = `${total} item(s) sem correspondência`;
+        }
+    }
+}
+
+// Bloqueia envio do formulário se ainda houver itens pendentes
+document.addEventListener('DOMContentLoaded', function () {
+    const form = document.getElementById('entradaDiretaForm');
+    if (form) {
+        form.addEventListener('submit', function (e) {
+            // Ignora ação de extract_xml
+            const submitter = e.submitter;
+            if (submitter && submitter.value === 'extract_xml') return;
+
+            const pendentes = document.querySelectorAll('.item-entrada[data-pendente="true"]').length;
+            if (pendentes > 0) {
+                e.preventDefault();
+                alert(`Há ${pendentes} item(s) sem produto vinculado. Use o botão "Vincular Produto" antes de gravar.`);
+            }
+        });
+    }
+});
 </script>
 {% endblock %}

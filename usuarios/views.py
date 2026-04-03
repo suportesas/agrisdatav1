@@ -14,6 +14,7 @@ from django.core.paginator import Paginator
 from django.utils import timezone
 from datetime import timedelta
 from django.core.cache import cache
+from django.contrib.auth.models import Group
 
 from .models import Usuario, LoginRegistro, PerfilUsuario, LoginAnomalia, AlertaSeguranca
 from .forms import (
@@ -199,6 +200,19 @@ def login_view(request):
             next_url = request.GET.get('next')
             if next_url:
                 return redirect(next_url)
+
+            # Portal do fornecedor: acesso isolado com grupo minimo.
+            try:
+                fornecedor = user.fornecedor_profile
+            except Exception:
+                fornecedor = None
+
+            if fornecedor and fornecedor.portal_enabled:
+                group, _ = Group.objects.get_or_create(name='FORNECEDOR')
+                if not user.groups.filter(pk=group.pk).exists():
+                    user.groups.add(group)
+                return redirect('portal_fornecedor:dashboard')
+
             return redirect('dashboard:index')
         
         else:

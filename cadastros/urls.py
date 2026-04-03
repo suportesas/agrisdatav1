@@ -142,6 +142,8 @@ urlpatterns = [
     path('fornecedores/<int:pk>/pdf/', views.fornecedor_pdf, name='fornecedor_pdf'),
     path('fornecedores/<int:pk>/editar/', views.fornecedor_update, name='fornecedor_update'),
     path('fornecedores/<int:pk>/excluir/', views.fornecedor_delete, name='fornecedor_delete'),
+    path('fornecedores/<int:pk>/portal/criar-acesso/', views.fornecedor_criar_acesso_portal, name='fornecedor_criar_acesso_portal'),
+    path('fornecedores/<int:pk>/portal/bloquear/', views.fornecedor_bloquear_portal, name='fornecedor_bloquear_portal'),
     path('fornecedores/relatorio/', views.relatorio_fornecedor, name='relatorio_fornecedor'),
     path('fornecedores/relatorio-ranking/', views.relatorio_fornecedor_ranking, name='relatorio_fornecedor_ranking'),
 

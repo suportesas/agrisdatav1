@@ -247,11 +247,33 @@
             </div>
         </div>
         <div class="text-end">
-            <button type="submit" class="btn btn-primary">
+            <button type="submit" class="btn btn-primary" id="btn-salvar-solicitacao">
                 <i class="fas fa-save"></i> Salvar Solicitação
             </button>
+            <div class="small text-muted mt-2">
+                <i class="bi bi-shield-check"></i>
+                Ao clicar em salvar, sera solicitada confirmacao.
+            </div>
         </div>
     </form>
+
+    <div class="modal fade" id="confirmarSalvarSolicitacaoModal" tabindex="-1" aria-labelledby="confirmarSalvarSolicitacaoModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="confirmarSalvarSolicitacaoModalLabel">Confirmar salvamento</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+                <div class="modal-body">
+                    Deseja salvar a solicitação agora ou continuar editando para incluir mais produtos?
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Continuar editando</button>
+                    <button type="button" class="btn btn-primary" id="confirmar-salvar-solicitacao">Salvar solicitação</button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}
 
@@ -641,6 +663,21 @@ document.addEventListener('DOMContentLoaded', function() {
     // Validação amigável antes de enviar
     const solicitacaoForm = document.getElementById('solicitacao-form');
     if (solicitacaoForm) {
+        let confirmarSalvarAprovado = false;
+        const modalElement = document.getElementById('confirmarSalvarSolicitacaoModal');
+        const confirmarSalvarModal = modalElement ? new bootstrap.Modal(modalElement) : null;
+        const confirmarSalvarBtn = document.getElementById('confirmar-salvar-solicitacao');
+
+        if (confirmarSalvarBtn) {
+            confirmarSalvarBtn.addEventListener('click', function() {
+                confirmarSalvarAprovado = true;
+                if (confirmarSalvarModal) {
+                    confirmarSalvarModal.hide();
+                }
+                solicitacaoForm.requestSubmit();
+            });
+        }
+
         console.log('✓ Form listener configurado');
         solicitacaoForm.addEventListener('submit', function(e) {
             console.log('\n========== VALIDAÇÃO DO FORMULÁRIO ==========');
@@ -740,6 +777,7 @@ document.addEventListener('DOMContentLoaded', function() {
             erros.forEach(e => console.log('   - ' + e));
             
             if (erros.length > 0) {
+                confirmarSalvarAprovado = false;
                 e.preventDefault();
                 const mensagem = 'Verifique os seguintes campos:\n\n' + 
                                 erros.map(e => '• ' + e).join('\n');
@@ -754,6 +792,16 @@ document.addEventListener('DOMContentLoaded', function() {
                     totalFormsInput.value = itemVisivel;
                     console.log('TOTAL_FORMS atualizado para:', itemVisivel);
                 }
+
+                if (!confirmarSalvarAprovado) {
+                    e.preventDefault();
+                    if (confirmarSalvarModal) {
+                        confirmarSalvarModal.show();
+                    }
+                    return false;
+                }
+
+                confirmarSalvarAprovado = false;
                 return true;
             }
         });

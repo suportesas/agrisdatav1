@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<nfe>
+  <infNFe Id="NFe35260402099999999000180551234567890123456789a">
+    <ide>
+      <cUF>35</cUF>
+      <natOp>COMPRA DE MATERIA PRIMA</natOp>
+      <model>55</model>
+      <serie>1</serie>
+      <nNF>999999</nNF>
+      <dhEmi>2026-04-02T10:30:00</dhEmi>
+      <tpNF>0</tpNF>
+      <idDest>1</idDest>
+      <cMunFG>3500105</cMunFG>
+      <tpImp>1</tpImp>
+      <tpEmis>1</tpEmis>
+    </ide>
+    <emit>
+      <CNPJ>99999999000180</CNPJ>
+      <xNome>FORNECEDOR NOVO LTDA</xNome>
+      <xFant>FORNECEDOR NOVO</xFant>
+      <enderEmit>
+        <xLgr>RUA DESCONHECIDA</xLgr>
+        <nro>999</nro>
+        <xBairro>BAIRRO DESCONHECIDO</xBairro>
+        <cMun>3500105</cMun>
+        <xMun>CAMPINAS</xMun>
+        <UF>SP</UF>
+        <CEP>13000000</CEP>
+      </enderEmit>
+      <IE>123456789999</IE>
+    </emit>
+    <dest>
+      <CNPJ>11222333000181</CNPJ>
+      <xNome>EMPRESA TESTE LTDA</xNome>
+      <enderDest>
+        <xLgr>RUA PRINCIPAL</xLgr>
+        <nro>456</nro>
+        <xBairro>BAIRRO</xBairro>
+        <cMun>3500105</cMun>
+        <xMun>CAMPINAS</xMun>
+        <UF>SP</UF>
+        <CEP>13000001</CEP>
+      </enderDest>
+      <IE>123456789013</IE>
+      <indIEDest>1</indIEDest>
+    </dest>
+    <total>
+      <ICMSTot>
+        <vNF>2000.00</vNF>
+      </ICMSTot>
+    </total>
+    <transp>
+      <modFrete>1</modFrete>
+    </transp>
+    <det nItem="1">
+      <prod>
+        <code>002</code>
+        <xProd>Produto do Fornecedor Novo</xProd>
+        <NCM>27101241</NCM>
+        <CFOP>1102</CFOP>
+        <uCom>UN</uCom>
+        <qCom>50</qCom>
+        <vUnCom>40.00</vUnCom>
+        <vProd>2000.00</vProd>
+      </prod>
+    </det>
+  </infNFe>
+</nfe>

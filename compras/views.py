@@ -50,8 +50,9 @@ def cotacao_item_comparativo(request, pk):
             if hasattr(cotacao, 'concluir'):
                 try:
                     cotacao.concluir()
-                except Exception:
-                    pass
+                except Exception as e:
+                    import logging
+                    logging.getLogger(__name__).error('Erro ao concluir cotação %s: %s', cotacao.pk, e)
         else:
             if hasattr(cotacao, 'atualizar_status_cotacao'):
                 cotacao.atualizar_status_cotacao()
@@ -88,6 +89,7 @@ from django.core.paginator import Paginator
 from django.utils import timezone
 from django.template.loader import render_to_string
 from django.core.mail import EmailMessage
+from django.core.files.base import ContentFile
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -114,11 +116,12 @@ from .forms import (
     SolicitacaoMensagemForm
 )
 from .forms_xml_nf import XMLNFeUploadForm
-import xmltodict
+from .nfe_parser import NFEImportError, parse_nfe_xml
 from produtos.models import Produto
 from estoque.models import LocalEstocagem
 from cadastros.models import Fornecedor
 from django.db.models import Q
+from core.feature_flags import is_feature_enabled
 
 @login_required
 def solicitacao_list(request):
@@ -956,8 +959,23 @@ def pedido_gerar(request, cotacao_pk):
         Cotacao,
         pk=cotacao_pk,
         empresa=request.user.empresa,
-        status='CONCLUIDA'
     )
+
+    if cotacao.status != 'CONCLUIDA':
+        for item in cotacao.itens.all():
+            if hasattr(item, 'atualizar_status'):
+                item.atualizar_status()
+
+        if hasattr(cotacao, 'pode_concluir') and cotacao.pode_concluir():
+            cotacao.concluir()
+            cotacao.refresh_from_db()
+
+        if cotacao.status != 'CONCLUIDA':
+            messages.warning(
+                request,
+                'A cotação ainda não está concluída. Salve a seleção dos fornecedores antes de gerar o pedido de compra.'
+            )
+            return redirect('compras:cotacao_item_comparativo', pk=cotacao_pk)
 
     # Evita gerar pedidos duplicados para a mesma cotação
     if PedidoCompra.objects.filter(cotacao=cotacao).exists():
@@ -2034,18 +2052,139 @@ def entrada_direta_nf(request):
     from decimal import Decimal
     from django.db import transaction
     from cadastros.models import Fornecedor
-    from produtos.models import Produto, UnidadeMedida
+    from produtos.models import Produto, ProdutoFornecedor, UnidadeMedida
     from estoque.models import LocalEstocagem
     from .models import RecebimentoCompra, ItemRecebimento
 
     empresa = request.user.empresa
+    xml_import_enabled = is_feature_enabled('COMPRAS_XML_IMPORT')
 
     fornecedores = Fornecedor.objects.filter(empresa=empresa, ativa=True).order_by('nome')
     produtos = Produto.objects.filter(ativo=True, categoria__empresa=empresa).order_by('nome')
     unidades = UnidadeMedida.objects.all().order_by('sigla')
     locais_estoque = LocalEstocagem.objects.filter(armazem__empresa=empresa, ativo=True).order_by('armazem__nome')
 
+    xml_data = {}
+    xml_upload_form = XMLNFeUploadForm()
+
+    def normalize_text(value):
+        return ' '.join(str(value or '').strip().lower().split())
+
+    def normalize_document(value):
+        return ''.join(char for char in str(value or '') if char.isdigit())
+
+    def normalize_code(value):
+        return str(value or '').strip().lower()
+
+    def enrich_xml_data(parsed_data):
+        fornecedor_id = None
+        fornecedor_documento = normalize_document(parsed_data.get('fornecedor_documento'))
+        fornecedor_nome = normalize_text(parsed_data.get('fornecedor_nome'))
+
+        for fornecedor in fornecedores:
+            fornecedor_cnpj = normalize_document(getattr(fornecedor, 'cnpj_cpf', ''))
+            if fornecedor_documento and fornecedor_cnpj == fornecedor_documento:
+                fornecedor_id = fornecedor.pk
+                break
+            if fornecedor_nome and normalize_text(fornecedor.nome) == fornecedor_nome:
+                fornecedor_id = fornecedor.pk
+                break
+            if fornecedor_nome and normalize_text(fornecedor.nome_fantasia) == fornecedor_nome:
+                fornecedor_id = fornecedor.pk
+                break
+
+        parsed_data['fornecedor_id'] = fornecedor_id
+
+        produto_fornecedor_by_code = {}
+        if fornecedor_id:
+            relacoes = ProdutoFornecedor.objects.filter(
+                fornecedor_id=fornecedor_id,
+                produto__categoria__empresa=empresa,
+                produto__ativo=True,
+                ativo=True,
+            ).select_related('produto')
+            produto_fornecedor_by_code = {
+                normalize_code(relacao.codigo_fornecedor): relacao.produto
+                for relacao in relacoes
+                if normalize_code(relacao.codigo_fornecedor)
+            }
+
+        produtos_by_barcode = {
+            normalize_document(getattr(produto, 'codigo_barras', '')): produto
+            for produto in produtos
+            if normalize_document(getattr(produto, 'codigo_barras', ''))
+        }
+
+        for item in parsed_data.get('produtos', []):
+            item_nome = normalize_text(item.get('nome'))
+            item_codigo_fornecedor = normalize_code(item.get('codigo_fornecedor'))
+            item_codigo_barras = normalize_document(item.get('codigo_barras'))
+            item['produto_id'] = None
+            item['unidade_medida_id'] = None
+
+            produto_match = None
+            if item_codigo_fornecedor and item_codigo_fornecedor in produto_fornecedor_by_code:
+                produto_match = produto_fornecedor_by_code[item_codigo_fornecedor]
+            elif item_codigo_barras and item_codigo_barras in produtos_by_barcode:
+                produto_match = produtos_by_barcode[item_codigo_barras]
+
+            if produto_match:
+                item['produto_id'] = produto_match.pk
+                item['unidade_medida_id'] = getattr(produto_match, 'unidade_medida_id', None)
+
+            for produto in produtos:
+                if item['produto_id']:
+                    break
+                if normalize_text(produto.nome) == item_nome:
+                    item['produto_id'] = produto.pk
+                    item['unidade_medida_id'] = getattr(produto, 'unidade_medida_id', None)
+                    break
+            if not item['unidade_medida_id']:
+                unidade_sigla = normalize_text(item.get('unidade'))
+                for unidade in unidades:
+                    if normalize_text(unidade.sigla) == unidade_sigla:
+                        item['unidade_medida_id'] = unidade.pk
+                        break
+
+            item['pendente'] = item['produto_id'] is None
+
+        parsed_data['itens_pendentes'] = sum(
+            1 for item in parsed_data.get('produtos', []) if item.get('pendente')
+        )
+        return parsed_data
+
     if request.method == 'POST':
+        action = request.POST.get('action')
+        if action == 'extract_xml' and xml_import_enabled:
+            xml_upload_form = XMLNFeUploadForm(request.POST, request.FILES)
+            if xml_upload_form.is_valid():
+                xml_file = xml_upload_form.cleaned_data['xml_file']
+                try:
+                    xml_bytes = xml_file.read()
+                    parsed_data = parse_nfe_xml(xml_bytes.decode('utf-8-sig'))
+                    xml_data = enrich_xml_data(parsed_data)
+                    request.session['entrada_direta_xml_cache'] = {
+                        'filename': xml_file.name,
+                        'content': xml_bytes.decode('utf-8-sig'),
+                    }
+                    messages.success(request, 'XML processado com sucesso. Revise os dados antes de registrar a entrada.')
+                except (UnicodeDecodeError, NFEImportError) as exc:
+                    messages.error(request, f'Nao foi possivel extrair os dados do XML: {exc}')
+            else:
+                for error in xml_upload_form.errors.get('xml_file', []):
+                    messages.error(request, error)
+
+            context = {
+                'fornecedores': fornecedores,
+                'produtos': produtos,
+                'unidades': unidades,
+                'locais_estoque': locais_estoque,
+                'xml_data': xml_data,
+                'xml_upload_form': xml_upload_form,
+                'xml_import_enabled': xml_import_enabled,
+            }
+            return render(request, 'compras/entrada_direta_nf.html', context)
+
         try:
             with transaction.atomic():
                 fornecedor_id = request.POST.get('fornecedor')
@@ -2059,6 +2198,14 @@ def entrada_direta_nf(request):
                 valor_frete = request.POST.get('valor_frete') or '0'
                 valor_desconto = request.POST.get('valor_desconto') or '0'
                 observacoes = request.POST.get('observacoes')
+                arquivo_nfe = request.FILES.get('xml_file')
+                xml_cache = request.session.get('entrada_direta_xml_cache')
+
+                if chave_nfe and RecebimentoCompra.objects.filter(
+                    empresa=empresa,
+                    chave_nfe=chave_nfe,
+                ).exists():
+                    raise ValueError('Ja existe um recebimento registrado com esta chave NF-e.')
 
                 recebimento = RecebimentoCompra.objects.create(
                     empresa=empresa,
@@ -2076,7 +2223,15 @@ def entrada_direta_nf(request):
                     valor_frete=Decimal(valor_frete),
                     valor_desconto=Decimal(valor_desconto),
                     observacoes=observacoes or '',
+                    arquivo_nfe=arquivo_nfe,
                 )
+
+                if not arquivo_nfe and xml_cache:
+                    recebimento.arquivo_nfe.save(
+                        xml_cache.get('filename') or f'{recebimento.numero}.xml',
+                        ContentFile((xml_cache.get('content') or '').encode('utf-8')),
+                        save=True,
+                    )
 
                 itens_count = int(request.POST.get('itens_count', 1))
                 itens = []
@@ -2114,6 +2269,9 @@ def entrada_direta_nf(request):
                 recebimento.status = 'FINALIZADO'
                 recebimento.save(update_fields=['status'])
 
+                if 'entrada_direta_xml_cache' in request.session:
+                    del request.session['entrada_direta_xml_cache']
+
             messages.success(request, 'Entrada direta registrada e estoque atualizado!')
             return redirect('compras:recebimento_detail', pk=recebimento.pk)
         except Exception as e:
@@ -2124,9 +2282,85 @@ def entrada_direta_nf(request):
         'produtos': produtos,
         'unidades': unidades,
         'locais_estoque': locais_estoque,
-        'xml_data': {},
+        'xml_data': xml_data,
+        'xml_upload_form': xml_upload_form,
+        'xml_import_enabled': xml_import_enabled,
     }
     return render(request, 'compras/entrada_direta_nf.html', context)
+
+
+@login_required
+def produto_busca_ajax(request):
+    """AJAX: busca produtos para vinculação manual na importação XML."""
+    import json as _json
+    from django.http import JsonResponse
+    from django.db.models import Q
+    from produtos.models import Produto
+
+    q = request.GET.get('q', '').strip()
+    empresa = request.user.empresa
+    qs = Produto.objects.filter(ativo=True, categoria__empresa=empresa)
+    if q:
+        qs = qs.filter(
+            Q(nome__icontains=q) |
+            Q(codigo_barras__icontains=q) |
+            Q(codigo__icontains=q)
+        )
+    qs = qs.order_by('nome')[:20]
+    data = [
+        {
+            'id': p.pk,
+            'nome': p.nome,
+            'codigo_barras': p.codigo_barras or '',
+            'codigo': p.codigo or '',
+        }
+        for p in qs
+    ]
+    return JsonResponse({'produtos': data})
+
+
+@login_required
+def salvar_vinculo_xml_ajax(request):
+    """AJAX: persiste o vínculo produto-fornecedor para próximas importações XML."""
+    import json as _json
+    from django.http import JsonResponse
+    from produtos.models import Produto, ProdutoFornecedor
+    from cadastros.models import Fornecedor
+
+    if request.method != 'POST':
+        return JsonResponse({'ok': False, 'error': 'Método não permitido'}, status=405)
+
+    try:
+        payload = _json.loads(request.body)
+        fornecedor_id = int(payload.get('fornecedor_id', 0))
+        produto_id = int(payload.get('produto_id', 0))
+        codigo_fornecedor = str(payload.get('codigo_fornecedor', '')).strip()
+    except (ValueError, KeyError, _json.JSONDecodeError) as exc:
+        return JsonResponse({'ok': False, 'error': str(exc)}, status=400)
+
+    if not fornecedor_id or not produto_id or not codigo_fornecedor:
+        return JsonResponse({'ok': False, 'error': 'Dados incompletos'}, status=400)
+
+    empresa = request.user.empresa
+
+    forn = Fornecedor.objects.filter(pk=fornecedor_id, empresa=empresa).first()
+    if not forn:
+        return JsonResponse({'ok': False, 'error': 'Fornecedor não encontrado'}, status=404)
+
+    prod = Produto.objects.filter(pk=produto_id, categoria__empresa=empresa, ativo=True).first()
+    if not prod:
+        return JsonResponse({'ok': False, 'error': 'Produto não encontrado'}, status=404)
+
+    pf, created = ProdutoFornecedor.objects.get_or_create(
+        fornecedor=forn,
+        produto=prod,
+        defaults={'codigo_fornecedor': codigo_fornecedor, 'ativo': True},
+    )
+    if not created and pf.codigo_fornecedor != codigo_fornecedor:
+        pf.codigo_fornecedor = codigo_fornecedor
+        pf.save(update_fields=['codigo_fornecedor', 'updated_at'])
+
+    return JsonResponse({'ok': True, 'created': created})
 
 
 @login_required
@@ -2196,6 +2430,7 @@ def recebimento_list(request):
         'total_cancelado': total_cancelado,
         'fornecedores': fornecedores,
         'fornecedor_filtro': request.GET.get('fornecedor', ''),
+        'xml_import_enabled': is_feature_enabled('COMPRAS_XML_IMPORT'),
     }
 
     return render(request, 'compras/recebimento_list.html', context)

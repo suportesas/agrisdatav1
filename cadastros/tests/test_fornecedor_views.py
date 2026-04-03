@@ -1,8 +1,11 @@
+from decimal import Decimal
+
 from django.test import TestCase, Client
 from django.urls import reverse
 from django.contrib.auth import get_user_model
 from empresas.models import Empresa, Plano
 from cadastros.models import Fornecedor
+from compras.models import PedidoCompra, RecebimentoCompra, AvaliacaoFornecedor
 
 
 class FornecedorViewsTest(TestCase):
@@ -50,3 +53,54 @@ class FornecedorViewsTest(TestCase):
         resp = self.client.post(url, {})
         self.assertEqual(resp.status_code, 302)
         self.assertFalse(Fornecedor.objects.filter(pk=f.pk).exists())
+
+    def test_detail_view_calcula_cards_de_compras_e_avaliacoes(self):
+        fornecedor = Fornecedor.objects.create(empresa=self.empresa, nome='Fornecedor KPI')
+        PedidoCompra.objects.create(
+            empresa=self.empresa,
+            fornecedor=fornecedor,
+            comprador=self.user,
+            status='ENVIADO',
+            valor_total=Decimal('100.00'),
+            valor_desconto=Decimal('10.00'),
+            valor_frete=Decimal('5.00'),
+        )
+        PedidoCompra.objects.create(
+            empresa=self.empresa,
+            fornecedor=fornecedor,
+            comprador=self.user,
+            status='CANCELADO',
+            valor_total=Decimal('999.00'),
+        )
+        recebimento = RecebimentoCompra.objects.create(
+            empresa=self.empresa,
+            fornecedor=fornecedor,
+            numero='REC-TEST-001',
+            nota_fiscal='123',
+            serie_nota='1',
+            data_emissao_nf='2026-04-02',
+            data_recebimento='2026-04-02',
+            hora_recebimento='10:00:00',
+            recebido_por=self.user,
+            status='FINALIZADO',
+            valor_total_nf=Decimal('95.00'),
+        )
+        AvaliacaoFornecedor.objects.create(
+            empresa=self.empresa,
+            recebimento=recebimento,
+            fornecedor=fornecedor,
+            qualidade_produto=5,
+            prazo_entrega=4,
+            documentacao=5,
+            atendimento=4,
+            preco=4,
+            avaliador=self.user,
+        )
+
+        url = reverse('cadastros:fornecedor_detail', args=[fornecedor.pk])
+        resp = self.client.get(url)
+
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.context['numero_pedidos'], 1)
+        self.assertEqual(resp.context['total_comprado'], Decimal('95'))
+        self.assertEqual(resp.context['total_avaliacoes'], 1)

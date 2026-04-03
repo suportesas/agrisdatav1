@@ -63,6 +63,8 @@ urlpatterns = [
     # Recebimentos de Compra
     path('recebimentos/', views.recebimento_list, name='recebimento_list'),
     path('recebimentos/entrada-direta/', views.entrada_direta_nf, name='entrada_direta_nf'),
+    path('recebimentos/entrada-direta/buscar-produto/', views.produto_busca_ajax, name='produto_busca_ajax'),
+    path('recebimentos/entrada-direta/salvar-vinculo/', views.salvar_vinculo_xml_ajax, name='salvar_vinculo_xml_ajax'),
     path('recebimentos/<int:pk>/', views.recebimento_detail, name='recebimento_detail'),
     path('recebimentos/novo/<int:pedido_id>/', views.recebimento_create, name='recebimento_create'),
     path('recebimentos/<int:pk>/conferir/', views.recebimento_conferir, name='recebimento_conferir'),

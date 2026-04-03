@@ -5,34 +5,318 @@
 
 {% block extra_css %}
 <style>
-  .section-header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    padding: 15px 20px;
-    border-radius: 10px 10px 0 0;
-    margin-bottom: 0;
+  .fornecedor-form-page {
+    --surface: rgba(255, 255, 255, 0.96);
+    --surface-soft: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(245,248,251,0.98));
+    --stroke: rgba(24, 59, 86, 0.12);
+    --shadow-soft: 0 18px 42px rgba(20, 48, 77, 0.08);
+    --shadow-hover: 0 26px 56px rgba(20, 48, 77, 0.14);
+    --title: #17324d;
+    --muted: #5f6f7d;
+    --brand: #1f6f78;
+    --brand-strong: #164e63;
+    --highlight: #f4a11a;
   }
-  .form-section {
-    background: white;
-    border-radius: 10px;
+
+  .fornecedor-form-page {
+    position: relative;
+  }
+
+  .fornecedor-form-page::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 300px;
+    background:
+      radial-gradient(circle at top left, rgba(31, 111, 120, 0.16), transparent 38%),
+      radial-gradient(circle at top right, rgba(244, 161, 26, 0.16), transparent 34%),
+      linear-gradient(180deg, rgba(237, 246, 248, 0.9), rgba(255,255,255,0));
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .fornecedor-form-page > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  .form-hero {
+    background:
+      linear-gradient(135deg, rgba(12, 34, 56, 0.96), rgba(31, 111, 120, 0.92)),
+      linear-gradient(135deg, #164e63, #1f6f78);
+    color: #fff;
+    border-radius: 28px;
+    padding: 1.8rem 2rem;
+    box-shadow: 0 26px 60px rgba(21, 47, 73, 0.18);
     overflow: hidden;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    margin-bottom: 1.75rem;
+  }
+
+  .form-hero::after {
+    content: "";
+    position: absolute;
+    top: -60px;
+    right: -40px;
+    width: 220px;
+    height: 220px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,255,255,0.16), rgba(255,255,255,0));
+  }
+
+  .form-hero-title {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    font-size: clamp(1.7rem, 2vw, 2.25rem);
+    margin-bottom: 0.5rem;
+  }
+
+  .form-hero-icon {
+    width: 58px;
+    height: 58px;
+    border-radius: 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.16);
+    font-size: 1.4rem;
+  }
+
+  .form-hero-subtitle {
+    color: rgba(255,255,255,0.78);
+    margin-bottom: 1rem;
+    max-width: 760px;
+  }
+
+  .hero-hints {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.7rem;
+  }
+
+  .hero-hint {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.65rem 0.9rem;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.12);
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+
+  .hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    justify-content: flex-end;
+  }
+
+  .hero-actions .btn {
+    border-radius: 14px;
+    padding: 0.8rem 1rem;
+    font-weight: 600;
+    box-shadow: 0 10px 28px rgba(0,0,0,0.12);
+  }
+
+  .hero-actions .btn-outline-info,
+  .hero-actions .btn-outline-secondary {
+    background: rgba(255,255,255,0.08);
+    color: #fff;
+    border-color: rgba(255,255,255,0.24);
+  }
+
+  .hero-actions .btn-outline-info:hover,
+  .hero-actions .btn-outline-secondary:hover {
+    background: rgba(255,255,255,0.14);
+    color: #fff;
+    border-color: rgba(255,255,255,0.32);
+  }
+
+  .section-header {
+    background: linear-gradient(135deg, #17324d 0%, #1f6f78 100%);
+    color: white;
+    padding: 1rem 1.25rem;
+    border-radius: 22px 22px 0 0;
+    margin-bottom: 0;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .section-header::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, rgba(255,255,255,0.12), transparent 55%);
+    pointer-events: none;
+  }
+
+  .section-header h5 {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    position: relative;
+    z-index: 1;
+  }
+
+  .form-section {
+    background: var(--surface-soft);
+    border-radius: 22px;
+    overflow: hidden;
+    box-shadow: var(--shadow-soft);
+    border: 1px solid var(--stroke);
     margin-bottom: 1.5rem;
+    transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
   }
+
+  .form-section:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-hover);
+    border-color: rgba(31, 111, 120, 0.18);
+  }
+
   .cnpj-search-btn {
-    transition: all 0.3s ease;
+    transition: all 0.22s ease;
+    font-weight: 600;
   }
+
   .cnpj-search-btn:hover {
-    transform: scale(1.05);
+    transform: translateY(-1px);
   }
+
   .form-section-body {
-    padding: 1.5rem;
+    padding: 1.45rem;
+  }
+
+  .help-list li {
+    margin-bottom: 0.5rem;
+  }
+
+  .form-label {
+    color: var(--title);
+    margin-bottom: 0.55rem;
+  }
+
+  .form-control,
+  .form-select,
+  .input-group-text {
+    border-radius: 14px;
+    border-color: rgba(24, 59, 86, 0.12);
+  }
+
+  .form-control,
+  .form-select {
+    min-height: 46px;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.02);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+  }
+
+  textarea.form-control {
+    min-height: 120px;
+  }
+
+  .form-control:focus,
+  .form-select:focus {
+    border-color: rgba(31, 111, 120, 0.42);
+    box-shadow: 0 0 0 0.25rem rgba(31, 111, 120, 0.14);
+  }
+
+  .input-group > .form-control,
+  .input-group > .form-select {
+    border-top-left-radius: 14px;
+    border-bottom-left-radius: 14px;
+  }
+
+  .input-group-text {
+    background: rgba(23, 50, 77, 0.04);
+    color: var(--title);
+    font-weight: 700;
+  }
+
+  .form-check.form-switch {
+    padding: 0.9rem 1rem 0.9rem 2.8rem;
+    border-radius: 16px;
+    background: rgba(23, 50, 77, 0.04);
+    border: 1px solid rgba(23, 50, 77, 0.06);
+  }
+
+  .form-check-input {
+    width: 2.7rem;
+    height: 1.4rem;
+    margin-top: 0.1rem;
+  }
+
+  .alert-light.border {
+    border-radius: 16px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.8), rgba(244,248,251,0.95));
+    border-color: rgba(23, 50, 77, 0.08) !important;
+  }
+
+  .sticky-action-bar {
+    position: sticky;
+    bottom: 1rem;
+    z-index: 5;
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1rem;
+    margin-top: 2rem;
+    border-radius: 22px;
+    background: rgba(255,255,255,0.86);
+    border: 1px solid rgba(24, 59, 86, 0.1);
+    box-shadow: 0 18px 45px rgba(24, 59, 86, 0.14);
+    backdrop-filter: blur(14px);
+  }
+
+  .sticky-action-bar .btn {
+    border-radius: 14px;
+    padding: 0.9rem 1.35rem;
+    font-weight: 700;
+  }
+
+  .section-note {
+    color: var(--muted);
+    font-size: 0.9rem;
+    margin-top: 0.35rem;
+  }
+
+  @media (max-width: 991.98px) {
+    .form-hero {
+      padding: 1.5rem;
+    }
+
+    .hero-actions {
+      justify-content: flex-start;
+      margin-top: 1rem;
+    }
+  }
+
+  @media (max-width: 767.98px) {
+    .form-hero {
+      border-radius: 22px;
+    }
+
+    .form-hero-title {
+      align-items: flex-start;
+    }
+
+    .sticky-action-bar {
+      flex-direction: column-reverse;
+      bottom: 0.5rem;
+      padding: 0.85rem;
+    }
+
+    .sticky-action-bar .btn {
+      width: 100%;
+    }
   }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container py-4">
+<div class="container py-4 fornecedor-form-page">
   
   <!-- Breadcrumb -->
   <nav aria-label="breadcrumb" class="mb-4">
@@ -44,21 +328,35 @@
   </nav>
 
   <!-- Header -->
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-      <h2 class="fw-bold mb-1">
-        <i class="bi bi-{% if fornecedor %}pencil-square{% else %}plus-circle{% endif %} text-success"></i>
-        {{ action }} Fornecedor
-      </h2>
-      {% if fornecedor %}
-        <p class="text-muted mb-0">Editando: <strong>{{ fornecedor.razao_social }}</strong></p>
-      {% else %}
-        <p class="text-muted mb-0">Cadastre um novo fornecedor para sua empresa</p>
-      {% endif %}
+  <div class="form-hero">
+    <div class="row g-4 align-items-center">
+      <div class="col-lg-8">
+        <h2 class="fw-bold form-hero-title">
+          <span class="form-hero-icon"><i class="bi bi-{% if fornecedor %}pencil-square{% else %}plus-circle{% endif %}"></i></span>
+          <span>{{ action }} Fornecedor</span>
+        </h2>
+        {% if fornecedor %}
+          <p class="form-hero-subtitle">Edite os dados de <strong>{{ fornecedor.razao_social }}</strong> com uma visão mais clara das seções críticas de cadastro, fiscais e comerciais.</p>
+        {% else %}
+          <p class="form-hero-subtitle">Cadastre um novo fornecedor com foco em dados fiscais consistentes, condições comerciais claras e contato pronto para operação.</p>
+        {% endif %}
+        <div class="hero-hints">
+          <span class="hero-hint"><i class="bi bi-shield-check"></i> Dados fiscais consistentes</span>
+          <span class="hero-hint"><i class="bi bi-cash-coin"></i> Crédito e prazo bem definidos</span>
+          <span class="hero-hint"><i class="bi bi-person-badge"></i> Portal pronto para acesso</span>
+        </div>
+      </div>
+      <div class="col-lg-4">
+        <div class="hero-actions">
+          <button type="button" class="btn btn-outline-info" data-bs-toggle="modal" data-bs-target="#fornecedorHelpModal">
+            <i class="bi bi-question-circle"></i> Ajuda
+          </button>
+          <a href="{% url 'cadastros:fornecedor_list' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Voltar
+          </a>
+        </div>
+      </div>
     </div>
-    <a href="{% url 'cadastros:fornecedor_list' %}" class="btn btn-outline-secondary">
-      <i class="bi bi-arrow-left"></i> Voltar
-    </a>
   </div>
 
   <form method="post" id="fornecedorForm">
@@ -102,7 +400,7 @@
             {% if form.cnpj_cpf.errors %}
               <div class="text-danger small">{{ form.cnpj_cpf.errors|striptags }}</div>
             {% endif %}
-            <small class="text-muted">Busca automática via CNPJ (apenas PJ nacional)</small>
+            <small class="section-note d-block">Busca automática via CNPJ para preenchimento inicial de fornecedores pessoa jurídica.</small>
           </div>
 
           <!-- Código Fiscal Internacional -->
@@ -217,19 +515,19 @@
               <span class="input-group-text">R$</span>
               {{ form.limite_credito }}
             </div>
-            <small class="text-muted d-block">Valor aprovado para compras a prazo</small>
+            <small class="section-note d-block">Valor aprovado para compras a prazo</small>
           </div>
 
           <div class="col-md-4">
             <label class="form-label fw-semibold">Prazo de Pagamento Padrão (dias) *</label>
             {{ form.prazo_pagamento_padrao }}
-            <small class="text-muted d-block">Ex: 30 dias</small>
+            <small class="section-note d-block">Ex: 30 dias</small>
           </div>
 
           <div class="col-md-4">
             <label class="form-label fw-semibold">Prazo de Entrega Médio (dias) *</label>
             {{ form.prazo_entrega_medio }}
-            <small class="text-muted d-block">Ex: 7 dias</small>
+            <small class="section-note d-block">Ex: 7 dias</small>
           </div>
 
         </div>
@@ -252,13 +550,13 @@
           <div class="col-md-4">
             <label class="form-label fw-semibold">Moeda Padrão</label>
             {{ form.moeda_padrao }}
-            <small class="text-muted d-block">Ex: USD, EUR</small>
+            <small class="section-note d-block">Ex: USD, EUR</small>
           </div>
 
           <div class="col-md-4">
             <label class="form-label fw-semibold">Incoterm Preferencial</label>
             {{ form.incoterm_preferencial }}
-            <small class="text-muted d-block">Ex: FOB, CIF</small>
+            <small class="section-note d-block">Ex: FOB, CIF</small>
           </div>
 
           <div class="col-md-12">
@@ -344,8 +642,52 @@
       </div>
     </div>
 
+    <!-- Seção 8: Portal do Fornecedor -->
+    <div class="form-section">
+      <div class="section-header">
+        <h5 class="mb-0"><i class="bi bi-person-badge"></i> Portal do Fornecedor</h5>
+      </div>
+      <div class="form-section-body">
+        <div class="row g-3">
+
+          <div class="col-md-4">
+            <label class="form-label fw-semibold d-block">Portal Habilitado</label>
+            <div class="form-check form-switch mt-2">
+              {{ form.portal_enabled }}
+              <label class="form-check-label" for="{{ form.portal_enabled.id_for_label }}">
+                Liberar acesso ao portal
+              </label>
+            </div>
+            {% if form.portal_enabled.errors %}
+              <div class="text-danger small">{{ form.portal_enabled.errors|striptags }}</div>
+            {% endif %}
+          </div>
+
+          <div class="col-md-8">
+            <label class="form-label fw-semibold">Usuário Portal</label>
+            {{ form.portal_user }}
+            {% if form.portal_user.help_text %}
+              <small class="text-muted d-block mt-1">{{ form.portal_user.help_text }}</small>
+            {% endif %}
+            {% if form.portal_user.errors %}
+              <div class="text-danger small">{{ form.portal_user.errors|striptags }}</div>
+            {% endif %}
+          </div>
+
+          <div class="col-12">
+            <div class="alert alert-light border mb-0 py-2">
+              <small class="text-muted">
+                O usuário selecionado deve pertencer à mesma empresa do fornecedor. Quando o portal estiver habilitado, esse usuário será redirecionado automaticamente para o portal do fornecedor após o login.
+              </small>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
     <!-- Botões de Ação -->
-    <div class="d-flex justify-content-between gap-3">
+    <div class="sticky-action-bar">
       <a href="{% url 'cadastros:fornecedor_list' %}" class="btn btn-outline-secondary btn-lg px-5">
         <i class="bi bi-x-circle"></i> Cancelar
       </a>
@@ -356,6 +698,40 @@
 
   </form>
 
+</div>
+
+<!-- Modal de Ajuda do Cadastro -->
+<div class="modal fade" id="fornecedorHelpModal" tabindex="-1" aria-labelledby="fornecedorHelpModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header bg-light">
+        <h5 class="modal-title" id="fornecedorHelpModalLabel">
+          <i class="bi bi-info-circle text-info"></i> Como preencher o cadastro de fornecedor
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-3">Siga estes passos para um cadastro completo e sem erros:</p>
+        <ol class="help-list ps-3">
+          <li><strong>Dados basicos:</strong> escolha o tipo de pessoa e informe CNPJ/CPF valido. Para CNPJ, use o botao <strong>Buscar</strong> para preencher automaticamente.</li>
+          <li><strong>Razao social e nome fantasia:</strong> use o nome oficial no campo principal e, se houver, o nome comercial no fantasia.</li>
+          <li><strong>Documentacao:</strong> preencha inscricoes e selecione corretamente o regime tributario para evitar problemas fiscais.</li>
+          <li><strong>Condicoes comerciais:</strong> informe limite de credito, prazo de pagamento e prazo medio de entrega conforme negociacao.</li>
+          <li><strong>Contato:</strong> valide telefone, celular e e-mail para facilitar cotacoes e recebimentos.</li>
+          <li><strong>Fornecedor internacional:</strong> ative a opcao quando aplicavel para liberar campos de pais, moeda e incoterm.</li>
+          <li><strong>Finalizacao:</strong> revise os campos obrigatorios (*) e clique em <strong>Salvar Fornecedor</strong>.</li>
+        </ol>
+
+        <div class="alert alert-warning mb-0 mt-3" role="alert">
+          <i class="bi bi-exclamation-triangle"></i>
+          Dica: mantenha CNPJ/CPF e dados fiscais atualizados para evitar bloqueios em compras e financeiro.
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- Modal de Loading para busca CNPJ -->
@@ -373,6 +749,7 @@
 {% endblock %}
 
 {% block extra_js %}
+{{ block.super }}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
   
@@ -439,6 +816,60 @@ document.addEventListener('DOMContentLoaded', function() {
         alert('❌ Erro ao buscar dados. Verifique sua conexão.');
       });
     });
+  }
+
+  const creditInput = document.getElementById('id_limite_credito');
+
+  function onlyDigits(value) {
+    return String(value || '').replace(/\D/g, '');
+  }
+
+  function formatCurrency(value) {
+    const digits = onlyDigits(value);
+    if (!digits) {
+      return '';
+    }
+
+    const amount = Number(digits) / 100;
+    return amount.toLocaleString('pt-BR', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+  }
+
+  function normalizeCurrency(value) {
+    const raw = String(value || '').trim();
+    if (!raw) {
+      return '';
+    }
+
+    if (/^\d+(\.\d+)?$/.test(raw)) {
+      return raw;
+    }
+
+    return raw.replace(/\./g, '').replace(',', '.');
+  }
+
+  if (creditInput) {
+    creditInput.value = formatCurrency(creditInput.value);
+
+    creditInput.addEventListener('input', function(event) {
+      const cursorAtEnd = event.target.selectionStart === event.target.value.length;
+      event.target.value = formatCurrency(event.target.value);
+      if (cursorAtEnd) {
+        event.target.setSelectionRange(event.target.value.length, event.target.value.length);
+      }
+    });
+
+    creditInput.addEventListener('blur', function(event) {
+      event.target.value = formatCurrency(event.target.value);
+    });
+
+    if (creditInput.form) {
+      creditInput.form.addEventListener('submit', function() {
+        creditInput.value = normalizeCurrency(creditInput.value);
+      });
+    }
   }
 
   // Máscara de CNPJ/CPF

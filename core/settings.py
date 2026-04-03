@@ -4,9 +4,11 @@ Configurações corrigidas e otimizadas
 """
 
 import os
+import sys
 from pathlib import Path
 from datetime import timedelta
 from dotenv import load_dotenv
+from django.core.exceptions import ImproperlyConfigured
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -15,16 +17,32 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / '.env')
 
 
+def get_bool_env(name, default=False):
+    value = os.getenv(name)
+    if value is None:
+        return default
+    return value.strip().lower() in {'1', 'true', 't', 'yes', 'y', 'on'}
+
+
+def get_list_env(name, default=None):
+    value = os.getenv(name)
+    if value is None:
+        return list(default or [])
+    return [item.strip() for item in value.split(',') if item.strip()]
+
+
 # Quick-start development settings - unsuitable for production
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 's_#plt(uejrjtdoh&_((ajet($=b+euzkeyn))0v0+puysf61+'
+DEBUG = get_bool_env('DEBUG', False)
 
-#'django-insecure-lopjd&u(&g8ei6j4!vltv6b1xgd(5fxn-kz3*35l0ma!2&8#+h'
+SECRET_KEY = os.getenv('SECRET_KEY')
+if not SECRET_KEY:
+    if DEBUG:
+        SECRET_KEY = 'dev-only-insecure-secret-key-change-me-in-env'
+    else:
+        raise ImproperlyConfigured('Defina SECRET_KEY no arquivo .env antes de iniciar o sistema.')
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-
-ALLOWED_HOSTS = ['*']  # Em produção, especifique os domínios permitidos
+ALLOWED_HOSTS = get_list_env('ALLOWED_HOSTS', ['localhost', '127.0.0.1'])
 
 
 # Application definition
@@ -196,9 +214,13 @@ REST_FRAMEWORK = {
     'PAGE_SIZE': 50,
     'DEFAULT_RENDERER_CLASSES': (
         'rest_framework.renderers.JSONRenderer',
-        'rest_framework.renderers.BrowsableAPIRenderer',
     ),
 }
+
+if DEBUG:
+    REST_FRAMEWORK['DEFAULT_RENDERER_CLASSES'] += (
+        'rest_framework.renderers.BrowsableAPIRenderer',
+    )
 
 # JWT Settings
 SIMPLE_JWT = {
@@ -212,11 +234,11 @@ SIMPLE_JWT = {
 }
 
 # CORS Settings (para API)
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",  # React/Vue frontend
-    "http://localhost:8080",
-    "http://127.0.0.1:3000",
-]
+CORS_ALLOWED_ORIGINS = get_list_env('CORS_ALLOWED_ORIGINS', [
+    'http://localhost:3000',
+    'http://localhost:8080',
+    'http://127.0.0.1:3000',
+])
 CORS_ALLOW_CREDENTIALS = True
 
 
@@ -227,7 +249,7 @@ CORS_ALLOW_CREDENTIALS = True
 # EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 # Para enviar emails reais via SMTP:
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_BACKEND = os.getenv('EMAIL_BACKEND', 'django.core.mail.backends.smtp.EmailBackend')
 EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')  # ou smtp-mail.outlook.com, smtp.office365.com
 EMAIL_PORT = int(os.getenv('EMAIL_PORT', '587'))
 EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True') == 'True'
@@ -235,6 +257,24 @@ EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')  # seu email completo
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')  # senha de app (não a senha normal)
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'ERP Agrícola <no-reply@erp-agricola.com>')
 EMAIL_SUBJECT_PREFIX = '[ERP Agrícola] '
+
+# Domínio público do sistema (usado em links de e-mail).
+# Em desenvolvimento: configure com ngrok (ex: abc123.ngrok-free.app)
+# Em produção: coloque o domínio real (ex: erp.minhaempresa.com.br)
+SITE_DOMAIN = os.getenv('SITE_DOMAIN', '')   # vazio = usa o host da requisição
+SITE_HTTPS = get_bool_env('SITE_HTTPS', False)
+
+# CSRF: aceita origens confiáveis via .env e também o SITE_DOMAIN configurado.
+# Exemplo .env: CSRF_TRUSTED_ORIGINS=https://abc123.ngrok-free.app,https://erp.minhaempresa.com.br
+CSRF_TRUSTED_ORIGINS = [
+    origin.strip()
+    for origin in os.getenv('CSRF_TRUSTED_ORIGINS', '').split(',')
+    if origin.strip()
+]
+if SITE_DOMAIN:
+    csrf_origin = f"https://{SITE_DOMAIN}" if SITE_HTTPS else f"http://{SITE_DOMAIN}"
+    if csrf_origin not in CSRF_TRUSTED_ORIGINS:
+        CSRF_TRUSTED_ORIGINS.append(csrf_origin)
 
 # IMPORTANTE: Crie um arquivo .env na raiz do projeto com:
 # EMAIL_HOST=smtp.gmail.com
@@ -278,11 +318,65 @@ LIMITES_PLANO = {
 
 
 # ============================================
+# FEATURE FLAGS (FASE 0 - LIBERACAO SEGURA)
+# ============================================
+# Objetivo: habilitar releases graduais por modulo sem impactar fluxos estaveis.
+#
+# Uso recomendado no codigo:
+# from core.feature_flags import is_feature_enabled
+# if is_feature_enabled('COMPRAS_XML_IMPORT'):
+#     ... novo fluxo ...
+
+FEATURE_FLAGS = {
+    # Fase 1
+    'COMPRAS_XML_IMPORT': get_bool_env('FF_COMPRAS_XML_IMPORT', False),
+
+    # Fase 2
+    'ESTOQUE_QUARENTENA_BLOQUEIO': get_bool_env('FF_ESTOQUE_QUARENTENA_BLOQUEIO', False),
+    'ESTOQUE_DEVOLUCOES_FLUXO': get_bool_env('FF_ESTOQUE_DEVOLUCOES_FLUXO', False),
+
+    # Fase 3
+    'RASTREABILIDADE_FULL_CHAIN': get_bool_env('FF_RASTREABILIDADE_FULL_CHAIN', False),
+
+    # Fase 4
+    'FINANCEIRO_RENEGOCIACAO': get_bool_env('FF_FINANCEIRO_RENEGOCIACAO', False),
+
+    # Fase 6
+    'RECEITUARIO_AGRONOMICO_V1': get_bool_env('FF_RECEITUARIO_AGRONOMICO_V1', False),
+
+    # Fase 7
+    'ARMADOR_INTEGRACOES_EXTERNAS': get_bool_env('FF_ARMADOR_INTEGRACOES_EXTERNAS', False),
+}
+
+
+# ============================================
 # SEGURANÇA
 # ============================================
 # Sessão expira ao fechar navegador
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False
 SESSION_COOKIE_AGE = 86400  # 24 horas
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SECURE = get_bool_env('SESSION_COOKIE_SECURE', not DEBUG)
+SESSION_COOKIE_SAMESITE = os.getenv('SESSION_COOKIE_SAMESITE', 'Lax')
+CSRF_COOKIE_SECURE = get_bool_env('CSRF_COOKIE_SECURE', not DEBUG)
+CSRF_COOKIE_HTTPONLY = get_bool_env('CSRF_COOKIE_HTTPONLY', False)
+CSRF_COOKIE_SAMESITE = os.getenv('CSRF_COOKIE_SAMESITE', 'Lax')
+SECURE_BROWSER_XSS_FILTER = True
+SECURE_CONTENT_TYPE_NOSNIFF = True
+X_FRAME_OPTIONS = os.getenv('X_FRAME_OPTIONS', 'DENY')
+SECURE_REFERRER_POLICY = os.getenv('SECURE_REFERRER_POLICY', 'same-origin')
+SECURE_CROSS_ORIGIN_OPENER_POLICY = os.getenv('SECURE_CROSS_ORIGIN_OPENER_POLICY', 'same-origin')
+SECURE_SSL_REDIRECT = get_bool_env('SECURE_SSL_REDIRECT', False)
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https') if get_bool_env('USE_X_FORWARDED_PROTO', False) else None
+
+if not DEBUG:
+    SECURE_HSTS_SECONDS = int(os.getenv('SECURE_HSTS_SECONDS', '31536000'))
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = get_bool_env('SECURE_HSTS_INCLUDE_SUBDOMAINS', True)
+    SECURE_HSTS_PRELOAD = get_bool_env('SECURE_HSTS_PRELOAD', True)
+else:
+    SECURE_HSTS_SECONDS = 0
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = False
+    SECURE_HSTS_PRELOAD = False
 
 
 # ============================================
@@ -305,7 +399,7 @@ LOGGING = {
             'formatter': 'verbose',
         },
         'console': {
-            'level': 'DEBUG',
+            'level': 'DEBUG' if DEBUG else 'INFO',
             'class': 'logging.StreamHandler',
             'formatter': 'verbose',
         },
@@ -324,7 +418,6 @@ LOGGING = {
 }
 
 # Durante test runs, reduz ruído ajustando o nível de log do servidor HTTP
-import sys
 if 'test' in sys.argv or any('pytest' in s for s in sys.argv):
     # Silencia mensagens como "Bad Request: /path" ou "Conflict: /path" durante testes
     LOGGING['loggers'].setdefault('django.server', {'handlers': ['console'], 'level': 'ERROR', 'propagate': False})

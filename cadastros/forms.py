@@ -4238,7 +4238,7 @@ class OrdemServicoInsumoForm(forms.ModelForm):
     def __init__(self, *args, empresa=None, **kwargs):
         super().__init__(*args, **kwargs)
         if empresa:
-            self.fields['produto'].queryset = Produto.objects.filter(empresa=empresa).order_by('nome')
+            self.fields['produto'].queryset = Produto.objects.filter(lotes__armazem__empresa=empresa).distinct().order_by('nome')
             self.fields['unidade_medida'].queryset = UnidadeMedida.objects.filter(empresa=empresa).order_by('nome')
 
         self.fields['quantidade_planejada'].required = False

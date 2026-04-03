@@ -22,6 +22,6 @@ class Migration(migrations.Migration):
         ),
         migrations.AddConstraint(
             model_name='motorista',
-            constraint=models.CheckConstraint(condition=models.Q(models.Q(('tipo__in', ['TERCEIRO', 'AGREGADO']), _negated=True), ('transportadora__isnull', False), _connector='OR'), name='motorista_terceiro_agregado_requer_transportadora'),
+            constraint=models.CheckConstraint(check=~models.Q(tipo__in=['TERCEIRO', 'AGREGADO'], transportadora__isnull=True), name='motorista_terceiro_agregado_requer_transportadora'),
         ),
     ]

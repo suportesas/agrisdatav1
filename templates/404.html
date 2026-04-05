@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Página Não Encontrada — Nexsafra</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=Barlow:wght@300;400;500;600;700&family=Barlow+Condensed:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --lime: #76FF03;
+  --g400: #66BB6A;
+  --g800: #2E7D32;
+  --soil: #080F09;
+  --white:#FAFFF8;
+  --muted:#8BA889;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--soil);
+  color: var(--white);
+  font-family: 'Barlow', sans-serif;
+}
+
+nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 1000;
+  padding: 0 80px;
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(46,125,50,0.2);
+  background: rgba(8,15,9,0.95);
+  backdrop-filter: blur(12px);
+}
+
+.nav-logo { display: flex; align-items: center; gap: 14px; text-decoration: none; }
+.nav-logo-text { display: flex; align-items: baseline; }
+.nav-logo-text .n { font-family: 'Playfair Display', serif; font-size: 28px; font-weight: 900; color: var(--white); }
+.nav-logo-text .s { font-family: 'Playfair Display', serif; font-size: 28px; font-weight: 300; color: var(--g400); }
+.nav-buttons { display: flex; gap: 12px; list-style: none; }
+.nav-buttons a { padding: 10px 20px; border-radius: 25px; text-decoration: none; font-size: 12px; font-weight: 700; transition: all 0.3s; background: var(--lime); color: #080F09; }
+.nav-buttons a:hover { background: var(--white); transform: translateY(-2px); }
+
+.error-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-top: 72px;
+  text-align: center;
+}
+
+.error-content { max-width: 700px; padding: 40px; }
+
+.error-code {
+  font-family: 'Playfair Display', serif;
+  font-size: 280px;
+  font-weight: 900;
+  background: linear-gradient(90deg, var(--lime), var(--g400));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 20px;
+  line-height: 0.9;
+}
+
+.error-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 48px;
+  font-weight: 700;
+  margin-bottom: 16px;
+  color: var(--white);
+}
+
+.error-title em { color: var(--g400); font-style: italic; }
+
+.error-message { font-size: 16px; color: var(--muted); line-height: 1.8; margin-bottom: 40px; }
+
+.error-actions { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; margin-bottom: 60px; }
+
+.btn-primary, .btn-secondary { padding: 16px 36px; border-radius: 4px; text-decoration: none; font-weight: 700; transition: all 0.3s; display: inline-block; }
+
+.btn-primary { background: var(--g800); color: var(--white); border: 1px solid #43A047; }
+.btn-primary:hover { background: #388E3C; border-color: var(--lime); color: var(--lime); transform: translateY(-2px); }
+
+.btn-secondary { color: #81C784; border: 1px solid rgba(129,199,132,0.3); }
+.btn-secondary:hover { color: var(--white); border-color: var(--g400); background: rgba(46,125,50,0.05); }
+
+.error-suggestions { padding-top: 40px; border-top: 1px solid rgba(46,125,50,0.2); }
+
+.error-suggestions-title { font-size: 12px; font-weight: 700; color: var(--lime); margin-bottom: 20px; text-transform: uppercase; letter-spacing: 2px; }
+
+.suggestion-links { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px; }
+
+.suggestion-link { padding: 12px; background: rgba(46,125,50,0.05); border: 1px solid rgba(46,125,50,0.15); color: var(--muted); text-decoration: none; font-size: 13px; border-radius: 4px; transition: all 0.2s; }
+.suggestion-link:hover { background: rgba(46,125,50,0.12); border-color: var(--lime); color: var(--lime); }
+
+footer { text-align: center; padding: 40px; border-top: 1px solid rgba(46,125,50,0.15); font-size: 12px; color: var(--muted); opacity: 0.6; }
+
+@media (max-width: 768px) {
+  nav { padding: 0 24px; }
+  .error-code { font-size: 140px; }
+  .error-title { font-size: 32px; }
+  footer { padding: 32px 24px; }
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="/">
+    <div class="nav-logo-text">
+      <span class="n">NEX</span><span class="s">SAFRA</span>
+    </div>
+  </a>
+  <ul class="nav-buttons">
+    <li><a href="/">Voltar</a></li>
+  </ul>
+</nav>
+
+<div class="error-container">
+  <div class="error-content">
+    <div class="error-code">404</div>
+    <h1 class="error-title">Página não <em>encontrada</em></h1>
+    <p class="error-message">Desculpe, a página que você está procurando não existe ou foi removida.</p>
+
+    <div class="error-actions">
+      <a href="/" class="btn-primary">← Voltar à Página Inicial</a>
+      <a href="/contato/" class="btn-secondary">Contato</a>
+    </div>
+
+    <div class="error-suggestions">
+      <div class="error-suggestions-title">Explore outras páginas</div>
+      <div class="suggestion-links">
+        <a href="/recursos/" class="suggestion-link">Funcionalidades</a>
+        <a href="/planos/" class="suggestion-link">Planos</a>
+        <a href="/faq/" class="suggestion-link">FAQ</a>
+        <a href="/sobre/" class="suggestion-link">Sobre</a>
+        <a href="/recursos-avancados/" class="suggestion-link">Recursos Avançados</a>
+        <a href="/login/" class="suggestion-link">Login</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>© 2026 Nexsafra. Todos os direitos reservados.</footer>
+
+</body>
+</html>

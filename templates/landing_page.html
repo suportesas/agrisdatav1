@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nexsafra — A Próxima Geração da Gestão de Safras</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=Barlow:wght@300;400;500;600;700&family=Barlow+Condensed:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --g900: #1B5E20;
+  --g800: #2E7D32;
+  --g700: #388E3C;
+  --g600: #43A047;
+  --g500: #4CAF50;
+  --g400: #66BB6A;
+  --g300: #81C784;
+  --g200: #C8E6C9;
+  --g100: #E8F5E9;
+  --lime: #76FF03;
+  --lime2:#CCFF90;
+  --soil: #080F09;
+  --earth:#0D1F0E;
+  --dark2:#111D12;
+  --white:#FAFFF8;
+  --muted:#8BA889;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--soil);
+  color: var(--white);
+  font-family: 'Barlow', sans-serif;
+  overflow-x: hidden;
+}
+
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--soil); }
+::-webkit-scrollbar-thumb { background: var(--g800); border-radius: 3px; }
+
+::selection { background: var(--g700); color: var(--white); }
+
+/* ══════════════════════════════ NAV ══════════════════════════════ */
+nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 1000;
+  padding: 0 80px;
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: background 0.4s, border-color 0.4s;
+  border-bottom: 1px solid transparent;
+}
+
+nav.scrolled {
+  background: rgba(8,15,9,0.95);
+  border-bottom-color: rgba(46,125,50,0.2);
+  backdrop-filter: blur(12px);
+}
+
+.nav-logo {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  text-decoration: none;
+}
+
+.nav-logo svg { width: 36px; height: 42px; }
+
+.nav-logo-text {
+  display: flex;
+  align-items: baseline;
+  gap: 0;
+}
+
+.nav-logo-text .n {
+  font-family: 'Playfair Display', serif;
+  font-size: 28px;
+  font-weight: 900;
+  color: var(--white);
+  letter-spacing: -1px;
+  line-height: 1;
+}
+
+.nav-logo-text .s {
+  font-family: 'Playfair Display', serif;
+  font-size: 28px;
+  font-weight: 300;
+  color: var(--g400);
+  letter-spacing: 2px;
+  line-height: 1;
+}
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 40px;
+  list-style: none;
+}
+
+.nav-links a {
+  font-family: 'Barlow', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 1px;
+  color: var(--muted);
+  text-decoration: none;
+  text-transform: uppercase;
+  transition: color 0.2s;
+}
+
+.nav-links a:hover { color: var(--white); }
+
+.nav-cta {
+  background: var(--g800);
+  color: var(--white) !important;
+  padding: 10px 24px !important;
+  border: 1px solid var(--g600) !important;
+  transition: background 0.2s, border-color 0.2s !important;
+}
+
+.nav-cta:hover {
+  background: var(--g700) !important;
+  border-color: var(--lime) !important;
+  color: var(--lime) !important;
+}
+
+.nav-hamburger {
+  display: none;
+  flex-direction: column;
+  gap: 5px;
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 4px;
+}
+
+.nav-hamburger span {
+  display: block;
+  width: 24px;
+  height: 2px;
+  background: var(--white);
+  transition: 0.3s;
+}
+
+.nav-buttons {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  list-style: none;
+}
+
+.nav-buttons a {
+  text-decoration: none;
+  padding: 10px 20px;
+  border-radius: 25px;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  transition: all 0.3s;
+  cursor: pointer;
+}
+
+.nav-buttons .btn-login {
+  color: var(--white);
+  border: 1px solid var(--white);
+  background: transparent;
+}
+
+.nav-buttons .btn-login:hover {
+  background: var(--white);
+  color: var(--g700);
+  transform: translateY(-2px);
+}
+
+.nav-buttons .btn-contratar {
+  background: var(--lime);
+  color: var(--soil);
+  border: 1px solid var(--lime);
+  font-weight: 800;
+}
+
+.nav-buttons .btn-contratar:hover {
+  background: var(--white);
+  border-color: var(--white);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(118,255,3,0.3);
+}
+
+/* ══════════════════════════════ HERO ══════════════════════════════ */
+#hero {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  position: relative;
+  overflow: hidden;
+  padding-top: 72px;
+}
+
+.hero-bg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.hero-bg::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 70% 60% at 30% 50%, rgba(27,94,32,0.15) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 50% at 80% 30%, rgba(118,255,3,0.04) 0%, transparent 50%);
+}
+
+.hero-bg::after {
+  content: '';
+  position: absolute;
+  right: 0; top: 0;
+  width: 55%;
+  height: 100%;
+  background:
+    linear-gradient(rgba(76,175,80,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(76,175,80,0.04) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse 90% 80% at 70% 50%, black, transparent 80%);
+  -webkit-mask-image: radial-gradient(ellipse 90% 80% at 70% 50%, black, transparent 80%);
+}
+
+.hero-left {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 100px 80px 100px 100px;
+  position: relative;
+  z-index: 2;
+}
+
+.hero-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 32px;
+  animation: fadeUp 0.8s ease both;
+}
+
+.hero-eyebrow-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--lime);
+  animation: pulseDot 2s ease-in-out infinite;
+}
+
+@keyframes pulseDot {
+  0%,100% { box-shadow: 0 0 0 0 rgba(118,255,3,0.4); }
+  50%      { box-shadow: 0 0 0 8px rgba(118,255,3,0); }
+}
+
+.hero-eyebrow-text {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 5px;
+  text-transform: uppercase;
+  color: var(--lime);
+  opacity: 0.9;
+}
+
+.hero-title {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(42px, 5vw, 72px);
+  font-weight: 900;
+  line-height: 1.05;
+  margin-bottom: 28px;
+  animation: fadeUp 0.8s ease 0.1s both;
+}
+
+.hero-title em {
+  font-style: italic;
+  color: var(--g400);
+}
+
+.hero-title .highlight {
+  position: relative;
+  display: inline-block;
+}
+
+.hero-title .highlight::after {
+  content: '';
+  position: absolute;
+  bottom: 4px; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--lime), transparent);
+}
+
+.hero-sub {
+  font-size: 17px;
+  font-weight: 300;
+  color: var(--g200);
+  line-height: 1.75;
+  max-width: 480px;
+  margin-bottom: 48px;
+  animation: fadeUp 0.8s ease 0.2s both;
+}
+
+.hero-sub strong {
+  font-weight: 600;
+  color: var(--lime);
+}
+
+.hero-actions {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  animation: fadeUp 0.8s ease 0.3s both;
+}
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--g800);
+  color: var(--white);
+  padding: 16px 36px;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  border: 1px solid var(--g600);
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.25s;
+}
+
+.btn-primary:hover {
+  background: var(--g700);
+  border-color: var(--lime);
+  color: var(--lime);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(27,94,32,0.3);
+}
+
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--g300);
+  font-family: 'Barlow', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 1px;
+  cursor: pointer;
+  text-decoration: none;
+  padding: 16px 4px;
+  border-bottom: 1px solid rgba(129,199,132,0.3);
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.btn-ghost:hover { color: var(--white); border-color: var(--g400); }
+
+.hero-badges {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  margin-top: 48px;
+  animation: fadeUp 0.8s ease 0.4s both;
+}
+
+.hero-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 300;
+  color: var(--muted);
+  letter-spacing: 0.5px;
+}
+
+.hero-badge-icon {
+  font-size: 16px;
+  opacity: 0.8;
+}
+
+/* Hero right — visual */
+.hero-right {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 2;
+  padding: 100px 80px 100px 40px;
+  animation: fadeIn 1.2s ease 0.3s both;
+}
+
+.hero-visual {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+  height: 500px;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 32px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(76,175,80,0.1);
+}
+
+.hero-visual img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: brightness(0.9) contrast(1.1);
+}
+
+/* ══════════════════════════════ NUMBERS ══════════════════════════════ */
+.numbers-strip {
+  background: var(--g900);
+  padding: 56px 100px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0;
+  border-top: 1px solid rgba(76,175,80,0.15);
+  border-bottom: 1px solid rgba(76,175,80,0.15);
+  position: relative;
+  overflow: hidden;
+}
+
+.numbers-strip::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    90deg,
+    transparent, transparent calc(25% - 1px),
+    rgba(76,175,80,0.1) calc(25% - 1px), rgba(76,175,80,0.1) 25%
+  );
+  pointer-events: none;
+}
+
+.num-item {
+  padding: 0 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  position: relative;
+  z-index: 1;
+}
+
+.num-value {
+  font-family: 'Playfair Display', serif;
+  font-size: 52px;
+  font-weight: 900;
+  color: var(--lime);
+  line-height: 1;
+  letter-spacing: -2px;
+}
+
+.num-label {
+  font-size: 13px;
+  font-weight: 300;
+  color: var(--g200);
+  line-height: 1.5;
+  letter-spacing: 0.5px;
+}
+
+/* ══════════════════════════════ ANIMAÇÕES ══════════════════════════════ */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(40px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.reveal {
+  opacity: 0;
+  transform: translateY(40px);
+  transition: opacity 0.7s ease, transform 0.7s ease;
+}
+
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ══════════════════════════════ MOBILE NAV ══════════════════════════════ */
+@media (max-width: 1024px) {
+  nav { padding: 0 32px; }
+  .nav-links { display: none; }
+  .nav-buttons { display: none; }
+  .nav-hamburger { display: flex; }
+
+  #hero { grid-template-columns: 1fr; }
+  .hero-right { display: none; }
+  .hero-left { padding: 100px 32px 80px; }
+
+  .numbers-strip { grid-template-columns: repeat(2,1fr); padding: 48px 32px; }
+}
+
+@media (max-width: 768px) {
+  nav { padding: 0 24px; }
+  .nav-logo svg { width: 28px; height: 32px; }
+  .nav-logo-text .n { font-size: 20px; }
+  .nav-logo-text .s { font-size: 20px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ══ NAV ══ -->
+<nav id="navbar">
+  <a class="nav-logo" href="#">
+    <svg viewBox="0 0 80 90" xmlns="http://www.w3.org/2000/svg" overflow="visible">
+      <defs>
+        <linearGradient id="nl1" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" style="stop-color:#2E7D32"/><stop offset="100%" style="stop-color:#66BB6A"/>
+        </linearGradient>
+      </defs>
+      <line x1="40" y1="64" x2="40" y2="78" stroke="#388E3C" stroke-width="2" stroke-linecap="round"/>
+      <path d="M40,64 C26,50 16,36 22,22 C28,10 40,14 40,32 Z" fill="url(#nl1)"/>
+      <path d="M40,64 C54,48 62,34 56,20 C50,10 40,14 40,32 Z" fill="#388E3C" opacity="0.8"/>
+      <circle cx="18" cy="22" r="4" fill="#76FF03"/>
+      <circle cx="62" cy="22" r="4" fill="#76FF03"/>
+    </svg>
+    <div class="nav-logo-text">
+      <span class="n">NEX</span><span class="s">SAFRA</span>
+    </div>
+  </a>
+
+  <ul class="nav-links">
+    <li><a href="#hero">Início</a></li>
+    <li><a href="/recursos/">Funcionalidades</a></li>
+    <li><a href="/planos/">Planos</a></li>
+    <li><a href="/faq/">FAQ</a></li>
+    <li><a href="/sobre/">Sobre</a></li>
+    <li><a href="/contato/" class="nav-cta">Contato</a></li>
+  </ul>
+
+  <ul class="nav-buttons">
+    <li><a href="/login/" class="btn-login">Login</a></li>
+    <li><a href="#cta" class="btn-contratar">Contratar</a></li>
+  </ul>
+
+  <button class="nav-hamburger" onclick="toggleMenu()" aria-label="Menu">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+
+<!-- ══ HERO ══ -->
+<section id="hero">
+  <div class="hero-bg"></div>
+
+  <div class="hero-left">
+    <div class="hero-eyebrow">
+      <div class="hero-eyebrow-dot"></div>
+      <span class="hero-eyebrow-text">Plataforma SaaS Agrícola · 36 Módulos</span>
+    </div>
+
+    <h1 class="hero-title">
+      A próxima geração<br>
+      da <em>gestão de<br>
+      <span class="highlight">safras</span></em>
+    </h1>
+
+    <p class="hero-sub">
+      <strong>Next + Safra.</strong> Nexsafra conecta cada etapa da sua produção — do talhão ao container, do produtor ao importador — em tempo real.
+    </p>
+
+    <div class="hero-actions">
+      <a href="#planos" class="btn-primary">Começar agora →</a>
+      <a href="#hero" class="btn-ghost">Saber mais ↓</a>
+    </div>
+
+    <div class="hero-badges">
+      <div class="hero-badge">
+        <span class="hero-badge-icon">🌿</span>
+        GLOBALG.A.P. Ready
+      </div>
+      <div class="hero-badge">
+        <span class="hero-badge-icon">🔒</span>
+        LGPD & GDPR
+      </div>
+      <div class="hero-badge">
+        <span class="hero-badge-icon">📱</span>
+        Mobile Offline
+      </div>
+    </div>
+  </div>
+
+  <div class="hero-right">
+    <div class="hero-visual">
+      <img src="{{ imagem_hero }}" alt="Operação agrícola em tempo real com trator">
+    </div>
+  </div>
+</section>
+
+<!-- ══ NUMBERS ══ -->
+<div class="numbers-strip reveal">
+  <div class="num-item">
+    <div class="num-value">36</div>
+    <div class="num-label">Módulos integrados — campo, packing, exportação e compliance</div>
+  </div>
+  <div class="num-item">
+    <div class="num-value">100%</div>
+    <div class="num-label">Rastreabilidade da semente ao cliente final</div>
+  </div>
+  <div class="num-item">
+    <div class="num-value">99,9%</div>
+    <div class="num-label">SLA garantido para planos Enterprise</div>
+  </div>
+  <div class="num-item">
+    <div class="num-value">24h</div>
+    <div class="num-label">Deploy em produção — sem instalação local</div>
+  </div>
+</div>
+
+<!-- ══ CTA FINAL ══ -->
+<section id="cta" style="padding: 160px 100px; background: var(--g900); text-align: center; position: relative; overflow: hidden;">
+  <span style="font-family: 'Barlow Condensed', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 6px; text-transform: uppercase; color: var(--lime); opacity: 0.8; margin-bottom: 24px; display: block;">Pronto para transformar sua operação?</span>
+  <h2 style="font-family: 'Playfair Display', serif; font-size: clamp(36px, 5vw, 64px); font-weight: 900; line-height: 1.1; margin-bottom: 24px;">
+    Sua safra merece<br>
+    <em style="font-style: italic; color: var(--g400);">tecnologia de verdade.</em>
+  </h2>
+  <p style="font-size: 17px; font-weight: 300; color: var(--g200); line-height: 1.7; max-width: 560px; margin: 0 auto 48px;">
+    Agende uma demo gratuita e veja como a Nexsafra transforma sua operação em <strong style="color: var(--lime); font-weight: 600;">30 dias</strong>.
+  </p>
+  <div style="display: flex; align-items: center; justify-content: center; gap: 24px; flex-wrap: wrap;">
+    <a href="#cta" class="btn-primary">Agendar demo gratuita →</a>
+  </div>
+</section>
+
+<!-- ══ FOOTER ══ -->
+<footer style="background: var(--soil); border-top: 1px solid rgba(46,125,50,0.15); padding: 80px 100px 40px;">
+  <div style="border-top: 1px solid rgba(46,125,50,0.1); padding-top: 32px; text-align: center;">
+    <span style="font-size: 12px; font-weight: 300; color: var(--muted); opacity: 0.6; letter-spacing: 0.5px;">© 2026 Nexsafra. Todos os direitos reservados. | Do talhão ao mundo.</span>
+  </div>
+</footer>
+
+<script>
+const navbar = document.getElementById('navbar');
+window.addEventListener('scroll', () => {
+  navbar.classList.toggle('scrolled', window.scrollY > 40);
+});
+
+const reveals = document.querySelectorAll('.reveal');
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.classList.add('visible');
+      observer.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.1, rootMargin: '0px 0px -60px 0px' });
+
+reveals.forEach(r => observer.observe(r));
+
+function animateCounters() {
+  document.querySelectorAll('.num-value').forEach(el => {
+    const target = el.textContent;
+    const num = parseFloat(target.replace(/[^0-9.]/g, ''));
+    if (!num) return;
+    const suffix = target.replace(/[0-9.]/g, '');
+    let current = 0;
+    const step = num / 60;
+    const timer = setInterval(() => {
+      current = Math.min(current + step, num);
+      el.textContent = (Number.isInteger(num) ? Math.floor(current) : current.toFixed(1)) + suffix;
+      if (current >= num) clearInterval(timer);
+    }, 20);
+  });
+}
+
+const stripObserver = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) { animateCounters(); stripObserver.unobserve(e.target); }
+  });
+}, { threshold: 0.5 });
+
+const strip = document.querySelector('.numbers-strip');
+if (strip) stripObserver.observe(strip);
+
+let menuOpen = false;
+function toggleMenu() {
+  menuOpen = !menuOpen;
+  const links = document.querySelector('.nav-links');
+  if (menuOpen) {
+    links.style.cssText = `display: flex; flex-direction: column; position: fixed; top: 72px; left: 0; right: 0; background: rgba(8,15,9,0.98); backdrop-filter: blur(12px); padding: 32px; gap: 24px; z-index: 999; border-bottom: 1px solid rgba(76,175,80,0.15);`;
+  } else {
+    links.style.cssText = 'display:none';
+  }
+}
+</script>
+</body>
+</html>

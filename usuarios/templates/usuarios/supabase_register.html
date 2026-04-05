@@ -1,0 +1,476 @@
+{% extends 'usuarios/base_auth.html' %}
+{% load static %}
+
+{% block title %}Registrar - Nexsafra{% endblock %}
+
+{% block extra_head %}
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=Barlow:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --primary: #1B5E20;
+  --primary-light: #2E7D32;
+  --lime: #76FF03;
+  --soil-dark: #1A1A1A;
+  --white: #FAFFF8;
+  --gray-light: #F5F5F5;
+  --muted: #8BA889;
+}
+
+body, html {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  font-family: 'Barlow', sans-serif;
+  background: var(--soil-dark);
+}
+
+.login-container {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+}
+
+.left-panel {
+  flex: 1;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 60px;
+}
+
+.left-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 80% 60% at 20% 50%, rgba(118,255,3,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse 60% 70% at 80% 30%, rgba(255,255,255,0.05) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+.left-content {
+  position: relative;
+  z-index: 2;
+  color: var(--white);
+  text-align: center;
+  max-width: 400px;
+}
+
+.left-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 40px;
+}
+
+.left-logo svg { width: 50px; height: 60px; }
+
+.left-logo-text {
+  display: flex;
+  align-items: baseline;
+  gap: 0;
+}
+
+.left-logo-text .n {
+  font-family: 'Playfair Display', serif;
+  font-size: 32px;
+  font-weight: 900;
+  color: var(--white);
+  letter-spacing: -1px;
+}
+
+.left-logo-text .s {
+  font-family: 'Playfair Display', serif;
+  font-size: 32px;
+  font-weight: 300;
+  color: var(--lime);
+  letter-spacing: 2px;
+}
+
+.left-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 42px;
+  font-weight: 900;
+  line-height: 1.2;
+  margin-bottom: 16px;
+}
+
+.right-panel {
+  flex: 1;
+  background: var(--soil-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 40px;
+  overflow-y: auto;
+}
+
+.form-wrapper {
+  width: 100%;
+  max-width: 420px;
+  animation: slideIn 0.6s ease;
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(40px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.form-header {
+  margin-bottom: 40px;
+}
+
+.form-header h1 {
+  font-family: 'Playfair Display', serif;
+  font-size: 36px;
+  font-weight: 900;
+  color: var(--white);
+  margin-bottom: 8px;
+}
+
+.form-header p {
+  font-size: 14px;
+  color: var(--muted);
+  font-weight: 300;
+}
+
+.form-group {
+  margin-bottom: 24px;
+}
+
+.form-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--white);
+  margin-bottom: 8px;
+}
+
+.form-control {
+  width: 100%;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(118,255,3,0.2);
+  color: var(--white);
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-family: 'Barlow', sans-serif;
+  font-size: 14px;
+  transition: all 0.3s;
+}
+
+.form-control::placeholder { color: rgba(255,255,255,0.4); }
+
+.form-control:focus {
+  background: rgba(255,255,255,0.08);
+  border-color: var(--lime);
+  color: var(--white);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(118,255,3,0.1);
+}
+
+.btn-register {
+  width: 100%;
+  background: var(--lime);
+  color: var(--soil-dark);
+  border: none;
+  padding: 14px;
+  border-radius: 8px;
+  font-family: 'Barlow', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.3s;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btn-register:hover {
+  background: var(--white);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 32px rgba(118,255,3,0.3);
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 24px 0;
+  opacity: 0.5;
+}
+
+.divider::before, .divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: rgba(255,255,255,0.1);
+}
+
+.divider-text {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.btn-google {
+  width: 100%;
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.2);
+  color: var(--white);
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.btn-google:hover {
+  background: rgba(255,255,255,0.05);
+  border-color: var(--lime);
+}
+
+.form-footer {
+  text-align: center;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.form-footer a {
+  color: var(--lime);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.alert {
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  font-size: 13px;
+  border-left: 3px solid;
+  animation: slideIn 0.4s ease;
+}
+
+.alert-danger {
+  background: rgba(220,53,69,0.1);
+  color: #ff6b6b;
+  border-left-color: #ff6b6b;
+}
+
+.alert-success {
+  background: rgba(118,255,3,0.1);
+  color: var(--lime);
+  border-left-color: var(--lime);
+}
+
+.password-meter {
+  height: 4px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 2px;
+  margin-top: 8px;
+  overflow: hidden;
+}
+
+.password-meter-fill {
+  height: 100%;
+  width: 0%;
+  background: #ff6b6b;
+  transition: width 0.3s;
+}
+
+.password-meter-fill.fair { background: #ffc107; width: 50%; }
+.password-meter-fill.good { background: #76FF03; width: 75%; }
+.password-meter-fill.strong { background: #00d084; width: 100%; }
+
+@media (max-width: 1024px) {
+  .left-panel { flex: 0.8; }
+  .right-panel { flex: 1.2; }
+}
+
+@media (max-width: 768px) {
+  .login-container { flex-direction: column; }
+  .left-panel { display: none; }
+  .right-panel { flex: 1; padding: 40px 24px; justify-content: flex-start; padding-top: 80px; }
+  .form-header h1 { font-size: 28px; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="login-container">
+  
+  <div class="left-panel">
+    <div class="left-content">
+      <div class="left-logo">
+        <svg viewBox="0 0 80 90" xmlns="http://www.w3.org/2000/svg" overflow="visible">
+          <defs>
+            <linearGradient id="nl1" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" style="stop-color:#FAFFF8"/><stop offset="100%" style="stop-color:#76FF03"/>
+            </linearGradient>
+          </defs>
+          <line x1="40" y1="64" x2="40" y2="78" stroke="#FAFFF8" stroke-width="2" stroke-linecap="round"/>
+          <path d="M40,64 C26,50 16,36 22,22 C28,10 40,14 40,32 Z" fill="url(#nl1)"/>
+          <path d="M40,64 C54,48 62,34 56,20 C50,10 40,14 40,32 Z" fill="#FAFFF8" opacity="0.8"/>
+          <circle cx="18" cy="22" r="4" fill="#76FF03"/>
+          <circle cx="62" cy="22" r="4" fill="#76FF03"/>
+        </svg>
+        <div class="left-logo-text">
+          <span class="n">NEX</span><span class="s">SAFRA</span>
+        </div>
+      </div>
+
+      <h2 class="left-title">Crie sua conta</h2>
+      <p style="font-size: 16px; font-weight: 300; line-height: 1.7; opacity: 0.95;">Junte-se a centenas de produtores que confiam na Nexsafra para gerenciar suas safras em tempo real.</p>
+    </div>
+  </div>
+
+  <div class="right-panel">
+    <div class="form-wrapper">
+      
+      <div class="form-header">
+        <h1>Criar Conta</h1>
+        <p>Preencha os dados abaixo para começar</p>
+      </div>
+
+      {% if messages %}
+        {% for message in messages %}
+          <div class="alert alert-{{ message.tags }}">
+            <i class="bi bi-{% if message.tags == 'error' %}exclamation-triangle{% else %}check-circle{% endif %}"></i>
+            {{ message }}
+          </div>
+        {% endfor %}
+      {% endif %}
+
+      <form id="registerForm" method="post">
+        {% csrf_token %}
+
+        <div class="form-group">
+          <label class="form-label" for="first_name">
+            <i class="bi bi-person"></i> Primeiro Nome
+          </label>
+          <input type="text" id="first_name" name="first_name" class="form-control" placeholder="João" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="last_name">
+            <i class="bi bi-person"></i> Último Nome
+          </label>
+          <input type="text" id="last_name" name="last_name" class="form-control" placeholder="Silva" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="email">
+            <i class="bi bi-envelope"></i> Email
+          </label>
+          <input type="email" id="email" name="email" class="form-control" placeholder="seu@email.com" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="password">
+            <i class="bi bi-lock"></i> Senha
+          </label>
+          <input type="password" id="password" name="password" class="form-control" placeholder="Mín. 6 caracteres" required oninput="updatePasswordMeter(this.value)">
+          <div class="password-meter">
+            <div id="passwordMeter" class="password-meter-fill"></div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="password_confirm">
+            <i class="bi bi-lock"></i> Confirmar Senha
+          </label>
+          <input type="password" id="password_confirm" name="password_confirm" class="form-control" placeholder="Repita a senha" required>
+        </div>
+
+        <button type="submit" class="btn-register">
+          <i class="bi bi-person-plus"></i> Criar Conta
+        </button>
+
+        <div class="divider">
+          <div class="divider-text">ou continuar com</div>
+        </div>
+
+        <button type="button" class="btn-google" id="googleBtn" onclick="loginWithGoogle()">
+          <i class="bi bi-google"></i> Google
+        </button>
+
+      </form>
+
+      <div class="form-footer">
+        Já tem conta? <a href="/login/">Fazer login</a>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<script>
+function updatePasswordMeter(password) {
+  const meter = document.getElementById('passwordMeter');
+  let strength = 0;
+  
+  if (password.length >= 6) strength++;
+  if (password.length >= 8) strength++;
+  if (/[A-Z]/.test(password)) strength++;
+  if (/[0-9]/.test(password)) strength++;
+  if (/[^A-Za-z0-9]/.test(password)) strength++;
+  
+  meter.classList.remove('fair', 'good', 'strong');
+  if (strength <= 2) {
+    meter.style.width = '33%';
+    meter.style.background = '#ff6b6b';
+  } else if (strength <= 3) {
+    meter.classList.add('fair');
+  } else if (strength <= 4) {
+    meter.classList.add('good');
+  } else {
+    meter.classList.add('strong');
+  }
+}
+
+document.getElementById('registerForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  
+  const password = document.getElementById('password').value;
+  const passwordConfirm = document.getElementById('password_confirm').value;
+  
+  if (password !== passwordConfirm) {
+    alert('As senhas não conferem');
+    return;
+  }
+  
+  if (password.length < 6) {
+    alert('Senha deve ter mínimo 6 caracteres');
+    return;
+  }
+  
+  this.submit();
+});
+
+function loginWithGoogle() {
+  // Será implementado com Supabase JS SDK
+  alert('Login com Google em breve!');
+}
+</script>
+
+{% endblock %}

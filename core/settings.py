@@ -104,6 +104,7 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
                 'django.template.context_processors.media',  # Para upload de arquivos
                 'core.context_processors.alertas_estoque',  # Context processor customizado para alertas
+                'usuarios.context_processors.supabase_context',  # Injecta contexto Supabase
             ],
         },
     },
@@ -240,6 +241,26 @@ CORS_ALLOWED_ORIGINS = get_list_env('CORS_ALLOWED_ORIGINS', [
     'http://127.0.0.1:3000',
 ])
 CORS_ALLOW_CREDENTIALS = True
+
+
+# ============================================
+# SUPABASE CONFIGURATION (PostgreSQL + Auth)
+# ============================================
+SUPABASE_URL = os.getenv('SUPABASE_URL')
+SUPABASE_ANON_KEY = os.getenv('SUPABASE_ANON_KEY')
+SUPABASE_SERVICE_ROLE_KEY = os.getenv('SUPABASE_SERVICE_ROLE_KEY')
+AUTH_MODE = os.getenv('AUTH_MODE', 'django')  # 'django', 'dual', 'supabase'
+
+# Validação em produção
+if not DEBUG:
+    if not SUPABASE_URL or not SUPABASE_ANON_KEY:
+        raise ImproperlyConfigured(
+            'SUPABASE_URL e SUPABASE_ANON_KEY devem ser configuradas em produção'
+        )
+
+# Google OAuth (para Supabase)
+GOOGLE_OAUTH_CLIENT_ID = os.getenv('GOOGLE_OAUTH_CLIENT_ID', '')
+GOOGLE_OAUTH_CLIENT_SECRET = os.getenv('GOOGLE_OAUTH_CLIENT_SECRET', '')
 
 
 # ============================================

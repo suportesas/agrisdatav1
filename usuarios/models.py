@@ -399,6 +399,13 @@ class PerfilUsuario(models.Model):
         return f"Perfil de {self.usuario.username}"
 
 
+# Importa modelos de sincronização Supabase
+try:
+    from usuarios.models_supabase import SupabaseUsuarioSync, LoginSupabase
+except ImportError:
+    pass  # Modelos não disponíveis se supabase não está configurado
+
+
 class DoisFatoresAutenticacao(models.Model):
     """
     Autenticação de Dois Fatores (2FA) via TOTP (Time-based One-Time Password)

@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Contato — Nexsafra</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=Barlow:wght@300;400;500;600;700&family=Barlow+Condensed:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --g900: #1B5E20;
+  --g800: #2E7D32;
+  --g700: #388E3C;
+  --g600: #43A047;
+  --g500: #4CAF50;
+  --g400: #66BB6A;
+  --lime: #76FF03;
+  --soil: #080F09;
+  --muted:#8BA889;
+  --white:#FAFFF8;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--soil);
+  color: var(--white);
+  font-family: 'Barlow', sans-serif;
+  overflow-x: hidden;
+}
+
+/* ══════════════════════════════ NAV ══════════════════════════════ */
+nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 1000;
+  padding: 0 80px;
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(46,125,50,0.2);
+  background: rgba(8,15,9,0.95);
+  backdrop-filter: blur(12px);
+}
+
+.nav-logo {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  text-decoration: none;
+}
+
+.nav-logo-text { display: flex; align-items: baseline; }
+
+.nav-logo-text .n {
+  font-family: 'Playfair Display', serif;
+  font-size: 28px;
+  font-weight: 900;
+  color: var(--white);
+  letter-spacing: -1px;
+}
+
+.nav-logo-text .s {
+  font-family: 'Playfair Display', serif;
+  font-size: 28px;
+  font-weight: 300;
+  color: var(--g400);
+  letter-spacing: 2px;
+}
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 40px;
+  list-style: none;
+}
+
+.nav-links a {
+  font-family: 'Barlow', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 1px;
+  color: var(--muted);
+  text-decoration: none;
+  text-transform: uppercase;
+  transition: color 0.2s;
+}
+
+.nav-links a:hover { color: var(--lime); }
+
+.nav-buttons {
+  display: flex;
+  gap: 12px;
+  list-style: none;
+}
+
+.nav-buttons a {
+  text-decoration: none;
+  padding: 10px 20px;
+  border-radius: 25px;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  transition: all 0.3s;
+}
+
+.nav-buttons .btn-contratar {
+  background: var(--lime);
+  color: var(--soil);
+}
+
+.nav-buttons .btn-contratar:hover {
+  background: var(--white);
+  transform: translateY(-2px);
+}
+
+/* ══════════════════════════════ MAIN ══════════════════════════════ */
+main {
+  padding-top: 120px;
+  min-height: 100vh;
+}
+
+.section-header {
+  text-align: center;
+  padding: 60px 100px;
+}
+
+.section-header h1 {
+  font-family: 'Playfair Display', serif;
+  font-size: 56px;
+  font-weight: 900;
+  margin-bottom: 16px;
+}
+
+.section-header h1 em {
+  color: var(--g400);
+  font-style: italic;
+}
+
+.section-header p {
+  font-size: 18px;
+  color: var(--muted);
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.contato-container {
+  max-width: 1000px;
+  margin: 40px auto;
+  padding: 0 100px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 60px;
+}
+
+.contato-info h3 {
+  font-family: 'Playfair Display', serif;
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 32px;
+  color: var(--lime);
+}
+
+.contato-item {
+  margin-bottom: 32px;
+}
+
+.contato-item-label {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.contato-item-value {
+  font-size: 16px;
+  color: var(--white);
+  line-height: 1.6;
+}
+
+.contato-item-value a {
+  color: var(--lime);
+  text-decoration: none;
+}
+
+.contato-item-value a:hover {
+  text-decoration: underline;
+}
+
+.contato-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group label {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.form-group input,
+.form-group textarea {
+  background: rgba(46,125,50,0.1);
+  border: 1px solid rgba(46,125,50,0.2);
+  color: var(--white);
+  padding: 12px 16px;
+  border-radius: 4px;
+  font-family: 'Barlow', sans-serif;
+  font-size: 14px;
+  transition: border-color 0.3s;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: var(--lime);
+  background: rgba(46,125,50,0.15);
+}
+
+.form-group textarea {
+  resize: vertical;
+  min-height: 120px;
+}
+
+.form-submit {
+  background: var(--lime);
+  color: var(--soil);
+  border: 1px solid var(--lime);
+  padding: 14px 32px;
+  border-radius: 4px;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.form-submit:hover {
+  background: var(--white);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(118,255,3,0.3);
+}
+
+/* ══════════════════════════════ FOOTER ══════════════════════════════ */
+footer {
+  background: var(--soil);
+  border-top: 1px solid rgba(46,125,50,0.15);
+  padding: 60px 100px 40px;
+  margin-top: 80px;
+}
+
+footer nav {
+  position: relative;
+  padding: 0;
+  height: auto;
+  border-bottom: 0;
+  background: none;
+  margin-bottom: 40px;
+  justify-content: center;
+  display: flex;
+}
+
+footer .nav-links {
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 32px;
+}
+
+footer .nav-links a {
+  color: var(--muted);
+}
+
+footer .nav-links a:hover {
+  color: var(--lime);
+}
+
+.footer-bottom {
+  border-top: 1px solid rgba(46,125,50,0.1);
+  padding-top: 32px;
+  text-align: center;
+}
+
+.footer-bottom span {
+  font-size: 12px;
+  font-weight: 300;
+  color: var(--muted);
+  opacity: 0.6;
+  letter-spacing: 0.5px;
+}
+
+@media (max-width: 968px) {
+  .contato-container {
+    grid-template-columns: 1fr;
+    gap: 40px;
+  }
+}
+
+@media (max-width: 768px) {
+  nav { padding: 0 24px; }
+  .section-header { padding: 40px 24px; }
+  .section-header h1 { font-size: 36px; }
+  .contato-container { padding: 0 24px; }
+  footer { padding: 40px 24px 30px; }
+}
+</style>
+</head>
+<body>
+
+<nav id="navbar">
+  <a href="/" class="nav-logo">
+    <div class="nav-logo-text">
+      <span class="n">N</span><span class="s">EXSAFRA</span>
+    </div>
+  </a>
+  <ul class="nav-links">
+    <li><a href="/recursos/">Funcionalidades</a></li>
+    <li><a href="/planos/">Planos</a></li>
+    <li><a href="/faq/">FAQ</a></li>
+    <li><a href="/sobre/">Sobre</a></li>
+    <li><a href="/contato/">Contato</a></li>
+  </ul>
+  <ul class="nav-buttons">
+    <li><a href="/login/" class="btn-contratar">Entrar →</a></li>
+  </ul>
+</nav>
+
+<main>
+  <section class="section-header">
+    <h1>Entre em <em>Contato</em></h1>
+    <p>Temos prazer em ouvir de você. Envie uma mensagem e nossa equipe responderá em breve.</p>
+  </section>
+
+  <div class="contato-container">
+    <div class="contato-info">
+      <h3>Informações de Contato</h3>
+      
+      <div class="contato-item">
+        <div class="contato-item-label">Email</div>
+        <div class="contato-item-value"><a href="mailto:contato@nexsafra.com.br">contato@nexsafra.com.br</a></div>
+      </div>
+      
+      <div class="contato-item">
+        <div class="contato-item-label">Telefone</div>
+        <div class="contato-item-value"><a href="tel:+551140001234">(11) 4000-1234</a></div>
+      </div>
+      
+      <div class="contato-item">
+        <div class="contato-item-label">Localização</div>
+        <div class="contato-item-value">São Paulo, SP - Brasil</div>
+      </div>
+      
+      <div class="contato-item">
+        <div class="contato-item-label">Horário de Atendimento</div>
+        <div class="contato-item-value">Segunda a Sexta, 09:00 - 18:00 (horário de Brasília)</div>
+      </div>
+    </div>
+
+    <form class="contato-form">
+      <div class="form-group">
+        <label for="nome">Nome Completo</label>
+        <input type="text" id="nome" name="nome" required>
+      </div>
+      
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" required>
+      </div>
+      
+      <div class="form-group">
+        <label for="empresa">Empresa</label>
+        <input type="text" id="empresa" name="empresa">
+      </div>
+      
+      <div class="form-group">
+        <label for="mensagem">Mensagem</label>
+        <textarea id="mensagem" name="mensagem" required></textarea>
+      </div>
+      
+      <button type="submit" class="form-submit">Enviar Mensagem →</button>
+    </form>
+  </div>
+</main>
+
+<footer>
+  <nav style="position: relative; padding: 0; height: auto; border-bottom: 0; background: none; margin-bottom: 40px; justify-content: center; display: flex;">
+    <ul class="nav-links" style="flex-wrap: wrap; justify-content: center; gap: 32px;">
+      <li><a href="/recursos/">Funcionalidades</a></li>
+      <li><a href="/planos/">Planos</a></li>
+      <li><a href="/faq/">FAQ</a></li>
+      <li><a href="/sobre/">Sobre</a></li>
+      <li><a href="/contato/">Contato</a></li>
+    </ul>
+  </nav>
+  <div class="footer-bottom">
+    <span>© 2026 Nexsafra. Todos os direitos reservados. | Do talhão ao mundo.</span>
+  </div>
+</footer>
+
+</body>
+</html>

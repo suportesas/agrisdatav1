@@ -10,13 +10,15 @@ from django.conf.urls.static import static
 from django.contrib.auth import views as auth_views
 from usuarios import views as user_views
 from compras import views as compras_views
+from core.views_public import (landing_page, recursos_page, sobre_page, planos_page, 
+                               faq_page, contato_page, recursos_avancados_page, page_not_found)
 
 
 def root_redirect(request):
     """Redireciona a raiz do site dependendo da autenticação"""
     if request.user.is_authenticated:
         return redirect('dashboard:index')
-    return redirect('login')
+    return redirect('landing_page')
 
 
 # Customização do Admin
@@ -30,6 +32,17 @@ urlpatterns = [
     # ADMIN DJANGO
     # ============================================
     path('admin/', admin.site.urls),
+    
+    # ============================================
+    # LANDING PAGE
+    # ============================================
+    path('landing/', landing_page, name='landing_page'),
+    path('recursos/', recursos_page, name='recursos_page'),
+    path('sobre/', sobre_page, name='sobre_page'),
+    path('planos/', planos_page, name='planos_page'),
+    path('faq/', faq_page, name='faq_page'),
+    path('contato/', contato_page, name='contato_page'),
+    path('recursos-avancados/', recursos_avancados_page, name='recursos_avancados_page'),
     
     # ============================================
     # RAIZ DO SITE
@@ -104,7 +117,17 @@ urlpatterns = [
     path('api/', include([
         path('auth/', include('rest_framework.urls')),
     ])),
+    
+    # ============================================
+    # CATCH-ALL 404 (DEVE SER O ÚLTIMO)
+    # ============================================
+    path('<path:unknown_path>/', page_not_found, name='page_not_found'),
 ]
+
+# ============================================
+# HANDLER 404
+# ============================================
+handler404 = 'core.views_public.page_not_found'
 
 # ============================================
 # SERVIR ARQUIVOS ESTÁTICOS E MEDIA (DESENVOLVIMENTO)

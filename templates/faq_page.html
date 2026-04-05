@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Perguntas Frequentes — Nexsafra</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=Barlow:wght@300;400;500;600;700&family=Barlow+Condensed:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --g900: #1B5E20;
+  --g800: #2E7D32;
+  --g700: #388E3C;
+  --g600: #43A047;
+  --g500: #4CAF50;
+  --g400: #66BB6A;
+  --lime: #76FF03;
+  --soil: #080F09;
+  --muted:#8BA889;
+  --white:#FAFFF8;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--soil);
+  color: var(--white);
+  font-family: 'Barlow', sans-serif;
+  overflow-x: hidden;
+}
+
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--soil); }
+::-webkit-scrollbar-thumb { background: var(--g800); border-radius: 3px; }
+
+/* ══════════════════════════════ NAV ══════════════════════════════ */
+nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 1000;
+  padding: 0 80px;
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(46,125,50,0.2);
+  background: rgba(8,15,9,0.95);
+  backdrop-filter: blur(12px);
+}
+
+.nav-logo {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  text-decoration: none;
+}
+
+.nav-logo-text { display: flex; align-items: baseline; }
+
+.nav-logo-text .n {
+  font-family: 'Playfair Display', serif;
+  font-size: 28px;
+  font-weight: 900;
+  color: var(--white);
+  letter-spacing: -1px;
+}
+
+.nav-logo-text .s {
+  font-family: 'Playfair Display', serif;
+  font-size: 28px;
+  font-weight: 300;
+  color: var(--g400);
+  letter-spacing: 2px;
+}
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 40px;
+  list-style: none;
+}
+
+.nav-links a {
+  font-family: 'Barlow', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 1px;
+  color: var(--muted);
+  text-decoration: none;
+  text-transform: uppercase;
+  transition: color 0.2s;
+}
+
+.nav-links a:hover { color: var(--lime); }
+
+.nav-buttons {
+  display: flex;
+  gap: 12px;
+  list-style: none;
+}
+
+.nav-buttons a {
+  text-decoration: none;
+  padding: 10px 20px;
+  border-radius: 25px;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  transition: all 0.3s;
+}
+
+.nav-buttons .btn-contratar {
+  background: var(--lime);
+  color: var(--soil);
+}
+
+.nav-buttons .btn-contratar:hover {
+  background: var(--white);
+  transform: translateY(-2px);
+}
+
+/* ══════════════════════════════ MAIN ══════════════════════════════ */
+main {
+  padding-top: 120px;
+  min-height: 100vh;
+}
+
+.section-header {
+  text-align: center;
+  padding: 60px 100px;
+}
+
+.section-header h1 {
+  font-family: 'Playfair Display', serif;
+  font-size: 56px;
+  font-weight: 900;
+  margin-bottom: 16px;
+}
+
+.section-header h1 em {
+  color: var(--g400);
+  font-style: italic;
+}
+
+.section-header p {
+  font-size: 18px;
+  color: var(--muted);
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.faq-container {
+  max-width: 800px;
+  margin: 40px auto;
+  padding: 0 100px;
+}
+
+.faq-item {
+  border: 1px solid rgba(46,125,50,0.2);
+  margin-bottom: 16px;
+  border-radius: 4px;
+  overflow: hidden;
+  transition: border-color 0.3s;
+}
+
+.faq-item.active {
+  border-color: var(--lime);
+  background: rgba(118,255,3,0.05);
+}
+
+.faq-question {
+  background: rgba(46,125,50,0.08);
+  padding: 24px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: background 0.3s;
+  font-family: 'Barlow', sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--white);
+}
+
+.faq-item:hover .faq-question {
+  background: rgba(46,125,50,0.12);
+}
+
+.faq-item.active .faq-question {
+  background: rgba(118,255,3,0.1);
+}
+
+.faq-icon {
+  font-size: 20px;
+  color: var(--lime);
+  transition: transform 0.3s;
+  flex-shrink: 0;
+  margin-left: 16px;
+}
+
+.faq-item.active .faq-icon {
+  transform: rotate(45deg);
+}
+
+.faq-answer {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+  background: rgba(46,125,50,0.04);
+}
+
+.faq-item.active .faq-answer {
+  max-height: 300px;
+}
+
+.faq-answer-text {
+  padding: 24px;
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+/* ══════════════════════════════ FOOTER ══════════════════════════════ */
+footer {
+  background: var(--soil);
+  border-top: 1px solid rgba(46,125,50,0.15);
+  padding: 60px 100px 40px;
+  margin-top: 80px;
+}
+
+footer nav {
+  position: relative;
+  padding: 0;
+  height: auto;
+  border-bottom: 0;
+  background: none;
+  margin-bottom: 40px;
+  justify-content: center;
+  display: flex;
+}
+
+footer .nav-links {
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 32px;
+}
+
+footer .nav-links a {
+  color: var(--muted);
+}
+
+footer .nav-links a:hover {
+  color: var(--lime);
+}
+
+.footer-bottom {
+  border-top: 1px solid rgba(46,125,50,0.1);
+  padding-top: 32px;
+  text-align: center;
+}
+
+.footer-bottom span {
+  font-size: 12px;
+  font-weight: 300;
+  color: var(--muted);
+  opacity: 0.6;
+  letter-spacing: 0.5px;
+}
+
+@media (max-width: 768px) {
+  nav { padding: 0 24px; }
+  .section-header { padding: 40px 24px; }
+  .section-header h1 { font-size: 36px; }
+  .faq-container { padding: 0 24px; }
+  .faq-question { padding: 16px; }
+  footer { padding: 40px 24px 30px; }
+}
+</style>
+</head>
+<body>
+
+<nav id="navbar">
+  <a href="/" class="nav-logo">
+    <div class="nav-logo-text">
+      <span class="n">N</span><span class="s">EXSAFRA</span>
+    </div>
+  </a>
+  <ul class="nav-links">
+    <li><a href="/recursos/">Funcionalidades</a></li>
+    <li><a href="/planos/">Planos</a></li>
+    <li><a href="/faq/">FAQ</a></li>
+    <li><a href="/sobre/">Sobre</a></li>
+    <li><a href="/contato/">Contato</a></li>
+  </ul>
+  <ul class="nav-buttons">
+    <li><a href="/login/" class="btn-contratar">Entrar →</a></li>
+  </ul>
+</nav>
+
+<main>
+  <section class="section-header">
+    <h1>Perguntas <em>Frequentes</em></h1>
+    <p>Todas as respostas que você precisa para começar com Nexsafra.</p>
+  </section>
+
+  <div class="faq-container">
+    {% for item in faq_items %}
+    <div class="faq-item" data-index="{{ forloop.counter0 }}">
+      <div class="faq-question">
+        <span>{{ item.pergunta }}</span>
+        <i class="bi bi-plus faq-icon"></i>
+      </div>
+      <div class="faq-answer">
+        <div class="faq-answer-text">{{ item.resposta }}</div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</main>
+
+<footer>
+  <nav style="position: relative; padding: 0; height: auto; border-bottom: 0; background: none; margin-bottom: 40px; justify-content: center; display: flex;">
+    <ul class="nav-links" style="flex-wrap: wrap; justify-content: center; gap: 32px;">
+      <li><a href="/recursos/">Funcionalidades</a></li>
+      <li><a href="/planos/">Planos</a></li>
+      <li><a href="/faq/">FAQ</a></li>
+      <li><a href="/sobre/">Sobre</a></li>
+      <li><a href="/contato/">Contato</a></li>
+    </ul>
+  </nav>
+  <div class="footer-bottom">
+    <span>© 2026 Nexsafra. Todos os direitos reservados. | Do talhão ao mundo.</span>
+  </div>
+</footer>
+
+<script>
+document.querySelectorAll('.faq-item').forEach(item => {
+  const question = item.querySelector('.faq-question');
+  question.addEventListener('click', () => {
+    // Fechar outros itens
+    document.querySelectorAll('.faq-item').forEach(other => {
+      if (other !== item) other.classList.remove('active');
+    });
+    // Alternar item atual
+    item.classList.toggle('active');
+  });
+});
+</script>
+
+</body>
+</html>

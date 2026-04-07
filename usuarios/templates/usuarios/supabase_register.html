@@ -468,9 +468,30 @@ document.getElementById('registerForm').addEventListener('submit', async functio
     return;
   }
   
-  // Submeter o formulário normalmente (POST ao Django)
-  // Django vai processar o registro com Supabase
-  this.submit();
+  // Submeter para o endpoint correto de registro (/auth/register/)
+  const formData = new FormData(this);
+  
+  try {
+    const response = await fetch('/auth/register/', {
+      method: 'POST',
+      body: formData,
+      headers: {
+        'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+      }
+    });
+    
+    const data = await response.json();
+    
+    if (response.ok && data.success) {
+      alert('✅ Registrado com sucesso! Redirecionando para login...');
+      window.location.href = data.redirect || '/login/';
+    } else {
+      alert('❌ Erro no registro: ' + (data.error || 'Tente novamente'));
+    }
+  } catch (error) {
+    console.error('Erro:', error);
+    alert('❌ Erro ao enviar dados. Verifique o console.');
+  }
 });
 
 // Inicializa Supabase quando a página carrega

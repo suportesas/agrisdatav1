@@ -466,13 +466,45 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
   const originalText = submitBtn.innerHTML;
   const form = this;
   
+  const email = document.getElementById('email').value;
+  const password = document.getElementById('password').value;
+  
+  if (!email || !password) {
+    alert('❌ Email e senha são obrigatórios');
+    return;
+  }
+  
   submitBtn.disabled = true;
   submitBtn.innerHTML = 'Entrando<span class="loading"><span></span><span></span><span></span></span>';
   
-  // Submeter o formulário normalmente (POST ao Django)
-  setTimeout(() => {
-    form.submit();
-  }, 500);
+  // Submeter para o endpoint correto de login (/auth/login/)
+  const formData = new FormData(form);
+  
+  try {
+    const response = await fetch('/auth/login/', {
+      method: 'POST',
+      body: formData,
+      headers: {
+        'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+      }
+    });
+    
+    const data = await response.json();
+    
+    if (response.ok && data.success) {
+      alert('✅ Login realizado com sucesso!');
+      window.location.href = data.redirect || '/dashboard/';
+    } else {
+      alert('❌ Erro no login: ' + (data.error || 'Email ou senha incorretos'));
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = originalText;
+    }
+  } catch (error) {
+    console.error('Erro:', error);
+    alert('❌ Erro ao enviar dados. Verifique o console.');
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = originalText;
+  }
 });
 
 function loginWithGoogle() {

@@ -459,27 +459,32 @@ body, html {
 </div>
 
 <script>
-document.getElementById('loginForm').addEventListener('submit', async (e) => {
+document.getElementById('loginForm').addEventListener('submit', async function(e) {
   e.preventDefault();
   
   const submitBtn = document.getElementById('submitBtn');
   const originalText = submitBtn.innerHTML;
+  const form = this;
   
   submitBtn.disabled = true;
   submitBtn.innerHTML = 'Entrando<span class="loading"><span></span><span></span><span></span></span>';
   
+  // Submeter o formulário normalmente (POST ao Django)
   setTimeout(() => {
-    submitBtn.disabled = false;
-    submitBtn.innerHTML = originalText;
-  }, 2000);
-  
-  this.submit();
+    form.submit();
+  }, 500);
 });
 
 function loginWithGoogle() {
   // Será implementado com Supabase JS SDK
   alert('Login com Google em breve!');
 }
+
+// Inicializa Supabase quando a página carrega
+document.addEventListener('DOMContentLoaded', async () => {
+  await initSupabase();
+  console.log('✅ Supabase inicializado');
+});
 </script>
 
 {% endblock %}

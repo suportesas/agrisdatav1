@@ -448,29 +448,36 @@ function updatePasswordMeter(password) {
   }
 }
 
-document.getElementById('registerForm').addEventListener('submit', async (e) => {
+document.getElementById('registerForm').addEventListener('submit', async function(e) {
   e.preventDefault();
   
   const password = document.getElementById('password').value;
   const passwordConfirm = document.getElementById('password_confirm').value;
+  const email = document.getElementById('email').value;
+  const firstName = document.getElementById('first_name').value;
+  const lastName = document.getElementById('last_name').value;
   
+  // Validação de senhas
   if (password !== passwordConfirm) {
-    alert('As senhas não conferem');
+    alert('❌ As senhas não conferem');
     return;
   }
   
   if (password.length < 6) {
-    alert('Senha deve ter mínimo 6 caracteres');
+    alert('❌ Senha deve ter mínimo 6 caracteres');
     return;
   }
   
+  // Submeter o formulário normalmente (POST ao Django)
+  // Django vai processar o registro com Supabase
   this.submit();
 });
 
-function loginWithGoogle() {
-  // Será implementado com Supabase JS SDK
-  alert('Login com Google em breve!');
-}
+// Inicializa Supabase quando a página carrega
+document.addEventListener('DOMContentLoaded', async () => {
+  await initSupabase();
+  console.log('✅ Supabase inicializado');
+});
 </script>
 
 {% endblock %}

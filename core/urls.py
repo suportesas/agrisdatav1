@@ -54,6 +54,7 @@ urlpatterns = [
     # ============================================
     path('login/', user_views.login_view, name='login'),
     path('logout/', user_views.logout_view, name='logout'),
+    path('auth/', include(('usuarios.supabase_auth.urls', 'supabase_auth'))),
     
     # ============================================
     # RECUPERAÇÃO DE SENHA

@@ -216,6 +216,19 @@ STATICFILES_DIRS = [
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
+# ============================================
+# SUPABASE STORAGE CONFIGURATION
+# ============================================
+SUPABASE_STORAGE_ENABLED = bool(os.getenv('SUPABASE_URL'))
+
+SUPABASE_STORAGE_BUCKETS = {
+    'empresas-logos': 'Logos de empresas',
+    'documentos': 'Documentos (PDF, Word, Excel)',
+    'produtos-imagens': 'Fotos de produtos',
+    'funcionarios-fotos': 'Fotos de colaboradores',
+    'compras-xml': 'Arquivos XML de compras',
+    'uploads-gerais': 'Uploads diversos',
+}
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

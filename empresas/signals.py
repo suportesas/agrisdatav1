@@ -2,10 +2,12 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.conf import settings
 from django.core.management import call_command
+from django.utils import timezone
 import os
 import logging
 
 from .models import Empresa, Role
+from core.storage import storage_helper
 
 logger = logging.getLogger(__name__)
 
@@ -151,3 +153,30 @@ def seed_tipos_produto_on_create(sender, instance, created, **kwargs):
     except Exception:
         # Nao deve bloquear criacao de empresa
         pass
+
+
+@receiver(post_save, sender=Empresa)
+def upload_empresa_logo(sender, instance, created, **kwargs):
+    """
+    Faz upload da logo para Supabase Storage quando salvar empresa
+    Organiza em: empresas-logos/empresa_ID/YYYY/MM/filename.ext
+    """
+    
+    if instance.logo and hasattr(instance.logo, 'file'):
+        try:
+            # Gerar path organizado
+            now = timezone.now()
+            file_name = os.path.basename(instance.logo.name)
+            file_path = f"empresa{instance.id}/{now.year}/{now.month:02d}/{file_name}"
+            
+            # Upload para Supabase
+            url = storage_helper.upload_file(
+                instance.logo.file,
+                'empresas-logos',
+                file_path
+            )
+            
+            if url:
+                logger.info(f"Logo de '{instance.nome}' enviada para Supabase Storage")
+        except Exception as e:
+            logger.error(f"Erro ao fazer upload de logo para '{instance.nome}': {e}")

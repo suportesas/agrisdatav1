@@ -61,7 +61,7 @@ class SupabaseStorageHelper:
                 content,
                 {
                     'contentType': content_type,
-                    'upsert': True,
+                    'upsert': 'true',
                 }
             )
             

@@ -98,7 +98,17 @@
 
           <!-- Tipo -->
           <div class="col-md-6">
-            <label class="form-label fw-bold">{{ form.tipo.label }} <span class="text-danger">*</span></label>
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <label class="form-label fw-bold mb-0">{{ form.tipo.label }} <span class="text-danger">*</span></label>
+              {% if user.is_superuser %}
+              <div class="d-flex gap-2 align-items-center">
+                <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalNovoTipoRapido">
+                  <i class="bi bi-plus-circle"></i> Novo tipo
+                </button>
+                <a href="{% url 'usuarios:tipo_usuario_list' %}" class="small text-decoration-none">Gerenciar tipos</a>
+              </div>
+              {% endif %}
+            </div>
             {{ form.tipo }}
             {% if form.tipo.errors %}
             <div class="text-danger small mt-1">
@@ -151,7 +161,12 @@
           {% if form.password1 %}
           <div class="col-md-6">
             <label class="form-label fw-bold">{{ form.password1.label }} <span class="text-danger">*</span></label>
-            {{ form.password1 }}
+            <div class="input-group">
+              {{ form.password1 }}
+              <button class="btn btn-outline-secondary toggle-password" type="button" data-target="id_password1">
+                <i class="bi bi-eye"></i>
+              </button>
+            </div>
             {% if form.password1.errors %}
             <div class="text-danger small mt-1">
               {{ form.password1.errors|join:", " }}
@@ -165,7 +180,12 @@
           {% if form.password2 %}
           <div class="col-md-6">
             <label class="form-label fw-bold">{{ form.password2.label }} <span class="text-danger">*</span></label>
-            {{ form.password2 }}
+            <div class="input-group">
+              {{ form.password2 }}
+              <button class="btn btn-outline-secondary toggle-password" type="button" data-target="id_password2">
+                <i class="bi bi-eye"></i>
+              </button>
+            </div>
             {% if form.password2.errors %}
             <div class="text-danger small mt-1">
               {{ form.password2.errors|join:", " }}
@@ -192,27 +212,195 @@
 
         <!-- Botões -->
         <div class="d-flex justify-content-between align-items-center mt-4">
-          <a href="{% url 'usuarios:usuario_list' %}" class="btn btn-outline-secondary">
-            <i class="bi bi-arrow-left"></i> Voltar
-          </a>
+          <div class="d-flex gap-2">
+            <a href="{% url 'usuarios:usuario_list' %}" class="btn btn-outline-secondary">
+              <i class="bi bi-arrow-left"></i> Voltar
+            </a>
+            {% if usuario and user.is_superuser %}
+            <a href="{% url 'usuarios:usuario_troca_senha_emergencial' usuario.id %}" class="btn btn-outline-warning">
+              <i class="bi bi-key"></i> Troca Emergencial de Senha
+            </a>
+            {% endif %}
+          </div>
           <button type="submit" class="btn btn-success btn-lg">
             <i class="bi bi-save"></i> Salvar Usuário
           </button>
         </div>
       </form>
 
-      
       <!-- ACRESCENTADO SCRIPT-->
       <script>
       document.getElementById('form-usuario').addEventListener('submit', function() {
         document.getElementById('loading').classList.remove('d-none');
       });
+
+      // Toggle visibilidade de senha
+      document.querySelectorAll('.toggle-password').forEach(button => {
+        button.addEventListener('click', function(e) {
+          e.preventDefault();
+          const targetId = this.getAttribute('data-target');
+          const input = document.getElementById(targetId);
+          const icon = this.querySelector('i');
+          
+          if (input.type === 'password') {
+            input.type = 'text';
+            icon.classList.remove('bi-eye');
+            icon.classList.add('bi-eye-slash');
+          } else {
+            input.type = 'password';
+            icon.classList.remove('bi-eye-slash');
+            icon.classList.add('bi-eye');
+          }
+        });
+      });
+
+      {% if user.is_superuser %}
+      {% url 'usuarios:tipo_usuario_quick_create' as tipo_usuario_quick_create_url %}
+      const formNovoTipoRapido = document.getElementById('form-novo-tipo-rapido');
+      const feedbackNovoTipo = document.getElementById('feedback-novo-tipo');
+      const tipoSelectPrincipal = document.getElementById('id_tipo');
+      const modalNovoTipoElement = document.getElementById('modalNovoTipoRapido');
+      const modalNovoTipo = modalNovoTipoElement ? bootstrap.Modal.getOrCreateInstance(modalNovoTipoElement) : null;
+
+      if (formNovoTipoRapido && tipoSelectPrincipal) {
+        formNovoTipoRapido.addEventListener('submit', async function(event) {
+          event.preventDefault();
+          feedbackNovoTipo.classList.add('d-none');
+          feedbackNovoTipo.className = 'alert d-none mt-3';
+
+          const submitButton = formNovoTipoRapido.querySelector('button[type="submit"]');
+          submitButton.disabled = true;
+          submitButton.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Salvando...';
+
+          try {
+            const formData = new FormData(formNovoTipoRapido);
+            const response = await fetch('{{ tipo_usuario_quick_create_url|default:"/usuarios/tipos/quick-create/" }}', {
+              method: 'POST',
+              headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+              },
+              body: formData,
+            });
+
+            const data = await response.json();
+            if (!response.ok || !data.ok) {
+              throw data;
+            }
+
+            const codigo = data.tipo.codigo;
+            const nome = data.tipo.nome;
+
+            let optionExistente = tipoSelectPrincipal.querySelector(`option[value="${codigo}"]`);
+            if (!optionExistente) {
+              optionExistente = new Option(nome, codigo, true, true);
+              tipoSelectPrincipal.add(optionExistente);
+            } else {
+              optionExistente.selected = true;
+            }
+
+            formNovoTipoRapido.reset();
+            document.getElementById('id_rapido_ordem').value = '100';
+            document.getElementById('id_rapido_ativo').checked = true;
+            if (modalNovoTipo) {
+              modalNovoTipo.hide();
+            }
+          } catch (errorPayload) {
+            const mensagens = [];
+            if (errorPayload && errorPayload.errors) {
+              Object.keys(errorPayload.errors).forEach((campo) => {
+                const errosCampo = errorPayload.errors[campo] || [];
+                errosCampo.forEach((erro) => {
+                  if (erro && erro.message) {
+                    mensagens.push(`${campo}: ${erro.message}`);
+                  }
+                });
+              });
+            }
+
+            feedbackNovoTipo.classList.remove('d-none');
+            feedbackNovoTipo.classList.add('alert-danger');
+            feedbackNovoTipo.innerHTML = mensagens.length ? mensagens.join('<br>') : 'Não foi possível criar o tipo agora.';
+          } finally {
+            submitButton.disabled = false;
+            submitButton.innerHTML = '<i class="bi bi-check2-circle"></i> Criar e usar este tipo';
+          }
+        });
+      }
+      {% endif %}
       </script>
 
 
     </div>
   </div>
 </div>
+
+{% if user.is_superuser %}
+<div class="modal fade" id="modalNovoTipoRapido" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Novo Tipo de Usuário (rápido)</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <form id="form-novo-tipo-rapido" novalidate>
+        <div class="modal-body">
+          {% csrf_token %}
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="form-label fw-semibold" for="id_rapido_codigo">Código</label>
+              <input id="id_rapido_codigo" name="codigo" type="text" class="form-control" placeholder="Ex.: SUPORTE" required>
+            </div>
+            <div class="col-md-5">
+              <label class="form-label fw-semibold" for="id_rapido_nome">Nome</label>
+              <input id="id_rapido_nome" name="nome" type="text" class="form-control" placeholder="Nome exibido" required>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label fw-semibold" for="id_rapido_ordem">Ordem</label>
+              <input id="id_rapido_ordem" name="ordem" type="number" class="form-control" min="0" value="100" required>
+            </div>
+            <div class="col-12">
+              <label class="form-label fw-semibold" for="id_rapido_descricao">Descrição</label>
+              <textarea id="id_rapido_descricao" name="descricao" class="form-control" rows="2" placeholder="Opcional"></textarea>
+            </div>
+            <div class="col-12">
+              <div class="d-flex flex-wrap gap-3">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="ativo" id="id_rapido_ativo" checked>
+                  <label class="form-check-label" for="id_rapido_ativo">Ativo</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="administrador_empresa" id="id_rapido_admin_empresa">
+                  <label class="form-check-label" for="id_rapido_admin_empresa">Conta como admin empresa</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="permite_gerenciar_usuarios" id="id_rapido_gerenciar">
+                  <label class="form-check-label" for="id_rapido_gerenciar">Gerencia usuários</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="permite_acessar_financeiro" id="id_rapido_financeiro">
+                  <label class="form-check-label" for="id_rapido_financeiro">Acesso financeiro</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="permite_fazer_vendas" id="id_rapido_vendas">
+                  <label class="form-check-label" for="id_rapido_vendas">Pode vender</label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div id="feedback-novo-tipo" class="alert d-none mt-3" role="alert"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-check2-circle"></i> Criar e usar este tipo
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endif %}
 
 <!-- Estilo -->
 <style>
@@ -233,6 +421,21 @@
   }
   .text-danger {
     font-size: 0.875rem;
+  }
+
+  /* Estilo para input-group com toggle password */
+  .input-group .toggle-password {
+    border-radius: 0 8px 8px 0 !important;
+    cursor: pointer;
+    padding: 8px 14px;
+  }
+
+  .input-group .form-control {
+    border-radius: 8px 0 0 8px !important;
+  }
+
+  .toggle-password i {
+    font-size: 1rem;
   }
 </style>
 {% endblock %}

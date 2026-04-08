@@ -10,13 +10,13 @@ from .models import Usuario
 def grant_admin_permission(sender, instance, created, **kwargs):
     """Concede automaticamente permissão de ver estoque de outras fazendas para admins.
     
-    Quando um usuário é criado/atualizado como admin (is_superuser, is_staff ou tipo='ADMIN'),
+    Quando um usuário é criado/atualizado como admin (is_superuser, is_staff ou tipo administrativo),
     ele automaticamente ganha permissão de escolher fazendas no estoque.
     """
     from cadastros.models import Fazenda
     
-    # Verifica se é admin (superuser, staff, ou tipo ADMIN)
-    is_admin = instance.is_superuser or instance.is_staff or (hasattr(instance, 'tipo') and instance.tipo == 'ADMIN')
+    # Verifica se é admin (superuser, staff, ou tipo com flag administrativa)
+    is_admin = instance.is_superuser or instance.is_staff or instance.is_admin_empresa()
     
     if is_admin:
         # Busca a permissão

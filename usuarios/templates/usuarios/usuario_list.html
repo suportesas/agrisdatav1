@@ -8,28 +8,61 @@
 <div class="container mt-4">
   <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
     <h4 class="fw-bold text-secondary">Usuários Cadastrados</h4>
-    {% if user.is_superuser or user.is_staff or user.tipo == 'ADMIN' %}
-    <a href="{% url 'usuarios:usuario_create' %}" class="btn btn-primary">
-      <i class="bi bi-plus-circle"></i> Novo Usuário
-    </a>
+    {% if user.is_superuser or user.is_staff or user.is_admin_empresa %}
+    <div class="d-flex flex-wrap gap-2">
+      {% if user.is_superuser %}
+      <a href="{% url 'usuarios:tipo_usuario_list' %}" class="btn btn-outline-secondary">
+        <i class="bi bi-diagram-3"></i> Tipos de Usuário
+      </a>
+      {% endif %}
+      <a href="{% url 'usuarios:usuario_create' %}" class="btn btn-primary">
+        <i class="bi bi-plus-circle"></i> Novo Usuário
+      </a>
+    </div>
     {% endif %}
   </div>
 
+  {% if user.is_superuser %}
+  <div class="d-flex flex-wrap gap-2 mb-3">
+    <button type="button"
+            class="btn btn-sm {% if view_mode == 'lista' %}btn-primary{% else %}btn-outline-primary{% endif %} view-toggle"
+            data-view="lista">
+      <i class="bi bi-table me-1"></i>Modo Lista
+    </button>
+    <button type="button"
+            class="btn btn-sm {% if view_mode == 'empresa' %}btn-primary{% else %}btn-outline-primary{% endif %} view-toggle"
+            data-view="empresa">
+      <i class="bi bi-building me-1"></i>Agrupado por Empresa
+    </button>
+  </div>
+  {% endif %}
+
   <!-- Filtros -->
   <form id="filtroForm" method="get" class="card p-3 mb-4 shadow-sm border-0 rounded-4 bg-light">
+    <input type="hidden" id="viewInput" name="view" value="{{ view_mode|default:'lista' }}">
     <div class="row g-2 align-items-center">
-      <div class="col-md-4">
+      <div class="col-md-3">
         <input type="text" id="buscaInput" name="q" value="{{ request.GET.q|default:'' }}" class="form-control"
           placeholder="Buscar por nome, e-mail ou telefone...">
       </div>
-      <div class="col-md-3">
+      <div class="col-md-2">
         <select id="tipoSelect" name="tipo" class="form-select">
           <option value="">-- Tipo de Usuário --</option>
-          <option value="ADMIN" {% if request.GET.tipo == "ADMIN" %}selected{% endif %}>Administrador</option>
-          <option value="FUNC" {% if request.GET.tipo == "FUNC" %}selected{% endif %}>Funcionário</option>
-          <option value="PROD" {% if request.GET.tipo == "PROD" %}selected{% endif %}>Produtor</option>
+          {% for tipo_item in tipos %}
+          <option value="{{ tipo_item.codigo }}" {% if request.GET.tipo == tipo_item.codigo %}selected{% endif %}>{{ tipo_item.nome }}</option>
+          {% endfor %}
         </select>
       </div>
+      {% if user.is_superuser %}
+      <div class="col-md-4">
+        <select id="empresaSelect" name="empresa_id" class="form-select">
+          <option value="">-- Todas as empresas --</option>
+          {% for e in empresas %}
+          <option value="{{ e.id }}" {% if request.GET.empresa_id == e.id|stringformat:"s" %}selected{% endif %}>{{ e.nome }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      {% endif %}
       <div class="col-md-3">
         <div class="input-group">
           <span class="input-group-text bg-white border-end-0">
@@ -49,7 +82,11 @@
 
   <!-- Container da tabela -->
   <div id="tabelaUsuarios">
-    {% include 'usuarios/_usuario_table.html' %}
+    {% if view_mode == 'empresa' %}
+      {% include 'usuarios/_usuario_grouped_table.html' %}
+    {% else %}
+      {% include 'usuarios/_usuario_table.html' %}
+    {% endif %}
   </div>
 </div>
 
@@ -59,7 +96,10 @@ document.addEventListener('DOMContentLoaded', function() {
   const filtroForm = document.getElementById('filtroForm');
   const buscaInput = document.getElementById('buscaInput');
   const tipoSelect = document.getElementById('tipoSelect');
+  const empresaSelect = document.getElementById('empresaSelect');
   const perPageSelect = document.getElementById('perPageSelect');
+  const viewInput = document.getElementById('viewInput');
+  const viewToggles = document.querySelectorAll('.view-toggle');
   const tabelaContainer = document.getElementById('tabelaUsuarios');
 
   function atualizarTabela(resetPage = true) {
@@ -87,7 +127,24 @@ document.addEventListener('DOMContentLoaded', function() {
   // Event listeners
   buscaInput.addEventListener('keyup', () => atualizarTabela(true));
   tipoSelect.addEventListener('change', () => atualizarTabela(true));
+  if (empresaSelect) {
+    empresaSelect.addEventListener('change', () => atualizarTabela(true));
+  }
   perPageSelect.addEventListener('change', () => atualizarTabela(true));
+
+  viewToggles.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const selected = btn.getAttribute('data-view');
+      viewInput.value = selected;
+      viewToggles.forEach((b) => {
+        b.classList.remove('btn-primary');
+        b.classList.add('btn-outline-primary');
+      });
+      btn.classList.remove('btn-outline-primary');
+      btn.classList.add('btn-primary');
+      atualizarTabela(true);
+    });
+  });
   
   // Delegação de eventos para links de paginação
   tabelaContainer.addEventListener('click', function(e) {

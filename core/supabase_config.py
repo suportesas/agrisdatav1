@@ -30,7 +30,7 @@ class SupabaseClient:
                 )
             
             cls._instance = create_client(url, key)
-            logger.info("✓ Supabase cliente inicializado")
+            logger.info("[OK] Supabase cliente inicializado")
         
         return cls._instance
 
@@ -196,7 +196,7 @@ class SupabaseAuth:
         """
         try:
             client = create_client(settings.SUPABASE_URL, self.service_key)
-            response = client.auth.admin_create_user({
+            response = client.auth.admin.create_user({
                 "email": email,
                 "password": password,
                 "user_metadata": user_metadata or {},
@@ -204,17 +204,30 @@ class SupabaseAuth:
             })
             return {'user': response.user}
         except Exception as e:
-            logger.error(f"✗ Erro ao criar user admin: {str(e)}")
+            logger.error(f"[ERRO] Erro ao criar user admin: {str(e)}")
             return {'error': str(e)}
     
     def admin_delete_user(self, user_id: str) -> Dict:
         """Admin: Deleta um usuário"""
         try:
             client = create_client(settings.SUPABASE_URL, self.service_key)
-            response = client.auth.admin_delete_user(user_id)
+            response = client.auth.admin.delete_user(user_id)
             return {'success': True}
         except Exception as e:
-            logger.error(f"✗ Erro ao deletar user: {str(e)}")
+            logger.error(f"[ERRO] Erro ao deletar user: {str(e)}")
+            return {'error': str(e)}
+
+    def admin_update_user_password(self, user_id: str, password: str) -> Dict:
+        """Admin: Atualiza senha de um usuário"""
+        try:
+            client = create_client(settings.SUPABASE_URL, self.service_key)
+            response = client.auth.admin.update_user_by_id(
+                user_id,
+                {"password": password}
+            )
+            return {'success': True, 'user': response.user if hasattr(response, 'user') else None}
+        except Exception as e:
+            logger.error(f"[ERRO] Erro ao atualizar senha user_id={user_id}: {str(e)}")
             return {'error': str(e)}
 
 

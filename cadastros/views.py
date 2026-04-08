@@ -53,7 +53,7 @@ from django.http import JsonResponse
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.core.exceptions import ValidationError, PermissionDenied
-from django.db.models import Q, Count, Sum, Avg
+from django.db.models import Q, Count, Sum, Avg, Case, When, Value, IntegerField
 from django.core.paginator import Paginator
 from django.utils import timezone
 import requests
@@ -1336,6 +1336,117 @@ def buscar_cep_brasil_api(cep):
             return JsonResponse({'erro': 'CEP não encontrado'}, status=404)
     except:
         return JsonResponse({'erro': 'APIs de CEP não estão acessíveis. Preencha os dados manualmente.'}, status=500)
+
+
+@login_required
+def buscar_geolocalizacao(request):
+    """Busca coordenadas por texto usando Nominatim (OpenStreetMap)."""
+    if request.method not in ['GET', 'POST']:
+        return JsonResponse({'erro': 'Método não permitido'}, status=405)
+
+    if request.method == 'POST':
+        consulta = (request.POST.get('q') or '').strip()
+        fazenda_id = (request.POST.get('fazenda_id') or '').strip()
+    else:
+        consulta = (request.GET.get('q') or '').strip()
+        fazenda_id = (request.GET.get('fazenda_id') or '').strip()
+
+    if len(consulta) < 3:
+        return JsonResponse({'erro': 'Informe pelo menos 3 caracteres para buscar a localização.'}, status=400)
+
+    empresa_id = getattr(request.user, 'empresa_id', None)
+    cache_key = f'buscar_geo:{empresa_id}:{fazenda_id}:{consulta.lower()}'
+    cached = cache.get(cache_key)
+    if cached:
+        return JsonResponse(cached)
+
+    try:
+        resultados = []
+
+        # Busca interna por estabelecimento (fazenda) da própria empresa.
+        fazendas_qs = Fazenda.objects.filter(
+            empresa=request.user.empresa,
+            ativa=True,
+        ).filter(
+            Q(nome__icontains=consulta) | Q(nome_fantasia__icontains=consulta)
+        ).exclude(
+            latitude__isnull=True
+        ).exclude(
+            longitude__isnull=True
+        )
+
+        if fazenda_id.isdigit():
+            fazendas_qs = fazendas_qs.order_by(
+                Case(
+                    When(pk=int(fazenda_id), then=Value(0)),
+                    default=Value(1),
+                    output_field=IntegerField(),
+                ),
+                'nome'
+            )
+        else:
+            fazendas_qs = fazendas_qs.order_by('nome')
+
+        for fazenda in fazendas_qs[:5]:
+            resultados.append({
+                'display_name': f'Estabelecimento: {fazenda.nome}',
+                'latitude': str(fazenda.latitude),
+                'longitude': str(fazenda.longitude),
+                'origem': 'estabelecimento',
+            })
+
+        erro_externo = None
+        try:
+            response = requests.get(
+                'https://nominatim.openstreetmap.org/search',
+                params={
+                    'q': consulta,
+                    'format': 'jsonv2',
+                    'limit': 6,
+                    'addressdetails': 1,
+                    'countrycodes': 'br',
+                },
+                headers={
+                    'User-Agent': 'ERP-Agricola/1.0 (geolocalizacao-area)'
+                },
+                timeout=10,
+            )
+
+            if response.status_code == 200:
+                dados = response.json() or []
+                for item in dados:
+                    lat = item.get('lat')
+                    lon = item.get('lon')
+                    display_name = item.get('display_name', '')
+                    if not lat or not lon:
+                        continue
+                    resultados.append({
+                        'display_name': display_name,
+                        'latitude': lat,
+                        'longitude': lon,
+                        'origem': 'externo',
+                    })
+            else:
+                erro_externo = 'Serviço de localização indisponível no momento.'
+        except requests.exceptions.Timeout:
+            erro_externo = 'Timeout na busca da localização. Tente novamente.'
+        except requests.exceptions.RequestException:
+            erro_externo = 'Falha de conexão com o serviço de localização.'
+
+        if not resultados and erro_externo:
+            return JsonResponse({'erro': erro_externo}, status=503)
+
+        payload = {
+            'sucesso': True,
+            'consulta': consulta,
+            'resultados': resultados,
+        }
+        if erro_externo:
+            payload['aviso'] = erro_externo
+        cache.set(cache_key, payload, timeout=60 * 60 * 24)
+        return JsonResponse(payload)
+    except Exception:
+        return JsonResponse({'erro': 'Não foi possível buscar a localização agora.'}, status=500)
 
 
 # ==================== ENDEREÇOS ====================

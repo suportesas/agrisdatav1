@@ -1,13 +1,15 @@
 from django.test import TestCase
 from django.contrib.auth import get_user_model
+from uuid import uuid4
 from empresas.models import Empresa, Role
+from usuarios.models import TipoUsuario
 
 User = get_user_model()
 
 
 class RoleSyncTests(TestCase):
     def setUp(self):
-        self.empresa = Empresa.objects.create(nome='Empresa Sync')
+        self.empresa = Empresa.objects.create(nome=f'Empresa Sync {uuid4().hex[:8]}', is_interna_saas=True)
         self.role = Role.objects.create(empresa=self.empresa, name='SyncRole')
         self.user = User.objects.create_user(username='syncuser', password='pass')
         self.user.empresa = self.empresa
@@ -49,7 +51,7 @@ class RoleSyncTests(TestCase):
 
 class UsuarioFormTests(TestCase):
     def setUp(self):
-        self.empresa = Empresa.objects.create(nome='Empresa Form')
+        self.empresa = Empresa.objects.create(nome=f'Empresa Form {uuid4().hex[:8]}', is_interna_saas=True)
         self.role = Role.objects.create(empresa=self.empresa, name='FormRole')
         self.user = User.objects.create_user(username='formadmin', password='pass')
         self.user.empresa = self.empresa
@@ -65,7 +67,7 @@ class UsuarioFormTests(TestCase):
         self.assertContains(resp, 'FormRole')
 
     def test_other_company_roles_not_shown(self):
-        other = Empresa.objects.create(nome='Outra')
+        other = Empresa.objects.create(nome=f'Outra {uuid4().hex[:8]}', is_interna_saas=True)
         Role.objects.create(empresa=other, name='OtherRole')
         self.client.force_login(self.user)
         resp = self.client.get('/usuarios/novo/')
@@ -143,3 +145,39 @@ class UsuarioFormTests(TestCase):
         resp = self.client.get('/usuarios/')
         self.assertEqual(resp.status_code, 200)
         self.assertContains(resp, 'ListRole')
+
+    def test_custom_tipo_visible_in_create_form(self):
+        TipoUsuario.objects.create(codigo='SUPORTE', nome='Suporte', ordem=70)
+        self.client.force_login(self.user)
+        resp = self.client.get('/usuarios/novo/')
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, 'Suporte')
+
+
+class TipoUsuarioCrudTests(TestCase):
+    def setUp(self):
+        self.superuser = User.objects.create_superuser(
+            username='root',
+            email='root@example.com',
+            password='pass12345'
+        )
+
+    def test_superuser_can_create_tipo_usuario(self):
+        self.client.force_login(self.superuser)
+        resp = self.client.post('/usuarios/tipos/novo/', {
+            'codigo': 'SUPORTE',
+            'nome': 'Suporte',
+            'descricao': 'Atendimento interno',
+            'ordem': 90,
+            'ativo': 'on',
+        }, follow=True)
+        self.assertEqual(resp.status_code, 200)
+        self.assertTrue(TipoUsuario.objects.filter(codigo='SUPORTE', nome='Suporte').exists())
+
+    def test_tipo_display_uses_dynamic_registry(self):
+        TipoUsuario.objects.update_or_create(
+            codigo='SUPORTE',
+            defaults={'nome': 'Suporte', 'ordem': 90}
+        )
+        user = User.objects.create_user(username='dinamico', password='pass12345', tipo='SUPORTE')
+        self.assertEqual(user.get_tipo_display(), 'Suporte')

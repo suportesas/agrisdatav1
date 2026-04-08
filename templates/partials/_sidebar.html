@@ -8,7 +8,7 @@
 
   <ul class="nav flex-column px-2">
     <li class="nav-item">
-      <a class="nav-link text-white" href="{% url 'dashboard:index' %}">
+      <a class="nav-link text-white {% if user.is_superuser %}saas-owner-nav{% endif %}" href="{% url 'dashboard:index' %}">
         <i class="bi bi-speedometer2 me-2"></i> Dashboard
       </a>
     </li>

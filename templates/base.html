@@ -20,7 +20,7 @@
   {% block extra_css %}{% endblock %}
 </head>
 
-<body>
+<body class="{% if user.is_authenticated and user.is_superuser %}saas-owner-layout{% endif %}">
   {% if user.is_authenticated %}
     <!-- Sidebar Moderno -->
     {% include 'sidebar.html' %}
@@ -32,7 +32,7 @@
   <!-- Main Content -->
   <div class="main-content">
     {% if user.is_authenticated %}
-    <nav class="navbar-custom">
+    <nav class="navbar-custom {% if user.is_superuser %}navbar-saas{% endif %}">
       <div class="d-flex align-items-center gap-3">
           <button id="menuToggle" class="menu-toggle" aria-controls="sidebar" aria-expanded="false" aria-label="Alternar menu">
             <i class="bi bi-list"></i>

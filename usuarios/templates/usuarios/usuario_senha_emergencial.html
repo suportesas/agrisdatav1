@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+
+{% block title %}Troca Emergencial de Senha{% endblock %}
+{% block page_title %}Troca Emergencial de Senha{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <div class="card shadow-sm border-0 rounded-4">
+    <div class="card-body p-4">
+      <h4 class="fw-bold text-warning mb-3">
+        <i class="bi bi-shield-exclamation me-2"></i>
+        Troca Emergencial - {{ usuario_alvo.username }}
+      </h4>
+
+      <div class="alert alert-warning">
+        Esta ação altera imediatamente a senha do usuário e envia um e-mail com link de cancelamento (24h).
+      </div>
+
+      <div class="mb-3">
+        <strong>Usuário:</strong> {{ usuario_alvo.get_full_name }} ({{ usuario_alvo.username }})<br>
+        <strong>E-mail:</strong> {{ usuario_alvo.email|default:'-' }}<br>
+        <strong>Empresa:</strong> {{ usuario_alvo.empresa.nome|default:'-' }}
+      </div>
+
+      <form method="post" novalidate>
+        {% csrf_token %}
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Nova senha emergencial</label>
+            <input type="password" name="nova_senha" class="form-control" minlength="8" required>
+            <div class="form-text">Mínimo de 8 caracteres.</div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Confirmar nova senha</label>
+            <input type="password" name="confirmar_senha" class="form-control" minlength="8" required>
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-semibold">Motivo da ação</label>
+            <textarea name="motivo" class="form-control" rows="3" placeholder="Descreva o motivo da troca emergencial"></textarea>
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-between mt-4">
+          <a href="{% url 'usuarios:usuario_list' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Voltar
+          </a>
+          <button type="submit" class="btn btn-warning">
+            <i class="bi bi-key"></i> Aplicar Troca Emergencial
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

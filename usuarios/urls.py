@@ -10,6 +10,13 @@ urlpatterns = [
     path('novo/', views.usuario_create, name='usuario_create'),
     path('<int:pk>/editar/', views.usuario_update, name='usuario_update'),
     path('<int:pk>/excluir/', views.usuario_delete, name='usuario_delete'),
+    path('tipos/', views.tipo_usuario_list, name='tipo_usuario_list'),
+    path('tipos/novo/', views.tipo_usuario_create, name='tipo_usuario_create'),
+    path('tipos/quick-create/', views.tipo_usuario_quick_create, name='tipo_usuario_quick_create'),
+    path('tipos/<int:pk>/editar/', views.tipo_usuario_update, name='tipo_usuario_update'),
+    path('tipos/<int:pk>/excluir/', views.tipo_usuario_delete, name='tipo_usuario_delete'),
+    path('<int:pk>/senha-emergencial/', views.usuario_troca_senha_emergencial, name='usuario_troca_senha_emergencial'),
+    path('senha-emergencial/cancelar/<str:token>/', views.cancelar_troca_senha_emergencial, name='cancelar_troca_senha_emergencial'),
     
     # Perfil do Usuário Logado
     path('meu-perfil/', views.meu_perfil, name='meu_perfil'),  # ← DESCOMENTAR

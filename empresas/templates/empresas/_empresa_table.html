@@ -28,11 +28,16 @@
             {% endif %}
           </td>
           <td class="text-center">
-            {% if e.bloqueada %}
-              <a href="{% url 'painel_clientes:desbloquear_empresa' e.id %}" class="btn btn-sm btn-outline-success">Desbloquear</a>
-            {% else %}
-              <a href="{% url 'painel_clientes:bloquear_empresa' e.id %}" class="btn btn-sm btn-outline-danger">Bloquear</a>
-            {% endif %}
+            <div class="d-flex justify-content-center gap-1 flex-wrap">
+              <a href="{% url 'usuarios:usuario_list' %}?empresa_id={{ e.id }}&view=empresa" class="btn btn-sm btn-outline-primary">
+                Ver usuários
+              </a>
+              {% if e.bloqueada %}
+                <a href="{% url 'painel_clientes:desbloquear_empresa' e.id %}" class="btn btn-sm btn-outline-success">Desbloquear</a>
+              {% else %}
+                <a href="{% url 'painel_clientes:bloquear_empresa' e.id %}" class="btn btn-sm btn-outline-danger">Bloquear</a>
+              {% endif %}
+            </div>
           </td>
         </tr>
         {% empty %}

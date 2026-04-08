@@ -1,16 +1,22 @@
 {% load static %}
 
 <!-- Sidebar Profissional -->
-<div class="sidebar-modern" id="sidebar">
+<div class="sidebar-modern {% if user.is_superuser %}saas-owner-nav{% endif %}" id="sidebar">
   <!-- Logo e Empresa -->
   <div class="sidebar-brand">
     <div class="brand-logo">
+      {% if user.is_superuser %}
+      <i class="bi bi-grid-1x2-fill"></i>
+      {% else %}
       <i class="bi bi-diagram-3-fill"></i>
+      {% endif %}
     </div>
     <div class="brand-text">
-      <h4>ERP Agrícola</h4>
+      <h4>{% if user.is_superuser %}NexSafra SaaS{% else %}ERP Agrícola{% endif %}</h4>
       {% if user.empresa %}
       <span class="brand-subtitle">{{ user.empresa.nome|truncatewords:3 }}</span>
+      {% elif user.is_superuser %}
+      <span class="brand-subtitle">Painel do Proprietário</span>
       {% endif %}
     </div>
     <button class="sidebar-collapse-btn" id="collapseBtn">
@@ -170,12 +176,22 @@
           <li><a href="{% url 'cadastros:cultura_list' %}"><i class="bi bi-flower2"></i> Culturas</a></li>
 
           <li class="submenu-divider"></li>
-          <li><a href="{% url 'cadastros:safra_list' %}"><i class="bi bi-calendar-event"></i> Safras</a></li>
-          <li><a href="{% url 'cadastros:safra_create' %}"><i class="bi bi-plus-circle"></i> Nova Safra</a></li>
+          <li class="has-submenu">
+            <a href="#"><i class="bi bi-calendar-event"></i> Safras <i class="bi bi-chevron-right ms-auto"></i></a>
+            <ul class="nested-submenu">
+              <li><a href="{% url 'cadastros:safra_list' %}"><i class="bi bi-list-ul"></i> Lista de Safras</a></li>
+              <li><a href="{% url 'cadastros:safra_create' %}"><i class="bi bi-plus-circle"></i> Nova Safra</a></li>
+            </ul>
+          </li>
 
           <li class="submenu-divider"></li>
-          <li><a href="{% url 'cadastros:os_list' %}"><i class="bi bi-clipboard-check"></i> Ordens de Serviço</a></li>
-          <li><a href="{% url 'cadastros:os_create' %}"><i class="bi bi-plus-square"></i> Nova OS</a></li>
+          <li class="has-submenu">
+            <a href="#"><i class="bi bi-clipboard-check"></i> Ordens de Serviço <i class="bi bi-chevron-right ms-auto"></i></a>
+            <ul class="nested-submenu">
+              <li><a href="{% url 'cadastros:os_list' %}"><i class="bi bi-list-ul"></i> Lista de OS</a></li>
+              <li><a href="{% url 'cadastros:os_create' %}"><i class="bi bi-plus-square"></i> Nova OS</a></li>
+            </ul>
+          </li>
           <li><a href="{% url 'cadastros:custo_talhao_list' %}"><i class="bi bi-graph-up"></i> Custo por Talhão/Safra</a></li>
           <li><a href="{% url 'cadastros:custo_maquina_list' %}"><i class="bi bi-gear"></i> Custo/Hora Máquinas</a></li>
           

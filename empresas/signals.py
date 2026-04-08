@@ -28,6 +28,8 @@ except Exception:
 @receiver(post_save, sender=Empresa)
 def create_default_roles(sender, instance, created, **kwargs):
     """Cria roles padrao quando uma Empresa e criada (idempotente)."""
+    if kwargs.get('raw'):
+        return
     if not created:
         return
 
@@ -38,7 +40,11 @@ def create_default_roles(sender, instance, created, **kwargs):
 @receiver(post_save, sender=Empresa)
 def seed_ncms_on_create(sender, instance, created, **kwargs):
     """Seed de NCMs da empresa ao criar empresa."""
+    if kwargs.get('raw'):
+        return
     if not created:
+        return
+    if getattr(instance, 'is_interna_saas', False):
         return
 
     try:
@@ -62,7 +68,11 @@ def seed_ncms_on_create(sender, instance, created, **kwargs):
 @receiver(post_save, sender=Empresa)
 def seed_cfops_on_create(sender, instance, created, **kwargs):
     """Seed de CFOPs da empresa ao criar empresa."""
+    if kwargs.get('raw'):
+        return
     if not created:
+        return
+    if getattr(instance, 'is_interna_saas', False):
         return
 
     try:
@@ -102,7 +112,11 @@ def seed_cfops_on_create(sender, instance, created, **kwargs):
 @receiver(post_save, sender=Empresa)
 def seed_pragas_on_create(sender, instance, created, **kwargs):
     """Cria pragas pre-definidas quando uma Empresa e criada."""
+    if kwargs.get('raw'):
+        return
     if not created:
+        return
+    if getattr(instance, 'is_interna_saas', False):
         return
 
     try:
@@ -116,7 +130,11 @@ def seed_pragas_on_create(sender, instance, created, **kwargs):
 @receiver(post_save, sender=Empresa)
 def seed_defensivos_on_create(sender, instance, created, **kwargs):
     """Cria defensivos pre-definidos quando uma Empresa e criada."""
+    if kwargs.get('raw'):
+        return
     if not created:
+        return
+    if getattr(instance, 'is_interna_saas', False):
         return
 
     try:
@@ -130,7 +148,11 @@ def seed_defensivos_on_create(sender, instance, created, **kwargs):
 @receiver(post_save, sender=Empresa)
 def seed_categorias_on_create(sender, instance, created, **kwargs):
     """Cria categorias padrao quando uma Empresa e criada."""
+    if kwargs.get('raw'):
+        return
     if not created:
+        return
+    if getattr(instance, 'is_interna_saas', False):
         return
 
     try:
@@ -144,7 +166,11 @@ def seed_categorias_on_create(sender, instance, created, **kwargs):
 @receiver(post_save, sender=Empresa)
 def seed_tipos_produto_on_create(sender, instance, created, **kwargs):
     """Cria tipos de produto padrao quando uma Empresa e criada."""
+    if kwargs.get('raw'):
+        return
     if not created:
+        return
+    if getattr(instance, 'is_interna_saas', False):
         return
 
     try:

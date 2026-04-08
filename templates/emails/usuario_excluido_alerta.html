@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alerta de Segurança - Usuário Excluído</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f4f6f8;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 640px;
+            margin: 0 auto;
+            background: #fff;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+        }
+        .header {
+            background: #b91c1c;
+            color: #fff;
+            padding: 24px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 22px;
+        }
+        .content {
+            padding: 24px;
+        }
+        .summary {
+            background: #fff7ed;
+            border-left: 4px solid #ea580c;
+            padding: 14px 16px;
+            margin-bottom: 18px;
+            border-radius: 4px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 12px;
+        }
+        .item {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            padding: 10px 12px;
+        }
+        .label {
+            display: block;
+            font-size: 11px;
+            color: #6b7280;
+            text-transform: uppercase;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+        .value {
+            font-size: 14px;
+            color: #111827;
+            font-weight: 600;
+        }
+        .footer {
+            background: #f9fafb;
+            border-top: 1px solid #e5e7eb;
+            padding: 14px;
+            text-align: center;
+            font-size: 12px;
+            color: #6b7280;
+        }
+        @media (max-width: 640px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Alerta de Segurança</h1>
+            <p style="margin: 6px 0 0 0; opacity: .9;">Exclusão de usuário detectada</p>
+        </div>
+
+        <div class="content">
+            <div class="summary">
+                Uma exclusão de usuário foi realizada no sistema e este aviso foi enviado para auditoria.
+            </div>
+
+            <div class="grid">
+                <div class="item">
+                    <span class="label">Empresa</span>
+                    <span class="value">{{ empresa_nome }}</span>
+                </div>
+                <div class="item">
+                    <span class="label">Usuário excluído</span>
+                    <span class="value">{{ usuario_excluido }}</span>
+                </div>
+                <div class="item">
+                    <span class="label">Executado por</span>
+                    <span class="value">{{ executor }}</span>
+                </div>
+                <div class="item">
+                    <span class="label">IP de origem</span>
+                    <span class="value">{{ ip }}</span>
+                </div>
+                <div class="item" style="grid-column: 1 / -1;">
+                    <span class="label">Data e hora</span>
+                    <span class="value">{{ data_evento|date:"d/m/Y H:i:s" }}</span>
+                </div>
+            </div>
+
+            <p style="margin-top: 18px; color: #7f1d1d; font-weight: 600;">
+                Se esta ação não foi autorizada, entre em contato imediatamente com o suporte.
+            </p>
+        </div>
+
+        <div class="footer">
+            ERP Agrícola - Notificação automática de segurança
+        </div>
+    </div>
+</body>
+</html>

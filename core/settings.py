@@ -5,6 +5,7 @@ Configurações corrigidas e otimizadas
 
 import os
 import sys
+import socket
 from pathlib import Path
 from datetime import timedelta
 from dotenv import load_dotenv
@@ -116,14 +117,35 @@ WSGI_APPLICATION = 'core.wsgi.application'
 # Database
 # By default use SQLite for local development. To use PostgreSQL, set environment variables:
 # PG_NAME, PG_USER, PG_PASSWORD, PG_HOST, PG_PORT
-if os.getenv('PG_NAME'):
+def _host_resolves(hostname: str) -> bool:
+    """Retorna True quando o hostname pode ser resolvido por DNS."""
+    if not hostname:
+        return False
+    try:
+        socket.getaddrinfo(hostname, None)
+        return True
+    except OSError:
+        return False
+
+
+PG_NAME = os.getenv('PG_NAME')
+PG_HOST = os.getenv('PG_HOST', 'localhost')
+DB_FALLBACK_SQLITE = get_bool_env('DB_FALLBACK_SQLITE', DEBUG)
+DB_FORCE_SQLITE = get_bool_env('DB_FORCE_SQLITE', False)
+
+use_postgres = bool(PG_NAME) and not DB_FORCE_SQLITE
+if use_postgres and DB_FALLBACK_SQLITE and not _host_resolves(PG_HOST):
+    # Em ambiente de desenvolvimento, evita quebrar o app inteiro se o DNS do banco externo falhar.
+    use_postgres = False
+
+if use_postgres:
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql_psycopg2',
-            'NAME': os.getenv('PG_NAME'),
+            'NAME': PG_NAME,
             'USER': os.getenv('PG_USER', ''),
             'PASSWORD': os.getenv('PG_PASSWORD', ''),
-            'HOST': os.getenv('PG_HOST', 'localhost'),
+            'HOST': PG_HOST,
             'PORT': os.getenv('PG_PORT', '5432'),
             # Configurações críticas para Supabase
             'CONN_MAX_AGE': 600,  # Reutilizar conexão por 10 minutos
@@ -132,6 +154,9 @@ if os.getenv('PG_NAME'):
                 'options': '-c statement_timeout=30000'  # Timeout SQL 30s
             },
             'ATOMIC_REQUESTS': False,  # Evitar locks desnecessários
+            # Evita erro "InvalidCursorName" em conexões pool/proxy
+            # (ex.: Supabase/PgBouncer) durante renderização de querysets em forms.
+            'DISABLE_SERVER_SIDE_CURSORS': True,
         }
     }
 else:

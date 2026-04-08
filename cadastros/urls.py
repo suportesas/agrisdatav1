@@ -24,6 +24,7 @@ urlpatterns = [
     # ==================== APIs EXTERNAS ====================
     path('api/buscar-cnpj/', views.buscar_cnpj, name='buscar_cnpj'),
     path('api/buscar-cep/', views.buscar_cep, name='buscar_cep'),
+    path('api/buscar-geolocalizacao/', views.buscar_geolocalizacao, name='buscar_geolocalizacao'),
     
     # ==================== ENDEREÇOS ====================
     path('fazendas/<int:fazenda_pk>/enderecos/novo/', views.endereco_create, name='endereco_create'),

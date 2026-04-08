@@ -243,6 +243,32 @@ body, html {
   box-shadow: 0 0 0 3px rgba(118,255,3,0.1);
 }
 
+.password-wrapper {
+  position: relative;
+}
+
+.password-wrapper .form-control {
+  padding-right: 46px;
+}
+
+.toggle-password {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  color: rgba(255,255,255,0.7);
+  cursor: pointer;
+  font-size: 1.05rem;
+  line-height: 1;
+  padding: 4px;
+}
+
+.toggle-password:hover {
+  color: var(--lime);
+}
+
 /* BUTTONS */
 .btn-login {
   width: 100%;
@@ -302,26 +328,33 @@ body, html {
   border-radius: 8px;
   margin-bottom: 20px;
   font-size: 13px;
+  font-weight: 600;
+  line-height: 1.45;
   border-left: 3px solid;
+  border: 1px solid transparent;
   animation: slideIn 0.4s ease;
 }
 
 .alert-danger {
-  background: rgba(220,53,69,0.1);
-  color: #ff6b6b;
+  background: rgba(220,53,69,0.18);
+  color: #ffd1d6;
   border-left-color: #ff6b6b;
+  border-color: rgba(255,107,107,0.45);
 }
 
 .alert-warning {
-  background: rgba(255,193,7,0.1);
-  color: #ffc107;
-  border-left-color: #ffc107;
+  background: rgba(255,193,7,0.22);
+  color: #ffe28a;
+  border-left-color: #ffd54f;
+  border-color: rgba(255,213,79,0.45);
+  text-shadow: 0 0 1px rgba(0,0,0,0.35);
 }
 
 .alert-success {
-  background: rgba(118,255,3,0.1);
-  color: var(--lime);
+  background: rgba(118,255,3,0.16);
+  color: #d7ffc0;
   border-left-color: var(--lime);
+  border-color: rgba(118,255,3,0.4);
 }
 
 /* RESPONSIVE */
@@ -443,7 +476,12 @@ body, html {
           <label class="form-label" for="id_password">
             <i class="bi bi-lock"></i> Senha
           </label>
-          {{ form.password }}
+          <div class="password-wrapper">
+            {{ form.password }}
+            <button type="button" class="toggle-password" id="togglePassword" aria-label="Mostrar senha">
+              <i class="bi bi-eye" id="togglePasswordIcon"></i>
+            </button>
+          </div>
         </div>
 
         <!-- SUBMIT -->
@@ -467,5 +505,23 @@ body, html {
   </div>
 
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const passwordInput = document.getElementById('id_password');
+  const toggleButton = document.getElementById('togglePassword');
+  const toggleIcon = document.getElementById('togglePasswordIcon');
+
+  if (passwordInput && toggleButton && toggleIcon) {
+    toggleButton.addEventListener('click', function () {
+      const isHidden = passwordInput.getAttribute('type') === 'password';
+      passwordInput.setAttribute('type', isHidden ? 'text' : 'password');
+      toggleIcon.classList.toggle('bi-eye', !isHidden);
+      toggleIcon.classList.toggle('bi-eye-slash', isHidden);
+      toggleButton.setAttribute('aria-label', isHidden ? 'Ocultar senha' : 'Mostrar senha');
+    });
+  }
+});
+</script>
 
 {% endblock %}

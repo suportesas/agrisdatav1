@@ -119,6 +119,28 @@
       <div class="card-body p-4">
         <h5 class="mb-3 text-info border-bottom pb-2"><i class="bi bi-geo-alt"></i> Geolocalização</h5>
         <div class="row g-3">
+          <div class="col-12">
+            <div class="d-flex align-items-center gap-2 mb-1">
+              <label class="form-label fw-semibold mb-0" for="id_busca_local">Buscar local</label>
+              <span class="badge rounded-pill text-bg-info" id="badge-busca-automatica">Busca automática ativa</span>
+            </div>
+            <div class="input-group">
+              <input type="text" id="id_busca_local" class="form-control" placeholder="Digite cidade, fazenda, bairro, endereço...">
+              <span class="input-group-text d-none" id="loading-busca-local" aria-hidden="true">
+                <span class="spinner-border spinner-border-sm" role="status"></span>
+              </span>
+              <button type="button" id="btn-buscar-local" class="btn btn-outline-primary">
+                <i class="bi bi-search"></i> Buscar
+              </button>
+            </div>
+            <small class="text-muted">Digite o local e clique em Buscar para preencher latitude e longitude automaticamente.</small>
+          </div>
+
+          <div class="col-12 d-none" id="container-resultados-local">
+            <label class="form-label fw-semibold" for="id_resultado_localizacao">Resultados encontrados</label>
+            <select id="id_resultado_localizacao" class="form-select"></select>
+          </div>
+
           <div class="col-md-6">
             <label class="form-label fw-semibold">{{ form.latitude.label }}</label>
             {{ form.latitude }}
@@ -128,6 +150,18 @@
             <label class="form-label fw-semibold">{{ form.longitude.label }}</label>
             {{ form.longitude }}
             {% if form.longitude.errors %}<div class="text-danger small mt-1">{{ form.longitude.errors|striptags }}</div>{% endif %}
+          </div>
+
+          <div class="col-12">
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" id="id_mostrar_mapa">
+              <label class="form-check-label" for="id_mostrar_mapa">Mostrar mapa</label>
+            </div>
+            <div id="feedback-geolocalizacao" class="small mt-2 text-muted"></div>
+          </div>
+
+          <div class="col-12 d-none" id="container-mapa-area">
+            <div id="map-area-form" style="height: 320px; border-radius: 10px; border: 1px solid #dfe3e8;"></div>
           </div>
         </div>
       </div>
@@ -189,6 +223,8 @@
   </form>
 </div>
 
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
   document.querySelectorAll('input:not([type="checkbox"]), select, textarea').forEach(function (element) {
@@ -230,6 +266,226 @@ document.addEventListener('DOMContentLoaded', function () {
   if (possuiIrrigacao && tipoIrrigacao) {
     possuiIrrigacao.addEventListener('change', toggleTipoIrrigacao);
     toggleTipoIrrigacao();
+  }
+
+  var inputBuscaLocal = document.getElementById('id_busca_local');
+  var selectFazenda = document.getElementById('id_fazenda');
+  var btnBuscarLocal = document.getElementById('btn-buscar-local');
+  var loadingBuscaLocal = document.getElementById('loading-busca-local');
+  var feedbackGeo = document.getElementById('feedback-geolocalizacao');
+  var containerResultados = document.getElementById('container-resultados-local');
+  var selectResultados = document.getElementById('id_resultado_localizacao');
+  var inputLatitude = document.getElementById('id_latitude');
+  var inputLongitude = document.getElementById('id_longitude');
+  var mostrarMapaSwitch = document.getElementById('id_mostrar_mapa');
+  var containerMapa = document.getElementById('container-mapa-area');
+  var mapa = null;
+  var marcador = null;
+  var debounceBuscaTimer = null;
+  var ultimaConsultaBuscada = '';
+  var controladorBusca = null;
+
+  function setFeedback(message, isError) {
+    if (!feedbackGeo) return;
+    feedbackGeo.textContent = message || '';
+    feedbackGeo.classList.remove('text-danger', 'text-success', 'text-muted');
+    feedbackGeo.classList.add(isError ? 'text-danger' : 'text-muted');
+  }
+
+  function parseCoord(value) {
+    var parsed = parseFloat((value || '').toString().replace(',', '.'));
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  function setBuscaLoading(isLoading) {
+    if (btnBuscarLocal) {
+      btnBuscarLocal.disabled = !!isLoading;
+    }
+    if (loadingBuscaLocal) {
+      loadingBuscaLocal.classList.toggle('d-none', !isLoading);
+    }
+  }
+
+  function atualizarMapaPorCoordenadas(lat, lng) {
+    if (!mostrarMapaSwitch || !mostrarMapaSwitch.checked || !containerMapa) {
+      return;
+    }
+
+    containerMapa.classList.remove('d-none');
+    if (!mapa) {
+      mapa = L.map('map-area-form').setView([lat, lng], 14);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+      }).addTo(mapa);
+    } else {
+      mapa.setView([lat, lng], 14);
+    }
+
+    if (!marcador) {
+      marcador = L.marker([lat, lng], { draggable: true }).addTo(mapa);
+      marcador.on('dragend', function(e) {
+        var pos = e.target.getLatLng();
+        inputLatitude.value = Number(pos.lat).toFixed(7);
+        inputLongitude.value = Number(pos.lng).toFixed(7);
+      });
+    } else {
+      marcador.setLatLng([lat, lng]);
+    }
+
+    setTimeout(function() {
+      if (mapa) {
+        mapa.invalidateSize();
+      }
+    }, 50);
+  }
+
+  function atualizarCampos(lat, lng) {
+    if (inputLatitude) inputLatitude.value = Number(lat).toFixed(7);
+    if (inputLongitude) inputLongitude.value = Number(lng).toFixed(7);
+    atualizarMapaPorCoordenadas(Number(lat), Number(lng));
+  }
+
+  async function buscarGeolocalizacao(force) {
+    if (!inputBuscaLocal) return;
+    var consulta = (inputBuscaLocal.value || '').trim();
+    if (consulta.length < 3) {
+      containerResultados.classList.add('d-none');
+      selectResultados.innerHTML = '';
+      setFeedback('Digite pelo menos 3 caracteres para buscar.', true);
+      return;
+    }
+
+    if (!force && consulta === ultimaConsultaBuscada) {
+      return;
+    }
+    ultimaConsultaBuscada = consulta;
+
+    setFeedback('Buscando localização...');
+    setBuscaLoading(true);
+
+    try {
+      if (controladorBusca) {
+        controladorBusca.abort();
+      }
+      controladorBusca = new AbortController();
+
+      var queryUrl = '{% url "cadastros:buscar_geolocalizacao" %}?q=' + encodeURIComponent(consulta);
+      if (selectFazenda && selectFazenda.value) {
+        queryUrl += '&fazenda_id=' + encodeURIComponent(selectFazenda.value);
+      }
+
+      var response = await fetch(queryUrl, {
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        signal: controladorBusca.signal,
+      });
+      var data = await response.json();
+      if (!response.ok || !data.sucesso) {
+        throw new Error((data && data.erro) ? data.erro : 'Falha na busca de localização.');
+      }
+
+      var resultados = data.resultados || [];
+      if (!resultados.length) {
+        containerResultados.classList.add('d-none');
+        selectResultados.innerHTML = '';
+        setFeedback('Nenhum resultado encontrado. Tente detalhar mais o local.', true);
+        return;
+      }
+
+      selectResultados.innerHTML = '';
+      resultados.forEach(function(item, index) {
+        var option = document.createElement('option');
+        option.value = item.latitude + ',' + item.longitude;
+        option.textContent = item.origem === 'estabelecimento'
+          ? '[Estabelecimento] ' + item.display_name
+          : item.display_name;
+        if (index === 0) option.selected = true;
+        selectResultados.appendChild(option);
+      });
+      containerResultados.classList.remove('d-none');
+
+      var primeiro = resultados[0];
+      atualizarCampos(primeiro.latitude, primeiro.longitude);
+      setFeedback('Localização encontrada e coordenadas preenchidas.');
+    } catch (error) {
+      if (error && error.name === 'AbortError') {
+        return;
+      }
+      setFeedback(error.message || 'Não foi possível buscar a localização agora.', true);
+    } finally {
+      setBuscaLoading(false);
+    }
+  }
+
+  if (btnBuscarLocal) {
+    btnBuscarLocal.addEventListener('click', function() {
+      buscarGeolocalizacao(true);
+    });
+  }
+
+  if (inputBuscaLocal) {
+    inputBuscaLocal.addEventListener('input', function() {
+      if (debounceBuscaTimer) {
+        clearTimeout(debounceBuscaTimer);
+      }
+
+      var texto = (inputBuscaLocal.value || '').trim();
+      if (texto.length < 3) {
+        containerResultados.classList.add('d-none');
+        selectResultados.innerHTML = '';
+        ultimaConsultaBuscada = '';
+        setFeedback('Digite pelo menos 3 caracteres para buscar.', true);
+        return;
+      }
+
+      debounceBuscaTimer = setTimeout(function() {
+        buscarGeolocalizacao(false);
+      }, 450);
+    });
+
+    inputBuscaLocal.addEventListener('keydown', function(event) {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        buscarGeolocalizacao(true);
+      }
+    });
+  }
+
+  if (selectResultados) {
+    selectResultados.addEventListener('change', function() {
+      var value = this.value || '';
+      if (!value.includes(',')) return;
+      var parts = value.split(',');
+      if (parts.length !== 2) return;
+      atualizarCampos(parts[0], parts[1]);
+    });
+  }
+
+  if (mostrarMapaSwitch) {
+    mostrarMapaSwitch.addEventListener('change', function() {
+      if (!containerMapa) return;
+      if (this.checked) {
+        var lat = parseCoord(inputLatitude ? inputLatitude.value : null);
+        var lng = parseCoord(inputLongitude ? inputLongitude.value : null);
+        if (lat !== null && lng !== null) {
+          atualizarMapaPorCoordenadas(lat, lng);
+        } else {
+          containerMapa.classList.remove('d-none');
+          setFeedback('Ative a busca ou preencha latitude/longitude para exibir o mapa.', true);
+        }
+      } else {
+        containerMapa.classList.add('d-none');
+      }
+    });
+  }
+
+  if (inputLatitude && inputLongitude) {
+    var latInicial = parseCoord(inputLatitude.value);
+    var lngInicial = parseCoord(inputLongitude.value);
+    if (latInicial !== null && lngInicial !== null) {
+      setFeedback('Coordenadas já preenchidas. Você pode mostrar o mapa para conferir.');
+    }
   }
 });
 </script>

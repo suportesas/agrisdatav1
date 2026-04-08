@@ -463,6 +463,12 @@ class Empresa(models.Model):
     )
     
     # Status e controle
+    is_interna_saas = models.BooleanField(
+        'Empresa interna do SaaS',
+        default=False,
+        help_text='Quando ativo, esta empresa e de uso interno do proprietario e nao entra em cobranca.'
+    )
+
     ativa = models.BooleanField(
         'Empresa Ativa',
         default=True,
@@ -556,7 +562,11 @@ class Empresa(models.Model):
             if len(cnpj_limpo) != 14:
                 raise ValidationError({'cnpj': 'CNPJ deve ter 14 dígitos'})
         
-        # Valida se plano existe
+        # Empresa interna nao exige plano comercial
+        if self.is_interna_saas:
+            return
+
+        # Valida se plano existe para clientes
         if not self.plano:
             raise ValidationError({'plano': 'É obrigatório selecionar um plano'})
     
@@ -577,6 +587,19 @@ class Empresa(models.Model):
     
     def aplicar_limites_plano(self):
         """Aplica limites e recursos do plano contratado"""
+        if self.is_interna_saas:
+            self.limite_fazendas = 999
+            self.limite_usuarios = 999
+            self.limite_talhoes = 999
+            self.limite_produtos = 999
+            self.acesso_relatorios_avancados = True
+            self.acesso_api = True
+            self.acesso_app_mobile = True
+            self.valor_mensalidade = Decimal('0.00')
+            if not self.data_expiracao:
+                self.data_expiracao = timezone.now().date() + timezone.timedelta(days=3650)
+            return
+
         if self.plano:
             self.limite_fazendas = self.plano.limite_fazendas
             self.limite_usuarios = self.plano.limite_usuarios

@@ -6,7 +6,22 @@ Configuração do painel administrativo do Django
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.utils.html import format_html
-from .models import Usuario, LoginRegistro, PerfilUsuario
+from .models import TipoUsuario, Usuario, LoginRegistro, PerfilUsuario
+
+
+@admin.register(TipoUsuario)
+class TipoUsuarioAdmin(admin.ModelAdmin):
+    list_display = [
+        'codigo', 'nome', 'ordem', 'ativo', 'protegido',
+        'administrador_empresa', 'permite_gerenciar_usuarios',
+        'permite_acessar_financeiro', 'permite_fazer_vendas'
+    ]
+    list_filter = [
+        'ativo', 'protegido', 'administrador_empresa',
+        'permite_gerenciar_usuarios', 'permite_acessar_financeiro', 'permite_fazer_vendas'
+    ]
+    search_fields = ['codigo', 'nome', 'descricao']
+    ordering = ['ordem', 'nome']
 
 
 @admin.register(Usuario)
@@ -15,7 +30,7 @@ class UsuarioAdmin(BaseUserAdmin):
     
     list_display = [
         'username', 'get_nome_completo', 'email', 'empresa',
-        'get_roles', 'tipo', 'telefone', 'is_active_badge', 'date_joined'
+        'get_roles', 'get_tipo_nome', 'telefone', 'is_active_badge', 'date_joined'
     ]
     
     list_filter = [
@@ -69,6 +84,10 @@ class UsuarioAdmin(BaseUserAdmin):
         """Exibe nome completo"""
         return obj.get_full_name() or '-'
     get_nome_completo.short_description = 'Nome Completo'
+
+    def get_tipo_nome(self, obj):
+        return obj.get_tipo_display()
+    get_tipo_nome.short_description = 'Tipo'
     
     def is_active_badge(self, obj):
         """Badge colorido para status ativo/inativo"""

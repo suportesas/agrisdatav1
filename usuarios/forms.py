@@ -6,7 +6,21 @@ Forms para autenticação e gerenciamento de usuários
 from django import forms
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm, UserChangeForm
 from django.core.exceptions import ValidationError
-from .models import Usuario, PerfilUsuario
+from .models import TipoUsuario, Usuario, PerfilUsuario
+
+
+def get_tipo_choices(include_codigo=None):
+    tipos = list(TipoUsuario.objects.filter(ativo=True).order_by('ordem', 'nome'))
+    if include_codigo:
+        codigo_normalizado = include_codigo.strip().upper()
+        if codigo_normalizado and not any(tipo.codigo == codigo_normalizado for tipo in tipos):
+            tipo_atual = TipoUsuario.objects.filter(codigo=codigo_normalizado).first()
+            if tipo_atual:
+                tipos.append(tipo_atual)
+
+    choices = [('', '-- Selecione --')]
+    choices.extend((tipo.codigo, tipo.nome) for tipo in tipos)
+    return choices
 
 
 class LoginForm(AuthenticationForm):
@@ -118,6 +132,14 @@ class UsuarioCreateForm(UserCreationForm):
             'placeholder': 'Digite a senha novamente'
         })
     )
+
+    tipo = forms.ChoiceField(
+        label='Tipo de Usuário',
+        choices=(),
+        widget=forms.Select(attrs={
+            'class': 'form-select'
+        })
+    )
     
     class Meta:
         model = Usuario
@@ -152,6 +174,8 @@ class UsuarioCreateForm(UserCreationForm):
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop('user', None)  # Usuário logado
         super().__init__(*args, **kwargs)
+        self.fields['tipo'].choices = get_tipo_choices()
+        self.fields['tipo'].initial = self.initial.get('tipo') or getattr(self.instance, 'tipo', None) or 'FUNC'
         
         # Se não for superusuário, limita escolha de empresa
         if self.user and not self.user.is_superuser:
@@ -241,6 +265,14 @@ class UsuarioCreateForm(UserCreationForm):
             if Usuario.objects.filter(cpf=cpf).exists():
                 raise ValidationError('Este CPF já está cadastrado.')
         return cpf
+
+    def clean_tipo(self):
+        tipo = (self.cleaned_data.get('tipo') or '').strip().upper()
+        if not tipo:
+            raise ValidationError('Selecione um tipo de usuário.')
+        if not TipoUsuario.objects.filter(codigo=tipo, ativo=True).exists():
+            raise ValidationError('O tipo de usuário selecionado não está disponível.')
+        return tipo
     
     def save(self, commit=True):
         user = super().save(commit=False)
@@ -324,6 +356,14 @@ class UsuarioUpdateForm(UserChangeForm):
             'rows': 3
         })
     )
+
+    tipo = forms.ChoiceField(
+        label='Tipo de Usuário',
+        choices=(),
+        widget=forms.Select(attrs={
+            'class': 'form-select'
+        })
+    )
     
     class Meta:
         model = Usuario
@@ -366,6 +406,8 @@ class UsuarioUpdateForm(UserChangeForm):
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
+        self.fields['tipo'].choices = get_tipo_choices(include_codigo=getattr(self.instance, 'tipo', None))
+        self.fields['tipo'].initial = getattr(self.instance, 'tipo', None)
         
         # Esconde campos de staff se não for superusuário
         if self.user and not self.user.is_superuser:
@@ -403,6 +445,21 @@ class UsuarioUpdateForm(UserChangeForm):
         if Usuario.objects.exclude(pk=self.instance.pk).filter(email=email).exists():
             raise ValidationError('Este e-mail já está cadastrado em outro usuário.')
         return email
+
+    def clean_tipo(self):
+        tipo = (self.cleaned_data.get('tipo') or '').strip().upper()
+        if not tipo:
+            raise ValidationError('Selecione um tipo de usuário.')
+
+        queryset = TipoUsuario.objects.filter(codigo=tipo)
+        if not queryset.exists():
+            raise ValidationError('O tipo de usuário selecionado não existe.')
+
+        tipo_obj = queryset.first()
+        if not tipo_obj.ativo and tipo != getattr(self.instance, 'tipo', None):
+            raise ValidationError('O tipo de usuário selecionado está inativo.')
+
+        return tipo
     
     def clean_roles(self):
         """Valida que as roles selecionadas pertencem à empresa correta"""
@@ -542,3 +599,77 @@ class PerfilUsuarioForm(forms.ModelForm):
                 'class': 'form-check-input'
             }),
         }
+
+
+class TipoUsuarioForm(forms.ModelForm):
+    class Meta:
+        model = TipoUsuario
+        fields = [
+            'codigo', 'nome', 'descricao', 'ordem', 'ativo',
+            'administrador_empresa', 'permite_gerenciar_usuarios',
+            'permite_acessar_financeiro', 'permite_fazer_vendas'
+        ]
+        widgets = {
+            'codigo': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ex.: SUPORTE'
+            }),
+            'nome': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Nome exibido para o usuário'
+            }),
+            'descricao': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'Descrição opcional do uso desse tipo'
+            }),
+            'ordem': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': '0'
+            }),
+            'ativo': forms.CheckboxInput(attrs={
+                'class': 'form-check-input'
+            }),
+            'administrador_empresa': forms.CheckboxInput(attrs={
+                'class': 'form-check-input'
+            }),
+            'permite_gerenciar_usuarios': forms.CheckboxInput(attrs={
+                'class': 'form-check-input'
+            }),
+            'permite_acessar_financeiro': forms.CheckboxInput(attrs={
+                'class': 'form-check-input'
+            }),
+            'permite_fazer_vendas': forms.CheckboxInput(attrs={
+                'class': 'form-check-input'
+            }),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance and self.instance.pk and self.instance.protegido:
+            self.fields['codigo'].disabled = True
+            self.fields['codigo'].help_text = 'Tipos padrão protegidos não podem ter o código alterado.'
+
+    def clean_codigo(self):
+        codigo = (self.cleaned_data.get('codigo') or '').strip().upper()
+        if not codigo:
+            raise ValidationError('Informe o código do tipo.')
+
+        queryset = TipoUsuario.objects.filter(codigo=codigo)
+        if self.instance.pk:
+            queryset = queryset.exclude(pk=self.instance.pk)
+
+        if queryset.exists():
+            raise ValidationError('Já existe um tipo de usuário com esse código.')
+
+        if self.instance and self.instance.pk and self.instance.protegido:
+            return self.instance.codigo
+
+        return codigo
+
+    def clean(self):
+        cleaned_data = super().clean()
+        if cleaned_data.get('administrador_empresa'):
+            cleaned_data['permite_gerenciar_usuarios'] = True
+            self.cleaned_data['permite_gerenciar_usuarios'] = True
+        return cleaned_data

@@ -6,6 +6,87 @@ Sistema de autenticação multi-tenant para ERP Agrícola
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.db import models
 from django.core.validators import RegexValidator
+from django.utils import timezone
+
+
+DEFAULT_TIPOS_USUARIO = [
+    {
+        'codigo': 'ADMIN',
+        'nome': 'Administrador',
+        'descricao': 'Administrador da empresa com acesso ampliado.',
+        'ordem': 10,
+        'protegido': True,
+        'administrador_empresa': True,
+        'permite_gerenciar_usuarios': True,
+        'permite_acessar_financeiro': True,
+        'permite_fazer_vendas': True,
+    },
+    {
+        'codigo': 'GERENTE',
+        'nome': 'Gerente',
+        'descricao': 'Gerencia usuários e acompanha operações da empresa.',
+        'ordem': 20,
+        'protegido': True,
+        'administrador_empresa': False,
+        'permite_gerenciar_usuarios': True,
+        'permite_acessar_financeiro': True,
+        'permite_fazer_vendas': True,
+    },
+    {
+        'codigo': 'FUNC',
+        'nome': 'Funcionário',
+        'descricao': 'Perfil operacional padrão.',
+        'ordem': 30,
+        'protegido': True,
+        'administrador_empresa': False,
+        'permite_gerenciar_usuarios': False,
+        'permite_acessar_financeiro': False,
+        'permite_fazer_vendas': False,
+    },
+    {
+        'codigo': 'PROD',
+        'nome': 'Produtor',
+        'descricao': 'Perfil voltado para operação de produção.',
+        'ordem': 40,
+        'protegido': True,
+        'administrador_empresa': False,
+        'permite_gerenciar_usuarios': False,
+        'permite_acessar_financeiro': False,
+        'permite_fazer_vendas': False,
+    },
+    {
+        'codigo': 'VENDEDOR',
+        'nome': 'Vendedor',
+        'descricao': 'Perfil comercial com acesso a vendas.',
+        'ordem': 50,
+        'protegido': True,
+        'administrador_empresa': False,
+        'permite_gerenciar_usuarios': False,
+        'permite_acessar_financeiro': False,
+        'permite_fazer_vendas': True,
+    },
+    {
+        'codigo': 'FINANCEIRO',
+        'nome': 'Financeiro',
+        'descricao': 'Perfil com acesso financeiro.',
+        'ordem': 60,
+        'protegido': True,
+        'administrador_empresa': False,
+        'permite_gerenciar_usuarios': False,
+        'permite_acessar_financeiro': True,
+        'permite_fazer_vendas': False,
+    },
+]
+
+
+def get_codigos_tipos_admin_empresa():
+    codigos = list(
+        TipoUsuario.objects.filter(administrador_empresa=True, ativo=True)
+        .values_list('codigo', flat=True)
+    )
+    if 'ADMIN' not in codigos:
+        codigos.append('ADMIN')
+    return codigos
 
 
 # ============================================
@@ -89,6 +170,65 @@ class UsuarioManager(BaseUserManager):
         return self._create_user(username, email, password, **extra_fields)
 
 
+class TipoUsuario(models.Model):
+    """Tipos de usuário configuráveis usados pelo campo Usuario.tipo."""
+
+    codigo_validator = RegexValidator(
+        regex=r'^[A-Z0-9_]+$',
+        message='O código deve conter apenas letras maiúsculas, números e underscore.'
+    )
+
+    codigo = models.CharField(
+        'Código',
+        max_length=30,
+        unique=True,
+        validators=[codigo_validator],
+        help_text='Identificador interno usado nas regras do sistema. Ex.: SUPORTE.'
+    )
+    nome = models.CharField('Nome', max_length=60)
+    descricao = models.TextField('Descrição', blank=True)
+    ordem = models.PositiveIntegerField('Ordem', default=100)
+    ativo = models.BooleanField('Ativo', default=True)
+    protegido = models.BooleanField(
+        'Protegido',
+        default=False,
+        help_text='Tipos protegidos não podem ser excluídos pelo CRUD.'
+    )
+    administrador_empresa = models.BooleanField(
+        'Conta como administrador da empresa',
+        default=False,
+        help_text='Libera as ações administrativas e permissões equivalentes a admin.'
+    )
+    permite_gerenciar_usuarios = models.BooleanField(
+        'Pode gerenciar usuários',
+        default=False
+    )
+    permite_acessar_financeiro = models.BooleanField(
+        'Pode acessar financeiro',
+        default=False
+    )
+    permite_fazer_vendas = models.BooleanField(
+        'Pode fazer vendas',
+        default=False
+    )
+
+    class Meta:
+        verbose_name = 'Tipo de Usuário'
+        verbose_name_plural = 'Tipos de Usuário'
+        ordering = ['ordem', 'nome']
+        indexes = [
+            models.Index(fields=['ativo', 'ordem']),
+            models.Index(fields=['codigo']),
+        ]
+
+    def __str__(self):
+        return self.nome
+
+    def save(self, *args, **kwargs):
+        self.codigo = (self.codigo or '').upper().strip()
+        super().save(*args, **kwargs)
+
+
 # ============================================
 # MODELOS
 # ============================================
@@ -99,15 +239,6 @@ class Usuario(AbstractUser):
     Cada usuário pertence a uma empresa (multi-tenant)
     Herda de AbstractUser do Django para autenticação completa
     """
-    
-    TIPO_USUARIO = (
-        ('ADMIN', 'Administrador'),
-        ('GERENTE', 'Gerente'),
-        ('FUNC', 'Funcionário'),
-        ('PROD', 'Produtor'),
-        ('VENDEDOR', 'Vendedor'),
-        ('FINANCEIRO', 'Financeiro'),
-    )
     
     # Relacionamento com empresa (multi-tenant)
     empresa = models.ForeignKey(
@@ -123,10 +254,10 @@ class Usuario(AbstractUser):
     # Tipo de usuário
     tipo = models.CharField(
         'Tipo de Usuário',
-        max_length=15,
-        choices=TIPO_USUARIO,
+        max_length=30,
         default='FUNC',
-        help_text='Define as permissões e acesso do usuário'
+        db_index=True,
+        help_text='Código do tipo de usuário configurado no cadastro de tipos.'
     )
     
     # Informações de contato
@@ -224,22 +355,98 @@ class Usuario(AbstractUser):
         """Retorna nome completo do usuário"""
         full_name = f"{self.first_name} {self.last_name}".strip()
         return full_name if full_name else self.username
+
+    def get_tipo_config(self):
+        """Retorna a configuração do tipo do usuário, quando existir."""
+        if hasattr(self, '_tipo_config_cache'):
+            return self._tipo_config_cache
+
+        if not self.tipo:
+            self._tipo_config_cache = None
+            return self._tipo_config_cache
+
+        self._tipo_config_cache = TipoUsuario.objects.filter(codigo=self.tipo).first()
+        return self._tipo_config_cache
+
+    def get_tipo_display(self):
+        """Retorna o nome amigável do tipo mesmo sem choices fixos."""
+        tipo_config = self.get_tipo_config()
+        if tipo_config:
+            return tipo_config.nome
+
+        if not self.tipo:
+            return 'Sem tipo'
+
+        return self.tipo.replace('_', ' ').title()
+
+    @property
+    def tipo_badge_class(self):
+        tipo_config = self.get_tipo_config()
+        codigo = (self.tipo or '').upper()
+
+        if codigo == 'ADMIN' or (tipo_config and tipo_config.administrador_empresa):
+            return 'bg-danger bg-opacity-10 text-danger border border-danger'
+        if codigo == 'GERENTE' or (tipo_config and tipo_config.permite_gerenciar_usuarios):
+            return 'bg-warning bg-opacity-10 text-warning border border-warning'
+        if codigo == 'VENDEDOR' or (tipo_config and tipo_config.permite_fazer_vendas):
+            return 'bg-success bg-opacity-10 text-success border border-success'
+        if codigo == 'FINANCEIRO' or (tipo_config and tipo_config.permite_acessar_financeiro):
+            return 'bg-info bg-opacity-10 text-info border border-info'
+        if codigo == 'PROD':
+            return 'bg-secondary bg-opacity-10 text-secondary border border-secondary'
+        return 'bg-secondary bg-opacity-10 text-secondary border border-secondary'
+
+    @property
+    def tipo_badge_icon(self):
+        tipo_config = self.get_tipo_config()
+        codigo = (self.tipo or '').upper()
+
+        if codigo == 'ADMIN' or (tipo_config and tipo_config.administrador_empresa):
+            return 'bi-shield-fill-check'
+        if codigo == 'GERENTE' or (tipo_config and tipo_config.permite_gerenciar_usuarios):
+            return 'bi-person-badge'
+        if codigo == 'VENDEDOR' or (tipo_config and tipo_config.permite_fazer_vendas):
+            return 'bi-cart-check'
+        if codigo == 'FINANCEIRO' or (tipo_config and tipo_config.permite_acessar_financeiro):
+            return 'bi-cash-coin'
+        if codigo == 'PROD':
+            return 'bi-gear'
+        return 'bi-person'
     
     def is_admin_empresa(self):
         """Verifica se usuário é admin da empresa"""
-        return self.tipo == 'ADMIN' or self.is_superuser
+        tipo_config = self.get_tipo_config()
+        return self.is_superuser or bool(tipo_config and tipo_config.administrador_empresa) or self.tipo == 'ADMIN'
     
     def pode_gerenciar_usuarios(self):
         """Verifica se pode gerenciar outros usuários"""
-        return self.tipo in ['ADMIN', 'GERENTE'] or self.is_superuser
+        tipo_config = self.get_tipo_config()
+        return (
+            self.is_superuser or
+            self.is_admin_empresa() or
+            bool(tipo_config and tipo_config.permite_gerenciar_usuarios) or
+            self.tipo in ['ADMIN', 'GERENTE']
+        )
     
     def pode_acessar_financeiro(self):
         """Verifica se tem acesso ao financeiro"""
-        return self.tipo in ['ADMIN', 'GERENTE', 'FINANCEIRO'] or self.is_superuser
+        tipo_config = self.get_tipo_config()
+        return (
+            self.is_superuser or
+            self.is_admin_empresa() or
+            bool(tipo_config and tipo_config.permite_acessar_financeiro) or
+            self.tipo in ['ADMIN', 'GERENTE', 'FINANCEIRO']
+        )
     
     def pode_fazer_vendas(self):
         """Verifica se pode registrar vendas"""
-        return self.tipo in ['ADMIN', 'GERENTE', 'VENDEDOR'] or self.is_superuser
+        tipo_config = self.get_tipo_config()
+        return (
+            self.is_superuser or
+            self.is_admin_empresa() or
+            bool(tipo_config and tipo_config.permite_fazer_vendas) or
+            self.tipo in ['ADMIN', 'GERENTE', 'VENDEDOR']
+        )
 
 
 class LoginRegistro(models.Model):
@@ -660,6 +867,90 @@ class AlertaSeguranca(models.Model):
     
     def __str__(self):
         return f"[{self.get_nivel_display()}] {self.titulo} - {self.usuario.username}"
+
+
+class TrocaSenhaEmergencial(models.Model):
+    """
+    Registra troca emergencial de senha executada por superadmin.
+    Permite cancelamento seguro com rollback da hash anterior no Django.
+    """
+
+    STATUS = (
+        ('ATIVA', 'Ativa'),
+        ('CANCELADA', 'Cancelada'),
+        ('EXPIRADA', 'Expirada'),
+    )
+
+    usuario_alvo = models.ForeignKey(
+        Usuario,
+        on_delete=models.CASCADE,
+        related_name='trocas_senha_emergenciais_recebidas',
+        verbose_name='Usuário Alvo',
+    )
+
+    executado_por = models.ForeignKey(
+        Usuario,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='trocas_senha_emergenciais_executadas',
+        verbose_name='Executado Por',
+    )
+
+    empresa = models.ForeignKey(
+        'empresas.Empresa',
+        on_delete=models.CASCADE,
+        related_name='trocas_senha_emergenciais',
+        verbose_name='Empresa',
+    )
+
+    senha_anterior_hash = models.CharField(
+        'Hash da Senha Anterior',
+        max_length=128,
+        help_text='Hash anterior para rollback seguro no Django.',
+    )
+
+    token_cancelamento_hash = models.CharField(
+        'Hash do Token de Cancelamento',
+        max_length=128,
+        unique=True,
+        db_index=True,
+    )
+
+    motivo = models.TextField('Motivo da Ação', blank=True)
+
+    status = models.CharField(
+        'Status',
+        max_length=12,
+        choices=STATUS,
+        default='ATIVA',
+        db_index=True,
+    )
+
+    data_execucao = models.DateTimeField('Data de Execução', auto_now_add=True, db_index=True)
+    expira_em = models.DateTimeField('Expira Em', db_index=True)
+    data_cancelamento = models.DateTimeField('Data de Cancelamento', null=True, blank=True)
+
+    ip_execucao = models.GenericIPAddressField('IP da Execução', blank=True, null=True)
+    user_agent_execucao = models.CharField('User Agent da Execução', max_length=500, blank=True)
+    ip_cancelamento = models.GenericIPAddressField('IP do Cancelamento', blank=True, null=True)
+    user_agent_cancelamento = models.CharField('User Agent do Cancelamento', max_length=500, blank=True)
+
+    class Meta:
+        verbose_name = 'Troca de Senha Emergencial'
+        verbose_name_plural = 'Trocas de Senha Emergenciais'
+        ordering = ['-data_execucao']
+        indexes = [
+            models.Index(fields=['empresa', '-data_execucao']),
+            models.Index(fields=['usuario_alvo', '-data_execucao']),
+            models.Index(fields=['status', '-data_execucao']),
+        ]
+
+    def __str__(self):
+        return f"{self.usuario_alvo.username} - {self.status} ({self.data_execucao:%d/%m/%Y %H:%M})"
+
+    def is_expirada(self):
+        return timezone.now() > self.expira_em
 
 
 class GraficoAcesso(models.Model):

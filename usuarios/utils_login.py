@@ -14,8 +14,9 @@ from io import BytesIO
 import base64
 
 from .models import (
-    LoginRegistro, LoginAnomalia, AlertaSeguranca, 
-    DoisFatoresAutenticacao, GraficoAcesso
+    LoginRegistro, LoginAnomalia, AlertaSeguranca,
+    DoisFatoresAutenticacao, GraficoAcesso,
+    get_codigos_tipos_admin_empresa,
 )
 
 
@@ -205,7 +206,7 @@ def enviar_email_alerta(alerta):
     """
     try:
         # Buscar destinatários
-        admins = alerta.empresa.usuarios.filter(tipo='ADMIN', is_active=True)
+        admins = alerta.empresa.usuarios.filter(tipo__in=get_codigos_tipos_admin_empresa(), is_active=True)
         superusers = alerta.empresa.usuarios.filter(is_superuser=True)
         
         destinatarios = list(set(

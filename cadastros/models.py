@@ -1347,7 +1347,7 @@ class NCM(models.Model):
     sem afetar outras empresas (SaaS multi-tenant behavior).
     """
     codigo = models.CharField('Código NCM', max_length=8, unique=True, help_text='8 dígitos numéricos')
-    nome = models.CharField('Descrição', max_length=255)
+    nome = models.CharField('Descrição', max_length=500)
     descricao = models.TextField('Observações', blank=True)
     cest = models.CharField('CEST', max_length=10, blank=True, help_text='CEST (se aplicável)')
     ativo = models.BooleanField('Ativo', default=True)

@@ -125,6 +125,13 @@ if os.getenv('PG_NAME'):
             'PASSWORD': os.getenv('PG_PASSWORD', ''),
             'HOST': os.getenv('PG_HOST', 'localhost'),
             'PORT': os.getenv('PG_PORT', '5432'),
+            # Configurações críticas para Supabase
+            'CONN_MAX_AGE': 600,  # Reutilizar conexão por 10 minutos
+            'OPTIONS': {
+                'connect_timeout': 10,  # Timeout de conexão 10s
+                'options': '-c statement_timeout=30000'  # Timeout SQL 30s
+            },
+            'ATOMIC_REQUESTS': False,  # Evitar locks desnecessários
         }
     }
 else:
@@ -154,6 +161,29 @@ AUTH_PASSWORD_VALIDATORS = [
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
 ]
+
+# ============================================
+# CACHE CONFIGURATION (Redis ou Memcached)
+# ============================================
+# Se usar PostgreSQL (Supabase), cache é importante
+if os.getenv('PG_NAME'):
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+            'LOCATION': 'erp-agricola-cache',
+            'TIMEOUT': 300,  # 5 minutos
+            'OPTIONS': {
+                'MAX_ENTRIES': 10000
+            }
+        }
+    }
+else:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+            'LOCATION': 'erp-agricola-cache',
+        }
+    }
 
 
 # Internationalization - CORRIGIDO PARA PT-BR

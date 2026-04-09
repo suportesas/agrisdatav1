@@ -252,6 +252,8 @@ SUPABASE_STORAGE_BUCKETS = {
     'produtos-imagens': 'Fotos de produtos',
     'funcionarios-fotos': 'Fotos de colaboradores',
     'compras-xml': 'Arquivos XML de compras',
+    'safra-imagens': 'Imagens de safra',
+    'cultura-imagens': 'Imagens de culturas',
     'uploads-gerais': 'Uploads diversos',
 }
 

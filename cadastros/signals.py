@@ -170,3 +170,73 @@ def copiar_estagios_template_para_nova_empresa(sender, instance, created, **kwar
             template_original=estagio_template,  # Rastrear origem
         )
 
+
+# ============================================================================
+# UPLOAD DE IMAGENS DE SAFRA NO SUPABASE STORAGE
+# ============================================================================
+
+@receiver(post_save, sender='cadastros.Safra')
+def safra_post_save_upload_imagem(sender, instance, created, **kwargs):
+    """
+    Quando uma safra com imagem é salva, envia a imagem para Supabase Storage
+    e atualiza o campo com a URL pública.
+    """
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    if not instance.imagem:
+        return  # Sem imagem, não faz nada
+    
+    try:
+        from core.storage import storage_helper
+        from django.conf import settings
+        
+        # Se não tem URL pública (foi novo upload), fazer upload para Supabase
+        if not instance.imagem.name.startswith('http'):
+            file_obj = instance.imagem.open('rb')
+            file_path = f"safra/{instance.fazenda.pk}/{instance.pk}/{instance.imagem.name.split('/')[-1]}"
+            
+            # Upload para Supabase
+            url = storage_helper.upload_file(file_obj, 'safra-imagens', file_path)
+            
+            if url:
+                logger.info(f"Imagem de safra {instance.pk} enviada para Supabase: {url}")
+    except Exception as e:
+        logger.error(f"Erro ao fazer upload de imagem de safra {instance.pk}: {e}")
+        # Não interrompe o fluxo se houver erro no upload
+
+
+# ============================================================================
+# UPLOAD DE IMAGENS DE CULTURA NO SUPABASE STORAGE
+# ============================================================================
+
+@receiver(post_save, sender='cadastros.Cultura')
+def cultura_post_save_upload_imagem(sender, instance, created, **kwargs):
+    """
+    Quando uma cultura com imagem é salva, envia a imagem para Supabase Storage
+    e armazena a URL pública.
+    """
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    if not instance.imagem:
+        return  # Sem imagem, não faz nada
+    
+    try:
+        from core.storage import storage_helper
+        from django.conf import settings
+        
+        # Se não tem URL pública (foi novo upload), fazer upload para Supabase
+        if not instance.imagem.name.startswith('http'):
+            file_obj = instance.imagem.open('rb')
+            file_path = f"cultura/{instance.empresa.pk}/{instance.pk}/{instance.imagem.name.split('/')[-1]}"
+            
+            # Upload para Supabase
+            url = storage_helper.upload_file(file_obj, 'cultura-imagens', file_path)
+            
+            if url:
+                logger.info(f"Imagem de cultura {instance.pk} enviada para Supabase: {url}")
+    except Exception as e:
+        logger.error(f"Erro ao fazer upload de imagem de cultura {instance.pk}: {e}")
+        # Não interrompe o fluxo se houver erro no upload
+

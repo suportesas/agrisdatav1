@@ -19,9 +19,23 @@ class SupabaseStorageHelper:
     
     def __init__(self):
         try:
+            from supabase import create_client
             from core.supabase_config import supabase_auth
-            self.client = supabase_auth.client
+            
             self.enabled = settings.SUPABASE_STORAGE_ENABLED
+            
+            # Cliente com SERVICE_ROLE_KEY para uploads (máximas permissões)
+            if self.enabled and settings.SUPABASE_URL and settings.SUPABASE_SERVICE_ROLE_KEY:
+                self.client = create_client(
+                    settings.SUPABASE_URL,
+                    settings.SUPABASE_SERVICE_ROLE_KEY
+                )
+                logger.info("✓ Storage Helper inicializado com SERVICE_ROLE_KEY")
+            else:
+                # Fallback para cliente público
+                self.client = supabase_auth.client
+                logger.warning("⚠️ Storage Helper usando chave pública (uploads com RLS podem falhar)")
+                
         except Exception as e:
             logger.warning(f"Supabase Storage não disponível: {e}")
             self.client = None

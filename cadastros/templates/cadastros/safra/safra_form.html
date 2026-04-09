@@ -337,6 +337,17 @@
             <label class="form-label fw-semibold">{{ form.periodo_fim.label }}</label>
             {{ form.periodo_fim }}
           </div>
+
+          <div class="col-md-12">
+            <label class="form-label fw-semibold">{{ form.imagem.label }}</label>
+            <div class="input-group">
+              {{ form.imagem }}
+              <small class="text-muted d-block mt-2">{% if form.instance.imagem %}<a href="{{ form.instance.imagem.url }}" target="_blank" class="btn btn-sm btn-link">📸 Ver imagem atual</a>{% endif %}</small>
+            </div>
+            {% if form.imagem.errors %}
+              <div class="text-danger small">{{ form.imagem.errors|striptags }}</div>
+            {% endif %}
+          </div>
         </div>
       </div>
     </div>

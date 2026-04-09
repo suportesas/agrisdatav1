@@ -2377,7 +2377,7 @@ class SafraForm(forms.ModelForm):
     
     class Meta:
         model = Safra
-        fields = ['nome', 'fazenda', 'cultura', 'ano', 'periodo_inicio', 'periodo_fim', 'status']
+        fields = ['nome', 'fazenda', 'cultura', 'ano', 'periodo_inicio', 'periodo_fim', 'status', 'imagem']
         widgets = {
             'nome': forms.TextInput(attrs={'class': 'form-control'}),
             'fazenda': forms.Select(attrs={'class': 'form-select'}),
@@ -2386,6 +2386,7 @@ class SafraForm(forms.ModelForm):
             'periodo_inicio': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'),
             'periodo_fim': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'),
             'status': forms.Select(attrs={'class': 'form-select'}),
+            'imagem': forms.FileInput(attrs={'class': 'form-control', 'accept': 'image/*', 'type': 'file'}),
         }
 
     def __init__(self, *args, **kwargs):

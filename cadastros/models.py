@@ -1374,7 +1374,7 @@ class EmpresaNCM(models.Model):
     """NCM específico de cada empresa. Cópia da tabela mestre para customização por empresa."""
     empresa = models.ForeignKey('empresas.Empresa', on_delete=models.CASCADE, related_name='ncms')
     codigo = models.CharField('Código NCM', max_length=8, help_text='8 dígitos numéricos')
-    nome = models.CharField('Descrição', max_length=255)
+    nome = models.CharField('Descrição', max_length=500)
     descricao = models.TextField('Observações', blank=True)
     cest = models.CharField('CEST', max_length=10, blank=True)
     ativo = models.BooleanField('Ativo', default=True)
@@ -4692,6 +4692,7 @@ class Safra(models.Model):
     periodo_fim = models.DateField('Fim', null=True, blank=True)
     talhoes = models.ManyToManyField(Talhao, related_name='safras', blank=True)
     status = models.CharField('Status', max_length=20, choices=STATUS, default='PLANEJADA')
+    imagem = models.ImageField('Imagem da Safra', upload_to='safra/%Y/%m/', null=True, blank=True)
 
     cadastrado_por = models.ForeignKey(
         'usuarios.Usuario', on_delete=models.SET_NULL, null=True, blank=True

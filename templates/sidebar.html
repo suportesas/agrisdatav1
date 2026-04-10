@@ -162,7 +162,7 @@
       </li>
 
       <!-- Agro -->
-      <li class="nav-item has-submenu">
+      <li class="nav-item nav-item-spotlight-agro has-submenu">
         <a href="#" class="nav-link">
           <i class="bi bi-brightness-high"></i>
           <span>Agro</span>
@@ -215,7 +215,7 @@
         <a href="#" class="nav-link">
           <i class="bi bi-folder-fill"></i>
           <span>Cadastros</span>
-          <span class="badge-count">6</span>
+          <span class="badge-count">5</span>
           <i class="bi bi-chevron-down submenu-arrow"></i>
         </a>
         <ul class="nav-submenu">
@@ -242,76 +242,32 @@
               <li><a href="{% url 'cadastros:prazo_pagamento_list' %}"><i class="bi bi-calendar-event"></i> Prazos de Pagamento</a></li>
             </ul>
           </li>
-          
-          <!-- Logística Marítima (Submenu) -->
-          <li class="has-submenu">
-            <a href="#"><i class="bi bi-shop-window"></i> Logística Marítima <i class="bi bi-chevron-right ms-auto"></i></a>
-            <ul class="nested-submenu">
-              <li><a href="{% url 'cadastros:porto_list' %}"><i class="bi bi-water"></i> Portos</a></li>
-              <li><a href="{% url 'cadastros:armador_list' %}"><i class="bi bi-ship"></i> Armadores</a></li>
-              <li><a href="{% url 'cadastros:navio_list' %}"><i class="bi bi-sailboat"></i> Navios</a></li>
-            </ul>
-          </li>
         </ul>
       </li>
 
-      <!-- RH - Recursos Humanos (Menu Principal) -->
-      <li class="nav-item has-submenu">
+      <li class="nav-divider"></li>
+      <li class="nav-section nav-section-logistica">
+        <span>LOGÍSTICA</span>
+      </li>
+
+      <!-- Logística Marítima (Menu Principal) -->
+      <li class="nav-item nav-item-spotlight has-submenu">
         <a href="#" class="nav-link">
-          <i class="bi bi-people-fill"></i>
-          <span>RH</span>
+          <i class="bi bi-shop-window"></i>
+          <span>Logística Marítima</span>
           <i class="bi bi-chevron-down submenu-arrow"></i>
         </a>
         <ul class="nav-submenu">
-          <li><a href="{% url 'cadastros:rh_dashboard' %}"><i class="bi bi-speedometer2"></i> Dashboard RH</a></li>
-          <li class="submenu-divider"></li>
-          
-          <!-- Funcionários (Submenu dentro de RH) -->
-          <li class="has-submenu">
-            <a href="#"><i class="bi bi-person-badge"></i> Funcionários <i class="bi bi-chevron-right ms-auto"></i></a>
-            <ul class="nested-submenu">
-              <li><a href="{% url 'cadastros:funcionario_list' %}"><i class="bi bi-list-ul"></i> Listar Funcionários</a></li>
-              <li><a href="{% url 'cadastros:funcao_list' %}"><i class="bi bi-person-workspace"></i> Funções/Cargos</a></li>
-            </ul>
-          </li>
-          
-          <li><a href="{% url 'cadastros:ferias_list' %}"><i class="bi bi-umbrella-beach"></i> Férias</a></li>
-          <li><a href="{% url 'cadastros:afastamento_list' %}"><i class="bi bi-medkit"></i> Afastamentos</a></li>
-          <li><a href="{% url 'cadastros:risco_ambiental_catalogo_list' %}"><i class="bi bi-shield-exclamation"></i> Riscos Ambientais</a></li>
-          <li><a href="{% url 'cadastros:vinculo_list' %}"><i class="bi bi-link-45deg"></i> Vínculos Contratuais</a></li>
-          <li><a href="{% url 'cadastros:laudo_list' %}"><i class="bi bi-file-earmark-check"></i> Laudos de Risco</a></li>
-          <li><a href="{% url 'cadastros:rescisao_list' %}"><i class="bi bi-person-dash"></i> Rescisões</a></li>
-          <li class="submenu-divider"></li>
-          
-          <!-- ASO - Atestado Saúde Ocupacional (Submenu dentro de RH) -->
-          <li class="has-submenu">
-            <a href="#"><i class="bi bi-heart-pulse"></i> ASO <i class="bi bi-chevron-right ms-auto"></i></a>
-            <ul class="nested-submenu">
-              <li><a href="{% url 'cadastros:aso_solicitacao_list' %}"><i class="bi bi-list-ul"></i> Solicitações</a></li>
-              <li><a href="{% url 'cadastros:aso_solicitacao_create' %}"><i class="bi bi-plus-circle"></i> Nova Solicitação</a></li>
-              <li><a href="{% url 'cadastros:tipo_exame_aso_list' %}"><i class="bi bi-gear"></i> Tipos de Exame</a></li>
-            </ul>
-          </li>
-          
-          <li class="submenu-divider"></li>
-          <li><a href="{% url 'cadastros:relatorio_rh' %}"><i class="bi bi-file-earmark-text"></i> Relatório RH</a></li>
+          <li><a href="{% url 'cadastros:porto_list' %}"><i class="bi bi-water"></i> Portos</a></li>
+          <li><a href="{% url 'cadastros:armador_list' %}"><i class="bi bi-ship"></i> Armadores</a></li>
+          <li><a href="{% url 'cadastros:navio_list' %}"><i class="bi bi-sailboat"></i> Navios</a></li>
         </ul>
       </li>
 
-      <!-- Patrimônio / Ativos -->
-      <li class="nav-item has-submenu">
-        <a href="#" class="nav-link">
-          <i class="bi bi-house-fill"></i>
-          <span>Patrimônio</span>
-          <i class="bi bi-chevron-down submenu-arrow"></i>
-        </a>
-        <ul class="nav-submenu">
-          <li><a href="{% url 'patrimonio:patrimonio_list' %}"><i class="bi bi-list-ul"></i> Listar Patrimônios</a></li>
-          <li><a href="{% url 'patrimonio:patrimonio_create' %}"><i class="bi bi-plus-circle"></i> Novo Patrimônio</a></li>
-          <li><a href="{% url 'patrimonio:auditoria_list' %}"><i class="bi bi-clipboard-check"></i> Auditorias</a></li>
-          <li class="submenu-divider"></li>
-          <li><a href="{% url 'patrimonio:patrimonio_relatorio' %}"><i class="bi bi-file-earmark-bar-graph"></i> Relatório</a></li>
-        </ul>
+      <li class="nav-divider"></li>
+
+      <li class="nav-section">
+        <span>MOVIMENTAÇÕES</span>
       </li>
 
       <!-- Produtos -->
@@ -405,6 +361,11 @@
         </ul>
       </li>
 
+      <li class="nav-divider"></li>
+      <li class="nav-section">
+        <span>GESTÃO E CONTROLE</span>
+      </li>
+
       <!-- Fiscal -->
       <li class="nav-item has-submenu">
         <a href="#" class="nav-link">
@@ -437,6 +398,70 @@
           <li><a href="{% url 'financeiro:relatorio_contas_vencidas' %}"><i class="bi bi-exclamation-triangle"></i> Contas Vencidas</a></li>
           <li><a href="{% url 'financeiro:relatorio_fluxo_caixa' %}"><i class="bi bi-graph-up"></i> Fluxo de Caixa</a></li>
         </ul>
+      </li>
+
+      <!-- Patrimônio / Ativos -->
+      <li class="nav-item has-submenu">
+        <a href="#" class="nav-link">
+          <i class="bi bi-house-fill"></i>
+          <span>Patrimônio</span>
+          <i class="bi bi-chevron-down submenu-arrow"></i>
+        </a>
+        <ul class="nav-submenu">
+          <li><a href="{% url 'patrimonio:patrimonio_list' %}"><i class="bi bi-list-ul"></i> Listar Patrimônios</a></li>
+          <li><a href="{% url 'patrimonio:patrimonio_create' %}"><i class="bi bi-plus-circle"></i> Novo Patrimônio</a></li>
+          <li><a href="{% url 'patrimonio:auditoria_list' %}"><i class="bi bi-clipboard-check"></i> Auditorias</a></li>
+          <li class="submenu-divider"></li>
+          <li><a href="{% url 'patrimonio:patrimonio_relatorio' %}"><i class="bi bi-file-earmark-bar-graph"></i> Relatório</a></li>
+        </ul>
+      </li>
+
+      <!-- RH - Recursos Humanos (Menu Principal) -->
+      <li class="nav-item has-submenu">
+        <a href="#" class="nav-link">
+          <i class="bi bi-people-fill"></i>
+          <span>RH</span>
+          <i class="bi bi-chevron-down submenu-arrow"></i>
+        </a>
+        <ul class="nav-submenu">
+          <li><a href="{% url 'cadastros:rh_dashboard' %}"><i class="bi bi-speedometer2"></i> Dashboard RH</a></li>
+          <li class="submenu-divider"></li>
+
+          <!-- Funcionários (Submenu dentro de RH) -->
+          <li class="has-submenu">
+            <a href="#"><i class="bi bi-person-badge"></i> Funcionários <i class="bi bi-chevron-right ms-auto"></i></a>
+            <ul class="nested-submenu">
+              <li><a href="{% url 'cadastros:funcionario_list' %}"><i class="bi bi-list-ul"></i> Listar Funcionários</a></li>
+              <li><a href="{% url 'cadastros:funcao_list' %}"><i class="bi bi-person-workspace"></i> Funções/Cargos</a></li>
+            </ul>
+          </li>
+
+          <li><a href="{% url 'cadastros:ferias_list' %}"><i class="bi bi-umbrella-beach"></i> Férias</a></li>
+          <li><a href="{% url 'cadastros:afastamento_list' %}"><i class="bi bi-medkit"></i> Afastamentos</a></li>
+          <li><a href="{% url 'cadastros:risco_ambiental_catalogo_list' %}"><i class="bi bi-shield-exclamation"></i> Riscos Ambientais</a></li>
+          <li><a href="{% url 'cadastros:vinculo_list' %}"><i class="bi bi-link-45deg"></i> Vínculos Contratuais</a></li>
+          <li><a href="{% url 'cadastros:laudo_list' %}"><i class="bi bi-file-earmark-check"></i> Laudos de Risco</a></li>
+          <li><a href="{% url 'cadastros:rescisao_list' %}"><i class="bi bi-person-dash"></i> Rescisões</a></li>
+          <li class="submenu-divider"></li>
+
+          <!-- ASO - Atestado Saúde Ocupacional (Submenu dentro de RH) -->
+          <li class="has-submenu">
+            <a href="#"><i class="bi bi-heart-pulse"></i> ASO <i class="bi bi-chevron-right ms-auto"></i></a>
+            <ul class="nested-submenu">
+              <li><a href="{% url 'cadastros:aso_solicitacao_list' %}"><i class="bi bi-list-ul"></i> Solicitações</a></li>
+              <li><a href="{% url 'cadastros:aso_solicitacao_create' %}"><i class="bi bi-plus-circle"></i> Nova Solicitação</a></li>
+              <li><a href="{% url 'cadastros:tipo_exame_aso_list' %}"><i class="bi bi-gear"></i> Tipos de Exame</a></li>
+            </ul>
+          </li>
+
+          <li class="submenu-divider"></li>
+          <li><a href="{% url 'cadastros:relatorio_rh' %}"><i class="bi bi-file-earmark-text"></i> Relatório RH</a></li>
+        </ul>
+      </li>
+
+      <li class="nav-divider"></li>
+      <li class="nav-section">
+        <span>ANÁLISES</span>
       </li>
 
       <!-- Relatórios -->

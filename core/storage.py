@@ -30,11 +30,11 @@ class SupabaseStorageHelper:
                     settings.SUPABASE_URL,
                     settings.SUPABASE_SERVICE_ROLE_KEY
                 )
-                logger.info("✓ Storage Helper inicializado com SERVICE_ROLE_KEY")
+                logger.info("[OK] Storage Helper inicializado com SERVICE_ROLE_KEY")
             else:
                 # Fallback para cliente público
                 self.client = supabase_auth.client
-                logger.warning("⚠️ Storage Helper usando chave pública (uploads com RLS podem falhar)")
+                logger.warning("[WARN] Storage Helper usando chave publica (uploads com RLS podem falhar)")
                 
         except Exception as e:
             logger.warning(f"Supabase Storage não disponível: {e}")

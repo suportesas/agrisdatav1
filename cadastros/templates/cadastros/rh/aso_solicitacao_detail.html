@@ -1,0 +1,148 @@
+{% extends 'base.html' %}
+
+{% block title %}Detalhe da Solicitação ASO | ERP Agrícola{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h1 class="h3 mb-1"><i class="fas fa-file-medical-alt me-2 text-primary"></i>Solicitação de ASO</h1>
+      <p class="text-muted mb-0">{{ solicitacao.funcionario.nome_completo }} - {{ solicitacao.get_tipo_aso_display }}</p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap justify-content-end">
+      <a href="{% url 'cadastros:aso_solicitacao_list' %}" class="btn btn-outline-secondary">Voltar</a>
+      <a href="{% url 'cadastros:aso_solicitacao_update' solicitacao.pk %}" class="btn btn-warning">Editar</a>
+      <a href="{% url 'cadastros:aso_solicitacao_assinar' solicitacao.pk %}" class="btn btn-info text-white">Assinar</a>
+      <form method="post" action="{% url 'cadastros:aso_solicitacao_enviar_email' solicitacao.pk %}" class="d-inline">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-success">Enviar Email</button>
+      </form>
+      <form method="post" action="{% url 'cadastros:aso_solicitacao_enviar_whatsapp' solicitacao.pk %}" class="d-inline">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-success">Enviar WhatsApp</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-4"><strong>Funcionário:</strong><br>{{ solicitacao.funcionario.nome_completo }}</div>
+        <div class="col-md-4"><strong>Tipo de ASO:</strong><br>{{ solicitacao.get_tipo_aso_display }}</div>
+        <div class="col-md-4"><strong>Status:</strong><br>{{ solicitacao.get_status_display }}</div>
+
+        <div class="col-md-4"><strong>Data Solicitação:</strong><br>{{ solicitacao.data_solicitacao|date:'d/m/Y' }}</div>
+        <div class="col-md-4"><strong>Data Prevista:</strong><br>{{ solicitacao.data_prevista_exame|date:'d/m/Y' }}</div>
+        <div class="col-md-4"><strong>Data Vencimento:</strong><br>{{ solicitacao.data_vencimento|date:'d/m/Y'|default:'-' }}</div>
+
+        <div class="col-md-4"><strong>Laboratório:</strong><br>{{ solicitacao.laboratorio_nome|default:'-' }}</div>
+        <div class="col-md-4"><strong>Email Laboratório:</strong><br>{{ solicitacao.laboratorio_email|default:'-' }}</div>
+        <div class="col-md-4"><strong>WhatsApp Trabalhador:</strong><br>{{ solicitacao.trabalhador_whatsapp|default:'-' }}</div>
+
+        <div class="col-12">
+          <strong>Exames Solicitados:</strong>
+          <ul class="mt-2 mb-0">
+            {% for exame in solicitacao.exames.all %}
+            <li>{{ exame.nome }} ({{ exame.codigo }})</li>
+            {% empty %}
+            <li class="text-muted">Nenhum exame vinculado.</li>
+            {% endfor %}
+          </ul>
+        </div>
+
+        <div class="col-12"><strong>Outros exames:</strong><br>{{ solicitacao.outros_exames_descricao|default:'-' }}</div>
+
+        <div class="col-12">
+          <strong>Riscos ambientais da função:</strong>
+          {% if riscos_ambientais_funcao %}
+          <div class="table-responsive mt-2">
+            <table class="table table-sm table-bordered align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Categoria</th>
+                  <th>Agente</th>
+                  <th>Intensidade</th>
+                  <th>EPI</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for risco in riscos_ambientais_funcao %}
+                <tr>
+                  <td>{{ risco.categoria.nome }}</td>
+                  <td>{{ risco.agente_especifico }}</td>
+                  <td>{{ risco.get_intensidade_display }}</td>
+                  <td>{{ risco.epi_obrigatorio|default:'-' }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div class="text-muted mt-1">Nenhum risco ambiental cadastrado para a função deste funcionário.</div>
+          {% endif %}
+        </div>
+
+        <div class="col-md-4"><strong>Alerta de vencimento:</strong><br>{% if solicitacao.gerar_alerta_vencimento %}Sim{% else %}Não{% endif %}</div>
+        <div class="col-md-4"><strong>Dias antecedência:</strong><br>{{ solicitacao.dias_antecedencia_alerta }}</div>
+        <div class="col-md-4"><strong>Cadastrado por:</strong><br>{{ solicitacao.cadastrado_por|default:'-' }}</div>
+
+        <div class="col-md-4"><strong>Responsável assinatura RH:</strong><br>{{ solicitacao.assinatura_rh_nome|default:'-' }}</div>
+        <div class="col-md-4"><strong>Data/Hora assinatura:</strong><br>{% if solicitacao.assinatura_rh_datahora %}{{ solicitacao.assinatura_rh_datahora|date:'d/m/Y H:i' }}{% else %}-{% endif %}</div>
+        <div class="col-md-4"><strong>PDF salvo:</strong><br>{% if solicitacao.arquivo_pdf %}<a href="{{ solicitacao.arquivo_pdf.url }}" target="_blank">Abrir PDF</a>{% else %}-{% endif %}</div>
+
+        <div class="col-12">
+          <strong>Assinatura eletrônica:</strong><br>
+          {% if solicitacao.assinatura_rh_imagem %}
+          <img src="{{ solicitacao.assinatura_rh_imagem.url }}" alt="Assinatura RH" class="img-fluid border rounded mt-2" style="max-height: 140px;">
+          {% else %}
+          <span class="text-muted">Nenhuma assinatura registrada.</span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card mt-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h5 class="mb-0">Histórico de Envios</h5>
+      <small class="text-muted">Últimos 20 registros</small>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-sm table-hover mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Data/Hora</th>
+              <th>Canal</th>
+              <th>Destinatário</th>
+              <th>Status</th>
+              <th>Retorno</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for log in logs_envio %}
+            <tr>
+              <td>{{ log.data_envio|date:'d/m/Y H:i' }}</td>
+              <td>{{ log.get_canal_display }}</td>
+              <td>{{ log.destinatario }}</td>
+              <td>
+                {% if log.status_envio == 'SUCESSO' %}
+                <span class="badge bg-success">Sucesso</span>
+                {% else %}
+                <span class="badge bg-danger">Falha</span>
+                {% endif %}
+              </td>
+              <td>{{ log.retorno|default:'-' }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="5" class="text-center text-muted py-3">Nenhum envio registrado até o momento.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

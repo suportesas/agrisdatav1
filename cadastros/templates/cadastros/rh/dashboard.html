@@ -22,6 +22,9 @@
   .stat-card.success {
     border-left-color: #10b981;
   }
+  .stat-card.critical {
+    border-left-color: #991b1b;
+  }
   .stat-number {
     font-size: 2.5rem;
     font-weight: bold;
@@ -46,10 +49,32 @@ document.addEventListener('DOMContentLoaded', function() {
     const afastamentosAlert = document.getElementById('afastamentos-alert');
     if (afastamentosAlert) afastamentosAlert.style.display = 'none';
   }
+
+  const experienciasDismissTime = localStorage.getItem('experienciasDismissTime');
+  const temporariosDismissTime = localStorage.getItem('temporariosDismissTime');
+  const laudosDismissTime = localStorage.getItem('laudosDismissTime');
+
+  if (experienciasDismissTime && (now - experienciasDismissTime) < 24 * 60 * 60 * 1000) {
+    const experienciasAlert = document.getElementById('experiencias-alert');
+    if (experienciasAlert) experienciasAlert.style.display = 'none';
+  }
+
+  if (temporariosDismissTime && (now - temporariosDismissTime) < 24 * 60 * 60 * 1000) {
+    const temporariosAlert = document.getElementById('temporarios-alert');
+    if (temporariosAlert) temporariosAlert.style.display = 'none';
+  }
+
+  if (laudosDismissTime && (now - laudosDismissTime) < 24 * 60 * 60 * 1000) {
+    const laudosAlert = document.getElementById('laudos-alert');
+    if (laudosAlert) laudosAlert.style.display = 'none';
+  }
   
   // Adicionar evento para gravar quando o usuário fechar o alerta
   const feriasAlert = document.getElementById('ferias-alert');
   const afastamentosAlert = document.getElementById('afastamentos-alert');
+  const experienciasAlert = document.getElementById('experiencias-alert');
+  const temporariosAlert = document.getElementById('temporarios-alert');
+  const laudosAlert = document.getElementById('laudos-alert');
   
   if (feriasAlert) {
     feriasAlert.addEventListener('close.bs.alert', function() {
@@ -60,6 +85,24 @@ document.addEventListener('DOMContentLoaded', function() {
   if (afastamentosAlert) {
     afastamentosAlert.addEventListener('close.bs.alert', function() {
       localStorage.setItem('afastamentosDismissTime', new Date().getTime());
+    });
+  }
+
+  if (experienciasAlert) {
+    experienciasAlert.addEventListener('close.bs.alert', function() {
+      localStorage.setItem('experienciasDismissTime', new Date().getTime());
+    });
+  }
+
+  if (temporariosAlert) {
+    temporariosAlert.addEventListener('close.bs.alert', function() {
+      localStorage.setItem('temporariosDismissTime', new Date().getTime());
+    });
+  }
+
+  if (laudosAlert) {
+    laudosAlert.addEventListener('close.bs.alert', function() {
+      localStorage.setItem('laudosDismissTime', new Date().getTime());
     });
   }
 });
@@ -78,6 +121,9 @@ document.addEventListener('DOMContentLoaded', function() {
       <p class="text-muted mb-0">Visão geral de Recursos Humanos</p>
     </div>
     <div class="d-flex gap-2">
+      <a href="{% url 'cadastros:vinculo_create' %}" class="btn btn-success">
+        <i class="fas fa-id-card me-2"></i>Nova Contratação
+      </a>
       <a href="{% url 'cadastros:ferias_create' %}" class="btn btn-primary">
         <i class="fas fa-umbrella-beach me-2"></i>Cadastrar Férias
       </a>
@@ -114,6 +160,71 @@ document.addEventListener('DOMContentLoaded', function() {
       <div>
         <strong>Aviso!</strong> Existem <strong>{{ afastamentos_lista|length }}</strong> afastamentos ativos no momento.
         <a href="{% url 'cadastros:afastamento_list' %}?status=ATIVO" class="alert-link">Visualizar</a>
+      </div>
+    </div>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  </div>
+  {% endif %}
+
+  {% if vinculos_vencidos_abertos %}
+  <div class="alert alert-danger alert-dismissible fade show mb-4" id="vinculos-vencidos-alert" role="alert">
+    <div class="d-flex align-items-center">
+      <i class="fas fa-id-card me-2"></i>
+      <div>
+        <strong>Ação necessária!</strong> Existem <strong>{{ vinculos_vencidos_abertos|length }}</strong> vínculos com data prevista já vencida e ainda abertos.
+        <a href="{% url 'cadastros:vinculo_list' %}?status=ATIVO" class="alert-link">Abrir vínculos</a>
+      </div>
+    </div>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  </div>
+  {% endif %}
+
+  {% if vinculos_a_vencer %}
+  <div class="alert alert-warning alert-dismissible fade show mb-4" id="vinculos-vencer-alert" role="alert">
+    <div class="d-flex align-items-center">
+      <i class="fas fa-hourglass-half me-2"></i>
+      <div>
+        <strong>Aviso!</strong> Existem <strong>{{ vinculos_a_vencer|length }}</strong> vínculos para vencer nos próximos 15 dias.
+        <a href="{% url 'cadastros:vinculo_list' %}" class="alert-link">Visualizar</a>
+      </div>
+    </div>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  </div>
+  {% endif %}
+
+  {% if experiencias_vencendo %}
+  <div class="alert alert-info alert-dismissible fade show mb-4" id="experiencias-alert" role="alert">
+    <div class="d-flex align-items-center">
+      <i class="fas fa-user-clock me-2"></i>
+      <div>
+        <strong>Aviso!</strong> Existem <strong>{{ total_experiencias_vencendo }}</strong> experiências vencendo nos próximos 30 dias.
+        <a href="{% url 'cadastros:vinculo_list' %}" class="alert-link">Visualizar vínculos</a>
+      </div>
+    </div>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  </div>
+  {% endif %}
+
+  {% if contratos_temporarios_vencendo %}
+  <div class="alert alert-warning alert-dismissible fade show mb-4" id="temporarios-alert" role="alert">
+    <div class="d-flex align-items-center">
+      <i class="fas fa-hourglass-end me-2"></i>
+      <div>
+        <strong>Atenção!</strong> Existem <strong>{{ total_contratos_temporarios_vencendo }}</strong> contratos temporários/safra vencendo em 15 dias.
+        <a href="{% url 'cadastros:vinculo_list' %}" class="alert-link">Abrir vínculos</a>
+      </div>
+    </div>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  </div>
+  {% endif %}
+
+  {% if laudos_vencendo %}
+  <div class="alert alert-danger alert-dismissible fade show mb-4" id="laudos-alert" role="alert">
+    <div class="d-flex align-items-center">
+      <i class="fas fa-file-shield me-2"></i>
+      <div>
+        <strong>Ação preventiva!</strong> Existem <strong>{{ total_laudos_vencendo }}</strong> laudos de insalubridade/periculosidade vencendo.
+        <a href="{% url 'cadastros:laudo_list' %}" class="alert-link">Abrir laudos</a>
       </div>
     </div>
     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
@@ -195,6 +306,104 @@ document.addEventListener('DOMContentLoaded', function() {
           <a href="{% url 'cadastros:afastamento_list' %}?status=ATIVO" class="btn btn-sm btn-link p-0 mt-2">
             Ver todos <i class="fas fa-arrow-right ms-1"></i>
           </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Vínculos Ativos -->
+    <div class="col-md-3">
+      <div class="card stat-card success">
+        <div class="card-body">
+          <div class="d-flex align-items-center justify-content-between">
+            <div>
+              <p class="text-muted mb-1">Vínculos Ativos</p>
+              <h2 class="stat-number text-success mb-0">{{ vinculos_ativos }}</h2>
+            </div>
+            <div class="bg-success bg-opacity-10 p-3 rounded">
+              <i class="fas fa-id-card fa-2x text-success"></i>
+            </div>
+          </div>
+          <a href="{% url 'cadastros:vinculo_list' %}?status=ATIVO" class="btn btn-sm btn-link p-0 mt-2">
+            Ver vínculos <i class="fas fa-arrow-right ms-1"></i>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-3">
+      <div class="card stat-card {% if experiencias_status.overdue > 0 %}critical{% elif experiencias_status.urgent > 0 %}danger{% else %}warning{% endif %}">
+        <div class="card-body">
+          <div class="d-flex align-items-center justify-content-between">
+            <div>
+              <p class="text-muted mb-1">Experiências em 30 Dias</p>
+              <h2 class="stat-number {% if experiencias_status.overdue > 0 %}text-danger{% elif experiencias_status.urgent > 0 %}text-danger{% else %}text-warning{% endif %} mb-0">{{ total_experiencias_vencendo }}</h2>
+            </div>
+            <div class="{% if experiencias_status.overdue > 0 or experiencias_status.urgent > 0 %}bg-danger{% else %}bg-warning{% endif %} bg-opacity-10 p-3 rounded">
+              <i class="fas fa-user-clock fa-2x {% if experiencias_status.overdue > 0 or experiencias_status.urgent > 0 %}text-danger{% else %}text-warning{% endif %}"></i>
+            </div>
+          </div>
+          <div class="small mt-2 text-muted">
+            {% if experiencias_status.overdue > 0 %}{{ experiencias_status.overdue }} vencida(s){% endif %}
+            {% if experiencias_status.urgent > 0 %}{% if experiencias_status.overdue > 0 %} • {% endif %}{{ experiencias_status.urgent }} em até 7 dias{% endif %}
+            {% if experiencias_status.warning > 0 %}{% if experiencias_status.overdue > 0 or experiencias_status.urgent > 0 %} • {% endif %}{{ experiencias_status.warning }} até 30 dias{% endif %}
+          </div>
+          <a href="{% url 'cadastros:vinculo_list' %}" class="btn btn-sm btn-link p-0 mt-2">
+            Ver experiências <i class="fas fa-arrow-right ms-1"></i>
+          </a>
+          <div class="mt-2">
+            <a href="{% url 'cadastros:vinculo_list' %}" class="btn btn-sm btn-outline-warning">Regularizar agora</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-3">
+      <div class="card stat-card {% if temporarios_status.overdue > 0 %}critical{% elif temporarios_status.urgent > 0 %}danger{% else %}warning{% endif %}">
+        <div class="card-body">
+          <div class="d-flex align-items-center justify-content-between">
+            <div>
+              <p class="text-muted mb-1">Temporários em 15 Dias</p>
+              <h2 class="stat-number text-danger mb-0">{{ total_contratos_temporarios_vencendo }}</h2>
+            </div>
+            <div class="bg-danger bg-opacity-10 p-3 rounded">
+              <i class="fas fa-hourglass-end fa-2x text-danger"></i>
+            </div>
+          </div>
+          <div class="small mt-2 text-muted">
+            {% if temporarios_status.overdue > 0 %}{{ temporarios_status.overdue }} vencido(s){% endif %}
+            {% if temporarios_status.urgent > 0 %}{% if temporarios_status.overdue > 0 %} • {% endif %}{{ temporarios_status.urgent }} em até 7 dias{% endif %}
+            {% if temporarios_status.warning > 0 %}{% if temporarios_status.overdue > 0 or temporarios_status.urgent > 0 %} • {% endif %}{{ temporarios_status.warning }} até 15 dias{% endif %}
+          </div>
+          <a href="{% url 'cadastros:vinculo_list' %}" class="btn btn-sm btn-link p-0 mt-2">
+            Ver contratos <i class="fas fa-arrow-right ms-1"></i>
+          </a>
+          <div class="mt-2">
+            <a href="{% url 'cadastros:vinculo_list' %}" class="btn btn-sm btn-outline-danger">Tratar contratos</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-3">
+      <div class="card stat-card {% if laudos_status.overdue > 0 %}critical{% elif laudos_status.urgent > 0 %}danger{% else %}warning{% endif %}">
+        <div class="card-body">
+          <div class="d-flex align-items-center justify-content-between">
+            <div>
+              <p class="text-muted mb-1">Laudos Vencendo</p>
+              <h2 class="stat-number text-danger mb-0">{{ total_laudos_vencendo }}</h2>
+            </div>
+            <div class="bg-danger bg-opacity-10 p-3 rounded">
+              <i class="fas fa-file-shield fa-2x text-danger"></i>
+            </div>
+          </div>
+          <div class="small mt-2 text-muted">
+            {% if laudos_status.overdue > 0 %}{{ laudos_status.overdue }} vencido(s){% endif %}
+            {% if laudos_status.urgent > 0 %}{% if laudos_status.overdue > 0 %} • {% endif %}{{ laudos_status.urgent }} em até 7 dias{% endif %}
+            {% if laudos_status.warning > 0 %}{% if laudos_status.overdue > 0 or laudos_status.urgent > 0 %} • {% endif %}{{ laudos_status.warning }} até 30 dias{% endif %}
+          </div>
+          <div class="mt-2">
+            <a href="{% url 'cadastros:laudo_list' %}" class="btn btn-sm btn-outline-danger">Revisar laudos</a>
+          </div>
         </div>
       </div>
     </div>
@@ -286,6 +495,133 @@ document.addEventListener('DOMContentLoaded', function() {
         <div class="card-footer text-center">
           <a href="{% url 'cadastros:afastamento_list' %}" class="btn btn-sm btn-outline-danger">
             Ver todos os afastamentos <i class="fas fa-arrow-right ms-1"></i>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header bg-info text-white">
+          <h5 class="mb-0">
+            <i class="fas fa-user-clock me-2"></i>
+            Experiências Vencendo em 30 Dias
+          </h5>
+        </div>
+        <div class="card-body p-0">
+          {% if experiencias_vencendo %}
+          <div class="list-group list-group-flush">
+            {% for vinculo in experiencias_vencendo %}
+            <a href="{% url 'cadastros:vinculo_detail' vinculo.pk %}" class="list-group-item list-group-item-action">
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  <h6 class="mb-1">{{ vinculo.funcionario.nome_completo }}</h6>
+                  <p class="mb-0 text-muted small">
+                    {{ vinculo.funcao.nome|default:'Sem função' }} | Fim da experiência: {{ vinculo.data_fim_experiencia|date:"d/m/Y" }}
+                  </p>
+                </div>
+                <span class="badge {{ vinculo.deadline_badge_class }} {% if vinculo.deadline_badge_class == 'text-bg-warning' %}text-dark{% endif %}">
+                  <i class="{{ vinculo.deadline_icon }} me-1"></i>{{ vinculo.deadline_label }}
+                </span>
+              </div>
+            </a>
+            {% endfor %}
+          </div>
+          {% else %}
+          <div class="p-4 text-center text-muted">
+            <i class="fas fa-check-circle fa-3x mb-3"></i>
+            <p>Nenhuma experiência vence nos próximos 30 dias</p>
+          </div>
+          {% endif %}
+        </div>
+        <div class="card-footer text-center">
+          <a href="{% url 'cadastros:vinculo_list' %}" class="btn btn-sm btn-outline-info">
+            Ver todas as experiências <i class="fas fa-arrow-right ms-1"></i>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header bg-warning text-dark">
+          <h5 class="mb-0">
+            <i class="fas fa-hourglass-end me-2"></i>
+            Contratos Temporários/Safra em 15 Dias
+          </h5>
+        </div>
+        <div class="card-body p-0">
+          {% if contratos_temporarios_vencendo %}
+          <div class="list-group list-group-flush">
+            {% for vinculo in contratos_temporarios_vencendo %}
+            <a href="{% url 'cadastros:vinculo_detail' vinculo.pk %}" class="list-group-item list-group-item-action">
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  <h6 class="mb-1">{{ vinculo.funcionario.nome_completo }}</h6>
+                  <p class="mb-0 text-muted small">
+                    {{ vinculo.funcao.nome|default:'Sem função' }} | Fim previsto: {{ vinculo.data_fim_prevista|date:"d/m/Y" }}
+                  </p>
+                </div>
+                <span class="badge {{ vinculo.deadline_badge_class }} {% if vinculo.deadline_badge_class == 'text-bg-warning' %}text-dark{% endif %}">
+                  <i class="{{ vinculo.deadline_icon }} me-1"></i>{{ vinculo.deadline_label }}
+                </span>
+              </div>
+            </a>
+            {% endfor %}
+          </div>
+          {% else %}
+          <div class="p-4 text-center text-muted">
+            <i class="fas fa-check-circle fa-3x mb-3"></i>
+            <p>Nenhum contrato temporário/safra vence em 15 dias</p>
+          </div>
+          {% endif %}
+        </div>
+        <div class="card-footer text-center">
+          <a href="{% url 'cadastros:vinculo_list' %}" class="btn btn-sm btn-outline-warning">
+            Ver contratos temporários <i class="fas fa-arrow-right ms-1"></i>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header bg-danger text-white">
+          <h5 class="mb-0">
+            <i class="fas fa-file-shield me-2"></i>
+            Laudos de Insalubridade/Periculosidade Vencendo
+          </h5>
+        </div>
+        <div class="card-body p-0">
+          {% if laudos_vencendo %}
+          <div class="list-group list-group-flush">
+            {% for laudo in laudos_vencendo %}
+            <a href="{% url 'cadastros:laudo_detail' laudo.pk %}" class="list-group-item list-group-item-action">
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  <h6 class="mb-1">{{ laudo.funcao.nome }} - {{ laudo.get_tipo_laudo_display }}</h6>
+                  <p class="mb-0 text-muted small">
+                    Validade: {{ laudo.data_validade|date:"d/m/Y" }}
+                    {% if laudo.vinculo %}| {{ laudo.vinculo.funcionario.nome_completo }}{% endif %}
+                  </p>
+                </div>
+                <span class="badge {{ laudo.deadline_badge_class }} {% if laudo.deadline_badge_class == 'text-bg-warning' %}text-dark{% endif %}">
+                  <i class="{{ laudo.deadline_icon }} me-1"></i>{{ laudo.deadline_label }}
+                </span>
+              </div>
+            </a>
+            {% endfor %}
+          </div>
+          {% else %}
+          <div class="p-4 text-center text-muted">
+            <i class="fas fa-check-circle fa-3x mb-3"></i>
+            <p>Nenhum laudo vence nos próximos 30 dias</p>
+          </div>
+          {% endif %}
+        </div>
+        <div class="card-footer text-center">
+          <a href="{% url 'cadastros:laudo_list' %}" class="btn btn-sm btn-outline-danger">
+            Ver laudos <i class="fas fa-arrow-right ms-1"></i>
           </a>
         </div>
       </div>

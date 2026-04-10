@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+
+{% block title %}Excluir Item de Risco | ERP Agrícola{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-6">
+      <div class="card shadow-sm border-danger">
+        <div class="card-header bg-danger text-white">
+          <h5 class="mb-0">Excluir Item de Catálogo</h5>
+        </div>
+        <div class="card-body">
+          <p class="mb-1">Confirma a exclusão deste item?</p>
+          <p class="fw-semibold">{{ item.categoria.nome }} - {{ item.nome }}</p>
+
+          <form method="post" class="d-flex justify-content-between border-top pt-3 mt-3">
+            {% csrf_token %}
+            <a href="{% url 'cadastros:risco_ambiental_catalogo_list' %}" class="btn btn-outline-secondary">Cancelar</a>
+            <button type="submit" class="btn btn-danger">Excluir</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

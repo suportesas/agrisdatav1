@@ -1,0 +1,367 @@
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+
+{% block title %}{{ title }} | ERP Agrícola{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-10">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+          <h1 class="h3 mb-1"><i class="fas fa-file-signature me-2 text-primary"></i>{{ title }}</h1>
+          <p class="text-muted mb-0">Registre os exames obrigatórios e o destino da solicitação</p>
+        </div>
+        <a href="{% url 'cadastros:aso_solicitacao_list' %}" class="btn btn-outline-secondary">
+          <i class="fas fa-arrow-left me-2"></i>Voltar
+        </a>
+      </div>
+
+      <form method="post">
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+        <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+        {% endif %}
+
+        <div class="card mb-3">
+          <div class="card-header bg-primary text-white"><strong>Dados da Solicitação</strong></div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-md-5">
+                <label class="form-label">{{ form.funcionario.label }} <span class="text-danger">*</span></label>
+                {{ form.funcionario|add_class:'form-select' }}
+                {% if form.funcionario.errors %}<div class="text-danger small">{{ form.funcionario.errors }}</div>{% endif %}
+              </div>
+
+              <div class="col-12">
+                <div class="card border-warning-subtle bg-warning bg-opacity-10">
+                  <div class="card-body py-3">
+                    <h6 class="fw-semibold mb-2">
+                      <i class="fas fa-triangle-exclamation me-1"></i> Riscos Ambientais da Função
+                    </h6>
+                    <div id="riscosAmbientaisWrapper">
+                      {% if riscos_ambientais_funcao %}
+                      <div class="table-responsive">
+                        <table class="table table-sm table-bordered align-middle mb-0">
+                          <thead class="table-light">
+                            <tr>
+                              <th>Categoria</th>
+                              <th>Agente</th>
+                              <th>Intensidade</th>
+                              <th>EPI</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {% for risco in riscos_ambientais_funcao %}
+                            <tr>
+                              <td>{{ risco.categoria.nome }}</td>
+                              <td>{{ risco.agente_especifico }}</td>
+                              <td>{{ risco.get_intensidade_display }}</td>
+                              <td>{{ risco.epi_obrigatorio|default:'-' }}</td>
+                            </tr>
+                            {% endfor %}
+                          </tbody>
+                        </table>
+                      </div>
+                      {% else %}
+                      <div class="text-muted small">Nenhum risco ambiental cadastrado para a função do funcionário selecionado.</div>
+                      {% endif %}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">{{ form.vinculo.label }}</label>
+                {{ form.vinculo|add_class:'form-select' }}
+                {% if form.vinculo.errors %}<div class="text-danger small">{{ form.vinculo.errors }}</div>{% endif %}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">{{ form.tipo_aso.label }} <span class="text-danger">*</span></label>
+                {{ form.tipo_aso|add_class:'form-select' }}
+                {% if form.tipo_aso.errors %}<div class="text-danger small">{{ form.tipo_aso.errors }}</div>{% endif %}
+              </div>
+
+              <div class="col-md-4">
+                <label class="form-label">{{ form.data_solicitacao.label }}</label>
+                {{ form.data_solicitacao|add_class:'form-control' }}
+                {% if form.data_solicitacao.errors %}<div class="text-danger small">{{ form.data_solicitacao.errors }}</div>{% endif %}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">{{ form.data_prevista_exame.label }} <span class="text-danger">*</span></label>
+                {{ form.data_prevista_exame|add_class:'form-control' }}
+                {% if form.data_prevista_exame.errors %}<div class="text-danger small">{{ form.data_prevista_exame.errors }}</div>{% endif %}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">{{ form.data_vencimento.label }}</label>
+                {{ form.data_vencimento|add_class:'form-control' }}
+                {% if form.data_vencimento.errors %}<div class="text-danger small">{{ form.data_vencimento.errors }}</div>{% endif %}
+              </div>
+
+              <div class="col-md-5">
+                <label class="form-label">{{ form.laboratorio_nome.label }}</label>
+                <div class="position-relative">
+                  <input type="text"
+                         id="busca_laboratorio_input"
+                         class="form-control"
+                         autocomplete="off"
+                         placeholder="Digite para buscar fornecedor..."
+                         value="{{ form.laboratorio_nome.value|default:'' }}">
+                  <input type="hidden"
+                         id="{{ form.laboratorio_nome.id_for_label }}"
+                         name="{{ form.laboratorio_nome.html_name }}"
+                         value="{{ form.laboratorio_nome.value|default:'' }}">
+                  <ul id="busca_laboratorio_dropdown"
+                      class="list-group position-absolute w-100 shadow-sm d-none"
+                      style="top:100%;left:0;max-height:220px;overflow-y:auto;z-index:1050;"></ul>
+                </div>
+                {% if form.laboratorio_nome.errors %}<div class="text-danger small">{{ form.laboratorio_nome.errors }}</div>{% endif %}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">{{ form.laboratorio_email.label }}</label>
+                {{ form.laboratorio_email|add_class:'form-control' }}
+                {% if form.laboratorio_email.errors %}<div class="text-danger small">{{ form.laboratorio_email.errors }}</div>{% endif %}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">{{ form.trabalhador_whatsapp.label }}</label>
+                {{ form.trabalhador_whatsapp|add_class:'form-control' }}
+                {% if form.trabalhador_whatsapp.errors %}<div class="text-danger small">{{ form.trabalhador_whatsapp.errors }}</div>{% endif %}
+              </div>
+
+              <div class="col-md-8">
+                <label class="form-label">{{ form.exames.label }} <span class="text-danger">*</span></label>
+                {{ form.exames|add_class:'form-select' }}
+                <small class="text-muted">Use Ctrl para selecionar mais de um exame.</small>
+                {% if form.exames.errors %}<div class="text-danger small">{{ form.exames.errors }}</div>{% endif %}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">{{ form.status.label }}</label>
+                {{ form.status|add_class:'form-select' }}
+                {% if form.status.errors %}<div class="text-danger small">{{ form.status.errors }}</div>{% endif %}
+
+                <div class="form-check mt-3" id="bloco_alerta_vencimento">
+                  {{ form.gerar_alerta_vencimento|add_class:'form-check-input' }}
+                  <label class="form-check-label" for="{{ form.gerar_alerta_vencimento.id_for_label }}">{{ form.gerar_alerta_vencimento.label }}</label>
+                </div>
+                <label class="form-label mt-2">{{ form.dias_antecedencia_alerta.label }}</label>
+                {{ form.dias_antecedencia_alerta|add_class:'form-control' }}
+                {% if form.dias_antecedencia_alerta.errors %}<div class="text-danger small">{{ form.dias_antecedencia_alerta.errors }}</div>{% endif %}
+
+                <div id="bloco_periodicidade_meses">
+                  <label class="form-label mt-2">{{ form.periodicidade_meses.label }}</label>
+                  {{ form.periodicidade_meses|add_class:'form-control' }}
+                  <small class="text-muted">Intervalo de renovação automática (ex: 12 = anual, 6 = semestral).</small>
+                  {% if form.periodicidade_meses.errors %}<div class="text-danger small">{{ form.periodicidade_meses.errors }}</div>{% endif %}
+                </div>
+              </div>
+
+              <div class="col-12">
+                <div class="form-check mb-2">
+                  {{ form.possui_outros_exames|add_class:'form-check-input' }}
+                  <label class="form-check-label" for="{{ form.possui_outros_exames.id_for_label }}">{{ form.possui_outros_exames.label }}</label>
+                </div>
+                <label class="form-label">{{ form.outros_exames_descricao.label }}</label>
+                {{ form.outros_exames_descricao|add_class:'form-control' }}
+                {% if form.outros_exames_descricao.errors %}<div class="text-danger small">{{ form.outros_exames_descricao.errors }}</div>{% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-end gap-2">
+          <a href="{% url 'cadastros:aso_solicitacao_list' %}" class="btn btn-outline-secondary">Cancelar</a>
+          <button type="submit" class="btn btn-primary">Salvar Solicitação</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const funcionarioSelect = document.getElementById('id_funcionario');
+  const riscosWrapper = document.getElementById('riscosAmbientaisWrapper');
+  const tipoAsoSelect = document.getElementById('id_tipo_aso');
+  const statusSelect = document.getElementById('id_status');
+  const alertaInput = document.getElementById('id_gerar_alerta_vencimento');
+  const periodicidadeInput = document.getElementById('id_periodicidade_meses');
+  const blocoAlerta = document.getElementById('bloco_alerta_vencimento');
+  const blocoPeriodicidade = document.getElementById('bloco_periodicidade_meses');
+
+  function renderRiscos(riscos) {
+    if (!riscos || !riscos.length) {
+      riscosWrapper.innerHTML = '<div class="text-muted small">Nenhum risco ambiental cadastrado para a função do funcionário selecionado.</div>';
+      return;
+    }
+
+    const rows = riscos.map((risco) => `
+      <tr>
+        <td>${risco.categoria}</td>
+        <td>${risco.agente}</td>
+        <td>${risco.intensidade}</td>
+        <td>${risco.epi}</td>
+      </tr>
+    `).join('');
+
+    riscosWrapper.innerHTML = `
+      <div class="table-responsive">
+        <table class="table table-sm table-bordered align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Categoria</th>
+              <th>Agente</th>
+              <th>Intensidade</th>
+              <th>EPI</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  async function carregarRiscosPorFuncionario() {
+    const funcionarioId = funcionarioSelect ? funcionarioSelect.value : '';
+    if (!funcionarioId) {
+      renderRiscos([]);
+      return;
+    }
+
+    try {
+      const url = `{% url 'cadastros:aso_funcionario_riscos' 0 %}`.replace('/0/', `/${funcionarioId}/`);
+      const response = await fetch(url);
+      const data = await response.json();
+      if (!response.ok || !data.ok) {
+        renderRiscos([]);
+        return;
+      }
+      renderRiscos(data.riscos || []);
+    } catch (error) {
+      renderRiscos([]);
+    }
+  }
+
+  function aplicarRegraDemissionalConcluido() {
+    const bloquear = Boolean(
+      tipoAsoSelect
+      && statusSelect
+      && tipoAsoSelect.value === 'DEMISSIONAL'
+      && statusSelect.value === 'CONCLUIDO'
+    );
+
+    if (alertaInput) {
+      if (bloquear) {
+        alertaInput.checked = false;
+      }
+      alertaInput.disabled = bloquear;
+    }
+
+    if (periodicidadeInput) {
+      if (bloquear && !periodicidadeInput.value) {
+        periodicidadeInput.value = '12';
+      }
+      periodicidadeInput.disabled = bloquear;
+      periodicidadeInput.required = !bloquear;
+    }
+
+    if (blocoAlerta) {
+      blocoAlerta.classList.toggle('d-none', bloquear);
+    }
+
+    if (blocoPeriodicidade) {
+      blocoPeriodicidade.classList.toggle('d-none', bloquear);
+    }
+  }
+
+  if (funcionarioSelect) {
+    funcionarioSelect.addEventListener('change', carregarRiscosPorFuncionario);
+  }
+
+  if (tipoAsoSelect) {
+    tipoAsoSelect.addEventListener('change', aplicarRegraDemissionalConcluido);
+  }
+
+  if (statusSelect) {
+    statusSelect.addEventListener('change', aplicarRegraDemissionalConcluido);
+  }
+
+  aplicarRegraDemissionalConcluido();
+
+  // === Autocomplete Laboratório ===
+  const buscaLabInput = document.getElementById('busca_laboratorio_input');
+  const laboratorioNomeHidden = document.getElementById('id_laboratorio_nome');
+  const laboratorioEmailInput = document.getElementById('id_laboratorio_email');
+  const labDropdown = document.getElementById('busca_laboratorio_dropdown');
+  const urlBuscarLab = "{% url 'cadastros:aso_buscar_laboratorio' %}";
+  let labDebounce = null;
+
+  function fecharLabDropdown() {
+    if (labDropdown) labDropdown.classList.add('d-none');
+  }
+
+  function selecionarLaboratorio(label, email) {
+    if (buscaLabInput) buscaLabInput.value = label;
+    if (laboratorioNomeHidden) laboratorioNomeHidden.value = label;
+    if (laboratorioEmailInput && email) laboratorioEmailInput.value = email;
+    fecharLabDropdown();
+  }
+
+  if (buscaLabInput) {
+    buscaLabInput.addEventListener('input', function () {
+      clearTimeout(labDebounce);
+      const q = buscaLabInput.value.trim();
+      if (!q) {
+        fecharLabDropdown();
+        if (laboratorioNomeHidden) laboratorioNomeHidden.value = '';
+        return;
+      }
+      labDebounce = setTimeout(async () => {
+        try {
+          const resp = await fetch(`${urlBuscarLab}?q=${encodeURIComponent(q)}`);
+          const data = await resp.json();
+          if (!data.ok || !data.results.length) { fecharLabDropdown(); return; }
+          labDropdown.innerHTML = data.results.map(r => {
+            const cidade = r.cidade
+              ? `<br><small class="text-muted">Cidade: ${r.cidade}</small>`
+              : '';
+            const sub = r.label !== r.nome_completo
+              ? `<br><small class="text-muted">${r.nome_completo}</small>${cidade}`
+              : cidade;
+            return `<li class="list-group-item list-group-item-action py-2 px-3"
+                        style="cursor:pointer"
+                        data-label="${r.label.replace(/"/g,'&quot;')}"
+                        data-email="${(r.email||'').replace(/"/g,'&quot;')}">
+                      <span class="fw-semibold">${r.label}</span>${sub}
+                    </li>`;
+          }).join('');
+          labDropdown.querySelectorAll('li').forEach(li => {
+            li.addEventListener('click', function () {
+              selecionarLaboratorio(li.dataset.label, li.dataset.email);
+            });
+          });
+          labDropdown.classList.remove('d-none');
+        } catch (_) { fecharLabDropdown(); }
+      }, 280);
+    });
+
+    buscaLabInput.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') fecharLabDropdown();
+    });
+  }
+
+  document.addEventListener('click', function (e) {
+    if (
+      buscaLabInput && !buscaLabInput.contains(e.target) &&
+      labDropdown && !labDropdown.contains(e.target)
+    ) {
+      fecharLabDropdown();
+      if (laboratorioNomeHidden && buscaLabInput) {
+        laboratorioNomeHidden.value = buscaLabInput.value;
+      }
+    }
+  });
+});
+</script>
+{% endblock %}

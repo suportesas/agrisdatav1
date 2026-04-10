@@ -69,14 +69,21 @@
       </div>
       <div class="card-body p-4">
         <div class="row g-3">
-          <div class="col-md-8">
+          <div class="col-md-6">
             <label class="form-label fw-semibold">Nome Completo *</label>
             {{ form.nome_completo }}
             {% if form.nome_completo.errors %}
               <div class="text-danger small">{{ form.nome_completo.errors|striptags }}</div>
             {% endif %}
           </div>
-          <div class="col-md-4">
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Código da Matrícula</label>
+            {{ form.matricula }}
+            {% if form.matricula.errors %}
+              <div class="text-danger small">{{ form.matricula.errors|striptags }}</div>
+            {% endif %}
+          </div>
+          <div class="col-md-3">
             <label class="form-label fw-semibold">CPF *</label>
             {{ form.cpf }}
             {% if form.cpf.errors %}
@@ -445,7 +452,7 @@
 
 <!-- Modal: Nova Função -->
 <div class="modal fade" id="modalNovaFuncao" tabindex="-1">
-  <div class="modal-dialog">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
     <div class="modal-content">
       <div class="modal-header bg-success text-white">
         <h5 class="modal-title"><i class="bi bi-plus-circle"></i> Cadastrar Nova Função</h5>
@@ -464,18 +471,78 @@
             <label class="form-label fw-semibold">Descrição</label>
             {{ form_funcao.descricao }}
           </div>
-          <div class="mb-3">
-            <label class="form-label fw-semibold">Salário Base (R$)</label>
-            <div class="input-group">
-              <span class="input-group-text">R$</span>
-              {{ form_funcao.salario_base }}
+          <div class="row g-3">
+            <div class="col-md-8">
+              <label class="form-label fw-semibold">Salário Base (R$)</label>
+              <div class="input-group">
+                <span class="input-group-text">R$</span>
+                {{ form_funcao.salario_base }}
+              </div>
+            </div>
+            <div class="col-md-4 d-flex align-items-end">
+              <div class="form-check form-switch mb-2">
+                {{ form_funcao.ativa }}
+                <label class="form-check-label" for="{{ form_funcao.ativa.id_for_label }}">
+                  Função Ativa
+                </label>
+              </div>
             </div>
           </div>
-          <div class="form-check form-switch">
-            {{ form_funcao.ativa }}
-            <label class="form-check-label" for="{{ form_funcao.ativa.id_for_label }}">
-              Função Ativa
-            </label>
+
+          <hr>
+
+          <div class="card border-warning-subtle bg-warning bg-opacity-10 mb-3">
+            <div class="card-body">
+              <div class="form-check form-switch mb-3">
+                {{ form_funcao.possui_insalubridade }}
+                <label class="form-check-label fw-semibold" for="{{ form_funcao.possui_insalubridade.id_for_label }}">
+                  Possui insalubridade?
+                </label>
+              </div>
+              <div id="modal_grau_insalubridade_wrapper">
+                <label class="form-label fw-semibold" for="{{ form_funcao.grau_insalubridade.id_for_label }}">Grau de Insalubridade</label>
+                {{ form_funcao.grau_insalubridade }}
+              </div>
+            </div>
+          </div>
+
+          <div class="card border-danger-subtle bg-danger bg-opacity-10 mb-3">
+            <div class="card-body">
+              <div class="form-check form-switch mb-3">
+                {{ form_funcao.possui_periculosidade }}
+                <label class="form-check-label fw-semibold" for="{{ form_funcao.possui_periculosidade.id_for_label }}">
+                  Possui periculosidade?
+                </label>
+              </div>
+              <div id="modal_percentual_periculosidade_wrapper">
+                <label class="form-label fw-semibold" for="{{ form_funcao.percentual_periculosidade.id_for_label }}">Percentual de Periculosidade (%)</label>
+                <div class="input-group">
+                  {{ form_funcao.percentual_periculosidade }}
+                  <span class="input-group-text">%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card border-info-subtle bg-info bg-opacity-10">
+            <div class="card-body">
+              <div class="form-check form-switch mb-3">
+                {{ form_funcao.requer_laudo }}
+                <label class="form-check-label fw-semibold" for="{{ form_funcao.requer_laudo.id_for_label }}">
+                  Requer laudo técnico?
+                </label>
+              </div>
+              <div id="modal_laudo_wrapper">
+                <div class="mb-3">
+                  <label class="form-label fw-semibold" for="{{ form_funcao.validade_laudo.id_for_label }}">Validade do Laudo</label>
+                  {{ form_funcao.validade_laudo }}
+                </div>
+                <div>
+                  <label class="form-label fw-semibold" for="{{ form_funcao.observacoes_risco.id_for_label }}">Observações sobre Riscos</label>
+                  {{ form_funcao.observacoes_risco }}
+                </div>
+              </div>
+            </div>
           </div>
         </form>
       </div>

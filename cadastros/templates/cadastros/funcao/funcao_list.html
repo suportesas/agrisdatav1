@@ -27,9 +27,14 @@
       </p>
       {% endif %}
     </div>
-    <a href="{% url 'cadastros:funcao_create' %}" class="btn btn-primary btn-lg">
-      <i class="bi bi-plus-circle"></i> Nova Função
-    </a>
+    <div class="d-flex gap-2">
+      <a href="{% url 'cadastros:risco_ambiental_catalogo_list' %}" class="btn btn-outline-secondary btn-lg">
+        <i class="bi bi-shield-exclamation"></i> Catálogo de Riscos
+      </a>
+      <a href="{% url 'cadastros:funcao_create' %}" class="btn btn-primary btn-lg">
+        <i class="bi bi-plus-circle"></i> Nova Função
+      </a>
+    </div>
   </div>
 
   <!-- Alert Multi-tenant -->
@@ -145,6 +150,7 @@
                   </button>
                   <ul class="dropdown-menu dropdown-menu-end">
                     <li><a class="dropdown-item" href="{% url 'cadastros:funcao_update' funcao.pk %}"><i class="bi bi-pencil text-warning"></i> Editar</a></li>
+                    <li><a class="dropdown-item" href="{% url 'cadastros:laudo_list' %}?funcao={{ funcao.pk }}"><i class="bi bi-file-earmark-medical text-danger"></i> Ver laudos</a></li>
                     <li><hr class="dropdown-divider"></li>
                     <li><a class="dropdown-item text-danger" href="{% url 'cadastros:funcao_delete' funcao.pk %}" onclick="return confirm('Tem certeza que deseja excluir esta função?')"><i class="bi bi-trash"></i> Excluir</a></li>
                   </ul>

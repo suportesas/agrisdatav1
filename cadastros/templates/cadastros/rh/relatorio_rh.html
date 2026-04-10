@@ -77,6 +77,67 @@
       <div class="stat-value">{{ total_rescisoes }}</div>
       <div class="stat-label">Rescisões em Processo</div>
     </div>
+    <div class="stat-item">
+      <div class="stat-value">{{ vinculos_ativos }}</div>
+      <div class="stat-label">Vínculos Ativos</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value">{{ vinculados_com_risco }}</div>
+      <div class="stat-label">Com Risco Ocupacional</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value">{{ recontratacoes_mes }}</div>
+      <div class="stat-label">Recontratações no Mês</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value">{{ taxa_rotatividade }}%</div>
+      <div class="stat-label">Rotatividade do Mês</div>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-lg-6">
+      <div class="card h-100">
+        <div class="card-header bg-danger text-white">
+          <strong>Laudos Vencidos</strong>
+        </div>
+        <div class="card-body">
+          {% if laudos_vencidos %}
+          <ul class="mb-0">
+            {% for laudo in laudos_vencidos %}
+            <li>
+              {{ laudo.funcao.nome }} ({{ laudo.get_tipo_laudo_display }}) - vencido em {{ laudo.data_validade|date:"d/m/Y" }}
+              {% if laudo.vinculo %}- {{ laudo.vinculo.funcionario.nome_completo }}{% endif %}
+            </li>
+            {% endfor %}
+          </ul>
+          {% else %}
+          <p class="text-muted mb-0">Nenhum laudo vencido.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <div class="card h-100">
+        <div class="card-header bg-warning text-dark">
+          <strong>Laudos a Vencer em 30 Dias</strong>
+        </div>
+        <div class="card-body">
+          {% if laudos_a_vencer %}
+          <ul class="mb-0">
+            {% for laudo in laudos_a_vencer %}
+            <li>
+              {{ laudo.funcao.nome }} ({{ laudo.get_tipo_laudo_display }}) - vence em {{ laudo.data_validade|date:"d/m/Y" }}
+              {% if laudo.vinculo %}- {{ laudo.vinculo.funcionario.nome_completo }}{% endif %}
+            </li>
+            {% endfor %}
+          </ul>
+          {% else %}
+          <p class="text-muted mb-0">Nenhum laudo a vencer nos próximos 30 dias.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- Tabela Relatório -->
@@ -94,6 +155,8 @@
               <th style="width: 12%;">Férias em Gozo</th>
               <th style="width: 15%;">Afastamentos Ativos</th>
               <th style="width: 10%;">Rescisões</th>
+              <th style="width: 10%;">Vínculos</th>
+              <th style="width: 8%;">Risco</th>
               <th style="width: 6%;">Ação</th>
             </tr>
           </thead>
@@ -140,6 +203,20 @@
                 {% endif %}
               </td>
               <td>
+                {% if item.vinculos_ativos > 0 %}
+                <span class="badge bg-success">{{ item.vinculos_ativos }}</span>
+                {% else %}
+                <span class="text-muted">—</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if item.tem_risco %}
+                <span class="badge bg-danger">Sim</span>
+                {% else %}
+                <span class="badge bg-light text-dark">Não</span>
+                {% endif %}
+              </td>
+              <td>
                 <a href="{% url 'cadastros:funcionario_detail' item.funcionario.pk %}" 
                    class="btn btn-sm btn-outline-primary" title="Ver detalhes">
                   <i class="fas fa-eye"></i>
@@ -168,6 +245,8 @@
         <li><strong>Férias em Gozo:</strong> Férias que o funcionário está usufruindo no momento (status EM_GOZO)</li>
         <li><strong>Afastamentos Ativos:</strong> Afastamentos médicos, acidentes, etc. que estão em andamento (status ATIVO)</li>
         <li><strong>Rescisões:</strong> Rescisões de contrato aguardando conclusão (status EM_PROCESSO)</li>
+        <li><strong>Vínculos:</strong> Quantidade de vínculos ativos do funcionário no momento.</li>
+        <li><strong>Risco:</strong> Indica se há vínculo ativo com insalubridade ou periculosidade.</li>
       </ul>
     </div>
   </div>

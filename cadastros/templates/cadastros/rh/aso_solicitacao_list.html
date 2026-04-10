@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+
+{% block title %}Solicitações de ASO | ERP Agrícola{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h1 class="h3 mb-1"><i class="fas fa-file-medical me-2 text-primary"></i>Solicitações de ASO</h1>
+      <p class="text-muted mb-0">Controle de solicitações admissionais, periódicas, recontratação e demissionais</p>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{% url 'cadastros:tipo_exame_aso_list' %}" class="btn btn-outline-info">
+        <i class="fas fa-vial me-2"></i>Tipos de Exame
+      </a>
+      <a href="{% url 'cadastros:aso_solicitacao_create' %}" class="btn btn-primary">
+        <i class="fas fa-plus me-2"></i>Nova Solicitação
+      </a>
+    </div>
+  </div>
+
+  <div class="card mb-3">
+    <div class="card-body">
+      <form method="get" class="row g-2">
+        <div class="col-md-3">
+          <input type="text" class="form-control" name="q" value="{{ busca|default:'' }}" placeholder="Buscar por funcionário/laboratório">
+        </div>
+        <div class="col-md-2">
+          <select class="form-select" name="status">
+            <option value="">Todos os status</option>
+            <option value="RASCUNHO" {% if status_filter == 'RASCUNHO' %}selected{% endif %}>Rascunho</option>
+            <option value="ASSINADO" {% if status_filter == 'ASSINADO' %}selected{% endif %}>Assinado</option>
+            <option value="ENVIADO" {% if status_filter == 'ENVIADO' %}selected{% endif %}>Enviado</option>
+            <option value="CONCLUIDO" {% if status_filter == 'CONCLUIDO' %}selected{% endif %}>Concluído</option>
+            <option value="CANCELADO" {% if status_filter == 'CANCELADO' %}selected{% endif %}>Cancelado</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <select class="form-select" name="tipo">
+            <option value="">Todos os tipos</option>
+            <option value="ADMISSIONAL" {% if tipo_filter == 'ADMISSIONAL' %}selected{% endif %}>Admissional</option>
+            <option value="RECONTRATACAO" {% if tipo_filter == 'RECONTRATACAO' %}selected{% endif %}>Recontratação</option>
+            <option value="PERIODICO" {% if tipo_filter == 'PERIODICO' %}selected{% endif %}>Periódico</option>
+            <option value="DEMISSIONAL" {% if tipo_filter == 'DEMISSIONAL' %}selected{% endif %}>Demissional</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <select class="form-select" name="funcionario">
+            <option value="">Todos os funcionários</option>
+            {% for funcionario in funcionarios %}
+            <option value="{{ funcionario.id }}" {% if funcionario_filter == funcionario.id|stringformat:'s' %}selected{% endif %}>{{ funcionario.nome_completo }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2 d-grid">
+          <button type="submit" class="btn btn-outline-primary">Filtrar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="table-responsive">
+      <table class="table table-striped align-middle mb-0">
+        <thead>
+          <tr>
+            <th>Funcionário</th>
+            <th>Tipo</th>
+            <th>Data Solicitação</th>
+            <th>Previsto</th>
+            <th>Vencimento</th>
+            <th>Status</th>
+            <th>Exames</th>
+            <th class="text-end">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in page_obj %}
+          <tr>
+            <td>{{ item.funcionario.nome_completo }}</td>
+            <td>{{ item.get_tipo_aso_display }}</td>
+            <td>{{ item.data_solicitacao|date:'d/m/Y' }}</td>
+            <td>{{ item.data_prevista_exame|date:'d/m/Y' }}</td>
+            <td>{{ item.data_vencimento|date:'d/m/Y'|default:'-' }}</td>
+            <td>
+              {% if item.status == 'RASCUNHO' %}
+              <span class="badge bg-secondary">{{ item.get_status_display }}</span>
+              {% elif item.status == 'ASSINADO' %}
+              <span class="badge bg-info text-dark">{{ item.get_status_display }}</span>
+              {% elif item.status == 'ENVIADO' %}
+              <span class="badge bg-primary">{{ item.get_status_display }}</span>
+              {% elif item.status == 'CONCLUIDO' %}
+              <span class="badge bg-success">{{ item.get_status_display }}</span>
+              {% else %}
+              <span class="badge bg-dark">{{ item.get_status_display }}</span>
+              {% endif %}
+            </td>
+            <td>{{ item.exames.count }}</td>
+            <td class="text-end">
+              <a href="{% url 'cadastros:aso_solicitacao_detail' item.pk %}" class="btn btn-sm btn-outline-primary">Ver</a>
+              <a href="{% url 'cadastros:aso_solicitacao_update' item.pk %}" class="btn btn-sm btn-outline-warning">Editar</a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="8" class="text-center text-muted py-4">Nenhuma solicitação de ASO encontrada.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

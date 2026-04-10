@@ -182,6 +182,65 @@ def seed_tipos_produto_on_create(sender, instance, created, **kwargs):
 
 
 @receiver(post_save, sender=Empresa)
+def seed_tipos_exame_aso_on_create(sender, instance, created, **kwargs):
+    """Cria tipos de exame ASO padrão quando uma Empresa é criada."""
+    if kwargs.get('raw'):
+        return
+    if not created:
+        return
+    if getattr(instance, 'is_interna_saas', False):
+        return
+
+    try:
+        from cadastros.models import TipoExameASO
+
+        exames_padrao = [
+            ('AUDIOMETRIA', 'Audiometria', 10),
+            ('COLINESTERASE', 'Colinesterase', 20),
+            ('ESPIROMETRIA', 'Espirometria', 30),
+            ('ACUIDADE_VISUAL', 'Acuidade Visual', 40),
+            ('HEMOGRAMA', 'Hemograma', 50),
+            ('ECG', 'Eletrocardiograma (ECG)', 60),
+            ('RX_TORAX', 'Raio-X de Tórax', 70),
+            ('GLICEMIA', 'Glicemia', 80),
+            ('URINA_TIPO_1', 'Urina Tipo I', 90),
+        ]
+
+        for codigo, nome, ordem in exames_padrao:
+            TipoExameASO.objects.get_or_create(
+                empresa=instance,
+                codigo=codigo,
+                defaults={
+                    'nome': nome,
+                    'ativo': True,
+                    'ordem': ordem,
+                    'eh_padrao_sistema': True,
+                }
+            )
+    except Exception:
+        # Nao deve bloquear criacao de empresa
+        logger.exception('Falha ao seedar tipos de exame ASO para empresa %s', instance.pk)
+
+
+@receiver(post_save, sender=Empresa)
+def seed_categorias_risco_ambiental_on_create(sender, instance, created, **kwargs):
+    """Cria categorias padrão de risco ambiental quando uma empresa é criada."""
+    if kwargs.get('raw'):
+        return
+    if not created:
+        return
+    if getattr(instance, 'is_interna_saas', False):
+        return
+
+    try:
+        from cadastros.models import CategoriaRiscoAmbiental
+        CategoriaRiscoAmbiental.criar_categorias_padrao_empresa(instance)
+    except Exception:
+        # Nao deve bloquear criacao de empresa
+        logger.exception('Falha ao seedar categorias de risco ambiental para empresa %s', instance.pk)
+
+
+@receiver(post_save, sender=Empresa)
 def upload_empresa_logo(sender, instance, created, **kwargs):
     """
     Faz upload da logo para Supabase Storage quando salvar empresa

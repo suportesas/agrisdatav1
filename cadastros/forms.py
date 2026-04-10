@@ -15,7 +15,15 @@ from .models import (
     Cliente, EnderecoCliente, ContatoCliente, ContaBancariaCliente, DocumentoCliente, PrazoPagamentoPadrao
 )
 
-from .models import Funcionario, FuncaoFuncionario, DocumentoFuncionario
+from .models import (
+    Funcionario,
+    FuncaoFuncionario,
+    DocumentoFuncionario,
+    VinculoContrato,
+    CategoriaRiscoAmbiental,
+    RiscoAmbientalCatalogo,
+    RiscoAmbientalFuncao,
+)
 from django.utils import timezone
 import re
 
@@ -1198,20 +1206,161 @@ ADICIONE ESTES FORMS AO FINAL DO ARQUIVO cadastros/forms.py
 
 class FuncaoFuncionarioForm(forms.ModelForm):
     """Formulário para cadastro rápido de função"""
+
+    riscos_fisicos = forms.CharField(
+        label='Riscos Físicos',
+        required=False,
+        widget=forms.Textarea(attrs={
+            'class': 'form-control',
+            'rows': 3,
+            'placeholder': 'Um risco por linha. Ex.: Ruído acima de 85dB'
+        }),
+        help_text='Use 1 linha por risco: Agente | Intensidade | EPI. Intensidade: BAIXA, MEDIA ou ALTA.'
+    )
+
+    riscos_quimicos = forms.CharField(
+        label='Riscos Químicos',
+        required=False,
+        widget=forms.Textarea(attrs={
+            'class': 'form-control',
+            'rows': 3,
+            'placeholder': 'Um risco por linha. Ex.: Poeira orgânica'
+        }),
+        help_text='Use 1 linha por risco: Agente | Intensidade | EPI. Intensidade: BAIXA, MEDIA ou ALTA.'
+    )
+
+    riscos_biologicos = forms.CharField(
+        label='Riscos Biológicos',
+        required=False,
+        widget=forms.Textarea(attrs={
+            'class': 'form-control',
+            'rows': 3,
+            'placeholder': 'Um risco por linha. Ex.: Fungos ambientais'
+        }),
+        help_text='Use 1 linha por risco: Agente | Intensidade | EPI. Intensidade: BAIXA, MEDIA ou ALTA.'
+    )
+
+    riscos_ergonomicos = forms.CharField(
+        label='Riscos Ergonômicos',
+        required=False,
+        widget=forms.Textarea(attrs={
+            'class': 'form-control',
+            'rows': 3,
+            'placeholder': 'Um risco por linha. Ex.: Movimentos repetitivos'
+        }),
+        help_text='Use 1 linha por risco: Agente | Intensidade | EPI. Intensidade: BAIXA, MEDIA ou ALTA.'
+    )
+
+    riscos_acidentes = forms.CharField(
+        label='Riscos de Acidentes',
+        required=False,
+        widget=forms.Textarea(attrs={
+            'class': 'form-control',
+            'rows': 3,
+            'placeholder': 'Um risco por linha. Ex.: Queda de mesmo nível'
+        }),
+        help_text='Use 1 linha por risco: Agente | Intensidade | EPI. Intensidade: BAIXA, MEDIA ou ALTA.'
+    )
+
+    riscos_outros = forms.CharField(
+        label='Outros Riscos',
+        required=False,
+        widget=forms.Textarea(attrs={
+            'class': 'form-control',
+            'rows': 3,
+            'placeholder': 'Um risco por linha. Ex.: Exposição a intempéries'
+        }),
+        help_text='Use 1 linha por risco: Agente | Intensidade | EPI. Intensidade: BAIXA, MEDIA ou ALTA.'
+    )
+
+    riscos_fisicos_catalogo = forms.ModelMultipleChoiceField(
+        label='Selecionar Riscos Físicos (catálogo)',
+        required=False,
+        queryset=RiscoAmbientalCatalogo.objects.none(),
+        widget=forms.SelectMultiple(attrs={'class': 'form-select', 'size': 5}),
+    )
+
+    riscos_quimicos_catalogo = forms.ModelMultipleChoiceField(
+        label='Selecionar Riscos Químicos (catálogo)',
+        required=False,
+        queryset=RiscoAmbientalCatalogo.objects.none(),
+        widget=forms.SelectMultiple(attrs={'class': 'form-select', 'size': 5}),
+    )
+
+    riscos_biologicos_catalogo = forms.ModelMultipleChoiceField(
+        label='Selecionar Riscos Biológicos (catálogo)',
+        required=False,
+        queryset=RiscoAmbientalCatalogo.objects.none(),
+        widget=forms.SelectMultiple(attrs={'class': 'form-select', 'size': 5}),
+    )
+
+    riscos_ergonomicos_catalogo = forms.ModelMultipleChoiceField(
+        label='Selecionar Riscos Ergonômicos (catálogo)',
+        required=False,
+        queryset=RiscoAmbientalCatalogo.objects.none(),
+        widget=forms.SelectMultiple(attrs={'class': 'form-select', 'size': 5}),
+    )
+
+    riscos_acidentes_catalogo = forms.ModelMultipleChoiceField(
+        label='Selecionar Riscos de Acidentes (catálogo)',
+        required=False,
+        queryset=RiscoAmbientalCatalogo.objects.none(),
+        widget=forms.SelectMultiple(attrs={'class': 'form-select', 'size': 5}),
+    )
+
+    riscos_outros_catalogo = forms.ModelMultipleChoiceField(
+        label='Selecionar Outros Riscos (catálogo)',
+        required=False,
+        queryset=RiscoAmbientalCatalogo.objects.none(),
+        widget=forms.SelectMultiple(attrs={'class': 'form-select', 'size': 5}),
+    )
+
+    MAPA_CAMPOS_CATEGORIA = {
+        CategoriaRiscoAmbiental.CODIGO_FISICO: 'riscos_fisicos',
+        CategoriaRiscoAmbiental.CODIGO_QUIMICO: 'riscos_quimicos',
+        CategoriaRiscoAmbiental.CODIGO_BIOLOGICO: 'riscos_biologicos',
+        CategoriaRiscoAmbiental.CODIGO_ERGONOMICO: 'riscos_ergonomicos',
+        CategoriaRiscoAmbiental.CODIGO_ACIDENTES: 'riscos_acidentes',
+        CategoriaRiscoAmbiental.CODIGO_OUTROS: 'riscos_outros',
+    }
+
+    MAPA_CAMPOS_CATALOGO = {
+        CategoriaRiscoAmbiental.CODIGO_FISICO: 'riscos_fisicos_catalogo',
+        CategoriaRiscoAmbiental.CODIGO_QUIMICO: 'riscos_quimicos_catalogo',
+        CategoriaRiscoAmbiental.CODIGO_BIOLOGICO: 'riscos_biologicos_catalogo',
+        CategoriaRiscoAmbiental.CODIGO_ERGONOMICO: 'riscos_ergonomicos_catalogo',
+        CategoriaRiscoAmbiental.CODIGO_ACIDENTES: 'riscos_acidentes_catalogo',
+        CategoriaRiscoAmbiental.CODIGO_OUTROS: 'riscos_outros_catalogo',
+    }
     
     class Meta:
         model = FuncaoFuncionario
-        fields = ['nome', 'descricao', 'salario_base', 'ativa']
+        fields = [
+            'nome', 'descricao', 'salario_base', 'ativa',
+            'possui_insalubridade', 'grau_insalubridade',
+            'possui_periculosidade', 'percentual_periculosidade',
+            'requer_laudo', 'validade_laudo', 'observacoes_risco',
+        ]
         labels = {
             'nome': 'Nome da Função/Cargo',
             'descricao': 'Descrição das Atividades',
             'salario_base': 'Salário Base Sugerido (R$)',
             'ativa': 'Função Ativa',
+            'possui_insalubridade': 'Possui Insalubridade?',
+            'grau_insalubridade': 'Grau de Insalubridade',
+            'possui_periculosidade': 'Possui Periculosidade?',
+            'percentual_periculosidade': 'Percentual de Periculosidade (%)',
+            'requer_laudo': 'Requer Laudo Técnico (PPRA/LTCAT)?',
+            'validade_laudo': 'Validade do Laudo',
+            'observacoes_risco': 'Observações sobre Riscos',
         }
         help_texts = {
             'nome': 'Digite o cargo ou função (ex: Motorista, Tratorista, Colhedor)',
             'descricao': 'Descreva as principais atividades e responsabilidades',
             'salario_base': 'Valor de referência para o cargo (opcional)',
+            'grau_insalubridade': 'Preencher apenas se houver insalubridade (NR-15)',
+            'percentual_periculosidade': 'Percentual padrão conforme NR-16 é 30%',
+            'observacoes_risco': 'EPI necessários, agentes de risco, etc.',
         }
         widgets = {
             'nome': forms.TextInput(attrs={
@@ -1233,6 +1382,37 @@ class FuncaoFuncionarioForm(forms.ModelForm):
             'ativa': forms.CheckboxInput(attrs={
                 'class': 'form-check-input',
             }),
+            'possui_insalubridade': forms.CheckboxInput(attrs={
+                'class': 'form-check-input',
+                'id': 'id_possui_insalubridade',
+            }),
+            'grau_insalubridade': forms.Select(attrs={
+                'class': 'form-select',
+                'id': 'id_grau_insalubridade',
+            }),
+            'possui_periculosidade': forms.CheckboxInput(attrs={
+                'class': 'form-check-input',
+                'id': 'id_possui_periculosidade',
+            }),
+            'percentual_periculosidade': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.01',
+                'min': '0',
+                'max': '100',
+                'id': 'id_percentual_periculosidade',
+            }),
+            'requer_laudo': forms.CheckboxInput(attrs={
+                'class': 'form-check-input',
+            }),
+            'validade_laudo': forms.DateInput(attrs={
+                'class': 'form-control',
+                'type': 'date',
+            }),
+            'observacoes_risco': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'EPI necessários, agentes de risco, observações gerais...',
+            }),
         }
     
     def clean_nome(self):
@@ -1243,6 +1423,226 @@ class FuncaoFuncionarioForm(forms.ModelForm):
         if len(nome) < 3:
             raise forms.ValidationError('O nome deve ter pelo menos 3 caracteres.')
         return nome
+
+    def __init__(self, *args, **kwargs):
+        self.empresa = kwargs.pop('empresa', None)
+        super().__init__(*args, **kwargs)
+
+        self.fields['periodicidade_meses'].required = False
+
+        empresa_ref = self.empresa or getattr(self.instance, 'empresa', None)
+        self._popular_queryset_catalogo(empresa_ref)
+
+        if self.instance and self.instance.pk:
+            self._popular_campos_risco_ambiental()
+
+
+    def clean(self):
+        cleaned_data = super().clean()
+        possui_insalubridade = cleaned_data.get('possui_insalubridade')
+        grau_insalubridade = cleaned_data.get('grau_insalubridade')
+        if possui_insalubridade and not grau_insalubridade:
+            self.add_error('grau_insalubridade', 'Informe o grau de insalubridade.')
+        return cleaned_data
+
+    def save(self, commit=True):
+        funcao = super().save(commit=commit)
+
+        if commit:
+            empresa = self.empresa or funcao.empresa
+            if empresa:
+                self._salvar_riscos_ambientais(funcao, empresa)
+
+        return funcao
+
+    def _popular_campos_risco_ambiental(self):
+        riscos = self.instance.riscos_ambientais.filter(ativo=True).select_related('categoria')
+        agrupado = {campo: [] for campo in self.MAPA_CAMPOS_CATEGORIA.values()}
+        agrupado_catalogo = {campo: [] for campo in self.MAPA_CAMPOS_CATALOGO.values()}
+
+        catalogo_map = {
+            (item.categoria_id, item.nome.strip().upper()): item.id
+            for item in RiscoAmbientalCatalogo.objects.filter(
+                empresa=self.instance.empresa,
+                ativo=True,
+            ).only('id', 'categoria_id', 'nome')
+        }
+
+        for risco in riscos:
+            campo = self.MAPA_CAMPOS_CATEGORIA.get(risco.categoria.codigo)
+            if campo:
+                agrupado[campo].append(self._formatar_linha_risco(risco))
+
+            campo_catalogo = self.MAPA_CAMPOS_CATALOGO.get(risco.categoria.codigo)
+            if campo_catalogo:
+                chave_catalogo = (risco.categoria_id, (risco.agente_especifico or '').strip().upper())
+                item_id = catalogo_map.get(chave_catalogo)
+                if item_id:
+                    agrupado_catalogo[campo_catalogo].append(item_id)
+
+        for campo, itens in agrupado.items():
+            self.fields[campo].initial = '\n'.join(itens)
+
+        for campo, itens in agrupado_catalogo.items():
+            self.fields[campo].initial = itens
+
+    def _popular_queryset_catalogo(self, empresa):
+        if not empresa:
+            return
+
+        CategoriaRiscoAmbiental.criar_categorias_padrao_empresa(empresa)
+        for codigo_categoria, campo_form in self.MAPA_CAMPOS_CATALOGO.items():
+            self.fields[campo_form].queryset = RiscoAmbientalCatalogo.objects.filter(
+                empresa=empresa,
+                ativo=True,
+                categoria__codigo=codigo_categoria,
+                categoria__ativo=True,
+            ).select_related('categoria').order_by('nome')
+
+    def _salvar_riscos_ambientais(self, funcao, empresa):
+        CategoriaRiscoAmbiental.criar_categorias_padrao_empresa(empresa)
+
+        categorias = {
+            categoria.codigo: categoria
+            for categoria in CategoriaRiscoAmbiental.objects.filter(
+                empresa=empresa,
+                codigo__in=self.MAPA_CAMPOS_CATEGORIA.keys(),
+            )
+        }
+
+        for codigo_categoria, campo_form in self.MAPA_CAMPOS_CATEGORIA.items():
+            categoria = categorias.get(codigo_categoria)
+            if not categoria:
+                continue
+
+            campo_catalogo = self.MAPA_CAMPOS_CATALOGO.get(codigo_categoria)
+            riscos_catalogo = self.cleaned_data.get(campo_catalogo) if campo_catalogo else []
+            texto_riscos = (self.cleaned_data.get(campo_form) or '').strip()
+            riscos_linha = [linha.strip() for linha in texto_riscos.splitlines() if linha.strip()]
+
+            # Mantém o cadastro aderente ao formulário atual: substitui os riscos da categoria.
+            RiscoAmbientalFuncao.objects.filter(
+                funcao=funcao,
+                categoria=categoria,
+            ).delete()
+
+            riscos_normalizados = set()
+
+            for item_catalogo in riscos_catalogo or []:
+                agente_catalogo = (item_catalogo.nome or '').strip()
+                if not agente_catalogo:
+                    continue
+                chave = agente_catalogo.upper()
+                if chave in riscos_normalizados:
+                    continue
+                riscos_normalizados.add(chave)
+
+                RiscoAmbientalFuncao.objects.create(
+                    empresa=empresa,
+                    funcao=funcao,
+                    categoria=categoria,
+                    agente_especifico=agente_catalogo,
+                    intensidade=item_catalogo.intensidade_padrao or RiscoAmbientalFuncao.INTENSIDADE_MEDIA,
+                    epi_obrigatorio=(item_catalogo.epi_padrao or '').strip(),
+                    observacoes=(item_catalogo.observacoes or '').strip(),
+                    ativo=True,
+                )
+
+            for linha in riscos_linha:
+                agente, intensidade, epi = self._parse_linha_risco(linha)
+                if not agente:
+                    continue
+                chave = agente.upper()
+                if chave in riscos_normalizados:
+                    continue
+                riscos_normalizados.add(chave)
+
+                RiscoAmbientalFuncao.objects.create(
+                    empresa=empresa,
+                    funcao=funcao,
+                    categoria=categoria,
+                    agente_especifico=agente,
+                    intensidade=intensidade,
+                    epi_obrigatorio=epi,
+                    ativo=True,
+                )
+
+    def _parse_linha_risco(self, linha):
+        """Converte linha em (agente, intensidade, epi)."""
+        partes = [p.strip() for p in linha.split('|')]
+        if len(partes) == 1:
+            return partes[0], RiscoAmbientalFuncao.INTENSIDADE_MEDIA, ''
+
+        agente = partes[0]
+        intensidade_raw = (partes[1] if len(partes) > 1 else '').upper().strip()
+        intensidade_map = {
+            'BAIXA': RiscoAmbientalFuncao.INTENSIDADE_BAIXA,
+            'MEDIA': RiscoAmbientalFuncao.INTENSIDADE_MEDIA,
+            'MÉDIA': RiscoAmbientalFuncao.INTENSIDADE_MEDIA,
+            'ALTA': RiscoAmbientalFuncao.INTENSIDADE_ALTA,
+        }
+        intensidade = intensidade_map.get(intensidade_raw, RiscoAmbientalFuncao.INTENSIDADE_MEDIA)
+        epi = partes[2] if len(partes) > 2 else ''
+        return agente, intensidade, epi
+
+    def _formatar_linha_risco(self, risco):
+        """Converte risco salvo para formato editável em linha única."""
+        intensidade = risco.intensidade or RiscoAmbientalFuncao.INTENSIDADE_MEDIA
+        epi = (risco.epi_obrigatorio or '').strip()
+        if epi:
+            return f'{risco.agente_especifico} | {intensidade} | {epi}'
+        return f'{risco.agente_especifico} | {intensidade}'
+
+
+class RiscoAmbientalCatalogoForm(forms.ModelForm):
+    """Formulário do catálogo de riscos ambientais."""
+
+    class Meta:
+        model = RiscoAmbientalCatalogo
+        fields = [
+            'categoria',
+            'nome',
+            'intensidade_padrao',
+            'epi_padrao',
+            'observacoes',
+            'ativo',
+        ]
+        widgets = {
+            'categoria': forms.Select(attrs={'class': 'form-select'}),
+            'nome': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex.: Ruído acima de 85dB'}),
+            'intensidade_padrao': forms.Select(attrs={'class': 'form-select'}),
+            'epi_padrao': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex.: Protetor auricular'}),
+            'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'ativo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.empresa = kwargs.pop('empresa', None)
+        super().__init__(*args, **kwargs)
+
+        empresa_ref = self.empresa or getattr(self.instance, 'empresa', None)
+        if empresa_ref:
+            CategoriaRiscoAmbiental.criar_categorias_padrao_empresa(empresa_ref)
+            self.fields['categoria'].queryset = CategoriaRiscoAmbiental.objects.filter(
+                empresa=empresa_ref,
+                ativo=True,
+            ).order_by('nome')
+        else:
+            self.fields['categoria'].queryset = CategoriaRiscoAmbiental.objects.none()
+
+    def clean_nome(self):
+        nome = (self.cleaned_data.get('nome') or '').strip()
+        if len(nome) < 3:
+            raise ValidationError('Informe um nome com pelo menos 3 caracteres.')
+        return nome
+
+    def save(self, commit=True):
+        item = super().save(commit=False)
+        if self.empresa and not item.empresa_id:
+            item.empresa = self.empresa
+        if commit:
+            item.save()
+        return item
 
 
 class FuncionarioForm(forms.ModelForm):
@@ -1258,7 +1658,7 @@ class FuncionarioForm(forms.ModelForm):
     class Meta:
         model = Funcionario
         fields = [
-            'fazenda', 'nome_completo', 'cpf', 'rg',
+            'fazenda', 'nome_completo', 'matricula', 'cpf', 'rg',
             'data_nascimento', 'genero', 'estado_civil',
             'telefone', 'celular', 'email',
             'cep', 'endereco', 'numero', 'complemento',
@@ -1276,6 +1676,10 @@ class FuncionarioForm(forms.ModelForm):
             'nome_completo': forms.TextInput(attrs={
                 'class': 'form-control',
                 'placeholder': 'Nome completo do funcionário'
+            }),
+            'matricula': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ex: MAT-0001'
             }),
             'cpf': forms.TextInput(attrs={
                 'class': 'form-control',
@@ -1467,6 +1871,21 @@ class FuncionarioForm(forms.ModelForm):
             raise ValidationError('Este CPF já está cadastrado')
         
         return cpf_limpo
+
+    def clean_matricula(self):
+        """Valida matrícula e evita duplicidade por empresa."""
+        matricula = (self.cleaned_data.get('matricula') or '').strip()
+        if not matricula:
+            return ''
+
+        if self.empresa:
+            qs = Funcionario.objects.filter(empresa=self.empresa, matricula__iexact=matricula)
+            if self.instance.pk:
+                qs = qs.exclude(pk=self.instance.pk)
+            if qs.exists():
+                raise ValidationError('Esta matrícula já está cadastrada para a empresa.')
+
+        return matricula
     
     def save(self, commit=True):
         """Salva funcionário"""
@@ -3798,7 +4217,7 @@ class EstagioDesenvolvimentoForm(forms.ModelForm):
 # CONTROLE DE RH - FÉRIAS, AFASTAMENTOS E RESCISÕES
 # =============================================================================
 
-from .models import FeriasFuncionario, AfastamentoFuncionario, RescisaoContrato
+from .models import FeriasFuncionario, AfastamentoFuncionario, RescisaoContrato, LaudoRisco, TipoExameASO, SolicitacaoASO
 
 
 class FeriasFuncionarioForm(forms.ModelForm):
@@ -3966,13 +4385,272 @@ class AfastamentoFuncionarioForm(forms.ModelForm):
             ).order_by('nome_completo')
 
 
+class VinculoContratoForm(forms.ModelForm):
+    """Formulário de contratação/recontratação por vínculo contratual."""
+
+    class Meta:
+        model = VinculoContrato
+        fields = [
+            'funcionario', 'funcao', 'matricula', 'tipo_contrato', 'origem', 'status',
+            'data_inicio', 'data_fim_prevista', 'periodo_experiencia', 'data_fim_experiencia',
+            'salario', 'observacoes'
+        ]
+        widgets = {
+            'funcionario': forms.Select(attrs={'class': 'form-select'}),
+            'funcao': forms.Select(attrs={'class': 'form-select'}),
+            'matricula': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Matrícula do vínculo'}),
+            'tipo_contrato': forms.Select(attrs={'class': 'form-select'}),
+            'origem': forms.Select(attrs={'class': 'form-select'}),
+            'status': forms.Select(attrs={'class': 'form-select'}),
+            'data_inicio': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'data_fim_prevista': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'periodo_experiencia': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'data_fim_experiencia': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'salario': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0'}),
+            'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.empresa = kwargs.pop('empresa', None)
+        super().__init__(*args, **kwargs)
+
+        if self.empresa:
+            self.fields['funcionario'].queryset = Funcionario.objects.filter(
+                empresa=self.empresa
+            ).order_by('nome_completo')
+            self.fields['funcao'].queryset = FuncaoFuncionario.objects.filter(
+                empresa=self.empresa,
+                ativa=True
+            ).order_by('nome')
+
+    def clean(self):
+        cleaned_data = super().clean()
+        funcionario = cleaned_data.get('funcionario')
+        status = cleaned_data.get('status')
+        data_inicio = cleaned_data.get('data_inicio')
+        data_fim_prevista = cleaned_data.get('data_fim_prevista')
+
+        if data_fim_prevista and data_inicio and data_fim_prevista < data_inicio:
+            self.add_error('data_fim_prevista', 'Data fim prevista não pode ser menor que a data de início.')
+
+        if funcionario and status == 'ATIVO':
+            vinculos_ativos = VinculoContrato.objects.filter(
+                empresa=self.empresa,
+                funcionario=funcionario,
+                status='ATIVO'
+            )
+            if self.instance.pk:
+                vinculos_ativos = vinculos_ativos.exclude(pk=self.instance.pk)
+            if vinculos_ativos.exists():
+                self.add_error('status', 'Este funcionário já possui um vínculo ATIVO.')
+
+        return cleaned_data
+
+
+class LaudoRiscoForm(forms.ModelForm):
+    """Formulário para cadastro de laudos de risco ocupacional."""
+
+    class Meta:
+        model = LaudoRisco
+        fields = [
+            'funcao', 'vinculo', 'tipo_laudo', 'data_emissao', 'data_validade',
+            'responsavel_tecnico', 'numero_art', 'arquivo_laudo', 'status', 'observacoes'
+        ]
+        widgets = {
+            'funcao': forms.Select(attrs={'class': 'form-select'}),
+            'vinculo': forms.Select(attrs={'class': 'form-select'}),
+            'tipo_laudo': forms.Select(attrs={'class': 'form-select'}),
+            'data_emissao': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'data_validade': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'responsavel_tecnico': forms.TextInput(attrs={'class': 'form-control'}),
+            'numero_art': forms.TextInput(attrs={'class': 'form-control'}),
+            'arquivo_laudo': forms.FileInput(attrs={'class': 'form-control'}),
+            'status': forms.Select(attrs={'class': 'form-select'}),
+            'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.empresa = kwargs.pop('empresa', None)
+        super().__init__(*args, **kwargs)
+
+        if self.empresa:
+            self.fields['funcao'].queryset = FuncaoFuncionario.objects.filter(
+                empresa=self.empresa,
+                ativa=True,
+            ).order_by('nome')
+            self.fields['vinculo'].queryset = VinculoContrato.objects.filter(
+                empresa=self.empresa,
+                status='ATIVO',
+            ).select_related('funcionario', 'funcao').order_by('-data_inicio')
+
+        self.fields['vinculo'].required = False
+
+    def clean(self):
+        cleaned_data = super().clean()
+        funcao = cleaned_data.get('funcao')
+        vinculo = cleaned_data.get('vinculo')
+
+        if funcao and vinculo and vinculo.funcao_id != funcao.id:
+            self.add_error('vinculo', 'O vínculo deve pertencer à mesma função selecionada.')
+
+        return cleaned_data
+
+
+class TipoExameASOForm(forms.ModelForm):
+    """Formulário de cadastro de tipo de exame ASO."""
+
+    class Meta:
+        model = TipoExameASO
+        fields = ['nome', 'codigo', 'ativo', 'ordem', 'observacoes']
+        widgets = {
+            'nome': forms.TextInput(attrs={'class': 'form-control'}),
+            'codigo': forms.TextInput(attrs={'class': 'form-control'}),
+            'ativo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'ordem': forms.NumberInput(attrs={'class': 'form-control', 'min': '0'}),
+            'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.empresa = kwargs.pop('empresa', None)
+        super().__init__(*args, **kwargs)
+
+    def clean_codigo(self):
+        codigo = (self.cleaned_data.get('codigo') or '').strip().upper()
+        if not codigo:
+            raise forms.ValidationError('Informe o código do exame.')
+
+        if self.empresa:
+            qs = TipoExameASO.objects.filter(empresa=self.empresa, codigo=codigo)
+            if self.instance.pk:
+                qs = qs.exclude(pk=self.instance.pk)
+            if qs.exists():
+                raise forms.ValidationError('Já existe um tipo de exame com esse código na empresa.')
+
+        return codigo
+
+    def clean_nome(self):
+        nome = (self.cleaned_data.get('nome') or '').strip()
+        if not nome:
+            raise forms.ValidationError('Informe o nome do exame.')
+
+        if self.empresa:
+            qs = TipoExameASO.objects.filter(empresa=self.empresa, nome__iexact=nome)
+            if self.instance.pk:
+                qs = qs.exclude(pk=self.instance.pk)
+            if qs.exists():
+                raise forms.ValidationError('Já existe um tipo de exame com esse nome na empresa.')
+
+        return nome
+
+
+class SolicitacaoASOForm(forms.ModelForm):
+    """Formulário de solicitação de ASO."""
+
+    class Meta:
+        model = SolicitacaoASO
+        fields = [
+            'funcionario', 'vinculo', 'tipo_aso',
+            'data_solicitacao', 'data_prevista_exame', 'data_vencimento',
+            'laboratorio_nome', 'laboratorio_email', 'trabalhador_whatsapp',
+            'exames', 'possui_outros_exames', 'outros_exames_descricao',
+            'status', 'gerar_alerta_vencimento', 'dias_antecedencia_alerta',
+            'periodicidade_meses',
+        ]
+        widgets = {
+            'funcionario': forms.Select(attrs={'class': 'form-select'}),
+            'vinculo': forms.Select(attrs={'class': 'form-select'}),
+            'tipo_aso': forms.Select(attrs={'class': 'form-select'}),
+            'data_solicitacao': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
+            'data_prevista_exame': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
+            'data_vencimento': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
+            'laboratorio_nome': forms.TextInput(attrs={'class': 'form-control'}),
+            'laboratorio_email': forms.EmailInput(attrs={'class': 'form-control'}),
+            'trabalhador_whatsapp': forms.TextInput(attrs={'class': 'form-control'}),
+            'exames': forms.SelectMultiple(attrs={'class': 'form-select', 'size': '8'}),
+            'possui_outros_exames': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'outros_exames_descricao': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'status': forms.Select(attrs={'class': 'form-select'}),
+            'gerar_alerta_vencimento': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'dias_antecedencia_alerta': forms.NumberInput(attrs={'class': 'form-control', 'min': '0'}),
+            'periodicidade_meses': forms.NumberInput(attrs={'class': 'form-control', 'min': '1'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.empresa = kwargs.pop('empresa', None)
+        super().__init__(*args, **kwargs)
+
+        self.fields['periodicidade_meses'].required = False
+
+        # Garante renderização correta em <input type="date"> e mantém aceitação dd/mm/aaaa.
+        for campo_data in ('data_solicitacao', 'data_prevista_exame', 'data_vencimento'):
+            self.fields[campo_data].input_formats = ['%Y-%m-%d', '%d/%m/%Y']
+
+        if self.instance and self.instance.pk:
+            for campo_data in ('data_solicitacao', 'data_prevista_exame', 'data_vencimento'):
+                valor = getattr(self.instance, campo_data, None)
+                if valor:
+                    self.initial[campo_data] = valor.strftime('%Y-%m-%d')
+
+        if self.empresa:
+            self.fields['funcionario'].queryset = Funcionario.objects.filter(
+                empresa=self.empresa
+            ).order_by('nome_completo')
+
+            self.fields['vinculo'].queryset = VinculoContrato.objects.filter(
+                empresa=self.empresa
+            ).select_related('funcionario', 'funcao').order_by('-data_inicio')
+
+            exames_qs = TipoExameASO.objects.filter(
+                empresa=self.empresa,
+                ativo=True,
+            ).order_by('ordem', 'nome')
+
+            if self.instance and self.instance.pk:
+                exames_qs = (exames_qs | self.instance.exames.all()).distinct()
+
+            self.fields['exames'].queryset = exames_qs
+
+    def clean(self):
+        cleaned_data = super().clean()
+        funcionario = cleaned_data.get('funcionario')
+        vinculo = cleaned_data.get('vinculo')
+        tipo_aso = cleaned_data.get('tipo_aso')
+        status = cleaned_data.get('status')
+        periodicidade_meses = cleaned_data.get('periodicidade_meses')
+        data_vencimento = cleaned_data.get('data_vencimento')
+        exames = cleaned_data.get('exames')
+        possui_outros_exames = cleaned_data.get('possui_outros_exames')
+        outros_exames_descricao = (cleaned_data.get('outros_exames_descricao') or '').strip()
+
+        if periodicidade_meses in (None, ''):
+            cleaned_data['periodicidade_meses'] = getattr(self.instance, 'periodicidade_meses', None) or 12
+
+        if vinculo and funcionario and vinculo.funcionario_id != funcionario.id:
+            self.add_error('vinculo', 'O vínculo selecionado não pertence ao funcionário informado.')
+
+        if tipo_aso == 'PERIODICO' and not data_vencimento:
+            self.add_error('data_vencimento', 'ASO periódico exige data de vencimento.')
+
+        if not exames:
+            self.add_error('exames', 'Selecione ao menos um exame para a solicitação.')
+
+        if possui_outros_exames and not outros_exames_descricao:
+            self.add_error('outros_exames_descricao', 'Descreva os exames adicionais quando essa opção estiver marcada.')
+
+        if tipo_aso == 'DEMISSIONAL' and status == 'CONCLUIDO':
+            cleaned_data['gerar_alerta_vencimento'] = False
+            cleaned_data['periodicidade_meses'] = cleaned_data.get('periodicidade_meses') or 12
+
+        return cleaned_data
+
+
 class RescisaoContratoForm(forms.ModelForm):
     """Formulário para cadastro de rescisões"""
     
     class Meta:
         model = RescisaoContrato
         fields = [
-            'funcionario', 'tipo_rescisao', 'data_aviso', 'data_desligamento',
+            'funcionario', 'vinculo', 'tipo_rescisao', 'data_aviso', 'data_desligamento',
             'trabalhou_aviso_previo', 'dias_aviso_previo', 'motivo_detalhado',
             'saldo_salario', 'ferias_vencidas', 'ferias_proporcionais',
             'decimo_terceiro_proporcional', 'aviso_previo_indenizado',
@@ -3986,6 +4664,7 @@ class RescisaoContratoForm(forms.ModelForm):
         ]
         widgets = {
             'funcionario': forms.Select(attrs={'class': 'form-select'}),
+            'vinculo': forms.Select(attrs={'class': 'form-select'}),
             'tipo_rescisao': forms.Select(attrs={'class': 'form-select'}),
             'data_aviso': forms.DateInput(attrs={
                 'class': 'form-control',
@@ -4098,10 +4777,36 @@ class RescisaoContratoForm(forms.ModelForm):
             self.fields['funcionario'].queryset = Funcionario.objects.filter(
                 empresa=self.empresa
             ).order_by('nome_completo')
+            self.fields['vinculo'].queryset = VinculoContrato.objects.filter(
+                empresa=self.empresa
+            ).select_related('funcionario').order_by('-data_inicio')
+
+            funcionario_id = None
+            if self.is_bound:
+                funcionario_id = self.data.get('funcionario')
+            elif self.instance and self.instance.pk:
+                funcionario_id = self.instance.funcionario_id
+
+            if funcionario_id:
+                self.fields['vinculo'].queryset = self.fields['vinculo'].queryset.filter(
+                    funcionario_id=funcionario_id
+                )
+            else:
+                self.fields['vinculo'].queryset = self.fields['vinculo'].queryset.none()
         
         # Calcular valor líquido automaticamente quando salvando
         if self.instance and self.instance.pk:
             self.initial['valor_liquido'] = self.instance.calcular_valor_liquido()
+
+    def clean(self):
+        cleaned_data = super().clean()
+        funcionario = cleaned_data.get('funcionario')
+        vinculo = cleaned_data.get('vinculo')
+
+        if vinculo and funcionario and vinculo.funcionario_id != funcionario.id:
+            self.add_error('vinculo', 'O vínculo selecionado não pertence ao funcionário informado.')
+
+        return cleaned_data
 
 
 # =============================================================================

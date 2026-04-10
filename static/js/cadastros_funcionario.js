@@ -1,9 +1,40 @@
 document.addEventListener('DOMContentLoaded', function () {
   const cfg = (window._cadastros_funcionario_config || {});
-  const modalNovaFuncao = new bootstrap.Modal(document.getElementById('modalNovaFuncao'));
+  const modalNovaFuncaoElement = document.getElementById('modalNovaFuncao');
+  const modalNovaFuncao = new bootstrap.Modal(modalNovaFuncaoElement);
   const loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'));
   const selectFuncao = document.getElementById('id_funcao');
   const inputSalario = document.getElementById('id_salario');
+
+  const quickFuncaoForm = document.getElementById('formNovaFuncao');
+  const possuiInsalubridadeInput = document.getElementById('id_possui_insalubridade');
+  const grauInsalubridadeWrapper = document.getElementById('modal_grau_insalubridade_wrapper');
+  const grauInsalubridadeInput = document.getElementById('id_grau_insalubridade');
+  const possuiPericulosidadeInput = document.getElementById('id_possui_periculosidade');
+  const percentualPericulosidadeWrapper = document.getElementById('modal_percentual_periculosidade_wrapper');
+  const percentualPericulosidadeInput = document.getElementById('id_percentual_periculosidade');
+  const requerLaudoInput = document.getElementById('id_requer_laudo');
+  const laudoWrapper = document.getElementById('modal_laudo_wrapper');
+  const validadeLaudoInput = document.getElementById('id_validade_laudo');
+
+  function toggleWrapper(wrapper, enabled, field) {
+    if (!wrapper) return;
+    wrapper.classList.toggle('d-none', !enabled);
+    if (!enabled && field) {
+      if (field.tagName === 'SELECT') {
+        field.selectedIndex = 0;
+      } else if (field.type === 'date' || field.type === 'text' || field.type === 'number' || field.tagName === 'TEXTAREA') {
+        field.value = '';
+      }
+      field.classList.remove('is-invalid');
+    }
+  }
+
+  function syncQuickFuncaoFields() {
+    toggleWrapper(grauInsalubridadeWrapper, !!(possuiInsalubridadeInput && possuiInsalubridadeInput.checked), grauInsalubridadeInput);
+    toggleWrapper(percentualPericulosidadeWrapper, !!(possuiPericulosidadeInput && possuiPericulosidadeInput.checked), percentualPericulosidadeInput);
+    toggleWrapper(laudoWrapper, !!(requerLaudoInput && requerLaudoInput.checked), validadeLaudoInput);
+  }
 
   function clearFuncaoModalErrors(form) {
     if (!form) return;
@@ -47,6 +78,30 @@ document.addEventListener('DOMContentLoaded', function () {
       }
     }
     if (first) first.focus();
+  }
+
+  if (possuiInsalubridadeInput) {
+    possuiInsalubridadeInput.addEventListener('change', syncQuickFuncaoFields);
+  }
+  if (possuiPericulosidadeInput) {
+    possuiPericulosidadeInput.addEventListener('change', syncQuickFuncaoFields);
+  }
+  if (requerLaudoInput) {
+    requerLaudoInput.addEventListener('change', syncQuickFuncaoFields);
+  }
+  syncQuickFuncaoFields();
+
+  if (modalNovaFuncaoElement) {
+    modalNovaFuncaoElement.addEventListener('shown.bs.modal', function () {
+      syncQuickFuncaoFields();
+    });
+
+    modalNovaFuncaoElement.addEventListener('hidden.bs.modal', function () {
+      if (!quickFuncaoForm) return;
+      quickFuncaoForm.reset();
+      clearFuncaoModalErrors(quickFuncaoForm);
+      syncQuickFuncaoFields();
+    });
   }
 
   // Preenchimento automático de salário pela função
@@ -104,7 +159,7 @@ document.addEventListener('DOMContentLoaded', function () {
   const btnSalvarFuncao = document.getElementById('btnSalvarFuncao');
   if (btnSalvarFuncao) {
     btnSalvarFuncao.addEventListener('click', async function () {
-      const form = document.getElementById('formNovaFuncao');
+      const form = quickFuncaoForm;
       if (!form) return;
       const btn = btnSalvarFuncao;
       btn.disabled = true;
@@ -156,7 +211,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
       } catch (error) {
         console.error('Erro ao criar função via AJAX', error);
-        const form = document.getElementById('formNovaFuncao');
+        const form = quickFuncaoForm;
         if (error && error.data && error.data.erros) {
           showFieldErrors(form, error.data.erros);
           modalNovaFuncao.show();

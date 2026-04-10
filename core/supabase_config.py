@@ -72,13 +72,13 @@ class SupabaseAuth:
                     "data": user_metadata or {}
                 }
             })
-            logger.info(f"✓ Usuário registrado: {email}")
+            logger.info(f"[OK] Usuario registrado: {email}")
             return {
                 'user': response.user,
                 'session': response.session
             }
         except Exception as e:
-            logger.error(f"✗ Erro ao registrar {email}: {str(e)}")
+            logger.error(f"[ERRO] Erro ao registrar {email}: {str(e)}")
             return {'error': str(e)}
     
     def login_with_email(
@@ -97,13 +97,13 @@ class SupabaseAuth:
                 "email": email,
                 "password": password
             })
-            logger.info(f"✓ Login bem-sucedido: {email}")
+            logger.info(f"[OK] Login bem-sucedido: {email}")
             return {
                 'user': response.user,
                 'session': response.session
             }
         except Exception as e:
-            logger.error(f"✗ Erro ao fazer login {email}: {str(e)}")
+            logger.error(f"[ERRO] Erro ao fazer login {email}: {str(e)}")
             return {'error': str(e)}
     
     def logout(self) -> bool:
@@ -135,7 +135,7 @@ class SupabaseAuth:
             })
             return response.url if hasattr(response, 'url') else None
         except Exception as e:
-            logger.error(f"✗ Erro ao gerar URL Google OAuth: {str(e)}")
+            logger.error(f"[ERRO] Erro ao gerar URL Google OAuth: {str(e)}")
             return None
     
     # ═══════════════════ GERENCIAMENTO DE USUÁRIOS ═══════════════════
@@ -146,7 +146,7 @@ class SupabaseAuth:
             response = self.client.auth.get_user(access_token)
             return response.user.dict() if response.user else None
         except Exception as e:
-            logger.error(f"✗ Erro ao obter usuário: {str(e)}")
+            logger.error(f"[ERRO] Erro ao obter usuario: {str(e)}")
             return None
     
     def update_user(self, access_token: str, data: Dict) -> Dict:
@@ -155,7 +155,7 @@ class SupabaseAuth:
             response = self.client.auth.update_user(access_token, data)
             return response.user.dict() if response.user else None
         except Exception as e:
-            logger.error(f"✗ Erro ao atualizar usuário: {str(e)}")
+            logger.error(f"[ERRO] Erro ao atualizar usuario: {str(e)}")
             return {'error': str(e)}
     
     def reset_password(self, email: str) -> Dict:
@@ -164,7 +164,7 @@ class SupabaseAuth:
             response = self.client.auth.reset_password_for_email(email)
             return {'success': True}
         except Exception as e:
-            logger.error(f"✗ Erro ao enviar reset: {str(e)}")
+            logger.error(f"[ERRO] Erro ao enviar reset: {str(e)}")
             return {'error': str(e)}
     
     # ═══════════════════ JWT / TOKENS ═══════════════════
@@ -178,7 +178,7 @@ class SupabaseAuth:
                 'user': response.user
             }
         except Exception as e:
-            logger.error(f"✗ Erro ao renovar sessão: {str(e)}")
+            logger.error(f"[ERRO] Erro ao renovar sessao: {str(e)}")
             return {'error': str(e)}
     
     # ═══════════════════ ADMIN OPERATIONS (service role) ═══════════════════

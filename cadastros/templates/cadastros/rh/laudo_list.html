@@ -1,0 +1,122 @@
+{% extends 'base.html' %}
+
+{% block title %}Laudos de Risco | ERP Agricola{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h1 class="h3 mb-1"><i class="fas fa-file-shield me-2 text-danger"></i>Laudos de Risco</h1>
+      <p class="text-muted mb-0">Controle de validade de laudos ocupacionais por funcao e vinculo</p>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{% url 'cadastros:rh_dashboard' %}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left me-2"></i>Dashboard RH
+      </a>
+      <a href="{% url 'cadastros:laudo_create' %}" class="btn btn-danger">
+        <i class="fas fa-plus me-2"></i>Novo Laudo
+      </a>
+    </div>
+  </div>
+
+  <div class="card mb-3">
+    <div class="card-body">
+      <form method="get" class="row g-2">
+        <div class="col-md-2">
+          <input type="text" class="form-control" name="q" value="{{ busca|default:'' }}" placeholder="Buscar por funcao, responsavel ou ART">
+        </div>
+        <div class="col-md-2">
+          <select class="form-select" name="status">
+            <option value="">Todos os status</option>
+            <option value="VIGENTE" {% if status_filter == 'VIGENTE' %}selected{% endif %}>Vigente</option>
+            <option value="RENOVACAO_PENDENTE" {% if status_filter == 'RENOVACAO_PENDENTE' %}selected{% endif %}>Renovacao pendente</option>
+            <option value="VENCIDO" {% if status_filter == 'VENCIDO' %}selected{% endif %}>Vencido</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <select class="form-select" name="tipo">
+            <option value="">Todos os tipos</option>
+            <option value="PPRA" {% if tipo_filter == 'PPRA' %}selected{% endif %}>PPRA</option>
+            <option value="LTCAT" {% if tipo_filter == 'LTCAT' %}selected{% endif %}>LTCAT</option>
+            <option value="PCMSO" {% if tipo_filter == 'PCMSO' %}selected{% endif %}>PCMSO</option>
+            <option value="INSALUBRIDADE" {% if tipo_filter == 'INSALUBRIDADE' %}selected{% endif %}>Insalubridade</option>
+            <option value="PERICULOSIDADE" {% if tipo_filter == 'PERICULOSIDADE' %}selected{% endif %}>Periculosidade</option>
+            <option value="OUTRO" {% if tipo_filter == 'OUTRO' %}selected{% endif %}>Outro</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <select class="form-select" name="categoria">
+            <option value="">Todas categorias</option>
+            {% for categoria in categorias_risco %}
+            <option value="{{ categoria.id }}" {% if categoria_filter == categoria.id|stringformat:'s' %}selected{% endif %}>{{ categoria.nome }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2">
+          <select class="form-select" name="funcao">
+            <option value="">Todas as funcoes</option>
+            {% for funcao in funcoes %}
+            <option value="{{ funcao.id }}" {% if funcao_filter == funcao.id|stringformat:'s' %}selected{% endif %}>{{ funcao.nome }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2 d-grid">
+          <button type="submit" class="btn btn-outline-danger">Filtrar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="table-responsive">
+      <table class="table table-striped align-middle mb-0">
+        <thead>
+          <tr>
+            <th>Funcao</th>
+            <th>Tipo</th>
+            <th>Validade</th>
+            <th>Responsavel</th>
+            <th>Status</th>
+            <th>Vinculo</th>
+            <th class="text-end">Acoes</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for laudo in page_obj %}
+          <tr>
+            <td>{{ laudo.funcao.nome }}</td>
+            <td>{{ laudo.get_tipo_laudo_display }}</td>
+            <td>{{ laudo.data_validade|date:'d/m/Y' }}</td>
+            <td>{{ laudo.responsavel_tecnico }}</td>
+            <td>
+              {% if laudo.status == 'VENCIDO' %}
+              <span class="badge bg-danger">{{ laudo.get_status_display }}</span>
+              {% elif laudo.status == 'RENOVACAO_PENDENTE' %}
+              <span class="badge bg-warning text-dark">{{ laudo.get_status_display }}</span>
+              {% else %}
+              <span class="badge bg-success">{{ laudo.get_status_display }}</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if laudo.vinculo %}
+                {{ laudo.vinculo.funcionario.nome_completo }}
+              {% else %}
+                -
+              {% endif %}
+            </td>
+            <td class="text-end">
+              <a href="{% url 'cadastros:laudo_detail' laudo.pk %}" class="btn btn-sm btn-outline-primary">Ver</a>
+              <a href="{% url 'cadastros:laudo_update' laudo.pk %}" class="btn btn-sm btn-outline-warning">Editar</a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="7" class="text-center text-muted py-4">Nenhum laudo encontrado.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

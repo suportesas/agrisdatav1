@@ -7,6 +7,8 @@ from django.core.validators import MinValueValidator, FileExtensionValidator
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 from decimal import Decimal
+from calendar import monthrange
+from datetime import date, timedelta
 import os
 from django.core.validators import MaxValueValidator, RegexValidator
 import re
@@ -77,6 +79,7 @@ from django.db import models
 from django.core.validators import MinValueValidator, FileExtensionValidator
 from django.core.exceptions import ValidationError
 from django.utils import timezone
+from django.conf import settings
 from decimal import Decimal
 import os
 from django.core.validators import MaxValueValidator, RegexValidator
@@ -1681,12 +1684,65 @@ class FuncaoFuncionario(models.Model):
         'Função Ativa',
         default=True
     )
-    
+
+    # --- Insalubridade ---
+    GRAU_INSALUBRIDADE = [
+        ('10', 'Mínimo (10%)'),
+        ('20', 'Médio (20%)'),
+        ('40', 'Máximo (40%)'),
+    ]
+
+    possui_insalubridade = models.BooleanField(
+        'Possui Insalubridade?',
+        default=False
+    )
+
+    grau_insalubridade = models.CharField(
+        'Grau de Insalubridade',
+        max_length=2,
+        choices=GRAU_INSALUBRIDADE,
+        blank=True,
+        help_text='Grau conforme NR-15 (preencher apenas se houver insalubridade)'
+    )
+
+    # --- Periculosidade ---
+    possui_periculosidade = models.BooleanField(
+        'Possui Periculosidade?',
+        default=False
+    )
+
+    percentual_periculosidade = models.DecimalField(
+        'Percentual de Periculosidade (%)',
+        max_digits=5,
+        decimal_places=2,
+        default=30,
+        help_text='Percentual padrão conforme NR-16 é 30%'
+    )
+
+    # --- Laudo técnico ---
+    requer_laudo = models.BooleanField(
+        'Requer Laudo Técnico (PPRA/LTCAT)?',
+        default=False
+    )
+
+    validade_laudo = models.DateField(
+        'Validade do Laudo',
+        null=True,
+        blank=True,
+        help_text='Data de vencimento do laudo técnico'
+    )
+
+    observacoes_risco = models.TextField(
+        'Observações sobre Riscos',
+        blank=True,
+        help_text='EPI necessários, agentes de risco, etc.'
+    )
+
     data_criacao = models.DateTimeField(
         'Data de Criação',
         auto_now_add=True
     )
-    
+
     class Meta:
         verbose_name = 'Função de Funcionário'
         verbose_name_plural = 'Funções de Funcionários'
@@ -1704,6 +1760,513 @@ class FuncaoFuncionario(models.Model):
     def get_total_funcionarios(self):
         """Retorna total de funcionários nesta função"""
         return self.funcionarios.filter(ativo=True).count()
+
+
+class CategoriaRiscoAmbiental(models.Model):
+    """Categorias ambientais de risco por empresa."""
+
+    CODIGO_FISICO = 'FISICO'
+    CODIGO_QUIMICO = 'QUIMICO'
+    CODIGO_BIOLOGICO = 'BIOLOGICO'
+    CODIGO_ERGONOMICO = 'ERGONOMICO'
+    CODIGO_ACIDENTES = 'ACIDENTES'
+    CODIGO_OUTROS = 'OUTROS'
+
+    CODIGOS_PADRAO = [
+        (CODIGO_FISICO, 'Físico'),
+        (CODIGO_QUIMICO, 'Químico'),
+        (CODIGO_BIOLOGICO, 'Biológico'),
+        (CODIGO_ERGONOMICO, 'Ergonômico'),
+        (CODIGO_ACIDENTES, 'Acidentes'),
+        (CODIGO_OUTROS, 'Outros'),
+    ]
+
+    empresa = models.ForeignKey(
+        'empresas.Empresa',
+        on_delete=models.CASCADE,
+        related_name='categorias_risco_ambiental',
+        verbose_name='Empresa'
+    )
+
+    codigo = models.CharField(
+        'Código',
+        max_length=20,
+        help_text='Código interno da categoria (ex.: FISICO, QUIMICO).'
+    )
+
+    nome = models.CharField(
+        'Nome da Categoria',
+        max_length=80
+    )
+
+    descricao = models.TextField(
+        'Descrição',
+        blank=True
+    )
+
+    ativo = models.BooleanField(
+        'Ativa',
+        default=True
+    )
+
+    eh_padrao_sistema = models.BooleanField(
+        'Categoria Padrão do Sistema',
+        default=False
+    )
+
+    data_criacao = models.DateTimeField(
+        'Data de Criação',
+        auto_now_add=True
+    )
+
+    data_atualizacao = models.DateTimeField(
+        'Última Atualização',
+        auto_now=True
+    )
+
+    class Meta:
+        verbose_name = 'Categoria de Risco Ambiental'
+        verbose_name_plural = 'Categorias de Risco Ambiental'
+        ordering = ['nome']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['empresa', 'codigo'],
+                name='unique_categoria_risco_codigo_empresa'
+            ),
+            models.UniqueConstraint(
+                fields=['empresa', 'nome'],
+                name='unique_categoria_risco_nome_empresa'
+            ),
+        ]
+
+    def __str__(self):
+        return f'{self.nome} ({self.empresa.nome})'
+
+    @classmethod
+    def criar_categorias_padrao_empresa(cls, empresa):
+        """Garante categorias padrão para uma empresa de forma idempotente."""
+        categorias = []
+        for codigo, nome in cls.CODIGOS_PADRAO:
+            categoria, _ = cls.objects.get_or_create(
+                empresa=empresa,
+                codigo=codigo,
+                defaults={
+                    'nome': nome,
+                    'eh_padrao_sistema': True,
+                    'ativo': True,
+                }
+            )
+            categorias.append(categoria)
+        return categorias
+
+
+class RiscoAmbientalFuncao(models.Model):
+    """Riscos ambientais cadastrados para uma função/cargo."""
+
+    INTENSIDADE_BAIXA = 'BAIXA'
+    INTENSIDADE_MEDIA = 'MEDIA'
+    INTENSIDADE_ALTA = 'ALTA'
+    INTENSIDADES = [
+        (INTENSIDADE_BAIXA, 'Baixa'),
+        (INTENSIDADE_MEDIA, 'Média'),
+        (INTENSIDADE_ALTA, 'Alta'),
+    ]
+
+    empresa = models.ForeignKey(
+        'empresas.Empresa',
+        on_delete=models.CASCADE,
+        related_name='riscos_ambientais_funcao',
+        verbose_name='Empresa'
+    )
+
+    funcao = models.ForeignKey(
+        FuncaoFuncionario,
+        on_delete=models.PROTECT,
+        related_name='riscos_ambientais',
+        verbose_name='Função/Cargo'
+    )
+
+    categoria = models.ForeignKey(
+        CategoriaRiscoAmbiental,
+        on_delete=models.PROTECT,
+        related_name='riscos_funcao',
+        verbose_name='Categoria de Risco'
+    )
+
+    agente_especifico = models.CharField(
+        'Agente Específico',
+        max_length=200,
+        help_text='Ex.: Ruído acima de 85dB, Poeira orgânica, Bactérias ambientais.'
+    )
+
+    intensidade = models.CharField(
+        'Intensidade',
+        max_length=10,
+        choices=INTENSIDADES,
+        default=INTENSIDADE_MEDIA
+    )
+
+    epi_obrigatorio = models.CharField(
+        'EPI Obrigatório',
+        max_length=255,
+        blank=True,
+        help_text='Ex.: Protetor auricular, máscara com filtro, luvas específicas.'
+    )
+
+    observacoes = models.TextField(
+        'Observações',
+        blank=True
+    )
+
+    ativo = models.BooleanField(
+        'Ativo',
+        default=True
+    )
+
+    data_criacao = models.DateTimeField(
+        'Data de Criação',
+        auto_now_add=True
+    )
+
+    data_atualizacao = models.DateTimeField(
+        'Última Atualização',
+        auto_now=True
+    )
+
+    class Meta:
+        verbose_name = 'Risco Ambiental da Função'
+        verbose_name_plural = 'Riscos Ambientais da Função'
+        ordering = ['categoria__nome', 'agente_especifico']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['funcao', 'categoria', 'agente_especifico'],
+                name='unique_risco_ambiental_funcao_categoria_agente'
+            ),
+        ]
+        indexes = [
+            models.Index(fields=['empresa', 'ativo']),
+            models.Index(fields=['funcao']),
+            models.Index(fields=['categoria']),
+        ]
+
+    def __str__(self):
+        return f'{self.funcao.nome} - {self.categoria.nome}: {self.agente_especifico}'
+
+    def clean(self):
+        errors = {}
+        if self.funcao_id and self.categoria_id and self.funcao.empresa_id != self.categoria.empresa_id:
+            errors['categoria'] = 'A categoria selecionada não pertence à mesma empresa da função.'
+
+        if self.empresa_id and self.funcao_id and self.empresa_id != self.funcao.empresa_id:
+            errors['empresa'] = 'A empresa do risco deve ser a mesma empresa da função.'
+
+        if errors:
+            raise ValidationError(errors)
+
+    def save(self, *args, **kwargs):
+        if self.funcao_id and not self.empresa_id:
+            self.empresa_id = self.funcao.empresa_id
+        super().save(*args, **kwargs)
+
+
+class RiscoAmbientalCatalogo(models.Model):
+    """Catálogo de agentes de risco reutilizáveis por empresa/categoria."""
+
+    empresa = models.ForeignKey(
+        'empresas.Empresa',
+        on_delete=models.CASCADE,
+        related_name='riscos_ambientais_catalogo',
+        verbose_name='Empresa'
+    )
+
+    categoria = models.ForeignKey(
+        CategoriaRiscoAmbiental,
+        on_delete=models.PROTECT,
+        related_name='itens_catalogo',
+        verbose_name='Categoria de Risco'
+    )
+
+    nome = models.CharField(
+        'Agente/Item de Risco',
+        max_length=200,
+        help_text='Ex.: Ruído acima de 85dB, poeira orgânica, fungos ambientais.'
+    )
+
+    intensidade_padrao = models.CharField(
+        'Intensidade Padrão',
+        max_length=10,
+        choices=RiscoAmbientalFuncao.INTENSIDADES,
+        default=RiscoAmbientalFuncao.INTENSIDADE_MEDIA
+    )
+
+    epi_padrao = models.CharField(
+        'EPI Padrão',
+        max_length=255,
+        blank=True
+    )
+
+    observacoes = models.TextField(
+        'Observações',
+        blank=True
+    )
+
+    ativo = models.BooleanField(
+        'Ativo',
+        default=True
+    )
+
+    data_criacao = models.DateTimeField(
+        'Data de Criação',
+        auto_now_add=True
+    )
+
+    data_atualizacao = models.DateTimeField(
+        'Última Atualização',
+        auto_now=True
+    )
+
+    class Meta:
+        verbose_name = 'Item de Catálogo de Risco Ambiental'
+        verbose_name_plural = 'Itens de Catálogo de Risco Ambiental'
+        ordering = ['categoria__nome', 'nome']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['empresa', 'categoria', 'nome'],
+                name='unique_catalogo_risco_empresa_categoria_nome'
+            ),
+        ]
+        indexes = [
+            models.Index(fields=['empresa', 'ativo']),
+            models.Index(fields=['categoria']),
+        ]
+
+    def __str__(self):
+        return f'{self.categoria.nome}: {self.nome}'
+
+    def clean(self):
+        errors = {}
+        if self.empresa_id and self.categoria_id and self.empresa_id != self.categoria.empresa_id:
+            errors['categoria'] = 'A categoria selecionada não pertence à mesma empresa do catálogo.'
+        if errors:
+            raise ValidationError(errors)
+
+class VinculoContrato(models.Model):
+    """
+    Representa um vínculo contratual de um funcionário com a empresa.
+    Cada contratação (ou recontratação) gera um novo vínculo.
+    Substitui o uso de data_admissao/data_demissao diretamente no Funcionario
+    para suportar rotatividade agrícola (contratações sazonais repetidas).
+    """
+
+    TIPO_CONTRATO = [
+        ('CLT', 'CLT'),
+        ('TEMPORARIO', 'Temporário'),
+        ('DIARISTA', 'Diarista'),
+        ('AUTONOMO', 'Autônomo'),
+        ('TERCEIRIZADO', 'Terceirizado'),
+    ]
+
+    STATUS_VINCULO = [
+        ('PROGRAMADO', 'Programado'),
+        ('ATIVO', 'Ativo'),
+        ('ENCERRADO', 'Encerrado'),
+        ('CANCELADO', 'Cancelado'),
+    ]
+
+    ORIGEM_CONTRATACAO = [
+        ('NOVO', 'Nova Contratação'),
+        ('RECONTRATACAO', 'Recontratação'),
+        ('EFETIVACAO', 'Efetivação (Temporário → CLT)'),
+    ]
+
+    empresa = models.ForeignKey(
+        'empresas.Empresa',
+        on_delete=models.CASCADE,
+        related_name='vinculos_contratos',
+        verbose_name='Empresa'
+    )
+
+    funcionario = models.ForeignKey(
+        'cadastros.Funcionario',
+        on_delete=models.CASCADE,
+        related_name='vinculos',
+        verbose_name='Funcionário'
+    )
+
+    funcao = models.ForeignKey(
+        FuncaoFuncionario,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='vinculos',
+        verbose_name='Função/Cargo'
+    )
+
+    matricula = models.CharField(
+        'Matrícula do Vínculo',
+        max_length=20,
+        blank=True,
+        help_text='Matrícula específica para este vínculo contratual'
+    )
+
+    tipo_contrato = models.CharField(
+        'Tipo de Contrato',
+        max_length=20,
+        choices=TIPO_CONTRATO,
+        default='CLT'
+    )
+
+    origem = models.CharField(
+        'Origem da Contratação',
+        max_length=20,
+        choices=ORIGEM_CONTRATACAO,
+        default='NOVO'
+    )
+
+    status = models.CharField(
+        'Status do Vínculo',
+        max_length=20,
+        choices=STATUS_VINCULO,
+        default='ATIVO'
+    )
+
+    # Datas
+    data_inicio = models.DateField(
+        'Data de Início',
+        help_text='Data de admissão neste vínculo'
+    )
+
+    data_fim_prevista = models.DateField(
+        'Data Fim Prevista',
+        null=True,
+        blank=True,
+        help_text='Para contratos temporários: data prevista de término'
+    )
+
+    data_fim_real = models.DateField(
+        'Data Fim Real',
+        null=True,
+        blank=True,
+        help_text='Preenchido automaticamente ao registrar rescisão'
+    )
+
+    # Período de experiência
+    periodo_experiencia = models.BooleanField(
+        'Possui Período de Experiência?',
+        default=False
+    )
+
+    data_fim_experiencia = models.DateField(
+        'Fim do Período de Experiência',
+        null=True,
+        blank=True
+    )
+
+    # Remuneração
+    salario = models.DecimalField(
+        'Salário (R$)',
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(Decimal('0.00'))]
+    )
+
+    # Snapshot dos adicionais de risco da função no momento da contratação
+    possui_insalubridade = models.BooleanField(
+        'Insalubridade Aplicada?',
+        default=False
+    )
+
+    grau_insalubridade = models.CharField(
+        'Grau de Insalubridade',
+        max_length=2,
+        blank=True
+    )
+
+    possui_periculosidade = models.BooleanField(
+        'Periculosidade Aplicada?',
+        default=False
+    )
+
+    percentual_periculosidade = models.DecimalField(
+        'Percentual Periculosidade (%)',
+        max_digits=5,
+        decimal_places=2,
+        default=30
+    )
+
+    # Auditoria
+    cadastrado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='vinculos_criados',
+        verbose_name='Cadastrado por'
+    )
+
+    observacoes = models.TextField(
+        'Observações',
+        blank=True
+    )
+
+    data_criacao = models.DateTimeField(
+        'Data de Criação',
+        auto_now_add=True
+    )
+
+    data_atualizacao = models.DateTimeField(
+        'Última Atualização',
+        auto_now=True
+    )
+
+    class Meta:
+        verbose_name = 'Vínculo Contratual'
+        verbose_name_plural = 'Vínculos Contratuais'
+        ordering = ['-data_inicio']
+
+    def __str__(self):
+        return f'{self.funcionario} — {self.get_tipo_contrato_display()} ({self.data_inicio})'
+
+    def clean(self):
+        errors = {}
+
+        if self.data_fim_prevista and self.data_inicio and self.data_fim_prevista < self.data_inicio:
+            errors['data_fim_prevista'] = 'A data fim prevista não pode ser anterior à data de início.'
+
+        if self.periodo_experiencia and not self.data_fim_experiencia:
+            errors['data_fim_experiencia'] = 'Informe a data final do período de experiência.'
+
+        if self.data_fim_experiencia and self.data_inicio and self.data_fim_experiencia < self.data_inicio:
+            errors['data_fim_experiencia'] = 'A data do período de experiência não pode ser anterior ao início do vínculo.'
+
+        if self.data_fim_experiencia and self.data_fim_prevista and self.data_fim_experiencia > self.data_fim_prevista:
+            errors['data_fim_experiencia'] = 'O fim da experiência não pode ultrapassar o fim previsto do contrato.'
+
+        if self.tipo_contrato == 'TEMPORARIO' and not self.data_fim_prevista:
+            errors['data_fim_prevista'] = 'Contratos temporários devem ter data fim prevista.'
+
+        if self.possui_insalubridade and not self.grau_insalubridade:
+            errors['grau_insalubridade'] = 'Informe o grau de insalubridade aplicado ao vínculo.'
+
+        if self.possui_periculosidade and self.percentual_periculosidade <= 0:
+            errors['percentual_periculosidade'] = 'Informe um percentual de periculosidade maior que zero.'
+
+        if self.status == 'ENCERRADO' and not self.data_fim_real:
+            errors['data_fim_real'] = 'Informe a data fim real para vínculos encerrados.'
+
+        if self.status in {'ATIVO', 'PROGRAMADO'} and self.data_fim_real:
+            errors['data_fim_real'] = 'Vínculos ativos ou programados não podem ter data fim real preenchida.'
+
+        if errors:
+            raise ValidationError(errors)
+
+    def encerrar(self, data_fim):
+        """Encerra o vínculo com a data de desligamento informada."""
+        self.data_fim_real = data_fim
+        self.status = 'ENCERRADO'
+        self.save(update_fields=['data_fim_real', 'status', 'data_atualizacao'])
 
 class Funcionario(models.Model):
     def get_qtd_suspensoes(self):
@@ -1769,6 +2332,14 @@ class Funcionario(models.Model):
     nome_completo = models.CharField(
         'Nome Completo',
         max_length=200
+    )
+
+    matricula = models.CharField(
+        'Código da Matrícula',
+        max_length=30,
+        blank=True,
+        null=True,
+        help_text='Código interno de matrícula do funcionário'
     )
     
     cpf = models.CharField(
@@ -2037,6 +2608,7 @@ class Funcionario(models.Model):
         indexes = [
             models.Index(fields=['empresa', 'ativo']),
             models.Index(fields=['cpf']),
+            models.Index(fields=['empresa', 'matricula']),
             models.Index(fields=['fazenda']),
         ]
     
@@ -2638,6 +3210,526 @@ class AfastamentoFuncionario(models.Model):
             })
 
 
+class LaudoRisco(models.Model):
+    """
+    Controle de laudos técnicos de risco ocupacional (insalubridade/periculosidade).
+    """
+
+    TIPO_LAUDO = [
+        ('PPRA', 'PPRA'),
+        ('LTCAT', 'LTCAT'),
+        ('PCMSO', 'PCMSO'),
+        ('INSALUBRIDADE', 'Insalubridade'),
+        ('PERICULOSIDADE', 'Periculosidade'),
+        ('OUTRO', 'Outro'),
+    ]
+
+    STATUS_LAUDO = [
+        ('VIGENTE', 'Vigente'),
+        ('RENOVACAO_PENDENTE', 'Renovação Pendente'),
+        ('VENCIDO', 'Vencido'),
+    ]
+
+    empresa = models.ForeignKey(
+        'empresas.Empresa',
+        on_delete=models.CASCADE,
+        related_name='laudos_risco',
+        verbose_name='Empresa'
+    )
+
+    funcao = models.ForeignKey(
+        'FuncaoFuncionario',
+        on_delete=models.PROTECT,
+        related_name='laudos_risco',
+        verbose_name='Função'
+    )
+
+    vinculo = models.ForeignKey(
+        'VinculoContrato',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='laudos_risco',
+        verbose_name='Vínculo Contratual'
+    )
+
+    tipo_laudo = models.CharField(
+        'Tipo de Laudo',
+        max_length=20,
+        choices=TIPO_LAUDO,
+        default='LTCAT'
+    )
+
+    data_emissao = models.DateField('Data de Emissão')
+    data_validade = models.DateField('Data de Validade')
+
+    responsavel_tecnico = models.CharField(
+        'Responsável Técnico',
+        max_length=150
+    )
+
+    numero_art = models.CharField(
+        'Número ART/Registro',
+        max_length=60,
+        blank=True
+    )
+
+    arquivo_laudo = models.FileField(
+        'Arquivo do Laudo',
+        upload_to='rh/laudos/%Y/%m/',
+        blank=True,
+        null=True,
+        validators=[FileExtensionValidator(allowed_extensions=['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx'])]
+    )
+
+    status = models.CharField(
+        'Status',
+        max_length=20,
+        choices=STATUS_LAUDO,
+        default='VIGENTE'
+    )
+
+    observacoes = models.TextField(
+        'Observações',
+        blank=True
+    )
+
+    cadastrado_por = models.ForeignKey(
+        'usuarios.Usuario',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='laudos_risco_cadastrados',
+        verbose_name='Cadastrado por'
+    )
+
+    data_cadastro = models.DateTimeField('Data de Cadastro', auto_now_add=True)
+    data_atualizacao = models.DateTimeField('Última Atualização', auto_now=True)
+
+    class Meta:
+        verbose_name = 'Laudo de Risco'
+        verbose_name_plural = 'Laudos de Risco'
+        ordering = ['data_validade', '-data_cadastro']
+        indexes = [
+            models.Index(fields=['empresa', 'status']),
+            models.Index(fields=['empresa', 'data_validade']),
+            models.Index(fields=['funcao']),
+            models.Index(fields=['vinculo']),
+        ]
+
+    def __str__(self):
+        return f"{self.funcao.nome} - {self.get_tipo_laudo_display()} ({self.data_validade:%d/%m/%Y})"
+
+    def clean(self):
+        errors = {}
+
+        if self.data_validade and self.data_emissao and self.data_validade < self.data_emissao:
+            errors['data_validade'] = 'A data de validade não pode ser anterior à data de emissão.'
+
+        if self.vinculo_id and self.funcao_id and self.vinculo.funcao_id != self.funcao_id:
+            errors['vinculo'] = 'O vínculo selecionado deve pertencer à mesma função informada no laudo.'
+
+        if errors:
+            raise ValidationError(errors)
+
+    def save(self, *args, **kwargs):
+        if self.data_validade:
+            hoje = timezone.now().date()
+            if self.data_validade < hoje:
+                self.status = 'VENCIDO'
+            elif (self.data_validade - hoje).days <= 30 and self.status == 'VIGENTE':
+                self.status = 'RENOVACAO_PENDENTE'
+        super().save(*args, **kwargs)
+
+
+class TipoExameASO(models.Model):
+    """Catálogo de tipos de exames ASO por empresa."""
+
+    empresa = models.ForeignKey(
+        'empresas.Empresa',
+        on_delete=models.CASCADE,
+        related_name='tipos_exame_aso',
+        verbose_name='Empresa'
+    )
+
+    nome = models.CharField(
+        'Nome do Exame',
+        max_length=100,
+        help_text='Ex: Audiometria, Colinesterase, Espirometria'
+    )
+
+    codigo = models.CharField(
+        'Código',
+        max_length=40,
+        help_text='Código único do exame dentro da empresa'
+    )
+
+    ativo = models.BooleanField(
+        'Ativo',
+        default=True
+    )
+
+    ordem = models.PositiveIntegerField(
+        'Ordem de Exibição',
+        default=0
+    )
+
+    eh_padrao_sistema = models.BooleanField(
+        'Exame Padrão do Sistema',
+        default=False,
+        help_text='Indica exame autocadastrado na criação da empresa'
+    )
+
+    observacoes = models.TextField(
+        'Observações',
+        blank=True
+    )
+
+    data_cadastro = models.DateTimeField('Data de Cadastro', auto_now_add=True)
+    data_atualizacao = models.DateTimeField('Última Atualização', auto_now=True)
+
+    class Meta:
+        verbose_name = 'Tipo de Exame ASO'
+        verbose_name_plural = 'Tipos de Exame ASO'
+        ordering = ['ordem', 'nome']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['empresa', 'codigo'],
+                name='unique_tipo_exame_aso_empresa_codigo'
+            ),
+            models.UniqueConstraint(
+                fields=['empresa', 'nome'],
+                name='unique_tipo_exame_aso_empresa_nome'
+            ),
+        ]
+        indexes = [
+            models.Index(fields=['empresa', 'ativo']),
+            models.Index(fields=['empresa', 'ordem']),
+        ]
+
+    def __str__(self):
+        return f"{self.nome} ({self.empresa.nome})"
+
+
+class SolicitacaoASO(models.Model):
+    """Solicitação de exame ASO por funcionário."""
+
+    TIPO_ASO = [
+        ('ADMISSIONAL', 'Admissional'),
+        ('RECONTRATACAO', 'Recontratação'),
+        ('PERIODICO', 'Periódico'),
+        ('DEMISSIONAL', 'Demissional'),
+    ]
+
+    STATUS_SOLICITACAO = [
+        ('RASCUNHO', 'Rascunho'),
+        ('ASSINADO', 'Assinado'),
+        ('ENVIADO', 'Enviado'),
+        ('CONCLUIDO', 'Concluído'),
+        ('CANCELADO', 'Cancelado'),
+    ]
+
+    empresa = models.ForeignKey(
+        'empresas.Empresa',
+        on_delete=models.CASCADE,
+        related_name='solicitacoes_aso',
+        verbose_name='Empresa'
+    )
+
+    funcionario = models.ForeignKey(
+        'cadastros.Funcionario',
+        on_delete=models.CASCADE,
+        related_name='solicitacoes_aso',
+        verbose_name='Funcionário'
+    )
+
+    vinculo = models.ForeignKey(
+        'cadastros.VinculoContrato',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='solicitacoes_aso',
+        verbose_name='Vínculo Contratual'
+    )
+
+    tipo_aso = models.CharField(
+        'Tipo de ASO',
+        max_length=20,
+        choices=TIPO_ASO
+    )
+
+    data_solicitacao = models.DateField(
+        'Data da Solicitação',
+        default=timezone.now
+    )
+
+    data_prevista_exame = models.DateField(
+        'Data Prevista do Exame'
+    )
+
+    data_vencimento = models.DateField(
+        'Data de Vencimento',
+        null=True,
+        blank=True,
+        help_text='Obrigatório para ASO periódico'
+    )
+
+    laboratorio_nome = models.CharField(
+        'Laboratório',
+        max_length=150,
+        blank=True
+    )
+
+    laboratorio_email = models.EmailField(
+        'Email do Laboratório',
+        blank=True
+    )
+
+    trabalhador_whatsapp = models.CharField(
+        'WhatsApp do Trabalhador',
+        max_length=20,
+        blank=True
+    )
+
+    exames = models.ManyToManyField(
+        TipoExameASO,
+        related_name='solicitacoes',
+        blank=True,
+        verbose_name='Exames Solicitados'
+    )
+
+    possui_outros_exames = models.BooleanField(
+        'Possui outros exames fora da lista?',
+        default=False
+    )
+
+    outros_exames_descricao = models.TextField(
+        'Outros Exames',
+        blank=True
+    )
+
+    assinatura_rh_imagem = models.ImageField(
+        'Assinatura Eletrônica RH',
+        upload_to='rh/aso/assinaturas/%Y/%m/',
+        null=True,
+        blank=True
+    )
+
+    assinatura_rh_nome = models.CharField(
+        'Nome do Responsável RH',
+        max_length=120,
+        blank=True
+    )
+
+    assinatura_rh_datahora = models.DateTimeField(
+        'Data/Hora da Assinatura',
+        null=True,
+        blank=True
+    )
+
+    status = models.CharField(
+        'Status',
+        max_length=20,
+        choices=STATUS_SOLICITACAO,
+        default='RASCUNHO'
+    )
+
+    gerar_alerta_vencimento = models.BooleanField(
+        'Gerar Alerta de Vencimento',
+        default=True
+    )
+
+    dias_antecedencia_alerta = models.IntegerField(
+        'Dias de Antecedência para Alerta',
+        default=30
+    )
+
+    periodicidade_meses = models.IntegerField(
+        'Periodicidade em Meses',
+        default=12,
+        help_text='Intervalo em meses para renovação automática de ASO periódico'
+    )
+
+    arquivo_pdf = models.FileField(
+        'Arquivo PDF da Solicitação',
+        upload_to='rh/aso/solicitacoes/%Y/%m/',
+        null=True,
+        blank=True
+    )
+
+    cadastrado_por = models.ForeignKey(
+        'usuarios.Usuario',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='solicitacoes_aso_cadastradas',
+        verbose_name='Cadastrado por'
+    )
+
+    data_cadastro = models.DateTimeField('Data de Cadastro', auto_now_add=True)
+    data_atualizacao = models.DateTimeField('Última Atualização', auto_now=True)
+
+    class Meta:
+        verbose_name = 'Solicitação de ASO'
+        verbose_name_plural = 'Solicitações de ASO'
+        ordering = ['-data_cadastro']
+        indexes = [
+            models.Index(fields=['empresa', 'status']),
+            models.Index(fields=['empresa', 'tipo_aso']),
+            models.Index(fields=['empresa', 'data_vencimento']),
+            models.Index(fields=['funcionario']),
+        ]
+
+    def __str__(self):
+        return f"ASO {self.get_tipo_aso_display()} - {self.funcionario.nome_completo}"
+
+    def clean(self):
+        errors = {}
+
+        if self.tipo_aso == 'PERIODICO' and not self.data_vencimento:
+            errors['data_vencimento'] = 'Informe a data de vencimento para ASO periódico.'
+
+        if self.possui_outros_exames and not self.outros_exames_descricao.strip():
+            errors['outros_exames_descricao'] = 'Descreva os outros exames quando essa opção estiver marcada.'
+
+        if self.vinculo_id and self.funcionario_id and self.vinculo.funcionario_id != self.funcionario_id:
+            errors['vinculo'] = 'O vínculo informado não pertence ao funcionário selecionado.'
+
+        if self.data_prevista_exame and self.data_solicitacao and self.data_prevista_exame < self.data_solicitacao:
+            errors['data_prevista_exame'] = 'A data prevista do exame não pode ser anterior à solicitação.'
+
+        if self.dias_antecedencia_alerta is not None and self.dias_antecedencia_alerta < 0:
+            errors['dias_antecedencia_alerta'] = 'Informe um valor maior ou igual a zero.'
+
+        if errors:
+            raise ValidationError(errors)
+
+    def dias_para_vencimento(self):
+        if not self.data_vencimento:
+            return None
+        return (self.data_vencimento - timezone.now().date()).days
+
+    def precisa_alerta(self):
+        if not self.gerar_alerta_vencimento or not self.data_vencimento:
+            return False
+
+        dias_restantes = self.dias_para_vencimento()
+        if dias_restantes is None:
+            return False
+
+        return 0 <= dias_restantes <= self.dias_antecedencia_alerta
+
+    def gerar_proxima_aso(self):
+        """
+        Gera automaticamente a próxima solicitação de ASO para renovação periódica.
+        Retorna a nova SolicitacaoASO criada ou None se não aplicável.
+        """
+        # Apenas para ASO periódica
+        if self.tipo_aso != 'PERIODICO':
+            return None
+
+        # Verifica se já existe ASO aberta para o mesmo funcionário
+        aso_existente = SolicitacaoASO.objects.filter(
+            funcionario=self.funcionario,
+            empresa=self.empresa,
+            tipo_aso='PERIODICO',
+            status__in=['RASCUNHO', 'ASSINADO', 'ENVIADO']
+        ).exists()
+
+        if aso_existente:
+            return None  # Já existe ASO aberta, não cria duplicata
+
+        # Calcula datas da próxima ASO
+        from datetime import timedelta
+        proxima_data_vencimento = self.data_vencimento + timedelta(days=self.periodicidade_meses * 30)
+        proxima_data_prevista_exame = self.data_prevista_exame + timedelta(days=self.periodicidade_meses * 30)
+
+        # Cria nova SolicitacaoASO
+        proxima_aso = SolicitacaoASO.objects.create(
+            empresa=self.empresa,
+            funcionario=self.funcionario,
+            vinculo=self.vinculo,
+            tipo_aso='PERIODICO',
+            data_solicitacao=timezone.now().date(),
+            data_prevista_exame=proxima_data_prevista_exame,
+            data_vencimento=proxima_data_vencimento,
+            laboratorio_nome=self.laboratorio_nome,
+            laboratorio_email=self.laboratorio_email,
+            trabalhador_whatsapp=self.trabalhador_whatsapp,
+            status='RASCUNHO',
+            gerar_alerta_vencimento=self.gerar_alerta_vencimento,
+            dias_antecedencia_alerta=self.dias_antecedencia_alerta,
+            periodicidade_meses=self.periodicidade_meses,
+            cadastrado_por=self.cadastrado_por,
+        )
+
+        # Copia os mesmos exames
+        if self.exames.exists():
+            proxima_aso.exames.set(self.exames.all())
+
+        return proxima_aso
+
+
+class LogEnvioSolicitacaoASO(models.Model):
+    """Log de envios de solicitações de ASO por canal."""
+
+    CANAL_ENVIO = [
+        ('EMAIL', 'Email'),
+        ('WHATSAPP', 'WhatsApp'),
+    ]
+
+    STATUS_ENVIO = [
+        ('SUCESSO', 'Sucesso'),
+        ('FALHA', 'Falha'),
+    ]
+
+    solicitacao = models.ForeignKey(
+        SolicitacaoASO,
+        on_delete=models.CASCADE,
+        related_name='logs_envio',
+        verbose_name='Solicitação ASO'
+    )
+
+    canal = models.CharField(
+        'Canal',
+        max_length=20,
+        choices=CANAL_ENVIO
+    )
+
+    destinatario = models.CharField(
+        'Destinatário',
+        max_length=200
+    )
+
+    status_envio = models.CharField(
+        'Status do Envio',
+        max_length=20,
+        choices=STATUS_ENVIO
+    )
+
+    retorno = models.TextField(
+        'Retorno',
+        blank=True
+    )
+
+    data_envio = models.DateTimeField(
+        'Data do Envio',
+        auto_now_add=True
+    )
+
+    class Meta:
+        verbose_name = 'Log de Envio da Solicitação ASO'
+        verbose_name_plural = 'Logs de Envio das Solicitações ASO'
+        ordering = ['-data_envio']
+        indexes = [
+            models.Index(fields=['canal', 'status_envio']),
+            models.Index(fields=['data_envio']),
+        ]
+
+    def __str__(self):
+        return f"{self.solicitacao_id} - {self.canal} - {self.status_envio}"
+
+
 class RescisaoContrato(models.Model):
     """
     Controle de rescisões/desligamentos de funcionários
@@ -2672,7 +3764,17 @@ class RescisaoContrato(models.Model):
         related_name='rescisoes',
         verbose_name='Funcionário'
     )
-    
+
+    vinculo = models.ForeignKey(
+        'cadastros.VinculoContrato',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='rescisoes',
+        verbose_name='Vínculo Contratual',
+        help_text='Vínculo contratual encerrado por esta rescisão (opcional)'
+    )
+
     tipo_rescisao = models.CharField(
         'Tipo de Rescisão',
         max_length=40,
@@ -2889,6 +3991,147 @@ class RescisaoContrato(models.Model):
     
     def __str__(self):
         return f"{self.funcionario.nome_completo} - {self.get_tipo_rescisao_display()} ({self.data_desligamento})"
+
+    @staticmethod
+    def _to_decimal(value):
+        if isinstance(value, Decimal):
+            return value.quantize(Decimal('0.01'))
+        if value in (None, ''):
+            return Decimal('0.00')
+        return Decimal(str(value)).quantize(Decimal('0.01'))
+
+    @staticmethod
+    def _add_years(base_date, years):
+        try:
+            return base_date.replace(year=base_date.year + years)
+        except ValueError:
+            return base_date.replace(month=2, day=28, year=base_date.year + years)
+
+    @classmethod
+    def calcular_estimativa_verbas(cls, funcionario, tipo_rescisao, data_desligamento,
+                                   trabalhou_aviso_previo=True, dias_aviso_previo=30):
+        """
+        Retorna uma estimativa das verbas rescisórias com base nos dados cadastrais.
+        Observação: FGTS, férias vencidas e descontos podem exigir conferência manual.
+        """
+        salario = cls._to_decimal(funcionario.salario or 0)
+        data_admissao = funcionario.data_admissao
+        data_desligamento = data_desligamento or timezone.now().date()
+        dias_aviso_previo = int(dias_aviso_previo or 30)
+
+        zeros = {
+            'saldo_salario': Decimal('0.00'),
+            'ferias_vencidas': Decimal('0.00'),
+            'ferias_proporcionais': Decimal('0.00'),
+            'decimo_terceiro_proporcional': Decimal('0.00'),
+            'aviso_previo_indenizado': Decimal('0.00'),
+            'multa_fgts': Decimal('0.00'),
+            'outros_valores': Decimal('0.00'),
+            'descontos': Decimal('0.00'),
+            'valor_total': Decimal('0.00'),
+            'valor_liquido': Decimal('0.00'),
+            'tem_direito_seguro_desemprego': False,
+            'liberar_fgts': False,
+            'memoria': [],
+        }
+
+        if not data_admissao or data_desligamento < data_admissao:
+            zeros['memoria'].append('Informe uma data de admissão válida para estimar as verbas.')
+            return zeros
+
+        dias_no_mes = monthrange(data_desligamento.year, data_desligamento.month)[1]
+        saldo_salario = cls._to_decimal((salario / Decimal(dias_no_mes)) * Decimal(data_desligamento.day))
+
+        periodos_vencidos = 0
+        periodo_inicio = data_admissao
+        while cls._add_years(periodo_inicio, 1) <= data_desligamento:
+            periodo_fim = cls._add_years(periodo_inicio, 1) - timedelta(days=1)
+            possui_ferias = funcionario.ferias.exclude(status='CANCELADA').filter(
+                periodo_aquisitivo_inicio=periodo_inicio,
+                periodo_aquisitivo_fim=periodo_fim
+            ).exists()
+            if not possui_ferias:
+                periodos_vencidos += 1
+            periodo_inicio = cls._add_years(periodo_inicio, 1)
+
+        ferias_vencidas = cls._to_decimal(salario * Decimal(periodos_vencidos))
+
+        meses_ferias_proporcionais = (
+            (data_desligamento.year - periodo_inicio.year) * 12 +
+            (data_desligamento.month - periodo_inicio.month)
+        )
+        if periodo_inicio.day > 15:
+            meses_ferias_proporcionais -= 1
+        if data_desligamento.day >= 15:
+            meses_ferias_proporcionais += 1
+        meses_ferias_proporcionais = min(max(meses_ferias_proporcionais, 0), 11)
+        ferias_proporcionais = cls._to_decimal((salario / Decimal('12')) * Decimal(meses_ferias_proporcionais))
+
+        inicio_ano = max(data_admissao, date(data_desligamento.year, 1, 1))
+        meses_decimo = (data_desligamento.month - inicio_ano.month) + 1
+        if inicio_ano.day > 15:
+            meses_decimo -= 1
+        if data_desligamento.day < 15:
+            meses_decimo -= 1
+        meses_decimo = min(max(meses_decimo, 0), 12)
+        decimo_terceiro = cls._to_decimal((salario / Decimal('12')) * Decimal(meses_decimo))
+
+        terco_constitucional = cls._to_decimal((ferias_vencidas + ferias_proporcionais) / Decimal('3'))
+
+        tipos_com_aviso_indenizado = {
+            'DEMISSAO_SEM_JUSTA_CAUSA',
+            'ACORDO_TRABALHISTA',
+            'TERMINO_CONTRATO',
+            'APOSENTADORIA',
+        }
+        aviso_previo_indenizado = Decimal('0.00')
+        if not trabalhou_aviso_previo and tipo_rescisao in tipos_com_aviso_indenizado:
+            aviso_previo_indenizado = cls._to_decimal((salario / Decimal('30')) * Decimal(dias_aviso_previo))
+
+        meses_fgts = max(((data_desligamento.year - data_admissao.year) * 12) + (data_desligamento.month - data_admissao.month), 0)
+        if data_desligamento.day >= data_admissao.day:
+            meses_fgts += 1
+        saldo_fgts_estimado = cls._to_decimal(salario * Decimal('0.08') * Decimal(meses_fgts))
+
+        multa_fgts = Decimal('0.00')
+        if tipo_rescisao == 'DEMISSAO_SEM_JUSTA_CAUSA':
+            multa_fgts = cls._to_decimal(saldo_fgts_estimado * Decimal('0.40'))
+        elif tipo_rescisao == 'ACORDO_TRABALHISTA':
+            multa_fgts = cls._to_decimal(saldo_fgts_estimado * Decimal('0.20'))
+
+        outros_valores = terco_constitucional
+        descontos = Decimal('0.00')
+        valor_total = cls._to_decimal(
+            saldo_salario + ferias_vencidas + ferias_proporcionais +
+            decimo_terceiro + aviso_previo_indenizado + multa_fgts + outros_valores
+        )
+        valor_liquido = cls._to_decimal(valor_total - descontos)
+
+        memoria = [
+            f'Saldo de salário: salário mensal de R$ {salario} dividido por {dias_no_mes} dias e multiplicado por {data_desligamento.day} dias trabalhados no mês.',
+            f'Férias vencidas: {periodos_vencidos} período(s) aquisitivo(s) sem baixa no controle de férias.',
+            f'Férias proporcionais: {meses_ferias_proporcionais}/12 avos sobre o salário atual.',
+            f'13º proporcional: {meses_decimo}/12 avos no ano da rescisão.',
+            f'1/3 constitucional: lançado em Outros Valores, sobre férias vencidas e proporcionais.',
+            f'FGTS/multa: estimativa sobre 8% do salário por {meses_fgts} mês(es) de vínculo. Conferir com extrato real.',
+            'Descontos legais e adiantamentos não são apurados automaticamente nesta versão e devem ser conferidos manualmente.',
+        ]
+
+        return {
+            'saldo_salario': saldo_salario,
+            'ferias_vencidas': ferias_vencidas,
+            'ferias_proporcionais': ferias_proporcionais,
+            'decimo_terceiro_proporcional': decimo_terceiro,
+            'aviso_previo_indenizado': aviso_previo_indenizado,
+            'multa_fgts': multa_fgts,
+            'outros_valores': outros_valores,
+            'descontos': descontos,
+            'valor_total': valor_total,
+            'valor_liquido': valor_liquido,
+            'tem_direito_seguro_desemprego': tipo_rescisao in {'DEMISSAO_SEM_JUSTA_CAUSA', 'TERMINO_CONTRATO'},
+            'liberar_fgts': tipo_rescisao in {'DEMISSAO_SEM_JUSTA_CAUSA', 'ACORDO_TRABALHISTA', 'TERMINO_CONTRATO'},
+            'memoria': memoria,
+        }
     
     def calcular_valor_liquido(self):
         """Calcula valor líquido da rescisão"""
@@ -2907,17 +4150,42 @@ class RescisaoContrato(models.Model):
     def clean(self):
         """Validações"""
         from django.core.exceptions import ValidationError
-        
+
+        errors = {}
+
         if self.data_desligamento < self.data_aviso:
-            raise ValidationError({
-                'data_desligamento': 'Data de desligamento não pode ser anterior ao aviso'
-            })
-        
-        # Valida multa FGTS apenas para demissão sem justa causa
+            errors['data_desligamento'] = 'Data de desligamento não pode ser anterior ao aviso'
+
+        if self.vinculo and self.funcionario_id and self.vinculo.funcionario_id != self.funcionario_id:
+            errors['vinculo'] = 'O vínculo selecionado não pertence ao funcionário informado.'
+
         if self.tipo_rescisao != 'DEMISSAO_SEM_JUSTA_CAUSA' and self.multa_fgts > 0:
-            raise ValidationError({
-                'multa_fgts': 'Multa FGTS apenas para demissão sem justa causa'
-            })
+            errors['multa_fgts'] = 'Multa FGTS apenas para demissão sem justa causa'
+
+        if self.tipo_rescisao == 'DEMISSAO_COM_JUSTA_CAUSA':
+            if self.tem_direito_seguro_desemprego:
+                errors['tem_direito_seguro_desemprego'] = 'Demissão por justa causa não gera seguro desemprego.'
+            if self.liberar_fgts:
+                errors['liberar_fgts'] = 'Demissão por justa causa não libera saque de FGTS.'
+            if self.multa_fgts > 0:
+                errors['multa_fgts'] = 'Demissão por justa causa não gera multa de FGTS.'
+            if self.aviso_previo_indenizado > 0:
+                errors['aviso_previo_indenizado'] = 'Demissão por justa causa não gera aviso prévio indenizado.'
+
+        if self.tipo_rescisao == 'PEDIDO_DEMISSAO' and self.tem_direito_seguro_desemprego:
+            errors['tem_direito_seguro_desemprego'] = 'Pedido de demissão não gera seguro desemprego.'
+
+        if self.exame_demissional_realizado and not self.data_exame_demissional:
+            errors['data_exame_demissional'] = 'Informe a data do exame demissional realizado.'
+
+        if self.data_homologacao and self.data_homologacao < self.data_desligamento:
+            errors['data_homologacao'] = 'A homologação não pode ocorrer antes do desligamento.'
+
+        if self.status == 'CONCLUIDA' and not self.data_pagamento:
+            errors['data_pagamento'] = 'Informe a data do pagamento para concluir a rescisão.'
+
+        if errors:
+            raise ValidationError(errors)
 
 
 # CULTURA

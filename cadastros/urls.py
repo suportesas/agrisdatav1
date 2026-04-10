@@ -56,6 +56,12 @@ urlpatterns = [
     path('funcoes/get-salario/', views.funcao_get_salario, name='funcao_get_salario'),
     path('funcoes/<int:pk>/editar/', views.funcao_update, name='funcao_update'),
     path('funcoes/<int:pk>/excluir/', views.funcao_delete, name='funcao_delete'),
+
+    # ==================== RISCOS AMBIENTAIS (CATÁLOGO) ====================
+    path('riscos-ambientais/', views.risco_ambiental_catalogo_list, name='risco_ambiental_catalogo_list'),
+    path('riscos-ambientais/novo/', views.risco_ambiental_catalogo_create, name='risco_ambiental_catalogo_create'),
+    path('riscos-ambientais/<int:pk>/editar/', views.risco_ambiental_catalogo_update, name='risco_ambiental_catalogo_update'),
+    path('riscos-ambientais/<int:pk>/excluir/', views.risco_ambiental_catalogo_delete, name='risco_ambiental_catalogo_delete'),
     
     # ==================== FUNCIONÁRIOS ====================
     path('funcionarios/', views.funcionario_list, name='funcionario_list'),
@@ -365,6 +371,7 @@ urlpatterns = [
     
     # Férias
     path('rh/ferias/', views_rh.ferias_list, name='ferias_list'),
+    path('rh/ferias/relatorio/previsao-pdf/', views_rh.ferias_previsao_pdf, name='ferias_previsao_pdf'),
     path('rh/ferias/novo/', views_rh.ferias_create, name='ferias_create'),
     path('rh/ferias/<int:pk>/', views_rh.ferias_detail, name='ferias_detail'),
     path('rh/ferias/<int:pk>/editar/', views_rh.ferias_update, name='ferias_update'),
@@ -376,10 +383,42 @@ urlpatterns = [
     path('rh/afastamentos/<int:pk>/', views_rh.afastamento_detail, name='afastamento_detail'),
     path('rh/afastamentos/<int:pk>/editar/', views_rh.afastamento_update, name='afastamento_update'),
     path('rh/afastamentos/<int:pk>/excluir/', views_rh.afastamento_delete, name='afastamento_delete'),
+
+    # Vínculos Contratuais
+    path('rh/vinculos/', views_rh.vinculo_list, name='vinculo_list'),
+    path('rh/vinculos/novo/', views_rh.vinculo_create, name='vinculo_create'),
+    path('rh/vinculos/<int:pk>/', views_rh.vinculo_detail, name='vinculo_detail'),
+    path('rh/vinculos/<int:pk>/editar/', views_rh.vinculo_update, name='vinculo_update'),
+
+    # Laudos de Risco
+    path('rh/laudos/', views_rh.laudo_list, name='laudo_list'),
+    path('rh/laudos/novo/', views_rh.laudo_create, name='laudo_create'),
+    path('rh/laudos/<int:pk>/', views_rh.laudo_detail, name='laudo_detail'),
+    path('rh/laudos/<int:pk>/editar/', views_rh.laudo_update, name='laudo_update'),
+
+    # Tipos de Exame ASO
+    path('rh/aso/tipos-exame/', views_rh.tipo_exame_aso_list, name='tipo_exame_aso_list'),
+    path('rh/aso/tipos-exame/novo/', views_rh.tipo_exame_aso_create, name='tipo_exame_aso_create'),
+    path('rh/aso/tipos-exame/<int:pk>/editar/', views_rh.tipo_exame_aso_update, name='tipo_exame_aso_update'),
+    path('rh/aso/tipos-exame/<int:pk>/toggle-ativo/', views_rh.tipo_exame_aso_toggle_ativo, name='tipo_exame_aso_toggle_ativo'),
+
+    # Solicitações de ASO
+    path('rh/aso/solicitacoes/', views_rh.aso_solicitacao_list, name='aso_solicitacao_list'),
+    path('rh/aso/solicitacoes/nova/', views_rh.aso_solicitacao_create, name='aso_solicitacao_create'),
+    path('rh/aso/funcionarios/<int:funcionario_id>/riscos/', views_rh.aso_funcionario_riscos, name='aso_funcionario_riscos'),
+    path('rh/aso/buscar-laboratorio/', views_rh.aso_buscar_laboratorio, name='aso_buscar_laboratorio'),
+    path('rh/aso/solicitacoes/<int:pk>/', views_rh.aso_solicitacao_detail, name='aso_solicitacao_detail'),
+    path('rh/aso/solicitacoes/<int:pk>/editar/', views_rh.aso_solicitacao_update, name='aso_solicitacao_update'),
+    path('rh/aso/solicitacoes/<int:pk>/assinar/', views_rh.aso_solicitacao_assinar, name='aso_solicitacao_assinar'),
+    path('rh/aso/solicitacoes/<int:pk>/pdf/', views_rh.aso_solicitacao_pdf, name='aso_solicitacao_pdf'),
+    path('rh/aso/solicitacoes/<int:pk>/enviar-email/', views_rh.aso_solicitacao_enviar_email, name='aso_solicitacao_enviar_email'),
+    path('rh/aso/solicitacoes/<int:pk>/enviar-whatsapp/', views_rh.aso_solicitacao_enviar_whatsapp, name='aso_solicitacao_enviar_whatsapp'),
     
     # Rescisões
     path('rh/rescisoes/', views_rh.rescisao_list, name='rescisao_list'),
     path('rh/rescisoes/novo/', views_rh.rescisao_create, name='rescisao_create'),
+    path('rh/rescisoes/vinculos-por-funcionario/', views_rh.vinculos_por_funcionario, name='vinculos_por_funcionario'),
+    path('rh/rescisoes/calcular/', views_rh.rescisao_calcular, name='rescisao_calcular'),
     path('rh/rescisoes/<int:pk>/', views_rh.rescisao_detail, name='rescisao_detail'),
     path('rh/rescisoes/<int:pk>/editar/', views_rh.rescisao_update, name='rescisao_update'),
     path('rh/rescisoes/<int:pk>/excluir/', views_rh.rescisao_delete, name='rescisao_delete'),

@@ -1,5 +1,4 @@
 {% extends 'base.html' %}
-{% load static %}
 {% load widget_tweaks %}
 
 {% block title %}{{ title }} | ERP Agrícola{% endblock %}
@@ -7,13 +6,14 @@
 {% block content %}
 <div class="container-fluid py-4">
   <div class="row justify-content-center">
-    <div class="col-lg-10">
+    <div class="col-xl-10">
       <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
           <h1 class="h3 mb-1">
             <i class="fas fa-user-times text-secondary me-2"></i>
             {{ title }}
           </h1>
+          <p class="text-muted mb-0">Use o cálculo automático como estimativa inicial e confira os valores legais antes de concluir.</p>
         </div>
         <a href="{% url 'cadastros:rescisao_list' %}" class="btn btn-outline-secondary">
           <i class="fas fa-arrow-left me-2"></i>Voltar
@@ -22,71 +22,138 @@
 
       <form method="post" enctype="multipart/form-data">
         {% csrf_token %}
-        
+
         {% if form.non_field_errors %}
         <div class="alert alert-danger">{{ form.non_field_errors }}</div>
         {% endif %}
 
-        <!-- Funcionário -->
+        <div class="card mb-3 border-0 shadow-sm">
+          <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="fas fa-calculator me-2"></i>Cálculo Assistido</h5>
+            <div class="d-flex gap-2">
+              <button type="button" class="btn btn-light btn-sm" id="btnCalcularRescisao">
+                <i class="fas fa-bolt me-1"></i>Calcular verbas automaticamente
+              </button>
+              <button type="button" class="btn btn-outline-light btn-sm" data-bs-toggle="modal" data-bs-target="#modalAjudaRescisao">
+                <i class="fas fa-circle-question me-1"></i>Ajuda
+              </button>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="alert alert-info mb-3">
+              O cálculo automático usa salário, data de admissão, data de desligamento, tipo de rescisão e aviso prévio para preencher uma estimativa inicial das verbas.
+            </div>
+            <div class="row g-3">
+              <div class="col-md-4">
+                <div class="border rounded p-3 h-100 bg-light">
+                  <div class="small text-muted text-uppercase">Salário Base</div>
+                  <div class="fw-semibold" id="baseSalario">-</div>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="border rounded p-3 h-100 bg-light">
+                  <div class="small text-muted text-uppercase">Data de Admissão</div>
+                  <div class="fw-semibold" id="baseAdmissao">-</div>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="border rounded p-3 h-100 bg-light">
+                  <div class="small text-muted text-uppercase">Tipo de Contrato</div>
+                  <div class="fw-semibold" id="baseContrato">-</div>
+                </div>
+              </div>
+            </div>
+            <div class="mt-3 d-none" id="memoriaCalculoWrapper">
+              <div class="border rounded p-3">
+                <div class="fw-semibold mb-2">Memória de cálculo</div>
+                <ul class="mb-0 ps-3" id="memoriaCalculo"></ul>
+              </div>
+            </div>
+            <div class="mt-3 d-none" id="calculoErro"></div>
+          </div>
+        </div>
+
         <div class="card mb-3">
           <div class="card-header bg-secondary text-white">
             <h5 class="mb-0"><i class="fas fa-user me-2"></i>Funcionário</h5>
           </div>
           <div class="card-body">
-            <div class="mb-3">
-              <label class="form-label">{{ form.funcionario.label }} <span class="text-danger">*</span></label>
-              {{ form.funcionario|add_class:"form-select" }}
-              {% if form.funcionario.errors %}<div class="text-danger small">{{ form.funcionario.errors }}</div>{% endif %}
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label">{{ form.funcionario.label }} <span class="text-danger">*</span></label>
+                {{ form.funcionario|add_class:"form-select" }}
+                {% if form.funcionario.errors %}<div class="text-danger small">{{ form.funcionario.errors }}</div>{% endif %}
+              </div>
+              <div class="col-md-6">
+                {% if form.vinculo %}
+                <label class="form-label">{{ form.vinculo.label }}</label>
+                {{ form.vinculo|add_class:"form-select" }}
+                {% if form.vinculo.errors %}<div class="text-danger small">{{ form.vinculo.errors }}</div>{% endif %}
+                {% else %}
+                <label class="form-label">Base do cálculo</label>
+                <input type="text" class="form-control" value="Salário e data de admissão do cadastro do funcionário" readonly>
+                {% endif %}
+              </div>
             </div>
           </div>
         </div>
 
-        <!-- Tipo e Datas -->
         <div class="card mb-3">
           <div class="card-header">
             <h5 class="mb-0"><i class="fas fa-file-contract me-2"></i>Dados da Rescisão</h5>
           </div>
           <div class="card-body">
-            <div class="row">
-              <div class="col-md-6 mb-3">
-                <label class="form-label">{{ form.tipo_rescisao.label }} <span class="text-danger">* </span></label>
+            <div class="row g-3">
+              <div class="col-md-4">
+                <label class="form-label">{{ form.tipo_rescisao.label }} <span class="text-danger">*</span></label>
                 {{ form.tipo_rescisao|add_class:"form-select" }}
                 {% if form.tipo_rescisao.errors %}<div class="text-danger small">{{ form.tipo_rescisao.errors }}</div>{% endif %}
               </div>
-              <div class="col-md-6 mb-3">
+              <div class="col-md-4">
+                <label class="form-label">{{ form.data_aviso.label }} <span class="text-danger">*</span></label>
+                {{ form.data_aviso|add_class:"form-control" }}
+                {% if form.data_aviso.errors %}<div class="text-danger small">{{ form.data_aviso.errors }}</div>{% endif %}
+              </div>
+              <div class="col-md-4">
                 <label class="form-label">{{ form.data_desligamento.label }} <span class="text-danger">*</span></label>
                 {{ form.data_desligamento|add_class:"form-control" }}
                 {% if form.data_desligamento.errors %}<div class="text-danger small">{{ form.data_desligamento.errors }}</div>{% endif %}
               </div>
-            </div>
-            <div class="mb-3">
-              <label class="form-label">{{ form.motivo_detalhado.label }}</label>
-              {{ form.motivo_detalhado|add_class:"form-control" }}
+              <div class="col-md-8">
+                <label class="form-label">{{ form.motivo_detalhado.label }}</label>
+                {{ form.motivo_detalhado|add_class:"form-control" }}
+                {% if form.motivo_detalhado.errors %}<div class="text-danger small">{{ form.motivo_detalhado.errors }}</div>{% endif %}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">{{ form.status.label }}</label>
+                {{ form.status|add_class:"form-select" }}
+                {% if form.status.errors %}<div class="text-danger small">{{ form.status.errors }}</div>{% endif %}
+              </div>
             </div>
           </div>
         </div>
 
-        <!-- Aviso Prévio -->
         <div class="card mb-3">
           <div class="card-header bg-warning">
             <h5 class="mb-0"><i class="fas fa-bell me-2"></i>Aviso Prévio</h5>
           </div>
           <div class="card-body">
-            <div class="row">
-              <div class="col-md-4 mb-3">
-                <label class="form-label">{{ form.data_aviso_previo.label }}</label>
-                {{ form.data_aviso_previo|add_class:"form-control" }}
-              </div>
-              <div class="col-md-4 mb-3">
+            <div class="row g-3 align-items-end">
+              <div class="col-md-4">
                 <label class="form-label">{{ form.dias_aviso_previo.label }}</label>
                 {{ form.dias_aviso_previo|add_class:"form-control" }}
-                <small class="text-muted">30 ou 90 dias conforme tempo de serviço</small>
+                {% if form.dias_aviso_previo.errors %}<div class="text-danger small">{{ form.dias_aviso_previo.errors }}</div>{% endif %}
               </div>
-              <div class="col-md-4 mb-3">
-                <div class="form-check mt-4">
-                  {{ form.aviso_previo_indenizado }}
-                  <label class="form-check-label" for="{{ form.aviso_previo_indenizado.id_for_label }}">
-                    {{ form.aviso_previo_indenizado.label }}
+              <div class="col-md-4">
+                <label class="form-label">{{ form.aviso_previo_indenizado.label }}</label>
+                {{ form.aviso_previo_indenizado|add_class:"form-control" }}
+                {% if form.aviso_previo_indenizado.errors %}<div class="text-danger small">{{ form.aviso_previo_indenizado.errors }}</div>{% endif %}
+              </div>
+              <div class="col-md-4">
+                <div class="form-check mt-4 pt-2">
+                  {{ form.trabalhou_aviso_previo|add_class:"form-check-input" }}
+                  <label class="form-check-label" for="{{ form.trabalhou_aviso_previo.id_for_label }}">
+                    {{ form.trabalhou_aviso_previo.label }}
                   </label>
                 </div>
               </div>
@@ -94,162 +161,138 @@
           </div>
         </div>
 
-        <!-- Verbas Rescisórias -->
         <div class="card mb-3">
           <div class="card-header bg-success text-white">
             <h5 class="mb-0"><i class="fas fa-dollar-sign me-2"></i>Verbas Rescisórias</h5>
           </div>
           <div class="card-body">
-            <div class="row">
-              <div class="col-md-4 mb-3">
+            <div class="row g-3">
+              <div class="col-md-4">
                 <label class="form-label">{{ form.saldo_salario.label }}</label>
-                {{ form.saldo_salario|add_class:"form-control" }}
+                {{ form.saldo_salario|add_class:"form-control campo-calculo" }}
               </div>
-              <div class="col-md-4 mb-3">
+              <div class="col-md-4">
                 <label class="form-label">{{ form.ferias_vencidas.label }}</label>
-                {{ form.ferias_vencidas|add_class:"form-control" }}
+                {{ form.ferias_vencidas|add_class:"form-control campo-calculo" }}
               </div>
-              <div class="col-md-4 mb-3">
+              <div class="col-md-4">
                 <label class="form-label">{{ form.ferias_proporcionais.label }}</label>
-                {{ form.ferias_proporcionais|add_class:"form-control" }}
+                {{ form.ferias_proporcionais|add_class:"form-control campo-calculo" }}
               </div>
-            </div>
-            <div class="row">
-              <div class="col-md-4 mb-3">
-                <label class="form-label">{{ form.terco_ferias.label }}</label>
-                {{ form.terco_ferias|add_class:"form-control" }}
-              </div>
-              <div class="col-md-4 mb-3">
+              <div class="col-md-4">
                 <label class="form-label">{{ form.decimo_terceiro_proporcional.label }}</label>
-                {{ form.decimo_terceiro_proporcional|add_class:"form-control" }}
+                {{ form.decimo_terceiro_proporcional|add_class:"form-control campo-calculo" }}
               </div>
-              <div class="col-md-4 mb-3">
-                <label class="form-label">{{ form.aviso_previo_indenizado_valor.label }}</label>
-                {{ form.aviso_previo_indenizado_valor|add_class:"form-control" }}
+              <div class="col-md-4">
+                <label class="form-label">{{ form.multa_fgts.label }}</label>
+                {{ form.multa_fgts|add_class:"form-control campo-calculo" }}
               </div>
-            </div>
-            <div class="row">
-              <div class="col-md-4 mb-3">
-                <label class="form-label">{{ form.outras_verbas.label }}</label>
-                {{ form.outras_verbas|add_class:"form-control" }}
-              </div>
-              <div class="col-md-8 mb-3">
-                <label class="form-label">{{ form.descricao_outras_verbas.label }}</label>
-                {{ form.descricao_outras_verbas|add_class:"form-control" }}
+              <div class="col-md-4">
+                <label class="form-label">{{ form.outros_valores.label }}</label>
+                {{ form.outros_valores|add_class:"form-control campo-calculo" }}
+                <small class="text-muted">O sistema lança aqui o 1/3 constitucional estimado.</small>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- FGTS -->
         <div class="card mb-3">
           <div class="card-header bg-info text-white">
-            <h5 class="mb-0"><i class="fas fa-university me-2"></i>FGTS</h5>
+            <h5 class="mb-0"><i class="fas fa-balance-scale me-2"></i>Totais e Direitos</h5>
           </div>
           <div class="card-body">
-            <div class="row">
-              <div class="col-md-4 mb-3">
-                <label class="form-label">{{ form.saldo_fgts.label }}</label>
-                {{ form.saldo_fgts|add_class:"form-control" }}
+            <div class="row g-3">
+              <div class="col-md-4">
+                <label class="form-label">Total Bruto Estimado</label>
+                <input type="text" class="form-control" id="valor_total_estimado" readonly>
               </div>
-              <div class="col-md-4 mb-3">
-                <label class="form-label">{{ form.multa_fgts_percentual.label }}</label>
-                {{ form.multa_fgts_percentual|add_class:"form-control" }}
-                <small class="text-muted">40% ou 20% (acordo)</small>
+              <div class="col-md-4">
+                <label class="form-label">{{ form.descontos.label }}</label>
+                {{ form.descontos|add_class:"form-control campo-calculo" }}
+                <small class="text-muted">INSS, IRRF, adiantamentos e faltas devem ser revisados manualmente.</small>
               </div>
-              <div class="col-md-4 mb-3">
-                <label class="form-label">{{ form.multa_fgts_valor.label }}</label>
-                {{ form.multa_fgts_valor|add_class:"form-control" }}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Descontos e Total -->
-        <div class="card mb-3">
-          <div class="card-header">
-            <h5 class="mb-0"><i class="fas fa-calculator me-2"></i>Descontos e Totais</h5>
-          </div>
-          <div class="card-body">
-            <div class="row">
-              <div class="col-md-4 mb-3">
-                <label class="form-label">{{ form.desconto_inss.label }}</label>
-                {{ form.desconto_inss|add_class:"form-control" }}
-              </div>
-              <div class="col-md-4 mb-3">
-                <label class="form-label">{{ form.desconto_irrf.label }}</label>
-                {{ form.desconto_irrf|add_class:"form-control" }}
-              </div>
-              <div class="col-md-4 mb-3">
-                <label class="form-label">{{ form.outros_descontos.label }}</label>
-                {{ form.outros_descontos|add_class:"form-control" }}
-              </div>
-            </div>
-            <div class="row">
-              <div class="col-md-6 mb-3">
-                <label class="form-label">{{ form.valor_total.label }}</label>
-                {{ form.valor_total|add_class:"form-control" }}
-                <small class="text-muted">Será calculado automaticamente</small>
-              </div>
-              <div class="col-md-6 mb-3">
+              <div class="col-md-4">
                 <label class="form-label">{{ form.valor_liquido.label }}</label>
                 {{ form.valor_liquido|add_class:"form-control" }}
-                <small class="text-muted">Total - Descontos</small>
+              </div>
+              <div class="col-md-6">
+                <div class="form-check mt-2">
+                  {{ form.tem_direito_seguro_desemprego|add_class:"form-check-input" }}
+                  <label class="form-check-label" for="{{ form.tem_direito_seguro_desemprego.id_for_label }}">
+                    {{ form.tem_direito_seguro_desemprego.label }}
+                  </label>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="form-check mt-2">
+                  {{ form.liberar_fgts|add_class:"form-check-input" }}
+                  <label class="form-check-label" for="{{ form.liberar_fgts.id_for_label }}">
+                    {{ form.liberar_fgts.label }}
+                  </label>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Documentos e Benefícios -->
         <div class="card mb-3">
           <div class="card-header">
-            <h5 class="mb-0"><i class="fas fa-file me-2"></i>Documentos e Benefícios</h5>
+            <h5 class="mb-0"><i class="fas fa-file-lines me-2"></i>Documentos, Pagamento e Observações</h5>
           </div>
           <div class="card-body">
-            <div class="row">
-              <div class="col-md-6 mb-3">
+            <div class="row g-3">
+              <div class="col-md-4">
+                <div class="form-check mt-4">
+                  {{ form.exame_demissional_realizado|add_class:"form-check-input" }}
+                  <label class="form-check-label" for="{{ form.exame_demissional_realizado.id_for_label }}">
+                    {{ form.exame_demissional_realizado.label }}
+                  </label>
+                </div>
+              </div>
+              <div class="col-md-4">
                 <label class="form-label">{{ form.data_exame_demissional.label }}</label>
                 {{ form.data_exame_demissional|add_class:"form-control" }}
               </div>
-              <div class="col-md-6 mb-3">
+              <div class="col-md-4">
+                <div class="form-check mt-4">
+                  {{ form.trct_emitido|add_class:"form-check-input" }}
+                  <label class="form-check-label" for="{{ form.trct_emitido.id_for_label }}">
+                    {{ form.trct_emitido.label }}
+                  </label>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">{{ form.chave_conectividade_social.label }}</label>
+                {{ form.chave_conectividade_social|add_class:"form-control" }}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">{{ form.arquivo_trct.label }}</label>
+                {{ form.arquivo_trct|add_class:"form-control" }}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">{{ form.arquivo_exame.label }}</label>
+                {{ form.arquivo_exame|add_class:"form-control" }}
+              </div>
+              <div class="col-md-4">
                 <label class="form-label">{{ form.data_homologacao.label }}</label>
                 {{ form.data_homologacao|add_class:"form-control" }}
-                <small class="text-muted">Obrigatória para contratos acima de 1 ano</small>
               </div>
-            </div>
-            <div class="row">
-              <div class="col-md-6 mb-3">
-                <label class="form-label">{{ form.documento_trct.label }}</label>
-                {{ form.documento_trct|add_class:"form-control" }}
-                <small class="text-muted">Termo de Rescisão do Contrato de Trabalho</small>
+              <div class="col-md-4">
+                <label class="form-label">{{ form.local_homologacao.label }}</label>
+                {{ form.local_homologacao|add_class:"form-control" }}
               </div>
-              <div class="col-md-6 mb-3">
-                <label class="form-label">{{ form.documento_exame_demissional.label }}</label>
-                {{ form.documento_exame_demissional|add_class:"form-control" }}
+              <div class="col-md-4">
+                <label class="form-label">{{ form.data_pagamento.label }}</label>
+                {{ form.data_pagamento|add_class:"form-control" }}
               </div>
-            </div>
-            <div class="form-check mb-3">
-              {{ form.direito_seguro_desemprego }}
-              <label class="form-check-label" for="{{ form.direito_seguro_desemprego.id_for_label }}">
-                {{ form.direito_seguro_desemprego.label }}
-              </label>
-            </div>
-            <div class="mb-3">
-              <label class="form-label">{{ form.observacoes.label }}</label>
-              {{ form.observacoes|add_class:"form-control" }}
-            </div>
-          </div>
-        </div>
-
-        <!-- Status -->
-        <div class="card mb-4">
-          <div class="card-header">
-            <h5 class="mb-0"><i class="fas fa-flag me-2"></i>Status</h5>
-          </div>
-          <div class="card-body">
-            <div class="mb-3">
-              <label class="form-label">{{ form.status.label }} <span class="text-danger">*</span></label>
-              {{ form.status|add_class:"form-select" }}
+              <div class="col-md-4">
+                <label class="form-label">{{ form.forma_pagamento.label }}</label>
+                {{ form.forma_pagamento|add_class:"form-control" }}
+              </div>
+              <div class="col-md-8">
+                <label class="form-label">{{ form.observacoes.label }}</label>
+                {{ form.observacoes|add_class:"form-control" }}
+              </div>
             </div>
           </div>
         </div>
@@ -266,40 +309,198 @@
     </div>
   </div>
 </div>
+
+<div class="modal fade" id="modalAjudaRescisao" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fas fa-circle-question me-2"></i>Como funciona a base de cálculo</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body">
+        <p>O cálculo automático desta tela é uma estimativa operacional para agilizar a geração da rescisão.</p>
+        <div class="mb-3">
+          <div class="fw-semibold">Base usada pelo sistema</div>
+          <ul class="mb-0">
+            <li>Salário atual do cadastro do funcionário.</li>
+            <li>Data de admissão do funcionário.</li>
+            <li>Data de desligamento informada na rescisão.</li>
+            <li>Tipo de rescisão selecionado.</li>
+            <li>Dias de aviso prévio e indicação se o aviso foi trabalhado.</li>
+          </ul>
+        </div>
+        <div class="mb-3">
+          <div class="fw-semibold">Como cada verba é estimada</div>
+          <ul class="mb-0">
+            <li>Saldo de salário: valor proporcional aos dias trabalhados no mês do desligamento.</li>
+            <li>Férias vencidas: quantidade de períodos aquisitivos completos sem baixa no controle de férias.</li>
+            <li>Férias proporcionais: avos proporcionais do período aquisitivo em andamento.</li>
+            <li>13º proporcional: avos proporcionais no ano da rescisão.</li>
+            <li>Aviso prévio indenizado: calculado sobre o salário e os dias informados, quando o aviso não é trabalhado.</li>
+            <li>Multa do FGTS: estimada a partir de 8% do salário por mês de vínculo. O extrato real do FGTS deve prevalecer.</li>
+            <li>1/3 constitucional: o sistema lança esse valor no campo Outros Valores.</li>
+          </ul>
+        </div>
+        <div class="alert alert-warning mb-0">
+          INSS, IRRF, adiantamentos, faltas, descontos de benefícios e particularidades legais precisam de conferência manual antes de concluir a rescisão.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-// Auto-calcular totais
-function calcularTotais() {
-  const saldo = parseFloat(document.querySelector('[name="saldo_salario"]').value) || 0;
-  const feriasVencidas = parseFloat(document.querySelector('[name="ferias_vencidas"]').value) || 0;
-  const feriasProporcionais = parseFloat(document.querySelector('[name="ferias_proporcionais"]').value) || 0;
-  const terco = parseFloat(document.querySelector('[name="terco_ferias"]').value) || 0;
-  const decimoTerceiro = parseFloat(document.querySelector('[name="decimo_terceiro_proporcional"]').value) || 0;
-  const avisoPrevio = parseFloat(document.querySelector('[name="aviso_previo_indenizado_valor"]').value) || 0;
-  const outrasVerbas = parseFloat(document.querySelector('[name="outras_verbas"]').value) || 0;
-  
-  const descontoINSS = parseFloat(document.querySelector('[name="desconto_inss"]').value) || 0;
-  const descontoIRRF = parseFloat(document.querySelector('[name="desconto_irrf"]').value) || 0;
-  const outrosDescontos = parseFloat(document.querySelector('[name="outros_descontos"]').value) || 0;
-  
-  const total = saldo + feriasVencidas + feriasProporcionais + terco + decimoTerceiro + avisoPrevio + outrasVerbas;
-  const liquido = total - descontoINSS - descontoIRRF - outrosDescontos;
-  
-  document.querySelector('[name="valor_total"]').value = total.toFixed(2);
-  document.querySelector('[name="valor_liquido"]').value = liquido.toFixed(2);
+function parseNumber(value) {
+  const parsed = parseFloat((value || '').toString().replace(',', '.'));
+  return Number.isFinite(parsed) ? parsed : 0;
 }
 
-// Adicionar listeners
-const campos = ['saldo_salario', 'ferias_vencidas', 'ferias_proporcionais', 'terco_ferias', 
-                'decimo_terceiro_proporcional', 'aviso_previo_indenizado_valor', 'outras_verbas',
-                'desconto_inss', 'desconto_irrf', 'outros_descontos'];
-campos.forEach(campo => {
-  const elemento = document.querySelector(`[name="${campo}"]`);
-  if (elemento) {
-    elemento.addEventListener('input', calcularTotais);
+function formatMoney(value) {
+  return parseNumber(value).toFixed(2);
+}
+
+function atualizarTotais() {
+  const campos = [
+    'saldo_salario',
+    'ferias_vencidas',
+    'ferias_proporcionais',
+    'decimo_terceiro_proporcional',
+    'aviso_previo_indenizado',
+    'multa_fgts',
+    'outros_valores'
+  ];
+  const bruto = campos.reduce((total, campo) => total + parseNumber(document.querySelector(`[name="${campo}"]`)?.value), 0);
+  const descontos = parseNumber(document.querySelector('[name="descontos"]')?.value);
+  const liquido = bruto - descontos;
+
+  const totalEstimado = document.getElementById('valor_total_estimado');
+  const valorLiquido = document.querySelector('[name="valor_liquido"]');
+  if (totalEstimado) totalEstimado.value = formatMoney(bruto);
+  if (valorLiquido) valorLiquido.value = formatMoney(liquido);
+}
+
+function mostrarErroCalculo(message) {
+  const box = document.getElementById('calculoErro');
+  box.className = 'mt-3 alert alert-danger';
+  box.textContent = message;
+  box.classList.remove('d-none');
+}
+
+function limparErroCalculo() {
+  const box = document.getElementById('calculoErro');
+  box.className = 'mt-3 d-none';
+  box.textContent = '';
+}
+
+async function atualizarVinculosDoFuncionario() {
+  const funcionarioSelect = document.querySelector('[name="funcionario"]');
+  const vinculoSelect = document.querySelector('[name="vinculo"]');
+  if (!funcionarioSelect || !vinculoSelect) return;
+
+  const funcionarioId = funcionarioSelect.value;
+  vinculoSelect.innerHTML = '';
+  const placeholder = document.createElement('option');
+  placeholder.value = '';
+  placeholder.textContent = '---------';
+  vinculoSelect.appendChild(placeholder);
+
+  if (!funcionarioId) return;
+
+  try {
+    const params = new URLSearchParams({ funcionario_id: funcionarioId });
+    const response = await fetch(`{% url 'cadastros:vinculos_por_funcionario' %}?${params.toString()}`);
+    const data = await response.json();
+    if (!response.ok || !data.ok) return;
+
+    data.vinculos.forEach((item) => {
+      const option = document.createElement('option');
+      option.value = item.id;
+      option.textContent = item.label;
+      vinculoSelect.appendChild(option);
+    });
+  } catch (error) {
+    // Mantém apenas placeholder em caso de falha de comunicação
   }
+}
+
+async function calcularRescisaoAutomaticamente() {
+  limparErroCalculo();
+
+  const funcionarioId = document.querySelector('[name="funcionario"]')?.value;
+  const tipoRescisao = document.querySelector('[name="tipo_rescisao"]')?.value;
+  const dataDesligamento = document.querySelector('[name="data_desligamento"]')?.value;
+  const trabalhouAviso = document.querySelector('[name="trabalhou_aviso_previo"]')?.checked;
+  const diasAviso = document.querySelector('[name="dias_aviso_previo"]')?.value || '30';
+
+  if (!funcionarioId || !tipoRescisao || !dataDesligamento) {
+    mostrarErroCalculo('Selecione funcionário, tipo de rescisão e data de desligamento antes de calcular.');
+    return;
+  }
+
+  const params = new URLSearchParams({
+    funcionario_id: funcionarioId,
+    tipo_rescisao: tipoRescisao,
+    data_desligamento: dataDesligamento,
+    trabalhou_aviso_previo: trabalhouAviso ? 'true' : 'false',
+    dias_aviso_previo: diasAviso,
+  });
+
+  const botao = document.getElementById('btnCalcularRescisao');
+  const textoOriginal = botao.innerHTML;
+  botao.disabled = true;
+  botao.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Calculando...';
+
+  try {
+    const response = await fetch(`{% url 'cadastros:rescisao_calcular' %}?${params.toString()}`);
+    const data = await response.json();
+
+    if (!response.ok || !data.ok) {
+      throw new Error(data.message || 'Não foi possível calcular a rescisão.');
+    }
+
+    Object.entries(data.campos).forEach(([campo, valor]) => {
+      const input = document.querySelector(`[name="${campo}"]`);
+      if (input) input.value = valor;
+    });
+
+    const seguro = document.querySelector('[name="tem_direito_seguro_desemprego"]');
+    const fgts = document.querySelector('[name="liberar_fgts"]');
+    if (seguro) seguro.checked = !!data.direitos.tem_direito_seguro_desemprego;
+    if (fgts) fgts.checked = !!data.direitos.liberar_fgts;
+
+    document.getElementById('baseSalario').textContent = `R$ ${data.bases.salario}`;
+    document.getElementById('baseAdmissao').textContent = data.bases.data_admissao;
+    document.getElementById('baseContrato').textContent = data.bases.tipo_contrato;
+
+    const memoriaWrapper = document.getElementById('memoriaCalculoWrapper');
+    const memoriaLista = document.getElementById('memoriaCalculo');
+    memoriaLista.innerHTML = '';
+    data.memoria.forEach((item) => {
+      const li = document.createElement('li');
+      li.textContent = item;
+      memoriaLista.appendChild(li);
+    });
+    memoriaWrapper.classList.remove('d-none');
+
+    atualizarTotais();
+  } catch (error) {
+    mostrarErroCalculo(error.message || 'Erro ao calcular as verbas.');
+  } finally {
+    botao.disabled = false;
+    botao.innerHTML = textoOriginal;
+  }
+}
+
+document.getElementById('btnCalcularRescisao')?.addEventListener('click', calcularRescisaoAutomaticamente);
+document.querySelector('[name="funcionario"]')?.addEventListener('change', atualizarVinculosDoFuncionario);
+document.querySelectorAll('.campo-calculo').forEach((elemento) => {
+  elemento.addEventListener('input', atualizarTotais);
+});
+document.addEventListener('DOMContentLoaded', () => {
+  atualizarTotais();
+  atualizarVinculosDoFuncionario();
 });
 </script>
 {% endblock %}

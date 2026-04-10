@@ -54,12 +54,14 @@ from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.core.exceptions import ValidationError, PermissionDenied
 from django.db.models import Q, Count, Sum, Avg, Case, When, Value, IntegerField
+from django.db import transaction
 from django.core.paginator import Paginator
 from django.utils import timezone
+from decimal import Decimal
 import requests
 import re
 from django.core.cache import cache
-from .models import FornecedorEndereco, Funcionario, FuncaoFuncionario
+from .models import FornecedorEndereco, Funcionario, FuncaoFuncionario, HistoricoFuncionario, VinculoContrato
 from .forms import FornecedorEnderecoForm, FuncionarioForm, FuncaoFuncionarioForm, DocumentoFuncionarioFormSet
 from .forms import DocumentoFuncionarioForm
 
@@ -68,7 +70,8 @@ from .models import (
     ContaBancariaFazenda, DocumentoFazenda, DocumentoFornecedor,
     Area, Talhao, Cultura, Praga, HistoricoTalhao, Safra,
     Vendedor, ComissaoVendedor, Fornecedor, FornecedorContato, FornecedorDadoBancario, Porto, NCM, EmpresaNCM, CFOP,
-    Cliente, EnderecoCliente, ContatoCliente, ContaBancariaCliente, DocumentoCliente, PrazoPagamentoPadrao
+    Cliente, EnderecoCliente, ContatoCliente, ContaBancariaCliente, DocumentoCliente, PrazoPagamentoPadrao,
+    CategoriaRiscoAmbiental, RiscoAmbientalCatalogo,
 )
 
 from .forms import VendedorForm, VendedorFiltroForm, ComissaoVendedorForm, FornecedorForm, FornecedorContatoForm, FornecedorDadoBancarioForm, TransportadoraForm
@@ -84,6 +87,7 @@ from .forms import (
     
     # Prazo de Pagamento
     PrazoPagamentoPadraoForm,
+    RiscoAmbientalCatalogoForm,
 )
 
 # Transportadora views (moved to a dedicated module for clarity)
@@ -1874,14 +1878,102 @@ def funcao_list(request):
 
 
 @login_required
+def risco_ambiental_catalogo_list(request):
+    """Lista itens do catálogo de riscos ambientais da empresa."""
+    empresa = request.user.empresa
+    CategoriaRiscoAmbiental.criar_categorias_padrao_empresa(empresa)
+
+    itens = RiscoAmbientalCatalogo.objects.filter(empresa=empresa).select_related('categoria')
+
+    q = request.GET.get('q', '').strip()
+    categoria_id = request.GET.get('categoria')
+    status = request.GET.get('status', '').strip()
+
+    if q:
+        itens = itens.filter(Q(nome__icontains=q) | Q(epi_padrao__icontains=q) | Q(observacoes__icontains=q))
+    if categoria_id:
+        itens = itens.filter(categoria_id=categoria_id)
+    if status == 'ativos':
+        itens = itens.filter(ativo=True)
+    elif status == 'inativos':
+        itens = itens.filter(ativo=False)
+
+    categorias = CategoriaRiscoAmbiental.objects.filter(empresa=empresa, ativo=True).order_by('nome')
+
+    return render(request, 'cadastros/risco_ambiental_catalogo/catalogo_list.html', {
+        'itens': itens.order_by('categoria__nome', 'nome'),
+        'categorias': categorias,
+    })
+
+
+@login_required
+def risco_ambiental_catalogo_create(request):
+    """Cria item do catálogo de riscos ambientais."""
+    empresa = request.user.empresa
+
+    if request.method == 'POST':
+        form = RiscoAmbientalCatalogoForm(request.POST, empresa=empresa)
+        if form.is_valid():
+            item = form.save()
+            messages.success(request, f'✅ Item "{item.nome}" adicionado ao catálogo de riscos.')
+            return redirect('cadastros:risco_ambiental_catalogo_list')
+    else:
+        form = RiscoAmbientalCatalogoForm(empresa=empresa)
+
+    return render(request, 'cadastros/risco_ambiental_catalogo/catalogo_form.html', {
+        'form': form,
+        'action': 'Cadastrar',
+    })
+
+
+@login_required
+def risco_ambiental_catalogo_update(request, pk):
+    """Edita item do catálogo de riscos ambientais."""
+    empresa = request.user.empresa
+    item = get_object_or_404(RiscoAmbientalCatalogo, pk=pk, empresa=empresa)
+
+    if request.method == 'POST':
+        form = RiscoAmbientalCatalogoForm(request.POST, instance=item, empresa=empresa)
+        if form.is_valid():
+            item = form.save()
+            messages.success(request, f'✅ Item "{item.nome}" atualizado com sucesso.')
+            return redirect('cadastros:risco_ambiental_catalogo_list')
+    else:
+        form = RiscoAmbientalCatalogoForm(instance=item, empresa=empresa)
+
+    return render(request, 'cadastros/risco_ambiental_catalogo/catalogo_form.html', {
+        'form': form,
+        'item': item,
+        'action': 'Editar',
+    })
+
+
+@login_required
+def risco_ambiental_catalogo_delete(request, pk):
+    """Exclui item do catálogo de riscos ambientais."""
+    empresa = request.user.empresa
+    item = get_object_or_404(RiscoAmbientalCatalogo, pk=pk, empresa=empresa)
+
+    if request.method == 'POST':
+        nome = item.nome
+        item.delete()
+        messages.success(request, f'🗑️ Item "{nome}" removido do catálogo.')
+        return redirect('cadastros:risco_ambiental_catalogo_list')
+
+    return render(request, 'cadastros/risco_ambiental_catalogo/catalogo_confirm_delete.html', {'item': item})
+
+
+@login_required
 def funcao_create_ajax(request):
     """Cria função via AJAX (para modal)"""
     if request.method == 'POST':
-        form = FuncaoFuncionarioForm(request.POST)
+        form = FuncaoFuncionarioForm(request.POST, empresa=request.user.empresa)
         if form.is_valid():
             funcao = form.save(commit=False)
             funcao.empresa = request.user.empresa
             funcao.save()
+            form.instance = funcao
+            form._salvar_riscos_ambientais(funcao, request.user.empresa)
             
             return JsonResponse({
                 'sucesso': True,
@@ -1902,15 +1994,17 @@ def funcao_create_ajax(request):
 def funcao_create(request):
     """Cria função de funcionário (fallback non-AJAX)"""
     if request.method == 'POST':
-        form = FuncaoFuncionarioForm(request.POST)
+        form = FuncaoFuncionarioForm(request.POST, empresa=request.user.empresa)
         if form.is_valid():
             funcao = form.save(commit=False)
             funcao.empresa = request.user.empresa
             funcao.save()
+            form.instance = funcao
+            form._salvar_riscos_ambientais(funcao, request.user.empresa)
             messages.success(request, f'✅ Função "{funcao.nome}" criada com sucesso!')
             return redirect('cadastros:funcao_list')
     else:
-        form = FuncaoFuncionarioForm()
+        form = FuncaoFuncionarioForm(empresa=request.user.empresa)
     return render(request, 'cadastros/funcao/funcao_form.html', {'form': form, 'action': 'Cadastrar'})
 
 
@@ -1945,13 +2039,57 @@ def funcao_update(request, pk):
     """Editar função de funcionário"""
     funcao = get_object_or_404(FuncaoFuncionario, pk=pk, empresa=request.user.empresa)
     if request.method == 'POST':
-        form = FuncaoFuncionarioForm(request.POST, instance=funcao)
+        salario_base_anterior = funcao.salario_base
+        form = FuncaoFuncionarioForm(request.POST, instance=funcao, empresa=request.user.empresa)
         if form.is_valid():
+            aplicar_reajuste_todos = request.POST.get('aplicar_reajuste_todos') == 'on'
             funcao = form.save()
+
+            reajustes_aplicados = 0
+            if (
+                aplicar_reajuste_todos
+                and salario_base_anterior != funcao.salario_base
+                and funcao.salario_base is not None
+            ):
+                funcionarios = Funcionario.objects.filter(
+                    empresa=request.user.empresa,
+                    funcao=funcao,
+                )
+
+                with transaction.atomic():
+                    for funcionario in funcionarios:
+                        salario_antigo = funcionario.salario
+                        salario_novo = funcao.salario_base
+
+                        if salario_antigo == salario_novo:
+                            continue
+
+                        funcionario.salario = salario_novo
+                        funcionario.save(update_fields=['salario'])
+
+                        HistoricoFuncionario.objects.create(
+                            funcionario=funcionario,
+                            tipo_evento='MUDANCA_SALARIO',
+                            funcao=funcao,
+                            salario=salario_novo,
+                            motivo=(
+                                f'Reajuste em lote aplicado pela função "{funcao.nome}". '
+                                f'Salário anterior: R$ {salario_antigo}. '
+                                f'Novo salário: R$ {salario_novo}.'
+                            ),
+                            usuario=request.user,
+                        )
+                        reajustes_aplicados += 1
+
             messages.success(request, f'✅ Função "{funcao.nome}" atualizada!')
+            if reajustes_aplicados > 0:
+                messages.info(
+                    request,
+                    f'ℹ️ Reajuste aplicado automaticamente para {reajustes_aplicados} funcionário(s).'
+                )
             return redirect('cadastros:funcao_list')
     else:
-        form = FuncaoFuncionarioForm(instance=funcao)
+        form = FuncaoFuncionarioForm(instance=funcao, empresa=request.user.empresa)
     return render(request, 'cadastros/funcao/funcao_form.html', {'form': form, 'funcao': funcao, 'action': 'Editar'})
 
 
@@ -1999,6 +2137,7 @@ def funcionario_list(request):
         funcionarios = funcionarios.filter(
             Q(nome_completo__icontains=q) |
             Q(cpf__icontains=q) |
+            Q(matricula__icontains=q) |
             Q(funcao__nome__icontains=q)
         )
     if fazenda_id:
@@ -2029,9 +2168,62 @@ def funcionario_detail(request, pk):
         pk=pk,
         empresa=request.user.empresa
     )
+
+    historicos_salariais = funcionario.historicos.filter(
+        tipo_evento='MUDANCA_SALARIO'
+    ).select_related('usuario', 'funcao').order_by('-data_evento')
+
+    vinculos_contratuais = VinculoContrato.objects.filter(
+        empresa=request.user.empresa,
+        funcionario=funcionario
+    ).select_related('funcao').order_by('-data_inicio')
+
+    data_inicio = (request.GET.get('data_inicio') or '').strip()
+    data_fim = (request.GET.get('data_fim') or '').strip()
+
+    if data_inicio:
+        try:
+            historicos_salariais = historicos_salariais.filter(data_evento__gte=data_inicio)
+        except Exception:
+            pass
+    if data_fim:
+        try:
+            historicos_salariais = historicos_salariais.filter(data_evento__lte=data_fim)
+        except Exception:
+            pass
+
+    export = (request.GET.get('export') or '').strip().lower()
+    if export == 'csv':
+        import csv
+
+        response = HttpResponse(content_type='text/csv; charset=utf-8')
+        response['Content-Disposition'] = (
+            f'attachment; filename="historico_reajustes_funcionario_{funcionario.pk}.csv"'
+        )
+
+        writer = csv.writer(response, delimiter=';')
+        writer.writerow(['Data', 'Tipo', 'Funcao', 'Salario', 'Responsavel', 'Motivo'])
+
+        for hist in historicos_salariais:
+            writer.writerow([
+                hist.data_evento.strftime('%d/%m/%Y') if hist.data_evento else '',
+                hist.get_tipo_evento_display(),
+                hist.funcao.nome if hist.funcao else '',
+                f'{hist.salario:.2f}' if hist.salario is not None else '0.00',
+                hist.usuario.username if hist.usuario else 'Sistema',
+                (hist.motivo or '').replace('\n', ' ').strip(),
+            ])
+
+        return response
+
+    historicos_salariais = historicos_salariais[:20]
     
     return render(request, 'cadastros/funcionario/funcionario_detail.html', {
-        'funcionario': funcionario
+        'funcionario': funcionario,
+        'historicos_salariais': historicos_salariais,
+        'vinculos_contratuais': vinculos_contratuais,
+        'filtro_data_inicio': data_inicio,
+        'filtro_data_fim': data_fim,
     })
 
 
@@ -2082,7 +2274,7 @@ def funcionario_create(request):
         formset = DocumentoFuncionarioFormSet()
     
     # Para o modal de nova função
-    form_funcao = FuncaoFuncionarioForm()
+    form_funcao = FuncaoFuncionarioForm(empresa=request.user.empresa)
     
     return render(request, 'cadastros/funcionario/funcionario_form.html', {
         'form': form,
@@ -2098,6 +2290,8 @@ def funcionario_update(request, pk):
     funcionario = get_object_or_404(Funcionario, pk=pk, empresa=request.user.empresa)
     
     if request.method == 'POST':
+        salario_anterior = funcionario.salario
+        funcao_anterior = funcionario.funcao
         form = FuncionarioForm(
             request.POST,
             request.FILES,
@@ -2108,6 +2302,27 @@ def funcionario_update(request, pk):
         
         if form.is_valid():
             funcionario = form.save()
+
+            if salario_anterior != funcionario.salario:
+                motivo = (
+                    f'Alteração manual no cadastro do funcionário. '
+                    f'Salário anterior: R$ {salario_anterior}. '
+                    f'Novo salário: R$ {funcionario.salario}.'
+                )
+                if funcao_anterior != funcionario.funcao:
+                    motivo += (
+                        f' Função alterada de "{funcao_anterior.nome}" '
+                        f'para "{funcionario.funcao.nome}".'
+                    )
+
+                HistoricoFuncionario.objects.create(
+                    funcionario=funcionario,
+                    tipo_evento='MUDANCA_SALARIO',
+                    funcao=funcionario.funcao,
+                    salario=funcionario.salario,
+                    motivo=motivo,
+                    usuario=request.user,
+                )
             
             # Processa formset de documentos
             formset = DocumentoFuncionarioFormSet(request.POST, request.FILES, instance=funcionario)
@@ -2143,7 +2358,7 @@ def funcionario_update(request, pk):
         )
         formset = DocumentoFuncionarioFormSet(instance=funcionario)
     
-    form_funcao = FuncaoFuncionarioForm()
+    form_funcao = FuncaoFuncionarioForm(empresa=request.user.empresa)
     
     return render(request, 'cadastros/funcionario/funcionario_form.html', {
         'form': form,

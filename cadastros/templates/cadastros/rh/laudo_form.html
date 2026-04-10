@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+
+{% block title %}{{ title }} | ERP Agricola{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-10">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+          <h1 class="h3 mb-1"><i class="fas fa-file-medical me-2 text-danger"></i>{{ title }}</h1>
+          <p class="text-muted mb-0">Registre data de emissao, validade e responsavel tecnico do laudo.</p>
+        </div>
+        <a href="{% url 'cadastros:laudo_list' %}" class="btn btn-outline-secondary">
+          <i class="fas fa-arrow-left me-2"></i>Voltar
+        </a>
+      </div>
+
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+        <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+        {% endif %}
+
+        <div class="card mb-3">
+          <div class="card-header bg-danger text-white"><strong>Dados do Laudo</strong></div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-md-4">
+                <label class="form-label">{{ form.funcao.label }} <span class="text-danger">*</span></label>
+                {{ form.funcao|add_class:"form-select" }}
+                {% if form.funcao.errors %}<div class="text-danger small">{{ form.funcao.errors }}</div>{% endif %}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">{{ form.vinculo.label }}</label>
+                {{ form.vinculo|add_class:"form-select" }}
+                {% if form.vinculo.errors %}<div class="text-danger small">{{ form.vinculo.errors }}</div>{% endif %}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">{{ form.tipo_laudo.label }} <span class="text-danger">*</span></label>
+                {{ form.tipo_laudo|add_class:"form-select" }}
+                {% if form.tipo_laudo.errors %}<div class="text-danger small">{{ form.tipo_laudo.errors }}</div>{% endif %}
+              </div>
+
+              <div class="col-md-3">
+                <label class="form-label">{{ form.data_emissao.label }} <span class="text-danger">*</span></label>
+                {{ form.data_emissao|add_class:"form-control" }}
+                {% if form.data_emissao.errors %}<div class="text-danger small">{{ form.data_emissao.errors }}</div>{% endif %}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">{{ form.data_validade.label }} <span class="text-danger">*</span></label>
+                {{ form.data_validade|add_class:"form-control" }}
+                {% if form.data_validade.errors %}<div class="text-danger small">{{ form.data_validade.errors }}</div>{% endif %}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">{{ form.status.label }}</label>
+                {{ form.status|add_class:"form-select" }}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">{{ form.numero_art.label }}</label>
+                {{ form.numero_art|add_class:"form-control" }}
+              </div>
+
+              <div class="col-md-8">
+                <label class="form-label">{{ form.responsavel_tecnico.label }} <span class="text-danger">*</span></label>
+                {{ form.responsavel_tecnico|add_class:"form-control" }}
+                {% if form.responsavel_tecnico.errors %}<div class="text-danger small">{{ form.responsavel_tecnico.errors }}</div>{% endif %}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">{{ form.arquivo_laudo.label }}</label>
+                {{ form.arquivo_laudo|add_class:"form-control" }}
+              </div>
+
+              <div class="col-md-12">
+                <label class="form-label">{{ form.observacoes.label }}</label>
+                {{ form.observacoes|add_class:"form-control" }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-end gap-2">
+          <a href="{% url 'cadastros:laudo_list' %}" class="btn btn-outline-secondary">Cancelar</a>
+          <button type="submit" class="btn btn-danger">Salvar Laudo</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -458,6 +458,9 @@
                   </a>
                 </h5>
                 <p class="text-muted">{{ funcionario.get_cpf_formatado }}</p>
+                {% if funcionario.matricula %}
+                <p class="small mb-0"><span class="badge bg-light text-dark border">Matrícula: {{ funcionario.matricula }}</span></p>
+                {% endif %}
               </div>
 
               <!-- Coluna Função -->

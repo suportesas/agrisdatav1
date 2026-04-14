@@ -1,4 +1,5 @@
 from decimal import Decimal
+from django.conf import settings
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 
@@ -184,12 +185,14 @@ def safra_post_save_upload_imagem(sender, instance, created, **kwargs):
     import logging
     logger = logging.getLogger(__name__)
     
+    if getattr(settings, 'SUPABASE_STORAGE_USE_AS_DEFAULT', False):
+        return
+
     if not instance.imagem:
         return  # Sem imagem, não faz nada
     
     try:
         from core.storage import storage_helper
-        from django.conf import settings
         
         # Se não tem URL pública (foi novo upload), fazer upload para Supabase
         if not instance.imagem.name.startswith('http'):
@@ -219,12 +222,14 @@ def cultura_post_save_upload_imagem(sender, instance, created, **kwargs):
     import logging
     logger = logging.getLogger(__name__)
     
+    if getattr(settings, 'SUPABASE_STORAGE_USE_AS_DEFAULT', False):
+        return
+
     if not instance.imagem:
         return  # Sem imagem, não faz nada
     
     try:
         from core.storage import storage_helper
-        from django.conf import settings
         
         # Se não tem URL pública (foi novo upload), fazer upload para Supabase
         if not instance.imagem.name.startswith('http'):

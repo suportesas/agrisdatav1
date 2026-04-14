@@ -216,6 +216,31 @@
             </div>
           </div>
         </div>
+
+        <h5 class="mb-3 mt-4">Certificação</h5>
+        <div class="row">
+          <div class="col-md-3 mb-3">
+            <div class="form-check mt-4">
+              {{ form.possui_certificado }} {{ form.possui_certificado.label_tag }}
+            </div>
+          </div>
+          <div class="col-md-4 mb-3 certificado-fields">
+            {{ form.numero_certificado.label_tag }}
+            {{ form.numero_certificado }}
+            {% if form.numero_certificado.errors %}<div class="text-danger">{{ form.numero_certificado.errors }}</div>{% endif %}
+          </div>
+          <div class="col-md-3 mb-3 certificado-fields">
+            {{ form.data_vencimento_certificado.label_tag }}
+            {{ form.data_vencimento_certificado }}
+            {% if form.data_vencimento_certificado.errors %}<div class="text-danger">{{ form.data_vencimento_certificado.errors }}</div>{% endif %}
+          </div>
+          <div class="col-md-6 mb-3 certificado-fields">
+            {{ form.arquivo_certificado.label_tag }}
+            {{ form.arquivo_certificado }}
+            <small class="form-text text-muted">Permitidos: PDF, PNG, JPG/JPEG (máximo 10MB).</small>
+            {% if form.arquivo_certificado.errors %}<div class="text-danger">{{ form.arquivo_certificado.errors }}</div>{% endif %}
+          </div>
+        </div>
       </div>
 
       <!-- ABA FISCAL -->
@@ -864,6 +889,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const isProdutoExistente = {% if object.pk %}true{% else %}false{% endif %};
     const defensivoTabLi = document.getElementById('defensivo-tab-li');
     const agricolaTabLi = document.getElementById('agricola-tab-li');
+    const possuiCertificado = document.getElementById('id_possui_certificado');
+    const certificadoFields = document.querySelectorAll('.certificado-fields');
     // Novo: mapping de categorias condicionais
     const categoriasCondicionais = {{ categorias_condicionais|safe }};
     
@@ -902,6 +929,17 @@ document.addEventListener('DOMContentLoaded', function() {
     if (categoriaSelect) {
         atualizarCategoriaDisplay();
         categoriaSelect.addEventListener('change', atualizarCategoriaDisplay);
+    }
+
+    function toggleCertificadoFields() {
+      const show = possuiCertificado && possuiCertificado.checked;
+      certificadoFields.forEach((el) => {
+        el.style.display = show ? '' : 'none';
+      });
+    }
+    if (possuiCertificado) {
+      toggleCertificadoFields();
+      possuiCertificado.addEventListener('change', toggleCertificadoFields);
     }
     
     // Log de debug

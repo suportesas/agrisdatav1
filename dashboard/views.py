@@ -1,8 +1,9 @@
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
-from django.db.models import Count, Q
+from django.db.models import Count, Q, Sum
 from django.utils import timezone
 
+from cadastros.models import EmprestimoProdutor
 from empresas.models import Empresa
 from usuarios.models import Usuario
 
@@ -50,10 +51,40 @@ def index(request):
 
     empresa = request.user.empresa
 
+    pendencias_mensagens_emprestimo = EmprestimoProdutor.objects.none()
+    total_mensagens_produtor_nao_lidas = 0
+    total_emprestimos_com_pendencia = 0
+    titulo_pendencias_emprestimo = 'Mensagens do produtor pendentes'
+    if empresa:
+        pendencias_base = EmprestimoProdutor.objects.filter(empresa=empresa)
+        if request.user.tipo not in ['ADMIN', 'GERENTE']:
+            pendencias_base = pendencias_base.filter(liberado_por=request.user)
+            titulo_pendencias_emprestimo = 'Minhas pendências de empréstimos'
+
+        pendencias_mensagens_emprestimo = (
+            pendencias_base
+            .annotate(
+                unread_mensagens_interno_count=Count(
+                    'mensagens',
+                    filter=Q(mensagens__perfil_autor='PRODUTOR', mensagens__lido_interno_em__isnull=True),
+                )
+            )
+            .filter(unread_mensagens_interno_count__gt=0)
+            .select_related('produtor', 'produto', 'requisicao')
+            .order_by('-atualizado_em', '-id')
+        )
+        total_mensagens_produtor_nao_lidas = pendencias_mensagens_emprestimo.aggregate(
+            total=Sum('unread_mensagens_interno_count')
+        ).get('total') or 0
+        total_emprestimos_com_pendencia = pendencias_mensagens_emprestimo.count()
+
     context.update({
         'total_fazendas': empresa.fazendas.filter(ativa=True).count() if empresa else 0,
         'total_usuarios': empresa.usuarios.filter(is_active=True).count() if empresa else 0,
-        # ... outros dados
+        'total_mensagens_produtor_nao_lidas': total_mensagens_produtor_nao_lidas,
+        'total_emprestimos_com_pendencia': total_emprestimos_com_pendencia,
+        'titulo_pendencias_emprestimo': titulo_pendencias_emprestimo,
+        'pendencias_mensagens_emprestimo': pendencias_mensagens_emprestimo[:5],
     })
     return render(request, 'dashboard/index.html', context)
 

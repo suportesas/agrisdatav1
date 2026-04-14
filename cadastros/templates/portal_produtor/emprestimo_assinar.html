@@ -1,0 +1,187 @@
+{% extends 'portal_produtor/base.html' %}
+
+{% block title %}Assinar Empréstimo{% endblock %}
+
+{% block extra_css %}
+<style>
+  #signature-pad {
+    border: 2px dashed #8c4f20;
+    border-radius: 12px;
+    background: #fff;
+    width: 100%;
+    height: 220px;
+    touch-action: none;
+  }
+  .signature-mode-card.active {
+    border-color: #2f5d3a;
+    box-shadow: 0 0 0 0.2rem rgba(47, 93, 58, 0.12);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-9">
+    <div class="card portal-card">
+      <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <strong>Assinatura do recebimento</strong>
+        <a href="{% url 'portal_produtor:emprestimo_detail' emprestimo.pk %}" class="btn btn-sm btn-outline-secondary">Voltar</a>
+      </div>
+      <div class="card-body">
+        <p class="text-muted">Você está confirmando o recebimento do material referente ao empréstimo {{ emprestimo.requisicao.numero|default:emprestimo.pk }}.</p>
+
+        <form method="post" enctype="multipart/form-data" id="assinatura-form">
+          {% csrf_token %}
+          <input type="hidden" name="modo_assinatura" id="modo-assinatura" value="desenho">
+          <input type="hidden" name="assinatura_data" id="assinatura-data">
+
+          <div class="mb-3">
+            <label for="assinatura-produtor-nome" class="form-label">Nome do assinante</label>
+            <input type="text" class="form-control" id="assinatura-produtor-nome" name="assinatura_produtor_nome" value="{{ request.user.get_full_name|default:produtor.razao_social }}">
+          </div>
+
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <div class="card signature-mode-card active h-100" data-mode="desenho">
+                <div class="card-body">
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="modo_opcao" id="modo-desenho" value="desenho" checked>
+                    <label class="form-check-label" for="modo-desenho">Desenhar assinatura</label>
+                  </div>
+                  <canvas id="signature-pad" class="mt-3"></canvas>
+                  <div class="mt-2 d-flex gap-2">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="limpar-assinatura">Limpar</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="card signature-mode-card h-100" data-mode="upload">
+                <div class="card-body">
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="modo_opcao" id="modo-upload" value="upload">
+                    <label class="form-check-label" for="modo-upload">Enviar imagem</label>
+                  </div>
+                  <div class="mt-3">
+                    <label for="assinatura-upload" class="form-label">Arquivo da assinatura</label>
+                    <input type="file" class="form-control" id="assinatura-upload" name="assinatura_upload" accept="image/*">
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="alert alert-light border">
+            <strong>Confirmação:</strong> esta tela é somente leitura. Ao assinar, o sistema grava data, hora, usuário do portal e imagem da assinatura no histórico do empréstimo.
+          </div>
+
+          <div class="d-flex justify-content-end gap-2">
+            <a href="{% url 'portal_produtor:emprestimo_detail' emprestimo.pk %}" class="btn btn-outline-secondary">Cancelar</a>
+            <button type="submit" class="btn btn-primary">Confirmar assinatura</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  (function () {
+    const form = document.getElementById('assinatura-form');
+    const modeInput = document.getElementById('modo-assinatura');
+    const hiddenSignatureData = document.getElementById('assinatura-data');
+    const canvas = document.getElementById('signature-pad');
+    const clearButton = document.getElementById('limpar-assinatura');
+    const modeCards = Array.from(document.querySelectorAll('.signature-mode-card'));
+    const radios = Array.from(document.querySelectorAll('input[name="modo_opcao"]'));
+    const context = canvas.getContext('2d');
+    let drawing = false;
+    let hasSignature = false;
+
+    function resizeCanvas() {
+      const ratio = Math.max(window.devicePixelRatio || 1, 1);
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width * ratio;
+      canvas.height = rect.height * ratio;
+      context.scale(ratio, ratio);
+      context.lineWidth = 2;
+      context.lineCap = 'round';
+      context.strokeStyle = '#2f5d3a';
+    }
+
+    function getPosition(event) {
+      const rect = canvas.getBoundingClientRect();
+      const source = event.touches ? event.touches[0] : event;
+      return {
+        x: source.clientX - rect.left,
+        y: source.clientY - rect.top,
+      };
+    }
+
+    function startDrawing(event) {
+      if (modeInput.value !== 'desenho') {
+        return;
+      }
+      drawing = true;
+      hasSignature = true;
+      const position = getPosition(event);
+      context.beginPath();
+      context.moveTo(position.x, position.y);
+      event.preventDefault();
+    }
+
+    function draw(event) {
+      if (!drawing || modeInput.value !== 'desenho') {
+        return;
+      }
+      const position = getPosition(event);
+      context.lineTo(position.x, position.y);
+      context.stroke();
+      event.preventDefault();
+    }
+
+    function stopDrawing() {
+      drawing = false;
+    }
+
+    function clearSignature() {
+      context.clearRect(0, 0, canvas.width, canvas.height);
+      hasSignature = false;
+      hiddenSignatureData.value = '';
+    }
+
+    function updateMode(mode) {
+      modeInput.value = mode;
+      modeCards.forEach((card) => {
+        card.classList.toggle('active', card.dataset.mode === mode);
+      });
+    }
+
+    radios.forEach((radio) => {
+      radio.addEventListener('change', function () {
+        updateMode(this.value);
+      });
+    });
+
+    clearButton.addEventListener('click', clearSignature);
+    canvas.addEventListener('mousedown', startDrawing);
+    canvas.addEventListener('mousemove', draw);
+    canvas.addEventListener('mouseup', stopDrawing);
+    canvas.addEventListener('mouseleave', stopDrawing);
+    canvas.addEventListener('touchstart', startDrawing, { passive: false });
+    canvas.addEventListener('touchmove', draw, { passive: false });
+    canvas.addEventListener('touchend', stopDrawing);
+
+    form.addEventListener('submit', function () {
+      if (modeInput.value === 'desenho' && hasSignature) {
+        hiddenSignatureData.value = canvas.toDataURL('image/png');
+      }
+    });
+
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+  })();
+</script>
+{% endblock %}

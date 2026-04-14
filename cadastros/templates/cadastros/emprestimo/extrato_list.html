@@ -1,0 +1,205 @@
+{% extends 'base.html' %}
+
+{% block title %}Extrato de Empréstimos{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0"><i class="bi bi-journal-text me-2"></i>Extrato de Empréstimos</h2>
+    <div>
+      <a href="{% url 'cadastros:emprestimo_devolucao_create' %}" class="btn btn-primary">
+        <i class="bi bi-arrow-return-left me-1"></i>Registrar Devolução
+      </a>
+    </div>
+  </div>
+
+  <div class="card mb-3">
+    <div class="card-body">
+      <form method="get" class="row g-3 align-items-end">
+        <div class="col-md-3">
+          <label class="form-label">Produtor</label>
+          {{ form.produtor }}
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Produto</label>
+          {{ form.produto }}
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">Status</label>
+          {{ form.status }}
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">Data Inicial</label>
+          {{ form.data_inicio }}
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">Data Final</label>
+          {{ form.data_fim }}
+        </div>
+        <div class="col-md-3">
+          <div class="form-check mt-2">
+            {{ form.apenas_vencidos }}
+            <label class="form-check-label" for="{{ form.apenas_vencidos.id_for_label }}">Apenas promessas vencidas</label>
+          </div>
+          <div class="form-check mt-2">
+            {{ form.apenas_mensagens_nao_lidas }}
+            <label class="form-check-label" for="{{ form.apenas_mensagens_nao_lidas.id_for_label }}">Apenas com mensagens não lidas</label>
+          </div>
+        </div>
+        <div class="col-md-9 text-end">
+          <button type="submit" class="btn btn-primary"><i class="bi bi-search me-1"></i>Filtrar</button>
+          <a href="{% url 'cadastros:emprestimo_extrato' %}" class="btn btn-outline-secondary">Limpar</a>
+          <a href="{% url 'cadastros:emprestimo_exportar_pdf' %}?{{ request.GET.urlencode }}" class="btn btn-outline-danger">
+            <i class="bi bi-file-earmark-pdf me-1"></i>PDF
+          </a>
+          <a href="{% url 'cadastros:emprestimo_exportar_excel' %}?{{ request.GET.urlencode }}" class="btn btn-outline-success">
+            <i class="bi bi-file-earmark-excel me-1"></i>Excel
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-3">
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <small class="text-muted d-block">Total Emprestado</small>
+          <h4 class="mb-0 text-primary">{{ totais.total_emprestado|default:0|floatformat:3 }}</h4>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <small class="text-muted d-block">Total Devolvido</small>
+          <h4 class="mb-0 text-success">{{ totais.total_devolvido|default:0|floatformat:3 }}</h4>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <small class="text-muted d-block">Saldo em Aberto</small>
+          <h4 class="mb-0 {% if totais.total_saldo|default:0 > 0 %}text-warning{% else %}text-success{% endif %}">{{ totais.total_saldo|default:0|floatformat:3 }}</h4>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead class="table-light">
+          <tr>
+            <th></th>
+            <th>Data</th>
+            <th>Nº Requisição</th>
+            <th>Produtor</th>
+            <th>Status</th>
+            <th>Promessa</th>
+            <th class="text-end">Total Emprestado</th>
+            <th class="text-end">Total Devolvido</th>
+            <th class="text-end">Saldo</th>
+            <th class="text-end">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for grupo in emprestimos_agrupados %}
+          <tr class="align-middle">
+            <td>
+              <button class="btn btn-sm btn-link p-0" type="button" data-bs-toggle="collapse" data-bs-target="#produtos-{{ forloop.counter }}" aria-expanded="false" aria-controls="produtos-{{ forloop.counter }}">
+                <i class="bi bi-chevron-down"></i>
+              </button>
+            </td>
+            <td>{{ grupo.data_emprestimo|date:'d/m/Y H:i' }}</td>
+            <td>{{ grupo.numero_requisicao }}</td>
+            <td>{{ grupo.produtor.razao_social }}</td>
+            <td>
+              <span class="badge {% if grupo.status == 'DEVOLVIDO' %}bg-success{% elif grupo.status == 'PROMESSA' %}bg-info text-dark{% elif grupo.status == 'NORMAL' %}bg-warning text-dark{% elif grupo.status == 'PARCIAL' %}bg-primary{% else %}bg-secondary{% endif %}">
+                {{ grupo.status|title }}
+              </span>
+            </td>
+            <td>{{ grupo.data_promessa_devolucao|date:'d/m/Y'|default:'-' }}</td>
+            <td class="text-end">{{ grupo.total_emprestado|floatformat:3 }}</td>
+            <td class="text-end">{{ grupo.total_devolvido|floatformat:3 }}</td>
+            <td class="text-end"><strong>{{ grupo.saldo_pendente|floatformat:3 }}</strong></td>
+            <td class="text-end">
+              {% if grupo.unread_mensagens_interno %}
+              <span class="badge bg-danger me-2">{{ grupo.unread_mensagens_interno }} nova{{ grupo.unread_mensagens_interno|pluralize }}</span>
+              {% endif %}
+              <a href="{% url 'cadastros:emprestimo_detalhe' grupo.emprestimos.0.pk %}" class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-clock-history me-1"></i>Timeline
+              </a>
+            </td>
+          </tr>
+          <tr class="collapse" id="produtos-{{ forloop.counter }}">
+            <td colspan="10" class="bg-light p-0">
+              <div class="p-3">
+                <strong>Produtos:</strong>
+                <table class="table table-sm mb-0">
+                  <thead>
+                    <tr>
+                      <th>Produto</th>
+                      <th>Quantidade</th>
+                      <th>Valor Unitário</th>
+                      <th>Valor Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for emp in grupo.emprestimos %}
+                    <tr>
+                      <td>{{ emp.produto.nome }}</td>
+                      <td>{{ emp.quantidade_emprestada|floatformat:3 }}</td>
+                      <td>R$ {{ emp.produto.preco_venda|floatformat:2 }}</td>
+                      <td>R$ {{ emp.quantidade_emprestada|floatformat:3|floatformat:2|add:0|floatformat:2|add:emp.produto.preco_venda|floatformat:2 }}</td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="10" class="text-center text-muted py-4">Nenhum empréstimo encontrado.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% if pagina_obj and pagina_obj.paginator.num_pages > 1 %}
+    <div class="card-footer bg-white">
+      <nav aria-label="Paginação do extrato">
+        <ul class="pagination pagination-sm justify-content-end mb-0">
+          <li class="page-item {% if not pagina_obj.has_previous %}disabled{% endif %}">
+            <a class="page-link" href="?{% if query_string %}{{ query_string }}&{% endif %}page=1">Primeira</a>
+          </li>
+          <li class="page-item {% if not pagina_obj.has_previous %}disabled{% endif %}">
+            {% if pagina_obj.has_previous %}
+            <a class="page-link" href="?{% if query_string %}{{ query_string }}&{% endif %}page={{ pagina_obj.previous_page_number }}">Anterior</a>
+            {% else %}
+            <span class="page-link">Anterior</span>
+            {% endif %}
+          </li>
+          <li class="page-item disabled">
+            <span class="page-link">Página {{ pagina_obj.number }} de {{ pagina_obj.paginator.num_pages }}</span>
+          </li>
+          <li class="page-item {% if not pagina_obj.has_next %}disabled{% endif %}">
+            {% if pagina_obj.has_next %}
+            <a class="page-link" href="?{% if query_string %}{{ query_string }}&{% endif %}page={{ pagina_obj.next_page_number }}">Próxima</a>
+            {% else %}
+            <span class="page-link">Próxima</span>
+            {% endif %}
+          </li>
+          <li class="page-item {% if not pagina_obj.has_next %}disabled{% endif %}">
+            <a class="page-link" href="?{% if query_string %}{{ query_string }}&{% endif %}page={{ pagina_obj.paginator.num_pages }}">Última</a>
+          </li>
+        </ul>
+      </nav>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

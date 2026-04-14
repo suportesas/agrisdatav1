@@ -10,10 +10,15 @@ from . import views_requisicao
 from . import views_rh
 from . import views_os
 from . import views_colheita
+from . import views_produtor
+from . import views_emprestimo
 
 app_name = 'cadastros'
 
 urlpatterns = [
+
+        # AJAX: registrar exibição do alerta visual de mensagens não lidas do produtor
+        path('emprestimos/ajax/registrar-alerta-visual/', views_emprestimo.registrar_alerta_visual_exibido, name='registrar_alerta_visual_exibido'),
     # ==================== FAZENDAS ====================
     path('fazendas/', views.fazenda_list, name='fazenda_list'),
     path('fazendas/nova/', views.fazenda_create, name='fazenda_create'),
@@ -154,6 +159,15 @@ urlpatterns = [
     path('fornecedores/relatorio/', views.relatorio_fornecedor, name='relatorio_fornecedor'),
     path('fornecedores/relatorio-ranking/', views.relatorio_fornecedor_ranking, name='relatorio_fornecedor_ranking'),
 
+    # Produtores
+    path('produtores/', views_produtor.produtor_list, name='produtor_list'),
+    path('produtores/novo/', views_produtor.produtor_create, name='produtor_create'),
+    path('produtores/<int:pk>/', views_produtor.produtor_detail, name='produtor_detail'),
+    path('produtores/<int:pk>/editar/', views_produtor.produtor_update, name='produtor_update'),
+    path('produtores/<int:pk>/excluir/', views_produtor.produtor_delete, name='produtor_delete'),
+    path('produtores/<int:pk>/portal/criar-acesso/', views_produtor.produtor_criar_acesso_portal, name='produtor_criar_acesso_portal'),
+    path('produtores/<int:pk>/portal/bloquear/', views_produtor.produtor_bloquear_portal, name='produtor_bloquear_portal'),
+
     # Transportadoras
     path('transportadoras/', views.transportadora_list, name='transportadora_list'),
     path('transportadoras/<int:pk>/', views.transportadora_detail, name='transportadora_detail'),
@@ -193,8 +207,20 @@ urlpatterns = [
     path('requisicoes/<int:requisicao_id>/itens/novo/', views_requisicao.requisicao_item_create, name='requisicao_item_create'),
     path('requisicoes/<int:requisicao_id>/itens/<int:item_id>/editar/', views_requisicao.requisicao_item_update, name='requisicao_item_update'),
     path('requisicoes/<int:requisicao_id>/itens/<int:item_id>/excluir/', views_requisicao.requisicao_item_delete, name='requisicao_item_delete'),
+    path('api/requisicoes/produto-dados/<int:produto_id>/', views_requisicao.ajax_produto_dados_requisicao, name='ajax_produto_dados_requisicao'),
     path('api/requisicoes/safras-por-talhao/<int:talhao_id>/', views_requisicao.ajax_safras_por_talhao, name='ajax_safras_por_talhao'),
     path('api/requisicoes/talhao-por-codigo/', views_requisicao.ajax_talhao_por_codigo, name='ajax_talhao_por_codigo'),
+
+    # ==================== EMPRESTIMOS PRODUTOR ====================
+    path('emprestimos/extrato/', views_emprestimo.emprestimo_extrato, name='emprestimo_extrato'),
+    path('emprestimos/<int:pk>/', views_emprestimo.emprestimo_detalhe, name='emprestimo_detalhe'),
+    path('emprestimos/<int:pk>/assinar-liberacao/', views_emprestimo.emprestimo_assinar_liberacao, name='emprestimo_assinar_liberacao'),
+    path('emprestimos/<int:pk>/reenviar-whatsapp/', views_emprestimo.emprestimo_reenviar_whatsapp, name='emprestimo_reenviar_whatsapp'),
+    path('emprestimos/<int:pk>/mensagens/nova/', views_emprestimo.emprestimo_mensagem_create, name='emprestimo_mensagem_create'),
+    path('emprestimos/mensagens/anexos/<int:anexo_id>/download/', views_emprestimo.emprestimo_mensagem_anexo_download, name='emprestimo_mensagem_anexo_download'),
+    path('emprestimos/extrato/pdf/', views_emprestimo.emprestimo_exportar_pdf, name='emprestimo_exportar_pdf'),
+    path('emprestimos/extrato/excel/', views_emprestimo.emprestimo_exportar_excel, name='emprestimo_exportar_excel'),
+    path('emprestimos/devolucao/nova/', views_emprestimo.emprestimo_devolucao_create, name='emprestimo_devolucao_create'),
 
     # Fornecedor: endereços
     path('fornecedores/<int:fornecedor_pk>/enderecos/novo/', views.fornecedor_endereco_create, name='fornecedor_endereco_create'),

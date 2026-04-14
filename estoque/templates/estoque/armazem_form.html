@@ -204,11 +204,24 @@
     if (value === null || value === undefined) {
       return 0;
     }
-
-    const normalized = String(value).trim().replace(',', '.');
-    const parsed = parseFloat(normalized);
+    let str = String(value).trim();
+    // Remove espaços
+    str = str.replace(/\s/g, '');
+    // Se houver vírgula e ponto, assume vírgula como decimal (brasileiro)
+    if (str.match(/\d+\.\d+,\d+$/)) {
+      str = str.replace(/\./g, '').replace(',', '.');
+    } else if (str.match(/\d+,\d+$/)) {
+      str = str.replace(',', '.');
+    } else if (str.match(/\d+\.\d+$/)) {
+      // já está no formato correto
+    } else if (str.match(/\d+$/)) {
+      // inteiro
+    }
+    const parsed = parseFloat(str);
     return Number.isFinite(parsed) ? parsed : 0;
   }
+
+  let capacidadeKgEditadoManualmente = false;
 
   function calcularCapacidades() {
     const comprimentoEl = document.getElementById('id_comprimento');
@@ -222,24 +235,42 @@
     const largura = parseDecimalInput(larguraEl.value);
     const altura = parseDecimalInput(alturaEl.value);
     const densidade = parseDecimalInput(densidadeEl.value);
-    
+
     // Calcula volume (m³)
     if (comprimento > 0 && largura > 0 && altura > 0) {
       const volumeM3 = comprimento * largura * altura;
       capacidadeM3El.value = volumeM3.toFixed(2);
-      
+
       // Calcula peso (kg) se tiver densidade
       if (densidade > 0) {
         const pesoKg = volumeM3 * densidade;
-        capacidadeKgEl.value = pesoKg.toFixed(2);
+        if (!capacidadeKgEditadoManualmente) {
+          capacidadeKgEl.value = pesoKg.toFixed(2);
+        }
       } else {
-        capacidadeKgEl.value = '';
+        if (!capacidadeKgEditadoManualmente) {
+          capacidadeKgEl.value = '';
+        }
       }
     } else {
       capacidadeM3El.value = '';
-      capacidadeKgEl.value = '';
+      if (!capacidadeKgEditadoManualmente) {
+        capacidadeKgEl.value = '';
+      }
     }
   }
+
+  // Detecta edição manual do campo capacidade_kg
+  document.getElementById('id_capacidade_kg').addEventListener('input', function() {
+    capacidadeKgEditadoManualmente = true;
+  });
+
+  // Se algum campo de dimensão/densidade mudar, reseta o flag de edição manual
+  ['id_comprimento','id_largura','id_altura','id_densidade_media'].forEach(function(id) {
+    document.getElementById(id).addEventListener('input', function() {
+      capacidadeKgEditadoManualmente = false;
+    });
+  });
   
   // Adiciona eventos aos campos
   document.getElementById('id_comprimento').addEventListener('input', calcularCapacidades);

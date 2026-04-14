@@ -1,0 +1,186 @@
+{% extends 'portal_produtor/base.html' %}
+
+{% block title %}Detalhe do Empréstimo{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2 class="mb-0">Confirmação do Empréstimo</h2>
+  <div class="d-flex gap-2">
+    {% if emprestimo.possui_assinatura_liberador and not emprestimo.possui_assinatura_produtor %}
+    <a href="{% url 'portal_produtor:emprestimo_assinar' emprestimo.pk %}" class="btn btn-primary">Assinar recebimento</a>
+    {% endif %}
+    <a href="{% url 'portal_produtor:emprestimos_list' %}" class="btn btn-outline-secondary">Voltar</a>
+  </div>
+</div>
+
+<div class="card portal-card mb-3">
+  <div class="card-body">
+    <div class="row g-3">
+      <div class="col-md-4">
+        <small class="text-muted d-block">Produto</small>
+        <strong>{{ emprestimo.produto.nome }}</strong>
+      </div>
+      <div class="col-md-4">
+        <small class="text-muted d-block">Requisição</small>
+        <strong>{{ emprestimo.requisicao.numero|default:'-' }}</strong>
+      </div>
+      <div class="col-md-4">
+        <small class="text-muted d-block">Recebedor informado na liberação</small>
+        <strong>{{ emprestimo.requisicao.recebedor_material|default:'-' }}</strong>
+      </div>
+      <div class="col-md-3">
+        <small class="text-muted d-block">Quantidade</small>
+        <strong>{{ emprestimo.quantidade_emprestada|floatformat:3 }} {{ emprestimo.unidade_medida.sigla }}</strong>
+      </div>
+      <div class="col-md-3">
+        <small class="text-muted d-block">Saldo pendente</small>
+        <strong>{{ emprestimo.saldo_pendente|floatformat:3 }} {{ emprestimo.unidade_medida.sigla }}</strong>
+      </div>
+      <div class="col-md-3">
+        <small class="text-muted d-block">Liberação interna</small>
+        {% if emprestimo.possui_assinatura_liberador %}
+        <span class="badge bg-success">Assinada</span>
+        <div class="small text-muted">{{ emprestimo.assinatura_liberador_nome }} em {{ emprestimo.assinatura_liberador_datahora|date:'d/m/Y H:i' }}</div>
+        {% else %}
+        <span class="badge bg-secondary">Aguardando</span>
+        {% endif %}
+      </div>
+      <div class="col-md-3">
+        <small class="text-muted d-block">Sua assinatura</small>
+        {% if emprestimo.possui_assinatura_produtor %}
+        <span class="badge bg-success">Concluída</span>
+        <div class="small text-muted">{{ emprestimo.assinatura_produtor_nome }} em {{ emprestimo.assinatura_produtor_datahora|date:'d/m/Y H:i' }}</div>
+        {% else %}
+        <span class="badge bg-warning text-dark">Pendente</span>
+        {% endif %}
+      </div>
+      {% if emprestimo.assinatura_liberador_imagem %}
+      <div class="col-md-6">
+        <small class="text-muted d-block">Assinatura do liberador</small>
+        <img src="{{ emprestimo.assinatura_liberador_imagem.url }}" alt="Assinatura do liberador" class="img-fluid border rounded mt-2" style="max-height: 140px;">
+      </div>
+      {% endif %}
+      {% if emprestimo.assinatura_produtor_imagem %}
+      <div class="col-md-6">
+        <small class="text-muted d-block">Assinatura do produtor</small>
+        <img src="{{ emprestimo.assinatura_produtor_imagem.url }}" alt="Assinatura do produtor" class="img-fluid border rounded mt-2" style="max-height: 140px;">
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="card portal-card">
+  <div class="card-header bg-white">
+    <strong>Histórico auditável</strong>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead>
+        <tr>
+          <th>Data</th>
+          <th>Tipo</th>
+          <th>Observações</th>
+          <th>Usuário</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for mov in movimentos %}
+        <tr>
+          <td>{{ mov.data_movimento|date:'d/m/Y H:i' }}</td>
+          <td>{{ mov.get_tipo_movimento_display }}</td>
+          <td>{{ mov.observacoes|default:'-' }}</td>
+          <td>{{ mov.criado_por.get_full_name|default:mov.criado_por.username|default:'-' }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="4" class="text-center text-muted py-4">Nenhum evento registrado.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card portal-card mt-3">
+  <div class="card-header bg-white">
+    <strong>Conversa com a equipe</strong>
+    {% if emprestimo.unread_mensagens_produtor %}
+    <span class="badge bg-info text-dark ms-2">{{ emprestimo.unread_mensagens_produtor }} mensagem{{ emprestimo.unread_mensagens_produtor|pluralize }} nova{{ emprestimo.unread_mensagens_produtor|pluralize }}</span>
+    {% endif %}
+  </div>
+  <div class="card-body">
+    <form method="post" action="{% url 'portal_produtor:emprestimo_mensagem_create' emprestimo.pk %}" enctype="multipart/form-data" class="mb-4">
+      {% csrf_token %}
+      <div class="mb-3">
+        <label for="mensagem-produtor" class="form-label">Nova mensagem</label>
+        <textarea class="form-control" id="mensagem-produtor" name="mensagem" rows="3" placeholder="Escreva sua dúvida ou observação sobre o empréstimo."></textarea>
+      </div>
+      <div class="mb-3">
+        <label for="anexos-produtor" class="form-label">Anexos</label>
+        <input type="file" class="form-control" id="anexos-produtor" name="anexos" multiple>
+      </div>
+      <button type="submit" class="btn btn-outline-primary">Enviar mensagem</button>
+    </form>
+
+    <div class="vstack gap-3">
+      {% for mensagem in mensagens_emprestimo %}
+      <div class="border rounded p-3 {% if mensagem.perfil_autor == 'PRODUTOR' %}bg-white{% else %}bg-light{% endif %}">
+        <div class="d-flex justify-content-between align-items-start mb-2">
+          <div>
+            <strong>{{ mensagem.autor.get_full_name|default:mensagem.autor.username|default:'-' }}</strong>
+            <span class="badge {% if mensagem.perfil_autor == 'PRODUTOR' %}bg-warning text-dark{% else %}bg-info text-dark{% endif %} ms-2">{{ mensagem.get_perfil_autor_display }}</span>
+            {% if mensagem.perfil_autor == 'INTERNO' and not mensagem.foi_lida_pelo_produtor %}
+            <span class="badge bg-info text-dark ms-2">Nova</span>
+            {% endif %}
+          </div>
+          <small class="text-muted">{{ mensagem.criado_em|date:'d/m/Y H:i' }}</small>
+        </div>
+        <div class="mb-2" style="white-space: pre-line;">{{ mensagem.mensagem }}</div>
+        {% if mensagem.anexos.all %}
+        <div class="d-flex flex-wrap gap-2">
+          {% for anexo in mensagem.anexos.all %}
+          <a href="{% url 'portal_produtor:emprestimo_mensagem_anexo_download' anexo.pk %}" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-paperclip me-1"></i>{{ anexo.nome_original|default:'Anexo' }}
+          </a>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+      {% empty %}
+      <div class="text-muted">Nenhuma mensagem registrada até o momento.</div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<div class="card portal-card mt-3">
+  <div class="card-header bg-white">
+    <strong>Interações registradas</strong>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead>
+        <tr>
+          <th>Data</th>
+          <th>Evento</th>
+          <th>Descrição</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for interacao in interacoes_emprestimo %}
+        <tr>
+          <td>{{ interacao.criado_em|date:'d/m/Y H:i' }}</td>
+          <td>{{ interacao.get_tipo_interacao_display }}</td>
+          <td>{{ interacao.descricao }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="3" class="text-center text-muted py-4">Nenhuma interação registrada.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

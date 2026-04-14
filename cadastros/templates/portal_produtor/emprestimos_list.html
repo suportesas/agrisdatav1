@@ -1,0 +1,164 @@
+{% extends 'portal_produtor/base.html' %}
+
+{% block title %}Empréstimos do Produtor{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="row g-3 mb-3">
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <small class="text-muted d-block">Total Emprestado</small>
+          <h4 class="mb-0 text-primary">{{ totais.total_emprestado|default:0|floatformat:3 }}</h4>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <small class="text-muted d-block">Total Devolvido</small>
+          <h4 class="mb-0 text-success">{{ totais.total_devolvido|default:0|floatformat:3 }}</h4>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <small class="text-muted d-block">Saldo em Aberto</small>
+          <h4 class="mb-0 {% if totais.total_saldo|default:0 > 0 %}text-warning{% else %}text-success{% endif %}">{{ totais.total_saldo|default:0|floatformat:3 }}</h4>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card mb-3">
+    <div class="card-body">
+      <form method="get" class="row g-3 align-items-end">
+        <div class="col-md-3">
+          <label class="form-label">Status</label>
+          <select name="status" class="form-select">
+            <option value="">Todos</option>
+            <option value="PROMESSA" {% if status == 'PROMESSA' %}selected{% endif %}>Promessa</option>
+            <option value="NORMAL" {% if status == 'NORMAL' %}selected{% endif %}>Normal</option>
+            <option value="PARCIAL" {% if status == 'PARCIAL' %}selected{% endif %}>Parcial</option>
+            <option value="DEVOLVIDO" {% if status == 'DEVOLVIDO' %}selected{% endif %}>Devolvido</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Produto</label>
+          <input type="text" name="produto" class="form-control" value="{{ produto_id|default:'' }}" placeholder="ID ou nome">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">Data Inicial</label>
+          <input type="date" name="data_inicio" class="form-control" value="{{ data_inicio|default:'' }}">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">Data Final</label>
+          <input type="date" name="data_fim" class="form-control" value="{{ data_fim|default:'' }}">
+        </div>
+        <div class="col-md-2">
+          <div class="form-check mt-2">
+            <input class="form-check-input" type="checkbox" name="apenas_promessa" id="apenas_promessa" value="1" {% if apenas_promessa %}checked{% endif %}>
+            <label class="form-check-label" for="apenas_promessa">Somente com promessa</label>
+          </div>
+          <div class="form-check mt-2">
+            <input class="form-check-input" type="checkbox" name="apenas_mensagens_nao_lidas" id="apenas_mensagens_nao_lidas" value="1" {% if apenas_mensagens_nao_lidas %}checked{% endif %}>
+            <label class="form-check-label" for="apenas_mensagens_nao_lidas">Somente com mensagens não lidas</label>
+          </div>
+        </div>
+        <div class="col-md-12 text-end">
+          <button type="submit" class="btn btn-primary"><i class="bi bi-search me-1"></i>Filtrar</button>
+          <a href="?" class="btn btn-outline-secondary">Limpar</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead class="table-light">
+          <tr>
+            <th></th>
+            <th>Data</th>
+            <th>Requisição</th>
+            <th>Status</th>
+            <th>Promessa</th>
+            <th class="text-end">Total Emprestado</th>
+            <th class="text-end">Total Devolvido</th>
+            <th class="text-end">Saldo</th>
+            <th class="text-end">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for grupo in emprestimos_agrupados %}
+          <tr class="align-middle">
+            <td>
+              <button class="btn btn-sm btn-link p-0" type="button" data-bs-toggle="collapse" data-bs-target="#produtos-{{ forloop.counter }}" aria-expanded="false" aria-controls="produtos-{{ forloop.counter }}">
+                <i class="bi bi-chevron-down"></i>
+              </button>
+            </td>
+            <td>{{ grupo.data_emprestimo|date:'d/m/Y H:i' }}</td>
+            <td>{{ grupo.numero_requisicao }}</td>
+            <td>
+              <span class="badge {% if grupo.status == 'DEVOLVIDO' %}bg-success{% elif grupo.status == 'PROMESSA' %}bg-info text-dark{% elif grupo.status == 'NORMAL' %}bg-warning text-dark{% elif grupo.status == 'PARCIAL' %}bg-primary{% else %}bg-secondary{% endif %}">
+                {{ grupo.status|title }}
+              </span>
+            </td>
+            <td>
+              {% if grupo.data_promessa_devolucao %}
+                <span {% if grupo.data_promessa_devolucao < today and grupo.saldo_pendente > 0 %}class="text-danger fw-bold" title="Promessa vencida"{% endif %}>
+                  {{ grupo.data_promessa_devolucao|date:'d/m/Y' }}
+                </span>
+              {% else %}-{% endif %}
+            </td>
+            <td class="text-end">{{ grupo.total_emprestado|floatformat:3 }}</td>
+            <td class="text-end">{{ grupo.total_devolvido|floatformat:3 }}</td>
+            <td class="text-end"><strong>{{ grupo.saldo_pendente|floatformat:3 }}</strong></td>
+            <td class="text-end">
+              {% if grupo.unread_mensagens_produtor %}
+              <span class="badge bg-danger me-2">{{ grupo.unread_mensagens_produtor }} nova{{ grupo.unread_mensagens_produtor|pluralize }}</span>
+              {% endif %}
+              <a href="{% url 'portal_produtor:emprestimo_detail' grupo.emprestimos.0.pk %}" class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-clock-history me-1"></i>Detalhar
+              </a>
+            </td>
+          </tr>
+          <tr class="collapse" id="produtos-{{ forloop.counter }}">
+            <td colspan="9" class="bg-light p-0">
+              <div class="p-3">
+                <strong>Produtos:</strong>
+                <table class="table table-sm mb-0">
+                  <thead>
+                    <tr>
+                      <th>Produto</th>
+                      <th>Quantidade</th>
+                      <th>Valor Unitário</th>
+                      <th>Valor Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for emp in grupo.emprestimos %}
+                    <tr>
+                      <td>{{ emp.produto.nome }}</td>
+                      <td>{{ emp.quantidade_emprestada|floatformat:3 }}</td>
+                      <td>R$ {{ emp.produto.preco_venda|floatformat:2 }}</td>
+                      <td>R$ {{ emp.quantidade_emprestada|floatformat:3|floatformat:2|add:0|floatformat:2|add:emp.produto.preco_venda|floatformat:2 }}</td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="9" class="text-center text-muted py-4">Nenhum empréstimo encontrado.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

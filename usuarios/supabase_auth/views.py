@@ -164,6 +164,7 @@ def supabase_login(request):
     
     # Django login
     django_login(request, usuario, backend='django.contrib.auth.backends.ModelBackend')
+    request.session.set_expiry(0)
     
     # Registra sucesso
     LoginSupabase.objects.create(

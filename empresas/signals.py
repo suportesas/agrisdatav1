@@ -246,6 +246,8 @@ def upload_empresa_logo(sender, instance, created, **kwargs):
     Faz upload da logo para Supabase Storage quando salvar empresa
     Organiza em: empresas-logos/empresa_ID/YYYY/MM/filename.ext
     """
+    if getattr(settings, 'SUPABASE_STORAGE_USE_AS_DEFAULT', False):
+        return
     
     if instance.logo and hasattr(instance.logo, 'file'):
         try:

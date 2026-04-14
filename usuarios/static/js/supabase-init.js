@@ -64,8 +64,14 @@ async function initSupabaseForOAuth() {
       console.error('❌ Supabase library not loaded. Include: <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>');
       return null;
     }
-    
-    supabaseClient = window.supabase.createClient(url, anonKey);
+
+    supabaseClient = window.supabase.createClient(url, anonKey, {
+      auth: {
+        storage: window.sessionStorage,
+        persistSession: true,
+        autoRefreshToken: true,
+      },
+    });
     supabaseConfig = { url, anonKey };
     
     console.log('✓ Supabase client initialized for OAuth');

@@ -1,0 +1,256 @@
+{% extends 'base.html' %}
+
+{% block title %}Detalhe do Empréstimo{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0"><i class="bi bi-clock-history me-2"></i>Timeline do Empréstimo</h2>
+    <div class="d-flex gap-2">
+      {% if request.user.tipo == 'ADMIN' or request.user.tipo == 'GERENTE' %}
+        {% if not emprestimo.possui_assinatura_liberador %}
+        <a href="{% url 'cadastros:emprestimo_assinar_liberacao' emprestimo.pk %}" class="btn btn-primary">
+          <i class="bi bi-pen me-1"></i>Assinar Liberação
+        </a>
+        {% endif %}
+      {% endif %}
+      {% if request.user.tipo == 'ADMIN' or request.user.tipo == 'GERENTE' or request.user == emprestimo.liberado_por %}
+      <form method="post" action="{% url 'cadastros:emprestimo_reenviar_whatsapp' emprestimo.pk %}" class="d-inline">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-outline-success" data-bs-toggle="tooltip" data-bs-placement="top" title="Envia novamente o link do portal para o WhatsApp do produtor, se o telefone estiver cadastrado corretamente.">
+          <i class="bi bi-whatsapp me-1"></i>Reenviar WhatsApp
+        </button>
+      </form>
+      {% endif %}
+      {% with interacao=emprestimo.interacoes.filter(tipo_interacao__in=['WHATSAPP_SUCESSO','WHATSAPP_FALHA']).order_by('-criado_em').first %}
+        {% if interacao %}
+          <span class="ms-2 small {% if interacao.tipo_interacao == 'WHATSAPP_SUCESSO' %}text-success{% else %}text-danger{% endif %}">
+            <i class="bi bi-clock-history"></i>
+            {% if interacao.tipo_interacao == 'WHATSAPP_SUCESSO' %}
+              Último WhatsApp enviado em {{ interacao.criado_em|date:'d/m/Y H:i' }}
+            {% else %}
+              Falha no envio do WhatsApp em {{ interacao.criado_em|date:'d/m/Y H:i' }}
+            {% endif %}
+          </span>
+        {% endif %}
+      {% endwith %}
+      <a href="{% url 'cadastros:emprestimo_extrato' %}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i>Voltar ao Extrato
+      </a>
+    </div>
+  </div>
+
+  <div class="card mb-3">
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-4">
+          <small class="text-muted d-block">Produtor</small>
+          <strong>{{ emprestimo.produtor.razao_social }}</strong>
+        </div>
+        <div class="col-md-4">
+          <small class="text-muted d-block">Produto</small>
+          <strong>{{ emprestimo.produto.nome }}</strong>
+        </div>
+        <div class="col-md-4">
+          <small class="text-muted d-block">Status</small>
+          <span class="badge {% if emprestimo.status == 'DEVOLVIDO' %}bg-success{% elif emprestimo.status == 'PROMESSA' %}bg-info text-dark{% elif emprestimo.status == 'NORMAL' %}bg-warning text-dark{% elif emprestimo.status == 'PARCIAL' %}bg-primary{% else %}bg-secondary{% endif %}">
+            {{ emprestimo.get_status_display }}
+          </span>
+        </div>
+        <div class="col-md-3">
+          <small class="text-muted d-block">Data do Empréstimo</small>
+          <strong>{{ emprestimo.data_emprestimo|date:'d/m/Y H:i' }}</strong>
+        </div>
+        <div class="col-md-3">
+          <small class="text-muted d-block">Promessa</small>
+          <strong>{{ emprestimo.data_promessa_devolucao|date:'d/m/Y'|default:'-' }}</strong>
+        </div>
+        <div class="col-md-2">
+          <small class="text-muted d-block">Emprestado</small>
+          <strong class="text-primary">{{ emprestimo.quantidade_emprestada|floatformat:3 }} {{ emprestimo.unidade_medida.sigla }}</strong>
+        </div>
+        <div class="col-md-2">
+          <small class="text-muted d-block">Devolvido</small>
+          <strong class="text-success">{{ emprestimo.quantidade_devolvida|floatformat:3 }} {{ emprestimo.unidade_medida.sigla }}</strong>
+        </div>
+        <div class="col-md-2">
+          <small class="text-muted d-block">Saldo</small>
+          <strong class="{% if emprestimo.saldo_pendente > 0 %}text-warning{% else %}text-success{% endif %}">{{ emprestimo.saldo_pendente|floatformat:3 }} {{ emprestimo.unidade_medida.sigla }}</strong>
+        </div>
+        <div class="col-md-6">
+          <small class="text-muted d-block">Liberação Interna</small>
+          {% if emprestimo.possui_assinatura_liberador %}
+          <strong>{{ emprestimo.assinatura_liberador_nome }}</strong>
+          <span class="badge bg-success ms-2">Assinado</span>
+          <div class="text-muted small">{{ emprestimo.assinatura_liberador_datahora|date:'d/m/Y H:i' }}</div>
+          {% else %}
+          <span class="badge bg-warning text-dark">Pendente</span>
+          {% endif %}
+        </div>
+        <div class="col-md-6">
+          <small class="text-muted d-block">Assinatura do Produtor</small>
+          {% if emprestimo.possui_assinatura_produtor %}
+          <strong>{{ emprestimo.assinatura_produtor_nome }}</strong>
+          <span class="badge bg-success ms-2">Assinado</span>
+          <div class="text-muted small">{{ emprestimo.assinatura_produtor_datahora|date:'d/m/Y H:i' }}</div>
+          {% else %}
+          <span class="badge bg-warning text-dark">Pendente</span>
+          {% endif %}
+        </div>
+        <div class="col-md-6">
+          <small class="text-muted d-block">Recebedor do Material</small>
+          <strong>{{ emprestimo.requisicao.recebedor_material|default:'-' }}</strong>
+        </div>
+        {% if emprestimo.assinatura_liberador_imagem %}
+        <div class="col-md-12">
+          <small class="text-muted d-block">Assinatura do Liberador</small>
+          <img src="{{ emprestimo.assinatura_liberador_imagem.url }}" alt="Assinatura do liberador" class="img-fluid border rounded mt-2" style="max-height: 140px;">
+        </div>
+        {% endif %}
+        {% if emprestimo.assinatura_produtor_imagem %}
+        <div class="col-md-12">
+          <small class="text-muted d-block">Assinatura do Produtor</small>
+          <img src="{{ emprestimo.assinatura_produtor_imagem.url }}" alt="Assinatura do produtor" class="img-fluid border rounded mt-2" style="max-height: 140px;">
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header bg-light">
+      <strong>Movimentações</strong>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Data</th>
+            <th>Tipo</th>
+            <th class="text-end">Quantidade</th>
+            <th class="text-end">Saldo Resultante</th>
+            <th>Documento</th>
+            <th>Comprovante</th>
+            <th>Usuário</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for mov in movimentos %}
+          <tr>
+            <td>{{ mov.data_movimento|date:'d/m/Y H:i' }}</td>
+            <td>
+              <span class="badge {% if mov.tipo_movimento == 'EMPRESTIMO' %}bg-primary{% elif mov.tipo_movimento == 'DEVOLUCAO' %}bg-success{% elif mov.tipo_movimento == 'ASSINATURA_LIBERACAO' %}bg-info text-dark{% elif mov.tipo_movimento == 'ASSINATURA_PRODUTOR' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
+                {{ mov.get_tipo_movimento_display }}
+              </span>
+            </td>
+            <td class="text-end">{{ mov.quantidade|floatformat:3 }}</td>
+            <td class="text-end"><strong>{{ mov.saldo_resultante|floatformat:3 }}</strong></td>
+            <td>{{ mov.documento_referencia|default:'-' }}</td>
+            <td>
+              {% if mov.comprovante %}
+              <a href="{{ mov.comprovante.url }}" target="_blank" class="btn btn-sm btn-outline-info">
+                <i class="bi bi-paperclip me-1"></i>Ver
+              </a>
+              {% else %}
+              -
+              {% endif %}
+            </td>
+            <td>{{ mov.criado_por.get_full_name|default:mov.criado_por.username|default:'-' }}</td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="7" class="text-center text-muted py-4">Nenhuma movimentação registrada para este empréstimo.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card mt-3">
+    <div class="card-header bg-light">
+      <strong>Conversa Auditável</strong>
+      {% if emprestimo.unread_mensagens_interno %}
+      <span class="badge bg-danger ms-2">{{ emprestimo.unread_mensagens_interno }} mensagem{{ emprestimo.unread_mensagens_interno|pluralize }} nova{{ emprestimo.unread_mensagens_interno|pluralize }}</span>
+      {% endif %}
+    </div>
+    <div class="card-body">
+      {% if request.user.tipo == 'ADMIN' or request.user.tipo == 'GERENTE' or request.user == emprestimo.liberado_por %}
+      <form method="post" action="{% url 'cadastros:emprestimo_mensagem_create' emprestimo.pk %}" enctype="multipart/form-data" class="mb-4">
+        {% csrf_token %}
+        <div class="mb-3">
+          <label for="mensagem-interna" class="form-label">Nova mensagem</label>
+          <textarea class="form-control" id="mensagem-interna" name="mensagem" rows="3" placeholder="Escreva uma orientação, dúvida ou retorno para o produtor."></textarea>
+        </div>
+        <div class="mb-3">
+          <label for="anexos-internos" class="form-label">Anexos</label>
+          <input type="file" class="form-control" id="anexos-internos" name="anexos" multiple>
+        </div>
+        <button type="submit" class="btn btn-outline-primary">Registrar mensagem</button>
+      </form>
+      {% endif %}
+
+      <div class="vstack gap-3">
+        {% for mensagem in mensagens_emprestimo %}
+        <div class="border rounded p-3 {% if mensagem.perfil_autor == 'PRODUTOR' %}bg-light{% endif %}">
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <div>
+              <strong>{{ mensagem.autor.get_full_name|default:mensagem.autor.username|default:'-' }}</strong>
+              <span class="badge {% if mensagem.perfil_autor == 'PRODUTOR' %}bg-warning text-dark{% else %}bg-info text-dark{% endif %} ms-2">{{ mensagem.get_perfil_autor_display }}</span>
+              {% if mensagem.perfil_autor == 'PRODUTOR' and not mensagem.foi_lida_pelo_interno %}
+              <span class="badge bg-danger ms-2">Nova</span>
+              {% endif %}
+            </div>
+            <small class="text-muted">{{ mensagem.criado_em|date:'d/m/Y H:i' }}</small>
+          </div>
+          <div class="mb-2" style="white-space: pre-line;">{{ mensagem.mensagem }}</div>
+          {% if mensagem.anexos.all %}
+          <div class="d-flex flex-wrap gap-2">
+            {% for anexo in mensagem.anexos.all %}
+            <a href="{% url 'cadastros:emprestimo_mensagem_anexo_download' anexo.pk %}" class="btn btn-sm btn-outline-secondary">
+              <i class="bi bi-paperclip me-1"></i>{{ anexo.nome_original|default:'Anexo' }}
+            </a>
+            {% endfor %}
+          </div>
+          {% endif %}
+        </div>
+        {% empty %}
+        <div class="text-muted">Nenhuma mensagem registrada para este empréstimo.</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <div class="card mt-3">
+    <div class="card-header bg-light">
+      <strong>Interações Auditáveis</strong>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-sm mb-0">
+        <thead>
+          <tr>
+            <th>Data</th>
+            <th>Evento</th>
+            <th>Descrição</th>
+            <th>Usuário</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for interacao in interacoes_emprestimo %}
+          <tr>
+            <td>{{ interacao.criado_em|date:'d/m/Y H:i' }}</td>
+            <td>{{ interacao.get_tipo_interacao_display }}</td>
+            <td>{{ interacao.descricao }}</td>
+            <td>{{ interacao.usuario.get_full_name|default:interacao.usuario.username|default:'-' }}</td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="4" class="text-center text-muted py-3">Nenhuma interação registrada.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

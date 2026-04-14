@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+
+{% block title %}Produtores{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <!-- Cards de Empréstimos -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <small class="text-muted d-block">Entradas de Empréstimos</small>
+          <h4 class="mb-2 text-primary">{{ emprestimo_total_entrada|floatformat:3 }}</h4>
+          <a class="small text-decoration-none" href="{% url 'cadastros:emprestimo_extrato' %}">Ver extrato</a>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <small class="text-muted d-block">Saídas de Empréstimos</small>
+          <h4 class="mb-2 text-warning">{{ emprestimo_total_saida|floatformat:3 }}</h4>
+          <a class="small text-decoration-none" href="{% url 'cadastros:emprestimo_extrato' %}">Ver extrato</a>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <small class="text-muted d-block">Saldo de Empréstimos</small>
+          <h4 class="mb-2 {% if emprestimo_total_saldo < 0 %}text-danger{% else %}text-success{% endif %}">{{ emprestimo_total_saldo|floatformat:3 }}</h4>
+          <a class="small text-decoration-none" href="{% url 'cadastros:emprestimo_extrato' %}">Ver extrato</a>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0"><i class="bi bi-person-vcard me-2"></i>Produtores</h2>
+    <a href="{% url 'cadastros:produtor_create' %}" class="btn btn-primary"><i class="bi bi-plus-circle me-1"></i>Novo Produtor</a>
+  </div>
+
+  <div class="card mb-3">
+    <div class="card-body">
+      <form method="get" class="row g-2 align-items-end">
+        <div class="col-md-6">
+          <label class="form-label">Busca</label>
+          <input type="text" class="form-control" name="q" value="{{ q }}" placeholder="Nome, fantasia, CNPJ/CPF, cidade">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Status</label>
+          <select class="form-select" name="status">
+            <option value="">Todos</option>
+            <option value="ATIVO" {% if status == 'ATIVO' %}selected{% endif %}>Ativo</option>
+            <option value="INATIVO" {% if status == 'INATIVO' %}selected{% endif %}>Inativo</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <button class="btn btn-primary" type="submit"><i class="bi bi-search me-1"></i>Filtrar</button>
+          <a href="{% url 'cadastros:produtor_list' %}" class="btn btn-outline-secondary">Limpar</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Razão Social</th>
+            <th>Fantasia</th>
+            <th>CNPJ/CPF</th>
+            <th>Cidade/UF</th>
+            <th>Status</th>
+            <th class="text-end">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for produtor in page_obj.object_list %}
+          <tr>
+            <td>{{ produtor.razao_social }}</td>
+            <td>{{ produtor.nome_fantasia|default:'-' }}</td>
+            <td>{{ produtor.get_cnpj_cpf_formatado }}</td>
+            <td>{{ produtor.cidade|default:'-' }}{% if produtor.uf %}/{{ produtor.uf }}{% endif %}</td>
+            <td>
+              {% if produtor.status == 'ATIVO' %}
+              <span class="badge bg-success">Ativo</span>
+              {% else %}
+              <span class="badge bg-secondary">Inativo</span>
+              {% endif %}
+            </td>
+            <td class="text-end">
+              <a class="btn btn-sm btn-outline-primary" href="{% url 'cadastros:produtor_detail' produtor.pk %}">Ver</a>
+              <a class="btn btn-sm btn-outline-warning" href="{% url 'cadastros:produtor_update' produtor.pk %}">Editar</a>
+              <a class="btn btn-sm btn-outline-danger" href="{% url 'cadastros:produtor_delete' produtor.pk %}">Inativar</a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="6" class="text-center text-muted py-4">Nenhum produtor encontrado.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {% include 'partials/pagination.html' with page_obj=page_obj %}
+</div>
+{% endblock %}

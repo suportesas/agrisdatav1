@@ -110,6 +110,7 @@ urlpatterns = [
     path('estoque/', include(('estoque.urls', 'estoque'))),
     path('compras/', include(('compras.urls', 'compras'))),
     path('portal/fornecedor/', include(('compras.portal_fornecedor_urls', 'portal_fornecedor'))),
+    path('portal/produtor/', include(('cadastros.portal_produtor_urls', 'portal_produtor'))),
     path('financeiro/', include(('financeiro.urls', 'financeiro'))),
     
     # ============================================

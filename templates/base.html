@@ -122,12 +122,51 @@
               el.appendChild(link);
             }
 
+            // Optionally add a navigation link to a URL (ex.: pendências)
+            if(opts && opts.url){
+              const navLink = document.createElement('a');
+              navLink.href = opts.url;
+              navLink.className = 'ms-2';
+              navLink.textContent = opts.urlText || 'Abrir';
+              el.appendChild(navLink);
+            }
+
             container.prepend(el);
 
             // Auto-remove
             setTimeout(()=>{ try{ el.remove(); } catch(e){} }, 4000);
           }catch(e){/* non-fatal */}
         }
+
+        {% if user.is_authenticated and notificacoes_emprestimo.total_nao_lidas > 0 and not user.is_superuser %}
+        document.addEventListener('DOMContentLoaded', function(){
+          try {
+            const unreadCount = {{ notificacoes_emprestimo.total_nao_lidas|default:0 }};
+            const storageKey = 'emprestimo_unread_toast_last_count';
+            const lastCount = parseInt(sessionStorage.getItem(storageKey) || '0', 10);
+            if (unreadCount > lastCount) {
+              showToast(
+                `Você tem ${unreadCount} mensagem(ns) de produtor não lida(s).`,
+                'warning',
+                {
+                  url: "{% url 'cadastros:emprestimo_extrato' %}?apenas_mensagens_nao_lidas=on",
+                  urlText: 'Abrir pendências'
+                }
+              );
+              // Registrar evento de auditoria via AJAX
+              fetch("{% url 'cadastros:registrar_alerta_visual_exibido' %}", {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/x-www-form-urlencoded',
+                  'X-CSRFToken': (document.querySelector('[name=csrfmiddlewaretoken]')||{}).value || ''
+                },
+                body: 'emprestimo_id=0'
+              });
+            }
+            sessionStorage.setItem(storageKey, String(unreadCount));
+          } catch (e) {}
+        });
+        {% endif %}
       </script>
 
       {% block content %}{% endblock %}

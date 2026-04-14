@@ -88,6 +88,7 @@ MIDDLEWARE = [
     
     # Middleware customizado
     'core.middleware.EmpresaBloqueadaMiddleware',
+    'middleware_restrito_produtor.RestrictProdutorMiddleware',
 ]
 
 ROOT_URLCONF = 'core.urls'
@@ -105,6 +106,7 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
                 'django.template.context_processors.media',  # Para upload de arquivos
                 'core.context_processors.alertas_estoque',  # Context processor customizado para alertas
+                'core.context_processors.notificacoes_emprestimo',  # Mensagens não lidas de empréstimos no menu
                 'usuarios.context_processors.supabase_context',  # Injecta contexto Supabase
             ],
         },
@@ -245,6 +247,8 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 # SUPABASE STORAGE CONFIGURATION
 # ============================================
 SUPABASE_STORAGE_ENABLED = bool(os.getenv('SUPABASE_URL'))
+SUPABASE_STORAGE_USE_AS_DEFAULT = get_bool_env('SUPABASE_STORAGE_USE_AS_DEFAULT', SUPABASE_STORAGE_ENABLED)
+SUPABASE_STORAGE_DEFAULT_BUCKET = 'uploads-gerais'
 
 SUPABASE_STORAGE_BUCKETS = {
     'empresas-logos': 'Logos de empresas',
@@ -256,6 +260,51 @@ SUPABASE_STORAGE_BUCKETS = {
     'cultura-imagens': 'Imagens de culturas',
     'uploads-gerais': 'Uploads diversos',
 }
+
+SUPABASE_STORAGE_PUBLIC_BUCKETS = {
+    'empresas-logos',
+    'produtos-imagens',
+    'funcionarios-fotos',
+    'uploads-gerais',
+}
+
+SUPABASE_STORAGE_SIGNED_URL_TTL = int(os.getenv('SUPABASE_STORAGE_SIGNED_URL_TTL', '3600'))
+
+SUPABASE_STORAGE_BUCKET_ROUTES = [
+    ('empresas/logos/', 'empresas-logos'),
+    ('funcionarios/fotos/', 'funcionarios-fotos'),
+    ('usuarios/fotos/', 'funcionarios-fotos'),
+    ('safra/', 'safra-imagens'),
+    ('culturas/imagens/', 'cultura-imagens'),
+    ('produtos/documentos/', 'documentos'),
+    ('fazendas/documentos/', 'documentos'),
+    ('fornecedores/documentos/', 'documentos'),
+    ('clientes/documentos/', 'documentos'),
+    ('funcionarios/documentos/', 'documentos'),
+    ('rh/', 'documentos'),
+    ('vehicle_docs/', 'documentos'),
+    ('motorista_docs/', 'documentos'),
+    ('comprovantes_pagamento/', 'documentos'),
+    ('compras/nfe/', 'compras-xml'),
+    ('produtos/', 'produtos-imagens'),
+    ('pragas/', 'uploads-gerais'),
+    ('monitoramento_mip/', 'uploads-gerais'),
+    ('monitoramento_pontos/', 'uploads-gerais'),
+    ('compras/divergencias/', 'uploads-gerais'),
+    ('patrimonio/', 'uploads-gerais'),
+    ('vendedores/fotos/', 'uploads-gerais'),
+]
+
+if SUPABASE_STORAGE_USE_AS_DEFAULT:
+    STORAGES = {
+        'default': {
+            'BACKEND': 'core.supabase_storage.RoutedSupabaseStorage',
+        },
+        'staticfiles': {
+            'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage',
+        },
+    }
+    DEFAULT_FILE_STORAGE = 'core.supabase_storage.RoutedSupabaseStorage'
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
@@ -444,7 +493,7 @@ FEATURE_FLAGS = {
 # SEGURANÇA
 # ============================================
 # Sessão expira ao fechar navegador
-SESSION_EXPIRE_AT_BROWSER_CLOSE = False
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 SESSION_COOKIE_AGE = 86400  # 24 horas
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SECURE = get_bool_env('SESSION_COOKIE_SECURE', not DEBUG)

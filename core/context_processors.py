@@ -1,5 +1,5 @@
 """Context processors para adicionar dados globais aos templates"""
-from django.db.models import Sum, Q
+from django.db.models import Count, Q, Sum
 from decimal import Decimal
 
 
@@ -66,3 +66,41 @@ def alertas_estoque(request):
             pass
     
     return {'alertas_estoque': alertas}
+
+
+def notificacoes_emprestimo(request):
+    """Adiciona contadores globais de mensagens não lidas de empréstimos no menu interno."""
+    payload = {
+        'total_nao_lidas': 0,
+        'emprestimos_com_pendencia': 0,
+    }
+
+    if not request.user.is_authenticated or request.user.is_superuser:
+        return {'notificacoes_emprestimo': payload}
+
+    empresa = getattr(request.user, 'empresa', None)
+    if not empresa:
+        return {'notificacoes_emprestimo': payload}
+
+    try:
+        from cadastros.models import EmprestimoMensagem
+
+        mensagens = EmprestimoMensagem.objects.filter(
+            empresa=empresa,
+            perfil_autor='PRODUTOR',
+            lido_interno_em__isnull=True,
+        )
+
+        if request.user.tipo not in ['ADMIN', 'GERENTE']:
+            mensagens = mensagens.filter(emprestimo__liberado_por=request.user)
+
+        resumo = mensagens.aggregate(
+            total_nao_lidas=Count('id'),
+            emprestimos_com_pendencia=Count('emprestimo_id', distinct=True),
+        )
+        payload['total_nao_lidas'] = resumo.get('total_nao_lidas') or 0
+        payload['emprestimos_com_pendencia'] = resumo.get('emprestimos_com_pendencia') or 0
+    except Exception:
+        pass
+
+    return {'notificacoes_emprestimo': payload}

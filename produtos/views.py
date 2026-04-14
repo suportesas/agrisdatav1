@@ -54,7 +54,7 @@ def categoria_seed(request):
     criados, ignorados = seed_categorias_for_empresa(empresa)
     messages.success(request, f'Categorias padrão populadas! Criadas: {criados}, já existentes: {ignorados}')
     return redirect('produtos:categoria_list')
-from django.db.models import Q, Count
+from django.db.models import Q, Count, Sum
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.core.paginator import Paginator
@@ -63,7 +63,7 @@ import json
 from decimal import Decimal
 from .models import UnidadeMedida, Categoria, SubCategoria, Produto, ProdutoTributacao, NaturezaOperacao, ProdutoDefensivoCultura, ProdutoFornecedor
 from .forms import UnidadeMedidaForm, CategoriaForm, SubCategoriaForm, ProdutoForm, ProdutoTributacaoForm, NaturezaOperacaoForm, ProdutoDefensivoCulturaForm
-from cadastros.models import NCM, CFOP, Fornecedor
+from cadastros.models import NCM, CFOP, Fornecedor, EmprestimoProdutor
 
 
 # ============== DASHBOARD ==============
@@ -409,8 +409,49 @@ def produto_list(request):
     if per_page not in (10, 25, 50, 100):
         per_page = 25
     
-    paginator = Paginator(produtos.order_by('nome'), per_page)
+    produtos = produtos.order_by('nome')
+    paginator = Paginator(produtos, per_page)
     page_obj = paginator.get_page(request.GET.get('page'))
+
+    produto_ids = [p.id for p in page_obj.object_list]
+    metricas_por_produto = {}
+    total_entrada = Decimal('0')
+    total_saida = Decimal('0')
+
+    if produto_ids:
+        agregados = (
+            EmprestimoProdutor.objects
+            .filter(
+                produto_id__in=produto_ids,
+                empresa=request.user.empresa,
+            )
+            .values('produto_id')
+            .annotate(
+                entrada=Sum('quantidade_emprestada'),
+                saida=Sum('quantidade_devolvida'),
+            )
+        )
+
+        for row in agregados:
+            entrada = row['entrada'] or Decimal('0')
+            saida = row['saida'] or Decimal('0')
+            metricas_por_produto[row['produto_id']] = {
+                'entrada': entrada,
+                'saida': saida,
+                'saldo': entrada - saida,
+            }
+            total_entrada += entrada
+            total_saida += saida
+
+    for produto in page_obj.object_list:
+        dados = metricas_por_produto.get(produto.id, {
+            'entrada': Decimal('0'),
+            'saida': Decimal('0'),
+            'saldo': Decimal('0'),
+        })
+        produto.emprestimo_entrada = dados['entrada']
+        produto.emprestimo_saida = dados['saida']
+        produto.emprestimo_saldo = dados['saldo']
     
     return render(request, 'produtos/produto/produto_list.html', {
         'page_obj': page_obj,
@@ -419,6 +460,9 @@ def produto_list(request):
         'categoria_filter': categoria_filter,
         'status_filter': status_filter,
         'per_page': per_page,
+        'emprestimo_total_entrada': total_entrada,
+        'emprestimo_total_saida': total_saida,
+        'emprestimo_total_saldo': total_entrada - total_saida,
     })
 
 

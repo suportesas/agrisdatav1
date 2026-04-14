@@ -10,9 +10,11 @@ from django.utils import timezone
 from django.core.paginator import Paginator
 from django.http import JsonResponse
 
-from .models import Requisicao, RequisicaoItem, Talhao, Safra
+from .emprestimo_utils import enviar_whatsapp_emprestimo
+from .models import Requisicao, RequisicaoItem, Talhao, Safra, EmprestimoProdutor, EmprestimoMovimento
 from .forms import RequisicaoForm, RequisicaoItemForm
 from estoque.models import MovimentacaoEstoque
+from produtos.models import Produto
 
 
 def _gerar_numero_requisicao():
@@ -46,7 +48,8 @@ def requisicao_list(request):
             Q(fazenda__nome__icontains=search) |
             Q(talhao__nome__icontains=search) |
             Q(talhao__codigo__icontains=search) |
-            Q(funcionario_destino__nome_completo__icontains=search)
+            Q(funcionario_destino__nome_completo__icontains=search) |
+            Q(produtor__razao_social__icontains=search)
         )
 
     if status:
@@ -54,7 +57,7 @@ def requisicao_list(request):
     if tipo:
         qs = qs.filter(tipo=tipo)
 
-    qs = qs.select_related('safra', 'fazenda', 'talhao', 'funcionario_destino').order_by('-data_requisicao')
+    qs = qs.select_related('safra', 'fazenda', 'talhao', 'funcionario_destino', 'produtor').order_by('-data_requisicao')
 
     paginator = Paginator(qs, 20)
     page_number = request.GET.get('page')
@@ -243,16 +246,30 @@ def requisicao_atender(request, pk):
 
     if request.method == 'POST':
         try:
+            mensagens_whatsapp = []
+            if requisicao.tipo == 'EMPRESTIMO' and not requisicao.produtor:
+                messages.error(request, 'Selecione um produtor antes de atender empréstimos.')
+                return redirect('cadastros:requisicao_detail', requisicao.id)
+            if requisicao.tipo == 'EMPRESTIMO' and not (requisicao.recebedor_material or '').strip():
+                messages.error(request, 'Informe o recebedor do material antes de atender empréstimos.')
+                return redirect('cadastros:requisicao_detail', requisicao.id)
+
             # Criar MovimentacaoEstoque para cada item da requisição
             for item in requisicao.itens.all():
+                quantidade_base = item.quantidade_atendida or item.quantidade_solicitada
+                tipo_movimento_estoque = 'SAIDA'
+
+                if requisicao.tipo == 'EMPRESTIMO' and requisicao.direcao_emprestimo == 'PRODUTOR_PARA_EMPRESA':
+                    tipo_movimento_estoque = 'ENTRADA'
+
                 MovimentacaoEstoque.objects.create(
-                    tipo='SAIDA',
+                    tipo=tipo_movimento_estoque,
                     origem='REQUISICAO',
                     status='EXECUTADO',
                     empresa=empresa,
                     produto=item.produto,
                     unidade_medida=item.unidade_medida,
-                    quantidade=item.quantidade_solicitada or item.quantidade_atendida,
+                    quantidade=quantidade_base,
                     documento=requisicao.numero,
                     requisitante=requisicao.solicitante,
                     aprovador=requisicao.aprovador,
@@ -261,11 +278,48 @@ def requisicao_atender(request, pk):
                     data_execucao=timezone.now(),
                     observacao=f'Requisição {requisicao.numero} - Item: {item.produto.nome}'
                 )
+
+                if requisicao.tipo == 'EMPRESTIMO':
+                    status_emprestimo = 'PROMESSA' if requisicao.data_promessa_devolucao else 'NORMAL'
+                    emprestimo = EmprestimoProdutor.objects.create(
+                        empresa=empresa,
+                        produtor=requisicao.produtor,
+                        produto=item.produto,
+                        unidade_medida=item.unidade_medida,
+                        requisicao=requisicao,
+                        requisicao_item=item,
+                        direcao=requisicao.direcao_emprestimo,
+                        data_emprestimo=timezone.now(),
+                        data_promessa_devolucao=requisicao.data_promessa_devolucao,
+                        status=status_emprestimo,
+                        quantidade_emprestada=quantidade_base,
+                        quantidade_devolvida=0,
+                        observacoes=f'Gerado automaticamente pela requisição {requisicao.numero}.',
+                        criado_por=request.user,
+                    )
+
+                    EmprestimoMovimento.objects.create(
+                        empresa=empresa,
+                        emprestimo=emprestimo,
+                        tipo_movimento='EMPRESTIMO',
+                        quantidade=quantidade_base,
+                        saldo_resultante=emprestimo.saldo_pendente,
+                        data_movimento=timezone.now(),
+                        documento_referencia=requisicao.numero,
+                        observacoes='Lançamento automático no atendimento da requisição.',
+                        criado_por=request.user,
+                    )
+
+                    sucesso_envio, retorno_envio = enviar_whatsapp_emprestimo(request, emprestimo)
+                    if not sucesso_envio:
+                        mensagens_whatsapp.append(f'{item.produto.nome}: {retorno_envio}')
             
             # Marcar requisição como ATENDIDA
             requisicao.status = 'ATENDIDA'
             requisicao.save(update_fields=['status'])
             messages.success(request, 'Requisicao atendida com sucesso. Movimentações de estoque criadas.')
+            if mensagens_whatsapp:
+                messages.warning(request, 'Alguns envios de WhatsApp não foram concluídos: ' + ' | '.join(mensagens_whatsapp))
         except Exception as e:
             messages.error(request, f'Erro ao atender requisicao: {str(e)}')
 
@@ -299,19 +353,22 @@ def requisicao_item_create(request, requisicao_id):
         return redirect('cadastros:requisicao_detail', requisicao.id)
 
     if request.method == 'POST':
-        form = RequisicaoItemForm(request.POST, empresa=empresa)
+        form = RequisicaoItemForm(request.POST, empresa=empresa, requisicao_tipo=requisicao.tipo)
         if form.is_valid():
             item = form.save(commit=False)
             item.requisicao = requisicao
             if not item.unidade_medida and item.produto:
                 item.unidade_medida = item.produto.unidade_medida
             if item.custo_estimado in (None, '') and item.produto:
-                item.custo_estimado = item.produto.preco_custo
+                if requisicao.tipo == 'EMPRESTIMO':
+                    item.custo_estimado = item.produto.preco_venda
+                else:
+                    item.custo_estimado = item.produto.preco_custo
             item.save()
             messages.success(request, 'Item adicionado com sucesso.')
             return redirect('cadastros:requisicao_detail', requisicao.id)
     else:
-        form = RequisicaoItemForm(empresa=empresa)
+        form = RequisicaoItemForm(empresa=empresa, requisicao_tipo=requisicao.tipo)
 
     return render(request, 'cadastros/requisicao/item_form.html', {
         'form': form,
@@ -331,13 +388,13 @@ def requisicao_item_update(request, requisicao_id, item_id):
         return redirect('cadastros:requisicao_detail', requisicao.id)
 
     if request.method == 'POST':
-        form = RequisicaoItemForm(request.POST, instance=item, empresa=empresa)
+        form = RequisicaoItemForm(request.POST, instance=item, empresa=empresa, requisicao_tipo=requisicao.tipo)
         if form.is_valid():
             form.save()
             messages.success(request, 'Item atualizado com sucesso.')
             return redirect('cadastros:requisicao_detail', requisicao.id)
     else:
-        form = RequisicaoItemForm(instance=item, empresa=empresa)
+        form = RequisicaoItemForm(instance=item, empresa=empresa, requisicao_tipo=requisicao.tipo)
 
     return render(request, 'cadastros/requisicao/item_form.html', {
         'form': form,
@@ -440,3 +497,39 @@ def ajax_talhao_por_codigo(request):
         })
     
     return JsonResponse({'talhoes': result})
+
+
+@login_required
+def ajax_produto_dados_requisicao(request, produto_id):
+    """AJAX endpoint para obter unidade e valor sugerido por tipo da requisicao."""
+    empresa = getattr(request.user, 'empresa', None)
+    if not empresa:
+        return JsonResponse({'success': False, 'error': 'Usuario sem empresa.'}, status=400)
+
+    requisicao_id = request.GET.get('requisicao_id')
+    if not requisicao_id:
+        return JsonResponse({'success': False, 'error': 'Requisicao nao informada.'}, status=400)
+
+    try:
+        requisicao = Requisicao.objects.get(pk=requisicao_id, empresa=empresa)
+    except Requisicao.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Requisicao nao encontrada.'}, status=404)
+
+    try:
+        produto = Produto.objects.select_related('unidade_medida').get(
+            pk=produto_id,
+            categoria__empresa=empresa,
+            ativo=True,
+        )
+    except Produto.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Produto nao encontrado.'}, status=404)
+
+    valor_sugerido = produto.preco_venda if requisicao.tipo == 'EMPRESTIMO' else produto.preco_custo
+
+    return JsonResponse({
+        'success': True,
+        'unidade_medida_id': produto.unidade_medida_id,
+        'unidade_medida_nome': produto.unidade_medida.sigla if produto.unidade_medida_id else '',
+        'valor_sugerido': float(valor_sugerido or 0),
+        'tipo_requisicao': requisicao.tipo,
+    })

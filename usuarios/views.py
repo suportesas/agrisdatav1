@@ -248,6 +248,7 @@ def login_view(request):
             
             # Faz login
             login(request, user)
+            request.session.set_expiry(0)
             
             # Registra o login para auditoria
             login_record = LoginRegistro.objects.create(
@@ -294,6 +295,17 @@ def login_view(request):
                 if not user.groups.filter(pk=group.pk).exists():
                     user.groups.add(group)
                 return redirect('portal_fornecedor:dashboard')
+
+            try:
+                produtor = user.produtor_profile
+            except Exception:
+                produtor = None
+
+            if produtor and produtor.portal_enabled:
+                group, _ = Group.objects.get_or_create(name='PRODUTOR')
+                if not user.groups.filter(pk=group.pk).exists():
+                    user.groups.add(group)
+                return redirect('portal_produtor:dashboard')
 
             return redirect('dashboard:index')
         

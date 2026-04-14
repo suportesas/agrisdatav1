@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0"><i class="bi bi-arrow-return-left me-2"></i>{{ titulo }}</h2>
+    <a href="{% url 'cadastros:emprestimo_extrato' %}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left me-1"></i>Voltar ao Extrato
+    </a>
+  </div>
+
+  <div class="card">
+    <div class="card-body">
+      <form method="post" enctype="multipart/form-data" class="row g-3">
+        {% csrf_token %}
+
+        <div class="col-md-12">
+          <label class="form-label">Empréstimo</label>
+          {{ form.emprestimo }}
+          {% if form.emprestimo.errors %}<div class="text-danger small">{{ form.emprestimo.errors }}</div>{% endif %}
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label">Quantidade Devolvida</label>
+          {{ form.quantidade }}
+          {% if form.quantidade.errors %}<div class="text-danger small">{{ form.quantidade.errors }}</div>{% endif %}
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label">Data da Devolução</label>
+          {{ form.data_movimento }}
+          {% if form.data_movimento.errors %}<div class="text-danger small">{{ form.data_movimento.errors }}</div>{% endif %}
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label">Comprovante</label>
+          {{ form.comprovante }}
+          {% if form.comprovante.errors %}<div class="text-danger small">{{ form.comprovante.errors }}</div>{% endif %}
+        </div>
+
+        <div class="col-md-12">
+          <label class="form-label">Observações</label>
+          {{ form.observacoes }}
+          {% if form.observacoes.errors %}<div class="text-danger small">{{ form.observacoes.errors }}</div>{% endif %}
+        </div>
+
+        {% if form.non_field_errors %}
+        <div class="col-md-12">
+          <div class="alert alert-danger mb-0">{{ form.non_field_errors }}</div>
+        </div>
+        {% endif %}
+
+        <div class="col-md-12 text-end">
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-check-circle me-1"></i>Salvar Devolução
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

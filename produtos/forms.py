@@ -153,6 +153,7 @@ class ProdutoForm(forms.ModelForm):
             'categoria_agricola',
             # Defensivos
             'classe_agronomica', 'ingrediente_ativo', 'concentracao', 'registro_mapa',
+            'possui_certificado', 'numero_certificado', 'data_vencimento_certificado', 'arquivo_certificado',
             'classe_toxicologica', 'classe_ambiental', 'periodo_carencia', 'intervalo_reaplicacao',
             'periodo_reentrada', 'paises_proibidos',
             # Fertilizantes
@@ -223,6 +224,10 @@ class ProdutoForm(forms.ModelForm):
             'ingrediente_ativo': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Glifosato'}),
             'concentracao': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: 480 g/L'}),
             'registro_mapa': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nº do MAPA'}),
+            'possui_certificado': forms.CheckboxInput(attrs={'class': 'form-check-input', 'id': 'id_possui_certificado'}),
+            'numero_certificado': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Número do certificado'}),
+            'data_vencimento_certificado': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'arquivo_certificado': forms.ClearableFileInput(attrs={'class': 'form-control'}),
             'classe_toxicologica': forms.Select(attrs={'class': 'form-select'}),
             'classe_ambiental': forms.Select(attrs={'class': 'form-select'}),
             'periodo_carencia': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Dias'}),

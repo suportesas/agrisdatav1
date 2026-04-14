@@ -1,0 +1,85 @@
+
+{% extends 'portal_produtor/base.html' %}
+
+{% block title %}Portal do Produtor{% endblock %}
+
+{% block content %}
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="card portal-card h-100">
+      <div class="card-body">
+        <small class="text-muted d-block">Pendentes de Assinatura</small>
+        <h4 class="mb-0">{{ pendentes_assinatura }}</h4>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card portal-card h-100">
+      <div class="card-body">
+        <small class="text-muted d-block">Mensagens Não Lidas</small>
+        <h4 class="mb-0">{{ total_mensagens_nao_lidas }}</h4>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card portal-card h-100">
+      <div class="card-body">
+        <small class="text-muted d-block">Saldo em Aberto</small>
+        <h4 class="mb-0">{{ total_saldo|default:0|floatformat:3 }}</h4>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+<div class="card portal-card">
+  <div class="card-header bg-white d-flex justify-content-between align-items-center">
+    <strong>Empréstimos recentes</strong>
+    <a href="{% url 'portal_produtor:emprestimos_list' %}" class="btn btn-sm btn-outline-secondary">Ver todos</a>
+  </div>
+  <div class="table-responsive">
+    <table class="table mb-0">
+      <thead>
+        <tr>
+          <th>Data</th>
+          <th>Produto</th>
+          <th class="text-end">Quantidade</th>
+          <th>Status</th>
+          <th>Assinatura</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for emprestimo in emprestimos_recentes %}
+        <tr>
+          <td>{{ emprestimo.data_emprestimo|date:'d/m/Y H:i' }}</td>
+          <td>{{ emprestimo.produto.nome }}</td>
+          <td class="text-end">{{ emprestimo.quantidade_emprestada|floatformat:3 }} {{ emprestimo.unidade_medida.sigla }}</td>
+          <td>{{ emprestimo.get_status_display }}</td>
+          <td>
+            {% if emprestimo.possui_assinatura_produtor %}
+              <span class="badge bg-success">Assinado</span>
+            {% elif emprestimo.possui_assinatura_liberador %}
+              <span class="badge bg-warning text-dark">Pendente</span>
+            {% else %}
+              <span class="badge bg-secondary">Aguardando liberação</span>
+            {% endif %}
+            {% if emprestimo.unread_mensagens_produtor %}
+              <span class="badge bg-info text-dark ms-1">{{ emprestimo.unread_mensagens_produtor }} nova{{ emprestimo.unread_mensagens_produtor|pluralize }}</span>
+            {% endif %}
+          </td>
+          <td class="text-end">
+            <a href="{% url 'portal_produtor:emprestimo_detail' emprestimo.pk %}" class="btn btn-sm btn-outline-primary">Abrir</a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6" class="text-center text-muted py-4">Nenhum empréstimo disponível para este produtor.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

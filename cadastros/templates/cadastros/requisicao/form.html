@@ -53,7 +53,7 @@
                         {{ form.funcionario_destino }}
                     </div>
 
-                    <div class="col-md-3">
+                    <div class="col-md-3" id="field-codigo-talhao">
                         <label class="form-label">Código do Talhão</label>
                         {{ form.codigo_talhao }}
                         <small class="text-muted d-block mt-1">Digite para buscar talhão</small>
@@ -63,7 +63,7 @@
                         <label class="form-label">Fazenda</label>
                         {{ form.fazenda }}
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-3" id="field-talhao">
                         <label class="form-label">Talhao</label>
                         {{ form.talhao }}
                     </div>
@@ -75,6 +75,23 @@
                     <div class="col-md-4" id="field-parceiro" style="display: none;">
                         <label class="form-label">Parceiro</label>
                         {{ form.parceiro }}
+                    </div>
+                    <div class="col-md-4" id="field-produtor" style="display: none;">
+                        <label class="form-label">Produtor</label>
+                        {{ form.produtor }}
+                    </div>
+                    <div class="col-md-4" id="field-direcao-emprestimo" style="display: none;">
+                        <label class="form-label">Direção do Empréstimo</label>
+                        {{ form.direcao_emprestimo }}
+                    </div>
+                    <div class="col-md-4" id="field-recebedor-material" style="display: none;">
+                        <label class="form-label">Recebedor do Material</label>
+                        {{ form.recebedor_material }}
+                        <small class="text-muted d-block mt-1">Informe nome completo e documento.</small>
+                    </div>
+                    <div class="col-md-4" id="field-promessa-devolucao" style="display: none;">
+                        <label class="form-label">Data Promessa de Devolução</label>
+                        {{ form.data_promessa_devolucao }}
                     </div>
                     <div class="col-md-4" id="field-veiculo" style="display: none;">
                         <label class="form-label">Veiculo</label>
@@ -119,16 +136,38 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const tipoSelect = document.getElementById('id_tipo');
+    const parceiroSelect = document.getElementById('id_parceiro');
     const talhaoSelect = document.getElementById('id_talhao');
     const safraSelect = document.getElementById('id_safra');
     const fazendaSelect = document.getElementById('id_fazenda');
+    const recebedorMaterialInput = document.getElementById('id_recebedor_material');
     const codigoTalhaoInput = document.getElementById('id_codigo_talhao');
     const listaTalhoesUl = document.getElementById('lista-talhoes');
     
     // Função para mostrar/esconder campos por tipo
     function updateFieldsVisibility() {
         const tipo = tipoSelect.value;
-        document.getElementById('field-parceiro').style.display = tipo === 'EMPRESTIMO' ? 'block' : 'none';
+        // Regra de negocio: em Emprestimo de Material o campo Parceiro nao deve ser exibido.
+        document.getElementById('field-parceiro').style.display = 'none';
+        if (tipo === 'EMPRESTIMO' && parceiroSelect) {
+            parceiroSelect.value = '';
+        }
+        document.getElementById('field-codigo-talhao').style.display = tipo === 'EMPRESTIMO' ? 'none' : 'block';
+        if (tipo === 'EMPRESTIMO' && codigoTalhaoInput) {
+            codigoTalhaoInput.value = '';
+            listaTalhoesUl.style.display = 'none';
+        }
+        document.getElementById('field-talhao').style.display = tipo === 'EMPRESTIMO' ? 'none' : 'block';
+        if (tipo === 'EMPRESTIMO' && talhaoSelect) {
+            talhaoSelect.value = '';
+        }
+        document.getElementById('field-produtor').style.display = tipo === 'EMPRESTIMO' ? 'block' : 'none';
+        document.getElementById('field-direcao-emprestimo').style.display = tipo === 'EMPRESTIMO' ? 'block' : 'none';
+        document.getElementById('field-recebedor-material').style.display = tipo === 'EMPRESTIMO' ? 'block' : 'none';
+        if (tipo !== 'EMPRESTIMO' && recebedorMaterialInput) {
+            recebedorMaterialInput.value = '';
+        }
+        document.getElementById('field-promessa-devolucao').style.display = tipo === 'EMPRESTIMO' ? 'block' : 'none';
         document.getElementById('field-veiculo').style.display = tipo === 'ABASTECIMENTO' ? 'block' : 'none';
         document.getElementById('field-horimetro').style.display = tipo === 'ABASTECIMENTO' ? 'block' : 'none';
         document.getElementById('field-odometro').style.display = tipo === 'ABASTECIMENTO' ? 'block' : 'none';

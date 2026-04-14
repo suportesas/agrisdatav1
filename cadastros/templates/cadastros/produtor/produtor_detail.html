@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+
+{% block title %}Produtor{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <!-- Cards de Empréstimos do Produtor -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <small class="text-muted d-block">Entradas de Empréstimos</small>
+          <h4 class="mb-2 text-primary">{{ emprestimo_total_entrada|floatformat:3 }}</h4>
+          <a class="small text-decoration-none" href="{% url 'cadastros:emprestimo_extrato' %}?produtor={{ produtor.pk }}">Ver extrato</a>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <small class="text-muted d-block">Saídas de Empréstimos</small>
+          <h4 class="mb-2 text-warning">{{ emprestimo_total_saida|floatformat:3 }}</h4>
+          <a class="small text-decoration-none" href="{% url 'cadastros:emprestimo_extrato' %}?produtor={{ produtor.pk }}">Ver extrato</a>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <small class="text-muted d-block">Saldo de Empréstimos</small>
+          <h4 class="mb-2 {% if emprestimo_total_saldo < 0 %}text-danger{% else %}text-success{% endif %}">{{ emprestimo_total_saldo|floatformat:3 }}</h4>
+          <a class="small text-decoration-none" href="{% url 'cadastros:emprestimo_extrato' %}?produtor={{ produtor.pk }}">Ver extrato</a>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0">{{ produtor.razao_social }}</h2>
+    <div>
+      <a href="{% url 'cadastros:produtor_update' produtor.pk %}" class="btn btn-warning">Editar</a>
+      <a href="{% url 'cadastros:produtor_list' %}" class="btn btn-outline-secondary">Voltar</a>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body">
+      <div class="row g-2">
+        <div class="col-md-4"><strong>CNPJ/CPF:</strong> {{ produtor.get_cnpj_cpf_formatado }}</div>
+        <div class="col-md-4"><strong>Fantasia:</strong> {{ produtor.nome_fantasia|default:'-' }}</div>
+        <div class="col-md-4"><strong>Status:</strong> {{ produtor.get_status_display }}</div>
+        <div class="col-md-4"><strong>Telefone:</strong> {{ produtor.telefone|default:'-' }}</div>
+        <div class="col-md-4"><strong>E-mail:</strong> {{ produtor.email|default:'-' }}</div>
+        <div class="col-md-4"><strong>Cidade/UF:</strong> {{ produtor.cidade|default:'-' }}{% if produtor.uf %}/{{ produtor.uf }}{% endif %}</div>
+        <div class="col-12"><strong>Observações:</strong> {{ produtor.observacoes|default:'-' }}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card mt-3">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <strong>Portal do Produtor</strong>
+      {% if produtor.portal_user %}
+        <span class="badge {% if produtor.portal_user.is_active and produtor.portal_enabled %}bg-success{% else %}bg-secondary{% endif %}">
+          {% if produtor.portal_user.is_active and produtor.portal_enabled %}Ativo{% else %}Bloqueado{% endif %}
+        </span>
+      {% else %}
+        <span class="badge bg-warning text-dark">Sem acesso</span>
+      {% endif %}
+    </div>
+    <div class="card-body">
+      {% if produtor.portal_user %}
+        <p class="mb-2"><strong>Usuário:</strong> {{ produtor.portal_user.username }}</p>
+        <p class="mb-3"><strong>E-mail:</strong> {{ produtor.portal_user.email|default:'-' }}</p>
+        <div class="d-flex gap-2">
+          <form method="post" action="{% url 'cadastros:produtor_criar_acesso_portal' produtor.pk %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-outline-primary">Reenviar convite</button>
+          </form>
+          <form method="post" action="{% url 'cadastros:produtor_bloquear_portal' produtor.pk %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-outline-secondary">
+              {% if produtor.portal_user.is_active %}Bloquear acesso{% else %}Desbloquear acesso{% endif %}
+            </button>
+          </form>
+        </div>
+      {% else %}
+        <p class="text-muted mb-3">Crie um acesso isolado para o produtor visualizar e assinar os empréstimos sem editar a requisição.</p>
+        <form method="post" action="{% url 'cadastros:produtor_criar_acesso_portal' produtor.pk %}">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-primary">Criar acesso ao portal</button>
+        </form>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

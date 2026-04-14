@@ -1,0 +1,222 @@
+{% extends 'base.html' %}
+
+{% block title %}Assinar Liberação do Empréstimo{% endblock %}
+
+{% block extra_css %}
+<style>
+  #abaAssinaturaEmprestimo .nav-link {
+    color: #444;
+    font-weight: 500;
+  }
+  #abaAssinaturaEmprestimo .nav-link.active {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+    color: #fff !important;
+    font-weight: 600;
+  }
+  #abaAssinaturaEmprestimo .nav-link:not(.active):hover {
+    color: #0d6efd;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-9">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+          <h1 class="h3 mb-1"><i class="fas fa-signature me-2 text-primary"></i>Assinatura da Liberação</h1>
+          <p class="text-muted mb-0">Empréstimo #{{ emprestimo.pk }} - {{ emprestimo.produtor.razao_social }}</p>
+        </div>
+        <a href="{% url 'cadastros:emprestimo_detalhe' emprestimo.pk %}" class="btn btn-outline-secondary">Voltar</a>
+      </div>
+
+      <div class="card mb-3">
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-4">
+              <small class="text-muted d-block">Produto</small>
+              <strong>{{ emprestimo.produto.nome }}</strong>
+            </div>
+            <div class="col-md-4">
+              <small class="text-muted d-block">Recebedor do Material</small>
+              <strong>{{ emprestimo.requisicao.recebedor_material|default:'-' }}</strong>
+            </div>
+            <div class="col-md-4">
+              <small class="text-muted d-block">Saldo Atual</small>
+              <strong>{{ emprestimo.saldo_pendente|floatformat:3 }} {{ emprestimo.unidade_medida.sigla }}</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-body">
+          <form method="post" id="formAssinaturaEmprestimo" enctype="multipart/form-data">
+            {% csrf_token %}
+
+            <div class="mb-3">
+              <label for="id_assinatura_liberador_nome" class="form-label">Nome de quem libera</label>
+              <input type="text" id="id_assinatura_liberador_nome" name="assinatura_liberador_nome" class="form-control" value="{{ request.user.get_full_name|default:request.user.username }}" required>
+            </div>
+
+            <ul class="nav nav-tabs mb-3" id="abaAssinaturaEmprestimo" role="tablist">
+              <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="tab-desenho" data-bs-toggle="tab" data-bs-target="#painel-desenho" type="button" role="tab">
+                  <i class="bi bi-pencil me-1"></i> Desenhar
+                </button>
+              </li>
+              <li class="nav-item" role="presentation">
+                <button class="nav-link" id="tab-upload" data-bs-toggle="tab" data-bs-target="#painel-upload" type="button" role="tab">
+                  <i class="bi bi-upload me-1"></i> Carregar Imagem
+                </button>
+              </li>
+            </ul>
+
+            <input type="hidden" name="modo_assinatura" id="modo_assinatura" value="desenho">
+            <input type="hidden" name="assinatura_data" id="assinatura_data">
+
+            <div class="tab-content">
+              <div class="tab-pane fade show active" id="painel-desenho" role="tabpanel">
+                <div class="mb-2">
+                  <label class="form-label">Desenhe a assinatura abaixo</label>
+                  <div class="border rounded p-2 bg-light">
+                    <canvas id="assinaturaCanvas" width="900" height="240" style="width:100%; height:240px; display:block; background:#fff; border:1px solid #ced4da;"></canvas>
+                  </div>
+                </div>
+                <div class="d-flex gap-2 mb-3">
+                  <button type="button" class="btn btn-outline-danger" id="btnLimparAssinatura">Limpar</button>
+                </div>
+              </div>
+
+              <div class="tab-pane fade" id="painel-upload" role="tabpanel">
+                <div class="mb-3">
+                  <label class="form-label">Selecione a imagem da assinatura</label>
+                  <input type="file" name="assinatura_upload" id="assinatura_upload" class="form-control" accept="image/png,image/jpeg,image/jpg,image/gif,image/webp">
+                  <small class="text-muted">Formatos aceitos: PNG, JPG, GIF, WEBP.</small>
+                </div>
+                <div id="preview_upload" class="d-none mb-3">
+                  <label class="form-label">Pré-visualização</label><br>
+                  <img id="img_preview" src="#" alt="Pré-visualização" style="max-height:160px; border:1px solid #ced4da; border-radius:4px;">
+                </div>
+              </div>
+            </div>
+
+            <div class="d-flex justify-content-end gap-2">
+              <a href="{% url 'cadastros:emprestimo_detalhe' emprestimo.pk %}" class="btn btn-outline-secondary">Cancelar</a>
+              <button type="submit" class="btn btn-primary">Salvar Assinatura</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  const canvas = document.getElementById('assinaturaCanvas');
+  const ctx = canvas.getContext('2d');
+  const inputData = document.getElementById('assinatura_data');
+  const inputModo = document.getElementById('modo_assinatura');
+  const form = document.getElementById('formAssinaturaEmprestimo');
+  const btnLimpar = document.getElementById('btnLimparAssinatura');
+  const inputUpload = document.getElementById('assinatura_upload');
+  const preview = document.getElementById('preview_upload');
+  const imgPreview = document.getElementById('img_preview');
+
+  let desenhando = false;
+  let teveTraco = false;
+
+  document.querySelectorAll('#abaAssinaturaEmprestimo button[data-bs-toggle="tab"]').forEach(btn => {
+    btn.addEventListener('shown.bs.tab', function (e) {
+      inputModo.value = e.target.id === 'tab-upload' ? 'upload' : 'desenho';
+    });
+  });
+
+  inputUpload.addEventListener('change', function () {
+    const file = this.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        imgPreview.src = e.target.result;
+        preview.classList.remove('d-none');
+      };
+      reader.readAsDataURL(file);
+    } else {
+      preview.classList.add('d-none');
+    }
+  });
+
+  function pos(event) {
+    const rect = canvas.getBoundingClientRect();
+    const touch = event.touches ? event.touches[0] : null;
+    const clientX = touch ? touch.clientX : event.clientX;
+    const clientY = touch ? touch.clientY : event.clientY;
+    return {
+      x: (clientX - rect.left) * (canvas.width / rect.width),
+      y: (clientY - rect.top) * (canvas.height / rect.height)
+    };
+  }
+
+  function iniciar(event) {
+    desenhando = true;
+    teveTraco = true;
+    const p = pos(event);
+    ctx.beginPath();
+    ctx.moveTo(p.x, p.y);
+    event.preventDefault();
+  }
+
+  function desenhar(event) {
+    if (!desenhando) return;
+    const p = pos(event);
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = '#111827';
+    ctx.lineTo(p.x, p.y);
+    ctx.stroke();
+    event.preventDefault();
+  }
+
+  function finalizar(event) {
+    if (!desenhando) return;
+    desenhando = false;
+    ctx.closePath();
+    event.preventDefault();
+  }
+
+  canvas.addEventListener('mousedown', iniciar);
+  canvas.addEventListener('mousemove', desenhar);
+  window.addEventListener('mouseup', finalizar);
+  canvas.addEventListener('touchstart', iniciar, { passive: false });
+  canvas.addEventListener('touchmove', desenhar, { passive: false });
+  canvas.addEventListener('touchend', finalizar, { passive: false });
+
+  btnLimpar.addEventListener('click', function () {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    teveTraco = false;
+    inputData.value = '';
+  });
+
+  form.addEventListener('submit', function (event) {
+    const modo = inputModo.value;
+    if (modo === 'desenho') {
+      if (!teveTraco) {
+        event.preventDefault();
+        alert('Desenhe a assinatura antes de salvar.');
+        return;
+      }
+      inputData.value = canvas.toDataURL('image/png');
+    } else if (!inputUpload.files || !inputUpload.files[0]) {
+      event.preventDefault();
+      alert('Selecione uma imagem para a assinatura.');
+    }
+  });
+})();
+</script>
+{% endblock %}

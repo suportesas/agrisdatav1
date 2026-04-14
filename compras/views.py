@@ -45,8 +45,15 @@ def cotacao_item_comparativo(request, pk):
                 item.atualizar_status()
         # Atualiza status da cotação e da solicitação
         cotacao.save()
-        # Se todos os itens estiverem cotados, conclui a cotação
-        if hasattr(cotacao, 'pode_concluir') and cotacao.pode_concluir():
+
+        # Garante conclusão quando todos os itens possuem proposta vencedora.
+        itens_total = cotacao.itens.count()
+        itens_com_vencedor = ItemCotacao.objects.filter(
+            cotacao=cotacao,
+            propostas__selecionado=True,
+        ).distinct().count()
+
+        if itens_total > 0 and itens_com_vencedor == itens_total:
             if hasattr(cotacao, 'concluir'):
                 try:
                     cotacao.concluir()
@@ -59,10 +66,18 @@ def cotacao_item_comparativo(request, pk):
         if hasattr(cotacao, 'solicitacao') and hasattr(cotacao.solicitacao, 'atualizar_status_cotacao'):
             cotacao.solicitacao.atualizar_status_cotacao()
         from django.contrib import messages
-        messages.success(request, 'Seleção e justificativas salvas com sucesso!')
+        if itens_total > 0 and itens_com_vencedor == itens_total:
+            messages.success(request, 'Seleção salva com sucesso! Cotação concluída e pronta para gerar pedido.')
+        else:
+            faltantes = max(itens_total - itens_com_vencedor, 0)
+            messages.success(request, 'Seleção e justificativas salvas com sucesso!')
+            messages.warning(
+                request,
+                f'Faltam selecionar fornecedores vencedores em {faltantes} item(ns) para liberar a geração do pedido.'
+            )
         from django.urls import reverse
-        # Redireciona para a página da solicitação relacionada
-        return redirect(reverse('compras:solicitacao_detail', args=[cotacao.solicitacao.pk]))
+        # Mantém no comparativo para exibir o botão de gerar pedido quando liberado
+        return redirect(reverse('compras:cotacao_item_comparativo', args=[pk]))
     itens_data = []
     for item in cotacao.itens.select_related('produto', 'unidade_medida').all():
         # Recarrega propostas do banco para garantir status atualizado

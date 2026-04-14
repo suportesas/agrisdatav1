@@ -1452,6 +1452,108 @@ class EmpresaCFOP(models.Model):
             raise ValidationError({'codigo': 'Código CFOP inválido. Deve conter 2 a 4 dígitos.'})
 
 
+class Produtor(models.Model):
+    """Cadastro de produtores para operações de empréstimo e conta corrente."""
+
+    STATUS_CHOICES = [
+        ('ATIVO', 'Ativo'),
+        ('INATIVO', 'Inativo'),
+    ]
+
+    TIPO_PESSOA_CHOICES = [
+        ('PF', 'Pessoa Física'),
+        ('PJ', 'Pessoa Jurídica'),
+    ]
+
+    empresa = models.ForeignKey(
+        'empresas.Empresa',
+        on_delete=models.CASCADE,
+        related_name='produtores',
+        verbose_name='Empresa'
+    )
+    tipo_pessoa = models.CharField('Tipo de Pessoa', max_length=2, choices=TIPO_PESSOA_CHOICES, default='PJ')
+    razao_social = models.CharField('Razão Social / Nome', max_length=250)
+    nome_fantasia = models.CharField('Nome Fantasia', max_length=250, blank=True, null=True)
+    cnpj_cpf = models.CharField('CNPJ/CPF', max_length=18)
+    inscricao_estadual = models.CharField('Inscrição Estadual', max_length=30, blank=True, null=True)
+    telefone = models.CharField('Telefone', max_length=30, blank=True, null=True)
+    email = models.EmailField('E-mail', blank=True, null=True)
+    cep = models.CharField('CEP', max_length=10, blank=True, null=True)
+    logradouro = models.CharField('Logradouro', max_length=200, blank=True, null=True)
+    numero = models.CharField('Número', max_length=20, blank=True, null=True)
+    complemento = models.CharField('Complemento', max_length=100, blank=True, null=True)
+    bairro = models.CharField('Bairro', max_length=100, blank=True, null=True)
+    cidade = models.CharField('Cidade', max_length=100, blank=True, null=True)
+    uf = models.CharField('UF', max_length=2, blank=True, null=True)
+    status = models.CharField('Status', max_length=10, choices=STATUS_CHOICES, default='ATIVO')
+    observacoes = models.TextField('Observações', blank=True, null=True)
+    portal_enabled = models.BooleanField('Portal Habilitado', default=False)
+    portal_user = models.OneToOneField(
+        'usuarios.Usuario',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='produtor_profile',
+        verbose_name='Usuário Portal'
+    )
+    portal_token = models.CharField(
+        'Token Portal/API',
+        max_length=200,
+        blank=True,
+        null=True,
+        help_text='Token temporário para integração API/Portal'
+    )
+    cadastrado_via_api = models.BooleanField('Cadastrado via API', default=False)
+    cadastrado_por = models.ForeignKey(
+        'usuarios.Usuario',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='produtores_cadastrados'
+    )
+    data_cadastro = models.DateTimeField('Data de Cadastro', auto_now_add=True)
+    data_atualizacao = models.DateTimeField('Última Atualização', auto_now=True)
+
+    class Meta:
+        verbose_name = 'Produtor'
+        verbose_name_plural = 'Produtores'
+        ordering = ['razao_social']
+        constraints = [
+            models.UniqueConstraint(fields=['empresa', 'cnpj_cpf'], name='unique_produtor_cnpj_cpf_por_empresa')
+        ]
+        indexes = [
+            models.Index(fields=['empresa', 'status']),
+            models.Index(fields=['cnpj_cpf']),
+        ]
+
+    def __str__(self):
+        return f"{self.razao_social}"
+
+    def clean(self):
+        doc = _normalize_doc(self.cnpj_cpf)
+        if len(doc) not in (11, 14):
+            raise ValidationError({'cnpj_cpf': 'CNPJ/CPF inválido. Deve ter 11 ou 14 dígitos.'})
+        self.cnpj_cpf = doc
+
+        if len(doc) == 14:
+            self.tipo_pessoa = 'PJ'
+        elif len(doc) == 11:
+            self.tipo_pessoa = 'PF'
+
+    def get_cnpj_cpf_formatado(self):
+        doc = re.sub(r'\D', '', (self.cnpj_cpf or ''))
+        if len(doc) == 14:
+            return f"{doc[:2]}.{doc[2:5]}.{doc[5:8]}/{doc[8:12]}-{doc[12:]}"
+        if len(doc) == 11:
+            return f"{doc[:3]}.{doc[3:6]}.{doc[6:9]}-{doc[9:]}"
+        return self.cnpj_cpf
+
+    def save(self, *args, **kwargs):
+        self.cnpj_cpf = _normalize_doc(self.cnpj_cpf)
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+
 class EnderecoCliente(models.Model):
     TIPO_ENDERECO = [
         ('PRINCIPAL','Principal'),('FATURAMENTO','Faturamento'),('COBRANCA','Cobrança'),('ENTREGA','Entrega'),('NOTIFY','Notify')
@@ -6056,6 +6158,11 @@ class Requisicao(models.Model):
         ('CANCELADA', 'Cancelada'),
     ]
 
+    DIRECAO_EMPRESTIMO_CHOICES = [
+        ('EMPRESA_PARA_PRODUTOR', 'Empresa para Produtor'),
+        ('PRODUTOR_PARA_EMPRESA', 'Produtor para Empresa'),
+    ]
+
     empresa = models.ForeignKey(
         'empresas.Empresa',
         on_delete=models.CASCADE,
@@ -6088,6 +6195,27 @@ class Requisicao(models.Model):
         related_name='requisicoes_emprestimo',
         verbose_name='Parceiro'
     )
+    produtor = models.ForeignKey(
+        'cadastros.Produtor',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='requisicoes_emprestimo',
+        verbose_name='Produtor'
+    )
+    direcao_emprestimo = models.CharField(
+        'Direcao do Emprestimo',
+        max_length=30,
+        choices=DIRECAO_EMPRESTIMO_CHOICES,
+        default='EMPRESA_PARA_PRODUTOR'
+    )
+    recebedor_material = models.CharField(
+        'Recebedor do Material',
+        max_length=180,
+        blank=True,
+        help_text='Informe nome completo e documento de quem recebeu o material.'
+    )
+    data_promessa_devolucao = models.DateField('Data Promessa de Devolucao', null=True, blank=True)
     veiculo = models.ForeignKey(
         'cadastros.Vehicle',
         on_delete=models.SET_NULL,
@@ -6170,6 +6298,260 @@ class RequisicaoItem(models.Model):
 
     def __str__(self):
         return f"{self.requisicao.numero} - {self.produto.nome}"
+
+
+class EmprestimoProdutor(models.Model):
+    """Controle de saldo de empréstimo por item e produtor."""
+
+    STATUS_CHOICES = [
+        ('PROMESSA', 'Promessa de Devolucao'),
+        ('NORMAL', 'Emprestimo Normal'),
+        ('PARCIAL', 'Devolucao Parcial'),
+        ('DEVOLVIDO', 'Devolvido'),
+        ('CANCELADO', 'Cancelado'),
+    ]
+
+    empresa = models.ForeignKey('empresas.Empresa', on_delete=models.CASCADE, related_name='emprestimos_produtor')
+    produtor = models.ForeignKey('cadastros.Produtor', on_delete=models.PROTECT, related_name='emprestimos')
+    produto = models.ForeignKey('produtos.Produto', on_delete=models.PROTECT, related_name='emprestimos_produtor')
+    unidade_medida = models.ForeignKey('produtos.UnidadeMedida', on_delete=models.PROTECT, related_name='emprestimos_produtor')
+    requisicao = models.ForeignKey('cadastros.Requisicao', on_delete=models.SET_NULL, null=True, blank=True, related_name='emprestimos_gerados')
+    requisicao_item = models.ForeignKey('cadastros.RequisicaoItem', on_delete=models.SET_NULL, null=True, blank=True, related_name='emprestimos_gerados')
+    direcao = models.CharField('Direcao', max_length=30, choices=Requisicao.DIRECAO_EMPRESTIMO_CHOICES, default='EMPRESA_PARA_PRODUTOR')
+    data_emprestimo = models.DateTimeField('Data do Emprestimo', default=timezone.now)
+    data_promessa_devolucao = models.DateField('Data Promessa de Devolucao', null=True, blank=True)
+    status = models.CharField('Status', max_length=20, choices=STATUS_CHOICES, default='NORMAL')
+    liberado_por = models.ForeignKey(
+        'usuarios.Usuario',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='emprestimos_liberados',
+        verbose_name='Liberado por'
+    )
+    assinatura_liberador_imagem = models.ImageField(
+        'Assinatura Eletronica do Liberador',
+        upload_to='emprestimos/assinaturas/%Y/%m/',
+        null=True,
+        blank=True
+    )
+    assinatura_liberador_nome = models.CharField('Nome do Liberador', max_length=120, blank=True)
+    assinatura_liberador_datahora = models.DateTimeField('Data/Hora da Assinatura do Liberador', null=True, blank=True)
+    assinatura_produtor_usuario = models.ForeignKey(
+        'usuarios.Usuario',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='emprestimos_assinados_como_produtor',
+        verbose_name='Usuário do Portal do Produtor'
+    )
+    assinatura_produtor_imagem = models.ImageField(
+        'Assinatura Eletronica do Produtor',
+        upload_to='emprestimos/assinaturas/%Y/%m/',
+        null=True,
+        blank=True
+    )
+    assinatura_produtor_nome = models.CharField('Nome do Produtor Assinante', max_length=120, blank=True)
+    assinatura_produtor_datahora = models.DateTimeField('Data/Hora da Assinatura do Produtor', null=True, blank=True)
+    quantidade_emprestada = models.DecimalField('Quantidade Emprestada', max_digits=15, decimal_places=3)
+    quantidade_devolvida = models.DecimalField('Quantidade Devolvida', max_digits=15, decimal_places=3, default=0)
+    saldo_pendente = models.DecimalField('Saldo Pendente', max_digits=15, decimal_places=3, default=0)
+    observacoes = models.TextField('Observacoes', blank=True)
+    criado_por = models.ForeignKey('usuarios.Usuario', on_delete=models.SET_NULL, null=True, blank=True, related_name='emprestimos_criados')
+    criado_em = models.DateTimeField('Criado em', auto_now_add=True)
+    atualizado_em = models.DateTimeField('Atualizado em', auto_now=True)
+
+    class Meta:
+        verbose_name = 'Emprestimo de Produtor'
+        verbose_name_plural = 'Emprestimos de Produtores'
+        ordering = ['-data_emprestimo']
+        indexes = [
+            models.Index(fields=['empresa', 'status']),
+            models.Index(fields=['empresa', 'produtor']),
+            models.Index(fields=['empresa', 'produto']),
+            models.Index(fields=['data_promessa_devolucao']),
+        ]
+
+    def __str__(self):
+        return f"{self.produtor.razao_social} - {self.produto.nome} ({self.saldo_pendente})"
+
+    @property
+    def possui_assinatura_liberador(self):
+        return bool(self.assinatura_liberador_imagem and self.assinatura_liberador_datahora)
+
+    @property
+    def possui_assinatura_produtor(self):
+        return bool(self.assinatura_produtor_imagem and self.assinatura_produtor_datahora)
+
+    @property
+    def possui_dupla_assinatura(self):
+        return self.possui_assinatura_liberador and self.possui_assinatura_produtor
+
+    @property
+    def unread_mensagens_interno(self):
+        annotated_value = getattr(self, 'unread_mensagens_interno_count', None)
+        if annotated_value is not None:
+            return annotated_value
+        return self.mensagens.filter(perfil_autor='PRODUTOR', lido_interno_em__isnull=True).count()
+
+    @property
+    def unread_mensagens_produtor(self):
+        annotated_value = getattr(self, 'unread_mensagens_produtor_count', None)
+        if annotated_value is not None:
+            return annotated_value
+        return self.mensagens.filter(perfil_autor='INTERNO', lido_produtor_em__isnull=True).count()
+
+    def clean(self):
+        if self.quantidade_devolvida < 0:
+            raise ValidationError({'quantidade_devolvida': 'Quantidade devolvida nao pode ser negativa.'})
+        if self.quantidade_emprestada <= 0:
+            raise ValidationError({'quantidade_emprestada': 'Quantidade emprestada deve ser maior que zero.'})
+
+    def atualizar_status_automatico(self, hoje=None):
+        hoje = hoje or date.today()
+        if self.saldo_pendente <= 0:
+            self.status = 'DEVOLVIDO'
+            return
+        if self.quantidade_devolvida > 0:
+            self.status = 'PARCIAL'
+            return
+        if self.status == 'PROMESSA' and self.data_promessa_devolucao and self.data_promessa_devolucao < hoje:
+            self.status = 'NORMAL'
+
+    def save(self, *args, **kwargs):
+        self.saldo_pendente = (self.quantidade_emprestada or Decimal('0')) - (self.quantidade_devolvida or Decimal('0'))
+        if self.data_promessa_devolucao and self.status == 'NORMAL' and self.saldo_pendente > 0:
+            self.status = 'PROMESSA'
+        self.atualizar_status_automatico()
+        super().save(*args, **kwargs)
+
+
+class EmprestimoMovimento(models.Model):
+    """Timeline estilo extrato bancário para empréstimos/devoluções."""
+
+    TIPO_MOVIMENTO_CHOICES = [
+        ('EMPRESTIMO', 'Emprestimo'),
+        ('DEVOLUCAO', 'Devolucao'),
+        ('AJUSTE', 'Ajuste Manual'),
+        ('ASSINATURA_LIBERACAO', 'Assinatura de Liberacao'),
+        ('ASSINATURA_PRODUTOR', 'Assinatura do Produtor'),
+    ]
+
+    empresa = models.ForeignKey('empresas.Empresa', on_delete=models.CASCADE, related_name='movimentos_emprestimo')
+    emprestimo = models.ForeignKey('cadastros.EmprestimoProdutor', on_delete=models.CASCADE, related_name='movimentos')
+    tipo_movimento = models.CharField('Tipo de Movimento', max_length=20, choices=TIPO_MOVIMENTO_CHOICES)
+    quantidade = models.DecimalField('Quantidade', max_digits=15, decimal_places=3)
+    saldo_resultante = models.DecimalField('Saldo Resultante', max_digits=15, decimal_places=3, default=0)
+    data_movimento = models.DateTimeField('Data do Movimento', default=timezone.now)
+    documento_referencia = models.CharField('Documento Referencia', max_length=60, blank=True)
+    comprovante = models.FileField(
+        'Comprovante da Devolucao',
+        upload_to='emprestimos/comprovantes/%Y/%m/',
+        null=True,
+        blank=True,
+        validators=[FileExtensionValidator(allowed_extensions=['pdf', 'png', 'jpg', 'jpeg'])]
+    )
+    observacoes = models.TextField('Observacoes', blank=True)
+    criado_por = models.ForeignKey('usuarios.Usuario', on_delete=models.SET_NULL, null=True, blank=True, related_name='movimentos_emprestimo_criados')
+    criado_em = models.DateTimeField('Criado em', auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Movimento de Emprestimo'
+        verbose_name_plural = 'Movimentos de Emprestimo'
+        ordering = ['-data_movimento', '-id']
+        indexes = [
+            models.Index(fields=['empresa', 'data_movimento']),
+            models.Index(fields=['tipo_movimento']),
+        ]
+
+    def __str__(self):
+        return f"{self.get_tipo_movimento_display()} - {self.emprestimo.produtor.razao_social}"
+
+
+class EmprestimoInteracao(models.Model):
+    """Log auditável de interações relacionadas ao empréstimo."""
+
+    TIPO_INTERACAO_CHOICES = [
+        ('WHATSAPP_SUCESSO', 'WhatsApp enviado'),
+        ('WHATSAPP_FALHA', 'Falha no WhatsApp'),
+        ('NOTIFICACAO_INTERNA', 'Notificação interna'),
+        ('MENSAGEM_INTERNA', 'Mensagem interna'),
+        ('MENSAGEM_PRODUTOR', 'Mensagem do produtor'),
+        ('DOWNLOAD_ANEXO', 'Download de anexo'),
+        ('ALERTA_VISUAL_EXIBIDO', 'Alerta visual exibido'),
+    ]
+
+    empresa = models.ForeignKey('empresas.Empresa', on_delete=models.CASCADE, related_name='interacoes_emprestimo')
+    emprestimo = models.ForeignKey('cadastros.EmprestimoProdutor', on_delete=models.CASCADE, related_name='interacoes')
+    tipo_interacao = models.CharField('Tipo de Interação', max_length=30, choices=TIPO_INTERACAO_CHOICES)
+    usuario = models.ForeignKey('usuarios.Usuario', on_delete=models.SET_NULL, null=True, blank=True, related_name='interacoes_emprestimo')
+    descricao = models.TextField('Descrição')
+    destinatario = models.CharField('Destinatário', max_length=120, blank=True)
+    sucesso = models.BooleanField('Sucesso', default=True)
+    criado_em = models.DateTimeField('Criado em', auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Interação do Empréstimo'
+        verbose_name_plural = 'Interações do Empréstimo'
+        ordering = ['-criado_em', '-id']
+
+    def __str__(self):
+        return f"{self.emprestimo_id} - {self.get_tipo_interacao_display()}"
+
+
+class EmprestimoMensagem(models.Model):
+    """Conversa auditável entre equipe interna e produtor."""
+
+    PERFIL_AUTOR_CHOICES = [
+        ('INTERNO', 'Interno'),
+        ('PRODUTOR', 'Produtor'),
+    ]
+
+    empresa = models.ForeignKey('empresas.Empresa', on_delete=models.CASCADE, related_name='mensagens_emprestimo')
+    emprestimo = models.ForeignKey('cadastros.EmprestimoProdutor', on_delete=models.CASCADE, related_name='mensagens')
+    autor = models.ForeignKey('usuarios.Usuario', on_delete=models.SET_NULL, null=True, blank=True, related_name='mensagens_emprestimo')
+    perfil_autor = models.CharField('Perfil do Autor', max_length=20, choices=PERFIL_AUTOR_CHOICES)
+    mensagem = models.TextField('Mensagem')
+    lido_interno_em = models.DateTimeField('Lido pelo Interno em', null=True, blank=True)
+    lido_produtor_em = models.DateTimeField('Lido pelo Produtor em', null=True, blank=True)
+    criado_em = models.DateTimeField('Criado em', auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Mensagem do Empréstimo'
+        verbose_name_plural = 'Mensagens do Empréstimo'
+        ordering = ['criado_em', 'id']
+
+    def __str__(self):
+        return f"{self.emprestimo_id} - {self.perfil_autor}"
+
+    @property
+    def foi_lida_pelo_interno(self):
+        return bool(self.lido_interno_em)
+
+    @property
+    def foi_lida_pelo_produtor(self):
+        return bool(self.lido_produtor_em)
+
+
+class EmprestimoMensagemAnexo(models.Model):
+    """Anexos enviados na conversa do empréstimo."""
+
+    mensagem = models.ForeignKey('cadastros.EmprestimoMensagem', on_delete=models.CASCADE, related_name='anexos')
+    arquivo = models.FileField(
+        'Arquivo',
+        upload_to='emprestimos/mensagens/%Y/%m/',
+        validators=[FileExtensionValidator(allowed_extensions=['pdf', 'png', 'jpg', 'jpeg', 'doc', 'docx', 'xls', 'xlsx'])]
+    )
+    nome_original = models.CharField('Nome Original', max_length=255, blank=True)
+    criado_em = models.DateTimeField('Criado em', auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Anexo da Mensagem do Empréstimo'
+        verbose_name_plural = 'Anexos das Mensagens do Empréstimo'
+        ordering = ['criado_em', 'id']
+
+    def __str__(self):
+        return self.nome_original or os.path.basename(self.arquivo.name)
 
 
 

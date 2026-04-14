@@ -230,6 +230,74 @@ class SupabaseAuth:
             logger.error(f"[ERRO] Erro ao atualizar senha user_id={user_id}: {str(e)}")
             return {'error': str(e)}
 
+    def admin_find_user_by_email(self, email: str) -> Dict:
+        """Admin: Busca usuário no Supabase Auth por e-mail."""
+        try:
+            client = create_client(settings.SUPABASE_URL, self.service_key)
+            page = 1
+            per_page = 200
+
+            while True:
+                response = client.auth.admin.list_users(page=page, per_page=per_page)
+                users = getattr(response, 'users', None) or []
+
+                for user in users:
+                    if getattr(user, 'email', '').lower() == email.lower():
+                        return {'user': user}
+
+                # Se retornou menos que o tamanho da página, acabou a listagem.
+                if len(users) < per_page:
+                    break
+
+                page += 1
+
+            return {'user': None}
+        except Exception as e:
+            logger.error(f"[ERRO] Erro ao buscar usuário por email={email}: {str(e)}")
+            return {'error': str(e)}
+
+    def admin_upsert_user(
+        self,
+        email: str,
+        password: str,
+        user_metadata: Dict = None,
+        email_confirm: bool = True
+    ) -> Dict:
+        """
+        Admin: cria usuário no Supabase quando não existe; se existir, atualiza senha/metadata.
+        """
+        try:
+            found = self.admin_find_user_by_email(email)
+            if 'error' in found:
+                return found
+
+            existing_user = found.get('user')
+            client = create_client(settings.SUPABASE_URL, self.service_key)
+
+            if existing_user is None:
+                created = self.admin_create_user(
+                    email=email,
+                    password=password,
+                    user_metadata=user_metadata,
+                    email_confirm=email_confirm,
+                )
+                if 'error' in created:
+                    return created
+                return {'user': created.get('user'), 'created': True}
+
+            payload = {
+                'password': password,
+                'user_metadata': user_metadata or {},
+            }
+            updated = client.auth.admin.update_user_by_id(existing_user.id, payload)
+            return {
+                'user': getattr(updated, 'user', None) or existing_user,
+                'created': False,
+            }
+        except Exception as e:
+            logger.error(f"[ERRO] Erro no upsert de usuário admin email={email}: {str(e)}")
+            return {'error': str(e)}
+
 
 # Instância global para uso
 supabase_auth = SupabaseAuth()

@@ -74,7 +74,7 @@ class SupabaseStorageHelper:
                 file_path,
                 content,
                 {
-                    'contentType': content_type,
+                    'content-type': content_type,
                     'upsert': 'true',
                 }
             )

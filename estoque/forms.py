@@ -73,7 +73,6 @@ class ArmazemForm(forms.ModelForm):
                 'class': 'form-control', 
                 'step': '0.01',
                 'id': 'id_capacidade_kg',
-                'readonly': True
             }),
             'controla_temperatura': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'temperatura_min': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1'}),

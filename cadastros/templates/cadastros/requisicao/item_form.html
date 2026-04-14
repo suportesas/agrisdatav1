@@ -19,7 +19,7 @@
 
     <div class="card">
         <div class="card-body">
-            <form method="post">
+            <form method="post" id="form-requisicao-item">
                 {% csrf_token %}
                 <div class="row g-3">
                     <div class="col-md-6">
@@ -39,8 +39,17 @@
                         {{ form.quantidade_atendida }}
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label">Custo Estimado</label>
+                        <label class="form-label">
+                            {% if requisicao.tipo == 'EMPRESTIMO' %}
+                            Valor do Produto (Venda)
+                            {% else %}
+                            Custo Estimado
+                            {% endif %}
+                        </label>
                         {{ form.custo_estimado }}
+                        {% if requisicao.tipo == 'EMPRESTIMO' %}
+                        <small class="text-muted d-block mt-1">Valor sugerido automaticamente. Pode ser ajustado.</small>
+                        {% endif %}
                     </div>
                     <div class="col-md-12">
                         <label class="form-label">Observacoes</label>
@@ -64,4 +73,46 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const produtoSelect = document.getElementById('id_produto');
+    const unidadeSelect = document.getElementById('id_unidade_medida');
+    const valorInput = document.getElementById('id_custo_estimado');
+    const requisicaoId = '{{ requisicao.id }}';
+
+    if (!produtoSelect || !unidadeSelect || !valorInput) {
+        return;
+    }
+
+    function preencherDadosProduto(produtoId) {
+        if (!produtoId) {
+            return;
+        }
+
+        fetch(`/cadastros/api/requisicoes/produto-dados/${produtoId}/?requisicao_id=${requisicaoId}`)
+            .then((response) => response.json())
+            .then((data) => {
+                if (!data.success) {
+                    return;
+                }
+
+                if (data.unidade_medida_id) {
+                    unidadeSelect.value = String(data.unidade_medida_id);
+                }
+
+                if (typeof data.valor_sugerido !== 'undefined') {
+                    valorInput.value = Number(data.valor_sugerido).toFixed(2);
+                }
+            })
+            .catch((error) => {
+                console.error('Erro ao buscar dados do produto:', error);
+            });
+    }
+
+    produtoSelect.addEventListener('change', function() {
+        preencherDadosProduto(this.value);
+    });
+});
+</script>
 {% endblock %}

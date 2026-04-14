@@ -278,6 +278,38 @@
         <h3>Usuários ativos</h3>
         <p class="val">{{ total_usuarios|default:0 }}</p>
       </article>
+      <article class="panel">
+        <h3>Pendências de empréstimos</h3>
+        <p class="val">{{ total_emprestimos_com_pendencia|default:0 }}</p>
+      </article>
+    </div>
+
+    <div class="panel mt-3">
+      <h3>{{ titulo_pendencias_emprestimo }}</h3>
+      <p class="mb-2">
+        <span class="badge-pill">Total não lidas: {{ total_mensagens_produtor_nao_lidas|default:0 }}</span>
+      </p>
+      <div class="mini-list">
+        {% for item in pendencias_mensagens_emprestimo %}
+          <div class="mini-item">
+            <div>
+              <strong>{{ item.produtor.razao_social }}</strong>
+              <div>
+                <small class="text-muted">{{ item.produto.nome }} | Req. {{ item.requisicao.numero|default:'-' }}</small>
+              </div>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+              <span class="chip warn">{{ item.unread_mensagens_interno_count }} nova{{ item.unread_mensagens_interno_count|pluralize }}</span>
+              <a href="{% url 'cadastros:emprestimo_detalhe' item.pk %}" class="btn btn-sm btn-outline-primary">Abrir</a>
+            </div>
+          </div>
+        {% empty %}
+          <div class="text-muted">Sem mensagens pendentes de leitura no módulo de empréstimos.</div>
+        {% endfor %}
+      </div>
+      <div class="mt-3">
+        <a href="{% url 'cadastros:emprestimo_extrato' %}?apenas_mensagens_nao_lidas=on" class="btn btn-sm btn-outline-secondary">Ver extrato somente com não lidas</a>
+      </div>
     </div>
   {% endif %}
 </div>

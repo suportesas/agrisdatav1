@@ -1,0 +1,53 @@
+{% extends 'portal_produtor/base.html' %}
+
+{% block title %}Devoluções Programadas{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+  <div class="col-12">
+    <h3 class="mb-3">Devoluções Programadas Pendentes</h3>
+    <a href="{% url 'portal_produtor:dashboard' %}" class="btn btn-outline-secondary btn-sm mb-3"><i class="bi bi-arrow-left"></i> Voltar ao dashboard</a>
+  </div>
+</div>
+<div class="card portal-card mb-4">
+  <div class="card-header bg-white d-flex justify-content-between align-items-center">
+    <strong>Devoluções Programadas Pendentes</strong>
+  </div>
+  <div class="table-responsive">
+    <table class="table mb-0">
+      <thead>
+        <tr>
+          <th>Data Promessa</th>
+          <th>Produto</th>
+          <th class="text-end">Saldo Pendente</th>
+          <th>Status</th>
+          <th>Alerta</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for emp in devolucoes_pendentes %}
+        <tr {% if emp in devolucoes_alerta %}class="table-warning"{% endif %}>
+          <td>{{ emp.data_promessa_devolucao|date:'d/m/Y' }}</td>
+          <td>{{ emp.produto.nome }}</td>
+          <td class="text-end">{{ emp.saldo_pendente|floatformat:3 }} {{ emp.unidade_medida.sigla }}</td>
+          <td>{{ emp.get_status_display }}</td>
+          <td>
+            {% if emp in devolucoes_alerta %}
+              <span class="badge bg-warning text-dark">Devolução próxima!</span>
+            {% endif %}
+          </td>
+          <td class="text-end">
+            <a href="#" class="btn btn-sm btn-outline-primary">Pedir extensão</a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6" class="text-center text-muted py-4">Nenhuma devolução programada pendente.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

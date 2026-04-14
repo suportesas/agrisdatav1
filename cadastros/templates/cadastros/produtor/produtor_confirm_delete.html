@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+
+{% block title %}Inativar Produtor{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="card border-danger">
+    <div class="card-body">
+      <h4 class="text-danger">Inativar produtor</h4>
+      <p>Confirma a inativação do produtor <strong>{{ produtor.razao_social }}</strong>?</p>
+      <form method="post">
+        {% csrf_token %}
+        <button class="btn btn-danger" type="submit">Confirmar inativação</button>
+        <a href="{% url 'cadastros:produtor_list' %}" class="btn btn-outline-secondary">Cancelar</a>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

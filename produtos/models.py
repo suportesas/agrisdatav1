@@ -283,6 +283,15 @@ class Produto(models.Model):
     ingrediente_ativo = models.CharField(max_length=200, blank=True, verbose_name='Ingrediente Ativo')
     concentracao = models.CharField(max_length=50, blank=True, verbose_name='Concentração')
     registro_mapa = models.CharField(max_length=50, blank=True, verbose_name='Registro MAPA')
+    possui_certificado = models.BooleanField(default=False, verbose_name='Possui Certificado')
+    numero_certificado = models.CharField(max_length=100, blank=True, verbose_name='Número do Certificado')
+    data_vencimento_certificado = models.DateField(blank=True, null=True, verbose_name='Vencimento do Certificado')
+    arquivo_certificado = models.FileField(
+        upload_to='produtos/certificados/%Y/%m/',
+        blank=True,
+        null=True,
+        verbose_name='Arquivo do Certificado'
+    )
     classe_toxicologica = models.CharField(max_length=3, choices=CLASSE_TOXICOLOGICA_CHOICES, blank=True, verbose_name='Classe Toxicológica')
     classe_ambiental = models.CharField(max_length=3, choices=CLASSE_AMBIENTAL_CHOICES, blank=True, verbose_name='Classe Ambiental')
     periodo_carencia = models.IntegerField(blank=True, null=True, verbose_name='Período de Carência (dias)')
@@ -384,6 +393,7 @@ class Produto(models.Model):
 
         self._validar_unidades(errors)
         self._validar_campos_agricolas(errors)
+        self._validar_certificado(errors)
 
         if self.validade_obrigatoria and not self.dias_validade:
             errors['dias_validade'] = 'Informe os dias de validade quando a validade for obrigatória.'
@@ -416,6 +426,27 @@ class Produto(models.Model):
 
         if self.fator_conversao is not None and self.fator_conversao <= 0:
             errors['fator_conversao'] = 'O fator de conversão deve ser maior que zero.'
+
+    def _validar_certificado(self, errors):
+        if self.possui_certificado:
+            if not (self.numero_certificado or '').strip():
+                errors['numero_certificado'] = 'Informe o número do certificado.'
+            if not self.data_vencimento_certificado:
+                errors['data_vencimento_certificado'] = 'Informe a data de vencimento do certificado.'
+
+            if self.arquivo_certificado and hasattr(self.arquivo_certificado, 'name'):
+                nome = self.arquivo_certificado.name.lower()
+                ext_permitidas = ('.pdf', '.png', '.jpg', '.jpeg')
+                if not nome.endswith(ext_permitidas):
+                    errors['arquivo_certificado'] = 'Arquivo de certificado deve ser PDF ou imagem (PNG/JPG).'
+
+                tamanho = getattr(self.arquivo_certificado, 'size', 0) or 0
+                if tamanho > 10 * 1024 * 1024:
+                    errors['arquivo_certificado'] = 'Arquivo de certificado deve ter no máximo 10MB.'
+        else:
+            self.numero_certificado = ''
+            self.data_vencimento_certificado = None
+            self.arquivo_certificado = None
 
     def _validar_campos_agricolas(self, errors):
         categoria_agricola = (self.categoria_agricola or '').strip()

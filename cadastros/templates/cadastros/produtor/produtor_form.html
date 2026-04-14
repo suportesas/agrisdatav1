@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ action }} Produtor{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0"><i class="bi bi-person-vcard me-2"></i>{{ action }} Produtor</h2>
+    <a href="{% url 'cadastros:produtor_list' %}" class="btn btn-outline-secondary">Voltar</a>
+  </div>
+
+  <form method="post" class="card">
+    {% csrf_token %}
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-4">
+          <label class="form-label">CNPJ/CPF</label>
+          <div class="input-group">
+            {{ form.cnpj_cpf }}
+            <button class="btn btn-outline-primary" type="button" id="btnConsultarCnpj">Consultar CNPJ</button>
+          </div>
+          {% if form.cnpj_cpf.errors %}<div class="text-danger small">{{ form.cnpj_cpf.errors }}</div>{% endif %}
+        </div>
+        <div class="col-md-5">
+          <label class="form-label">Razão Social / Nome</label>
+          {{ form.razao_social }}
+          {% if form.razao_social.errors %}<div class="text-danger small">{{ form.razao_social.errors }}</div>{% endif %}
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Nome Fantasia</label>
+          {{ form.nome_fantasia }}
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label">Inscrição Estadual</label>
+          {{ form.inscricao_estadual }}
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Telefone</label>
+          {{ form.telefone }}
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">E-mail</label>
+          {{ form.email }}
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">Status</label>
+          {{ form.status }}
+        </div>
+
+        <div class="col-md-2"><label class="form-label">CEP</label>{{ form.cep }}</div>
+        <div class="col-md-6"><label class="form-label">Logradouro</label>{{ form.logradouro }}</div>
+        <div class="col-md-2"><label class="form-label">Número</label>{{ form.numero }}</div>
+        <div class="col-md-2"><label class="form-label">Complemento</label>{{ form.complemento }}</div>
+        <div class="col-md-4"><label class="form-label">Bairro</label>{{ form.bairro }}</div>
+        <div class="col-md-6"><label class="form-label">Cidade</label>{{ form.cidade }}</div>
+        <div class="col-md-2"><label class="form-label">UF</label>{{ form.uf }}</div>
+
+        <div class="col-12"><label class="form-label">Observações</label>{{ form.observacoes }}</div>
+      </div>
+    </div>
+    <div class="card-footer bg-white">
+      <button class="btn btn-primary" type="submit"><i class="bi bi-save me-1"></i>Salvar</button>
+      <a href="{% url 'cadastros:produtor_list' %}" class="btn btn-outline-secondary">Cancelar</a>
+    </div>
+  </form>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const btn = document.getElementById('btnConsultarCnpj');
+  const cnpjInput = document.getElementById('id_cnpj_cpf');
+
+  btn.addEventListener('click', async function() {
+    const cnpj = (cnpjInput.value || '').replace(/\D/g, '');
+    if (cnpj.length !== 14) {
+      alert('Informe um CNPJ válido com 14 dígitos para consulta automática.');
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Consultando...';
+
+    try {
+      const resp = await fetch(`{% url 'cadastros:buscar_cnpj' %}?cnpj=${cnpj}`, {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+      });
+      const payload = await resp.json();
+
+      if (!resp.ok || !payload.sucesso) {
+        throw new Error(payload.erro || 'Não foi possível consultar o CNPJ.');
+      }
+
+      const dados = payload.dados || {};
+      document.getElementById('id_razao_social').value = dados.nome || document.getElementById('id_razao_social').value;
+      document.getElementById('id_nome_fantasia').value = dados.nome_fantasia || document.getElementById('id_nome_fantasia').value;
+      document.getElementById('id_telefone').value = dados.telefone || document.getElementById('id_telefone').value;
+      document.getElementById('id_email').value = dados.email || document.getElementById('id_email').value;
+      document.getElementById('id_cep').value = dados.cep || document.getElementById('id_cep').value;
+      document.getElementById('id_logradouro').value = dados.logradouro || document.getElementById('id_logradouro').value;
+      document.getElementById('id_numero').value = dados.numero || document.getElementById('id_numero').value;
+      document.getElementById('id_complemento').value = dados.complemento || document.getElementById('id_complemento').value;
+      document.getElementById('id_bairro').value = dados.bairro || document.getElementById('id_bairro').value;
+      document.getElementById('id_cidade').value = dados.cidade || document.getElementById('id_cidade').value;
+      document.getElementById('id_uf').value = dados.uf || document.getElementById('id_uf').value;
+    } catch (err) {
+      alert(err.message || 'Falha na consulta. Você pode preencher manualmente.');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Consultar CNPJ';
+    }
+  });
+});
+</script>
+{% endblock %}

@@ -2019,6 +2019,11 @@ class FornecedorForm(forms.ModelForm):
         self.empresa = empresa
         self.usuario = usuario
 
+        # Só permite edição do campo portal_enabled para administradores da empresa
+        if 'portal_enabled' in self.fields and usuario and not getattr(usuario, 'is_admin_empresa', lambda: False)():
+            self.fields['portal_enabled'].disabled = True
+            self.fields['portal_enabled'].help_text = 'Apenas administradores da empresa podem habilitar o portal do fornecedor.'
+
         try:
             from .models import CategoriaFornecedor, SubcategoriaFornecedor
             if 'categorias' in self.fields:

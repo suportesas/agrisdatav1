@@ -1,3 +1,32 @@
+
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth import update_session_auth_hash
+
+@login_required
+def perfil_usuario(request):
+    user = request.user
+    if request.method == 'POST':
+        nome = request.POST.get('nome', '').strip()
+        password1 = request.POST.get('password1', '')
+        password2 = request.POST.get('password2', '')
+        if nome:
+            partes = nome.split()
+            user.first_name = partes[0]
+            user.last_name = ' '.join(partes[1:]) if len(partes) > 1 else ''
+        if password1 or password2:
+            if password1 != password2:
+                messages.error(request, 'As senhas não conferem.')
+            elif len(password1) < 6:
+                messages.error(request, 'A senha deve ter pelo menos 6 caracteres.')
+            else:
+                user.set_password(password1)
+                update_session_auth_hash(request, user)
+                messages.success(request, 'Senha alterada com sucesso!')
+        user.save()
+        if nome:
+            messages.success(request, 'Nome atualizado com sucesso!')
+        return redirect('portal_fornecedor:perfil')
+    return render(request, 'portal_fornecedor/perfil.html', {'user': user})
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import Group

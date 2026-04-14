@@ -87,7 +87,8 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     
     # Middleware customizado
-    'core.middleware.EmpresaBloqueadaMiddleware',
+    'core.middleware.empresa_bloqueada.EmpresaBloqueadaMiddleware',
+    'core.middleware.fornecedor_portal_only.FornecedorPortalOnlyMiddleware',
     'middleware_restrito_produtor.RestrictProdutorMiddleware',
 ]
 

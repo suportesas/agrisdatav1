@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-4">
+    <h2>Excluir Forma de Pagamento</h2>
+    <form method="post">
+        {% csrf_token %}
+        <p>Tem certeza que deseja excluir a forma de pagamento <strong>{{ forma.nome }}</strong>?</p>
+        <button type="submit" class="btn btn-danger">Sim, excluir</button>
+        <a href="{% url 'compras:forma_pagamento_list' %}" class="btn btn-secondary">Cancelar</a>
+    </form>
+</div>
+{% endblock %}

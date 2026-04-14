@@ -83,6 +83,21 @@
                                onchange="atualizarParcelas()" oninput="atualizarParcelas()">
                         <small class="form-text text-muted">Valor total da nota fiscal</small>
                     </div>
+                    <div class="col-md-2">
+                        <label for="juros" class="form-label">Juros (%)</label>
+                        <input type="number" class="form-control" id="juros" name="juros" step="0.01" min="0" value="0.00" placeholder="0.00">
+                        <small class="form-text text-muted">Juros a ser aplicado (opcional)</small>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="multa" class="form-label">Multa (%)</label>
+                        <input type="number" class="form-control" id="multa" name="multa" step="0.01" min="0" value="0.00" placeholder="0.00">
+                        <small class="form-text text-muted">Multa a ser aplicada (opcional)</small>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="desconto" class="form-label">Desconto (R$)</label>
+                        <input type="number" class="form-control" id="desconto" name="desconto" step="0.01" min="0" value="0.00" placeholder="0.00">
+                        <small class="form-text text-muted">Desconto negociado (opcional)</small>
+                    </div>
                 </div>
             </div>
         </div>

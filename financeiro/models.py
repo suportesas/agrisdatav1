@@ -16,6 +16,13 @@ from decimal import Decimal
 class FormaPagemento(models.Model):
     """Formas de pagamento disponíveis (Boleto, PIX, Transferência, etc)"""
     
+    empresa = models.ForeignKey(
+        'empresas.Empresa',
+        on_delete=models.CASCADE,
+        related_name='formas_pagamento',
+        verbose_name='Empresa'
+    )
+
     nome = models.CharField(
         'Nome da Forma de Pagamento',
         max_length=100,

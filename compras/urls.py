@@ -10,6 +10,10 @@ from .views_cotacao import (
 )
 from .views_dashboard import dashboard_compras
 from . import views_simples
+from .views_forma_pagamento import (
+    forma_pagamento_list, forma_pagamento_create, forma_pagamento_edit,
+    forma_pagamento_delete
+)
 
 app_name = 'compras'
 
@@ -81,6 +85,12 @@ urlpatterns = [
     path('cotacoes-inteligentes/proposta/<int:proposta_pk>/selecionar/', proposta_selecionar, name='proposta_inteligente_selecionar'),
     path('produtos/<int:produto_pk>/historico-precos/', historico_precos, name='historico_precos'),
     path('historico-precos/', historico_precos_list, name='historico_precos_list'),
+    
+    # Formas de Pagamento CRUD
+    path('formas-pagamento/', forma_pagamento_list, name='forma_pagamento_list'),
+    path('formas-pagamento/nova/', forma_pagamento_create, name='forma_pagamento_create'),
+    path('formas-pagamento/<int:pk>/editar/', forma_pagamento_edit, name='forma_pagamento_edit'),
+    path('formas-pagamento/<int:pk>/excluir/', forma_pagamento_delete, name='forma_pagamento_delete'),
     
     # API
     path('api/produto/<int:produto_id>/estoque/', views.get_produto_estoque, name='get_produto_estoque'),

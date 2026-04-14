@@ -450,14 +450,17 @@ def parcela_criar(request, conta_pk):
                             pass
                     
                     # Criar parcela
-                    ParcelaContaPagar.objects.create(
+                    parcela = ParcelaContaPagar.objects.create(
                         conta_pagar=conta,
                         numero_parcela=idx,
                         valor_parcela=valor,
+                        valor_total_parcela=valor,  # Garante preenchimento obrigatório
                         forma_pagamento=forma_pagamento,
                         data_vencimento=data_vencimento,
                         status='ABERTA'
                     )
+                    parcela.recalcular_total()
+                    parcela.save()
                 
                 messages.success(
                     request,

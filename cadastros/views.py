@@ -4113,28 +4113,37 @@ def fornecedor_criar_acesso_portal(request, pk):
     site_domain = getattr(settings, 'SITE_DOMAIN', '') or request.get_host()
     use_https = getattr(settings, 'SITE_HTTPS', False) or request.is_secure()
 
-    def _enviar_reset(email):
-        form = PasswordResetForm(data={'email': email})
-        if form.is_valid():
-            form.save(
-                request=request,
-                domain_override=site_domain,
-                use_https=use_https,
-                from_email=None,
-                email_template_name='usuarios/password_reset_email.html',
-                subject_template_name='usuarios/password_reset_subject.txt',
-            )
-            return True
-        return False
+    from django.core.mail import send_mail
+    import string
+    import random
 
-    # Já tem acesso: apenas reenvia convite
+    def gerar_senha_aleatoria(tamanho=8):
+        chars = string.ascii_letters + string.digits
+        return ''.join(random.choice(chars) for _ in range(tamanho))
+
+    def enviar_email_senha(email, senha, fornecedor_nome):
+        assunto = 'Acesso ao Portal do Fornecedor'
+        mensagem = f"Olá {fornecedor_nome},\n\nSeu acesso ao Portal do Fornecedor foi criado.\n\nUsuário: {email}\nSenha provisória: {senha}\n\nAcesse o portal e troque sua senha no primeiro acesso pelo menu Perfil.\n\nAtenciosamente,\nEquipe ERP Agrícola"
+        send_mail(
+            assunto,
+            mensagem,
+            None,
+            [email],
+            fail_silently=False,
+        )
+        return True
+
+    # Já tem acesso: apenas reenvia senha provisória
     if fornecedor.portal_user_id:
         user_portal = fornecedor.portal_user
         if not user_portal.is_active:
             user_portal.is_active = True
             user_portal.save(update_fields=['is_active'])
-        _enviar_reset(user_portal.email)
-        messages.success(request, f'✅ Convite de acesso reenviado para {user_portal.email}.')
+        senha = gerar_senha_aleatoria()
+        user_portal.set_password(senha)
+        user_portal.save(update_fields=['password'])
+        enviar_email_senha(user_portal.email, senha, fornecedor.nome_fantasia or fornecedor.razao_social or '')
+        messages.success(request, f'✅ Nova senha provisória enviada para {user_portal.email}.')
         return redirect('cadastros:fornecedor_detail', pk=pk)
 
     # Gera username único
@@ -4152,27 +4161,23 @@ def fornecedor_criar_acesso_portal(request, pk):
     elif hasattr(fornecedor, 'razao_social') and fornecedor.razao_social:
         nome_display = fornecedor.razao_social[:30]
 
+    senha = gerar_senha_aleatoria()
     user_portal = Usuario.objects.create_user(
         username=username,
         email=fornecedor.email,
-        password=None,
+        password=senha,
         first_name=nome_display,
         empresa=fornecedor.empresa,
         tipo='FUNC',
         is_active=True,
     )
-    user_portal.set_unusable_password()
-    user_portal.save(update_fields=['password'])
 
     fornecedor.portal_user = user_portal
     fornecedor.portal_enabled = True
     fornecedor.save(update_fields=['portal_user', 'portal_enabled'])
 
-    if _enviar_reset(user_portal.email):
-        messages.success(request, f'✅ Acesso ao portal criado! E-mail enviado para {user_portal.email}.')
-    else:
-        messages.warning(request, f'✅ Acesso criado, mas não foi possível enviar o e-mail. Verifique o e-mail do fornecedor.')
-
+    enviar_email_senha(user_portal.email, senha, fornecedor.nome_fantasia or fornecedor.razao_social or '')
+    messages.success(request, f'✅ Acesso ao portal criado! Senha provisória enviada para {user_portal.email}.')
     return redirect('cadastros:fornecedor_detail', pk=pk)
 
 

@@ -1,0 +1,28 @@
+{% extends 'portal_fornecedor/base.html' %}
+{% block title %}Perfil do Usuário{% endblock %}
+
+{% block content %}
+<div class="card portal-card p-4 mx-auto" style="max-width: 500px;">
+  <h4 class="mb-3">Perfil do Usuário</h4>
+  <form method="post">
+    {% csrf_token %}
+    <div class="mb-3">
+      <label for="id_nome" class="form-label">Nome</label>
+      <input type="text" class="form-control" id="id_nome" name="nome" value="{{ user.get_full_name }}" required>
+    </div>
+    <div class="mb-3">
+      <label for="id_username" class="form-label">Usuário</label>
+      <input type="text" class="form-control" id="id_username" name="username" value="{{ user.username }}" readonly>
+    </div>
+    <div class="mb-3">
+      <label for="id_password1" class="form-label">Nova Senha</label>
+      <input type="password" class="form-control" id="id_password1" name="password1" autocomplete="new-password">
+    </div>
+    <div class="mb-3">
+      <label for="id_password2" class="form-label">Confirme a Nova Senha</label>
+      <input type="password" class="form-control" id="id_password2" name="password2" autocomplete="new-password">
+    </div>
+    <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+  </form>
+</div>
+{% endblock %}

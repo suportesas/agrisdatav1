@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-4">
+    <h2>Formas de Pagamento</h2>
+    <a href="{% url 'compras:forma_pagamento_create' %}" class="btn btn-success mb-3">Nova Forma de Pagamento</a>
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Nome</th>
+                <th>Ativo</th>
+                <th>Ordem</th>
+                <th>Dias Proc.</th>
+                <th>Taxa Adm.</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for forma in formas %}
+            <tr>
+                <td>{{ forma.nome }}</td>
+                <td>{{ forma.ativo|yesno:"Sim,Não" }}</td>
+                <td>{{ forma.ordem_exibicao }}</td>
+                <td>{{ forma.dias_processamento }}</td>
+                <td>{{ forma.taxa_administrativa }}</td>
+                <td>
+                    <a href="{% url 'compras:forma_pagamento_edit' forma.pk %}" class="btn btn-sm btn-primary">Editar</a>
+                    <a href="{% url 'compras:forma_pagamento_delete' forma.pk %}" class="btn btn-sm btn-danger">Excluir</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6">Nenhuma forma cadastrada.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

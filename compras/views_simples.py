@@ -443,6 +443,9 @@ def faturar_recebimento(request, recebimento_pk):
         data_emissao = request.POST.get('data_emissao')
         valor_nf = Decimal(request.POST.get('valor_nf', '0'))
         num_parcelas = int(request.POST.get('num_parcelas', '1'))
+        juros = Decimal(request.POST.get('juros', '0'))
+        multa = Decimal(request.POST.get('multa', '0'))
+        desconto = Decimal(request.POST.get('desconto', '0'))
         
         if not all([numero_nf, data_emissao, valor_nf]):
             messages.error(request, 'Preencha todos os campos obrigatórios.')
@@ -458,6 +461,10 @@ def faturar_recebimento(request, recebimento_pk):
         
         # Atualizar dados da NF no recebimento
         recebimento.nota_fiscal = numero_nf
+        recebimento.juros_nf = juros
+        recebimento.multa_nf = multa
+        recebimento.desconto_nf = desconto
+        # Se os campos não existirem no modelo RecebimentoCompra, remova estas linhas e use apenas nos cálculos da ContaPagar
         recebimento.serie_nota = serie_nf
         recebimento.valor_total_nf = valor_nf
         recebimento.status = 'FINALIZADO'
@@ -469,39 +476,46 @@ def faturar_recebimento(request, recebimento_pk):
             messages.error(request, 'Recebimento não possui fornecedor vinculado.')
             return redirect('compras:faturar_recebimento', recebimento_pk=recebimento.pk)
         
+        # Aplicar desconto, juros e multa ao valor da NF
+        valor_com_desconto = valor_nf - desconto if desconto > 0 else valor_nf
+        valor_com_juros = valor_com_desconto * (1 + (juros / 100)) if juros > 0 else valor_com_desconto
+        valor_final = valor_com_juros * (1 + (multa / 100)) if multa > 0 else valor_com_juros
+
         # Criar ContaPagar
         conta = ContaPagar.objects.create(
             empresa=request.user.empresa,
             fornecedor=fornecedor,
             numero=f"NF-{numero_nf}",
-            valor_total=valor_nf,
-            desconto_negociado=Decimal('0'),
+            valor_total=valor_final,
+            desconto_negociado=desconto,
+            juros_aplicado=juros,
+            multa_aplicada=multa,
             data_emissao=data_emissao,
             requer_aprovacao=True,
             observacoes=f"Gerada automaticamente do recebimento {recebimento.numero}\nNF: {numero_nf} - Série: {serie_nf}"
         )
-        
+
         # Calcular valor por parcela com precisão
-        valor_parcela = valor_nf / num_parcelas
+        valor_parcela = valor_final / num_parcelas
         valor_acumulado = Decimal('0')
-        
+
         # Criar parcelas profissionais com forma de pagamento
         for parcela_num in range(1, num_parcelas + 1):
             # Se é a última parcela, ajusta para não haver centavos perdidos
             if parcela_num == num_parcelas:
-                valor_calc = valor_nf - valor_acumulado
+                valor_calc = valor_final - valor_acumulado
             else:
                 valor_calc = valor_parcela
-            
+
             valor_acumulado += valor_calc
-            
+
             # Calcular dias até vencimento (primeira parcela no dia do recebimento)
             dias_ate_vencimento = 30 * (parcela_num - 1)  # 0 dias, 30 dias, 60 dias, etc
-            
+
             data_vencimento = recebimento.data_recebimento + timedelta(
                 days=dias_ate_vencimento
             )
-            
+
             # Pegar forma de pagamento do POST (pode vir por parcela ou geral)
             forma_id = request.POST.get(f'forma_pagamento_{parcela_num}') or request.POST.get('forma_pagamento_padrao')
             forma_pagamento = None

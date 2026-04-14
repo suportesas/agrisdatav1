@@ -52,6 +52,7 @@
           <li><a href="{% url 'compras:dashboard_compras' %}"><i class="bi bi-cart-check"></i> Compras</a></li>
           <li><a href="{% url 'financeiro:dashboard' %}"><i class="bi bi-cash-coin"></i> Financeiro</a></li>
           <li><a href="{% url 'estoque:relatorio_rastreamento_dashboard' %}"><i class="bi bi-activity"></i> Rastreamento</a></li>
+          <li><a href="{% url 'produtos:dashboard' %}"><i class="bi bi-speedometer2"></i> Dashboard de Produtos</a></li>
         </ul>
       </li>
 
@@ -329,7 +330,7 @@
           <i class="bi bi-chevron-down submenu-arrow"></i>
         </a>
         <ul class="nav-submenu">
-          <li><a href="{% url 'produtos:dashboard' %}"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
+          <!-- Dashboard removido: agora está em Dashboard principal -->
           <li><a href="{% url 'produtos:produto_list' %}"><i class="bi bi-list-ul"></i> Listar Produtos</a></li>
           <li><a href="{% url 'produtos:produto_create' %}"><i class="bi bi-plus-circle"></i> Novo Produto</a></li>
           <li><a href="{% url 'produtos:tipo_produto_list' %}"><i class="bi bi-tag"></i> Tipos de Produto</a></li>
@@ -451,6 +452,7 @@
           <li><a href="{% url 'financeiro:relatorio_contas_vencer' %}"><i class="bi bi-calendar-plus"></i> Contas a Vencer</a></li>
           <li><a href="{% url 'financeiro:relatorio_contas_vencidas' %}"><i class="bi bi-exclamation-triangle"></i> Contas Vencidas</a></li>
           <li><a href="{% url 'financeiro:relatorio_fluxo_caixa' %}"><i class="bi bi-graph-up"></i> Fluxo de Caixa</a></li>
+          <li><a href="{% url 'compras:forma_pagamento_list' %}"><i class="bi bi-credit-card"></i> Formas de Pagamento</a></li>
         </ul>
       </li>
 

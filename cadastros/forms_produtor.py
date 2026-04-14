@@ -22,6 +22,7 @@ class ProdutorForm(forms.ModelForm):
             'uf',
             'status',
             'observacoes',
+            'portal_enabled',
         ]
         widgets = {
             'razao_social': forms.TextInput(attrs={'class': 'form-control'}),
@@ -39,4 +40,13 @@ class ProdutorForm(forms.ModelForm):
             'uf': forms.TextInput(attrs={'class': 'form-control', 'maxlength': '2'}),
             'status': forms.Select(attrs={'class': 'form-select'}),
             'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'portal_enabled': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
+
+    def __init__(self, *args, **kwargs):
+        usuario = kwargs.pop('usuario', None)
+        super().__init__(*args, **kwargs)
+        # Só permite edição do campo portal_enabled para administradores da empresa
+        if 'portal_enabled' in self.fields and usuario and not getattr(usuario, 'is_admin_empresa', lambda: False)():
+            self.fields['portal_enabled'].disabled = True
+            self.fields['portal_enabled'].help_text = 'Apenas administradores da empresa podem habilitar o portal do produtor.'

@@ -1,3 +1,4 @@
+
 from django.urls import path
 
 from . import portal_produtor_views as views
@@ -15,4 +16,5 @@ urlpatterns = [
     path('mensagens/anexos/<int:anexo_id>/download/', views.emprestimo_mensagem_anexo_download, name='emprestimo_mensagem_anexo_download'),
     path('perfil/', views.perfil_produtor, name='perfil'),
     path('trocar-senha/', views.trocar_senha_produtor, name='trocar_senha'),
+    path('emprestimos/ajax/aceite/', views.emprestimo_aceite_ajax, name='emprestimo_aceite_ajax'),
 ]

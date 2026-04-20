@@ -451,6 +451,23 @@ Solução para escalabilidade:
 
 ---
 
+## 🔏 Mudança: Assinatura Única por Requisição (RF-055)
+
+A partir de 20/04/2026, o sistema passou a adotar assinatura única por requisição para os fluxos de Liberação Interna e Assinatura do Produtor:
+
+- **Assinatura de Liberação Interna** e **Assinatura do Produtor** agora são armazenadas diretamente nos campos da entidade `Requisicao`.
+- Todos os produtos vinculados à requisição compartilham o mesmo status de assinatura, exibido em todas as telas e relatórios.
+- O fluxo de assinatura foi centralizado, eliminando a necessidade de múltiplas assinaturas por produto.
+- Scripts de migração garantiram a integridade dos dados históricos.
+- Templates, views e extratos foram ajustados para refletir a nova lógica.
+
+**Benefícios:**
+- Mais clareza e rastreabilidade.
+- Redução de inconsistências.
+- Experiência unificada para o usuário e para auditoria.
+
+---
+
 **Versão**: v1.0  
 **Data**: 2025-02-03  
 **Arquitetura**: Django + Bootstrap + Context Processors

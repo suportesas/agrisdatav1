@@ -9,7 +9,7 @@
       <div class="card border-0 shadow-sm h-100">
         <div class="card-body">
           <small class="text-muted d-block">Total Emprestado</small>
-          <h4 class="mb-0 text-primary">{{ totais.total_emprestado|default:0|floatformat:3 }}</h4>
+          <h4 class="mb-0 text-primary">R$ {{ totais.total_emprestado|default:0|floatformat:2 }}</h4>
         </div>
       </div>
     </div>
@@ -17,7 +17,7 @@
       <div class="card border-0 shadow-sm h-100">
         <div class="card-body">
           <small class="text-muted d-block">Total Devolvido</small>
-          <h4 class="mb-0 text-success">{{ totais.total_devolvido|default:0|floatformat:3 }}</h4>
+          <h4 class="mb-0 text-success">R$ {{ totais.total_devolvido|default:0|floatformat:2 }}</h4>
         </div>
       </div>
     </div>
@@ -25,7 +25,7 @@
       <div class="card border-0 shadow-sm h-100">
         <div class="card-body">
           <small class="text-muted d-block">Saldo em Aberto</small>
-          <h4 class="mb-0 {% if totais.total_saldo|default:0 > 0 %}text-warning{% else %}text-success{% endif %}">{{ totais.total_saldo|default:0|floatformat:3 }}</h4>
+          <h4 class="mb-0 {% if totais.total_saldo|default:0 > 0 %}text-warning{% else %}text-success{% endif %}">R$ {{ totais.total_saldo|default:0|floatformat:2 }}</h4>
         </div>
       </div>
     </div>
@@ -34,6 +34,7 @@
   <div class="card mb-3">
     <div class="card-body">
       <form method="get" class="row g-3 align-items-end">
+        {% csrf_token %}
         <div class="col-md-3">
           <label class="form-label">Status</label>
           <select name="status" class="form-select">
@@ -84,9 +85,9 @@
             <th>Requisição</th>
             <th>Status</th>
             <th>Promessa</th>
-            <th class="text-end">Total Emprestado</th>
-            <th class="text-end">Total Devolvido</th>
-            <th class="text-end">Saldo</th>
+            <th class="text-end">Total Emprestado (R$)</th>
+            <th class="text-end">Total Devolvido (R$)</th>
+            <th class="text-end">Saldo (R$)</th>
             <th class="text-end">Ações</th>
           </tr>
         </thead>
@@ -112,16 +113,18 @@
                 </span>
               {% else %}-{% endif %}
             </td>
-            <td class="text-end">{{ grupo.total_emprestado|floatformat:3 }}</td>
-            <td class="text-end">{{ grupo.total_devolvido|floatformat:3 }}</td>
-            <td class="text-end"><strong>{{ grupo.saldo_pendente|floatformat:3 }}</strong></td>
+            <td class="text-end">R$ {{ grupo.total_emprestado|floatformat:2 }}</td>
+            <td class="text-end">R$ {{ grupo.total_devolvido|floatformat:2 }}</td>
+            <td class="text-end"><strong>R$ {{ grupo.saldo_pendente|floatformat:2 }}</strong></td>
             <td class="text-end">
               {% if grupo.unread_mensagens_produtor %}
               <span class="badge bg-danger me-2">{{ grupo.unread_mensagens_produtor }} nova{{ grupo.unread_mensagens_produtor|pluralize }}</span>
               {% endif %}
-              <a href="{% url 'portal_produtor:emprestimo_detail' grupo.emprestimos.0.pk %}" class="btn btn-sm btn-outline-primary">
-                <i class="bi bi-clock-history me-1"></i>Detalhar
-              </a>
+              {% if grupo.emprestimos and grupo.emprestimos.0.obj.pk %}
+                <a href="{% url 'portal_produtor:emprestimo_detail' grupo.emprestimos.0.obj.pk %}" class="btn btn-sm btn-outline-primary">
+                  <i class="bi bi-clock-history me-1"></i>Detalhar
+                </a>
+              {% endif %}
             </td>
           </tr>
           <tr class="collapse" id="produtos-{{ forloop.counter }}">
@@ -138,12 +141,35 @@
                     </tr>
                   </thead>
                   <tbody>
-                    {% for emp in grupo.emprestimos %}
+                    {% for emp_dict in grupo.emprestimos %}
                     <tr>
-                      <td>{{ emp.produto.nome }}</td>
-                      <td>{{ emp.quantidade_emprestada|floatformat:3 }}</td>
-                      <td>R$ {{ emp.produto.preco_venda|floatformat:2 }}</td>
-                      <td>R$ {{ emp.quantidade_emprestada|floatformat:3|floatformat:2|add:0|floatformat:2|add:emp.produto.preco_venda|floatformat:2 }}</td>
+                      <td>{{ emp_dict.obj.produto.nome }}</td>
+                      <td>{{ emp_dict.obj.quantidade_emprestada|floatformat:3 }}</td>
+                      <td>R$ {{ emp_dict.preco_venda|floatformat:2 }}</td>
+                      <td>R$ {{ emp_dict.valor_total_produto|floatformat:2 }}</td>
+                      <td>
+                        <input type="checkbox" name="confirmar_produto_{{ emp_dict.obj.pk }}" id="confirmar_produto_{{ emp_dict.obj.pk }}"
+                          data-produto-id="{{ emp_dict.obj.pk }}"
+                          class="aceite-checkbox"
+                          {% if emp_dict.obj.aceite_produtor %}checked disabled{% endif %}
+                        >
+                        <label for="confirmar_produto_{{ emp_dict.obj.pk }}">Aceite</label>
+                      </td>
+                      <td class="text-center">
+                        <button type="button" class="btn btn-link p-0 comentario-btn" data-produto="{{ emp_dict.obj.pk }}" title="Adicionar comentário">
+                          <i class="bi bi-chat-left-dots" id="icon-comentario-{{ emp_dict.obj.pk }}"></i>
+                        </button>
+                        <div id="comentario-popup-{{ emp_dict.obj.pk }}" class="comentario-popup" style="display:none; position:absolute; z-index:10; background:#fff; border:1px solid #ccc; padding:10px; min-width:220px;">
+                          <textarea name="comentario_produto_{{ emp_dict.obj.pk }}" class="form-control form-control-sm" placeholder="Comentário ou divergência (opcional)" {% if emp_dict.obj.aceite_produtor %}disabled{% endif %}></textarea>
+                          <div class="text-end mt-2">
+                            <button type="button" class="btn btn-sm btn-secondary fechar-comentario" data-produto="{{ emp_dict.obj.pk }}" {% if emp_dict.obj.aceite_produtor %}disabled{% endif %}>Fechar</button>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                      <td colspan="9" class="text-center text-muted py-4">Nenhum produto emprestado.</td>
                     </tr>
                     {% endfor %}
                   </tbody>
@@ -151,11 +177,84 @@
               </div>
             </td>
           </tr>
-          {% empty %}
-          <tr>
-            <td colspan="9" class="text-center text-muted py-4">Nenhum empréstimo encontrado.</td>
+          <!-- Fim do loop grupo -->
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.comentario-btn').forEach(function(btn) {
+    btn.addEventListener('click', function(e) {
+      var produtoId = btn.getAttribute('data-produto');
+      var popup = document.getElementById('comentario-popup-' + produtoId);
+      // Fecha outros popups
+      document.querySelectorAll('.comentario-popup').forEach(function(p) { if (p !== popup) p.style.display = 'none'; });
+      popup.style.display = (popup.style.display === 'block') ? 'none' : 'block';
+    });
+  });
+  document.querySelectorAll('.fechar-comentario').forEach(function(btn) {
+    btn.addEventListener('click', function(e) {
+      var produtoId = btn.getAttribute('data-produto');
+      var popup = document.getElementById('comentario-popup-' + produtoId);
+      popup.style.display = 'none';
+    });
+  });
+});
+  // Aceite automático via AJAX
+  document.querySelectorAll('.aceite-checkbox').forEach(function(checkbox) {
+    checkbox.addEventListener('change', function(e) {
+      var produtoId = checkbox.getAttribute('data-produto-id');
+      var checked = checkbox.checked;
+      checkbox.disabled = true; // previne duplo clique
+      fetch('/portal/produtor/emprestimos/ajax/aceite/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': (document.querySelector('[name=csrfmiddlewaretoken]')||{}).value || ''
+        },
+        body: JSON.stringify({ pk: produtoId, aceite: checked })
+      })
+      .then(resp => resp.json())
+      .then(data => {
+        if (data.success && data.aceite) {
+          // Bloqueia comentário e checkbox
+          checkbox.checked = true;
+          checkbox.disabled = true;
+          var popup = document.getElementById('comentario-popup-' + produtoId);
+          if (popup) {
+            var textarea = popup.querySelector('textarea');
+            if (textarea) textarea.disabled = true;
+            var fecharBtn = popup.querySelector('.fechar-comentario');
+            if (fecharBtn) fecharBtn.disabled = true;
+          }
+        } else {
+          checkbox.checked = false;
+          checkbox.disabled = false;
+          alert(data.error || 'Erro ao salvar aceite.');
+        }
+      })
+      .catch(() => {
+        checkbox.checked = false;
+        checkbox.disabled = false;
+        alert('Erro de comunicação com o servidor.');
+      });
+    });
+  });
+</script>
+<style>
+.comentario-popup { box-shadow: 0 2px 12px rgba(0,0,0,0.08); border-radius: 8px; }
+.comentario-btn i { font-size: 1.3em; color: #888; transition: color 0.2s; }
+.comentario-btn.comentario-preenchido i, .comentario-btn:focus i { color: #0d6efd; }
+</style>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </td>
           </tr>
-          {% endfor %}
+          <!-- Removido endfor extra -->
         </tbody>
       </table>
     </div>

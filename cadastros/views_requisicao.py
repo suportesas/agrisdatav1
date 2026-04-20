@@ -156,10 +156,17 @@ def requisicao_detail(request, pk):
         total_estimado=Sum('custo_estimado'),
     )
 
+    # Valor total do empréstimo: soma de quantidade_atendida * custo_estimado
+    valor_total_emprestimo = sum([
+        (item.quantidade_atendida or 0) * (item.custo_estimado or 0)
+        for item in itens
+    ])
+
     return render(request, 'cadastros/requisicao/detail.html', {
         'requisicao': requisicao,
         'itens': itens,
         'totais': totais,
+        'valor_total_emprestimo': valor_total_emprestimo,
     })
 
 

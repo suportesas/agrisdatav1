@@ -25,7 +25,7 @@
     <div class="card portal-card h-100">
       <div class="card-body">
         <small class="text-muted d-block">Saldo em Aberto</small>
-        <h4 class="mb-0">{{ total_saldo|default:0|floatformat:3 }}</h4>
+        <h4 class="mb-0">R$ {{ total_valor_aberto|default:0|floatformat:2 }}</h4>
       </div>
     </div>
   </div>
@@ -43,6 +43,7 @@
       <thead>
         <tr>
           <th>Data</th>
+          <th>Requisição</th>
           <th>Produto</th>
           <th class="text-end">Quantidade</th>
           <th>Status</th>
@@ -54,6 +55,7 @@
         {% for emprestimo in emprestimos_recentes %}
         <tr>
           <td>{{ emprestimo.data_emprestimo|date:'d/m/Y H:i' }}</td>
+          <td>{{ emprestimo.requisicao.numero|default:'-' }}</td>
           <td>{{ emprestimo.produto.nome }}</td>
           <td class="text-end">{{ emprestimo.quantidade_emprestada|floatformat:3 }} {{ emprestimo.unidade_medida.sigla }}</td>
           <td>{{ emprestimo.get_status_display }}</td>

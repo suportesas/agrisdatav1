@@ -1,4 +1,6 @@
+
 {% extends 'base.html' %}
+{% load emprestimo_extras %}
 
 {% block title %}Extrato de Empréstimos{% endblock %}
 
@@ -65,7 +67,7 @@
       <div class="card border-0 shadow-sm h-100">
         <div class="card-body">
           <small class="text-muted d-block">Total Emprestado</small>
-          <h4 class="mb-0 text-primary">{{ totais.total_emprestado|default:0|floatformat:3 }}</h4>
+          <h4 class="mb-0 text-primary">R$ {{ totais.total_emprestado_valor|default:0|floatformat:2 }}</h4>
         </div>
       </div>
     </div>
@@ -73,7 +75,7 @@
       <div class="card border-0 shadow-sm h-100">
         <div class="card-body">
           <small class="text-muted d-block">Total Devolvido</small>
-          <h4 class="mb-0 text-success">{{ totais.total_devolvido|default:0|floatformat:3 }}</h4>
+          <h4 class="mb-0 text-success">R$ {{ totais.total_devolvido_valor|default:0|floatformat:2 }}</h4>
         </div>
       </div>
     </div>
@@ -81,7 +83,7 @@
       <div class="card border-0 shadow-sm h-100">
         <div class="card-body">
           <small class="text-muted d-block">Saldo em Aberto</small>
-          <h4 class="mb-0 {% if totais.total_saldo|default:0 > 0 %}text-warning{% else %}text-success{% endif %}">{{ totais.total_saldo|default:0|floatformat:3 }}</h4>
+          <h4 class="mb-0 {% if totais.total_saldo_valor|default:0 > 0 %}text-warning{% else %}text-success{% endif %}">R$ {{ totais.total_saldo_valor|default:0|floatformat:2 }}</h4>
         </div>
       </div>
     </div>
@@ -97,6 +99,8 @@
             <th>Nº Requisição</th>
             <th>Produtor</th>
             <th>Status</th>
+            <th>Liberação Interna (Requisição)</th>
+            <th>Assinatura Produtor (Requisição)</th>
             <th>Promessa</th>
             <th class="text-end">Total Emprestado</th>
             <th class="text-end">Total Devolvido</th>
@@ -120,10 +124,24 @@
                 {{ grupo.status|title }}
               </span>
             </td>
+            <td>
+              {% if grupo.requisicao.assinatura_liberacao_interna_imagem %}
+                Assinado
+              {% else %}
+                Pendente
+              {% endif %}
+            </td>
+            <td>
+              {% if grupo.requisicao.assinatura_produtor_imagem %}
+                <span class="badge bg-success">Assinado</span>
+              {% else %}
+                <span class="badge bg-warning text-dark">Pendente</span>
+              {% endif %}
+            </td>
             <td>{{ grupo.data_promessa_devolucao|date:'d/m/Y'|default:'-' }}</td>
-            <td class="text-end">{{ grupo.total_emprestado|floatformat:3 }}</td>
-            <td class="text-end">{{ grupo.total_devolvido|floatformat:3 }}</td>
-            <td class="text-end"><strong>{{ grupo.saldo_pendente|floatformat:3 }}</strong></td>
+            <td class="text-end">R$ {{ grupo.total_emprestado_valor|floatformat:2 }}</td>
+            <td class="text-end">R$ {{ grupo.total_devolvido_valor|floatformat:2 }}</td>
+            <td class="text-end"><strong>R$ {{ grupo.saldo_pendente_valor|floatformat:2 }}</strong></td>
             <td class="text-end">
               {% if grupo.unread_mensagens_interno %}
               <span class="badge bg-danger me-2">{{ grupo.unread_mensagens_interno }} nova{{ grupo.unread_mensagens_interno|pluralize }}</span>
@@ -152,7 +170,7 @@
                       <td>{{ emp.produto.nome }}</td>
                       <td>{{ emp.quantidade_emprestada|floatformat:3 }}</td>
                       <td>R$ {{ emp.produto.preco_venda|floatformat:2 }}</td>
-                      <td>R$ {{ emp.quantidade_emprestada|floatformat:3|floatformat:2|add:0|floatformat:2|add:emp.produto.preco_venda|floatformat:2 }}</td>
+                      <td>R$ {{ emp.quantidade_emprestada|mul:emp.produto.preco_venda|floatformat:2 }}</td>
                     </tr>
                     {% endfor %}
                   </tbody>

@@ -7,19 +7,20 @@
   <h2 class="mb-0">Confirmação do Empréstimo</h2>
   <div class="d-flex gap-2">
     {% if emprestimo.possui_assinatura_liberador and not emprestimo.possui_assinatura_produtor %}
-    <a href="{% url 'portal_produtor:emprestimo_assinar' emprestimo.pk %}" class="btn btn-primary">Assinar recebimento</a>
+      <a href="{% url 'portal_produtor:emprestimo_assinar' emprestimo.pk %}" class="btn btn-primary">Assinar recebimento</a>
+    {% elif not emprestimo.possui_assinatura_liberador %}
+      <span class="btn btn-secondary disabled">Aguardando liberação interna</span>
+    {% elif emprestimo.possui_assinatura_produtor %}
+      <span class="btn btn-success disabled">Assinatura já realizada</span>
     {% endif %}
     <a href="{% url 'portal_produtor:emprestimos_list' %}" class="btn btn-outline-secondary">Voltar</a>
   </div>
 </div>
 
+
 <div class="card portal-card mb-3">
   <div class="card-body">
     <div class="row g-3">
-      <div class="col-md-4">
-        <small class="text-muted d-block">Produto</small>
-        <strong>{{ emprestimo.produto.nome }}</strong>
-      </div>
       <div class="col-md-4">
         <small class="text-muted d-block">Requisição</small>
         <strong>{{ emprestimo.requisicao.numero|default:'-' }}</strong>
@@ -28,44 +29,51 @@
         <small class="text-muted d-block">Recebedor informado na liberação</small>
         <strong>{{ emprestimo.requisicao.recebedor_material|default:'-' }}</strong>
       </div>
-      <div class="col-md-3">
-        <small class="text-muted d-block">Quantidade</small>
-        <strong>{{ emprestimo.quantidade_emprestada|floatformat:3 }} {{ emprestimo.unidade_medida.sigla }}</strong>
-      </div>
-      <div class="col-md-3">
-        <small class="text-muted d-block">Saldo pendente</small>
-        <strong>{{ emprestimo.saldo_pendente|floatformat:3 }} {{ emprestimo.unidade_medida.sigla }}</strong>
-      </div>
-      <div class="col-md-3">
-        <small class="text-muted d-block">Liberação interna</small>
-        {% if emprestimo.possui_assinatura_liberador %}
-        <span class="badge bg-success">Assinada</span>
-        <div class="small text-muted">{{ emprestimo.assinatura_liberador_nome }} em {{ emprestimo.assinatura_liberador_datahora|date:'d/m/Y H:i' }}</div>
-        {% else %}
-        <span class="badge bg-secondary">Aguardando</span>
-        {% endif %}
-      </div>
-      <div class="col-md-3">
-        <small class="text-muted d-block">Sua assinatura</small>
-        {% if emprestimo.possui_assinatura_produtor %}
-        <span class="badge bg-success">Concluída</span>
-        <div class="small text-muted">{{ emprestimo.assinatura_produtor_nome }} em {{ emprestimo.assinatura_produtor_datahora|date:'d/m/Y H:i' }}</div>
-        {% else %}
-        <span class="badge bg-warning text-dark">Pendente</span>
-        {% endif %}
-      </div>
-      {% if emprestimo.assinatura_liberador_imagem %}
-      <div class="col-md-6">
-        <small class="text-muted d-block">Assinatura do liberador</small>
-        <img src="{{ emprestimo.assinatura_liberador_imagem.url }}" alt="Assinatura do liberador" class="img-fluid border rounded mt-2" style="max-height: 140px;">
-      </div>
-      {% endif %}
-      {% if emprestimo.assinatura_produtor_imagem %}
-      <div class="col-md-6">
-        <small class="text-muted d-block">Assinatura do produtor</small>
-        <img src="{{ emprestimo.assinatura_produtor_imagem.url }}" alt="Assinatura do produtor" class="img-fluid border rounded mt-2" style="max-height: 140px;">
-      </div>
-      {% endif %}
+    </div>
+    <hr>
+    <div class="table-responsive">
+      <table class="table table-bordered align-middle">
+        <thead>
+          <tr>
+            <th>Produto</th>
+            <th>Quantidade</th>
+            <th>Unidade</th>
+            <th>Valor unitário</th>
+            <th>Valor total</th>
+            <th>Saldo pendente</th>
+            <th>Liberação interna</th>
+            <th>Sua assinatura</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for emp in emprestimos_produtos %}
+          <tr {% if emp.pk == emprestimo.pk %}class="table-info"{% endif %}>
+            <td>{{ emp.produto.nome }}</td>
+            <td>{{ emp.quantidade_emprestada|floatformat:3 }}</td>
+            <td>{{ emp.unidade_medida.sigla }}</td>
+            <td>R$ {{ emp.produto.preco_venda|floatformat:2 }}</td>
+            <td>R$ {{ emp.quantidade_emprestada|floatformat:3|floatformat:2|add:0|floatformat:2|add:emp.produto.preco_venda|floatformat:2 }}</td>
+            <td>R$ {{ emp.saldo_pendente|floatformat:2 }}</td>
+            <td>
+              {% if emp.possui_assinatura_liberador %}
+                <span class="badge bg-success">Assinada</span><br>
+                <small>{{ emp.assinatura_liberador_nome }}<br>{{ emp.assinatura_liberador_datahora|date:'d/m/Y H:i' }}</small>
+              {% else %}
+                <span class="badge bg-secondary">Aguardando</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if emp.possui_assinatura_produtor %}
+                <span class="badge bg-success">Concluída</span><br>
+                <small>{{ emp.assinatura_produtor_nome }}<br>{{ emp.assinatura_produtor_datahora|date:'d/m/Y H:i' }}</small>
+              {% else %}
+                <span class="badge bg-warning text-dark">Pendente</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
   </div>
 </div>

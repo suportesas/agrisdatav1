@@ -153,8 +153,10 @@ def emprestimo_extrato(request):
         )
 
     # Agrupar por requisição
+
+    from decimal import Decimal
     agrupados = {}
-    for emp in emprestimos_qs:
+    for emp in emprestimos_qs.select_related('produto'):
         req_id = emp.requisicao_id or f"emp-{emp.pk}"
         if req_id not in agrupados:
             agrupados[req_id] = {
@@ -164,15 +166,24 @@ def emprestimo_extrato(request):
                 'status': emp.status,
                 'data_promessa_devolucao': emp.data_promessa_devolucao,
                 'emprestimos': [],
-                'total_emprestado': 0,
-                'total_devolvido': 0,
-                'saldo_pendente': 0,
+                'total_emprestado': Decimal('0.00'),
+                'total_devolvido': Decimal('0.00'),
+                'saldo_pendente': Decimal('0.00'),
+                'total_emprestado_valor': Decimal('0.00'),
+                'total_devolvido_valor': Decimal('0.00'),
+                'saldo_pendente_valor': Decimal('0.00'),
                 'unread_mensagens_interno': 0,
             }
         agrupados[req_id]['emprestimos'].append(emp)
-        agrupados[req_id]['total_emprestado'] += float(emp.quantidade_emprestada or 0)
-        agrupados[req_id]['total_devolvido'] += float(emp.quantidade_devolvida or 0)
-        agrupados[req_id]['saldo_pendente'] += float(emp.saldo_pendente or 0)
+        preco = getattr(emp.produto, 'preco_venda', Decimal('0.00'))
+        # Quantidade
+        agrupados[req_id]['total_emprestado'] += Decimal(emp.quantidade_emprestada or 0)
+        agrupados[req_id]['total_devolvido'] += Decimal(emp.quantidade_devolvida or 0)
+        agrupados[req_id]['saldo_pendente'] += Decimal(emp.saldo_pendente or 0)
+        # Valor financeiro
+        agrupados[req_id]['total_emprestado_valor'] += Decimal(emp.quantidade_emprestada or 0) * preco
+        agrupados[req_id]['total_devolvido_valor'] += Decimal(emp.quantidade_devolvida or 0) * preco
+        agrupados[req_id]['saldo_pendente_valor'] += Decimal(emp.saldo_pendente or 0) * preco
         agrupados[req_id]['unread_mensagens_interno'] += emp.unread_mensagens_interno if hasattr(emp, 'unread_mensagens_interno') else 0
 
     agrupados_lista = sorted(agrupados.values(), key=lambda x: (x['data_emprestimo'], x['numero_requisicao']), reverse=True)
@@ -186,11 +197,24 @@ def emprestimo_extrato(request):
         query_params.pop('page')
     query_string = query_params.urlencode()
 
+
+    # Totais financeiros globais
+    total_emprestado_valor = Decimal('0.00')
+    total_devolvido_valor = Decimal('0.00')
+    total_saldo_valor = Decimal('0.00')
+    for grupo in agrupados.values():
+        total_emprestado_valor += grupo['total_emprestado_valor']
+        total_devolvido_valor += grupo['total_devolvido_valor']
+        total_saldo_valor += grupo['saldo_pendente_valor']
+
     totais = emprestimos_qs.aggregate(
         total_emprestado=Sum('quantidade_emprestada'),
         total_devolvido=Sum('quantidade_devolvida'),
         total_saldo=Sum('saldo_pendente'),
     )
+    totais['total_emprestado_valor'] = total_emprestado_valor
+    totais['total_devolvido_valor'] = total_devolvido_valor
+    totais['total_saldo_valor'] = total_saldo_valor
 
     from datetime import date
     today = date.today()
@@ -212,26 +236,48 @@ def emprestimo_detalhe(request, pk):
         messages.error(request, 'Usuário sem empresa vinculada.')
         return redirect('dashboard:index')
 
+
     emprestimo = get_object_or_404(
         EmprestimoProdutor.objects.select_related('produtor', 'produto', 'requisicao', 'unidade_medida'),
         pk=pk,
         empresa=empresa,
     )
+
+    # Buscar todos os produtos da mesma requisição
+    if emprestimo.requisicao_id:
+        emprestimos_lote = EmprestimoProdutor.objects.filter(
+            empresa=empresa,
+            requisicao_id=emprestimo.requisicao_id
+        ).select_related('produtor', 'produto', 'unidade_medida', 'requisicao')
+    else:
+        emprestimos_lote = EmprestimoProdutor.objects.filter(pk=emprestimo.pk, empresa=empresa)
+
+    # Movimentações agrupadas por produto
+    movimentos_lote = {}
+    for emp in emprestimos_lote:
+        movimentos_lote[emp.pk] = list(
+            EmprestimoMovimento.objects
+            .filter(empresa=empresa, emprestimo=emp)
+            .select_related('criado_por')
+            .order_by('-data_movimento', '-id')
+        )
+
+    # Mensagens e interações do empréstimo selecionado
     marcar_mensagens_emprestimo_como_lidas(emprestimo, 'INTERNO')
-    movimentos = (
-        EmprestimoMovimento.objects
-        .filter(empresa=empresa, emprestimo=emprestimo)
-        .select_related('criado_por')
-        .order_by('-data_movimento', '-id')
-    )
     mensagens = emprestimo.mensagens.select_related('autor').prefetch_related('anexos').all()
     interacoes = emprestimo.interacoes.select_related('usuario').all()[:20]
 
+    ultima_interacao_whatsapp = emprestimo.interacoes.filter(
+        tipo_interacao__in=['WHATSAPP_SUCESSO', 'WHATSAPP_FALHA']
+    ).order_by('-criado_em').first()
+
     return render(request, 'cadastros/emprestimo/emprestimo_detail.html', {
         'emprestimo': emprestimo,
-        'movimentos': movimentos,
+        'emprestimos_lote': emprestimos_lote,
+        'movimentos_lote': movimentos_lote,
         'mensagens_emprestimo': mensagens,
         'interacoes_emprestimo': interacoes,
+        'ultima_interacao_whatsapp': ultima_interacao_whatsapp,
     })
 
 
@@ -322,19 +368,34 @@ def emprestimo_assinar_liberacao(request, pk):
         messages.error(request, 'Usuário sem empresa vinculada.')
         return redirect('dashboard:index')
 
+
     emprestimo = get_object_or_404(
         EmprestimoProdutor.objects.select_related('produtor', 'produto', 'unidade_medida', 'requisicao'),
         pk=pk,
         empresa=empresa,
     )
 
+    # Buscar todos os empréstimos da mesma requisição
+    if emprestimo.requisicao_id:
+        emprestimos_lote = EmprestimoProdutor.objects.filter(
+            empresa=empresa,
+            requisicao_id=emprestimo.requisicao_id
+        ).select_related('produtor', 'produto', 'unidade_medida', 'requisicao')
+    else:
+        # fallback: só o empréstimo atual
+        emprestimos_lote = EmprestimoProdutor.objects.filter(pk=emprestimo.pk, empresa=empresa)
+
     if request.user.tipo not in ['ADMIN', 'GERENTE']:
         messages.error(request, 'Você não tem permissão para assinar a liberação deste empréstimo.')
         return redirect('cadastros:emprestimo_detalhe', pk=emprestimo.pk)
 
-    if emprestimo.possui_assinatura_liberador:
-        messages.warning(request, 'Este empréstimo já possui assinatura de liberação registrada.')
+
+    # Se TODOS já possuem assinatura, não permitir nova assinatura
+    if all(e.possui_assinatura_liberador for e in emprestimos_lote):
+        messages.warning(request, 'Todos os produtos desta requisição já possuem assinatura de liberação registrada.')
         return redirect('cadastros:emprestimo_detalhe', pk=emprestimo.pk)
+
+
 
     if request.method == 'POST':
         assinatura_data = (request.POST.get('assinatura_data') or '').strip()
@@ -347,54 +408,51 @@ def emprestimo_assinar_liberacao(request, pk):
 
         if modo == 'upload' and not assinatura_upload:
             messages.error(request, 'Selecione um arquivo de imagem para a assinatura.')
-            return render(request, 'cadastros/emprestimo/emprestimo_assinar_liberacao.html', {'emprestimo': emprestimo})
+            return render(request, 'cadastros/emprestimo/emprestimo_assinar_liberacao.html', {'emprestimos_lote': emprestimos_lote, 'emprestimo': emprestimo})
 
         if modo == 'desenho' and not assinatura_data:
             messages.error(request, 'Desenhe a assinatura antes de salvar.')
-            return render(request, 'cadastros/emprestimo/emprestimo_assinar_liberacao.html', {'emprestimo': emprestimo})
+            return render(request, 'cadastros/emprestimo/emprestimo_assinar_liberacao.html', {'emprestimos_lote': emprestimos_lote, 'emprestimo': emprestimo})
 
         try:
+            requisicao = emprestimo.requisicao
+            if requisicao is None:
+                messages.error(request, 'Requisição não encontrada para este empréstimo.')
+                return redirect('cadastros:emprestimo_detalhe', pk=emprestimo.pk)
+
+            if requisicao.assinatura_liberacao_interna_imagem:
+                messages.warning(request, 'Esta requisição já possui assinatura de liberação registrada.')
+                return redirect('cadastros:emprestimo_detalhe', pk=emprestimo.pk)
+
             if modo == 'upload':
-                filename = f'assinatura_emprestimo_{emprestimo.pk}_{uuid4().hex[:8]}.png'
-                emprestimo.assinatura_liberador_imagem.save(filename, assinatura_upload, save=False)
+                filename = f'assinatura_requisicao_{requisicao.pk}_{uuid4().hex[:8]}.png'
+                requisicao.assinatura_liberacao_interna_imagem.save(filename, assinatura_upload, save=False)
             else:
                 if ',' in assinatura_data:
                     _, assinatura_b64 = assinatura_data.split(',', 1)
                 else:
                     assinatura_b64 = assinatura_data
                 assinatura_bin = base64.b64decode(assinatura_b64)
-                filename = f'assinatura_emprestimo_{emprestimo.pk}_{uuid4().hex[:8]}.png'
-                emprestimo.assinatura_liberador_imagem.save(filename, ContentFile(assinatura_bin), save=False)
+                filename = f'assinatura_requisicao_{requisicao.pk}_{uuid4().hex[:8]}.png'
+                requisicao.assinatura_liberacao_interna_imagem.save(filename, ContentFile(assinatura_bin), save=False)
 
-            emprestimo.liberado_por = request.user
-            emprestimo.assinatura_liberador_nome = assinatura_nome
-            emprestimo.assinatura_liberador_datahora = timezone.now()
-            emprestimo.save(update_fields=[
-                'liberado_por',
-                'assinatura_liberador_imagem',
-                'assinatura_liberador_nome',
-                'assinatura_liberador_datahora',
-                'atualizado_em',
+            requisicao.assinatura_liberacao_interna_nome = assinatura_nome
+            requisicao.assinatura_liberacao_interna_datahora = timezone.now()
+            requisicao.assinatura_liberacao_interna_usuario = request.user
+            requisicao.save(update_fields=[
+                'assinatura_liberacao_interna_imagem',
+                'assinatura_liberacao_interna_nome',
+                'assinatura_liberacao_interna_datahora',
+                'assinatura_liberacao_interna_usuario',
             ])
 
-            EmprestimoMovimento.objects.create(
-                empresa=empresa,
-                emprestimo=emprestimo,
-                tipo_movimento='ASSINATURA_LIBERACAO',
-                quantidade=0,
-                saldo_resultante=emprestimo.saldo_pendente,
-                data_movimento=timezone.now(),
-                documento_referencia=emprestimo.requisicao.numero if emprestimo.requisicao_id else f'EMP-{emprestimo.pk}',
-                observacoes=f'Liberação assinada por {assinatura_nome}.',
-                criado_por=request.user,
-            )
-
-            messages.success(request, 'Liberação do empréstimo assinada com sucesso.')
+            messages.success(request, 'Liberação da requisição assinada.')
             return redirect('cadastros:emprestimo_detalhe', pk=emprestimo.pk)
         except Exception:
             messages.error(request, 'Não foi possível processar a assinatura eletrônica da liberação.')
 
     return render(request, 'cadastros/emprestimo/emprestimo_assinar_liberacao.html', {
+        'emprestimos_lote': emprestimos_lote,
         'emprestimo': emprestimo,
     })
 

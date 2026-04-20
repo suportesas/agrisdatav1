@@ -21,32 +21,48 @@
 {% endblock %}
 
 {% block content %}
+
 <div class="container-fluid py-4">
   <div class="row justify-content-center">
     <div class="col-lg-9">
       <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
           <h1 class="h3 mb-1"><i class="fas fa-signature me-2 text-primary"></i>Assinatura da Liberação</h1>
-          <p class="text-muted mb-0">Empréstimo #{{ emprestimo.pk }} - {{ emprestimo.produtor.razao_social }}</p>
+          <p class="text-muted mb-0">Requisição {% if emprestimo.requisicao %}#{{ emprestimo.requisicao.numero }}{% else %}Empréstimo #{{ emprestimo.pk }}{% endif %} - {{ emprestimo.produtor.razao_social }}</p>
         </div>
         <a href="{% url 'cadastros:emprestimo_detalhe' emprestimo.pk %}" class="btn btn-outline-secondary">Voltar</a>
       </div>
 
       <div class="card mb-3">
         <div class="card-body">
-          <div class="row g-3">
-            <div class="col-md-4">
-              <small class="text-muted d-block">Produto</small>
-              <strong>{{ emprestimo.produto.nome }}</strong>
-            </div>
-            <div class="col-md-4">
-              <small class="text-muted d-block">Recebedor do Material</small>
-              <strong>{{ emprestimo.requisicao.recebedor_material|default:'-' }}</strong>
-            </div>
-            <div class="col-md-4">
-              <small class="text-muted d-block">Saldo Atual</small>
-              <strong>{{ emprestimo.saldo_pendente|floatformat:3 }} {{ emprestimo.unidade_medida.sigla }}</strong>
-            </div>
+          <h6 class="mb-3">Produtos da Requisição</h6>
+          <div class="table-responsive">
+            <table class="table table-sm align-middle mb-0">
+              <thead>
+                <tr>
+                  <th>Produto</th>
+                  <th>Saldo Atual</th>
+                  <th>Unidade</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for emp in emprestimos_lote %}
+                <tr>
+                  <td>{{ emp.produto.nome }}</td>
+                  <td>{{ emp.saldo_pendente|floatformat:3 }}</td>
+                  <td>{{ emp.unidade_medida.sigla }}</td>
+                  <td>
+                    {% if emp.possui_assinatura_liberador %}
+                      <span class="badge bg-success">Assinado</span>
+                    {% else %}
+                      <span class="badge bg-warning text-dark">Pendente</span>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
           </div>
         </div>
       </div>

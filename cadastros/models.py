@@ -6140,8 +6140,47 @@ class SafraReal(models.Model):
         return f"Real {self.safra}"
 
 
+
 class Requisicao(models.Model):
     """Requisicao base para consumo interno e safra"""
+    # Assinatura única de Liberação Interna
+    from core.supabase_storage import SupabaseStorage
+    assinatura_liberacao_interna_imagem = models.ImageField(
+        'Assinatura Eletrônica Liberação Interna',
+        upload_to='requisicoes/assinaturas/%Y/%m/',
+        storage=SupabaseStorage(bucket_name='requisicoes-assinaturas'),
+        null=True,
+        blank=True
+    )  # Permite sobrescrever a assinatura sem restrição
+    assinatura_liberacao_interna_nome = models.CharField('Nome do Liberador Interno', max_length=120, blank=True)
+    assinatura_liberacao_interna_datahora = models.DateTimeField('Data/Hora da Assinatura Liberação Interna', null=True, blank=True)
+    assinatura_liberacao_interna_usuario = models.ForeignKey(
+        'usuarios.Usuario',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='requisicoes_liberadas_internamente',
+        verbose_name='Usuário Liberação Interna'
+    )
+
+    # Assinatura única do Produtor
+    assinatura_produtor_imagem = models.ImageField(
+        'Assinatura Eletrônica Produtor',
+        upload_to='requisicoes/assinaturas/%Y/%m/',
+        storage=SupabaseStorage(bucket_name='requisicoes-assinaturas'),
+        null=True,
+        blank=True
+    )
+    assinatura_produtor_nome = models.CharField('Nome do Produtor Assinante', max_length=120, blank=True)
+    assinatura_produtor_datahora = models.DateTimeField('Data/Hora da Assinatura Produtor', null=True, blank=True)
+    assinatura_produtor_usuario = models.ForeignKey(
+        'usuarios.Usuario',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='requisicoes_assinadas_como_produtor',
+        verbose_name='Usuário Produtor Assinante'
+    )
 
     TIPO_CHOICES = [
         ('INSUMO_SAFRA', 'Insumo Safra'),
@@ -6361,10 +6400,27 @@ class EmprestimoProdutor(models.Model):
     criado_em = models.DateTimeField('Criado em', auto_now_add=True)
     atualizado_em = models.DateTimeField('Atualizado em', auto_now=True)
 
+    # Aceite do produtor
+    aceite_produtor = models.BooleanField('Aceite do Produtor', default=False)
+    aceite_produtor_data = models.DateTimeField('Data do Aceite', null=True, blank=True)
+    aceite_produtor_usuario = models.ForeignKey(
+        'usuarios.Usuario',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='emprestimos_aceitos_como_produtor',
+        verbose_name='Usuário que deu o aceite'
+    )
+    aceite_editavel = models.BooleanField('Aceite editável (apenas empresa pode reverter)', default=True)
+
     class Meta:
         verbose_name = 'Emprestimo de Produtor'
         verbose_name_plural = 'Emprestimos de Produtores'
         ordering = ['-data_emprestimo']
+
+    @property
+    def possui_assinatura_liberador(self):
+        return bool(self.assinatura_liberador_imagem or self.assinatura_liberador_nome)
         indexes = [
             models.Index(fields=['empresa', 'status']),
             models.Index(fields=['empresa', 'produtor']),

@@ -103,6 +103,95 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
+---
+
+## ☁️ Deploy na Oracle Cloud (OCI)
+
+### Pré-requisitos
+- Conta na Oracle Cloud (OCI)
+- Instância Compute (Ubuntu recomendado)
+- Banco de dados PostgreSQL (pode ser Autonomous Database ou Compute)
+- Domínio configurado (opcional)
+
+### Passos de Deploy
+
+```bash
+# 1. Atualize o sistema
+sudo apt update && sudo apt upgrade -y
+
+# 2. Instale dependências
+sudo apt install python3-pip python3-venv nginx git -y
+
+# 3. Clone o repositório
+git clone https://github.com/EMSSousa/erp_agricola_novo.git
+cd erp_agricola
+
+# 4. Crie e ative o ambiente virtual
+python3 -m venv venv
+source venv/bin/activate
+
+# 5. Instale as dependências
+pip install -r requirements.txt
+
+# 6. Configure variáveis de ambiente
+cp .env.example .env
+nano .env  # Edite com dados de produção
+
+# 7. Migre o banco de dados
+python manage.py migrate
+
+# 8. Colete arquivos estáticos
+python manage.py collectstatic --noinput
+
+# 9. Crie superusuário
+python manage.py createsuperuser
+
+# 10. Execute com Gunicorn (produção)
+pip install gunicorn
+gunicorn erp_agricola.wsgi:application --bind 0.0.0.0:8000
+```
+
+### Configuração do Nginx (Opcional, recomendado para produção)
+
+```nginx
+server {
+    listen 80;
+    server_name seu-dominio.com;
+
+    location = /favicon.ico { access_log off; log_not_found off; }
+    location /static/ {
+        root /caminho/para/erp_agricola;
+    }
+    location /media/ {
+        root /caminho/para/erp_agricola;
+    }
+
+    location / {
+        proxy_pass http://127.0.0.1:8000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+
+### Segurança e Checklist de Produção
+
+- DEBUG=False no .env
+- ALLOWED_HOSTS configurado
+- Banco PostgreSQL configurado
+- HTTPS ativo (use Let’s Encrypt)
+- Variáveis sensíveis no .env
+- Backups automáticos configurados
+
+### Referências Úteis
+
+- [Documentação oficial OCI](https://docs.oracle.com/en-us/iaas/Content/home.htm)
+- [Deploy Django na OCI](https://docs.oracle.com/en-us/iaas/Content/Compute/Tasks/django-app.htm)
+
+---
+
 > 💡 **Dica:** Se não tiver o `requirements.txt`, gere com:
 > ```bash
 > pip freeze > requirements.txt

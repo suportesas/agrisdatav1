@@ -156,7 +156,7 @@ def emprestimo_extrato(request):
 
     from decimal import Decimal
     agrupados = {}
-    for emp in emprestimos_qs.select_related('produto'):
+    for emp in emprestimos_qs.select_related('produto', 'requisicao'):
         req_id = emp.requisicao_id or f"emp-{emp.pk}"
         if req_id not in agrupados:
             agrupados[req_id] = {
@@ -173,14 +173,13 @@ def emprestimo_extrato(request):
                 'total_devolvido_valor': Decimal('0.00'),
                 'saldo_pendente_valor': Decimal('0.00'),
                 'unread_mensagens_interno': 0,
+                'requisicao': emp.requisicao,  # garantir acesso ao objeto requisicao
             }
         agrupados[req_id]['emprestimos'].append(emp)
         preco = getattr(emp.produto, 'preco_venda', Decimal('0.00'))
-        # Quantidade
         agrupados[req_id]['total_emprestado'] += Decimal(emp.quantidade_emprestada or 0)
         agrupados[req_id]['total_devolvido'] += Decimal(emp.quantidade_devolvida or 0)
         agrupados[req_id]['saldo_pendente'] += Decimal(emp.saldo_pendente or 0)
-        # Valor financeiro
         agrupados[req_id]['total_emprestado_valor'] += Decimal(emp.quantidade_emprestada or 0) * preco
         agrupados[req_id]['total_devolvido_valor'] += Decimal(emp.quantidade_devolvida or 0) * preco
         agrupados[req_id]['saldo_pendente_valor'] += Decimal(emp.saldo_pendente or 0) * preco
@@ -436,6 +435,7 @@ def emprestimo_assinar_liberacao(request, pk):
                 filename = f'assinatura_requisicao_{requisicao.pk}_{uuid4().hex[:8]}.png'
                 requisicao.assinatura_liberacao_interna_imagem.save(filename, ContentFile(assinatura_bin), save=False)
 
+
             requisicao.assinatura_liberacao_interna_nome = assinatura_nome
             requisicao.assinatura_liberacao_interna_datahora = timezone.now()
             requisicao.assinatura_liberacao_interna_usuario = request.user
@@ -445,6 +445,18 @@ def emprestimo_assinar_liberacao(request, pk):
                 'assinatura_liberacao_interna_datahora',
                 'assinatura_liberacao_interna_usuario',
             ])
+
+            # Sincronizar assinatura nos EmprestimoProdutor relacionados
+            EmprestimoProdutor = requisicao.emprestimos_gerados.model
+            for emp in requisicao.emprestimos_gerados.all():
+                emp.assinatura_liberador_imagem = requisicao.assinatura_liberacao_interna_imagem
+                emp.assinatura_liberador_nome = requisicao.assinatura_liberacao_interna_nome
+                emp.assinatura_liberador_datahora = requisicao.assinatura_liberacao_interna_datahora
+                emp.save(update_fields=[
+                    'assinatura_liberador_imagem',
+                    'assinatura_liberador_nome',
+                    'assinatura_liberador_datahora',
+                ])
 
             messages.success(request, 'Liberação da requisição assinada.')
             return redirect('cadastros:emprestimo_detalhe', pk=emprestimo.pk)

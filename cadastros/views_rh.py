@@ -1580,10 +1580,16 @@ def _gerar_pdf_solicitacao_aso(solicitacao, empresa, salvar_arquivo=True):
     nome_arquivo = f'autorizacao_exame_medico_aso_{solicitacao.pk}_{timezone.now().strftime("%Y%m%d_%H%M%S")}.pdf'
     if salvar_arquivo:
         try:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.info(f'Salvando PDF ASO: {nome_arquivo}')
             solicitacao.arquivo_pdf.save(nome_arquivo, ContentFile(pdf_bytes), save=True)
-        except Exception:
+            logger.info(f'PDF ASO salvo com sucesso em: {solicitacao.arquivo_pdf.path}')
+        except Exception as e:
             # Se o storage falhar, o PDF ainda deve ser entregue para download.
-            pass
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f'Erro ao salvar PDF ASO: {str(e)}', exc_info=True)
 
     return nome_arquivo, pdf_bytes
 

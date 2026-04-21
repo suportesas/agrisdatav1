@@ -341,6 +341,7 @@ def emprestimo_assinar(request, pk):
                 filename = f'assinatura_produtor_{emprestimo.pk}_{uuid4().hex[:8]}.png'
                 emprestimo.assinatura_produtor_imagem.save(filename, ContentFile(assinatura_bin), save=False)
 
+
             emprestimo.assinatura_produtor_usuario = request.user
             emprestimo.assinatura_produtor_nome = assinatura_nome
             emprestimo.assinatura_produtor_datahora = timezone.now()
@@ -351,6 +352,19 @@ def emprestimo_assinar(request, pk):
                 'assinatura_produtor_datahora',
                 'atualizado_em',
             ])
+
+            # Sincronizar assinatura do produtor na Requisicao relacionada
+            if emprestimo.requisicao:
+                emprestimo.requisicao.assinatura_produtor_imagem = emprestimo.assinatura_produtor_imagem
+                emprestimo.requisicao.assinatura_produtor_nome = emprestimo.assinatura_produtor_nome
+                emprestimo.requisicao.assinatura_produtor_datahora = emprestimo.assinatura_produtor_datahora
+                emprestimo.requisicao.assinatura_produtor_usuario = emprestimo.assinatura_produtor_usuario
+                emprestimo.requisicao.save(update_fields=[
+                    'assinatura_produtor_imagem',
+                    'assinatura_produtor_nome',
+                    'assinatura_produtor_datahora',
+                    'assinatura_produtor_usuario',
+                ])
 
             EmprestimoMovimento.objects.create(
                 empresa=request.user.empresa,
@@ -366,7 +380,8 @@ def emprestimo_assinar(request, pk):
 
             messages.success(request, 'Assinatura do produtor registrada com sucesso.')
             return redirect('portal_produtor:emprestimo_detail', pk=emprestimo.pk)
-        except Exception:
+        except Exception as e:
+            print("ERRO AO ASSINAR PRODUTOR:", e)
             messages.error(request, 'Não foi possível processar a assinatura do produtor.')
 
     return render(request, 'portal_produtor/emprestimo_assinar.html', {

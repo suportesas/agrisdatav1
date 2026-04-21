@@ -541,13 +541,103 @@ Desenvolvido com ❤️ e apoio da IA
 
 ---
 
-⭐ Se este projeto foi útil, deixe uma estrela no GitHub!
+## 🚢 Deploy com Docker Compose (Supabase)
 
-## 📝 Nota rápida sobre Área Agricultável
+### Pré-requisitos
+- Conta no Supabase (PostgreSQL gerenciado)
+- Variáveis de ambiente do Supabase (host, user, password, db)
+- Docker e Docker Compose instalados
 
-`Área Agricultável` na ficha da Fazenda é calculada automaticamente como a soma das **Áreas Plantáveis** (`area_plantavel`) das `Area` pertencentes àquela fazenda. Para alterar este valor, edite as `Area` (seções) da fazenda — o sistema sincroniza automaticamente a soma através de sinais Django.
+### Passos de Deploy
 
-- `Fazenda.area_agricultavel` (apresentado como leitura no formulário de edição da fazenda)
-- `Area.area_total`, `Area.area_reserva`, `Area.area_plantavel` (edite por área)
+```bash
+# 1. Configure o arquivo .env.docker com as credenciais do Supabase
+cp .env.docker .env.docker # Edite conforme necessário
 
-Esta abordagem evita inconsistência entre um total armazenado manualmente e a soma das seções. Reservas/infraestrutura devem ser informadas por `area_reserva` nas `Area`.
+# 2. Build e start dos containers
+sudo docker-compose up --build
+
+# 3. Acesse o sistema em http://localhost:8000
+
+# 4. Migre o banco e crie superusuário (em outro terminal):
+sudo docker-compose exec app python manage.py migrate
+sudo docker-compose exec app python manage.py createsuperuser
+
+# 5. Colete arquivos estáticos (produção):
+sudo docker-compose exec app python manage.py collectstatic --noinput
+```
+
+### Observações
+- O banco de dados NÃO roda em container, mas sim no Supabase.
+- Edite `.env.docker` com as credenciais do Supabase.
+- Volumes locais garantem persistência dos arquivos estáticos/media.
+- Para produção, configure um proxy reverso (ex: Nginx).
+
+### Exemplo de .env.docker
+```env
+SECRET_KEY=sua-chave-secreta-aqui
+DEBUG=False
+ALLOWED_HOSTS=*
+DB_NAME=postgres
+DB_USER=postgres
+DB_PASSWORD=sua-senha-do-supabase
+DB_HOST=seu-host.supabase.co
+DB_PORT=6543
+```
+
+---
+
+## 📦 Plano de Deploy Docker Compose com Supabase
+
+O objetivo é criar um ambiente de deploy para o ERP Agrícola usando Docker Compose, com o banco de dados hospedado no Supabase (PostgreSQL gerenciado na nuvem). O Compose orquestra apenas o backend Django e, opcionalmente, o Nginx para produção. O acesso ao banco é feito via variáveis de ambiente apontando para o Supabase.
+
+### Etapas
+
+**Fase 1: Infraestrutura Docker**
+1. Criar um `Dockerfile` para o backend Django.
+   - Baseado em Python 3.9+.
+   - Instala dependências do `requirements.txt`.
+   - Copia o projeto para o container.
+   - Expõe a porta 8000.
+2. Criar um arquivo `docker-compose.yml` com serviços:
+   - app (Django)
+   - nginx (opcional, para produção)
+   - Sem serviço de banco local.
+3. Adicionar um `.env.docker` de exemplo para variáveis de ambiente, incluindo as credenciais do Supabase.
+
+**Fase 2: Configuração do Django**
+4. Ajustar configurações do Django para aceitar variáveis de ambiente do Docker e apontar para o Supabase.
+   - Usar variáveis como `DB_HOST`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_PORT` vindas do `.env.docker`.
+   - Garantir que `ALLOWED_HOSTS` e `DEBUG` também possam ser configurados por ambiente.
+5. Garantir que arquivos estáticos e de mídia sejam servidos corretamente (volumes para `/static` e `/media`).
+
+**Fase 3: Documentação e Testes**
+6. Instruções no README para build, up, down e comandos úteis:
+   - Como rodar migrações, criar superusuário, coletar estáticos.
+   - Como acessar o sistema e o admin.
+   - Como customizar variáveis de ambiente.
+7. (Opcional) Incluir Nginx no Compose para produção, com configuração de proxy reverso para o Django.
+
+### Arquivos relevantes
+- `Dockerfile` — build do backend Django
+- `docker-compose.yml` — orquestração dos serviços
+- `.env.docker` — variáveis de ambiente para Docker (incluindo Supabase)
+- `README.md` — instruções de uso Docker Compose
+- `erp_agricola/settings.py` — garantir leitura de variáveis de ambiente do Supabase
+
+### Verificação
+1. Executar `docker-compose up` e acessar o sistema via navegador.
+2. Verificar conexão e persistência dos dados no Supabase.
+3. Testar comandos de migração e criação de superusuário via Docker Compose.
+4. Validar coleta de estáticos e acesso via Nginx (se incluído).
+
+### Decisões
+- O banco de dados será o Supabase (PostgreSQL gerenciado).
+- O Compose não terá serviço de banco local.
+- O arquivo `.env.docker` será usado para separar variáveis do ambiente local.
+- Nginx é opcional, recomendado para produção.
+
+### Considerações Finais
+1. Nginx será incluído no Compose? (opcional, recomendado para produção)
+2. Alguma customização de porta ou volume?
+3. O build será multi-stage para produção ou simples para dev?

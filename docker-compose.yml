@@ -1,0 +1,28 @@
+version: '3.9'
+
+services:
+  app:
+    build: .
+    container_name: erp_agricola_app
+    env_file:
+      - .env.docker
+    volumes:
+      - ./static:/app/static
+      - ./media:/app/media
+    ports:
+      - "8000:8000"
+    depends_on: []
+    command: ["gunicorn", "erp_agricola.wsgi:application", "--bind", "0.0.0.0:8000"]
+
+  # Descomente para produção
+  # nginx:
+  #   image: nginx:alpine
+  #   container_name: erp_agricola_nginx
+  #   ports:
+  #     - "80:80"
+  #   volumes:
+  #     - ./static:/static
+  #     - ./media:/media
+  #     - ./nginx.conf:/etc/nginx/conf.d/default.conf
+  #   depends_on:
+  #     - app

@@ -6148,7 +6148,7 @@ class Requisicao(models.Model):
     assinatura_liberacao_interna_imagem = models.ImageField(
         'Assinatura Eletrônica Liberação Interna',
         upload_to='requisicoes/assinaturas/%Y/%m/',
-        storage=None,
+        storage=SupabaseStorage(bucket_name='requisicoes-assinaturas'),
         null=True,
         blank=True
     )  # Permite sobrescrever a assinatura sem restrição
@@ -6167,7 +6167,7 @@ class Requisicao(models.Model):
     assinatura_produtor_imagem = models.ImageField(
         'Assinatura Eletrônica Produtor',
         upload_to='requisicoes/assinaturas/%Y/%m/',
-        storage=None,
+        storage=SupabaseStorage(bucket_name='requisicoes-assinaturas'),
         null=True,
         blank=True
     )

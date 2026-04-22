@@ -305,6 +305,7 @@ if SUPABASE_STORAGE_USE_AS_DEFAULT:
             'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage',
         },
     }
+    DEFAULT_FILE_STORAGE = 'core.supabase_storage.RoutedSupabaseStorage'
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

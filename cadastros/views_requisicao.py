@@ -232,8 +232,12 @@ def requisicao_aprovar(request, pk):
         requisicao.status = 'APROVADA'
         requisicao.aprovador = request.user
         requisicao.data_aprovacao = timezone.now()
-        requisicao.save(update_fields=['status', 'aprovador', 'data_aprovacao'])
-        messages.success(request, 'Requisicao aprovada com sucesso.')
+        # PLANO: Preenche campos globais de assinatura de liberação interna
+        requisicao.assinatura_liberacao_interna_usuario = request.user
+        requisicao.assinatura_liberacao_interna_nome = request.user.get_full_name() or request.user.username
+        requisicao.assinatura_liberacao_interna_datahora = timezone.now()
+        requisicao.save(update_fields=['status', 'aprovador', 'data_aprovacao', 'assinatura_liberacao_interna_usuario', 'assinatura_liberacao_interna_nome', 'assinatura_liberacao_interna_datahora'])
+        messages.success(request, 'Requisicao aprovada e assinatura de liberação registrada.')
 
     return redirect('cadastros:requisicao_detail', requisicao.id)
 
@@ -372,6 +376,42 @@ def requisicao_item_create(request, requisicao_id):
                 else:
                     item.custo_estimado = item.produto.preco_custo
             item.save()
+
+            # --- PLANO: Criação automática do EmprestimoProdutor ao adicionar item ---
+            if requisicao.tipo == 'EMPRESTIMO' and requisicao.produtor:
+                from .models import EmprestimoProdutor, EmprestimoMovimento
+                try:
+                    emp = EmprestimoProdutor.objects.create(
+                        empresa=empresa,
+                        produtor=requisicao.produtor,
+                        produto=item.produto,
+                        unidade_medida=item.unidade_medida,
+                        requisicao=requisicao,
+                        requisicao_item=item,
+                        direcao=requisicao.direcao_emprestimo,
+                        data_emprestimo=timezone.now(),
+                        data_promessa_devolucao=requisicao.data_promessa_devolucao,
+                        status='PROMESSA' if requisicao.data_promessa_devolucao else 'NORMAL',
+                        quantidade_emprestada=item.quantidade_solicitada,
+                        quantidade_devolvida=0,
+                        observacoes=f'Gerado automaticamente pela requisição {requisicao.numero}.',
+                        criado_por=request.user,
+                    )
+                    # PLANO: Cria registro de auditoria/movimentação
+                    EmprestimoMovimento.objects.create(
+                        empresa=empresa,
+                        emprestimo=emp,
+                        tipo_movimento='EMPRESTIMO',
+                        quantidade=item.quantidade_solicitada,
+                        saldo_resultante=emp.saldo_pendente,
+                        data_movimento=timezone.now(),
+                        documento_referencia=requisicao.numero,
+                        observacoes='Lançamento automático ao adicionar item.',
+                        criado_por=request.user,
+                    )
+                except Exception as e:
+                    messages.error(request, f'Erro ao criar controle de empréstimo: {e}')
+
             messages.success(request, 'Item adicionado com sucesso.')
             return redirect('cadastros:requisicao_detail', requisicao.id)
     else:

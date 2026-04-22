@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% block title %}Ajuste Rápido de Estoque{% endblock %}
+{% block page_title %}Ajuste Rápido de Estoque{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">Ajuste Rápido de Estoque</h2>
+    <form method="post" class="card p-4 shadow-sm">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label for="id_produto_id" class="form-label">Produto</label>
+            <select name="produto_id" id="id_produto_id" class="form-select" required>
+                <option value="">Selecione o produto...</option>
+                {% for produto in produtos %}
+                    <option value="{{ produto.id }}">
+                        {{ produto.nome }} {% if produto.estoque_atual is not None %}- Estoque atual: {{ produto.estoque_atual }}{% endif %}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="mb-3">
+            <label for="id_tipo_ajuste" class="form-label">Tipo de Ajuste</label>
+            <select name="tipo_ajuste" id="id_tipo_ajuste" class="form-select" required>
+                <option value="">Selecione...</option>
+                <option value="ENTRADA">Entrada</option>
+                <option value="SAIDA">Saída</option>
+            </select>
+        </div>
+        <div class="mb-3">
+            <label for="id_quantidade" class="form-label">Quantidade</label>
+            <input type="number" step="0.001" min="0.001" name="quantidade" id="id_quantidade" class="form-control" required>
+        </div>
+        <div class="mb-3">
+            <label for="id_motivo" class="form-label">Motivo do Ajuste</label>
+            <input type="text" name="motivo" id="id_motivo" class="form-control" maxlength="200" required placeholder="Ex: Inventário, perda, acerto, etc">
+        </div>
+        <button type="submit" class="btn btn-primary">Executar Ajuste</button>
+    </form>
+</div>
+{% endblock %}

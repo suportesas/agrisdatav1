@@ -126,7 +126,17 @@ def dashboard(request):
         )
     )
 
-    emprestimos_recentes = emprestimos_qs.select_related('produto', 'unidade_medida', 'requisicao').order_by('-data_emprestimo')[:5]
+    # Deduplicação manual dos empréstimos recentes por produto/unidade_medida/requisicao
+    emprestimos_recentes_qs = emprestimos_qs.select_related('produto', 'unidade_medida', 'requisicao').order_by('-data_emprestimo')
+    seen = set()
+    emprestimos_recentes = []
+    for emp in emprestimos_recentes_qs:
+        key = (emp.requisicao_id, emp.produto_id, emp.unidade_medida_id)
+        if key not in seen:
+            seen.add(key)
+            emprestimos_recentes.append(emp)
+        if len(emprestimos_recentes) >= 5:
+            break
     pendentes_assinatura = emprestimos_qs.filter(
         assinatura_liberador_datahora__isnull=False,
         assinatura_produtor_datahora__isnull=True,
@@ -262,12 +272,20 @@ def emprestimo_detail(request, pk):
         empresa=request.user.empresa,
         produtor=produtor,
     )
-    # Buscar todos os produtos da mesma requisição
-    emprestimos_produtos = EmprestimoProdutor.objects.filter(
+
+    # Buscar todos os produtos da mesma requisição e deduplicar manualmente
+    emprestimos_produtos_qs = EmprestimoProdutor.objects.filter(
         requisicao=emprestimo.requisicao,
         produtor=produtor,
         empresa=request.user.empresa
     ).select_related('produto', 'unidade_medida')
+    seen = set()
+    emprestimos_produtos = []
+    for emp in emprestimos_produtos_qs:
+        key = (emp.produto_id, emp.unidade_medida_id)
+        if key not in seen:
+            seen.add(key)
+            emprestimos_produtos.append(emp)
 
     # Marcar mensagens como lidas para todos os produtos
     for emp in emprestimos_produtos:
@@ -303,7 +321,8 @@ def emprestimo_assinar(request, pk):
         produtor=produtor,
     )
 
-    if not emprestimo.possui_assinatura_liberador:
+    # Corrige: só bloqueia se a requisição não tiver assinatura_liberacao_interna_datahora
+    if not (emprestimo.requisicao and emprestimo.requisicao.assinatura_liberacao_interna_datahora):
         messages.error(request, 'A assinatura interna da liberação ainda não foi concluída.')
         return redirect('portal_produtor:emprestimo_detail', pk=emprestimo.pk)
 
@@ -341,6 +360,7 @@ def emprestimo_assinar(request, pk):
                 filename = f'assinatura_produtor_{emprestimo.pk}_{uuid4().hex[:8]}.png'
                 emprestimo.assinatura_produtor_imagem.save(filename, ContentFile(assinatura_bin), save=False)
 
+
             emprestimo.assinatura_produtor_usuario = request.user
             emprestimo.assinatura_produtor_nome = assinatura_nome
             emprestimo.assinatura_produtor_datahora = timezone.now()
@@ -351,6 +371,18 @@ def emprestimo_assinar(request, pk):
                 'assinatura_produtor_datahora',
                 'atualizado_em',
             ])
+
+            # PLANO: Preenche campos globais de assinatura do produtor na requisição
+            if emprestimo.requisicao_id:
+                req = emprestimo.requisicao
+                req.assinatura_produtor_usuario = request.user
+                req.assinatura_produtor_nome = assinatura_nome
+                req.assinatura_produtor_datahora = timezone.now()
+                req.save(update_fields=[
+                    'assinatura_produtor_usuario',
+                    'assinatura_produtor_nome',
+                    'assinatura_produtor_datahora',
+                ])
 
             EmprestimoMovimento.objects.create(
                 empresa=request.user.empresa,

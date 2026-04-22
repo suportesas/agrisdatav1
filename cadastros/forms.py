@@ -3023,8 +3023,33 @@ class RequisicaoForm(forms.ModelForm):
         return cleaned
 
 
+
 class RequisicaoItemForm(forms.ModelForm):
     """Formulario de item da requisicao"""
+    def __init__(self, *args, **kwargs):
+        self.empresa = kwargs.pop('empresa', None)
+        self.requisicao_tipo = kwargs.pop('requisicao_tipo', None)
+        super().__init__(*args, **kwargs)
+
+        if self.empresa:
+            self.fields['produto'].queryset = Produto.objects.filter(
+                categoria__empresa=self.empresa,
+                ativo=True
+            ).order_by('nome')
+            self.fields['unidade_medida'].queryset = UnidadeMedida.objects.filter(
+                empresa=self.empresa,
+                ativo=True
+            ).order_by('sigla')
+
+        # Customiza o label do produto para mostrar o estoque atual
+        self.fields['produto'].label_from_instance = lambda obj: f"{obj.nome} - {getattr(obj, 'estoque_atual', 0)}"
+
+        self.fields['quantidade_atendida'].required = False
+        self.fields['quantidade_atendida'].initial = 0
+
+        if self.instance and self.instance.pk:
+            if self.instance.unidade_medida:
+                self.fields['unidade_medida'].initial = self.instance.unidade_medida
 
     class Meta:
         model = RequisicaoItem

@@ -125,10 +125,11 @@
               </span>
             </td>
             <td>
-              {% if grupo.requisicao.assinatura_liberacao_interna_imagem %}
-                Assinado
+              {% if grupo.requisicao.assinatura_liberacao_interna_datahora %}
+                <span class="badge bg-success">Assinado</span>
+                <br><small>{{ grupo.requisicao.assinatura_liberacao_interna_nome }}<br>{{ grupo.requisicao.assinatura_liberacao_interna_datahora|date:'d/m/Y H:i' }}</small>
               {% else %}
-                Pendente
+                <span class="badge bg-warning text-dark">Pendente</span>
               {% endif %}
             </td>
             <td>

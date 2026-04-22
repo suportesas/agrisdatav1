@@ -134,29 +134,31 @@ def emprestimo_extrato(request):
         messages.warning(request, f'{total_atualizados} empréstimo(s) com promessa vencida foram convertidos para normal.')
 
     form = EmprestimoExtratoFiltroForm(request.GET or None, empresa=empresa)
-    if form.is_valid():
-        emprestimos_qs = _filtrar_emprestimos(empresa, form.cleaned_data)
-    else:
+    # PLANO: Garante que o queryset do extrato pega todos os EmprestimoProdutor da empresa, sem filtros extras, inclusive registros novos ou sem movimentação
+    if not request.GET:
         emprestimos_qs = EmprestimoProdutor.objects.filter(empresa=empresa).select_related('produtor', 'produto', 'requisicao').annotate(
             unread_mensagens_interno_count=Count(
                 'mensagens',
                 filter=Q(mensagens__perfil_autor='PRODUTOR', mensagens__lido_interno_em__isnull=True),
             )
         ).order_by('-data_emprestimo', '-id')
-
-    # Filtro: somente com promessa de devolução
-    apenas_promessa = request.GET.get('apenas_promessa')
-    if apenas_promessa:
-        emprestimos_qs = emprestimos_qs.filter(
-            Q(status='PROMESSA') |
-            (Q(data_promessa_devolucao__isnull=False) & Q(saldo_pendente__gt=0))
-        )
+    else:
+        # Se houver filtros, aplica normalmente
+        if form.is_valid():
+            emprestimos_qs = _filtrar_emprestimos(empresa, form.cleaned_data)
+        else:
+            emprestimos_qs = EmprestimoProdutor.objects.filter(empresa=empresa).select_related('produtor', 'produto', 'requisicao').annotate(
+                unread_mensagens_interno_count=Count(
+                    'mensagens',
+                    filter=Q(mensagens__perfil_autor='PRODUTOR', mensagens__lido_interno_em__isnull=True),
+                )
+            ).order_by('-data_emprestimo', '-id')
 
     # Agrupar por requisição
 
     from decimal import Decimal
     agrupados = {}
-    for emp in emprestimos_qs.select_related('produto'):
+    for emp in emprestimos_qs.select_related('produto', 'requisicao'):
         req_id = emp.requisicao_id or f"emp-{emp.pk}"
         if req_id not in agrupados:
             agrupados[req_id] = {
@@ -173,6 +175,8 @@ def emprestimo_extrato(request):
                 'total_devolvido_valor': Decimal('0.00'),
                 'saldo_pendente_valor': Decimal('0.00'),
                 'unread_mensagens_interno': 0,
+                # Adiciona referência direta aos campos de assinatura da requisição
+                'requisicao': emp.requisicao,
             }
         agrupados[req_id]['emprestimos'].append(emp)
         preco = getattr(emp.produto, 'preco_venda', Decimal('0.00'))
@@ -243,14 +247,23 @@ def emprestimo_detalhe(request, pk):
         empresa=empresa,
     )
 
-    # Buscar todos os produtos da mesma requisição
+
+    # Buscar todos os produtos da mesma requisição e remover duplicidade manualmente
     if emprestimo.requisicao_id:
-        emprestimos_lote = EmprestimoProdutor.objects.filter(
+        emprestimos_lote_qs = EmprestimoProdutor.objects.filter(
             empresa=empresa,
             requisicao_id=emprestimo.requisicao_id
         ).select_related('produtor', 'produto', 'unidade_medida', 'requisicao')
+        # Deduplicação manual por produto e unidade_medida
+        seen = set()
+        emprestimos_lote = []
+        for emp in emprestimos_lote_qs:
+            key = (emp.produto_id, emp.unidade_medida_id)
+            if key not in seen:
+                seen.add(key)
+                emprestimos_lote.append(emp)
     else:
-        emprestimos_lote = EmprestimoProdutor.objects.filter(pk=emprestimo.pk, empresa=empresa)
+        emprestimos_lote = list(EmprestimoProdutor.objects.filter(pk=emprestimo.pk, empresa=empresa))
 
     # Movimentações agrupadas por produto
     movimentos_lote = {}
@@ -375,15 +388,22 @@ def emprestimo_assinar_liberacao(request, pk):
         empresa=empresa,
     )
 
-    # Buscar todos os empréstimos da mesma requisição
+
+    # Buscar todos os empréstimos da mesma requisição e deduplicar manualmente
     if emprestimo.requisicao_id:
-        emprestimos_lote = EmprestimoProdutor.objects.filter(
+        emprestimos_lote_qs = EmprestimoProdutor.objects.filter(
             empresa=empresa,
             requisicao_id=emprestimo.requisicao_id
         ).select_related('produtor', 'produto', 'unidade_medida', 'requisicao')
+        seen = set()
+        emprestimos_lote = []
+        for emp in emprestimos_lote_qs:
+            key = (emp.produto_id, emp.unidade_medida_id)
+            if key not in seen:
+                seen.add(key)
+                emprestimos_lote.append(emp)
     else:
-        # fallback: só o empréstimo atual
-        emprestimos_lote = EmprestimoProdutor.objects.filter(pk=emprestimo.pk, empresa=empresa)
+        emprestimos_lote = list(EmprestimoProdutor.objects.filter(pk=emprestimo.pk, empresa=empresa))
 
     if request.user.tipo not in ['ADMIN', 'GERENTE']:
         messages.error(request, 'Você não tem permissão para assinar a liberação deste empréstimo.')

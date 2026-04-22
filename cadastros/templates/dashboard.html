@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard Principal{% endblock %}
+
+{% block content %}
+<h2 class="fw-bold mb-4">Dashboard Administrativo</h2>
+<p class="text-muted mb-4">Visão geral do desempenho do sistema e do negócio em tempo real.</p>
+<div class="row g-4 mb-4">
+    <div class="col-md-4">
+        <div class="card card-metric p-4">
+            <div class="d-flex align-items-center mb-2">
+                <i class="bi bi-person-lines-fill text-primary fs-3 me-2"></i>
+                <span class="fw-semibold">Profissionais Cadastrados</span>
+            </div>
+            <h3 class="fw-bold">{{ profissionais_cadastrados|default:5 }}</h3>
+            <span class="text-success small">+12% este mês</span>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card card-metric p-4">
+            <div class="d-flex align-items-center mb-2">
+                <i class="bi bi-person-check-fill text-success fs-3 me-2"></i>
+                <span class="fw-semibold">Profissionais Ativos (30d)</span>
+            </div>
+            <h3 class="fw-bold">{{ profissionais_ativos|default:5 }}</h3>
+            <span class="text-muted small">82% de engajamento</span>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card card-metric p-4">
+            <div class="d-flex align-items-center mb-2">
+                <i class="bi bi-currency-dollar text-purple fs-3 me-2"></i>
+                <span class="fw-semibold">MRR em Tempo Real</span>
+            </div>
+            <h3 class="fw-bold">R$ {{ mrr|default:'0,00' }}</h3>
+            <span class="text-success small">+8.4% este mês</span>
+        </div>
+    </div>
+</div>
+<div class="row g-4">
+    <div class="col-md-4">
+        <div class="card card-metric p-4">
+            <div class="d-flex align-items-center mb-2">
+                <i class="bi bi-graph-up-arrow text-warning fs-3 me-2"></i>
+                <span class="fw-semibold">ARR Projetado</span>
+            </div>
+            <h3 class="fw-bold">R$ {{ arr|default:'0,00' }}</h3>
+            <span class="text-muted small">Baseado no MRR atual</span>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card card-metric p-4">
+            <div class="d-flex align-items-center mb-2">
+                <i class="bi bi-activity text-danger fs-3 me-2"></i>
+                <span class="fw-semibold">Taxa de Churn Mensal</span>
+            </div>
+            <h3 class="fw-bold">{{ churn|default:'0%' }}</h3>
+            <span class="text-danger small">-0.3% vs mês passado</span>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card card-metric p-4">
+            <div class="d-flex align-items-center mb-2">
+                <i class="bi bi-calendar-check text-info fs-3 me-2"></i>
+                <span class="fw-semibold">Consultas no Mês</span>
+            </div>
+            <h3 class="fw-bold">{{ consultas_mes|default:12 }}</h3>
+        </div>
+    </div>
+</div>
+{% endblock %}

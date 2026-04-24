@@ -61,17 +61,31 @@ class RoutedSupabaseStorage(Storage):
             logger.error('Erro ao baixar %s do bucket %s: %s', normalized_name, bucket_name, exc)
             raise IOError(f'Não foi possível baixar {normalized_name}') from exc
 
+    def _ensure_bucket_exists(self, bucket_name):
+        """Cria ou corrige a visibilidade do bucket no Supabase."""
+        should_be_public = bucket_name in getattr(settings, 'SUPABASE_STORAGE_PUBLIC_BUCKETS', set())
+        try:
+            bucket = self.client.storage.get_bucket(bucket_name)
+            if getattr(bucket, 'public', None) != should_be_public:
+                self.client.storage.update_bucket(bucket_name, options={'public': should_be_public})
+                logger.info('Bucket "%s" atualizado para público=%s', bucket_name, should_be_public)
+        except Exception:
+            try:
+                self.client.storage.create_bucket(bucket_name, options={'public': should_be_public})
+                logger.info('Bucket "%s" criado no Supabase (público=%s)', bucket_name, should_be_public)
+            except Exception as exc:
+                logger.warning('Não foi possível criar bucket "%s": %s', bucket_name, exc)
+
     def _save(self, name, content):
         normalized_name = self._normalize_name(name)
         if not self.enabled or not self.client:
             return self.local_storage._save(normalized_name, content)
 
         bucket_name = self._get_bucket_name(normalized_name)
+        self._ensure_bucket_exists(bucket_name)
         try:
             content_type = getattr(content, 'content_type', None) or self._get_content_type(normalized_name)
             file_content = content.read() if hasattr(content, 'read') else content
-            if hasattr(content, 'seek'):
-                content.seek(0)
 
             self.client.storage.from_(bucket_name).upload(
                 normalized_name,

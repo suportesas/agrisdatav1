@@ -279,7 +279,7 @@ class Produto(models.Model):
     categoria_agricola = models.CharField(max_length=20, choices=CATEGORIA_AGRICOLA_CHOICES, blank=True, verbose_name='Categoria Agrícola')
     
     # Defensivos Agrícolas
-    classe_agronomica = models.CharField(max_length=20, choices=CLASSE_AGRONOMICA_CHOICES, blank=True, verbose_name='Classe Agronômica')
+    classe_agronomica = models.CharField(max_length=200, blank=True, verbose_name='Classe Agronômica')
     ingrediente_ativo = models.CharField(max_length=200, blank=True, verbose_name='Ingrediente Ativo')
     concentracao = models.CharField(max_length=50, blank=True, verbose_name='Concentração')
     registro_mapa = models.CharField(max_length=50, blank=True, verbose_name='Registro MAPA')
@@ -508,6 +508,17 @@ class Produto(models.Model):
         if self.paises_proibidos:
             return [p.strip() for p in self.paises_proibidos.split(',') if p.strip()]
         return []
+
+    def get_classes_agronomicas_list(self):
+        """Retorna lista de códigos das classes agronômicas selecionadas."""
+        if not self.classe_agronomica:
+            return []
+        return [v.strip() for v in self.classe_agronomica.split(',') if v.strip()]
+
+    def get_classes_agronomicas_display(self):
+        """Retorna lista de labels das classes agronômicas para exibição."""
+        choices_map = dict(self.CLASSE_AGRONOMICA_CHOICES)
+        return [choices_map.get(code, code) for code in self.get_classes_agronomicas_list()]
     
     def save(self, *args, **kwargs):
         # Normalizar nome: Title Case e remover espaços extras

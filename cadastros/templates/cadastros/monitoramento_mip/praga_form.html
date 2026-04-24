@@ -112,27 +112,38 @@
 
             <!-- Severidade -->
             <div class="mb-4">
-              <label for="{{ form.severidade.id_for_label }}" class="form-label">
+              <label class="form-label">
                 <i class="bi bi-exclamation-triangle"></i> Severidade *
               </label>
               <div class="row g-2">
                 {% for value, label in form.severidade.field.choices %}
-                  <div class="col-auto">
-                    <input type="radio" class="btn-check" name="{{ form.severidade.name }}" 
+                  <div class="col-12 col-sm-auto">
+                    <input type="radio" class="btn-check" name="{{ form.severidade.name }}"
                            id="severidade_{{ value }}" value="{{ value }}"
                            {% if form.severidade.value == value|stringformat:"s" %}checked{% endif %}>
-                    <label class="btn btn-outline-warning" for="severidade_{{ value }}">
-                      {% if value == '1' %}
-                        <i class="bi bi-emoji-smile"></i> Muito Baixa
-                      {% elif value == '2' %}
-                        <i class="bi bi-emoji-neutral"></i> Baixa
-                      {% elif value == '3' %}
-                        <i class="bi bi-emoji-frown"></i> Média
-                      {% elif value == '4' %}
-                        <i class="bi bi-exclamation-triangle"></i> Alta
-                      {% elif value == '5' %}
-                        <i class="bi bi-exclamation-triangle-fill"></i> Muito Alta
-                      {% endif %}
+                    <label class="btn w-100 text-start
+                      {% if value == '1' %}btn-outline-success
+                      {% elif value == '2' %}btn-outline-info
+                      {% elif value == '3' %}btn-outline-warning
+                      {% elif value == '4' %}btn-outline-orange
+                      {% elif value == '5' %}btn-outline-danger
+                      {% endif %}" for="severidade_{{ value }}" style="min-width:200px">
+                      <div class="fw-bold">
+                        {% if value == '1' %}<i class="bi bi-1-circle"></i> Muito Baixa
+                        {% elif value == '2' %}<i class="bi bi-2-circle"></i> Baixa
+                        {% elif value == '3' %}<i class="bi bi-3-circle"></i> Média
+                        {% elif value == '4' %}<i class="bi bi-4-circle"></i> Alta
+                        {% elif value == '5' %}<i class="bi bi-5-circle"></i> Muito Alta
+                        {% endif %}
+                      </div>
+                      <small class="opacity-75 fw-normal">
+                        {% if value == '1' %}Infestação inicial, &lt; 5% dos pontos
+                        {% elif value == '2' %}5–20% dos pontos afetados
+                        {% elif value == '3' %}20–40% dos pontos — atenção
+                        {% elif value == '4' %}40–70% dos pontos — risco elevado
+                        {% elif value == '5' %}&gt; 70% dos pontos — ação imediata
+                        {% endif %}
+                      </small>
                     </label>
                   </div>
                 {% endfor %}
@@ -164,11 +175,13 @@
             <!-- Detalhes de Estágios -->
             <div class="mb-4">
               <label for="{{ form.detalhes_estagios.id_for_label }}" class="form-label">
-                <i class="bi bi-diagram-3"></i> Detalhes de Estágios (JSON)
+                <i class="bi bi-diagram-3"></i> Contagem por Estágio
+                <small class="text-muted fw-normal">(preenchido automaticamente ao selecionar a praga)</small>
               </label>
               {{ form.detalhes_estagios }}
               <small class="text-muted d-block mt-2">
-                Formato: {"OVO": 0, "NINFA": 1, "LARVA": 5, "PUPA": 2, "ADULTO": 0}
+                <i class="bi bi-info-circle"></i>
+                Informe a quantidade de indivíduos por estágio. Ex: <code>{"LARVA": 5, "ADULTO": 2}</code>
               </small>
               {% if form.detalhes_estagios.errors %}
                 <div class="invalid-feedback d-block">{{ form.detalhes_estagios.errors.0 }}</div>
@@ -215,9 +228,10 @@ document.addEventListener('DOMContentLoaded', function() {
   const nedInput = document.getElementById('{{ form.ned_valor.id_for_label }}');
   const resultadoDiv = document.getElementById('resultado-acao');
   const btnResetNed = document.getElementById('btn-reset-ned');
+  const detalhesEstagiosInput = document.getElementById('{{ form.detalhes_estagios.id_for_label }}');
   const totalPontos = {{ monitoramento.quantidade_pontos }};
 
-  // Cascading Select: Praga → Estágios
+  // Cascading Select: Praga → Estágios + auto-preenche JSON de contagem
   function carregarEstagios(pragaId) {
     if (!pragaId) {
       estagioSelect.innerHTML = '<option value="">-- Selecione um estágio --</option>';
@@ -225,21 +239,28 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     estagioLoading.classList.remove('d-none');
-    
+
     fetch(`{% url 'cadastros:ajax_get_estagios_praga' %}?praga_id=${pragaId}`)
       .then(response => response.json())
       .then(data => {
         estagioLoading.classList.add('d-none');
         let html = '<option value="">-- Selecione um estágio --</option>';
-        
+
         if (data.estagios && data.estagios.length > 0) {
           data.estagios.forEach(estagio => {
             html += `<option value="${estagio.id}">${estagio.tipo_estagio}</option>`;
           });
+
+          // Auto-preenche o JSON de contagem somente se o campo ainda estiver vazio
+          if (detalhesEstagiosInput && !detalhesEstagiosInput.value.trim()) {
+            const template = {};
+            data.estagios.forEach(e => { template[e.tipo_estagio] = 0; });
+            detalhesEstagiosInput.value = JSON.stringify(template, null, 2);
+          }
         } else {
           html += '<option disabled>Nenhum estágio encontrado</option>';
         }
-        
+
         estagioSelect.innerHTML = html;
       })
       .catch(error => {

@@ -1162,12 +1162,23 @@ def pedido_pdf(request, pk):
     
     # Verifica se há logo
     logo_cell = []
-    if pedido.empresa.logo and pedido.empresa.logo.path and os.path.exists(pedido.empresa.logo.path):
+    if pedido.empresa.logo:
         try:
-            logo = RLImage(pedido.empresa.logo.path, width=3*cm, height=3*cm, kind='proportional')
-            logo_cell = [logo]
-        except:
-            logo_cell = [Paragraph('', header_empresa_style)]
+            logo_path = pedido.empresa.logo.path
+            if os.path.exists(logo_path):
+                logo = RLImage(logo_path, width=3*cm, height=3*cm, kind='proportional')
+                logo_cell = [logo]
+            else:
+                logo_cell = [Paragraph('', header_empresa_style)]
+        except NotImplementedError:
+            # Storage remoto (ex: Supabase) — carrega via URL
+            try:
+                import urllib.request as _urllib_req
+                logo_data = io.BytesIO(_urllib_req.urlopen(pedido.empresa.logo.url, timeout=5).read())
+                logo = RLImage(logo_data, width=3*cm, height=3*cm, kind='proportional')
+                logo_cell = [logo]
+            except Exception:
+                logo_cell = [Paragraph('', header_empresa_style)]
     else:
         logo_cell = [Paragraph('', header_empresa_style)]
     
@@ -1276,13 +1287,14 @@ def pedido_pdf(request, pk):
     
     # Itens do Pedido
     elements.append(Paragraph("Itens do Pedido", heading_style))
+    cell_style = ParagraphStyle('cell', parent=styles['Normal'], fontSize=9, leading=12)
     itens_data = [['Código', 'Produto', 'Un.', 'Qtd', 'Preço Unit.', 'Subtotal']]
-    
+
     for item in pedido.itens.all():
         subtotal = item.quantidade_pedida * item.preco_unitario
         itens_data.append([
             item.produto.codigo,
-            item.produto.nome[:50],
+            Paragraph(item.produto.nome, cell_style),
             item.unidade_medida.sigla,
             f"{item.quantidade_pedida:.2f}",
             f"R$ {item.preco_unitario:.2f}",

@@ -1428,8 +1428,6 @@ class FuncaoFuncionarioForm(forms.ModelForm):
         self.empresa = kwargs.pop('empresa', None)
         super().__init__(*args, **kwargs)
 
-        self.fields['periodicidade_meses'].required = False
-
         empresa_ref = self.empresa or getattr(self.instance, 'empresa', None)
         self._popular_queryset_catalogo(empresa_ref)
 
@@ -2039,18 +2037,25 @@ class FornecedorForm(forms.ModelForm):
 
         try:
             from usuarios.models import Usuario
+            from django.db.models import Q
             if 'portal_user' in self.fields:
-                usuarios_qs = Usuario.objects.filter(is_active=True)
+                portal_user_id = self.instance.portal_user_id if self.instance.pk else None
+
+                q = Q(is_active=True)
                 if empresa:
-                    usuarios_qs = usuarios_qs.filter(empresa=empresa)
+                    q &= Q(empresa=empresa)
+                # Garante que o usuário já vinculado sempre aparece no queryset, mesmo inativo.
+                if portal_user_id:
+                    q = q | Q(pk=portal_user_id)
 
-                # Permite reutilizar o usuário já vinculado ao fornecedor atual durante edição.
-                if self.instance.pk and self.instance.portal_user_id:
-                    usuarios_qs = usuarios_qs | Usuario.objects.filter(pk=self.instance.portal_user_id)
-
-                self.fields['portal_user'].queryset = usuarios_qs.order_by('first_name', 'last_name', 'username').distinct()
+                usuarios_qs = Usuario.objects.filter(q).order_by('first_name', 'last_name', 'username').distinct()
+                self.fields['portal_user'].queryset = usuarios_qs
                 self.fields['portal_user'].required = False
                 self.fields['portal_user'].help_text = 'Selecione o usuário que fará login no portal deste fornecedor.'
+
+                # Força a pré-seleção do usuário já vinculado ao fornecedor.
+                if portal_user_id:
+                    self.initial['portal_user'] = portal_user_id
         except Exception:
             pass
 
@@ -4031,13 +4036,11 @@ class PragaNoMonitoramentoForm(forms.ModelForm):
                 'class': 'form-control',
                 'step': '0.01',
                 'readonly': 'readonly',
-                'disabled': 'disabled'
             }),
             'estagio_principal': forms.Select(attrs={'class': 'form-control'}),
             'detalhes_estagios': forms.Textarea(attrs={
                 'class': 'form-control',
-                'rows': 2,
-                'placeholder': 'JSON: {"L3": 5, "L4": 3}'
+                'rows': 3,
             }),
             'severidade': forms.RadioSelect(attrs={'class': 'form-check-input'}),
             'quantidade_total_pragas': forms.NumberInput(attrs={
@@ -4071,13 +4074,16 @@ class PragaNoMonitoramentoForm(forms.ModelForm):
         self.monitoramento = kwargs.pop('monitoramento', None)
         self.empresa = kwargs.pop('empresa', None)
         super().__init__(*args, **kwargs)
-        
+
+        # A view calcula incidencia_percentual; o campo é apenas informativo no form
+        self.fields['incidencia_percentual'].required = False
+
         if self.empresa:
             self.fields['praga'].queryset = Praga.objects.filter(
                 empresa=self.empresa,
                 ativa=True
             )
-        
+
         if self.monitoramento and self.monitoramento.cultura:
             # Filtrar estágios apenas da praga selecionada
             self.fields['estagio_principal'].queryset = \

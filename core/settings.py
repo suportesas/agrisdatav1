@@ -89,7 +89,7 @@ MIDDLEWARE = [
     # Middleware customizado
     'core.middleware.empresa_bloqueada.EmpresaBloqueadaMiddleware',
     'core.middleware.fornecedor_portal_only.FornecedorPortalOnlyMiddleware',
-    'middleware_restrito_produtor.RestrictProdutorMiddleware',
+    'core.middleware.restrito_produtor.RestrictProdutorMiddleware',
 ]
 
 ROOT_URLCONF = 'core.urls'

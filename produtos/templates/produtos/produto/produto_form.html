@@ -469,10 +469,22 @@
           <strong>"Defensivo - Culturas/Pragas"</strong>.
         </div>
         <div class="row">
-          <div class="col-md-4 mb-3">
+          <div class="col-12 mb-3">
             {{ form.classe_agronomica.label_tag }}
-            {{ form.classe_agronomica }}
+            <div class="d-flex flex-wrap gap-3 mt-1 border rounded p-3">
+              {% for checkbox in form.classe_agronomica %}
+              <div class="form-check">
+                {{ checkbox.tag }}
+                <label class="form-check-label" for="{{ checkbox.id_for_label }}">{{ checkbox.choice_label }}</label>
+              </div>
+              {% endfor %}
+            </div>
+            {% if form.classe_agronomica.errors %}
+              <div class="text-danger small mt-1">{{ form.classe_agronomica.errors|striptags }}</div>
+            {% endif %}
           </div>
+        </div>
+        <div class="row">
           <div class="col-md-4 mb-3">
             {{ form.ingrediente_ativo.label_tag }}
             {{ form.ingrediente_ativo }}

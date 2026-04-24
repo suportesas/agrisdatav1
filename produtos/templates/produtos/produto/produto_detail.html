@@ -256,7 +256,11 @@
           <p><strong>Categoria:</strong> {{ produto.get_categoria_agricola_display }}</p>
           
           {% if produto.classe_agronomica %}
-          <p><strong>Classe:</strong> {{ produto.get_classe_agronomica_display }}</p>
+          <p><strong>Classe:</strong>
+            {% for label in produto.get_classes_agronomicas_display %}
+              <span class="badge bg-secondary me-1">{{ label }}</span>
+            {% endfor %}
+          </p>
           <p><strong>Ingrediente Ativo:</strong> {{ produto.ingrediente_ativo|default:"-" }}</p>
           <p><strong>Concentração:</strong> {{ produto.concentracao|default:"-" }}</p>
           <p><strong>Registro MAPA:</strong> {{ produto.registro_mapa|default:"-" }}</p>
@@ -267,7 +271,11 @@
           
           {% if produto.paises_proibidos %}
           <p><strong>Países Proibidos:</strong><br>
-            <span class="badge bg-danger me-1" style="font-size: 0.85rem;">{{ produto.paises_proibidos }}</span>
+            <div class="d-flex flex-wrap gap-1 mt-1">
+              {% for pais in produto.get_paises_proibidos_list %}
+                <span class="badge bg-danger">{{ pais }}</span>
+              {% endfor %}
+            </div>
           </p>
           {% endif %}
           {% endif %}

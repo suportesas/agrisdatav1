@@ -755,6 +755,8 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // Elementos do formulário
   const isExportadorCheckbox = document.getElementById('{{ form.is_exportador.id_for_label }}');
+  const tipoFornecedorSelect = document.getElementById('{{ form.tipo_pessoa.id_for_label }}');
+  const statusSelect = document.getElementById('id_status');
   const btnBuscarCNPJ = document.getElementById('buscarCNPJ');
   const inputCNPJ = document.getElementById('{{ form.cnpj_cpf.id_for_label }}');
   const loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'));

@@ -457,16 +457,16 @@
           if(navigator.sendBeacon){
             navigator.sendBeacon('/__e2e_log__', JSON.stringify({msg: args, url: window.location.href}));
           } else {
-            fetch('__e2e_log__', {method:'POST', body: JSON.stringify({msg: args, url: window.location.href}), headers:{'Content-Type':'application/json'}}).catch(()=>{});
+            fetch('/__e2e_log__', {method:'POST', body: JSON.stringify({msg: args, url: window.location.href}), headers:{'Content-Type':'application/json'}}).catch(()=>{});
           }
         }catch(e){}
         orig.apply(console, arguments);
       };
       window.addEventListener('error', function(ev){
-        try{ navigator.sendBeacon ? navigator.sendBeacon('__e2e_log__', JSON.stringify({msg: ['error', ev.message], url: window.location.href})) : fetch('__e2e_log__', {method:'POST', body: JSON.stringify({msg: ['error', ev.message], url: window.location.href}), headers:{'Content-Type':'application/json'}}).catch(()=>{}); }catch(e){}
+        try{ navigator.sendBeacon ? navigator.sendBeacon('/__e2e_log__', JSON.stringify({msg: ['error', ev.message], url: window.location.href})) : fetch('/__e2e_log__', {method:'POST', body: JSON.stringify({msg: ['error', ev.message], url: window.location.href}), headers:{'Content-Type':'application/json'}}).catch(()=>{}); }catch(e){}
       });
       window.addEventListener('unhandledrejection', function(ev){
-        try{ navigator.sendBeacon ? navigator.sendBeacon('__e2e_log__', JSON.stringify({msg: ['promise', String(ev.reason)], url: window.location.href})) : fetch('__e2e_log__', {method:'POST', body: JSON.stringify({msg: ['promise', String(ev.reason)], url: window.location.href}), headers:{'Content-Type':'application/json'}}).catch(()=>{}); }catch(e){}
+        try{ navigator.sendBeacon ? navigator.sendBeacon('/__e2e_log__', JSON.stringify({msg: ['promise', String(ev.reason)], url: window.location.href})) : fetch('/__e2e_log__', {method:'POST', body: JSON.stringify({msg: ['promise', String(ev.reason)], url: window.location.href}), headers:{'Content-Type':'application/json'}}).catch(()=>{}); }catch(e){}
       });
     }catch(e){}
   })();

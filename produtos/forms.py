@@ -110,13 +110,26 @@ class CategoriaSelect(Select):
         return option
 
 class ProdutoForm(forms.ModelForm):
+    classe_agronomica = forms.MultipleChoiceField(
+        choices=Produto.CLASSE_AGRONOMICA_CHOICES,
+        widget=forms.CheckboxSelectMultiple(attrs={'class': 'form-check-input'}),
+        required=False,
+        label='Classe Agronômica',
+    )
+
     def __init__(self, *args, **kwargs):
         empresa = kwargs.pop('empresa', None)
         super().__init__(*args, **kwargs)
         # Tornar o campo código opcional (será gerado automaticamente)
         self.fields['codigo'].required = False
         self.fields['codigo'].help_text = 'Deixe em branco para gerar automaticamente'
-        
+
+        # Converte a string comma-separated do banco para lista para renderizar os checkboxes
+        if self.instance.pk and self.instance.classe_agronomica:
+            self.initial['classe_agronomica'] = [
+                v.strip() for v in self.instance.classe_agronomica.split(',') if v.strip()
+            ]
+
         # Filtrar por empresa
         if empresa:
             self.fields['categoria'].queryset = Categoria.objects.filter(empresa=empresa)
@@ -126,6 +139,10 @@ class ProdutoForm(forms.ModelForm):
             self.fields['unidade_venda'].queryset = UnidadeMedida.objects.filter(empresa=empresa)
             self.fields['unidade_dosagem'].queryset = UnidadeMedida.objects.filter(empresa=empresa)
             self.fields['armazem_padrao'].queryset = Armazem.objects.filter(empresa=empresa, ativo=True)
+
+    def clean_classe_agronomica(self):
+        values = self.cleaned_data.get('classe_agronomica') or []
+        return ','.join(values)
     
     class Meta:
         model = Produto
@@ -220,7 +237,6 @@ class ProdutoForm(forms.ModelForm):
             'categoria_agricola': forms.Select(attrs={'class': 'form-select'}),
             
             # Defensivos
-            'classe_agronomica': forms.Select(attrs={'class': 'form-select'}),
             'ingrediente_ativo': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Glifosato'}),
             'concentracao': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: 480 g/L'}),
             'registro_mapa': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nº do MAPA'}),

@@ -22,13 +22,20 @@
         </li>
         <li>
             <a href="#" class="nav-link">
-                <i class="bi bi-cash-coin me-2"></i> Relatórios Financeiros
+                <i class="bi bi-cash-coin me-2"></i> Financeiro
             </a>
-        </li>
-        <li>
-            <a href="#" class="nav-link">
-                <i class="bi bi-gear me-2"></i> Configurações
-            </a>
+            <ul class="nav flex-column ms-4">
+                <li>
+                    <a href="#" class="nav-link">
+                        <i class="bi bi-gear me-2"></i> Configurações
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'cadastros:prazo_pagamento_list' %}" class="nav-link">
+                        <i class="bi bi-calendar-event me-2"></i> Prazos de Pagamento
+                    </a>
+                </li>
+            </ul>
         </li>
     </ul>
     <hr>

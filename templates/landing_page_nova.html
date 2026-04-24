@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AgrisData — Agricultura Inteligente</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
+  <style>
+    body {
+      font-family: 'Inter', Arial, sans-serif;
+      background: #f5f5f5;
+      color: #222;
+      margin: 0;
+      padding: 0;
+    }
+    .hero {
+      background: linear-gradient(120deg, #3CB371 0%, #1976D2 100%);
+      color: #fff;
+      padding: 80px 0 40px 0;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero .logo-highlight {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 32px;
+      animation: logoPop 1.2s cubic-bezier(.68,-0.55,.27,1.55);
+    }
+    .hero .logo-highlight img {
+      width: 160px;
+      height: 160px;
+      background: #fff;
+      border-radius: 50%;
+      box-shadow: 0 8px 32px rgba(25,118,210,0.10), 0 0 0 8px #FFA72633;
+      padding: 18px;
+      margin-bottom: 18px;
+      border: 4px solid #FFA726;
+      transition: transform 0.3s;
+    }
+    .hero .logo-highlight img:hover {
+      transform: scale(1.07) rotate(-3deg);
+      box-shadow: 0 12px 48px #3CB37155;
+    }
+    .hero .logo-highlight span {
+      font-size: 2.2em;
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: -1px;
+      text-shadow: 0 2px 16px #1976D244;
+    }
+    @keyframes logoPop {
+      0% { transform: scale(0.7); opacity: 0; }
+      80% { transform: scale(1.1); opacity: 1; }
+      100% { transform: scale(1); }
+    }
+    .hero h1 {
+      font-size: 2.8em;
+      font-weight: 700;
+      margin-bottom: 18px;
+      text-shadow: 0 2px 16px #1976D244;
+    }
+    .hero .highlight {
+      color: #FFA726;
+    }
+    .hero p {
+      font-size: 1.2em;
+      font-weight: 400;
+      margin-bottom: 32px;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .hero-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      flex-wrap: wrap;
+      margin-bottom: 32px;
+    }
+    .btn {
+      padding: 14px 32px;
+      border-radius: 30px;
+      font-size: 1em;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+      text-decoration: none;
+      display: inline-block;
+    }
+    .btn-primary {
+      background: #3CB371;
+      color: #fff;
+    }
+    .btn-primary:hover {
+      background: #1976D2;
+      color: #fff;
+    }
+    .btn-secondary {
+      background: #FFA726;
+      color: #fff;
+    }
+    .btn-secondary:hover {
+      background: #fff;
+      color: #3CB371;
+    }
+    .swiper {
+      width: 100%;
+      max-width: 900px;
+      margin: 0 auto 40px auto;
+      border-radius: 18px;
+      box-shadow: 0 8px 32px rgba(25,118,210,0.10);
+      background: #fff;
+      overflow: hidden;
+    }
+    .swiper-slide {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #fff;
+      height: 340px;
+    }
+    .swiper-slide img {
+      max-width: 100%;
+      max-height: 320px;
+      border-radius: 12px;
+      object-fit: cover;
+      box-shadow: 0 4px 24px #3CB37122;
+    }
+    .modules {
+      background: #fff;
+      padding: 60px 0 40px 0;
+      text-align: center;
+    }
+    .modules h2 {
+      color: #1976D2;
+      font-size: 2.2em;
+      margin-bottom: 32px;
+    }
+    .modules-list {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 32px;
+    }
+    .module-card {
+      background: #f5f5f5;
+      border-radius: 16px;
+      box-shadow: 0 4px 24px rgba(25,118,210,0.07);
+      padding: 32px 24px;
+      width: 320px;
+      text-align: center;
+      transition: box-shadow 0.2s;
+    }
+    .module-card:hover {
+      box-shadow: 0 8px 32px rgba(60,179,113,0.15);
+    }
+    .module-card img {
+      width: 54px;
+      margin-bottom: 18px;
+    }
+    .module-card h3 {
+      color: #3CB371;
+      font-size: 1.3em;
+      margin-bottom: 10px;
+    }
+    .module-card p {
+      color: #444;
+      font-size: 1em;
+    }
+    .differentials {
+      background: #f5f5f5;
+      padding: 60px 0 40px 0;
+      text-align: center;
+    }
+    .differentials h2 {
+      color: #1976D2;
+      font-size: 2em;
+      margin-bottom: 18px;
+    }
+    .differentials ul {
+      list-style: none;
+      padding: 0;
+      margin: 0 auto;
+      max-width: 600px;
+    }
+    .differentials li {
+      font-size: 1.1em;
+      color: #3CB371;
+      margin-bottom: 10px;
+      text-align: left;
+      padding-left: 1.2em;
+      position: relative;
+    }
+    .differentials li:before {
+      content: '✔️';
+      position: absolute;
+      left: 0;
+      color: #FFA726;
+    }
+    .cta {
+      background: linear-gradient(120deg, #3CB371 0%, #1976D2 100%);
+      color: #fff;
+      padding: 80px 0;
+      text-align: center;
+    }
+    .cta .btn-primary {
+      background: #FFA726;
+      color: #fff;
+    }
+    .cta .btn-primary:hover {
+      background: #fff;
+      color: #3CB371;
+    }
+    footer {
+      background: #222;
+      color: #fff;
+      text-align: center;
+      padding: 40px 0 20px 0;
+      font-size: 1em;
+    }
+    @media (max-width: 900px) {
+      .modules-list {
+        flex-direction: column;
+        gap: 24px;
+      }
+      .module-card {
+        width: 90%;
+        margin: 0 auto;
+      }
+      .swiper-slide {
+        height: 220px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <section class="hero">
+    <div class="logo-highlight">
+      <img src="/static/img/logo.png" alt="AgrisData Logo" />
+      <span>AgrisData</span>
+    </div>
+    <h1>Transforme sua gestão agrícola<br><span class="highlight">com tecnologia de ponta</span></h1>
+    <p>Plataforma completa para produtores de melão, melancia, milho e muito mais.<br>Tenha controle total do campo ao financeiro, onde estiver.</p>
+    <div class="hero-buttons">
+      <a href="#demo" class="btn btn-primary">Agende uma demonstração</a>
+      <a href="#modules" class="btn btn-secondary">Conheça os módulos</a>
+      <a href="/login/" class="btn btn-primary">Entrar no Sistema</a>
+    </div>
+    <!-- Carrossel de imagens -->
+    <div class="swiper">
+      <div class="swiper-wrapper">
+        <div class="swiper-slide"><img src="/static/carousel/campo-melao.jpg" alt="Campo de melão"></div>
+        <div class="swiper-slide"><img src="/static/carousel/campo-melancia.jpg" alt="Campo de melancia"></div>
+        <div class="swiper-slide"><img src="/static/carousel/plantio-milho.jpg" alt="Plantio de milho"></div>
+        <div class="swiper-slide"><img src="/static/carousel/uso-notebook.jpg" alt="Pessoa usando sistema no notebook"></div>
+        <div class="swiper-slide"><img src="/static/carousel/uso-tablet.jpg" alt="Pessoa usando sistema no tablet"></div>
+        <div class="swiper-slide"><img src="/static/carousel/uso-mobile.jpg" alt="Pessoa usando sistema no celular"></div>
+      </div>
+      <div class="swiper-pagination"></div>
+      <div class="swiper-button-prev"></div>
+      <div class="swiper-button-next"></div>
+    </div>
+  </section>
+  <section class="modules" id="modules">
+    <h2>Módulos que atendem toda a cadeia produtiva</h2>
+    <div class="modules-list">
+      <div class="module-card">
+        <img src="/static/icons/safra.svg" alt="Gestão de Safra">
+        <h3>Gestão de Safra</h3>
+        <p>Planejamento, acompanhamento e análise de produtividade.</p>
+      </div>
+      <div class="module-card">
+        <img src="/static/icons/estoque.svg" alt="Estoque & Insumos">
+        <h3>Estoque & Insumos</h3>
+        <p>Controle total de insumos, defensivos e produtos acabados.</p>
+      </div>
+      <div class="module-card">
+        <img src="/static/icons/financeiro.svg" alt="Financeiro">
+        <h3>Financeiro</h3>
+        <p>Gestão de contas, fluxo de caixa e relatórios automáticos.</p>
+      </div>
+      <div class="module-card">
+        <img src="/static/icons/rh.svg" alt="Recursos Humanos">
+        <h3>Recursos Humanos</h3>
+        <p>Gestão de equipes, ponto, folha e compliance trabalhista.</p>
+      </div>
+      <div class="module-card">
+        <img src="/static/icons/exportacao.svg" alt="Exportação & Compliance">
+        <h3>Exportação & Compliance</h3>
+        <p>Documentação, rastreabilidade e integração com órgãos reguladores.</p>
+      </div>
+      <!-- Adicione outros módulos conforme seu PRD -->
+    </div>
+  </section>
+  <section class="differentials">
+    <h2>Por que escolher a AgrisData?</h2>
+    <ul>
+      <li>Plataforma 100% online e responsiva</li>
+      <li>Acesso por computador, tablet e celular</li>
+      <li>Suporte especializado</li>
+      <li>Rastreabilidade ponta a ponta</li>
+      <li>Atualizações constantes</li>
+    </ul>
+  </section>
+  <section class="cta" id="demo">
+    <h2>Pronto para revolucionar sua produção?</h2>
+    <a href="/contato/" class="btn btn-primary">Solicite uma demonstração</a>
+  </section>
+  <footer>
+    © 2026 AgrisData. Todos os direitos reservados.
+  </footer>
+  <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+  <script>
+    const swiper = new Swiper('.swiper', {
+      loop: true,
+      pagination: { el: '.swiper-pagination', clickable: true },
+      navigation: { nextEl: '.swiper-button-next', prevEl: '.swiper-button-prev' },
+      autoplay: { delay: 3500, disableOnInteraction: false },
+    });
+  </script>
+</body>
+</html>

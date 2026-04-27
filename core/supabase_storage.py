@@ -48,6 +48,10 @@ class RoutedSupabaseStorage(Storage):
             self.client = None
             self.enabled = False
 
+    def deconstruct(self):
+        """Permite que o Django serialize este storage nas migrations."""
+        return ('core.supabase_storage.RoutedSupabaseStorage', [], {})
+
     def _open(self, name, mode='rb'):
         normalized_name = self._normalize_name(name)
         if not self.enabled or not self.client:

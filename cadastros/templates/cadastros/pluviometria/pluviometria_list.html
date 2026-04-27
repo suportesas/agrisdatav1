@@ -1,0 +1,224 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Pluviometria | ERP Agrícola{% endblock %}
+{% block page_title %}Pluviometria — Registros de Chuva{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+
+  <!-- Cards de resumo -->
+  <div class="row mb-4">
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm bg-primary text-white">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <h6 class="opacity-75 mb-1">Total no Período</h6>
+              <h2 class="mb-0">{{ total_mm|floatformat:1 }} mm</h2>
+            </div>
+            <i class="bi bi-cloud-rain fs-1 opacity-50"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm bg-info text-white">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <h6 class="opacity-75 mb-1">Registros</h6>
+              <h2 class="mb-0">{{ registros|length }}</h2>
+            </div>
+            <i class="bi bi-calendar-check fs-1 opacity-50"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm bg-success text-white">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <h6 class="opacity-75 mb-1">Fazendas Cadastradas</h6>
+              <h2 class="mb-0">{{ fazendas|length }}</h2>
+            </div>
+            <i class="bi bi-tree fs-1 opacity-50"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm bg-warning text-dark">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <h6 class="mb-1">Novo Registro</h6>
+              <a href="{% url 'cadastros:pluviometria_create' %}" class="btn btn-dark btn-sm">
+                <i class="bi bi-plus-circle"></i> Registrar
+              </a>
+            </div>
+            <i class="bi bi-plus-square fs-1 opacity-50"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Gráfico -->
+  {% if chart_labels %}
+  <div class="card shadow-sm border-0 rounded-4 mb-4">
+    <div class="card-header bg-white border-0 pt-3 pb-0">
+      <h6 class="fw-bold text-secondary mb-0"><i class="bi bi-bar-chart-line text-primary"></i> Histórico de Precipitação</h6>
+    </div>
+    <div class="card-body">
+      <canvas id="chartChuva" height="90"></canvas>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Filtros -->
+  <div class="card shadow-sm border-0 rounded-4 mb-4">
+    <div class="card-body">
+      <form method="get" class="row g-2 align-items-end">
+        <div class="col-md-3">
+          <label class="form-label small fw-semibold">Fazenda</label>
+          <select class="form-select" name="fazenda">
+            <option value="">Todas as fazendas</option>
+            {% for f in fazendas %}
+              <option value="{{ f.id }}" {% if fazenda_selecionada|stringformat:"s" == f.id|stringformat:"s" %}selected{% endif %}>
+                {{ f.nome }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small fw-semibold">Ano</label>
+          <input type="number" class="form-control" name="ano" value="{{ ano_selecionado }}" placeholder="Ex: 2026" min="2020" max="2030">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small fw-semibold">Mês</label>
+          <select class="form-select" name="mes">
+            <option value="">Todos</option>
+              <option value="1" {% if mes_selecionado == "1" %}selected{% endif %}>Janeiro</option>
+            <option value="2" {% if mes_selecionado == "2" %}selected{% endif %}>Fevereiro</option>
+            <option value="3" {% if mes_selecionado == "3" %}selected{% endif %}>Março</option>
+            <option value="4" {% if mes_selecionado == "4" %}selected{% endif %}>Abril</option>
+            <option value="5" {% if mes_selecionado == "5" %}selected{% endif %}>Maio</option>
+            <option value="6" {% if mes_selecionado == "6" %}selected{% endif %}>Junho</option>
+            <option value="7" {% if mes_selecionado == "7" %}selected{% endif %}>Julho</option>
+            <option value="8" {% if mes_selecionado == "8" %}selected{% endif %}>Agosto</option>
+            <option value="9" {% if mes_selecionado == "9" %}selected{% endif %}>Setembro</option>
+            <option value="10" {% if mes_selecionado == "10" %}selected{% endif %}>Outubro</option>
+            <option value="11" {% if mes_selecionado == "11" %}selected{% endif %}>Novembro</option>
+            <option value="12" {% if mes_selecionado == "12" %}selected{% endif %}>Dezembro</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <button type="submit" class="btn btn-primary w-100">
+            <i class="bi bi-funnel"></i> Filtrar
+          </button>
+        </div>
+        <div class="col-md-1">
+          <a href="{% url 'cadastros:pluviometria_list' %}" class="btn btn-outline-secondary w-100">
+            <i class="bi bi-x"></i>
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Tabela -->
+  <div class="card shadow-sm border-0 rounded-4">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Data</th>
+            <th>Fazenda</th>
+            <th class="text-end">Precipitação (mm)</th>
+            <th>Tipo</th>
+            <th>Fonte</th>
+            <th>Responsável</th>
+            <th class="text-center" style="width:120px;">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in registros %}
+          <tr>
+            <td><strong>{{ r.data|date:"d/m/Y" }}</strong></td>
+            <td>{{ r.fazenda.nome }}</td>
+            <td class="text-end">
+              <span class="badge bg-primary fs-6">{{ r.mm_chuva }} mm</span>
+            </td>
+            <td>
+              {% if r.tipo_registro == 'AUTOMATICO' %}
+                <span class="badge bg-info text-dark"><i class="bi bi-cpu"></i> Automático</span>
+              {% else %}
+                <span class="badge bg-secondary"><i class="bi bi-pencil"></i> Manual</span>
+              {% endif %}
+            </td>
+            <td class="text-muted small">{{ r.fonte|default:"—" }}</td>
+            <td class="small">{{ r.responsavel.get_full_name|default:r.responsavel.username|default:"—" }}</td>
+            <td class="text-center">
+              <div class="btn-group btn-group-sm">
+                <a href="{% url 'cadastros:pluviometria_update' r.pk %}" class="btn btn-outline-primary" title="Editar">
+                  <i class="bi bi-pencil"></i>
+                </a>
+                <a href="{% url 'cadastros:pluviometria_delete' r.pk %}" class="btn btn-outline-danger" title="Excluir">
+                  <i class="bi bi-trash"></i>
+                </a>
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="7" class="text-center py-5 text-muted">
+              <i class="bi bi-cloud-slash fs-3 d-block mb-2"></i>
+              Nenhum registro de pluviometria encontrado.
+              <br>
+              <a href="{% url 'cadastros:pluviometria_create' %}" class="btn btn-sm btn-primary mt-2">
+                <i class="bi bi-plus"></i> Registrar primeira chuva
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+{% if chart_labels %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+(function () {
+  const labels = {{ chart_labels|safe }};
+  const data   = {{ chart_data|safe }};
+  new Chart(document.getElementById('chartChuva'), {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Precipitação (mm)',
+        data: data,
+        backgroundColor: 'rgba(13,110,253,0.6)',
+        borderColor: 'rgba(13,110,253,1)',
+        borderWidth: 1,
+        borderRadius: 4,
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { beginAtZero: true, title: { display: true, text: 'mm' } },
+        x: { title: { display: true, text: 'Data' } }
+      }
+    }
+  });
+})();
+</script>
+{% endif %}
+{% endblock %}

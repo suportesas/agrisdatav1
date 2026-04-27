@@ -10064,3 +10064,562 @@ class ViagemColheita(models.Model):
     def proximo_numero(cls, carrocao):
         ultimo = cls.objects.filter(carrocao=carrocao).order_by('-numero_viagem').first()
         return (ultimo.numero_viagem + 1) if ultimo else 1
+
+
+# ============================================================
+# FASE 2 — PRODUÇÃO AGRÍCOLA: PLUVIOMETRIA (RF-107)
+# ============================================================
+
+class RegistroPluviometria(models.Model):
+    TIPO_CHOICES = [
+        ('MANUAL', 'Manual'),
+        ('AUTOMATICO', 'Automático'),
+    ]
+
+    empresa = models.ForeignKey(
+        'empresas.Empresa', on_delete=models.CASCADE, related_name='registros_pluviometria'
+    )
+    fazenda = models.ForeignKey(
+        Fazenda, on_delete=models.CASCADE, related_name='registros_pluviometria'
+    )
+    data = models.DateField()
+    mm_chuva = models.DecimalField(max_digits=6, decimal_places=1, validators=[MinValueValidator(Decimal('0'))])
+    tipo_registro = models.CharField(max_length=20, choices=TIPO_CHOICES, default='MANUAL')
+    fonte = models.CharField(max_length=100, blank=True, help_text='Pluviômetro, estação meteorológica, etc.')
+    responsavel = models.ForeignKey(
+        'usuarios.Usuario', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='registros_pluviometria'
+    )
+    observacoes = models.TextField(blank=True)
+    data_cadastro = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-data']
+        unique_together = ['fazenda', 'data']
+        verbose_name = 'Registro de Pluviometria'
+        verbose_name_plural = 'Registros de Pluviometria'
+
+    def __str__(self):
+        return f"{self.fazenda.nome} — {self.data.strftime('%d/%m/%Y')} — {self.mm_chuva} mm"
+
+
+# ============================================================
+# FASE 2 — PRODUÇÃO AGRÍCOLA: QUALIDADE DE CAMPO (RF-108)
+# ============================================================
+
+class InspecaoQualidadeCampo(models.Model):
+    TIPO_CHOICES = [
+        ('FENOLOGICA', 'Fenológica'),
+        ('VISUAL', 'Visual'),
+        ('PRE_COLHEITA', 'Pré-colheita'),
+        ('POS_COLHEITA', 'Pós-colheita'),
+    ]
+    COLORACAO_CHOICES = [
+        ('VERDE', 'Verde'),
+        ('INICIO_MATURACAO', 'Início de Maturação'),
+        ('MADURO', 'Maduro'),
+        ('PASSADO', 'Passado'),
+    ]
+    RESULTADO_CHOICES = [
+        ('APROVADO', 'Aprovado'),
+        ('APROVADO_COM_RESSALVA', 'Aprovado c/ Ressalva'),
+        ('REPROVADO', 'Reprovado'),
+    ]
+
+    empresa = models.ForeignKey(
+        'empresas.Empresa', on_delete=models.CASCADE, related_name='inspecoes_qualidade_campo'
+    )
+    talhao = models.ForeignKey(
+        Talhao, on_delete=models.PROTECT, related_name='inspecoes_qualidade'
+    )
+    safra = models.ForeignKey(
+        Safra, on_delete=models.SET_NULL, null=True, blank=True, related_name='inspecoes_qualidade'
+    )
+    os = models.ForeignKey(
+        OrdemServico, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='inspecoes_qualidade', verbose_name='Ordem de Serviço'
+    )
+    data_inspecao = models.DateField()
+    responsavel = models.ForeignKey(
+        'usuarios.Usuario', on_delete=models.SET_NULL, null=True, related_name='inspecoes_qualidade_campo'
+    )
+    tipo_inspecao = models.CharField(max_length=30, choices=TIPO_CHOICES)
+    estagio_cultura = models.CharField(max_length=50, blank=True, help_text='Fase fenológica atual da cultura')
+    brix = models.DecimalField(max_digits=5, decimal_places=1, null=True, blank=True, verbose_name='Brix (°Bx)')
+    peso_medio_fruto_g = models.DecimalField(
+        max_digits=7, decimal_places=1, null=True, blank=True, verbose_name='Peso médio do fruto (g)'
+    )
+    percentual_defeitos = models.DecimalField(
+        max_digits=5, decimal_places=2, null=True, blank=True,
+        validators=[MinValueValidator(Decimal('0')), MaxValueValidator(Decimal('100'))],
+        verbose_name='% Defeitos'
+    )
+    coloracao = models.CharField(max_length=30, choices=COLORACAO_CHOICES, blank=True)
+    resultado = models.CharField(max_length=30, choices=RESULTADO_CHOICES)
+    previsao_colheita_dias = models.IntegerField(null=True, blank=True, verbose_name='Previsão p/ colheita (dias)')
+    fotos = models.ImageField(upload_to='qualidade_campo/%Y/%m/', null=True, blank=True)
+    observacoes = models.TextField(blank=True)
+    data_cadastro = models.DateTimeField(auto_now_add=True)
+    cadastrado_por = models.ForeignKey(
+        'usuarios.Usuario', related_name='inspecoes_qualidade_criadas',
+        null=True, on_delete=models.SET_NULL
+    )
+
+    class Meta:
+        ordering = ['-data_inspecao']
+        verbose_name = 'Inspeção de Qualidade de Campo'
+        verbose_name_plural = 'Inspeções de Qualidade de Campo'
+
+    def __str__(self):
+        return f"Inspeção {self.talhao.codigo} — {self.data_inspecao.strftime('%d/%m/%Y')} — {self.get_resultado_display()}"
+
+
+# ============================================================
+# FASE 2 — PRODUÇÃO AGRÍCOLA: CADERNO DE CAMPO (RF-111)
+# ============================================================
+
+class RegistroCadernoCampo(models.Model):
+    TIPO_ATIVIDADE_CHOICES = [
+        ('PREPARO_SOLO', 'Preparo de Solo'),
+        ('PLANTIO', 'Plantio'),
+        ('IRRIGACAO', 'Irrigação'),
+        ('ADUBACAO', 'Adubação'),
+        ('APLICACAO_DEFENSIVO', 'Aplicação de Defensivo'),
+        ('COLHEITA', 'Colheita'),
+        ('MANUTENCAO', 'Manutenção'),
+        ('MONITORAMENTO', 'Monitoramento'),
+        ('OUTRO', 'Outro'),
+    ]
+    CONDICAO_TEMPO_CHOICES = [
+        ('ENSOLARADO', 'Ensolarado'),
+        ('NUBLADO', 'Nublado'),
+        ('CHUVOSO', 'Chuvoso'),
+        ('VENTO_FORTE', 'Vento Forte'),
+        ('PARCIALMENTE_NUBLADO', 'Parcialmente Nublado'),
+    ]
+
+    empresa = models.ForeignKey(
+        'empresas.Empresa', on_delete=models.CASCADE, related_name='caderno_campo'
+    )
+    talhao = models.ForeignKey(
+        Talhao, on_delete=models.PROTECT, related_name='caderno_campo'
+    )
+    safra = models.ForeignKey(
+        Safra, on_delete=models.SET_NULL, null=True, blank=True, related_name='caderno_campo'
+    )
+    os = models.ForeignKey(
+        OrdemServico, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='caderno_campo', verbose_name='Ordem de Serviço'
+    )
+    data_atividade = models.DateField()
+    tipo_atividade = models.CharField(max_length=30, choices=TIPO_ATIVIDADE_CHOICES)
+    atividade = models.CharField(max_length=200, help_text='Descrição resumida da atividade realizada')
+    temperatura = models.DecimalField(max_digits=4, decimal_places=1, null=True, blank=True, verbose_name='Temperatura (°C)')
+    umidade = models.IntegerField(
+        null=True, blank=True,
+        validators=[MinValueValidator(0), MaxValueValidator(100)],
+        verbose_name='Umidade relativa (%)'
+    )
+    condicao_tempo = models.CharField(max_length=30, choices=CONDICAO_TEMPO_CHOICES, blank=True)
+    responsavel = models.ForeignKey(
+        'usuarios.Usuario', on_delete=models.SET_NULL, null=True, related_name='registros_caderno_campo'
+    )
+    observacoes = models.TextField(blank=True)
+    fotos = models.ImageField(upload_to='caderno_campo/%Y/%m/', null=True, blank=True)
+    data_cadastro = models.DateTimeField(auto_now_add=True)
+    cadastrado_por = models.ForeignKey(
+        'usuarios.Usuario', related_name='caderno_campo_criados',
+        null=True, on_delete=models.SET_NULL
+    )
+
+    class Meta:
+        ordering = ['-data_atividade', '-data_cadastro']
+        verbose_name = 'Registro do Caderno de Campo'
+        verbose_name_plural = 'Registros do Caderno de Campo'
+
+    def __str__(self):
+        return f"{self.talhao.codigo} — {self.get_tipo_atividade_display()} — {self.data_atividade.strftime('%d/%m/%Y')}"
+
+
+class RegistroCadernoCampoInsumo(models.Model):
+    registro = models.ForeignKey(
+        RegistroCadernoCampo, on_delete=models.CASCADE, related_name='insumos_utilizados'
+    )
+    produto = models.ForeignKey('produtos.Produto', on_delete=models.PROTECT)
+    quantidade = models.DecimalField(max_digits=12, decimal_places=3, validators=[MinValueValidator(Decimal('0.001'))])
+    unidade_medida = models.ForeignKey('produtos.UnidadeMedida', on_delete=models.PROTECT)
+    receituario_numero = models.CharField(max_length=50, blank=True, verbose_name='Nº Receituário Agronômico')
+    carencia_dias = models.IntegerField(null=True, blank=True, verbose_name='Carência (dias)')
+    observacoes = models.CharField(max_length=255, blank=True)
+
+    class Meta:
+        verbose_name = 'Insumo do Caderno de Campo'
+        verbose_name_plural = 'Insumos do Caderno de Campo'
+
+    def __str__(self):
+        return f"{self.produto} — {self.quantidade} {self.unidade_medida}"
+
+
+class RegistroCadernoCampoFuncionario(models.Model):
+    registro = models.ForeignKey(
+        RegistroCadernoCampo, on_delete=models.CASCADE, related_name='funcionarios_atividade'
+    )
+    funcionario = models.ForeignKey(Funcionario, on_delete=models.PROTECT)
+    horas_trabalhadas = models.DecimalField(
+        max_digits=5, decimal_places=2, null=True, blank=True,
+        validators=[MinValueValidator(Decimal('0.01'))],
+        verbose_name='Horas trabalhadas'
+    )
+
+    class Meta:
+        verbose_name = 'Funcionário do Caderno de Campo'
+        verbose_name_plural = 'Funcionários do Caderno de Campo'
+        unique_together = ['registro', 'funcionario']
+
+    def __str__(self):
+        return f"{self.funcionario} — {self.horas_trabalhadas or '—'} h"
+
+
+# ============================================================
+# FASE 2 — PRODUÇÃO AGRÍCOLA: ESTUFAS E TRANSPLANTIO (RF-1200 a RF-1254)
+# ============================================================
+
+class Estufa(models.Model):
+    TIPO_CHOICES = [
+        ('PLASTICO', 'Plástico'),
+        ('VIDRO', 'Vidro'),
+        ('SOMBRITE', 'Sombrite'),
+        ('OUTRO', 'Outro'),
+    ]
+
+    empresa = models.ForeignKey(
+        'empresas.Empresa', on_delete=models.CASCADE, related_name='estufas'
+    )
+    fazenda = models.ForeignKey(
+        Fazenda, on_delete=models.CASCADE, related_name='estufas'
+    )
+    nome = models.CharField(max_length=100)
+    codigo = models.CharField(max_length=20)
+    area_m2 = models.DecimalField(
+        max_digits=10, decimal_places=2, null=True, blank=True,
+        validators=[MinValueValidator(Decimal('0.01'))], verbose_name='Área (m²)'
+    )
+    capacidade_bandejas = models.IntegerField(null=True, blank=True, verbose_name='Capacidade (bandejas)')
+    tipo = models.CharField(max_length=30, choices=TIPO_CHOICES, default='PLASTICO')
+    ativo = models.BooleanField(default=True)
+    observacoes = models.TextField(blank=True)
+    data_cadastro = models.DateTimeField(auto_now_add=True)
+    cadastrado_por = models.ForeignKey(
+        'usuarios.Usuario', null=True, on_delete=models.SET_NULL, related_name='estufas_criadas'
+    )
+
+    class Meta:
+        unique_together = ['empresa', 'fazenda', 'codigo']
+        ordering = ['fazenda', 'nome']
+        verbose_name = 'Estufa'
+        verbose_name_plural = 'Estufas'
+
+    def __str__(self):
+        return f"{self.nome} ({self.codigo}) — {self.fazenda.nome}"
+
+    def get_lotes_ativos(self):
+        return self.lotes.exclude(status__in=['TRANSPLANTADO', 'ENCERRADO'])
+
+
+class LoteMuda(models.Model):
+    STATUS_CHOICES = [
+        ('SEMEADO', 'Semeado'),
+        ('EM_CRESCIMENTO', 'Em Crescimento'),
+        ('PRONTO', 'Pronto p/ Transplantio'),
+        ('TRANSPLANTADO', 'Transplantado'),
+        ('ENCERRADO', 'Encerrado'),
+    ]
+    STATUS_AVANCAR = {
+        'SEMEADO': 'EM_CRESCIMENTO',
+        'EM_CRESCIMENTO': 'PRONTO',
+    }
+
+    empresa = models.ForeignKey(
+        'empresas.Empresa', on_delete=models.CASCADE, related_name='lotes_muda'
+    )
+    estufa = models.ForeignKey(Estufa, on_delete=models.CASCADE, related_name='lotes')
+    cultura = models.ForeignKey(Cultura, on_delete=models.PROTECT, related_name='lotes_muda')
+    cultivar = models.CharField(max_length=100, blank=True)
+    codigo_lote = models.CharField(max_length=30, unique=True)
+    lote_semente = models.CharField(max_length=100, blank=True, verbose_name='Lote da semente', help_text='Código do lote de semente para rastreabilidade (RF-1202)')
+    data_semeadura = models.DateField()
+    quantidade_semeada = models.IntegerField(validators=[MinValueValidator(1)])
+    data_prevista_pronto = models.DateField(null=True, blank=True, verbose_name='Data prevista para transplantio')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='SEMEADO')
+    responsavel = models.ForeignKey(
+        Funcionario, null=True, blank=True, on_delete=models.SET_NULL, related_name='lotes_responsavel'
+    )
+    observacoes = models.TextField(blank=True)
+    data_cadastro = models.DateTimeField(auto_now_add=True)
+    cadastrado_por = models.ForeignKey(
+        'usuarios.Usuario', null=True, on_delete=models.SET_NULL, related_name='lotes_criados'
+    )
+
+    class Meta:
+        ordering = ['-data_semeadura']
+        verbose_name = 'Lote de Mudas'
+        verbose_name_plural = 'Lotes de Mudas'
+
+    def __str__(self):
+        return f"{self.codigo_lote} — {self.cultura.nome} ({self.get_status_display()})"
+
+    @property
+    def quantidade_perdida(self):
+        return self.perdas.aggregate(t=models.Sum('quantidade_perdida'))['t'] or 0
+
+    @property
+    def quantidade_transplantada(self):
+        return self.transplantios.aggregate(t=models.Sum('quantidade_transplantada'))['t'] or 0
+
+    @property
+    def quantidade_disponivel(self):
+        return max(0, self.quantidade_semeada - self.quantidade_perdida - self.quantidade_transplantada)
+
+    @property
+    def custo_total_estufa(self):
+        from django.db.models import F as DbF
+        total = self.aplicacoes.aggregate(
+            t=models.Sum(DbF('quantidade') * DbF('custo_unitario'))
+        )['t']
+        return total or Decimal('0.00')
+
+    @property
+    def custo_por_muda(self):
+        if self.quantidade_disponivel > 0:
+            return self.custo_total_estufa / self.quantidade_disponivel
+        return Decimal('0.00')
+
+    @property
+    def percentual_perdas(self):
+        if self.quantidade_semeada > 0:
+            return round((self.quantidade_perdida / self.quantidade_semeada) * 100, 1)
+        return 0
+
+    @classmethod
+    def gerar_codigo_lote(cls, empresa_id):
+        from django.utils import timezone
+        ano = timezone.now().year
+        prefixo = f"LM-{ano}-"
+        ultimo = cls.objects.filter(codigo_lote__startswith=prefixo).order_by('-codigo_lote').first()
+        if ultimo:
+            try:
+                seq = int(ultimo.codigo_lote.split('-')[-1]) + 1
+            except (ValueError, IndexError):
+                seq = 1
+        else:
+            seq = 1
+        return f"{prefixo}{seq:05d}"
+
+
+class PerdaEstufa(models.Model):
+    MOTIVO_CHOICES = [
+        ('DOENCA', 'Doença'),
+        ('PRAGA', 'Praga'),
+        ('AMBIENTE', 'Fator Ambiental'),
+        ('QUALIDADE', 'Qualidade da Semente'),
+        ('OUTRO', 'Outro'),
+    ]
+
+    lote_muda = models.ForeignKey(LoteMuda, on_delete=models.CASCADE, related_name='perdas')
+    data = models.DateField()
+    quantidade_perdida = models.IntegerField(validators=[MinValueValidator(1)])
+    motivo = models.CharField(max_length=30, choices=MOTIVO_CHOICES)
+    observacao = models.TextField(blank=True)
+    responsavel = models.ForeignKey(
+        Funcionario, null=True, blank=True, on_delete=models.SET_NULL, related_name='perdas_estufa'
+    )
+
+    class Meta:
+        ordering = ['-data']
+        verbose_name = 'Perda na Estufa'
+        verbose_name_plural = 'Perdas na Estufa'
+
+    def __str__(self):
+        return f"Perda {self.lote_muda.codigo_lote} — {self.data} — {self.quantidade_perdida} un"
+
+    def clean(self):
+        if self.quantidade_perdida and self.lote_muda_id:
+            disponivel_atual = (
+                self.lote_muda.quantidade_semeada
+                - self.lote_muda.quantidade_transplantada
+                - (self.lote_muda.perdas.exclude(pk=self.pk).aggregate(t=models.Sum('quantidade_perdida'))['t'] or 0)
+            )
+            if self.quantidade_perdida > disponivel_atual:
+                raise ValidationError({'quantidade_perdida': f'Quantidade ({self.quantidade_perdida}) supera o disponível ({disponivel_atual}).'})
+
+
+class AplicacaoEstufa(models.Model):
+    TIPO_CHOICES = [
+        ('DEFENSIVO', 'Defensivo'),
+        ('FERTILIZANTE', 'Fertilizante'),
+        ('OUTRO', 'Outro'),
+    ]
+
+    lote_muda = models.ForeignKey(LoteMuda, on_delete=models.CASCADE, related_name='aplicacoes')
+    data = models.DateField()
+    tipo = models.CharField(max_length=20, choices=TIPO_CHOICES)
+    produto = models.ForeignKey('produtos.Produto', on_delete=models.PROTECT)
+    quantidade = models.DecimalField(max_digits=10, decimal_places=3, validators=[MinValueValidator(Decimal('0.001'))])
+    unidade_medida = models.ForeignKey('produtos.UnidadeMedida', on_delete=models.PROTECT)
+    custo_unitario = models.DecimalField(
+        max_digits=12, decimal_places=4, default=Decimal('0'),
+        validators=[MinValueValidator(Decimal('0'))], verbose_name='Custo unitário (R$)'
+    )
+    responsavel = models.ForeignKey(
+        Funcionario, null=True, blank=True, on_delete=models.SET_NULL, related_name='aplicacoes_estufa'
+    )
+    observacao = models.CharField(max_length=255, blank=True)
+    receituario = models.CharField(max_length=50, blank=True, verbose_name='Nº Receituário Agronômico')
+
+    class Meta:
+        ordering = ['-data']
+        verbose_name = 'Aplicação na Estufa'
+        verbose_name_plural = 'Aplicações na Estufa'
+
+    def __str__(self):
+        return f"{self.produto} — {self.lote_muda.codigo_lote} — {self.data}"
+
+    @property
+    def custo_total(self):
+        return self.quantidade * self.custo_unitario
+
+
+class MonitoramentoEstufa(models.Model):
+    NIVEL_CHOICES = [
+        ('AUSENTE', 'Ausente'),
+        ('BAIXO', 'Baixo'),
+        ('MEDIO', 'Médio'),
+        ('ALTO', 'Alto'),
+    ]
+
+    lote_muda = models.ForeignKey(LoteMuda, on_delete=models.CASCADE, related_name='monitoramentos_estufa')
+    data = models.DateField()
+    praga = models.ForeignKey(Praga, on_delete=models.PROTECT, related_name='monitoramentos_estufa')
+    nivel_infestacao = models.CharField(max_length=20, choices=NIVEL_CHOICES)
+    acao_tomada = models.TextField(blank=True)
+    responsavel = models.ForeignKey(
+        Funcionario, null=True, blank=True, on_delete=models.SET_NULL, related_name='monitoramentos_estufa'
+    )
+
+    class Meta:
+        ordering = ['-data']
+        verbose_name = 'Monitoramento na Estufa'
+        verbose_name_plural = 'Monitoramentos na Estufa'
+
+    def __str__(self):
+        return f"{self.praga.nome_comum} — {self.lote_muda.codigo_lote} — {self.data}"
+
+
+class Transplantio(models.Model):
+    TIPO_CHOICES = [
+        ('TOTAL', 'Total'),
+        ('PARCIAL', 'Parcial'),
+    ]
+
+    empresa = models.ForeignKey(
+        'empresas.Empresa', on_delete=models.CASCADE, related_name='transplantios'
+    )
+    lote_muda = models.ForeignKey(LoteMuda, on_delete=models.PROTECT, related_name='transplantios')
+    talhao = models.ForeignKey(Talhao, on_delete=models.PROTECT, related_name='transplantios')
+    safra = models.ForeignKey(
+        Safra, on_delete=models.SET_NULL, null=True, blank=True, related_name='transplantios'
+    )
+    data_transplantio = models.DateField()
+    tipo = models.CharField(max_length=10, choices=TIPO_CHOICES, default='TOTAL')
+    quantidade_transplantada = models.IntegerField(validators=[MinValueValidator(1)])
+    custo_transferido = models.DecimalField(
+        max_digits=14, decimal_places=2, default=Decimal('0'),
+        help_text='Custo proporcional da estufa transferido para o talhão (RN-17)'
+    )
+    responsavel = models.ForeignKey(
+        Funcionario, null=True, blank=True, on_delete=models.SET_NULL, related_name='transplantios'
+    )
+    observacao = models.TextField(blank=True)
+    fotos = models.ImageField(upload_to='transplantios/%Y/%m/', null=True, blank=True)
+    data_cadastro = models.DateTimeField(auto_now_add=True)
+    cadastrado_por = models.ForeignKey(
+        'usuarios.Usuario', null=True, on_delete=models.SET_NULL, related_name='transplantios_criados'
+    )
+
+    class Meta:
+        ordering = ['-data_transplantio']
+        verbose_name = 'Transplantio'
+        verbose_name_plural = 'Transplantios'
+
+    def __str__(self):
+        return f"Transplantio {self.lote_muda.codigo_lote} → {self.talhao.codigo} ({self.data_transplantio})"
+
+    def save(self, *args, **kwargs):
+        # Calcular custo a transferir (RN-17)
+        if not self.pk:  # somente na criação
+            self.custo_transferido = self.lote_muda.custo_por_muda * self.quantidade_transplantada
+        super().save(*args, **kwargs)
+        # Atualizar status do lote se esgotado
+        lote = self.lote_muda
+        if lote.quantidade_disponivel <= 0 and lote.status not in ['TRANSPLANTADO', 'ENCERRADO']:
+            lote.status = 'TRANSPLANTADO'
+            lote.save(update_fields=['status'])
+
+    def clean(self):
+        if self.talhao_id and self.talhao.status not in ['DISPONIVEL', 'PREPARACAO']:
+            raise ValidationError({'talhao': 'O talhão selecionado não está disponível para transplantio (RN-19).'})
+        if self.lote_muda_id and self.quantidade_transplantada:
+            disponivel = self.lote_muda.quantidade_disponivel
+            if self.quantidade_transplantada > disponivel:
+                raise ValidationError({'quantidade_transplantada': f'Quantidade ({self.quantidade_transplantada}) supera o disponível no lote ({disponivel}).'})
+
+
+class ReplantioTalhao(models.Model):
+    ORIGEM_CHOICES = [
+        ('ESTUFA', 'Estufa Própria'),
+        ('COMPRA', 'Compra Externa'),
+        ('OUTRA_AREA', 'Outra Área'),
+    ]
+    MOTIVO_CHOICES = [
+        ('CLIMA', 'Clima / Intempérie'),
+        ('PRAGA', 'Praga'),
+        ('DOENCA', 'Doença'),
+        ('MECANICO', 'Dano Mecânico'),
+        ('OUTRO', 'Outro'),
+    ]
+
+    empresa = models.ForeignKey(
+        'empresas.Empresa', on_delete=models.CASCADE, related_name='replantios'
+    )
+    talhao = models.ForeignKey(Talhao, on_delete=models.PROTECT, related_name='replantios')
+    safra = models.ForeignKey(
+        Safra, on_delete=models.SET_NULL, null=True, blank=True, related_name='replantios'
+    )
+    data_replantio = models.DateField()
+    quantidade = models.IntegerField(validators=[MinValueValidator(1)])
+    origem_muda = models.CharField(max_length=20, choices=ORIGEM_CHOICES)
+    lote_muda = models.ForeignKey(
+        LoteMuda, null=True, blank=True, on_delete=models.SET_NULL, related_name='replantios',
+        help_text='Preencher somente se origem for "Estufa Própria"'
+    )
+    motivo_perda = models.CharField(max_length=30, choices=MOTIVO_CHOICES)
+    custo_adicional = models.DecimalField(
+        max_digits=12, decimal_places=2, default=Decimal('0'),
+        validators=[MinValueValidator(Decimal('0'))], verbose_name='Custo adicional (R$)'
+    )
+    responsavel = models.ForeignKey(
+        Funcionario, null=True, blank=True, on_delete=models.SET_NULL, related_name='replantios'
+    )
+    observacao = models.TextField(blank=True)
+    data_cadastro = models.DateTimeField(auto_now_add=True)
+    cadastrado_por = models.ForeignKey(
+        'usuarios.Usuario', null=True, on_delete=models.SET_NULL, related_name='replantios_criados'
+    )
+
+    class Meta:
+        ordering = ['-data_replantio']
+        verbose_name = 'Replantio'
+        verbose_name_plural = 'Replantios'
+
+    def __str__(self):
+        return f"Replantio {self.talhao.codigo} — {self.data_replantio} — {self.quantidade} un"

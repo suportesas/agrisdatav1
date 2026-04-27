@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+
+{% block title %}Excluir Registro de Pluviometria | ERP Agrícola{% endblock %}
+{% block page_title %}Excluir Registro de Pluviometria{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-5">
+
+      <div class="card shadow-sm border-0 rounded-4 border-danger">
+        <div class="card-header bg-danger text-white rounded-top-4 py-3">
+          <h5 class="mb-0"><i class="bi bi-exclamation-triangle"></i> Confirmar Exclusão</h5>
+        </div>
+        <div class="card-body p-4 text-center">
+          <i class="bi bi-cloud-rain fs-1 text-danger mb-3 d-block"></i>
+          <p class="mb-1">Você está prestes a excluir o registro:</p>
+          <h5 class="fw-bold">{{ obj.mm_chuva }} mm — {{ obj.data|date:"d/m/Y" }}</h5>
+          <p class="text-muted">Fazenda: <strong>{{ obj.fazenda.nome }}</strong></p>
+          <p class="text-danger small">Esta ação não pode ser desfeita.</p>
+
+          <form method="post" class="mt-3">
+            {% csrf_token %}
+            <a href="{% url 'cadastros:pluviometria_list' %}" class="btn btn-outline-secondary me-2">
+              <i class="bi bi-x-circle"></i> Cancelar
+            </a>
+            <button type="submit" class="btn btn-danger">
+              <i class="bi bi-trash"></i> Excluir
+            </button>
+          </form>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}

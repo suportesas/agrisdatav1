@@ -12,6 +12,7 @@ from . import views_os
 from . import views_colheita
 from . import views_produtor
 from . import views_emprestimo
+from . import views_pluviometria
 
 app_name = 'cadastros'
 
@@ -498,5 +499,12 @@ urlpatterns = [
 
     # AJAX
     path('ordens-servico/<int:os_pk>/colheita/<int:etapa_pk>/ajax/carrocoes/', views_colheita.ajax_carrocoes_disponiveis, name='colheita_ajax_carrocoes'),
+
+    # ==================== PLUVIOMETRIA (RF-107) ====================
+    path('pluviometria/', views_pluviometria.pluviometria_list, name='pluviometria_list'),
+    path('pluviometria/novo/', views_pluviometria.pluviometria_create, name='pluviometria_create'),
+    path('pluviometria/<int:pk>/editar/', views_pluviometria.pluviometria_update, name='pluviometria_update'),
+    path('pluviometria/<int:pk>/excluir/', views_pluviometria.pluviometria_delete, name='pluviometria_delete'),
+    path('pluviometria/dashboard/', views_pluviometria.pluviometria_dashboard, name='pluviometria_dashboard'),
 
 ]

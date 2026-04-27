@@ -14,7 +14,7 @@ from core.models_config import ConfiguracaoSistema
 from produtos.models import Produto
 from cadastros.models import Fornecedor
 from .models import (
-    LocalEstocagem, Lote, MovimentacaoEstoque
+    LocalEstocagem, Lote, MovimentacaoEstoque, Armazem
 )
 
 
@@ -252,50 +252,114 @@ def ajuste_rapido(request):
     if request.method == 'POST':
         try:
             with transaction.atomic():
-                lote_id = request.POST.get('lote_id')
-                quantidade_nova = Decimal(request.POST.get('quantidade_nova'))
+                produto_id = request.POST.get('produto_id')
+                tipo_ajuste = request.POST.get('tipo_ajuste')
+                quantidade = Decimal(request.POST.get('quantidade'))
                 motivo = request.POST.get('motivo', 'Ajuste de inventário')
                 
-                lote = get_object_or_404(Lote, pk=lote_id, armazem__empresa=request.user.empresa)
-                quantidade_anterior = lote.quantidade_atual
-                diferenca = quantidade_nova - quantidade_anterior
+                # Buscar o produto
+                produto = get_object_or_404(Produto, pk=produto_id, categoria__empresa=request.user.empresa)
                 
-                # Atualizar lote
-                lote.quantidade_atual = quantidade_nova
-                lote.save()
+                # Buscar lotes disponiveis do produto (FIFO para saída)
+                lotes = Lote.objects.filter(
+                    produto=produto,
+                    armazem__empresa=request.user.empresa,
+                    quantidade_atual__gt=0
+                ).order_by('data_fabricacao')
                 
-
-                MovimentacaoEstoque.objects.create(
-                    empresa=request.user.empresa,
-                    tipo='AJUSTE',
-                    origem='AJUSTE_ENTRADA' if diferenca > 0 else 'AJUSTE_SAIDA',
-                    produto=lote.produto,
-                    lote=lote,
-                    quantidade=diferenca,
-                    data_movimentacao=timezone.now()
-                )
-
+                if not lotes.exists():
+                    messages.error(request, f'Nenhum lote disponível para {produto.descricao}')
+                    raise Exception('Sem lotes disponíveis')
+                
+                # Se é saída, verifica se tem estoque suficiente
+                if tipo_ajuste == 'SAIDA':
+                    estoque_disponivel = sum(lote.quantidade_atual for lote in lotes)
+                    if estoque_disponivel < quantidade and not config.permitir_estoque_negativo:
+                        messages.error(
+                            request,
+                            f'❌ Estoque insuficiente para {produto.descricao}. '
+                            f'Disponível: {estoque_disponivel}'
+                        )
+                        raise Exception('Estoque insuficiente')
+                
+                # Processar o ajuste
+                if tipo_ajuste == 'ENTRADA':
+                    # Entrada: adiciona ao primeiro lote (ou cria novo se necessário)
+                    lote = lotes.first() if lotes else None
+                    if not lote:
+                        # Criar lote novo se não existir
+                        numero_lote = f"ADJ-{produto.id}-{timezone.now().timestamp()}"
+                        lote = Lote.objects.create(
+                            produto=produto,
+                            numero_lote=numero_lote,
+                            armazem=Armazem.objects.filter(empresa=request.user.empresa).first(),
+                            data_fabricacao=timezone.now().date(),
+                            quantidade_inicial=quantidade,
+                            quantidade_atual=quantidade,
+                            preco_custo=Decimal('0.00')
+                        )
+                    else:
+                        lote.quantidade_atual += quantidade
+                        lote.save()
+                    
+                    MovimentacaoEstoque.objects.create(
+                        empresa=request.user.empresa,
+                        tipo='AJUSTE',
+                        origem='AJUSTE_ENTRADA',
+                        produto=produto,
+                        lote=lote,
+                        quantidade=quantidade,
+                        data_movimentacao=timezone.now()
+                    )
+                    
+                    messages.success(
+                        request,
+                        f'✅ Entrada de ajuste realizada! {produto.descricao} + {quantidade}'
+                    )
+                
+                else:  # SAIDA
+                    # Saída: remove dos lotes (FIFO)
+                    qtd_restante = quantidade
+                    for lote in lotes:
+                        if qtd_restante <= 0:
+                            break
+                        
+                        qtd_a_baixar = min(lote.quantidade_atual, qtd_restante)
+                        lote.quantidade_atual -= qtd_a_baixar
+                        lote.save()
+                        
+                        MovimentacaoEstoque.objects.create(
+                            empresa=request.user.empresa,
+                            tipo='AJUSTE',
+                            origem='AJUSTE_SAIDA',
+                            produto=produto,
+                            lote=lote,
+                            quantidade=-qtd_a_baixar,
+                            data_movimentacao=timezone.now()
+                        )
+                        
+                        qtd_restante -= qtd_a_baixar
+                    
+                    messages.success(
+                        request,
+                        f'✅ Saída de ajuste realizada! {produto.descricao} - {quantidade}'
+                    )
+                
                 # Recalcula estoque_atual do produto
-                lote.produto.recalcular_estoque()
+                produto.recalcular_estoque()
                 
-                messages.success(
-                    request,
-                    f'✅ Ajuste realizado! '
-                    f'{lote.produto.descricao} - De {quantidade_anterior} para {quantidade_nova}'
-                )
-                return redirect('estoque:lote_list')
+                return redirect('estoque:ajuste_rapido')
                 
         except Exception as e:
             messages.error(request, f'Erro ao processar ajuste: {str(e)}')
     
-    # GET - Listar lotes para ajuste
-    lotes = Lote.objects.filter(
-        armazem__empresa=request.user.empresa
-    ).select_related('produto', 'armazem').order_by('-data_fabricacao')
-    
+    # GET - Renderizar formulário
     context = {
         'config': config,
-        'lotes': lotes,
+        'produtos': Produto.objects.filter(
+            categoria__empresa=request.user.empresa,
+            ativo=True
+        ).select_related('categoria', 'unidade_compra'),
     }
     
     return render(request, 'estoque/ajuste_rapido.html', context)

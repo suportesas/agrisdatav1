@@ -5,7 +5,19 @@
       "Bash(python -c \"from produtos.forms import ProdutoForm; from produtos.models import Produto; p = Produto\\(\\); print\\('classes:', p.get_classes_agronomicas_display\\(\\)\\); print\\('OK'\\)\")",
       "Bash(python manage.py shell -c \"from produtos.forms import ProdutoForm; from produtos.models import Produto; p = Produto\\(\\); print\\('classes:', p.get_classes_agronomicas_display\\(\\)\\); print\\('OK'\\)\")",
       "Bash(python -c \"import storage3; print\\(storage3.__version__\\)\")",
-      "Bash(python manage.py shell -c ' *)"
+      "Bash(python manage.py shell -c ' *)",
+      "Bash(xargs -I {} bash -c 'echo \"=== {} ===\" && grep -E \"^\\(def |class \\)\" {} | head -15')",
+      "Bash(xargs grep *)",
+      "Bash(sed 's/class //')",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(python manage.py check --app-label cadastros)",
+      "Bash(python manage.py check)",
+      "Bash(python manage.py makemigrations cadastros --name=\"fase2_pluviometria_qualidade_caderno_estufas\")",
+      "Bash(python -c ' *)",
+      "Bash(python manage.py migrate)",
+      "Bash(python -c \"from cadastros.forms import RegistroPluviometriaForm, InspecaoQualidadeCampoForm, RegistroCadernoCampoForm, EstufaForm, LoteMudaForm, TransplantioForm; print\\('Forms OK'\\)\")",
+      "Bash(python manage.py check --deploy)"
     ]
   }
 }

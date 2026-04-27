@@ -1,0 +1,110 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }} | ERP Agrícola{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-7">
+
+      <div class="card shadow-sm border-0 rounded-4">
+        <div class="card-header bg-primary text-white rounded-top-4 py-3">
+          <h5 class="mb-0"><i class="bi bi-cloud-rain-heavy"></i> {{ title }}</h5>
+        </div>
+        <div class="card-body p-4">
+
+          <form method="post" novalidate>
+            {% csrf_token %}
+
+            <div class="row g-3">
+
+              <!-- Fazenda -->
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Fazenda <span class="text-danger">*</span></label>
+                {{ form.fazenda }}
+                {% if form.fazenda.errors %}
+                  <div class="text-danger small mt-1">{{ form.fazenda.errors }}</div>
+                {% endif %}
+              </div>
+
+              <!-- Data -->
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Data do Registro <span class="text-danger">*</span></label>
+                {{ form.data }}
+                {% if form.data.errors %}
+                  <div class="text-danger small mt-1">{{ form.data.errors }}</div>
+                {% endif %}
+              </div>
+
+              <!-- mm_chuva -->
+              <div class="col-md-4">
+                <label class="form-label fw-semibold">Precipitação (mm) <span class="text-danger">*</span></label>
+                <div class="input-group">
+                  <span class="input-group-text"><i class="bi bi-cloud-rain"></i></span>
+                  {{ form.mm_chuva }}
+                  <span class="input-group-text">mm</span>
+                </div>
+                {% if form.mm_chuva.errors %}
+                  <div class="text-danger small mt-1">{{ form.mm_chuva.errors }}</div>
+                {% endif %}
+              </div>
+
+              <!-- Tipo de Registro -->
+              <div class="col-md-4">
+                <label class="form-label fw-semibold">Tipo de Registro</label>
+                {{ form.tipo_registro }}
+                {% if form.tipo_registro.errors %}
+                  <div class="text-danger small mt-1">{{ form.tipo_registro.errors }}</div>
+                {% endif %}
+              </div>
+
+              <!-- Responsável -->
+              <div class="col-md-4">
+                <label class="form-label fw-semibold">Responsável</label>
+                {{ form.responsavel }}
+                {% if form.responsavel.errors %}
+                  <div class="text-danger small mt-1">{{ form.responsavel.errors }}</div>
+                {% endif %}
+              </div>
+
+              <!-- Fonte -->
+              <div class="col-12">
+                <label class="form-label fw-semibold">Fonte / Equipamento</label>
+                {{ form.fonte }}
+                <div class="form-text">Ex: Pluviômetro Campo Norte, Estação Meteorológica INMET</div>
+                {% if form.fonte.errors %}
+                  <div class="text-danger small mt-1">{{ form.fonte.errors }}</div>
+                {% endif %}
+              </div>
+
+              <!-- Observações -->
+              <div class="col-12">
+                <label class="form-label fw-semibold">Observações</label>
+                {{ form.observacoes }}
+                {% if form.observacoes.errors %}
+                  <div class="text-danger small mt-1">{{ form.observacoes.errors }}</div>
+                {% endif %}
+              </div>
+
+            </div>
+
+            <div class="d-flex justify-content-between mt-4">
+              <a href="{% url 'cadastros:pluviometria_list' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Voltar
+              </a>
+              <button type="submit" class="btn btn-primary px-4">
+                <i class="bi bi-check-circle"></i>
+                {% if obj %}Salvar Alterações{% else %}Registrar Chuva{% endif %}
+              </button>
+            </div>
+
+          </form>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}

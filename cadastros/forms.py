@@ -5255,3 +5255,377 @@ class ViagemColheitaForm(forms.ModelForm):
         self.fields['hora_saida_campo'].required = False
         self.fields['hora_chegada_balanca'].required = False
         self.fields['foto_romaneio'].required = False
+
+
+# ============================================================
+# FASE 2 — FORMS: PLUVIOMETRIA (RF-107)
+# ============================================================
+
+from .models import RegistroPluviometria
+
+class RegistroPluviometriaForm(forms.ModelForm):
+    class Meta:
+        model = RegistroPluviometria
+        fields = ['fazenda', 'data', 'mm_chuva', 'tipo_registro', 'fonte', 'responsavel', 'observacoes']
+        widgets = {
+            'fazenda': forms.Select(attrs={'class': 'form-select'}),
+            'data': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'mm_chuva': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1', 'placeholder': 'Ex: 12.5'}),
+            'tipo_registro': forms.Select(attrs={'class': 'form-select'}),
+            'fonte': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Pluviômetro Campo Sul'}),
+            'responsavel': forms.Select(attrs={'class': 'form-select'}),
+            'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        self.fields['responsavel'].required = False
+        self.fields['fonte'].required = False
+        self.fields['observacoes'].required = False
+        if self.user and self.user.empresa:
+            self.fields['fazenda'].queryset = Fazenda.objects.filter(empresa=self.user.empresa, ativa=True)
+            from usuarios.models import Usuario
+            self.fields['responsavel'].queryset = Usuario.objects.filter(empresa=self.user.empresa, is_active=True)
+
+    def clean_data(self):
+        data = self.cleaned_data.get('data')
+        from django.utils import timezone
+        if data and data > timezone.now().date():
+            raise forms.ValidationError('A data não pode ser futura.')
+        return data
+
+
+# ============================================================
+# FASE 2 — FORMS: QUALIDADE DE CAMPO (RF-108)
+# ============================================================
+
+from .models import InspecaoQualidadeCampo
+
+class InspecaoQualidadeCampoForm(forms.ModelForm):
+    class Meta:
+        model = InspecaoQualidadeCampo
+        fields = [
+            'talhao', 'safra', 'os', 'data_inspecao', 'tipo_inspecao', 'responsavel',
+            'estagio_cultura', 'brix', 'peso_medio_fruto_g', 'percentual_defeitos',
+            'coloracao', 'resultado', 'previsao_colheita_dias', 'fotos', 'observacoes',
+        ]
+        widgets = {
+            'talhao': forms.Select(attrs={'class': 'form-select'}),
+            'safra': forms.Select(attrs={'class': 'form-select'}),
+            'os': forms.Select(attrs={'class': 'form-select'}),
+            'data_inspecao': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'tipo_inspecao': forms.Select(attrs={'class': 'form-select'}),
+            'responsavel': forms.Select(attrs={'class': 'form-select'}),
+            'estagio_cultura': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Floração, Frutificação'}),
+            'brix': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1', 'placeholder': '°Bx'}),
+            'peso_medio_fruto_g': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1', 'placeholder': 'g'}),
+            'percentual_defeitos': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': '%'}),
+            'coloracao': forms.Select(attrs={'class': 'form-select'}),
+            'resultado': forms.Select(attrs={'class': 'form-select'}),
+            'previsao_colheita_dias': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'dias'}),
+            'fotos': forms.ClearableFileInput(attrs={'class': 'form-control'}),
+            'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        optional = ['safra', 'os', 'estagio_cultura', 'brix', 'peso_medio_fruto_g',
+                    'percentual_defeitos', 'coloracao', 'previsao_colheita_dias', 'fotos', 'observacoes']
+        for f in optional:
+            self.fields[f].required = False
+        if self.user and self.user.empresa:
+            from .models import OrdemServico
+            from usuarios.models import Usuario
+            self.fields['talhao'].queryset = Talhao.objects.filter(empresa=self.user.empresa, ativo=True)
+            self.fields['safra'].queryset = Safra.objects.filter(empresa=self.user.empresa)
+            self.fields['os'].queryset = OrdemServico.objects.filter(empresa=self.user.empresa)
+            self.fields['responsavel'].queryset = Usuario.objects.filter(empresa=self.user.empresa, is_active=True)
+
+    def clean_data_inspecao(self):
+        data = self.cleaned_data.get('data_inspecao')
+        from django.utils import timezone
+        if data and data > timezone.now().date():
+            raise forms.ValidationError('A data não pode ser futura.')
+        return data
+
+
+# ============================================================
+# FASE 2 — FORMS: CADERNO DE CAMPO (RF-111)
+# ============================================================
+
+from .models import RegistroCadernoCampo, RegistroCadernoCampoInsumo, RegistroCadernoCampoFuncionario
+
+class RegistroCadernoCampoForm(forms.ModelForm):
+    class Meta:
+        model = RegistroCadernoCampo
+        fields = [
+            'talhao', 'safra', 'os', 'data_atividade', 'tipo_atividade', 'atividade',
+            'temperatura', 'umidade', 'condicao_tempo', 'responsavel', 'observacoes', 'fotos',
+        ]
+        widgets = {
+            'talhao': forms.Select(attrs={'class': 'form-select'}),
+            'safra': forms.Select(attrs={'class': 'form-select'}),
+            'os': forms.Select(attrs={'class': 'form-select'}),
+            'data_atividade': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'tipo_atividade': forms.Select(attrs={'class': 'form-select'}),
+            'atividade': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Descrição da atividade realizada'}),
+            'temperatura': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1', 'placeholder': '°C'}),
+            'umidade': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': '%'}),
+            'condicao_tempo': forms.Select(attrs={'class': 'form-select'}),
+            'responsavel': forms.Select(attrs={'class': 'form-select'}),
+            'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'fotos': forms.ClearableFileInput(attrs={'class': 'form-control'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        optional = ['safra', 'os', 'temperatura', 'umidade', 'condicao_tempo', 'observacoes', 'fotos']
+        for f in optional:
+            self.fields[f].required = False
+        if self.user and self.user.empresa:
+            from .models import OrdemServico
+            from usuarios.models import Usuario
+            self.fields['talhao'].queryset = Talhao.objects.filter(empresa=self.user.empresa, ativo=True)
+            self.fields['safra'].queryset = Safra.objects.filter(empresa=self.user.empresa)
+            self.fields['os'].queryset = OrdemServico.objects.filter(empresa=self.user.empresa)
+            self.fields['responsavel'].queryset = Usuario.objects.filter(empresa=self.user.empresa, is_active=True)
+
+
+class RegistroCadernoCampoInsumoForm(forms.ModelForm):
+    class Meta:
+        model = RegistroCadernoCampoInsumo
+        fields = ['produto', 'quantidade', 'unidade_medida', 'receituario_numero', 'carencia_dias', 'observacoes']
+        widgets = {
+            'produto': forms.Select(attrs={'class': 'form-select'}),
+            'quantidade': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.001'}),
+            'unidade_medida': forms.Select(attrs={'class': 'form-select'}),
+            'receituario_numero': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nº Receituário Agronômico'}),
+            'carencia_dias': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'dias'}),
+            'observacoes': forms.TextInput(attrs={'class': 'form-control'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['receituario_numero'].required = False
+        self.fields['carencia_dias'].required = False
+        self.fields['observacoes'].required = False
+
+
+class RegistroCadernoCampoFuncionarioForm(forms.ModelForm):
+    class Meta:
+        model = RegistroCadernoCampoFuncionario
+        fields = ['funcionario', 'horas_trabalhadas']
+        widgets = {
+            'funcionario': forms.Select(attrs={'class': 'form-select'}),
+            'horas_trabalhadas': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.25', 'placeholder': 'Ex: 8.0'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        self.fields['horas_trabalhadas'].required = False
+        if self.user and self.user.empresa:
+            self.fields['funcionario'].queryset = Funcionario.objects.filter(
+                empresa=self.user.empresa, ativo=True
+            )
+
+
+# ============================================================
+# FASE 2 — FORMS: ESTUFAS E TRANSPLANTIO (RF-1200 a RF-1254)
+# ============================================================
+
+from .models import Estufa, LoteMuda, PerdaEstufa, AplicacaoEstufa, MonitoramentoEstufa, Transplantio, ReplantioTalhao
+
+class EstufaForm(forms.ModelForm):
+    class Meta:
+        model = Estufa
+        fields = ['fazenda', 'nome', 'codigo', 'tipo', 'area_m2', 'capacidade_bandejas', 'ativo', 'observacoes']
+        widgets = {
+            'fazenda': forms.Select(attrs={'class': 'form-select'}),
+            'nome': forms.TextInput(attrs={'class': 'form-control'}),
+            'codigo': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: EST-01'}),
+            'tipo': forms.Select(attrs={'class': 'form-select'}),
+            'area_m2': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'capacidade_bandejas': forms.NumberInput(attrs={'class': 'form-control'}),
+            'ativo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        self.fields['area_m2'].required = False
+        self.fields['capacidade_bandejas'].required = False
+        self.fields['observacoes'].required = False
+        if self.user and self.user.empresa:
+            self.fields['fazenda'].queryset = Fazenda.objects.filter(empresa=self.user.empresa, ativa=True)
+
+
+class LoteMudaForm(forms.ModelForm):
+    class Meta:
+        model = LoteMuda
+        fields = [
+            'estufa', 'cultura', 'cultivar', 'lote_semente', 'data_semeadura',
+            'quantidade_semeada', 'data_prevista_pronto', 'status', 'responsavel', 'observacoes',
+        ]
+        widgets = {
+            'estufa': forms.Select(attrs={'class': 'form-select'}),
+            'cultura': forms.Select(attrs={'class': 'form-select'}),
+            'cultivar': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Híbrido BRS-12'}),
+            'lote_semente': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Código do lote da semente'}),
+            'data_semeadura': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'quantidade_semeada': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Total de sementes'}),
+            'data_prevista_pronto': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'status': forms.Select(attrs={'class': 'form-select'}),
+            'responsavel': forms.Select(attrs={'class': 'form-select'}),
+            'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        optional = ['cultivar', 'lote_semente', 'data_prevista_pronto', 'responsavel', 'observacoes']
+        for f in optional:
+            self.fields[f].required = False
+        if self.user and self.user.empresa:
+            self.fields['estufa'].queryset = Estufa.objects.filter(empresa=self.user.empresa, ativo=True)
+            self.fields['cultura'].queryset = Cultura.objects.filter(empresa=self.user.empresa, ativo=True)
+            self.fields['responsavel'].queryset = Funcionario.objects.filter(empresa=self.user.empresa, ativo=True)
+
+
+class PerdaEstufaForm(forms.ModelForm):
+    class Meta:
+        model = PerdaEstufa
+        fields = ['data', 'quantidade_perdida', 'motivo', 'observacao', 'responsavel']
+        widgets = {
+            'data': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'quantidade_perdida': forms.NumberInput(attrs={'class': 'form-control'}),
+            'motivo': forms.Select(attrs={'class': 'form-select'}),
+            'observacao': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'responsavel': forms.Select(attrs={'class': 'form-select'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        self.fields['observacao'].required = False
+        self.fields['responsavel'].required = False
+        if self.user and self.user.empresa:
+            self.fields['responsavel'].queryset = Funcionario.objects.filter(empresa=self.user.empresa, ativo=True)
+
+
+class AplicacaoEstufaForm(forms.ModelForm):
+    class Meta:
+        model = AplicacaoEstufa
+        fields = ['data', 'tipo', 'produto', 'quantidade', 'unidade_medida', 'custo_unitario', 'responsavel', 'observacao', 'receituario']
+        widgets = {
+            'data': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'tipo': forms.Select(attrs={'class': 'form-select'}),
+            'produto': forms.Select(attrs={'class': 'form-select'}),
+            'quantidade': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.001'}),
+            'unidade_medida': forms.Select(attrs={'class': 'form-select'}),
+            'custo_unitario': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.0001', 'placeholder': 'R$'}),
+            'responsavel': forms.Select(attrs={'class': 'form-select'}),
+            'observacao': forms.TextInput(attrs={'class': 'form-control'}),
+            'receituario': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nº Receituário Agronômico'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        self.fields['responsavel'].required = False
+        self.fields['observacao'].required = False
+        self.fields['receituario'].required = False
+        self.fields['custo_unitario'].required = False
+        if self.user and self.user.empresa:
+            self.fields['responsavel'].queryset = Funcionario.objects.filter(empresa=self.user.empresa, ativo=True)
+
+
+class MonitoramentoEstufaForm(forms.ModelForm):
+    class Meta:
+        model = MonitoramentoEstufa
+        fields = ['data', 'praga', 'nivel_infestacao', 'acao_tomada', 'responsavel']
+        widgets = {
+            'data': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'praga': forms.Select(attrs={'class': 'form-select'}),
+            'nivel_infestacao': forms.Select(attrs={'class': 'form-select'}),
+            'acao_tomada': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'responsavel': forms.Select(attrs={'class': 'form-select'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        self.fields['acao_tomada'].required = False
+        self.fields['responsavel'].required = False
+        if self.user and self.user.empresa:
+            self.fields['praga'].queryset = Praga.objects.filter(empresa=self.user.empresa, ativa=True)
+            self.fields['responsavel'].queryset = Funcionario.objects.filter(empresa=self.user.empresa, ativo=True)
+
+
+class TransplantioForm(forms.ModelForm):
+    class Meta:
+        model = Transplantio
+        fields = ['lote_muda', 'talhao', 'safra', 'data_transplantio', 'tipo', 'quantidade_transplantada', 'responsavel', 'observacao', 'fotos']
+        widgets = {
+            'lote_muda': forms.Select(attrs={'class': 'form-select'}),
+            'talhao': forms.Select(attrs={'class': 'form-select'}),
+            'safra': forms.Select(attrs={'class': 'form-select'}),
+            'data_transplantio': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'tipo': forms.Select(attrs={'class': 'form-select'}),
+            'quantidade_transplantada': forms.NumberInput(attrs={'class': 'form-control'}),
+            'responsavel': forms.Select(attrs={'class': 'form-select'}),
+            'observacao': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'fotos': forms.ClearableFileInput(attrs={'class': 'form-control'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        optional = ['safra', 'responsavel', 'observacao', 'fotos']
+        for f in optional:
+            self.fields[f].required = False
+        if self.user and self.user.empresa:
+            self.fields['lote_muda'].queryset = LoteMuda.objects.filter(
+                empresa=self.user.empresa, status='PRONTO'
+            )
+            self.fields['talhao'].queryset = Talhao.objects.filter(
+                empresa=self.user.empresa, ativo=True, status__in=['DISPONIVEL', 'PREPARACAO']
+            )
+            self.fields['safra'].queryset = Safra.objects.filter(
+                empresa=self.user.empresa, status__in=['PLANEJADA', 'EM_ANDAMENTO']
+            )
+            self.fields['responsavel'].queryset = Funcionario.objects.filter(empresa=self.user.empresa, ativo=True)
+
+
+class ReplantioTalhaoForm(forms.ModelForm):
+    class Meta:
+        model = ReplantioTalhao
+        fields = ['talhao', 'safra', 'data_replantio', 'quantidade', 'origem_muda', 'lote_muda', 'motivo_perda', 'custo_adicional', 'responsavel', 'observacao']
+        widgets = {
+            'talhao': forms.Select(attrs={'class': 'form-select'}),
+            'safra': forms.Select(attrs={'class': 'form-select'}),
+            'data_replantio': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'quantidade': forms.NumberInput(attrs={'class': 'form-control'}),
+            'origem_muda': forms.Select(attrs={'class': 'form-select'}),
+            'lote_muda': forms.Select(attrs={'class': 'form-select'}),
+            'motivo_perda': forms.Select(attrs={'class': 'form-select'}),
+            'custo_adicional': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'responsavel': forms.Select(attrs={'class': 'form-select'}),
+            'observacao': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        optional = ['safra', 'lote_muda', 'custo_adicional', 'responsavel', 'observacao']
+        for f in optional:
+            self.fields[f].required = False
+        if self.user and self.user.empresa:
+            self.fields['talhao'].queryset = Talhao.objects.filter(empresa=self.user.empresa, ativo=True)
+            self.fields['safra'].queryset = Safra.objects.filter(empresa=self.user.empresa)
+            self.fields['lote_muda'].queryset = LoteMuda.objects.filter(empresa=self.user.empresa)
+            self.fields['responsavel'].queryset = Funcionario.objects.filter(empresa=self.user.empresa, ativo=True)

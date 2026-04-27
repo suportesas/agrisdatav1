@@ -376,6 +376,8 @@ urlpatterns = [
     path('monitoramento-mip/<int:pk>/pdf/', views_monitoramento_mip.monitoramento_mip_pdf, name='monitoramento_mip_pdf'),
     path('monitoramento-mip/<int:pk>/adicionar-praga/', views_monitoramento_mip.monitoramento_mip_add_praga, name='monitoramento_mip_add_praga'),
     path('monitoramento-mip/praga/<int:pk>/', views_monitoramento_mip.monitoramento_mip_praga_detail, name='monitoramento_mip_praga_detail'),
+    path('monitoramento-mip/praga/<int:pk>/editar/', views_monitoramento_mip.monitoramento_mip_praga_edit, name='monitoramento_mip_praga_edit'),
+    path('monitoramento-mip/praga/<int:pk>/excluir/', views_monitoramento_mip.monitoramento_mip_praga_delete, name='monitoramento_mip_praga_delete'),
     path('monitoramento-mip/praga/<int:pk>/adicionar-ponto/', views_monitoramento_mip.monitoramento_mip_add_ponto, name='monitoramento_mip_add_ponto'),
     
     # AJAX endpoints

@@ -4,7 +4,7 @@
 {% block title %}Adicionar Praga | ERP Agrícola{% endblock %}
 {% block page_title %}
   <div class="d-flex align-items-center gap-2">
-    <span>Adicionar Praga ao Monitoramento {{ monitoramento.numero }}</span>
+    <span>{% if editing %}Editar Praga{% else %}Adicionar Praga{% endif %} — Monitoramento {{ monitoramento.numero }}</span>
     <button type="button" class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#helpPragaForm" title="Ajuda">
       <i class="bi bi-question-circle"></i>
     </button>
@@ -38,9 +38,10 @@
 
       <!-- Formulário de Praga -->
       <div class="card shadow-sm border-0 rounded-4">
-        <div class="card-header bg-success text-white rounded-top-4">
+        <div class="card-header {% if editing %}bg-warning text-dark{% else %}bg-success text-white{% endif %} rounded-top-4">
           <h5 class="mb-0">
-            <i class="bi bi-plus-circle"></i> Adicionar Praga
+            <i class="bi bi-{% if editing %}pencil{% else %}plus-circle{% endif %}"></i>
+            {% if editing %}Editar Praga{% else %}Adicionar Praga{% endif %}
           </h5>
         </div>
 
@@ -120,28 +121,28 @@
                   <div class="col-12 col-sm-auto">
                     <input type="radio" class="btn-check" name="{{ form.severidade.name }}"
                            id="severidade_{{ value }}" value="{{ value }}"
-                           {% if form.severidade.value == value|stringformat:"s" %}checked{% endif %}>
+                           {% if form.severidade.value == value %}checked{% endif %}>
                     <label class="btn w-100 text-start
-                      {% if value == '1' %}btn-outline-success
-                      {% elif value == '2' %}btn-outline-info
-                      {% elif value == '3' %}btn-outline-warning
-                      {% elif value == '4' %}btn-outline-orange
-                      {% elif value == '5' %}btn-outline-danger
+                      {% if value == 1 %}btn-outline-success
+                      {% elif value == 2 %}btn-outline-info
+                      {% elif value == 3 %}btn-outline-warning
+                      {% elif value == 4 %}btn-outline-danger
+                      {% elif value == 5 %}btn-outline-danger
                       {% endif %}" for="severidade_{{ value }}" style="min-width:200px">
                       <div class="fw-bold">
-                        {% if value == '1' %}<i class="bi bi-1-circle"></i> Muito Baixa
-                        {% elif value == '2' %}<i class="bi bi-2-circle"></i> Baixa
-                        {% elif value == '3' %}<i class="bi bi-3-circle"></i> Média
-                        {% elif value == '4' %}<i class="bi bi-4-circle"></i> Alta
-                        {% elif value == '5' %}<i class="bi bi-5-circle"></i> Muito Alta
+                        {% if value == 1 %}<i class="bi bi-1-circle"></i> Muito Baixa
+                        {% elif value == 2 %}<i class="bi bi-2-circle"></i> Baixa
+                        {% elif value == 3 %}<i class="bi bi-3-circle"></i> Média
+                        {% elif value == 4 %}<i class="bi bi-4-circle"></i> Alta
+                        {% elif value == 5 %}<i class="bi bi-5-circle"></i> Muito Alta
                         {% endif %}
                       </div>
                       <small class="opacity-75 fw-normal">
-                        {% if value == '1' %}Infestação inicial, &lt; 5% dos pontos
-                        {% elif value == '2' %}5–20% dos pontos afetados
-                        {% elif value == '3' %}20–40% dos pontos — atenção
-                        {% elif value == '4' %}40–70% dos pontos — risco elevado
-                        {% elif value == '5' %}&gt; 70% dos pontos — ação imediata
+                        {% if value == 1 %}Infestação inicial, &lt; 5% dos pontos
+                        {% elif value == 2 %}5–20% dos pontos afetados
+                        {% elif value == 3 %}20–40% dos pontos — atenção
+                        {% elif value == 4 %}40–70% dos pontos — risco elevado
+                        {% elif value == 5 %}&gt; 70% dos pontos — ação imediata
                         {% endif %}
                       </small>
                     </label>
@@ -204,8 +205,8 @@
               <a href="{% url 'cadastros:monitoramento_mip_detail' monitoramento.pk %}" class="btn btn-outline-secondary">
                 <i class="bi bi-x-circle"></i> Cancelar
               </a>
-              <button type="submit" class="btn btn-success">
-                <i class="bi bi-check-circle"></i> Adicionar Praga
+              <button type="submit" class="btn {% if editing %}btn-warning{% else %}btn-success{% endif %}">
+                <i class="bi bi-check-circle"></i> {% if editing %}Salvar Alterações{% else %}Adicionar Praga{% endif %}
               </button>
             </div>
 
@@ -232,7 +233,8 @@ document.addEventListener('DOMContentLoaded', function() {
   const totalPontos = {{ monitoramento.quantidade_pontos }};
 
   // Cascading Select: Praga → Estágios + auto-preenche JSON de contagem
-  function carregarEstagios(pragaId) {
+  // selectedValue: preserva o estágio já salvo ao abrir no modo edição
+  function carregarEstagios(pragaId, selectedValue) {
     if (!pragaId) {
       estagioSelect.innerHTML = '<option value="">-- Selecione um estágio --</option>';
       return;
@@ -248,7 +250,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (data.estagios && data.estagios.length > 0) {
           data.estagios.forEach(estagio => {
-            html += `<option value="${estagio.id}">${estagio.tipo_estagio}</option>`;
+            const sel = selectedValue && String(estagio.id) === String(selectedValue) ? ' selected' : '';
+            html += `<option value="${estagio.id}"${sel}>${estagio.tipo_estagio}</option>`;
           });
 
           // Auto-preenche o JSON de contagem somente se o campo ainda estiver vazio
@@ -277,8 +280,9 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     // Carregar estágios inicialmente se praga já foi selecionada
+    // Passa o valor atual do estágio para que a opção salva apareça selecionada (modo edição)
     if (pragaSelect.value) {
-      carregarEstagios(pragaSelect.value);
+      carregarEstagios(pragaSelect.value, estagioSelect.value);
     }
   }
 

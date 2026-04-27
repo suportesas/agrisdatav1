@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+
+{% block title %}Excluir Praga | ERP Agrícola{% endblock %}
+{% block page_title %}Excluir Praga do Monitoramento{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+  <div class="row">
+    <div class="col-lg-6 offset-lg-3">
+      <div class="card shadow-sm border-0 rounded-4">
+        <div class="card-header bg-danger text-white rounded-top-4">
+          <h5 class="mb-0"><i class="bi bi-exclamation-triangle"></i> Confirmar Exclusão</h5>
+        </div>
+        <div class="card-body p-4 text-center">
+          <p class="fs-5 mb-1">Deseja remover a praga</p>
+          <p class="fw-bold fs-4 mb-1">{{ praga_mon.praga }}</p>
+          <p class="text-muted mb-4">do monitoramento <strong>{{ monitoramento.numero }}</strong>?</p>
+          <p class="text-danger small">Esta ação também excluirá todos os pontos registrados para esta praga.</p>
+
+          <form method="post" class="d-flex gap-3 justify-content-center mt-3">
+            {% csrf_token %}
+            <a href="{% url 'cadastros:monitoramento_mip_detail' monitoramento.pk %}"
+               class="btn btn-outline-secondary btn-lg">
+              <i class="bi bi-x-circle"></i> Cancelar
+            </a>
+            <button type="submit" class="btn btn-danger btn-lg">
+              <i class="bi bi-trash"></i> Excluir
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

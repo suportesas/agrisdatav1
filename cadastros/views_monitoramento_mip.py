@@ -350,23 +350,17 @@ def monitoramento_mip_add_praga(request, pk):
 
 
 @login_required
-def monitoramento_mip_praga_detail(request, pk, praga_pk):
+def monitoramento_mip_praga_detail(request, pk):
     """Visualizar detalhes de uma praga no monitoramento"""
     empresa = request.user.empresa
-    monitoramento = get_object_or_404(
-        MonitoramentoMIP,
-        pk=pk,
-        empresa=empresa
-    )
-    
     praga_mon = get_object_or_404(
         PragaNoMonitoramento,
-        pk=praga_pk,
-        monitoramento=monitoramento
+        pk=pk,
+        monitoramento__empresa=empresa,
     )
-    
+    monitoramento = praga_mon.monitoramento
     pontos = praga_mon.pontos.all().order_by('numero_ponto')
-    
+
     return render(request, 'cadastros/monitoramento_mip/praga_detail.html', {
         'monitoramento': monitoramento,
         'praga_mon': praga_mon,
@@ -375,32 +369,81 @@ def monitoramento_mip_praga_detail(request, pk, praga_pk):
 
 
 @login_required
-def monitoramento_mip_add_ponto(request, pk, praga_pk):
-    """Adicionar ponto de monitoramento"""
+def monitoramento_mip_praga_edit(request, pk):
+    """Editar uma praga registrada no monitoramento"""
     empresa = request.user.empresa
-    monitoramento = get_object_or_404(
-        MonitoramentoMIP,
-        pk=pk,
-        empresa=empresa
-    )
-    
     praga_mon = get_object_or_404(
         PragaNoMonitoramento,
-        pk=praga_pk,
-        monitoramento=monitoramento
+        pk=pk,
+        monitoramento__empresa=empresa,
     )
-    
-    # Contar pontos já registrados
+    monitoramento = praga_mon.monitoramento
+
+    if request.method == 'POST':
+        form = PragaNoMonitoramentoForm(
+            request.POST,
+            instance=praga_mon,
+            monitoramento=monitoramento,
+            empresa=empresa,
+        )
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Praga atualizada com sucesso!')
+            return redirect('cadastros:monitoramento_mip_detail', pk=monitoramento.pk)
+    else:
+        form = PragaNoMonitoramentoForm(
+            instance=praga_mon,
+            monitoramento=monitoramento,
+            empresa=empresa,
+        )
+
+    return render(request, 'cadastros/monitoramento_mip/praga_form.html', {
+        'form': form,
+        'monitoramento': monitoramento,
+        'praga_mon': praga_mon,
+        'editing': True,
+    })
+
+
+@login_required
+def monitoramento_mip_praga_delete(request, pk):
+    """Excluir uma praga registrada no monitoramento"""
+    empresa = request.user.empresa
+    praga_mon = get_object_or_404(
+        PragaNoMonitoramento,
+        pk=pk,
+        monitoramento__empresa=empresa,
+    )
+    monitoramento = praga_mon.monitoramento
+
+    if request.method == 'POST':
+        praga_mon.delete()
+        messages.success(request, 'Praga removida do monitoramento.')
+        return redirect('cadastros:monitoramento_mip_detail', pk=monitoramento.pk)
+
+    return render(request, 'cadastros/monitoramento_mip/praga_confirm_delete.html', {
+        'praga_mon': praga_mon,
+        'monitoramento': monitoramento,
+    })
+
+
+@login_required
+def monitoramento_mip_add_ponto(request, pk):
+    """Adicionar ponto de monitoramento"""
+    empresa = request.user.empresa
+    praga_mon = get_object_or_404(
+        PragaNoMonitoramento,
+        pk=pk,
+        monitoramento__empresa=empresa,
+    )
+    monitoramento = praga_mon.monitoramento
+
     proxima_numero = praga_mon.pontos.count() + 1
-    
+
     if proxima_numero > 20:
         messages.error(request, 'Máximo de 20 pontos já foi atingido!')
-        return redirect(
-            'cadastros:monitoramento_mip_praga_detail',
-            pk=pk,
-            praga_pk=praga_pk
-        )
-    
+        return redirect('cadastros:monitoramento_mip_praga_detail', pk=praga_mon.pk)
+
     if request.method == 'POST':
         form = PontoMonitoramentoForm(request.POST, request.FILES)
         if form.is_valid():
@@ -408,22 +451,12 @@ def monitoramento_mip_add_ponto(request, pk, praga_pk):
             ponto.praga_monitoramento = praga_mon
             ponto.numero_ponto = proxima_numero
             ponto.save()
-            
-            messages.success(
-                request,
-                f'Ponto {ponto.numero_ponto} registrado com sucesso!'
-            )
-            
-            return redirect(
-                'cadastros:monitoramento_mip_praga_detail',
-                pk=pk,
-                praga_pk=praga_pk
-            )
+            messages.success(request, f'Ponto {ponto.numero_ponto} registrado com sucesso!')
+            return redirect('cadastros:monitoramento_mip_praga_detail', pk=praga_mon.pk)
     else:
         form = PontoMonitoramentoForm()
-        # Pre-preencher número
         form.fields['numero_ponto'].initial = proxima_numero
-    
+
     return render(request, 'cadastros/monitoramento_mip/ponto_form.html', {
         'form': form,
         'monitoramento': monitoramento,
@@ -552,7 +585,7 @@ def monitoramento_mip_pdf(request, pk):
     # Informações gerais
     info_data = [
         ['Talhão:', monitoramento.talhao.nome if monitoramento.talhao else '-'],
-        ['Cultura:', monitoramento.cultura_atual if monitoramento.cultura_atual else '-'],
+        ['Cultura:', str(monitoramento.cultura) if monitoramento.cultura else '-'],
         ['Responsável:', monitoramento.responsavel.get_full_name() if monitoramento.responsavel else '-'],
         ['Data:', monitoramento.data_monitoramento.strftime('%d/%m/%Y')],
         ['Status:', monitoramento.get_status_display()],

@@ -199,10 +199,20 @@
                         {% endif %}
                       </td>
                       <td class="text-center">
-                        <a href="{% url 'cadastros:monitoramento_mip_praga_detail' praga_mon.pk %}" 
-                           class="btn btn-sm btn-outline-primary" title="Ver Detalhes">
-                          <i class="bi bi-eye"></i>
-                        </a>
+                        <div class="btn-group btn-group-sm" role="group">
+                          <a href="{% url 'cadastros:monitoramento_mip_praga_detail' praga_mon.pk %}"
+                             class="btn btn-outline-primary" title="Ver Detalhes">
+                            <i class="bi bi-eye"></i>
+                          </a>
+                          <a href="{% url 'cadastros:monitoramento_mip_praga_edit' praga_mon.pk %}"
+                             class="btn btn-outline-warning" title="Editar">
+                            <i class="bi bi-pencil"></i>
+                          </a>
+                          <a href="{% url 'cadastros:monitoramento_mip_praga_delete' praga_mon.pk %}"
+                             class="btn btn-outline-danger" title="Excluir">
+                            <i class="bi bi-trash"></i>
+                          </a>
+                        </div>
                       </td>
                     </tr>
                   {% endfor %}

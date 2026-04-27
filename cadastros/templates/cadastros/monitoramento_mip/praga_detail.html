@@ -4,7 +4,7 @@
 {% block title %}Detalhes da Praga | ERP Agrícola{% endblock %}
 {% block page_title %}
   <div class="d-flex align-items-center gap-2">
-    <span>Detalhes da Praga: {{ praga_monitoramento.praga.nome_comum }}</span>
+    <span>Detalhes da Praga: {{ praga_mon.praga.nome_comum }}</span>
     <button type="button" class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#helpPragaForm" title="Ajuda">
       <i class="bi bi-question-circle"></i>
     </button>
@@ -34,8 +34,8 @@
       <nav aria-label="breadcrumb" class="mb-4">
         <ol class="breadcrumb">
           <li class="breadcrumb-item"><a href="{% url 'cadastros:monitoramento_mip_list' %}">Monitoramentos</a></li>
-          <li class="breadcrumb-item"><a href="{% url 'cadastros:monitoramento_mip_detail' praga_monitoramento.monitoramento.pk %}">{{ praga_monitoramento.monitoramento.numero }}</a></li>
-          <li class="breadcrumb-item active">{{ praga_monitoramento.praga.nome_comum }}</li>
+          <li class="breadcrumb-item"><a href="{% url 'cadastros:monitoramento_mip_detail' praga_mon.monitoramento.pk %}">{{ praga_mon.monitoramento.numero }}</a></li>
+          <li class="breadcrumb-item active">{{ praga_mon.praga.nome_comum }}</li>
         </ol>
       </nav>
 
@@ -45,13 +45,13 @@
           <div class="row align-items-center">
             <div class="col">
               <h3 class="mb-0">
-                <i class="bi bi-bug"></i> {{ praga_monitoramento.praga.nome_comum }}
+                <i class="bi bi-bug"></i> {{ praga_mon.praga.nome_comum }}
               </h3>
-              <p class="text-muted mb-0">{{ praga_monitoramento.praga.nome_cientifico }}</p>
+              <p class="text-muted mb-0">{{ praga_mon.praga.nome_cientifico }}</p>
             </div>
             <div class="col-auto">
-              <span class="badge bg-{% if praga_monitoramento.ned_atingido %}danger{% else %}warning{% endif %} fs-6">
-                {% if praga_monitoramento.ned_atingido %}
+              <span class="badge bg-{% if praga_mon.ned_atingido %}danger{% else %}warning{% endif %} fs-6">
+                {% if praga_mon.ned_atingido %}
                   <i class="bi bi-exclamation-triangle-fill"></i> NED ATINGIDO
                 {% else %}
                   <i class="bi bi-check-circle"></i> MONITORAR
@@ -69,8 +69,8 @@
           <div class="card shadow-sm border-0 rounded-4 h-100">
             <div class="card-body">
               <p class="text-muted mb-1"><small>INCIDÊNCIA</small></p>
-              <h4 class="mb-0">{{ praga_monitoramento.incidencia_percentual|floatformat:1 }}%</h4>
-              <p class="text-muted mb-0"><small>{{ praga_monitoramento.quantidade_pontos_com_praga }}/{{ praga_monitoramento.monitoramento.quantidade_pontos }} pontos</small></p>
+              <h4 class="mb-0">{{ praga_mon.incidencia_percentual|floatformat:1 }}%</h4>
+              <p class="text-muted mb-0"><small>{{ praga_mon.quantidade_pontos_com_praga }}/{{ praga_mon.monitoramento.quantidade_pontos }} pontos</small></p>
             </div>
           </div>
         </div>
@@ -80,18 +80,18 @@
             <div class="card-body">
               <p class="text-muted mb-1"><small>SEVERIDADE</small></p>
               <h4 class="mb-0">
-                {% if praga_monitoramento.severidade == 1 %}
+                {% if praga_mon.severidade == 1 %}
                   <i class="bi bi-emoji-smile text-success"></i>
-                {% elif praga_monitoramento.severidade == 2 %}
+                {% elif praga_mon.severidade == 2 %}
                   <i class="bi bi-emoji-neutral text-info"></i>
-                {% elif praga_monitoramento.severidade == 3 %}
+                {% elif praga_mon.severidade == 3 %}
                   <i class="bi bi-emoji-frown text-warning"></i>
-                {% elif praga_monitoramento.severidade == 4 %}
+                {% elif praga_mon.severidade == 4 %}
                   <i class="bi bi-exclamation-triangle text-danger"></i>
-                {% elif praga_monitoramento.severidade == 5 %}
+                {% elif praga_mon.severidade == 5 %}
                   <i class="bi bi-exclamation-triangle-fill text-danger"></i>
                 {% endif %}
-                Nível {{ praga_monitoramento.severidade }}
+                Nível {{ praga_mon.severidade }}
               </h4>
             </div>
           </div>
@@ -101,10 +101,10 @@
           <div class="card shadow-sm border-0 rounded-4 h-100">
             <div class="card-body">
               <p class="text-muted mb-1"><small>NED</small></p>
-              <h4 class="mb-0">{{ praga_monitoramento.ned_valor|floatformat:1 }}%</h4>
+              <h4 class="mb-0">{{ praga_mon.ned_valor|floatformat:1 }}%</h4>
               <p class="text-muted mb-0">
                 <small>
-                  {% if praga_monitoramento.incidencia_percentual >= praga_monitoramento.ned_valor %}
+                  {% if praga_mon.incidencia_percentual >= praga_mon.ned_valor %}
                     <i class="bi bi-check-lg text-danger"></i> Atingido
                   {% else %}
                     <i class="bi bi-dash-circle text-success"></i> Não atingido
@@ -120,9 +120,9 @@
             <div class="card-body">
               <p class="text-muted mb-1"><small>AÇÃO RECOMENDADA</small></p>
               <h5 class="mb-0">
-                {% if praga_monitoramento.resultado_acao == 'RECOMENDA_DEFENSIVO' %}
+                {% if praga_mon.resultado_acao == 'RECOMENDA_DEFENSIVO' %}
                   <span class="badge bg-danger"><i class="bi bi-shield-exclamation"></i> Defensivo</span>
-                {% elif praga_monitoramento.resultado_acao == 'MONITORAR' %}
+                {% elif praga_mon.resultado_acao == 'MONITORAR' %}
                   <span class="badge bg-warning"><i class="bi bi-binoculars"></i> Monitorar</span>
                 {% else %}
                   <span class="badge bg-success"><i class="bi bi-check-circle"></i> Sem Ação</span>
@@ -141,10 +141,10 @@
               <h6 class="mb-0"><i class="bi bi-diagram-3"></i> Estágio Principal</h6>
             </div>
             <div class="card-body">
-              {% if praga_monitoramento.estagio_principal %}
+              {% if praga_mon.estagio_principal %}
                 <p class="mb-0">
-                  <strong>{{ praga_monitoramento.estagio_principal.get_tipo_estagio_display }}</strong><br>
-                  <small class="text-muted">{{ praga_monitoramento.estagio_principal.observacoes }}</small>
+                  <strong>{{ praga_mon.estagio_principal.get_tipo_estagio_display }}</strong><br>
+                  <small class="text-muted">{{ praga_mon.estagio_principal.observacoes }}</small>
                 </p>
               {% else %}
                 <p class="text-muted mb-0">Não informado</p>
@@ -159,9 +159,9 @@
               <h6 class="mb-0"><i class="bi bi-layers-fill"></i> Detalhes de Estágios</h6>
             </div>
             <div class="card-body">
-              {% if praga_monitoramento.detalhes_estagios %}
+              {% if praga_mon.detalhes_estagios %}
                 <div class="row g-2">
-                  {% for estagio, quantidade in praga_monitoramento.detalhes_estagios.items %}
+                  {% for estagio, quantidade in praga_mon.detalhes_estagios.items %}
                     {% if quantidade > 0 %}
                       <div class="col-auto">
                         <span class="badge bg-secondary">{{ estagio }}: {{ quantidade }}</span>
@@ -181,10 +181,10 @@
       <div class="card shadow-sm border-0 rounded-4 mb-4">
         <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
           <h5 class="mb-0">
-            <i class="bi bi-crosshair2"></i> Pontos de Amostragem ({{ pontos|length }}/{{ praga_monitoramento.monitoramento.quantidade_pontos }})
+            <i class="bi bi-crosshair2"></i> Pontos de Amostragem ({{ pontos|length }}/{{ praga_mon.monitoramento.quantidade_pontos }})
           </h5>
-          {% if pontos|length < praga_monitoramento.monitoramento.quantidade_pontos %}
-            <a href="{% url 'cadastros:monitoramento_mip_add_ponto' praga_monitoramento.pk %}" class="btn btn-light btn-sm">
+          {% if pontos|length < praga_mon.monitoramento.quantidade_pontos %}
+            <a href="{% url 'cadastros:monitoramento_mip_add_ponto' praga_mon.pk %}" class="btn btn-light btn-sm">
               <i class="bi bi-plus-circle"></i> Adicionar Ponto
             </a>
           {% endif %}
@@ -255,7 +255,7 @@
                         {% endif %}
                       </div>
                       <div class="card-footer bg-light">
-                        <a href="{% url 'cadastros:monitoramento_mip_add_ponto' praga_monitoramento.pk %}?numero={{ ponto.numero_ponto }}" 
+                        <a href="{% url 'cadastros:monitoramento_mip_add_ponto' praga_mon.pk %}?numero={{ ponto.numero_ponto }}" 
                            class="btn btn-sm btn-outline-primary">
                           <i class="bi bi-pencil"></i> Editar
                         </a>
@@ -268,7 +268,7 @@
           {% else %}
             <div class="alert alert-info text-center" role="alert">
               <i class="bi bi-info-circle"></i> Nenhum ponto de amostragem registrado ainda.<br>
-              <a href="{% url 'cadastros:monitoramento_mip_add_ponto' praga_monitoramento.pk %}" class="alert-link">
+              <a href="{% url 'cadastros:monitoramento_mip_add_ponto' praga_mon.pk %}" class="alert-link">
                 Começar a adicionar pontos →
               </a>
             </div>
@@ -283,7 +283,7 @@
             <div class="card shadow-sm border-0 rounded-4 bg-light">
               <div class="card-body">
                 <p class="text-muted mb-1"><small>PONTOS REGISTRADOS</small></p>
-                <h4 class="mb-0">{{ pontos|length }}/{{ praga_monitoramento.monitoramento.quantidade_pontos }}</h4>
+                <h4 class="mb-0">{{ pontos|length }}/{{ praga_mon.monitoramento.quantidade_pontos }}</h4>
               </div>
             </div>
           </div>
@@ -291,7 +291,7 @@
             <div class="card shadow-sm border-0 rounded-4 bg-light">
               <div class="card-body">
                 <p class="text-muted mb-1"><small>PONTOS COM PRAGA</small></p>
-                <h4 class="mb-0">{{ praga_monitoramento.quantidade_pontos_com_praga }}</h4>
+                <h4 class="mb-0">{{ praga_mon.quantidade_pontos_com_praga }}</h4>
               </div>
             </div>
           </div>
@@ -308,18 +308,18 @@
 
       <!-- Botões de Ação -->
       <div class="d-flex gap-2 mb-4">
-        <a href="{% url 'cadastros:monitoramento_mip_detail' praga_monitoramento.monitoramento.pk %}" 
+        <a href="{% url 'cadastros:monitoramento_mip_detail' praga_mon.monitoramento.pk %}" 
            class="btn btn-outline-secondary">
           <i class="bi bi-arrow-left"></i> Voltar ao Monitoramento
         </a>
-        {% if pontos|length < praga_monitoramento.monitoramento.quantidade_pontos %}
-          <a href="{% url 'cadastros:monitoramento_mip_add_ponto' praga_monitoramento.pk %}" 
+        {% if pontos|length < praga_mon.monitoramento.quantidade_pontos %}
+          <a href="{% url 'cadastros:monitoramento_mip_add_ponto' praga_mon.pk %}" 
              class="btn btn-primary">
-            <i class="bi bi-plus-circle"></i> Adicionar Próximo Ponto ({{ pontos|length|add:1 }}/{{ praga_monitoramento.monitoramento.quantidade_pontos }})
+            <i class="bi bi-plus-circle"></i> Adicionar Próximo Ponto ({{ pontos|length|add:1 }}/{{ praga_mon.monitoramento.quantidade_pontos }})
           </a>
         {% else %}
           <div class="alert alert-success mb-0" role="alert">
-            <i class="bi bi-check-circle-fill"></i> Todos os {{ praga_monitoramento.monitoramento.quantidade_pontos }} pontos foram registrados!
+            <i class="bi bi-check-circle-fill"></i> Todos os {{ praga_mon.monitoramento.quantidade_pontos }} pontos foram registrados!
           </div>
         {% endif %}
       </div>
@@ -343,6 +343,8 @@
     padding: 1rem;
   }
 </style>
+
+{% endblock %}
 
 <!-- Leaflet JS -->
 <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.js"></script>

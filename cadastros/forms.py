@@ -4084,10 +4084,17 @@ class PragaNoMonitoramentoForm(forms.ModelForm):
                 ativa=True
             )
 
-        if self.monitoramento and self.monitoramento.cultura:
-            # Filtrar estágios apenas da praga selecionada
-            self.fields['estagio_principal'].queryset = \
-                EstagioDesenvolvimento.objects.none()
+        # On POST, use submitted praga to validate estagio_principal;
+        # on GET, default to none() (JS cascading will populate the select).
+        praga_id = (self.data.get('praga') if self.data else None) or (
+            self.instance.praga_id if self.instance and self.instance.pk else None
+        )
+        if praga_id:
+            self.fields['estagio_principal'].queryset = (
+                EstagioDesenvolvimento.objects.filter(praga_id=praga_id, ativo=True)
+            )
+        else:
+            self.fields['estagio_principal'].queryset = EstagioDesenvolvimento.objects.none()
     
     def clean(self):
         cleaned = super().clean()

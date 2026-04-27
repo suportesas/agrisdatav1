@@ -146,72 +146,136 @@
 
 <!-- AJUDA: Ponto de Amostragem -->
 <div class="modal fade" id="helpPontoForm" tabindex="-1">
-  <div class="modal-dialog modal-lg">
+  <div class="modal-dialog modal-xl">
     <div class="modal-content">
-      <div class="modal-header bg-info text-white">
+      <div class="modal-header bg-primary text-white">
         <h5 class="modal-title">
           <i class="bi bi-question-circle"></i> Ajuda: Registrar Ponto de Amostragem
         </h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
-        <h6><i class="bi bi-crosshair2"></i> O que é um Ponto de Amostragem?</h6>
-        <p>
-          É um local específico no talhão onde você verifica a presença/ausência de pragas.
-          O padrão MIP recomenda <strong>20 pontos</strong> distribuídos de forma a cobrir toda a área.
-        </p>
 
-        <h6 class="mt-3"><i class="bi bi-layout-split"></i> Distribuição dos Pontos</h6>
-        <div class="bg-light p-3 rounded">
-          <p class="mb-0">
-            <strong>Padrão em Grid:</strong><br>
-            Para um talhão retangular, distribua em 4×5 ou 5×4:
+        <!-- Fluxo geral -->
+        <div class="alert alert-info mb-4">
+          <h6 class="alert-heading"><i class="bi bi-map"></i> Onde estou no fluxo do MIP?</h6>
+          <div class="d-flex align-items-center gap-2 flex-wrap mt-2">
+            <span class="badge bg-secondary fs-6 py-2 px-3">1. Criar Monitoramento</span>
+            <i class="bi bi-arrow-right"></i>
+            <span class="badge bg-secondary fs-6 py-2 px-3">2. Adicionar Praga (resumo de campo)</span>
+            <i class="bi bi-arrow-right"></i>
+            <span class="badge bg-primary fs-6 py-2 px-3">3. Registrar Pontos ← você está aqui</span>
+            <i class="bi bi-arrow-right"></i>
+            <span class="badge bg-secondary fs-6 py-2 px-3">4. Analisar resultado</span>
+          </div>
+          <p class="mb-0 mt-2 small">
+            <strong>Por que a praga é cadastrada antes dos pontos?</strong>
+            O técnico vai ao campo com caderneta e percorre os 20 pontos anotando no papel.
+            Ao voltar, lança o <em>resumo geral</em> da praga (passo 2) — isso já basta para calcular incidência e gerar recomendação.
+            Os pontos individuais (passo 3) são opcionais e adicionam GPS, foto e granularidade.
           </p>
-          <pre>
-20 pontos em grid 4x5:
-[ ● ● ● ● ● ]
-[ ● ● ● ● ● ]
-[ ● ● ● ● ● ]
-[ ● ● ● ● ● ]
-          </pre>
         </div>
 
-        <h6 class="mt-3"><i class="bi bi-info-circle"></i> Registrando Cada Ponto</h6>
-        <ol>
-          <li><strong>Vá ao ponto #1</strong> do talhão</li>
-          <li><strong>Procure pragas</strong> (olhe plantas, solo, etc)</li>
-          <li><strong>Marque "Praga Presente"</strong> SIM ou NÃO</li>
-          <li>Se Sim:
-            <ul>
-              <li>Digite <strong>quantidade</strong> de indivíduos</li>
-              <li>Selecione <strong>estágio</strong> (ovo, larva, adulto, etc)</li>
-              <li>Avalie <strong>severidade</strong> (1-5)</li>
-            </ul>
-          </li>
-          <li>Registre <strong>GPS</strong> (latitude, longitude) - opcional mas recomendado</li>
-          <li>Tire uma <strong>foto</strong> - opcional mas recomendado</li>
-          <li>Clique <strong>"Salvar e Próximo"</strong></li>
-        </ol>
-
-        <h6 class="mt-3"><i class="bi bi-geo-alt"></i> Coordenadas GPS</h6>
-        <p>
-          Usar GPS ajuda a:
-        </p>
-        <ul>
-          <li>Validar que os pontos foram realmente coletados</li>
-          <li>Visualizar distribuição das pragas no mapa</li>
-          <li>Identificar "hot spots" de infestação</li>
-          <li>Retornar ao mesmo ponto em próximas visitas</li>
-        </ul>
-
-        <div class="alert alert-success" role="alert">
-          <i class="bi bi-lightbulb"></i> <strong>Dica:</strong> 
-          Use a câmera do smartphone para tirar foto de cada ponto ou da praga encontrada.
-          Isso cria documentação visual do monitoramento.
+        <!-- Guia de preenchimento -->
+        <h6 class="mb-3"><i class="bi bi-ui-checks"></i> Como preencher cada campo</h6>
+        <div class="table-responsive mb-4">
+          <table class="table table-bordered table-sm align-middle">
+            <thead class="table-primary">
+              <tr>
+                <th style="width:22%">Campo</th>
+                <th>O que fazer</th>
+                <th style="width:20%">Exemplo</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Praga Presente?</strong></td>
+                <td>Ative se encontrou a praga <em>neste ponto específico</em>. Se não encontrou, deixe desativado e salve — o ponto fica registrado como "Ausente".</td>
+                <td>Toggle ligado = Presente</td>
+              </tr>
+              <tr>
+                <td><strong>Quantidade</strong></td>
+                <td>Número de indivíduos (insetos, lagartas, ovos) encontrados neste ponto.</td>
+                <td>3 lagartas</td>
+              </tr>
+              <tr>
+                <td><strong>Estágio</strong></td>
+                <td>Fase de vida predominante da praga: Ovo → Larva → Pupa → Adulto.</td>
+                <td>Larva</td>
+              </tr>
+              <tr>
+                <td><strong>Severidade</strong></td>
+                <td>Nível de dano visual: 1 = mínimo, 3 = médio, 5 = muito alto.</td>
+                <td>Nível 2</td>
+              </tr>
+              <tr>
+                <td><strong>Latitude / Longitude</strong></td>
+                <td>Coordenadas GPS do local (opcional). Permite gerar mapa de infestação. Use o celular para obter.</td>
+                <td>-19.8711 / -51.7500</td>
+              </tr>
+              <tr>
+                <td><strong>Foto</strong></td>
+                <td>Foto da planta ou da praga encontrada. Documentação visual para laudo técnico (opcional).</td>
+                <td>foto_ponto3.jpg</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
+
+        <!-- Boas práticas e erros comuns -->
+        <div class="row g-3 mb-3">
+          <div class="col-md-6">
+            <div class="card border-success h-100">
+              <div class="card-header bg-success text-white py-2">
+                <strong><i class="bi bi-check-circle"></i> Boas práticas de campo</strong>
+              </div>
+              <div class="card-body small">
+                <ul class="mb-0">
+                  <li>Distribua os 20 pontos em <strong>grid 4×5</strong> cobrindo todo o talhão</li>
+                  <li>Examine ao menos <strong>5 plantas por ponto</strong></li>
+                  <li>Registre GPS em campo com o smartphone para criar mapa de calor</li>
+                  <li>Use <strong>"Salvar e Próximo"</strong> para agilizar o lançamento sequencial</li>
+                  <li>Registre todos os 20, mesmo os pontos sem praga</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="card border-danger h-100">
+              <div class="card-header bg-danger text-white py-2">
+                <strong><i class="bi bi-x-circle"></i> Evite estes erros</strong>
+              </div>
+              <div class="card-body small">
+                <ul class="mb-0">
+                  <li>Não confunda <em>quantidade de indivíduos</em> (campo aqui) com <em>nº de pontos com praga</em> (campo na tela de Praga)</li>
+                  <li>Não deixe "Praga Presente" ativado se o ponto estava limpo</li>
+                  <li>Não pule pontos — um grid incompleto distorce a incidência</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Distribuição visual -->
+        <div class="card bg-light">
+          <div class="card-body text-center">
+            <strong><i class="bi bi-grid-3x3-gap"></i> Distribuição sugerida: grid 4×5 no talhão</strong>
+            <div class="d-flex justify-content-center gap-3 mt-2 flex-wrap font-monospace">
+              <span>● ● ● ● ●</span>
+              <span>● ● ● ● ●</span>
+              <span>● ● ● ● ●</span>
+              <span>● ● ● ● ●</span>
+            </div>
+            <small class="text-muted d-block mt-1">Cada ● = 1 ponto de amostragem | Total: 20 pontos</small>
+          </div>
+        </div>
+
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
+          <i class="bi bi-check-circle"></i> Entendi, vou preencher!
+        </button>
       </div>
     </div>
   </div>

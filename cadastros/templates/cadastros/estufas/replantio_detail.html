@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} | ERP Agrícola{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+
+  <div class="mb-3">
+    <a href="{% url 'cadastros:replantio_list' %}" class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-arrow-left"></i> Voltar
+    </a>
+  </div>
+
+  <div class="row justify-content-center">
+    <div class="col-lg-6">
+      <div class="card shadow-sm border-0 rounded-4">
+        <div class="card-header bg-white border-0 pt-3 pb-0">
+          <h6 class="fw-bold text-secondary mb-0"><i class="bi bi-arrow-repeat text-warning"></i> Detalhes do Replantio</h6>
+        </div>
+        <div class="card-body">
+          <dl class="row">
+            <dt class="col-5 text-muted">Talhão</dt><dd class="col-7">{{ obj.talhao.nome }}</dd>
+            <dt class="col-5 text-muted">Safra</dt><dd class="col-7">{{ obj.safra|default:"—" }}</dd>
+            <dt class="col-5 text-muted">Data</dt><dd class="col-7">{{ obj.data_replantio|date:"d/m/Y" }}</dd>
+            <dt class="col-5 text-muted">Quantidade</dt><dd class="col-7"><strong>{{ obj.quantidade }}</strong> mudas</dd>
+            <dt class="col-5 text-muted">Origem</dt><dd class="col-7">{{ obj.get_origem_muda_display }}</dd>
+            <dt class="col-5 text-muted">Lote (Estufa)</dt>
+            <dd class="col-7">
+              {% if obj.lote_muda %}
+                <a href="{% url 'cadastros:lote_muda_detail' obj.lote_muda.pk %}">{{ obj.lote_muda.codigo_lote }}</a>
+              {% else %}—{% endif %}
+            </dd>
+            <dt class="col-5 text-muted">Motivo</dt><dd class="col-7"><span class="badge bg-warning text-dark">{{ obj.get_motivo_perda_display }}</span></dd>
+            <dt class="col-5 text-muted">Custo Adicional</dt><dd class="col-7"><strong>R$ {{ obj.custo_adicional|floatformat:2 }}</strong></dd>
+          </dl>
+          {% if obj.observacao %}
+          <hr>
+          <p class="small mb-0">{{ obj.observacao }}</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

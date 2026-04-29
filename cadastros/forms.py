@@ -5339,7 +5339,7 @@ class InspecaoQualidadeCampoForm(forms.ModelForm):
             from .models import OrdemServico
             from usuarios.models import Usuario
             self.fields['talhao'].queryset = Talhao.objects.filter(empresa=self.user.empresa, ativo=True)
-            self.fields['safra'].queryset = Safra.objects.filter(empresa=self.user.empresa)
+            self.fields['safra'].queryset = Safra.objects.filter(fazenda__empresa=self.user.empresa)
             self.fields['os'].queryset = OrdemServico.objects.filter(empresa=self.user.empresa)
             self.fields['responsavel'].queryset = Usuario.objects.filter(empresa=self.user.empresa, is_active=True)
 
@@ -5389,7 +5389,7 @@ class RegistroCadernoCampoForm(forms.ModelForm):
             from .models import OrdemServico
             from usuarios.models import Usuario
             self.fields['talhao'].queryset = Talhao.objects.filter(empresa=self.user.empresa, ativo=True)
-            self.fields['safra'].queryset = Safra.objects.filter(empresa=self.user.empresa)
+            self.fields['safra'].queryset = Safra.objects.filter(fazenda__empresa=self.user.empresa)
             self.fields['os'].queryset = OrdemServico.objects.filter(empresa=self.user.empresa)
             self.fields['responsavel'].queryset = Usuario.objects.filter(empresa=self.user.empresa, is_active=True)
 
@@ -5626,6 +5626,357 @@ class ReplantioTalhaoForm(forms.ModelForm):
             self.fields[f].required = False
         if self.user and self.user.empresa:
             self.fields['talhao'].queryset = Talhao.objects.filter(empresa=self.user.empresa, ativo=True)
-            self.fields['safra'].queryset = Safra.objects.filter(empresa=self.user.empresa)
+            self.fields['safra'].queryset = Safra.objects.filter(fazenda__empresa=self.user.empresa)
             self.fields['lote_muda'].queryset = LoteMuda.objects.filter(empresa=self.user.empresa)
             self.fields['responsavel'].queryset = Funcionario.objects.filter(empresa=self.user.empresa, ativo=True)
+
+
+# ─── FASE 3: Planejamento de Custo ───────────────────────────────────────────
+
+from .models import PlanejamentoCustoSafra, PlanejamentoCustoItem
+
+
+class PlanejamentoCustoSafraForm(forms.ModelForm):
+    class Meta:
+        model = PlanejamentoCustoSafra
+        fields = ['nome', 'cultura', 'safra', 'talhao', 'area_ha', 'observacoes']
+        widgets = {
+            'nome': forms.TextInput(attrs={'class': 'form-control'}),
+            'cultura': forms.Select(attrs={'class': 'form-select'}),
+            'safra': forms.Select(attrs={'class': 'form-select'}),
+            'talhao': forms.Select(attrs={'class': 'form-select'}),
+            'area_ha': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.0001'}),
+            'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        self.fields['safra'].required = False
+        self.fields['talhao'].required = False
+        self.fields['observacoes'].required = False
+        if self.user and self.user.empresa:
+            emp = self.user.empresa
+            self.fields['cultura'].queryset = Cultura.objects.filter(empresa=emp)
+            self.fields['safra'].queryset = Safra.objects.filter(fazenda__empresa=emp).order_by('-ano', 'nome')
+            self.fields['talhao'].queryset = Talhao.objects.filter(empresa=emp, ativo=True).order_by('nome')
+
+
+class PlanejamentoCustoItemForm(forms.ModelForm):
+    class Meta:
+        model = PlanejamentoCustoItem
+        fields = ['categoria', 'produto', 'descricao', 'dose_por_ha', 'unidade_medida', 'custo_unitario', 'area_ha']
+        widgets = {
+            'categoria': forms.Select(attrs={'class': 'form-select'}),
+            'produto': forms.Select(attrs={'class': 'form-select'}),
+            'descricao': forms.TextInput(attrs={'class': 'form-control'}),
+            'dose_por_ha': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.0001'}),
+            'unidade_medida': forms.Select(attrs={'class': 'form-select'}),
+            'custo_unitario': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.0001'}),
+            'area_ha': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.0001'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        self.fields['produto'].required = False
+        self.fields['dose_por_ha'].required = False
+        self.fields['unidade_medida'].required = False
+        if self.user and self.user.empresa:
+            from produtos.models import Produto, UnidadeMedida
+            emp = self.user.empresa
+            self.fields['produto'].queryset = Produto.objects.filter(empresa=emp, ativo=True).order_by('nome')
+            self.fields['unidade_medida'].queryset = UnidadeMedida.objects.filter(
+                empresa=emp
+            ).order_by('sigla')
+
+
+# ==============================================================
+# MÓDULO FROTA — FORMS
+# ==============================================================
+
+from .models import (
+    AbastecimentoVeiculo, ManutencaoVeiculo, ManutencaoItem,
+    PedagioVeiculo, TelemetriaVeiculo, Viagem,
+)
+
+
+class AbastecimentoVeiculoForm(forms.ModelForm):
+    class Meta:
+        model = AbastecimentoVeiculo
+        fields = [
+            'vehicle', 'motorista', 'data', 'tipo_combustivel',
+            'litros', 'preco_por_litro', 'km_odometro', 'horimetro',
+            'tanque_cheio', 'local_abastecimento', 'fornecedor', 'observacoes',
+        ]
+        widgets = {
+            'vehicle': forms.Select(attrs={'class': 'form-select'}),
+            'motorista': forms.Select(attrs={'class': 'form-select'}),
+            'data': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'tipo_combustivel': forms.Select(attrs={'class': 'form-select'}),
+            'litros': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.001'}),
+            'preco_por_litro': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.001'}),
+            'km_odometro': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1'}),
+            'horimetro': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1'}),
+            'tanque_cheio': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'local_abastecimento': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nome do posto / local'}),
+            'fornecedor': forms.Select(attrs={'class': 'form-select'}),
+            'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        for f in ['motorista', 'km_odometro', 'horimetro', 'local_abastecimento', 'fornecedor', 'observacoes']:
+            self.fields[f].required = False
+        if self.user and self.user.empresa:
+            emp = self.user.empresa
+            self.fields['vehicle'].queryset = Vehicle.objects.filter(empresa=emp, ativo=True).order_by('descricao', 'modelo')
+            from .models import Motorista
+            self.fields['motorista'].queryset = Motorista.objects.filter(empresa=emp, ativo=True).order_by('nome')
+            self.fields['fornecedor'].queryset = Fornecedor.objects.filter(empresa=emp, ativa=True).order_by('nome_fantasia', 'nome')
+
+
+class ManutencaoVeiculoForm(forms.ModelForm):
+    class Meta:
+        model = ManutencaoVeiculo
+        fields = [
+            'vehicle', 'tipo', 'status', 'descricao', 'data_abertura', 'data_conclusao',
+            'km_odometro', 'horimetro', 'proxima_data', 'proximo_km',
+            'eh_oficina_propria', 'local_oficina', 'fornecedor_externo',
+            'valor_servico', 'observacoes',
+        ]
+        widgets = {
+            'vehicle': forms.Select(attrs={'class': 'form-select'}),
+            'tipo': forms.Select(attrs={'class': 'form-select'}),
+            'status': forms.Select(attrs={'class': 'form-select'}),
+            'descricao': forms.TextInput(attrs={'class': 'form-control'}),
+            'data_abertura': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'data_conclusao': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'km_odometro': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1'}),
+            'horimetro': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1'}),
+            'proxima_data': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'proximo_km': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1'}),
+            'eh_oficina_propria': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'local_oficina': forms.Select(attrs={'class': 'form-select'}),
+            'fornecedor_externo': forms.Select(attrs={'class': 'form-select'}),
+            'valor_servico': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        optional = [
+            'data_conclusao', 'km_odometro', 'horimetro', 'proxima_data', 'proximo_km',
+            'local_oficina', 'fornecedor_externo', 'observacoes',
+        ]
+        for f in optional:
+            self.fields[f].required = False
+        if self.user and self.user.empresa:
+            emp = self.user.empresa
+            self.fields['vehicle'].queryset = Vehicle.objects.filter(empresa=emp, ativo=True).order_by('descricao', 'modelo')
+            self.fields['fornecedor_externo'].queryset = Fornecedor.objects.filter(empresa=emp, ativa=True).order_by('nome_fantasia', 'nome')
+            from estoque.models import Armazem
+            self.fields['local_oficina'].queryset = Armazem.objects.filter(empresa=emp)
+
+
+class ManutencaoItemForm(forms.ModelForm):
+    class Meta:
+        model = ManutencaoItem
+        fields = ['descricao', 'lote', 'quantidade', 'valor_unitario']
+        widgets = {
+            'descricao': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Filtro de óleo'}),
+            'lote': forms.Select(attrs={'class': 'form-select'}),
+            'quantidade': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.001'}),
+            'valor_unitario': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.0001'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        self.fields['lote'].required = False
+        if self.user and self.user.empresa:
+            from estoque.models import Lote
+            self.fields['lote'].queryset = Lote.objects.filter(
+                empresa=self.user.empresa
+            ).select_related('produto').order_by('produto__nome')
+
+
+class PedagioVeiculoForm(forms.ModelForm):
+    class Meta:
+        model = PedagioVeiculo
+        fields = ['vehicle', 'viagem', 'motorista', 'data', 'praca', 'valor', 'observacoes']
+        widgets = {
+            'vehicle': forms.Select(attrs={'class': 'form-select'}),
+            'viagem': forms.Select(attrs={'class': 'form-select'}),
+            'motorista': forms.Select(attrs={'class': 'form-select'}),
+            'data': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'praca': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Praça SP-270 km 45'}),
+            'valor': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        for f in ['viagem', 'motorista', 'praca', 'observacoes']:
+            self.fields[f].required = False
+        if self.user and self.user.empresa:
+            emp = self.user.empresa
+            self.fields['vehicle'].queryset = Vehicle.objects.filter(empresa=emp, ativo=True).order_by('descricao', 'modelo')
+            from .models import Motorista
+            self.fields['motorista'].queryset = Motorista.objects.filter(empresa=emp, ativo=True).order_by('nome')
+            self.fields['viagem'].queryset = Viagem.objects.filter(transportadora__empresa=emp).order_by('-data')
+
+
+class TelemetriaVeiculoForm(forms.ModelForm):
+    class Meta:
+        model = TelemetriaVeiculo
+        fields = ['vehicle', 'motorista', 'viagem', 'data_hora', 'latitude', 'longitude',
+                  'local_descricao', 'velocidade_kmh', 'km_odometro', 'fonte', 'observacoes']
+        widgets = {
+            'vehicle': forms.Select(attrs={'class': 'form-select'}),
+            'motorista': forms.Select(attrs={'class': 'form-select'}),
+            'viagem': forms.Select(attrs={'class': 'form-select'}),
+            'data_hora': forms.DateTimeInput(attrs={'class': 'form-control', 'type': 'datetime-local'}),
+            'latitude': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.0000001'}),
+            'longitude': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.0000001'}),
+            'local_descricao': forms.TextInput(attrs={'class': 'form-control'}),
+            'velocidade_kmh': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1'}),
+            'km_odometro': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1'}),
+            'fonte': forms.Select(attrs={'class': 'form-select'}),
+            'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        for f in ['motorista', 'viagem', 'latitude', 'longitude', 'local_descricao',
+                  'velocidade_kmh', 'km_odometro', 'observacoes']:
+            self.fields[f].required = False
+        if self.user and self.user.empresa:
+            emp = self.user.empresa
+            self.fields['vehicle'].queryset = Vehicle.objects.filter(empresa=emp, ativo=True).order_by('descricao', 'modelo')
+            from .models import Motorista
+            self.fields['motorista'].queryset = Motorista.objects.filter(empresa=emp, ativo=True).order_by('nome')
+            self.fields['viagem'].queryset = Viagem.objects.filter(transportadora__empresa=emp).order_by('-data')
+
+
+class ViagemFrotaForm(forms.ModelForm):
+    class Meta:
+        model = Viagem
+        fields = ['transportadora', 'vehicle', 'motorista', 'origem', 'destino',
+                  'data', 'valor_frete', 'km_inicial', 'km_final', 'status', 'observacoes']
+        widgets = {
+            'transportadora': forms.Select(attrs={'class': 'form-select'}),
+            'vehicle': forms.Select(attrs={'class': 'form-select'}),
+            'motorista': forms.Select(attrs={'class': 'form-select'}),
+            'origem': forms.TextInput(attrs={'class': 'form-control'}),
+            'destino': forms.TextInput(attrs={'class': 'form-control'}),
+            'data': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'valor_frete': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'km_inicial': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1'}),
+            'km_final': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1'}),
+            'status': forms.Select(attrs={'class': 'form-select'}),
+            'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        for f in ['vehicle', 'motorista', 'valor_frete', 'km_inicial', 'km_final', 'observacoes']:
+            self.fields[f].required = False
+        if self.user and self.user.empresa:
+            emp = self.user.empresa
+            self.fields['transportadora'].queryset = Transportadora.objects.filter(empresa=emp, ativa=True).order_by('nome_fantasia', 'razao_social')
+            self.fields['vehicle'].queryset = Vehicle.objects.filter(empresa=emp, ativo=True).order_by('descricao', 'modelo')
+            from .models import Motorista
+            self.fields['motorista'].queryset = Motorista.objects.filter(empresa=emp, ativo=True).order_by('nome')
+
+
+class AbastecimentoImportForm(forms.Form):
+    arquivo = forms.FileField(
+        label='Arquivo CSV',
+        widget=forms.ClearableFileInput(attrs={'class': 'form-control', 'accept': '.csv,.txt'}),
+        help_text='Arquivo CSV com colunas: vehicle_placa, data, tipo_combustivel, litros, preco_por_litro, km_odometro, tanque_cheio, local'
+    )
+
+
+class MotoristaLoginForm(forms.Form):
+    matricula = forms.CharField(
+        label='Matrícula',
+        max_length=50,
+        widget=forms.TextInput(attrs={'class': 'form-control form-control-lg', 'placeholder': 'Sua matrícula', 'autofocus': True}),
+    )
+    pin = forms.CharField(
+        label='PIN',
+        max_length=20,
+        widget=forms.PasswordInput(attrs={'class': 'form-control form-control-lg', 'placeholder': '••••••'}),
+    )
+
+
+class AbastecimentoPortalForm(forms.ModelForm):
+    foto_bomba = forms.ImageField(
+        label='Foto da Bomba',
+        widget=forms.ClearableFileInput(attrs={'class': 'form-control', 'accept': 'image/*', 'capture': 'environment'}),
+        required=True,
+    )
+    foto_odometro = forms.ImageField(
+        label='Foto do Hodômetro',
+        widget=forms.ClearableFileInput(attrs={'class': 'form-control', 'accept': 'image/*', 'capture': 'environment'}),
+        required=False,
+    )
+
+    class Meta:
+        model = AbastecimentoVeiculo
+        fields = ['vehicle', 'data', 'tipo_combustivel', 'litros', 'preco_por_litro',
+                  'km_odometro', 'horimetro', 'tanque_cheio', 'local_abastecimento', 'observacoes']
+        widgets = {
+            'vehicle': forms.Select(attrs={'class': 'form-select form-select-lg'}),
+            'data': forms.DateInput(attrs={'class': 'form-control form-control-lg', 'type': 'date'}),
+            'tipo_combustivel': forms.Select(attrs={'class': 'form-select form-select-lg'}),
+            'litros': forms.NumberInput(attrs={'class': 'form-control form-control-lg', 'step': '0.001', 'min': '0'}),
+            'preco_por_litro': forms.NumberInput(attrs={'class': 'form-control form-control-lg', 'step': '0.001', 'min': '0'}),
+            'km_odometro': forms.NumberInput(attrs={'class': 'form-control form-control-lg', 'step': '0.1'}),
+            'horimetro': forms.NumberInput(attrs={'class': 'form-control form-control-lg', 'step': '0.1'}),
+            'tanque_cheio': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'local_abastecimento': forms.TextInput(attrs={'class': 'form-control form-control-lg', 'placeholder': 'Nome do posto'}),
+            'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.empresa = kwargs.pop('empresa', None)
+        vehicles_qs = kwargs.pop('vehicles_qs', None)
+        super().__init__(*args, **kwargs)
+        for f in ['km_odometro', 'horimetro', 'local_abastecimento', 'observacoes']:
+            self.fields[f].required = False
+        if vehicles_qs is not None:
+            self.fields['vehicle'].queryset = vehicles_qs
+        elif self.empresa:
+            self.fields['vehicle'].queryset = Vehicle.objects.filter(empresa=self.empresa, ativo=True).order_by('descricao', 'modelo')
+
+
+class SolicitacaoManutencaoForm(forms.ModelForm):
+    class Meta:
+        model = ManutencaoVeiculo
+        fields = ['vehicle', 'tipo', 'descricao', 'km_odometro', 'horimetro', 'observacoes']
+        widgets = {
+            'vehicle': forms.Select(attrs={'class': 'form-select form-select-lg'}),
+            'tipo': forms.Select(attrs={'class': 'form-select form-select-lg'}),
+            'descricao': forms.Textarea(attrs={'class': 'form-control', 'rows': 4, 'placeholder': 'Descreva o problema ou serviço necessário...'}),
+            'km_odometro': forms.NumberInput(attrs={'class': 'form-control form-control-lg', 'step': '0.1'}),
+            'horimetro': forms.NumberInput(attrs={'class': 'form-control form-control-lg', 'step': '0.1'}),
+            'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.empresa = kwargs.pop('empresa', None)
+        vehicles_qs = kwargs.pop('vehicles_qs', None)
+        super().__init__(*args, **kwargs)
+        for f in ['km_odometro', 'horimetro', 'observacoes']:
+            self.fields[f].required = False
+        if vehicles_qs is not None:
+            self.fields['vehicle'].queryset = vehicles_qs
+        elif self.empresa:
+            self.fields['vehicle'].queryset = Vehicle.objects.filter(empresa=self.empresa, ativo=True).order_by('descricao', 'modelo')

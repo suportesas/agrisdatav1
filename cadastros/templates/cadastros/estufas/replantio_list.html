@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+
+{% block title %}Replantios | ERP Agrícola{% endblock %}
+{% block page_title %}Replantios{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+
+  <div class="row mb-4">
+    <div class="col">
+      <a href="{% url 'cadastros:replantio_create' %}" class="btn btn-success">
+        <i class="bi bi-plus-circle"></i> Novo Replantio
+      </a>
+    </div>
+  </div>
+
+  <div class="card shadow-sm border-0 rounded-4 mb-4">
+    <div class="card-body">
+      <form method="get" class="row g-2 align-items-end">
+        <div class="col-md-3">
+          <label class="form-label small fw-semibold">Talhão</label>
+          <select class="form-select form-select-sm" name="talhao">
+            <option value="">Todos</option>
+            {% for t in talhoes %}
+              <option value="{{ t.id }}" {% if talhao_selecionado|stringformat:"s" == t.id|stringformat:"s" %}selected{% endif %}>{{ t.nome }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small fw-semibold">Safra</label>
+          <select class="form-select form-select-sm" name="safra">
+            <option value="">Todas</option>
+            {% for s in safras %}
+              <option value="{{ s.id }}" {% if safra_selecionada|stringformat:"s" == s.id|stringformat:"s" %}selected{% endif %}>{{ s }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small fw-semibold">Motivo</label>
+          <select class="form-select form-select-sm" name="motivo">
+            <option value="">Todos</option>
+            {% for val, lbl in motivo_choices %}
+              <option value="{{ val }}" {% if motivo_selecionado == val %}selected{% endif %}>{{ lbl }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2">
+          <button type="submit" class="btn btn-primary btn-sm w-100"><i class="bi bi-funnel"></i> Filtrar</button>
+        </div>
+        <div class="col-md-1">
+          <a href="{% url 'cadastros:replantio_list' %}" class="btn btn-outline-secondary btn-sm w-100"><i class="bi bi-x"></i></a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card shadow-sm border-0 rounded-4">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Data</th>
+            <th>Talhão</th>
+            <th>Safra</th>
+            <th>Motivo</th>
+            <th>Origem</th>
+            <th class="text-end">Quantidade</th>
+            <th class="text-end">Custo Adicional</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in replantios %}
+          <tr>
+            <td><strong>{{ r.data_replantio|date:"d/m/Y" }}</strong></td>
+            <td>{{ r.talhao.nome }}</td>
+            <td class="small text-muted">{{ r.safra|default:"—" }}</td>
+            <td><span class="badge bg-warning text-dark">{{ r.get_motivo_perda_display }}</span></td>
+            <td class="small">{{ r.get_origem_muda_display }}</td>
+            <td class="text-end">{{ r.quantidade }}</td>
+            <td class="text-end">R$ {{ r.custo_adicional|floatformat:2 }}</td>
+            <td>
+              <a href="{% url 'cadastros:replantio_detail' r.pk %}" class="btn btn-outline-info btn-sm">
+                <i class="bi bi-eye"></i>
+              </a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="8" class="text-center py-5 text-muted">
+              <i class="bi bi-arrow-repeat fs-3 d-block mb-2"></i>
+              Nenhum replantio registrado.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

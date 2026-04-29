@@ -1,0 +1,110 @@
+{% extends 'base.html' %}
+{% block title %}{{ title }} | ERP Agrícola{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <h5 class="fw-bold text-secondary mb-0"><i class="bi bi-truck text-primary"></i> {{ obj.origem }} → {{ obj.destino }}</h5>
+    <div class="d-flex gap-2">
+      <a href="{% url 'cadastros:viagem_list' %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i> Voltar</a>
+      <a href="{% url 'cadastros:viagem_frota_update' obj.pk %}" class="btn btn-outline-primary btn-sm"><i class="bi bi-pencil"></i> Editar</a>
+      <a href="{% url 'cadastros:pedagio_create' %}?viagem={{ obj.pk }}" class="btn btn-outline-warning btn-sm"><i class="bi bi-plus"></i> Pedágio</a>
+    </div>
+  </div>
+
+  <!-- Margem KPIs -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-2">
+      <div class="card border-0 shadow-sm text-center"><div class="card-body py-3">
+        <small class="text-muted d-block">Frete</small>
+        <h5 class="mb-0 text-primary">R$ {{ margem.frete|floatformat:2 }}</h5>
+      </div></div>
+    </div>
+    <div class="col-md-2">
+      <div class="card border-0 shadow-sm text-center"><div class="card-body py-3">
+        <small class="text-muted d-block">Combustível</small>
+        <h5 class="mb-0">R$ {{ margem.custo_combustivel|floatformat:2 }}</h5>
+      </div></div>
+    </div>
+    <div class="col-md-2">
+      <div class="card border-0 shadow-sm text-center"><div class="card-body py-3">
+        <small class="text-muted d-block">Pedágios</small>
+        <h5 class="mb-0">R$ {{ margem.custo_pedagio|floatformat:2 }}</h5>
+      </div></div>
+    </div>
+    <div class="col-md-2">
+      <div class="card border-0 shadow-sm text-center"><div class="card-body py-3">
+        <small class="text-muted d-block">Manutenção</small>
+        <h5 class="mb-0">R$ {{ margem.custo_manutencao|floatformat:2 }}</h5>
+      </div></div>
+    </div>
+    <div class="col-md-2">
+      <div class="card border-0 shadow-sm text-center"><div class="card-body py-3">
+        <small class="text-muted d-block">Custo Total</small>
+        <h5 class="mb-0 text-danger">R$ {{ margem.custo_total|floatformat:2 }}</h5>
+      </div></div>
+    </div>
+    <div class="col-md-2">
+      <div class="card border-0 shadow-sm text-center {% if margem.margem_bruta >= 0 %}bg-success bg-opacity-10{% else %}bg-danger bg-opacity-10{% endif %}">
+        <div class="card-body py-3">
+          <small class="text-muted d-block">Margem Bruta</small>
+          <h5 class="mb-0 {% if margem.margem_bruta >= 0 %}text-success{% else %}text-danger{% endif %}">
+            R$ {{ margem.margem_bruta|floatformat:2 }}
+          </h5>
+          {% if margem.margem_pct %}<small class="{% if margem.margem_bruta >= 0 %}text-success{% else %}text-danger{% endif %}">{{ margem.margem_pct }}%</small>{% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-lg-7">
+      <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-6"><div class="small text-muted">Transportadora</div><div class="fw-semibold">{{ obj.transportadora }}</div></div>
+            <div class="col-md-6"><div class="small text-muted">Data</div><div class="fw-semibold">{{ obj.data|date:"d/m/Y" }}</div></div>
+            <div class="col-md-6"><div class="small text-muted">Veículo</div><div>{{ obj.vehicle|default:"—" }}</div></div>
+            <div class="col-md-6"><div class="small text-muted">Motorista</div><div>{{ obj.motorista.nome|default:"—" }}</div></div>
+            {% if obj.km_percorrido %}
+            <div class="col-md-4"><div class="small text-muted">KM Percorrido</div><div class="fw-bold">{{ obj.km_percorrido|floatformat:0 }} km</div></div>
+            {% if margem.custo_por_km %}<div class="col-md-4"><div class="small text-muted">Custo/km</div><div class="fw-bold text-warning">R$ {{ margem.custo_por_km|floatformat:2 }}</div></div>{% endif %}
+            {% endif %}
+            <div class="col-md-4"><div class="small text-muted">Status</div>
+              {% if obj.status == 'CONCLUIDA' %}<span class="badge bg-success">{{ obj.get_status_display }}</span>
+              {% elif obj.status == 'EM_TRANSITO' %}<span class="badge bg-primary">{{ obj.get_status_display }}</span>
+              {% else %}<span class="badge bg-warning text-dark">{{ obj.get_status_display }}</span>{% endif %}
+            </div>
+            {% if obj.observacoes %}<div class="col-12"><div class="small text-muted">{{ obj.observacoes }}</div></div>{% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Pedágios desta viagem -->
+      <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-header bg-white border-0 pt-3 pb-0">
+          <h6 class="fw-bold text-secondary mb-0"><i class="bi bi-signpost"></i> Pedágios da Viagem</h6>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-sm align-middle mb-0">
+            <thead class="table-light"><tr><th>Data</th><th>Praça</th><th class="text-end">Valor</th></tr></thead>
+            <tbody>
+              {% for p in pedagios %}
+              <tr>
+                <td class="small">{{ p.data|date:"d/m/Y" }}</td>
+                <td class="small">{{ p.praca|default:"—" }}</td>
+                <td class="text-end fw-bold">R$ {{ p.valor|floatformat:2 }}</td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="3" class="text-center text-muted py-2">Nenhum pedágio.</td></tr>
+              {% endfor %}
+            </tbody>
+            {% if pedagios %}<tfoot class="table-light fw-bold"><tr><td colspan="2">Total</td><td class="text-end">R$ {{ margem.custo_pedagio|floatformat:2 }}</td></tr></tfoot>{% endif %}
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

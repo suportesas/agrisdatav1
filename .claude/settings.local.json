@@ -17,7 +17,17 @@
       "Bash(python -c ' *)",
       "Bash(python manage.py migrate)",
       "Bash(python -c \"from cadastros.forms import RegistroPluviometriaForm, InspecaoQualidadeCampoForm, RegistroCadernoCampoForm, EstufaForm, LoteMudaForm, TransplantioForm; print\\('Forms OK'\\)\")",
-      "Bash(python manage.py check --deploy)"
+      "Bash(python manage.py check --deploy)",
+      "Bash(wait bogphp8ki *)",
+      "Bash(python manage.py makemigrations cadastros --name=fase3_planejamento_custo)",
+      "Bash(python manage.py makemigrations cadastros --name frota_combustivel_manutencao_pedagio_telemetria)",
+      "Bash(python manage.py makemigrations cadastros --name frota_viagem_extend)",
+      "Bash(git remote *)",
+      "Bash(python manage.py makemigrations cadastros --name motorista_portal_foto_abastecimento)",
+      "Bash(python manage.py makemigrations cadastros --name manutencao_motorista_solicitante)",
+      "Bash(python manage.py shell -c \"from django.urls import reverse; print\\(reverse\\('cadastros:motorista_login'\\)\\); print\\(reverse\\('cadastros:api_veiculo_info_abastecimento'\\)\\); print\\(reverse\\('cadastros:abastecimento_importar'\\)\\); print\\(reverse\\('cadastros:motorista_set_pin', args=[1]\\)\\)\")",
+      "Bash(python manage.py shell -c \"from django.urls import reverse; print\\(reverse\\('cadastros:motorista_set_pin', args=[1]\\)\\); print\\(reverse\\('cadastros:motorista_login'\\)\\); print\\('OK'\\)\")",
+      "Bash(python manage.py shell -c \"from django.urls import reverse; print\\(reverse\\('portal_motorista:login'\\)\\); print\\(reverse\\('portal_motorista:home'\\)\\); print\\(reverse\\('portal_motorista:abastecimento_novo'\\)\\); print\\('OK'\\)\")"
     ]
   }
 }

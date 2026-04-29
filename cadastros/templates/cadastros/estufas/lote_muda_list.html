@@ -1,0 +1,127 @@
+{% extends 'base.html' %}
+
+{% block title %}Lotes de Mudas | ERP Agrícola{% endblock %}
+{% block page_title %}Lotes de Mudas{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+
+  <div class="row mb-4">
+    <div class="col d-flex gap-2">
+      <a href="{% url 'cadastros:lote_muda_create' %}" class="btn btn-success">
+        <i class="bi bi-plus-circle"></i> Novo Lote
+      </a>
+      <a href="{% url 'cadastros:transplantio_create' %}" class="btn btn-outline-primary">
+        <i class="bi bi-arrow-right-square"></i> Novo Transplantio
+      </a>
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <div class="card shadow-sm border-0 rounded-4 mb-4">
+    <div class="card-body">
+      <form method="get" class="row g-2 align-items-end">
+        <div class="col-md-3">
+          <label class="form-label small fw-semibold">Status</label>
+          <select class="form-select form-select-sm" name="status">
+            <option value="">Todos</option>
+            {% for val, lbl in status_choices %}
+              <option value="{{ val }}" {% if status_selecionado == val %}selected{% endif %}>{{ lbl }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small fw-semibold">Estufa</label>
+          <select class="form-select form-select-sm" name="estufa">
+            <option value="">Todas</option>
+            {% for e in estufas %}
+              <option value="{{ e.id }}" {% if estufa_selecionada|stringformat:"s" == e.id|stringformat:"s" %}selected{% endif %}>{{ e.nome }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small fw-semibold">Cultura</label>
+          <select class="form-select form-select-sm" name="cultura">
+            <option value="">Todas</option>
+            {% for c in culturas %}
+              <option value="{{ c.id }}" {% if cultura_selecionada|stringformat:"s" == c.id|stringformat:"s" %}selected{% endif %}>{{ c.nome }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-1">
+          <button type="submit" class="btn btn-primary btn-sm w-100"><i class="bi bi-funnel"></i> Filtrar</button>
+        </div>
+        <div class="col-md-1">
+          <a href="{% url 'cadastros:lote_muda_list' %}" class="btn btn-outline-secondary btn-sm w-100"><i class="bi bi-x"></i></a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Cards dos lotes -->
+  {% if lotes %}
+  <div class="row g-3">
+    {% for lote in lotes %}
+    <div class="col-md-4">
+      <div class="card shadow-sm border-0 rounded-4 h-100">
+        <div class="card-header bg-white border-0 pt-3 pb-0 d-flex justify-content-between align-items-center">
+          <h6 class="fw-bold mb-0 small font-monospace">{{ lote.codigo_lote }}</h6>
+          {% if lote.status == 'PRONTO' %}
+            <span class="badge bg-success">{{ lote.get_status_display }}</span>
+          {% elif lote.status == 'EM_CRESCIMENTO' %}
+            <span class="badge bg-info text-dark">{{ lote.get_status_display }}</span>
+          {% elif lote.status == 'SEMEADO' %}
+            <span class="badge bg-secondary">{{ lote.get_status_display }}</span>
+          {% elif lote.status == 'TRANSPLANTADO' %}
+            <span class="badge bg-warning text-dark">{{ lote.get_status_display }}</span>
+          {% else %}
+            <span class="badge bg-dark">{{ lote.get_status_display }}</span>
+          {% endif %}
+        </div>
+        <div class="card-body">
+          <p class="mb-1 small"><strong>{{ lote.cultura.nome }}</strong> {% if lote.cultivar %}({{ lote.cultivar }}){% endif %}</p>
+          <p class="mb-1 small text-muted"><i class="bi bi-house-door"></i> {{ lote.estufa.nome }} — {{ lote.estufa.fazenda.nome }}</p>
+          <p class="mb-2 small text-muted"><i class="bi bi-calendar"></i> Semeio: {{ lote.data_semeadura|date:"d/m/Y" }}</p>
+
+          <!-- Barra de progresso: disponíveis vs semeadas -->
+          {% if lote.quantidade_semeada %}
+          <div class="mb-1">
+            <div class="d-flex justify-content-between small text-muted mb-1">
+              <span>{{ lote.quantidade_disponivel }} disponíveis</span>
+              <span>{{ lote.quantidade_semeada }} semeadas</span>
+            </div>
+            <div class="progress" style="height:8px;">
+              <div class="progress-bar bg-success" style="width:{% widthratio lote.quantidade_disponivel lote.quantidade_semeada 100 %}%"></div>
+              <div class="progress-bar bg-warning" style="width:{% widthratio lote.quantidade_transplantada lote.quantidade_semeada 100 %}%"></div>
+              <div class="progress-bar bg-danger" style="width:{% widthratio lote.quantidade_perdida lote.quantidade_semeada 100 %}%"></div>
+            </div>
+            <div class="d-flex gap-2 mt-1 small text-muted">
+              <span><span class="badge bg-success" style="font-size:8px;">&nbsp;</span> Disp.</span>
+              <span><span class="badge bg-warning text-dark" style="font-size:8px;">&nbsp;</span> Transp.</span>
+              <span><span class="badge bg-danger" style="font-size:8px;">&nbsp;</span> Perdas</span>
+            </div>
+          </div>
+          {% endif %}
+        </div>
+        <div class="card-footer bg-white border-0 pt-0">
+          <a href="{% url 'cadastros:lote_muda_detail' lote.pk %}" class="btn btn-outline-info btn-sm">
+            <i class="bi bi-eye"></i> Detalhe
+          </a>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="text-center py-5 text-muted">
+    <i class="bi bi-grid-x fs-1 d-block mb-2"></i>
+    Nenhum lote encontrado.
+    <br>
+    <a href="{% url 'cadastros:lote_muda_create' %}" class="btn btn-success btn-sm mt-3">
+      <i class="bi bi-plus"></i> Criar Lote
+    </a>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

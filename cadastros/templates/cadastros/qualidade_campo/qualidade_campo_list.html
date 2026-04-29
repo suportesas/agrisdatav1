@@ -1,0 +1,199 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Qualidade de Campo | ERP Agrícola{% endblock %}
+{% block page_title %}Qualidade de Campo — Inspeções{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+
+  <!-- Cards de resumo -->
+  <div class="row mb-4">
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm bg-success text-white">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <h6 class="opacity-75 mb-1">Total de Inspeções</h6>
+              <h2 class="mb-0">{{ total }}</h2>
+            </div>
+            <i class="bi bi-patch-check fs-1 opacity-50"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm bg-primary text-white">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <h6 class="opacity-75 mb-1">Aprovadas</h6>
+              <h2 class="mb-0">{{ inspecoes|length }}</h2>
+            </div>
+            <i class="bi bi-check-circle fs-1 opacity-50"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm bg-info text-white">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <h6 class="opacity-75 mb-1">Talhões</h6>
+              <h2 class="mb-0">{{ talhoes|length }}</h2>
+            </div>
+            <i class="bi bi-map fs-1 opacity-50"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm bg-warning text-dark">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <h6 class="mb-1">Nova Inspeção</h6>
+              <a href="{% url 'cadastros:qualidade_campo_create' %}" class="btn btn-dark btn-sm">
+                <i class="bi bi-plus-circle"></i> Registrar
+              </a>
+            </div>
+            <i class="bi bi-plus-square fs-1 opacity-50"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <div class="card shadow-sm border-0 rounded-4 mb-4">
+    <div class="card-body">
+      <form method="get" class="row g-2 align-items-end">
+        <div class="col-md-2">
+          <label class="form-label small fw-semibold">Talhão</label>
+          <select class="form-select form-select-sm" name="talhao">
+            <option value="">Todos</option>
+            {% for t in talhoes %}
+              <option value="{{ t.id }}" {% if talhao_selecionado|stringformat:"s" == t.id|stringformat:"s" %}selected{% endif %}>{{ t.nome }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small fw-semibold">Safra</label>
+          <select class="form-select form-select-sm" name="safra">
+            <option value="">Todas</option>
+            {% for s in safras %}
+              <option value="{{ s.id }}" {% if safra_selecionada|stringformat:"s" == s.id|stringformat:"s" %}selected{% endif %}>{{ s }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small fw-semibold">Resultado</label>
+          <select class="form-select form-select-sm" name="resultado">
+            <option value="">Todos</option>
+            {% for val, lbl in resultado_choices %}
+              <option value="{{ val }}" {% if resultado_selecionado == val %}selected{% endif %}>{{ lbl }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small fw-semibold">Tipo</label>
+          <select class="form-select form-select-sm" name="tipo">
+            <option value="">Todos</option>
+            {% for val, lbl in tipo_choices %}
+              <option value="{{ val }}" {% if tipo_selecionado == val %}selected{% endif %}>{{ lbl }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-1">
+          <label class="form-label small fw-semibold">De</label>
+          <input type="date" class="form-control form-control-sm" name="data_inicio" value="{{ data_inicio }}">
+        </div>
+        <div class="col-md-1">
+          <label class="form-label small fw-semibold">Até</label>
+          <input type="date" class="form-control form-control-sm" name="data_fim" value="{{ data_fim }}">
+        </div>
+        <div class="col-md-1">
+          <button type="submit" class="btn btn-primary btn-sm w-100"><i class="bi bi-funnel"></i> Filtrar</button>
+        </div>
+        <div class="col-md-1">
+          <a href="{% url 'cadastros:qualidade_campo_list' %}" class="btn btn-outline-secondary btn-sm w-100"><i class="bi bi-x"></i></a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Tabela -->
+  <div class="card shadow-sm border-0 rounded-4">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Data</th>
+            <th>Talhão</th>
+            <th>Safra</th>
+            <th>Tipo</th>
+            <th>Estágio</th>
+            <th class="text-center">Brix</th>
+            <th class="text-center">% Def.</th>
+            <th class="text-center">Resultado</th>
+            <th>Responsável</th>
+            <th class="text-center" style="width:130px;">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for insp in inspecoes %}
+          <tr>
+            <td><strong>{{ insp.data_inspecao|date:"d/m/Y" }}</strong></td>
+            <td>{{ insp.talhao.nome }}</td>
+            <td class="text-muted small">{{ insp.safra|default:"—" }}</td>
+            <td><span class="badge bg-secondary">{{ insp.get_tipo_inspecao_display }}</span></td>
+            <td class="small text-muted">{{ insp.estagio_cultura|default:"—" }}</td>
+            <td class="text-center small">{{ insp.brix|default:"—" }}</td>
+            <td class="text-center small">{% if insp.percentual_defeitos %}{{ insp.percentual_defeitos }}%{% else %}—{% endif %}</td>
+            <td class="text-center">
+              {% if insp.resultado == 'APROVADO' %}
+                <span class="badge bg-success"><i class="bi bi-check-circle"></i> Aprovado</span>
+              {% elif insp.resultado == 'APROVADO_COM_RESSALVA' %}
+                <span class="badge bg-warning text-dark"><i class="bi bi-exclamation-circle"></i> c/ Ressalva</span>
+              {% else %}
+                <span class="badge bg-danger"><i class="bi bi-x-circle"></i> Reprovado</span>
+              {% endif %}
+            </td>
+            <td class="small">{{ insp.responsavel.get_full_name|default:insp.responsavel.username|default:"—" }}</td>
+            <td class="text-center">
+              <div class="btn-group btn-group-sm">
+                <a href="{% url 'cadastros:qualidade_campo_detail' insp.pk %}" class="btn btn-outline-info" title="Ver">
+                  <i class="bi bi-eye"></i>
+                </a>
+                <a href="{% url 'cadastros:qualidade_campo_update' insp.pk %}" class="btn btn-outline-primary" title="Editar">
+                  <i class="bi bi-pencil"></i>
+                </a>
+                <a href="{% url 'cadastros:qualidade_campo_pdf' insp.pk %}" class="btn btn-outline-secondary" title="PDF" target="_blank">
+                  <i class="bi bi-file-pdf"></i>
+                </a>
+                <a href="{% url 'cadastros:qualidade_campo_delete' insp.pk %}" class="btn btn-outline-danger" title="Excluir">
+                  <i class="bi bi-trash"></i>
+                </a>
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="10" class="text-center py-5 text-muted">
+              <i class="bi bi-patch-check fs-3 d-block mb-2"></i>
+              Nenhuma inspeção encontrada.
+              <br>
+              <a href="{% url 'cadastros:qualidade_campo_create' %}" class="btn btn-sm btn-success mt-2">
+                <i class="bi bi-plus"></i> Registrar primeira inspeção
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% block title %}{{ title }} | ERP Agrícola{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <div>
+      <form method="get" class="d-flex gap-2">
+        <select name="vehicle" class="form-select form-select-sm" style="width:220px">
+          <option value="">Todos os veículos</option>
+          {% for v in veiculos %}<option value="{{ v.pk }}" {% if vehicle_selecionado == v.pk|stringformat:"s" %}selected{% endif %}>{{ v }}</option>{% endfor %}
+        </select>
+        <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-search"></i></button>
+        {% if vehicle_selecionado %}
+        <a href="{% url 'cadastros:telemetria_mapa' vehicle_selecionado %}" class="btn btn-outline-success btn-sm"><i class="bi bi-map"></i> Ver Mapa</a>
+        {% endif %}
+      </form>
+    </div>
+    <a href="{% url 'cadastros:telemetria_create' %}" class="btn btn-success btn-sm"><i class="bi bi-plus"></i> Registrar Posição</a>
+  </div>
+
+  <div class="card border-0 shadow-sm rounded-4">
+    <div class="table-responsive">
+      <table class="table table-sm table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr><th>Data/Hora</th><th>Veículo</th><th>Motorista</th><th>Local</th><th>Lat/Lng</th><th>Velocidade</th><th>Fonte</th><th></th></tr>
+        </thead>
+        <tbody>
+          {% for r in registros %}
+          <tr>
+            <td class="small">{{ r.data_hora|date:"d/m/Y H:i" }}</td>
+            <td>{{ r.vehicle }}</td>
+            <td class="small text-muted">{{ r.motorista.nome|default:"—" }}</td>
+            <td class="small">{{ r.local_descricao|truncatechars:30|default:"—" }}</td>
+            <td class="small text-muted">
+              {% if r.latitude %}{{ r.latitude }}, {{ r.longitude }}{% else %}—{% endif %}
+            </td>
+            <td class="small">{% if r.velocidade_kmh %}{{ r.velocidade_kmh|floatformat:0 }} km/h{% else %}—{% endif %}</td>
+            <td><span class="badge bg-secondary small">{{ r.get_fonte_display }}</span></td>
+            <td>
+              <form method="post" action="{% url 'cadastros:telemetria_delete' r.pk %}" class="d-inline"
+                    onsubmit="return confirm('Excluir?')">{% csrf_token %}
+                <button class="btn btn-outline-danger btn-sm py-0 px-1"><i class="bi bi-trash"></i></button>
+              </form>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="8" class="text-center text-muted py-4">Nenhum registro de telemetria.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

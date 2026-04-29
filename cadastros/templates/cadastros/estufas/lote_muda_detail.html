@@ -1,0 +1,288 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} | ERP Agrícola{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+
+  <div class="row mb-3">
+    <div class="col d-flex flex-wrap gap-2">
+      <a href="{% url 'cadastros:lote_muda_list' %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i> Voltar</a>
+      <a href="{% url 'cadastros:lote_muda_update' lote.pk %}" class="btn btn-primary btn-sm"><i class="bi bi-pencil"></i> Editar</a>
+      {% if proximo_status %}
+      <form method="post" action="{% url 'cadastros:lote_muda_avancar_status' lote.pk %}" class="d-inline">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-success btn-sm">
+          <i class="bi bi-arrow-right-circle"></i> Avançar Status
+        </button>
+      </form>
+      {% endif %}
+      {% if lote.status == 'PRONTO' %}
+      <a href="{% url 'cadastros:transplantio_create' %}" class="btn btn-warning btn-sm">
+        <i class="bi bi-arrow-right-square"></i> Transplantar
+      </a>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Resumo do lote -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm text-center">
+        <div class="card-body py-3">
+          <small class="text-muted d-block">Semeadas</small>
+          <h3 class="mb-0 text-secondary">{{ lote.quantidade_semeada }}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm text-center">
+        <div class="card-body py-3">
+          <small class="text-muted d-block">Disponíveis</small>
+          <h3 class="mb-0 text-success">{{ lote.quantidade_disponivel }}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm text-center">
+        <div class="card-body py-3">
+          <small class="text-muted d-block">Perdas</small>
+          <h3 class="mb-0 text-danger">{{ lote.quantidade_perdida }}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm text-center">
+        <div class="card-body py-3">
+          <small class="text-muted d-block">Custo/muda</small>
+          <h3 class="mb-0 text-primary">R$ {{ lote.custo_por_muda|floatformat:4 }}</h3>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <ul class="nav nav-tabs mb-3" id="loteTabs" role="tablist">
+    <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#resumo"><i class="bi bi-info-circle"></i> Resumo</a></li>
+    <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#perdas"><i class="bi bi-dash-circle text-danger"></i> Perdas ({{ lote.perdas.count }})</a></li>
+    <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#aplicacoes"><i class="bi bi-droplet text-primary"></i> Aplicações ({{ lote.aplicacoes.count }})</a></li>
+    <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#monitoramentos"><i class="bi bi-eye text-warning"></i> Monitoramentos ({{ lote.monitoramentos_estufa.count }})</a></li>
+  </ul>
+
+  <div class="tab-content">
+
+    <!-- Tab Resumo -->
+    <div class="tab-pane fade show active" id="resumo">
+      <div class="card shadow-sm border-0 rounded-4">
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-sm-4"><small class="text-muted d-block">Estufa</small><strong>{{ lote.estufa.nome }}</strong></div>
+            <div class="col-sm-4"><small class="text-muted d-block">Fazenda</small><span>{{ lote.estufa.fazenda.nome }}</span></div>
+            <div class="col-sm-4"><small class="text-muted d-block">Cultura</small><span>{{ lote.cultura.nome }}</span></div>
+            <div class="col-sm-4"><small class="text-muted d-block">Cultivar</small><span>{{ lote.cultivar|default:"—" }}</span></div>
+            <div class="col-sm-4"><small class="text-muted d-block">Lote Semente</small><span>{{ lote.lote_semente|default:"—" }}</span></div>
+            <div class="col-sm-4"><small class="text-muted d-block">Data Semeadura</small><span>{{ lote.data_semeadura|date:"d/m/Y" }}</span></div>
+            <div class="col-sm-4"><small class="text-muted d-block">Prev. Transplantio</small><span>{{ lote.data_prevista_pronto|date:"d/m/Y"|default:"—" }}</span></div>
+            <div class="col-sm-4"><small class="text-muted d-block">Custo Total Estufa</small><span>R$ {{ lote.custo_total_estufa|floatformat:2 }}</span></div>
+            <div class="col-sm-4"><small class="text-muted d-block">% Perdas</small><span>{{ lote.percentual_perdas }}%</span></div>
+          </div>
+          {% if lote.observacoes %}
+          <hr><p class="mb-0">{{ lote.observacoes }}</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab Perdas -->
+    <div class="tab-pane fade" id="perdas">
+      <div class="card shadow-sm border-0 rounded-4">
+        <div class="card-header bg-white border-0 pt-3 pb-0 d-flex justify-content-between">
+          <h6 class="fw-bold text-secondary mb-0">Registrar Perda</h6>
+        </div>
+        <div class="card-body border-bottom">
+          <form method="post" action="{% url 'cadastros:perda_estufa_create' lote.pk %}" class="row g-2 align-items-end">
+            {% csrf_token %}
+            <div class="col-md-2">
+              <label class="form-label small fw-semibold">Data</label>
+              {{ perda_form.data }}
+            </div>
+            <div class="col-md-2">
+              <label class="form-label small fw-semibold">Quantidade</label>
+              {{ perda_form.quantidade_perdida }}
+            </div>
+            <div class="col-md-3">
+              <label class="form-label small fw-semibold">Motivo</label>
+              {{ perda_form.motivo }}
+            </div>
+            <div class="col-md-3">
+              <label class="form-label small fw-semibold">Observação</label>
+              {{ perda_form.observacao }}
+            </div>
+            <div class="col-md-2">
+              <button type="submit" class="btn btn-danger btn-sm w-100"><i class="bi bi-check"></i> Registrar</button>
+            </div>
+          </form>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-sm table-hover mb-0">
+            <thead class="table-light">
+              <tr><th>Data</th><th class="text-end">Quantidade</th><th>Motivo</th><th>Observação</th><th></th></tr>
+            </thead>
+            <tbody>
+              {% for p in lote.perdas.all %}
+              <tr>
+                <td>{{ p.data|date:"d/m/Y" }}</td>
+                <td class="text-end"><span class="badge bg-danger">{{ p.quantidade_perdida }}</span></td>
+                <td>{{ p.get_motivo_display }}</td>
+                <td class="small text-muted">{{ p.observacao|default:"—" }}</td>
+                <td>
+                  <form method="post" action="{% url 'cadastros:perda_estufa_delete' lote.pk p.pk %}" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('Remover?')"><i class="bi bi-trash"></i></button>
+                  </form>
+                </td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="5" class="text-center text-muted py-3 small">Nenhuma perda registrada.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab Aplicações -->
+    <div class="tab-pane fade" id="aplicacoes">
+      <div class="card shadow-sm border-0 rounded-4">
+        <div class="card-header bg-white border-0 pt-3 pb-0">
+          <h6 class="fw-bold text-secondary mb-0">Registrar Aplicação</h6>
+        </div>
+        <div class="card-body border-bottom">
+          <form method="post" action="{% url 'cadastros:aplicacao_estufa_create' lote.pk %}" class="row g-2 align-items-end">
+            {% csrf_token %}
+            <div class="col-md-2">
+              <label class="form-label small fw-semibold">Data</label>
+              {{ aplicacao_form.data }}
+            </div>
+            <div class="col-md-2">
+              <label class="form-label small fw-semibold">Tipo</label>
+              {{ aplicacao_form.tipo }}
+            </div>
+            <div class="col-md-2">
+              <label class="form-label small fw-semibold">Produto</label>
+              {{ aplicacao_form.produto }}
+            </div>
+            <div class="col-md-1">
+              <label class="form-label small fw-semibold">Qtd.</label>
+              {{ aplicacao_form.quantidade }}
+            </div>
+            <div class="col-md-2">
+              <label class="form-label small fw-semibold">Unidade</label>
+              {{ aplicacao_form.unidade_medida }}
+            </div>
+            <div class="col-md-2">
+              <label class="form-label small fw-semibold">Custo Unit. (R$)</label>
+              {{ aplicacao_form.custo_unitario }}
+            </div>
+            <div class="col-md-1">
+              <button type="submit" class="btn btn-primary btn-sm w-100"><i class="bi bi-check"></i></button>
+            </div>
+          </form>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-sm table-hover mb-0">
+            <thead class="table-light">
+              <tr><th>Data</th><th>Tipo</th><th>Produto</th><th class="text-end">Qtd.</th><th>Un.</th><th class="text-end">Custo</th><th></th></tr>
+            </thead>
+            <tbody>
+              {% for a in lote.aplicacoes.all %}
+              <tr>
+                <td>{{ a.data|date:"d/m/Y" }}</td>
+                <td>{{ a.get_tipo_display }}</td>
+                <td>{{ a.produto }}</td>
+                <td class="text-end">{{ a.quantidade }}</td>
+                <td>{{ a.unidade_medida }}</td>
+                <td class="text-end">R$ {{ a.custo_total|floatformat:2 }}</td>
+                <td>
+                  <form method="post" action="{% url 'cadastros:aplicacao_estufa_delete' lote.pk a.pk %}" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('Remover?')"><i class="bi bi-trash"></i></button>
+                  </form>
+                </td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="7" class="text-center text-muted py-3 small">Nenhuma aplicação registrada.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab Monitoramentos -->
+    <div class="tab-pane fade" id="monitoramentos">
+      <div class="card shadow-sm border-0 rounded-4">
+        <div class="card-header bg-white border-0 pt-3 pb-0">
+          <h6 class="fw-bold text-secondary mb-0">Registrar Monitoramento</h6>
+        </div>
+        <div class="card-body border-bottom">
+          <form method="post" action="{% url 'cadastros:monitoramento_estufa_create' lote.pk %}" class="row g-2 align-items-end">
+            {% csrf_token %}
+            <div class="col-md-2">
+              <label class="form-label small fw-semibold">Data</label>
+              {{ monitoramento_form.data }}
+            </div>
+            <div class="col-md-3">
+              <label class="form-label small fw-semibold">Praga</label>
+              {{ monitoramento_form.praga }}
+            </div>
+            <div class="col-md-2">
+              <label class="form-label small fw-semibold">Nível</label>
+              {{ monitoramento_form.nivel_infestacao }}
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small fw-semibold">Ação Tomada</label>
+              {{ monitoramento_form.acao_tomada }}
+            </div>
+            <div class="col-md-1">
+              <button type="submit" class="btn btn-warning btn-sm w-100"><i class="bi bi-check"></i></button>
+            </div>
+          </form>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-sm table-hover mb-0">
+            <thead class="table-light">
+              <tr><th>Data</th><th>Praga</th><th>Nível</th><th>Ação</th><th></th></tr>
+            </thead>
+            <tbody>
+              {% for m in lote.monitoramentos_estufa.all %}
+              <tr>
+                <td>{{ m.data|date:"d/m/Y" }}</td>
+                <td>{{ m.praga.nome_comum }}</td>
+                <td>
+                  {% if m.nivel_infestacao == 'ALTO' %}<span class="badge bg-danger">Alto</span>
+                  {% elif m.nivel_infestacao == 'MEDIO' %}<span class="badge bg-warning text-dark">Médio</span>
+                  {% elif m.nivel_infestacao == 'BAIXO' %}<span class="badge bg-info text-dark">Baixo</span>
+                  {% else %}<span class="badge bg-success">Ausente</span>{% endif %}
+                </td>
+                <td class="small">{{ m.acao_tomada|default:"—" }}</td>
+                <td>
+                  <form method="post" action="{% url 'cadastros:monitoramento_estufa_delete' lote.pk m.pk %}" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('Remover?')"><i class="bi bi-trash"></i></button>
+                  </form>
+                </td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="5" class="text-center text-muted py-3 small">Nenhum monitoramento registrado.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

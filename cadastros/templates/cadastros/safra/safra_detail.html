@@ -456,6 +456,72 @@
         </div>
       </div>
 
+      <!-- Comparativo de Talhões -->
+      {% if comparativo %}
+      <div class="section-card">
+        <div class="section-header">
+          <i class="bi bi-bar-chart-steps text-warning"></i>
+          Comparativo de Talhões
+          <a href="{% url 'cadastros:custo_talhao_list' %}?safra={{ safra.pk }}" class="ms-auto btn btn-sm btn-outline-warning">
+            <i class="bi bi-bar-chart-line"></i> Relatório completo
+          </a>
+        </div>
+        <div class="section-body p-0">
+          <div class="table-responsive">
+            <table class="table table-sm table-hover align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Talhão</th>
+                  <th class="text-end">Área (ha)</th>
+                  <th class="text-end">Custo Total</th>
+                  <th class="text-end">R$/ha</th>
+                  <th class="text-end">Produção (kg)</th>
+                  <th class="text-end">kg/ha</th>
+                  <th class="text-end">R$/kg</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for item in comparativo %}
+                {% with is_first=forloop.first is_last=forloop.last %}
+                <tr class="{% if is_first and comparativo|length > 1 %}table-danger{% elif is_last and comparativo|length > 1 %}table-success{% endif %}">
+                  <td class="fw-semibold">{{ item.talhao.nome }}</td>
+                  <td class="text-end small">{{ item.area_ha|floatformat:2 }}</td>
+                  <td class="text-end fw-bold">
+                    {% if item.total_custo %}R$ {{ item.total_custo|floatformat:2 }}{% else %}<span class="text-muted">—</span>{% endif %}
+                  </td>
+                  <td class="text-end small">
+                    {% if item.custo_ha %}
+                      <span class="{% if is_first and comparativo|length > 1 %}text-danger{% elif is_last and comparativo|length > 1 %}text-success{% endif %}">R$ {{ item.custo_ha }}</span>
+                    {% else %}<span class="text-muted">—</span>{% endif %}
+                  </td>
+                  <td class="text-end small">
+                    {% if item.producao_kg %}{{ item.producao_kg|floatformat:0 }}{% else %}<span class="text-muted">—</span>{% endif %}
+                  </td>
+                  <td class="text-end small">
+                    {% if item.produtividade_ha %}{{ item.produtividade_ha }}{% else %}<span class="text-muted">—</span>{% endif %}
+                  </td>
+                  <td class="text-end small">
+                    {% if item.custo_por_kg %}R$ {{ item.custo_por_kg }}{% else %}<span class="text-muted">—</span>{% endif %}
+                  </td>
+                  <td>
+                    <a href="{% url 'cadastros:talhao_detail' item.talhao.pk %}" class="btn btn-outline-secondary btn-sm py-0 px-1" title="Dossiê do talhão">
+                      <i class="bi bi-folder2-open"></i>
+                    </a>
+                  </td>
+                </tr>
+                {% endwith %}
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          <div class="px-3 py-2 small text-muted">
+            <i class="bi bi-info-circle"></i> Linha vermelha = maior custo, verde = menor custo. Ordenado por custo total decrescente.
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
     </div>
 
     <!-- Coluna Direita -->

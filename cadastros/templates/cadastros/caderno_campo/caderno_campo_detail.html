@@ -1,0 +1,263 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} | ERP Agrícola{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+
+  <div class="row mb-3">
+    <div class="col">
+      <a href="{% url 'cadastros:caderno_campo_list' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left"></i> Voltar
+      </a>
+      <a href="{% url 'cadastros:caderno_campo_update' obj.pk %}" class="btn btn-primary btn-sm ms-2">
+        <i class="bi bi-pencil"></i> Editar
+      </a>
+      <a href="{% url 'cadastros:caderno_campo_delete' obj.pk %}" class="btn btn-outline-danger btn-sm ms-2">
+        <i class="bi bi-trash"></i> Excluir
+      </a>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-lg-8">
+
+      <!-- Informações do registro -->
+      <div class="card shadow-sm border-0 rounded-4 mb-4">
+        <div class="card-header bg-white border-0 pt-3 pb-0">
+          <h6 class="fw-bold text-secondary mb-0">
+            <i class="bi bi-journal-text text-success"></i> Dados da Atividade
+          </h6>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-sm-6">
+              <small class="text-muted d-block">Talhão</small>
+              <strong>{{ obj.talhao.nome }}</strong>
+            </div>
+            <div class="col-sm-6">
+              <small class="text-muted d-block">Data</small>
+              <strong>{{ obj.data_atividade|date:"d/m/Y" }}</strong>
+            </div>
+            <div class="col-sm-6">
+              <small class="text-muted d-block">Safra</small>
+              <span>{{ obj.safra|default:"—" }}</span>
+            </div>
+            <div class="col-sm-6">
+              <small class="text-muted d-block">Tipo de Atividade</small>
+              <span class="badge bg-secondary">{{ obj.get_tipo_atividade_display }}</span>
+            </div>
+            <div class="col-sm-12">
+              <small class="text-muted d-block">Descrição</small>
+              <span>{{ obj.atividade }}</span>
+            </div>
+            <div class="col-sm-6">
+              <small class="text-muted d-block">Responsável</small>
+              <span>{{ obj.responsavel.get_full_name|default:obj.responsavel.username|default:"—" }}</span>
+            </div>
+            <div class="col-sm-6">
+              <small class="text-muted d-block">Ordem de Serviço</small>
+              <span>{{ obj.os|default:"—" }}</span>
+            </div>
+          </div>
+
+          {% if obj.temperatura or obj.umidade or obj.condicao_tempo %}
+          <hr class="my-3">
+          <h6 class="text-muted fw-bold small text-uppercase mb-3">Condições Climáticas</h6>
+          <div class="row g-2">
+            {% if obj.temperatura %}
+            <div class="col-sm-4 text-center">
+              <div class="border rounded p-2">
+                <small class="text-muted d-block">Temperatura</small>
+                <strong>{{ obj.temperatura }}°C</strong>
+              </div>
+            </div>
+            {% endif %}
+            {% if obj.umidade %}
+            <div class="col-sm-4 text-center">
+              <div class="border rounded p-2">
+                <small class="text-muted d-block">Umidade</small>
+                <strong>{{ obj.umidade }}%</strong>
+              </div>
+            </div>
+            {% endif %}
+            {% if obj.condicao_tempo %}
+            <div class="col-sm-4 text-center">
+              <div class="border rounded p-2">
+                <small class="text-muted d-block">Condição</small>
+                <strong>{{ obj.get_condicao_tempo_display }}</strong>
+              </div>
+            </div>
+            {% endif %}
+          </div>
+          {% endif %}
+
+          {% if obj.observacoes %}
+          <hr class="my-3">
+          <h6 class="text-muted fw-bold small text-uppercase mb-2">Observações</h6>
+          <p class="mb-0">{{ obj.observacoes }}</p>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Insumos utilizados -->
+      <div class="card shadow-sm border-0 rounded-4 mb-4">
+        <div class="card-header bg-white border-0 pt-3 pb-0 d-flex justify-content-between align-items-center">
+          <h6 class="fw-bold text-secondary mb-0">
+            <i class="bi bi-box-seam text-primary"></i> Insumos Utilizados
+          </h6>
+          <button class="btn btn-outline-primary btn-sm" data-bs-toggle="collapse" data-bs-target="#formInsumo">
+            <i class="bi bi-plus"></i> Adicionar
+          </button>
+        </div>
+        <div id="formInsumo" class="collapse">
+          <div class="card-body border-bottom bg-light">
+            <form method="post" action="{% url 'cadastros:caderno_campo_insumo_add' obj.pk %}" id="formInsumoEl">
+              {% csrf_token %}
+              <div class="row g-2 align-items-end">
+                <div class="col-md-3">
+                  <label class="form-label small fw-semibold">Produto</label>
+                  {{ insumo_form.produto }}
+                </div>
+                <div class="col-md-2">
+                  <label class="form-label small fw-semibold">Quantidade</label>
+                  {{ insumo_form.quantidade }}
+                </div>
+                <div class="col-md-2">
+                  <label class="form-label small fw-semibold">Unidade</label>
+                  {{ insumo_form.unidade_medida }}
+                </div>
+                <div class="col-md-2">
+                  <label class="form-label small fw-semibold">Receituário</label>
+                  {{ insumo_form.receituario_numero }}
+                </div>
+                <div class="col-md-2">
+                  <label class="form-label small fw-semibold">Carência (dias)</label>
+                  {{ insumo_form.carencia_dias }}
+                </div>
+                <div class="col-md-1">
+                  <button type="submit" class="btn btn-primary btn-sm w-100">
+                    <i class="bi bi-check"></i>
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-sm table-hover mb-0" id="tabelaInsumos">
+            <thead class="table-light">
+              <tr>
+                <th>Produto</th>
+                <th class="text-end">Quantidade</th>
+                <th>Unidade</th>
+                <th>Receituário</th>
+                <th class="text-center">Carência</th>
+                <th class="text-center" style="width:60px;"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for ins in obj.insumos_utilizados.all %}
+              {% include 'cadastros/caderno_campo/_insumo_row.html' with insumo=ins registro=obj %}
+              {% empty %}
+              <tr id="row-sem-insumos">
+                <td colspan="6" class="text-center text-muted py-3 small">Nenhum insumo registrado.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Funcionários -->
+      <div class="card shadow-sm border-0 rounded-4">
+        <div class="card-header bg-white border-0 pt-3 pb-0 d-flex justify-content-between align-items-center">
+          <h6 class="fw-bold text-secondary mb-0">
+            <i class="bi bi-people text-success"></i> Funcionários na Atividade
+          </h6>
+          <button class="btn btn-outline-success btn-sm" data-bs-toggle="collapse" data-bs-target="#formFunc">
+            <i class="bi bi-plus"></i> Adicionar
+          </button>
+        </div>
+        <div id="formFunc" class="collapse">
+          <div class="card-body border-bottom bg-light">
+            <form method="post" action="{% url 'cadastros:caderno_campo_funcionario_add' obj.pk %}">
+              {% csrf_token %}
+              <div class="row g-2 align-items-end">
+                <div class="col-md-5">
+                  <label class="form-label small fw-semibold">Funcionário</label>
+                  {{ func_form.funcionario }}
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label small fw-semibold">Horas Trabalhadas</label>
+                  {{ func_form.horas_trabalhadas }}
+                </div>
+                <div class="col-md-2">
+                  <button type="submit" class="btn btn-success btn-sm w-100">
+                    <i class="bi bi-check"></i> Adicionar
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-sm table-hover mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Funcionário</th>
+                <th class="text-center">Horas</th>
+                <th class="text-center" style="width:60px;"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for fc in obj.funcionarios_atividade.all %}
+              <tr>
+                <td>{{ fc.funcionario }}</td>
+                <td class="text-center">{{ fc.horas_trabalhadas|default:"—" }}</td>
+                <td class="text-center">
+                  <form method="post" action="{% url 'cadastros:caderno_campo_funcionario_delete' obj.pk fc.pk %}" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('Remover?')">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </form>
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="3" class="text-center text-muted py-3 small">Nenhum funcionário registrado.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Lateral: foto -->
+    <div class="col-lg-4">
+      {% if obj.fotos %}
+      <div class="card shadow-sm border-0 rounded-4 mb-4">
+        <div class="card-body text-center p-2">
+          <img src="{{ obj.fotos.url }}" alt="Foto" class="img-fluid rounded" style="max-height:250px;">
+        </div>
+      </div>
+      {% endif %}
+
+      <div class="card shadow-sm border-0 rounded-4">
+        <div class="card-body">
+          <small class="text-muted d-block mb-1">Cadastrado em</small>
+          <span class="small">{{ obj.data_cadastro|date:"d/m/Y H:i" }}</span>
+          {% if obj.cadastrado_por %}
+          <br><small class="text-muted">por {{ obj.cadastrado_por.get_full_name|default:obj.cadastrado_por.username }}</small>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

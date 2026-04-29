@@ -1,0 +1,186 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Caderno de Campo | ERP Agrícola{% endblock %}
+{% block page_title %}Caderno de Campo Digital{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+
+  <!-- Cards de resumo -->
+  <div class="row mb-4">
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm bg-success text-white">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <h6 class="opacity-75 mb-1">Total de Registros</h6>
+              <h2 class="mb-0">{{ total }}</h2>
+            </div>
+            <i class="bi bi-journal-text fs-1 opacity-50"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm bg-primary text-white">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <h6 class="opacity-75 mb-1">Talhões Monitorados</h6>
+              <h2 class="mb-0">{{ talhoes|length }}</h2>
+            </div>
+            <i class="bi bi-map fs-1 opacity-50"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm bg-info text-white">
+        <div class="card-body d-flex justify-content-between align-items-center">
+          <div>
+            <h6 class="opacity-75 mb-1">Exportar PDF</h6>
+            <a href="{% url 'cadastros:caderno_campo_pdf' %}{% if talhao_selecionado or safra_selecionada %}?{% if talhao_selecionado %}talhao={{ talhao_selecionado }}{% endif %}{% if safra_selecionada %}&safra={{ safra_selecionada }}{% endif %}{% endif %}"
+               class="btn btn-light btn-sm" target="_blank">
+              <i class="bi bi-file-pdf"></i> Gerar PDF
+            </a>
+          </div>
+          <i class="bi bi-file-earmark-pdf fs-1 opacity-50"></i>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm bg-warning text-dark">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <h6 class="mb-1">Novo Registro</h6>
+              <a href="{% url 'cadastros:caderno_campo_create' %}" class="btn btn-dark btn-sm">
+                <i class="bi bi-plus-circle"></i> Registrar
+              </a>
+            </div>
+            <i class="bi bi-plus-square fs-1 opacity-50"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <div class="card shadow-sm border-0 rounded-4 mb-4">
+    <div class="card-body">
+      <form method="get" class="row g-2 align-items-end">
+        <div class="col-md-2">
+          <label class="form-label small fw-semibold">Talhão</label>
+          <select class="form-select form-select-sm" name="talhao">
+            <option value="">Todos</option>
+            {% for t in talhoes %}
+              <option value="{{ t.id }}" {% if talhao_selecionado|stringformat:"s" == t.id|stringformat:"s" %}selected{% endif %}>{{ t.nome }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small fw-semibold">Safra</label>
+          <select class="form-select form-select-sm" name="safra">
+            <option value="">Todas</option>
+            {% for s in safras %}
+              <option value="{{ s.id }}" {% if safra_selecionada|stringformat:"s" == s.id|stringformat:"s" %}selected{% endif %}>{{ s }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small fw-semibold">Tipo de Atividade</label>
+          <select class="form-select form-select-sm" name="tipo">
+            <option value="">Todos</option>
+            {% for val, lbl in tipo_choices %}
+              <option value="{{ val }}" {% if tipo_selecionado == val %}selected{% endif %}>{{ lbl }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small fw-semibold">De</label>
+          <input type="date" class="form-control form-control-sm" name="data_inicio" value="{{ data_inicio }}">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small fw-semibold">Até</label>
+          <input type="date" class="form-control form-control-sm" name="data_fim" value="{{ data_fim }}">
+        </div>
+        <div class="col-md-1">
+          <button type="submit" class="btn btn-primary btn-sm w-100"><i class="bi bi-funnel"></i> Filtrar</button>
+        </div>
+        <div class="col-md-1">
+          <a href="{% url 'cadastros:caderno_campo_list' %}" class="btn btn-outline-secondary btn-sm w-100"><i class="bi bi-x"></i></a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Tabela -->
+  <div class="card shadow-sm border-0 rounded-4">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Data</th>
+            <th>Talhão</th>
+            <th>Safra</th>
+            <th>Atividade</th>
+            <th>Tipo</th>
+            <th>Condição</th>
+            <th>Responsável</th>
+            <th class="text-center" style="width:120px;">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for reg in registros %}
+          <tr>
+            <td><strong>{{ reg.data_atividade|date:"d/m/Y" }}</strong></td>
+            <td>{{ reg.talhao.nome }}</td>
+            <td class="small text-muted">{{ reg.safra|default:"—" }}</td>
+            <td class="small">{{ reg.atividade|truncatechars:50 }}</td>
+            <td>
+              <span class="badge bg-secondary">
+                {% if reg.tipo_atividade == 'APLICACAO_DEFENSIVO' %}<i class="bi bi-shield-x"></i>
+                {% elif reg.tipo_atividade == 'IRRIGACAO' %}<i class="bi bi-droplet"></i>
+                {% elif reg.tipo_atividade == 'PLANTIO' %}<i class="bi bi-flower1"></i>
+                {% elif reg.tipo_atividade == 'COLHEITA' %}<i class="bi bi-scissors"></i>
+                {% elif reg.tipo_atividade == 'ADUBACAO' %}<i class="bi bi-bag"></i>
+                {% else %}<i class="bi bi-tools"></i>{% endif %}
+                {{ reg.get_tipo_atividade_display }}
+              </span>
+            </td>
+            <td class="small text-muted">{{ reg.get_condicao_tempo_display|default:"—" }}</td>
+            <td class="small">{{ reg.responsavel.get_full_name|default:reg.responsavel.username|default:"—" }}</td>
+            <td class="text-center">
+              <div class="btn-group btn-group-sm">
+                <a href="{% url 'cadastros:caderno_campo_detail' reg.pk %}" class="btn btn-outline-info" title="Ver">
+                  <i class="bi bi-eye"></i>
+                </a>
+                <a href="{% url 'cadastros:caderno_campo_update' reg.pk %}" class="btn btn-outline-primary" title="Editar">
+                  <i class="bi bi-pencil"></i>
+                </a>
+                <a href="{% url 'cadastros:caderno_campo_delete' reg.pk %}" class="btn btn-outline-danger" title="Excluir">
+                  <i class="bi bi-trash"></i>
+                </a>
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="8" class="text-center py-5 text-muted">
+              <i class="bi bi-journal-x fs-3 d-block mb-2"></i>
+              Nenhum registro encontrado.
+              <br>
+              <a href="{% url 'cadastros:caderno_campo_create' %}" class="btn btn-sm btn-success mt-2">
+                <i class="bi bi-plus"></i> Criar primeiro registro
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

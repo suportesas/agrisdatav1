@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block title %}{{ title }} | ERP Agrícola{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="container-fluid mt-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-5">
+      <div class="card border-danger border-0 shadow-sm rounded-4">
+        <div class="card-body text-center py-5">
+          <i class="bi bi-trash fs-1 text-danger mb-3"></i>
+          <h5 class="fw-bold">Excluir Planejamento</h5>
+          <p class="text-muted">Deseja excluir o planejamento <strong>{{ plan.nome }}</strong> e todos os seus itens? Esta ação não pode ser desfeita.</p>
+          <div class="d-flex gap-2 justify-content-center mt-4">
+            <form method="post">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-danger"><i class="bi bi-trash"></i> Confirmar Exclusão</button>
+            </form>
+            <a href="{% url 'cadastros:planejamento_custo_list' %}" class="btn btn-outline-secondary">Cancelar</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

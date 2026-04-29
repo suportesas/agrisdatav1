@@ -1,0 +1,15 @@
+<tr id="insumo-{{ insumo.pk }}">
+  <td>{{ insumo.produto }}</td>
+  <td class="text-end">{{ insumo.quantidade }}</td>
+  <td>{{ insumo.unidade_medida }}</td>
+  <td class="small">{{ insumo.receituario_numero|default:"—" }}</td>
+  <td class="text-center small">{% if insumo.carencia_dias %}{{ insumo.carencia_dias }} dias{% else %}—{% endif %}</td>
+  <td class="text-center">
+    <form method="post" action="{% url 'cadastros:caderno_campo_insumo_delete' registro.pk insumo.pk %}" class="d-inline">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('Remover insumo?')">
+        <i class="bi bi-trash"></i>
+      </button>
+    </form>
+  </td>
+</tr>

@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+{% block title %}{{ title }} | ERP Agrícola{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-9">
+      <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-header bg-white border-0 pt-3 pb-0">
+          <h6 class="fw-bold text-secondary"><i class="bi bi-wrench text-warning"></i> {{ title }}</h6>
+        </div>
+        <div class="card-body">
+          <form method="post" novalidate>
+            {% csrf_token %}
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Veículo <span class="text-danger">*</span></label>
+                {{ form.vehicle }}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label fw-semibold">Tipo <span class="text-danger">*</span></label>
+                {{ form.tipo }}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label fw-semibold">Status <span class="text-danger">*</span></label>
+                {{ form.status }}
+              </div>
+              <div class="col-12">
+                <label class="form-label fw-semibold">Descrição do Serviço <span class="text-danger">*</span></label>
+                {{ form.descricao }}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label fw-semibold">Data Abertura <span class="text-danger">*</span></label>
+                {{ form.data_abertura }}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label fw-semibold">Data Conclusão</label>
+                {{ form.data_conclusao }}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label fw-semibold">Hodômetro (km)</label>
+                {{ form.km_odometro }}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label fw-semibold">Horímetro (h)</label>
+                {{ form.horimetro }}
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Próxima Manutenção (data)</label>
+                {{ form.proxima_data }}
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Próxima Manutenção (km)</label>
+                {{ form.proximo_km }}
+              </div>
+
+              <div class="col-12"><hr class="my-1"><h6 class="text-secondary">Local de Execução</h6></div>
+              <div class="col-md-3">
+                <label class="form-label fw-semibold">Oficina Própria?</label>
+                <div class="form-check mt-2">{{ form.eh_oficina_propria }} <span class="small">Sim — baixa no estoque</span></div>
+              </div>
+              <div class="col-md-5">
+                <label class="form-label fw-semibold">Armazém / Oficina</label>
+                {{ form.local_oficina }}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-semibold">Fornecedor Externo</label>
+                {{ form.fornecedor_externo }}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-semibold">Valor do Serviço (R$)</label>
+                {{ form.valor_servico }}
+              </div>
+              <div class="col-12">
+                <label class="form-label fw-semibold">Observações</label>
+                {{ form.observacoes }}
+              </div>
+            </div>
+            <div class="d-flex gap-2 mt-4">
+              <button type="submit" class="btn btn-warning"><i class="bi bi-check-lg"></i> Salvar</button>
+              <a href="{% url 'cadastros:manutencao_list' %}" class="btn btn-outline-secondary"><i class="bi bi-x"></i> Cancelar</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

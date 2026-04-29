@@ -16,6 +16,7 @@ from decimal import Decimal
 from .models import (
     OrdemServico, OrdemServicoInsumo, CustoTalhao, CustoHoraMaquina,
     Talhao, Safra, TipoServicoOS, SubtipoServicoOS, ModalidadeExecucaoOS,
+    EtapaColheita,
 )
 from .forms import (
     OrdemServicoForm, OSFuncionarioFormSet, OSMaquinaFormSet,
@@ -133,7 +134,7 @@ def custo_talhao_list(request):
     qs = qs.order_by('-data_registro')
 
     consolidado_talhoes = list(
-        qs.values('talhao__nome').annotate(
+        qs.values('talhao__nome', 'talhao_id').annotate(
             total_os=Count('id'),
             total_mao_obra=Sum('custo_mao_obra'),
             total_maquinario=Sum('custo_maquinario'),
@@ -155,7 +156,7 @@ def custo_talhao_list(request):
         item['custo_medio_ha'] = (total_item / area_item) if area_item > 0 else Decimal('0')
 
     consolidado_safras = list(
-        qs.values('safra__nome', 'safra__ano').annotate(
+        qs.values('safra__nome', 'safra__ano', 'safra_id').annotate(
             total_os=Count('id'),
             total_mao_obra=Sum('custo_mao_obra'),
             total_maquinario=Sum('custo_maquinario'),
@@ -224,6 +225,46 @@ def custo_talhao_list(request):
     total_area = resumo.get('total_area') or Decimal('0')
     custo_medio_ha = (total_geral / total_area) if total_area > 0 else Decimal('0')
 
+    # --- Produção real por talhão (EtapaColheita.total_liquido_kg) ---
+    producao_qs = EtapaColheita.objects.filter(os__empresa=empresa)
+    if talhao_filter:
+        producao_qs = producao_qs.filter(talhao_id=talhao_filter)
+    if safra_filter:
+        producao_qs = producao_qs.filter(safra_id=safra_filter)
+    producao_map = {}
+    for p in producao_qs.values('talhao__nome').annotate(total_kg=Sum('total_liquido_kg')):
+        producao_map[p['talhao__nome']] = p['total_kg'] or Decimal('0')
+    producao_total = sum(producao_map.values()) or Decimal('0')
+
+    # Enriquecer consolidado_talhoes com produção, % e R$/kg
+    grande_total = sum(i['total_geral'] for i in consolidado_talhoes) or Decimal('1')
+    custo_ha_vals = [i['custo_medio_ha'] for i in consolidado_talhoes if i['custo_medio_ha'] > 0]
+    talhao_mais_caro = max(consolidado_talhoes, key=lambda x: x['custo_medio_ha'], default=None)
+    talhao_mais_barato = min(
+        [i for i in consolidado_talhoes if i['custo_medio_ha'] > 0],
+        key=lambda x: x['custo_medio_ha'],
+        default=None,
+    )
+    for item in consolidado_talhoes:
+        kg = producao_map.get(item['talhao__nome'])
+        item['producao_kg'] = kg
+        item['pct_total'] = round(float(item['total_geral'] / grande_total * 100), 1) if grande_total else 0
+        item['custo_por_kg'] = (item['total_geral'] / kg).quantize(Decimal('0.01')) if kg else None
+
+    # --- Dados JSON para Chart.js ---
+    import json
+    chart_labels = json.dumps([i['talhao__nome'] for i in consolidado_talhoes])
+    chart_mao_obra = json.dumps([float(i.get('total_mao_obra') or 0) for i in consolidado_talhoes])
+    chart_maquinario = json.dumps([float(i.get('total_maquinario') or 0) for i in consolidado_talhoes])
+    chart_insumos = json.dumps([float(i.get('total_insumos') or 0) for i in consolidado_talhoes])
+    chart_servico = json.dumps([float(i.get('total_servico') or 0) for i in consolidado_talhoes])
+    resumo_doughnut = json.dumps([
+        float(sum(i.get('total_mao_obra') or 0 for i in consolidado_talhoes)),
+        float(sum(i.get('total_maquinario') or 0 for i in consolidado_talhoes)),
+        float(sum(i.get('total_insumos') or 0 for i in consolidado_talhoes)),
+        float(sum(i.get('total_servico') or 0 for i in consolidado_talhoes)),
+    ])
+
     export_format = request.GET.get('export')
     if export_format == 'excel':
         return _exportar_custo_talhao_excel(
@@ -274,7 +315,16 @@ def custo_talhao_list(request):
             'total_geral': total_geral,
             'total_area': total_area,
             'custo_medio_ha': custo_medio_ha,
-        }
+        },
+        'producao_total': producao_total,
+        'talhao_mais_caro': talhao_mais_caro,
+        'talhao_mais_barato': talhao_mais_barato,
+        'chart_labels': chart_labels,
+        'chart_mao_obra': chart_mao_obra,
+        'chart_maquinario': chart_maquinario,
+        'chart_insumos': chart_insumos,
+        'chart_servico': chart_servico,
+        'resumo_doughnut': resumo_doughnut,
     }
     return render(request, 'cadastros/os/custo_talhao_list.html', context)
 

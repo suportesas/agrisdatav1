@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} | ERP Agrícola{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h5 class="fw-bold text-secondary mb-0"><i class="bi bi-clipboard-data text-warning"></i> Planejamento de Custo</h5>
+    <a href="{% url 'cadastros:planejamento_custo_create' %}" class="btn btn-warning btn-sm">
+      <i class="bi bi-plus"></i> Novo Planejamento
+    </a>
+  </div>
+
+  <div class="card border-0 shadow-sm rounded-4">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Nome</th>
+            <th>Cultura</th>
+            <th>Safra</th>
+            <th>Talhão</th>
+            <th class="text-end">Área (ha)</th>
+            <th class="text-end">Custo Planejado</th>
+            <th class="text-end">R$/ha Planejado</th>
+            <th>Criado em</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in plans %}
+          <tr>
+            <td class="fw-semibold">
+              <a href="{% url 'cadastros:planejamento_custo_detail' p.pk %}" class="text-decoration-none">{{ p.nome }}</a>
+            </td>
+            <td>{{ p.cultura.nome }}</td>
+            <td class="small text-muted">{{ p.safra.nome|default:"—" }}</td>
+            <td class="small text-muted">{{ p.talhao.nome|default:"—" }}</td>
+            <td class="text-end">{{ p.area_ha|floatformat:2 }}</td>
+            <td class="text-end fw-bold">R$ {{ p.custo_total_planejado|floatformat:2 }}</td>
+            <td class="text-end">R$ {{ p.custo_planejado_por_ha|floatformat:2 }}</td>
+            <td class="small text-muted">{{ p.data_criacao|date:"d/m/Y" }}</td>
+            <td>
+              <a href="{% url 'cadastros:planejamento_custo_detail' p.pk %}" class="btn btn-outline-secondary btn-sm py-0 px-1"><i class="bi bi-eye"></i></a>
+              <form method="post" action="{% url 'cadastros:planejamento_custo_delete' p.pk %}" class="d-inline">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-outline-danger btn-sm py-0 px-1" onclick="return confirm('Excluir?')"><i class="bi bi-trash"></i></button>
+              </form>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="9" class="text-center text-muted py-4">
+              <i class="bi bi-clipboard-data fs-2 d-block mb-2 opacity-50"></i>
+              Nenhum planejamento criado.
+              <a href="{% url 'cadastros:planejamento_custo_create' %}" class="d-block mt-2">Criar o primeiro planejamento</a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

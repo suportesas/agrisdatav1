@@ -8394,6 +8394,23 @@ class Viagem(models.Model):
     valor_frete = models.DecimalField('Valor do Frete', max_digits=10, decimal_places=2, null=True, blank=True)
     status = models.CharField('Status', max_length=20, choices=STATUS_CHOICES, default='PLANEJADA')
 
+    # Campos estendidos para cálculo de margem
+    vehicle = models.ForeignKey(
+        'cadastros.Vehicle', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='viagens', verbose_name='Veículo'
+    )
+    motorista = models.ForeignKey(
+        'cadastros.Motorista', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='viagens', verbose_name='Motorista'
+    )
+    km_inicial = models.DecimalField(
+        'Hodômetro Inicial (km)', max_digits=12, decimal_places=1, null=True, blank=True
+    )
+    km_final = models.DecimalField(
+        'Hodômetro Final (km)', max_digits=12, decimal_places=1, null=True, blank=True
+    )
+    observacoes = models.TextField('Observações', blank=True)
+
     criado_em = models.DateTimeField('Criado em', auto_now_add=True)
     atualizado_em = models.DateTimeField('Atualizado em', auto_now=True)
 
@@ -8407,6 +8424,12 @@ class Viagem(models.Model):
 
     def __str__(self):
         return f"{self.transportadora} - {self.origem} → {self.destino} ({self.data})"
+
+    @property
+    def km_percorrido(self):
+        if self.km_inicial and self.km_final and self.km_final > self.km_inicial:
+            return self.km_final - self.km_inicial
+        return None
 
 
 # ==========================
@@ -8719,10 +8742,24 @@ class Motorista(models.Model):
     ativo = models.BooleanField('Ativo', default=True)
     motivo_inativacao = models.TextField('Motivo da Inativação', blank=True)
     data_inativacao = models.DateField('Data Inativação', null=True, blank=True)
-    
+
+    # Portal do Motorista
+    matricula = models.CharField('Matrícula', max_length=50, blank=True, help_text='Usada para login no Portal do Motorista')
+    pin = models.CharField('PIN (portal)', max_length=128, blank=True, help_text='PIN numérico hashado — definido pelo gestor')
+
     # Auditoria
     data_criacao = models.DateTimeField('Data de Criação', auto_now_add=True)
     data_atualizacao = models.DateTimeField('Última Atualização', auto_now=True)
+
+    def set_pin(self, raw_pin):
+        from django.contrib.auth.hashers import make_password
+        self.pin = make_password(str(raw_pin))
+
+    def check_pin(self, raw_pin):
+        from django.contrib.auth.hashers import check_password
+        if not self.pin:
+            return False
+        return check_password(str(raw_pin), self.pin)
 
     class Meta:
         verbose_name = 'Motorista'
@@ -10623,3 +10660,540 @@ class ReplantioTalhao(models.Model):
 
     def __str__(self):
         return f"Replantio {self.talhao.codigo} — {self.data_replantio} — {self.quantidade} un"
+
+
+class PlanejamentoCustoSafra(models.Model):
+    CATEGORIA_CHOICES = [
+        ('MO', 'Mão de Obra'),
+        ('MAQUINARIO', 'Maquinário'),
+        ('INSUMO', 'Insumo'),
+        ('SERVICO_EXTERNO', 'Serviço Externo'),
+        ('ESTUFA', 'Estufa / Transplantio'),
+    ]
+
+    empresa = models.ForeignKey(
+        'empresas.Empresa', on_delete=models.CASCADE, related_name='planejamentos_custo'
+    )
+    safra = models.ForeignKey(
+        Safra, on_delete=models.SET_NULL, null=True, blank=True, related_name='planejamentos_custo'
+    )
+    cultura = models.ForeignKey(
+        Cultura, on_delete=models.PROTECT, related_name='planejamentos_custo'
+    )
+    talhao = models.ForeignKey(
+        Talhao, on_delete=models.SET_NULL, null=True, blank=True, related_name='planejamentos_custo'
+    )
+    nome = models.CharField(max_length=120, help_text='Ex: Planejamento Tomate 2026')
+    area_ha = models.DecimalField(max_digits=10, decimal_places=4, verbose_name='Área (ha)')
+    observacoes = models.TextField(blank=True)
+    data_criacao = models.DateTimeField(auto_now_add=True)
+    criado_por = models.ForeignKey(
+        'usuarios.Usuario', null=True, on_delete=models.SET_NULL, related_name='planejamentos_custo_criados'
+    )
+
+    class Meta:
+        ordering = ['-data_criacao']
+        verbose_name = 'Planejamento de Custo'
+        verbose_name_plural = 'Planejamentos de Custo'
+
+    def __str__(self):
+        return self.nome
+
+    @property
+    def custo_total_planejado(self):
+        return sum((item.custo_total for item in self.itens.all()), Decimal('0'))
+
+    @property
+    def custo_planejado_por_ha(self):
+        if self.area_ha and self.area_ha > 0:
+            total = self.custo_total_planejado
+            return (total / self.area_ha).quantize(Decimal('0.01'))
+        return Decimal('0')
+
+
+class PlanejamentoCustoItem(models.Model):
+    CATEGORIA_CHOICES = [
+        ('MO', 'Mão de Obra'),
+        ('MAQUINARIO', 'Maquinário'),
+        ('INSUMO', 'Insumo'),
+        ('SERVICO_EXTERNO', 'Serviço Externo'),
+        ('ESTUFA', 'Estufa / Transplantio'),
+    ]
+
+    planejamento = models.ForeignKey(
+        PlanejamentoCustoSafra, on_delete=models.CASCADE, related_name='itens'
+    )
+    categoria = models.CharField(max_length=20, choices=CATEGORIA_CHOICES, verbose_name='Categoria')
+    produto = models.ForeignKey(
+        'produtos.Produto', on_delete=models.SET_NULL, null=True, blank=True,
+        help_text='Preencher para insumos — preço será auto-preenchido'
+    )
+    descricao = models.CharField(max_length=200, help_text='Descrição livre (serviço, mão de obra, etc.)')
+    dose_por_ha = models.DecimalField(
+        max_digits=12, decimal_places=4, null=True, blank=True,
+        verbose_name='Dose/ha', help_text='Quantidade por hectare (deixe em branco para custo fixo/ha)'
+    )
+    unidade_medida = models.ForeignKey(
+        'produtos.UnidadeMedida', on_delete=models.SET_NULL, null=True, blank=True
+    )
+    custo_unitario = models.DecimalField(
+        max_digits=12, decimal_places=4,
+        validators=[MinValueValidator(Decimal('0'))],
+        verbose_name='Custo unitário (R$)'
+    )
+    area_ha = models.DecimalField(
+        max_digits=10, decimal_places=4, verbose_name='Área (ha)',
+        help_text='Copiado do planejamento, editável por item'
+    )
+
+    class Meta:
+        verbose_name = 'Item de Planejamento de Custo'
+        verbose_name_plural = 'Itens de Planejamento de Custo'
+
+    def __str__(self):
+        return f"{self.descricao} ({self.get_categoria_display()})"
+
+    @property
+    def quantidade_total(self):
+        if self.dose_por_ha and self.area_ha:
+            return (self.dose_por_ha * self.area_ha).quantize(Decimal('0.001'))
+        return Decimal('0')
+
+    @property
+    def custo_total(self):
+        if self.dose_por_ha and self.area_ha:
+            qtd = self.dose_por_ha * self.area_ha
+            return (qtd * self.custo_unitario).quantize(Decimal('0.01'))
+        if self.area_ha:
+            return (self.area_ha * self.custo_unitario).quantize(Decimal('0.01'))
+        return Decimal('0')
+
+
+# ==============================================================
+# MÓDULO FROTA — FASE 1: COMBUSTÍVEL
+# ==============================================================
+
+class AbastecimentoVeiculo(models.Model):
+    """Registro de abastecimentos de combustível por veículo."""
+
+    TIPO_COMBUSTIVEL_CHOICES = [
+        ('DIESEL_S10', 'Diesel S10'),
+        ('DIESEL_S500', 'Diesel S500'),
+        ('GASOLINA', 'Gasolina'),
+        ('ETANOL', 'Etanol'),
+        ('GNV', 'GNV'),
+        ('OUTRO', 'Outro'),
+    ]
+
+    empresa = models.ForeignKey(
+        'empresas.Empresa', on_delete=models.CASCADE,
+        related_name='abastecimentos', verbose_name='Empresa'
+    )
+    vehicle = models.ForeignKey(
+        Vehicle, on_delete=models.CASCADE,
+        related_name='abastecimentos', verbose_name='Veículo'
+    )
+    motorista = models.ForeignKey(
+        'cadastros.Motorista', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='abastecimentos', verbose_name='Motorista'
+    )
+    data = models.DateField('Data do Abastecimento')
+    tipo_combustivel = models.CharField(
+        'Tipo de Combustível', max_length=15, choices=TIPO_COMBUSTIVEL_CHOICES
+    )
+    litros = models.DecimalField(
+        'Litros', max_digits=10, decimal_places=3,
+        validators=[MinValueValidator(Decimal('0.001'))]
+    )
+    preco_por_litro = models.DecimalField(
+        'Preço por Litro (R$)', max_digits=8, decimal_places=3,
+        validators=[MinValueValidator(Decimal('0.001'))]
+    )
+    valor_total = models.DecimalField(
+        'Valor Total (R$)', max_digits=12, decimal_places=2,
+        validators=[MinValueValidator(Decimal('0.01'))]
+    )
+    km_odometro = models.DecimalField(
+        'Hodômetro (km)', max_digits=12, decimal_places=1,
+        null=True, blank=True, help_text='Leitura do hodômetro no momento do abastecimento'
+    )
+    horimetro = models.DecimalField(
+        'Horímetro (h)', max_digits=10, decimal_places=1,
+        null=True, blank=True, help_text='Para tratores/máquinas com horímetro'
+    )
+    tanque_cheio = models.BooleanField(
+        'Tanque Cheio?', default=True,
+        help_text='Se falso, o consumo calculado pode ser impreciso'
+    )
+    local_abastecimento = models.CharField(
+        'Local / Posto', max_length=200, blank=True
+    )
+    fornecedor = models.ForeignKey(
+        'cadastros.Fornecedor', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='abastecimentos',
+        verbose_name='Fornecedor', help_text='Para gerar Conta a Pagar'
+    )
+    conta_pagar = models.OneToOneField(
+        'financeiro.ContaPagar', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='abastecimento',
+        verbose_name='Conta a Pagar gerada'
+    )
+    observacoes = models.TextField('Observações', blank=True)
+    criado_por = models.ForeignKey(
+        'usuarios.Usuario', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='abastecimentos_criados'
+    )
+    criado_em = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Abastecimento'
+        verbose_name_plural = 'Abastecimentos'
+        ordering = ['-data', '-criado_em']
+        indexes = [
+            models.Index(fields=['empresa', 'vehicle', 'data']),
+            models.Index(fields=['empresa', 'data']),
+        ]
+
+    def __str__(self):
+        return f"{self.vehicle} — {self.litros}L ({self.data})"
+
+    def save(self, *args, **kwargs):
+        self.valor_total = (self.litros * self.preco_por_litro).quantize(Decimal('0.01'))
+        super().save(*args, **kwargs)
+
+    @property
+    def consumo_calculado(self):
+        """L/km calculado com base no abastecimento anterior com hodômetro."""
+        if not self.km_odometro or not self.tanque_cheio:
+            return None
+        anterior = (
+            AbastecimentoVeiculo.objects
+            .filter(vehicle=self.vehicle, km_odometro__lt=self.km_odometro, tanque_cheio=True)
+            .order_by('-km_odometro')
+            .first()
+        )
+        if not anterior or not anterior.km_odometro:
+            return None
+        km = self.km_odometro - anterior.km_odometro
+        if km <= 0:
+            return None
+        return (self.litros / km).quantize(Decimal('0.0001'))
+
+
+# ==============================================================
+# MÓDULO FROTA — FASE 2: MANUTENÇÃO
+# ==============================================================
+
+class ManutencaoVeiculo(models.Model):
+    """Registro de manutenções preventivas e corretivas."""
+
+    TIPO_CHOICES = [
+        ('PREVENTIVA', 'Preventiva'),
+        ('CORRETIVA', 'Corretiva'),
+        ('PREDITIVA', 'Preditiva'),
+        ('REVISAO', 'Revisão Periódica'),
+    ]
+    STATUS_CHOICES = [
+        ('ABERTA', 'Aberta'),
+        ('EM_ANDAMENTO', 'Em Andamento'),
+        ('CONCLUIDA', 'Concluída'),
+        ('CANCELADA', 'Cancelada'),
+    ]
+
+    empresa = models.ForeignKey(
+        'empresas.Empresa', on_delete=models.CASCADE,
+        related_name='manutencoes', verbose_name='Empresa'
+    )
+    vehicle = models.ForeignKey(
+        Vehicle, on_delete=models.CASCADE,
+        related_name='manutencoes', verbose_name='Veículo'
+    )
+    tipo = models.CharField('Tipo', max_length=15, choices=TIPO_CHOICES, default='PREVENTIVA')
+    status = models.CharField('Status', max_length=15, choices=STATUS_CHOICES, default='ABERTA')
+    descricao = models.CharField('Descrição do Serviço', max_length=300)
+    data_abertura = models.DateField('Data de Abertura', default=date.today)
+    data_conclusao = models.DateField('Data de Conclusão', null=True, blank=True)
+    km_odometro = models.DecimalField(
+        'Hodômetro (km)', max_digits=12, decimal_places=1, null=True, blank=True
+    )
+    horimetro = models.DecimalField(
+        'Horímetro (h)', max_digits=10, decimal_places=1, null=True, blank=True
+    )
+    # Próxima manutenção (para gerar alertas)
+    proxima_data = models.DateField('Próxima Manutenção (data)', null=True, blank=True)
+    proximo_km = models.DecimalField(
+        'Próxima Manutenção (km)', max_digits=12, decimal_places=1, null=True, blank=True
+    )
+    # Oficina
+    eh_oficina_propria = models.BooleanField(
+        'Oficina Própria?', default=False,
+        help_text='Se sim, gera baixa automática no estoque de peças'
+    )
+    local_oficina = models.ForeignKey(
+        'estoque.Armazem', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='manutencoes', verbose_name='Armazém / Oficina',
+        help_text='Oficina própria — peças baixadas deste armazém'
+    )
+    fornecedor_externo = models.ForeignKey(
+        'cadastros.Fornecedor', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='manutencoes_veiculos', verbose_name='Fornecedor Externo'
+    )
+    valor_servico = models.DecimalField(
+        'Valor do Serviço (R$)', max_digits=12, decimal_places=2,
+        default=Decimal('0'), validators=[MinValueValidator(Decimal('0'))]
+    )
+    conta_pagar = models.OneToOneField(
+        'financeiro.ContaPagar', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='manutencao',
+        verbose_name='Conta a Pagar gerada'
+    )
+    motorista_solicitante = models.ForeignKey(
+        'cadastros.Motorista', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='manutencoes_solicitadas',
+        verbose_name='Motorista Solicitante',
+        help_text='Preenchido quando a manutenção é solicitada via Portal do Motorista'
+    )
+    observacoes = models.TextField('Observações', blank=True)
+    criado_por = models.ForeignKey(
+        'usuarios.Usuario', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='manutencoes_criadas'
+    )
+    criado_em = models.DateTimeField(auto_now_add=True)
+    atualizado_em = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Manutenção de Veículo'
+        verbose_name_plural = 'Manutenções de Veículo'
+        ordering = ['-data_abertura']
+        indexes = [
+            models.Index(fields=['empresa', 'vehicle', 'status']),
+        ]
+
+    def __str__(self):
+        return f"{self.vehicle} — {self.descricao} ({self.data_abertura})"
+
+    @property
+    def valor_total(self):
+        """Valor do serviço + custo de todas as peças."""
+        custo_pecas = sum(i.custo_total for i in self.itens.all())
+        return (self.valor_servico + custo_pecas).quantize(Decimal('0.01'))
+
+
+class ManutencaoItem(models.Model):
+    """Peça ou material usado em uma manutenção."""
+
+    manutencao = models.ForeignKey(
+        ManutencaoVeiculo, on_delete=models.CASCADE,
+        related_name='itens', verbose_name='Manutenção'
+    )
+    descricao = models.CharField('Descrição da Peça/Material', max_length=200)
+    lote = models.ForeignKey(
+        'estoque.Lote', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='itens_manutencao', verbose_name='Lote em Estoque',
+        help_text='Preencher para gerar baixa automática no estoque'
+    )
+    quantidade = models.DecimalField(
+        'Quantidade', max_digits=10, decimal_places=3,
+        validators=[MinValueValidator(Decimal('0.001'))]
+    )
+    valor_unitario = models.DecimalField(
+        'Valor Unitário (R$)', max_digits=12, decimal_places=4,
+        validators=[MinValueValidator(Decimal('0'))]
+    )
+
+    class Meta:
+        verbose_name = 'Item de Manutenção'
+        verbose_name_plural = 'Itens de Manutenção'
+
+    def __str__(self):
+        return self.descricao
+
+    @property
+    def custo_total(self):
+        return (self.quantidade * self.valor_unitario).quantize(Decimal('0.01'))
+
+
+class AlertaManutencao(models.Model):
+    """Alerta gerado automaticamente quando manutenção está próxima do vencimento."""
+
+    TIPO_GATILHO_CHOICES = [
+        ('DATA', 'Por Data'),
+        ('KM', 'Por Km/Horímetro'),
+        ('AMBOS', 'Data e Km'),
+    ]
+    STATUS_CHOICES = [
+        ('PENDENTE', 'Pendente'),
+        ('VISTO', 'Visto'),
+        ('RESOLVIDO', 'Resolvido'),
+    ]
+
+    empresa = models.ForeignKey(
+        'empresas.Empresa', on_delete=models.CASCADE, related_name='alertas_manutencao'
+    )
+    vehicle = models.ForeignKey(
+        Vehicle, on_delete=models.CASCADE, related_name='alertas_manutencao'
+    )
+    manutencao_origem = models.ForeignKey(
+        ManutencaoVeiculo, on_delete=models.CASCADE,
+        related_name='alertas', verbose_name='Manutenção de Origem'
+    )
+    tipo_gatilho = models.CharField('Gatilho', max_length=10, choices=TIPO_GATILHO_CHOICES)
+    status = models.CharField('Status', max_length=10, choices=STATUS_CHOICES, default='PENDENTE')
+    descricao = models.CharField('Descrição', max_length=300)
+    data_alerta = models.DateField('Data do Alerta')
+    criado_em = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Alerta de Manutenção'
+        verbose_name_plural = 'Alertas de Manutenção'
+        ordering = ['-data_alerta']
+
+    def __str__(self):
+        return f"Alerta: {self.vehicle} — {self.descricao}"
+
+
+# ==============================================================
+# MÓDULO FROTA — FASE 3: PEDÁGIOS
+# ==============================================================
+
+class PedagioVeiculo(models.Model):
+    """Registro de passagens em pedágios por viagem."""
+
+    empresa = models.ForeignKey(
+        'empresas.Empresa', on_delete=models.CASCADE,
+        related_name='pedagios', verbose_name='Empresa'
+    )
+    vehicle = models.ForeignKey(
+        Vehicle, on_delete=models.CASCADE,
+        related_name='pedagios', verbose_name='Veículo'
+    )
+    viagem = models.ForeignKey(
+        Viagem, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='pedagios', verbose_name='Viagem'
+    )
+    motorista = models.ForeignKey(
+        'cadastros.Motorista', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='pedagios', verbose_name='Motorista'
+    )
+    data = models.DateField('Data')
+    praca = models.CharField('Praça / Local', max_length=200, blank=True)
+    valor = models.DecimalField(
+        'Valor (R$)', max_digits=8, decimal_places=2,
+        validators=[MinValueValidator(Decimal('0.01'))]
+    )
+    conta_pagar = models.OneToOneField(
+        'financeiro.ContaPagar', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='pedagio',
+        verbose_name='Conta a Pagar gerada'
+    )
+    observacoes = models.TextField('Observações', blank=True)
+    criado_por = models.ForeignKey(
+        'usuarios.Usuario', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='pedagios_criados'
+    )
+    criado_em = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Pedágio'
+        verbose_name_plural = 'Pedágios'
+        ordering = ['-data', '-criado_em']
+        indexes = [
+            models.Index(fields=['empresa', 'vehicle', 'data']),
+            models.Index(fields=['empresa', 'viagem']),
+        ]
+
+    def __str__(self):
+        return f"{self.vehicle} — R$ {self.valor} ({self.data})"
+
+
+# ==============================================================
+# MÓDULO FROTA — FASE 5: TELEMETRIA HÍBRIDA
+# ==============================================================
+
+class TelemetriaVeiculo(models.Model):
+    """Registro de posição/telemetria — entrada manual ou via GPS."""
+
+    FONTE_CHOICES = [
+        ('MANUAL', 'Manual'),
+        ('GPS', 'GPS Automático'),
+        ('APP', 'App Mobile'),
+    ]
+
+    empresa = models.ForeignKey(
+        'empresas.Empresa', on_delete=models.CASCADE, related_name='telemetrias'
+    )
+    vehicle = models.ForeignKey(
+        Vehicle, on_delete=models.CASCADE, related_name='telemetrias'
+    )
+    motorista = models.ForeignKey(
+        'cadastros.Motorista', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='telemetrias'
+    )
+    viagem = models.ForeignKey(
+        Viagem, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='telemetrias'
+    )
+    data_hora = models.DateTimeField('Data/Hora')
+    latitude = models.DecimalField(
+        'Latitude', max_digits=10, decimal_places=7, null=True, blank=True
+    )
+    longitude = models.DecimalField(
+        'Longitude', max_digits=10, decimal_places=7, null=True, blank=True
+    )
+    local_descricao = models.CharField(
+        'Local (descrição)', max_length=300, blank=True,
+        help_text='Ex: "Posto BR km 45 — SP-270"'
+    )
+    velocidade_kmh = models.DecimalField(
+        'Velocidade (km/h)', max_digits=6, decimal_places=1, null=True, blank=True
+    )
+    km_odometro = models.DecimalField(
+        'Hodômetro (km)', max_digits=12, decimal_places=1, null=True, blank=True
+    )
+    fonte = models.CharField('Fonte', max_length=10, choices=FONTE_CHOICES, default='MANUAL')
+    observacoes = models.TextField(blank=True)
+    criado_em = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Registro de Telemetria'
+        verbose_name_plural = 'Registros de Telemetria'
+        ordering = ['-data_hora']
+        indexes = [
+            models.Index(fields=['empresa', 'vehicle', 'data_hora']),
+        ]
+
+    def __str__(self):
+        return f"{self.vehicle} — {self.data_hora:%d/%m/%Y %H:%M}"
+
+
+# ==============================================================
+# MÓDULO FROTA — PORTAL DO MOTORISTA
+# ==============================================================
+
+class FotoAbastecimento(models.Model):
+    """Fotos enviadas pelo motorista via Portal do Motorista."""
+
+    abastecimento = models.OneToOneField(
+        AbastecimentoVeiculo, on_delete=models.CASCADE,
+        related_name='foto', verbose_name='Abastecimento'
+    )
+    foto_bomba = models.ImageField(
+        'Foto da Bomba', upload_to='frota/fotos/bomba/',
+        help_text='Foto do display da bomba com litros e valor'
+    )
+    foto_odometro = models.ImageField(
+        'Foto do Hodômetro/Horímetro', upload_to='frota/fotos/odometro/',
+        blank=True, help_text='Foto do painel mostrando odômetro ou horímetro'
+    )
+    enviada_por = models.ForeignKey(
+        'cadastros.Motorista', on_delete=models.SET_NULL,
+        null=True, related_name='fotos_abastecimento', verbose_name='Motorista'
+    )
+    data_envio = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Foto de Abastecimento'
+        verbose_name_plural = 'Fotos de Abastecimentos'
+
+    def __str__(self):
+        return f"Fotos — {self.abastecimento}"

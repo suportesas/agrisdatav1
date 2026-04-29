@@ -6,53 +6,53 @@
 
 {% block content %}
 <div class="container-fluid mt-4">
+
+  <!-- Cabeçalho -->
   <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-    <h4 class="fw-bold text-secondary mb-0">
-      <i class="bi bi-bar-chart-line text-success"></i> Custo por Talhão e Safra
-    </h4>
-    <div class="d-flex gap-2">
-      <a href="?talhao={{ talhao_filter }}&safra={{ safra_filter }}&q={{ search|urlencode }}&export=excel" class="btn btn-outline-success">
+    <h5 class="fw-bold text-secondary mb-0">
+      <i class="bi bi-bar-chart-line text-success"></i> Custos por Talhão e Safra
+    </h5>
+    <div class="d-flex gap-2 flex-wrap">
+      <a href="?talhao={{ talhao_filter }}&safra={{ safra_filter }}&q={{ search|urlencode }}&export=excel" class="btn btn-outline-success btn-sm">
         <i class="bi bi-file-earmark-spreadsheet me-1"></i> Excel
       </a>
-      <a href="?talhao={{ talhao_filter }}&safra={{ safra_filter }}&q={{ search|urlencode }}&export=pdf" class="btn btn-outline-danger" target="_blank" rel="noopener">
+      <a href="?talhao={{ talhao_filter }}&safra={{ safra_filter }}&q={{ search|urlencode }}&export=pdf" class="btn btn-outline-danger btn-sm" target="_blank" rel="noopener">
         <i class="bi bi-file-earmark-pdf me-1"></i> PDF
       </a>
-      <a href="{% url 'cadastros:os_list' %}" class="btn btn-outline-secondary">
+      <a href="{% url 'cadastros:os_list' %}" class="btn btn-outline-secondary btn-sm">
         <i class="bi bi-arrow-left me-1"></i> Voltar para OS
       </a>
     </div>
   </div>
 
-  <div class="card border-0 shadow-sm mb-3">
-    <div class="card-body">
-      <form method="get" class="row g-3 align-items-end">
+  <!-- Filtros -->
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-body py-3">
+      <form method="get" class="row g-2 align-items-end">
         <div class="col-md-3">
-          <label class="form-label">Talhão</label>
-          <select name="talhao" class="form-select">
+          <label class="form-label small fw-semibold">Talhão</label>
+          <select name="talhao" class="form-select form-select-sm">
             <option value="">Todos</option>
             {% for t in talhoes %}
             <option value="{{ t.id }}" {% if talhao_filter == t.id|stringformat:"s" %}selected{% endif %}>{{ t.nome }}</option>
             {% endfor %}
           </select>
         </div>
-
         <div class="col-md-3">
-          <label class="form-label">Safra</label>
-          <select name="safra" class="form-select">
+          <label class="form-label small fw-semibold">Safra</label>
+          <select name="safra" class="form-select form-select-sm">
             <option value="">Todas</option>
             {% for s in safras %}
             <option value="{{ s.id }}" {% if safra_filter == s.id|stringformat:"s" %}selected{% endif %}>{{ s.nome }}{% if s.ano %} ({{ s.ano }}){% endif %}</option>
             {% endfor %}
           </select>
         </div>
-
         <div class="col-md-4">
-          <label class="form-label">Buscar</label>
-          <input type="text" name="q" class="form-control" value="{{ search }}" placeholder="Número da OS, talhão ou safra">
+          <label class="form-label small fw-semibold">Buscar</label>
+          <input type="text" name="q" class="form-control form-control-sm" value="{{ search }}" placeholder="Número da OS, talhão ou safra">
         </div>
-
         <div class="col-md-2 d-grid">
-          <button type="submit" class="btn btn-success">
+          <button type="submit" class="btn btn-success btn-sm">
             <i class="bi bi-funnel me-1"></i> Filtrar
           </button>
         </div>
@@ -60,237 +60,391 @@
     </div>
   </div>
 
-  <div class="row g-3 mb-3">
+  <!-- KPI Cards -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm bg-success text-white h-100">
+        <div class="card-body d-flex justify-content-between align-items-center py-3">
+          <div>
+            <div class="small opacity-75">Custo Total</div>
+            <div class="fs-5 fw-bold">R$ {{ resumo.total_geral|floatformat:2 }}</div>
+          </div>
+          <i class="bi bi-currency-dollar fs-2 opacity-50"></i>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body py-3">
+          <div class="row g-0 text-center">
+            <div class="col-6 border-end">
+              <div class="small text-muted">Mão de Obra</div>
+              <div class="fw-bold text-primary small">R$ {{ resumo.total_mao_obra|floatformat:2 }}</div>
+            </div>
+            <div class="col-6">
+              <div class="small text-muted">Maquinário</div>
+              <div class="fw-bold text-info small">R$ {{ resumo.total_maquinario|floatformat:2 }}</div>
+            </div>
+          </div>
+          <hr class="my-2">
+          <div class="row g-0 text-center">
+            <div class="col-6 border-end">
+              <div class="small text-muted">Insumos</div>
+              <div class="fw-bold text-warning small">R$ {{ resumo.total_insumos|floatformat:2 }}</div>
+            </div>
+            <div class="col-6">
+              <div class="small text-muted">Serv. Externo</div>
+              <div class="fw-bold text-secondary small">R$ {{ resumo.total_servico|floatformat:2 }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
     <div class="col-md-2">
       <div class="card border-0 shadow-sm h-100">
-        <div class="card-body">
-          <div class="text-muted small">Mão de Obra</div>
-          <div class="fw-bold text-dark">R$ {{ resumo.total_mao_obra|floatformat:2 }}</div>
+        <div class="card-body text-center py-3">
+          <div class="small text-muted">Custo Médio/ha</div>
+          <div class="fs-5 fw-bold text-dark">R$ {{ resumo.custo_medio_ha|floatformat:2 }}</div>
+          <div class="small text-muted mt-1">{{ resumo.total_area|floatformat:2 }} ha</div>
         </div>
       </div>
     </div>
+    {% if producao_total %}
     <div class="col-md-2">
-      <div class="card border-0 shadow-sm h-100">
-        <div class="card-body">
-          <div class="text-muted small">Maquinário</div>
-          <div class="fw-bold text-dark">R$ {{ resumo.total_maquinario|floatformat:2 }}</div>
+      <div class="card border-0 shadow-sm bg-info text-white h-100">
+        <div class="card-body text-center py-3">
+          <div class="small opacity-75">Produção Total</div>
+          <div class="fs-5 fw-bold">{{ producao_total|floatformat:0 }} kg</div>
+          {% if resumo.total_geral and producao_total %}
+          <div class="small opacity-75 mt-1">R$ {% widthratio resumo.total_geral producao_total 1 %}/kg</div>
+          {% endif %}
         </div>
       </div>
     </div>
+    {% endif %}
+    {% if talhao_mais_caro %}
     <div class="col-md-2">
-      <div class="card border-0 shadow-sm h-100">
-        <div class="card-body">
-          <div class="text-muted small">Insumos</div>
-          <div class="fw-bold text-dark">R$ {{ resumo.total_insumos|floatformat:2 }}</div>
+      <div class="card border-0 shadow-sm border-start border-danger border-3 h-100">
+        <div class="card-body py-3">
+          <div class="small text-muted">Talhão mais caro/ha</div>
+          <div class="fw-bold text-danger small">{{ talhao_mais_caro.talhao__nome }}</div>
+          <div class="small text-muted">R$ {{ talhao_mais_caro.custo_medio_ha|floatformat:2 }}/ha</div>
         </div>
       </div>
     </div>
+    {% endif %}
+    {% if talhao_mais_barato %}
     <div class="col-md-2">
-      <div class="card border-0 shadow-sm h-100">
-        <div class="card-body">
-          <div class="text-muted small">Serviço Externo</div>
-          <div class="fw-bold text-dark">R$ {{ resumo.total_servico|floatformat:2 }}</div>
+      <div class="card border-0 shadow-sm border-start border-success border-3 h-100">
+        <div class="card-body py-3">
+          <div class="small text-muted">Talhão mais barato/ha</div>
+          <div class="fw-bold text-success small">{{ talhao_mais_barato.talhao__nome }}</div>
+          <div class="small text-muted">R$ {{ talhao_mais_barato.custo_medio_ha|floatformat:2 }}/ha</div>
         </div>
       </div>
     </div>
-    <div class="col-md-2">
-      <div class="card border-0 shadow-sm h-100">
-        <div class="card-body">
-          <div class="text-muted small">Área Total</div>
-          <div class="fw-bold text-dark">{{ resumo.total_area|floatformat:4 }} ha</div>
-        </div>
-      </div>
-    </div>
-    <div class="col-md-2">
-      <div class="card border-success shadow-sm h-100">
-        <div class="card-body">
-          <div class="text-muted small">Custo Médio/ha</div>
-          <div class="fw-bold text-success">R$ {{ resumo.custo_medio_ha|floatformat:2 }}</div>
-        </div>
-      </div>
-    </div>
+    {% endif %}
   </div>
 
-  <div class="card border-0 shadow-sm mb-3">
-    <div class="card-header bg-light d-flex justify-content-between align-items-center">
-      <span class="fw-semibold">Consolidado por Talhão</span>
-      <span class="badge bg-primary">{{ consolidado_talhoes|length }} talhão(ões)</span>
+  <!-- Gráficos -->
+  {% if consolidado_talhoes %}
+  <div class="row g-4 mb-4">
+    <div class="col-lg-8">
+      <div class="card border-0 shadow-sm rounded-4 h-100">
+        <div class="card-header bg-white border-0 pt-3 pb-0">
+          <h6 class="fw-bold text-secondary mb-0"><i class="bi bi-bar-chart-stacked text-success"></i> Custo por Talhão (empilhado)</h6>
+        </div>
+        <div class="card-body">
+          <canvas id="chartStackedBar" style="max-height: 300px;"></canvas>
+        </div>
+      </div>
     </div>
-    <div class="card-body p-0">
-      <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0">
-          <thead class="table-light">
-            <tr>
-              <th class="{% if sort_talhao == 'nome' %}table-warning{% endif %}">
-                <a class="text-decoration-none text-dark" href="?talhao={{ talhao_filter }}&safra={{ safra_filter }}&q={{ search|urlencode }}&sort_talhao=nome&dir_talhao={% if sort_talhao == 'nome' and dir_talhao == 'asc' %}desc{% else %}asc{% endif %}&sort_safra={{ sort_safra }}&dir_safra={{ dir_safra }}">
-                  Talhão {% if sort_talhao == 'nome' %}{% if dir_talhao == 'asc' %}↑{% else %}↓{% endif %}{% endif %}
-                </a>
-              </th>
-              <th class="text-end {% if sort_talhao == 'total_os' %}table-warning{% endif %}">
-                <a class="text-decoration-none text-dark" href="?talhao={{ talhao_filter }}&safra={{ safra_filter }}&q={{ search|urlencode }}&sort_talhao=total_os&dir_talhao={% if sort_talhao == 'total_os' and dir_talhao == 'asc' %}desc{% else %}asc{% endif %}&sort_safra={{ sort_safra }}&dir_safra={{ dir_safra }}">
-                  Qtd OS {% if sort_talhao == 'total_os' %}{% if dir_talhao == 'asc' %}↑{% else %}↓{% endif %}{% endif %}
-                </a>
-              </th>
-              <th class="text-end {% if sort_talhao == 'total_area' %}table-warning{% endif %}">
-                <a class="text-decoration-none text-dark" href="?talhao={{ talhao_filter }}&safra={{ safra_filter }}&q={{ search|urlencode }}&sort_talhao=total_area&dir_talhao={% if sort_talhao == 'total_area' and dir_talhao == 'asc' %}desc{% else %}asc{% endif %}&sort_safra={{ sort_safra }}&dir_safra={{ dir_safra }}">
-                  Área Total (ha) {% if sort_talhao == 'total_area' %}{% if dir_talhao == 'asc' %}↑{% else %}↓{% endif %}{% endif %}
-                </a>
-              </th>
-              <th class="text-end">Mão de Obra</th>
-              <th class="text-end">Maquinário</th>
-              <th class="text-end">Insumos</th>
-              <th class="text-end">Serviço Externo</th>
-              <th class="text-end {% if sort_talhao == 'total_geral' %}table-warning{% endif %}">
-                <a class="text-decoration-none text-dark" href="?talhao={{ talhao_filter }}&safra={{ safra_filter }}&q={{ search|urlencode }}&sort_talhao=total_geral&dir_talhao={% if sort_talhao == 'total_geral' and dir_talhao == 'asc' %}desc{% else %}asc{% endif %}&sort_safra={{ sort_safra }}&dir_safra={{ dir_safra }}">
-                  Total {% if sort_talhao == 'total_geral' %}{% if dir_talhao == 'asc' %}↑{% else %}↓{% endif %}{% endif %}
-                </a>
-              </th>
-              <th class="text-end {% if sort_talhao == 'custo_medio_ha' %}table-warning{% endif %}">
-                <a class="text-decoration-none text-dark" href="?talhao={{ talhao_filter }}&safra={{ safra_filter }}&q={{ search|urlencode }}&sort_talhao=custo_medio_ha&dir_talhao={% if sort_talhao == 'custo_medio_ha' and dir_talhao == 'asc' %}desc{% else %}asc{% endif %}&sort_safra={{ sort_safra }}&dir_safra={{ dir_safra }}">
-                  R$/ha {% if sort_talhao == 'custo_medio_ha' %}{% if dir_talhao == 'asc' %}↑{% else %}↓{% endif %}{% endif %}
-                </a>
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for item in consolidado_talhoes %}
-            <tr>
-              <td class="fw-semibold {% if sort_talhao == 'nome' %}table-warning{% endif %}">{{ item.talhao__nome }}</td>
-              <td class="text-end {% if sort_talhao == 'total_os' %}table-warning{% endif %}">{{ item.total_os }}</td>
-              <td class="text-end {% if sort_talhao == 'total_area' %}table-warning{% endif %}">{{ item.total_area|default:0|floatformat:4 }}</td>
-              <td class="text-end">R$ {{ item.total_mao_obra|default:0|floatformat:2 }}</td>
-              <td class="text-end">R$ {{ item.total_maquinario|default:0|floatformat:2 }}</td>
-              <td class="text-end">R$ {{ item.total_insumos|default:0|floatformat:2 }}</td>
-              <td class="text-end">R$ {{ item.total_servico|default:0|floatformat:2 }}</td>
-              <td class="text-end fw-bold {% if sort_talhao == 'total_geral' %}table-warning{% endif %}">R$ {{ item.total_geral|default:0|floatformat:2 }}</td>
-              <td class="text-end {% if sort_talhao == 'custo_medio_ha' %}table-warning{% endif %}">R$ {{ item.custo_medio_ha|default:0|floatformat:2 }}</td>
-            </tr>
-            {% empty %}
-            <tr>
-              <td colspan="9" class="text-center text-muted py-4">Nenhum dado consolidado para os filtros informados.</td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
+    <div class="col-lg-4">
+      <div class="card border-0 shadow-sm rounded-4 h-100">
+        <div class="card-header bg-white border-0 pt-3 pb-0">
+          <h6 class="fw-bold text-secondary mb-0"><i class="bi bi-pie-chart text-primary"></i> Composição dos Custos</h6>
+        </div>
+        <div class="card-body d-flex align-items-center justify-content-center">
+          <canvas id="chartDoughnut" style="max-height: 260px;"></canvas>
+        </div>
       </div>
     </div>
   </div>
+  {% endif %}
 
-  <div class="card border-0 shadow-sm mb-3">
-    <div class="card-header bg-light d-flex justify-content-between align-items-center">
-      <span class="fw-semibold">Consolidado por Safra</span>
-      <span class="badge bg-secondary">{{ consolidado_safras|length }} safra(s)</span>
+  <!-- Abas de dados -->
+  <div class="card border-0 shadow-sm rounded-4">
+    <div class="card-header bg-white border-0 pt-3 pb-0">
+      <ul class="nav nav-tabs card-header-tabs" id="custoTabs" role="tablist">
+        <li class="nav-item">
+          <a class="nav-link active" data-bs-toggle="tab" href="#tab-talhao" role="tab">
+            <i class="bi bi-grid text-success"></i> Por Talhão
+            <span class="badge bg-primary ms-1">{{ consolidado_talhoes|length }}</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" data-bs-toggle="tab" href="#tab-safra" role="tab">
+            <i class="bi bi-calendar3 text-info"></i> Por Safra
+            <span class="badge bg-secondary ms-1">{{ consolidado_safras|length }}</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" data-bs-toggle="tab" href="#tab-os" role="tab">
+            <i class="bi bi-list-ul text-secondary"></i> Por OS
+            <span class="badge bg-success ms-1">R$ {{ resumo.total_geral|floatformat:2 }}</span>
+          </a>
+        </li>
+      </ul>
     </div>
-    <div class="card-body p-0">
-      <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0">
-          <thead class="table-light">
-            <tr>
-              <th class="{% if sort_safra == 'nome' %}table-warning{% endif %}">
-                <a class="text-decoration-none text-dark" href="?talhao={{ talhao_filter }}&safra={{ safra_filter }}&q={{ search|urlencode }}&sort_safra=nome&dir_safra={% if sort_safra == 'nome' and dir_safra == 'asc' %}desc{% else %}asc{% endif %}&sort_talhao={{ sort_talhao }}&dir_talhao={{ dir_talhao }}">
-                  Safra {% if sort_safra == 'nome' %}{% if dir_safra == 'asc' %}↑{% else %}↓{% endif %}{% endif %}
-                </a>
-              </th>
-              <th class="text-end {% if sort_safra == 'total_os' %}table-warning{% endif %}">
-                <a class="text-decoration-none text-dark" href="?talhao={{ talhao_filter }}&safra={{ safra_filter }}&q={{ search|urlencode }}&sort_safra=total_os&dir_safra={% if sort_safra == 'total_os' and dir_safra == 'asc' %}desc{% else %}asc{% endif %}&sort_talhao={{ sort_talhao }}&dir_talhao={{ dir_talhao }}">
-                  Qtd OS {% if sort_safra == 'total_os' %}{% if dir_safra == 'asc' %}↑{% else %}↓{% endif %}{% endif %}
-                </a>
-              </th>
-              <th class="text-end {% if sort_safra == 'total_area' %}table-warning{% endif %}">
-                <a class="text-decoration-none text-dark" href="?talhao={{ talhao_filter }}&safra={{ safra_filter }}&q={{ search|urlencode }}&sort_safra=total_area&dir_safra={% if sort_safra == 'total_area' and dir_safra == 'asc' %}desc{% else %}asc{% endif %}&sort_talhao={{ sort_talhao }}&dir_talhao={{ dir_talhao }}">
-                  Área Total (ha) {% if sort_safra == 'total_area' %}{% if dir_safra == 'asc' %}↑{% else %}↓{% endif %}{% endif %}
-                </a>
-              </th>
-              <th class="text-end">Mão de Obra</th>
-              <th class="text-end">Maquinário</th>
-              <th class="text-end">Insumos</th>
-              <th class="text-end">Serviço Externo</th>
-              <th class="text-end {% if sort_safra == 'total_geral' %}table-warning{% endif %}">
-                <a class="text-decoration-none text-dark" href="?talhao={{ talhao_filter }}&safra={{ safra_filter }}&q={{ search|urlencode }}&sort_safra=total_geral&dir_safra={% if sort_safra == 'total_geral' and dir_safra == 'asc' %}desc{% else %}asc{% endif %}&sort_talhao={{ sort_talhao }}&dir_talhao={{ dir_talhao }}">
-                  Total {% if sort_safra == 'total_geral' %}{% if dir_safra == 'asc' %}↑{% else %}↓{% endif %}{% endif %}
-                </a>
-              </th>
-              <th class="text-end {% if sort_safra == 'custo_medio_ha' %}table-warning{% endif %}">
-                <a class="text-decoration-none text-dark" href="?talhao={{ talhao_filter }}&safra={{ safra_filter }}&q={{ search|urlencode }}&sort_safra=custo_medio_ha&dir_safra={% if sort_safra == 'custo_medio_ha' and dir_safra == 'asc' %}desc{% else %}asc{% endif %}&sort_talhao={{ sort_talhao }}&dir_talhao={{ dir_talhao }}">
-                  R$/ha {% if sort_safra == 'custo_medio_ha' %}{% if dir_safra == 'asc' %}↑{% else %}↓{% endif %}{% endif %}
-                </a>
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for item in consolidado_safras %}
-            <tr>
-              <td class="fw-semibold {% if sort_safra == 'nome' %}table-warning{% endif %}">{{ item.safra_label }}</td>
-              <td class="text-end {% if sort_safra == 'total_os' %}table-warning{% endif %}">{{ item.total_os }}</td>
-              <td class="text-end {% if sort_safra == 'total_area' %}table-warning{% endif %}">{{ item.total_area|default:0|floatformat:4 }}</td>
-              <td class="text-end">R$ {{ item.total_mao_obra|default:0|floatformat:2 }}</td>
-              <td class="text-end">R$ {{ item.total_maquinario|default:0|floatformat:2 }}</td>
-              <td class="text-end">R$ {{ item.total_insumos|default:0|floatformat:2 }}</td>
-              <td class="text-end">R$ {{ item.total_servico|default:0|floatformat:2 }}</td>
-              <td class="text-end fw-bold {% if sort_safra == 'total_geral' %}table-warning{% endif %}">R$ {{ item.total_geral|default:0|floatformat:2 }}</td>
-              <td class="text-end {% if sort_safra == 'custo_medio_ha' %}table-warning{% endif %}">R$ {{ item.custo_medio_ha|default:0|floatformat:2 }}</td>
-            </tr>
-            {% empty %}
-            <tr>
-              <td colspan="9" class="text-center text-muted py-4">Nenhum dado consolidado por safra para os filtros informados.</td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
 
-  <div class="card border-0 shadow-sm">
-    <div class="card-header bg-light d-flex justify-content-between align-items-center">
-      <span class="fw-semibold">Detalhamento por OS</span>
-      <span class="badge bg-success">Total geral: R$ {{ resumo.total_geral|floatformat:2 }}</span>
-    </div>
-    <div class="card-body p-0">
-      <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0">
-          <thead class="table-light">
-            <tr>
-              <th>OS</th>
-              <th>Talhão</th>
-              <th>Safra</th>
-              <th class="text-end">Área (ha)</th>
-              <th class="text-end">Mão de Obra</th>
-              <th class="text-end">Maquinário</th>
-              <th class="text-end">Insumos</th>
-              <th class="text-end">Serviço Externo</th>
-              <th class="text-end">Total</th>
-              <th class="text-end">R$/ha</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for item in custos %}
-            <tr>
-              <td>
-                <a href="{% url 'cadastros:os_detail' item.os.pk %}" class="fw-semibold text-decoration-none">{{ item.os.numero }}</a>
-              </td>
-              <td>{{ item.talhao.nome }}</td>
-              <td>{% if item.safra %}{{ item.safra.nome }}{% else %}<span class="text-muted">-</span>{% endif %}</td>
-              <td class="text-end">{{ item.area_executada_ha|default:0|floatformat:4 }}</td>
-              <td class="text-end">R$ {{ item.custo_mao_obra|floatformat:2 }}</td>
-              <td class="text-end">R$ {{ item.custo_maquinario|floatformat:2 }}</td>
-              <td class="text-end">R$ {{ item.custo_insumos|floatformat:2 }}</td>
-              <td class="text-end">R$ {{ item.custo_servico_externo|floatformat:2 }}</td>
-              <td class="text-end fw-bold">R$ {{ item.custo_total|floatformat:2 }}</td>
-              <td class="text-end">R$ {{ item.custo_por_hectare|floatformat:2 }}</td>
-            </tr>
-            {% empty %}
-            <tr>
-              <td colspan="10" class="text-center text-muted py-4">
-                <i class="bi bi-inboxes fs-2 d-block mb-2"></i>
-                Nenhum custo encontrado com os filtros informados.
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
+    <div class="tab-content">
+
+      <!-- Aba: Por Talhão -->
+      <div class="tab-pane fade show active" id="tab-talhao" role="tabpanel">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>
+                  <a class="text-decoration-none text-dark" href="?talhao={{ talhao_filter }}&safra={{ safra_filter }}&q={{ search|urlencode }}&sort_talhao=nome&dir_talhao={% if sort_talhao == 'nome' and dir_talhao == 'asc' %}desc{% else %}asc{% endif %}&sort_safra={{ sort_safra }}&dir_safra={{ dir_safra }}">
+                    Talhão {% if sort_talhao == 'nome' %}{% if dir_talhao == 'asc' %}&#8593;{% else %}&#8595;{% endif %}{% endif %}
+                  </a>
+                </th>
+                <th class="text-end">
+                  <a class="text-decoration-none text-dark" href="?talhao={{ talhao_filter }}&safra={{ safra_filter }}&q={{ search|urlencode }}&sort_talhao=total_os&dir_talhao={% if sort_talhao == 'total_os' and dir_talhao == 'asc' %}desc{% else %}asc{% endif %}&sort_safra={{ sort_safra }}&dir_safra={{ dir_safra }}">
+                    OS {% if sort_talhao == 'total_os' %}{% if dir_talhao == 'asc' %}&#8593;{% else %}&#8595;{% endif %}{% endif %}
+                  </a>
+                </th>
+                <th class="text-end">
+                  <a class="text-decoration-none text-dark" href="?talhao={{ talhao_filter }}&safra={{ safra_filter }}&q={{ search|urlencode }}&sort_talhao=total_area&dir_talhao={% if sort_talhao == 'total_area' and dir_talhao == 'asc' %}desc{% else %}asc{% endif %}&sort_safra={{ sort_safra }}&dir_safra={{ dir_safra }}">
+                    Área (ha) {% if sort_talhao == 'total_area' %}{% if dir_talhao == 'asc' %}&#8593;{% else %}&#8595;{% endif %}{% endif %}
+                  </a>
+                </th>
+                <th class="text-end">M.O.</th>
+                <th class="text-end">Maquinário</th>
+                <th class="text-end">Insumos</th>
+                <th class="text-end">Serv. Ext.</th>
+                <th class="text-end">
+                  <a class="text-decoration-none text-dark" href="?talhao={{ talhao_filter }}&safra={{ safra_filter }}&q={{ search|urlencode }}&sort_talhao=total_geral&dir_talhao={% if sort_talhao == 'total_geral' and dir_talhao == 'asc' %}desc{% else %}asc{% endif %}&sort_safra={{ sort_safra }}&dir_safra={{ dir_safra }}">
+                    Total {% if sort_talhao == 'total_geral' %}{% if dir_talhao == 'asc' %}&#8593;{% else %}&#8595;{% endif %}{% endif %}
+                  </a>
+                </th>
+                <th class="text-end">% Total</th>
+                <th class="text-end">
+                  <a class="text-decoration-none text-dark" href="?talhao={{ talhao_filter }}&safra={{ safra_filter }}&q={{ search|urlencode }}&sort_talhao=custo_medio_ha&dir_talhao={% if sort_talhao == 'custo_medio_ha' and dir_talhao == 'asc' %}desc{% else %}asc{% endif %}&sort_safra={{ sort_safra }}&dir_safra={{ dir_safra }}">
+                    R$/ha {% if sort_talhao == 'custo_medio_ha' %}{% if dir_talhao == 'asc' %}&#8593;{% else %}&#8595;{% endif %}{% endif %}
+                  </a>
+                </th>
+                <th class="text-end">Produção (kg)</th>
+                <th class="text-end">R$/kg</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in consolidado_talhoes %}
+              <tr class="{% if talhao_mais_caro and item.talhao__nome == talhao_mais_caro.talhao__nome %}table-danger{% elif talhao_mais_barato and item.talhao__nome == talhao_mais_barato.talhao__nome %}table-success{% endif %}">
+                <td class="fw-semibold">{{ item.talhao__nome }}</td>
+                <td class="text-end">{{ item.total_os }}</td>
+                <td class="text-end">{{ item.total_area|default:0|floatformat:2 }}</td>
+                <td class="text-end small">R$ {{ item.total_mao_obra|default:0|floatformat:2 }}</td>
+                <td class="text-end small">R$ {{ item.total_maquinario|default:0|floatformat:2 }}</td>
+                <td class="text-end small">R$ {{ item.total_insumos|default:0|floatformat:2 }}</td>
+                <td class="text-end small">R$ {{ item.total_servico|default:0|floatformat:2 }}</td>
+                <td class="text-end fw-bold">R$ {{ item.total_geral|default:0|floatformat:2 }}</td>
+                <td class="text-end"><span class="badge bg-secondary">{{ item.pct_total }}%</span></td>
+                <td class="text-end">
+                  {% if talhao_mais_caro and item.talhao__nome == talhao_mais_caro.talhao__nome %}
+                    <span class="badge bg-danger">R$ {{ item.custo_medio_ha|floatformat:2 }}</span>
+                  {% elif talhao_mais_barato and item.talhao__nome == talhao_mais_barato.talhao__nome %}
+                    <span class="badge bg-success">R$ {{ item.custo_medio_ha|floatformat:2 }}</span>
+                  {% else %}
+                    <span class="text-muted small">R$ {{ item.custo_medio_ha|floatformat:2 }}</span>
+                  {% endif %}
+                </td>
+                <td class="text-end small">
+                  {% if item.producao_kg %}{{ item.producao_kg|floatformat:0 }}{% else %}<span class="text-muted">—</span>{% endif %}
+                </td>
+                <td class="text-end small">
+                  {% if item.custo_por_kg %}<span class="fw-semibold">R$ {{ item.custo_por_kg }}</span>{% else %}<span class="text-muted">—</span>{% endif %}
+                </td>
+                <td>
+                  <a href="{% url 'cadastros:talhao_detail' item.talhao_id %}" class="btn btn-outline-secondary btn-sm py-0 px-1" title="Ver dossiê do talhão">
+                    <i class="bi bi-folder2-open"></i>
+                  </a>
+                </td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="13" class="text-center text-muted py-4">Nenhum dado consolidado para os filtros informados.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
       </div>
-    </div>
-  </div>
+
+      <!-- Aba: Por Safra -->
+      <div class="tab-pane fade" id="tab-safra" role="tabpanel">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>
+                  <a class="text-decoration-none text-dark" href="?talhao={{ talhao_filter }}&safra={{ safra_filter }}&q={{ search|urlencode }}&sort_safra=nome&dir_safra={% if sort_safra == 'nome' and dir_safra == 'asc' %}desc{% else %}asc{% endif %}&sort_talhao={{ sort_talhao }}&dir_talhao={{ dir_talhao }}">
+                    Safra {% if sort_safra == 'nome' %}{% if dir_safra == 'asc' %}&#8593;{% else %}&#8595;{% endif %}{% endif %}
+                  </a>
+                </th>
+                <th class="text-end">
+                  <a class="text-decoration-none text-dark" href="?talhao={{ talhao_filter }}&safra={{ safra_filter }}&q={{ search|urlencode }}&sort_safra=total_os&dir_safra={% if sort_safra == 'total_os' and dir_safra == 'asc' %}desc{% else %}asc{% endif %}&sort_talhao={{ sort_talhao }}&dir_talhao={{ dir_talhao }}">
+                    OS {% if sort_safra == 'total_os' %}{% if dir_safra == 'asc' %}&#8593;{% else %}&#8595;{% endif %}{% endif %}
+                  </a>
+                </th>
+                <th class="text-end">
+                  <a class="text-decoration-none text-dark" href="?talhao={{ talhao_filter }}&safra={{ safra_filter }}&q={{ search|urlencode }}&sort_safra=total_area&dir_safra={% if sort_safra == 'total_area' and dir_safra == 'asc' %}desc{% else %}asc{% endif %}&sort_talhao={{ sort_talhao }}&dir_talhao={{ dir_talhao }}">
+                    Área (ha) {% if sort_safra == 'total_area' %}{% if dir_safra == 'asc' %}&#8593;{% else %}&#8595;{% endif %}{% endif %}
+                  </a>
+                </th>
+                <th class="text-end">M.O.</th>
+                <th class="text-end">Maquinário</th>
+                <th class="text-end">Insumos</th>
+                <th class="text-end">Serv. Ext.</th>
+                <th class="text-end">
+                  <a class="text-decoration-none text-dark" href="?talhao={{ talhao_filter }}&safra={{ safra_filter }}&q={{ search|urlencode }}&sort_safra=total_geral&dir_safra={% if sort_safra == 'total_geral' and dir_safra == 'asc' %}desc{% else %}asc{% endif %}&sort_talhao={{ sort_talhao }}&dir_talhao={{ dir_talhao }}">
+                    Total {% if sort_safra == 'total_geral' %}{% if dir_safra == 'asc' %}&#8593;{% else %}&#8595;{% endif %}{% endif %}
+                  </a>
+                </th>
+                <th class="text-end">
+                  <a class="text-decoration-none text-dark" href="?talhao={{ talhao_filter }}&safra={{ safra_filter }}&q={{ search|urlencode }}&sort_safra=custo_medio_ha&dir_safra={% if sort_safra == 'custo_medio_ha' and dir_safra == 'asc' %}desc{% else %}asc{% endif %}&sort_talhao={{ sort_talhao }}&dir_talhao={{ dir_talhao }}">
+                    R$/ha {% if sort_safra == 'custo_medio_ha' %}{% if dir_safra == 'asc' %}&#8593;{% else %}&#8595;{% endif %}{% endif %}
+                  </a>
+                </th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in consolidado_safras %}
+              <tr>
+                <td class="fw-semibold">{{ item.safra_label }}</td>
+                <td class="text-end">{{ item.total_os }}</td>
+                <td class="text-end">{{ item.total_area|default:0|floatformat:2 }}</td>
+                <td class="text-end small">R$ {{ item.total_mao_obra|default:0|floatformat:2 }}</td>
+                <td class="text-end small">R$ {{ item.total_maquinario|default:0|floatformat:2 }}</td>
+                <td class="text-end small">R$ {{ item.total_insumos|default:0|floatformat:2 }}</td>
+                <td class="text-end small">R$ {{ item.total_servico|default:0|floatformat:2 }}</td>
+                <td class="text-end fw-bold">R$ {{ item.total_geral|default:0|floatformat:2 }}</td>
+                <td class="text-end">R$ {{ item.custo_medio_ha|default:0|floatformat:2 }}</td>
+                <td>
+                  {% if item.safra_id %}
+                  <a href="{% url 'cadastros:safra_detail' item.safra_id %}" class="btn btn-outline-info btn-sm py-0 px-1" title="Ver safra">
+                    <i class="bi bi-arrow-right-circle"></i>
+                  </a>
+                  {% endif %}
+                </td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="10" class="text-center text-muted py-4">Nenhum dado consolidado por safra para os filtros informados.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Aba: Por OS -->
+      <div class="tab-pane fade" id="tab-os" role="tabpanel">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>OS</th>
+                <th>Tipo de Serviço</th>
+                <th>Talhão</th>
+                <th>Safra</th>
+                <th class="text-end">Área (ha)</th>
+                <th class="text-end">M.O.</th>
+                <th class="text-end">Maquinário</th>
+                <th class="text-end">Insumos</th>
+                <th class="text-end">Serv. Ext.</th>
+                <th class="text-end">Total</th>
+                <th class="text-end">R$/ha</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in custos %}
+              <tr>
+                <td><a href="{% url 'cadastros:os_detail' item.os.pk %}" class="fw-semibold text-decoration-none">{{ item.os.numero }}</a></td>
+                <td class="small text-muted">{% if item.os.tipo_servico %}{{ item.os.tipo_servico.nome }}{% else %}—{% endif %}</td>
+                <td><a href="{% url 'cadastros:talhao_detail' item.talhao.pk %}" class="text-decoration-none text-dark">{{ item.talhao.nome }}</a></td>
+                <td>{% if item.safra %}<span class="badge bg-light text-dark border">{{ item.safra.nome }}</span>{% else %}<span class="text-muted">-</span>{% endif %}</td>
+                <td class="text-end small">{{ item.area_executada_ha|default:0|floatformat:4 }}</td>
+                <td class="text-end small">R$ {{ item.custo_mao_obra|floatformat:2 }}</td>
+                <td class="text-end small">R$ {{ item.custo_maquinario|floatformat:2 }}</td>
+                <td class="text-end small">R$ {{ item.custo_insumos|floatformat:2 }}</td>
+                <td class="text-end small">R$ {{ item.custo_servico_externo|floatformat:2 }}</td>
+                <td class="text-end fw-bold">R$ {{ item.custo_total|floatformat:2 }}</td>
+                <td class="text-end small">R$ {{ item.custo_por_hectare|floatformat:2 }}</td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="11" class="text-center text-muted py-4">
+                  <i class="bi bi-inboxes fs-2 d-block mb-2"></i>
+                  Nenhum custo encontrado com os filtros informados.
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div><!-- /tab-content -->
+  </div><!-- /card -->
+
 </div>
+
+{% if consolidado_talhoes %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+(function () {
+  const labels      = {{ chart_labels|safe }};
+  const dataMO      = {{ chart_mao_obra|safe }};
+  const dataMaq     = {{ chart_maquinario|safe }};
+  const dataIns     = {{ chart_insumos|safe }};
+  const dataSvc     = {{ chart_servico|safe }};
+  const doughnutData = {{ resumo_doughnut|safe }};
+
+  // Stacked Bar
+  new Chart(document.getElementById('chartStackedBar'), {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [
+        { label: 'Mão de Obra',     data: dataMO,  backgroundColor: '#0d6efd' },
+        { label: 'Maquinário',      data: dataMaq, backgroundColor: '#0dcaf0' },
+        { label: 'Insumos',         data: dataIns, backgroundColor: '#ffc107' },
+        { label: 'Serviço Externo', data: dataSvc, backgroundColor: '#6c757d' },
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { position: 'top' } },
+      scales: {
+        x: { stacked: true },
+        y: { stacked: true, ticks: { callback: v => 'R$ ' + v.toLocaleString('pt-BR') } }
+      }
+    }
+  });
+
+  // Doughnut
+  new Chart(document.getElementById('chartDoughnut'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Mão de Obra', 'Maquinário', 'Insumos', 'Serviço Externo'],
+      datasets: [{ data: doughnutData, backgroundColor: ['#0d6efd','#0dcaf0','#ffc107','#6c757d'], borderWidth: 2 }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { position: 'bottom' } }
+    }
+  });
+})();
+</script>
+{% endif %}
 {% endblock %}

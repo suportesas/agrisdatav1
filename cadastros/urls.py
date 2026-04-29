@@ -13,6 +13,11 @@ from . import views_colheita
 from . import views_produtor
 from . import views_emprestimo
 from . import views_pluviometria
+from . import views_qualidade_campo
+from . import views_caderno_campo
+from . import views_estufas
+from . import views_planejamento_custo
+from . import views_frota
 
 app_name = 'cadastros'
 
@@ -340,6 +345,7 @@ urlpatterns = [
     path('motoristas/<int:pk>/', views_motorista.motorista_detail, name='motorista_detail'),
     path('motoristas/<int:pk>/editar/', views_motorista.motorista_update, name='motorista_update'),
     path('motoristas/<int:pk>/deletar/', views_motorista.motorista_delete, name='motorista_delete'),
+    path('motoristas/<int:pk>/portal-acesso/', views_motorista.motorista_set_pin, name='motorista_set_pin'),
 
     # Historico Motorista x Placa
     path('motoristas/vinculos/', views_motorista.motorista_vinculo_list, name='motorista_vinculo_list'),
@@ -506,5 +512,111 @@ urlpatterns = [
     path('pluviometria/<int:pk>/editar/', views_pluviometria.pluviometria_update, name='pluviometria_update'),
     path('pluviometria/<int:pk>/excluir/', views_pluviometria.pluviometria_delete, name='pluviometria_delete'),
     path('pluviometria/dashboard/', views_pluviometria.pluviometria_dashboard, name='pluviometria_dashboard'),
+
+    # ==================== QUALIDADE DE CAMPO (RF-108) ====================
+    path('qualidade-campo/', views_qualidade_campo.qualidade_campo_list, name='qualidade_campo_list'),
+    path('qualidade-campo/nova/', views_qualidade_campo.qualidade_campo_create, name='qualidade_campo_create'),
+    path('qualidade-campo/<int:pk>/', views_qualidade_campo.qualidade_campo_detail, name='qualidade_campo_detail'),
+    path('qualidade-campo/<int:pk>/editar/', views_qualidade_campo.qualidade_campo_update, name='qualidade_campo_update'),
+    path('qualidade-campo/<int:pk>/excluir/', views_qualidade_campo.qualidade_campo_delete, name='qualidade_campo_delete'),
+    path('qualidade-campo/<int:pk>/pdf/', views_qualidade_campo.qualidade_campo_pdf, name='qualidade_campo_pdf'),
+
+    # ==================== CADERNO DE CAMPO (RF-111) ====================
+    path('caderno-campo/', views_caderno_campo.caderno_campo_list, name='caderno_campo_list'),
+    path('caderno-campo/novo/', views_caderno_campo.caderno_campo_create, name='caderno_campo_create'),
+    path('caderno-campo/pdf/', views_caderno_campo.caderno_campo_pdf, name='caderno_campo_pdf'),
+    path('caderno-campo/<int:pk>/', views_caderno_campo.caderno_campo_detail, name='caderno_campo_detail'),
+    path('caderno-campo/<int:pk>/editar/', views_caderno_campo.caderno_campo_update, name='caderno_campo_update'),
+    path('caderno-campo/<int:pk>/excluir/', views_caderno_campo.caderno_campo_delete, name='caderno_campo_delete'),
+    path('caderno-campo/<int:pk>/insumos/novo/', views_caderno_campo.caderno_campo_insumo_add, name='caderno_campo_insumo_add'),
+    path('caderno-campo/<int:pk>/insumos/<int:insumo_pk>/excluir/', views_caderno_campo.caderno_campo_insumo_delete, name='caderno_campo_insumo_delete'),
+    path('caderno-campo/<int:pk>/funcionarios/novo/', views_caderno_campo.caderno_campo_funcionario_add, name='caderno_campo_funcionario_add'),
+    path('caderno-campo/<int:pk>/funcionarios/<int:func_pk>/excluir/', views_caderno_campo.caderno_campo_funcionario_delete, name='caderno_campo_funcionario_delete'),
+
+    # ==================== ESTUFAS (RF-1200) ====================
+    path('estufas/', views_estufas.estufa_list, name='estufa_list'),
+    path('estufas/nova/', views_estufas.estufa_create, name='estufa_create'),
+    path('estufas/dashboard/', views_estufas.dashboard_estufas, name='dashboard_estufas'),
+    path('estufas/<int:pk>/', views_estufas.estufa_detail, name='estufa_detail'),
+    path('estufas/<int:pk>/editar/', views_estufas.estufa_update, name='estufa_update'),
+    path('estufas/<int:pk>/excluir/', views_estufas.estufa_delete, name='estufa_delete'),
+
+    # ==================== LOTES DE MUDAS (RF-1201) ====================
+    path('lotes-muda/', views_estufas.lote_muda_list, name='lote_muda_list'),
+    path('lotes-muda/novo/', views_estufas.lote_muda_create, name='lote_muda_create'),
+    path('lotes-muda/<int:pk>/', views_estufas.lote_muda_detail, name='lote_muda_detail'),
+    path('lotes-muda/<int:pk>/editar/', views_estufas.lote_muda_update, name='lote_muda_update'),
+    path('lotes-muda/<int:pk>/avancar-status/', views_estufas.lote_muda_avancar_status, name='lote_muda_avancar_status'),
+    path('lotes-muda/<int:pk>/perdas/nova/', views_estufas.perda_estufa_create, name='perda_estufa_create'),
+    path('lotes-muda/<int:lote_pk>/perdas/<int:pk>/excluir/', views_estufas.perda_estufa_delete, name='perda_estufa_delete'),
+    path('lotes-muda/<int:pk>/aplicacoes/nova/', views_estufas.aplicacao_estufa_create, name='aplicacao_estufa_create'),
+    path('lotes-muda/<int:lote_pk>/aplicacoes/<int:pk>/excluir/', views_estufas.aplicacao_estufa_delete, name='aplicacao_estufa_delete'),
+    path('lotes-muda/<int:pk>/monitoramentos/novo/', views_estufas.monitoramento_estufa_create, name='monitoramento_estufa_create'),
+    path('lotes-muda/<int:lote_pk>/monitoramentos/<int:pk>/excluir/', views_estufas.monitoramento_estufa_delete, name='monitoramento_estufa_delete'),
+
+    # ==================== TRANSPLANTIO (RF-1210) ====================
+    path('transplantios/', views_estufas.transplantio_list, name='transplantio_list'),
+    path('transplantios/novo/', views_estufas.transplantio_create, name='transplantio_create'),
+    path('transplantios/<int:pk>/', views_estufas.transplantio_detail, name='transplantio_detail'),
+
+    # ==================== REPLANTIO (RF-1230) ====================
+    path('replantios/', views_estufas.replantio_list, name='replantio_list'),
+    path('replantios/novo/', views_estufas.replantio_create, name='replantio_create'),
+    path('replantios/<int:pk>/', views_estufas.replantio_detail, name='replantio_detail'),
+
+    # ==================== PLANEJAMENTO DE CUSTO (FASE 3) ====================
+    path('planejamento-custo/', views_planejamento_custo.planejamento_custo_list, name='planejamento_custo_list'),
+    path('planejamento-custo/novo/', views_planejamento_custo.planejamento_custo_create, name='planejamento_custo_create'),
+    path('planejamento-custo/<int:pk>/', views_planejamento_custo.planejamento_custo_detail, name='planejamento_custo_detail'),
+    path('planejamento-custo/<int:pk>/excluir/', views_planejamento_custo.planejamento_custo_delete, name='planejamento_custo_delete'),
+    path('planejamento-custo/<int:pk>/itens/novo/', views_planejamento_custo.planejamento_custo_item_add, name='planejamento_custo_item_add'),
+    path('planejamento-custo/<int:pk>/itens/<int:item_pk>/excluir/', views_planejamento_custo.planejamento_custo_item_delete, name='planejamento_custo_item_delete'),
+    path('planejamento-custo/ajax/preco-produto/', views_planejamento_custo.ajax_preco_produto, name='ajax_preco_produto'),
+
+    # ==================== MÓDULO FROTA ====================
+    path('frota/', views_frota.frota_dashboard, name='frota_dashboard'),
+
+    # Abastecimentos
+    path('frota/abastecimentos/', views_frota.abastecimento_list, name='abastecimento_list'),
+    path('frota/abastecimentos/novo/', views_frota.abastecimento_create, name='abastecimento_create'),
+    path('frota/abastecimentos/<int:pk>/', views_frota.abastecimento_detail, name='abastecimento_detail'),
+    path('frota/abastecimentos/<int:pk>/editar/', views_frota.abastecimento_update, name='abastecimento_update'),
+    path('frota/abastecimentos/<int:pk>/excluir/', views_frota.abastecimento_delete, name='abastecimento_delete'),
+    path('frota/abastecimentos/<int:pk>/conta-pagar/', views_frota.abastecimento_gerar_conta_pagar, name='abastecimento_gerar_conta_pagar'),
+    path('frota/abastecimentos/importar/', views_frota.abastecimento_importar, name='abastecimento_importar'),
+    path('frota/abastecimentos/modelo-csv/', views_frota.abastecimento_download_modelo, name='abastecimento_download_modelo'),
+    path('frota/api/veiculo-abastecimento-info/', views_frota.api_veiculo_info_abastecimento, name='api_veiculo_info_abastecimento'),
+
+    # Manutenções
+    path('frota/manutencoes/', views_frota.manutencao_list, name='manutencao_list'),
+    path('frota/manutencoes/nova/', views_frota.manutencao_create, name='manutencao_create'),
+    path('frota/manutencoes/<int:pk>/', views_frota.manutencao_detail, name='manutencao_detail'),
+    path('frota/manutencoes/<int:pk>/editar/', views_frota.manutencao_update, name='manutencao_update'),
+    path('frota/manutencoes/<int:pk>/excluir/', views_frota.manutencao_delete, name='manutencao_delete'),
+    path('frota/manutencoes/<int:pk>/itens/novo/', views_frota.manutencao_item_add, name='manutencao_item_add'),
+    path('frota/manutencoes/<int:pk>/itens/<int:item_pk>/excluir/', views_frota.manutencao_item_delete, name='manutencao_item_delete'),
+    path('frota/manutencoes/<int:pk>/conta-pagar/', views_frota.manutencao_gerar_conta_pagar, name='manutencao_gerar_conta_pagar'),
+    path('frota/alertas/', views_frota.alertas_manutencao_list, name='alertas_manutencao_list'),
+    path('frota/alertas/<int:pk>/resolver/', views_frota.alerta_resolver, name='alerta_resolver'),
+
+    # Pedágios
+    path('frota/pedagios/', views_frota.pedagio_list, name='pedagio_list'),
+    path('frota/pedagios/novo/', views_frota.pedagio_create, name='pedagio_create'),
+    path('frota/pedagios/<int:pk>/editar/', views_frota.pedagio_update, name='pedagio_update'),
+    path('frota/pedagios/<int:pk>/excluir/', views_frota.pedagio_delete, name='pedagio_delete'),
+
+    # Viagens (frota)
+    path('frota/viagens/', views_frota.viagem_list, name='viagem_list'),
+    path('frota/viagens/nova/', views_frota.viagem_create, name='viagem_create'),
+    path('frota/viagens/<int:pk>/', views_frota.viagem_detail, name='viagem_frota_detail'),
+    path('frota/viagens/<int:pk>/editar/', views_frota.viagem_update, name='viagem_frota_update'),
+    path('frota/viagens/<int:pk>/excluir/', views_frota.viagem_delete, name='viagem_frota_delete'),
+
+    # Telemetria
+    path('frota/telemetria/', views_frota.telemetria_list, name='telemetria_list'),
+    path('frota/telemetria/nova/', views_frota.telemetria_create, name='telemetria_create'),
+    path('frota/telemetria/<int:pk>/excluir/', views_frota.telemetria_delete, name='telemetria_delete'),
+    path('frota/telemetria/mapa/<int:vehicle_pk>/', views_frota.telemetria_mapa, name='telemetria_mapa'),
+    path('frota/api/telemetria/', views_frota.api_telemetria_ingest, name='api_telemetria_ingest'),
 
 ]

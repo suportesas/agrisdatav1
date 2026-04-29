@@ -1,0 +1,122 @@
+{% extends 'base.html' %}
+{% block title %}{{ title }} | ERP Agrícola{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <h5 class="fw-bold text-secondary mb-0"><i class="bi bi-fuel-pump text-info"></i> Abastecimento #{{ obj.pk }}</h5>
+    <div class="d-flex gap-2">
+      <a href="{% url 'cadastros:abastecimento_list' %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i> Voltar</a>
+      <a href="{% url 'cadastros:abastecimento_update' obj.pk %}" class="btn btn-outline-primary btn-sm"><i class="bi bi-pencil"></i> Editar</a>
+      {% if not obj.conta_pagar and obj.fornecedor %}
+      <form method="post" action="{% url 'cadastros:abastecimento_gerar_conta_pagar' obj.pk %}" class="d-inline">
+        {% csrf_token %}
+        <button class="btn btn-outline-success btn-sm"><i class="bi bi-receipt"></i> Gerar ContaPagar</button>
+      </form>
+      {% endif %}
+      <form method="post" action="{% url 'cadastros:abastecimento_delete' obj.pk %}" class="d-inline"
+            onsubmit="return confirm('Excluir este abastecimento?')">
+        {% csrf_token %}
+        <button class="btn btn-outline-danger btn-sm"><i class="bi bi-trash"></i> Excluir</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-lg-8">
+      <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <div class="small text-muted">Veículo</div>
+              <div class="fw-semibold">{{ obj.vehicle }}</div>
+            </div>
+            <div class="col-md-6">
+              <div class="small text-muted">Motorista</div>
+              <div class="fw-semibold">{{ obj.motorista.nome|default:"—" }}</div>
+            </div>
+            <div class="col-md-4">
+              <div class="small text-muted">Data</div>
+              <div class="fw-semibold">{{ obj.data|date:"d/m/Y" }}</div>
+            </div>
+            <div class="col-md-4">
+              <div class="small text-muted">Combustível</div>
+              <div><span class="badge bg-secondary">{{ obj.get_tipo_combustivel_display }}</span></div>
+            </div>
+            <div class="col-md-4">
+              <div class="small text-muted">Tanque Cheio?</div>
+              <div>{% if obj.tanque_cheio %}<span class="badge bg-success">Sim</span>{% else %}<span class="badge bg-secondary">Não</span>{% endif %}</div>
+            </div>
+            <div class="col-md-4">
+              <div class="small text-muted">Litros</div>
+              <div class="fw-bold fs-5">{{ obj.litros|floatformat:3 }} L</div>
+            </div>
+            <div class="col-md-4">
+              <div class="small text-muted">Preço/Litro</div>
+              <div class="fw-semibold">R$ {{ obj.preco_por_litro|floatformat:3 }}</div>
+            </div>
+            <div class="col-md-4">
+              <div class="small text-muted">Valor Total</div>
+              <div class="fw-bold text-info fs-5">R$ {{ obj.valor_total|floatformat:2 }}</div>
+            </div>
+            {% if obj.km_odometro %}
+            <div class="col-md-4">
+              <div class="small text-muted">Hodômetro</div>
+              <div class="fw-semibold">{{ obj.km_odometro|floatformat:0 }} km</div>
+            </div>
+            {% endif %}
+            {% if obj.horimetro %}
+            <div class="col-md-4">
+              <div class="small text-muted">Horímetro</div>
+              <div class="fw-semibold">{{ obj.horimetro|floatformat:1 }} h</div>
+            </div>
+            {% endif %}
+            {% if consumo %}
+            <div class="col-md-4">
+              <div class="small text-muted">Consumo Calculado</div>
+              <div class="fw-bold text-success">{{ consumo|floatformat:4 }} L/km</div>
+            </div>
+            {% endif %}
+            {% if obj.local_abastecimento %}
+            <div class="col-12">
+              <div class="small text-muted">Local / Posto</div>
+              <div>{{ obj.local_abastecimento }}</div>
+            </div>
+            {% endif %}
+            {% if obj.observacoes %}
+            <div class="col-12">
+              <div class="small text-muted">Observações</div>
+              <div class="text-muted small">{{ obj.observacoes }}</div>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-body">
+          {% if obj.fornecedor %}
+          <div class="small text-muted mb-1">Fornecedor</div>
+          <div class="fw-semibold mb-3">{{ obj.fornecedor }}</div>
+          {% endif %}
+          {% if obj.conta_pagar %}
+          <div class="alert alert-success py-2 mb-0 small">
+            <i class="bi bi-check-circle"></i> Conta a Pagar gerada — #{{ obj.conta_pagar.numero }}
+          </div>
+          {% elif not obj.fornecedor %}
+          <div class="alert alert-secondary py-2 mb-0 small">
+            <i class="bi bi-info-circle"></i> Informe um fornecedor para gerar Conta a Pagar.
+          </div>
+          {% endif %}
+          <hr class="my-3">
+          <div class="small text-muted">Registrado em {{ obj.criado_em|date:"d/m/Y H:i" }}</div>
+          {% if obj.criado_por %}<div class="small text-muted">por {{ obj.criado_por.get_full_name }}</div>{% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+{% block title %}{{ title }} | ERP Agrícola{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-5">
+      <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-header bg-white border-0 pt-3 pb-0">
+          <h6 class="fw-bold text-secondary"><i class="bi bi-person-badge text-success"></i> Acesso ao Portal do Motorista</h6>
+        </div>
+        <div class="card-body">
+          <div class="alert alert-info rounded-3 small mb-4">
+            <i class="bi bi-info-circle"></i>
+            O motorista usará a <strong>matrícula</strong> e o <strong>PIN</strong> para entrar no Portal do Motorista
+            em <code>{% url 'portal_motorista:login' %}</code>.
+            Se deixar o PIN em branco, o PIN atual não será alterado.
+          </div>
+
+          <div class="mb-3 p-3 bg-light rounded-3">
+            <div class="fw-semibold">{{ motorista.nome }}</div>
+            <div class="small text-muted">{{ motorista.cpf }}</div>
+            {% if motorista.matricula %}
+            <div class="small text-success mt-1"><i class="bi bi-check-circle"></i> Matrícula atual: <strong>{{ motorista.matricula }}</strong></div>
+            {% else %}
+            <div class="small text-muted mt-1"><i class="bi bi-x-circle text-warning"></i> Sem matrícula configurada</div>
+            {% endif %}
+            {% if motorista.pin %}
+            <div class="small text-success mt-1"><i class="bi bi-lock-fill"></i> PIN configurado</div>
+            {% else %}
+            <div class="small text-warning mt-1"><i class="bi bi-unlock"></i> PIN não configurado — acesso bloqueado</div>
+            {% endif %}
+          </div>
+
+          <form method="post" novalidate>
+            {% csrf_token %}
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Matrícula <span class="text-danger">*</span></label>
+              <input type="text" name="matricula" class="form-control" value="{{ motorista.matricula }}" placeholder="Ex: MOT-001" required>
+              <div class="form-text">Identificador único usado no login do portal</div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Novo PIN (numérico)</label>
+              <input type="password" name="pin" class="form-control" placeholder="Mínimo 4 dígitos — deixe em branco para não alterar" inputmode="numeric" pattern="[0-9]*">
+            </div>
+            <div class="mb-4">
+              <label class="form-label fw-semibold">Confirmar PIN</label>
+              <input type="password" name="pin2" class="form-control" placeholder="Repita o PIN" inputmode="numeric" pattern="[0-9]*">
+            </div>
+            <div class="d-flex gap-2">
+              <button type="submit" class="btn btn-success"><i class="bi bi-check-lg"></i> Salvar</button>
+              <a href="{% url 'cadastros:motorista_detail' motorista.pk %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> Voltar</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

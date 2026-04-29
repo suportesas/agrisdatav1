@@ -1,0 +1,111 @@
+{% extends 'base_portal.html' %}
+{% block title %}Registrar Abastecimento — Portal do Motorista{% endblock %}
+
+{% block content %}
+<h5 class="fw-bold mb-3"><i class="bi bi-fuel-pump-fill text-info"></i> Registrar Abastecimento</h5>
+
+<div class="card border-0 shadow-sm" style="border-radius:1rem;">
+  <div class="card-body p-3">
+    <form method="post" enctype="multipart/form-data" novalidate>
+      {% csrf_token %}
+      {% if form.non_field_errors %}
+      <div class="alert alert-danger py-2 rounded-3 small">{{ form.non_field_errors }}</div>
+      {% endif %}
+
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Veículo *</label>
+        {% if tem_vinculo %}
+        <div class="d-flex align-items-center gap-2 mb-1">
+          <span class="badge bg-success-subtle text-success border border-success-subtle small">
+            <i class="bi bi-link-45deg"></i> Exibindo apenas veículos vinculados a você ({{ total_veiculos }})
+          </span>
+        </div>
+        {% else %}
+        <div class="alert alert-warning py-1 px-2 small mb-1 rounded-2">
+          <i class="bi bi-exclamation-triangle"></i> Nenhum vínculo ativo configurado — exibindo todos os veículos da empresa
+        </div>
+        {% endif %}
+        {{ form.vehicle }}
+        {% if form.vehicle.errors %}<div class="text-danger small">{{ form.vehicle.errors }}</div>{% endif %}
+      </div>
+      <div class="row g-2 mb-3">
+        <div class="col-6">
+          <label class="form-label fw-semibold">Data *</label>
+          {{ form.data }}
+        </div>
+        <div class="col-6">
+          <label class="form-label fw-semibold">Combustível *</label>
+          {{ form.tipo_combustivel }}
+        </div>
+      </div>
+      <div class="row g-2 mb-3">
+        <div class="col-6">
+          <label class="form-label fw-semibold">Litros *</label>
+          {{ form.litros }}
+          {% if form.litros.errors %}<div class="text-danger small">{{ form.litros.errors }}</div>{% endif %}
+        </div>
+        <div class="col-6">
+          <label class="form-label fw-semibold">Preço/Litro *</label>
+          {{ form.preco_por_litro }}
+        </div>
+      </div>
+      <div class="mb-3 p-2 bg-light rounded-3 text-center">
+        <div class="small text-muted">Total calculado</div>
+        <div class="fw-bold text-info fs-5" id="total-preview">R$ 0,00</div>
+      </div>
+      <div class="row g-2 mb-3">
+        <div class="col-6">
+          <label class="form-label fw-semibold">Hodômetro (km)</label>
+          {{ form.km_odometro }}
+        </div>
+        <div class="col-6">
+          <label class="form-label fw-semibold">Horímetro (h)</label>
+          {{ form.horimetro }}
+        </div>
+      </div>
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Local / Posto</label>
+        {{ form.local_abastecimento }}
+      </div>
+      <div class="form-check mb-3">
+        {{ form.tanque_cheio }}
+        <label class="form-check-label fw-semibold" for="{{ form.tanque_cheio.id_for_label }}">Tanque cheio</label>
+      </div>
+
+      <hr class="my-3">
+      <h6 class="fw-bold text-secondary"><i class="bi bi-camera text-success"></i> Fotos (obrigatório)</h6>
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Foto da bomba / display *</label>
+        {{ form.foto_bomba }}
+        {% if form.foto_bomba.errors %}<div class="text-danger small">{{ form.foto_bomba.errors }}</div>{% endif %}
+      </div>
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Foto do hodômetro / painel</label>
+        {{ form.foto_odometro }}
+      </div>
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Observações</label>
+        {{ form.observacoes }}
+      </div>
+
+      <button type="submit" class="btn btn-success btn-lg w-100 fw-semibold">
+        <i class="bi bi-check-circle-fill"></i> Salvar Abastecimento
+      </button>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const litros = document.getElementById('{{ form.litros.id_for_label }}');
+const preco  = document.getElementById('{{ form.preco_por_litro.id_for_label }}');
+function calcTotal() {
+  const l = parseFloat(litros.value) || 0;
+  const p = parseFloat(preco.value) || 0;
+  document.getElementById('total-preview').textContent = 'R$ ' + (l*p).toLocaleString('pt-BR', {minimumFractionDigits: 2});
+}
+if (litros) litros.addEventListener('input', calcTotal);
+if (preco)  preco.addEventListener('input', calcTotal);
+</script>
+{% endblock %}

@@ -1,0 +1,151 @@
+{% extends 'base.html' %}
+{% block title %}{{ title }} | ERP Agrícola{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+
+  <!-- KPIs -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm text-center">
+        <div class="card-body py-3">
+          <small class="text-muted d-block">Veículos Ativos</small>
+          <h3 class="mb-0 text-primary">{{ total_veiculos }}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm text-center {% if manutencoes_abertas > 0 %}bg-warning bg-opacity-10{% endif %}">
+        <div class="card-body py-3">
+          <small class="text-muted d-block">Manutenções Abertas</small>
+          <h3 class="mb-0 {% if manutencoes_abertas > 0 %}text-warning{% endif %}">{{ manutencoes_abertas }}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm text-center {% if alertas|length > 0 %}bg-danger bg-opacity-10{% endif %}">
+        <div class="card-body py-3">
+          <small class="text-muted d-block">Alertas Pendentes</small>
+          <h3 class="mb-0 {% if alertas|length > 0 %}text-danger{% endif %}">{{ alertas|length }}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm text-center">
+        <div class="card-body py-3">
+          <small class="text-muted d-block">Combustível (mês)</small>
+          <h3 class="mb-0">R$ {{ gasto_combustivel_mes|floatformat:2 }}</h3>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+
+    <!-- Alertas de Manutenção -->
+    <div class="col-lg-6">
+      <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-header bg-white border-0 pt-3 pb-0 d-flex justify-content-between align-items-center">
+          <h6 class="fw-bold text-secondary mb-0"><i class="bi bi-exclamation-triangle text-warning"></i> Alertas de Manutenção</h6>
+          <a href="{% url 'cadastros:alertas_manutencao_list' %}" class="btn btn-outline-warning btn-sm">Ver todos</a>
+        </div>
+        <div class="card-body p-0">
+          {% if alertas %}
+          <div class="table-responsive">
+            <table class="table table-sm table-hover align-middle mb-0">
+              <tbody>
+                {% for alerta in alertas|slice:":8" %}
+                <tr>
+                  <td><i class="bi bi-car-front text-secondary"></i> {{ alerta.vehicle }}</td>
+                  <td class="small text-muted">{{ alerta.descricao|truncatechars:50 }}</td>
+                  <td class="text-end">
+                    <form method="post" action="{% url 'cadastros:alerta_resolver' alerta.pk %}" class="d-inline">
+                      {% csrf_token %}
+                      <button class="btn btn-outline-success btn-sm py-0 px-1"><i class="bi bi-check"></i></button>
+                    </form>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <p class="text-muted text-center py-3 small">Nenhum alerta pendente.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Documentos Vencendo -->
+    <div class="col-lg-6">
+      <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-header bg-white border-0 pt-3 pb-0">
+          <h6 class="fw-bold text-secondary mb-0"><i class="bi bi-file-earmark-x text-danger"></i> Documentos — Atenção</h6>
+        </div>
+        <div class="card-body p-0">
+          {% if docs_vencidos or docs_vencendo %}
+          <div class="table-responsive">
+            <table class="table table-sm table-hover align-middle mb-0">
+              <thead class="table-light"><tr><th>Veículo</th><th>Documento</th><th>Vencimento</th><th>Status</th></tr></thead>
+              <tbody>
+                {% for doc in docs_vencidos|slice:":5" %}
+                <tr class="table-danger">
+                  <td class="small">{{ doc.vehicle }}</td>
+                  <td class="small">{{ doc.tipo }}</td>
+                  <td class="small">{{ doc.data_validade|date:"d/m/Y" }}</td>
+                  <td><span class="badge bg-danger">Vencido</span></td>
+                </tr>
+                {% endfor %}
+                {% for doc in docs_vencendo|slice:":5" %}
+                <tr class="table-warning">
+                  <td class="small">{{ doc.vehicle }}</td>
+                  <td class="small">{{ doc.tipo }}</td>
+                  <td class="small">{{ doc.data_validade|date:"d/m/Y" }}</td>
+                  <td><span class="badge bg-warning text-dark">Vence em breve</span></td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <p class="text-muted text-center py-3 small">Nenhum documento com vencimento próximo.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Últimos Abastecimentos -->
+    <div class="col-12">
+      <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-header bg-white border-0 pt-3 pb-0 d-flex justify-content-between align-items-center">
+          <h6 class="fw-bold text-secondary mb-0"><i class="bi bi-fuel-pump text-info"></i> Últimos Abastecimentos (7 dias)</h6>
+          <a href="{% url 'cadastros:abastecimento_create' %}" class="btn btn-outline-info btn-sm"><i class="bi bi-plus"></i> Registrar</a>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-sm table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr><th>Data</th><th>Veículo</th><th>Motorista</th><th>Combustível</th><th class="text-end">Litros</th><th class="text-end">Valor</th></tr>
+            </thead>
+            <tbody>
+              {% for ab in abastecimentos_recentes %}
+              <tr>
+                <td class="small">{{ ab.data|date:"d/m/Y" }}</td>
+                <td><a href="{% url 'cadastros:abastecimento_detail' ab.pk %}">{{ ab.vehicle }}</a></td>
+                <td class="small text-muted">{{ ab.motorista.nome|default:"—" }}</td>
+                <td class="small"><span class="badge bg-secondary">{{ ab.get_tipo_combustivel_display }}</span></td>
+                <td class="text-end small">{{ ab.litros|floatformat:1 }} L</td>
+                <td class="text-end fw-bold">R$ {{ ab.valor_total|floatformat:2 }}</td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="6" class="text-center text-muted py-3">Nenhum abastecimento nos últimos 7 dias.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

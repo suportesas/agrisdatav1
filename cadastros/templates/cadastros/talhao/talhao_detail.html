@@ -185,6 +185,21 @@
               </a>
             </li>
             {% endif %}
+            <li class="nav-item">
+              <a class="nav-link" data-bs-toggle="tab" href="#caderno">
+                <i class="bi bi-journal-text text-success"></i> Caderno
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" data-bs-toggle="tab" href="#custos">
+                <i class="bi bi-currency-dollar text-warning"></i> Custos
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" data-bs-toggle="tab" href="#movimentos">
+                <i class="bi bi-arrow-left-right text-primary"></i> Transplantios
+              </a>
+            </li>
             <li class="nav-item ms-auto">
               <a href="{% url 'cadastros:historico_create' talhao.pk %}" class="btn btn-sm btn-outline-primary">
                 <i class="bi bi-plus-circle"></i> Registrar Histórico
@@ -315,8 +330,6 @@
           {% if historico %}
           <div class="tab-pane fade" id="historico">
             <h6 class="fw-bold text-primary mb-3">Histórico de Cultivo</h6>
-            
-            {% if historico %}
             <div class="table-responsive">
               <table class="table table-hover">
                 <thead class="table-light">
@@ -333,33 +346,21 @@
                   <tr>
                     <td>
                       <strong>{{ hist.cultura.nome }}</strong>
-                      {% if hist.variedade %}
-                        <br><small class="text-muted">{{ hist.variedade }}</small>
-                      {% endif %}
+                      {% if hist.variedade %}<br><small class="text-muted">{{ hist.variedade }}</small>{% endif %}
                     </td>
                     <td>
                       <small>
                         {{ hist.data_plantio|date:"d/m/Y" }}
-                        {% if hist.data_colheita %}
-                          a {{ hist.data_colheita|date:"d/m/Y" }}
-                        {% else %}
-                          (em andamento)
-                        {% endif %}
+                        {% if hist.data_colheita %} a {{ hist.data_colheita|date:"d/m/Y" }}{% else %} (em andamento){% endif %}
                       </small>
                     </td>
                     <td>
-                      {% if hist.producao_real %}
-                        {{ hist.producao_real }} {{ hist.cultura.get_unidade_medida_display }}
-                      {% else %}
-                        <small class="text-muted">-</small>
-                      {% endif %}
+                      {% if hist.producao_real %}{{ hist.producao_real }} {{ hist.cultura.get_unidade_medida_display }}
+                      {% else %}<small class="text-muted">-</small>{% endif %}
                     </td>
                     <td>
-                      {% if hist.produtividade %}
-                        {{ hist.produtividade|floatformat:2 }} /ha
-                      {% else %}
-                        <small class="text-muted">-</small>
-                      {% endif %}
+                      {% if hist.produtividade %}{{ hist.produtividade|floatformat:2 }} /ha
+                      {% else %}<small class="text-muted">-</small>{% endif %}
                     </td>
                     <td>
                       <a href="{% url 'cadastros:historico_detail' hist.pk %}" class="btn btn-sm btn-outline-secondary">Ver</a>
@@ -370,10 +371,6 @@
                 </tbody>
               </table>
             </div>
-            {% else %}
-            <p class="text-muted">Nenhum histórico de cultivo registrado.</p>
-            {% endif %}
-
             {% if historico_stats %}
             <div class="row mt-4">
               <div class="col-md-4">
@@ -411,6 +408,158 @@
             {% endif %}
           </div>
           {% endif %}
+
+          <!-- Tab: Caderno de Campo -->
+          <div class="tab-pane fade" id="caderno">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h6 class="fw-bold text-success mb-0">Últimos Registros do Caderno de Campo</h6>
+              <a href="{% url 'cadastros:caderno_campo_create' %}?talhao={{ talhao.pk }}" class="btn btn-outline-success btn-sm">
+                <i class="bi bi-plus"></i> Novo Registro
+              </a>
+            </div>
+            <div class="table-responsive">
+              <table class="table table-sm table-hover align-middle">
+                <thead class="table-light">
+                  <tr><th>Data</th><th>Tipo</th><th>Atividade</th><th>Safra</th><th>Insumos</th><th></th></tr>
+                </thead>
+                <tbody>
+                  {% for reg in caderno %}
+                  <tr>
+                    <td class="small">{{ reg.data_atividade|date:"d/m/Y" }}</td>
+                    <td><span class="badge bg-info text-dark small">{{ reg.get_tipo_atividade_display }}</span></td>
+                    <td class="small">{{ reg.atividade }}</td>
+                    <td class="small text-muted">{{ reg.safra.nome|default:"—" }}</td>
+                    <td>
+                      {% for ins in reg.insumos_utilizados.all %}
+                        <span class="badge bg-warning text-dark small">{{ ins.produto.nome }} {{ ins.quantidade|floatformat:2 }} {{ ins.unidade_medida.sigla }}</span>
+                      {% empty %}
+                        <span class="text-muted small">—</span>
+                      {% endfor %}
+                    </td>
+                    <td>
+                      <a href="{% url 'cadastros:caderno_campo_detail' reg.pk %}" class="btn btn-outline-secondary btn-sm py-0 px-1"><i class="bi bi-eye"></i></a>
+                    </td>
+                  </tr>
+                  {% empty %}
+                  <tr><td colspan="6" class="text-center text-muted py-3">Nenhum registro no caderno de campo.</td></tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Tab: Custos -->
+          <div class="tab-pane fade" id="custos">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h6 class="fw-bold text-warning mb-0">Custos por Safra</h6>
+              <a href="{% url 'cadastros:custo_talhao_list' %}?talhao={{ talhao.pk }}" class="btn btn-outline-warning btn-sm">
+                <i class="bi bi-bar-chart-line"></i> Ver relatório completo
+              </a>
+            </div>
+            {% if custos_safra %}
+            <div class="table-responsive mb-3">
+              <table class="table table-sm table-hover align-middle">
+                <thead class="table-light">
+                  <tr>
+                    <th>Safra</th>
+                    <th class="text-end">OS</th>
+                    <th class="text-end">Área (ha)</th>
+                    <th class="text-end">M.O.</th>
+                    <th class="text-end">Maquinário</th>
+                    <th class="text-end">Insumos</th>
+                    <th class="text-end">Serv.Ext.</th>
+                    <th class="text-end">Total</th>
+                    <th class="text-end">R$/ha</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for c in custos_safra %}
+                  <tr>
+                    <td class="fw-semibold">{{ c.safra_label }}</td>
+                    <td class="text-end">{{ c.qtd_os }}</td>
+                    <td class="text-end">{{ c.total_area|default:0|floatformat:2 }}</td>
+                    <td class="text-end small">R$ {{ c.total_mao_obra|default:0|floatformat:2 }}</td>
+                    <td class="text-end small">R$ {{ c.total_maquinario|default:0|floatformat:2 }}</td>
+                    <td class="text-end small">R$ {{ c.total_insumos|default:0|floatformat:2 }}</td>
+                    <td class="text-end small">R$ {{ c.total_servico|default:0|floatformat:2 }}</td>
+                    <td class="text-end fw-bold">R$ {{ c.total_geral|floatformat:2 }}</td>
+                    <td class="text-end">{% if c.custo_ha %}R$ {{ c.custo_ha }}{% else %}<span class="text-muted">—</span>{% endif %}</td>
+                    <td>
+                      {% if c.safra_id %}<a href="{% url 'cadastros:safra_detail' c.safra_id %}" class="btn btn-outline-info btn-sm py-0 px-1"><i class="bi bi-arrow-right-circle"></i></a>{% endif %}
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+                <tfoot class="table-light fw-bold">
+                  <tr>
+                    <td colspan="7">Total Geral</td>
+                    <td class="text-end">R$ {{ custo_total_talhao|floatformat:2 }}</td>
+                    <td></td><td></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+            {% else %}
+            <p class="text-muted">Nenhum custo registrado para este talhão.</p>
+            {% endif %}
+          </div>
+
+          <!-- Tab: Transplantios / Replantios -->
+          <div class="tab-pane fade" id="movimentos">
+            <div class="row g-4">
+              <div class="col-12">
+                <h6 class="fw-bold text-primary mb-3">Transplantios Recebidos</h6>
+                <div class="table-responsive">
+                  <table class="table table-sm table-hover align-middle">
+                    <thead class="table-light">
+                      <tr><th>Data</th><th>Lote</th><th>Safra</th><th>Tipo</th><th class="text-end">Qtd.</th><th class="text-end">Custo Transf.</th><th>Responsável</th></tr>
+                    </thead>
+                    <tbody>
+                      {% for t in transplantios %}
+                      <tr>
+                        <td class="small">{{ t.data_transplantio|date:"d/m/Y" }}</td>
+                        <td><a href="{% url 'cadastros:lote_muda_detail' t.lote_muda.pk %}" class="font-monospace small">{{ t.lote_muda.codigo_lote }}</a></td>
+                        <td class="small text-muted">{{ t.safra.nome|default:"—" }}</td>
+                        <td><span class="badge bg-secondary small">{{ t.get_tipo_display }}</span></td>
+                        <td class="text-end">{{ t.quantidade_transplantada }}</td>
+                        <td class="text-end small">R$ {{ t.custo_transferido|floatformat:2 }}</td>
+                        <td class="small">{{ t.responsavel.nome_completo|default:"—" }}</td>
+                      </tr>
+                      {% empty %}
+                      <tr><td colspan="7" class="text-center text-muted py-3">Nenhum transplantio registrado.</td></tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="col-12">
+                <h6 class="fw-bold text-warning mb-3">Replantios</h6>
+                <div class="table-responsive">
+                  <table class="table table-sm table-hover align-middle">
+                    <thead class="table-light">
+                      <tr><th>Data</th><th>Safra</th><th>Motivo</th><th>Origem</th><th class="text-end">Qtd.</th><th class="text-end">Custo Adic.</th><th>Responsável</th></tr>
+                    </thead>
+                    <tbody>
+                      {% for r in replantios %}
+                      <tr>
+                        <td class="small">{{ r.data_replantio|date:"d/m/Y" }}</td>
+                        <td class="small text-muted">{{ r.safra.nome|default:"—" }}</td>
+                        <td><span class="badge bg-warning text-dark small">{{ r.get_motivo_perda_display }}</span></td>
+                        <td class="small">{{ r.get_origem_muda_display }}</td>
+                        <td class="text-end">{{ r.quantidade }}</td>
+                        <td class="text-end small">R$ {{ r.custo_adicional|floatformat:2 }}</td>
+                        <td class="small">{{ r.responsavel.nome_completo|default:"—" }}</td>
+                      </tr>
+                      {% empty %}
+                      <tr><td colspan="7" class="text-center text-muted py-3">Nenhum replantio registrado.</td></tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
 
         </div>
       </div>

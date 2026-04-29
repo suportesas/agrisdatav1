@@ -3056,30 +3056,94 @@ def safra_update(request, pk):
 
 @login_required
 def safra_detail(request, pk):
-    safra = get_object_or_404(Safra, pk=pk, fazenda__empresa=request.user.empresa)
-    
-    # 🔥 Calcular resumo de áreas
-    talhoes = safra.talhoes.all()
-    total_talhoes = talhoes.count()
-    
-    # Calcular áreas
-    from django.db.models import Sum, F, ExpressionWrapper, DecimalField
+    from .models import CustoTalhao, EtapaColheita, RegistroCadernoCampo
+    from django.db.models import Sum, F, ExpressionWrapper, DecimalField as DjDecimalField
     from decimal import Decimal
-    
+
+    safra = get_object_or_404(Safra, pk=pk, fazenda__empresa=request.user.empresa)
+    empresa = request.user.empresa
+
+    talhoes = safra.talhoes.select_related('area', 'fazenda').all()
+    total_talhoes = talhoes.count()
+
     area_total = talhoes.aggregate(
-        total=Sum(F('area_hac'), output_field=DecimalField())
+        total=Sum(F('area_hac'), output_field=DjDecimalField())
     )['total'] or Decimal('0.00')
-    
     area_media = (area_total / total_talhoes) if total_talhoes > 0 else Decimal('0.00')
-    
+
+    # Custos por talhão nesta safra
+    custos_qs = (
+        CustoTalhao.objects
+        .filter(empresa=empresa, safra=safra)
+        .values('talhao_id')
+        .annotate(
+            total_mao_obra=Sum('custo_mao_obra'),
+            total_maquinario=Sum('custo_maquinario'),
+            total_insumos=Sum('custo_insumos'),
+            total_servico=Sum('custo_servico_externo'),
+            total_area_os=Sum('area_executada_ha'),
+        )
+    )
+    custo_map = {}
+    for c in custos_qs:
+        tid = c['talhao_id']
+        total = (
+            (c['total_mao_obra'] or Decimal('0')) +
+            (c['total_maquinario'] or Decimal('0')) +
+            (c['total_insumos'] or Decimal('0')) +
+            (c['total_servico'] or Decimal('0'))
+        )
+        area_os = c['total_area_os'] or Decimal('0')
+        custo_map[tid] = {
+            'total': total,
+            'total_mao_obra': c['total_mao_obra'] or Decimal('0'),
+            'total_maquinario': c['total_maquinario'] or Decimal('0'),
+            'total_insumos': c['total_insumos'] or Decimal('0'),
+            'total_servico': c['total_servico'] or Decimal('0'),
+            'custo_ha': (total / area_os).quantize(Decimal('0.01')) if area_os > 0 else None,
+        }
+
+    # Produção por talhão nesta safra
+    producao_qs = (
+        EtapaColheita.objects
+        .filter(os__empresa=empresa, safra=safra)
+        .values('talhao_id')
+        .annotate(total_kg=Sum('total_liquido_kg'))
+    )
+    producao_map = {p['talhao_id']: p['total_kg'] or Decimal('0') for p in producao_qs}
+
+    # Montar lista comparativa por talhão
+    comparativo = []
+    for t in talhoes:
+        custo = custo_map.get(t.pk, {})
+        total_custo = custo.get('total', Decimal('0'))
+        prod_kg = producao_map.get(t.pk)
+        area_ha = t.area_hac or Decimal('0')
+        comparativo.append({
+            'talhao': t,
+            'area_ha': area_ha,
+            'total_custo': total_custo,
+            'total_mao_obra': custo.get('total_mao_obra', Decimal('0')),
+            'total_maquinario': custo.get('total_maquinario', Decimal('0')),
+            'total_insumos': custo.get('total_insumos', Decimal('0')),
+            'total_servico': custo.get('total_servico', Decimal('0')),
+            'custo_ha': custo.get('custo_ha'),
+            'producao_kg': prod_kg,
+            'produtividade_ha': (prod_kg / area_ha).quantize(Decimal('0.01')) if prod_kg and area_ha > 0 else None,
+            'custo_por_kg': (total_custo / prod_kg).quantize(Decimal('0.01')) if prod_kg and total_custo > 0 else None,
+        })
+
+    comparativo.sort(key=lambda x: x['total_custo'], reverse=True)
+
     # Prepare comparativo
     form = SafraPlanForm(safra=safra)
     context = {
-        'safra': safra, 
+        'safra': safra,
         'form': form,
         'area_total': area_total,
         'area_media': area_media,
         'total_talhoes': total_talhoes,
+        'comparativo': comparativo,
     }
     return render(request, 'cadastros/safra/safra_detail.html', context)
 
@@ -3618,8 +3682,10 @@ def talhao_detail(request, pk):
     Detalhes do talhão com histórico
     🔒 ACESSO APENAS PARA EMPRESA DONA
     """
+    from .models import RegistroCadernoCampo, CustoTalhao, Transplantio, ReplantioTalhao
+
     empresa = request.user.empresa
-    
+
     # 🔒 Busca apenas se pertencer à empresa
     talhao = get_object_or_404(
         Talhao.objects.da_empresa(empresa).select_related(
@@ -3627,21 +3693,80 @@ def talhao_detail(request, pk):
         ),
         pk=pk
     )
-    
+
     # Histórico de cultivos
     historico = talhao.historico.all().order_by('-data_plantio')[:10]
-    
+
     # Estatísticas do histórico
     historico_stats = talhao.historico.aggregate(
         total_safras=Count('id'),
         producao_total=Sum('producao_real'),
         media_produtividade=Avg('produtividade')
     )
-    
+
+    # Caderno de campo — últimos 20 registros com insumos
+    caderno = (
+        RegistroCadernoCampo.objects
+        .filter(empresa=empresa, talhao=talhao)
+        .select_related('safra', 'os')
+        .prefetch_related('insumos_utilizados__produto', 'insumos_utilizados__unidade_medida')
+        .order_by('-data')[:20]
+    )
+
+    # Custos por safra
+    custos_safra = list(
+        CustoTalhao.objects
+        .filter(empresa=empresa, talhao=talhao)
+        .values('safra__nome', 'safra__ano', 'safra_id')
+        .annotate(
+            total_mao_obra=Sum('custo_mao_obra'),
+            total_maquinario=Sum('custo_maquinario'),
+            total_insumos=Sum('custo_insumos'),
+            total_servico=Sum('custo_servico_externo'),
+            total_area=Sum('area_executada_ha'),
+            qtd_os=Count('id'),
+        )
+        .order_by('-safra__ano', 'safra__nome')
+    )
+    for c in custos_safra:
+        area = c['total_area'] or Decimal('0')
+        total = (
+            (c['total_mao_obra'] or Decimal('0')) +
+            (c['total_maquinario'] or Decimal('0')) +
+            (c['total_insumos'] or Decimal('0')) +
+            (c['total_servico'] or Decimal('0'))
+        )
+        c['total_geral'] = total
+        c['custo_ha'] = (total / area).quantize(Decimal('0.01')) if area > 0 else None
+        c['safra_label'] = f"{c['safra__nome']} ({c['safra__ano']})" if c['safra__ano'] else (c['safra__nome'] or '—')
+
+    custo_total_talhao = sum((c['total_geral'] or Decimal('0')) for c in custos_safra)
+
+    # Transplantios
+    transplantios = (
+        Transplantio.objects
+        .filter(empresa=empresa, talhao=talhao)
+        .select_related('lote_muda', 'safra', 'responsavel')
+        .order_by('-data_transplantio')[:20]
+    )
+
+    # Replantios
+    replantios = (
+        ReplantioTalhao.objects
+        .filter(empresa=empresa, talhao=talhao)
+        .select_related('safra', 'responsavel')
+        .order_by('-data_replantio')[:20]
+    )
+
     return render(request, 'cadastros/talhao/talhao_detail.html', {
         'talhao': talhao,
         'historico': historico,
-        'historico_stats': historico_stats
+        'historico_stats': historico_stats,
+        'caderno': caderno,
+        'custos_safra': custos_safra,
+        'custo_total_talhao': custo_total_talhao,
+        'transplantios': transplantios,
+        'replantios': replantios,
     })
 
 

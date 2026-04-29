@@ -1,0 +1,261 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} | ERP Agrícola{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+
+  <!-- Cabeçalho -->
+  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <h5 class="fw-bold text-secondary mb-0"><i class="bi bi-clipboard-data text-warning"></i> {{ plan.nome }}</h5>
+    <div class="d-flex gap-2">
+      <a href="{% url 'cadastros:planejamento_custo_list' %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i> Voltar</a>
+      <form method="post" action="{% url 'cadastros:planejamento_custo_delete' plan.pk %}" class="d-inline">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('Excluir este planejamento?')"><i class="bi bi-trash"></i> Excluir</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- KPIs -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm text-center">
+        <div class="card-body py-3">
+          <small class="text-muted d-block">Área Planejada</small>
+          <h4 class="mb-0">{{ plan.area_ha|floatformat:2 }} ha</h4>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm text-center bg-warning bg-opacity-10">
+        <div class="card-body py-3">
+          <small class="text-muted d-block">Custo Total Planejado</small>
+          <h4 class="mb-0 text-warning">R$ {{ planejado_total|floatformat:2 }}</h4>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm text-center">
+        <div class="card-body py-3">
+          <small class="text-muted d-block">Planejado por ha</small>
+          <h4 class="mb-0">R$ {{ plan.custo_planejado_por_ha|floatformat:2 }}</h4>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      {% if custo_real.total %}
+      <div class="card border-0 shadow-sm text-center {% if variacao and variacao > 0 %}bg-danger bg-opacity-10{% elif variacao and variacao < 0 %}bg-success bg-opacity-10{% endif %}">
+        <div class="card-body py-3">
+          <small class="text-muted d-block">Custo Real</small>
+          <h4 class="mb-0 {% if variacao and variacao > 0 %}text-danger{% elif variacao and variacao < 0 %}text-success{% endif %}">R$ {{ custo_real.total|floatformat:2 }}</h4>
+          {% if variacao_pct %}
+          <small class="{% if variacao > 0 %}text-danger{% else %}text-success{% endif %}">
+            {% if variacao > 0 %}+{% endif %}{{ variacao_pct }}% em relação ao planejado
+          </small>
+          {% endif %}
+        </div>
+      </div>
+      {% else %}
+      <div class="card border-0 shadow-sm text-center">
+        <div class="card-body py-3">
+          <small class="text-muted d-block">Custo Real</small>
+          <h4 class="mb-0 text-muted">—</h4>
+          <small class="text-muted">Sem dados reais para esta seleção</small>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <!-- Coluna principal: tabela de itens -->
+    <div class="col-lg-8">
+      <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-header bg-white border-0 pt-3 pb-0">
+          <h6 class="fw-bold text-secondary mb-0"><i class="bi bi-list-check"></i> Itens Planejados</h6>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-sm table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Categoria</th>
+                <th>Descrição</th>
+                <th>Produto</th>
+                <th class="text-end">Dose/ha</th>
+                <th>Un.</th>
+                <th class="text-end">Qtd. Total</th>
+                <th class="text-end">Custo Unit.</th>
+                <th class="text-end">Custo Total</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in itens %}
+              <tr>
+                <td><span class="badge bg-secondary small">{{ item.get_categoria_display }}</span></td>
+                <td>{{ item.descricao }}</td>
+                <td class="small text-muted">{{ item.produto.nome|default:"—" }}</td>
+                <td class="text-end small">{% if item.dose_por_ha %}{{ item.dose_por_ha|floatformat:4 }}{% else %}—{% endif %}</td>
+                <td class="small">{{ item.unidade_medida.sigla|default:"—" }}</td>
+                <td class="text-end small">{% if item.quantidade_total %}{{ item.quantidade_total|floatformat:3 }}{% else %}—{% endif %}</td>
+                <td class="text-end small">R$ {{ item.custo_unitario|floatformat:4 }}</td>
+                <td class="text-end fw-bold">R$ {{ item.custo_total|floatformat:2 }}</td>
+                <td>
+                  <form method="post" action="{% url 'cadastros:planejamento_custo_item_delete' plan.pk item.pk %}" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-outline-danger btn-sm py-0 px-1" onclick="return confirm('Remover?')"><i class="bi bi-trash"></i></button>
+                  </form>
+                </td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="9" class="text-center text-muted py-3">Nenhum item adicionado.</td></tr>
+              {% endfor %}
+            </tbody>
+            {% if itens %}
+            <tfoot class="table-light fw-bold">
+              <tr>
+                <td colspan="7">Total</td>
+                <td class="text-end">R$ {{ planejado_total|floatformat:2 }}</td>
+                <td></td>
+              </tr>
+            </tfoot>
+            {% endif %}
+          </table>
+        </div>
+      </div>
+
+      <!-- Comparativo Planejado x Real por categoria -->
+      {% if custo_real.total %}
+      <div class="card border-0 shadow-sm rounded-4 mt-4">
+        <div class="card-header bg-white border-0 pt-3 pb-0">
+          <h6 class="fw-bold text-secondary mb-0"><i class="bi bi-bar-chart-line text-info"></i> Comparativo por Categoria</h6>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-sm align-middle mb-0">
+            <thead class="table-light">
+              <tr><th>Categoria</th><th class="text-end">Real (R$)</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Mão de Obra</td><td class="text-end">R$ {{ custo_real.mao_obra|floatformat:2 }}</td></tr>
+              <tr><td>Maquinário</td><td class="text-end">R$ {{ custo_real.maquinario|floatformat:2 }}</td></tr>
+              <tr><td>Insumos</td><td class="text-end">R$ {{ custo_real.insumos|floatformat:2 }}</td></tr>
+              <tr><td>Serviço Externo</td><td class="text-end">R$ {{ custo_real.servico|floatformat:2 }}</td></tr>
+            </tbody>
+            <tfoot class="table-light fw-bold">
+              <tr>
+                <td>Total Real</td>
+                <td class="text-end {% if variacao and variacao > 0 %}text-danger{% elif variacao and variacao < 0 %}text-success{% endif %}">
+                  R$ {{ custo_real.total|floatformat:2 }}
+                  {% if variacao_pct %}({% if variacao > 0 %}+{% endif %}{{ variacao_pct }}%){% endif %}
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Coluna lateral: formulário de adição de item + info -->
+    <div class="col-lg-4">
+      <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-header bg-white border-0 pt-3 pb-0">
+          <h6 class="fw-bold text-secondary mb-0"><i class="bi bi-plus-circle text-warning"></i> Adicionar Item</h6>
+        </div>
+        <div class="card-body">
+          <form method="post" action="{% url 'cadastros:planejamento_custo_item_add' plan.pk %}" novalidate>
+            {% csrf_token %}
+            <div class="mb-2">
+              <label class="form-label small fw-semibold">Categoria</label>
+              {{ item_form.categoria }}
+            </div>
+            <div class="mb-2">
+              <label class="form-label small fw-semibold">Produto (insumo)</label>
+              {{ item_form.produto }}
+            </div>
+            <div class="mb-2">
+              <label class="form-label small fw-semibold">Descrição</label>
+              {{ item_form.descricao }}
+            </div>
+            <div class="row g-2 mb-2">
+              <div class="col-6">
+                <label class="form-label small fw-semibold">Dose/ha</label>
+                {{ item_form.dose_por_ha }}
+              </div>
+              <div class="col-6">
+                <label class="form-label small fw-semibold">Unidade</label>
+                {{ item_form.unidade_medida }}
+              </div>
+            </div>
+            <div class="row g-2 mb-3">
+              <div class="col-6">
+                <label class="form-label small fw-semibold">Custo Unit. (R$)</label>
+                {{ item_form.custo_unitario }}
+              </div>
+              <div class="col-6">
+                <label class="form-label small fw-semibold">Área (ha)</label>
+                {{ item_form.area_ha }}
+              </div>
+            </div>
+            <button type="submit" class="btn btn-warning w-100 btn-sm"><i class="bi bi-plus"></i> Adicionar Item</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Info do planejamento -->
+      <div class="card border-0 shadow-sm rounded-4 mt-3">
+        <div class="card-body py-3">
+          <div class="small text-muted mb-1">Cultura</div>
+          <div class="fw-semibold mb-2">{{ plan.cultura.nome }}</div>
+          {% if plan.safra %}
+          <div class="small text-muted mb-1">Safra</div>
+          <div class="fw-semibold mb-2">
+            <a href="{% url 'cadastros:safra_detail' plan.safra.pk %}">{{ plan.safra.nome }}</a>
+          </div>
+          {% endif %}
+          {% if plan.talhao %}
+          <div class="small text-muted mb-1">Talhão</div>
+          <div class="fw-semibold mb-2">
+            <a href="{% url 'cadastros:talhao_detail' plan.talhao.pk %}">{{ plan.talhao.nome }}</a>
+          </div>
+          {% endif %}
+          {% if plan.observacoes %}
+          <hr class="my-2">
+          <div class="small text-muted">{{ plan.observacoes }}</div>
+          {% endif %}
+          <hr class="my-2">
+          <div class="small text-muted">Criado em {{ plan.data_criacao|date:"d/m/Y" }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// AJAX: ao selecionar produto, preenche custo_unitario e unidade_medida
+document.addEventListener('DOMContentLoaded', function () {
+  const produtoSel = document.getElementById('id_produto');
+  const custoInput = document.getElementById('id_custo_unitario');
+  const unidadeSel = document.getElementById('id_unidade_medida');
+  if (!produtoSel) return;
+
+  produtoSel.addEventListener('change', function () {
+    const pid = this.value;
+    if (!pid) return;
+    fetch(`{% url 'cadastros:ajax_preco_produto' %}?produto_id=${pid}`)
+      .then(r => r.json())
+      .then(data => {
+        if (data.preco_custo && custoInput) custoInput.value = data.preco_custo;
+        if (data.unidade_medida_id && unidadeSel) {
+          for (let opt of unidadeSel.options) {
+            if (opt.value == data.unidade_medida_id) { opt.selected = true; break; }
+          }
+        }
+      }).catch(() => {});
+  });
+});
+</script>
+{% endblock %}

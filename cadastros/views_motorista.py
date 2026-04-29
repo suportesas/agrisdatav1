@@ -523,3 +523,36 @@ def motorista_vinculo_consulta_pdf(request):
     
     messages.error(request, 'Erro ao gerar PDF.')
     return redirect('cadastros:motorista_vinculo_consulta')
+
+
+@login_required
+def motorista_set_pin(request, pk):
+    """Define matrícula e PIN para acesso ao Portal do Motorista."""
+    empresa = request.user.empresa
+    motorista = get_object_or_404(Motorista, pk=pk, empresa=empresa)
+
+    if request.method == 'POST':
+        matricula = request.POST.get('matricula', '').strip()
+        pin = request.POST.get('pin', '').strip()
+        pin2 = request.POST.get('pin2', '').strip()
+
+        if not matricula:
+            messages.error(request, 'A matrícula é obrigatória.')
+        elif pin and pin != pin2:
+            messages.error(request, 'Os PINs não coincidem.')
+        elif pin and not pin.isdigit():
+            messages.error(request, 'O PIN deve conter apenas números.')
+        elif pin and len(pin) < 4:
+            messages.error(request, 'O PIN deve ter pelo menos 4 dígitos.')
+        else:
+            motorista.matricula = matricula
+            if pin:
+                motorista.set_pin(pin)
+            motorista.save()
+            messages.success(request, f'Acesso ao portal configurado para {motorista.nome}.')
+            return redirect('cadastros:motorista_detail', pk=motorista.pk)
+
+    return render(request, 'cadastros/motorista/set_pin.html', {
+        'motorista': motorista,
+        'title': f'Configurar Acesso ao Portal — {motorista.nome}',
+    })

@@ -1,0 +1,153 @@
+{% extends 'cadastros/portal_campo/base.html' %}
+{% block title %}{{ os.numero }} | Portal do Campo{% endblock %}
+
+{% block content %}
+
+{% with status=os.status %}
+
+<!-- Header OS -->
+<div class="card mb-3 border-0 shadow-sm"
+     style="border-left: 5px solid
+       {% if status == 'CONCLUIDA' %}#198754
+       {% elif status == 'EM_ANDAMENTO' %}#fd7e14
+       {% elif status == 'APROVADA' %}#0d6efd
+       {% else %}#6c757d{% endif %} !important;">
+  <div class="card-body p-3">
+    <div class="d-flex justify-content-between align-items-start mb-1">
+      <span class="fw-bold text-dark">{{ os.numero }}</span>
+      <span class="badge rounded-pill
+        {% if status == 'CONCLUIDA' %}bg-success
+        {% elif status == 'EM_ANDAMENTO' %}bg-warning text-dark
+        {% elif status == 'APROVADA' %}bg-primary
+        {% elif status == 'ABERTA' %}bg-secondary
+        {% else %}bg-danger{% endif %}">
+        {{ os.get_status_display }}
+      </span>
+    </div>
+    <div class="fw-semibold" style="font-size:.95rem;">{{ os.descricao_servico }}</div>
+    <div class="text-muted small mt-1">
+      <i class="bi bi-geo-alt me-1"></i>{{ os.talhao.nome }}
+      {% if os.safra %}<span class="mx-1">·</span><i class="bi bi-calendar-range me-1"></i>{{ os.safra.nome }}{% endif %}
+    </div>
+    {% if os.data_prevista %}
+    <div class="text-muted small">
+      <i class="bi bi-calendar-event me-1"></i>Previsto: {{ os.data_prevista|date:"d/m/Y" }}
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Pipeline compacto -->
+<div class="card mb-3 border-0 shadow-sm">
+  <div class="card-body p-3">
+    <div class="pipeline-mini">
+      <div class="step">
+        <div class="dot {% if status != 'ABERTA' %}done{% elif status == 'ABERTA' %}current{% endif %}"></div>
+        <span>Aberta</span>
+      </div>
+      <div class="line {% if status != 'ABERTA' %}done{% endif %}"></div>
+      <div class="step">
+        <div class="dot {% if status == 'APROVADA' %}current{% elif status in 'EM_ANDAMENTO,CONCLUIDA' %}done{% endif %}"></div>
+        <span>Aprovada</span>
+      </div>
+      <div class="line {% if status == 'EM_ANDAMENTO' or status == 'CONCLUIDA' %}done{% endif %}"></div>
+      <div class="step">
+        <div class="dot {% if status == 'EM_ANDAMENTO' %}current{% elif status == 'CONCLUIDA' %}done{% endif %}"></div>
+        <span>Andamento</span>
+      </div>
+      <div class="line {% if status == 'CONCLUIDA' %}done{% endif %}"></div>
+      <div class="step">
+        <div class="dot {% if status == 'CONCLUIDA' %}done{% endif %}"></div>
+        <span>Concluída</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Ações -->
+{% if status == 'APROVADA' %}
+<div class="d-grid gap-2 mb-3">
+  <form method="post" action="{% url 'portal_campo:os_iniciar' os.pk %}">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-success w-100 rounded-pill py-2 fw-semibold">
+      <i class="bi bi-play-fill me-2"></i>Iniciar OS
+    </button>
+  </form>
+  <a href="{% url 'portal_campo:os_executar' os.pk %}" class="btn btn-outline-warning rounded-pill py-2 fw-semibold">
+    <i class="bi bi-pencil me-2"></i>Registrar Horas
+  </a>
+</div>
+{% elif status == 'EM_ANDAMENTO' %}
+<div class="d-grid gap-2 mb-3">
+  <a href="{% url 'portal_campo:os_executar' os.pk %}" class="btn btn-warning rounded-pill py-2 fw-semibold">
+    <i class="bi bi-pencil-fill me-2"></i>Registrar Execução
+  </a>
+  <a href="{% url 'portal_campo:os_concluir' os.pk %}" class="btn btn-success rounded-pill py-2 fw-semibold">
+    <i class="bi bi-flag-fill me-2"></i>Concluir OS
+  </a>
+</div>
+{% endif %}
+
+<!-- Insumos -->
+{% if insumos %}
+<div class="section-label"><i class="bi bi-box-seam me-1"></i>Insumos previstos</div>
+<div class="card mb-3 border-0 shadow-sm">
+  <div class="list-group list-group-flush rounded-3">
+    {% for item in insumos %}
+    <div class="list-group-item py-2 px-3">
+      <div class="fw-semibold small">{{ item.produto.nome }}</div>
+      <div class="text-muted" style="font-size:.78rem;">
+        Qtd: {{ item.quantidade_prevista }} {{ item.get_unidade_medida_display }}
+        {% if item.quantidade_aplicada %}
+        · <span class="text-success">Aplicado: {{ item.quantidade_aplicada }}</span>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<!-- Alocações de funcionários -->
+{% if alocacoes %}
+<div class="section-label"><i class="bi bi-people me-1"></i>Execução registrada</div>
+<div class="card mb-3 border-0 shadow-sm">
+  <div class="list-group list-group-flush rounded-3">
+    {% for al in alocacoes %}
+    <div class="list-group-item py-2 px-3">
+      <div class="fw-semibold small">{{ al.funcionario.nome_completo }}</div>
+      <div class="text-muted" style="font-size:.78rem;">
+        {{ al.data_execucao|date:"d/m" }} — {{ al.hora_inicio|time:"H:i" }} às {{ al.hora_fim|time:"H:i" }}
+        ({{ al.horas_trabalhadas }}h)
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<!-- Foto de evidência -->
+{% if os.foto_evidencia %}
+<div class="section-label"><i class="bi bi-camera me-1"></i>Foto de evidência</div>
+<div class="text-center mb-3">
+  <img src="{{ os.foto_evidencia.url }}" class="img-fluid rounded-3 shadow-sm" style="max-height:220px;" alt="Evidência">
+</div>
+{% endif %}
+
+{% if os.observacoes %}
+<div class="card mb-3 border-0 shadow-sm">
+  <div class="card-body p-3">
+    <div class="section-label mb-1"><i class="bi bi-chat-text me-1"></i>Observações</div>
+    <p class="mb-0 small text-muted">{{ os.observacoes }}</p>
+  </div>
+</div>
+{% endif %}
+
+<div class="text-center mt-2">
+  <a href="{% url 'portal_campo:home' %}" class="btn btn-outline-secondary btn-sm rounded-pill">
+    <i class="bi bi-arrow-left me-1"></i>Voltar ao início
+  </a>
+</div>
+
+{% endwith %}
+{% endblock %}

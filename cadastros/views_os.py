@@ -1096,14 +1096,56 @@ def os_concluir(request, pk):
                     }
                 )
                 custo_obj.recalcular()
+
+                # Integração automática: Caderno de Campo
+                if request.POST.get('criar_registro_caderno'):
+                    from .models import RegistroCadernoCampo, RegistroCadernoCampoInsumo
+                    _TIPO_MAP = {
+                        'PREPARO_SOLO': 'PREPARO_SOLO',
+                        'PLANTIO': 'PLANTIO',
+                        'IRRIGACAO': 'IRRIGACAO',
+                        'ADUBACAO': 'ADUBACAO',
+                        'PULV_MECANICA': 'APLICACAO_DEFENSIVO',
+                        'PULV_COSTAL': 'APLICACAO_DEFENSIVO',
+                        'COLHEITA': 'COLHEITA',
+                        'MANUTENCAO': 'MANUTENCAO',
+                    }
+                    _tl = ''
+                    if os_obj.tipo_servico_id:
+                        _tl = os_obj.tipo_servico.tipo_legado or ''
+                    elif os_obj.tipo:
+                        _tl = os_obj.tipo
+                    tipo_atividade_caderno = _TIPO_MAP.get(_tl, 'OUTRO')
+
+                    if not RegistroCadernoCampo.objects.filter(os=os_obj).exists():
+                        registro = RegistroCadernoCampo.objects.create(
+                            empresa=empresa,
+                            talhao=os_obj.talhao,
+                            safra=os_obj.safra,
+                            os=os_obj,
+                            data_atividade=timezone.localdate(),
+                            tipo_atividade=tipo_atividade_caderno,
+                            atividade=os_obj.descricao_servico,
+                            responsavel=request.user,
+                            cadastrado_por=request.user,
+                            observacoes=os_obj.observacoes or '',
+                        )
+                        for item in insumos_os.filter(quantidade_aplicada__gt=0).select_related('produto', 'unidade_medida'):
+                            RegistroCadernoCampoInsumo.objects.create(
+                                registro=registro,
+                                produto=item.produto,
+                                quantidade=item.quantidade_aplicada,
+                                unidade_medida=item.unidade_medida,
+                            )
+
         except Exception as e:
             messages.error(request, f'Erro ao concluir OS: {str(e)}')
             return redirect('cadastros:os_detail', pk=pk)
 
-        messages.success(
-            request,
-            f'OS {os_obj.numero} concluída! Custo total: R$ {custo_obj.custo_total:.2f}'
-        )
+        _msg = f'OS {os_obj.numero} concluída! Custo total: R$ {custo_obj.custo_total:.2f}'
+        if request.POST.get('criar_registro_caderno'):
+            _msg += ' · Registro criado no Caderno de Campo.'
+        messages.success(request, _msg)
         return redirect('cadastros:os_detail', pk=pk)
 
     context = {'os': os_obj}

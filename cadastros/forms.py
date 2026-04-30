@@ -5492,7 +5492,7 @@ class LoteMudaForm(forms.ModelForm):
             self.fields[f].required = False
         if self.user and self.user.empresa:
             self.fields['estufa'].queryset = Estufa.objects.filter(empresa=self.user.empresa, ativo=True)
-            self.fields['cultura'].queryset = Cultura.objects.filter(empresa=self.user.empresa, ativo=True)
+            self.fields['cultura'].queryset = Cultura.objects.filter(empresa=self.user.empresa, ativa=True)
             self.fields['responsavel'].queryset = Funcionario.objects.filter(empresa=self.user.empresa, ativo=True)
 
 
@@ -5738,6 +5738,11 @@ class AbastecimentoVeiculoForm(forms.ModelForm):
 
 
 class ManutencaoVeiculoForm(forms.ModelForm):
+    placa = forms.CharField(
+        label='Placa', max_length=10, required=False,
+        widget=forms.TextInput(attrs={'class': 'form-control-plaintext', 'readonly': 'readonly'})
+    )
+
     class Meta:
         model = ManutencaoVeiculo
         fields = [
@@ -5773,6 +5778,9 @@ class ManutencaoVeiculoForm(forms.ModelForm):
         ]
         for f in optional:
             self.fields[f].required = False
+        # Preencher placa se há instância
+        if self.instance and self.instance.pk:
+            self.fields['placa'].initial = self.instance.placa_atual
         if self.user and self.user.empresa:
             emp = self.user.empresa
             self.fields['vehicle'].queryset = Vehicle.objects.filter(empresa=emp, ativo=True).order_by('descricao', 'modelo')
@@ -5784,23 +5792,59 @@ class ManutencaoVeiculoForm(forms.ModelForm):
 class ManutencaoItemForm(forms.ModelForm):
     class Meta:
         model = ManutencaoItem
-        fields = ['descricao', 'lote', 'quantidade', 'valor_unitario']
+        fields = ['descricao', 'lote', 'quantidade', 'valor_unitario', 'valor_custo', 'nome_produto', 'unidade_medida', 'desconto']
         widgets = {
-            'descricao': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Filtro de óleo'}),
-            'lote': forms.Select(attrs={'class': 'form-select'}),
-            'quantidade': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.001'}),
-            'valor_unitario': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.0001'}),
+            'descricao': forms.HiddenInput(),
+            'lote': forms.HiddenInput(),
+            'quantidade': forms.NumberInput(attrs={'class': 'form-control quantidade-input', 'step': '0.001'}),
+            'valor_unitario': forms.HiddenInput(),
+            'valor_custo': forms.NumberInput(attrs={'class': 'form-control-plaintext custo-input', 'readonly': 'readonly', 'step': '0.0001', 'tabindex': '-1'}),
+            'nome_produto': forms.TextInput(attrs={'class': 'form-control produto-search-input', 'placeholder': 'Buscar produto...', 'autocomplete': 'off'}),
+            'unidade_medida': forms.TextInput(attrs={'class': 'form-control-plaintext', 'readonly': 'readonly', 'tabindex': '-1'}),
+            'desconto': forms.NumberInput(attrs={'class': 'form-control desconto-input', 'step': '0.01'}),
         }
 
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
+        self.fields['descricao'].required = False
         self.fields['lote'].required = False
+        self.fields['valor_unitario'].required = False
+        self.fields['valor_custo'].required = False
+        self.fields['nome_produto'].required = False
+        self.fields['unidade_medida'].required = False
+        self.fields['desconto'].required = False
         if self.user and self.user.empresa:
             from estoque.models import Lote
             self.fields['lote'].queryset = Lote.objects.filter(
                 empresa=self.user.empresa
             ).select_related('produto').order_by('produto__nome')
+
+    def clean_valor_unitario(self):
+        from decimal import Decimal
+        v = self.cleaned_data.get('valor_unitario')
+        if v is None:
+            return self.cleaned_data.get('valor_custo') or Decimal('0')
+        return v
+
+
+class DocumentoManutencaoForm(forms.ModelForm):
+    class Meta:
+        from .models import DocumentoManutencao
+        model = DocumentoManutencao
+        fields = ['tipo', 'descricao', 'numero_documento', 'arquivo']
+        widgets = {
+            'tipo': forms.Select(attrs={'class': 'form-select form-select-sm'}),
+            'descricao': forms.TextInput(attrs={'class': 'form-control form-control-sm', 'placeholder': 'Descrição opcional'}),
+            'numero_documento': forms.TextInput(attrs={'class': 'form-control form-control-sm', 'placeholder': 'Ex: NF 001234'}),
+            'arquivo': forms.FileInput(attrs={'class': 'form-control form-control-sm', 'accept': '.pdf,.jpg,.jpeg,.png,.doc,.docx'}),
+        }
+
+    def clean_arquivo(self):
+        arquivo = self.cleaned_data.get('arquivo')
+        if arquivo and arquivo.size > 10 * 1024 * 1024:
+            raise ValidationError('Arquivo muito grande. Tamanho máximo: 10MB.')
+        return arquivo
 
 
 class PedagioVeiculoForm(forms.ModelForm):

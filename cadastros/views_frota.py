@@ -7,6 +7,7 @@ from decimal import Decimal, InvalidOperation
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Sum, Count, Avg
+from django.forms import inlineformset_factory
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 
@@ -362,6 +363,9 @@ def manutencao_list(request):
 
 @login_required
 def manutencao_create(request):
+    from .models import ManutencaoVeiculo, ManutencaoItem
+    ManutencaoItemFormSet = inlineformset_factory(ManutencaoVeiculo, ManutencaoItem, form=ManutencaoItemForm, extra=1, can_delete=True)
+
     if request.method == 'POST':
         form = ManutencaoVeiculoForm(request.POST, user=request.user)
         if form.is_valid():
@@ -369,40 +373,124 @@ def manutencao_create(request):
             obj.empresa = request.user.empresa
             obj.criado_por = request.user
             obj.save()
-            messages.success(request, 'Manutenção registrada com sucesso.')
-            return redirect('cadastros:manutencao_detail', pk=obj.pk)
+            
+            # Processar FormSet de itens
+            formset = ManutencaoItemFormSet(request.POST, instance=obj, form_kwargs={'user': request.user})
+            if formset.is_valid():
+                formset.save()
+                messages.success(request, 'Manutenção registrada com sucesso.')
+                return redirect('cadastros:manutencao_detail', pk=obj.pk)
+            else:
+                # Se formset inválido, re-renderizar com erros
+                return render(request, 'cadastros/frota/manutencao_form.html', {
+                    'form': form,
+                    'formset': formset,
+                    'title': 'Nova Manutenção',
+                })
+        else:
+            formset = ManutencaoItemFormSet(form_kwargs={'user': request.user})
+            return render(request, 'cadastros/frota/manutencao_form.html', {
+                'form': form,
+                'formset': formset,
+                'title': 'Nova Manutenção',
+            })
     else:
         form = ManutencaoVeiculoForm(user=request.user)
+        formset = ManutencaoItemFormSet(form_kwargs={'user': request.user})
+    
     return render(request, 'cadastros/frota/manutencao_form.html', {
         'form': form,
+        'formset': formset,
         'title': 'Nova Manutenção',
     })
 
 
 @login_required
 def manutencao_detail(request, pk):
+    from .forms import DocumentoManutencaoForm
     obj = get_object_or_404(ManutencaoVeiculo, pk=pk, empresa=request.user.empresa)
     item_form = ManutencaoItemForm(user=request.user)
+    doc_form = DocumentoManutencaoForm()
     return render(request, 'cadastros/frota/manutencao_detail.html', {
         'obj': obj,
         'item_form': item_form,
+        'doc_form': doc_form,
         'title': f'Manutenção — {obj.vehicle}',
     })
 
 
 @login_required
+def manutencao_documento_add(request, pk):
+    from .models import DocumentoManutencao
+    from .forms import DocumentoManutencaoForm
+    obj = get_object_or_404(ManutencaoVeiculo, pk=pk, empresa=request.user.empresa)
+    if request.method == 'POST':
+        form = DocumentoManutencaoForm(request.POST, request.FILES)
+        if form.is_valid():
+            doc = form.save(commit=False)
+            doc.manutencao = obj
+            doc.enviado_por = request.user
+            doc.save()
+            messages.success(request, 'Documento anexado com sucesso.')
+        else:
+            for erros in form.errors.values():
+                for erro in erros:
+                    messages.error(request, erro)
+    return redirect('cadastros:manutencao_detail', pk=pk)
+
+
+@login_required
+def manutencao_documento_delete(request, pk, doc_pk):
+    from .models import DocumentoManutencao
+    obj = get_object_or_404(ManutencaoVeiculo, pk=pk, empresa=request.user.empresa)
+    doc = get_object_or_404(DocumentoManutencao, pk=doc_pk, manutencao=obj)
+    if request.method == 'POST':
+        doc.arquivo.delete(save=False)
+        doc.delete()
+        messages.success(request, 'Documento removido.')
+    return redirect('cadastros:manutencao_detail', pk=pk)
+
+
+@login_required
 def manutencao_update(request, pk):
+    from .models import ManutencaoVeiculo, ManutencaoItem
+    ManutencaoItemFormSet = inlineformset_factory(ManutencaoVeiculo, ManutencaoItem, form=ManutencaoItemForm, extra=1, can_delete=True)
+
     obj = get_object_or_404(ManutencaoVeiculo, pk=pk, empresa=request.user.empresa)
     if request.method == 'POST':
         form = ManutencaoVeiculoForm(request.POST, instance=obj, user=request.user)
         if form.is_valid():
-            form.save()
-            messages.success(request, 'Manutenção atualizada.')
-            return redirect('cadastros:manutencao_detail', pk=obj.pk)
+            obj = form.save()
+            
+            # Processar FormSet de itens
+            formset = ManutencaoItemFormSet(request.POST, instance=obj, form_kwargs={'user': request.user})
+            if formset.is_valid():
+                formset.save()
+                messages.success(request, 'Manutenção atualizada.')
+                return redirect('cadastros:manutencao_detail', pk=obj.pk)
+            else:
+                # Se formset inválido, re-renderizar com erros
+                return render(request, 'cadastros/frota/manutencao_form.html', {
+                    'form': form,
+                    'formset': formset,
+                    'obj': obj,
+                    'title': 'Editar Manutenção',
+                })
+        else:
+            formset = ManutencaoItemFormSet(instance=obj, form_kwargs={'user': request.user})
+            return render(request, 'cadastros/frota/manutencao_form.html', {
+                'form': form,
+                'formset': formset,
+                'obj': obj,
+                'title': 'Editar Manutenção',
+            })
     else:
         form = ManutencaoVeiculoForm(instance=obj, user=request.user)
+        formset = ManutencaoItemFormSet(instance=obj, form_kwargs={'user': request.user})
+    
     return render(request, 'cadastros/frota/manutencao_form.html', {
         'form': form,
+        'formset': formset,
         'obj': obj,
         'title': 'Editar Manutenção',
     })
@@ -505,6 +593,81 @@ def alerta_resolver(request, pk):
         alerta.save(update_fields=['status'])
         messages.success(request, 'Alerta marcado como resolvido.')
     return redirect('cadastros:alertas_manutencao_list')
+
+
+@login_required
+def get_lote_produto_data(request):
+    """Endpoint AJAX para buscar dados do produto via lote ou placa via vehicle_id."""
+    from estoque.models import Lote
+    from .models import Vehicle
+
+    vehicle_id = request.GET.get('vehicle_id')
+    if vehicle_id:
+        try:
+            vehicle = Vehicle.objects.get(pk=vehicle_id, empresa=request.user.empresa)
+            placa = vehicle.get_current_plate()
+            if not placa:
+                # Fallback: placa mais recente caso nenhuma esteja marcada como atual
+                latest = vehicle.plates.order_by('-vigencia_inicio').first()
+                placa = latest.placa if latest else ''
+            return JsonResponse({'placa': placa or ''})
+        except Vehicle.DoesNotExist:
+            return JsonResponse({'placa': ''})
+
+    lote_id = request.GET.get('lote_id')
+    if not lote_id:
+        return JsonResponse({'error': 'Parâmetro inválido'}, status=400)
+
+    try:
+        lote = Lote.objects.select_related('produto', 'unidade_medida').get(
+            id=lote_id,
+            empresa=request.user.empresa
+        )
+        return JsonResponse({
+            'nome_produto': lote.produto.nome,
+            'unidade_medida': lote.unidade_medida.sigla if lote.unidade_medida else '',
+            'valor_custo': float(lote.produto.preco_custo or 0),
+            'quantidade_disponivel': float(lote.quantidade_atual or 0),
+        })
+    except Lote.DoesNotExist:
+        return JsonResponse({'error': 'Lote não encontrado'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
+def produto_busca(request):
+    """Endpoint AJAX para busca de produtos por nome (retorna do cadastro de produtos)."""
+    from produtos.models import Produto
+    from estoque.models import Lote
+
+    q = request.GET.get('q', '').strip()
+    empresa = request.user.empresa
+    produtos = (
+        Produto.objects
+        .filter(ativo=True, categoria__empresa=empresa, nome__icontains=q)
+        .select_related('unidade_medida')
+        .order_by('nome')[:20]
+    )
+    # Carrega lotes disponíveis para preencher lote_id quando houver estoque
+    lotes_por_produto = {}
+    produto_ids = [p.pk for p in produtos]
+    for lote in Lote.objects.filter(empresa=empresa, produto_id__in=produto_ids, quantidade_atual__gt=0).select_related('unidade_medida'):
+        if lote.produto_id not in lotes_por_produto:
+            lotes_por_produto[lote.produto_id] = lote
+
+    results = []
+    for produto in produtos:
+        lote = lotes_por_produto.get(produto.pk)
+        unidade = lote.unidade_medida.sigla if lote and lote.unidade_medida else (produto.unidade_medida.sigla if produto.unidade_medida else '')
+        results.append({
+            'nome': produto.nome,
+            'lote_id': lote.pk if lote else '',
+            'unidade_medida': unidade,
+            'valor_custo': float(produto.preco_custo or 0),
+            'quantidade_disponivel': float(lote.quantidade_atual or 0) if lote else 0,
+        })
+    return JsonResponse({'results': results})
 
 
 # ──────────────────────────────────────────────────────────────────────────────

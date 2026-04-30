@@ -211,6 +211,8 @@
           <li><a href="{% url 'cadastros:pluviometria_list' %}"><i class="bi bi-cloud-rain-heavy"></i> Pluviometria</a></li>
           <li><a href="{% url 'cadastros:qualidade_campo_list' %}"><i class="bi bi-patch-check"></i> Qualidade de Campo</a></li>
           <li><a href="{% url 'cadastros:caderno_campo_list' %}"><i class="bi bi-journal-text"></i> Caderno de Campo</a></li>
+          <li class="submenu-divider"></li>
+          <li><a href="{% url 'portal_campo:login' %}" target="_blank"><i class="bi bi-person-badge-fill"></i> Portal do Campo</a></li>
         </ul>
       </li>
 
@@ -219,9 +221,9 @@
         <a href="#" class="nav-link">
           <i class="bi bi-flower1"></i>
           <span>Estufas e Mudas</span>
-          <i class="bi bi-chevron-right ms-auto"></i>
+          <i class="bi bi-chevron-down submenu-arrow"></i>
         </a>
-        <ul class="nested-submenu">
+        <ul class="nav-submenu">
           <li><a href="{% url 'cadastros:estufa_list' %}"><i class="bi bi-house-door"></i> Estufas</a></li>
           <li><a href="{% url 'cadastros:lote_muda_list' %}"><i class="bi bi-grid-3x3-gap"></i> Lotes de Mudas</a></li>
           <li><a href="{% url 'cadastros:transplantio_list' %}"><i class="bi bi-arrow-right-square"></i> Transplantios</a></li>
@@ -251,33 +253,7 @@
           <li><a href="{% url 'cadastros:fornecedor_list' %}"><i class="bi bi-shop"></i> Fornecedores</a></li>
           <li><a href="{% url 'cadastros:transportadora_list' %}"><i class="bi bi-truck"></i> Transportadoras</a></li>
           <li><a href="{% url 'cadastros:vendedor_list' %}"><i class="bi bi-person-lines-fill"></i> Vendedores</a></li>
-          <!-- Frota (Submenu) -->
-          <li class="has-submenu">
-            <a href="{% url 'cadastros:frota_dashboard' %}"><i class="bi bi-truck text-primary"></i> Frota <i class="bi bi-chevron-right ms-auto"></i></a>
-            <ul class="nested-submenu">
-              <li><a href="{% url 'cadastros:frota_dashboard' %}"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
-              <li><a href="{% url 'cadastros:vehicle_list' %}"><i class="bi bi-car-front"></i> Veículos</a></li>
-              <li><a href="{% url 'cadastros:abastecimento_list' %}"><i class="bi bi-fuel-pump"></i> Combustível</a></li>
-              <li><a href="{% url 'cadastros:manutencao_list' %}"><i class="bi bi-wrench"></i> Manutenções</a></li>
-              <li><a href="{% url 'cadastros:pedagio_list' %}"><i class="bi bi-signpost"></i> Pedágios</a></li>
-              <li><a href="{% url 'cadastros:viagem_list' %}"><i class="bi bi-map"></i> Viagens</a></li>
-              <li><a href="{% url 'cadastros:telemetria_list' %}"><i class="bi bi-geo-alt"></i> Telemetria</a></li>
-              <li><a href="{% url 'cadastros:alertas_manutencao_list' %}"><i class="bi bi-exclamation-triangle text-warning"></i> Alertas</a></li>
-              <li><a href="{% url 'cadastros:abastecimento_importar' %}"><i class="bi bi-upload"></i> Importar CSV</a></li>
-              <li><a href="{% url 'portal_motorista:login' %}" target="_blank"><i class="bi bi-person-badge"></i> Portal do Motorista</a></li>
-            </ul>
-          </li>
 
-          <!-- Motorista x Placa (Submenu) -->
-          <li class="has-submenu">
-            <a href="#"><i class="bi bi-link-45deg"></i> Motorista x Placa <i class="bi bi-chevron-right ms-auto"></i></a>
-            <ul class="nested-submenu">
-              <li><a href="{% url 'cadastros:motorista_list' %}"><i class="bi bi-person-badge"></i> Motoristas</a></li>
-              <li><a href="{% url 'cadastros:motorista_vinculo_list' %}"><i class="bi bi-list-ul"></i> Lista de Vínculos</a></li>
-              <li><a href="{% url 'cadastros:motorista_vinculo_consulta' %}"><i class="bi bi-search"></i> Consulta Histórico</a></li>
-            </ul>
-          </li>
-          
           <!-- Configurações Comerciais (Submenu) -->
           <li class="has-submenu">
             <a href="#"><i class="bi bi-gear"></i> Configurações <i class="bi bi-chevron-right ms-auto"></i></a>
@@ -293,6 +269,37 @@
               <li><a href="{% url 'cadastros:porto_list' %}"><i class="bi bi-water"></i> Portos</a></li>
               <li><a href="{% url 'cadastros:armador_list' %}"><i class="bi bi-ship"></i> Armadores</a></li>
               <li><a href="{% url 'cadastros:navio_list' %}"><i class="bi bi-sailboat"></i> Navios</a></li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+
+      <!-- Frota (Menu Principal) -->
+      <li class="nav-item has-submenu">
+        <a href="#" class="nav-link">
+          <i class="bi bi-truck-front-fill"></i>
+          <span>Frota</span>
+          <i class="bi bi-chevron-down submenu-arrow"></i>
+        </a>
+        <ul class="nav-submenu">
+          <li><a href="{% url 'cadastros:frota_dashboard' %}"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
+          <li><a href="{% url 'cadastros:vehicle_list' %}"><i class="bi bi-car-front"></i> Veículos</a></li>
+          <li><a href="{% url 'cadastros:abastecimento_list' %}"><i class="bi bi-fuel-pump"></i> Combustível</a></li>
+          <li><a href="{% url 'cadastros:manutencao_list' %}"><i class="bi bi-wrench"></i> Manutenções</a></li>
+          <li><a href="{% url 'cadastros:pedagio_list' %}"><i class="bi bi-signpost"></i> Pedágios</a></li>
+          <li><a href="{% url 'cadastros:viagem_list' %}"><i class="bi bi-map"></i> Viagens</a></li>
+          <li><a href="{% url 'cadastros:telemetria_list' %}"><i class="bi bi-geo-alt"></i> Telemetria</a></li>
+          <li><a href="{% url 'cadastros:alertas_manutencao_list' %}"><i class="bi bi-exclamation-triangle text-warning"></i> Alertas</a></li>
+          <li><a href="{% url 'cadastros:abastecimento_importar' %}"><i class="bi bi-upload"></i> Importar CSV</a></li>
+          <li><a href="{% url 'portal_motorista:login' %}" target="_blank"><i class="bi bi-person-badge"></i> Portal do Motorista</a></li>
+          <li class="submenu-divider"></li>
+          <!-- Motorista x Frota (Submenu) -->
+          <li class="has-submenu">
+            <a href="#"><i class="bi bi-link-45deg"></i> Motorista x Frota <i class="bi bi-chevron-right ms-auto"></i></a>
+            <ul class="nested-submenu">
+              <li><a href="{% url 'cadastros:motorista_list' %}"><i class="bi bi-person-badge"></i> Motoristas</a></li>
+              <li><a href="{% url 'cadastros:motorista_vinculo_list' %}"><i class="bi bi-list-ul"></i> Lista de Vínculos</a></li>
+              <li><a href="{% url 'cadastros:motorista_vinculo_consulta' %}"><i class="bi bi-search"></i> Consulta Histórico</a></li>
             </ul>
           </li>
         </ul>

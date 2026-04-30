@@ -115,10 +115,12 @@ def motorista_home(request):
         motorista=motorista
     ).select_related('vehicle').order_by('-data', '-criado_em')[:5]
 
+    _vehicles, _ = _get_vehicles_for_motorista(motorista)
+    _vehicle_ids = list(_vehicles.values_list('pk', flat=True))
     manutencoes_pendentes = ManutencaoVeiculo.objects.filter(
-        motorista_solicitante=motorista,
+        Q(motorista_solicitante=motorista) | Q(vehicle_id__in=_vehicle_ids),
         status__in=['ABERTA', 'EM_ANDAMENTO'],
-    ).select_related('vehicle').order_by('-data_abertura')[:5]
+    ).select_related('vehicle').prefetch_related('itens', 'documentos').distinct().order_by('-data_abertura')[:5]
 
     return render(request, 'cadastros/portal_motorista/home.html', {
         'motorista': motorista,
@@ -190,9 +192,11 @@ def motorista_historico(request):
         motorista=motorista
     ).select_related('vehicle').order_by('-data', '-criado_em')[:50]
 
+    _vehicles_h, _ = _get_vehicles_for_motorista(motorista)
+    _vehicle_ids_h = list(_vehicles_h.values_list('pk', flat=True))
     manutencoes = ManutencaoVeiculo.objects.filter(
-        motorista_solicitante=motorista
-    ).select_related('vehicle').order_by('-data_abertura')[:50]
+        Q(motorista_solicitante=motorista) | Q(vehicle_id__in=_vehicle_ids_h)
+    ).select_related('vehicle').prefetch_related('itens', 'documentos').distinct().order_by('-data_abertura')[:50]
 
     return render(request, 'cadastros/portal_motorista/historico.html', {
         'motorista': motorista,
@@ -212,9 +216,11 @@ def motorista_manutencao_list(request):
     if not motorista:
         return redirect(LOGIN_URL)
 
+    _vehicles_m, _ = _get_vehicles_for_motorista(motorista)
+    _vehicle_ids_m = list(_vehicles_m.values_list('pk', flat=True))
     manutencoes = ManutencaoVeiculo.objects.filter(
-        motorista_solicitante=motorista
-    ).select_related('vehicle').order_by('-data_abertura')
+        Q(motorista_solicitante=motorista) | Q(vehicle_id__in=_vehicle_ids_m)
+    ).select_related('vehicle').prefetch_related('itens', 'documentos').distinct().order_by('-data_abertura')
 
     return render(request, 'cadastros/portal_motorista/manutencao_list.html', {
         'motorista': motorista,

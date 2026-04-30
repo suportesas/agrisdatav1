@@ -2687,7 +2687,19 @@ class Funcionario(models.Model):
         'Funcionário Ativo',
         default=True
     )
-    
+
+    # Portal do Campo
+    pin_portal = models.CharField(
+        'PIN (Portal do Campo)',
+        max_length=128,
+        blank=True,
+        help_text='PIN numérico hashado — definido pelo gestor'
+    )
+    portal_ativo = models.BooleanField(
+        'Acesso ao Portal do Campo',
+        default=False
+    )
+
     # Auditoria
     data_cadastro = models.DateTimeField(
         'Data de Cadastro',
@@ -2717,6 +2729,16 @@ class Funcionario(models.Model):
     def __str__(self):
         return f"{self.nome_completo} - {self.funcao}"
     
+    def set_pin(self, raw_pin):
+        from django.contrib.auth.hashers import make_password
+        self.pin_portal = make_password(str(raw_pin))
+
+    def check_pin(self, raw_pin):
+        from django.contrib.auth.hashers import check_password
+        if not self.pin_portal:
+            return False
+        return check_password(str(raw_pin), self.pin_portal)
+
     def get_cpf_formatado(self):
         """Retorna CPF formatado"""
         import re
@@ -10978,6 +11000,11 @@ class ManutencaoVeiculo(models.Model):
         custo_pecas = sum(i.custo_total for i in self.itens.all())
         return (self.valor_servico + custo_pecas).quantize(Decimal('0.01'))
 
+    @property
+    def placa_atual(self):
+        """Retorna a placa atual do veículo."""
+        return self.vehicle.get_current_plate()
+
 
 class ManutencaoItem(models.Model):
     """Peça ou material usado em uma manutenção."""
@@ -11000,6 +11027,23 @@ class ManutencaoItem(models.Model):
         'Valor Unitário (R$)', max_digits=12, decimal_places=4,
         validators=[MinValueValidator(Decimal('0'))]
     )
+    # Novos campos para dados do produto
+    desconto = models.DecimalField(
+        'Desconto (R$)', max_digits=12, decimal_places=2,
+        default=Decimal('0'), validators=[MinValueValidator(Decimal('0'))]
+    )
+    nome_produto = models.CharField(
+        'Nome do Produto', max_length=200, blank=True,
+        help_text='Preenchido automaticamente pelo lote'
+    )
+    unidade_medida = models.CharField(
+        'Unidade de Medida', max_length=20, blank=True,
+        help_text='Preenchida automaticamente pelo lote'
+    )
+    valor_custo = models.DecimalField(
+        'Valor de Custo (R$)', max_digits=12, decimal_places=4,
+        default=Decimal('0'), validators=[MinValueValidator(Decimal('0'))]
+    )
 
     class Meta:
         verbose_name = 'Item de Manutenção'
@@ -11010,7 +11054,50 @@ class ManutencaoItem(models.Model):
 
     @property
     def custo_total(self):
-        return (self.quantidade * self.valor_unitario).quantize(Decimal('0.01'))
+        """Calcula: (quantidade × valor_custo) - desconto"""
+        return ((self.quantidade * self.valor_custo) - self.desconto).quantize(Decimal('0.01'))
+
+
+class DocumentoManutencao(models.Model):
+    """Documentos anexados a uma manutenção (NF de peças, NF de serviço, orçamentos, etc.)."""
+
+    TIPO_CHOICES = [
+        ('NF_PECA', 'NF de Peças'),
+        ('NF_SERVICO', 'NF de Serviço'),
+        ('NF_CONSUMIDOR', 'Nota do Consumidor'),
+        ('ORCAMENTO', 'Orçamento'),
+        ('OUTRO', 'Outro'),
+    ]
+
+    manutencao = models.ForeignKey(
+        ManutencaoVeiculo, on_delete=models.CASCADE,
+        related_name='documentos', verbose_name='Manutenção'
+    )
+    tipo = models.CharField('Tipo', max_length=20, choices=TIPO_CHOICES, default='NF_PECA')
+    descricao = models.CharField('Descrição', max_length=200, blank=True)
+    numero_documento = models.CharField('Número do Documento', max_length=100, blank=True)
+    arquivo = models.FileField(
+        'Arquivo',
+        upload_to='frota/manutencoes/documentos/%Y/%m/',
+        validators=[FileExtensionValidator(allowed_extensions=['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx'])],
+        help_text='PDF, JPG, PNG, DOC (máx. 10MB)'
+    )
+    enviado_por = models.ForeignKey(
+        'usuarios.Usuario', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='documentos_manutencao_enviados'
+    )
+    criado_em = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Documento de Manutenção'
+        verbose_name_plural = 'Documentos de Manutenção'
+        ordering = ['-criado_em']
+
+    def __str__(self):
+        return f"{self.get_tipo_display()} — {self.descricao or self.get_nome_arquivo()}"
+
+    def get_nome_arquivo(self):
+        return os.path.basename(self.arquivo.name) if self.arquivo else ''
 
 
 class AlertaManutencao(models.Model):

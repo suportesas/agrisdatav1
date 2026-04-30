@@ -640,11 +640,24 @@ class Lote(models.Model):
     
     def clean(self):
         """Validações customizadas"""
+        from datetime import date as _date
         errors = {}
-        
+
         # Valida datas
-        if self.data_fabricacao and self.data_validade:
-            if self.data_fabricacao > self.data_validade:
+        df = self.data_fabricacao
+        dv = self.data_validade
+        if isinstance(df, str):
+            try:
+                df = _date.fromisoformat(df)
+            except (ValueError, AttributeError):
+                df = None
+        if isinstance(dv, str):
+            try:
+                dv = _date.fromisoformat(dv)
+            except (ValueError, AttributeError):
+                dv = None
+        if df and dv:
+            if df > dv:
                 errors['data_validade'] = 'Data de validade deve ser posterior à fabricação'
         
         # Valida quantidade
@@ -660,6 +673,17 @@ class Lote(models.Model):
     
     def save(self, *args, **kwargs):
         """Atualiza status automaticamente e recalcula estoque_atual do produto."""
+        from datetime import date as _date
+        if isinstance(self.data_validade, str):
+            try:
+                self.data_validade = _date.fromisoformat(self.data_validade)
+            except (ValueError, AttributeError):
+                self.data_validade = None
+        if isinstance(self.data_fabricacao, str):
+            try:
+                self.data_fabricacao = _date.fromisoformat(self.data_fabricacao)
+            except (ValueError, AttributeError):
+                self.data_fabricacao = None
         # Ao criar, só iguala quantidade_atual à inicial se não foi explicitamente definida
         if self._state.adding and (self.quantidade_atual is None):
             self.quantidade_atual = self.quantidade_inicial
@@ -670,6 +694,10 @@ class Lote(models.Model):
         # Verifica esgotamento
         if self.quantidade_atual == 0 and self.status != 'ESGOTADO':
             self.status = 'ESGOTADO'
+        # Restaura status de ESGOTADO para DISPONIVEL se quantidade > 0
+        # (não afeta BLOQUEADO, VENCIDO ou QUARENTENA - estatuses que precisam de ação manual)
+        if self.quantidade_atual > 0 and self.status == 'ESGOTADO':
+            self.status = 'DISPONIVEL'
         # Calcula valor total
         if self.valor_unitario and self.quantidade_inicial:
             self.valor_total = self.valor_unitario * self.quantidade_inicial
@@ -959,25 +987,22 @@ class MovimentacaoEstoque(models.Model):
             if self.armazem_origem == self.armazem_destino:
                 errors['armazem_destino'] = 'Armazéns de origem e destino devem ser diferentes'
         
-        # Valida quantidade disponível para saída
+        # Valida quantidade disponível para saída (apenas validação, sem modificar dados)
         if self.tipo in ['SAIDA', 'TRANSFERENCIA'] and self.lote:
             if self.quantidade > self.lote.quantidade_atual:
-                pass
-        elif self.tipo == 'AJUSTE':
-            # Ajuste pode ser positivo ou negativo
-            if self.origem == 'AJUSTE_ENTRADA':
-                self.lote.quantidade_atual += self.quantidade
-            else:  # AJUSTE_SAIDA
-                if self.lote.quantidade_atual < self.quantidade:
-                    raise ValidationError('Quantidade insuficiente para ajuste de saída')
-                self.lote.quantidade_atual -= self.quantidade
-            self.lote.save()
-            # Atualiza estoque do produto
-            lotes_filtrados = self.lote.produto.lotes.filter(status__in=['DISPONIVEL', 'BLOQUEADO'])
-            total = lotes_filtrados.aggregate(total=models.Sum('quantidade_atual'))['total']
-            self.lote.produto.estoque_atual = Decimal(total) if total is not None else Decimal('0.000')
-            self.lote.produto.save()
-    
+                errors['quantidade'] = (
+                    f'Quantidade insuficiente. Disponível: {self.lote.quantidade_atual}'
+                )
+        elif self.tipo == 'AJUSTE' and self.lote and self.origem == 'AJUSTE_SAIDA':
+            if self.quantidade > self.lote.quantidade_atual:
+                errors['quantidade'] = (
+                    f'Quantidade insuficiente para ajuste de saída. '
+                    f'Disponível: {self.lote.quantidade_atual}'
+                )
+
+        if errors:
+            raise ValidationError(errors)
+
     def save(self, *args, **kwargs):
         """Gera número automático mas NÃO atualiza estoque aqui"""
         if not self.numero:

@@ -58,7 +58,14 @@
             <td class="small">{{ m.data_abertura|date:"d/m/Y" }}</td>
             <td><a href="{% url 'cadastros:manutencao_detail' m.pk %}">{{ m.vehicle }}</a></td>
             <td><span class="badge bg-info text-dark small">{{ m.get_tipo_display }}</span></td>
-            <td class="small">{{ m.descricao|truncatechars:40 }}</td>
+            <td class="small">
+              {{ m.descricao|truncatechars:40 }}
+              {% if m.motorista_solicitante %}
+              <br><span class="badge bg-orange-subtle text-warning border border-warning-subtle" style="font-size:0.7rem;">
+                <i class="bi bi-person-badge"></i> Solicitado por {{ m.motorista_solicitante.nome }}
+              </span>
+              {% endif %}
+            </td>
             <td>
               {% if m.status == 'ABERTA' %}<span class="badge bg-warning text-dark">{{ m.get_status_display }}</span>
               {% elif m.status == 'EM_ANDAMENTO' %}<span class="badge bg-primary">{{ m.get_status_display }}</span>
@@ -66,8 +73,13 @@
               {% else %}<span class="badge bg-secondary">{{ m.get_status_display }}</span>{% endif %}
             </td>
             <td class="text-end fw-bold">R$ {{ m.valor_total|floatformat:2 }}</td>
-            <td>
+            <td class="d-flex gap-1">
               <a href="{% url 'cadastros:manutencao_update' m.pk %}" class="btn btn-outline-secondary btn-sm py-0 px-1"><i class="bi bi-pencil"></i></a>
+              <form method="post" action="{% url 'cadastros:manutencao_delete' m.pk %}" class="d-inline"
+                    onsubmit="return confirm('Excluir manutenção de {{ m.vehicle|escapejs }}? Esta ação não pode ser desfeita.')">
+                {% csrf_token %}
+                <button class="btn btn-outline-danger btn-sm py-0 px-1"><i class="bi bi-trash"></i></button>
+              </form>
             </td>
           </tr>
           {% empty %}

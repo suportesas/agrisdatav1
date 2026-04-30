@@ -27,7 +27,15 @@
       "Bash(python manage.py makemigrations cadastros --name manutencao_motorista_solicitante)",
       "Bash(python manage.py shell -c \"from django.urls import reverse; print\\(reverse\\('cadastros:motorista_login'\\)\\); print\\(reverse\\('cadastros:api_veiculo_info_abastecimento'\\)\\); print\\(reverse\\('cadastros:abastecimento_importar'\\)\\); print\\(reverse\\('cadastros:motorista_set_pin', args=[1]\\)\\)\")",
       "Bash(python manage.py shell -c \"from django.urls import reverse; print\\(reverse\\('cadastros:motorista_set_pin', args=[1]\\)\\); print\\(reverse\\('cadastros:motorista_login'\\)\\); print\\('OK'\\)\")",
-      "Bash(python manage.py shell -c \"from django.urls import reverse; print\\(reverse\\('portal_motorista:login'\\)\\); print\\(reverse\\('portal_motorista:home'\\)\\); print\\(reverse\\('portal_motorista:abastecimento_novo'\\)\\); print\\('OK'\\)\")"
+      "Bash(python manage.py shell -c \"from django.urls import reverse; print\\(reverse\\('portal_motorista:login'\\)\\); print\\(reverse\\('portal_motorista:home'\\)\\); print\\(reverse\\('portal_motorista:abastecimento_novo'\\)\\); print\\('OK'\\)\")",
+      "Bash(grep -n \"^class OrdemServico\\\\|^class TipoServicoOS\\\\|^class SubtipoServicoOS\\\\|^class ModalidadeExecucaoOS\\\\|^class OSFuncionario\\\\|^class OSMaquina\\\\|^class OrdemServicoInsumo\\\\|^class CustoTalhao\\\\|^class CustoHoraMaquina\\\\|^class EtapaColheita\" c:\\\\\\\\erp_agricola_novo\\\\\\\\cadastros\\\\\\\\models.py)",
+      "Bash(python manage.py migrate cadastros 0101)",
+      "PowerShell(\\(Get-Item \"C:\\\\erp_agricola_novo\\\\produtos\\\\forms.py\"\\).Length / 1KB; \\(Get-Item \"C:\\\\erp_agricola_novo\\\\produtos\\\\models.py\"\\).Length / 1KB; \\(Get-Item \"C:\\\\erp_agricola_novo\\\\produtos\\\\views.py\"\\).Length / 1KB)",
+      "Bash(python manage.py migrate produtos)",
+      "Bash(python manage.py makemigrations cadastros --name documentomanutencao)",
+      "Bash(python manage.py migrate cadastros 0103)",
+      "Bash(python -c \"from cadastros.views_frota import manutencao_documento_add, manutencao_documento_delete; print\\('OK'\\)\")",
+      "Bash(grep -E \"\\\\.\\(py\\)$\")"
     ]
   }
 }

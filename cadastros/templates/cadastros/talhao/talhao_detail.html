@@ -3,608 +3,663 @@
 
 {% block title %}{{ talhao.nome }} | ERP Agrícola{% endblock %}
 
-{% block extra_css %}
-<style>
-  .info-box {
-    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
-    border-left: 4px solid #0ea5e9;
-    padding: 20px;
-    border-radius: 10px;
-    margin-bottom: 20px;
-  }
-  .stat-item {
-    text-align: center;
-    padding: 15px;
-    background: white;
-    border-radius: 10px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-  }
-  .stat-item h4 {
-    color: #0ea5e9;
-    font-size: 2rem;
-    margin-bottom: 5px;
-  }
-  .stat-item small {
-    color: #6b7280;
-    font-weight: 600;
-  }
-</style>
-{% endblock %}
-
 {% block content %}
-<div class="container-fluid py-4">
-  
-  <!-- Breadcrumb -->
-  <nav aria-label="breadcrumb" class="mb-4">
-    <ol class="breadcrumb">
-      <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
-      <li class="breadcrumb-item"><a href="{% url 'cadastros:talhao_list' %}">Talhões</a></li>
-      <li class="breadcrumb-item active">{{ talhao.nome }}</li>
-    </ol>
-  </nav>
+<div class="container-fluid mt-3">
 
-  <!-- Header -->
-  <div class="row align-items-center mb-4">
-    <div class="col-md-8">
-      <h2 class="fw-bold mb-1">
-        <i class="bi bi-geo-alt text-info"></i> {{ talhao.nome }}
-        {% if talhao.codigo %}
-          <span class="text-muted">- {{ talhao.codigo }}</span>
-        {% endif %}
-      </h2>
-      <p class="text-muted mb-0">
-        <strong>{{ talhao.fazenda.nome }}</strong> • 
-        {% if talhao.area %}
-          Área: {{ talhao.area.nome }}
-        {% endif %}
-      </p>
-    </div>
-    <div class="col-md-4 text-end">
-      <div class="btn-group">
-        <a href="{% url 'cadastros:talhao_update' talhao.pk %}" class="btn btn-primary">
-          <i class="bi bi-pencil"></i> Editar
-        </a>
-        <a href="{% url 'cadastros:talhao_delete' talhao.pk %}" class="btn btn-outline-danger">
-          <i class="bi bi-trash"></i> Excluir
-        </a>
+  <!-- Header Hub -->
+  <div class="card border-0 shadow-sm mb-3">
+    <div class="card-body p-0">
+      <div class="px-4 pt-3 pb-3" style="border-left: 5px solid
+        {% if talhao.status == 'PLANTADO' %}#198754
+        {% elif talhao.status == 'DISPONIVEL' %}#0d6efd
+        {% elif talhao.status == 'PREPARACAO' %}#ffc107
+        {% elif talhao.status == 'COLHEITA' %}#f59e0b
+        {% else %}#6c757d{% endif %};">
+        <div class="d-flex flex-wrap justify-content-between align-items-start gap-2">
+          <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+              <h5 class="fw-bold mb-0">
+                <i class="bi bi-grid-3x3 me-1 text-success"></i>{{ talhao.nome }}
+                {% if talhao.codigo %}<span class="text-muted fw-normal fs-6">· {{ talhao.codigo }}</span>{% endif %}
+              </h5>
+              <span class="badge
+                {% if talhao.status == 'PLANTADO' %}bg-success
+                {% elif talhao.status == 'DISPONIVEL' %}bg-primary
+                {% elif talhao.status == 'PREPARACAO' %}bg-warning text-dark
+                {% elif talhao.status == 'COLHEITA' %}bg-warning text-dark
+                {% else %}bg-secondary{% endif %}">
+                {{ talhao.get_status_display }}
+              </span>
+              {% if not talhao.ativo %}<span class="badge bg-danger">Inativo</span>{% endif %}
+            </div>
+            <div class="text-muted small">
+              <i class="bi bi-geo-alt me-1"></i>
+              <a href="{% url 'cadastros:fazenda_detail' talhao.fazenda.pk %}" class="text-muted">{{ talhao.fazenda.nome }}</a>
+              {% if talhao.area %}<span class="mx-1">·</span>{{ talhao.area.nome }}{% endif %}
+              {% if talhao.cultura_atual %}
+              <span class="mx-1">·</span>
+              <i class="bi bi-leaf me-1 text-success"></i>{{ talhao.cultura_atual.nome }}
+              {% endif %}
+            </div>
+          </div>
+          <div class="d-flex gap-2">
+            <a href="{% url 'cadastros:os_create' %}?talhao={{ talhao.pk }}" class="btn btn-success btn-sm">
+              <i class="bi bi-plus-circle me-1"></i>Nova OS
+            </a>
+            <a href="{% url 'cadastros:talhao_update' talhao.pk %}" class="btn btn-outline-secondary btn-sm">
+              <i class="bi bi-pencil me-1"></i>Editar
+            </a>
+            <a href="{% url 'cadastros:talhao_list' %}" class="btn btn-outline-secondary btn-sm">
+              <i class="bi bi-arrow-left"></i>
+            </a>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- Badges de Status -->
-  <div class="mb-4">
-    <span class="badge bg-info fs-6 me-2">
-      <i class="bi bi-tag"></i> {{ talhao.get_status_display }}
-    </span>
-    {% if talhao.pronto_para_plantio %}
-      <span class="badge bg-success fs-6 me-2">
-        <i class="bi bi-check-circle"></i> Pronto para Plantio
-      </span>
-    {% endif %}
-    {% if talhao.ativo %}
-      <span class="badge bg-success fs-6">
-        <i class="bi bi-check-circle"></i> Ativo
-      </span>
-    {% else %}
-      <span class="badge bg-secondary fs-6">
-        <i class="bi bi-x-circle"></i> Inativo
-      </span>
-    {% endif %}
+  <!-- KPI Cards -->
+  <div class="row g-2 mb-3">
+    <div class="col-6 col-md-2">
+      <div class="card border-0 shadow-sm text-center py-2">
+        <div class="small text-muted">Área</div>
+        <div class="fw-bold text-primary">{{ talhao.area_hac|floatformat:2 }} ha</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-2">
+      <div class="card border-0 shadow-sm text-center py-2">
+        <div class="small text-muted">Custo Total</div>
+        <div class="fw-bold text-success">R$ {{ custo_total_talhao|floatformat:0 }}</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-2">
+      <div class="card border-0 shadow-sm text-center py-2">
+        <div class="small text-muted">OS Em Andamento</div>
+        <div class="fw-bold {% if os_ativas > 0 %}text-info{% else %}text-muted{% endif %}">{{ os_ativas }}</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-2">
+      <div class="card border-0 shadow-sm text-center py-2">
+        <div class="small text-muted">OS Pendentes</div>
+        <div class="fw-bold {% if os_pendentes > 0 %}text-warning{% else %}text-muted{% endif %}">{{ os_pendentes }}</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-2">
+      <div class="card border-0 shadow-sm text-center py-2">
+        <div class="small text-muted">Monit. MIP</div>
+        <div class="fw-bold text-secondary">{{ monitoramentos|length }}</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-2">
+      <div class="card border-0 shadow-sm text-center py-2">
+        <div class="small text-muted">Safras</div>
+        <div class="fw-bold text-secondary">{{ historico_stats.total_safras|default:0 }}</div>
+      </div>
+    </div>
   </div>
 
-  <div class="row">
-    
-    <!-- Coluna do Mapa (se houver coordenadas) -->
+  <!-- Abas Hub -->
+  <ul class="nav nav-tabs mb-3" id="talhaoTabs">
+    <li class="nav-item">
+      <a class="nav-link active" data-bs-toggle="tab" href="#tab-atividades">
+        <i class="bi bi-list-ul me-1"></i>Atividades
+        {% if timeline %}<span class="badge bg-secondary ms-1" style="font-size:.65rem;">{{ timeline|length }}</span>{% endif %}
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" data-bs-toggle="tab" href="#tab-geral">
+        <i class="bi bi-info-circle me-1"></i>Geral
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" data-bs-toggle="tab" href="#tab-custos">
+        <i class="bi bi-currency-dollar me-1"></i>Custos
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" data-bs-toggle="tab" href="#tab-caderno">
+        <i class="bi bi-journal-text me-1"></i>Caderno
+        {% if caderno %}<span class="badge bg-secondary ms-1" style="font-size:.65rem;">{{ caderno|length }}</span>{% endif %}
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" data-bs-toggle="tab" href="#tab-mip">
+        <i class="bi bi-bug me-1"></i>MIP
+        {% if monitoramentos %}<span class="badge bg-secondary ms-1" style="font-size:.65rem;">{{ monitoramentos|length }}</span>{% endif %}
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" data-bs-toggle="tab" href="#tab-mudas">
+        <i class="bi bi-arrow-left-right me-1"></i>Mudas
+      </a>
+    </li>
     {% if talhao.latitude and talhao.longitude %}
-    <div class="col-lg-4 mb-4">
-      <div class="card border-0 shadow-sm">
-        <div id="map" style="height: 350px; border-radius: 10px 10px 0 0;"></div>
-        <div class="card-body text-center">
-          <h5 class="mb-0">{{ talhao.nome }}</h5>
-          <p class="text-muted mb-0">{{ talhao.area.nome }} - {{ talhao.area_hac|floatformat:2 }} ha</p>
-        </div>
-      </div>
-
-      <!-- Info de Localização -->
-      <div class="card border-0 shadow-sm mt-3">
-        <div class="card-body">
-          <h6 class="text-muted mb-2">📍 Coordenadas</h6>
-          <table class="table table-borderless table-sm">
-            <tr>
-              <td class="text-muted"><strong>Latitude:</strong></td>
-              <td>{{ talhao.latitude }}</td>
-            </tr>
-            <tr>
-              <td class="text-muted"><strong>Longitude:</strong></td>
-              <td>{{ talhao.longitude }}</td>
-            </tr>
-          </table>
-        </div>
-      </div>
-    </div>
+    <li class="nav-item">
+      <a class="nav-link" data-bs-toggle="tab" href="#tab-mapa">
+        <i class="bi bi-map me-1"></i>Mapa
+      </a>
+    </li>
     {% endif %}
+  </ul>
 
-    <!-- Coluna Principal -->
-    <div class="{% if talhao.latitude and talhao.longitude %}col-lg-8{% else %}col-lg-12{% endif %}">
-      
-      <!-- Cards de Estatísticas -->
-      <div class="row g-3 mb-4">
-        <div class="col-md-3">
-          <div class="stat-item">
-            <i class="bi bi-rulers text-info fs-3"></i>
-            <h4 class="mt-2">{{ talhao.area_hac|floatformat:2 }}</h4>
-            <small>HECTARES</small>
+  <div class="tab-content">
+
+    <!-- ABA: ATIVIDADES (Timeline Unificada) -->
+    <div class="tab-pane fade show active" id="tab-atividades">
+      <div class="row g-3">
+        <div class="col-lg-8">
+          <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent py-2 d-flex justify-content-between align-items-center">
+              <h6 class="mb-0"><i class="bi bi-list-ul me-2 text-primary"></i>Timeline de Atividades</h6>
+              <div class="d-flex gap-2">
+                <a href="{% url 'cadastros:os_create' %}?talhao={{ talhao.pk }}" class="btn btn-xs btn-outline-success">
+                  <i class="bi bi-plus-circle me-1"></i>Nova OS
+                </a>
+                <a href="{% url 'cadastros:caderno_campo_create' %}?talhao={{ talhao.pk }}" class="btn btn-xs btn-outline-secondary">
+                  <i class="bi bi-journal-plus me-1"></i>Caderno
+                </a>
+              </div>
+            </div>
+            <div class="card-body p-0">
+              {% if timeline %}
+              <div class="talhao-timeline px-3 py-2">
+                {% for item in timeline %}
+                <div class="tl-item d-flex gap-3 py-2 border-bottom border-light-subtle">
+                  <!-- Ícone por tipo -->
+                  <div class="tl-icon flex-shrink-0">
+                    {% if item.tipo == 'os' %}
+                      <span class="badge rounded-pill
+                        {% if item.status == 'CONCLUIDA' %}bg-success
+                        {% elif item.status == 'EM_ANDAMENTO' %}bg-info text-dark
+                        {% elif item.status == 'APROVADA' %}bg-primary
+                        {% elif item.status == 'CANCELADA' %}bg-danger
+                        {% else %}bg-warning text-dark{% endif %}"
+                        style="font-size:.65rem; min-width:30px;">
+                        <i class="bi bi-clipboard-check"></i>
+                      </span>
+                    {% elif item.tipo == 'caderno' %}
+                      <span class="badge bg-secondary rounded-pill" style="font-size:.65rem; min-width:30px;">
+                        <i class="bi bi-journal-text"></i>
+                      </span>
+                    {% elif item.tipo == 'mip' %}
+                      <span class="badge bg-danger rounded-pill" style="font-size:.65rem; min-width:30px;">
+                        <i class="bi bi-bug"></i>
+                      </span>
+                    {% endif %}
+                  </div>
+                  <div class="flex-fill">
+                    <div class="d-flex justify-content-between align-items-start">
+                      <div>
+                        <a href="{{ item.url_detail }}" class="fw-semibold text-dark text-decoration-none">
+                          {{ item.titulo }}
+                        </a>
+                        {% if item.numero %}
+                        <span class="text-muted small ms-1">{{ item.numero }}</span>
+                        {% endif %}
+                        <div class="text-muted small">{{ item.sub }}</div>
+                      </div>
+                      <div class="text-end">
+                        <div class="text-muted small">{{ item.data|date:"d/m/Y" }}</div>
+                        {% if item.tipo == 'os' and item.status %}
+                        <span class="badge
+                          {% if item.status == 'CONCLUIDA' %}bg-success
+                          {% elif item.status == 'EM_ANDAMENTO' %}bg-info text-dark
+                          {% elif item.status == 'APROVADA' %}bg-primary
+                          {% elif item.status == 'CANCELADA' %}bg-danger
+                          {% else %}bg-warning text-dark{% endif %}"
+                          style="font-size:.6rem;">
+                          {{ item.status|capfirst }}
+                        </span>
+                        {% endif %}
+                      </div>
+                    </div>
+                    {% if item.responsavel != '—' %}
+                    <small class="text-muted"><i class="bi bi-person me-1"></i>{{ item.responsavel }}</small>
+                    {% endif %}
+                  </div>
+                </div>
+                {% endfor %}
+              </div>
+              {% else %}
+              <div class="p-5 text-center text-muted">
+                <i class="bi bi-list-ul display-5 opacity-25 d-block mb-3"></i>
+                <p class="mb-2">Nenhuma atividade registrada neste talhão.</p>
+                <a href="{% url 'cadastros:os_create' %}?talhao={{ talhao.pk }}" class="btn btn-success btn-sm">
+                  <i class="bi bi-plus-circle me-1"></i>Criar primeira OS
+                </a>
+              </div>
+              {% endif %}
+            </div>
           </div>
         </div>
 
-        <div class="col-md-3">
-          <div class="stat-item">
-            <i class="bi bi-map text-success fs-3"></i>
-            <h4 class="mt-2">{{ talhao.area.nome }}</h4>
-            <small>ÁREA VINCULADA</small>
+        <!-- Coluna lateral: OS abertas/andamento -->
+        <div class="col-lg-4">
+          <div class="card border-0 shadow-sm mb-3">
+            <div class="card-header bg-transparent py-2">
+              <h6 class="mb-0"><i class="bi bi-clipboard-check me-2 text-success"></i>OS Ativas</h6>
+            </div>
+            <div class="card-body p-0">
+              {% with os_ativas_list=os_talhao %}
+              {% for os in os_ativas_list %}
+              {% if os.status in 'ABERTA,APROVADA,EM_ANDAMENTO' %}
+              <div class="px-3 py-2 border-bottom border-light-subtle">
+                <div class="d-flex justify-content-between align-items-start">
+                  <div>
+                    <a href="/cadastros/ordens-servico/{{ os.pk }}/" class="fw-semibold text-dark text-decoration-none small">{{ os.numero }}</a>
+                    <div class="text-muted" style="font-size:.75rem;">{{ os.descricao_servico|truncatechars:35 }}</div>
+                  </div>
+                  <span class="badge
+                    {% if os.status == 'EM_ANDAMENTO' %}bg-info text-dark
+                    {% elif os.status == 'APROVADA' %}bg-primary
+                    {% else %}bg-warning text-dark{% endif %}"
+                    style="font-size:.6rem; white-space:nowrap;">
+                    {{ os.status|capfirst }}
+                  </span>
+                </div>
+                {% if os.data_prevista %}
+                <div class="text-muted" style="font-size:.7rem;"><i class="bi bi-calendar3 me-1"></i>Prev: {{ os.data_prevista|date:"d/m/Y" }}</div>
+                {% endif %}
+              </div>
+              {% endif %}
+              {% endfor %}
+              {% endwith %}
+              {% if not os_ativas and not os_pendentes %}
+              <div class="p-3 text-center text-muted small">
+                <i class="bi bi-inbox opacity-25 d-block fs-4 mb-1"></i>Nenhuma OS ativa
+              </div>
+              {% endif %}
+            </div>
           </div>
-        </div>
 
-        {% if talhao.cultura_atual %}
-        <div class="col-md-3">
-          <div class="stat-item">
-            <i class="bi bi-leaf text-warning fs-3"></i>
-            <h4 class="mt-2">{{ talhao.cultura_atual.nome }}</h4>
-            <small>CULTURA ATUAL</small>
-          </div>
-        </div>
-        {% endif %}
-
-        <div class="col-md-3">
-          <div class="stat-item">
-            <i class="bi bi-gear text-primary fs-3"></i>
-            <h4 class="mt-2">{{ talhao.get_status_display }}</h4>
-            <small>STATUS</small>
+          <!-- Legenda da timeline -->
+          <div class="card border-0 shadow-sm">
+            <div class="card-body py-2">
+              <div class="small text-muted fw-semibold mb-2">Legenda</div>
+              <div class="d-flex flex-column gap-1" style="font-size:.75rem;">
+                <div><span class="badge bg-success me-1">OS</span>Ordem de Serviço concluída</div>
+                <div><span class="badge bg-info text-dark me-1">OS</span>OS em andamento</div>
+                <div><span class="badge bg-warning text-dark me-1">OS</span>OS aberta/aprovada</div>
+                <div><span class="badge bg-secondary me-1"><i class="bi bi-journal-text"></i></span>Caderno de Campo</div>
+                <div><span class="badge bg-danger me-1"><i class="bi bi-bug"></i></span>Monitoramento MIP</div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
+    </div><!-- /tab-atividades -->
 
-      <!-- Informações Detalhadas -->
-      <div class="card border-0 shadow-sm mb-4">
-        <div class="card-header bg-white border-0 pt-3">
-          <ul class="nav nav-tabs card-header-tabs">
-            <li class="nav-item">
-              <a class="nav-link active" data-bs-toggle="tab" href="#geral">
-                <i class="bi bi-info-circle"></i> Geral
-              </a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" data-bs-toggle="tab" href="#localizacao">
-                <i class="bi bi-geo-alt"></i> Localização
-              </a>
-            </li>
-            {% if historico %}
-            <li class="nav-item">
-              <a class="nav-link" data-bs-toggle="tab" href="#historico">
-                <i class="bi bi-clock-history"></i> Histórico
-              </a>
-            </li>
-            {% endif %}
-            <li class="nav-item">
-              <a class="nav-link" data-bs-toggle="tab" href="#caderno">
-                <i class="bi bi-journal-text text-success"></i> Caderno
-              </a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" data-bs-toggle="tab" href="#custos">
-                <i class="bi bi-currency-dollar text-warning"></i> Custos
-              </a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" data-bs-toggle="tab" href="#movimentos">
-                <i class="bi bi-arrow-left-right text-primary"></i> Transplantios
-              </a>
-            </li>
-            <li class="nav-item ms-auto">
-              <a href="{% url 'cadastros:historico_create' talhao.pk %}" class="btn btn-sm btn-outline-primary">
-                <i class="bi bi-plus-circle"></i> Registrar Histórico
-              </a>
-            </li>
-          </ul>
+    <!-- ABA: GERAL -->
+    <div class="tab-pane fade" id="tab-geral">
+      <div class="row g-3">
+        <div class="col-md-6">
+          <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-transparent py-2">
+              <h6 class="mb-0"><i class="bi bi-info-circle me-2 text-info"></i>Informações Básicas</h6>
+            </div>
+            <div class="card-body">
+              <dl class="row mb-0 small">
+                <dt class="col-5 text-muted">Nome</dt><dd class="col-7">{{ talhao.nome }}</dd>
+                <dt class="col-5 text-muted">Código</dt><dd class="col-7">{{ talhao.codigo|default:"—" }}</dd>
+                <dt class="col-5 text-muted">Área (ha)</dt><dd class="col-7">{{ talhao.area_hac|floatformat:2 }}</dd>
+                <dt class="col-5 text-muted">Fazenda</dt>
+                <dd class="col-7"><a href="{% url 'cadastros:fazenda_detail' talhao.fazenda.pk %}">{{ talhao.fazenda.nome }}</a></dd>
+                <dt class="col-5 text-muted">Área</dt>
+                <dd class="col-7">
+                  {% if talhao.area %}<a href="{% url 'cadastros:area_detail' talhao.area.pk %}">{{ talhao.area.nome }}</a>{% else %}—{% endif %}
+                </dd>
+                <dt class="col-5 text-muted">Cultura Atual</dt>
+                <dd class="col-7">{{ talhao.cultura_atual.nome|default:"—" }}</dd>
+              </dl>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-transparent py-2">
+              <h6 class="mb-0"><i class="bi bi-gear me-2 text-secondary"></i>Características</h6>
+            </div>
+            <div class="card-body">
+              <dl class="row mb-0 small">
+                <dt class="col-6 text-muted">Status</dt>
+                <dd class="col-6"><span class="badge bg-info">{{ talhao.get_status_display }}</span></dd>
+                <dt class="col-6 text-muted">Declividade</dt>
+                <dd class="col-6">{{ talhao.get_declividade_display|default:"—" }}</dd>
+                <dt class="col-6 text-muted">Exposição Solar</dt>
+                <dd class="col-6">{{ talhao.get_exposicao_solar_display|default:"—" }}</dd>
+                <dt class="col-6 text-muted">Pronto para Plantio</dt>
+                <dd class="col-6">
+                  {% if talhao.pronto_para_plantio %}<span class="badge bg-success">Sim</span>
+                  {% else %}<span class="badge bg-secondary">Não</span>{% endif %}
+                </dd>
+                <dt class="col-6 text-muted">Ativo</dt>
+                <dd class="col-6">{% if talhao.ativo %}<span class="badge bg-success">Sim</span>{% else %}<span class="badge bg-danger">Não</span>{% endif %}</dd>
+              </dl>
+              {% if talhao.observacoes %}
+              <hr class="my-2">
+              <p class="small text-muted mb-0"><strong>Observações:</strong> {{ talhao.observacoes }}</p>
+              {% endif %}
+            </div>
+          </div>
         </div>
 
-        <div class="tab-content p-4">
-          
-          <!-- Tab: Geral -->
-          <div class="tab-pane fade show active" id="geral">
-            <div class="row">
-              <div class="col-md-6">
-                <h6 class="fw-bold text-info mb-3">Informações Básicas</h6>
-                <table class="table table-borderless">
-                  <tr>
-                    <td class="text-muted"><strong>Nome:</strong></td>
-                    <td>{{ talhao.nome }}</td>
-                  </tr>
-                  <tr>
-                    <td class="text-muted"><strong>Código:</strong></td>
-                    <td>{{ talhao.codigo|default:"N/A" }}</td>
-                  </tr>
-                  <tr>
-                    <td class="text-muted"><strong>Área (ha):</strong></td>
-                    <td>{{ talhao.area_hac|floatformat:2 }}</td>
-                  </tr>
-                  <tr>
-                    <td class="text-muted"><strong>Fazenda:</strong></td>
-                    <td><a href="{% url 'cadastros:fazenda_detail' talhao.fazenda.pk %}">{{ talhao.fazenda.nome }}</a></td>
-                  </tr>
-                  <tr>
-                    <td class="text-muted"><strong>Área:</strong></td>
-                    <td>
-                      {% if talhao.area %}
-                        <a href="{% url 'cadastros:area_detail' talhao.area.pk %}">{{ talhao.area.nome }}</a>
-                      {% else %}
-                        N/A
-                      {% endif %}
-                    </td>
-                  </tr>
-                </table>
-              </div>
-
-              <div class="col-md-6">
-                <h6 class="fw-bold text-success mb-3">Características</h6>
-                <table class="table table-borderless">
-                  <tr>
-                    <td class="text-muted"><strong>Status:</strong></td>
-                    <td><span class="badge bg-info">{{ talhao.get_status_display }}</span></td>
-                  </tr>
-                  <tr>
-                    <td class="text-muted"><strong>Declividade:</strong></td>
-                    <td>{{ talhao.get_declividade_display|default:"N/A" }}</td>
-                  </tr>
-                  <tr>
-                    <td class="text-muted"><strong>Exposição Solar:</strong></td>
-                    <td>{{ talhao.get_exposicao_solar_display|default:"N/A" }}</td>
-                  </tr>
-                  <tr>
-                    <td class="text-muted"><strong>Pronto para Plantio:</strong></td>
-                    <td>
-                      {% if talhao.pronto_para_plantio %}
-                        <span class="badge bg-success">Sim</span>
-                      {% else %}
-                        <span class="badge bg-secondary">Não</span>
-                      {% endif %}
-                    </td>
-                  </tr>
-                </table>
-              </div>
-            </div>
-
-            {% if talhao.observacoes %}
-            <div class="mt-4">
-              <h6 class="fw-bold">Observações:</h6>
-              <p class="text-muted">{{ talhao.observacoes }}</p>
-            </div>
-            {% endif %}
-          </div>
-
-          <!-- Tab: Localização -->
-          <div class="tab-pane fade" id="localizacao">
-            <div class="row">
-              <div class="col-md-6">
-                <h6 class="fw-bold text-primary mb-3">Coordenadas GPS</h6>
-                <table class="table table-borderless">
-                  <tr>
-                    <td class="text-muted"><strong>Latitude:</strong></td>
-                    <td>{{ talhao.latitude|default:"N/A" }}</td>
-                  </tr>
-                  <tr>
-                    <td class="text-muted"><strong>Longitude:</strong></td>
-                    <td>{{ talhao.longitude|default:"N/A" }}</td>
-                  </tr>
-                </table>
-              </div>
-
-              <div class="col-md-6">
-                <h6 class="fw-bold text-success mb-3">Detalhes da Localização</h6>
-                <table class="table table-borderless">
-                  <tr>
-                    <td class="text-muted"><strong>Fazenda:</strong></td>
-                    <td>{{ talhao.fazenda.nome }}</td>
-                  </tr>
-                  <tr>
-                    <td class="text-muted"><strong>Área:</strong></td>
-                    <td>{{ talhao.area.nome|default:"N/A" }}</td>
-                  </tr>
-                </table>
-              </div>
-            </div>
-
-            {% if talhao.latitude and talhao.longitude %}
-            <div class="alert alert-info mt-3">
-              <i class="bi bi-info-circle"></i>
-              <strong>Coordenadas:</strong> 
-              {{ talhao.latitude }}, {{ talhao.longitude }}
-              <a href="https://www.google.com/maps?q={{ talhao.latitude }},{{ talhao.longitude }}" target="_blank" class="ms-2">
-                <i class="bi bi-box-arrow-up-right"></i> Abrir no Google Maps
+        <!-- Histórico de Cultivos -->
+        {% if historico %}
+        <div class="col-12">
+          <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent py-2 d-flex justify-content-between align-items-center">
+              <h6 class="mb-0"><i class="bi bi-clock-history me-2"></i>Histórico de Cultivo</h6>
+              <a href="{% url 'cadastros:historico_create' talhao.pk %}" class="btn btn-xs btn-outline-primary">
+                <i class="bi bi-plus-circle me-1"></i>Registrar
               </a>
             </div>
-            {% endif %}
-          </div>
-
-          <!-- Tab: Histórico -->
-          {% if historico %}
-          <div class="tab-pane fade" id="historico">
-            <h6 class="fw-bold text-primary mb-3">Histórico de Cultivo</h6>
-            <div class="table-responsive">
-              <table class="table table-hover">
+            <div class="card-body p-0">
+              <table class="table table-sm table-hover mb-0">
                 <thead class="table-light">
-                  <tr>
-                    <th>Cultura</th>
-                    <th>Período</th>
-                    <th>Produção</th>
-                    <th>Produtividade</th>
-                    <th>Ação</th>
-                  </tr>
+                  <tr><th>Cultura</th><th>Período</th><th class="text-end">Produção</th><th class="text-end">Prod./ha</th><th></th></tr>
                 </thead>
                 <tbody>
                   {% for hist in historico %}
                   <tr>
+                    <td class="fw-semibold">{{ hist.cultura.nome }}{% if hist.variedade %}<div class="text-muted small">{{ hist.variedade }}</div>{% endif %}</td>
+                    <td class="small">{{ hist.data_plantio|date:"d/m/Y" }}{% if hist.data_colheita %} → {{ hist.data_colheita|date:"d/m/Y" }}{% else %} <span class="text-info small">(ativo)</span>{% endif %}</td>
+                    <td class="text-end">{{ hist.producao_real|default:"—" }}</td>
+                    <td class="text-end">{{ hist.produtividade|floatformat:2|default:"—" }}</td>
                     <td>
-                      <strong>{{ hist.cultura.nome }}</strong>
-                      {% if hist.variedade %}<br><small class="text-muted">{{ hist.variedade }}</small>{% endif %}
-                    </td>
-                    <td>
-                      <small>
-                        {{ hist.data_plantio|date:"d/m/Y" }}
-                        {% if hist.data_colheita %} a {{ hist.data_colheita|date:"d/m/Y" }}{% else %} (em andamento){% endif %}
-                      </small>
-                    </td>
-                    <td>
-                      {% if hist.producao_real %}{{ hist.producao_real }} {{ hist.cultura.get_unidade_medida_display }}
-                      {% else %}<small class="text-muted">-</small>{% endif %}
-                    </td>
-                    <td>
-                      {% if hist.produtividade %}{{ hist.produtividade|floatformat:2 }} /ha
-                      {% else %}<small class="text-muted">-</small>{% endif %}
-                    </td>
-                    <td>
-                      <a href="{% url 'cadastros:historico_detail' hist.pk %}" class="btn btn-sm btn-outline-secondary">Ver</a>
-                      <a href="{% url 'cadastros:historico_update' hist.pk %}" class="btn btn-sm btn-outline-secondary ms-1">Editar</a>
+                      <a href="{% url 'cadastros:historico_detail' hist.pk %}" class="btn btn-xs btn-outline-secondary py-0 px-1"><i class="bi bi-eye"></i></a>
                     </td>
                   </tr>
                   {% endfor %}
                 </tbody>
               </table>
             </div>
-            {% if historico_stats %}
-            <div class="row mt-4">
-              <div class="col-md-4">
-                <div class="card bg-light border-0">
-                  <div class="card-body text-center">
-                    <i class="bi bi-calendar-event text-success fs-3"></i>
-                    <h5 class="mt-2 mb-0">{{ historico_stats.total_safras }}</h5>
-                    <small class="text-muted">Total de Safras</small>
-                  </div>
-                </div>
-              </div>
-              {% if historico_stats.producao_total %}
-              <div class="col-md-4">
-                <div class="card bg-light border-0">
-                  <div class="card-body text-center">
-                    <i class="bi bi-basket text-warning fs-3"></i>
-                    <h5 class="mt-2 mb-0">{{ historico_stats.producao_total|floatformat:0 }}</h5>
-                    <small class="text-muted">Produção Total</small>
-                  </div>
-                </div>
-              </div>
-              {% endif %}
-              {% if historico_stats.media_produtividade %}
-              <div class="col-md-4">
-                <div class="card bg-light border-0">
-                  <div class="card-body text-center">
-                    <i class="bi bi-graph-up text-info fs-3"></i>
-                    <h5 class="mt-2 mb-0">{{ historico_stats.media_produtividade|floatformat:2 }}</h5>
-                    <small class="text-muted">Média de Produtividade</small>
-                  </div>
-                </div>
-              </div>
-              {% endif %}
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- Auditoria -->
+        <div class="col-12">
+          <div class="card border-0 shadow-sm">
+            <div class="card-body py-2 small text-muted">
+              <i class="bi bi-clock me-1"></i>Cadastrado em {{ talhao.data_cadastro|date:"d/m/Y H:i" }}
+              {% if talhao.cadastrado_por %}por {{ talhao.cadastrado_por.username }}{% endif %}
+              <span class="mx-2">·</span>
+              Atualizado em {{ talhao.data_atualizacao|date:"d/m/Y H:i" }}
             </div>
-            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div><!-- /tab-geral -->
+
+    <!-- ABA: CUSTOS -->
+    <div class="tab-pane fade" id="tab-custos">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-transparent py-2 d-flex justify-content-between align-items-center">
+          <h6 class="mb-0"><i class="bi bi-currency-dollar me-2 text-success"></i>Custos por Safra</h6>
+          <a href="{% url 'cadastros:custo_talhao_list' %}?talhao={{ talhao.pk }}" class="btn btn-xs btn-outline-warning">
+            <i class="bi bi-bar-chart-line me-1"></i>Relatório Completo
+          </a>
+        </div>
+        <div class="card-body p-0">
+          {% if custos_safra %}
+          <div class="table-responsive">
+            <table class="table table-sm table-hover align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Safra</th>
+                  <th class="text-end">OS</th>
+                  <th class="text-end">Área ha</th>
+                  <th class="text-end">M.O.</th>
+                  <th class="text-end">Maq.</th>
+                  <th class="text-end">Insumos</th>
+                  <th class="text-end">Serv. Ext.</th>
+                  <th class="text-end fw-bold">Total</th>
+                  <th class="text-end">R$/ha</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for c in custos_safra %}
+                <tr>
+                  <td class="fw-semibold">{{ c.safra_label }}</td>
+                  <td class="text-end">{{ c.qtd_os }}</td>
+                  <td class="text-end small">{{ c.total_area|default:0|floatformat:2 }}</td>
+                  <td class="text-end small">R$ {{ c.total_mao_obra|default:0|floatformat:2 }}</td>
+                  <td class="text-end small">R$ {{ c.total_maquinario|default:0|floatformat:2 }}</td>
+                  <td class="text-end small">R$ {{ c.total_insumos|default:0|floatformat:2 }}</td>
+                  <td class="text-end small">R$ {{ c.total_servico|default:0|floatformat:2 }}</td>
+                  <td class="text-end fw-bold text-success">R$ {{ c.total_geral|floatformat:2 }}</td>
+                  <td class="text-end small">{% if c.custo_ha %}R$ {{ c.custo_ha }}{% else %}—{% endif %}</td>
+                  <td>{% if c.safra_id %}<a href="{% url 'cadastros:safra_detail' c.safra_id %}" class="btn btn-xs btn-outline-info py-0 px-1"><i class="bi bi-arrow-right-circle"></i></a>{% endif %}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+              <tfoot class="table-light">
+                <tr>
+                  <td colspan="7" class="text-end fw-bold text-muted small">Total Geral:</td>
+                  <td class="text-end fw-bold text-success">R$ {{ custo_total_talhao|floatformat:2 }}</td>
+                  <td colspan="2"></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+          {% else %}
+          <div class="p-5 text-center text-muted">
+            <i class="bi bi-currency-dollar display-5 opacity-25 d-block mb-2"></i>
+            <p>Nenhum custo registrado para este talhão.</p>
+            <small>Os custos são gerados automaticamente ao concluir uma OS.</small>
           </div>
           {% endif %}
-
-          <!-- Tab: Caderno de Campo -->
-          <div class="tab-pane fade" id="caderno">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-              <h6 class="fw-bold text-success mb-0">Últimos Registros do Caderno de Campo</h6>
-              <a href="{% url 'cadastros:caderno_campo_create' %}?talhao={{ talhao.pk }}" class="btn btn-outline-success btn-sm">
-                <i class="bi bi-plus"></i> Novo Registro
-              </a>
-            </div>
-            <div class="table-responsive">
-              <table class="table table-sm table-hover align-middle">
-                <thead class="table-light">
-                  <tr><th>Data</th><th>Tipo</th><th>Atividade</th><th>Safra</th><th>Insumos</th><th></th></tr>
-                </thead>
-                <tbody>
-                  {% for reg in caderno %}
-                  <tr>
-                    <td class="small">{{ reg.data_atividade|date:"d/m/Y" }}</td>
-                    <td><span class="badge bg-info text-dark small">{{ reg.get_tipo_atividade_display }}</span></td>
-                    <td class="small">{{ reg.atividade }}</td>
-                    <td class="small text-muted">{{ reg.safra.nome|default:"—" }}</td>
-                    <td>
-                      {% for ins in reg.insumos_utilizados.all %}
-                        <span class="badge bg-warning text-dark small">{{ ins.produto.nome }} {{ ins.quantidade|floatformat:2 }} {{ ins.unidade_medida.sigla }}</span>
-                      {% empty %}
-                        <span class="text-muted small">—</span>
-                      {% endfor %}
-                    </td>
-                    <td>
-                      <a href="{% url 'cadastros:caderno_campo_detail' reg.pk %}" class="btn btn-outline-secondary btn-sm py-0 px-1"><i class="bi bi-eye"></i></a>
-                    </td>
-                  </tr>
-                  {% empty %}
-                  <tr><td colspan="6" class="text-center text-muted py-3">Nenhum registro no caderno de campo.</td></tr>
-                  {% endfor %}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <!-- Tab: Custos -->
-          <div class="tab-pane fade" id="custos">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-              <h6 class="fw-bold text-warning mb-0">Custos por Safra</h6>
-              <a href="{% url 'cadastros:custo_talhao_list' %}?talhao={{ talhao.pk }}" class="btn btn-outline-warning btn-sm">
-                <i class="bi bi-bar-chart-line"></i> Ver relatório completo
-              </a>
-            </div>
-            {% if custos_safra %}
-            <div class="table-responsive mb-3">
-              <table class="table table-sm table-hover align-middle">
-                <thead class="table-light">
-                  <tr>
-                    <th>Safra</th>
-                    <th class="text-end">OS</th>
-                    <th class="text-end">Área (ha)</th>
-                    <th class="text-end">M.O.</th>
-                    <th class="text-end">Maquinário</th>
-                    <th class="text-end">Insumos</th>
-                    <th class="text-end">Serv.Ext.</th>
-                    <th class="text-end">Total</th>
-                    <th class="text-end">R$/ha</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {% for c in custos_safra %}
-                  <tr>
-                    <td class="fw-semibold">{{ c.safra_label }}</td>
-                    <td class="text-end">{{ c.qtd_os }}</td>
-                    <td class="text-end">{{ c.total_area|default:0|floatformat:2 }}</td>
-                    <td class="text-end small">R$ {{ c.total_mao_obra|default:0|floatformat:2 }}</td>
-                    <td class="text-end small">R$ {{ c.total_maquinario|default:0|floatformat:2 }}</td>
-                    <td class="text-end small">R$ {{ c.total_insumos|default:0|floatformat:2 }}</td>
-                    <td class="text-end small">R$ {{ c.total_servico|default:0|floatformat:2 }}</td>
-                    <td class="text-end fw-bold">R$ {{ c.total_geral|floatformat:2 }}</td>
-                    <td class="text-end">{% if c.custo_ha %}R$ {{ c.custo_ha }}{% else %}<span class="text-muted">—</span>{% endif %}</td>
-                    <td>
-                      {% if c.safra_id %}<a href="{% url 'cadastros:safra_detail' c.safra_id %}" class="btn btn-outline-info btn-sm py-0 px-1"><i class="bi bi-arrow-right-circle"></i></a>{% endif %}
-                    </td>
-                  </tr>
-                  {% endfor %}
-                </tbody>
-                <tfoot class="table-light fw-bold">
-                  <tr>
-                    <td colspan="7">Total Geral</td>
-                    <td class="text-end">R$ {{ custo_total_talhao|floatformat:2 }}</td>
-                    <td></td><td></td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
-            {% else %}
-            <p class="text-muted">Nenhum custo registrado para este talhão.</p>
-            {% endif %}
-          </div>
-
-          <!-- Tab: Transplantios / Replantios -->
-          <div class="tab-pane fade" id="movimentos">
-            <div class="row g-4">
-              <div class="col-12">
-                <h6 class="fw-bold text-primary mb-3">Transplantios Recebidos</h6>
-                <div class="table-responsive">
-                  <table class="table table-sm table-hover align-middle">
-                    <thead class="table-light">
-                      <tr><th>Data</th><th>Lote</th><th>Safra</th><th>Tipo</th><th class="text-end">Qtd.</th><th class="text-end">Custo Transf.</th><th>Responsável</th></tr>
-                    </thead>
-                    <tbody>
-                      {% for t in transplantios %}
-                      <tr>
-                        <td class="small">{{ t.data_transplantio|date:"d/m/Y" }}</td>
-                        <td><a href="{% url 'cadastros:lote_muda_detail' t.lote_muda.pk %}" class="font-monospace small">{{ t.lote_muda.codigo_lote }}</a></td>
-                        <td class="small text-muted">{{ t.safra.nome|default:"—" }}</td>
-                        <td><span class="badge bg-secondary small">{{ t.get_tipo_display }}</span></td>
-                        <td class="text-end">{{ t.quantidade_transplantada }}</td>
-                        <td class="text-end small">R$ {{ t.custo_transferido|floatformat:2 }}</td>
-                        <td class="small">{{ t.responsavel.nome_completo|default:"—" }}</td>
-                      </tr>
-                      {% empty %}
-                      <tr><td colspan="7" class="text-center text-muted py-3">Nenhum transplantio registrado.</td></tr>
-                      {% endfor %}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-              <div class="col-12">
-                <h6 class="fw-bold text-warning mb-3">Replantios</h6>
-                <div class="table-responsive">
-                  <table class="table table-sm table-hover align-middle">
-                    <thead class="table-light">
-                      <tr><th>Data</th><th>Safra</th><th>Motivo</th><th>Origem</th><th class="text-end">Qtd.</th><th class="text-end">Custo Adic.</th><th>Responsável</th></tr>
-                    </thead>
-                    <tbody>
-                      {% for r in replantios %}
-                      <tr>
-                        <td class="small">{{ r.data_replantio|date:"d/m/Y" }}</td>
-                        <td class="small text-muted">{{ r.safra.nome|default:"—" }}</td>
-                        <td><span class="badge bg-warning text-dark small">{{ r.get_motivo_perda_display }}</span></td>
-                        <td class="small">{{ r.get_origem_muda_display }}</td>
-                        <td class="text-end">{{ r.quantidade }}</td>
-                        <td class="text-end small">R$ {{ r.custo_adicional|floatformat:2 }}</td>
-                        <td class="small">{{ r.responsavel.nome_completo|default:"—" }}</td>
-                      </tr>
-                      {% empty %}
-                      <tr><td colspan="7" class="text-center text-muted py-3">Nenhum replantio registrado.</td></tr>
-                      {% endfor %}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          </div>
-
         </div>
       </div>
+    </div><!-- /tab-custos -->
 
-      <!-- Informações de Auditoria -->
+    <!-- ABA: CADERNO DE CAMPO -->
+    <div class="tab-pane fade" id="tab-caderno">
       <div class="card border-0 shadow-sm">
-        <div class="card-body">
-          <h6 class="fw-bold mb-3">Informações do Sistema</h6>
-          <div class="row small text-muted">
-            <div class="col-md-6">
-              <p class="mb-1"><strong>Cadastrado em:</strong> {{ talhao.data_cadastro|date:"d/m/Y H:i" }}</p>
-              {% if talhao.cadastrado_por %}
-              <p class="mb-0"><strong>Cadastrado por:</strong> {{ talhao.cadastrado_por.username }}</p>
+        <div class="card-header bg-transparent py-2 d-flex justify-content-between align-items-center">
+          <h6 class="mb-0"><i class="bi bi-journal-text me-2 text-success"></i>Caderno de Campo</h6>
+          <a href="{% url 'cadastros:caderno_campo_create' %}?talhao={{ talhao.pk }}" class="btn btn-xs btn-outline-success">
+            <i class="bi bi-plus-circle me-1"></i>Novo Registro
+          </a>
+        </div>
+        <div class="card-body p-0">
+          {% if caderno %}
+          <table class="table table-sm table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr><th>Data</th><th>Tipo</th><th>Atividade</th><th>Safra</th><th>Insumos</th><th></th></tr>
+            </thead>
+            <tbody>
+              {% for reg in caderno %}
+              <tr>
+                <td class="small">{{ reg.data_atividade|date:"d/m/Y" }}</td>
+                <td><span class="badge bg-info text-dark small">{{ reg.get_tipo_atividade_display }}</span></td>
+                <td class="small">{{ reg.atividade|truncatechars:40 }}</td>
+                <td class="small text-muted">{{ reg.safra.nome|default:"—" }}</td>
+                <td>
+                  {% for ins in reg.insumos_utilizados.all %}
+                    <span class="badge bg-warning text-dark" style="font-size:.65rem;">{{ ins.produto.nome|truncatechars:12 }} {{ ins.quantidade|floatformat:2 }}</span>
+                  {% empty %}<span class="text-muted small">—</span>{% endfor %}
+                </td>
+                <td>
+                  <a href="{% url 'cadastros:caderno_campo_detail' reg.pk %}" class="btn btn-xs btn-outline-secondary py-0 px-1"><i class="bi bi-eye"></i></a>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          {% else %}
+          <div class="p-5 text-center text-muted">
+            <i class="bi bi-journal-text display-5 opacity-25 d-block mb-2"></i>
+            <p>Nenhum registro no caderno de campo.</p>
+            <a href="{% url 'cadastros:caderno_campo_create' %}?talhao={{ talhao.pk }}" class="btn btn-sm btn-outline-success">
+              <i class="bi bi-plus-circle me-1"></i>Criar Registro
+            </a>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div><!-- /tab-caderno -->
+
+    <!-- ABA: MONITORAMENTO MIP -->
+    <div class="tab-pane fade" id="tab-mip">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-transparent py-2 d-flex justify-content-between align-items-center">
+          <h6 class="mb-0"><i class="bi bi-bug me-2 text-danger"></i>Monitoramento MIP</h6>
+          <a href="{% url 'cadastros:monitoramento_mip_create' %}?talhao={{ talhao.pk }}" class="btn btn-xs btn-outline-danger">
+            <i class="bi bi-plus-circle me-1"></i>Novo Monitoramento
+          </a>
+        </div>
+        <div class="card-body p-0">
+          {% if monitoramentos %}
+          <table class="table table-sm table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr><th>Número</th><th>Data</th><th>Tipo</th><th>Safra</th><th>Status</th><th></th></tr>
+            </thead>
+            <tbody>
+              {% for mip in monitoramentos %}
+              <tr>
+                <td class="font-monospace small">{{ mip.numero }}</td>
+                <td class="small">{{ mip.data_monitoramento|date:"d/m/Y" }}</td>
+                <td><span class="badge bg-secondary small">{{ mip.get_tipo_monitoramento_display }}</span></td>
+                <td class="small text-muted">{{ mip.safra.nome|default:"—" }}</td>
+                <td>
+                  <span class="badge
+                    {% if mip.status == 'ANALISADO' %}bg-success
+                    {% elif mip.status == 'COMPLETO' %}bg-primary
+                    {% elif mip.status == 'CANCELADO' %}bg-danger
+                    {% else %}bg-secondary{% endif %}"
+                    style="font-size:.65rem;">{{ mip.get_status_display }}</span>
+                </td>
+                <td>
+                  <a href="{% url 'cadastros:monitoramento_mip_detail' mip.pk %}" class="btn btn-xs btn-outline-secondary py-0 px-1"><i class="bi bi-eye"></i></a>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          {% else %}
+          <div class="p-5 text-center text-muted">
+            <i class="bi bi-bug display-5 opacity-25 d-block mb-2"></i>
+            <p>Nenhum monitoramento MIP registrado.</p>
+            <a href="{% url 'cadastros:monitoramento_mip_create' %}?talhao={{ talhao.pk }}" class="btn btn-sm btn-outline-danger">
+              <i class="bi bi-plus-circle me-1"></i>Criar Monitoramento
+            </a>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div><!-- /tab-mip -->
+
+    <!-- ABA: MUDAS (Transplantios/Replantios) -->
+    <div class="tab-pane fade" id="tab-mudas">
+      <div class="row g-3">
+        <div class="col-12">
+          <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent py-2">
+              <h6 class="mb-0"><i class="bi bi-arrow-down-circle me-2 text-primary"></i>Transplantios Recebidos</h6>
+            </div>
+            <div class="card-body p-0">
+              {% if transplantios %}
+              <table class="table table-sm table-hover align-middle mb-0">
+                <thead class="table-light">
+                  <tr><th>Data</th><th>Lote</th><th>Safra</th><th>Tipo</th><th class="text-end">Qtd.</th><th class="text-end">Custo Transf.</th><th>Responsável</th></tr>
+                </thead>
+                <tbody>
+                  {% for t in transplantios %}
+                  <tr>
+                    <td class="small">{{ t.data_transplantio|date:"d/m/Y" }}</td>
+                    <td><a href="{% url 'cadastros:lote_muda_detail' t.lote_muda.pk %}" class="font-monospace small">{{ t.lote_muda.codigo_lote }}</a></td>
+                    <td class="small text-muted">{{ t.safra.nome|default:"—" }}</td>
+                    <td><span class="badge bg-secondary small">{{ t.get_tipo_display }}</span></td>
+                    <td class="text-end">{{ t.quantidade_transplantada }}</td>
+                    <td class="text-end small">R$ {{ t.custo_transferido|floatformat:2 }}</td>
+                    <td class="small">{{ t.responsavel.nome_completo|default:"—" }}</td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+              {% else %}
+              <div class="p-4 text-center text-muted small">Nenhum transplantio registrado.</div>
               {% endif %}
             </div>
-            <div class="col-md-6">
-              <p class="mb-0"><strong>Última atualização:</strong> {{ talhao.data_atualizacao|date:"d/m/Y H:i" }}</p>
+          </div>
+        </div>
+        <div class="col-12">
+          <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent py-2">
+              <h6 class="mb-0"><i class="bi bi-arrow-repeat me-2 text-warning"></i>Replantios</h6>
+            </div>
+            <div class="card-body p-0">
+              {% if replantios %}
+              <table class="table table-sm table-hover align-middle mb-0">
+                <thead class="table-light">
+                  <tr><th>Data</th><th>Safra</th><th>Motivo</th><th>Origem</th><th class="text-end">Qtd.</th><th class="text-end">Custo Adic.</th><th>Responsável</th></tr>
+                </thead>
+                <tbody>
+                  {% for r in replantios %}
+                  <tr>
+                    <td class="small">{{ r.data_replantio|date:"d/m/Y" }}</td>
+                    <td class="small text-muted">{{ r.safra.nome|default:"—" }}</td>
+                    <td><span class="badge bg-warning text-dark small">{{ r.get_motivo_perda_display }}</span></td>
+                    <td class="small">{{ r.get_origem_muda_display }}</td>
+                    <td class="text-end">{{ r.quantidade }}</td>
+                    <td class="text-end small">R$ {{ r.custo_adicional|floatformat:2 }}</td>
+                    <td class="small">{{ r.responsavel.nome_completo|default:"—" }}</td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+              {% else %}
+              <div class="p-4 text-center text-muted small">Nenhum replantio registrado.</div>
+              {% endif %}
             </div>
           </div>
         </div>
       </div>
+    </div><!-- /tab-mudas -->
 
+    <!-- ABA: MAPA -->
+    {% if talhao.latitude and talhao.longitude %}
+    <div class="tab-pane fade" id="tab-mapa">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body p-0">
+          <div id="map" style="height: 450px; border-radius: .5rem;"></div>
+        </div>
+        <div class="card-footer bg-transparent small text-muted d-flex gap-3">
+          <span><i class="bi bi-geo-alt me-1"></i>Lat: {{ talhao.latitude }}</span>
+          <span>Lon: {{ talhao.longitude }}</span>
+          <a href="https://www.google.com/maps?q={{ talhao.latitude }},{{ talhao.longitude }}" target="_blank" class="ms-auto">
+            <i class="bi bi-box-arrow-up-right me-1"></i>Google Maps
+          </a>
+        </div>
+      </div>
     </div>
-  </div>
+    {% endif %}
 
-</div>
+  </div><!-- /tab-content -->
 
-<!-- Script para carregar mapa (se houver coordenadas) -->
+</div><!-- /container -->
+
+<style>
+.talhao-timeline .tl-item:last-child { border-bottom: none !important; }
+.btn-xs { font-size: .75rem; padding: .1rem .5rem; border-radius: .25rem; }
+</style>
+
 {% if talhao.latitude and talhao.longitude %}
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
+document.querySelector('[href="#tab-mapa"]').addEventListener('shown.bs.tab', function () {
+  if (window._mapInit) return;
+  window._mapInit = true;
   const map = L.map('map').setView([{{ talhao.latitude }}, {{ talhao.longitude }}], 16);
-  
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; OpenStreetMap contributors',
-    maxZoom: 19
+    attribution: '&copy; OpenStreetMap contributors', maxZoom: 19
   }).addTo(map);
-
   L.marker([{{ talhao.latitude }}, {{ talhao.longitude }}])
     .bindPopup('<strong>{{ talhao.nome }}</strong><br>{{ talhao.area_hac|floatformat:2 }} ha')
-    .addTo(map)
-    .openPopup();
+    .addTo(map).openPopup();
 });
 </script>
 {% endif %}

@@ -595,9 +595,13 @@ urlpatterns = [
     path('frota/manutencoes/<int:pk>/excluir/', views_frota.manutencao_delete, name='manutencao_delete'),
     path('frota/manutencoes/<int:pk>/itens/novo/', views_frota.manutencao_item_add, name='manutencao_item_add'),
     path('frota/manutencoes/<int:pk>/itens/<int:item_pk>/excluir/', views_frota.manutencao_item_delete, name='manutencao_item_delete'),
+    path('frota/manutencoes/<int:pk>/documentos/novo/', views_frota.manutencao_documento_add, name='manutencao_documento_add'),
+    path('frota/manutencoes/<int:pk>/documentos/<int:doc_pk>/excluir/', views_frota.manutencao_documento_delete, name='manutencao_documento_delete'),
     path('frota/manutencoes/<int:pk>/conta-pagar/', views_frota.manutencao_gerar_conta_pagar, name='manutencao_gerar_conta_pagar'),
     path('frota/alertas/', views_frota.alertas_manutencao_list, name='alertas_manutencao_list'),
     path('frota/alertas/<int:pk>/resolver/', views_frota.alerta_resolver, name='alerta_resolver'),
+    path('api/lote-produto-data/', views_frota.get_lote_produto_data, name='lote_produto_data'),
+    path('api/produto-busca/', views_frota.produto_busca, name='produto_busca'),
 
     # Pedágios
     path('frota/pedagios/', views_frota.pedagio_list, name='pedagio_list'),

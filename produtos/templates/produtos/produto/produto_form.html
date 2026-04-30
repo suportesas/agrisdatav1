@@ -176,7 +176,7 @@
             {{ form.unidade_medida.label_tag }}
             <div class="input-group">
               {{ form.unidade_medida }}
-              <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalCadastroRapidoUnidadeDosagem" title="Cadastrar nova unidade de medida">
+              <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalCadastroRapidoUnidadeDosagem" data-target-select="id_unidade_medida" title="Cadastrar nova unidade de medida">
                 <i class="bi bi-plus-lg"></i>
               </button>
             </div>
@@ -186,7 +186,7 @@
             {{ form.unidade_compra.label_tag }}
             <div class="input-group">
               {{ form.unidade_compra }}
-              <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalCadastroRapidoUnidadeDosagem" title="Cadastrar nova unidade de medida">
+              <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalCadastroRapidoUnidadeDosagem" data-target-select="id_unidade_compra" title="Cadastrar nova unidade de medida">
                 <i class="bi bi-plus-lg"></i>
               </button>
             </div>
@@ -195,7 +195,7 @@
             {{ form.unidade_venda.label_tag }}
             <div class="input-group">
               {{ form.unidade_venda }}
-              <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalCadastroRapidoUnidadeDosagem" title="Cadastrar nova unidade de medida">
+              <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalCadastroRapidoUnidadeDosagem" data-target-select="id_unidade_venda" title="Cadastrar nova unidade de medida">
                 <i class="bi bi-plus-lg"></i>
               </button>
             </div>
@@ -2366,6 +2366,8 @@ function salvarNovaCultura() {
 {% endif %}
 
 <script>
+let unidadeModalTargetSelect = null;
+
 function salvarNovaUnidadeDosagem() {
   const sigla = document.getElementById('novaUnidadeSigla').value.trim();
   const nome = document.getElementById('novaUnidadeNome').value.trim();
@@ -2397,13 +2399,13 @@ function salvarNovaUnidadeDosagem() {
     console.log('Resposta cadastro unidade:', data);
     if (data.success) {
       // Adicionar nova opção a todos os selects de unidade de medida relevantes
-      const selects = document.querySelectorAll('select[id^="unidadeDosagem"], select[name^="unidade_medida"], select[name^="unidade_dosagem"]');
+      const selects = document.querySelectorAll('#id_unidade_medida, #id_unidade_compra, #id_unidade_venda, select[id^="unidadeDosagem"], select[name^="unidade_dosagem"]');
       selects.forEach(function(select) {
         if (select) {
           const option = document.createElement('option');
           option.value = data.id;
           option.text = data.sigla + ' - ' + data.nome;
-          option.selected = true;
+          option.selected = (select.id === unidadeModalTargetSelect);
           select.add(option);
         }
       });
@@ -2427,6 +2429,12 @@ function salvarNovaUnidadeDosagem() {
 
 // Conversão de dosagem ml/ha para ml/100L
 document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('[data-bs-target="#modalCadastroRapidoUnidadeDosagem"]').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        unidadeModalTargetSelect = this.dataset.targetSelect || null;
+      });
+    });
+
     const dosagemMinima = document.querySelector('input[name="dosagem_minima"]');
     const dosagemMaxima = document.querySelector('input[name="dosagem_maxima"]');
     const volumeCaldaMin = document.querySelector('input[name="volume_calda_minimo"]');

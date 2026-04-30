@@ -255,7 +255,6 @@
                                 </div>
                             </div>
                         {% endfor %}
-                        <input type="hidden" name="itens_count" id="itensCount" value="{{ xml_data.produtos|length }}">
                     {% else %}
                         <!-- Item 0 - Template inicial -->
                         <div class="item-entrada border p-3 mb-3 rounded" data-index="0">
@@ -511,6 +510,7 @@ let itemIndex = 1;
 
 document.addEventListener('DOMContentLoaded', function() {
     itemIndex = document.querySelectorAll('.item-entrada').length;
+    document.getElementById('itensCount').value = itemIndex;
 
     // Preenche data e hora atual
     const dataRecebimento = document.getElementById('dataRecebimento');

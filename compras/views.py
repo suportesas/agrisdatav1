@@ -2166,6 +2166,16 @@ def entrada_direta_nf(request):
                     item['produto_id'] = produto.pk
                     item['unidade_medida_id'] = getattr(produto, 'unidade_medida_id', None)
                     break
+            # Estratégia 4: correspondência parcial de nome (XML contém nome do produto ou vice-versa)
+            if not item['produto_id']:
+                for produto in produtos:
+                    nome_produto = normalize_text(produto.nome)
+                    if nome_produto and item_nome and (
+                        nome_produto in item_nome or item_nome in nome_produto
+                    ):
+                        item['produto_id'] = produto.pk
+                        item['unidade_medida_id'] = getattr(produto, 'unidade_medida_id', None)
+                        break
             if not item['unidade_medida_id']:
                 unidade_sigla = normalize_text(item.get('unidade'))
                 for unidade in unidades:
@@ -2269,8 +2279,17 @@ def entrada_direta_nf(request):
                     preco_unitario = request.POST.get(f'preco_unitario_{i}')
                     valor_desc = request.POST.get(f'valor_desconto_{i}') or '0'
                     local_estoque_id = request.POST.get(f'local_estoque_{i}')
-                    data_fabricacao = request.POST.get(f'data_fabricacao_{i}') or None
-                    data_validade = request.POST.get(f'data_validade_{i}') or None
+                    from datetime import date as _date
+                    _df_str = request.POST.get(f'data_fabricacao_{i}') or None
+                    _dv_str = request.POST.get(f'data_validade_{i}') or None
+                    try:
+                        data_fabricacao = _date.fromisoformat(_df_str) if _df_str else None
+                    except (ValueError, AttributeError):
+                        data_fabricacao = None
+                    try:
+                        data_validade = _date.fromisoformat(_dv_str) if _dv_str else None
+                    except (ValueError, AttributeError):
+                        data_validade = None
                     observacoes_item = request.POST.get(f'observacoes_{i}') or ''
 
                     if not produto_id or not quantidade or not local_estoque_id:

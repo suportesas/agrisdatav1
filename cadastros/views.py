@@ -224,15 +224,29 @@ def vehicle_list(request):
 
 @login_required
 def vehicle_detail(request, pk):
+    from .models import AbastecimentoVeiculo
     vehicle = get_object_or_404(Vehicle, pk=pk, empresa=request.user.empresa)
 
-    # Assignment form moved to a dedicated page; only prepare plate form here
     plate_form = VehiclePlateForm()
+
+    # Histórico de abastecimentos com filtro opcional por período
+    abastecimentos_qs = AbastecimentoVeiculo.objects.filter(vehicle=vehicle).order_by('-data', '-criado_em')
+    data_ini = request.GET.get('data_ini')
+    data_fim = request.GET.get('data_fim')
+    if data_ini:
+        abastecimentos_qs = abastecimentos_qs.filter(data__gte=data_ini)
+    if data_fim:
+        abastecimentos_qs = abastecimentos_qs.filter(data__lte=data_fim)
+    abastecimentos = abastecimentos_qs[:30]
 
     context = {
         'vehicle': vehicle,
         'plates': vehicle.plates.all().order_by('-atual', '-vigencia_inicio'),
         'plate_form': plate_form,
+        'abastecimentos': abastecimentos,
+        'data_ini': data_ini or '',
+        'data_fim': data_fim or '',
+        'total_abastecimentos': AbastecimentoVeiculo.objects.filter(vehicle=vehicle).count(),
     }
     return render(request, 'cadastros/vehicle/vehicle_detail.html', context)
 
@@ -2373,15 +2387,44 @@ def funcionario_update(request, pk):
 def funcionario_delete(request, pk):
     """Deleta funcionário"""
     funcionario = get_object_or_404(Funcionario, pk=pk, empresa=request.user.empresa)
-    
+
     if request.method == 'POST':
         nome = funcionario.nome_completo
         funcionario.delete()
         messages.success(request, f'🗑️ Funcionário "{nome}" excluído!')
         return redirect('cadastros:funcionario_list')
-    
+
     return render(request, 'cadastros/funcionario/funcionario_confirm_delete.html', {
         'funcionario': funcionario
+    })
+
+
+def funcionario_set_pin(request, pk):
+    """Define PIN e ativa acesso ao Portal do Campo para um funcionário."""
+    funcionario = get_object_or_404(Funcionario, pk=pk, empresa=request.user.empresa)
+
+    if request.method == 'POST':
+        pin = request.POST.get('pin', '').strip()
+        pin2 = request.POST.get('pin2', '').strip()
+        portal_ativo = request.POST.get('portal_ativo') == '1'
+
+        if pin and pin != pin2:
+            messages.error(request, 'Os PINs não coincidem.')
+        elif pin and not pin.isdigit():
+            messages.error(request, 'O PIN deve conter apenas números.')
+        elif pin and len(pin) < 4:
+            messages.error(request, 'O PIN deve ter pelo menos 4 dígitos.')
+        else:
+            funcionario.portal_ativo = portal_ativo
+            if pin:
+                funcionario.set_pin(pin)
+            funcionario.save(update_fields=['portal_ativo', 'pin_portal'])
+            messages.success(request, f'Acesso ao Portal do Campo configurado para {funcionario.nome_completo}.')
+            return redirect('cadastros:funcionario_detail', pk=funcionario.pk)
+
+    return render(request, 'cadastros/funcionario/set_pin_portal.html', {
+        'funcionario': funcionario,
+        'title': f'Portal do Campo — {funcionario.nome_completo}',
     })
 
 
@@ -3682,7 +3725,7 @@ def talhao_detail(request, pk):
     Detalhes do talhão com histórico
     🔒 ACESSO APENAS PARA EMPRESA DONA
     """
-    from .models import RegistroCadernoCampo, CustoTalhao, Transplantio, ReplantioTalhao
+    from .models import RegistroCadernoCampo, CustoTalhao, Transplantio, ReplantioTalhao, OrdemServico, MonitoramentoMIP
 
     empresa = request.user.empresa
 
@@ -3710,8 +3753,67 @@ def talhao_detail(request, pk):
         .filter(empresa=empresa, talhao=talhao)
         .select_related('safra', 'os')
         .prefetch_related('insumos_utilizados__produto', 'insumos_utilizados__unidade_medida')
-        .order_by('-data')[:20]
+        .order_by('-data_atividade')[:20]
     )
+
+    # OS deste talhão (para timeline e KPIs)
+    os_talhao = (
+        OrdemServico.objects
+        .filter(empresa=empresa, talhao=talhao)
+        .select_related('tipo_servico', 'safra', 'responsavel')
+        .order_by('-data_prevista', '-data_cadastro')[:30]
+    )
+
+    # Monitoramento MIP deste talhão
+    monitoramentos = (
+        MonitoramentoMIP.objects
+        .filter(empresa=empresa, talhao=talhao)
+        .select_related('safra', 'cultura')
+        .order_by('-data_monitoramento')[:15]
+    )
+
+    # Timeline unificada: OS + Caderno + MIP ordenados por data DESC
+    _timeline = []
+    for os in os_talhao:
+        ref_date = os.data_fim or os.data_inicio or os.data_prevista
+        if ref_date:
+            _timeline.append({
+                'tipo': 'os',
+                'data': ref_date,
+                'titulo': os.descricao_servico,
+                'sub': os.safra.nome if os.safra else '—',
+                'status': os.status,
+                'responsavel': os.responsavel.nome_completo if os.responsavel else '—',
+                'url_detail': f'/cadastros/ordens-servico/{os.pk}/',
+                'numero': os.numero,
+            })
+    for reg in caderno:
+        _timeline.append({
+            'tipo': 'caderno',
+            'data': reg.data_atividade,
+            'titulo': reg.get_tipo_atividade_display(),
+            'sub': reg.atividade,
+            'status': '',
+            'responsavel': str(reg.responsavel) if reg.responsavel else '—',
+            'url_detail': f'/cadastros/caderno-campo/{reg.pk}/',
+            'numero': '',
+        })
+    for mip in monitoramentos:
+        _timeline.append({
+            'tipo': 'mip',
+            'data': mip.data_monitoramento,
+            'titulo': 'Monitoramento MIP',
+            'sub': f'{mip.get_tipo_monitoramento_display()} — {mip.get_status_display()}',
+            'status': mip.status,
+            'responsavel': str(mip.responsavel) if mip.responsavel else '—',
+            'url_detail': f'/cadastros/monitoramento-mip/{mip.pk}/',
+            'numero': mip.numero,
+        })
+    timeline = sorted(_timeline, key=lambda x: str(x['data']), reverse=True)[:40]
+
+    # KPIs rápidos
+    os_ativas = OrdemServico.objects.filter(empresa=empresa, talhao=talhao, status='EM_ANDAMENTO').count()
+    os_pendentes = OrdemServico.objects.filter(empresa=empresa, talhao=talhao, status__in=['ABERTA', 'APROVADA']).count()
 
     # Custos por safra
     custos_safra = list(
@@ -3767,6 +3869,11 @@ def talhao_detail(request, pk):
         'custo_total_talhao': custo_total_talhao,
         'transplantios': transplantios,
         'replantios': replantios,
+        'os_talhao': os_talhao,
+        'monitoramentos': monitoramentos,
+        'timeline': timeline,
+        'os_ativas': os_ativas,
+        'os_pendentes': os_pendentes,
     })
 
 

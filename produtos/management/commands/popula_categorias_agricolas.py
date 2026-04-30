@@ -5,7 +5,7 @@ from empresas.models import Empresa
 CATEGORIAS_AGRICOLAS = [
     {"codigo": "DEF", "nome": "Defensivo Agrícola", "condiciona_campos": True},
     {"codigo": "FERT", "nome": "Fertilizante", "condiciona_campos": True},
-    {"codigo": "SEM", "nome": "Semente", "condiciona_campos": True},
+    {"codigo": "SEM", "nome": "Semente", "condiciona_campos": False},
     {"codigo": "ADUB", "nome": "Adubo", "condiciona_campos": True},
     {"codigo": "CORR", "nome": "Corretivo de Solo", "condiciona_campos": True},
     {"codigo": "INOC", "nome": "Inoculante", "condiciona_campos": True},

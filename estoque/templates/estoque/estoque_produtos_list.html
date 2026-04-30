@@ -3,6 +3,18 @@
 
 {% block title %}Estoque de Produtos{% endblock %}
 
+{% block extra_css %}
+<style>
+  .row-critico {
+    background-color: #fff5f5 !important;
+    border-left: 3px solid #f8a8a8;
+  }
+  .row-critico td {
+    color: inherit;
+  }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid">
   <div class="mb-4">
@@ -107,7 +119,7 @@
             </thead>
             <tbody>
               {% for produto in produtos %}
-                <tr {% if produto.alerta_tipo == 'critico' %}class="table-danger"{% elif produto.alerta_tipo == 'excesso' %}class="table-info"{% endif %}>
+                <tr {% if produto.alerta_tipo == 'critico' %}class="row-critico"{% elif produto.alerta_tipo == 'excesso' %}class="table-info"{% endif %}>
                   <td>
                     <span class="badge bg-secondary">{{ produto.codigo|default:"-" }}</span>
                   </td>

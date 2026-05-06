@@ -51,6 +51,7 @@
                     <div class="col-md-3">
                         <label class="form-label">Funcionario Destino</label>
                         {{ form.funcionario_destino }}
+                        <small class="text-muted d-block mt-1" id="hint-funcionario">Selecione uma fazenda para filtrar</small>
                     </div>
 
                     <div class="col-md-3" id="field-codigo-talhao">
@@ -140,6 +141,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const talhaoSelect = document.getElementById('id_talhao');
     const safraSelect = document.getElementById('id_safra');
     const fazendaSelect = document.getElementById('id_fazenda');
+    const funcionarioSelect = document.getElementById('id_funcionario_destino');
+    const hintFuncionario = document.getElementById('hint-funcionario');
     const recebedorMaterialInput = document.getElementById('id_recebedor_material');
     const codigoTalhaoInput = document.getElementById('id_codigo_talhao');
     const listaTalhoesUl = document.getElementById('lista-talhoes');
@@ -173,6 +176,38 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('field-odometro').style.display = tipo === 'ABASTECIMENTO' ? 'block' : 'none';
     }
     
+    // Função para filtrar funcionários por fazenda
+    function updateFuncionariosByFazenda(fazendaId, valorAtual) {
+        if (!fazendaId) {
+            funcionarioSelect.innerHTML = '<option value="">---------</option>';
+            hintFuncionario.textContent = 'Selecione uma fazenda para filtrar';
+            return;
+        }
+
+        hintFuncionario.textContent = 'Carregando...';
+        fetch(`/cadastros/api/requisicoes/funcionarios-por-fazenda/${fazendaId}/`)
+            .then(response => response.json())
+            .then(data => {
+                const anterior = valorAtual || funcionarioSelect.value;
+                funcionarioSelect.innerHTML = '<option value="">---------</option>';
+                if (data.funcionarios && data.funcionarios.length > 0) {
+                    data.funcionarios.forEach(f => {
+                        const opt = document.createElement('option');
+                        opt.value = f.id;
+                        opt.textContent = f.label;
+                        if (String(f.id) === String(anterior)) opt.selected = true;
+                        funcionarioSelect.appendChild(opt);
+                    });
+                    hintFuncionario.textContent = `${data.funcionarios.length} funcionário(s) desta fazenda`;
+                } else {
+                    hintFuncionario.textContent = 'Nenhum funcionário nesta fazenda';
+                }
+            })
+            .catch(() => {
+                hintFuncionario.textContent = 'Erro ao carregar funcionários';
+            });
+    }
+
     // Função para auto-preencher Safra baseado no Talhão
     function updateSafraFromTalhao() {
         const talhaoId = talhaoSelect.value;
@@ -256,27 +291,37 @@ document.addEventListener('DOMContentLoaded', function() {
         talhaoSelect.value = talhao.id;
         fazendaSelect.value = talhao.fazenda_id;
         listaTalhoesUl.style.display = 'none';
-        
-        // Garante atualização da safra com delay pequeno
+
         setTimeout(() => {
             updateSafraFromTalhao();
+            updateFuncionariosByFazenda(talhao.fazenda_id);
         }, 100);
     }
-    
+
     // Event listeners
     tipoSelect.addEventListener('change', updateFieldsVisibility);
     talhaoSelect.addEventListener('change', updateSafraFromTalhao);
     codigoTalhaoInput.addEventListener('input', searchTalhaoByCode);
-    
+    fazendaSelect.addEventListener('change', function() {
+        updateFuncionariosByFazenda(this.value);
+    });
+
     // Fechar lista ao clicar fora
     document.addEventListener('click', function(e) {
         if (e.target !== codigoTalhaoInput && !listaTalhoesUl.contains(e.target)) {
             listaTalhoesUl.style.display = 'none';
         }
     });
-    
+
     // Inicializar visibilidade dos campos
     updateFieldsVisibility();
+
+    // Se já há uma fazenda selecionada (edição), carrega os funcionários preservando o valor atual
+    const fazendaInicial = fazendaSelect.value;
+    const funcionarioInicial = funcionarioSelect.value;
+    if (fazendaInicial) {
+        updateFuncionariosByFazenda(fazendaInicial, funcionarioInicial);
+    }
 });
 </script>
 {% endblock %}

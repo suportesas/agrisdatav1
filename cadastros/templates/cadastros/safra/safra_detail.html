@@ -328,7 +328,8 @@
           Comparativo Planejado x Real
         </div>
         <div class="section-body">
-          {% if safra.planned_production %}
+          {% if safra.plano %}
+            {% with plano=safra.plano %}
             <table class="comparison-table">
               <thead>
                 <tr>
@@ -342,7 +343,7 @@
                 <tr>
                   <td class="text-start"><strong>Produção (ton)</strong></td>
                   <td>
-                    <div class="comparison-value">{{ safra.planned_production|floatformat:2 }}</div>
+                    <div class="comparison-value">{{ plano.planned_production|floatformat:2|default:"-" }}</div>
                     <div class="comparison-label">planejado</div>
                   </td>
                   <td>
@@ -370,26 +371,92 @@
                     {% endwith %}
                   </td>
                 </tr>
+                {% if plano.produtividade_esperada %}
+                <tr>
+                  <td class="text-start"><strong>Produtividade (sc/ha)</strong></td>
+                  <td>
+                    <div class="comparison-value">{{ plano.produtividade_esperada|floatformat:1 }}</div>
+                    <div class="comparison-label">esperada</div>
+                  </td>
+                  <td><span class="text-muted">-</span></td>
+                  <td><span class="text-muted">-</span></td>
+                </tr>
+                {% endif %}
+                {% if plano.preco_meta_saca %}
+                <tr>
+                  <td class="text-start"><strong>Preço Meta (R$/sc)</strong></td>
+                  <td>
+                    <div class="comparison-value">R$ {{ plano.preco_meta_saca|floatformat:2 }}</div>
+                    <div class="comparison-label">meta</div>
+                  </td>
+                  <td><span class="text-muted">-</span></td>
+                  <td><span class="text-muted">-</span></td>
+                </tr>
+                {% endif %}
+                {% if plano.custo_meta_ha %}
+                <tr>
+                  <td class="text-start"><strong>Custo Meta (R$/ha)</strong></td>
+                  <td>
+                    <div class="comparison-value">R$ {{ plano.custo_meta_ha|floatformat:2 }}</div>
+                    <div class="comparison-label">meta</div>
+                  </td>
+                  <td><span class="text-muted">-</span></td>
+                  <td><span class="text-muted">-</span></td>
+                </tr>
+                {% endif %}
               </tbody>
             </table>
 
+            <!-- Indicadores financeiros calculados -->
+            {% if plano.receita_esperada or plano.custo_total_esperado %}
+            <div class="row g-2 mt-2">
+              {% if plano.receita_esperada %}
+              <div class="col-md-4">
+                <div class="p-3 bg-light rounded text-center">
+                  <div class="fw-bold text-success fs-6">R$ {{ plano.receita_esperada|floatformat:0 }}</div>
+                  <div class="small text-muted">Receita Esperada</div>
+                </div>
+              </div>
+              {% endif %}
+              {% if plano.custo_total_esperado %}
+              <div class="col-md-4">
+                <div class="p-3 bg-light rounded text-center">
+                  <div class="fw-bold text-danger fs-6">R$ {{ plano.custo_total_esperado|floatformat:0 }}</div>
+                  <div class="small text-muted">Custo Total Esperado</div>
+                </div>
+              </div>
+              {% endif %}
+              {% if plano.margem_esperada %}
+              <div class="col-md-4">
+                <div class="p-3 rounded text-center {% if plano.margem_esperada > 0 %}bg-success bg-opacity-10{% else %}bg-danger bg-opacity-10{% endif %}">
+                  <div class="fw-bold fs-6 {% if plano.margem_esperada > 0 %}text-success{% else %}text-danger{% endif %}">
+                    R$ {{ plano.margem_esperada|floatformat:0 }}
+                  </div>
+                  <div class="small text-muted">Margem Esperada</div>
+                </div>
+              </div>
+              {% endif %}
+            </div>
+            {% endif %}
+
             <!-- Progress Bar -->
-            {% with var=safra.production_variation_percent real=safra.real_production planned=safra.planned_production %}
-              {% if planned > 0 %}
-                <div class="progress-section">
+            {% with real=safra.real_production planned=plano.planned_production %}
+              {% if planned and planned > 0 %}
+                <div class="progress-section mt-3">
                   <div class="d-flex justify-content-between mb-2">
                     <span class="small text-muted">Progresso de Produção</span>
                     <span class="small fw-bold">{{ real|floatformat:0 }} / {{ planned|floatformat:0 }} ton</span>
                   </div>
                   <div class="progress">
                     {% widthratio real planned 100 as percentage %}
-                    <div class="progress-bar {% if percentage >= 100 %}bg-success{% elif percentage >= 80 %}bg-warning{% else %}bg-info{% endif %}" 
+                    <div class="progress-bar {% if percentage >= 100 %}bg-success{% elif percentage >= 80 %}bg-warning{% else %}bg-info{% endif %}"
                          style="width: {% if percentage > 100 %}100{% else %}{{ percentage }}{% endif %}%">
                       {% if percentage >= 100 %}100{% else %}{{ percentage }}{% endif %}%
                     </div>
                   </div>
                 </div>
               {% endif %}
+            {% endwith %}
             {% endwith %}
           {% else %}
             <div class="empty-state">
@@ -522,6 +589,77 @@
       </div>
       {% endif %}
 
+      <!-- Planejamentos de Custo -->
+      <div class="section-card">
+        <div class="section-header">
+          <i class="bi bi-clipboard-data text-success"></i>
+          Planejamentos de Custo
+          <a href="{% url 'cadastros:planejamento_custo_create' %}?safra_id={{ safra.pk }}" class="ms-auto btn btn-sm btn-outline-success">
+            <i class="bi bi-plus-lg"></i> Novo Planejamento
+          </a>
+        </div>
+        <div class="section-body p-0">
+          {% if planejamentos_custo %}
+          <div class="table-responsive">
+            <table class="table table-sm table-hover align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Nome</th>
+                  <th class="text-end">Área (ha)</th>
+                  <th class="text-end">Custo Planejado</th>
+                  <th class="text-end">Custo Real</th>
+                  <th class="text-end">Variação</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for item in planejamentos_custo %}
+                <tr>
+                  <td>
+                    <div class="fw-semibold">{{ item.plan.nome }}</div>
+                    {% if item.plan.talhao %}<small class="text-muted">Talhão: {{ item.plan.talhao.nome }}</small>{% endif %}
+                  </td>
+                  <td class="text-end small">{{ item.plan.area_ha|floatformat:2|default:"—" }}</td>
+                  <td class="text-end fw-bold text-warning">
+                    {% if item.plan.custo_total_planejado %}
+                      R$ {{ item.plan.custo_total_planejado|floatformat:2 }}
+                    {% else %}<span class="text-muted">—</span>{% endif %}
+                  </td>
+                  <td class="text-end small">
+                    {% if item.custo_real %}R$ {{ item.custo_real|floatformat:2 }}{% else %}<span class="text-muted">—</span>{% endif %}
+                  </td>
+                  <td class="text-end small">
+                    {% if item.variacao != None %}
+                      <span class="{% if item.variacao > 0 %}text-danger{% elif item.variacao < 0 %}text-success{% else %}text-muted{% endif %}">
+                        {% if item.variacao > 0 %}+{% endif %}R$ {{ item.variacao|floatformat:2 }}
+                      </span>
+                    {% else %}<span class="text-muted">—</span>{% endif %}
+                  </td>
+                  <td>
+                    <a href="{% url 'cadastros:planejamento_custo_detail' item.plan.pk %}" class="btn btn-sm btn-outline-warning py-0 px-2">
+                      <i class="bi bi-eye"></i> Ver
+                    </a>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          <div class="px-3 py-2 small text-muted">
+            <i class="bi bi-info-circle"></i> Variação positiva = custo real acima do planejado.
+          </div>
+          {% else %}
+          <div class="empty-state">
+            <i class="bi bi-clipboard-data"></i>
+            <p class="mb-0">Nenhum planejamento de custo cadastrado</p>
+            <small class="text-muted">
+              <a href="{% url 'cadastros:planejamento_custo_create' %}?safra_id={{ safra.pk }}">Criar o primeiro planejamento</a>
+            </small>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
     </div>
 
     <!-- Coluna Direita -->
@@ -597,18 +735,21 @@
               <i class="bi bi-pencil"></i> Editar Safra
             </a>
 
-            {% if safra.planned_production %}
-            <button class="btn btn-outline-primary" id="btnEditPlan" data-url="{% url 'cadastros:safra_plan_update' safra.pk %}">
-              <i class="bi bi-pencil-square"></i> Editar Planejamento
+            {% if safra.plano %}
+            <button class="btn btn-outline-secondary" id="btnEditPlan" data-url="{% url 'cadastros:safra_plan_update' safra.pk %}">
+              <i class="bi bi-pencil-square"></i> Editar Metas de Produção
             </button>
             <button class="btn btn-outline-danger" id="btnDeletePlan" data-bs-toggle="modal" data-bs-target="#safraPlanDeleteModal">
-              <i class="bi bi-trash"></i> Excluir Planejamento
+              <i class="bi bi-trash"></i> Excluir Metas de Produção
             </button>
             {% else %}
-            <button class="btn btn-outline-primary" id="btnAddPlan" data-url="{% url 'cadastros:safra_plan_create' safra.pk %}">
-              <i class="bi bi-clipboard-plus"></i> Adicionar Planejamento
+            <button class="btn btn-outline-secondary" id="btnAddPlan" data-url="{% url 'cadastros:safra_plan_create' safra.pk %}">
+              <i class="bi bi-graph-up"></i> Definir Metas de Produção
             </button>
             {% endif %}
+            <a href="{% url 'cadastros:planejamento_custo_create' %}?safra_id={{ safra.pk }}" class="btn btn-outline-success">
+              <i class="bi bi-clipboard-plus"></i> Novo Planejamento de Custo
+            </a>
 
             <button class="btn btn-outline-primary" disabled>
               <i class="bi bi-file-earmark-bar-graph"></i> Gerar Relatório
@@ -632,7 +773,7 @@
       <form method="post" action="{% url 'cadastros:safra_plan_create' safra.pk %}">
         {% csrf_token %}
         <div class="modal-header">
-          <h5 class="modal-title" id="safraPlanModalLabel">Adicionar Planejamento</h5>
+          <h5 class="modal-title" id="safraPlanModalLabel">Metas de Produção</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
         </div>
         <div class="modal-body" id="safraPlanModalBody">
@@ -715,13 +856,12 @@ document.addEventListener('DOMContentLoaded', function() {
     if (btnAdd) {
       btnAdd.addEventListener('click', function(e) {
         const url = btnAdd.dataset.url;
-        // Load empty partial from server (we included it server-side already, but set form action accordingly)
         const form = modal.querySelector('form');
         form.action = url;
-        // If modal body has stale content from previous edit, refresh by fetching the create page partial via GET (optional)
-        // For simplicity, keep initial partial included in page; ensure inputs are empty
         const body = document.getElementById('safraPlanModalBody');
         body.querySelectorAll('input').forEach(i => i.value = '');
+        var bsModal = new bootstrap.Modal(modal);
+        bsModal.show();
       });
     }
 

@@ -72,11 +72,29 @@ class ArmadorForm(forms.ModelForm):
         for f in ['nome_fantasia', 'cnpj', 'website', 'complemento', 'custo_medio_rolagem']:
             if f in self.fields:
                 self.fields[f].required = False
+        # No cadastro novo o código é gerado automaticamente
+        if not (self.instance and self.instance.pk):
+            self.fields['codigo'].required = False
+            self.fields['codigo'].widget.attrs.update({
+                'readonly': True,
+                'placeholder': 'Gerado automaticamente',
+                'class': 'form-control bg-light text-muted',
+            })
+
+    def _gerar_codigo(self):
+        n = 1
+        while True:
+            codigo = f'ARM{n:04d}'
+            if not Armador.objects.filter(empresa=self.empresa, codigo=codigo).exists():
+                return codigo
+            n += 1
 
     def save(self, commit=True):
         obj = super().save(commit=False)
         if getattr(self, 'empresa', None):
             obj.empresa = self.empresa
+        if not obj.codigo:
+            obj.codigo = self._gerar_codigo()
         if getattr(self, 'usuario', None):
             if hasattr(obj, 'criado_por'):
                 obj.criado_por = self.usuario

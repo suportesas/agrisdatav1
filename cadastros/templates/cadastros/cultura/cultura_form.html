@@ -273,7 +273,53 @@
       </div>
     </div>
 
-    <!-- Seção 7: Complementos -->
+    <!-- Seção 7: Dados Exportação -->
+    <div class="form-section">
+      <div class="section-header">
+        <h5 class="mb-0"><i class="bi bi-ship"></i> Dados Exportação</h5>
+      </div>
+      <div class="p-4">
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Temperatura (°C)</label>
+            <div class="input-group">
+              {{ form.exportacao_temperatura }}
+              <span class="input-group-text">°C</span>
+            </div>
+            {% if form.exportacao_temperatura.errors %}
+              <div class="text-danger small">{{ form.exportacao_temperatura.errors|striptags }}</div>
+            {% endif %}
+            <small class="text-muted">Temperatura ideal de transporte</small>
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Humidade (%)</label>
+            <div class="input-group">
+              {{ form.exportacao_humidade }}
+              <span class="input-group-text">%</span>
+            </div>
+            {% if form.exportacao_humidade.errors %}
+              <div class="text-danger small">{{ form.exportacao_humidade.errors|striptags }}</div>
+            {% endif %}
+            <small class="text-muted">Humidade relativa ideal</small>
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Ventilação (cbm)</label>
+            <div class="input-group">
+              {{ form.exportacao_ventilacao }}
+              <span class="input-group-text">cbm/h</span>
+            </div>
+            {% if form.exportacao_ventilacao.errors %}
+              <div class="text-danger small">{{ form.exportacao_ventilacao.errors|striptags }}</div>
+            {% endif %}
+            <small class="text-muted">Ventilação em metros cúbicos/hora</small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Seção 8: Complementos -->
     <div class="form-section">
       <div class="section-header">
         <h5 class="mb-0"><i class="bi bi-image"></i> Imagem e Observações</h5>

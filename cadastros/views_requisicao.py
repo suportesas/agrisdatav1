@@ -516,6 +516,30 @@ def ajax_safras_por_talhao(request, talhao_id):
 
 
 @login_required
+def ajax_funcionarios_por_fazenda(request, fazenda_id):
+    """AJAX endpoint para filtrar funcionários por fazenda selecionada"""
+    from .models import Funcionario
+    empresa = getattr(request.user, 'empresa', None)
+    if not empresa:
+        return JsonResponse({'funcionarios': []})
+
+    funcionarios = Funcionario.objects.filter(
+        empresa=empresa,
+        fazenda_id=fazenda_id,
+        ativo=True,
+    ).values('id', 'nome_completo', 'matricula').order_by('nome_completo')
+
+    result = [
+        {
+            'id': f['id'],
+            'label': f"{f['nome_completo']} ({f['matricula']})" if f['matricula'] else f['nome_completo'],
+        }
+        for f in funcionarios
+    ]
+    return JsonResponse({'funcionarios': result})
+
+
+@login_required
 def ajax_talhao_por_codigo(request):
     """AJAX endpoint para obter talhao por codigo"""
     empresa = getattr(request.user, 'empresa', None)

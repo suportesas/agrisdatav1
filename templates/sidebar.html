@@ -253,24 +253,6 @@
           <li><a href="{% url 'cadastros:fornecedor_list' %}"><i class="bi bi-shop"></i> Fornecedores</a></li>
           <li><a href="{% url 'cadastros:transportadora_list' %}"><i class="bi bi-truck"></i> Transportadoras</a></li>
           <li><a href="{% url 'cadastros:vendedor_list' %}"><i class="bi bi-person-lines-fill"></i> Vendedores</a></li>
-
-          <!-- Configurações Comerciais (Submenu) -->
-          <li class="has-submenu">
-            <a href="#"><i class="bi bi-gear"></i> Configurações <i class="bi bi-chevron-right ms-auto"></i></a>
-            <ul class="nested-submenu">
-              <li><a href="{% url 'cadastros:prazo_pagamento_list' %}"><i class="bi bi-calendar-event"></i> Prazos de Pagamento</a></li>
-            </ul>
-          </li>
-          
-          <!-- Logística Marítima (Submenu) -->
-          <li class="has-submenu">
-            <a href="#"><i class="bi bi-shop-window"></i> Logística Marítima <i class="bi bi-chevron-right ms-auto"></i></a>
-            <ul class="nested-submenu">
-              <li><a href="{% url 'cadastros:porto_list' %}"><i class="bi bi-water"></i> Portos</a></li>
-              <li><a href="{% url 'cadastros:armador_list' %}"><i class="bi bi-ship"></i> Armadores</a></li>
-              <li><a href="{% url 'cadastros:navio_list' %}"><i class="bi bi-sailboat"></i> Navios</a></li>
-            </ul>
-          </li>
         </ul>
       </li>
 
@@ -490,11 +472,43 @@
         <ul class="nav-submenu">
           <li><a href="{% url 'financeiro:conta_pagar_list' %}"><i class="bi bi-list-check"></i> Contas a Pagar</a></li>
           <li><a href="{% url 'financeiro:parcela_list' %}"><i class="bi bi-calendar-check"></i> Parcelas</a></li>
+
           <li class="submenu-divider"></li>
           <li><a href="{% url 'financeiro:relatorio_contas_vencer' %}"><i class="bi bi-calendar-plus"></i> Contas a Vencer</a></li>
           <li><a href="{% url 'financeiro:relatorio_contas_vencidas' %}"><i class="bi bi-exclamation-triangle"></i> Contas Vencidas</a></li>
           <li><a href="{% url 'financeiro:relatorio_fluxo_caixa' %}"><i class="bi bi-graph-up"></i> Fluxo de Caixa</a></li>
-          <li><a href="{% url 'compras:forma_pagamento_list' %}"><i class="bi bi-credit-card"></i> Formas de Pagamento</a></li>
+
+          <!-- Configurações Comerciais (Submenu) -->
+          <li class="has-submenu">
+            <a href="#"><i class="bi bi-gear"></i> Configurações <i class="bi bi-chevron-right ms-auto"></i></a>
+            <ul class="nested-submenu">
+              <li><a href="{% url 'cadastros:prazo_pagamento_list' %}"><i class="bi bi-calendar-event"></i> Prazos de Pagamento</a></li>
+              <li><a href="{% url 'compras:forma_pagamento_list' %}"><i class="bi bi-credit-card"></i> Formas de Pagamento</a></li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+
+      <!-- Exportação -->
+      <li class="nav-item has-submenu">
+        <a href="#" class="nav-link">
+          <i class="bi bi-box-seam"></i>
+          <span>Exportação</span>
+          <i class="bi bi-chevron-down submenu-arrow"></i>
+        </a>
+        <ul class="nav-submenu">
+          <!-- Logística Marítima (Submenu) -->
+          <li class="has-submenu">
+            <a href="#"><i class="bi bi-shop-window"></i> Logística Marítima <i class="bi bi-chevron-right ms-auto"></i></a>
+            <ul class="nested-submenu">
+              <li><a href="{% url 'cadastros:porto_list' %}"><i class="bi bi-water"></i> Portos</a></li>
+              <li><a href="{% url 'cadastros:armador_list' %}"><i class="bi bi-ship"></i> Armadores</a></li>
+              <li><a href="{% url 'cadastros:navio_list' %}"><i class="bi bi-sailboat"></i> Navios</a></li>
+            </ul>
+          </li>
+          <li><a href="{% url 'exportacao:solicitacao_booking_list' %}"><i class="bi bi-file-earmark-plus"></i> Solicitações Booking</a></li>
+          <li><a href="{% url 'exportacao:booking_list' %}"><i class="bi bi-box-seam"></i> Bookings</a></li>
+          <li><a href="{% url 'exportacao:ordem_coleta_list' %}"><i class="bi bi-truck"></i> Ordens de Coleta</a></li>
         </ul>
       </li>
 

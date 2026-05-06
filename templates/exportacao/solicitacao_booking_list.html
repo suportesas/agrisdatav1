@@ -1,0 +1,150 @@
+{% extends 'base.html' %}
+
+{% block title %}Solicitações de Booking{% endblock %}
+{% block page_title %}Solicitações de Booking{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+  <!-- Cabeçalho -->
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0"><i class="bi bi-journal-text me-2"></i>Solicitações de Booking</h2>
+    <a class="btn btn-primary" href="{% url 'exportacao:solicitacao_booking_create' %}">
+      <i class="bi bi-plus-circle"></i> Nova Solicitação
+    </a>
+  </div>
+
+  <!-- Filtros -->
+  <div class="card mb-4">
+    <div class="card-body">
+      <form method="get" class="row g-3 align-items-end">
+
+        <div class="col-md-4">
+          <label class="form-label fw-semibold">Pesquisar</label>
+          <input type="text" name="search" class="form-control"
+                 value="{{ search }}"
+                 placeholder="Nome, cultura, armador ou navio…">
+        </div>
+
+        <div class="col-md-2">
+          <label class="form-label fw-semibold">Status</label>
+          <select name="status" class="form-select">
+            <option value="">— Todos —</option>
+            {% for value, label in status_choices %}
+              <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-md-2">
+          <label class="form-label fw-semibold">Embarque de</label>
+          <input type="date" name="embarque_de" class="form-control" value="{{ embarque_de }}">
+        </div>
+
+        <div class="col-md-2">
+          <label class="form-label fw-semibold">Embarque até</label>
+          <input type="date" name="embarque_ate" class="form-control" value="{{ embarque_ate }}">
+        </div>
+
+        <div class="col-md-2 d-flex gap-2">
+          <button type="submit" class="btn btn-outline-primary flex-fill">
+            <i class="bi bi-search"></i> Filtrar
+          </button>
+          <a href="{% url 'exportacao:solicitacao_booking_list' %}" class="btn btn-outline-secondary" title="Limpar filtros">
+            <i class="bi bi-x-lg"></i>
+          </a>
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+  <!-- Contagem de resultados -->
+  <div class="mb-2 text-muted small">
+    {% with total=page_obj.paginator.count %}
+      {% if total == 0 %}
+        Nenhuma solicitação encontrada.
+      {% elif total == 1 %}
+        1 solicitação encontrada.
+      {% else %}
+        {{ total }} solicitações encontradas.
+      {% endif %}
+    {% endwith %}
+  </div>
+
+  <!-- Tabela -->
+  <div class="card">
+    <div class="table-responsive">
+      <table class="table table-hover table-bordered align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th style="width:60px;">#</th>
+            <th>Nome</th>
+            <th>Cultura</th>
+            <th>Armador</th>
+            <th>Previsão Embarque</th>
+            <th style="width:110px;">Status</th>
+            <th class="text-center" style="width:110px;">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for solicitacao in solicitacoes %}
+            <tr>
+              <td class="text-muted small">{{ solicitacao.pk|stringformat:"05d" }}</td>
+              <td>{{ solicitacao.nome }}</td>
+              <td>{{ solicitacao.cultura|default:"—" }}</td>
+              <td>{{ solicitacao.armador|default:"—" }}</td>
+              <td>{{ solicitacao.data_prevista_embarque|date:'d/m/Y'|default:"—" }}</td>
+              <td>
+                {% with s=solicitacao.status %}
+                <span class="badge
+                  {% if s == 'ABERTO' %}bg-warning text-dark
+                  {% elif s == 'APROVADO' %}bg-success
+                  {% elif s == 'NEGADO' %}bg-danger
+                  {% else %}bg-secondary
+                  {% endif %}">
+                  {{ solicitacao.get_status_display }}
+                </span>
+                {% endwith %}
+              </td>
+              <td class="text-center" style="white-space:nowrap;">
+                <a class="btn btn-sm btn-outline-primary"
+                   href="{% url 'exportacao:solicitacao_booking_detail' solicitacao.pk %}"
+                   title="Ver detalhes">
+                  <i class="bi bi-eye"></i>
+                </a>
+                <a class="btn btn-sm btn-outline-secondary"
+                   href="{% url 'exportacao:solicitacao_booking_update' solicitacao.pk %}"
+                   title="Editar">
+                  <i class="bi bi-pencil"></i>
+                </a>
+                <a class="btn btn-sm btn-outline-danger"
+                   href="{% url 'exportacao:solicitacao_booking_pdf' solicitacao.pk %}"
+                   target="_blank" title="Gerar PDF">
+                  <i class="bi bi-file-earmark-pdf"></i>
+                </a>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="7" class="text-center text-muted py-5">
+                <i class="bi bi-inbox fs-3 d-block mb-2"></i>
+                Nenhuma solicitação de booking encontrada.
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Paginação -->
+    {% if page_obj.has_other_pages %}
+    <div class="card-footer">
+      {% include 'partials/pagination.html' %}
+    </div>
+    {% endif %}
+
+  </div>
+
+</div>
+{% endblock %}

@@ -124,9 +124,9 @@ urlpatterns = [
     path('safras/nova/', views.safra_create, name='safra_create'),
     path('safras/<int:pk>/', views.safra_detail, name='safra_detail'),
     path('safras/<int:pk>/editar/', views.safra_update, name='safra_update'),
-    path('safras/<int:pk>/planejamento/novo/', views.safra_plan_create, name='safra_plan_create'),
-    path('safras/<int:pk>/planejamento/editar/', views.safra_plan_update, name='safra_plan_update'),
-    path('safras/<int:pk>/planejamento/excluir/', views.safra_plan_delete, name='safra_plan_delete'),
+    path('safras/<int:safra_pk>/planejamento/novo/', views.safra_plan_create, name='safra_plan_create'),
+    path('safras/<int:safra_pk>/planejamento/editar/', views.safra_plan_update, name='safra_plan_update'),
+    path('safras/<int:safra_pk>/planejamento/excluir/', views.safra_plan_delete, name='safra_plan_delete'),
     path('safras/<int:pk>/excluir/', views.safra_delete, name='safra_delete'),
     
     # AJAX
@@ -216,6 +216,7 @@ urlpatterns = [
     path('api/requisicoes/produto-dados/<int:produto_id>/', views_requisicao.ajax_produto_dados_requisicao, name='ajax_produto_dados_requisicao'),
     path('api/requisicoes/safras-por-talhao/<int:talhao_id>/', views_requisicao.ajax_safras_por_talhao, name='ajax_safras_por_talhao'),
     path('api/requisicoes/talhao-por-codigo/', views_requisicao.ajax_talhao_por_codigo, name='ajax_talhao_por_codigo'),
+    path('api/requisicoes/funcionarios-por-fazenda/<int:fazenda_id>/', views_requisicao.ajax_funcionarios_por_fazenda, name='ajax_funcionarios_por_fazenda'),
 
     # ==================== EMPRESTIMOS PRODUTOR ====================
     path('emprestimos/extrato/', views_emprestimo.emprestimo_extrato, name='emprestimo_extrato'),
@@ -572,6 +573,8 @@ urlpatterns = [
     path('planejamento-custo/<int:pk>/itens/novo/', views_planejamento_custo.planejamento_custo_item_add, name='planejamento_custo_item_add'),
     path('planejamento-custo/<int:pk>/itens/<int:item_pk>/excluir/', views_planejamento_custo.planejamento_custo_item_delete, name='planejamento_custo_item_delete'),
     path('planejamento-custo/ajax/preco-produto/', views_planejamento_custo.ajax_preco_produto, name='ajax_preco_produto'),
+    path('planejamento-custo/ajax/safras/', views_planejamento_custo.ajax_safras_por_cultura, name='ajax_safras_planejamento_custo'),
+    path('planejamento-custo/ajax/talhoes/', views_planejamento_custo.ajax_talhoes_por_safra, name='ajax_talhoes_planejamento_custo'),
 
     # ==================== MÓDULO FROTA ====================
     path('frota/', views_frota.frota_dashboard, name='frota_dashboard'),

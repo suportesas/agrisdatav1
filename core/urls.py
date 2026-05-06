@@ -114,6 +114,7 @@ urlpatterns = [
     path('portal/motorista/', include(('cadastros.portal_motorista_urls', 'portal_motorista'))),
     path('portal/campo/', include(('cadastros.portal_campo_urls', 'portal_campo'))),
     path('financeiro/', include(('financeiro.urls', 'financeiro'))),
+    path('exportacao/', include(('exportacao.urls', 'exportacao'))),
     
     # ============================================
     # API REST

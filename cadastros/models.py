@@ -4552,6 +4552,35 @@ class Cultura(models.Model):
         help_text='Informações adicionais sobre a cultura'
     )
     
+    # Dados de Exportação
+    exportacao_temperatura = models.DecimalField(
+        'Temperatura (°C)',
+        max_digits=5,
+        decimal_places=1,
+        blank=True,
+        null=True,
+        help_text='Temperatura ideal de armazenamento/transporte para exportação'
+    )
+
+    exportacao_humidade = models.DecimalField(
+        'Humidade (%)',
+        max_digits=5,
+        decimal_places=1,
+        blank=True,
+        null=True,
+        validators=[MinValueValidator(Decimal('0')), MaxValueValidator(Decimal('100'))],
+        help_text='Percentual de humidade relativa ideal para exportação'
+    )
+
+    exportacao_ventilacao = models.DecimalField(
+        'Ventilação (cbm)',
+        max_digits=7,
+        decimal_places=2,
+        blank=True,
+        null=True,
+        help_text='Ventilação necessária em metros cúbicos por hora (cbm)'
+    )
+
     # Colheita
     max_etapas_colheita = models.PositiveSmallIntegerField(
         'Máx. Etapas de Colheita',
@@ -6125,6 +6154,9 @@ class SafraPlan(models.Model):
     planned_plantio = models.DateField('Plantio Previsto', null=True, blank=True)
     planned_colheita = models.DateField('Colheita Prevista', null=True, blank=True)
     planned_production = models.DecimalField('Produção Planejada (ton)', max_digits=12, decimal_places=2, null=True, blank=True)
+    produtividade_esperada = models.DecimalField('Produtividade Esperada (sc/ha)', max_digits=10, decimal_places=2, null=True, blank=True)
+    preco_meta_saca = models.DecimalField('Preço Meta (R$/sc)', max_digits=10, decimal_places=2, null=True, blank=True)
+    custo_meta_ha = models.DecimalField('Custo Meta (R$/ha)', max_digits=12, decimal_places=2, null=True, blank=True)
 
     class Meta:
         verbose_name = 'Planejamento de Safra'
@@ -6132,6 +6164,26 @@ class SafraPlan(models.Model):
 
     def __str__(self):
         return f"Planejamento {self.safra}"
+
+    @property
+    def receita_esperada(self):
+        if self.produtividade_esperada and self.planned_area and self.preco_meta_saca:
+            return self.produtividade_esperada * self.planned_area * self.preco_meta_saca
+        return None
+
+    @property
+    def custo_total_esperado(self):
+        if self.custo_meta_ha and self.planned_area:
+            return self.custo_meta_ha * self.planned_area
+        return None
+
+    @property
+    def margem_esperada(self):
+        receita = self.receita_esperada
+        custo = self.custo_total_esperado
+        if receita is not None and custo is not None:
+            return receita - custo
+        return None
 
 
 class SafraReal(models.Model):

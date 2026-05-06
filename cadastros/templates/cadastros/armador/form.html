@@ -60,9 +60,13 @@
       <div class="form-section-body">
         <div class="row g-3">
           <div class="col-md-6">
-            <label class="form-label fw-semibold">Código *</label>
+            <label class="form-label fw-semibold">
+              Código
+              {% if not armador %}<span class="badge bg-secondary ms-1" style="font-size:.7rem;">Automático</span>{% else %}*{% endif %}
+            </label>
             {{ form.codigo }}
             {% if form.codigo.errors %}<div class="invalid-feedback d-block">{{ form.codigo.errors.0 }}</div>{% endif %}
+            {% if not armador %}<small class="text-muted">Gerado automaticamente no formato ARM0001</small>{% endif %}
           </div>
           <div class="col-md-6">
             <label class="form-label fw-semibold">Nome *</label>
@@ -79,7 +83,7 @@
             <label class="form-label fw-semibold">CNPJ</label>
             <div class="input-group">
               {{ form.cnpj }}
-              <button type="button" class="btn btn-primary" id="buscarCNPJ">
+              <button type="button" class="btn btn-primary" id="buscarCNPJArmador">
                 <i class="bi bi-search"></i> Buscar
               </button>
             </div>

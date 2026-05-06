@@ -10,6 +10,7 @@ from decimal import Decimal
 from .models import (
     PlanejamentoCustoSafra, PlanejamentoCustoItem,
     CustoTalhao, EtapaColheita,
+    Safra, Talhao,
 )
 from .forms import PlanejamentoCustoSafraForm, PlanejamentoCustoItemForm
 
@@ -27,6 +28,8 @@ def planejamento_custo_list(request):
 @login_required
 def planejamento_custo_create(request):
     empresa = request.user.empresa
+    safra_pre = None
+
     if request.method == 'POST':
         form = PlanejamentoCustoSafraForm(request.POST, user=request.user)
         if form.is_valid():
@@ -36,11 +39,43 @@ def planejamento_custo_create(request):
             plan.save()
             messages.success(request, f'Planejamento "{plan.nome}" criado com sucesso.')
             return redirect('cadastros:planejamento_custo_detail', pk=plan.pk)
+        safra_id = request.POST.get('safra') or request.GET.get('safra_id')
+        if safra_id:
+            try:
+                safra_pre = Safra.objects.get(pk=safra_id, fazenda__empresa=empresa)
+            except Safra.DoesNotExist:
+                pass
     else:
-        form = PlanejamentoCustoSafraForm(user=request.user)
+        initial = {}
+        safra_id = request.GET.get('safra_id')
+        if safra_id:
+            try:
+                safra_pre = Safra.objects.select_related('cultura').get(
+                    pk=safra_id, fazenda__empresa=empresa
+                )
+                area_ha = None
+                try:
+                    area_ha = safra_pre.plano.planned_area
+                except Exception:
+                    pass
+                if not area_ha:
+                    area_ha = safra_pre.talhoes.aggregate(
+                        total=Sum('area_hac')
+                    )['total']
+                initial = {
+                    'cultura': safra_pre.cultura.pk if safra_pre.cultura else None,
+                    'safra': safra_pre.pk,
+                    'area_ha': area_ha,
+                    'nome': f"Planejamento {safra_pre.cultura.nome if safra_pre.cultura else ''} {safra_pre.ano or ''}".strip(),
+                }
+            except Safra.DoesNotExist:
+                pass
+        form = PlanejamentoCustoSafraForm(user=request.user, initial=initial)
+
     return render(request, 'cadastros/planejamento_custo/planejamento_custo_form.html', {
         'form': form,
         'title': 'Novo Planejamento de Custo',
+        'safra_pre': safra_pre,
     })
 
 
@@ -146,3 +181,35 @@ def ajax_preco_produto(request):
         })
     except Exception:
         return JsonResponse({'error': 'not found'}, status=404)
+
+@login_required
+def ajax_safras_por_cultura(request):
+    cultura_id = request.GET.get('cultura_id')
+    empresa = request.user.empresa
+    safras = []
+    if cultura_id:
+        safras = Safra.objects.filter(
+            fazenda__empresa=empresa,
+            cultura_id=cultura_id
+        ).order_by('-ano', 'nome')
+    return JsonResponse({
+        'safras': [{'id': s.pk, 'nome': str(s)} for s in safras]
+    })
+
+
+@login_required
+def ajax_talhoes_por_safra(request):
+    safra_id = request.GET.get('safra_id')
+    empresa = request.user.empresa
+    talhoes = []
+    if safra_id:
+        talhoes = Talhao.objects.filter(
+            empresa=empresa,
+            ativo=True,
+            safras__id=safra_id
+        ).distinct().order_by('nome')
+    return JsonResponse({
+        'talhoes': [
+            {'id': t.pk, 'nome': str(t), 'area_hac': str(t.area_hac)} for t in talhoes
+        ]
+    })

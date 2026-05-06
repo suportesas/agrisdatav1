@@ -217,7 +217,7 @@ Navio (N) ────────→ (1) Armador (Optional)
 
 ### 1. Acessar o Painel
 ```
-Login → Menu → Cadastros → Logística Marítima → Armadores
+Login → Menu → Exportação → Logística Marítima → Armadores
 ```
 
 ### 2. Criar um Novo Armador
@@ -238,7 +238,7 @@ Login → Menu → Cadastros → Logística Marítima → Armadores
 
 ### 4. Criar um Navio
 ```
-1. Vá para Menu → Cadastros → Logística Marítima → Navios
+1. Vá para Menu → Exportação → Logística Marítima → Navios
 2. Clique em "Novo Navio"
 3. Preencha Código, Nome, Tipo, Status
 4. Associe um Armador (opcional)

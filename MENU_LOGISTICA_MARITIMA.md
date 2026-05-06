@@ -2,7 +2,7 @@
 
 ## 📋 Mudança Realizada
 
-Reorganizei o menu lateral para agrupar **Porto**, **Armador** e **Navio** em um submenu chamado **"Logística Marítima"**.
+Reorganizei o menu lateral para agrupar **Porto**, **Armador** e **Navio** em um submenu chamado **"Logística Marítima"** dentro do menu **Exportação**.
 
 ---
 
@@ -29,24 +29,14 @@ CADASTROS
 
 ### Depois:
 ```
-CADASTROS
-├── Fazendas
-├── Áreas
-├── Talhões
-├── Culturas
-├── Pragas
-├── Funcionários (submenu)
-│   ├── Listar Funcionários
-│   └── Funções/Cargos
-├── Clientes
-├── Fornecedores
-├── Transportadoras
-├── Vendedores
-├── Veículos
+EXPORTAÇÃO
 └── 🆕 Logística Marítima (submenu) ✨
     ├── Portos         (bi-water)
     ├── Armadores      (bi-ship)
     └── Navios         (bi-sailboat)
+├── Solicitações Booking
+├── Bookings
+├── Ordens de Coleta
 ```
 
 ---

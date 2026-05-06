@@ -1,0 +1,104 @@
+{% extends 'base.html' %}
+
+{% block title %}Detalhes do Booking{% endblock %}
+{% block page_title %}Detalhes do Booking{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="mb-3">
+    <a href="{% url 'exportacao:booking_update' booking.pk %}" class="btn btn-secondary">Editar Booking</a>
+    <a href="{% url 'exportacao:booking_list' %}" class="btn btn-outline-secondary">Voltar à lista</a>
+    <a href="{% url 'exportacao:booking_container_create' booking.pk %}" class="btn btn-primary">Adicionar Contêiner</a>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-md-6">
+      <div class="card mb-3">
+        <div class="card-body">
+          <h5 class="card-title">Resumo do Booking</h5>
+          <dl class="row mb-0">
+            <dt class="col-5">Código</dt><dd class="col-7">{{ booking.codigo }}</dd>
+            <dt class="col-5">Solicitação</dt><dd class="col-7">{{ booking.solicitacao }}</dd>
+            <dt class="col-5">Status</dt><dd class="col-7">{{ booking.get_status_display }}</dd>
+            <dt class="col-5">Porto Origem</dt><dd class="col-7">{{ booking.porto_origem }}</dd>
+            <dt class="col-5">Porto Destino</dt><dd class="col-7">{{ booking.porto_destino }}</dd>
+            <dt class="col-5">Data Embarque</dt><dd class="col-7">{{ booking.data_embarque_previsto|date:'d/m/Y' }}</dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="card mb-3">
+        <div class="card-body">
+          <h5 class="card-title">Observações</h5>
+          <p class="card-text">{{ booking.observacoes|default:'Sem observações.' }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card mb-3">
+    <div class="card-body">
+      <h5 class="card-title">Contêineres</h5>
+      <div class="table-responsive">
+        <table class="table table-bordered table-hover mb-0">
+          <thead>
+            <tr>
+              <th>Número</th>
+              <th>Tipo</th>
+              <th>Status</th>
+              <th>Coleta Prevista</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for container in containers %}
+              <tr>
+                <td>{{ container.numero_container }}</td>
+                <td>{{ container.get_tipo_container_display }}</td>
+                <td>{{ container.get_status_display }}</td>
+                <td>{{ container.data_coleta_prevista|date:'d/m/Y' }}</td>
+                <td>
+                  <a class="btn btn-sm btn-outline-secondary" href="{% url 'exportacao:container_update' container.pk %}">Editar</a>
+                </td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="5" class="text-center">Nenhum contêiner cadastrado para este booking.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body">
+      <h5 class="card-title">Ordens de Coleta</h5>
+      <div class="table-responsive">
+        <table class="table table-bordered table-hover mb-0">
+          <thead>
+            <tr>
+              <th>Número</th>
+              <th>Contêiner</th>
+              <th>Data Prevista</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for ordem in ordens %}
+              <tr>
+                <td>{{ ordem.numero }}</td>
+                <td>{{ ordem.container }}</td>
+                <td>{{ ordem.data_prevista|date:'d/m/Y' }}</td>
+                <td>{{ ordem.get_status_display }}</td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="4" class="text-center">Nenhuma ordem de coleta cadastrada.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

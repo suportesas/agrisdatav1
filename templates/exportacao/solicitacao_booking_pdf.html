@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    @page {
+      size: A4;
+      margin: 1.5cm 1.8cm;
+    }
+    body {
+      font-family: Arial, sans-serif;
+      font-size: 12pt;
+      color: #1a1a1a;
+    }
+    /* Cabeçalho */
+    .header {
+      border-bottom: 2px solid #0d6efd;
+      padding-bottom: 8px;
+      margin-bottom: 14px;
+    }
+    .header-top {
+      display: table;
+      width: 100%;
+    }
+    .header-empresa {
+      display: table-cell;
+      vertical-align: middle;
+      width: 60%;
+    }
+    .header-titulo {
+      display: table-cell;
+      vertical-align: middle;
+      text-align: right;
+      width: 40%;
+    }
+    .empresa-nome {
+      font-size: 15pt;
+      font-weight: bold;
+      color: #0d6efd;
+    }
+    .doc-titulo {
+      font-size: 16pt;
+      font-weight: bold;
+      color: #0d6efd;
+    }
+    .doc-subtitulo {
+      font-size: 10pt;
+      color: #555;
+    }
+    /* Seções */
+    .secao {
+      margin-bottom: 12px;
+    }
+    .secao-titulo {
+      background-color: #0d6efd;
+      color: white;
+      font-size: 11pt;
+      font-weight: bold;
+      padding: 4px 8px;
+      margin-bottom: 0;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .secao-corpo {
+      border: 1px solid #c8d4e8;
+      border-top: none;
+      padding: 8px 10px;
+    }
+    /* Grid 2 colunas */
+    .row {
+      display: table;
+      width: 100%;
+      margin-bottom: 4px;
+    }
+    .col-half {
+      display: table-cell;
+      width: 50%;
+      vertical-align: top;
+      padding-right: 10px;
+    }
+    .col-half:last-child { padding-right: 0; }
+    .col-full {
+      display: table-cell;
+      width: 100%;
+      vertical-align: top;
+    }
+    .campo-label {
+      font-size: 9pt;
+      color: #555;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      margin-bottom: 1px;
+    }
+    .campo-valor {
+      font-size: 12pt;
+      font-weight: bold;
+      color: #1a1a1a;
+      border-bottom: 1px solid #dee2e6;
+      padding-bottom: 2px;
+      min-height: 16px;
+    }
+    /* Badge de status */
+    .badge-status {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 3px;
+      font-size: 10.5pt;
+      font-weight: bold;
+    }
+    .status-ABERTO    { background: #fff3cd; color: #664d03; border: 1px solid #ffc107; }
+    .status-APROVADO  { background: #d1e7dd; color: #0a3622; border: 1px solid #198754; }
+    .status-NEGADO    { background: #f8d7da; color: #58151c; border: 1px solid #dc3545; }
+    .status-CANCELADO { background: #e2e3e5; color: #41464b; border: 1px solid #adb5bd; }
+    /* Rodapé */
+    .footer {
+      border-top: 1px solid #dee2e6;
+      margin-top: 16px;
+      padding-top: 6px;
+      font-size: 9pt;
+      color: #888;
+      display: table;
+      width: 100%;
+    }
+    .footer-left  { display: table-cell; width: 60%; }
+    .footer-right { display: table-cell; width: 40%; text-align: right; }
+    /* Observações */
+    .obs-box {
+      background: #f8f9fa;
+      border: 1px solid #dee2e6;
+      padding: 6px 8px;
+      font-size: 9pt;
+      min-height: 30px;
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Cabeçalho -->
+  <div class="header">
+    <div class="header-top">
+      <div class="header-empresa">
+        <div class="empresa-nome">{{ empresa.nome|default:"ERP Agrícola" }}</div>
+        {% if empresa.cnpj %}<div style="font-size:8pt; color:#555;">CNPJ: {{ empresa.cnpj }}</div>{% endif %}
+      </div>
+      <div class="header-titulo">
+        <div class="doc-titulo">Solicitação de Booking</div>
+        <div class="doc-subtitulo">Nº {{ solicitacao.pk|stringformat:"05d" }}</div>
+        <div class="doc-subtitulo">Emitido em: {{ hoje }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Identificação -->
+  <div class="secao">
+    <div class="secao-titulo">Identificação</div>
+    <div class="secao-corpo">
+      <div class="row">
+        <div class="col-half">
+          <div class="campo-label">Nome da Solicitação</div>
+          <div class="campo-valor">{{ solicitacao.nome }}</div>
+        </div>
+        <div class="col-half">
+          <div class="campo-label">Status</div>
+          <div class="campo-valor">
+            <span class="badge-status status-{{ solicitacao.status }}">
+              {{ solicitacao.get_status_display }}
+            </span>
+          </div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-half">
+          <div class="campo-label">Cultura</div>
+          <div class="campo-valor">{{ solicitacao.cultura|default:"—" }}</div>
+        </div>
+        <div class="col-half">
+          <div class="campo-label">Quantidade de Containers</div>
+          <div class="campo-valor">{{ solicitacao.quantidade|default:"—" }}</div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-half">
+          <div class="campo-label">Data da Solicitação</div>
+          <div class="campo-valor">{{ solicitacao.data_solicitacao|date:"d/m/Y H:i" }}</div>
+        </div>
+        <div class="col-half">
+          <div class="campo-label">Previsão de Embarque</div>
+          <div class="campo-valor">{{ solicitacao.data_prevista_embarque|date:"d/m/Y"|default:"—" }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Rotas -->
+  <div class="secao">
+    <div class="secao-titulo">Rotas</div>
+    <div class="secao-corpo">
+      <div class="row">
+        <div class="col-half">
+          <div class="campo-label">Porto de Origem</div>
+          <div class="campo-valor">{{ solicitacao.porto_origem|default:"—" }}</div>
+        </div>
+        <div class="col-half">
+          <div class="campo-label">Porto de Destino</div>
+          <div class="campo-valor">{{ solicitacao.porto_destino|default:"—" }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Armador / Navio -->
+  <div class="secao">
+    <div class="secao-titulo">Armador / Navio</div>
+    <div class="secao-corpo">
+      <div class="row">
+        <div class="col-half">
+          <div class="campo-label">Armador</div>
+          <div class="campo-valor">{{ solicitacao.armador|default:"—" }}</div>
+        </div>
+        <div class="col-half">
+          <div class="campo-label">Navio</div>
+          <div class="campo-valor">{{ solicitacao.navio|default:"—" }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Condições de Frete -->
+  <div class="secao">
+    <div class="secao-titulo">Condições de Frete</div>
+    <div class="secao-corpo">
+      <div class="row">
+        <div class="col-half">
+          <div class="campo-label">Frete</div>
+          <div class="campo-valor">{{ solicitacao.get_frete_display|default:"—" }}</div>
+        </div>
+        <div class="col-half">
+          <div class="campo-label">Genset</div>
+          <div class="campo-valor">{{ solicitacao.get_genset_display|default:"—" }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Observações -->
+  {% if solicitacao.observacoes %}
+  <div class="secao">
+    <div class="secao-titulo">Observações</div>
+    <div class="secao-corpo">
+      <div class="obs-box">{{ solicitacao.observacoes }}</div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Rodapé -->
+  <div class="footer">
+    <div class="footer-left">
+      Gerado pelo ERP Agrícola &mdash; {{ empresa.nome|default:"" }}
+    </div>
+    <div class="footer-right">
+      Solicitação #{{ solicitacao.pk|stringformat:"05d" }} &mdash; {{ hoje }}
+    </div>
+  </div>
+
+</body>
+</html>

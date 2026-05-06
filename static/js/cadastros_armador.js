@@ -1,196 +1,147 @@
-// JS para o formulário de Armador
-console.log('cadastros_armador.js loaded');
-
+// Formulário de Armador — CNPJ e CEP
 (function () {
-  const cfg = {
-    buscar_cep_url: window.CADASTROS_BUSCAR_CEP_URL || '/cadastros/api/buscar-cep/',
-    buscar_cnpj_url: window.CADASTROS_BUSCAR_CNPJ_URL || '/cadastros/api/buscar-cnpj/'
-  };
+  const CNPJ_URL = '/cadastros/api/buscar-cnpj/';
+  const CEP_URL  = '/cadastros/api/buscar-cep/';
 
-  function getCsrfToken() {
-    const el = document.querySelector('input[name=csrfmiddlewaretoken]');
-    return el ? el.value : null;
+  function csrf() {
+    var el = document.querySelector('input[name=csrfmiddlewaretoken]');
+    return el ? el.value : '';
   }
 
-  function showAlert(text, level = 'danger') {
-    try {
-      const main = document.querySelector('main') || document.querySelector('.container-fluid');
-      if (!main) return;
-      const div = document.createElement('div');
-      div.className = `alert alert-${level} alert-dismissible fade show`;
-      div.setAttribute('role', 'alert');
-      div.innerHTML = `${text} <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>`;
-      main.insertBefore(div, main.firstChild);
-      setTimeout(() => {
-        try {
-          const bs = bootstrap.Alert.getInstance(div) || new bootstrap.Alert(div);
-          bs.close();
-        } catch (e) { }
-      }, 5000);
-    } catch (e) {
-      console.error('showAlert failed', e);
-    }
+  function showAlert(text, level) {
+    var nav = document.querySelector('nav.breadcrumb')
+           || document.querySelector('.container');
+    if (!nav) return;
+    var div = document.createElement('div');
+    div.className = 'alert alert-' + (level || 'danger') + ' alert-dismissible fade show';
+    div.setAttribute('role', 'alert');
+    div.innerHTML = text + '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>';
+    nav.parentNode.insertBefore(div, nav);
+    setTimeout(function () {
+      try { new bootstrap.Alert(div).close(); } catch (e) { div.remove(); }
+    }, 6000);
   }
 
-  document.addEventListener('DOMContentLoaded', function () {
-    // Buscar CNPJ - Click no ícone de lupa
-    const cnpjLabel = Array.from(document.querySelectorAll('label')).find(l => l.textContent.includes('CNPJ'));
-    if (cnpjLabel) {
-      const icon = cnpjLabel.querySelector('i.bi-search');
-      if (icon) {
-        icon.addEventListener('click', async (e) => {
-          e.preventDefault();
-          const cnpjInput = document.querySelector('input[name="cnpj"]');
-          if (!cnpjInput) {
-            showAlert('Campo CNPJ não encontrado', 'danger');
-            return;
+  function setBtn(btn, loading) {
+    btn.disabled = loading;
+    var icon = btn.querySelector('i');
+    if (icon) icon.className = loading ? 'bi bi-hourglass-split' : 'bi bi-search';
+    btn.querySelector('span') && (btn.querySelector('span').textContent = loading ? ' Buscando...' : ' Buscar');
+  }
+
+  function init() {
+
+    /* ── CNPJ ─────────────────────────────────────────────── */
+    var btnCNPJ = document.getElementById('buscarCNPJArmador');
+    if (btnCNPJ) {
+      btnCNPJ.addEventListener('click', function () {
+        var form = btnCNPJ.closest('form');
+        var inp  = form && form.querySelector('input[name="cnpj"]');
+        if (!inp) { showAlert('Campo CNPJ não encontrado.', 'danger'); return; }
+
+        var cnpj = inp.value.replace(/\D/g, '');
+        if (cnpj.length !== 14) { showAlert('Digite um CNPJ válido com 14 dígitos.', 'warning'); return; }
+
+        setBtn(btnCNPJ, true);
+
+        fetch(CNPJ_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': csrf(),
+            'X-Requested-With': 'XMLHttpRequest'
+          },
+          body: 'cnpj=' + encodeURIComponent(cnpj)
+        })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (!data.sucesso) { showAlert(data.erro || 'CNPJ não encontrado.', 'warning'); return; }
+
+          var d = data.dados || {};
+          function set(name, val) {
+            if (!val) return;
+            var el = form.querySelector('[name="' + name + '"]');
+            if (el) el.value = val;
           }
-
-          const cnpj = (cnpjInput.value || '').replace(/\D/g, '');
-          if (cnpj.length !== 14) {
-            showAlert('Digite um CNPJ válido (14 dígitos)', 'danger');
-            return;
+          set('nome',          d.nome);
+          set('nome_fantasia', d.nome_fantasia);
+          set('email',         d.email);
+          set('telefone',      d.telefone);
+          set('cep',           d.cep);
+          set('endereco',      d.logradouro);
+          set('numero',        d.numero);
+          set('bairro',        d.bairro);
+          set('cidade',        d.cidade || d.municipio);
+          if (d.uf) {
+            var ufEl = form.querySelector('[name="uf"]');
+            if (ufEl) ufEl.value = d.uf.toUpperCase();
           }
-
-          const csrf = getCsrfToken();
-          try {
-            icon.style.opacity = '0.5';
-            icon.style.pointerEvents = 'none';
-
-            const resp = await fetch(cfg.buscar_cnpj_url, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-                'X-CSRFToken': csrf,
-                'Accept': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
-              },
-              body: `cnpj=${cnpj}`
-            });
-
-            if (!resp.ok) {
-              const json = await resp.json().catch(() => ({}));
-              showAlert(json.erro || 'Erro ao buscar CNPJ', 'danger');
-              return;
-            }
-
-            const data = await resp.json();
-            if (data && data.sucesso && data.dados) {
-              const d = data.dados;
-
-              // Preencher campos principais
-              if (d.nome) document.querySelector('input[name="nome"]').value = d.nome;
-              if (d.nome_fantasia) {
-                const nf = document.querySelector('input[name="nome_fantasia"]');
-                if (nf) nf.value = d.nome_fantasia;
-              }
-
-              // Preencher endereço
-              if (d.logradouro) document.querySelector('input[name="endereco"]').value = d.logradouro;
-              if (d.numero) document.querySelector('input[name="numero"]').value = d.numero;
-              if (d.bairro) document.querySelector('input[name="bairro"]').value = d.bairro;
-              if (d.cidade) document.querySelector('input[name="cidade"]').value = d.cidade;
-              if (d.uf) {
-                const ufField = document.querySelector('select[name="uf"]') || document.querySelector('input[name="uf"]');
-                if (ufField) ufField.value = d.uf.toUpperCase();
-              }
-              if (d.cep) document.querySelector('input[name="cep"]').value = d.cep;
-
-              showAlert('CNPJ carregado com sucesso!', 'success');
-            } else {
-              showAlert(data.erro || 'CNPJ não encontrado', 'warning');
-            }
-          } catch (err) {
-            console.error('Erro ao buscar CNPJ:', err);
-            showAlert('Erro ao buscar CNPJ. Verifique a conexão.', 'danger');
-          } finally {
-            icon.style.opacity = '1';
-            icon.style.pointerEvents = 'auto';
-          }
-        });
-      }
+          showAlert('Dados do CNPJ preenchidos com sucesso!', 'success');
+        })
+        .catch(function (err) {
+          console.error('buscarCNPJ erro:', err);
+          showAlert('Erro ao consultar CNPJ. Verifique a conexão.', 'danger');
+        })
+        .finally(function () { setBtn(btnCNPJ, false); });
+      });
     }
 
-    // Buscar CEP - Click no ícone de lupa
-    const cepLabel = Array.from(document.querySelectorAll('label')).find(l => l.textContent.includes('CEP'));
-    if (cepLabel) {
-      const icon = cepLabel.querySelector('i.bi-search');
-      if (icon) {
-        icon.addEventListener('click', async (e) => {
-          e.preventDefault();
-          const cepInput = document.querySelector('input[name="cep"]');
-          if (!cepInput) {
-            showAlert('Campo CEP não encontrado', 'danger');
-            return;
+    /* ── CEP ──────────────────────────────────────────────── */
+    var btnCEP = document.getElementById('buscarCEP');
+    if (btnCEP) {
+      btnCEP.addEventListener('click', function () {
+        var form = btnCEP.closest('form');
+        var inp  = form && form.querySelector('input[name="cep"]');
+        if (!inp) { showAlert('Campo CEP não encontrado.', 'danger'); return; }
+
+        var cep = inp.value.replace(/\D/g, '');
+        if (cep.length !== 8) { showAlert('Digite um CEP válido com 8 dígitos.', 'warning'); return; }
+
+        setBtn(btnCEP, true);
+
+        fetch(CEP_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': csrf(),
+            'X-Requested-With': 'XMLHttpRequest'
+          },
+          body: 'cep=' + encodeURIComponent(cep)
+        })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          var d = (data && data.dados) ? data.dados : data;
+          if (!d || !d.logradouro) { showAlert(d.erro || 'CEP não encontrado.', 'warning'); return; }
+
+          function set(name, val) {
+            if (!val) return;
+            var el = form.querySelector('[name="' + name + '"]');
+            if (el) el.value = val;
           }
-
-          const cep = (cepInput.value || '').replace(/\D/g, '');
-          if (cep.length !== 8) {
-            showAlert('Digite um CEP válido (8 dígitos)', 'danger');
-            return;
+          set('endereco', d.logradouro);
+          set('bairro',   d.bairro);
+          set('cidade',   d.localidade || d.cidade);
+          if (d.uf) {
+            var ufEl = form.querySelector('[name="uf"]');
+            if (ufEl) ufEl.value = d.uf.toUpperCase();
           }
-
-          const csrf = getCsrfToken();
-          try {
-            icon.style.opacity = '0.5';
-            icon.style.pointerEvents = 'none';
-
-            const resp = await fetch(cfg.buscar_cep_url, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-                'X-CSRFToken': csrf,
-                'Accept': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
-              },
-              body: `cep=${cep}`
-            });
-
-            if (!resp.ok) {
-              const json = await resp.json().catch(() => ({}));
-              showAlert(json.erro || 'Erro ao buscar CEP', 'danger');
-              return;
-            }
-
-            const data = await resp.json();
-            const d = (data && data.dados) ? data.dados : data;
-
-            if (d && d.logradouro) {
-              // Preencher campos
-              if (d.logradouro) document.querySelector('input[name="endereco"]').value = d.logradouro;
-              if (d.bairro) document.querySelector('input[name="bairro"]').value = d.bairro;
-              if (d.cidade) document.querySelector('input[name="cidade"]').value = d.cidade;
-              if (d.uf) {
-                const ufField = document.querySelector('select[name="uf"]') || document.querySelector('input[name="uf"]');
-                if (ufField) ufField.value = d.uf.toUpperCase();
-              }
-              if (d.cep) document.querySelector('input[name="cep"]').value = d.cep;
-
-              showAlert('CEP carregado com sucesso!', 'success');
-            } else {
-              showAlert(d.erro || 'CEP não encontrado', 'warning');
-            }
-          } catch (err) {
-            console.error('Erro ao buscar CEP:', err);
-            showAlert('Erro ao buscar CEP. Verifique a conexão.', 'danger');
-          } finally {
-            icon.style.opacity = '1';
-            icon.style.pointerEvents = 'auto';
-          }
-        });
-      }
+          showAlert('Endereço preenchido com sucesso!', 'success');
+        })
+        .catch(function (err) {
+          console.error('buscarCEP erro:', err);
+          showAlert('Erro ao consultar CEP. Verifique a conexão.', 'danger');
+        })
+        .finally(function () { setBtn(btnCEP, false); });
+      });
     }
 
-    // Melhorar UX do ícone de busca - mostrar cursor de pointer
-    document.querySelectorAll('label i.bi-search').forEach(icon => {
-      icon.style.cursor = 'pointer';
-      icon.style.transition = 'opacity 0.2s';
-      icon.addEventListener('mouseenter', () => {
-        icon.style.opacity = '0.7';
-      });
-      icon.addEventListener('mouseleave', () => {
-        icon.style.opacity = '1';
-      });
-    });
-  });
+  } // end init
+
+  // Funciona independente do momento em que o script é carregado
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+
 })();

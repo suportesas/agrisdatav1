@@ -12,6 +12,12 @@
           <h6 class="fw-bold text-secondary"><i class="bi bi-clipboard-data text-warning"></i> {{ title }}</h6>
         </div>
         <div class="card-body">
+          {% if safra_pre %}
+          <div class="alert alert-info d-flex align-items-center gap-2 mb-3">
+            <i class="bi bi-info-circle-fill"></i>
+            <span>Criando planejamento para a safra <strong>{{ safra_pre }}</strong> — campos pré-preenchidos automaticamente.</span>
+          </div>
+          {% endif %}
           <form method="post" novalidate>
             {% csrf_token %}
             {% if form.non_field_errors %}
@@ -54,6 +60,117 @@
               <a href="{% url 'cadastros:planejamento_custo_list' %}" class="btn btn-outline-secondary"><i class="bi bi-x"></i> Cancelar</a>
             </div>
           </form>
+          <script>
+            document.addEventListener('DOMContentLoaded', function () {
+              const culturaEl = document.getElementById('id_cultura');
+              const safraEl = document.getElementById('id_safra');
+              const talhaoEl = document.getElementById('id_talhao');
+              const areaEl = document.getElementById('id_area_ha');
+              let lastAutoArea = '';
+
+              const fillOptions = (select, items, placeholder, selectedValue) => {
+                if (!select) return;
+                select.innerHTML = '';
+                const empty = document.createElement('option');
+                empty.value = '';
+                empty.textContent = placeholder || '-- Selecione --';
+                select.appendChild(empty);
+
+                items.forEach(item => {
+                  const option = document.createElement('option');
+                  option.value = item.id;
+                  option.textContent = item.nome;
+                  if (String(item.id) === String(selectedValue)) {
+                    option.selected = true;
+                  }
+                  if (item.area_hac !== undefined) {
+                    option.setAttribute('data-area-ha', item.area_hac);
+                  }
+                  select.appendChild(option);
+                });
+              };
+
+              const updateAreaFromTalhao = (value) => {
+                if (!areaEl) return;
+                const current = areaEl.value;
+                if (!current || current === lastAutoArea) {
+                  areaEl.value = value || '';
+                  lastAutoArea = value || '';
+                }
+              };
+
+              const loadSafras = async (culturaId) => {
+                if (!safraEl) return;
+                if (!culturaId) {
+                  fillOptions(safraEl, [], '-- Selecione a cultura primeiro --');
+                  fillOptions(talhaoEl, [], '-- Primeiro selecione uma safra --');
+                  return;
+                }
+                try {
+                  const response = await fetch(`{% url 'cadastros:ajax_safras_planejamento_custo' %}?cultura_id=${encodeURIComponent(culturaId)}`);
+                  const data = await response.json();
+                  const selectedSafra = safraEl.value;
+                  fillOptions(safraEl, data.safras || [], '-- Selecione uma safra --', selectedSafra);
+                  if (safraEl.value) {
+                    loadTalhoes(safraEl.value);
+                  } else {
+                    fillOptions(talhaoEl, [], '-- Primeiro selecione uma safra --');
+                  }
+                } catch (error) {
+                  console.error('Erro ao carregar safra(s):', error);
+                }
+              };
+
+              const loadTalhoes = async (safraId) => {
+                if (!talhaoEl) return;
+                if (!safraId) {
+                  fillOptions(talhaoEl, [], '-- Primeiro selecione uma safra --');
+                  return;
+                }
+                try {
+                  const response = await fetch(`{% url 'cadastros:ajax_talhoes_planejamento_custo' %}?safra_id=${encodeURIComponent(safraId)}`);
+                  const data = await response.json();
+                  const selectedTalhao = talhaoEl.value;
+                  fillOptions(talhaoEl, data.talhoes || [], '-- Selecione um talhão --', selectedTalhao);
+                  if (talhaoEl.value) {
+                    const option = talhaoEl.selectedOptions[0];
+                    if (option) {
+                      updateAreaFromTalhao(option.getAttribute('data-area-ha'));
+                    }
+                  }
+                } catch (error) {
+                  console.error('Erro ao carregar talhão(ões):', error);
+                }
+              };
+
+              if (culturaEl) {
+                culturaEl.addEventListener('change', function () {
+                  loadSafras(this.value);
+                });
+              }
+
+              if (safraEl) {
+                safraEl.addEventListener('change', function () {
+                  loadTalhoes(this.value);
+                });
+              }
+
+              if (talhaoEl) {
+                talhaoEl.addEventListener('change', function () {
+                  const option = talhaoEl.selectedOptions[0];
+                  const areaValue = option ? option.getAttribute('data-area-ha') : '';
+                  updateAreaFromTalhao(areaValue);
+                });
+              }
+
+              if (culturaEl && culturaEl.value) {
+                loadSafras(culturaEl.value);
+              }
+              if (safraEl && safraEl.value) {
+                loadTalhoes(safraEl.value);
+              }
+            });
+          </script>
         </div>
       </div>
     </div>

@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+
+{% block title %}Ordens de Coleta{% endblock %}
+{% block page_title %}Ordens de Coleta{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Ordens de Coleta</h2>
+    <a class="btn btn-primary" href="{% url 'exportacao:ordem_coleta_create' %}">Nova Ordem de Coleta</a>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table table-bordered table-hover">
+      <thead>
+        <tr>
+          <th>Número</th>
+          <th>Booking</th>
+          <th>Contêiner</th>
+          <th>Data Prevista</th>
+          <th>Status</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for ordem in ordens %}
+          <tr>
+            <td>{{ ordem.numero }}</td>
+            <td>{{ ordem.booking.codigo }}</td>
+            <td>{{ ordem.container }}</td>
+            <td>{{ ordem.data_prevista|date:'d/m/Y' }}</td>
+            <td>{{ ordem.get_status_display }}</td>
+            <td>
+              <a class="btn btn-sm btn-outline-secondary" href="{% url 'exportacao:ordem_coleta_update' ordem.pk %}">Editar</a>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="6" class="text-center">Nenhuma ordem de coleta encontrada.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

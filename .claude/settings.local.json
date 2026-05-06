@@ -35,7 +35,15 @@
       "Bash(python manage.py makemigrations cadastros --name documentomanutencao)",
       "Bash(python manage.py migrate cadastros 0103)",
       "Bash(python -c \"from cadastros.views_frota import manutencao_documento_add, manutencao_documento_delete; print\\('OK'\\)\")",
-      "Bash(grep -E \"\\\\.\\(py\\)$\")"
+      "Bash(grep -E \"\\\\.\\(py\\)$\")",
+      "Bash(python manage.py makemigrations exportacao --name=\"solicitacao_booking_novos_campos\")",
+      "PowerShell(cd c:\\\\erp_agricola_novo; $env:DJANGO_SETTINGS_MODULE=\"core.settings\"; .\\\\venv\\\\Scripts\\\\python.exe -c \"import django; django.setup\\(\\); from exportacao.forms import SolicitacaoBookingForm; print\\('OK'\\)\" 2>&1)",
+      "PowerShell(cd c:\\\\erp_agricola_novo; $env:DJANGO_SETTINGS_MODULE=\"core.settings\"; .\\\\venv\\\\Scripts\\\\python.exe -c \"import django; django.setup\\(\\); from exportacao.views import ajax_cultura_exportacao; print\\('OK'\\)\" 2>&1 | Select-String -NotMatch \"^INFO\")",
+      "PowerShell(cd c:\\\\erp_agricola_novo; $env:DJANGO_SETTINGS_MODULE=\"core.settings\"; .\\\\venv\\\\Scripts\\\\python.exe -c \"import django; django.setup\\(\\); from cadastros.forms_armador import ArmadorForm; print\\('OK'\\)\" 2>&1 | Select-String -NotMatch \"^INFO\")",
+      "PowerShell(Copy-Item \"c:\\\\erp_agricola_novo\\\\static\\\\js\\\\cadastros_armador.js\" \"c:\\\\erp_agricola_novo\\\\staticfiles\\\\js\\\\cadastros_armador.js\" -Force)",
+      "Bash(python manage.py makemigrations cadastros --name safraplan_expand_fields)",
+      "Bash(Get-ChildItem -Path \"c:\\\\erp_agricola_novo\" -Recurse -Filter \"models.py\")",
+      "Bash(Select-Object -ExpandProperty FullName)"
     ]
   }
 }

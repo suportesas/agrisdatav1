@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+
+{% block title %}Detalhes da Solicitação{% endblock %}
+{% block page_title %}Detalhes da Solicitação{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="mb-3 d-flex gap-2">
+    <a class="btn btn-secondary" href="{% url 'exportacao:solicitacao_booking_update' solicitacao.pk %}">
+      <i class="bi bi-pencil"></i> Editar
+    </a>
+    <a class="btn btn-danger" href="{% url 'exportacao:solicitacao_booking_pdf' solicitacao.pk %}" target="_blank">
+      <i class="bi bi-file-earmark-pdf"></i> Gerar PDF
+    </a>
+    <a class="btn btn-outline-secondary" href="{% url 'exportacao:solicitacao_booking_list' %}">
+      <i class="bi bi-arrow-left"></i> Voltar à lista
+    </a>
+  </div>
+
+  <div class="card mb-3">
+    <div class="card-body">
+      <h5 class="card-title">Resumo da Solicitação</h5>
+      <dl class="row mb-0">
+        <dt class="col-4">Nome</dt><dd class="col-8">{{ solicitacao.nome }}</dd>
+        <dt class="col-4">Cliente</dt><dd class="col-8">{{ solicitacao.cliente }}</dd>
+        <dt class="col-4">Cultura</dt><dd class="col-8">{{ solicitacao.cultura }}</dd>
+        <dt class="col-4">Status</dt><dd class="col-8">{{ solicitacao.get_status_display }}</dd>
+        <dt class="col-4">Previsão de Embarque</dt><dd class="col-8">{{ solicitacao.data_prevista_embarque|date:'d/m/Y' }}</dd>
+        <dt class="col-4">Quantidade</dt><dd class="col-8">{{ solicitacao.quantidade }}</dd>
+        <dt class="col-4">Observações</dt><dd class="col-8">{{ solicitacao.observacoes|default:'Sem observações.' }}</dd>
+      </dl>
+    </div>
+  </div>
+</div>
+{% endblock %}

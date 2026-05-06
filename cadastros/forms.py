@@ -2266,6 +2266,7 @@ class CulturaForm(forms.ModelForm):
             'irrigacao_necessaria', 'tipo_irrigacao', 
             'adubacao_recomendada', 'controle_pragas',
             'certificacao_organica', 'certificacao_exportacao',
+            'exportacao_temperatura', 'exportacao_humidade', 'exportacao_ventilacao',
             'imagem', 'observacoes', 'ativa'
         ]
         widgets = {
@@ -2348,6 +2349,21 @@ class CulturaForm(forms.ModelForm):
                 'class': 'form-control',
                 'rows': 3,
                 'placeholder': 'Principais pragas e métodos de controle'
+            }),
+            'exportacao_temperatura': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.1',
+                'placeholder': '°C'
+            }),
+            'exportacao_humidade': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.1',
+                'placeholder': '%'
+            }),
+            'exportacao_ventilacao': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.01',
+                'placeholder': 'cbm/h'
             }),
             'imagem': forms.FileInput(attrs={
                 'class': 'form-control',
@@ -2912,12 +2928,18 @@ class SafraPlanForm(forms.ModelForm):
 
     class Meta:
         model = SafraPlan
-        fields = ['planned_area', 'planned_plantio', 'planned_colheita', 'planned_production']
+        fields = [
+            'planned_area', 'planned_plantio', 'planned_colheita', 'planned_production',
+            'produtividade_esperada', 'preco_meta_saca', 'custo_meta_ha',
+        ]
         widgets = {
             'planned_area': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.0001'}),
             'planned_production': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'planned_plantio': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'),
             'planned_colheita': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'),
+            'produtividade_esperada': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'preco_meta_saca': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'custo_meta_ha': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -5596,7 +5618,7 @@ class TransplantioForm(forms.ModelForm):
                 empresa=self.user.empresa, ativo=True, status__in=['DISPONIVEL', 'PREPARACAO']
             )
             self.fields['safra'].queryset = Safra.objects.filter(
-                empresa=self.user.empresa, status__in=['PLANEJADA', 'EM_ANDAMENTO']
+                fazenda__empresa=self.user.empresa, status__in=['PLANEJADA', 'EM_ANDAMENTO']
             )
             self.fields['responsavel'].queryset = Funcionario.objects.filter(empresa=self.user.empresa, ativo=True)
 
@@ -5658,8 +5680,52 @@ class PlanejamentoCustoSafraForm(forms.ModelForm):
         if self.user and self.user.empresa:
             emp = self.user.empresa
             self.fields['cultura'].queryset = Cultura.objects.filter(empresa=emp)
-            self.fields['safra'].queryset = Safra.objects.filter(fazenda__empresa=emp).order_by('-ano', 'nome')
-            self.fields['talhao'].queryset = Talhao.objects.filter(empresa=emp, ativo=True).order_by('nome')
+
+            cultura_ref = self.data.get('cultura') or self.initial.get('cultura')
+            if hasattr(cultura_ref, 'pk'):
+                cultura_id = cultura_ref.pk
+            else:
+                try:
+                    cultura_id = int(cultura_ref) if cultura_ref not in (None, '') else None
+                except (TypeError, ValueError):
+                    cultura_id = None
+
+            if cultura_id:
+                self.fields['safra'].queryset = Safra.objects.filter(
+                    fazenda__empresa=emp,
+                    cultura_id=cultura_id
+                ).order_by('-ano', 'nome')
+            else:
+                self.fields['safra'].queryset = Safra.objects.filter(
+                    fazenda__empresa=emp
+                ).order_by('-ano', 'nome')
+
+            safra_ref = self.data.get('safra') or self.initial.get('safra')
+            if hasattr(safra_ref, 'pk'):
+                safra_id = safra_ref.pk
+            else:
+                try:
+                    safra_id = int(safra_ref) if safra_ref not in (None, '') else None
+                except (TypeError, ValueError):
+                    safra_id = None
+
+            if safra_id:
+                self.fields['talhao'].queryset = Talhao.objects.filter(
+                    empresa=emp,
+                    ativo=True,
+                    safras__id=safra_id
+                ).distinct().order_by('nome')
+            elif cultura_id:
+                self.fields['talhao'].queryset = Talhao.objects.filter(
+                    empresa=emp,
+                    ativo=True,
+                    safras__cultura_id=cultura_id
+                ).distinct().order_by('nome')
+            else:
+                self.fields['talhao'].queryset = Talhao.objects.filter(
+                    empresa=emp,
+                    ativo=True
+                ).order_by('nome')
 
 
 class PlanejamentoCustoItemForm(forms.ModelForm):
@@ -5685,7 +5751,7 @@ class PlanejamentoCustoItemForm(forms.ModelForm):
         if self.user and self.user.empresa:
             from produtos.models import Produto, UnidadeMedida
             emp = self.user.empresa
-            self.fields['produto'].queryset = Produto.objects.filter(empresa=emp, ativo=True).order_by('nome')
+            self.fields['produto'].queryset = Produto.objects.filter(categoria__empresa=emp, ativo=True).order_by('nome')
             self.fields['unidade_medida'].queryset = UnidadeMedida.objects.filter(
                 empresa=emp
             ).order_by('sigla')

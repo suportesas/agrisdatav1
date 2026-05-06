@@ -1,349 +1,42 @@
 {% extends 'base.html' %}
-{% load static %}
-
-{% block title %}{{ fornecedor.razao_social }} | ERP Agrícola{% endblock %}
+{% block title %}{{ fornecedor.get_nome_exibicao }} | Fornecedor{% endblock %}
 
 {% block extra_css %}
 <style>
-  .fornecedor-page {
-    --surface: #ffffff;
-    --surface-soft: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(246,249,252,0.98));
-    --stroke: rgba(28, 63, 92, 0.12);
-    --shadow-soft: 0 18px 40px rgba(25, 54, 82, 0.08);
-    --shadow-hover: 0 24px 60px rgba(25, 54, 82, 0.14);
-    --ink-soft: #5f6f7d;
-    --brand: #1f6f78;
-    --brand-strong: #164e63;
-    --accent: #f59e0b;
-  }
-
-  .fornecedor-page {
-    position: relative;
-  }
-
-  .fornecedor-page::before {
-    content: "";
-    position: absolute;
-    inset: 0 0 auto 0;
-    height: 280px;
-    background:
-      radial-gradient(circle at top left, rgba(31, 111, 120, 0.16), transparent 40%),
-      radial-gradient(circle at top right, rgba(245, 158, 11, 0.14), transparent 34%),
-      linear-gradient(180deg, rgba(236, 245, 247, 0.9), rgba(255, 255, 255, 0));
-    pointer-events: none;
-    z-index: 0;
-  }
-
-  .fornecedor-page > * {
-    position: relative;
-    z-index: 1;
-  }
-
   .info-card {
-    background: var(--surface-soft);
-    border-radius: 22px;
-    padding: 1.5rem;
-    box-shadow: var(--shadow-soft);
-    border: 1px solid var(--stroke);
-    margin-bottom: 1.5rem;
-    backdrop-filter: blur(10px);
-    transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+    border-left: 4px solid #0d6efd;
+    transition: all 0.3s ease;
   }
-
   .info-card:hover {
     transform: translateY(-3px);
-    box-shadow: var(--shadow-hover);
-    border-color: rgba(31, 111, 120, 0.2);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
   }
-
-  .hero-card {
-    padding: 2rem;
-    background:
-      linear-gradient(135deg, rgba(12, 34, 56, 0.95), rgba(31, 111, 120, 0.92)),
-      linear-gradient(135deg, #164e63, #1f6f78);
-    color: #fff;
-    overflow: hidden;
+  .tab-content {
+    background: white;
+    border-radius: 0 0 10px 10px;
+    padding: 25px;
   }
-
-  .hero-card::after {
-    content: "";
-    position: absolute;
-    top: -70px;
-    right: -50px;
-    width: 220px;
-    height: 220px;
-    border-radius: 50%;
-    background: radial-gradient(circle, rgba(255,255,255,0.18), rgba(255,255,255,0));
-  }
-
-  .hero-title {
-    display: flex;
-    align-items: center;
-    gap: 0.85rem;
-    font-size: clamp(1.8rem, 2vw, 2.35rem);
-    line-height: 1.1;
-  }
-
-  .hero-title-icon {
-    width: 56px;
-    height: 56px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 18px;
-    background: rgba(255, 255, 255, 0.12);
-    border: 1px solid rgba(255, 255, 255, 0.18);
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.12);
-    font-size: 1.4rem;
-  }
-
-  .hero-subtitle {
-    color: rgba(255,255,255,0.76);
-    max-width: 880px;
-  }
-
-  .hero-meta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.75rem;
-    margin-top: 1.25rem;
-  }
-
-  .hero-meta-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.65rem 0.9rem;
-    border-radius: 999px;
-    background: rgba(255,255,255,0.1);
-    border: 1px solid rgba(255,255,255,0.12);
-    color: #fff;
-    font-weight: 600;
-  }
-
-  .hero-actions .btn {
-    border-radius: 14px;
-    padding: 0.8rem 1rem;
-    font-weight: 600;
-    box-shadow: 0 10px 28px rgba(0,0,0,0.12);
-  }
-
-  .hero-actions .btn-outline-primary,
-  .hero-actions .btn-outline-danger {
-    background: rgba(255,255,255,0.08);
-    border-color: rgba(255,255,255,0.26);
-    color: #fff;
-  }
-
-  .hero-actions .btn-outline-primary:hover,
-  .hero-actions .btn-outline-danger:hover {
-    background: rgba(255,255,255,0.14);
-    border-color: rgba(255,255,255,0.32);
-    color: #fff;
-  }
-  
-  .section-title {
-    font-size: 1.1rem;
-    font-weight: 700;
-    color: #183b56;
-    margin-bottom: 1.1rem;
-    padding-bottom: 0.85rem;
-    border-bottom: 1px solid rgba(24, 59, 86, 0.08);
-    display: flex;
-    align-items: center;
-    gap: 0.65rem;
-  }
-  
-  .info-row {
-    display: flex;
-    align-items: flex-start;
-    gap: 1rem;
-    padding: 0.9rem 0;
-    border-bottom: 1px solid rgba(24, 59, 86, 0.06);
-  }
-  
-  .info-row:last-child {
-    border-bottom: none;
-  }
-  
-  .info-label {
-    font-weight: 600;
-    color: var(--ink-soft);
-    min-width: 180px;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    font-size: 0.78rem;
-  }
-  
-  .info-value {
-    flex: 1;
-    color: #163047;
-    font-weight: 600;
-  }
-  
-  .badge-status-large {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.45rem;
-    padding: 0.65rem 1rem;
-    border-radius: 999px;
-    font-size: 0.95rem;
-    font-weight: 600;
-    border: 1px solid rgba(255,255,255,0.08);
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
-  }
-  
-  .fornecedor-metric-card {
-    border: 0;
-    border-radius: 18px;
-    box-shadow: 0 12px 26px rgba(22, 48, 71, 0.08);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-  }
-
-  .fornecedor-metric-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 16px 32px rgba(22, 48, 71, 0.12);
-  }
-
-  .fornecedor-metric-icon {
-    width: 48px;
-    height: 48px;
-    border-radius: 14px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto 0.75rem;
-    font-size: 1.25rem;
-  }
-  
-  .doc-item {
-    padding: 1rem;
-    background: #f8f9fa;
-    border-radius: 8px;
-    margin-bottom: 0.5rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-  
-  .doc-status-valido { border-left: 4px solid #28a745; }
-  .doc-status-vencido { border-left: 4px solid #dc3545; }
-  .doc-status-pendente { border-left: 4px solid #ffc107; }
-  
-  .avaliacao-card {
-    background: linear-gradient(180deg, #ffffff, #f8fafc);
-    border-radius: 18px;
-    padding: 1.1rem 1.15rem;
-    margin-bottom: 1rem;
-    border: 1px solid rgba(24, 59, 86, 0.08);
-    box-shadow: 0 10px 25px rgba(15, 38, 61, 0.06);
-  }
-  
-  .nota-badge {
-    display: inline-block;
-    padding: 0.25rem 0.6rem;
-    border-radius: 12px;
-    font-weight: 600;
-    font-size: 0.9rem;
-  }
-  
-  .nota-alta { background: #d4edda; color: #155724; }
-  .nota-media { background: #fff3cd; color: #856404; }
-  .nota-baixa { background: #f8d7da; color: #721c24; }
-  
-  .tab-pane {
-    padding: 1.5rem 0;
-  }
-  
-  .categoria-tag-large {
-    display: inline-block;
-    padding: 0.5rem 0.85rem;
-    margin: 0.3rem;
-    background: rgba(255, 255, 255, 0.12);
-    color: #f3fbff;
-    border-radius: 999px;
-    font-size: 0.9rem;
-    border: 1px solid rgba(255,255,255,0.12);
-    backdrop-filter: blur(8px);
-  }
-
   .nav-tabs .nav-link {
-    color: #495057;
+    color: #6c757d;
     font-weight: 600;
-    border: none;
-    border-radius: 14px 14px 0 0;
-    padding: 0.9rem 1.1rem;
   }
-
-  .nav-tabs .nav-link:hover {
-    color: #212529;
-    background-color: #f8f9fa;
-  }
-
   .nav-tabs .nav-link.active {
-    color: #f8f9fa;
-    background: linear-gradient(135deg, #164e63, #1f6f78);
-    border-color: transparent;
-    font-weight: 700;
-    box-shadow: 0 14px 24px rgba(22, 78, 99, 0.22);
+    color: #000000;
+    background-color: #f5f5f5;
+    border-bottom: 3px solid #0d6efd;
+    border-radius: 8px 8px 0 0;
   }
-
-  .detail-card-compact .info-label {
-    min-width: 150px;
+  .alert-doc {
+    border-left: 4px solid #ffc107;
   }
-
-  .observacoes-card p {
-    margin: 0;
-    color: #304a5f;
-    line-height: 1.75;
-  }
-
-  @media (max-width: 991.98px) {
-    .hero-card {
-      padding: 1.5rem;
-    }
-
-    .hero-actions {
-      width: 100%;
-      margin-top: 1.25rem;
-    }
-
-    .hero-actions .btn {
-      width: 100%;
-      justify-content: center;
-    }
-  }
-
-  @media (max-width: 767.98px) {
-    .info-card {
-      padding: 1.1rem;
-      border-radius: 18px;
-    }
-
-    .info-row {
-      flex-direction: column;
-      gap: 0.35rem;
-    }
-
-    .info-label {
-      min-width: 0;
-    }
-
-    .hero-title {
-      align-items: flex-start;
-    }
-
-    .badge-status-large {
-      font-size: 0.86rem;
-    }
+  .doc-vencido {
+    border-left-color: #dc3545;
   }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container py-4 fornecedor-page">
-  
-  <!-- Breadcrumb -->
+<div class="container py-4">
   <nav aria-label="breadcrumb" class="mb-4">
     <ol class="breadcrumb">
       <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
@@ -352,602 +45,591 @@
     </ol>
   </nav>
 
-  <!-- Header -->
-  <div class="info-card hero-card">
-    <div class="d-flex justify-content-between align-items-start">
-      {% url 'cadastros:fornecedor_pdf' fornecedor.pk as fornecedor_pdf_url %}
-      <div class="flex-grow-1">
-        <h2 class="fw-bold mb-2 hero-title">
-          <span class="hero-title-icon"><i class="bi bi-building-fill"></i></span>
-          <span>{{ fornecedor.get_nome_exibicao }}</span>
-        </h2>
-        <p class="hero-subtitle mb-2">
-          <strong>CNPJ/CPF:</strong> {{ fornecedor.get_cnpj_cpf_formatado }}
-          {% if fornecedor.razao_social != fornecedor.get_nome_exibicao %}
-            | <em>{{ fornecedor.razao_social }}</em>
-          {% endif %}
-        </p>
-        
-        <!-- Categorias -->
-        <div class="mb-3">
-          {% for cat in fornecedor.categorias.all %}
-            <span class="categoria-tag-large">{{ cat.icone }} {{ cat.nome }}</span>
-          {% endfor %}
-        </div>
-        
-        <!-- Status e Score -->
-        <div class="hero-meta">
-          {% if fornecedor.ativa %}
-            <span class="badge-status-large" style="background: #d4edda; color: #155724;">✓ Ativo</span>
-          {% elif fornecedor.status == 'BLOQUEADO' %}
-            <span class="badge-status-large" style="background: #dc3545; color: white;">⛔ Bloqueado</span>
-          {% elif fornecedor.status == 'EM_ANALISE' %}
-            <span class="badge-status-large" style="background: #fff3cd; color: #856404;">⏳ Em Análise</span>
-          {% elif fornecedor.status == 'PENDENTE_DOC' %}
-            <span class="badge-status-large" style="background: #ffc107; color: #000;">📋 Pendente Doc.</span>
-          {% else %}
-            <span class="badge-status-large" style="background: #f8d7da; color: #721c24;">⏸ Inativo</span>
-          {% endif %}
-          
-          {% if fornecedor.score_avaliacao > 0 %}
-            {% if fornecedor.score_avaliacao >= 7 %}
-              <span class="badge-status-large" style="background: #d4edda; color: #155724;">⭐ Score: {{ fornecedor.score_avaliacao }}/10</span>
-            {% elif fornecedor.score_avaliacao >= 4 %}
-              <span class="badge-status-large" style="background: #fff3cd; color: #856404;">⚠️ Score: {{ fornecedor.score_avaliacao }}/10</span>
-            {% else %}
-              <span class="badge-status-large" style="background: #f8d7da; color: #721c24;">❌ Score: {{ fornecedor.score_avaliacao }}/10</span>
-            {% endif %}
-          {% endif %}
-        </div>
-      </div>
-      
-      <!-- Ações -->
-      <div class="d-flex gap-2 flex-wrap hero-actions">
-        {% if fornecedor_pdf_url %}
-          <a href="{{ fornecedor_pdf_url }}" class="btn btn-outline-primary" target="_blank" rel="noopener">
-            <i class="bi bi-file-earmark-pdf"></i> Ver PDF
-          </a>
-        {% endif %}
-        <a href="{% url 'cadastros:fornecedor_update' fornecedor.pk %}" class="btn btn-primary">
-          <i class="bi bi-pencil"></i> Editar
-        </a>
-        <a href="{% url 'cadastros:fornecedor_delete' fornecedor.pk %}" class="btn btn-outline-danger">
-          <i class="bi bi-trash"></i> Excluir
-        </a>
-      </div>
-    </div>
+  {% url 'cadastros:fornecedor_update' fornecedor.pk as fornecedor_update_url %}
+  {% url 'cadastros:fornecedor_delete' fornecedor.pk as fornecedor_delete_url %}
+  {% include 'cadastros/partials/entity_header.html' with title=fornecedor.get_nome_exibicao subtitle=fornecedor.nome icon="<i class='bi bi-building text-primary'></i>" edit_url=fornecedor_update_url delete_url=fornecedor_delete_url %}
+
+  <div class="d-flex justify-content-end mb-3">
+    <a class="btn btn-outline-primary" href="{% url 'cadastros:fornecedor_pdf' fornecedor.pk %}" target="_blank" rel="noopener">
+      <i class="bi bi-file-earmark-pdf"></i> Ver PDF
+    </a>
   </div>
 
-  <!-- Estatísticas -->
+  {% if not fornecedor.ativa %}
+    <div class="alert alert-warning mb-3">
+      <i class="bi bi-pause-circle"></i> Este fornecedor está <strong>inativo</strong>.
+    </div>
+  {% endif %}
+
+  <!-- Alerta de Documentos -->
+  {% if docs_vencidos > 0 %}
+    <div class="alert alert-danger doc-vencido shadow-sm mb-4">
+      <div class="d-flex align-items-center">
+        <i class="bi bi-exclamation-triangle-fill fs-3 me-3"></i>
+        <div class="flex-grow-1">
+          <h5 class="mb-1">Atenção: Documentos Precisam de Atualização!</h5>
+          <p class="mb-0"><strong>{{ docs_vencidos }} documento(s) vencido(s)</strong></p>
+        </div>
+        <a href="#documentos" class="btn btn-light">Ver Documentos</a>
+      </div>
+    </div>
+  {% endif %}
+
+  <!-- Cards de Contagem -->
   <div class="row g-3 mb-4">
-    <div class="col-md-4">
-      <div class="card text-center p-3 h-100 fornecedor-metric-card">
-        <div class="fornecedor-metric-icon" style="background: rgba(102, 126, 234, 0.12); color: #667eea;">
-          <i class="bi bi-graph-up-arrow"></i>
+    <div class="col-md-3">
+      <div class="card info-card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="bg-info bg-opacity-10 text-info rounded-circle p-3 me-3">
+              <i class="bi bi-geo-alt fs-4"></i>
+            </div>
+            <div>
+              <h6 class="text-muted mb-0 small">Endereços</h6>
+              <h4 class="mb-0 fw-bold">{{ fornecedor.enderecos.count }}</h4>
+            </div>
+          </div>
         </div>
-        <h6 class="text-muted mb-1">Volume</h6>
-        <h3 class="fw-bold text-primary mb-1">R$ {{ total_comprado|floatformat:2 }}</h3>
-        <p class="text-muted mb-0">Total Comprado</p>
       </div>
     </div>
-    <div class="col-md-4">
-      <div class="card text-center p-3 h-100 fornecedor-metric-card">
-        <div class="fornecedor-metric-icon" style="background: rgba(240, 147, 251, 0.16); color: #d63384;">
-          <i class="bi bi-bag-check"></i>
+
+    <div class="col-md-3">
+      <div class="card info-card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="bg-success bg-opacity-10 text-success rounded-circle p-3 me-3">
+              <i class="bi bi-people fs-4"></i>
+            </div>
+            <div>
+              <h6 class="text-muted mb-0 small">Contatos</h6>
+              <h4 class="mb-0 fw-bold">{{ fornecedor.contatos.count }}</h4>
+            </div>
+          </div>
         </div>
-        <h6 class="text-muted mb-1">Histórico</h6>
-        <h3 class="fw-bold text-danger mb-1">{{ numero_pedidos }}</h3>
-        <p class="text-muted mb-0">Pedidos Realizados</p>
       </div>
     </div>
-    <div class="col-md-4">
-      <div class="card text-center p-3 h-100 fornecedor-metric-card">
-        <div class="fornecedor-metric-icon" style="background: rgba(79, 172, 254, 0.14); color: #0d6efd;">
-          <i class="bi bi-star-half"></i>
+
+    <div class="col-md-3">
+      <div class="card info-card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="bg-primary bg-opacity-10 text-primary rounded-circle p-3 me-3">
+              <i class="bi bi-bank fs-4"></i>
+            </div>
+            <div>
+              <h6 class="text-muted mb-0 small">Contas</h6>
+              <h4 class="mb-0 fw-bold">{{ contas.count }}</h4>
+            </div>
+          </div>
         </div>
-        <h6 class="text-muted mb-1">Qualidade</h6>
-        <h3 class="fw-bold text-info mb-1">{{ total_avaliacoes }}</h3>
-        <p class="text-muted mb-0">Avaliações Registradas</p>
+      </div>
+    </div>
+
+    <div class="col-md-3">
+      <div class="card info-card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="bg-warning bg-opacity-10 text-warning rounded-circle p-3 me-3">
+              <i class="bi bi-file-earmark fs-4"></i>
+            </div>
+            <div>
+              <h6 class="text-muted mb-0 small">Documentos</h6>
+              <h4 class="mb-0 fw-bold">{{ fornecedor.documentos.count }}</h4>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- Tabs de Informações -->
-  <ul class="nav nav-tabs mb-3" id="fornecedorTabs" role="tablist">
-    <li class="nav-item" role="presentation">
-      <button class="nav-link active" id="info-tab" data-bs-toggle="tab" data-bs-target="#info" type="button">
-        <i class="bi bi-info-circle"></i> Informações
-      </button>
-    </li>
-    <li class="nav-item" role="presentation">
-      <button class="nav-link" id="enderecos-tab" data-bs-toggle="tab" data-bs-target="#enderecos" type="button">
-        <i class="bi bi-geo-alt"></i> Endereços ({{ fornecedor.enderecos.count }})
-      </button>
-    </li>
-    <li class="nav-item" role="presentation">
-      <button class="nav-link" id="contatos-tab" data-bs-toggle="tab" data-bs-target="#contatos" type="button">
-        <i class="bi bi-people"></i> Contatos ({{ fornecedor.contatos.count }})
-      </button>
-    </li>
-    <li class="nav-item" role="presentation">
-      <button class="nav-link" id="bancos-tab" data-bs-toggle="tab" data-bs-target="#bancos" type="button">
-        <i class="bi bi-bank"></i> Bancos ({{ contas.count }})
-      </button>
-    </li>
-    <li class="nav-item" role="presentation">
-      <button class="nav-link" id="documentos-tab" data-bs-toggle="tab" data-bs-target="#documentos" type="button">
-        <i class="bi bi-file-earmark-text"></i> Documentos ({{ fornecedor.documentos.count }})
-        {% if docs_vencidos > 0 %}
-          <span class="badge bg-danger">{{ docs_vencidos }}</span>
-        {% endif %}
-      </button>
-    </li>
-    <li class="nav-item" role="presentation">
-      <button class="nav-link" id="avaliacoes-tab" data-bs-toggle="tab" data-bs-target="#avaliacoes" type="button">
-        <i class="bi bi-star"></i> Avaliações ({{ total_avaliacoes }})
-      </button>
-    </li>
-  </ul>
-
-  <div class="tab-content" id="fornecedorTabContent">
-    
-    <!-- Tab: Informações -->
-    <div class="tab-pane fade show active" id="info" role="tabpanel">
-      <div class="row">
-        <div class="col-md-6">
-          <div class="info-card detail-card-compact">
-            <h5 class="section-title"><i class="bi bi-file-earmark-text"></i> Documentação</h5>
-            <div class="info-row">
-              <span class="info-label">Inscrição Estadual:</span>
-              <span class="info-value">{{ fornecedor.inscricao_estadual|default:"—" }}</span>
-            </div>
-            <div class="info-row">
-              <span class="info-label">Inscrição Municipal:</span>
-              <span class="info-value">{{ fornecedor.inscricao_municipal|default:"—" }}</span>
-            </div>
-            <div class="info-row">
-              <span class="info-label">Código EORI:</span>
-              <span class="info-value">{{ fornecedor.eori|default:"—" }}</span>
-            </div>
-            <div class="info-row">
-              <span class="info-label">Regime Tributário:</span>
-              <span class="info-value">{{ fornecedor.get_regime_tributario_display }}</span>
-            </div>
-          </div>
-
-          <div class="info-card detail-card-compact">
-            <h5 class="section-title"><i class="bi bi-cash-coin"></i> Condições Comerciais</h5>
-            <div class="info-row">
-              <span class="info-label">Limite de Crédito Aprovado:</span>
-              <span class="info-value">R$ {{ fornecedor.limite_credito|default:0|floatformat:2 }}</span>
-            </div>
-            <div class="info-row">
-              <span class="info-label">Prazo de Pagamento:</span>
-              <span class="info-value">{{ fornecedor.prazo_pagamento_padrao }} dias</span>
-            </div>
-            <div class="info-row">
-              <span class="info-label">Prazo de Entrega:</span>
-              <span class="info-value">{{ fornecedor.prazo_entrega_medio }} dias</span>
-            </div>
-            <div class="info-row">
-              <span class="info-label">Última Compra:</span>
-              <span class="info-value">{{ fornecedor.data_ultima_compra|date:"d/m/Y"|default:"—" }}</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="col-md-6">
-          <div class="info-card detail-card-compact">
-            <h5 class="section-title"><i class="bi bi-telephone"></i> Contato</h5>
-            <div class="info-row">
-              <span class="info-label">Telefone:</span>
-              <span class="info-value">{{ fornecedor.telefone|default:"—" }}</span>
-            </div>
-            <div class="info-row">
-              <span class="info-label">E-mail:</span>
-              <span class="info-value">
-                {% if fornecedor.email %}
-                  <a href="mailto:{{ fornecedor.email }}">{{ fornecedor.email }}</a>
-                {% else %}—{% endif %}
-              </span>
-            </div>
-            <div class="info-row">
-              <span class="info-label">Website:</span>
-              <span class="info-value">
-                {% if fornecedor.website %}
-                  <a href="{{ fornecedor.website }}" target="_blank">{{ fornecedor.website }}</a>
-                {% else %}—{% endif %}
-              </span>
-            </div>
-          </div>
-
-          <div class="info-card detail-card-compact">
-            <h5 class="section-title"><i class="bi bi-shield-check"></i> Homologação</h5>
-            <div class="info-row">
-              <span class="info-label">Data Homologação:</span>
-              <span class="info-value">{{ fornecedor.data_homologacao|date:"d/m/Y"|default:"—" }}</span>
-            </div>
-            <div class="info-row">
-              <span class="info-label">Validade:</span>
-              <span class="info-value">
-                {{ fornecedor.validade_homologacao|date:"d/m/Y"|default:"—" }}
-                {% if fornecedor.homologacao_vencida %}
-                  <span class="badge bg-danger">Vencida</span>
-                {% endif %}
-              </span>
-            </div>
-            <div class="info-row">
-              <span class="info-label">Classificação Risco:</span>
-              <span class="info-value">{{ fornecedor.get_classificacao_risco_display }}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {% if fornecedor.observacoes %}
-      <div class="info-card observacoes-card">
-        <h5 class="section-title"><i class="bi bi-chat-left-text"></i> Observações</h5>
-        <p>{{ fornecedor.observacoes|linebreaks }}</p>
-      </div>
-      {% endif %}
+  <!-- Tabs -->
+  <div class="card border-0 shadow-sm">
+    <div class="card-header bg-white border-0 pt-3">
+      <ul class="nav nav-tabs card-header-tabs" role="tablist">
+        <li class="nav-item">
+          <a class="nav-link active" data-bs-toggle="tab" href="#geral">
+            <i class="bi bi-info-circle"></i> Informações Gerais
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" data-bs-toggle="tab" href="#enderecos">
+            <i class="bi bi-geo-alt"></i> Endereços ({{ fornecedor.enderecos.count }})
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" data-bs-toggle="tab" href="#contatos">
+            <i class="bi bi-person"></i> Contatos ({{ fornecedor.contatos.count }})
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" data-bs-toggle="tab" href="#bancos">
+            <i class="bi bi-bank"></i> Contas Bancárias ({{ contas.count }})
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" data-bs-toggle="tab" href="#documentos">
+            <i class="bi bi-file-earmark"></i> Documentos ({{ fornecedor.documentos.count }})
+            {% if docs_vencidos > 0 %}
+              <span class="badge bg-danger">{{ docs_vencidos }}</span>
+            {% endif %}
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" data-bs-toggle="tab" href="#avaliacoes">
+            <i class="bi bi-star"></i> Avaliações ({{ total_avaliacoes }})
+          </a>
+        </li>
+      </ul>
     </div>
 
-    <!-- optional alert if documents are expiring or expired -->
-    {% if docs_vencidos > 0 %}
-    <div class="alert alert-danger mt-3">
-      <i class="bi bi-exclamation-octagon"></i> Atenção: <strong>{{ docs_vencidos }}</strong> documento(s) vencido(s) ou com alerta de vencimento. Verifique os documentos na aba "Documentos".
-    </div>
-    {% endif %}
+    <div class="tab-content">
 
-    <!-- Tab: Endereços -->
-    <div class="tab-pane fade" id="enderecos" role="tabpanel">
-      <div class="d-flex justify-content-between align-items-center mb-3">
-        <h5 class="mb-0">Endereços Cadastrados</h5>
-        <a href="{% url 'cadastros:fornecedor_endereco_create' fornecedor.pk %}" class="btn btn-success btn-sm">
-          <i class="bi bi-plus-circle"></i> Novo Endereço
-        </a>
-      </div>
-
-      {% if fornecedor.enderecos.exists %}
+      <!-- Tab: Informações Gerais -->
+      <div class="tab-pane fade show active" id="geral">
         <div class="row">
-          {% for endereco in fornecedor.enderecos.all %}
-          <div class="col-md-6 mb-3">
-            <div class="info-card">
-              <div class="d-flex justify-content-between align-items-start mb-2">
-                <h6 class="fw-bold">
-                  <i class="bi bi-geo-alt-fill text-primary"></i>
-                  {{ endereco.get_tipo_display }}
-                  {% if endereco.padrao %}
-                    <span class="badge bg-primary">Principal</span>
-                  {% endif %}
-                </h6>
-                <div>
-                  <a href="{% url 'cadastros:fornecedor_endereco_update' fornecedor.pk endereco.pk %}" class="btn btn-sm btn-outline-primary">
-                    <i class="bi bi-pencil"></i>
-                  </a>
-                  <a href="{% url 'cadastros:fornecedor_endereco_delete' fornecedor.pk endereco.pk %}" class="btn btn-sm btn-outline-danger">
-                    <i class="bi bi-trash"></i>
-                  </a>
-                </div>
-              </div>
-              <p class="mb-0">
-                {{ endereco.logradouro }}, {{ endereco.numero }}
-                {% if endereco.complemento %}<br>{{ endereco.complemento }}{% endif %}
-                <br>{{ endereco.bairro }}
-                <br>{{ endereco.cidade }}/{{ endereco.uf }} - CEP {{ endereco.cep }}
-                <br><strong>{{ endereco.pais }}</strong>
-              </p>
-            </div>
-          </div>
-          {% endfor %}
-        </div>
-      {% else %}
-        <div class="alert alert-info">
-          <i class="bi bi-info-circle"></i> Nenhum endereço cadastrado.
-          <a href="{% url 'cadastros:fornecedor_endereco_create' fornecedor.pk %}">Adicionar primeiro endereço</a>
-        </div>
-      {% endif %}
-    </div>
-
-    <!-- Tab: Bancos -->
-    <div class="tab-pane fade" id="bancos" role="tabpanel">
-      <div class="d-flex justify-content-between align-items-center mb-3">
-        <h5 class="mb-0">Contas Bancárias</h5>
-        <a href="{% url 'cadastros:fornecedor_conta_create' fornecedor.pk %}" class="btn btn-success btn-sm">
-          <i class="bi bi-plus-circle"></i> Nova Conta
-        </a>
-      </div>
-
-      {% if contas %}
-        <div class="table-responsive">
-          <table class="table table-hover">
-            <thead class="table-light">
+          <div class="col-md-6">
+            <h5 class="fw-bold mb-3 text-primary">Documentação</h5>
+            <table class="table table-borderless">
               <tr>
-                <th>Banco</th>
-                <th>Agência / Conta</th>
-                <th>PIX</th>
-                <th>Principal</th>
-                <th class="text-center">Ações</th>
+                <td class="text-muted"><strong>CNPJ/CPF:</strong></td>
+                <td>{{ fornecedor.get_cnpj_cpf_formatado }}</td>
               </tr>
-            </thead>
-            <tbody>
-              {% for c in contas %}
               <tr>
-                <td>{{ c.banco }}</td>
-                <td>{{ c.agencia }} / {{ c.conta }}{% if c.agencia_digito %}-{{ c.agencia_digito }}{% endif %}{% if c.conta_digito %}-{{ c.conta_digito }}{% endif %}</td>
-                <td>{% if c.pix_habilitado %}{{ c.get_tipo_chave_pix_display }}: {{ c.chave_pix }}{% else %}—{% endif %}</td>
-                <td>{% if c.conta_principal %}<span class="badge bg-primary">Principal</span>{% else %}—{% endif %}</td>
-                <td class="text-center">
-                  <a href="{% url 'cadastros:fornecedor_conta_update' fornecedor.pk c.pk %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
-                  <a href="{% url 'cadastros:fornecedor_conta_delete' fornecedor.pk c.pk %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></a>
+                <td class="text-muted"><strong>Inscrição Estadual:</strong></td>
+                <td>{{ fornecedor.inscricao_estadual|default:"Não informada" }}</td>
+              </tr>
+              <tr>
+                <td class="text-muted"><strong>Inscrição Municipal:</strong></td>
+                <td>{{ fornecedor.inscricao_municipal|default:"Não informada" }}</td>
+              </tr>
+              <tr>
+                <td class="text-muted"><strong>Código EORI:</strong></td>
+                <td>{{ fornecedor.eori|default:"Não informado" }}</td>
+              </tr>
+              <tr>
+                <td class="text-muted"><strong>Regime Tributário:</strong></td>
+                <td><span class="badge bg-info">{{ fornecedor.get_regime_tributario_display }}</span></td>
+              </tr>
+              <tr>
+                <td class="text-muted"><strong>Tipo:</strong></td>
+                <td>
+                  {% if fornecedor.is_exportador %}
+                    <span class="badge bg-primary">Internacional</span>
+                  {% else %}
+                    <span class="badge bg-info text-dark">Nacional</span>
+                  {% endif %}
                 </td>
               </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-      {% else %}
-        <div class="alert alert-info">Nenhuma conta bancária cadastrada.</div>
-      {% endif %}
-    </div>
+              <tr>
+                <td class="text-muted"><strong>Status:</strong></td>
+                <td>
+                  {% if fornecedor.ativa %}
+                    <span class="badge bg-success">Ativo</span>
+                  {% else %}
+                    <span class="badge bg-secondary">Inativo</span>
+                  {% endif %}
+                </td>
+              </tr>
+            </table>
+          </div>
 
-    <!-- Tab: Contatos -->
-    <div class="tab-pane fade" id="contatos" role="tabpanel">
-      <div class="d-flex justify-content-between align-items-center mb-3">
-        <h5 class="mb-0">Contatos Cadastrados</h5>
-        <a href="{% url 'cadastros:fornecedor_contato_create' fornecedor.pk %}" class="btn btn-success btn-sm">
-          <i class="bi bi-plus-circle"></i> Novo Contato
-        </a>
-      </div>
+          <div class="col-md-6">
+            <h5 class="fw-bold mb-3 text-success">Comercial</h5>
+            <table class="table table-borderless">
+              <tr>
+                <td class="text-muted"><strong>Limite de Crédito:</strong></td>
+                <td>R$ {{ fornecedor.limite_credito|default:0|floatformat:2 }}</td>
+              </tr>
+              <tr>
+                <td class="text-muted"><strong>Prazo de Pagamento:</strong></td>
+                <td>{{ fornecedor.prazo_pagamento_padrao|default:"—" }} dias</td>
+              </tr>
+              <tr>
+                <td class="text-muted"><strong>Prazo de Entrega:</strong></td>
+                <td>{{ fornecedor.prazo_entrega_medio|default:"—" }} dias</td>
+              </tr>
+              <tr>
+                <td class="text-muted"><strong>Última Compra:</strong></td>
+                <td>{{ fornecedor.data_ultima_compra|date:"d/m/Y"|default:"—" }}</td>
+              </tr>
+              <tr>
+                <td class="text-muted"><strong>Telefone:</strong></td>
+                <td>{{ fornecedor.telefone|default:"—" }}</td>
+              </tr>
+              <tr>
+                <td class="text-muted"><strong>E-mail:</strong></td>
+                <td>
+                  {% if fornecedor.email %}
+                    <a href="mailto:{{ fornecedor.email }}">{{ fornecedor.email }}</a>
+                  {% else %}—{% endif %}
+                </td>
+              </tr>
+              <tr>
+                <td class="text-muted"><strong>Website:</strong></td>
+                <td>
+                  {% if fornecedor.website %}
+                    <a href="{{ fornecedor.website }}" target="_blank">{{ fornecedor.website }}</a>
+                  {% else %}—{% endif %}
+                </td>
+              </tr>
+              <tr>
+                <td class="text-muted"><strong>Classificação Risco:</strong></td>
+                <td>{{ fornecedor.get_classificacao_risco_display|default:"—" }}</td>
+              </tr>
+            </table>
 
-      {% if fornecedor.contatos.exists %}
-        <div class="row">
-          {% for contato in fornecedor.contatos.all %}
-          <div class="col-md-6 mb-3">
-            <div class="info-card">
-              <div class="d-flex justify-content-between align-items-start mb-2">
-                <div>
-                  <h6 class="fw-bold mb-0">
-                    <i class="bi bi-person-fill text-success"></i>
-                    {{ contato.nome }}
-                    {% if contato.preferencial %}
-                      <span class="badge bg-success">Principal</span>
-                    {% endif %}
-                  </h6>
-                  <small class="text-muted">{{ contato.cargo }} - {{ contato.get_tipo_display }}</small>
-                </div>
-                <div>
-                  <a href="{% url 'cadastros:fornecedor_contato_update' fornecedor.pk contato.pk %}" class="btn btn-sm btn-outline-primary">
-                    <i class="bi bi-pencil"></i>
-                  </a>
-                  <a href="{% url 'cadastros:fornecedor_contato_delete' fornecedor.pk contato.pk %}" class="btn btn-sm btn-outline-danger">
-                    <i class="bi bi-trash"></i>
-                  </a>
-                </div>
-              </div>
-              <p class="mb-0">
-                {% if contato.telefone %}<i class="bi bi-telephone"></i> {{ contato.telefone }}<br>{% endif %}
-                {% if contato.celular %}<i class="bi bi-phone"></i> {{ contato.celular }}<br>{% endif %}
-                {% if contato.email %}<i class="bi bi-envelope"></i> {{ contato.email }}<br>{% endif %}
-                {% if contato.whatsapp %}
-                  <span class="badge bg-info mt-1">WhatsApp</span>
-                {% endif %}
-              </p>
+            <div class="mt-3 small text-muted">
+              <div><strong>Pedidos realizados:</strong> {{ numero_pedidos }}</div>
+              <div><strong>Total comprado:</strong> R$ {{ total_comprado|floatformat:2 }}</div>
             </div>
           </div>
-          {% endfor %}
         </div>
-      {% else %}
-        <div class="alert alert-info">
-          <i class="bi bi-info-circle"></i> Nenhum contato cadastrado.
-          <a href="{% url 'cadastros:fornecedor_contato_create' fornecedor.pk %}">Adicionar primeiro contato</a>
-        </div>
-      {% endif %}
-    </div>
 
-    <!-- Tab: Documentos -->
-    <div class="tab-pane fade" id="documentos" role="tabpanel">
-      <div class="d-flex justify-content-between align-items-center mb-3">
-        <h5 class="mb-0">Documentos Anexados</h5>
-        <a href="{% url 'cadastros:fornecedor_documento_create' fornecedor.pk %}" class="btn btn-sm btn-success">
-          <i class="bi bi-plus-circle"></i> Anexar Documento
-        </a>
+        {% if fornecedor.observacoes %}
+          <h5 class="fw-bold mb-3 text-secondary mt-4">Observações</h5>
+          <p class="text-muted">{{ fornecedor.observacoes|linebreaks }}</p>
+        {% endif %}
       </div>
 
-      {% if fornecedor.documentos.all %}
-        <div class="table-responsive">
-          <table class="table table-hover">
-            <thead class="table-light">
-              <tr>
-                <th>Tipo</th>
-                <th>Título</th>
-                <th>Validade</th>
-                <th>Status</th>
-                <th class="text-center">Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for doc in fornecedor.documentos.all %}
-                <tr class="{% if doc.esta_vencido %}table-danger{% elif doc.precisa_alerta %}table-warning{% endif %}">
-                  <td><span class="badge bg-secondary">{{ doc.get_tipo_display }}</span></td>
-                  <td>
-                    <strong>{{ doc.titulo }}</strong>
-                    {% if doc.numero_documento %}
-                      <br><small class="text-muted">Nº {{ doc.numero_documento }}</small>
-                    {% endif %}
-                  </td>
-                  <td>
-                    {% if doc.data_validade %}
-                      {{ doc.data_validade|date:"d/m/Y" }}
-                      {% if doc.dias_para_vencimento %}
-                        <br><small class="text-muted">({{ doc.dias_para_vencimento }} dias)</small>
+      <!-- Tab: Endereços -->
+      <div class="tab-pane fade" id="enderecos">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="fw-bold mb-0">Endereços Cadastrados</h5>
+          <a href="{% url 'cadastros:fornecedor_endereco_create' fornecedor.pk %}" class="btn btn-sm btn-success">
+            <i class="bi bi-plus-circle"></i> Adicionar Endereço
+          </a>
+        </div>
+
+        {% if fornecedor.enderecos.exists %}
+          <div class="row g-3">
+            {% for e in fornecedor.enderecos.all %}
+              <div class="col-md-6">
+                <div class="card h-100">
+                  <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                      <h6 class="fw-bold text-primary mb-0">
+                        <i class="bi bi-geo-alt-fill"></i> {{ e.get_tipo_display }}
+                      </h6>
+                      {% if e.padrao %}
+                        <span class="badge bg-success">Padrão</span>
                       {% endif %}
-                    {% else %}
-                      Sem validade
-                    {% endif %}
-                  </td>
-                  <td>
-                    {% if doc.esta_vencido %}
-                      <span class="badge bg-danger">Vencido</span>
-                    {% elif doc.precisa_alerta %}
-                      <span class="badge bg-warning text-dark">Vencendo</span>
-                    {% else %}
-                      <span class="badge bg-success">Válido</span>
-                    {% endif %}
-                  </td>
-                  <td class="text-center">
-                    <div class="btn-group btn-group-sm">
-                      <a href="{{ doc.arquivo.url }}" target="_blank" class="btn btn-outline-info" title="Visualizar">
-                        <i class="bi bi-eye"></i>
-                      </a>                        <a href="{% url 'cadastros:fornecedor_documento_update' fornecedor.pk doc.pk %}" class="btn btn-outline-secondary" title="Editar">
-                          <i class="bi bi-pencil-square"></i>
-                        </a>                      <a href="{% url 'cadastros:fornecedor_documento_delete' fornecedor.pk doc.pk %}" class="btn btn-outline-danger">
+                    </div>
+                    <p class="mb-1 small">
+                      {{ e.logradouro }}, {{ e.numero }}
+                      {% if e.complemento %}<br>{{ e.complemento }}{% endif %}
+                      <br>{{ e.bairro }}
+                      <br>{{ e.cidade }}/{{ e.uf }} — CEP {{ e.cep }}
+                      <br><strong>{{ e.pais }}</strong>
+                    </p>
+                    <div class="d-flex gap-2 mt-3">
+                      <a href="{% url 'cadastros:fornecedor_endereco_update' fornecedor.pk e.pk %}" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-pencil"></i> Editar
+                      </a>
+                      <a href="{% url 'cadastros:fornecedor_endereco_delete' fornecedor.pk e.pk %}" class="btn btn-sm btn-outline-danger">
                         <i class="bi bi-trash"></i>
                       </a>
                     </div>
+                  </div>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i> Nenhum endereço cadastrado ainda.
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- Tab: Contatos -->
+      <div class="tab-pane fade" id="contatos">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="fw-bold mb-0">Contatos</h5>
+          <a href="{% url 'cadastros:fornecedor_contato_create' fornecedor.pk %}" class="btn btn-sm btn-success">
+            <i class="bi bi-plus-circle"></i> Adicionar Contato
+          </a>
+        </div>
+
+        {% if fornecedor.contatos.exists %}
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead class="table-light">
+                <tr>
+                  <th>Nome</th>
+                  <th>Cargo</th>
+                  <th>Telefone</th>
+                  <th>E-mail</th>
+                  <th class="text-center">Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for contato in fornecedor.contatos.all %}
+                  <tr>
+                    <td>
+                      <strong>{{ contato.nome }}</strong>
+                      {% if contato.preferencial %}<span class="badge bg-success ms-1">Principal</span>{% endif %}
+                    </td>
+                    <td>{{ contato.cargo|default:"—" }}</td>
+                    <td>{{ contato.telefone|default:contato.celular|default:"—" }}</td>
+                    <td>{{ contato.email|default:"—" }}</td>
+                    <td class="text-center">
+                      <div class="btn-group btn-group-sm">
+                        <a href="{% url 'cadastros:fornecedor_contato_update' fornecedor.pk contato.pk %}" class="btn btn-outline-primary">
+                          <i class="bi bi-pencil"></i>
+                        </a>
+                        <a href="{% url 'cadastros:fornecedor_contato_delete' fornecedor.pk contato.pk %}" class="btn btn-outline-danger">
+                          <i class="bi bi-trash"></i>
+                        </a>
+                      </div>
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i> Nenhum contato cadastrado.
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- Tab: Contas Bancárias -->
+      <div class="tab-pane fade" id="bancos">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="fw-bold mb-0">Contas Bancárias</h5>
+          <a href="{% url 'cadastros:fornecedor_conta_create' fornecedor.pk %}" class="btn btn-sm btn-success">
+            <i class="bi bi-plus-circle"></i> Nova Conta
+          </a>
+        </div>
+
+        {% if contas %}
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead class="table-light">
+                <tr>
+                  <th>Banco</th>
+                  <th>Agência / Conta</th>
+                  <th>PIX</th>
+                  <th>Principal</th>
+                  <th class="text-center">Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for c in contas %}
+                <tr>
+                  <td>{{ c.banco }}</td>
+                  <td>{{ c.agencia }} / {{ c.conta }}{% if c.conta_digito %}-{{ c.conta_digito }}{% endif %}</td>
+                  <td>{% if c.pix_habilitado %}{{ c.get_tipo_chave_pix_display }}: {{ c.chave_pix }}{% else %}—{% endif %}</td>
+                  <td>{% if c.conta_principal %}<span class="badge bg-primary">Principal</span>{% else %}—{% endif %}</td>
+                  <td class="text-center">
+                    <div class="btn-group btn-group-sm">
+                      <a href="{% url 'cadastros:fornecedor_conta_update' fornecedor.pk c.pk %}" class="btn btn-outline-primary"><i class="bi bi-pencil"></i></a>
+                      <a href="{% url 'cadastros:fornecedor_conta_delete' fornecedor.pk c.pk %}" class="btn btn-outline-danger"><i class="bi bi-trash"></i></a>
+                    </div>
                   </td>
                 </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-      {% else %}
-        <div class="alert alert-info">
-          <i class="bi bi-info-circle"></i> Nenhum documento anexado.
-        </div>
-      {% endif %}
-    </div>
-
-    <!-- Tab: Avaliações -->
-    <div class="tab-pane fade" id="avaliacoes" role="tabpanel">
-      <div class="d-flex justify-content-between align-items-center mb-3">
-        <h5 class="mb-0">Histórico de Avaliações</h5>
-        <a href="#" class="btn btn-success btn-sm">
-          <i class="bi bi-plus-circle"></i> Nova Avaliação
-        </a>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="alert alert-info">Nenhuma conta bancária cadastrada.</div>
+        {% endif %}
       </div>
 
-      {% if avaliacoes_recentes %}
-        {% for av in avaliacoes_recentes %}
-        <div class="avaliacao-card">
-          <div class="d-flex justify-content-between align-items-start mb-2">
-            <div>
-              <h6 class="fw-bold mb-1">
-                {{ av.get_tipo_avaliacao_display }}
-                <span class="badge bg-secondary">{{ av.data_avaliacao|date:"d/m/Y" }}</span>
-              </h6>
-              <small class="text-muted">Por: {{ av.avaliado_por.get_full_name }}</small>
-            </div>
-            <div>
-              {% with media=av.get_media_notas %}
-                {% if media >= 7 %}
-                  <span class="nota-badge nota-alta">⭐ {{ media }}</span>
-                {% elif media >= 4 %}
-                  <span class="nota-badge nota-media">⚠️ {{ media }}</span>
-                {% else %}
-                  <span class="nota-badge nota-baixa">❌ {{ media }}</span>
-                {% endif %}
-              {% endwith %}
-            </div>
-          </div>
-          
-          <div class="row g-2 mb-2">
-            <div class="col-3">
-              <small><strong>Qualidade:</strong> {{ av.nota_qualidade }}</small>
-            </div>
-            <div class="col-3">
-              <small><strong>Prazo:</strong> {{ av.nota_prazo_entrega }}</small>
-            </div>
-            <div class="col-3">
-              <small><strong>Atendimento:</strong> {{ av.nota_atendimento }}</small>
-            </div>
-            <div class="col-3">
-              <small><strong>Preço:</strong> {{ av.nota_preco }}</small>
-            </div>
-          </div>
-          
-          {% if av.observacoes %}
-            <p class="mb-0"><em>{{ av.observacoes }}</em></p>
-          {% endif %}
+      <!-- Tab: Documentos -->
+      <div class="tab-pane fade" id="documentos">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="mb-0">Documentos Anexados</h5>
+          <a href="{% url 'cadastros:fornecedor_documento_create' fornecedor.pk %}" class="btn btn-sm btn-success">
+            <i class="bi bi-plus-circle"></i> Anexar Documento
+          </a>
         </div>
-        {% endfor %}
-      {% else %}
-        <div class="alert alert-info">
-          <i class="bi bi-info-circle"></i> Nenhuma avaliação registrada.
-        </div>
-      {% endif %}
-    </div>
 
+        {% if fornecedor.documentos.all %}
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead class="table-light">
+                <tr>
+                  <th>Tipo</th>
+                  <th>Título</th>
+                  <th>Validade</th>
+                  <th>Status</th>
+                  <th class="text-center">Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for doc in fornecedor.documentos.all %}
+                  <tr class="{% if doc.esta_vencido %}table-danger{% elif doc.precisa_alerta %}table-warning{% endif %}">
+                    <td><span class="badge bg-secondary">{{ doc.get_tipo_display }}</span></td>
+                    <td>
+                      <strong>{{ doc.titulo }}</strong>
+                      {% if doc.numero_documento %}
+                        <br><small class="text-muted">Nº {{ doc.numero_documento }}</small>
+                      {% endif %}
+                    </td>
+                    <td>
+                      {% if doc.data_validade %}
+                        {{ doc.data_validade|date:"d/m/Y" }}
+                        {% if doc.dias_para_vencimento %}
+                          <br><small class="text-muted">({{ doc.dias_para_vencimento }} dias)</small>
+                        {% endif %}
+                      {% else %}
+                        Sem validade
+                      {% endif %}
+                    </td>
+                    <td>
+                      {% if doc.esta_vencido %}
+                        <span class="badge bg-danger">Vencido</span>
+                      {% elif doc.precisa_alerta %}
+                        <span class="badge bg-warning text-dark">Vencendo</span>
+                      {% else %}
+                        <span class="badge bg-success">Válido</span>
+                      {% endif %}
+                    </td>
+                    <td class="text-center">
+                      <div class="btn-group btn-group-sm">
+                        <a href="{{ doc.arquivo.url }}" target="_blank" class="btn btn-outline-info" title="Visualizar">
+                          <i class="bi bi-eye"></i>
+                        </a>
+                        <a href="{% url 'cadastros:fornecedor_documento_update' fornecedor.pk doc.pk %}" class="btn btn-outline-secondary" title="Editar">
+                          <i class="bi bi-pencil-square"></i>
+                        </a>
+                        <a href="{% url 'cadastros:fornecedor_documento_delete' fornecedor.pk doc.pk %}" class="btn btn-outline-danger">
+                          <i class="bi bi-trash"></i>
+                        </a>
+                      </div>
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i> Nenhum documento anexado.
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- Tab: Avaliações -->
+      <div class="tab-pane fade" id="avaliacoes">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="fw-bold mb-0">Histórico de Avaliações</h5>
+        </div>
+
+        {% if avaliacoes_recentes %}
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead class="table-light">
+                <tr>
+                  <th>Data</th>
+                  <th>Tipo</th>
+                  <th>Qualidade</th>
+                  <th>Prazo</th>
+                  <th>Atendimento</th>
+                  <th>Preço</th>
+                  <th>Avaliado por</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for av in avaliacoes_recentes %}
+                  <tr>
+                    <td>{{ av.data_avaliacao|date:"d/m/Y" }}</td>
+                    <td>{{ av.get_tipo_avaliacao_display }}</td>
+                    <td>{{ av.nota_qualidade }}</td>
+                    <td>{{ av.nota_prazo_entrega }}</td>
+                    <td>{{ av.nota_atendimento }}</td>
+                    <td>{{ av.nota_preco }}</td>
+                    <td>{{ av.avaliado_por.get_full_name }}</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i> Nenhuma avaliação registrada.
+          </div>
+        {% endif %}
+      </div>
+
+    </div>
   </div>
 
-  <!-- Card: Acesso ao Portal do Fornecedor -->
-  <div class="info-card mb-4">
-    <h5 class="section-title"><i class="bi bi-person-badge me-2"></i>Acesso ao Portal</h5>
-    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
-      <div>
-        {% if fornecedor.portal_user %}
-          {% if fornecedor.portal_user.is_active and fornecedor.portal_enabled %}
-            <span class="badge bg-success fs-6 px-3 py-2">
-              <i class="bi bi-check-circle me-1"></i> Ativo
-            </span>
-          {% elif not fornecedor.portal_user.is_active %}
-            <span class="badge bg-danger fs-6 px-3 py-2">
-              <i class="bi bi-slash-circle me-1"></i> Bloqueado
-            </span>
-          {% else %}
-            <span class="badge bg-secondary fs-6 px-3 py-2">
-              <i class="bi bi-pause-circle me-1"></i> Desabilitado
-            </span>
-          {% endif %}
-          <div class="mt-2 text-muted small">
-            <i class="bi bi-person me-1"></i> Usuário: <strong>{{ fornecedor.portal_user.username }}</strong><br>
-            <i class="bi bi-envelope me-1"></i> E-mail: <strong>{{ fornecedor.portal_user.email }}</strong><br>
-            {% if fornecedor.portal_user.last_login %}
-              <i class="bi bi-clock me-1"></i> Último acesso: {{ fornecedor.portal_user.last_login|date:"d/m/Y H:i" }}
+  <!-- Portal do Fornecedor -->
+  <div class="card border-0 shadow-sm mt-4">
+    <div class="card-header bg-white">
+      <h5 class="mb-0 fw-bold"><i class="bi bi-person-badge me-2"></i>Acesso ao Portal</h5>
+    </div>
+    <div class="card-body">
+      <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+        <div>
+          {% if fornecedor.portal_user %}
+            {% if fornecedor.portal_user.is_active and fornecedor.portal_enabled %}
+              <span class="badge bg-success fs-6 px-3 py-2">
+                <i class="bi bi-check-circle me-1"></i> Ativo
+              </span>
+            {% elif not fornecedor.portal_user.is_active %}
+              <span class="badge bg-danger fs-6 px-3 py-2">
+                <i class="bi bi-slash-circle me-1"></i> Bloqueado
+              </span>
             {% else %}
-              <i class="bi bi-clock me-1"></i> Nunca acessou
+              <span class="badge bg-secondary fs-6 px-3 py-2">
+                <i class="bi bi-pause-circle me-1"></i> Desabilitado
+              </span>
             {% endif %}
-          </div>
-        {% else %}
-          <span class="badge bg-warning text-dark fs-6 px-3 py-2">
-            <i class="bi bi-x-circle me-1"></i> Sem acesso
-          </span>
-          {% if not fornecedor.email %}
-            <div class="mt-2">
-              <small class="text-danger"><i class="bi bi-exclamation-triangle me-1"></i>Cadastre um e-mail no fornecedor para criar acesso.</small>
+            <div class="mt-2 text-muted small">
+              <i class="bi bi-person me-1"></i> Usuário: <strong>{{ fornecedor.portal_user.username }}</strong><br>
+              <i class="bi bi-envelope me-1"></i> E-mail: <strong>{{ fornecedor.portal_user.email }}</strong><br>
+              {% if fornecedor.portal_user.last_login %}
+                <i class="bi bi-clock me-1"></i> Último acesso: {{ fornecedor.portal_user.last_login|date:"d/m/Y H:i" }}
+              {% else %}
+                <i class="bi bi-clock me-1"></i> Nunca acessou
+              {% endif %}
             </div>
-          {% endif %}
-        {% endif %}
-      </div>
-
-      <div class="d-flex gap-2 flex-wrap">
-        {% if not fornecedor.portal_user %}
-          <form method="post" action="{% url 'cadastros:fornecedor_criar_acesso_portal' fornecedor.pk %}">
-            {% csrf_token %}
-            <button type="submit" class="btn btn-primary" {% if not fornecedor.email %}disabled title="Cadastre um e-mail primeiro"{% endif %}>
-              <i class="bi bi-person-plus me-1"></i> Criar acesso
-            </button>
-          </form>
-        {% else %}
-          <form method="post" action="{% url 'cadastros:fornecedor_criar_acesso_portal' fornecedor.pk %}">
-            {% csrf_token %}
-            <button type="submit" class="btn btn-outline-primary">
-              <i class="bi bi-envelope me-1"></i> Reenviar convite
-            </button>
-          </form>
-          <form method="post" action="{% url 'cadastros:fornecedor_bloquear_portal' fornecedor.pk %}">
-            {% csrf_token %}
-            {% if fornecedor.portal_user.is_active %}
-              <button type="submit" class="btn btn-outline-danger">
-                <i class="bi bi-slash-circle me-1"></i> Bloquear acesso
-              </button>
-            {% else %}
-              <button type="submit" class="btn btn-outline-success">
-                <i class="bi bi-check-circle me-1"></i> Desbloquear
-              </button>
+          {% else %}
+            <span class="badge bg-warning text-dark fs-6 px-3 py-2">
+              <i class="bi bi-x-circle me-1"></i> Sem acesso
+            </span>
+            {% if not fornecedor.email %}
+              <div class="mt-2">
+                <small class="text-danger"><i class="bi bi-exclamation-triangle me-1"></i>Cadastre um e-mail no fornecedor para criar acesso.</small>
+              </div>
             {% endif %}
-          </form>
-        {% endif %}
+          {% endif %}
+        </div>
+
+        <div class="d-flex gap-2 flex-wrap">
+          {% if not fornecedor.portal_user %}
+            <form method="post" action="{% url 'cadastros:fornecedor_criar_acesso_portal' fornecedor.pk %}">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-primary" {% if not fornecedor.email %}disabled title="Cadastre um e-mail primeiro"{% endif %}>
+                <i class="bi bi-person-plus me-1"></i> Criar acesso
+              </button>
+            </form>
+          {% else %}
+            <form method="post" action="{% url 'cadastros:fornecedor_criar_acesso_portal' fornecedor.pk %}">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-outline-primary">
+                <i class="bi bi-envelope me-1"></i> Reenviar convite
+              </button>
+            </form>
+            <form method="post" action="{% url 'cadastros:fornecedor_bloquear_portal' fornecedor.pk %}">
+              {% csrf_token %}
+              {% if fornecedor.portal_user.is_active %}
+                <button type="submit" class="btn btn-outline-danger">
+                  <i class="bi bi-slash-circle me-1"></i> Bloquear acesso
+                </button>
+              {% else %}
+                <button type="submit" class="btn btn-outline-success">
+                  <i class="bi bi-check-circle me-1"></i> Desbloquear
+                </button>
+              {% endif %}
+            </form>
+          {% endif %}
+        </div>
       </div>
     </div>
   </div>

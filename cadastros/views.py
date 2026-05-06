@@ -3178,7 +3178,37 @@ def safra_detail(request, pk):
 
     comparativo.sort(key=lambda x: x['total_custo'], reverse=True)
 
-    # Prepare comparativo
+    # Planejamentos de custo vinculados à safra
+    from .models import PlanejamentoCustoSafra
+    planejamentos_custo_qs = PlanejamentoCustoSafra.objects.filter(
+        empresa=empresa, safra=safra
+    ).select_related('cultura', 'talhao').prefetch_related('itens').order_by('-data_criacao')
+
+    planejamentos_custo = []
+    for plan in planejamentos_custo_qs:
+        qs_real = CustoTalhao.objects.filter(empresa=empresa, safra=safra)
+        if plan.talhao:
+            qs_real = qs_real.filter(talhao=plan.talhao)
+        agg = qs_real.aggregate(
+            mo=Sum('custo_mao_obra'),
+            maq=Sum('custo_maquinario'),
+            ins=Sum('custo_insumos'),
+            svc=Sum('custo_servico_externo'),
+        )
+        custo_real = (
+            (agg['mo'] or Decimal('0')) +
+            (agg['maq'] or Decimal('0')) +
+            (agg['ins'] or Decimal('0')) +
+            (agg['svc'] or Decimal('0'))
+        )
+        planejado = plan.custo_total_planejado
+        variacao = custo_real - planejado if planejado else None
+        planejamentos_custo.append({
+            'plan': plan,
+            'custo_real': custo_real,
+            'variacao': variacao,
+        })
+
     form = SafraPlanForm(safra=safra)
     context = {
         'safra': safra,
@@ -3187,6 +3217,7 @@ def safra_detail(request, pk):
         'area_media': area_media,
         'total_talhoes': total_talhoes,
         'comparativo': comparativo,
+        'planejamentos_custo': planejamentos_custo,
     }
     return render(request, 'cadastros/safra/safra_detail.html', context)
 
@@ -4219,6 +4250,7 @@ def fornecedor_list(request):
 
     context = {
         'fornecedores': fornecedores_page,
+        'page_obj': fornecedores_page,
         'q': q,
         'status_atual': status,
         'categoria_atual': categoria,
@@ -4478,6 +4510,7 @@ def cliente_list(request):
 
     context = {
         'clientes': clientes,
+        'page_obj': clientes,
         'q': q,
         'status_atual': status_atual,
         'tipo_atual': tipo_atual,

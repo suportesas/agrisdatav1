@@ -73,6 +73,7 @@ INSTALLED_APPS = [
     'estoque',
     'compras',
     'financeiro',  # Módulo Contábil - Contas a Pagar, Juros, Multas
+    'exportacao',  # Módulo de Exportação e Booking
 ]
 
 

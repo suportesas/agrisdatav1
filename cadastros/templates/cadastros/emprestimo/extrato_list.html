@@ -51,6 +51,9 @@
         <div class="col-md-9 text-end">
           <button type="submit" class="btn btn-primary"><i class="bi bi-search me-1"></i>Filtrar</button>
           <a href="{% url 'cadastros:emprestimo_extrato' %}" class="btn btn-outline-secondary">Limpar</a>
+          <a href="{% url 'cadastros:emprestimo_extrato_imprimir' %}?{{ request.GET.urlencode }}" target="_blank" class="btn btn-outline-dark">
+            <i class="bi bi-printer me-1"></i>Imprimir
+          </a>
           <a href="{% url 'cadastros:emprestimo_exportar_pdf' %}?{{ request.GET.urlencode }}" class="btn btn-outline-danger">
             <i class="bi bi-file-earmark-pdf me-1"></i>PDF
           </a>
@@ -91,7 +94,7 @@
 
   <div class="card">
     <div class="table-responsive">
-      <table class="table table-hover mb-0">
+      <table class="table table-hover mb-0" style="min-width: 1100px;">
         <thead class="table-light">
           <tr>
             <th></th>
@@ -99,8 +102,8 @@
             <th>Nº Requisição</th>
             <th>Produtor</th>
             <th>Status</th>
-            <th>Liberação Interna (Requisição)</th>
-            <th>Assinatura Produtor (Requisição)</th>
+            <th style="white-space: normal; width: 110px;">Liberação Interna<br>(Requisição)</th>
+            <th style="white-space: normal; width: 110px;">Assinatura Produtor<br>(Requisição)</th>
             <th>Promessa</th>
             <th class="text-end">Total Emprestado</th>
             <th class="text-end">Total Devolvido</th>
@@ -124,17 +127,24 @@
                 {{ grupo.status|title }}
               </span>
             </td>
-            <td>
+            <td style="width: 110px; word-break: break-word;">
               {% if grupo.requisicao.assinatura_liberacao_interna_datahora %}
                 <span class="badge bg-success">Assinado</span>
-                <br><small>{{ grupo.requisicao.assinatura_liberacao_interna_nome }}<br>{{ grupo.requisicao.assinatura_liberacao_interna_datahora|date:'d/m/Y H:i' }}</small>
+                <div style="font-size: 0.72rem; color: #6b7280; margin-top: 3px; line-height: 1.4;">
+                  {{ grupo.requisicao.assinatura_liberacao_interna_nome }}<br>
+                  {{ grupo.requisicao.assinatura_liberacao_interna_datahora|date:'d/m/Y H:i' }}
+                </div>
               {% else %}
                 <span class="badge bg-warning text-dark">Pendente</span>
               {% endif %}
             </td>
-            <td>
+            <td style="width: 110px; word-break: break-word;">
               {% if grupo.requisicao.assinatura_produtor_imagem %}
                 <span class="badge bg-success">Assinado</span>
+                <div style="font-size: 0.72rem; color: #6b7280; margin-top: 3px; line-height: 1.4;">
+                  {{ grupo.requisicao.assinatura_produtor_nome }}<br>
+                  {{ grupo.requisicao.assinatura_produtor_datahora|date:'d/m/Y H:i' }}
+                </div>
               {% else %}
                 <span class="badge bg-warning text-dark">Pendente</span>
               {% endif %}

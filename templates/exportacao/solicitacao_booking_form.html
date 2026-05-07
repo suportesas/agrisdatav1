@@ -122,15 +122,27 @@
         <!-- Condições de Frete -->
         <h6 class="text-uppercase text-muted fw-bold mb-3">Condições de Frete</h6>
         <div class="row g-3 mb-3">
-          <div class="col-md-6">
+          <div class="col-md-4">
             <label for="{{ form.frete.id_for_label }}" class="form-label fw-semibold">{{ form.frete.label }}</label>
             {{ form.frete }}
             {% if form.frete.errors %}<div class="text-danger small mt-1">{{ form.frete.errors }}</div>{% endif %}
           </div>
-          <div class="col-md-6">
+          <div class="col-md-4">
             <label for="{{ form.genset.id_for_label }}" class="form-label fw-semibold">{{ form.genset.label }}</label>
             {{ form.genset }}
             {% if form.genset.errors %}<div class="text-danger small mt-1">{{ form.genset.errors }}</div>{% endif %}
+          </div>
+          <div class="col-md-4">
+            <label for="{{ form.tipo_exportacao.id_for_label }}" class="form-label fw-semibold">{{ form.tipo_exportacao.label }}</label>
+            {{ form.tipo_exportacao }}
+            {% if form.tipo_exportacao.errors %}<div class="text-danger small mt-1">{{ form.tipo_exportacao.errors }}</div>{% endif %}
+          </div>
+        </div>
+        <div class="row g-3 mb-3" id="campo-tipo-outros" style="display:none;">
+          <div class="col-md-6">
+            <label for="{{ form.tipo_exportacao_outros.id_for_label }}" class="form-label fw-semibold">{{ form.tipo_exportacao_outros.label }}</label>
+            {{ form.tipo_exportacao_outros }}
+            {% if form.tipo_exportacao_outros.errors %}<div class="text-danger small mt-1">{{ form.tipo_exportacao_outros.errors }}</div>{% endif %}
           </div>
         </div>
 
@@ -194,6 +206,20 @@
     if (culturaSelect.value) {
       carregarDadosExportacao(culturaSelect.value);
     }
+  }
+})();
+
+(function () {
+  const tipoSelect = document.getElementById('id_tipo_exportacao');
+  const campoOutros = document.getElementById('campo-tipo-outros');
+
+  function toggleOutros() {
+    campoOutros.style.display = tipoSelect.value === 'OUTROS' ? '' : 'none';
+  }
+
+  if (tipoSelect) {
+    tipoSelect.addEventListener('change', toggleOutros);
+    toggleOutros();
   }
 })();
 </script>

@@ -31,11 +31,14 @@
   box-sizing: border-box;
 }
 
+html {
+  overflow-x: hidden;
+}
+
 body {
   font-family: var(--font-sans);
   background: var(--color-bg);
   color: var(--color-text-primary);
-  overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -268,10 +271,12 @@ main {
 ================================ */
 .table-responsive {
   border-radius: var(--radius-card);
-  overflow: hidden;
+  overflow-x: auto;
   box-shadow: var(--shadow-card);
   border: 1px solid var(--color-border);
   background: var(--color-surface);
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
 }
 
 .table {

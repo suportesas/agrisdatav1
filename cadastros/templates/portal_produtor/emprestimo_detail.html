@@ -14,6 +14,10 @@
     {% elif emprestimo.requisicao.assinatura_produtor_datahora %}
       <span class="btn btn-success disabled">Assinatura já realizada</span>
     {% endif %}
+    <a href="{% url 'portal_produtor:emprestimo_imprimir' emprestimo.pk %}" target="_blank" class="btn btn-outline-dark">
+      <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" class="me-1" viewBox="0 0 16 16"><path d="M2.5 8a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1z"/><path d="M5 1a2 2 0 0 0-2 2v2H2a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h1v1a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-1h1a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-1V3a2 2 0 0 0-2-2H5zm4 11v1H5v-2h4v1zm2 0v1H9v-1h2zm1-4H4a1 1 0 0 1 0-2h8a1 1 0 0 1 0 2z"/></svg>
+      Imprimir
+    </a>
     <a href="{% url 'portal_produtor:emprestimos_list' %}" class="btn btn-outline-secondary">Voltar</a>
   </div>
 </div>

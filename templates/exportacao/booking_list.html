@@ -31,7 +31,7 @@
             <td>{{ booking.get_status_display }}</td>
             <td>{{ booking.porto_origem }}</td>
             <td>{{ booking.porto_destino }}</td>
-            <td>{{ booking.containers_count }}</td>
+            <td>{{ booking.solicitacao.quantidade|floatformat:0|default:"—" }}</td>
             <td>
               <a class="btn btn-sm btn-outline-primary" href="{% url 'exportacao:booking_detail' booking.pk %}">Ver</a>
               <a class="btn btn-sm btn-outline-secondary" href="{% url 'exportacao:booking_update' booking.pk %}">Editar</a>

@@ -315,6 +315,12 @@ class Usuario(AbstractUser):
         help_text='Funções atribuídas ao usuário (ex.: Proprietário, Almoxarife)'
     )
     
+    must_change_password = models.BooleanField(
+        'Deve trocar a senha',
+        default=False,
+        help_text='Força o usuário a alterar a senha provisória no próximo acesso.',
+    )
+
     # Campos de controle
     data_admissao = models.DateField(
         'Data de Admissão',

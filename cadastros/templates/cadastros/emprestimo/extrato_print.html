@@ -1,0 +1,221 @@
+{% load emprestimo_extras %}<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Extrato de Empréstimos – {{ empresa.nome }}</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <style>
+    body { font-size: 12px; color: #1a1a1a; }
+    .page-header { border-bottom: 2px solid #1f4788; padding-bottom: 10px; margin-bottom: 18px; }
+    .company-name { font-size: 1.3rem; font-weight: 700; color: #1f4788; }
+    .section-title { background: #1f4788; color: #fff; padding: 4px 10px; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: .6px; margin: 18px 0 6px; }
+    .req-block { border: 1px solid #dee2e6; border-radius: 4px; margin-bottom: 14px; overflow: hidden; }
+    .req-header { background: #f0f4ff; padding: 8px 12px; border-bottom: 1px solid #dee2e6; display: flex; justify-content: space-between; align-items: flex-start; }
+    .req-number { font-size: 1rem; font-weight: 700; color: #1f4788; }
+    .req-meta { font-size: 11px; color: #555; }
+    .badge-status { padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; }
+    .badge-devolvido { background:#d1fae5; color:#065f46; }
+    .badge-parcial { background:#dbeafe; color:#1e40af; }
+    .badge-promessa { background:#e0f2fe; color:#075985; }
+    .badge-normal { background:#fef3c7; color:#92400e; }
+    .sig-img { max-height: 55px; border: 1px solid #ccc; padding: 2px; background: #fff; }
+    .sig-box { border: 1px solid #dee2e6; border-radius: 4px; padding: 8px 12px; font-size: 11px; }
+    .totals-row td { font-weight: 700; background: #f8fafc; border-top: 2px solid #1f4788 !important; }
+    .grand-total { background: #1f4788; color: #fff; border-radius: 4px; padding: 10px 16px; }
+    @media print {
+      .no-print { display: none !important; }
+      body { font-size: 10px; }
+      .req-block { page-break-inside: avoid; }
+      a[href]:after { content: none !important; }
+    }
+  </style>
+</head>
+<body class="p-4">
+
+  <!-- Botão imprimir -->
+  <div class="no-print d-flex justify-content-between align-items-center mb-3">
+    <button onclick="window.print()" class="btn btn-primary">
+      <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" class="me-1" viewBox="0 0 16 16"><path d="M2.5 8a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1z"/><path d="M5 1a2 2 0 0 0-2 2v2H2a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h1v1a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-1h1a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-1V3a2 2 0 0 0-2-2H5zm4 11v1H5v-2h4v1zm2 0v1H9v-1h2zm1-4H4a1 1 0 0 1 0-2h8a1 1 0 0 1 0 2z"/></svg>
+      Imprimir / Salvar PDF
+    </button>
+    <a href="{% url 'cadastros:emprestimo_extrato' %}?{{ request.GET.urlencode }}" class="btn btn-outline-secondary">Voltar ao Extrato</a>
+  </div>
+
+  <!-- Cabeçalho -->
+  <div class="page-header">
+    <div class="row align-items-start">
+      <div class="col">
+        <div class="company-name">{{ empresa.nome }}</div>
+        {% if empresa.cnpj %}<div class="text-muted" style="font-size:11px;">CNPJ: {{ empresa.cnpj }}</div>{% endif %}
+        {% if empresa.telefone %}<div class="text-muted" style="font-size:11px;">Tel: {{ empresa.telefone }}</div>{% endif %}
+      </div>
+      <div class="col-auto text-end">
+        <div style="font-size:1.1rem; font-weight:700;">Extrato de Empréstimos de Materiais</div>
+        <div class="text-muted" style="font-size:11px;">Emitido em: {% now "d/m/Y H:i" %}</div>
+        {% if filtros.produtor %}
+        <div class="mt-1"><strong>Produtor:</strong> {{ filtros.produtor.razao_social }}</div>
+        {% endif %}
+        {% if filtros.data_inicio or filtros.data_fim %}
+        <div><strong>Período:</strong>
+          {% if filtros.data_inicio %}{{ filtros.data_inicio|date:'d/m/Y' }}{% else %}início{% endif %}
+          até
+          {% if filtros.data_fim %}{{ filtros.data_fim|date:'d/m/Y' }}{% else %}hoje{% endif %}
+        </div>
+        {% endif %}
+        {% if filtros.produto %}
+        <div><strong>Produto:</strong> {{ filtros.produto.nome }}</div>
+        {% endif %}
+        {% if filtros.status %}
+        <div><strong>Status:</strong> {{ filtros.status }}</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Cards de totais -->
+  <div class="row g-3 mb-4">
+    <div class="col-4">
+      <div class="border rounded p-3 text-center">
+        <div class="text-muted" style="font-size:10px; text-transform:uppercase; letter-spacing:.5px;">Total Emprestado</div>
+        <div style="font-size:1.2rem; font-weight:700; color:#1f4788;">R$ {{ total_emprestado|floatformat:2 }}</div>
+      </div>
+    </div>
+    <div class="col-4">
+      <div class="border rounded p-3 text-center">
+        <div class="text-muted" style="font-size:10px; text-transform:uppercase; letter-spacing:.5px;">Total Devolvido</div>
+        <div style="font-size:1.2rem; font-weight:700; color:#065f46;">R$ {{ total_devolvido|floatformat:2 }}</div>
+      </div>
+    </div>
+    <div class="col-4">
+      <div class="border rounded p-3 text-center">
+        <div class="text-muted" style="font-size:10px; text-transform:uppercase; letter-spacing:.5px;">Saldo em Aberto</div>
+        <div style="font-size:1.2rem; font-weight:700; {% if total_saldo > 0 %}color:#92400e;{% else %}color:#065f46;{% endif %}">R$ {{ total_saldo|floatformat:2 }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Requisições -->
+  {% if grupos %}
+  <div class="section-title">Detalhamento por Requisição ({{ grupos|length }} registro{{ grupos|length|pluralize }})</div>
+
+  {% for grupo in grupos %}
+  <div class="req-block">
+    <!-- Cabeçalho da requisição -->
+    <div class="req-header">
+      <div>
+        <div class="req-number">{{ grupo.numero_requisicao }}</div>
+        <div class="req-meta">
+          <strong>Produtor:</strong> {{ grupo.produtor.razao_social }}
+          {% if grupo.produtor.nome_fantasia %} · {{ grupo.produtor.nome_fantasia }}{% endif %}
+        </div>
+        <div class="req-meta">
+          <strong>Data:</strong> {{ grupo.data_emprestimo|date:'d/m/Y H:i' }}
+          {% if grupo.data_promessa_devolucao %} · <strong>Promessa:</strong> {{ grupo.data_promessa_devolucao|date:'d/m/Y' }}{% endif %}
+          {% if grupo.requisicao.recebedor_material %} · <strong>Recebedor:</strong> {{ grupo.requisicao.recebedor_material }}{% endif %}
+        </div>
+      </div>
+      <div class="text-end">
+        <span class="badge-status {% if grupo.status == 'DEVOLVIDO' %}badge-devolvido{% elif grupo.status == 'PARCIAL' %}badge-parcial{% elif grupo.status == 'PROMESSA' %}badge-promessa{% else %}badge-normal{% endif %}">
+          {{ grupo.status|title }}
+        </span>
+        <div class="mt-2 req-meta">
+          <strong>Emprestado:</strong> R$ {{ grupo.total_emprestado_valor|floatformat:2 }}<br>
+          <strong>Devolvido:</strong> R$ {{ grupo.total_devolvido_valor|floatformat:2 }}<br>
+          <strong>Saldo:</strong> R$ {{ grupo.saldo_pendente_valor|floatformat:2 }}
+        </div>
+      </div>
+    </div>
+
+    <!-- Produtos -->
+    <div class="px-2 py-1">
+      <table class="table table-sm table-bordered mb-1" style="font-size:11px;">
+        <thead style="background:#f8f9fa;">
+          <tr>
+            <th>Produto</th>
+            <th class="text-end">Emprestado</th>
+            <th class="text-end">Devolvido</th>
+            <th class="text-end">Saldo</th>
+            <th>Unid.</th>
+            <th class="text-end">Val. Unit.</th>
+            <th class="text-end">Val. Total</th>
+            <th class="text-end">Val. Saldo</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for emp in grupo.emprestimos %}
+          <tr>
+            <td>{{ emp.produto.nome }}</td>
+            <td class="text-end">{{ emp.quantidade_emprestada|floatformat:3 }}</td>
+            <td class="text-end">{{ emp.quantidade_devolvida|floatformat:3 }}</td>
+            <td class="text-end"><strong>{{ emp.saldo_pendente|floatformat:3 }}</strong></td>
+            <td>{{ emp.unidade_medida.sigla }}</td>
+            <td class="text-end">R$ {{ emp.produto.preco_venda|floatformat:2 }}</td>
+            <td class="text-end">R$ {{ emp.quantidade_emprestada|mul:emp.produto.preco_venda|floatformat:2 }}</td>
+            <td class="text-end">R$ {{ emp.saldo_pendente|mul:emp.produto.preco_venda|floatformat:2 }}</td>
+            <td>{{ emp.get_status_display }}</td>
+          </tr>
+          {% endfor %}
+          <tr class="totals-row">
+            <td colspan="6" class="text-end">Total da Requisição</td>
+            <td class="text-end">R$ {{ grupo.total_emprestado_valor|floatformat:2 }}</td>
+            <td class="text-end">R$ {{ grupo.saldo_pendente_valor|floatformat:2 }}</td>
+            <td></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Assinaturas -->
+    <div class="row g-2 px-2 pb-2">
+      <div class="col-6">
+        <div class="sig-box">
+          <div class="fw-bold mb-1" style="font-size:10px; text-transform:uppercase; letter-spacing:.4px;">Liberação Interna</div>
+          {% if grupo.requisicao.assinatura_liberacao_interna_datahora %}
+            {% if grupo.requisicao.assinatura_liberacao_interna_imagem %}
+            <img src="{{ grupo.requisicao.assinatura_liberacao_interna_imagem.url }}" class="sig-img d-block mb-1" alt="Assinatura Liberação">
+            {% endif %}
+            <div><strong>{{ grupo.requisicao.assinatura_liberacao_interna_nome }}</strong></div>
+            <div class="text-muted">{{ grupo.requisicao.assinatura_liberacao_interna_datahora|date:'d/m/Y H:i' }}</div>
+          {% else %}
+            <span class="text-muted">Pendente</span>
+          {% endif %}
+        </div>
+      </div>
+      <div class="col-6">
+        <div class="sig-box">
+          <div class="fw-bold mb-1" style="font-size:10px; text-transform:uppercase; letter-spacing:.4px;">Assinatura do Produtor</div>
+          {% if grupo.requisicao.assinatura_produtor_imagem %}
+            <img src="{{ grupo.requisicao.assinatura_produtor_imagem.url }}" class="sig-img d-block mb-1" alt="Assinatura Produtor">
+            <div><strong>{{ grupo.requisicao.assinatura_produtor_nome }}</strong></div>
+            <div class="text-muted">{{ grupo.requisicao.assinatura_produtor_datahora|date:'d/m/Y H:i' }}</div>
+          {% else %}
+            {% with emp0=grupo.emprestimos.0 %}
+              {% if emp0.assinatura_produtor_imagem %}
+                <img src="{{ emp0.assinatura_produtor_imagem.url }}" class="sig-img d-block mb-1" alt="Assinatura Produtor">
+                <div><strong>{{ emp0.assinatura_produtor_nome }}</strong></div>
+                <div class="text-muted">{{ emp0.assinatura_produtor_datahora|date:'d/m/Y H:i' }}</div>
+              {% else %}
+                <span class="text-muted">Pendente</span>
+              {% endif %}
+            {% endwith %}
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+
+  {% else %}
+  <div class="text-center text-muted py-5">Nenhum empréstimo encontrado para os filtros selecionados.</div>
+  {% endif %}
+
+  <!-- Rodapé -->
+  <div class="mt-4 pt-3 border-top text-muted" style="font-size:10px;">
+    Documento gerado em {% now "d/m/Y \à\s H:i" %} — {{ empresa.nome }}
+    {% if filtros.produtor %} · Produtor: {{ filtros.produtor.razao_social }}{% endif %}
+  </div>
+
+</body>
+</html>

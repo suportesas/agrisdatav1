@@ -12,6 +12,7 @@ urlpatterns = [
     path('emprestimos/', views.emprestimos_list, name='emprestimos_list'),
     path('emprestimos/<int:pk>/', views.emprestimo_detail, name='emprestimo_detail'),
     path('emprestimos/<int:pk>/assinar/', views.emprestimo_assinar, name='emprestimo_assinar'),
+    path('emprestimos/<int:pk>/imprimir/', views.emprestimo_imprimir, name='emprestimo_imprimir'),
     path('emprestimos/<int:pk>/mensagens/nova/', views.emprestimo_mensagem_create, name='emprestimo_mensagem_create'),
     path('mensagens/anexos/<int:anexo_id>/download/', views.emprestimo_mensagem_anexo_download, name='emprestimo_mensagem_anexo_download'),
     path('perfil/', views.perfil_produtor, name='perfil'),

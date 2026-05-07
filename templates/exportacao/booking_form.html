@@ -9,13 +9,242 @@
     <div class="card-body">
       <form method="post">
         {% csrf_token %}
-        {{ form.as_p }}
-        <div class="mt-3">
-          <button type="submit" class="btn btn-primary">Salvar</button>
-          <a href="{% url 'exportacao:booking_list' %}" class="btn btn-secondary">Cancelar</a>
+
+        {% if form.non_field_errors %}
+          <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+        {% endif %}
+
+        <!-- Solicitação -->
+        <h6 class="text-uppercase text-muted fw-bold mb-3 mt-1">Solicitação de Booking</h6>
+        <div class="row g-3 mb-2">
+          <div class="col-md-12">
+            <label for="{{ form.solicitacao.id_for_label }}" class="form-label fw-semibold">{{ form.solicitacao.label }}</label>
+            {{ form.solicitacao }}
+            {% if form.solicitacao.errors %}<div class="text-danger small mt-1">{{ form.solicitacao.errors }}</div>{% endif %}
+          </div>
         </div>
+
+        <!-- Card preview AJAX -->
+        <div id="solicitacao-preview" class="card border-primary mb-3" style="display:none;">
+          <div class="card-header bg-primary bg-opacity-10 py-2">
+            <small class="fw-semibold text-primary text-uppercase">
+              <i class="bi bi-info-circle me-1"></i>Dados da Solicitação Selecionada
+            </small>
+          </div>
+          <div class="card-body py-3">
+            <div class="row g-2">
+              <div class="col-md-6">
+                <span class="text-muted small">Nome</span><br>
+                <span id="prev-nome" class="fw-semibold"></span>
+              </div>
+              <div class="col-md-3">
+                <span class="text-muted small">Status</span><br>
+                <span id="prev-status"></span>
+              </div>
+              <div class="col-md-3">
+                <span class="text-muted small">Embarque Previsto</span><br>
+                <span id="prev-embarque" class="fw-semibold"></span>
+              </div>
+              <div class="col-md-4">
+                <span class="text-muted small">Cliente</span><br>
+                <span id="prev-cliente"></span>
+              </div>
+              <div class="col-md-4">
+                <span class="text-muted small">Cultura</span><br>
+                <span id="prev-cultura"></span>
+              </div>
+              <div class="col-md-4">
+                <span class="text-muted small">Qtd. Contêineres</span><br>
+                <span id="prev-quantidade"></span>
+              </div>
+              <div class="col-md-4">
+                <span class="text-muted small">Porto Origem</span><br>
+                <span id="prev-porto-origem"></span>
+              </div>
+              <div class="col-md-4">
+                <span class="text-muted small">Porto Destino</span><br>
+                <span id="prev-porto-destino"></span>
+              </div>
+              <div class="col-md-4">
+                <span class="text-muted small">Tipo de Exportação</span><br>
+                <span id="prev-tipo"></span>
+              </div>
+              <div class="col-md-4">
+                <span class="text-muted small">Armador</span><br>
+                <span id="prev-armador"></span>
+              </div>
+              <div class="col-md-4">
+                <span class="text-muted small">Navio</span><br>
+                <span id="prev-navio"></span>
+              </div>
+              <div class="col-md-4">
+                <span class="text-muted small">Frete</span><br>
+                <span id="prev-frete"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <hr class="my-3">
+
+        <!-- Identificação -->
+        <h6 class="text-uppercase text-muted fw-bold mb-3">Identificação</h6>
+        <div class="row g-3 mb-3">
+          <div class="col-md-4">
+            <label for="{{ form.codigo.id_for_label }}" class="form-label fw-semibold">{{ form.codigo.label }}</label>
+            {{ form.codigo }}
+            {% if form.codigo.errors %}<div class="text-danger small mt-1">{{ form.codigo.errors }}</div>{% endif %}
+          </div>
+          <div class="col-md-4">
+            <label for="{{ form.tipo_exportacao.id_for_label }}" class="form-label fw-semibold">{{ form.tipo_exportacao.label }}</label>
+            {{ form.tipo_exportacao }}
+            {% if form.tipo_exportacao.errors %}<div class="text-danger small mt-1">{{ form.tipo_exportacao.errors }}</div>{% endif %}
+          </div>
+          <div class="col-md-4">
+            <label for="{{ form.status.id_for_label }}" class="form-label fw-semibold">{{ form.status.label }}</label>
+            {{ form.status }}
+            {% if form.status.errors %}<div class="text-danger small mt-1">{{ form.status.errors }}</div>{% endif %}
+          </div>
+        </div>
+
+        <hr class="my-3">
+
+        <!-- Rotas -->
+        <h6 class="text-uppercase text-muted fw-bold mb-3">Rotas</h6>
+        <div class="row g-3 mb-3">
+          <div class="col-md-4">
+            <label for="{{ form.porto_origem.id_for_label }}" class="form-label fw-semibold">{{ form.porto_origem.label }}</label>
+            {{ form.porto_origem }}
+            {% if form.porto_origem.errors %}<div class="text-danger small mt-1">{{ form.porto_origem.errors }}</div>{% endif %}
+          </div>
+          <div class="col-md-4">
+            <label for="{{ form.porto_destino.id_for_label }}" class="form-label fw-semibold">{{ form.porto_destino.label }}</label>
+            {{ form.porto_destino }}
+            {% if form.porto_destino.errors %}<div class="text-danger small mt-1">{{ form.porto_destino.errors }}</div>{% endif %}
+          </div>
+          <div class="col-md-4">
+            <label for="{{ form.rota_navio.id_for_label }}" class="form-label fw-semibold">{{ form.rota_navio.label }}</label>
+            {{ form.rota_navio }}
+            {% if form.rota_navio.errors %}<div class="text-danger small mt-1">{{ form.rota_navio.errors }}</div>{% endif %}
+          </div>
+        </div>
+
+        <hr class="my-3">
+
+        <!-- Datas e Prazos -->
+        <h6 class="text-uppercase text-muted fw-bold mb-3">Datas e Prazos</h6>
+        <div class="row g-3 mb-3">
+          <div class="col-md-6">
+            <label for="{{ form.data_embarque_previsto.id_for_label }}" class="form-label fw-semibold">{{ form.data_embarque_previsto.label }}</label>
+            {{ form.data_embarque_previsto }}
+            {% if form.data_embarque_previsto.errors %}<div class="text-danger small mt-1">{{ form.data_embarque_previsto.errors }}</div>{% endif %}
+          </div>
+          <div class="col-md-6">
+            <label for="{{ form.data_embarque_realizado.id_for_label }}" class="form-label fw-semibold">{{ form.data_embarque_realizado.label }}</label>
+            {{ form.data_embarque_realizado }}
+            {% if form.data_embarque_realizado.errors %}<div class="text-danger small mt-1">{{ form.data_embarque_realizado.errors }}</div>{% endif %}
+          </div>
+        </div>
+        <div class="row g-3 mb-3">
+          <div class="col-md-3">
+            <label for="{{ form.deadline_draft.id_for_label }}" class="form-label fw-semibold">{{ form.deadline_draft.label }}</label>
+            {{ form.deadline_draft }}
+            {% if form.deadline_draft.errors %}<div class="text-danger small mt-1">{{ form.deadline_draft.errors }}</div>{% endif %}
+          </div>
+          <div class="col-md-3">
+            <label for="{{ form.deadline_carga.id_for_label }}" class="form-label fw-semibold">{{ form.deadline_carga.label }}</label>
+            {{ form.deadline_carga }}
+            {% if form.deadline_carga.errors %}<div class="text-danger small mt-1">{{ form.deadline_carga.errors }}</div>{% endif %}
+          </div>
+          <div class="col-md-3">
+            <label for="{{ form.etd.id_for_label }}" class="form-label fw-semibold">{{ form.etd.label }}</label>
+            {{ form.etd }}
+            {% if form.etd.errors %}<div class="text-danger small mt-1">{{ form.etd.errors }}</div>{% endif %}
+          </div>
+          <div class="col-md-3">
+            <label for="{{ form.eta.id_for_label }}" class="form-label fw-semibold">{{ form.eta.label }}</label>
+            {{ form.eta }}
+            {% if form.eta.errors %}<div class="text-danger small mt-1">{{ form.eta.errors }}</div>{% endif %}
+          </div>
+        </div>
+
+        <hr class="my-3">
+
+        <!-- Financeiro e Observações -->
+        <h6 class="text-uppercase text-muted fw-bold mb-3">Financeiro</h6>
+        <div class="row g-3 mb-3">
+          <div class="col-md-4">
+            <label for="{{ form.valor_fob.id_for_label }}" class="form-label fw-semibold">{{ form.valor_fob.label }}</label>
+            <div class="input-group">
+              <span class="input-group-text">R$</span>
+              {{ form.valor_fob }}
+            </div>
+            {% if form.valor_fob.errors %}<div class="text-danger small mt-1">{{ form.valor_fob.errors }}</div>{% endif %}
+          </div>
+        </div>
+        <div class="row g-3 mb-3">
+          <div class="col-12">
+            <label for="{{ form.observacoes.id_for_label }}" class="form-label fw-semibold">{{ form.observacoes.label }}</label>
+            {{ form.observacoes }}
+            {% if form.observacoes.errors %}<div class="text-danger small mt-1">{{ form.observacoes.errors }}</div>{% endif %}
+          </div>
+        </div>
+
+        <div class="mt-4">
+          <button type="submit" class="btn btn-primary">Salvar</button>
+          <a href="{% url 'exportacao:booking_list' %}" class="btn btn-secondary ms-2">Cancelar</a>
+        </div>
+
       </form>
     </div>
   </div>
 </div>
+
+{% block extra_js %}
+<script>
+(function () {
+  const sel  = document.getElementById('id_solicitacao');
+  const card = document.getElementById('solicitacao-preview');
+
+  const CAMPOS = [
+    ['prev-nome',         'nome'],
+    ['prev-status',       'status'],
+    ['prev-embarque',     'data_prevista_embarque'],
+    ['prev-cliente',      'cliente'],
+    ['prev-cultura',      'cultura'],
+    ['prev-quantidade',   'quantidade'],
+    ['prev-porto-origem', 'porto_origem'],
+    ['prev-porto-destino','porto_destino'],
+    ['prev-tipo',         'tipo_exportacao'],
+    ['prev-armador',      'armador'],
+    ['prev-navio',        'navio'],
+    ['prev-frete',        'frete'],
+  ];
+
+  function limpar() {
+    CAMPOS.forEach(([id]) => { const el = document.getElementById(id); if (el) el.textContent = ''; });
+    card.style.display = 'none';
+  }
+
+  function carregar(pk) {
+    if (!pk) { limpar(); return; }
+    fetch(`/exportacao/ajax/solicitacao/${pk}/preview/`)
+      .then(r => r.ok ? r.json() : Promise.reject(r.status))
+      .then(data => {
+        CAMPOS.forEach(([id, key]) => {
+          const el = document.getElementById(id);
+          if (el) el.textContent = data[key] || '—';
+        });
+        card.style.display = '';
+      })
+      .catch(() => limpar());
+  }
+
+  if (sel) {
+    sel.addEventListener('change', function () { carregar(this.value); });
+    if (sel.value) { carregar(sel.value); }
+  }
+})();
+</script>
+{% endblock %}
 {% endblock %}

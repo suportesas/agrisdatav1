@@ -28,6 +28,20 @@ from .models import EmprestimoMensagemAnexo, EmprestimoProdutor, EmprestimoMovim
 from .relatorio_utils_emprestimo import gerar_extrato_emprestimo_excel, gerar_extrato_emprestimo_pdf
 
 
+def _recalcular_estoque_produto(produto, empresa):
+    """Recalcula estoque_atual do produto somando todas as MovimentacaoEstoque da empresa."""
+    from django.db.models import Sum, Q
+    from decimal import Decimal
+    movs = MovimentacaoEstoque.objects.filter(
+        Q(produto=produto) | Q(lote__produto=produto),
+        empresa=empresa,
+    )
+    entrada = movs.filter(tipo='ENTRADA').aggregate(total=Sum('quantidade'))['total'] or Decimal('0')
+    saida = movs.filter(tipo='SAIDA').aggregate(total=Sum('quantidade'))['total'] or Decimal('0')
+    produto.estoque_atual = Decimal(entrada) - Decimal(saida)
+    produto.save(update_fields=['estoque_atual'])
+
+
 # --- AJAX endpoint para registrar alerta visual exibido ---
 @login_required
 @require_POST
@@ -494,6 +508,61 @@ def emprestimo_exportar_excel(request):
 
 
 @login_required
+def emprestimo_extrato_imprimir(request):
+    empresa = getattr(request.user, 'empresa', None)
+    if not empresa:
+        return redirect('dashboard:index')
+
+    form = EmprestimoExtratoFiltroForm(request.GET or None, empresa=empresa)
+    if form.is_valid():
+        emprestimos_qs = _filtrar_emprestimos(empresa, form.cleaned_data)
+    else:
+        emprestimos_qs = EmprestimoProdutor.objects.filter(empresa=empresa).select_related(
+            'produtor', 'produto', 'requisicao'
+        ).order_by('-data_emprestimo', '-id')
+
+    from decimal import Decimal
+    agrupados = {}
+    for emp in emprestimos_qs.select_related('produto', 'requisicao', 'produtor'):
+        req_id = emp.requisicao_id or f'emp-{emp.pk}'
+        if req_id not in agrupados:
+            agrupados[req_id] = {
+                'data_emprestimo': emp.data_emprestimo,
+                'numero_requisicao': emp.requisicao.numero if emp.requisicao else '-',
+                'produtor': emp.produtor,
+                'status': emp.status,
+                'data_promessa_devolucao': emp.data_promessa_devolucao,
+                'emprestimos': [],
+                'total_emprestado_valor': Decimal('0.00'),
+                'total_devolvido_valor': Decimal('0.00'),
+                'saldo_pendente_valor': Decimal('0.00'),
+                'requisicao': emp.requisicao,
+            }
+        agrupados[req_id]['emprestimos'].append(emp)
+        preco = Decimal(getattr(emp.produto, 'preco_venda', 0) or 0)
+        agrupados[req_id]['total_emprestado_valor'] += Decimal(emp.quantidade_emprestada or 0) * preco
+        agrupados[req_id]['total_devolvido_valor'] += Decimal(emp.quantidade_devolvida or 0) * preco
+        agrupados[req_id]['saldo_pendente_valor'] += Decimal(emp.saldo_pendente or 0) * preco
+
+    grupos = sorted(agrupados.values(), key=lambda x: (x['data_emprestimo'], x['numero_requisicao']), reverse=True)
+    total_emprestado = sum(g['total_emprestado_valor'] for g in grupos)
+    total_devolvido = sum(g['total_devolvido_valor'] for g in grupos)
+    total_saldo = sum(g['saldo_pendente_valor'] for g in grupos)
+
+    filtros = form.cleaned_data if form.is_valid() else {}
+
+    return render(request, 'cadastros/emprestimo/extrato_print.html', {
+        'empresa': empresa,
+        'grupos': grupos,
+        'total_emprestado': total_emprestado,
+        'total_devolvido': total_devolvido,
+        'total_saldo': total_saldo,
+        'filtros': filtros,
+        'form': form,
+    })
+
+
+@login_required
 def emprestimo_exportar_pdf(request):
     empresa = getattr(request.user, 'empresa', None)
     if not empresa:
@@ -507,6 +576,57 @@ def emprestimo_exportar_pdf(request):
     response = HttpResponse(content, content_type='application/pdf')
     response['Content-Disposition'] = f'attachment; filename="extrato_emprestimos_{timezone.now().strftime("%Y%m%d_%H%M")}.pdf"'
     return response
+
+
+@login_required
+def emprestimo_imprimir(request, pk):
+    empresa = getattr(request.user, 'empresa', None)
+    if not empresa:
+        return redirect('dashboard:index')
+
+    emprestimo = get_object_or_404(
+        EmprestimoProdutor.objects.select_related('produtor', 'produto', 'requisicao', 'unidade_medida'),
+        pk=pk, empresa=empresa,
+    )
+
+    if emprestimo.requisicao_id:
+        emprestimos_lote_qs = EmprestimoProdutor.objects.filter(
+            empresa=empresa, requisicao_id=emprestimo.requisicao_id
+        ).select_related('produto', 'unidade_medida', 'requisicao')
+        seen = set()
+        emprestimos_lote = []
+        for emp in emprestimos_lote_qs:
+            key = (emp.produto_id, emp.unidade_medida_id)
+            if key not in seen:
+                seen.add(key)
+                emprestimos_lote.append(emp)
+    else:
+        emprestimos_lote = list(EmprestimoProdutor.objects.filter(pk=emprestimo.pk, empresa=empresa))
+
+    movimentos_lote = {}
+    for emp in emprestimos_lote:
+        movimentos_lote[emp.pk] = list(
+            EmprestimoMovimento.objects.filter(empresa=empresa, emprestimo=emp)
+            .select_related('criado_por')
+            .order_by('data_movimento', 'id')
+        )
+
+    mensagens = emprestimo.mensagens.select_related('autor').all()
+
+    from decimal import Decimal
+    total_valor = sum(
+        Decimal(emp.quantidade_emprestada or 0) * Decimal(getattr(emp.produto, 'preco_venda', 0) or 0)
+        for emp in emprestimos_lote
+    )
+
+    return render(request, 'cadastros/emprestimo/emprestimo_print.html', {
+        'emprestimo': emprestimo,
+        'emprestimos_lote': emprestimos_lote,
+        'movimentos_lote': movimentos_lote,
+        'mensagens_emprestimo': mensagens,
+        'empresa': empresa,
+        'total_valor': total_valor,
+    })
 
 
 @login_required
@@ -556,6 +676,7 @@ def emprestimo_devolucao_create(request):
                 data_execucao=timezone.now(),
                 observacao=f'Devolução de empréstimo - Produtor: {emprestimo.produtor.razao_social}',
             )
+            _recalcular_estoque_produto(emprestimo.produto, empresa)
 
             messages.success(request, 'Devolução registrada com sucesso.')
             return redirect('cadastros:emprestimo_extrato')

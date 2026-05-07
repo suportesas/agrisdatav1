@@ -17,6 +17,20 @@ from estoque.models import MovimentacaoEstoque
 from produtos.models import Produto
 
 
+def _recalcular_estoque_produto(produto, empresa):
+    """Recalcula estoque_atual do produto somando todas as MovimentacaoEstoque da empresa."""
+    from django.db.models import Sum, Q
+    from decimal import Decimal
+    movs = MovimentacaoEstoque.objects.filter(
+        Q(produto=produto) | Q(lote__produto=produto),
+        empresa=empresa,
+    )
+    entrada = movs.filter(tipo='ENTRADA').aggregate(total=Sum('quantidade'))['total'] or Decimal('0')
+    saida = movs.filter(tipo='SAIDA').aggregate(total=Sum('quantidade'))['total'] or Decimal('0')
+    produto.estoque_atual = Decimal(entrada) - Decimal(saida)
+    produto.save(update_fields=['estoque_atual'])
+
+
 def _gerar_numero_requisicao():
     ultimo = Requisicao.objects.order_by('-id').first()
     if not ultimo or not ultimo.numero:
@@ -289,6 +303,7 @@ def requisicao_atender(request, pk):
                     data_execucao=timezone.now(),
                     observacao=f'Requisição {requisicao.numero} - Item: {item.produto.nome}'
                 )
+                _recalcular_estoque_produto(item.produto, empresa)
 
                 if requisicao.tipo == 'EMPRESTIMO':
                     status_emprestimo = 'PROMESSA' if requisicao.data_promessa_devolucao else 'NORMAL'
@@ -376,41 +391,6 @@ def requisicao_item_create(request, requisicao_id):
                 else:
                     item.custo_estimado = item.produto.preco_custo
             item.save()
-
-            # --- PLANO: Criação automática do EmprestimoProdutor ao adicionar item ---
-            if requisicao.tipo == 'EMPRESTIMO' and requisicao.produtor:
-                from .models import EmprestimoProdutor, EmprestimoMovimento
-                try:
-                    emp = EmprestimoProdutor.objects.create(
-                        empresa=empresa,
-                        produtor=requisicao.produtor,
-                        produto=item.produto,
-                        unidade_medida=item.unidade_medida,
-                        requisicao=requisicao,
-                        requisicao_item=item,
-                        direcao=requisicao.direcao_emprestimo,
-                        data_emprestimo=timezone.now(),
-                        data_promessa_devolucao=requisicao.data_promessa_devolucao,
-                        status='PROMESSA' if requisicao.data_promessa_devolucao else 'NORMAL',
-                        quantidade_emprestada=item.quantidade_solicitada,
-                        quantidade_devolvida=0,
-                        observacoes=f'Gerado automaticamente pela requisição {requisicao.numero}.',
-                        criado_por=request.user,
-                    )
-                    # PLANO: Cria registro de auditoria/movimentação
-                    EmprestimoMovimento.objects.create(
-                        empresa=empresa,
-                        emprestimo=emp,
-                        tipo_movimento='EMPRESTIMO',
-                        quantidade=item.quantidade_solicitada,
-                        saldo_resultante=emp.saldo_pendente,
-                        data_movimento=timezone.now(),
-                        documento_referencia=requisicao.numero,
-                        observacoes='Lançamento automático ao adicionar item.',
-                        criado_por=request.user,
-                    )
-                except Exception as e:
-                    messages.error(request, f'Erro ao criar controle de empréstimo: {e}')
 
             messages.success(request, 'Item adicionado com sucesso.')
             return redirect('cadastros:requisicao_detail', requisicao.id)

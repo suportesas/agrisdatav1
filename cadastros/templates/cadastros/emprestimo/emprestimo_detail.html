@@ -34,6 +34,9 @@
           {% endif %}
         </span>
       {% endif %}
+      <a href="{% url 'cadastros:emprestimo_imprimir' emprestimo.pk %}" target="_blank" class="btn btn-outline-dark">
+        <i class="bi bi-printer me-1"></i>Imprimir
+      </a>
       <a href="{% url 'cadastros:emprestimo_extrato' %}" class="btn btn-outline-secondary">
         <i class="bi bi-arrow-left me-1"></i>Voltar ao Extrato
       </a>

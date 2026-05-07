@@ -1,90 +1,51 @@
-from django.contrib.auth.decorators import login_required
-from django.views.decorators.http import require_POST
-from django.http import JsonResponse
-
-# AJAX: aceite do produtor
-@login_required
-@require_POST
-def emprestimo_aceite_ajax(request):
-    from django.utils import timezone
-    import json
-    data = json.loads(request.body.decode('utf-8'))
-    pk = data.get('pk')
-    aceite = data.get('aceite')
-    if pk is None or aceite is None:
-        return JsonResponse({'success': False, 'error': 'Dados incompletos.'}, status=400)
-    try:
-        emp = EmprestimoProdutor.objects.get(pk=pk, produtor=request.user.produtor_profile, empresa=request.user.empresa)
-    except EmprestimoProdutor.DoesNotExist:
-        return JsonResponse({'success': False, 'error': 'Empréstimo não encontrado.'}, status=404)
-    if emp.aceite_produtor and emp.aceite_editavel is False:
-        return JsonResponse({'success': False, 'error': 'Aceite já confirmado e bloqueado.'}, status=403)
-    if aceite:
-        emp.aceite_produtor = True
-        emp.aceite_produtor_data = timezone.now()
-        emp.aceite_produtor_usuario = request.user
-        emp.aceite_editavel = False
-    else:
-        # Só empresa pode reverter (implementar depois)
-        return JsonResponse({'success': False, 'error': 'Reversão de aceite só pela empresa.'}, status=403)
-    emp.save()
-    return JsonResponse({'success': True, 'aceite': emp.aceite_produtor, 'data': emp.aceite_produtor_data})
-from django.contrib.auth.decorators import login_required
-
-@login_required
-def devolucoes_programadas(request):
-    produtor = _produtor_portal_guard(request)
-    from datetime import date, timedelta
-    hoje = date.today()
-    proximos_dias = hoje + timedelta(days=3)
-
-    emprestimos_qs = EmprestimoProdutor.objects.filter(
-        empresa=request.user.empresa,
-        produtor=produtor,
-    )
-    devolucoes_pendentes = emprestimos_qs.filter(
-        status__in=['PROMESSA', 'NORMAL', 'PARCIAL'],
-        saldo_pendente__gt=0,
-        data_promessa_devolucao__isnull=False,
-        data_promessa_devolucao__gte=hoje
-    ).order_by('data_promessa_devolucao')
-    devolucoes_alerta = devolucoes_pendentes.filter(data_promessa_devolucao__lte=proximos_dias)
-
-    return render(request, 'portal_produtor/devolucoes_programadas.html', {
-        'produtor': produtor,
-        'devolucoes_pendentes': devolucoes_pendentes,
-        'devolucoes_alerta': devolucoes_alerta,
-        'hoje': hoje,
-    })
-from django.contrib.auth import authenticate, login
-
-def portal_login(request):
-    if request.method == 'POST':
-        username = request.POST.get('username')
-        password = request.POST.get('password')
-        user = authenticate(request, username=username, password=password)
-        if user is not None:
-            login(request, user)
-            return redirect('portal_produtor:dashboard')
-        else:
-            messages.error(request, 'Usuário ou senha inválidos.')
-    return render(request, 'portal_produtor/login.html')
 import base64
+import json
+from datetime import date, timedelta
+from decimal import Decimal
+from functools import wraps
 from uuid import uuid4
 
 from django.contrib import messages
+from django.contrib.auth import authenticate, login, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth.models import Group
 from django.core.exceptions import PermissionDenied
 from django.core.files.base import ContentFile
 from django.db.models import Count, Q, Sum
-from django.http import FileResponse
+from django.http import FileResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
+from django.views.decorators.http import require_POST
 
-from .emprestimo_utils import criar_mensagem_emprestimo, marcar_mensagens_emprestimo_como_lidas, registrar_interacao_emprestimo
+from .emprestimo_utils import (
+    criar_mensagem_emprestimo,
+    marcar_mensagens_emprestimo_como_lidas,
+    registrar_interacao_emprestimo,
+)
 from .models import EmprestimoMensagemAnexo, EmprestimoMovimento, EmprestimoProdutor, Produtor
 
+
+# ---------------------------------------------------------------------------
+# Decorador: autenticação + troca de senha obrigatória
+# ---------------------------------------------------------------------------
+
+def portal_login_required(view_func):
+    """login_required + redirecionamento obrigatório para troca de senha provisória."""
+    @wraps(view_func)
+    def wrapper(request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return redirect('portal_produtor:login')
+        if getattr(request.user, 'must_change_password', False):
+            messages.warning(request, 'Você deve alterar sua senha provisória antes de continuar.')
+            return redirect('portal_produtor:trocar_senha')
+        return view_func(request, *args, **kwargs)
+    return wrapper
+
+
+# ---------------------------------------------------------------------------
+# Helpers internos
+# ---------------------------------------------------------------------------
 
 def _get_produtor_do_usuario(user):
     try:
@@ -113,7 +74,48 @@ def _produtor_portal_guard(request):
     return produtor
 
 
-@login_required
+# ---------------------------------------------------------------------------
+# Login / Troca de senha
+# ---------------------------------------------------------------------------
+
+def portal_login(request):
+    if request.method == 'POST':
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+        user = authenticate(request, username=username, password=password)
+        if user is not None:
+            login(request, user)
+            if getattr(user, 'must_change_password', False):
+                messages.warning(request, 'Sua senha é provisória. Defina uma nova senha para continuar.')
+                return redirect('portal_produtor:trocar_senha')
+            return redirect('portal_produtor:dashboard')
+        else:
+            messages.error(request, 'Usuário ou senha inválidos.')
+    return render(request, 'portal_produtor/login.html')
+
+
+@login_required(login_url='portal_produtor:login')
+def trocar_senha_produtor(request):
+    if request.method == 'POST':
+        form = PasswordChangeForm(request.user, request.POST)
+        if form.is_valid():
+            user = form.save()
+            user.must_change_password = False
+            user.save(update_fields=['must_change_password'])
+            update_session_auth_hash(request, user)
+            messages.success(request, 'Senha alterada com sucesso! Bem-vindo ao portal.')
+            return redirect('portal_produtor:dashboard')
+    else:
+        form = PasswordChangeForm(request.user)
+    obrigatorio = getattr(request.user, 'must_change_password', False)
+    return render(request, 'portal_produtor/trocar_senha.html', {'form': form, 'obrigatorio': obrigatorio})
+
+
+# ---------------------------------------------------------------------------
+# Views do portal
+# ---------------------------------------------------------------------------
+
+@portal_login_required
 def dashboard(request):
     produtor = _produtor_portal_guard(request)
     emprestimos_qs = EmprestimoProdutor.objects.filter(
@@ -126,7 +128,6 @@ def dashboard(request):
         )
     )
 
-    # Deduplicação manual dos empréstimos recentes por produto/unidade_medida/requisicao
     emprestimos_recentes_qs = emprestimos_qs.select_related('produto', 'unidade_medida', 'requisicao').order_by('-data_emprestimo')
     seen = set()
     emprestimos_recentes = []
@@ -137,16 +138,14 @@ def dashboard(request):
             emprestimos_recentes.append(emp)
         if len(emprestimos_recentes) >= 5:
             break
+
     pendentes_assinatura = emprestimos_qs.filter(
         assinatura_liberador_datahora__isnull=False,
         assinatura_produtor_datahora__isnull=True,
     ).count()
 
-    # Calcular valor total em aberto (financeiro)
-    from decimal import Decimal
-    emprestimos_com_produto = emprestimos_qs.select_related('produto')
     total_valor_aberto = Decimal('0.00')
-    for emp in emprestimos_com_produto:
+    for emp in emprestimos_qs.select_related('produto'):
         preco = getattr(emp.produto, 'preco_venda', None)
         if preco is not None:
             total_valor_aberto += (emp.saldo_pendente or 0) * preco
@@ -165,9 +164,8 @@ def dashboard(request):
     })
 
 
-@login_required
+@portal_login_required
 def emprestimos_list(request):
-    from datetime import date
     produtor = _produtor_portal_guard(request)
     emprestimos_qs = EmprestimoProdutor.objects.filter(
         empresa=request.user.empresa,
@@ -179,7 +177,6 @@ def emprestimos_list(request):
         )
     ).order_by('-data_emprestimo', '-id')
 
-    # Filtros (exemplo: status, produto, datas, promessa, mensagens não lidas)
     status = request.GET.get('status')
     produto_id = request.GET.get('produto')
     apenas_promessa = request.GET.get('apenas_promessa')
@@ -202,7 +199,6 @@ def emprestimos_list(request):
     if data_fim:
         emprestimos_qs = emprestimos_qs.filter(data_emprestimo__date__lte=data_fim)
 
-    # Agrupar por requisição
     agrupados = {}
     for emp in emprestimos_qs:
         req_id = emp.requisicao_id or f"emp-{emp.pk}"
@@ -233,26 +229,19 @@ def emprestimos_list(request):
         agrupados[req_id]['total_emprestado'] += valor_emprestado
         agrupados[req_id]['total_devolvido'] += valor_devolvido
         agrupados[req_id]['saldo_pendente'] += valor_saldo
-        agrupados[req_id]['unread_mensagens_produtor'] += emp.unread_mensagens_produtor_count if hasattr(emp, 'unread_mensagens_produtor_count') else 0
+        agrupados[req_id]['unread_mensagens_produtor'] += getattr(emp, 'unread_mensagens_produtor_count', 0)
 
     agrupados_lista = sorted(agrupados.values(), key=lambda x: (x['data_emprestimo'], x['numero_requisicao']), reverse=True)
 
-    # Totais dos cards do cabeçalho
-    total_emprestado = sum([g['total_emprestado'] for g in agrupados_lista])
-    total_devolvido = sum([g['total_devolvido'] for g in agrupados_lista])
-    total_saldo = sum([g['saldo_pendente'] for g in agrupados_lista])
-    totais = {
-        'total_emprestado': total_emprestado,
-        'total_devolvido': total_devolvido,
-        'total_saldo': total_saldo,
-    }
-    today = date.today()
+    total_emprestado = sum(g['total_emprestado'] for g in agrupados_lista)
+    total_devolvido = sum(g['total_devolvido'] for g in agrupados_lista)
+    total_saldo = sum(g['saldo_pendente'] for g in agrupados_lista)
 
     return render(request, 'portal_produtor/emprestimos_list.html', {
         'produtor': produtor,
         'emprestimos_agrupados': agrupados_lista,
-        'totais': totais,
-        'today': today,
+        'totais': {'total_emprestado': total_emprestado, 'total_devolvido': total_devolvido, 'total_saldo': total_saldo},
+        'today': date.today(),
         'status': status,
         'produto_id': produto_id,
         'apenas_promessa': apenas_promessa,
@@ -262,8 +251,7 @@ def emprestimos_list(request):
     })
 
 
-
-@login_required
+@portal_login_required
 def emprestimo_detail(request, pk):
     produtor = _produtor_portal_guard(request)
     emprestimo = get_object_or_404(
@@ -273,11 +261,10 @@ def emprestimo_detail(request, pk):
         produtor=produtor,
     )
 
-    # Buscar todos os produtos da mesma requisição e deduplicar manualmente
     emprestimos_produtos_qs = EmprestimoProdutor.objects.filter(
         requisicao=emprestimo.requisicao,
         produtor=produtor,
-        empresa=request.user.empresa
+        empresa=request.user.empresa,
     ).select_related('produto', 'unidade_medida')
     seen = set()
     emprestimos_produtos = []
@@ -287,11 +274,9 @@ def emprestimo_detail(request, pk):
             seen.add(key)
             emprestimos_produtos.append(emp)
 
-    # Marcar mensagens como lidas para todos os produtos
     for emp in emprestimos_produtos:
         marcar_mensagens_emprestimo_como_lidas(emp, 'PRODUTOR')
 
-    # Movimentos, mensagens e interações do produto selecionado
     movimentos = (
         EmprestimoMovimento.objects
         .filter(empresa=request.user.empresa, emprestimo=emprestimo)
@@ -311,7 +296,7 @@ def emprestimo_detail(request, pk):
     })
 
 
-@login_required
+@portal_login_required
 def emprestimo_assinar(request, pk):
     produtor = _produtor_portal_guard(request)
     emprestimo = get_object_or_404(
@@ -321,7 +306,6 @@ def emprestimo_assinar(request, pk):
         produtor=produtor,
     )
 
-    # Corrige: só bloqueia se a requisição não tiver assinatura_liberacao_interna_datahora
     if not (emprestimo.requisicao and emprestimo.requisicao.assinatura_liberacao_interna_datahora):
         messages.error(request, 'A assinatura interna da liberação ainda não foi concluída.')
         return redirect('portal_produtor:emprestimo_detail', pk=emprestimo.pk)
@@ -360,7 +344,6 @@ def emprestimo_assinar(request, pk):
                 filename = f'assinatura_produtor_{emprestimo.pk}_{uuid4().hex[:8]}.png'
                 emprestimo.assinatura_produtor_imagem.save(filename, ContentFile(assinatura_bin), save=False)
 
-
             emprestimo.assinatura_produtor_usuario = request.user
             emprestimo.assinatura_produtor_nome = assinatura_nome
             emprestimo.assinatura_produtor_datahora = timezone.now()
@@ -372,16 +355,17 @@ def emprestimo_assinar(request, pk):
                 'atualizado_em',
             ])
 
-            # PLANO: Preenche campos globais de assinatura do produtor na requisição
             if emprestimo.requisicao_id:
                 req = emprestimo.requisicao
                 req.assinatura_produtor_usuario = request.user
                 req.assinatura_produtor_nome = assinatura_nome
                 req.assinatura_produtor_datahora = timezone.now()
+                req.assinatura_produtor_imagem = emprestimo.assinatura_produtor_imagem.name
                 req.save(update_fields=[
                     'assinatura_produtor_usuario',
                     'assinatura_produtor_nome',
                     'assinatura_produtor_datahora',
+                    'assinatura_produtor_imagem',
                 ])
 
             EmprestimoMovimento.objects.create(
@@ -407,7 +391,7 @@ def emprestimo_assinar(request, pk):
     })
 
 
-@login_required
+@portal_login_required
 def emprestimo_mensagem_create(request, pk):
     produtor = _produtor_portal_guard(request)
     emprestimo = get_object_or_404(EmprestimoProdutor, pk=pk, empresa=request.user.empresa, produtor=produtor)
@@ -425,7 +409,56 @@ def emprestimo_mensagem_create(request, pk):
     return redirect('portal_produtor:emprestimo_detail', pk=emprestimo.pk)
 
 
-@login_required
+@portal_login_required
+def emprestimo_imprimir(request, pk):
+    produtor = _produtor_portal_guard(request)
+    emprestimo = get_object_or_404(
+        EmprestimoProdutor.objects.select_related('produto', 'unidade_medida', 'requisicao', 'produtor'),
+        pk=pk, empresa=request.user.empresa, produtor=produtor,
+    )
+
+    if emprestimo.requisicao_id:
+        emprestimos_produtos_qs = EmprestimoProdutor.objects.filter(
+            empresa=request.user.empresa,
+            requisicao_id=emprestimo.requisicao_id,
+            produtor=produtor,
+        ).select_related('produto', 'unidade_medida', 'requisicao')
+        seen = set()
+        emprestimos_produtos = []
+        for emp in emprestimos_produtos_qs:
+            key = (emp.produto_id, emp.unidade_medida_id)
+            if key not in seen:
+                seen.add(key)
+                emprestimos_produtos.append(emp)
+    else:
+        emprestimos_produtos = [emprestimo]
+
+    movimentos = (
+        EmprestimoMovimento.objects
+        .filter(empresa=request.user.empresa, emprestimo=emprestimo)
+        .select_related('criado_por')
+        .order_by('data_movimento', 'id')
+    )
+    mensagens = emprestimo.mensagens.select_related('autor').all()
+
+    from decimal import Decimal
+    total_valor = sum(
+        Decimal(emp.quantidade_emprestada or 0) * Decimal(getattr(emp.produto, 'preco_venda', 0) or 0)
+        for emp in emprestimos_produtos
+    )
+
+    return render(request, 'portal_produtor/emprestimo_print.html', {
+        'produtor': produtor,
+        'emprestimo': emprestimo,
+        'emprestimos_produtos': emprestimos_produtos,
+        'movimentos': movimentos,
+        'mensagens_emprestimo': mensagens,
+        'empresa': request.user.empresa,
+        'total_valor': total_valor,
+    })
+
+
+@portal_login_required
 def emprestimo_mensagem_anexo_download(request, anexo_id):
     produtor = _produtor_portal_guard(request)
     anexo = get_object_or_404(
@@ -445,22 +478,61 @@ def emprestimo_mensagem_anexo_download(request, anexo_id):
     return FileResponse(anexo.arquivo.open('rb'), as_attachment=True, filename=anexo.nome_original or None)
 
 
-@login_required
+@portal_login_required
+def devolucoes_programadas(request):
+    produtor = _produtor_portal_guard(request)
+    hoje = date.today()
+    proximos_dias = hoje + timedelta(days=3)
+
+    emprestimos_qs = EmprestimoProdutor.objects.filter(
+        empresa=request.user.empresa,
+        produtor=produtor,
+    )
+    devolucoes_pendentes = emprestimos_qs.filter(
+        status__in=['PROMESSA', 'NORMAL', 'PARCIAL'],
+        saldo_pendente__gt=0,
+        data_promessa_devolucao__isnull=False,
+        data_promessa_devolucao__gte=hoje,
+    ).order_by('data_promessa_devolucao')
+    devolucoes_alerta = devolucoes_pendentes.filter(data_promessa_devolucao__lte=proximos_dias)
+
+    return render(request, 'portal_produtor/devolucoes_programadas.html', {
+        'produtor': produtor,
+        'devolucoes_pendentes': devolucoes_pendentes,
+        'devolucoes_alerta': devolucoes_alerta,
+        'hoje': hoje,
+    })
+
+
+@portal_login_required
 def perfil_produtor(request):
-    # Apenas exibe o perfil do usuário logado
     return render(request, 'portal_produtor/perfil.html')
 
+
+# ---------------------------------------------------------------------------
+# AJAX
+# ---------------------------------------------------------------------------
+
 @login_required
-def trocar_senha_produtor(request):
-    from django.contrib.auth.forms import PasswordChangeForm
-    from django.contrib.auth import update_session_auth_hash
-    if request.method == 'POST':
-        form = PasswordChangeForm(request.user, request.POST)
-        if form.is_valid():
-            user = form.save()
-            update_session_auth_hash(request, user)
-            messages.success(request, 'Senha alterada com sucesso!')
-            return redirect('portal_produtor:perfil')
+@require_POST
+def emprestimo_aceite_ajax(request):
+    data = json.loads(request.body.decode('utf-8'))
+    pk = data.get('pk')
+    aceite = data.get('aceite')
+    if pk is None or aceite is None:
+        return JsonResponse({'success': False, 'error': 'Dados incompletos.'}, status=400)
+    try:
+        emp = EmprestimoProdutor.objects.get(pk=pk, produtor=request.user.produtor_profile, empresa=request.user.empresa)
+    except EmprestimoProdutor.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Empréstimo não encontrado.'}, status=404)
+    if emp.aceite_produtor and emp.aceite_editavel is False:
+        return JsonResponse({'success': False, 'error': 'Aceite já confirmado e bloqueado.'}, status=403)
+    if aceite:
+        emp.aceite_produtor = True
+        emp.aceite_produtor_data = timezone.now()
+        emp.aceite_produtor_usuario = request.user
+        emp.aceite_editavel = False
     else:
-        form = PasswordChangeForm(request.user)
-    return render(request, 'portal_produtor/trocar_senha.html', {'form': form})
+        return JsonResponse({'success': False, 'error': 'Reversão de aceite só pela empresa.'}, status=403)
+    emp.save()
+    return JsonResponse({'success': True, 'aceite': emp.aceite_produtor, 'data': emp.aceite_produtor_data})

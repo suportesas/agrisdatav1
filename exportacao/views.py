@@ -3,7 +3,7 @@ import io
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
-from django.db.models import Q
+from django.db.models import Count, Q
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import get_template
@@ -119,7 +119,12 @@ def booking_list(request):
         messages.warning(request, '⚠️ Seu usuário não está vinculado a nenhuma empresa.')
         return redirect('dashboard:index')
 
-    bookings = Booking.objects.filter(empresa=request.user.empresa).order_by('-data_embarque_previsto')
+    bookings = (
+        Booking.objects
+        .filter(empresa=request.user.empresa)
+        .select_related('solicitacao')
+        .order_by('-data_embarque_previsto')
+    )
     return render(request, 'exportacao/booking_list.html', {
         'bookings': bookings,
         'request': request
@@ -326,4 +331,25 @@ def ajax_cultura_exportacao(request, pk):
         'temperatura': str(cultura.exportacao_temperatura) if cultura.exportacao_temperatura is not None else '',
         'humidade': str(cultura.exportacao_humidade) if cultura.exportacao_humidade is not None else '',
         'ventilacao': str(cultura.exportacao_ventilacao) if cultura.exportacao_ventilacao is not None else '',
+    })
+
+
+@login_required
+def ajax_solicitacao_preview(request, pk):
+    s = get_object_or_404(SolicitacaoBooking, pk=pk, empresa=request.user.empresa)
+    return JsonResponse({
+        'nome': s.nome,
+        'cliente': str(s.cliente) if s.cliente else '',
+        'cultura': str(s.cultura) if s.cultura else '',
+        'porto_origem': str(s.porto_origem) if s.porto_origem else '',
+        'porto_destino': str(s.porto_destino) if s.porto_destino else '',
+        'armador': str(s.armador) if s.armador else '',
+        'navio': str(s.navio) if s.navio else '',
+        'frete': s.get_frete_display(),
+        'genset': s.get_genset_display(),
+        'tipo_exportacao': s.get_tipo_exportacao_display() if s.tipo_exportacao else '',
+        'tipo_exportacao_outros': s.tipo_exportacao_outros,
+        'data_prevista_embarque': s.data_prevista_embarque.strftime('%d/%m/%Y') if s.data_prevista_embarque else '',
+        'quantidade': str(s.quantidade) if s.quantidade is not None else '',
+        'status': s.get_status_display(),
     })

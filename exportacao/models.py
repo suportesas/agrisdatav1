@@ -51,6 +51,13 @@ class SolicitacaoBooking(ExportacaoBaseModel):
         ('SEM_GENSET', 'Sem Genset'),
     ]
 
+    TIPO_EXPORTACAO_CHOICES = [
+        ('CONTEINER', 'Contêiner'),
+        ('GRANELEIRA', 'Graneleira'),
+        ('REEFER', 'Reefer'),
+        ('OUTROS', 'Outros'),
+    ]
+
     nome = models.CharField('Nome da Solicitação', max_length=200)
     cliente = models.ForeignKey(
         'cadastros.Cliente',
@@ -114,6 +121,17 @@ class SolicitacaoBooking(ExportacaoBaseModel):
         'Genset',
         max_length=20,
         choices=GENSET_CHOICES,
+        blank=True,
+    )
+    tipo_exportacao = models.CharField(
+        'Tipo de Exportação',
+        max_length=20,
+        choices=TIPO_EXPORTACAO_CHOICES,
+        blank=True,
+    )
+    tipo_exportacao_outros = models.CharField(
+        'Especificação (Outros)',
+        max_length=200,
         blank=True,
     )
     status = models.CharField('Status', max_length=20, choices=STATUS, default='ABERTO')
@@ -185,6 +203,11 @@ class Booking(ExportacaoBaseModel):
     status = models.CharField('Status', max_length=20, choices=STATUS, default='RASCUNHO')
     valor_fob = models.DecimalField('Valor FOB', max_digits=14, decimal_places=2, blank=True, null=True)
     observacoes = models.TextField('Observações', blank=True)
+    rota_navio = models.CharField('Rota do Navio (VIAGEM)', max_length=100, blank=True)
+    deadline_draft = models.DateTimeField('DEADLINE DRAFT', null=True, blank=True)
+    deadline_carga = models.DateTimeField('DEADLINE CARGA', null=True, blank=True)
+    etd = models.DateTimeField('ETD', null=True, blank=True)
+    eta = models.DateTimeField('ETA', null=True, blank=True)
 
     class Meta:
         verbose_name = 'Booking'

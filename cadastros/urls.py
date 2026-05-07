@@ -221,10 +221,12 @@ urlpatterns = [
     # ==================== EMPRESTIMOS PRODUTOR ====================
     path('emprestimos/extrato/', views_emprestimo.emprestimo_extrato, name='emprestimo_extrato'),
     path('emprestimos/<int:pk>/', views_emprestimo.emprestimo_detalhe, name='emprestimo_detalhe'),
+    path('emprestimos/<int:pk>/imprimir/', views_emprestimo.emprestimo_imprimir, name='emprestimo_imprimir'),
     path('emprestimos/<int:pk>/assinar-liberacao/', views_emprestimo.emprestimo_assinar_liberacao, name='emprestimo_assinar_liberacao'),
     path('emprestimos/<int:pk>/reenviar-whatsapp/', views_emprestimo.emprestimo_reenviar_whatsapp, name='emprestimo_reenviar_whatsapp'),
     path('emprestimos/<int:pk>/mensagens/nova/', views_emprestimo.emprestimo_mensagem_create, name='emprestimo_mensagem_create'),
     path('emprestimos/mensagens/anexos/<int:anexo_id>/download/', views_emprestimo.emprestimo_mensagem_anexo_download, name='emprestimo_mensagem_anexo_download'),
+    path('emprestimos/extrato/imprimir/', views_emprestimo.emprestimo_extrato_imprimir, name='emprestimo_extrato_imprimir'),
     path('emprestimos/extrato/pdf/', views_emprestimo.emprestimo_exportar_pdf, name='emprestimo_exportar_pdf'),
     path('emprestimos/extrato/excel/', views_emprestimo.emprestimo_exportar_excel, name='emprestimo_exportar_excel'),
     path('emprestimos/devolucao/nova/', views_emprestimo.emprestimo_devolucao_create, name='emprestimo_devolucao_create'),

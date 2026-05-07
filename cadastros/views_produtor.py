@@ -1,6 +1,5 @@
 from django.contrib import messages
 from django.conf import settings
-from django.contrib.auth.forms import PasswordResetForm
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db.models import Q
@@ -34,24 +33,14 @@ def produtor_list(request):
     paginator = Paginator(produtores.order_by('razao_social'), 20)
     page_obj = paginator.get_page(request.GET.get('page'))
 
-    # Cálculo dos totais de empréstimos dos produtores da página
     from decimal import Decimal
     from cadastros.models import EmprestimoProdutor
-    from django.db import models
-    produtor_ids = [p.id for p in page_obj.object_list]
     total_entrada = Decimal('0')
     total_saida = Decimal('0')
-    if produtor_ids:
-        agregados = (
-            EmprestimoProdutor.objects
-            .filter(produtor_id__in=produtor_ids, empresa=request.user.empresa)
-            .aggregate(
-                entrada=models.Sum('quantidade_emprestada'),
-                saida=models.Sum('quantidade_devolvida')
-            )
-        )
-        total_entrada = agregados['entrada'] or Decimal('0')
-        total_saida = agregados['saida'] or Decimal('0')
+    for emp in EmprestimoProdutor.objects.filter(empresa=request.user.empresa).select_related('produto'):
+        preco = Decimal(getattr(emp.produto, 'preco_venda', 0) or 0)
+        total_entrada += Decimal(emp.quantidade_emprestada or 0) * preco
+        total_saida += Decimal(emp.quantidade_devolvida or 0) * preco
 
     return render(
         request,
@@ -72,17 +61,12 @@ def produtor_detail(request, pk):
     produtor = get_object_or_404(Produtor, pk=pk, empresa=request.user.empresa)
     from decimal import Decimal
     from cadastros.models import EmprestimoProdutor
-    from django.db import models
-    agregados = (
-        EmprestimoProdutor.objects
-        .filter(produtor=produtor, empresa=request.user.empresa)
-        .aggregate(
-            entrada=models.Sum('quantidade_emprestada'),
-            saida=models.Sum('quantidade_devolvida')
-        )
-    )
-    total_entrada = agregados['entrada'] or Decimal('0')
-    total_saida = agregados['saida'] or Decimal('0')
+    total_entrada = Decimal('0')
+    total_saida = Decimal('0')
+    for emp in EmprestimoProdutor.objects.filter(produtor=produtor, empresa=request.user.empresa).select_related('produto'):
+        preco = Decimal(getattr(emp.produto, 'preco_venda', 0) or 0)
+        total_entrada += Decimal(emp.quantidade_emprestada or 0) * preco
+        total_saida += Decimal(emp.quantidade_devolvida or 0) * preco
     return render(request, 'cadastros/produtor/produtor_detail.html', {
         'produtor': produtor,
         'emprestimo_total_entrada': total_entrada,
@@ -154,84 +138,94 @@ def produtor_delete(request, pk):
 
 @login_required
 def produtor_criar_acesso_portal(request, pk):
-    """Cria usuário de portal para o produtor e envia e-mail de primeiro acesso."""
+    """Cria (ou reativa) acesso portal do produtor com senha provisória obrigatória."""
+    from django.core.mail import send_mail
+    from django.urls import reverse
     from usuarios.models import Usuario
+    import secrets
 
     produtor = get_object_or_404(Produtor, pk=pk, empresa=request.user.empresa)
 
+    if not produtor.email and not produtor.telefone:
+        messages.error(request, 'Cadastre e-mail ou telefone no produtor para criar acesso ao portal.')
+        return redirect('cadastros:produtor_detail', pk=pk)
 
-    import secrets
-    from cadastros.emprestimo_utils import registrar_interacao_emprestimo
-    senha_provisoria = None
-    whatsapp_enviado = False
+    senha_provisoria = secrets.token_urlsafe(10)
+    portal_url = request.build_absolute_uri(reverse('portal_produtor:login'))
+    nome_produtor = produtor.nome_fantasia or produtor.razao_social
 
-    # settings já está importado no topo do arquivo, não importar localmente!
-    site_domain = getattr(settings, 'SITE_DOMAIN', '') or request.get_host()
-    use_https = getattr(settings, 'SITE_HTTPS', False) or request.is_secure()
-
-    def _enviar_reset(email):
-        form = PasswordResetForm(data={'email': email})
-        if form.is_valid():
-            form.save(
-                request=request,
-                domain_override=site_domain,
-                use_https=use_https,
-                from_email=None,
-                email_template_name='usuarios/password_reset_email.html',
-                subject_template_name='usuarios/password_reset_subject.txt',
+    def _enviar_email_senha(email, username):
+        try:
+            send_mail(
+                subject='Acesso ao Portal do Produtor',
+                message=(
+                    f'Olá, {nome_produtor}!\n\n'
+                    f'Seu acesso ao Portal do Produtor foi criado/reativado.\n\n'
+                    f'Usuário: {username}\n'
+                    f'Senha provisória: {senha_provisoria}\n\n'
+                    f'Acesse: {portal_url}\n\n'
+                    f'Você será solicitado a trocar a senha no primeiro acesso.\n\n'
+                    f'{produtor.empresa.nome}'
+                ),
+                from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', None),
+                recipient_list=[email],
+                fail_silently=True,
             )
             return True
-        return False
+        except Exception:
+            return False
 
-    if produtor.portal_user_id:
-        user_portal = produtor.portal_user
-        if not user_portal.is_active:
-            user_portal.is_active = True
-            user_portal.save(update_fields=['is_active'])
-        if produtor.email:
-            _enviar_reset(user_portal.email)
-            messages.success(request, f'Convite de acesso reenviado para {user_portal.email}.')
-        elif produtor.telefone:
-            senha_provisoria = secrets.token_urlsafe(8)
-            user_portal.set_password(senha_provisoria)
-            user_portal.save(update_fields=['password'])
-            # Enviar WhatsApp
-            from django.urls import reverse
+    def _enviar_whatsapp(username):
+        try:
+            from twilio.rest import Client
+            sid = getattr(settings, 'TWILIO_ACCOUNT_SID', None)
+            token = getattr(settings, 'TWILIO_AUTH_TOKEN', None)
+            phone = getattr(settings, 'TWILIO_PHONE_NUMBER', None)
+            if not all([sid, token, phone]):
+                return False
             numero = re.sub(r'\D', '', produtor.telefone)
             if not numero.startswith('55'):
                 numero = '55' + numero
             numero = '+' + numero
-            # Agora existe rota de login do portal_produtor
-            portal_url = request.build_absolute_uri(reverse('portal_produtor:login'))
-            mensagem = (
-                f'Olá, {produtor.nome_fantasia or produtor.razao_social}!\n\n'
-                f'Seu acesso ao Portal do Produtor foi criado.\n'
-                f'Usuário: {user_portal.username}\nSenha provisória: {senha_provisoria}\n'
-                f'Acesse: {portal_url}\n\nTroque a senha no primeiro acesso.'
+            Client(sid, token).messages.create(
+                from_=f'whatsapp:{phone}',
+                body=(
+                    f'Olá, {nome_produtor}!\n\n'
+                    f'Seu acesso ao Portal do Produtor foi criado/reativado.\n'
+                    f'Usuário: {username}\nSenha provisória: {senha_provisoria}\n'
+                    f'Acesse: {portal_url}\n\nTroque a senha no primeiro acesso.'
+                ),
+                to=f'whatsapp:{numero}',
             )
-            try:
-                from twilio.rest import Client
-                twilio_account_sid = getattr(settings, 'TWILIO_ACCOUNT_SID', None)
-                twilio_auth_token = getattr(settings, 'TWILIO_AUTH_TOKEN', None)
-                twilio_phone = getattr(settings, 'TWILIO_PHONE_NUMBER', None)
-                if all([twilio_account_sid, twilio_auth_token, twilio_phone]):
-                    client = Client(twilio_account_sid, twilio_auth_token)
-                    client.messages.create(
-                        from_=f'whatsapp:{twilio_phone}',
-                        body=mensagem,
-                        to=f'whatsapp:{numero}',
-                    )
-                    whatsapp_enviado = True
-            except Exception:
-                whatsapp_enviado = False
-            messages.success(request, f'Acesso reativado. Senha provisória: {senha_provisoria} (também enviada por WhatsApp se possível).')
-        else:
-            messages.warning(request, 'Produtor sem e-mail ou telefone para envio automático. Cadastre um contato.')
-        # Só registra interação se houver objeto de empréstimo
-        # registrar_interacao_emprestimo espera um objeto com .empresa
-        # Aqui não há empréstimo, então apenas ignore
+            return True
+        except Exception:
+            return False
+
+    # ---- Reenvio: produtor já tem usuário ----
+    if produtor.portal_user_id:
+        user_portal = produtor.portal_user
+        user_portal.set_password(senha_provisoria)
+        user_portal.must_change_password = True
+        user_portal.is_active = True
+        user_portal.save(update_fields=['password', 'must_change_password', 'is_active'])
+
+        if not produtor.portal_enabled:
+            produtor.portal_enabled = True
+            produtor.save(update_fields=['portal_enabled'])
+
+        enviado = False
+        if produtor.email:
+            enviado = _enviar_email_senha(user_portal.email, user_portal.username)
+        if produtor.telefone:
+            _enviar_whatsapp(user_portal.username)
+
+        msg = f'Nova senha provisória gerada: {senha_provisoria}'
+        if enviado:
+            msg += f' (e-mail enviado para {user_portal.email})'
+        messages.success(request, f'Acesso reativado. {msg}')
         return redirect('cadastros:produtor_detail', pk=pk)
 
+    # ---- Primeiro acesso: cria o usuário ----
     doc = re.sub(r'\D', '', produtor.cnpj_cpf or '')
     base_username = f'prod_{doc or pk}'
     username = base_username
@@ -241,78 +235,31 @@ def produtor_criar_acesso_portal(request, pk):
         counter += 1
 
     nome_display = (produtor.nome_fantasia or produtor.razao_social or '')[:30]
-
-    if produtor.email:
-        user_portal = Usuario.objects.create_user(
-            username=username,
-            email=produtor.email,
-            password=None,
-            first_name=nome_display,
-            empresa=produtor.empresa,
-            tipo='PROD',
-            is_active=True,
-        )
-        user_portal.set_unusable_password()
-        user_portal.save(update_fields=['password'])
-    elif produtor.telefone:
-        senha_provisoria = secrets.token_urlsafe(8)
-        user_portal = Usuario.objects.create_user(
-            username=username,
-            email='',
-            password=senha_provisoria,
-            first_name=nome_display,
-            empresa=produtor.empresa,
-            tipo='PROD',
-            is_active=True,
-        )
-        # Enviar WhatsApp
-        from django.urls import reverse
-        numero = re.sub(r'\D', '', produtor.telefone)
-        if not numero.startswith('55'):
-            numero = '55' + numero
-        numero = '+' + numero
-        portal_url = request.build_absolute_uri(reverse('portal_produtor:login'))
-        mensagem = (
-            f'Olá, {produtor.nome_fantasia or produtor.razao_social}!\n\n'
-            f'Seu acesso ao Portal do Produtor foi criado.\n'
-            f'Usuário: {user_portal.username}\nSenha provisória: {senha_provisoria}\n'
-            f'Acesse: {portal_url}\n\nTroque a senha no primeiro acesso.'
-        )
-        try:
-            from twilio.rest import Client
-            twilio_account_sid = getattr(settings, 'TWILIO_ACCOUNT_SID', None)
-            twilio_auth_token = getattr(settings, 'TWILIO_AUTH_TOKEN', None)
-            twilio_phone = getattr(settings, 'TWILIO_PHONE_NUMBER', None)
-            if all([twilio_account_sid, twilio_auth_token, twilio_phone]):
-                client = Client(twilio_account_sid, twilio_auth_token)
-                client.messages.create(
-                    from_=f'whatsapp:{twilio_phone}',
-                    body=mensagem,
-                    to=f'whatsapp:{numero}',
-                )
-                whatsapp_enviado = True
-        except Exception:
-            whatsapp_enviado = False
-    else:
-        messages.error(request, 'Cadastre e-mail ou telefone no produtor para criar acesso ao portal.')
-        return redirect('cadastros:produtor_detail', pk=pk)
-
+    user_portal = Usuario.objects.create_user(
+        username=username,
+        email=produtor.email or '',
+        password=senha_provisoria,
+        first_name=nome_display,
+        empresa=produtor.empresa,
+        tipo='PROD',
+        is_active=True,
+        must_change_password=True,
+    )
 
     produtor.portal_user = user_portal
     produtor.portal_enabled = True
     produtor.save(update_fields=['portal_user', 'portal_enabled'])
 
+    enviado = False
     if produtor.email:
-        if _enviar_reset(user_portal.email):
-            messages.success(request, f'Acesso ao portal criado e e-mail enviado para {user_portal.email}.')
-        else:
-            messages.warning(request, 'Acesso criado, mas não foi possível enviar o e-mail de primeiro acesso.')
-    elif produtor.telefone:
-        messages.success(request, f'Acesso ao portal criado. Senha provisória: {senha_provisoria} (também enviada por WhatsApp se possível).')
-    else:
-        messages.warning(request, 'Acesso criado, mas não foi possível enviar senha automática. Cadastre e-mail ou telefone.')
+        enviado = _enviar_email_senha(user_portal.email, user_portal.username)
+    if produtor.telefone:
+        _enviar_whatsapp(user_portal.username)
 
-    registrar_interacao_emprestimo(None, 'NOTIFICACAO_INTERNA', f'Acesso portal criado para produtor {produtor}.', usuario=request.user, sucesso=True)
+    msg = f'Usuário: {user_portal.username} | Senha provisória: {senha_provisoria}'
+    if enviado:
+        msg += f' (e-mail enviado para {produtor.email})'
+    messages.success(request, f'Acesso ao portal criado! {msg}')
     return redirect('cadastros:produtor_detail', pk=pk)
 
 

@@ -60,9 +60,9 @@
           <td class="text-end">{{ emprestimo.quantidade_emprestada|floatformat:3 }} {{ emprestimo.unidade_medida.sigla }}</td>
           <td>{{ emprestimo.get_status_display }}</td>
           <td>
-            {% if emprestimo.possui_assinatura_produtor %}
+            {% if emprestimo.possui_assinatura_produtor or emprestimo.requisicao.assinatura_produtor_imagem %}
               <span class="badge bg-success">Assinado</span>
-            {% elif emprestimo.possui_assinatura_liberador %}
+            {% elif emprestimo.possui_assinatura_liberador or emprestimo.requisicao.assinatura_liberacao_interna_datahora %}
               <span class="badge bg-warning text-dark">Pendente</span>
             {% else %}
               <span class="badge bg-secondary">Aguardando liberação</span>

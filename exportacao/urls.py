@@ -25,4 +25,5 @@ urlpatterns = [
     path('ordens-coleta/<int:pk>/editar/', views.ordem_coleta_update, name='ordem_coleta_update'),
 
     path('ajax/cultura/<int:pk>/exportacao/', views.ajax_cultura_exportacao, name='ajax_cultura_exportacao'),
+    path('ajax/solicitacao/<int:pk>/preview/', views.ajax_solicitacao_preview, name='ajax_solicitacao_preview'),
 ]

@@ -43,7 +43,19 @@
       "PowerShell(Copy-Item \"c:\\\\erp_agricola_novo\\\\static\\\\js\\\\cadastros_armador.js\" \"c:\\\\erp_agricola_novo\\\\staticfiles\\\\js\\\\cadastros_armador.js\" -Force)",
       "Bash(python manage.py makemigrations cadastros --name safraplan_expand_fields)",
       "Bash(Get-ChildItem -Path \"c:\\\\erp_agricola_novo\" -Recurse -Filter \"models.py\")",
-      "Bash(Select-Object -ExpandProperty FullName)"
+      "Bash(Select-Object -ExpandProperty FullName)",
+      "Bash(venv\\\\Scripts\\\\python.exe manage.py makemigrations usuarios --name must_change_password)",
+      "Bash(Get-ChildItem -Path \"c:\\\\erp_agricola_novo\" -Recurse -Name \"*views*\")",
+      "Bash(Select-Object -First 20)",
+      "Bash(venv\\\\Scripts\\\\python.exe manage.py resetar_emprestimos_teste --dry-run)",
+      "Bash(findstr exportacao *)",
+      "Bash(python manage.py makemigrations exportacao --name=\"solicitacao_booking_tipo_exportacao\")",
+      "Bash(venv\\\\Scripts\\\\python.exe manage.py makemigrations exportacao --name=\"solicitacao_booking_tipo_exportacao\")",
+      "PowerShell(venv\\\\Scripts\\\\python.exe manage.py makemigrations exportacao --name=\"solicitacao_booking_tipo_exportacao\" 2>&1)",
+      "PowerShell(venv\\\\Scripts\\\\python.exe manage.py migrate exportacao 2>&1)",
+      "Bash(find /c:/erp_agricola_novo/exportacao -name \"urls.py\" -type f)",
+      "Read(//c:/erp_agricola_novo/**)",
+      "PowerShell(venv\\\\Scripts\\\\python.exe manage.py makemigrations exportacao --name add_booking_shipping_fields 2>&1)"
     ]
   }
 }

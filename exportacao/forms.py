@@ -1,6 +1,6 @@
 from django import forms
 from .models import Booking, BookingContainer, OrdemColeta, SolicitacaoBooking
-from cadastros.models import Armador, Cultura, Navio, Porto, Transportadora
+from cadastros.models import Armador, Cultura, Navio, Porto
 
 
 class ExportacaoBaseForm(forms.ModelForm):
@@ -41,13 +41,15 @@ class SolicitacaoBookingForm(ExportacaoBaseForm):
             'navio',
             'frete',
             'genset',
+            'tipo_exportacao',
+            'tipo_exportacao_outros',
             'status',
             'observacoes',
         ]
         widgets = {
             'nome': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '202526 - SM19'}),
             'cultura': forms.Select(attrs={'class': 'form-select'}),
-            'data_prevista_embarque': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'data_prevista_embarque': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'),
             'quantidade': forms.NumberInput(attrs={'class': 'form-control', 'step': '1'}),
             'porto_origem': forms.Select(attrs={'class': 'form-select'}),
             'porto_destino': forms.Select(attrs={'class': 'form-select'}),
@@ -55,6 +57,8 @@ class SolicitacaoBookingForm(ExportacaoBaseForm):
             'navio': forms.Select(attrs={'class': 'form-select'}),
             'frete': forms.Select(attrs={'class': 'form-select'}),
             'genset': forms.Select(attrs={'class': 'form-select'}),
+            'tipo_exportacao': forms.Select(attrs={'class': 'form-select', 'id': 'id_tipo_exportacao'}),
+            'tipo_exportacao_outros': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Descreva o tipo de exportação'}),
             'status': forms.Select(attrs={'class': 'form-select'}),
             'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
@@ -78,11 +82,15 @@ class BookingForm(ExportacaoBaseForm):
             'solicitacao',
             'codigo',
             'tipo_exportacao',
-            'transportadora',
             'porto_origem',
             'porto_destino',
+            'rota_navio',
             'data_embarque_previsto',
             'data_embarque_realizado',
+            'deadline_draft',
+            'deadline_carga',
+            'etd',
+            'eta',
             'status',
             'valor_fob',
             'observacoes',
@@ -91,11 +99,15 @@ class BookingForm(ExportacaoBaseForm):
             'solicitacao': forms.Select(attrs={'class': 'form-select'}),
             'codigo': forms.TextInput(attrs={'class': 'form-control'}),
             'tipo_exportacao': forms.Select(attrs={'class': 'form-select'}),
-            'transportadora': forms.Select(attrs={'class': 'form-select'}),
             'porto_origem': forms.Select(attrs={'class': 'form-select'}),
             'porto_destino': forms.Select(attrs={'class': 'form-select'}),
-            'data_embarque_previsto': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'data_embarque_realizado': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'rota_navio': forms.TextInput(attrs={'class': 'form-control'}),
+            'data_embarque_previsto': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
+            'data_embarque_realizado': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
+            'deadline_draft': forms.DateTimeInput(format='%Y-%m-%dT%H:%M', attrs={'class': 'form-control', 'type': 'datetime-local'}),
+            'deadline_carga': forms.DateTimeInput(format='%Y-%m-%dT%H:%M', attrs={'class': 'form-control', 'type': 'datetime-local'}),
+            'etd': forms.DateTimeInput(format='%Y-%m-%dT%H:%M', attrs={'class': 'form-control', 'type': 'datetime-local'}),
+            'eta': forms.DateTimeInput(format='%Y-%m-%dT%H:%M', attrs={'class': 'form-control', 'type': 'datetime-local'}),
             'status': forms.Select(attrs={'class': 'form-select'}),
             'valor_fob': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
@@ -105,7 +117,6 @@ class BookingForm(ExportacaoBaseForm):
         super().__init__(*args, **kwargs)
         if self.empresa:
             self.fields['solicitacao'].queryset = SolicitacaoBooking.objects.filter(empresa=self.empresa).order_by('-data_solicitacao')
-            self.fields['transportadora'].queryset = Transportadora.objects.filter(empresa=self.empresa).order_by('razao_social')
             self.fields['porto_origem'].queryset = Porto.objects.filter(empresa=self.empresa, ativo=True).order_by('nome')
             self.fields['porto_destino'].queryset = Porto.objects.filter(empresa=self.empresa, ativo=True).order_by('nome')
 

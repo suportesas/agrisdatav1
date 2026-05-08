@@ -122,10 +122,16 @@ def motorista_home(request):
         status__in=['ABERTA', 'EM_ANDAMENTO'],
     ).select_related('vehicle').prefetch_related('itens', 'documentos').distinct().order_by('-data_abertura')[:5]
 
+    from exportacao.models import OrdemColeta
+    ordens_pendentes_count = OrdemColeta.objects.filter(
+        motorista=motorista, status='PENDENTE'
+    ).count()
+
     return render(request, 'cadastros/portal_motorista/home.html', {
         'motorista': motorista,
         'ultimos_abastecimentos': ultimos_abastecimentos,
         'manutencoes_pendentes': manutencoes_pendentes,
+        'ordens_pendentes_count': ordens_pendentes_count,
         'hoje': date.today(),
     })
 
@@ -285,4 +291,237 @@ def motorista_manutencao_concluir(request, pk):
         'manutencao': manutencao,
         'motorista': motorista,
         'title': 'Confirmar Conclusão',
+    })
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# ORDENS DE COLETA
+# ──────────────────────────────────────────────────────────────────────────────
+
+def motorista_ordens_coleta(request):
+    motorista_id = request.session.get('motorista_id')
+    if not motorista_id:
+        return redirect(LOGIN_URL)
+    motorista = get_object_or_404(Motorista, pk=motorista_id)
+    from exportacao.models import OrdemColeta
+    from datetime import date as _date, timedelta
+
+    status_filtro = request.GET.get('status', '')
+    periodo_filtro = request.GET.get('periodo', '')
+
+    ordens = OrdemColeta.objects.filter(
+        motorista_id=motorista_id,
+    ).select_related('booking', 'container').order_by('-data_prevista')
+
+    if status_filtro:
+        ordens = ordens.filter(status=status_filtro)
+
+    hoje = _date.today()
+    if periodo_filtro == '7d':
+        ordens = ordens.filter(data_prevista__gte=hoje - timedelta(days=7))
+    elif periodo_filtro == '30d':
+        ordens = ordens.filter(data_prevista__gte=hoje - timedelta(days=30))
+    elif periodo_filtro == 'mes':
+        ordens = ordens.filter(data_prevista__year=hoje.year, data_prevista__month=hoje.month)
+    elif periodo_filtro == 'proximas':
+        ordens = ordens.filter(data_prevista__gte=hoje)
+
+    contagens = {
+        'PENDENTE':    OrdemColeta.objects.filter(motorista_id=motorista_id, status='PENDENTE').count(),
+        'EM_ANDAMENTO': OrdemColeta.objects.filter(motorista_id=motorista_id, status='EM_ANDAMENTO').count(),
+        'CONCLUIDA':   OrdemColeta.objects.filter(motorista_id=motorista_id, status='CONCLUIDA').count(),
+        'total':       OrdemColeta.objects.filter(motorista_id=motorista_id).count(),
+    }
+
+    return render(request, 'cadastros/portal_motorista/ordens_coleta_list.html', {
+        'ordens': ordens,
+        'motorista': motorista,
+        'status_filtro': status_filtro,
+        'periodo_filtro': periodo_filtro,
+        'contagens': contagens,
+        'title': 'Minhas Ordens de Coleta',
+    })
+
+
+def motorista_ordem_coleta_detail(request, pk):
+    motorista_id = request.session.get('motorista_id')
+    if not motorista_id:
+        return redirect(LOGIN_URL)
+    motorista = get_object_or_404(Motorista, pk=motorista_id)
+    from exportacao.models import OrdemColeta
+    ordem = get_object_or_404(OrdemColeta, pk=pk, motorista_id=motorista_id)
+    fotos_count = ordem.fotos.count()
+    return render(request, 'cadastros/portal_motorista/ordem_coleta_detail.html', {
+        'ordem': ordem,
+        'motorista': motorista,
+        'fotos_count': fotos_count,
+        'title': f'Ordem {ordem.numero}',
+    })
+
+
+def motorista_ordem_coleta_print(request, pk):
+    """PDF da Ordem de Coleta — autenticação via session do portal."""
+    from datetime import date as _date
+    from django.db.models import Q as _Q
+    motorista_id = request.session.get('motorista_id')
+    if not motorista_id:
+        return redirect(LOGIN_URL)
+    motorista = get_object_or_404(Motorista, pk=motorista_id)
+    from exportacao.models import OrdemColeta
+    ordem = get_object_or_404(
+        OrdemColeta.objects.select_related(
+            'booking', 'container', 'transportadora', 'motorista', 'empresa'
+        ),
+        pk=pk, motorista_id=motorista_id,
+    )
+    placa_principal = ''
+    veiculo_principal = ''
+    reboques = []
+    hoje = _date.today()
+    vinculo = (
+        MotoristaVinculoPlaca.objects
+        .filter(motorista_id=motorista_id, ativo=True)
+        .filter(_Q(data_fim__isnull=True) | _Q(data_fim__gte=hoje))
+        .select_related('placa_principal__vehicle')
+        .prefetch_related('reboques__vehicle')
+        .order_by('-data_inicio')
+        .first()
+    )
+    if vinculo and vinculo.placa_principal:
+        placa_principal = vinculo.placa_principal.placa
+        v = getattr(vinculo.placa_principal, 'vehicle', None)
+        if v:
+            veiculo_principal = f'{v.marca} {v.modelo}'.strip()
+        for rp in vinculo.reboques.select_related('vehicle').all():
+            rv = rp.vehicle
+            reboques.append({
+                'placa': rp.placa,
+                'veiculo': f'{rv.marca} {rv.modelo}'.strip() if rv else '',
+            })
+    return render(request, 'exportacao/ordem_coleta_print.html', {
+        'ordem': ordem,
+        'empresa': motorista.empresa,
+        'placa_principal': placa_principal,
+        'veiculo_principal': veiculo_principal,
+        'reboques': reboques,
+    })
+
+
+def motorista_carta_temperatura(request, pk):
+    """Carta de Temperatura — autenticação via session do portal."""
+    motorista_id = request.session.get('motorista_id')
+    if not motorista_id:
+        return redirect(LOGIN_URL)
+    motorista = get_object_or_404(Motorista, pk=motorista_id)
+    from exportacao.models import OrdemColeta
+    ordem = get_object_or_404(
+        OrdemColeta.objects.select_related(
+            'booking__solicitacao__cultura',
+            'booking__solicitacao__navio',
+            'booking__porto_origem',
+            'booking__porto_destino',
+            'container',
+        ),
+        pk=pk, motorista_id=motorista_id,
+    )
+    MESES = [
+        'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+        'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
+    ]
+    from datetime import date as _date
+    booking = ordem.booking
+    solicitacao = getattr(booking, 'solicitacao', None)
+    cultura = getattr(solicitacao, 'cultura', None) if solicitacao else None
+    navio = getattr(solicitacao, 'navio', None) if solicitacao else None
+    navio_nome = str(navio) if navio else ''
+    rota = booking.rota_navio or ''
+    to_master = ' '.join(filter(None, [navio_nome, rota])) or '—'
+    commodity = str(cultura) if cultura else '—'
+    porto_loading = str(booking.porto_origem) if booking.porto_origem else '—'
+    porto_discharge = str(booking.porto_destino) if booking.porto_destino else '—'
+    temperatura = getattr(cultura, 'exportacao_temperatura', None)
+    ventilacao_raw = getattr(cultura, 'exportacao_ventilacao', None)
+    humidade_raw = getattr(cultura, 'exportacao_humidade', None)
+    temperatura_display = f'{temperatura}°C' if temperatura is not None else '—'
+    ventilacao_display = 'OFF' if (ventilacao_raw is None or ventilacao_raw == 0) else f'{ventilacao_raw} cbm/h'
+    humidade_display = 'OFF' if (humidade_raw is None or humidade_raw == 0) else f'{humidade_raw}%'
+    hoje = _date.today()
+    empresa = motorista.empresa
+    cidade_uf = f'{empresa.cidade}/{empresa.uf}' if (empresa.cidade and empresa.uf) else (empresa.cidade or '')
+    mes_nome = MESES[hoje.month - 1].upper()
+    data_local = f'{cidade_uf}, {mes_nome}, {hoje.day} de {hoje.year}.'
+    return render(request, 'exportacao/ordem_coleta_carta_temperatura.html', {
+        'ordem': ordem,
+        'empresa': empresa,
+        'to_master': to_master,
+        'commodity': commodity,
+        'porto_loading': porto_loading,
+        'porto_discharge': porto_discharge,
+        'place_delivery': porto_discharge,
+        'temperatura_display': temperatura_display,
+        'ventilacao_display': ventilacao_display,
+        'humidade_display': humidade_display,
+        'data_local': data_local,
+    })
+
+
+def motorista_confirmar_coleta(request, pk):
+    """POST: muda status PENDENTE → EM_ANDAMENTO."""
+    motorista_id = request.session.get('motorista_id')
+    if not motorista_id:
+        return redirect(LOGIN_URL)
+    from exportacao.models import OrdemColeta
+    ordem = get_object_or_404(OrdemColeta, pk=pk, motorista_id=motorista_id)
+    if request.method == 'POST' and ordem.status == 'PENDENTE':
+        ordem.status = 'EM_ANDAMENTO'
+        ordem.save(update_fields=['status'])
+    return redirect('portal_motorista:ordem_coleta_detail', pk=pk)
+
+
+def motorista_finalizar_coleta(request, pk):
+    """POST: muda status EM_ANDAMENTO → CONCLUIDA."""
+    motorista_id = request.session.get('motorista_id')
+    if not motorista_id:
+        return redirect(LOGIN_URL)
+    from exportacao.models import OrdemColeta
+    ordem = get_object_or_404(OrdemColeta, pk=pk, motorista_id=motorista_id)
+    if request.method == 'POST' and ordem.status == 'EM_ANDAMENTO':
+        from datetime import date as _date
+        ordem.status = 'CONCLUIDA'
+        ordem.data_realizada = _date.today()
+        ordem.save(update_fields=['status', 'data_realizada'])
+    return redirect('portal_motorista:ordem_coleta_fotos', pk=pk)
+
+
+def motorista_ordem_coleta_fotos(request, pk):
+    """GET: galeria de fotos + formulário de upload. POST: salva nova foto."""
+    from django import forms as _forms
+    motorista_id = request.session.get('motorista_id')
+    if not motorista_id:
+        return redirect(LOGIN_URL)
+    motorista = get_object_or_404(Motorista, pk=motorista_id)
+    from exportacao.models import FotoOrdemColeta, OrdemColeta
+    ordem = get_object_or_404(OrdemColeta, pk=pk, motorista_id=motorista_id)
+
+    if request.method == 'POST':
+        tipo = request.POST.get('tipo', 'OUTROS')
+        observacao = request.POST.get('observacao', '').strip()
+        foto_file = request.FILES.get('foto')
+        if foto_file:
+            FotoOrdemColeta.objects.create(
+                ordem=ordem,
+                tipo=tipo,
+                foto=foto_file,
+                observacao=observacao,
+                enviada_por=motorista,
+            )
+        return redirect('portal_motorista:ordem_coleta_fotos', pk=pk)
+
+    fotos = ordem.fotos.select_related('enviada_por').all()
+    return render(request, 'cadastros/portal_motorista/ordem_coleta_fotos.html', {
+        'ordem': ordem,
+        'motorista': motorista,
+        'fotos': fotos,
+        'tipo_choices': FotoOrdemColeta.TIPO_CHOICES,
+        'title': f'Fotos — {ordem.numero}',
     })

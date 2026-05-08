@@ -350,13 +350,33 @@ class OrdemColeta(ExportacaoBaseModel):
         verbose_name='Contêiner',
     )
     numero = models.CharField('Número da Ordem de Coleta', max_length=30, blank=True, null=True, db_index=True)
-    endereco_coleta = models.CharField('Endereço de Coleta', max_length=250)
+    endereco_coleta = models.CharField('Endereço de Coleta', max_length=250, blank=True)
     responsavel_coleta = models.CharField('Responsável pela Coleta', max_length=150, blank=True)
     data_prevista = models.DateField('Data Prevista', blank=True, null=True)
     data_realizada = models.DateField('Data Realizada', blank=True, null=True)
     status = models.CharField('Status', max_length=20, choices=STATUS, default='PENDENTE')
-    documento = models.FileField('Documento de Coleta', upload_to='exportacao/ordens_coleta/', blank=True, null=True)
+    documento = models.FileField('Assinatura / Documento de Coleta', upload_to='exportacao/ordens_coleta/', blank=True, null=True)
     observacoes = models.TextField('Observações', blank=True)
+    segregado = models.BooleanField('Contêiner Segregado', default=False)
+    lacre_armador = models.CharField('Lacre do Armador', max_length=50, blank=True)
+    lacre_fiscal = models.CharField('Lacre Fiscal', max_length=50, blank=True)
+    lacre_terminal = models.CharField('Lacre do Terminal', max_length=50, blank=True)
+    transportadora = models.ForeignKey(
+        'cadastros.Transportadora',
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='ordens_coleta',
+        verbose_name='Transportadora',
+    )
+    motorista = models.ForeignKey(
+        'cadastros.Motorista',
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='ordens_coleta',
+        verbose_name='Motorista',
+    )
 
     class Meta:
         verbose_name = 'Ordem de Coleta'
@@ -366,3 +386,52 @@ class OrdemColeta(ExportacaoBaseModel):
 
     def __str__(self):
         return f'Ordem {self.numero or self.pk} - {self.get_status_display()}'
+
+    @classmethod
+    def generate_numero(cls, empresa):
+        from django.utils import timezone
+        year = timezone.now().year
+        prefix = 'OC-'
+        suffix = f'/{year}'
+        last = cls.objects.filter(
+            empresa=empresa,
+            numero__startswith=prefix,
+            numero__endswith=suffix,
+        ).order_by('-numero').first()
+        seq = 1
+        if last and last.numero:
+            try:
+                seq = int(last.numero[len(prefix):-len(suffix)]) + 1
+            except (ValueError, IndexError):
+                seq = 1
+        return f'{prefix}{seq:04d}{suffix}'
+
+
+class FotoOrdemColeta(models.Model):
+    TIPO_CHOICES = [
+        ('CONTAINER_VAZIO',  'Container Vazio'),
+        ('NUMERO_CONTAINER', 'Número do Container'),
+        ('GENSET',           'Genset'),
+        ('OUTROS',           'Outros'),
+    ]
+    ordem = models.ForeignKey(
+        OrdemColeta, on_delete=models.CASCADE,
+        related_name='fotos', verbose_name='Ordem de Coleta',
+    )
+    tipo = models.CharField('Tipo', max_length=20, choices=TIPO_CHOICES, default='OUTROS')
+    foto = models.ImageField('Foto', upload_to='exportacao/ordens_coleta/fotos/%Y/%m/')
+    observacao = models.CharField('Observação', max_length=200, blank=True)
+    enviada_por = models.ForeignKey(
+        'cadastros.Motorista', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='fotos_coleta',
+        verbose_name='Enviada por',
+    )
+    data_envio = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Foto da Coleta'
+        verbose_name_plural = 'Fotos da Coleta'
+        ordering = ['tipo', 'data_envio']
+
+    def __str__(self):
+        return f'{self.get_tipo_display()} — {self.ordem}'

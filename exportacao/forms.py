@@ -1,6 +1,6 @@
 from django import forms
 from .models import Booking, BookingContainer, OrdemColeta, SolicitacaoBooking
-from cadastros.models import Armador, Cultura, Navio, Porto
+from cadastros.models import Armador, Cultura, Motorista, Navio, Porto, Transportadora
 
 
 class ExportacaoBaseForm(forms.ModelForm):
@@ -171,10 +171,14 @@ class OrdemColetaForm(ExportacaoBaseForm):
         model = OrdemColeta
         fields = [
             'booking',
+            'segregado',
             'container',
+            'lacre_armador',
+            'lacre_fiscal',
+            'lacre_terminal',
+            'transportadora',
+            'motorista',
             'numero',
-            'endereco_coleta',
-            'responsavel_coleta',
             'data_prevista',
             'data_realizada',
             'status',
@@ -183,12 +187,16 @@ class OrdemColetaForm(ExportacaoBaseForm):
         ]
         widgets = {
             'booking': forms.Select(attrs={'class': 'form-select'}),
+            'segregado': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'container': forms.Select(attrs={'class': 'form-select'}),
-            'numero': forms.TextInput(attrs={'class': 'form-control'}),
-            'endereco_coleta': forms.TextInput(attrs={'class': 'form-control'}),
-            'responsavel_coleta': forms.TextInput(attrs={'class': 'form-control'}),
-            'data_prevista': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'data_realizada': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'lacre_armador': forms.TextInput(attrs={'class': 'form-control'}),
+            'lacre_fiscal': forms.TextInput(attrs={'class': 'form-control'}),
+            'lacre_terminal': forms.TextInput(attrs={'class': 'form-control'}),
+            'transportadora': forms.Select(attrs={'class': 'form-select'}),
+            'motorista': forms.Select(attrs={'class': 'form-select'}),
+            'numero': forms.TextInput(attrs={'class': 'form-control', 'readonly': True}),
+            'data_prevista': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
+            'data_realizada': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
             'status': forms.Select(attrs={'class': 'form-select'}),
             'documento': forms.ClearableFileInput(attrs={'class': 'form-control'}),
             'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
@@ -196,6 +204,15 @@ class OrdemColetaForm(ExportacaoBaseForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields['container'].required = False
         if self.empresa:
             self.fields['booking'].queryset = Booking.objects.filter(empresa=self.empresa).order_by('-data_embarque_previsto')
             self.fields['container'].queryset = BookingContainer.objects.filter(empresa=self.empresa).order_by('numero_container')
+            self.fields['transportadora'].queryset = Transportadora.objects.filter(empresa=self.empresa, ativa=True).order_by('razao_social')
+            self.fields['motorista'].queryset = Motorista.objects.filter(empresa=self.empresa, ativo=True).order_by('nome')
+
+    def clean(self):
+        cleaned_data = super().clean()
+        if cleaned_data.get('segregado') and not cleaned_data.get('container'):
+            self.add_error('container', 'Contêiner é obrigatório para coleta segregada.')
+        return cleaned_data

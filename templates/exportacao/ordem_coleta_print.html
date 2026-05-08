@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ordem de Coleta – {{ ordem.numero|default:ordem.pk }}</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <style>
+    body { font-size: 13px; }
+    .page-header { border-bottom: 2px solid #333; padding-bottom: 8px; margin-bottom: 16px; }
+    .section-title { background: #f0f0f0; padding: 4px 8px; font-weight: 600; margin: 16px 0 8px; font-size: 12px; text-transform: uppercase; letter-spacing: .5px; }
+    .sig-img { max-height: 100px; border: none; padding: 0; background: transparent; }
+    @media print {
+      .no-print { display: none !important; }
+      body { font-size: 11px; }
+      a[href]:after { content: none !important; }
+    }
+  </style>
+</head>
+<body class="p-4">
+
+  <!-- Botões de ação -->
+  <div class="no-print d-flex justify-content-between align-items-center mb-3">
+    <button onclick="window.print()" class="btn btn-primary">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="me-1" viewBox="0 0 16 16">
+        <path d="M2.5 8a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1z"/>
+        <path d="M5 1a2 2 0 0 0-2 2v2H2a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h1v1a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-1h1a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-1V3a2 2 0 0 0-2-2H5zm4 11v1H5v-2h4v1zm2 0v1H9v-1h2zm1-4H4a1 1 0 0 1 0-2h8a1 1 0 0 1 0 2z"/>
+      </svg>
+      Imprimir / Salvar PDF
+    </button>
+    <a href="{% url 'exportacao:ordem_coleta_list' %}" class="btn btn-outline-secondary">Voltar</a>
+  </div>
+
+  <!-- Cabeçalho -->
+  <div class="page-header">
+    <div class="row align-items-center">
+      <div class="col">
+        <h4 class="mb-0">{{ empresa.nome }}</h4>
+        {% if empresa.cnpj %}<small class="text-muted">CNPJ: {{ empresa.cnpj }}</small>{% endif %}
+      </div>
+      <div class="col-auto text-end">
+        <strong>Ordem de Coleta</strong><br>
+        <span class="fs-5 fw-bold">{{ ordem.numero|default:"—" }}</span><br>
+        <small class="text-muted">Emitido em: {% now "d/m/Y H:i" %}</small>
+      </div>
+    </div>
+  </div>
+
+  <!-- Status -->
+  <div class="mb-3">
+    {% if ordem.status == 'PENDENTE' %}<span class="badge bg-warning text-dark fs-6">Pendente</span>
+    {% elif ordem.status == 'EM_ANDAMENTO' %}<span class="badge bg-primary fs-6">Em andamento</span>
+    {% elif ordem.status == 'CONCLUIDA' %}<span class="badge bg-success fs-6">Concluída</span>
+    {% elif ordem.status == 'CANCELADA' %}<span class="badge bg-danger fs-6">Cancelada</span>
+    {% endif %}
+  </div>
+
+  <!-- Booking -->
+  <div class="section-title">Booking</div>
+  <div class="row g-3 mb-2">
+    <div class="col-md-3">
+      <small class="text-muted d-block">Código</small>
+      <strong>{{ ordem.booking.codigo|default:"—" }}</strong>
+    </div>
+    <div class="col-md-3">
+      <small class="text-muted d-block">Status Booking</small>
+      {{ ordem.booking.get_status_display|default:"—" }}
+    </div>
+    <div class="col-md-3">
+      <small class="text-muted d-block">Porto Origem</small>
+      {{ ordem.booking.porto_origem|default:"—" }}
+    </div>
+    <div class="col-md-3">
+      <small class="text-muted d-block">Porto Destino</small>
+      {{ ordem.booking.porto_destino|default:"—" }}
+    </div>
+    {% if ordem.booking.rota_navio %}
+    <div class="col-md-6">
+      <small class="text-muted d-block">Rota / Viagem</small>
+      {{ ordem.booking.rota_navio }}
+    </div>
+    {% endif %}
+    {% if ordem.booking.etd %}
+    <div class="col-md-3">
+      <small class="text-muted d-block">ETD</small>
+      {{ ordem.booking.etd|date:'d/m/Y H:i' }}
+    </div>
+    {% endif %}
+    {% if ordem.booking.eta %}
+    <div class="col-md-3">
+      <small class="text-muted d-block">ETA</small>
+      {{ ordem.booking.eta|date:'d/m/Y H:i' }}
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Contêiner -->
+  {% if ordem.container %}
+  <div class="section-title">Contêiner</div>
+  <div class="row g-3 mb-2">
+    <div class="col-md-4">
+      <small class="text-muted d-block">Número</small>
+      <strong>{{ ordem.container.numero_container }}</strong>
+    </div>
+    <div class="col-md-4">
+      <small class="text-muted d-block">Tipo</small>
+      {{ ordem.container.get_tipo_container_display }}
+    </div>
+    <div class="col-md-4">
+      <small class="text-muted d-block">Segregado</small>
+      {% if ordem.segregado %}<span class="text-danger fw-bold">Sim</span>{% else %}Não{% endif %}
+    </div>
+    {% if ordem.segregado %}
+    {% if ordem.lacre_armador %}
+    <div class="col-md-4">
+      <small class="text-muted d-block">Lacre Armador</small>
+      <strong>{{ ordem.lacre_armador }}</strong>
+    </div>
+    {% endif %}
+    {% if ordem.lacre_fiscal %}
+    <div class="col-md-4">
+      <small class="text-muted d-block">Lacre Fiscal</small>
+      <strong>{{ ordem.lacre_fiscal }}</strong>
+    </div>
+    {% endif %}
+    {% if ordem.lacre_terminal %}
+    <div class="col-md-4">
+      <small class="text-muted d-block">Lacre Terminal</small>
+      <strong>{{ ordem.lacre_terminal }}</strong>
+    </div>
+    {% endif %}
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <!-- Transportadora -->
+  {% if ordem.transportadora %}
+  <div class="section-title">Transportadora</div>
+  <div class="row g-3 mb-2">
+    <div class="col-md-6">
+      <small class="text-muted d-block">Razão Social</small>
+      <strong>{{ ordem.transportadora.razao_social }}</strong>
+    </div>
+    {% if ordem.transportadora.cnpj %}
+    <div class="col-md-3">
+      <small class="text-muted d-block">CNPJ</small>
+      {{ ordem.transportadora.cnpj }}
+    </div>
+    {% endif %}
+    {% if ordem.transportadora.rntc %}
+    <div class="col-md-3">
+      <small class="text-muted d-block">RNTC</small>
+      {{ ordem.transportadora.rntc }}
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <!-- Motorista -->
+  {% if ordem.motorista %}
+  <div class="section-title">Motorista</div>
+  <div class="row g-3 mb-2">
+    <div class="col-md-5">
+      <small class="text-muted d-block">Nome</small>
+      <strong>{{ ordem.motorista.nome }}</strong>
+    </div>
+    {% if ordem.motorista.cpf %}
+    <div class="col-md-3">
+      <small class="text-muted d-block">CPF</small>
+      {{ ordem.motorista.cpf }}
+    </div>
+    {% endif %}
+    {% if ordem.motorista.celular %}
+    <div class="col-md-4">
+      <small class="text-muted d-block">Celular</small>
+      {{ ordem.motorista.celular }}
+    </div>
+    {% endif %}
+    {% if ordem.motorista.cnh %}
+    <div class="col-md-3">
+      <small class="text-muted d-block">CNH</small>
+      {{ ordem.motorista.cnh }}
+    </div>
+    {% endif %}
+    {% if ordem.motorista.categoria_cnh %}
+    <div class="col-md-2">
+      <small class="text-muted d-block">Categoria</small>
+      {{ ordem.motorista.categoria_cnh }}
+    </div>
+    {% endif %}
+    {% if ordem.motorista.data_validade_cnh %}
+    <div class="col-md-3">
+      <small class="text-muted d-block">Validade CNH</small>
+      {{ ordem.motorista.data_validade_cnh|date:'d/m/Y' }}
+    </div>
+    {% endif %}
+    {% if veiculo_principal %}
+    <div class="col-md-5">
+      <small class="text-muted d-block">Veículo</small>
+      {{ veiculo_principal }}
+    </div>
+    {% endif %}
+    {% if placa_principal %}
+    <div class="col-md-3">
+      <small class="text-muted d-block">Placa Principal</small>
+      <strong>{{ placa_principal }}</strong>
+    </div>
+    {% endif %}
+    {% if reboques %}
+    <div class="col-12">
+      <small class="text-muted d-block">Reboque(s)</small>
+      <strong>
+        {% for r in reboques %}{{ r.placa }}{% if r.veiculo %} ({{ r.veiculo }}){% endif %}{% if not forloop.last %} | {% endif %}{% endfor %}
+      </strong>
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <!-- Datas -->
+  <div class="section-title">Datas</div>
+  <div class="row g-3 mb-2">
+    <div class="col-md-4">
+      <small class="text-muted d-block">Data Prevista</small>
+      {{ ordem.data_prevista|date:'d/m/Y'|default:"—" }}
+    </div>
+    <div class="col-md-4">
+      <small class="text-muted d-block">Data Realizada</small>
+      {{ ordem.data_realizada|date:'d/m/Y'|default:"—" }}
+    </div>
+  </div>
+
+  <!-- Observações -->
+  {% if ordem.observacoes %}
+  <div class="section-title">Observações</div>
+  <p style="white-space: pre-line;">{{ ordem.observacoes }}</p>
+  {% endif %}
+
+  <!-- Assinatura digital -->
+  {% if ordem.documento %}
+  <div class="section-title">Assinatura / Documento</div>
+  <div class="mb-3">
+    {% with ext=ordem.documento.name|lower %}
+    {% if '.png' in ext or '.jpg' in ext or '.jpeg' in ext or '.gif' in ext or '.webp' in ext %}
+      <img src="{{ ordem.documento.url }}" class="sig-img" alt="Assinatura">
+    {% else %}
+      <a href="{{ ordem.documento.url }}" class="btn btn-sm btn-outline-primary no-print" target="_blank">
+        <i class="bi bi-file-earmark-arrow-down me-1"></i>Baixar Documento
+      </a>
+      <span class="text-muted small">(documento anexo)</span>
+    {% endif %}
+    {% endwith %}
+  </div>
+  {% endif %}
+
+  <!-- Rodapé / Assinaturas físicas -->
+  <div class="mt-5 pt-3 border-top">
+    <div class="row">
+      <div class="col-md-5">
+        <div style="border-top: 1px solid #333; margin-top: 50px; padding-top: 6px; font-size: 11px;">
+          Assinatura do Motorista / Responsável pela Coleta
+        </div>
+      </div>
+      <div class="col-md-2"></div>
+      <div class="col-md-5">
+        <div style="border-top: 1px solid #333; margin-top: 50px; padding-top: 6px; font-size: 11px;">
+          Representante da Empresa
+        </div>
+      </div>
+    </div>
+    <div class="text-muted mt-4" style="font-size: 11px;">
+      Documento gerado em {% now "d/m/Y \à\s H:i" %} — {{ empresa.nome }}
+    </div>
+  </div>
+
+</body>
+</html>

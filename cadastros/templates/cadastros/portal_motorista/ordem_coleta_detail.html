@@ -1,0 +1,126 @@
+{% extends 'base_portal.html' %}
+{% block title %}{{ ordem.numero }} — Ordem de Coleta{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h5 class="fw-bold mb-0"><i class="bi bi-clipboard-check me-2 text-primary"></i>{{ ordem.numero|default:"Ordem de Coleta" }}</h5>
+</div>
+
+<!-- Status -->
+<div class="mb-3">
+  {% if ordem.status == 'PENDENTE' %}<span class="badge bg-warning text-dark fs-6">Pendente</span>
+  {% elif ordem.status == 'EM_ANDAMENTO' %}<span class="badge bg-primary fs-6">Em andamento</span>
+  {% elif ordem.status == 'CONCLUIDA' %}<span class="badge bg-success fs-6">Concluída</span>
+  {% elif ordem.status == 'CANCELADA' %}<span class="badge bg-danger fs-6">Cancelada</span>
+  {% endif %}
+</div>
+
+<!-- Botões PDF -->
+<div class="d-flex gap-2 mb-3">
+  <a href="{% url 'portal_motorista:ordem_coleta_print' ordem.pk %}" target="_blank"
+     class="btn btn-sm btn-outline-danger w-100">
+    <i class="bi bi-file-earmark-pdf me-1"></i>Ordem de Coleta
+  </a>
+  <a href="{% url 'portal_motorista:ordem_coleta_carta_temperatura' ordem.pk %}" target="_blank"
+     class="btn btn-sm btn-outline-info w-100">
+    <i class="bi bi-thermometer-half me-1"></i>Carta de Temperatura
+  </a>
+</div>
+
+<!-- Ação: Confirmar Coleta (PENDENTE) -->
+{% if ordem.status == 'PENDENTE' %}
+<div class="alert alert-warning py-2 small mb-2">
+  <i class="bi bi-info-circle me-1"></i>Confirme a coleta para liberar o envio de fotos e a conclusão.
+</div>
+<form method="post" action="{% url 'portal_motorista:ordem_coleta_confirmar' ordem.pk %}">
+  {% csrf_token %}
+  <button type="submit" class="btn btn-success w-100 mb-2 py-3" style="font-size:1.1rem;">
+    <i class="bi bi-check2-circle me-2"></i>Confirmar Coleta
+  </button>
+</form>
+<a href="{% url 'portal_motorista:ordem_coleta_fotos' ordem.pk %}"
+   class="btn btn-outline-secondary w-100 mb-3 disabled" aria-disabled="true">
+  <i class="bi bi-camera me-1"></i>Fotos da Coleta (confirme primeiro)
+</a>
+{% endif %}
+
+<!-- Ação: Ver/Enviar Fotos (EM_ANDAMENTO ou CONCLUIDA) -->
+{% if ordem.status == 'EM_ANDAMENTO' or ordem.status == 'CONCLUIDA' %}
+<a href="{% url 'portal_motorista:ordem_coleta_fotos' ordem.pk %}"
+   class="btn btn-primary w-100 mb-3 py-2">
+  <i class="bi bi-camera me-1"></i>
+  Fotos da Coleta / Finalizar
+  {% if fotos_count %}<span class="badge bg-light text-dark ms-1">{{ fotos_count }}</span>{% endif %}
+</a>
+{% endif %}
+
+<!-- Booking -->
+<div class="card border-0 shadow-sm mb-3" style="border-radius:1rem;">
+  <div class="card-header bg-light fw-semibold small text-uppercase py-2">Booking</div>
+  <div class="card-body">
+    <div class="row g-2 small">
+      <div class="col-6"><span class="text-muted">Código</span><br><strong>{{ ordem.booking.codigo|default:"—" }}</strong></div>
+      <div class="col-6"><span class="text-muted">Status</span><br><strong>{{ ordem.booking.get_status_display }}</strong></div>
+      <div class="col-6"><span class="text-muted">Porto Origem</span><br><strong>{{ ordem.booking.porto_origem|default:"—" }}</strong></div>
+      <div class="col-6"><span class="text-muted">Porto Destino</span><br><strong>{{ ordem.booking.porto_destino|default:"—" }}</strong></div>
+      {% if ordem.booking.rota_navio %}
+      <div class="col-12"><span class="text-muted">Rota (VIAGEM)</span><br><strong>{{ ordem.booking.rota_navio }}</strong></div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Contêiner -->
+{% if ordem.container %}
+<div class="card border-0 shadow-sm mb-3" style="border-radius:1rem;">
+  <div class="card-header bg-light fw-semibold small text-uppercase py-2">Contêiner</div>
+  <div class="card-body">
+    <div class="row g-2 small">
+      <div class="col-6"><span class="text-muted">Número</span><br><strong>{{ ordem.container.numero_container }}</strong></div>
+      <div class="col-6"><span class="text-muted">Tipo</span><br><strong>{{ ordem.container.get_tipo_container_display }}</strong></div>
+      {% if ordem.segregado %}
+      <div class="col-12"><span class="text-muted fw-semibold text-danger">Contêiner Segregado</span></div>
+      {% if ordem.lacre_armador %}<div class="col-4"><span class="text-muted">Lacre Armador</span><br><strong>{{ ordem.lacre_armador }}</strong></div>{% endif %}
+      {% if ordem.lacre_fiscal %}<div class="col-4"><span class="text-muted">Lacre Fiscal</span><br><strong>{{ ordem.lacre_fiscal }}</strong></div>{% endif %}
+      {% if ordem.lacre_terminal %}<div class="col-4"><span class="text-muted">Lacre Terminal</span><br><strong>{{ ordem.lacre_terminal }}</strong></div>{% endif %}
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Datas -->
+<div class="card border-0 shadow-sm mb-3" style="border-radius:1rem;">
+  <div class="card-header bg-light fw-semibold small text-uppercase py-2">Datas</div>
+  <div class="card-body">
+    <div class="row g-2 small">
+      <div class="col-6"><span class="text-muted">Data Prevista</span><br><strong>{{ ordem.data_prevista|date:'d/m/Y'|default:"—" }}</strong></div>
+      <div class="col-6"><span class="text-muted">Data Realizada</span><br><strong>{{ ordem.data_realizada|date:'d/m/Y'|default:"—" }}</strong></div>
+    </div>
+  </div>
+</div>
+
+<!-- Observações -->
+{% if ordem.observacoes %}
+<div class="card border-0 shadow-sm mb-3" style="border-radius:1rem;">
+  <div class="card-header bg-light fw-semibold small text-uppercase py-2">Observações</div>
+  <div class="card-body small" style="white-space:pre-line;">{{ ordem.observacoes }}</div>
+</div>
+{% endif %}
+
+<!-- Documento/Assinatura -->
+{% if ordem.documento %}
+<div class="card border-0 shadow-sm mb-3" style="border-radius:1rem;">
+  <div class="card-header bg-light fw-semibold small text-uppercase py-2">Documento / Assinatura</div>
+  <div class="card-body text-center">
+    <a href="{{ ordem.documento.url }}" target="_blank" class="btn btn-outline-primary btn-sm">
+      <i class="bi bi-file-earmark-arrow-down me-1"></i>Baixar Documento
+    </a>
+  </div>
+</div>
+{% endif %}
+
+<a href="{% url 'portal_motorista:ordens_coleta' %}" class="btn btn-outline-secondary w-100 mt-2">
+  <i class="bi bi-arrow-left me-1"></i>Voltar
+</a>
+{% endblock %}

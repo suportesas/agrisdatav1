@@ -1,0 +1,106 @@
+{% extends 'base_portal.html' %}
+{% block title %}Ordens de Coleta — Portal do Motorista{% endblock %}
+
+{% block content %}
+<h5 class="fw-bold mb-3"><i class="bi bi-clipboard-check me-2 text-primary"></i>Minhas Ordens de Coleta</h5>
+
+<!-- ── Filtro de Status (chips) ──────────────────────────────── -->
+<div class="mb-2" style="overflow-x:auto; white-space:nowrap; -webkit-overflow-scrolling:touch;">
+  <div class="d-inline-flex gap-2 pb-1">
+
+    <a href="?{% if periodo_filtro %}periodo={{ periodo_filtro }}{% endif %}"
+       class="btn btn-sm {% if not status_filtro %}btn-primary{% else %}btn-outline-secondary{% endif %} rounded-pill">
+      Todos <span class="badge {% if not status_filtro %}bg-white text-primary{% else %}bg-secondary{% endif %} ms-1">{{ contagens.total }}</span>
+    </a>
+
+    <a href="?status=PENDENTE{% if periodo_filtro %}&periodo={{ periodo_filtro }}{% endif %}"
+       class="btn btn-sm {% if status_filtro == 'PENDENTE' %}btn-warning{% else %}btn-outline-warning{% endif %} rounded-pill">
+      Pendentes <span class="badge {% if status_filtro == 'PENDENTE' %}bg-white text-dark{% else %}bg-warning text-dark{% endif %} ms-1">{{ contagens.PENDENTE }}</span>
+    </a>
+
+    <a href="?status=EM_ANDAMENTO{% if periodo_filtro %}&periodo={{ periodo_filtro }}{% endif %}"
+       class="btn btn-sm {% if status_filtro == 'EM_ANDAMENTO' %}btn-primary{% else %}btn-outline-primary{% endif %} rounded-pill">
+      Em andamento <span class="badge {% if status_filtro == 'EM_ANDAMENTO' %}bg-white text-primary{% else %}bg-primary{% endif %} ms-1">{{ contagens.EM_ANDAMENTO }}</span>
+    </a>
+
+    <a href="?status=CONCLUIDA{% if periodo_filtro %}&periodo={{ periodo_filtro }}{% endif %}"
+       class="btn btn-sm {% if status_filtro == 'CONCLUIDA' %}btn-success{% else %}btn-outline-success{% endif %} rounded-pill">
+      Concluídas <span class="badge {% if status_filtro == 'CONCLUIDA' %}bg-white text-success{% else %}bg-success{% endif %} ms-1">{{ contagens.CONCLUIDA }}</span>
+    </a>
+
+  </div>
+</div>
+
+<!-- ── Filtro de Período ──────────────────────────────────────── -->
+<div class="mb-3">
+  <select class="form-select form-select-sm"
+          onchange="location.href='?{% if status_filtro %}status={{ status_filtro }}&{% endif %}periodo='+this.value">
+    <option value="" {% if not periodo_filtro %}selected{% endif %}>Todos os períodos</option>
+    <option value="proximas" {% if periodo_filtro == 'proximas' %}selected{% endif %}>Próximas (a partir de hoje)</option>
+    <option value="mes"      {% if periodo_filtro == 'mes' %}selected{% endif %}>Este mês</option>
+    <option value="7d"       {% if periodo_filtro == '7d' %}selected{% endif %}>Últimos 7 dias</option>
+    <option value="30d"      {% if periodo_filtro == '30d' %}selected{% endif %}>Últimos 30 dias</option>
+  </select>
+</div>
+
+<!-- ── Lista de ordens ───────────────────────────────────────── -->
+{% if ordens %}
+  {% for ordem in ordens %}
+  <div class="card border-0 shadow-sm mb-3" style="border-radius:1rem;">
+    <div class="card-body">
+      <div class="d-flex justify-content-between align-items-start">
+        <div>
+          <p class="fw-bold mb-0">{{ ordem.numero|default:"—" }}</p>
+          <small class="text-muted">Booking: {{ ordem.booking.codigo|default:"—" }}</small>
+        </div>
+        <div>
+          {% if ordem.status == 'PENDENTE' %}<span class="badge bg-warning text-dark">Pendente</span>
+          {% elif ordem.status == 'EM_ANDAMENTO' %}<span class="badge bg-primary">Em andamento</span>
+          {% elif ordem.status == 'CONCLUIDA' %}<span class="badge bg-success">Concluída</span>
+          {% elif ordem.status == 'CANCELADA' %}<span class="badge bg-danger">Cancelada</span>
+          {% endif %}
+        </div>
+      </div>
+      <hr class="my-2">
+      <div class="row g-1 small">
+        <div class="col-6">
+          <span class="text-muted">Data Prevista</span><br>
+          <strong>{{ ordem.data_prevista|date:'d/m/Y'|default:"—" }}</strong>
+        </div>
+        <div class="col-6">
+          <span class="text-muted">Contêiner</span><br>
+          <strong>{{ ordem.container|default:"—" }}</strong>
+        </div>
+        {% if ordem.booking.porto_origem %}
+        <div class="col-6 mt-1">
+          <span class="text-muted">Porto Origem</span><br>
+          <strong>{{ ordem.booking.porto_origem }}</strong>
+        </div>
+        {% endif %}
+        {% if ordem.booking.porto_destino %}
+        <div class="col-6 mt-1">
+          <span class="text-muted">Porto Destino</span><br>
+          <strong>{{ ordem.booking.porto_destino }}</strong>
+        </div>
+        {% endif %}
+      </div>
+      <div class="mt-2">
+        <a href="{% url 'portal_motorista:ordem_coleta_detail' ordem.pk %}" class="btn btn-sm btn-outline-primary w-100">
+          <i class="bi bi-eye me-1"></i>Ver Detalhes
+        </a>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+{% else %}
+  <div class="card border-0 shadow-sm text-center py-5" style="border-radius:1rem;">
+    <i class="bi bi-clipboard-x text-muted" style="font-size:2.5rem;"></i>
+    <p class="mt-2 text-muted">Nenhuma ordem encontrada para os filtros selecionados.</p>
+    {% if status_filtro or periodo_filtro %}
+    <a href="{% url 'portal_motorista:ordens_coleta' %}" class="btn btn-sm btn-outline-secondary mt-1">
+      Limpar filtros
+    </a>
+    {% endif %}
+  </div>
+{% endif %}
+{% endblock %}

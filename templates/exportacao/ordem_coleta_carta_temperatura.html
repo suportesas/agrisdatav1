@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Carta de Temperatura – {{ ordem.numero|default:ordem.pk }}</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <style>
+    body { font-size: 13px; font-family: Arial, sans-serif; }
+
+    /* ── Cabeçalho ── */
+    .doc-header {
+      border: 1px solid #999;
+      margin-bottom: 0;
+    }
+    .doc-header .logo-cell {
+      width: 110px;
+      padding: 8px 10px;
+      border-right: 1px solid #999;
+      vertical-align: middle;
+      text-align: center;
+    }
+    .doc-header .logo-cell img { max-height: 80px; max-width: 100px; }
+    .doc-header .company-cell {
+      padding: 8px 14px;
+      vertical-align: middle;
+    }
+    .doc-header .company-cell .company-name {
+      font-size: 15px; font-weight: 700; text-transform: uppercase;
+    }
+    .doc-header .company-cell .company-sub {
+      font-size: 12px; font-weight: 600;
+    }
+    .doc-header .company-cell small {
+      font-size: 11px; color: #444;
+    }
+
+    /* ── Título ── */
+    .doc-title {
+      border: 1px solid #999;
+      border-top: none;
+      text-align: center;
+      padding: 7px 0;
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .4px;
+      background: #fff;
+    }
+
+    /* ── Campos (tabela de dados) ── */
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 0;
+    }
+    .data-table td {
+      border: 1px solid #999;
+      padding: 4px 8px;
+      font-size: 12px;
+      vertical-align: top;
+    }
+    .data-table td.label {
+      font-weight: 700;
+      width: 210px;
+      white-space: nowrap;
+    }
+    .data-table td.value {
+      color: #0000cc;
+    }
+    .data-table tr.spacer td {
+      border: none;
+      height: 6px;
+      padding: 0;
+    }
+
+    /* ── Corpo do texto ── */
+    .body-text {
+      padding: 10px 0 4px;
+      font-size: 12px;
+    }
+
+    /* ── Temperatura ── */
+    .temp-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .temp-table td {
+      border: 1px solid #999;
+      padding: 5px 8px;
+      font-size: 12px;
+      vertical-align: middle;
+    }
+    .temp-table td.label { font-weight: 700; width: 280px; }
+    .temp-table td.value { font-weight: 700; }
+
+    /* ── Rodapé ── */
+    .footer-date { font-size: 12px; color: #0000cc; margin-top: 16px; }
+    .sig-line { border-top: 1px solid #333; margin-top: 50px; padding-top: 5px; font-size: 11px; }
+
+    @media print {
+      .no-print { display: none !important; }
+      body { font-size: 11px; }
+      a[href]:after { content: none !important; }
+    }
+  </style>
+</head>
+<body class="p-4">
+
+  <!-- Botões de ação -->
+  <div class="no-print d-flex justify-content-between align-items-center mb-3">
+    <button onclick="window.print()" class="btn btn-primary">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="me-1" viewBox="0 0 16 16">
+        <path d="M2.5 8a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1z"/>
+        <path d="M5 1a2 2 0 0 0-2 2v2H2a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h1v1a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-1h1a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-1V3a2 2 0 0 0-2-2H5zm4 11v1H5v-2h4v1zm2 0v1H9v-1h2zm1-4H4a1 1 0 0 1 0-2h8a1 1 0 0 1 0 2z"/>
+      </svg>
+      Imprimir / Salvar PDF
+    </button>
+    <a href="{% url 'exportacao:ordem_coleta_list' %}" class="btn btn-outline-secondary">Voltar</a>
+  </div>
+
+  <!-- Cabeçalho com logo e dados da empresa -->
+  <table class="doc-header" style="width:100%; border-collapse:collapse;">
+    <tr>
+      <td class="logo-cell">
+        {% if empresa.logo %}
+          <img src="{{ empresa.logo.url }}" alt="Logo">
+        {% else %}
+          <div style="width:90px;height:70px;background:#e9ecef;display:flex;align-items:center;justify-content:center;font-size:10px;color:#888;border-radius:4px;">SEM LOGO</div>
+        {% endif %}
+      </td>
+      <td class="company-cell">
+        <div class="company-name">{{ empresa.nome }}</div>
+        {% if empresa.nome_fantasia and empresa.nome_fantasia != empresa.nome %}
+        <div class="company-sub">{{ empresa.nome_fantasia }}</div>
+        {% endif %}
+        {% if empresa.cnpj %}<small>CNPJ: {{ empresa.cnpj }}{% if empresa.inscricao_estadual %} Insc. Est.: {{ empresa.inscricao_estadual }}{% endif %}</small><br>{% endif %}
+        {% if empresa.endereco %}<small>{{ empresa.endereco }}{% if empresa.bairro %} – {{ empresa.bairro }}{% endif %}{% if empresa.cidade %} – {{ empresa.cidade }}{% endif %}</small><br>{% endif %}
+        {% if empresa.cidade %}<small>Cep: {{ empresa.cep|default:"" }} Fone: {{ empresa.telefone|default:"" }}</small>{% endif %}
+      </td>
+    </tr>
+  </table>
+
+  <!-- Título -->
+  <div class="doc-title">
+    Temperature Instructions for Reefer Cargo in Container
+  </div>
+
+  <!-- Campos principais -->
+  <table class="data-table">
+    <tr>
+      <td class="label">To the master of:</td>
+      <td class="value">{{ to_master }}</td>
+    </tr>
+    <tr>
+      <td class="label">Commodity:</td>
+      <td class="value">{{ commodity }}</td>
+    </tr>
+    <tr>
+      <td class="label">Port of Loading:</td>
+      <td class="value">{{ porto_loading }}</td>
+    </tr>
+    <tr>
+      <td class="label">Port of Discharge:</td>
+      <td class="value">{{ porto_discharge }}</td>
+    </tr>
+    <tr>
+      <td class="label">Place of Delivery:</td>
+      <td class="value">{{ place_delivery }}</td>
+    </tr>
+    <tr class="spacer"><td colspan="2"></td></tr>
+    <tr>
+      <td class="label">Booking nº.:</td>
+      <td>{{ ordem.booking.codigo|default:"—" }}</td>
+    </tr>
+    <tr>
+      <td class="label">Lacre:</td>
+      <td>
+        {% if ordem.segregado %}
+          {% if ordem.lacre_armador %}{{ ordem.lacre_armador }}{% endif %}
+          {% if ordem.lacre_fiscal %} / {{ ordem.lacre_fiscal }}{% endif %}
+          {% if ordem.lacre_terminal %} / {{ ordem.lacre_terminal }}{% endif %}
+        {% endif %}
+      </td>
+    </tr>
+    <tr>
+      <td class="label">Container Prefix and Numbers:</td>
+      <td>
+        {% if ordem.segregado and ordem.container %}
+          {{ ordem.container.numero_container }}
+        {% endif %}
+      </td>
+    </tr>
+    <tr class="spacer"><td colspan="2"></td></tr>
+    <tr>
+      <td class="label">Shipper's Name:</td>
+      <td>{{ empresa.nome }}</td>
+    </tr>
+    <tr class="spacer"><td colspan="2"></td></tr>
+    <tr>
+      <td class="label">Gross Weight:</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td class="label">Net Weight:</td>
+      <td></td>
+    </tr>
+  </table>
+
+  <!-- Corpo do texto fixo -->
+  <div class="body-text">
+    <p class="mb-1">Dear Captain,</p>
+    <p>We kindly ask you to carry the above mentioned commodity during the present voyage within the following temperature and instructions:</p>
+  </div>
+
+  <!-- Temperatura / Ventilação / Humidade -->
+  <table class="temp-table">
+    <tr>
+      <td class="label">Delivery ( Air Inlet ) Temperature Range:</td>
+      <td class="value">{{ temperatura_display }}</td>
+    </tr>
+    <tr>
+      <td class="label">Air Exchange:</td>
+      <td class="value">{{ ventilacao_display }}</td>
+    </tr>
+    <tr>
+      <td class="label">Humidity:</td>
+      <td class="value">{{ humidade_display }}</td>
+    </tr>
+  </table>
+
+  <!-- Drain opened -->
+  <div style="border:1px solid #999; border-top:none; padding: 5px 8px; font-size:12px;">
+    Drain opened:
+  </div>
+
+  <!-- Data e assinatura -->
+  <div class="footer-date mt-3">{{ data_local }}</div>
+
+  <div class="mt-2" style="font-size:12px; font-weight:600;">Best Regards,</div>
+
+  <div class="row mt-5">
+    <div class="col-md-5">
+      <div class="sig-line">Assinatura / Representante da Empresa</div>
+    </div>
+  </div>
+
+  <div class="text-muted mt-4" style="font-size:11px;">
+    Documento gerado em {% now "d/m/Y \à\s H:i" %} — {{ empresa.nome }}
+  </div>
+
+</body>
+</html>

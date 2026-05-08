@@ -13,9 +13,26 @@
     </a>
   </div>
   <div class="col-6">
+    <a href="{% url 'portal_motorista:ordens_coleta' %}" class="card text-center p-3 text-decoration-none border-0 shadow-sm h-100 position-relative" style="border-radius:1rem;">
+      <i class="bi bi-clipboard-check text-success" style="font-size:2rem;"></i>
+      <div class="fw-semibold mt-2 small">Ordens de Coleta</div>
+      {% if ordens_pendentes_count %}
+      <span class="position-absolute top-0 end-0 translate-middle badge rounded-pill bg-warning text-dark" style="font-size:.65rem; margin:.4rem;">
+        {{ ordens_pendentes_count }}
+      </span>
+      {% endif %}
+    </a>
+  </div>
+  <div class="col-6">
     <a href="{% url 'portal_motorista:solicitar_manutencao' %}" class="card text-center p-3 text-decoration-none border-0 shadow-sm h-100" style="border-radius:1rem;">
       <i class="bi bi-tools text-warning" style="font-size:2rem;"></i>
       <div class="fw-semibold mt-2 small">Solicitar Manutenção</div>
+    </a>
+  </div>
+  <div class="col-6">
+    <a href="{% url 'portal_motorista:historico' %}" class="card text-center p-3 text-decoration-none border-0 shadow-sm h-100" style="border-radius:1rem;">
+      <i class="bi bi-clock-history text-secondary" style="font-size:2rem;"></i>
+      <div class="fw-semibold mt-2 small">Meu Histórico</div>
     </a>
   </div>
 </div>

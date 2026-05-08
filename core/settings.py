@@ -295,6 +295,7 @@ SUPABASE_STORAGE_BUCKET_ROUTES = [
     ('compras/divergencias/', 'uploads-gerais'),
     ('patrimonio/', 'uploads-gerais'),
     ('vendedores/fotos/', 'uploads-gerais'),
+    ('exportacao/ordens_coleta/fotos/', 'uploads-gerais'),
 ]
 
 if SUPABASE_STORAGE_USE_AS_DEFAULT:

@@ -9,13 +9,468 @@
     <div class="card-body">
       <form method="post" enctype="multipart/form-data">
         {% csrf_token %}
-        {{ form.as_p }}
-        <div class="mt-3">
-          <button type="submit" class="btn btn-primary">Salvar</button>
-          <a href="{% url 'exportacao:ordem_coleta_list' %}" class="btn btn-secondary">Cancelar</a>
+
+        {% if form.non_field_errors %}
+          <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+        {% endif %}
+
+        <!-- ── 1. BOOKING ─────────────────────────────────────────── -->
+        <h6 class="text-uppercase text-muted fw-bold mb-3 mt-1">Booking</h6>
+        <div class="row g-3 mb-2">
+          <div class="col-12">
+            <label for="{{ form.booking.id_for_label }}" class="form-label fw-semibold">{{ form.booking.label }}</label>
+            {{ form.booking }}
+            {% if form.booking.errors %}<div class="text-danger small mt-1">{{ form.booking.errors }}</div>{% endif %}
+          </div>
         </div>
+
+        <!-- Card preview do booking -->
+        <div id="booking-preview" class="card border-primary mb-3" style="display:none;">
+          <div class="card-header bg-primary bg-opacity-10 py-2">
+            <small class="fw-semibold text-primary text-uppercase">
+              <i class="bi bi-info-circle me-1"></i>Dados do Booking
+            </small>
+          </div>
+          <div class="card-body py-3">
+            <div class="row g-2">
+              <div class="col-md-4">
+                <span class="text-muted small">Porto Origem</span><br>
+                <span id="bk-porto-origem" class="fw-semibold"></span>
+              </div>
+              <div class="col-md-4">
+                <span class="text-muted small">Porto Destino</span><br>
+                <span id="bk-porto-destino" class="fw-semibold"></span>
+              </div>
+              <div class="col-md-4">
+                <span class="text-muted small">Rota do Navio (VIAGEM)</span><br>
+                <span id="bk-rota-navio"></span>
+              </div>
+              <div class="col-md-3">
+                <span class="text-muted small">Armador</span><br>
+                <span id="bk-armador"></span>
+              </div>
+              <div class="col-md-3">
+                <span class="text-muted small">Navio</span><br>
+                <span id="bk-navio"></span>
+              </div>
+              <div class="col-md-3">
+                <span class="text-muted small">Cultura</span><br>
+                <span id="bk-cultura"></span>
+              </div>
+              <div class="col-md-3">
+                <span class="text-muted small">Genset</span><br>
+                <span id="bk-genset"></span>
+              </div>
+              <div class="col-md-4">
+                <span class="text-muted small">Temperatura</span><br>
+                <span id="bk-temperatura"></span> <small class="text-muted">°C</small>
+              </div>
+              <div class="col-md-4">
+                <span class="text-muted small">Humidade</span><br>
+                <span id="bk-humidade"></span> <small class="text-muted">%</small>
+              </div>
+              <div class="col-md-4">
+                <span class="text-muted small">Ventilação</span><br>
+                <span id="bk-ventilacao"></span> <small class="text-muted">cbm/h</small>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <hr class="my-3">
+
+        <!-- ── 2. CONTÊINER ───────────────────────────────────────── -->
+        <h6 class="text-uppercase text-muted fw-bold mb-3">Contêiner</h6>
+
+        <!-- Toggle segregado -->
+        <div class="form-check form-switch mb-3">
+          {{ form.segregado }}
+          <label class="form-check-label fw-semibold" for="{{ form.segregado.id_for_label }}">
+            Contêiner Segregado
+          </label>
+          <div class="form-text text-muted">Ative se o contêiner já foi pré-cadastrado no booking.</div>
+        </div>
+
+        <div class="row g-3 mb-3">
+          <div class="col-md-6">
+            <label for="{{ form.container.id_for_label }}" class="form-label fw-semibold">
+              {{ form.container.label }} <span id="lbl-obrigatorio" class="text-danger" style="display:none;">*</span>
+            </label>
+            {{ form.container }}
+            {% if form.container.errors %}<div class="text-danger small mt-1">{{ form.container.errors }}</div>{% endif %}
+          </div>
+        </div>
+
+        <!-- Lacres (visíveis só quando segregado) -->
+        <div id="painel-lacres" class="row g-3 mb-3" style="display:none;">
+          <div class="col-12">
+            <small class="text-muted fw-semibold text-uppercase"><i class="bi bi-lock me-1"></i>Lacres</small>
+          </div>
+          <div class="col-md-4">
+            <label for="{{ form.lacre_armador.id_for_label }}" class="form-label fw-semibold">{{ form.lacre_armador.label }}</label>
+            {{ form.lacre_armador }}
+            {% if form.lacre_armador.errors %}<div class="text-danger small mt-1">{{ form.lacre_armador.errors }}</div>{% endif %}
+          </div>
+          <div class="col-md-4">
+            <label for="{{ form.lacre_fiscal.id_for_label }}" class="form-label fw-semibold">{{ form.lacre_fiscal.label }}</label>
+            {{ form.lacre_fiscal }}
+            {% if form.lacre_fiscal.errors %}<div class="text-danger small mt-1">{{ form.lacre_fiscal.errors }}</div>{% endif %}
+          </div>
+          <div class="col-md-4">
+            <label for="{{ form.lacre_terminal.id_for_label }}" class="form-label fw-semibold">{{ form.lacre_terminal.label }}</label>
+            {{ form.lacre_terminal }}
+            {% if form.lacre_terminal.errors %}<div class="text-danger small mt-1">{{ form.lacre_terminal.errors }}</div>{% endif %}
+          </div>
+        </div>
+
+        <hr class="my-3">
+
+        <!-- ── 3. TRANSPORTADORA ──────────────────────────────────── -->
+        <h6 class="text-uppercase text-muted fw-bold mb-3">Transportadora</h6>
+        <div class="row g-3 mb-2">
+          <div class="col-md-6">
+            <label for="{{ form.transportadora.id_for_label }}" class="form-label fw-semibold">{{ form.transportadora.label }}</label>
+            {{ form.transportadora }}
+            {% if form.transportadora.errors %}<div class="text-danger small mt-1">{{ form.transportadora.errors }}</div>{% endif %}
+          </div>
+        </div>
+
+        <div id="transp-preview" class="card border-secondary mb-3" style="display:none;">
+          <div class="card-header bg-light py-2">
+            <small class="fw-semibold text-secondary text-uppercase"><i class="bi bi-truck me-1"></i>Dados da Transportadora</small>
+          </div>
+          <div class="card-body py-3">
+            <div class="row g-2">
+              <div class="col-md-5">
+                <span class="text-muted small">Razão Social</span><br>
+                <span id="tr-razao" class="fw-semibold"></span>
+              </div>
+              <div class="col-md-3">
+                <span class="text-muted small">CNPJ</span><br>
+                <span id="tr-cnpj"></span>
+              </div>
+              <div class="col-md-4">
+                <span class="text-muted small">RNTC</span><br>
+                <span id="tr-rntc"></span>
+              </div>
+              <div class="col-md-4">
+                <span class="text-muted small">Contato</span><br>
+                <span id="tr-contato"></span>
+              </div>
+              <div class="col-md-4">
+                <span class="text-muted small">Telefone</span><br>
+                <span id="tr-telefone"></span>
+              </div>
+              <div class="col-md-4">
+                <span class="text-muted small">Cidade/UF</span><br>
+                <span id="tr-cidade"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <hr class="my-3">
+
+        <!-- ── 4. MOTORISTA ───────────────────────────────────────── -->
+        <h6 class="text-uppercase text-muted fw-bold mb-3">Motorista</h6>
+        <div class="row g-3 mb-2">
+          <div class="col-md-6">
+            <label for="{{ form.motorista.id_for_label }}" class="form-label fw-semibold">{{ form.motorista.label }}</label>
+            {{ form.motorista }}
+            {% if form.motorista.errors %}<div class="text-danger small mt-1">{{ form.motorista.errors }}</div>{% endif %}
+          </div>
+        </div>
+
+        <div id="motorista-preview" class="card border-success mb-3" style="display:none;">
+          <div class="card-header bg-success bg-opacity-10 py-2">
+            <small class="fw-semibold text-success text-uppercase"><i class="bi bi-person-badge me-1"></i>Dados do Motorista</small>
+          </div>
+          <div class="card-body py-3">
+            <div class="row g-2">
+              <div class="col-md-5">
+                <span class="text-muted small">Nome</span><br>
+                <span id="mo-nome" class="fw-semibold"></span>
+              </div>
+              <div class="col-md-3">
+                <span class="text-muted small">CPF</span><br>
+                <span id="mo-cpf"></span>
+              </div>
+              <div class="col-md-4">
+                <span class="text-muted small">Celular</span><br>
+                <span id="mo-celular"></span>
+              </div>
+              <div class="col-md-3">
+                <span class="text-muted small">CNH</span><br>
+                <span id="mo-cnh"></span>
+              </div>
+              <div class="col-md-3">
+                <span class="text-muted small">Categoria</span><br>
+                <span id="mo-categoria"></span>
+              </div>
+              <div class="col-md-3">
+                <span class="text-muted small">Validade CNH</span><br>
+                <span id="mo-validade-cnh"></span>
+              </div>
+              <div class="col-md-3">
+                <span class="text-muted small">Transportadora</span><br>
+                <span id="mo-transportadora"></span>
+              </div>
+              <div class="col-md-6">
+                <span class="text-muted small">Veículo</span><br>
+                <span id="mo-veiculo"></span>
+              </div>
+              <div class="col-md-6">
+                <span class="text-muted small">Placa Principal</span><br>
+                <span id="mo-placa" class="fw-semibold"></span>
+              </div>
+              <div class="col-12" id="mo-reboques-row" style="display:none;">
+                <span class="text-muted small">Reboque(s)</span><br>
+                <span id="mo-reboques" class="fw-semibold"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <hr class="my-3">
+
+        <!-- ── 5. DATAS E STATUS ──────────────────────────────────── -->
+        <h6 class="text-uppercase text-muted fw-bold mb-3">Datas e Status</h6>
+        <div class="row g-3 mb-3">
+          <div class="col-md-3">
+            <label for="{{ form.numero.id_for_label }}" class="form-label fw-semibold">{{ form.numero.label }}</label>
+            {{ form.numero }}
+            <div class="form-text text-muted">Gerado automaticamente.</div>
+            {% if form.numero.errors %}<div class="text-danger small mt-1">{{ form.numero.errors }}</div>{% endif %}
+          </div>
+          <div class="col-md-3">
+            <label for="{{ form.status.id_for_label }}" class="form-label fw-semibold">{{ form.status.label }}</label>
+            {{ form.status }}
+            {% if form.status.errors %}<div class="text-danger small mt-1">{{ form.status.errors }}</div>{% endif %}
+          </div>
+          <div class="col-md-3">
+            <label for="{{ form.data_prevista.id_for_label }}" class="form-label fw-semibold">{{ form.data_prevista.label }}</label>
+            {{ form.data_prevista }}
+            {% if form.data_prevista.errors %}<div class="text-danger small mt-1">{{ form.data_prevista.errors }}</div>{% endif %}
+          </div>
+          <div class="col-md-3">
+            <label for="{{ form.data_realizada.id_for_label }}" class="form-label fw-semibold">{{ form.data_realizada.label }}</label>
+            {{ form.data_realizada }}
+            {% if form.data_realizada.errors %}<div class="text-danger small mt-1">{{ form.data_realizada.errors }}</div>{% endif %}
+          </div>
+        </div>
+
+        <hr class="my-3">
+
+        <!-- ── 6. ASSINATURA / DOCUMENTO ─────────────────────────── -->
+        <h6 class="text-uppercase text-muted fw-bold mb-3">Assinatura / Documento</h6>
+        <div class="row g-3 mb-3">
+          <div class="col-md-6">
+            <label for="{{ form.documento.id_for_label }}" class="form-label fw-semibold">{{ form.documento.label }}</label>
+            {{ form.documento }}
+            <div class="form-text text-muted">Aceita imagem (JPG, PNG) ou PDF.</div>
+            {% if form.documento.errors %}<div class="text-danger small mt-1">{{ form.documento.errors }}</div>{% endif %}
+          </div>
+        </div>
+
+        <hr class="my-3">
+
+        <!-- ── 7. OBSERVAÇÕES ────────────────────────────────────── -->
+        <div class="row g-3 mb-3">
+          <div class="col-12">
+            <label for="{{ form.observacoes.id_for_label }}" class="form-label fw-semibold">{{ form.observacoes.label }}</label>
+            {{ form.observacoes }}
+            {% if form.observacoes.errors %}<div class="text-danger small mt-1">{{ form.observacoes.errors }}</div>{% endif %}
+          </div>
+        </div>
+
+        <div class="mt-4">
+          <button type="submit" class="btn btn-primary">Salvar</button>
+          <a href="{% url 'exportacao:ordem_coleta_list' %}" class="btn btn-secondary ms-2">Cancelar</a>
+        </div>
+
       </form>
     </div>
   </div>
 </div>
+
+{% block extra_js %}
+<script>
+/* ── BOOKING preview + containers ─────────────────────────────── */
+(function () {
+  const bookingSel = document.getElementById('id_booking');
+  const bkCard     = document.getElementById('booking-preview');
+  const contSel    = document.getElementById('id_container');
+
+  const BK = [
+    ['bk-porto-origem', 'porto_origem'],
+    ['bk-porto-destino', 'porto_destino'],
+    ['bk-rota-navio',   'rota_navio'],
+    ['bk-armador',      'armador'],
+    ['bk-navio',        'navio'],
+    ['bk-cultura',      'cultura'],
+    ['bk-genset',       'genset'],
+    ['bk-temperatura',  'temperatura'],
+    ['bk-humidade',     'humidade'],
+    ['bk-ventilacao',   'ventilacao'],
+  ];
+
+  function limparBooking() {
+    BK.forEach(([id]) => { const el = document.getElementById(id); if (el) el.textContent = ''; });
+    bkCard.style.display = 'none';
+    const opt = contSel.querySelector('option[value=""]') || new Option('---', '');
+    while (contSel.options.length > 1) contSel.remove(1);
+  }
+
+  function carregarBooking(pk) {
+    if (!pk) { limparBooking(); return; }
+    fetch(`/exportacao/ajax/booking/${pk}/coleta-preview/`)
+      .then(r => r.ok ? r.json() : Promise.reject())
+      .then(data => {
+        BK.forEach(([id, key]) => {
+          const el = document.getElementById(id);
+          if (el) el.textContent = data[key] || '—';
+        });
+        bkCard.style.display = '';
+        // Popular containers do booking
+        while (contSel.options.length > 1) contSel.remove(1);
+        (data.containers || []).forEach(c => {
+          contSel.add(new Option(c.label, c.id));
+        });
+      })
+      .catch(() => limparBooking());
+  }
+
+  if (bookingSel) {
+    bookingSel.addEventListener('change', function () { carregarBooking(this.value); });
+    if (bookingSel.value) carregarBooking(bookingSel.value);
+  }
+})();
+
+/* ── SEGREGADO toggle ─────────────────────────────────────────── */
+(function () {
+  const chk         = document.getElementById('id_segregado');
+  const painelLacre = document.getElementById('painel-lacres');
+  const lblObrig    = document.getElementById('lbl-obrigatorio');
+
+  function toggle() {
+    const on = chk && chk.checked;
+    painelLacre.style.display = on ? '' : 'none';
+    if (lblObrig) lblObrig.style.display = on ? '' : 'none';
+  }
+
+  if (chk) {
+    chk.addEventListener('change', toggle);
+    toggle();
+  }
+})();
+
+/* ── TRANSPORTADORA preview + filtra motoristas ───────────────── */
+(function () {
+  const transpSel  = document.getElementById('id_transportadora');
+  const trCard     = document.getElementById('transp-preview');
+  const motoristaSel = document.getElementById('id_motorista');
+
+  const TR = [
+    ['tr-razao',    'razao_social'],
+    ['tr-cnpj',     'cnpj'],
+    ['tr-rntc',     'rntc'],
+    ['tr-contato',  'contato'],
+    ['tr-telefone', 'telefone'],
+    ['tr-cidade',   'cidade'],
+  ];
+
+  function limparTransp() {
+    TR.forEach(([id]) => { const el = document.getElementById(id); if (el) el.textContent = ''; });
+    trCard.style.display = 'none';
+  }
+
+  function carregarTransp(pk) {
+    if (!pk) { limparTransp(); return; }
+    fetch(`/exportacao/ajax/transportadora/${pk}/preview/`)
+      .then(r => r.ok ? r.json() : Promise.reject())
+      .then(data => {
+        TR.forEach(([id, key]) => {
+          const el = document.getElementById(id);
+          if (el) el.textContent = data[key] || '—';
+        });
+        trCard.style.display = '';
+      })
+      .catch(() => limparTransp());
+    // Filtrar motoristas
+    fetch(`/exportacao/ajax/transportadora/${pk}/motoristas/`)
+      .then(r => r.ok ? r.json() : Promise.reject())
+      .then(data => {
+        const current = motoristaSel.value;
+        while (motoristaSel.options.length > 1) motoristaSel.remove(1);
+        (data.motoristas || []).forEach(m => {
+          const opt = new Option(m.nome, m.id);
+          if (String(m.id) === current) opt.selected = true;
+          motoristaSel.add(opt);
+        });
+      })
+      .catch(() => {});
+  }
+
+  if (transpSel) {
+    transpSel.addEventListener('change', function () { carregarTransp(this.value); });
+    if (transpSel.value) carregarTransp(transpSel.value);
+  }
+})();
+
+/* ── MOTORISTA preview ────────────────────────────────────────── */
+(function () {
+  const motoristaSel = document.getElementById('id_motorista');
+  const moCard       = document.getElementById('motorista-preview');
+
+  const MO = [
+    ['mo-nome',          'nome'],
+    ['mo-cpf',           'cpf'],
+    ['mo-celular',       'celular'],
+    ['mo-cnh',           'cnh'],
+    ['mo-categoria',     'categoria_cnh'],
+    ['mo-validade-cnh',  'validade_cnh'],
+    ['mo-transportadora','transportadora'],
+    ['mo-veiculo',       'veiculo'],
+    ['mo-placa',         'placa'],
+  ];
+
+  function limparMotorista() {
+    MO.forEach(([id]) => { const el = document.getElementById(id); if (el) el.textContent = ''; });
+    const rRow = document.getElementById('mo-reboques-row');
+    const rEl  = document.getElementById('mo-reboques');
+    if (rEl) rEl.textContent = '';
+    if (rRow) rRow.style.display = 'none';
+    moCard.style.display = 'none';
+  }
+
+  function carregarMotorista(pk) {
+    if (!pk) { limparMotorista(); return; }
+    fetch(`/exportacao/ajax/motorista/${pk}/preview/`)
+      .then(r => r.ok ? r.json() : Promise.reject())
+      .then(data => {
+        MO.forEach(([id, key]) => {
+          const el = document.getElementById(id);
+          if (el) el.textContent = data[key] || '—';
+        });
+        const reboques = data.reboques || [];
+        const rRow = document.getElementById('mo-reboques-row');
+        const rEl  = document.getElementById('mo-reboques');
+        if (rEl && reboques.length > 0) {
+          rEl.textContent = reboques.map(r => r.placa + (r.veiculo ? ` (${r.veiculo})` : '')).join(' | ');
+          if (rRow) rRow.style.display = '';
+        } else if (rRow) {
+          rRow.style.display = 'none';
+        }
+        moCard.style.display = '';
+      })
+      .catch(() => limparMotorista());
+  }
+
+  if (motoristaSel) {
+    motoristaSel.addEventListener('change', function () { carregarMotorista(this.value); });
+    if (motoristaSel.value) carregarMotorista(motoristaSel.value);
+  }
+})();
+</script>
+{% endblock %}
 {% endblock %}

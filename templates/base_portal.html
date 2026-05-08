@@ -58,8 +58,8 @@
   <a href="{% url 'portal_motorista:abastecimento_novo' %}" class="{% if request.resolver_match.url_name == 'abastecimento_novo' %}active{% endif %}">
     <i class="bi bi-fuel-pump-fill"></i>Abastecer
   </a>
-  <a href="{% url 'portal_motorista:historico' %}" class="{% if request.resolver_match.url_name == 'historico' %}active{% endif %}">
-    <i class="bi bi-clock-history"></i>Histórico
+  <a href="{% url 'portal_motorista:ordens_coleta' %}" class="{% if 'ordem_coleta' in request.resolver_match.url_name %}active{% endif %}">
+    <i class="bi bi-clipboard-check"></i>Coletas
   </a>
   <a href="{% url 'portal_motorista:solicitar_manutencao' %}" class="{% if request.resolver_match.url_name == 'solicitar_manutencao' %}active{% endif %}">
     <i class="bi bi-tools"></i>Manutenção

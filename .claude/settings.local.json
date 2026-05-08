@@ -55,7 +55,8 @@
       "PowerShell(venv\\\\Scripts\\\\python.exe manage.py migrate exportacao 2>&1)",
       "Bash(find /c:/erp_agricola_novo/exportacao -name \"urls.py\" -type f)",
       "Read(//c:/erp_agricola_novo/**)",
-      "PowerShell(venv\\\\Scripts\\\\python.exe manage.py makemigrations exportacao --name add_booking_shipping_fields 2>&1)"
+      "PowerShell(venv\\\\Scripts\\\\python.exe manage.py makemigrations exportacao --name add_booking_shipping_fields 2>&1)",
+      "Bash(Get-ChildItem -Path \"c:\\\\erp_agricola_novo\" -Directory)"
     ]
   }
 }

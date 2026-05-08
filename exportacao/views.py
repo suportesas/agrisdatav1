@@ -3,14 +3,14 @@ import io
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
-from django.db.models import Count, Q
+from django.db.models import Count, DecimalField, ExpressionWrapper, F, Q
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import get_template
 from django.utils import timezone
 from xhtml2pdf import pisa
 
-from cadastros.models import Cultura
+from cadastros.models import Cultura, Motorista, Transportadora
 from .forms import BookingContainerForm, BookingForm, OrdemColetaForm, SolicitacaoBookingForm
 from .models import Booking, BookingContainer, OrdemColeta, SolicitacaoBooking
 
@@ -123,6 +123,13 @@ def booking_list(request):
         Booking.objects
         .filter(empresa=request.user.empresa)
         .select_related('solicitacao')
+        .annotate(
+            n_containers=Count('containers'),
+            saldo=ExpressionWrapper(
+                F('solicitacao__quantidade') - Count('containers'),
+                output_field=DecimalField(max_digits=14, decimal_places=0),
+            ),
+        )
         .order_by('-data_embarque_previsto')
     )
     return render(request, 'exportacao/booking_list.html', {
@@ -254,11 +261,29 @@ def ordem_coleta_list(request):
         messages.warning(request, '⚠️ Seu usuário não está vinculado a nenhuma empresa.')
         return redirect('dashboard:index')
 
-    ordens = OrdemColeta.objects.filter(empresa=request.user.empresa).order_by('-data_prevista')
+    ordens = (
+        OrdemColeta.objects.filter(empresa=request.user.empresa)
+        .select_related('booking', 'motorista', 'container')
+        .prefetch_related('fotos')
+        .order_by('-data_prevista')
+    )
     return render(request, 'exportacao/ordem_coleta_list.html', {
         'ordens': ordens,
         'request': request
     })
+
+
+def _sync_lacres_container(ordem):
+    if ordem.segregado and ordem.container:
+        ct = ordem.container
+        changed = False
+        for field in ('lacre_armador', 'lacre_fiscal', 'lacre_terminal'):
+            val = getattr(ordem, field)
+            if val:
+                setattr(ct, field, val)
+                changed = True
+        if changed:
+            ct.save()
 
 
 @login_required
@@ -270,8 +295,11 @@ def ordem_coleta_create(request):
     if request.method == 'POST':
         form = OrdemColetaForm(request.POST, request.FILES, empresa=request.user.empresa)
         if form.is_valid():
+            if not form.cleaned_data.get('numero'):
+                form.instance.numero = OrdemColeta.generate_numero(request.user.empresa)
             ordem = form.save(user=request.user)
-            messages.success(request, f'✅ Ordem de coleta criada com sucesso!')
+            _sync_lacres_container(ordem)
+            messages.success(request, f'✅ Ordem de coleta {ordem.numero} criada com sucesso!')
             return redirect('exportacao:ordem_coleta_list')
         messages.error(request, '❌ Corrija os erros no formulário antes de salvar.')
     else:
@@ -291,7 +319,8 @@ def ordem_coleta_update(request, pk):
         form = OrdemColetaForm(request.POST, request.FILES, instance=ordem, empresa=request.user.empresa)
         if form.is_valid():
             ordem = form.save(user=request.user)
-            messages.success(request, f'✅ Ordem de coleta atualizada com sucesso!')
+            _sync_lacres_container(ordem)
+            messages.success(request, f'✅ Ordem de coleta {ordem.numero} atualizada com sucesso!')
             return redirect('exportacao:ordem_coleta_list')
         messages.error(request, '❌ Corrija os erros no formulário antes de salvar.')
     else:
@@ -301,6 +330,137 @@ def ordem_coleta_update(request, pk):
         'form': form,
         'action': 'Editar Ordem de Coleta',
         'request': request
+    })
+
+
+@login_required
+def ordem_coleta_print(request, pk):
+    from datetime import date as _date
+    from django.db.models import Q as _Q
+    from cadastros.models import MotoristaVinculoPlaca
+
+    ordem = get_object_or_404(
+        OrdemColeta.objects.select_related(
+            'booking', 'container', 'transportadora', 'motorista', 'empresa'
+        ),
+        pk=pk, empresa=request.user.empresa,
+    )
+
+    placa_principal = ''
+    veiculo_principal = ''
+    reboques = []
+    if ordem.motorista_id:
+        hoje = _date.today()
+        vinculo = (
+            MotoristaVinculoPlaca.objects
+            .filter(
+                motorista_id=ordem.motorista_id,
+                ativo=True,
+            )
+            .filter(_Q(data_fim__isnull=True) | _Q(data_fim__gte=hoje))
+            .select_related('placa_principal__vehicle')
+            .prefetch_related('reboques__vehicle')
+            .order_by('-data_inicio')
+            .first()
+        )
+        if vinculo and vinculo.placa_principal:
+            placa_principal = vinculo.placa_principal.placa
+            v = getattr(vinculo.placa_principal, 'vehicle', None)
+            if v:
+                veiculo_principal = f'{v.marca} {v.modelo}'.strip()
+            for rp in vinculo.reboques.select_related('vehicle').all():
+                rv = rp.vehicle
+                reboques.append({
+                    'placa': rp.placa,
+                    'veiculo': f'{rv.marca} {rv.modelo}'.strip() if rv else '',
+                })
+
+    return render(request, 'exportacao/ordem_coleta_print.html', {
+        'ordem': ordem,
+        'empresa': request.user.empresa,
+        'placa_principal': placa_principal,
+        'veiculo_principal': veiculo_principal,
+        'reboques': reboques,
+    })
+
+
+@login_required
+def ordem_coleta_fotos_admin(request, pk):
+    from .models import FotoOrdemColeta
+    ordem = get_object_or_404(OrdemColeta, pk=pk, empresa=request.user.empresa)
+    fotos = ordem.fotos.select_related('enviada_por').all()
+    return render(request, 'exportacao/ordem_coleta_fotos.html', {
+        'ordem': ordem,
+        'fotos': fotos,
+    })
+
+
+@login_required
+def ordem_coleta_carta_temperatura(request, pk):
+    from datetime import date as _date
+    MESES = [
+        'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+        'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
+    ]
+
+    ordem = get_object_or_404(
+        OrdemColeta.objects.select_related(
+            'booking__solicitacao__cultura',
+            'booking__solicitacao__navio',
+            'booking__porto_origem',
+            'booking__porto_destino',
+            'container',
+            'empresa',
+        ),
+        pk=pk, empresa=request.user.empresa,
+    )
+
+    booking = ordem.booking
+    solicitacao = getattr(booking, 'solicitacao', None)
+    cultura = getattr(solicitacao, 'cultura', None) if solicitacao else None
+    navio = getattr(solicitacao, 'navio', None) if solicitacao else None
+
+    # "To the master of": navio + rota_navio
+    navio_nome = str(navio) if navio else ''
+    rota = booking.rota_navio or ''
+    to_master = ' '.join(filter(None, [navio_nome, rota])) or '—'
+
+    # Commodity
+    commodity = str(cultura) if cultura else '—'
+
+    # Porto
+    porto_loading = str(booking.porto_origem) if booking.porto_origem else '—'
+    porto_discharge = str(booking.porto_destino) if booking.porto_destino else '—'
+    place_delivery = porto_discharge  # mesmo porto de descarga
+
+    # Temperatura / ventilação / humidade — valores raw (sem normalize para evitar notação científica)
+    temperatura = getattr(cultura, 'exportacao_temperatura', None)
+    ventilacao_raw = getattr(cultura, 'exportacao_ventilacao', None)
+    humidade_raw = getattr(cultura, 'exportacao_humidade', None)
+
+    temperatura_display = f'{temperatura}°C' if temperatura is not None else '—'
+    ventilacao_display = 'OFF' if (ventilacao_raw is None or ventilacao_raw == 0) else f'{ventilacao_raw} cbm/h'
+    humidade_display = 'OFF' if (humidade_raw is None or humidade_raw == 0) else f'{humidade_raw}%'
+
+    # Data localizada
+    hoje = _date.today()
+    empresa = request.user.empresa
+    cidade_uf = f'{empresa.cidade}/{empresa.uf}' if (empresa.cidade and empresa.uf) else (empresa.cidade or '')
+    mes_nome = MESES[hoje.month - 1].upper()
+    data_local = f'{cidade_uf}, {mes_nome}, {hoje.day} de {hoje.year}.'
+
+    return render(request, 'exportacao/ordem_coleta_carta_temperatura.html', {
+        'ordem': ordem,
+        'empresa': empresa,
+        'to_master': to_master,
+        'commodity': commodity,
+        'porto_loading': porto_loading,
+        'porto_discharge': porto_discharge,
+        'place_delivery': place_delivery,
+        'temperatura_display': temperatura_display,
+        'ventilacao_display': ventilacao_display,
+        'humidade_display': humidade_display,
+        'data_local': data_local,
     })
 
 
@@ -353,3 +513,83 @@ def ajax_solicitacao_preview(request, pk):
         'quantidade': str(s.quantidade) if s.quantidade is not None else '',
         'status': s.get_status_display(),
     })
+
+
+@login_required
+def ajax_booking_coleta_preview(request, pk):
+    b = get_object_or_404(Booking, pk=pk, empresa=request.user.empresa)
+    s = b.solicitacao
+    cultura = s.cultura if s else None
+    return JsonResponse({
+        'porto_origem': str(b.porto_origem) if b.porto_origem else '',
+        'porto_destino': str(b.porto_destino) if b.porto_destino else '',
+        'rota_navio': b.rota_navio,
+        'armador': str(s.armador) if s and s.armador else '',
+        'navio': str(s.navio) if s and s.navio else '',
+        'cultura': str(cultura) if cultura else '',
+        'genset': s.get_genset_display() if s and s.genset else '',
+        'temperatura': str(cultura.exportacao_temperatura) if cultura and cultura.exportacao_temperatura is not None else '',
+        'humidade': str(cultura.exportacao_humidade) if cultura and cultura.exportacao_humidade is not None else '',
+        'ventilacao': str(cultura.exportacao_ventilacao) if cultura and cultura.exportacao_ventilacao is not None else '',
+        'containers': [
+            {'id': c.pk, 'label': f'{c.numero_container} ({c.get_tipo_container_display()})'}
+            for c in b.containers.order_by('numero_container')
+        ],
+    })
+
+
+@login_required
+def ajax_transportadora_preview(request, pk):
+    t = get_object_or_404(Transportadora, pk=pk, empresa=request.user.empresa)
+    return JsonResponse({
+        'razao_social': t.razao_social,
+        'cnpj': t.cnpj or '',
+        'contato': t.contato_principal_nome,
+        'telefone': t.contato_principal_telefone,
+        'cidade': f'{t.cidade}/{t.uf}' if t.cidade else '',
+        'rntc': t.rntc,
+    })
+
+
+@login_required
+def ajax_motorista_preview(request, pk):
+    m = get_object_or_404(Motorista, pk=pk, empresa=request.user.empresa)
+    vinculo = m.vinculos_placas.filter(ativo=True).order_by('-data_inicio').first()
+    placa = ''
+    veiculo = ''
+    reboques = []
+    if vinculo and hasattr(vinculo, 'placa_principal') and vinculo.placa_principal:
+        placa = vinculo.placa_principal.placa
+        v = getattr(vinculo.placa_principal, 'vehicle', None)
+        if v:
+            veiculo = f'{v.marca} {v.modelo}'.strip()
+        for rp in vinculo.reboques.select_related('vehicle').all():
+            rv = rp.vehicle
+            reboques.append({
+                'placa': rp.placa,
+                'veiculo': f'{rv.marca} {rv.modelo}'.strip() if rv else '',
+            })
+    return JsonResponse({
+        'nome': m.nome,
+        'cpf': m.cpf,
+        'celular': m.celular,
+        'cnh': m.cnh,
+        'categoria_cnh': m.categoria_cnh,
+        'validade_cnh': m.data_validade_cnh.strftime('%d/%m/%Y') if m.data_validade_cnh else '',
+        'placa': placa,
+        'veiculo': veiculo,
+        'reboques': reboques,
+        'transportadora': str(m.transportadora) if m.transportadora else '',
+    })
+
+
+@login_required
+def ajax_motoristas_por_transportadora(request, pk):
+    motoristas = list(
+        Motorista.objects.filter(
+            empresa=request.user.empresa,
+            transportadora_id=pk,
+            ativo=True,
+        ).values('id', 'nome').order_by('nome')
+    )
+    return JsonResponse({'motoristas': motoristas})

@@ -1,0 +1,187 @@
+{% extends 'base.html' %}
+{% block title %}{{ pedido.numero }}{% endblock %}
+{% block page_title %}Pedido de Venda{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+  <div class="d-flex justify-content-between align-items-start mb-4">
+    <div class="d-flex align-items-center">
+      <a href="{% url 'vendas:pedido_list' %}" class="btn btn-outline-secondary me-3"><i class="bi bi-arrow-left"></i></a>
+      <div>
+        <h3 class="mb-0">{{ pedido.numero }}</h3>
+        <small class="text-muted">{{ pedido.cliente.razao_social }} — {{ pedido.get_tipo_venda_display }}</small>
+      </div>
+    </div>
+    <div class="d-flex gap-2">
+      {% if pedido.status == 'RASCUNHO' %}
+      <a href="{% url 'vendas:pedido_update' pedido.pk %}" class="btn btn-outline-secondary">
+        <i class="bi bi-pencil me-1"></i>Editar
+      </a>
+      <form method="post" action="{% url 'vendas:pedido_aprovar' pedido.pk %}" class="d-inline">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-info text-white">
+          <i class="bi bi-check me-1"></i>Aprovar
+        </button>
+      </form>
+      {% endif %}
+      {% if pedido.status == 'APROVADO' or pedido.status == 'CONFIRMADO' %}
+      <form method="post" action="{% url 'vendas:pedido_emitir' pedido.pk %}" class="d-inline">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-success" onclick="return confirm('Emitir documentos e concluir o pedido?')">
+          <i class="bi bi-lightning me-1"></i>Emitir e Concluir
+        </button>
+      </form>
+      {% endif %}
+      {% if pedido.status != 'CONCLUIDO' and pedido.status != 'CANCELADO' %}
+      <form method="post" action="{% url 'vendas:pedido_cancelar' pedido.pk %}" class="d-inline">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-outline-danger" onclick="return confirm('Cancelar este pedido?')">
+          <i class="bi bi-x-circle me-1"></i>Cancelar
+        </button>
+      </form>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="mb-3">
+    {% if pedido.status == 'RASCUNHO' %}<span class="badge bg-secondary fs-6">Rascunho</span>
+    {% elif pedido.status == 'APROVADO' %}<span class="badge bg-info fs-6">Aprovado</span>
+    {% elif pedido.status == 'CONFIRMADO' %}<span class="badge bg-primary fs-6">Confirmado</span>
+    {% elif pedido.status == 'CONCLUIDO' %}<span class="badge bg-success fs-6">Concluído</span>
+    {% else %}<span class="badge bg-danger fs-6">Cancelado</span>{% endif %}
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header fw-semibold">Dados do Pedido</div>
+        <div class="card-body">
+          <dl class="row mb-0">
+            <dt class="col-sm-5">Número</dt><dd class="col-sm-7">{{ pedido.numero }}</dd>
+            <dt class="col-sm-5">Cliente</dt><dd class="col-sm-7">{{ pedido.cliente.razao_social }}</dd>
+            <dt class="col-sm-5">Tipo</dt><dd class="col-sm-7">{{ pedido.get_tipo_venda_display }}</dd>
+            <dt class="col-sm-5">Data Pedido</dt><dd class="col-sm-7">{{ pedido.data_pedido|date:"d/m/Y" }}</dd>
+            {% if pedido.data_entrega_prevista %}<dt class="col-sm-5">Entrega Prev.</dt><dd class="col-sm-7">{{ pedido.data_entrega_prevista|date:"d/m/Y" }}</dd>{% endif %}
+            {% if pedido.vendedor %}<dt class="col-sm-5">Vendedor</dt><dd class="col-sm-7">{{ pedido.vendedor.get_full_name|default:pedido.vendedor.username }}</dd>{% endif %}
+            {% if pedido.condicao_pagamento %}<dt class="col-sm-5">Cond. Pgto.</dt><dd class="col-sm-7">{{ pedido.condicao_pagamento }}</dd>{% endif %}
+            {% if pedido.forma_pagamento %}<dt class="col-sm-5">Forma Pgto.</dt><dd class="col-sm-7">{{ pedido.forma_pagamento }}</dd>{% endif %}
+          </dl>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header fw-semibold">Valores</div>
+        <div class="card-body">
+          <dl class="row mb-0">
+            <dt class="col-sm-6">Moeda</dt><dd class="col-sm-6"><strong>{{ pedido.moeda }}</strong></dd>
+            {% if pedido.taxa_cambio %}<dt class="col-sm-6">Câmbio</dt><dd class="col-sm-6">{{ pedido.taxa_cambio|floatformat:4 }}</dd>{% endif %}
+            <dt class="col-sm-6">Produtos</dt><dd class="col-sm-6">{{ pedido.valor_produtos|floatformat:2 }}</dd>
+            <dt class="col-sm-6">Desconto</dt><dd class="col-sm-6">- {{ pedido.valor_desconto|floatformat:2 }}</dd>
+            <dt class="col-sm-6">Frete</dt><dd class="col-sm-6">{{ pedido.valor_frete|floatformat:2 }}</dd>
+            <dt class="col-sm-6 fw-bold">Total {{ pedido.moeda }}</dt><dd class="col-sm-6 fw-bold fs-5">{{ pedido.valor_total|floatformat:2 }}</dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header fw-semibold">Documentos Gerados</div>
+        <div class="card-body">
+          <ul class="list-unstyled mb-0">
+            <li class="mb-2">
+              <small class="text-muted d-block">NF-e / Invoice</small>
+              {% if pedido.nota_fiscal %}
+              <a href="{% url 'faturamento:nota_fiscal_detail' pedido.nota_fiscal.pk %}" class="btn btn-sm btn-outline-info">
+                <i class="bi bi-receipt me-1"></i>NF {{ pedido.nota_fiscal.numero }}
+              </a>
+              {% elif pedido.invoice %}
+              <a href="{% url 'faturamento:invoice_detail' pedido.invoice.pk %}" class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-file-earmark-text me-1"></i>{{ pedido.invoice.numero }}
+              </a>
+              {% else %}<span class="text-muted">Não gerado</span>{% endif %}
+            </li>
+            <li>
+              <small class="text-muted d-block">Conta a Receber</small>
+              {% if pedido.conta_receber %}
+              <a href="{% url 'financeiro:conta_receber_detail' pedido.conta_receber.pk %}" class="btn btn-sm btn-outline-warning">
+                <i class="bi bi-cash me-1"></i>{{ pedido.conta_receber.numero }}
+              </a>
+              {% else %}<span class="text-muted">Não gerado</span>{% endif %}
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Itens -->
+  <div class="card border-0 shadow-sm">
+    <div class="card-header fw-semibold">Itens do Pedido</div>
+    <div class="card-body p-0">
+      <table class="table table-sm mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Descrição</th>
+            <th>Produto</th>
+            <th>NCM</th>
+            <th>CFOP</th>
+            <th>Un.</th>
+            <th class="text-end">Qtd</th>
+            <th class="text-end">Preço Unit.</th>
+            <th class="text-end">Desconto</th>
+            <th class="text-end">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in itens %}
+          <tr>
+            <td>{{ item.descricao }}</td>
+            <td>{{ item.produto.nome|default:"—" }}</td>
+            <td>{{ item.ncm|default:"—" }}</td>
+            <td>{{ item.cfop|default:"—" }}</td>
+            <td>{{ item.unidade }}</td>
+            <td class="text-end">{{ item.quantidade|floatformat:3 }}</td>
+            <td class="text-end">{{ item.preco_unitario|floatformat:4 }}</td>
+            <td class="text-end">{{ item.desconto_item|floatformat:2 }}</td>
+            <td class="text-end fw-semibold">{{ item.preco_total|floatformat:2 }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="9" class="text-center text-muted py-3">Sem itens.</td></tr>
+          {% endfor %}
+        </tbody>
+        <tfoot class="table-light fw-bold">
+          <tr>
+            <td colspan="8" class="text-end">TOTAL {{ pedido.moeda }}</td>
+            <td class="text-end">{{ pedido.valor_total|floatformat:2 }}</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+
+  {% if pedido.observacoes or pedido.observacoes_fiscais %}
+  <div class="row g-3 mt-1">
+    {% if pedido.observacoes %}
+    <div class="col-md-6">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header fw-semibold">Observações</div>
+        <div class="card-body">{{ pedido.observacoes }}</div>
+      </div>
+    </div>
+    {% endif %}
+    {% if pedido.observacoes_fiscais %}
+    <div class="col-md-6">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header fw-semibold">Inf. Complementares NF-e</div>
+        <div class="card-body">{{ pedido.observacoes_fiscais }}</div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

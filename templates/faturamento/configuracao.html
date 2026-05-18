@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+{% block title %}Configuração Fiscal{% endblock %}
+{% block page_title %}Configuração Fiscal{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="d-flex align-items-center mb-4">
+    <a href="{% url 'faturamento:dashboard' %}" class="btn btn-outline-secondary me-3">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    <h3 class="mb-0">Configuração Fiscal</h3>
+  </div>
+
+  <div class="row">
+    <div class="col-md-8">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header fw-semibold">Parâmetros Fiscais da Empresa</div>
+        <div class="card-body">
+          <form method="post">
+            {% csrf_token %}
+            {% if form.non_field_errors %}
+            <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+            {% endif %}
+
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label">Regime Tributário *</label>
+                {{ form.regime_tributario }}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">Série NF-e</label>
+                {{ form.serie_nfe }}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">CFOP Venda Interna</label>
+                {{ form.cfop_venda_interna }}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">CFOP Venda Exportação</label>
+                {{ form.cfop_venda_exportacao }}
+              </div>
+              <div class="col-md-9">
+                <label class="form-label">Natureza da Operação Padrão</label>
+                {{ form.natureza_operacao_padrao }}
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Observações Padrão NF-e</label>
+                {{ form.observacoes_padrao_nfe }}
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Observações Padrão Invoice</label>
+                {{ form.observacoes_padrao_invoice }}
+              </div>
+            </div>
+
+            <div class="mt-4 d-flex gap-2">
+              <button type="submit" class="btn btn-primary">
+                <i class="bi bi-check-circle me-1"></i>Salvar Configuração
+              </button>
+              <a href="{% url 'faturamento:dashboard' %}" class="btn btn-outline-secondary">Cancelar</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header fw-semibold">Dicas</div>
+        <div class="card-body text-muted small">
+          <p><strong>CFOP 5102</strong> — Venda de mercadoria adquirida ou recebida de terceiros (mercado interno).</p>
+          <p><strong>CFOP 7101</strong> — Venda de produção do estabelecimento (exportação).</p>
+          <p>A <strong>Série NF-e</strong> padrão é 1. Use outras séries para contingência ou filiais.</p>
+          <p>As observações padrão serão pré-preenchidas automaticamente ao criar novas notas/invoices.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

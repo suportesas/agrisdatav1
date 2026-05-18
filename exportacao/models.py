@@ -280,8 +280,25 @@ class BookingContainer(ExportacaoBaseModel):
         related_name='containers_destino',
         verbose_name='Porto de Destino',
     )
-    data_coleta_prevista = models.DateField('Previsão de Coleta', blank=True, null=True)
+    data_coleta_prevista  = models.DateField('Previsão de Coleta', blank=True, null=True)
     data_coleta_realizada = models.DateField('Coleta Realizada', blank=True, null=True)
+    hora_coleta_realizada = models.TimeField('Hora Coleta Realizada', null=True, blank=True)
+    armador = models.ForeignKey(
+        'cadastros.Armador', on_delete=models.SET_NULL,
+        null=True, blank=True, verbose_name='Armador', related_name='containers',
+    )
+    transportadora = models.ForeignKey(
+        'cadastros.Transportadora', on_delete=models.SET_NULL,
+        null=True, blank=True, verbose_name='Transportadora', related_name='containers',
+    )
+    motorista = models.ForeignKey(
+        'cadastros.Motorista', on_delete=models.SET_NULL,
+        null=True, blank=True, verbose_name='Motorista', related_name='containers',
+    )
+    placa_principal = models.CharField('Placa Principal', max_length=15, blank=True)
+    placa_reboque   = models.CharField('Placa(s) Reboque', max_length=100, blank=True)
+    numero_genset   = models.CharField('Nº Genset', max_length=30, blank=True)
+    tara_container  = models.IntegerField('Tara do Container (kg)', null=True, blank=True)
     observacoes = models.TextField('Observações', blank=True)
 
     class Meta:

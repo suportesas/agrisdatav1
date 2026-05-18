@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Conferência — {{ romaneio.numero }}</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<style>
+  body { background: #1a1a2e; color: #eee; min-height: 100vh; }
+  .conf-header { background: #16213e; padding: 12px 16px; position: sticky; top: 0; z-index: 10; box-shadow: 0 2px 8px rgba(0,0,0,.4); }
+  .conf-titulo { font-size: 1rem; font-weight: 700; color: #fff; }
+  .conf-sub { font-size: .75rem; color: #aaa; }
+
+  .progress-area { padding: 12px 16px; background: #0f3460; }
+  .progress-texto { font-size: .85rem; color: #ccc; margin-bottom: 4px; }
+  .progress { height: 14px; border-radius: 7px; }
+
+  .scan-area { padding: 16px; }
+  .scan-input { font-size: 1.4rem; font-family: monospace; border-radius: 12px; border: 2px solid #444; background: #111; color: #fff; text-align: center; letter-spacing: 3px; }
+  .scan-input:focus { border-color: #4cc9f0; box-shadow: 0 0 0 4px rgba(76,201,240,.2); outline: none; }
+  .btn-scan { font-size: 1rem; border-radius: 12px; }
+
+  .resultado-area { padding: 0 16px 12px; min-height: 80px; }
+  .resultado-card { border-radius: 12px; padding: 12px 16px; font-size: .95rem; }
+  .resultado-ok { background: #1b4332; border: 2px solid #40916c; }
+  .resultado-warn { background: #5c4a1e; border: 2px solid #ffd60a; }
+  .resultado-erro { background: #7b1e1e; border: 2px solid #e63946; }
+
+  .lista-pallets { padding: 8px 16px 80px; }
+  .pallet-item { background: #16213e; border-radius: 10px; padding: 10px 14px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; transition: all .3s; }
+  .pallet-item.conferido { background: #1b4332; }
+  .pallet-item.divergente { background: #7b1e1e; }
+  .pallet-codigo { font-family: monospace; font-size: .85rem; font-weight: 600; }
+  .pallet-tipo { font-size: .75rem; color: #aaa; }
+
+  .btn-voltar-fixo { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); z-index: 20; }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="conf-header">
+  <div class="d-flex justify-content-between align-items-center">
+    <div>
+      <div class="conf-titulo"><i class="bi bi-upc-scan me-1"></i>{{ romaneio.numero }}</div>
+      <div class="conf-sub">{{ romaneio.cliente.razao_social }} — {{ romaneio.get_tipo_display }}</div>
+    </div>
+    <a href="{% url 'embalagem:romaneio_detail' romaneio.pk %}" class="btn btn-sm btn-outline-light">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+  </div>
+</div>
+
+<!-- Progresso -->
+<div class="progress-area">
+  <div class="progress-texto">
+    <span id="conf-count">{{ pallets_conferidos }}</span> de <span>{{ total_pallets }}</span> pallets conferidos
+  </div>
+  <div class="progress">
+    <div class="progress-bar bg-success" id="conf-bar"
+      style="width: {% if total_pallets > 0 %}{% widthratio pallets_conferidos total_pallets 100 %}{% else %}0{% endif %}%">
+    </div>
+  </div>
+</div>
+
+<!-- Campo de scan -->
+<div class="scan-area">
+  <div class="input-group">
+    <input type="text" id="campo-scan" class="form-control scan-input"
+      placeholder="Código do pallet..."
+      autocomplete="off" autocorrect="off" spellcheck="false"
+      autofocus>
+    <button class="btn btn-primary btn-scan" onclick="conferirPallet()">
+      <i class="bi bi-check2-circle fs-5"></i>
+    </button>
+  </div>
+  <div class="text-center mt-2 text-muted small">
+    <i class="bi bi-camera"></i> Escanei ou digite o código e pressione Enter
+  </div>
+</div>
+
+<!-- Resultado do scan -->
+<div class="resultado-area">
+  <div id="resultado-msg" class="resultado-card d-none"></div>
+</div>
+
+<!-- Lista de pallets -->
+<div class="lista-pallets">
+  <div class="text-muted small mb-2">Pallets do romaneio:</div>
+  <div id="lista-pallets-container">
+    {% for item in itens %}
+    <div class="pallet-item {% if item.status_conferencia == 'CONFERIDO' %}conferido{% elif item.status_conferencia == 'DIVERGENTE' %}divergente{% endif %}"
+      id="pallet-item-{{ item.pallet.codigo_pallet|slugify }}">
+      <div>
+        <div class="pallet-codigo">{{ item.pallet.codigo_pallet }}</div>
+        <div class="pallet-tipo">{{ item.pallet.tipo_embalagem.nome }} — {{ item.quantidade_caixas }} cx</div>
+      </div>
+      <div id="status-{{ item.pallet.codigo_pallet|slugify }}">
+        {% if item.status_conferencia == 'CONFERIDO' %}
+          <i class="bi bi-check-circle-fill text-success fs-4"></i>
+        {% elif item.status_conferencia == 'DIVERGENTE' %}
+          <i class="bi bi-exclamation-triangle-fill text-danger fs-4"></i>
+        {% else %}
+          <i class="bi bi-circle text-secondary fs-4"></i>
+        {% endif %}
+      </div>
+    </div>
+    {% empty %}
+    <div class="text-muted text-center py-4">Nenhum pallet no romaneio.</div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- Botão voltar fixo -->
+<div class="btn-voltar-fixo">
+  <a href="{% url 'embalagem:romaneio_detail' romaneio.pk %}" class="btn btn-secondary btn-lg px-5">
+    <i class="bi bi-arrow-left me-1"></i>Voltar
+  </a>
+</div>
+
+<!-- Audio para alertas -->
+<audio id="som-ok" preload="auto">
+  <source src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAA..." type="audio/wav">
+</audio>
+
+<script>
+const CSRF = "{{ csrf_token }}";
+const CONFERIR_URL = "{% url 'embalagem:ajax_conferir_pallet' %}";
+const ROMANEIO_PK = {{ romaneio.pk }};
+let conferidos = {{ pallets_conferidos }};
+let total = {{ total_pallets }};
+
+// Auto-submit ao escanear (debounce 300ms)
+let debounceTimer;
+document.getElementById('campo-scan').addEventListener('input', function() {
+  clearTimeout(debounceTimer);
+  const val = this.value.trim();
+  if (val.length >= 8) {
+    debounceTimer = setTimeout(conferirPallet, 300);
+  }
+});
+document.getElementById('campo-scan').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') { e.preventDefault(); conferirPallet(); }
+});
+
+function conferirPallet() {
+  const campo = document.getElementById('campo-scan');
+  const codigo = campo.value.trim();
+  if (!codigo) return;
+
+  fetch(CONFERIR_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+    body: JSON.stringify({ codigo_pallet: codigo, romaneio_pk: ROMANEIO_PK }),
+  })
+  .then(r => r.json())
+  .then(data => {
+    campo.value = '';
+    campo.focus();
+    mostrarResultado(data);
+    if (data.ok) atualizarItem(codigo, 'CONFERIDO');
+    else if (data.status === 'divergente') atualizarItem(codigo, 'DIVERGENTE');
+  })
+  .catch(() => mostrarResultado({ ok: false, status: 'erro_rede', mensagem: 'Erro de rede.' }));
+}
+
+function mostrarResultado(data) {
+  const el = document.getElementById('resultado-msg');
+  el.className = 'resultado-card';
+  el.classList.remove('d-none');
+
+  if (data.ok) {
+    el.classList.add('resultado-ok');
+    el.innerHTML = `<i class="bi bi-check-circle-fill me-2 text-success fs-5"></i><strong>Conferido!</strong> ${data.msg || ''}`;
+    conferidos = Math.min(conferidos + 1, total);
+    atualizarBarra();
+    if (conferidos >= total) {
+      el.innerHTML += '<br><span class="text-success fw-bold">✅ Todos os pallets conferidos!</span>';
+    }
+  } else if (data.status === 'ja_conferido') {
+    el.classList.add('resultado-warn');
+    el.innerHTML = `<i class="bi bi-exclamation-circle-fill me-2 text-warning fs-5"></i><strong>Já conferido.</strong> Este pallet já foi lido.`;
+  } else if (data.status === 'nao_pertence') {
+    el.classList.add('resultado-erro');
+    el.innerHTML = `<i class="bi bi-x-octagon-fill me-2 text-danger fs-5"></i><strong>ALERTA!</strong> Pallet não pertence a este romaneio!`;
+    tocarAlerta();
+  } else if (data.status === 'nao_encontrado') {
+    el.classList.add('resultado-erro');
+    el.innerHTML = `<i class="bi bi-question-circle-fill me-2 text-warning fs-5"></i><strong>Pallet não encontrado</strong> no sistema.`;
+    tocarAlerta();
+  } else {
+    el.classList.add('resultado-erro');
+    el.innerHTML = `<i class="bi bi-x-circle-fill me-2 text-danger fs-5"></i>${data.mensagem || 'Erro desconhecido.'}`;
+  }
+
+  clearTimeout(window._resultadoTimer);
+  window._resultadoTimer = setTimeout(() => { el.classList.add('d-none'); }, 4000);
+}
+
+function atualizarItem(codigo, status) {
+  const slug = codigo.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-');
+  const item = document.getElementById('pallet-item-' + slug);
+  const statusEl = document.getElementById('status-' + slug);
+  if (!item || !statusEl) return;
+
+  item.className = 'pallet-item';
+  if (status === 'CONFERIDO') {
+    item.classList.add('conferido');
+    statusEl.innerHTML = '<i class="bi bi-check-circle-fill text-success fs-4"></i>';
+    // Mover para o topo dos conferidos
+    item.parentElement.prepend(item);
+  } else if (status === 'DIVERGENTE') {
+    item.classList.add('divergente');
+    statusEl.innerHTML = '<i class="bi bi-exclamation-triangle-fill text-danger fs-4"></i>';
+  }
+}
+
+function atualizarBarra() {
+  document.getElementById('conf-count').textContent = conferidos;
+  const pct = total > 0 ? Math.round(conferidos / total * 100) : 0;
+  document.getElementById('conf-bar').style.width = pct + '%';
+}
+
+function tocarAlerta() {
+  // Vibração em dispositivos móveis
+  if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+}
+</script>
+</body>
+</html>

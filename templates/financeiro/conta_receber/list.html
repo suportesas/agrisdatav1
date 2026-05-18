@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+{% block title %}Contas a Receber{% endblock %}
+{% block page_title %}Contas a Receber{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="mb-0">Contas a Receber</h3>
+    <a href="{% url 'financeiro:conta_receber_create' %}" class="btn btn-primary">
+      <i class="bi bi-plus-circle me-1"></i>Nova Conta a Receber
+    </a>
+  </div>
+
+  <div class="card border-0 shadow-sm mb-3">
+    <div class="card-body">
+      <form method="get" class="row g-2">
+        <div class="col-md-3">
+          <input type="text" name="q" class="form-control" placeholder="Número, cliente ou descrição" value="{{ filtros.q }}">
+        </div>
+        <div class="col-md-2">
+          <select name="status" class="form-select">
+            <option value="">Todos status</option>
+            {% for val, lbl in status_choices %}
+            <option value="{{ val }}" {% if filtros.status == val %}selected{% endif %}>{{ lbl }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2">
+          <select name="moeda" class="form-select">
+            <option value="">Todas moedas</option>
+            {% for val, lbl in moeda_choices %}
+            <option value="{{ val }}" {% if filtros.moeda == val %}selected{% endif %}>{{ lbl }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2">
+          <input type="date" name="data_ini" class="form-control" placeholder="Venc. de" value="{{ filtros.data_ini }}">
+        </div>
+        <div class="col-md-2">
+          <input type="date" name="data_fim" class="form-control" placeholder="Venc. até" value="{{ filtros.data_fim }}">
+        </div>
+        <div class="col-md-1">
+          <button type="submit" class="btn btn-outline-secondary w-100"><i class="bi bi-search"></i></button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Número</th>
+              <th>Cliente</th>
+              <th>Emissão</th>
+              <th>Vencimento</th>
+              <th>Moeda</th>
+              <th class="text-end">Valor Moeda</th>
+              <th class="text-end">Valor BRL</th>
+              <th>Status</th>
+              <th>Origem</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for cr in page_obj %}
+            <tr>
+              <td><a href="{% url 'financeiro:conta_receber_detail' cr.pk %}">{{ cr.numero }}</a></td>
+              <td>{{ cr.cliente.razao_social }}</td>
+              <td>{{ cr.data_emissao|date:"d/m/Y" }}</td>
+              <td>{{ cr.data_vencimento|date:"d/m/Y" }}</td>
+              <td>{{ cr.moeda }}</td>
+              <td class="text-end">{{ cr.valor_moeda|floatformat:2 }}</td>
+              <td class="text-end">{{ cr.valor_brl|floatformat:2 }}</td>
+              <td>
+                {% if cr.status == 'ABERTA' %}<span class="badge bg-primary">Aberta</span>
+                {% elif cr.status == 'PARCIALMENTE_PAGA' %}<span class="badge bg-warning text-dark">Parcial</span>
+                {% elif cr.status == 'PAGA' %}<span class="badge bg-success">Paga</span>
+                {% elif cr.status == 'VENCIDA' %}<span class="badge bg-danger">Vencida</span>
+                {% else %}<span class="badge bg-secondary">Cancelada</span>{% endif %}
+              </td>
+              <td><small class="text-muted">{{ cr.get_origem_display }}</small></td>
+              <td><a href="{% url 'financeiro:conta_receber_detail' cr.pk %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-eye"></i></a></td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="10" class="text-center text-muted py-4">Nenhuma conta a receber encontrada.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  {% if page_obj.has_other_pages %}
+  <nav class="mt-3">
+    <ul class="pagination justify-content-center">
+      {% if page_obj.has_previous %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">«</a></li>{% endif %}
+      <li class="page-item disabled"><span class="page-link">Pág. {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span></li>
+      {% if page_obj.has_next %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">»</a></li>{% endif %}
+    </ul>
+  </nav>
+  {% endif %}
+</div>
+{% endblock %}

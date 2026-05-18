@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+{% block title %}Histórico — {{ container.numero_container }}{% endblock %}
+{% block page_title %}Histórico do Contêiner{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4" style="max-width:900px;">
+
+  <div class="mb-3">
+    <a href="{% url 'exportacao:booking_detail' booking.pk %}" class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-arrow-left me-1"></i>Voltar ao Booking
+    </a>
+  </div>
+
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-white border-bottom fw-semibold">
+      <i class="bi bi-box-seam me-2 text-secondary"></i>{{ container.numero_container }}
+      <span class="badge ms-2
+        {% if container.status == 'PENDENTE' %}bg-warning text-dark
+        {% elif container.status == 'CONFIRMADO' %}bg-primary
+        {% elif container.status == 'EMBARCADO' %}bg-success
+        {% elif container.status == 'DESLOCADO' %}bg-secondary
+        {% else %}bg-secondary{% endif %}">
+        {{ container.get_status_display }}
+      </span>
+    </div>
+    <div class="card-body small text-muted">
+      Tipo: <strong class="text-dark">{{ container.get_tipo_container_display }}</strong>
+      &nbsp;|&nbsp;
+      Booking: <strong class="text-dark">{{ booking.codigo }}</strong>
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-header bg-white border-bottom fw-semibold">
+      <i class="bi bi-clock-history me-2 text-info"></i>Histórico de Alterações
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0 small">
+          <thead class="table-light">
+            <tr>
+              <th>Data / Hora</th>
+              <th>Usuário</th>
+              <th>Status Anterior</th>
+              <th>Status Novo</th>
+              <th>Observações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for h in historico %}
+            <tr>
+              <td class="text-nowrap">{{ h.data|date:'d/m/Y H:i' }}</td>
+              <td>{{ h.usuario.get_full_name|default:h.usuario.username }}</td>
+              <td><span class="badge bg-secondary">{{ h.status_from|default:'—' }}</span></td>
+              <td><span class="badge bg-primary">{{ h.status_to }}</span></td>
+              <td>{{ h.observacoes|default:'—' }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="5" class="text-center text-muted py-3">Nenhum registro de histórico.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

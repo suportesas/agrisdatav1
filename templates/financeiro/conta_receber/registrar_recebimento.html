@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+{% block title %}Registrar Recebimento{% endblock %}
+{% block page_title %}Registrar Recebimento{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="d-flex align-items-center mb-4">
+    <a href="{% url 'financeiro:conta_receber_detail' cr.pk %}" class="btn btn-outline-secondary me-3"><i class="bi bi-arrow-left"></i></a>
+    <div>
+      <h3 class="mb-0">Registrar Recebimento</h3>
+      <small class="text-muted">{{ cr.numero }} — Parcela {{ parcela.numero_parcela }} — Venc: {{ parcela.data_vencimento|date:"d/m/Y" }}</small>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-md-6">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header fw-semibold">Dados do Recebimento</div>
+        <div class="card-body">
+          <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+
+            <div class="mb-3">
+              <label class="form-label">Data do Recebimento *</label>
+              {{ form.data_pagamento }}
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Valor Recebido ({{ cr.moeda }}) *</label>
+              {{ form.valor_recebido_moeda }}
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Valor Recebido em BRL *</label>
+              {{ form.valor_recebido_brl }}
+              <div class="form-text">BRL efetivamente creditado na conta bancária.</div>
+            </div>
+            {% if cr.moeda != 'BRL' %}
+            <div class="mb-3">
+              <label class="form-label">Câmbio Realizado</label>
+              {{ form.taxa_cambio_realizada }}
+            </div>
+            {% endif %}
+            <div class="mb-3">
+              <label class="form-label">Forma de Pagamento *</label>
+              {{ form.forma_pagamento }}
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Nº Documento / Referência</label>
+              {{ form.numero_documento }}
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Banco</label>
+              {{ form.banco }}
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Comprovante</label>
+              {{ form.comprovante }}
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Observações</label>
+              {{ form.observacoes }}
+            </div>
+
+            <div class="d-flex gap-2">
+              <button type="submit" class="btn btn-success"><i class="bi bi-cash-coin me-1"></i>Confirmar Recebimento</button>
+              <a href="{% url 'financeiro:conta_receber_detail' cr.pk %}" class="btn btn-outline-secondary">Cancelar</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header fw-semibold">Resumo da Parcela</div>
+        <div class="card-body">
+          <dl class="row mb-0">
+            <dt class="col-sm-6">Conta</dt><dd class="col-sm-6">{{ cr.numero }}</dd>
+            <dt class="col-sm-6">Cliente</dt><dd class="col-sm-6">{{ cr.cliente.razao_social }}</dd>
+            <dt class="col-sm-6">Parcela</dt><dd class="col-sm-6">{{ parcela.numero_parcela }}</dd>
+            <dt class="col-sm-6">Vencimento</dt><dd class="col-sm-6">{{ parcela.data_vencimento|date:"d/m/Y" }}</dd>
+            <dt class="col-sm-6">Valor {{ cr.moeda }}</dt><dd class="col-sm-6 fw-bold">{{ parcela.valor_parcela_moeda|floatformat:2 }}</dd>
+            <dt class="col-sm-6">Valor BRL</dt><dd class="col-sm-6 fw-bold">R$ {{ parcela.valor_parcela_brl|floatformat:2 }}</dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

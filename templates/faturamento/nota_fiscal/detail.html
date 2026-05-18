@@ -1,0 +1,166 @@
+{% extends 'base.html' %}
+{% block title %}NF {{ nf.numero }}/{{ nf.serie }}{% endblock %}
+{% block page_title %}NF-e{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+  <div class="d-flex justify-content-between align-items-start mb-4">
+    <div class="d-flex align-items-center">
+      <a href="{% url 'faturamento:nota_fiscal_list' %}" class="btn btn-outline-secondary me-3">
+        <i class="bi bi-arrow-left"></i>
+      </a>
+      <div>
+        <h3 class="mb-0">NF {{ nf.numero|default:"S/N" }}/{{ nf.serie }}</h3>
+        <small class="text-muted">Emitida em {{ nf.data_emissao|date:"d/m/Y" }}</small>
+      </div>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{% url 'faturamento:nota_fiscal_pdf' nf.pk %}" class="btn btn-outline-danger" target="_blank">
+        <i class="bi bi-file-pdf me-1"></i>PDF
+      </a>
+      {% if nf.status == 'RASCUNHO' %}
+      <a href="{% url 'faturamento:nota_fiscal_update' nf.pk %}" class="btn btn-outline-secondary">
+        <i class="bi bi-pencil me-1"></i>Editar
+      </a>
+      <form method="post" action="{% url 'faturamento:nota_fiscal_emitir' nf.pk %}" class="d-inline">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-success" onclick="return confirm('Emitir esta NF-e?')">
+          <i class="bi bi-check-circle me-1"></i>Emitir
+        </button>
+      </form>
+      {% endif %}
+      {% if nf.status != 'CANCELADA' %}
+      <form method="post" action="{% url 'faturamento:nota_fiscal_cancelar' nf.pk %}" class="d-inline">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-outline-danger" onclick="return confirm('Cancelar esta NF-e?')">
+          <i class="bi bi-x-circle me-1"></i>Cancelar
+        </button>
+      </form>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Status Badge -->
+  <div class="mb-3">
+    {% if nf.status == 'RASCUNHO' %}<span class="badge bg-secondary fs-6">Rascunho</span>
+    {% elif nf.status == 'EMITIDA' %}<span class="badge bg-success fs-6">Emitida</span>
+    {% else %}<span class="badge bg-danger fs-6">Cancelada</span>{% endif %}
+  </div>
+
+  <div class="row g-3">
+    <!-- Dados Principais -->
+    <div class="col-md-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header fw-semibold">Dados da NF-e</div>
+        <div class="card-body">
+          <dl class="row mb-0">
+            <dt class="col-sm-5">Cliente</dt>
+            <dd class="col-sm-7">{{ nf.cliente.razao_social }}</dd>
+            <dt class="col-sm-5">CNPJ / CPF</dt>
+            <dd class="col-sm-7">{{ nf.cliente.cnpj_cpf|default:"—" }}</dd>
+            <dt class="col-sm-5">Natureza da Operação</dt>
+            <dd class="col-sm-7">{{ nf.natureza_operacao }}</dd>
+            <dt class="col-sm-5">CFOP</dt>
+            <dd class="col-sm-7">{{ nf.cfop }}</dd>
+            <dt class="col-sm-5">Data Emissão</dt>
+            <dd class="col-sm-7">{{ nf.data_emissao|date:"d/m/Y" }}</dd>
+            <dt class="col-sm-5">Data Saída</dt>
+            <dd class="col-sm-7">{{ nf.data_saida|date:"d/m/Y"|default:"—" }}</dd>
+            <dt class="col-sm-5">Frete</dt>
+            <dd class="col-sm-7">{{ nf.get_modalidade_frete_display }}</dd>
+            {% if nf.transportadora %}
+            <dt class="col-sm-5">Transportadora</dt>
+            <dd class="col-sm-7">{{ nf.transportadora.razao_social }}</dd>
+            {% endif %}
+          </dl>
+        </div>
+      </div>
+    </div>
+
+    <!-- Totais -->
+    <div class="col-md-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header fw-semibold">Totais</div>
+        <div class="card-body">
+          <dl class="row mb-0">
+            <dt class="col-sm-6">Valor dos Produtos</dt>
+            <dd class="col-sm-6 text-end">R$ {{ nf.valor_produtos|floatformat:2 }}</dd>
+            <dt class="col-sm-6">Frete</dt>
+            <dd class="col-sm-6 text-end">R$ {{ nf.valor_frete|floatformat:2 }}</dd>
+            <dt class="col-sm-6">Seguro</dt>
+            <dd class="col-sm-6 text-end">R$ {{ nf.valor_seguro|floatformat:2 }}</dd>
+            <dt class="col-sm-6">Desconto</dt>
+            <dd class="col-sm-6 text-end text-danger">- R$ {{ nf.valor_desconto|floatformat:2 }}</dd>
+            <dt class="col-sm-6">ICMS</dt>
+            <dd class="col-sm-6 text-end">R$ {{ nf.valor_icms|floatformat:2 }}</dd>
+            <dt class="col-sm-6">IPI</dt>
+            <dd class="col-sm-6 text-end">R$ {{ nf.valor_ipi|floatformat:2 }}</dd>
+            <dt class="col-sm-6">PIS</dt>
+            <dd class="col-sm-6 text-end">R$ {{ nf.valor_pis|floatformat:2 }}</dd>
+            <dt class="col-sm-6">COFINS</dt>
+            <dd class="col-sm-6 text-end">R$ {{ nf.valor_cofins|floatformat:2 }}</dd>
+            <dt class="col-sm-6 fw-bold border-top pt-2">VALOR TOTAL</dt>
+            <dd class="col-sm-6 text-end fw-bold border-top pt-2 text-primary">R$ {{ nf.valor_total|floatformat:2 }}</dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+
+    <!-- Itens -->
+    <div class="col-12">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header fw-semibold">Itens da NF-e</div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-bordered table-sm mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Nº</th>
+                  <th>Descrição</th>
+                  <th>NCM</th>
+                  <th>CFOP</th>
+                  <th>UN</th>
+                  <th class="text-end">Qtd</th>
+                  <th class="text-end">Vl. Unit.</th>
+                  <th class="text-end">Desconto</th>
+                  <th class="text-end">Vl. Total</th>
+                  <th class="text-end">ICMS</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for item in nf.itens.all %}
+                <tr>
+                  <td>{{ item.numero_item }}</td>
+                  <td>{{ item.descricao }}</td>
+                  <td>{{ item.ncm|default:"—" }}</td>
+                  <td>{{ item.cfop|default:"—" }}</td>
+                  <td>{{ item.unidade }}</td>
+                  <td class="text-end">{{ item.quantidade|floatformat:4 }}</td>
+                  <td class="text-end">R$ {{ item.valor_unitario|floatformat:4 }}</td>
+                  <td class="text-end">R$ {{ item.valor_desconto|floatformat:2 }}</td>
+                  <td class="text-end fw-semibold">R$ {{ item.valor_total|floatformat:2 }}</td>
+                  <td class="text-end">R$ {{ item.valor_icms|floatformat:2 }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="10" class="text-center text-muted py-3">Nenhum item.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {% if nf.informacoes_complementares %}
+    <div class="col-12">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header fw-semibold">Informações Complementares</div>
+        <div class="card-body">{{ nf.informacoes_complementares }}</div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

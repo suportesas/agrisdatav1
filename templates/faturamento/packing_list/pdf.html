@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>{{ pl.numero }}</title>
+  <style>
+    body { font-family: Arial, sans-serif; font-size: 9pt; margin: 0; padding: 12px; color: #000; }
+    .header { display: flex; justify-content: space-between; margin-bottom: 10px; }
+    .company h1 { font-size: 13pt; margin: 0 0 2px; }
+    .doc-title { text-align: right; }
+    .doc-title h2 { font-size: 18pt; margin: 0; color: #003366; letter-spacing: 2px; }
+    hr { border: 1.5px solid #003366; margin: 8px 0; }
+    .info-grid { display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+    .info-cell { border: 1px solid #ccc; padding: 4px 6px; min-width: 130px; }
+    .label { font-size: 7pt; color: #555; }
+    .value { font-size: 9pt; font-weight: bold; }
+    table { width: 100%; border-collapse: collapse; font-size: 8.5pt; }
+    th { background: #003366; color: #fff; padding: 4px 5px; text-align: left; }
+    td { border-bottom: 1px solid #ddd; padding: 3px 5px; }
+    tr:nth-child(even) td { background: #f5f8ff; }
+    tfoot td { background: #eee !important; font-weight: bold; border-top: 2px solid #003366; }
+    .text-right { text-align: right; }
+    .footer { margin-top: 16px; font-size: 8pt; color: #555; border-top: 1px solid #ccc; padding-top: 6px; }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div class="company">
+    <h1>{{ empresa.razao_social|default:"EXPORTADORA" }}</h1>
+    <div>{{ empresa.logradouro|default:"" }}, {{ empresa.cidade|default:"" }} - {{ empresa.uf|default:"" }}, Brasil</div>
+    <div>CNPJ: {{ empresa.cnpj|default:"" }}</div>
+  </div>
+  <div class="doc-title">
+    <h2>PACKING LIST</h2>
+    <div>Nº {{ pl.numero }}</div>
+    <div>Date / Data: {{ pl.data_emissao|date:"d/m/Y" }}</div>
+  </div>
+</div>
+
+<hr>
+
+<div class="info-grid">
+  <div class="info-cell">
+    <div class="label">Invoice / Fatura</div>
+    <div class="value">{{ pl.invoice.numero }}</div>
+  </div>
+  <div class="info-cell">
+    <div class="label">Buyer / Importador</div>
+    <div class="value">{{ pl.invoice.cliente.razao_social }}</div>
+  </div>
+  <div class="info-cell">
+    <div class="label">Booking Nº</div>
+    <div class="value">{{ pl.invoice.booking.codigo|default:"—" }}</div>
+  </div>
+  <div class="info-cell">
+    <div class="label">Port of Loading</div>
+    <div class="value">{{ pl.invoice.porto_embarque|default:"—" }}</div>
+  </div>
+  <div class="info-cell">
+    <div class="label">Port of Discharge</div>
+    <div class="value">{{ pl.invoice.porto_destino|default:"—" }}</div>
+  </div>
+  <div class="info-cell">
+    <div class="label">Incoterm</div>
+    <div class="value">{{ pl.invoice.incoterm }}</div>
+  </div>
+</div>
+
+<table>
+  <thead>
+    <tr>
+      <th>#</th>
+      <th>Container No.</th>
+      <th>Type</th>
+      <th>Seal / Lacre</th>
+      <th>Description / Produto</th>
+      <th class="text-right">Boxes / Caixas</th>
+      <th class="text-right">Pallets</th>
+      <th class="text-right">Gross Weight (kg)</th>
+      <th class="text-right">Net Weight (kg)</th>
+      <th class="text-right">Volume (m³)</th>
+      <th>Marks</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for item in pl.itens.all %}
+    <tr>
+      <td>{{ item.ordem }}</td>
+      <td><strong>{{ item.numero_container|default:"—" }}</strong></td>
+      <td>{{ item.tipo_container|default:"—" }}</td>
+      <td>{{ item.lacre_armador|default:"" }}{% if item.lacre_fiscal %} / {{ item.lacre_fiscal }}{% endif %}</td>
+      <td>{{ item.descricao_produto }}</td>
+      <td class="text-right">{{ item.quantidade_caixas|floatformat:0 }}</td>
+      <td class="text-right">{{ item.quantidade_pallets|floatformat:0|default:"—" }}</td>
+      <td class="text-right">{{ item.peso_bruto_kg|floatformat:3 }}</td>
+      <td class="text-right">{{ item.peso_liquido_kg|floatformat:3 }}</td>
+      <td class="text-right">{{ item.volume_m3|floatformat:3|default:"—" }}</td>
+      <td>{{ item.marks_numbers|default:"" }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+  <tfoot>
+    <tr>
+      <td colspan="5">TOTAL</td>
+      <td class="text-right">{{ pl.total_caixas|floatformat:0 }}</td>
+      <td></td>
+      <td class="text-right">{{ pl.peso_bruto_total|floatformat:3 }}</td>
+      <td class="text-right">{{ pl.peso_liquido_total|floatformat:3 }}</td>
+      <td></td>
+      <td></td>
+    </tr>
+  </tfoot>
+</table>
+
+{% if pl.observacoes %}
+<div style="margin-top:10px;font-size:8pt"><strong>Remarks / Observações:</strong> {{ pl.observacoes }}</div>
+{% endif %}
+
+<div class="footer">
+  {{ empresa.razao_social|default:"" }} | {{ pl.numero }} | {{ pl.data_emissao|date:"d/m/Y" }}<br>
+  Authorized Signature / Assinatura: ______________________________
+</div>
+
+</body>
+</html>

@@ -1,0 +1,256 @@
+{% extends 'base.html' %}
+{% block title %}{{ title }}{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="d-flex align-items-center mb-4">
+    <a href="{% url 'vendas:pedido_list' %}" class="btn btn-outline-secondary me-3"><i class="bi bi-arrow-left"></i></a>
+    <h3 class="mb-0">{{ title }}</h3>
+  </div>
+
+  <form method="post">
+    {% csrf_token %}
+    {{ formset.management_form }}
+    {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+
+    <div class="row g-3">
+      <!-- Dados do Cliente -->
+      <div class="col-md-6">
+        <div class="card border-0 shadow-sm">
+          <div class="card-header fw-semibold">Dados do Pedido</div>
+          <div class="card-body">
+            <div class="mb-3">
+              <label class="form-label">Cliente *</label>
+              {{ form.cliente }}
+              {% if form.cliente.errors %}<div class="text-danger small">{{ form.cliente.errors }}</div>{% endif %}
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Vendedor</label>
+              {{ form.vendedor }}
+            </div>
+            <div class="row g-2">
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Data do Pedido *</label>
+                {{ form.data_pedido }}
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Entrega Prevista</label>
+                {{ form.data_entrega_prevista }}
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Tipo de Venda *</label>
+              {{ form.tipo_venda }}
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Natureza da Operação</label>
+              {{ form.natureza_operacao }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Condições Comerciais -->
+      <div class="col-md-6">
+        <div class="card border-0 shadow-sm">
+          <div class="card-header fw-semibold">Condições Comerciais</div>
+          <div class="card-body">
+            <div class="mb-3">
+              <label class="form-label">Condição de Pagamento</label>
+              {{ form.condicao_pagamento }}
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Forma de Pagamento</label>
+              {{ form.forma_pagamento }}
+            </div>
+            <div class="row g-2">
+              <div class="col-md-4 mb-3">
+                <label class="form-label">Moeda *</label>
+                {{ form.moeda }}
+              </div>
+              <div class="col-md-4 mb-3">
+                <label class="form-label d-flex justify-content-between">
+                  Taxa Câmbio (R$)
+                  <button type="button" class="btn btn-link btn-sm p-0 text-success" id="btn-cotacao-bcb" title="Buscar PTAX do BCB (dia útil anterior)">
+                    <i class="bi bi-bank me-1"></i>Buscar BCB
+                  </button>
+                </label>
+                {{ form.taxa_cambio }}
+                <div id="info-cotacao" class="form-text text-success mt-1" style="display:none"></div>
+              </div>
+              <div class="col-md-4 mb-3">
+                <label class="form-label">Desconto Total</label>
+                {{ form.valor_desconto }}
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Frete</label>
+              {{ form.valor_frete }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Itens -->
+      <div class="col-12">
+        <div class="card border-0 shadow-sm">
+          <div class="card-header fw-semibold d-flex justify-content-between align-items-center">
+            Itens do Pedido
+            <button type="button" class="btn btn-sm btn-outline-primary" id="add-item">
+              <i class="bi bi-plus"></i> Adicionar Item
+            </button>
+          </div>
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table table-sm mb-0" id="itens-table">
+                <thead class="table-light">
+                  <tr>
+                    <th>Produto</th>
+                    <th>Descrição *</th>
+                    <th style="width:90px">NCM</th>
+                    <th style="width:70px">CFOP</th>
+                    <th style="width:60px">Un.</th>
+                    <th style="width:90px">Qtd *</th>
+                    <th style="width:110px">Preço Unit. *</th>
+                    <th style="width:90px">Desconto</th>
+                    <th style="width:40px"></th>
+                  </tr>
+                </thead>
+                <tbody id="itens-body">
+                  {% for item_form in formset %}
+                  <tr class="item-row">
+                    <td>{{ item_form.id }}{{ item_form.DELETE }}{{ item_form.produto }}</td>
+                    <td>{{ item_form.descricao }}</td>
+                    <td>{{ item_form.ncm }}</td>
+                    <td>{{ item_form.cfop }}</td>
+                    <td>{{ item_form.unidade }}</td>
+                    <td>{{ item_form.quantidade }}</td>
+                    <td>{{ item_form.preco_unitario }}</td>
+                    <td>{{ item_form.desconto_item }}</td>
+                    <td>
+                      <button type="button" class="btn btn-sm btn-outline-danger remove-item">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Observações e Opções -->
+      <div class="col-md-6">
+        <div class="card border-0 shadow-sm">
+          <div class="card-header fw-semibold">Observações</div>
+          <div class="card-body">
+            <div class="mb-3">
+              <label class="form-label">Observações Gerais</label>
+              {{ form.observacoes }}
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Informações Complementares (NF-e)</label>
+              {{ form.observacoes_fiscais }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-6">
+        <div class="card border-0 shadow-sm">
+          <div class="card-header fw-semibold">Opções de Geração</div>
+          <div class="card-body">
+            <div class="form-check mb-3">
+              {{ form.gerar_nota_fiscal }}
+              <label class="form-check-label" for="{{ form.gerar_nota_fiscal.id_for_label }}">
+                Gerar NF-e / Invoice ao emitir
+              </label>
+            </div>
+            <div class="form-check">
+              {{ form.gerar_conta_receber }}
+              <label class="form-check-label" for="{{ form.gerar_conta_receber.id_for_label }}">
+                Gerar Conta a Receber ao emitir
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="d-flex gap-2 mt-4">
+      <button type="submit" class="btn btn-primary"><i class="bi bi-check-circle me-1"></i>Salvar</button>
+      <a href="{% url 'vendas:pedido_list' %}" class="btn btn-outline-secondary">Cancelar</a>
+    </div>
+  </form>
+</div>
+
+<script>
+(function() {
+  const TOTAL = document.getElementById('id_itens-TOTAL_FORMS');
+  const body = document.getElementById('itens-body');
+
+  document.getElementById('add-item').addEventListener('click', function() {
+    const idx = parseInt(TOTAL.value);
+    const tpl = body.querySelector('.item-row');
+    if (!tpl) return;
+    const clone = tpl.cloneNode(true);
+    clone.querySelectorAll('input, select, textarea').forEach(el => {
+      el.name = el.name.replace(/-\d+-/, `-${idx}-`);
+      el.id = el.id ? el.id.replace(/-\d+-/, `-${idx}-`) : '';
+      if (el.type !== 'checkbox') el.value = '';
+      if (el.type === 'checkbox') el.checked = false;
+    });
+    body.appendChild(clone);
+    TOTAL.value = idx + 1;
+    attachRemove(clone);
+  });
+
+  function attachRemove(row) {
+    const btn = row.querySelector('.remove-item');
+    if (btn) btn.addEventListener('click', function() {
+      const chk = row.querySelector('input[type=checkbox][name$="-DELETE"]');
+      if (chk) { chk.checked = true; row.style.display = 'none'; }
+      else row.remove();
+    });
+  }
+  body.querySelectorAll('.item-row').forEach(r => attachRemove(r));
+
+  // Cotação BCB — busca PTAX do dia útil anterior
+  const btnBCB = document.getElementById('btn-cotacao-bcb');
+  const infoCotacao = document.getElementById('info-cotacao');
+  if (btnBCB) {
+    btnBCB.addEventListener('click', function() {
+      const moeda = document.getElementById('id_moeda')?.value || 'USD';
+      if (moeda === 'BRL') {
+        alert('A taxa de câmbio só é necessária para moedas estrangeiras.');
+        return;
+      }
+      btnBCB.disabled = true;
+      btnBCB.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+      fetch(`/faturamento/ajax/cotacao-bcb/?moedas=${moeda}`)
+        .then(r => r.json())
+        .then(data => {
+          if (data.erro) { alert('BCB: ' + data.erro); return; }
+          const c = data.cotacoes[moeda];
+          if (!c) { alert('Cotação não disponível para ' + moeda); return; }
+          document.getElementById('id_taxa_cambio').value = c.venda.toFixed(4);
+          infoCotacao.style.display = 'block';
+          infoCotacao.innerHTML =
+            `<i class="bi bi-check-circle-fill me-1"></i>PTAX BCB ${moeda} — ${data.data} &nbsp;|&nbsp; ` +
+            `Compra: <strong>R$ ${c.compra.toFixed(4)}</strong> &nbsp;|&nbsp; ` +
+            `Venda: <strong>R$ ${c.venda.toFixed(4)}</strong> &nbsp;` +
+            `<a href="https://www.bcb.gov.br/estabilidadefinanceira/historicocotacoes" target="_blank" class="text-muted small">BCB ↗</a>`;
+        })
+        .catch(e => alert('Erro ao conectar ao BCB: ' + e))
+        .finally(() => {
+          btnBCB.disabled = false;
+          btnBCB.innerHTML = '<i class="bi bi-bank me-1"></i>Buscar BCB';
+        });
+    });
+  }
+})();
+</script>
+{% endblock %}

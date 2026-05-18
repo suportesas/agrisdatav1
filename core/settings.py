@@ -74,6 +74,10 @@ INSTALLED_APPS = [
     'compras',
     'financeiro',  # Módulo Contábil - Contas a Pagar, Juros, Multas
     'exportacao',  # Módulo de Exportação e Booking
+    'faturamento',  # Módulo de Faturamento (NF-e, Invoice, Packing List)
+    'vendas',       # Módulo de Vendas (Pré-venda / Pedido de Venda)
+    'portal',       # Portal do Cliente (acesso externo)
+    'embalagem',    # Embalamento, Pallets, Romaneio de Venda
 ]
 
 
@@ -91,6 +95,7 @@ MIDDLEWARE = [
     'core.middleware.empresa_bloqueada.EmpresaBloqueadaMiddleware',
     'core.middleware.fornecedor_portal_only.FornecedorPortalOnlyMiddleware',
     'core.middleware.restrito_produtor.RestrictProdutorMiddleware',
+    'core.middleware.portal_cliente.PortalClienteMiddleware',
 ]
 
 ROOT_URLCONF = 'core.urls'

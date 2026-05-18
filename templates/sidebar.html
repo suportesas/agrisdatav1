@@ -512,6 +512,66 @@
         </ul>
       </li>
 
+      <!-- Embalagem -->
+      <li class="nav-item has-submenu">
+        <a href="#" class="nav-link">
+          <i class="bi bi-box2-heart-fill"></i>
+          <span>Embalagem</span>
+          <i class="bi bi-chevron-down submenu-arrow"></i>
+        </a>
+        <ul class="nav-submenu">
+          <li><a href="{% url 'embalagem:dashboard' %}"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
+          <li class="submenu-divider"></li>
+          <li><a href="{% url 'embalagem:ordem_list' %}"><i class="bi bi-clipboard-check"></i> Ordens de Embalagem</a></li>
+          <li><a href="{% url 'embalagem:ordem_create' %}"><i class="bi bi-plus-circle"></i> Nova Ordem</a></li>
+          <li class="submenu-divider"></li>
+          <li><a href="{% url 'embalagem:pallet_list' %}"><i class="bi bi-stack"></i> Pallets</a></li>
+          <li class="submenu-divider"></li>
+          <li><a href="{% url 'embalagem:romaneio_list' %}"><i class="bi bi-file-earmark-text"></i> Romaneios de Venda</a></li>
+          <li><a href="{% url 'embalagem:romaneio_create' %}"><i class="bi bi-plus-circle"></i> Novo Romaneio</a></li>
+          <li class="submenu-divider"></li>
+          <li><a href="{% url 'embalagem:tipo_embalagem_list' %}"><i class="bi bi-gear"></i> Tipos de Embalagem</a></li>
+        </ul>
+      </li>
+
+      <!-- Vendas -->
+      <li class="nav-item has-submenu">
+        <a href="#" class="nav-link">
+          <i class="bi bi-cart-check"></i>
+          <span>Vendas</span>
+          <i class="bi bi-chevron-down submenu-arrow"></i>
+        </a>
+        <ul class="nav-submenu">
+          <li><a href="{% url 'vendas:pedido_list' %}"><i class="bi bi-list-ul"></i> Pedidos de Venda</a></li>
+          <li><a href="{% url 'vendas:pedido_create' %}"><i class="bi bi-plus-circle"></i> Novo Pedido</a></li>
+          <li class="submenu-divider"></li>
+          <li><a href="{% url 'financeiro:conta_receber_list' %}"><i class="bi bi-cash-coin"></i> Contas a Receber</a></li>
+          <li><a href="{% url 'financeiro:conta_receber_create' %}"><i class="bi bi-plus-circle"></i> Nova CR</a></li>
+        </ul>
+      </li>
+
+      <!-- Faturamento -->
+      <li class="nav-item has-submenu">
+        <a href="#" class="nav-link">
+          <i class="bi bi-receipt"></i>
+          <span>Faturamento</span>
+          <i class="bi bi-chevron-down submenu-arrow"></i>
+        </a>
+        <ul class="nav-submenu">
+          <li><a href="{% url 'faturamento:dashboard' %}"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
+          <li class="submenu-divider"></li>
+          <li><a href="{% url 'faturamento:nota_fiscal_list' %}"><i class="bi bi-file-earmark-text"></i> Notas Fiscais (NF-e)</a></li>
+          <li><a href="{% url 'faturamento:nota_fiscal_create' %}"><i class="bi bi-plus-circle"></i> Nova NF-e</a></li>
+          <li class="submenu-divider"></li>
+          <li><a href="{% url 'faturamento:invoice_list' %}"><i class="bi bi-globe"></i> Invoices Exportação</a></li>
+          <li><a href="{% url 'faturamento:invoice_create' %}"><i class="bi bi-plus-circle"></i> Nova Invoice</a></li>
+          <li class="submenu-divider"></li>
+          <li><a href="{% url 'faturamento:packing_list_list' %}"><i class="bi bi-box-seam"></i> Packing Lists</a></li>
+          <li class="submenu-divider"></li>
+          <li><a href="{% url 'faturamento:configuracao' %}"><i class="bi bi-gear"></i> Configuração Fiscal</a></li>
+        </ul>
+      </li>
+
       <!-- Relatórios -->
       <li class="nav-item has-submenu">
         <a href="#" class="nav-link">

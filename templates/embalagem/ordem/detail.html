@@ -1,0 +1,185 @@
+{% extends 'base.html' %}
+{% block title %}{{ ordem.numero }}{% endblock %}
+{% block page_title %}Ordens de Embalagem{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+  <!-- Faixa de contexto do fluxo -->
+  <div class="alert alert-light border shadow-sm py-2 px-3 mb-3 d-flex align-items-center gap-3 flex-wrap" style="font-size:.85rem">
+    <span class="text-muted">Você está em:</span>
+    <span class="badge bg-secondary">1 · Configurar</span>
+    <i class="bi bi-chevron-right text-muted"></i>
+    <span class="badge bg-primary">2 · Embalar (aqui)</span>
+    <i class="bi bi-chevron-right text-muted"></i>
+    <span class="badge bg-light text-dark border">3 · Etiquetas</span>
+    <i class="bi bi-chevron-right text-muted"></i>
+    <span class="badge bg-light text-dark border">4 · Romaneio</span>
+    <i class="bi bi-chevron-right text-muted"></i>
+    <span class="badge bg-light text-dark border">5 · Conferência</span>
+    <span class="ms-auto text-muted">
+      {% if ordem.pallets.count == 0 %}
+        <i class="bi bi-info-circle text-primary"></i> Clique em <strong>Gerar Pallets</strong> para criar os pallets deste lote.
+      {% else %}
+        <i class="bi bi-check-circle text-success"></i> Pallets gerados → imprima as <strong>Etiquetas PDF</strong> e depois crie um <a href="{% url 'embalagem:romaneio_create' %}">Romaneio de Venda</a>.
+      {% endif %}
+    </span>
+  </div>
+
+  <div class="d-flex justify-content-between align-items-start mb-4">
+    <div class="d-flex align-items-center">
+      <a href="{% url 'embalagem:ordem_list' %}" class="btn btn-outline-secondary me-3"><i class="bi bi-arrow-left"></i></a>
+      <div>
+        <h3 class="mb-0">{{ ordem.numero }}</h3>
+        <small class="text-muted">{{ ordem.tipo_embalagem.nome }} — {{ ordem.data|date:"d/m/Y" }}</small>
+      </div>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      {% if ordem.status == 'ABERTA' or ordem.status == 'EM_ANDAMENTO' %}
+      <form method="post" action="{% url 'embalagem:ordem_gerar_pallets' ordem.pk %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-success"
+          onclick="return confirm('Gerar pallets automaticamente a partir da quantidade de entrada?')">
+          <i class="bi bi-stack me-1"></i>Gerar Pallets
+        </button>
+      </form>
+      {% endif %}
+      {% if ordem.pallets.count > 0 %}
+      <a href="{% url 'embalagem:ordem_etiquetas_pdf' ordem.pk %}" class="btn btn-outline-primary" target="_blank">
+        <i class="bi bi-printer me-1"></i>Etiquetas PDF
+      </a>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if messages %}
+  {% for msg in messages %}
+  <div class="alert alert-{{ msg.tags }} alert-dismissible fade show">
+    {{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  {% endfor %}
+  {% endif %}
+
+  <!-- Status badge -->
+  <div class="mb-3">
+    {% if ordem.status == 'ABERTA' %}<span class="badge bg-secondary fs-6">Aberta</span>
+    {% elif ordem.status == 'EM_ANDAMENTO' %}<span class="badge bg-primary fs-6">Em Andamento</span>
+    {% elif ordem.status == 'CONCLUIDA' %}<span class="badge bg-success fs-6">Concluída</span>
+    {% else %}<span class="badge bg-danger fs-6">Cancelada</span>{% endif %}
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header fw-semibold">Dados da Ordem</div>
+        <div class="card-body">
+          <dl class="row mb-0 small">
+            <dt class="col-sm-5">Número</dt><dd class="col-sm-7">{{ ordem.numero }}</dd>
+            <dt class="col-sm-5">Data</dt><dd class="col-sm-7">{{ ordem.data|date:"d/m/Y" }}</dd>
+            <dt class="col-sm-5">Tipo Embalagem</dt><dd class="col-sm-7">{{ ordem.tipo_embalagem.nome }}</dd>
+            <dt class="col-sm-5">Calibre</dt><dd class="col-sm-7">{{ ordem.tipo_embalagem.tipo_calibre|default:"—" }}</dd>
+            <dt class="col-sm-5">Responsável</dt><dd class="col-sm-7">{{ ordem.responsavel.get_full_name|default:"—" }}</dd>
+            {% if ordem.observacoes %}<dt class="col-sm-5">Obs.</dt><dd class="col-sm-7">{{ ordem.observacoes }}</dd>{% endif %}
+          </dl>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header fw-semibold">Entrada</div>
+        <div class="card-body">
+          <dl class="row mb-0 small">
+            <dt class="col-sm-6">Lote Origem</dt><dd class="col-sm-6">{{ ordem.lote_origem }}</dd>
+            <dt class="col-sm-6">Qtd. Entrada</dt><dd class="col-sm-6 fw-bold">{{ ordem.quantidade_entrada_kg|floatformat:3 }} kg</dd>
+            <dt class="col-sm-6">Kg/Pallet (líq.)</dt><dd class="col-sm-6">{{ ordem.tipo_embalagem.peso_liquido_pallet|floatformat:3 }} kg</dd>
+            <dt class="col-sm-6">Pallets Estimados</dt><dd class="col-sm-6">{{ ordem.n_pallets_esperados }}</dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header fw-semibold">Destino</div>
+        <div class="card-body">
+          <dl class="row mb-0 small">
+            <dt class="col-sm-5">Armazém</dt><dd class="col-sm-7">{{ ordem.armazem_destino.nome }}</dd>
+            <dt class="col-sm-5">Local</dt><dd class="col-sm-7">{{ ordem.local_destino|default:"—" }}</dd>
+            <dt class="col-sm-5">Pallets Gerados</dt><dd class="col-sm-7 fw-bold text-success">{{ ordem.n_pallets }}</dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lista de Pallets -->
+  <div class="card border-0 shadow-sm">
+    <div class="card-header d-flex justify-content-between align-items-center fw-semibold">
+      <span><i class="bi bi-stack me-1"></i>Pallets Gerados ({{ ordem.pallets.count }})</span>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover table-sm mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>#</th>
+              <th>Código</th>
+              <th class="text-end">Caixas</th>
+              <th class="text-end">Peso Líq. (kg)</th>
+              <th class="text-end">Peso Bruto (kg)</th>
+              <th>Armazém</th>
+              <th>Local</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for p in ordem.pallets.all %}
+            <tr>
+              <td>{{ p.numero_sequencial }}</td>
+              <td><strong>{{ p.codigo_pallet }}</strong></td>
+              <td class="text-end">{{ p.quantidade_caixas }}</td>
+              <td class="text-end">{{ p.peso_liquido_kg|floatformat:3 }}</td>
+              <td class="text-end">{{ p.peso_bruto_kg|floatformat:3 }}</td>
+              <td>{{ p.armazem.nome }}</td>
+              <td>{{ p.local_estocagem|default:"—" }}</td>
+              <td>
+                {% if p.status == 'DISPONIVEL' %}<span class="badge bg-success">Disponível</span>
+                {% elif p.status == 'RESERVADO' %}<span class="badge bg-warning text-dark">Reservado</span>
+                {% elif p.status == 'CARREGADO' %}<span class="badge bg-info">Carregado</span>
+                {% else %}<span class="badge bg-danger">Cancelado</span>{% endif %}
+              </td>
+              <td>
+                <a href="{% url 'embalagem:pallet_etiqueta_pdf' p.pk %}" class="btn btn-sm btn-outline-secondary" target="_blank" title="Etiqueta PDF">
+                  <i class="bi bi-printer"></i>
+                </a>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="9" class="text-center text-muted py-4">
+                {% if ordem.status == 'ABERTA' or ordem.status == 'EM_ANDAMENTO' %}
+                Nenhum pallet gerado. Clique em <strong>Gerar Pallets</strong> para criar automaticamente.
+                {% else %}
+                Nenhum pallet registrado.
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+          {% if ordem.pallets.count > 0 %}
+          <tfoot class="table-light fw-bold">
+            <tr>
+              <td colspan="2">Total</td>
+              <td class="text-end">{{ ordem.pallets.all|length }}</td>
+              <td class="text-end">—</td>
+              <td class="text-end">—</td>
+              <td colspan="4"></td>
+            </tr>
+          </tfoot>
+          {% endif %}
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

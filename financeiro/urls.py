@@ -31,4 +31,11 @@ urlpatterns = [
     
     # API AUXILIARES
     path('contas/<int:conta_pk>/recalcular-juros/', views.recalcular_juros_multas, name='recalcular_juros'),
+
+    # CONTAS A RECEBER
+    path('contas-receber/', views.conta_receber_list, name='conta_receber_list'),
+    path('contas-receber/nova/', views.conta_receber_create, name='conta_receber_create'),
+    path('contas-receber/<int:pk>/', views.conta_receber_detail, name='conta_receber_detail'),
+    path('contas-receber/<int:pk>/cancelar/', views.conta_receber_cancelar, name='conta_receber_cancelar'),
+    path('contas-receber/parcela/<int:parcela_pk>/receber/', views.parcela_receber_registrar, name='parcela_receber_registrar'),
 ]

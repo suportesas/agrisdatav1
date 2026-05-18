@@ -1,0 +1,114 @@
+{% extends 'portal/base_portal.html' %}
+{% block title %}{{ cr.numero }}{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center mb-4">
+  <a href="{% url 'portal_cliente:financeiro_list' %}" class="btn btn-outline-secondary me-3"><i class="bi bi-arrow-left"></i></a>
+  <div>
+    <h4 class="mb-0">{{ cr.numero }}</h4>
+    <small class="text-muted">{{ cr.get_origem_display }} — {{ cr.descricao }}</small>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-5">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header fw-semibold">Dados da Conta</div>
+      <div class="card-body">
+        <dl class="row mb-0">
+          <dt class="col-sm-5">Emissão</dt><dd class="col-sm-7">{{ cr.data_emissao|date:"d/m/Y" }}</dd>
+          <dt class="col-sm-5">Vencimento</dt><dd class="col-sm-7">{{ cr.data_vencimento|date:"d/m/Y" }}</dd>
+          <dt class="col-sm-5">Moeda</dt><dd class="col-sm-7"><strong>{{ cr.moeda }}</strong></dd>
+          <dt class="col-sm-5">Valor {{ cr.moeda }}</dt><dd class="col-sm-7 fw-bold">{{ cr.valor_moeda|floatformat:2 }}</dd>
+          {% if cr.taxa_cambio %}<dt class="col-sm-5">Câmbio Emissão</dt><dd class="col-sm-7">{{ cr.taxa_cambio|floatformat:4 }}</dd>{% endif %}
+          <dt class="col-sm-5">Valor BRL</dt><dd class="col-sm-7 fw-bold">R$ {{ cr.valor_brl|floatformat:2 }}</dd>
+          <dt class="col-sm-5">Recebido BRL</dt><dd class="col-sm-7 text-success fw-bold">R$ {{ cr.total_recebido_brl|floatformat:2 }}</dd>
+          <dt class="col-sm-5 fw-bold">Saldo BRL</dt>
+          <dd class="col-sm-7 fw-bold {% if cr.saldo_brl > 0 %}text-danger{% else %}text-success{% endif %}">R$ {{ cr.saldo_brl|floatformat:2 }}</dd>
+          <dt class="col-sm-5">Status</dt>
+          <dd class="col-sm-7">
+            {% if cr.status == 'PAGA' %}<span class="badge bg-success">Paga</span>
+            {% elif cr.status == 'VENCIDA' %}<span class="badge bg-danger">Vencida</span>
+            {% elif cr.status == 'PARCIALMENTE_PAGA' %}<span class="badge bg-warning text-dark">Parcial</span>
+            {% else %}<span class="badge bg-primary">Aberta</span>{% endif %}
+          </dd>
+        </dl>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card border-0 shadow-sm mb-3">
+  <div class="card-header fw-semibold">Parcelas</div>
+  <div class="card-body p-0">
+    <table class="table table-sm mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>Nº</th>
+          <th>Vencimento</th>
+          <th class="text-end">Valor {{ cr.moeda }}</th>
+          <th class="text-end">Valor BRL</th>
+          <th>Status</th>
+          <th>Pago em</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in parcelas %}
+        <tr>
+          <td>{{ p.numero_parcela }}</td>
+          <td>{{ p.data_vencimento|date:"d/m/Y" }}</td>
+          <td class="text-end">{{ p.valor_parcela_moeda|floatformat:2 }}</td>
+          <td class="text-end">R$ {{ p.valor_parcela_brl|floatformat:2 }}</td>
+          <td>
+            {% if p.status == 'PAGA' %}<span class="badge bg-success">Paga</span>
+            {% elif p.status == 'VENCIDA' %}<span class="badge bg-danger">Vencida</span>
+            {% elif p.status == 'CANCELADA' %}<span class="badge bg-secondary">Cancelada</span>
+            {% else %}<span class="badge bg-primary">Aberta</span>{% endif %}
+          </td>
+          <td>{{ p.data_pagamento|date:"d/m/Y"|default:"—" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="text-center text-muted py-3">Sem parcelas.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% if recebimentos %}
+<div class="card border-0 shadow-sm">
+  <div class="card-header fw-semibold">Pagamentos Recebidos</div>
+  <div class="card-body p-0">
+    <table class="table table-sm mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>Data</th>
+          <th>Parcela</th>
+          <th class="text-end">Valor {{ cr.moeda }}</th>
+          <th class="text-end">Valor BRL</th>
+          <th>Câmbio Realizado</th>
+          <th class="text-end">Var. Cambial</th>
+          <th>Forma</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in recebimentos %}
+        <tr>
+          <td>{{ r.data_pagamento|date:"d/m/Y" }}</td>
+          <td>Parcela {{ r.parcela.numero_parcela }}</td>
+          <td class="text-end">{{ r.valor_recebido_moeda|floatformat:2 }}</td>
+          <td class="text-end">R$ {{ r.valor_recebido_brl|floatformat:2 }}</td>
+          <td>{{ r.taxa_cambio_realizada|floatformat:4|default:"—" }}</td>
+          <td class="text-end {% if r.variacao_cambial_brl >= 0 %}text-success{% else %}text-danger{% endif %}">
+            R$ {{ r.variacao_cambial_brl|floatformat:2 }}
+          </td>
+          <td>{{ r.get_forma_pagamento_display }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}

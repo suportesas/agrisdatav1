@@ -115,6 +115,10 @@ urlpatterns = [
     path('portal/campo/', include(('cadastros.portal_campo_urls', 'portal_campo'))),
     path('financeiro/', include(('financeiro.urls', 'financeiro'))),
     path('exportacao/', include(('exportacao.urls', 'exportacao'))),
+    path('faturamento/', include(('faturamento.urls', 'faturamento'))),
+    path('vendas/', include(('vendas.urls', 'vendas'))),
+    path('portal/cliente/', include(('portal.urls', 'portal_cliente'))),
+    path('embalagem/', include(('embalagem.urls', 'embalagem'))),
     
     # ============================================
     # API REST

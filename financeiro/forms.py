@@ -8,7 +8,10 @@ from .models import (
     ContaPagar,
     ParcelaContaPagar,
     PagamentoContaPagar,
-    AjusteContaPagar
+    AjusteContaPagar,
+    ContaReceber,
+    ParcelaContaReceber,
+    RecebimentoContaReceber,
 )
 
 
@@ -242,3 +245,78 @@ AjusteContaPageFormSet = inlineformset_factory(
     extra=1,
     can_delete=True
 )
+
+
+# ============================================
+# CONTAS A RECEBER
+# ============================================
+
+class ContaReceberForm(forms.ModelForm):
+    class Meta:
+        model = ContaReceber
+        fields = [
+            'cliente', 'data_emissao', 'data_vencimento',
+            'moeda', 'valor_moeda', 'taxa_cambio', 'valor_brl',
+            'descricao', 'observacoes',
+        ]
+        widgets = {
+            'cliente': forms.Select(attrs={'class': 'form-select'}),
+            'data_emissao': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'data_vencimento': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'moeda': forms.Select(attrs={'class': 'form-select', 'id': 'id_moeda'}),
+            'valor_moeda': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0.01'}),
+            'taxa_cambio': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.0001', 'min': '0'}),
+            'valor_brl': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0'}),
+            'descricao': forms.TextInput(attrs={'class': 'form-control'}),
+            'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+        }
+
+    def __init__(self, *args, empresa=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if empresa:
+            from cadastros.models import Cliente
+            self.fields['cliente'].queryset = Cliente.objects.filter(empresa=empresa, status='ATIVO')
+
+
+class ParcelaContaReceberForm(forms.ModelForm):
+    class Meta:
+        model = ParcelaContaReceber
+        fields = ['numero_parcela', 'valor_parcela_moeda', 'valor_parcela_brl', 'data_vencimento', 'observacoes']
+        widgets = {
+            'numero_parcela': forms.NumberInput(attrs={'class': 'form-control', 'min': '1'}),
+            'valor_parcela_moeda': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'valor_parcela_brl': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'data_vencimento': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'observacoes': forms.TextInput(attrs={'class': 'form-control'}),
+        }
+
+
+ParcelaContaReceberFormSet = inlineformset_factory(
+    ContaReceber,
+    ParcelaContaReceber,
+    form=ParcelaContaReceberForm,
+    extra=1,
+    min_num=1,
+    can_delete=True,
+)
+
+
+class RecebimentoContaReceberForm(forms.ModelForm):
+    class Meta:
+        model = RecebimentoContaReceber
+        fields = [
+            'data_pagamento', 'valor_recebido_moeda', 'valor_recebido_brl',
+            'taxa_cambio_realizada', 'forma_pagamento', 'numero_documento',
+            'banco', 'comprovante', 'observacoes',
+        ]
+        widgets = {
+            'data_pagamento': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'valor_recebido_moeda': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'valor_recebido_brl': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'taxa_cambio_realizada': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.0001'}),
+            'forma_pagamento': forms.Select(attrs={'class': 'form-select'}),
+            'numero_documento': forms.TextInput(attrs={'class': 'form-control'}),
+            'banco': forms.TextInput(attrs={'class': 'form-control'}),
+            'comprovante': forms.FileInput(attrs={'class': 'form-control'}),
+            'observacoes': forms.TextInput(attrs={'class': 'form-control'}),
+        }

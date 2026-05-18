@@ -1,0 +1,184 @@
+{% extends 'base.html' %}
+{% block title %}{% if object %}Editar{% else %}Novo{% endif %} Romaneio de Venda{% endblock %}
+{% block page_title %}Romaneios de Venda{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width: 760px">
+  <div class="d-flex align-items-center mb-4">
+    <a href="{% url 'embalagem:romaneio_list' %}" class="btn btn-outline-secondary me-3"><i class="bi bi-arrow-left"></i></a>
+    <h3 class="mb-0 me-auto">{% if object %}Editar Romaneio{% else %}Novo Romaneio de Venda{% endif %}</h3>
+    <button type="button" class="btn btn-outline-info" data-bs-toggle="modal" data-bs-target="#modalAjuda">
+      <i class="bi bi-question-circle me-1"></i>Ajuda
+    </button>
+  </div>
+
+  <!-- Modal de Ajuda -->
+  <div class="modal fade" id="modalAjuda" tabindex="-1" aria-labelledby="modalAjudaLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header bg-info bg-opacity-10">
+          <h5 class="modal-title" id="modalAjudaLabel">
+            <i class="bi bi-question-circle-fill text-info me-2"></i>Ajuda — Romaneio de Venda
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+
+          <div class="alert alert-primary border-0 mb-4">
+            <strong><i class="bi bi-lightbulb me-1"></i>O que é um Romaneio de Venda?</strong><br>
+            É a seleção dos pallets do estoque que serão enviados para um cliente específico.
+            Funciona como uma lista de carregamento: você escolhe os pallets, confirma, e o sistema
+            reserva automaticamente cada pallet e libera a impressão das etiquetas com os dados do cliente.
+          </div>
+
+          <!-- Fluxo -->
+          <h6 class="fw-bold border-bottom pb-1 mb-3">O que acontece depois de salvar?</h6>
+          <ol class="small mb-4">
+            <li>O romaneio é criado com status <strong>Rascunho</strong>.</li>
+            <li>No detalhe, você <strong>seleciona os pallets</strong> disponíveis usando a busca (por código, tipo ou armazém).</li>
+            <li>Clique em <strong>Confirmar</strong> — os pallets ficam com status <em>Reservado</em> e não aparecem mais para outros romaneios.</li>
+            <li>Imprima as <strong>Etiquetas PDF</strong> — agora com nome do cliente, cidade, país e dados do booking (se exportação).</li>
+            <li>Opcionalmente clique em <strong>Gerar Pré-venda</strong> para criar um Pedido de Venda automaticamente.</li>
+            <li>Na doca, use o celular na tela de <strong>Conferência</strong> para escanear cada pallet carregado.</li>
+          </ol>
+
+          <!-- Tipo -->
+          <h6 class="fw-bold border-bottom pb-1 mb-3">Tipo: Exportação × Mercado Interno</h6>
+          <div class="row g-2 mb-4">
+            <div class="col-md-6">
+              <div class="card border-primary h-100">
+                <div class="card-body py-2 px-3 small">
+                  <div class="fw-bold text-primary mb-1"><i class="bi bi-globe me-1"></i>Exportação</div>
+                  Use quando o destino for para fora do país. Exige preenchimento do
+                  <strong>Booking</strong> (reserva de navio) e opcionalmente o <strong>Container</strong>.
+                  As etiquetas incluirão armador, navio, viagem e porto de destino.
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="card border-secondary h-100">
+                <div class="card-body py-2 px-3 small">
+                  <div class="fw-bold text-secondary mb-1"><i class="bi bi-shop me-1"></i>Mercado Interno</div>
+                  Use para vendas dentro do país. Os campos de Booking e Container ficam ocultos.
+                  As etiquetas incluirão apenas os dados do cliente nacional.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Campos -->
+          <h6 class="fw-bold border-bottom pb-1 mb-3">Campos do formulário</h6>
+          <dl class="row small mb-4">
+            <dt class="col-sm-4">Tipo <span class="text-danger">*</span></dt>
+            <dd class="col-sm-8">Exportação ou Mercado Interno. Define quais campos adicionais aparecem e o formato das etiquetas.</dd>
+
+            <dt class="col-sm-4">Data <span class="text-danger">*</span></dt>
+            <dd class="col-sm-8">Data do romaneio, geralmente a data de carregamento ou de emissão do documento.</dd>
+
+            <dt class="col-sm-4">Cliente <span class="text-danger">*</span></dt>
+            <dd class="col-sm-8">Destinatário dos pallets. Aparecerá nas etiquetas e no Pedido de Venda gerado.</dd>
+
+            <dt class="col-sm-4">Booking</dt>
+            <dd class="col-sm-8">
+              Reserva de espaço no navio (somente Exportação). Vincula o romaneio ao armador,
+              navio e porto de destino. Se não houver Booking cadastrado, acesse
+              <a href="{% url 'exportacao:booking_list' %}" target="_blank">Exportação → Bookings</a>.
+            </dd>
+
+            <dt class="col-sm-4">Container</dt>
+            <dd class="col-sm-8">Container específico dentro do Booking (somente Exportação). O número do container aparece nas etiquetas.</dd>
+
+            <dt class="col-sm-4">Observações</dt>
+            <dd class="col-sm-8">Informações adicionais: temperatura de transporte, instruções especiais, referência do cliente, etc.</dd>
+          </dl>
+
+          <div class="alert alert-warning py-2 small mb-0">
+            <i class="bi bi-exclamation-triangle me-1"></i>
+            <strong>Atenção:</strong> os pallets só são adicionados <em>após</em> salvar este formulário,
+            na tela de detalhe do romaneio. Aqui você define apenas os dados gerais (cliente, tipo, booking).
+          </div>
+
+        </div>
+        <div class="modal-footer">
+          <a href="{% url 'embalagem:pallet_list' %}?status=DISPONIVEL" class="btn btn-outline-success me-auto">
+            <i class="bi bi-stack me-1"></i>Ver pallets disponíveis
+          </a>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% if messages %}
+  {% for msg in messages %}
+  <div class="alert alert-{{ msg.tags }} alert-dismissible fade show">
+    {{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  {% endfor %}
+  {% endif %}
+
+  <form method="post">
+    {% csrf_token %}
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-header fw-semibold">Dados do Romaneio</div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Tipo <span class="text-danger">*</span></label>
+            {{ form.tipo }}
+            {% if form.tipo.errors %}<div class="text-danger small mt-1">{{ form.tipo.errors }}</div>{% endif %}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Data <span class="text-danger">*</span></label>
+            {{ form.data }}
+            {% if form.data.errors %}<div class="text-danger small mt-1">{{ form.data.errors }}</div>{% endif %}
+          </div>
+          <div class="col-md-8">
+            <label class="form-label fw-semibold">Cliente <span class="text-danger">*</span></label>
+            {{ form.cliente }}
+            {% if form.cliente.errors %}<div class="text-danger small mt-1">{{ form.cliente.errors }}</div>{% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-3" id="card-exportacao">
+      <div class="card-header fw-semibold">Exportação <small class="text-muted fw-normal">(somente para tipo Exportação)</small></div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Booking</label>
+            {{ form.booking }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Container</label>
+            {{ form.container }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-body">
+        <label class="form-label fw-semibold">Observações</label>
+        {{ form.observacoes }}
+      </div>
+    </div>
+
+    <div class="d-flex gap-2">
+      <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>Salvar</button>
+      <a href="{% url 'embalagem:romaneio_list' %}" class="btn btn-outline-secondary">Cancelar</a>
+    </div>
+  </form>
+</div>
+
+<script>
+function toggleExportacao() {
+  const tipo = document.getElementById('id_tipo')?.value;
+  const card = document.getElementById('card-exportacao');
+  if (card) card.style.display = (tipo === 'EXPORTACAO') ? '' : 'none';
+}
+document.getElementById('id_tipo')?.addEventListener('change', toggleExportacao);
+toggleExportacao();
+</script>
+{% endblock %}

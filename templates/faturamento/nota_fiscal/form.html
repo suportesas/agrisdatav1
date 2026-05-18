@@ -1,0 +1,454 @@
+{% extends 'base.html' %}
+{% block title %}{{ title }}{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<style>
+  #items-table td, #items-table th { vertical-align: middle; padding: 6px 8px; }
+  #items-table input.form-control-sm, #items-table select.form-select-sm { font-size: .8rem; }
+  .item-fiscal-row td { background: #f8f9fa; border-top: none !important; }
+  .item-fiscal-row .row { padding: 8px 4px; }
+  .item-fiscal-row label { font-size: .72rem; font-weight: 600; color: #6c757d; margin-bottom: 2px; }
+  .item-total { font-size: .85rem; }
+  #items-table .btn-toggle-fiscal { padding: 2px 6px; }
+  #items-table .remove-item { padding: 2px 6px; }
+</style>
+
+<div class="container-fluid py-4">
+  <div class="d-flex align-items-center mb-4">
+    <a href="{% url 'faturamento:nota_fiscal_list' %}" class="btn btn-outline-secondary me-3">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    <h3 class="mb-0">{{ title }}</h3>
+  </div>
+
+  <form method="post" id="nf-form">
+    {% csrf_token %}
+    {{ formset.management_form }}
+
+    <div class="row g-3">
+      <!-- Dados Principais -->
+      <div class="col-md-8">
+        <div class="card border-0 shadow-sm">
+          <div class="card-header fw-semibold">Dados da Nota Fiscal</div>
+          <div class="card-body">
+            {% if form.non_field_errors %}
+            <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+            {% endif %}
+            <div class="row g-3">
+              <div class="col-md-8">
+                <label class="form-label">Cliente *</label>
+                {{ form.cliente }}
+                {% if form.cliente.errors %}<div class="text-danger small">{{ form.cliente.errors }}</div>{% endif %}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Data de Emissão *</label>
+                {{ form.data_emissao }}
+              </div>
+              <div class="col-md-8">
+                <label class="form-label">Natureza da Operação *</label>
+                {{ form.natureza_operacao }}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">CFOP Padrão</label>
+                {{ form.cfop }}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Data de Saída</label>
+                {{ form.data_saida }}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Modalidade de Frete</label>
+                {{ form.modalidade_frete }}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Transportadora</label>
+                {{ form.transportadora }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Totais -->
+      <div class="col-md-4">
+        <div class="card border-0 shadow-sm">
+          <div class="card-header fw-semibold">Valores</div>
+          <div class="card-body">
+            <div class="mb-2">
+              <label class="form-label mb-1">Frete (R$)</label>
+              {{ form.valor_frete }}
+            </div>
+            <div class="mb-2">
+              <label class="form-label mb-1">Seguro (R$)</label>
+              {{ form.valor_seguro }}
+            </div>
+            <div class="mb-3">
+              <label class="form-label mb-1">Desconto NF (R$)</label>
+              {{ form.valor_desconto }}
+            </div>
+            <hr class="my-2">
+            <div class="d-flex justify-content-between text-muted small mb-1">
+              <span>Subtotal Produtos</span>
+              <span id="resumo-produtos">R$ 0,00</span>
+            </div>
+            <div class="d-flex justify-content-between text-muted small mb-1">
+              <span>+ Frete</span>
+              <span id="resumo-frete">R$ 0,00</span>
+            </div>
+            <div class="d-flex justify-content-between text-muted small mb-1">
+              <span>+ Seguro</span>
+              <span id="resumo-seguro">R$ 0,00</span>
+            </div>
+            <div class="d-flex justify-content-between text-muted small mb-1">
+              <span>- Desconto NF</span>
+              <span id="resumo-desconto-nf" class="text-danger">R$ 0,00</span>
+            </div>
+            <div class="d-flex justify-content-between fw-bold border-top pt-2 mt-1 fs-6">
+              <span>Total NF</span>
+              <span id="resumo-total" class="text-success">R$ 0,00</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card border-0 shadow-sm mt-3">
+          <div class="card-header fw-semibold">Informações Complementares</div>
+          <div class="card-body">
+            {{ form.informacoes_complementares }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Itens -->
+      <div class="col-12">
+        <div class="card border-0 shadow-sm">
+          <div class="card-header fw-semibold d-flex justify-content-between align-items-center">
+            <span><i class="bi bi-list-ul me-2 text-primary"></i>Itens da Nota Fiscal</span>
+            <button type="button" class="btn btn-sm btn-primary" id="add-item">
+              <i class="bi bi-plus-lg me-1"></i>Adicionar Item
+            </button>
+          </div>
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table table-sm table-bordered mb-0 align-middle" id="items-table">
+                <thead class="table-light">
+                  <tr>
+                    <th style="width:40px" class="text-center">#</th>
+                    <th style="width:190px">Produto</th>
+                    <th>Descrição</th>
+                    <th style="width:52px">UN</th>
+                    <th style="width:90px">Quantidade</th>
+                    <th style="width:110px">Vl. Unitário</th>
+                    <th style="width:100px">Desconto</th>
+                    <th style="width:115px" class="text-end">Total Item</th>
+                    <th style="width:72px" class="text-center">
+                      <i class="bi bi-gear text-muted" title="Ações"></i>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody id="items-body">
+                  {% for item_form in formset %}
+                  <tr class="item-row">
+                    <td class="text-center text-muted small fw-semibold">
+                      {{ item_form.id }}
+                      {{ item_form.DELETE }}
+                      {{ item_form.numero_item }}
+                    </td>
+                    <td>{{ item_form.produto }}</td>
+                    <td>{{ item_form.descricao }}</td>
+                    <td>{{ item_form.unidade }}</td>
+                    <td>{{ item_form.quantidade }}</td>
+                    <td>{{ item_form.valor_unitario }}</td>
+                    <td>{{ item_form.valor_desconto }}</td>
+                    <td class="text-end">
+                      <span class="item-total fw-semibold text-success">—</span>
+                    </td>
+                    <td class="text-center">
+                      <button type="button" class="btn btn-outline-secondary btn-toggle-fiscal btn-sm" title="Dados Fiscais">
+                        <i class="bi bi-chevron-down"></i>
+                      </button>
+                      <button type="button" class="btn btn-outline-danger remove-item btn-sm" title="Remover">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </td>
+                  </tr>
+                  <tr class="item-fiscal-row" style="display:none">
+                    <td colspan="9">
+                      <div class="row g-2 align-items-end px-1 py-1">
+                        <div class="col-auto">
+                          <label class="d-block">NCM</label>
+                          {{ item_form.ncm }}
+                        </div>
+                        <div class="col-auto">
+                          <label class="d-block">CFOP</label>
+                          {{ item_form.cfop }}
+                        </div>
+                        <div class="col-auto">
+                          <label class="d-block">CST ICMS</label>
+                          {{ item_form.cst_icms }}
+                        </div>
+                        <div class="col-auto">
+                          <label class="d-block">CST PIS</label>
+                          {{ item_form.cst_pis }}
+                        </div>
+                        <div class="col-auto">
+                          <label class="d-block">CST COFINS</label>
+                          {{ item_form.cst_cofins }}
+                        </div>
+                        <div class="col-auto">
+                          <label class="d-block">% ICMS</label>
+                          {{ item_form.aliquota_icms }}
+                        </div>
+                        <div class="col-auto">
+                          <label class="d-block">% IPI</label>
+                          {{ item_form.aliquota_ipi }}
+                        </div>
+                        <div class="col-auto">
+                          <label class="d-block">% PIS</label>
+                          {{ item_form.aliquota_pis }}
+                        </div>
+                        <div class="col-auto">
+                          <label class="d-block">% COFINS</label>
+                          {{ item_form.aliquota_cofins }}
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+                <tfoot class="table-light">
+                  <tr>
+                    <td colspan="7" class="text-end text-muted small fw-semibold pe-3">Subtotal dos Produtos:</td>
+                    <td class="text-end fw-bold text-success" id="tfoot-subtotal">R$ 0,00</td>
+                    <td></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="d-flex gap-2 mt-4">
+      <button type="submit" class="btn btn-primary">
+        <i class="bi bi-check-circle me-1"></i>Salvar
+      </button>
+      <a href="{% url 'faturamento:nota_fiscal_list' %}" class="btn btn-outline-secondary">Cancelar</a>
+    </div>
+  </form>
+</div>
+
+<script>
+(function () {
+  const TOTAL_FORMS = document.getElementById('id_itens-TOTAL_FORMS');
+  const body = document.getElementById('items-body');
+  const fmt = v => 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  // ── Toggle sub-linha fiscal ───────────────────────────────────────
+  function attachToggleFiscal(mainRow) {
+    const btn = mainRow.querySelector('.btn-toggle-fiscal');
+    if (!btn) return;
+    btn.addEventListener('click', function () {
+      const fiscalRow = mainRow.nextElementSibling;
+      if (!fiscalRow || !fiscalRow.classList.contains('item-fiscal-row')) return;
+      const collapsed = fiscalRow.style.display === 'none';
+      fiscalRow.style.display = collapsed ? '' : 'none';
+      btn.querySelector('i').className = collapsed ? 'bi bi-chevron-up' : 'bi bi-chevron-down';
+    });
+  }
+
+  // ── Remover linha ────────────────────────────────────────────────
+  function attachRemove(mainRow) {
+    const btn = mainRow.querySelector('.remove-item');
+    if (!btn) return;
+    btn.addEventListener('click', function () {
+      const fiscalRow = mainRow.nextElementSibling;
+      const chk = mainRow.querySelector('input[type=checkbox][name$="-DELETE"]');
+      if (chk) {
+        chk.checked = true;
+        mainRow.style.display = 'none';
+        if (fiscalRow && fiscalRow.classList.contains('item-fiscal-row')) fiscalRow.style.display = 'none';
+      } else {
+        if (fiscalRow && fiscalRow.classList.contains('item-fiscal-row')) fiscalRow.remove();
+        mainRow.remove();
+      }
+      renumerarItens();
+      recalcularTotais();
+    });
+  }
+
+  // ── Renumerar itens visíveis ─────────────────────────────────────
+  function renumerarItens() {
+    let n = 1;
+    body.querySelectorAll('.item-row').forEach(row => {
+      if (row.style.display !== 'none') {
+        const el = row.querySelector('input[name$="-numero_item"]');
+        if (el) el.value = n++;
+      }
+    });
+  }
+
+  // ── Calcular total da linha ──────────────────────────────────────
+  function calcLinha(row) {
+    const qtd = parseFloat(row.querySelector('input[name$="-quantidade"]')?.value) || 0;
+    const vu  = parseFloat(row.querySelector('input[name$="-valor_unitario"]')?.value) || 0;
+    const desc = parseFloat(row.querySelector('input[name$="-valor_desconto"]')?.value) || 0;
+    return Math.max(0, qtd * vu - desc);
+  }
+
+  // ── Recalcular todos os totais ───────────────────────────────────
+  function recalcularTotais() {
+    let subtotal = 0;
+    body.querySelectorAll('.item-row').forEach(row => {
+      if (row.style.display !== 'none') {
+        const t = calcLinha(row);
+        subtotal += t;
+        const span = row.querySelector('.item-total');
+        if (span) span.textContent = fmt(t);
+      }
+    });
+
+    const frete  = parseFloat(document.getElementById('id_valor_frete')?.value)   || 0;
+    const seguro = parseFloat(document.getElementById('id_valor_seguro')?.value)   || 0;
+    const descNF = parseFloat(document.getElementById('id_valor_desconto')?.value) || 0;
+    const total  = subtotal + frete + seguro - descNF;
+
+    document.getElementById('tfoot-subtotal').textContent    = fmt(subtotal);
+    document.getElementById('resumo-produtos').textContent   = fmt(subtotal);
+    document.getElementById('resumo-frete').textContent      = fmt(frete);
+    document.getElementById('resumo-seguro').textContent     = fmt(seguro);
+    document.getElementById('resumo-desconto-nf').textContent = fmt(descNF);
+    document.getElementById('resumo-total').textContent      = fmt(total);
+  }
+
+  // ── Listeners de recálculo nos campos da linha ───────────────────
+  function attachCalcListeners(row) {
+    ['input[name$="-quantidade"]', 'input[name$="-valor_unitario"]', 'input[name$="-valor_desconto"]'].forEach(sel => {
+      const el = row.querySelector(sel);
+      if (el) el.addEventListener('input', recalcularTotais);
+    });
+  }
+
+  // ── AJAX: preencher produto ──────────────────────────────────────
+  function attachProdutoAjax(mainRow) {
+    const fiscalRow = mainRow.nextElementSibling;
+    const prodSel   = mainRow.querySelector('select[name$="-produto"]');
+    if (!prodSel) return;
+
+    prodSel.addEventListener('change', function () {
+      const pk = this.value;
+      if (!pk) return;
+      fetch(`/faturamento/ajax/produto/${pk}/`)
+        .then(r => r.json())
+        .then(data => {
+          if (data.erro) return;
+
+          const desc = mainRow.querySelector('input[name$="-descricao"]');
+          if (desc && !desc.value) desc.value = data.nome || '';
+
+          const un = mainRow.querySelector('input[name$="-unidade"]');
+          if (un) un.value = data.unidade || '';
+
+          const vu = mainRow.querySelector('input[name$="-valor_unitario"]');
+          if (vu && (!vu.value || vu.value === '0')) vu.value = data.preco_venda || '';
+
+          const t = data.tributacoes && data.tributacoes[0];
+          const rowFiscal = fiscalRow && fiscalRow.classList.contains('item-fiscal-row') ? fiscalRow : null;
+
+          const setField = (sel, val) => {
+            const el = (rowFiscal && rowFiscal.querySelector(sel)) || mainRow.querySelector(sel);
+            if (el && val !== undefined && val !== null) el.value = val;
+          };
+
+          setField('input[name$="-ncm"]', data.ncm);
+
+          if (t) {
+            setField('input[name$="-cfop"]', t.cfop);
+            setField('input[name$="-cst_icms"]', t.cst_icms);
+            setField('input[name$="-cst_pis"]', t.cst_pis);
+            setField('input[name$="-cst_cofins"]', t.cst_cofins);
+            setField('input[name$="-aliquota_icms"]', t.aliquota_icms);
+            setField('input[name$="-aliquota_ipi"]', t.aliquota_ipi);
+            setField('input[name$="-aliquota_pis"]', t.aliquota_pis);
+            setField('input[name$="-aliquota_cofins"]', t.aliquota_cofins);
+          }
+          recalcularTotais();
+        })
+        .catch(() => {});
+    });
+  }
+
+  // ── Inicializar linhas já existentes ─────────────────────────────
+  body.querySelectorAll('.item-row').forEach(row => {
+    attachToggleFiscal(row);
+    attachRemove(row);
+    attachCalcListeners(row);
+    attachProdutoAjax(row);
+  });
+
+  // Recalcular quando campos globais mudam
+  ['id_valor_frete', 'id_valor_seguro', 'id_valor_desconto'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('input', recalcularTotais);
+  });
+
+  recalcularTotais();
+
+  // ── Adicionar nova linha ──────────────────────────────────────────
+  document.getElementById('add-item').addEventListener('click', function () {
+    const allMainRows = [...body.querySelectorAll('.item-row')];
+    if (!allMainRows.length) return;
+
+    const lastMain   = allMainRows.at(-1);
+    const lastFiscal = lastMain.nextElementSibling;
+    const idx        = parseInt(TOTAL_FORMS.value);
+
+    const newMain   = lastMain.cloneNode(true);
+    const newFiscal = lastFiscal && lastFiscal.classList.contains('item-fiscal-row')
+      ? lastFiscal.cloneNode(true)
+      : null;
+
+    // Reindexar e limpar campos
+    [newMain, newFiscal].filter(Boolean).forEach(row => {
+      row.querySelectorAll('input, select, textarea').forEach(el => {
+        el.name = el.name.replace(/-\d+-/, `-${idx}-`);
+        el.id   = el.id   ? el.id.replace(/-\d+-/, `-${idx}-`)   : '';
+        if (el.type === 'checkbox') {
+          el.checked = false;
+        } else if (el.name.endsWith('-numero_item')) {
+          el.value = idx + 1;
+        } else {
+          el.value = '';
+        }
+      });
+    });
+
+    // Resetar display e ícone do toggle
+    newMain.style.display = '';
+    const icon = newMain.querySelector('.btn-toggle-fiscal i');
+    if (icon) icon.className = 'bi bi-chevron-down';
+    if (newFiscal) newFiscal.style.display = 'none';
+
+    // Limpar total
+    const totalSpan = newMain.querySelector('.item-total');
+    if (totalSpan) totalSpan.textContent = '—';
+
+    body.appendChild(newMain);
+    if (newFiscal) body.appendChild(newFiscal);
+
+    TOTAL_FORMS.value = idx + 1;
+
+    attachToggleFiscal(newMain);
+    attachRemove(newMain);
+    attachCalcListeners(newMain);
+    attachProdutoAjax(newMain);
+    renumerarItens();
+
+    // Focar no select de produto da nova linha
+    const prodSel = newMain.querySelector('select[name$="-produto"]');
+    if (prodSel) prodSel.focus();
+  });
+})();
+</script>
+{% endblock %}

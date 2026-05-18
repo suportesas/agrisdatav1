@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>{{ invoice.numero }}</title>
+  <style>
+    body { font-family: Arial, sans-serif; font-size: 9pt; margin: 0; padding: 12px; color: #000; }
+    .header { display: flex; justify-content: space-between; margin-bottom: 12px; }
+    .company { flex: 1; }
+    .company h1 { font-size: 14pt; margin: 0 0 2px; }
+    .doc-title { text-align: right; }
+    .doc-title h2 { font-size: 18pt; margin: 0; color: #003366; letter-spacing: 2px; }
+    .doc-title .number { font-size: 11pt; font-weight: bold; }
+    hr { border: 1.5px solid #003366; margin: 8px 0; }
+    .parties { display: flex; gap: 20px; margin-bottom: 10px; }
+    .party { flex: 1; border: 1px solid #ccc; padding: 6px; }
+    .party-title { font-weight: bold; font-size: 8pt; color: #003366; border-bottom: 1px solid #ccc; margin-bottom: 4px; }
+    .info-grid { display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+    .info-cell { border: 1px solid #ccc; padding: 4px 6px; min-width: 120px; }
+    .label { font-size: 7pt; color: #555; }
+    .value { font-size: 9pt; font-weight: bold; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 8.5pt; }
+    th { background: #003366; color: #fff; padding: 4px 5px; text-align: left; }
+    td { border-bottom: 1px solid #ddd; padding: 3px 5px; }
+    tr:nth-child(even) td { background: #f5f8ff; }
+    .text-right { text-align: right; }
+    .totals { width: 40%; margin-left: auto; border: 1px solid #003366; }
+    .totals td { padding: 4px 8px; }
+    .total-row { background: #003366 !important; color: #fff; font-weight: bold; }
+    .footer { margin-top: 20px; font-size: 8pt; color: #555; border-top: 1px solid #ccc; padding-top: 6px; }
+    .stamp { border: 3px solid #c00; color: #c00; font-size: 20pt; font-weight: bold; text-align: center; padding: 8px; margin: 8px 0; opacity: 0.7; }
+    .bank-box { border: 1px solid #ccc; padding: 6px; margin-top: 8px; font-size: 8pt; white-space: pre-line; }
+  </style>
+</head>
+<body>
+
+{% if invoice.status == 'CANCELADA' %}
+<div class="stamp">CANCELLED / CANCELADA</div>
+{% endif %}
+
+<div class="header">
+  <div class="company">
+    <h1>{{ empresa.razao_social|default:"EXPORTADORA" }}</h1>
+    <div>CNPJ: {{ empresa.cnpj|default:"" }}</div>
+    <div>{{ empresa.logradouro|default:"" }}, {{ empresa.cidade|default:"" }} - {{ empresa.uf|default:"" }}, Brasil</div>
+    <div>Tel: {{ empresa.telefone|default:"" }}</div>
+  </div>
+  <div class="doc-title">
+    <h2>COMMERCIAL INVOICE</h2>
+    <div>INVOICE / FATURA COMERCIAL</div>
+    <div class="number">Nº {{ invoice.numero }}</div>
+    <div>Date / Data: {{ invoice.data_emissao|date:"d/m/Y" }}</div>
+  </div>
+</div>
+
+<hr>
+
+<div class="parties">
+  <div class="party">
+    <div class="party-title">SELLER / EXPORTADOR</div>
+    <strong>{{ empresa.razao_social|default:"EXPORTADORA" }}</strong><br>
+    {{ empresa.logradouro|default:"" }}, {{ empresa.cidade|default:"" }}<br>
+    {{ empresa.uf|default:"" }}, Brasil<br>
+    CNPJ: {{ empresa.cnpj|default:"" }}
+  </div>
+  <div class="party">
+    <div class="party-title">BUYER / IMPORTADOR</div>
+    <strong>{{ invoice.cliente.razao_social }}</strong><br>
+    {% if invoice.cliente.vat %}VAT: {{ invoice.cliente.vat }}<br>{% endif %}
+    {% if invoice.cliente.eori %}EORI: {{ invoice.cliente.eori }}<br>{% endif %}
+  </div>
+</div>
+
+<div class="info-grid">
+  <div class="info-cell">
+    <div class="label">Port of Loading / Porto de Embarque</div>
+    <div class="value">{{ invoice.porto_embarque|default:"—" }}</div>
+  </div>
+  <div class="info-cell">
+    <div class="label">Port of Discharge / Porto de Destino</div>
+    <div class="value">{{ invoice.porto_destino|default:"—" }}</div>
+  </div>
+  <div class="info-cell">
+    <div class="label">Incoterm</div>
+    <div class="value">{{ invoice.incoterm }}</div>
+  </div>
+  <div class="info-cell">
+    <div class="label">Currency / Moeda</div>
+    <div class="value">{{ invoice.moeda }}</div>
+  </div>
+  <div class="info-cell">
+    <div class="label">Booking Nº</div>
+    <div class="value">{{ invoice.booking.codigo|default:"—" }}</div>
+  </div>
+  <div class="info-cell">
+    <div class="label">Payment Terms / Cond. de Pagamento</div>
+    <div class="value">{{ invoice.condicao_pagamento|default:"—" }}</div>
+  </div>
+  {% if invoice.data_embarque_previsto %}
+  <div class="info-cell">
+    <div class="label">Estimated Departure / Embarque Previsto</div>
+    <div class="value">{{ invoice.data_embarque_previsto|date:"d/m/Y" }}</div>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Itens -->
+<table>
+  <thead>
+    <tr>
+      <th>Description / Descrição</th>
+      <th>Container</th>
+      <th>Marks & Numbers</th>
+      <th class="text-right">Qty / Qtd</th>
+      <th>Unit</th>
+      <th class="text-right">Gross Weight (kg)</th>
+      <th class="text-right">Net Weight (kg)</th>
+      <th class="text-right">Unit Price FOB ({{ invoice.moeda }})</th>
+      <th class="text-right">Total FOB ({{ invoice.moeda }})</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for item in invoice.itens.all %}
+    <tr>
+      <td>{{ item.descricao }}</td>
+      <td>{{ item.container.numero_container|default:"—" }}</td>
+      <td>{{ item.marks_numbers|default:"—" }}</td>
+      <td class="text-right">{{ item.quantidade|floatformat:4 }}</td>
+      <td>{{ item.unidade }}</td>
+      <td class="text-right">{{ item.peso_bruto_kg|floatformat:3 }}</td>
+      <td class="text-right">{{ item.peso_liquido_kg|floatformat:3 }}</td>
+      <td class="text-right">{{ item.valor_unitario_fob|floatformat:4 }}</td>
+      <td class="text-right"><strong>{{ item.valor_total_fob|floatformat:2 }}</strong></td>
+    </tr>
+    {% endfor %}
+    <tr>
+      <td colspan="5"><strong>TOTAL</strong></td>
+      <td class="text-right"><strong>{{ invoice.peso_bruto_total|floatformat:3 }}</strong></td>
+      <td class="text-right"><strong>{{ invoice.peso_liquido_total|floatformat:3 }}</strong></td>
+      <td></td>
+      <td class="text-right"><strong>{{ invoice.valor_mercadoria|floatformat:2 }}</strong></td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- Totais -->
+<table class="totals">
+  <tbody>
+    <tr><td>Goods Value / Valor da Mercadoria</td><td class="text-right">{{ invoice.moeda }} {{ invoice.valor_mercadoria|floatformat:2 }}</td></tr>
+    {% if invoice.valor_frete %}<tr><td>Freight / Frete</td><td class="text-right">{{ invoice.moeda }} {{ invoice.valor_frete|floatformat:2 }}</td></tr>{% endif %}
+    {% if invoice.valor_seguro %}<tr><td>Insurance / Seguro</td><td class="text-right">{{ invoice.moeda }} {{ invoice.valor_seguro|floatformat:2 }}</td></tr>{% endif %}
+    <tr class="total-row"><td>TOTAL {{ invoice.incoterm }}</td><td class="text-right">{{ invoice.moeda }} {{ invoice.valor_total|floatformat:2 }}</td></tr>
+  </tbody>
+</table>
+
+{% if invoice.banco_beneficiario %}
+<div class="bank-box">
+  <strong>Banking Details / Dados Bancários:</strong><br>
+  {{ invoice.banco_beneficiario }}
+</div>
+{% endif %}
+
+{% if invoice.observacoes %}
+<div style="margin-top:8px;font-size:8pt"><strong>Remarks / Observações:</strong> {{ invoice.observacoes }}</div>
+{% endif %}
+
+<div class="footer">
+  <div>{{ empresa.razao_social|default:"" }} | {{ invoice.data_emissao|date:"d/m/Y" }} | {{ invoice.numero }}</div>
+  <div>Authorized Signature / Assinatura Autorizada: ______________________________</div>
+</div>
+
+</body>
+</html>

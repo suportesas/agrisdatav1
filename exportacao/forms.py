@@ -126,35 +126,38 @@ class BookingContainerForm(ExportacaoBaseForm):
         model = BookingContainer
         fields = [
             'booking',
-            'numero_container',
-            'tipo_container',
-            'status',
-            'cultura',
-            'peso_bruto_kg',
-            'lacre_armador',
-            'lacre_fiscal',
-            'lacre_terminal',
-            'porto_origem',
-            'porto_destino',
-            'data_coleta_prevista',
-            'data_coleta_realizada',
+            'numero_container', 'tipo_container', 'status',
+            'cultura', 'porto_origem', 'porto_destino', 'data_coleta_prevista',
+            'armador', 'transportadora', 'motorista',
+            'placa_principal', 'placa_reboque',
+            'peso_bruto_kg', 'tara_container', 'numero_genset',
+            'lacre_armador', 'lacre_fiscal', 'lacre_terminal',
+            'data_coleta_realizada', 'hora_coleta_realizada',
             'observacoes',
         ]
         widgets = {
-            'booking': forms.Select(attrs={'class': 'form-select'}),
-            'numero_container': forms.TextInput(attrs={'class': 'form-control'}),
-            'tipo_container': forms.Select(attrs={'class': 'form-select'}),
-            'status': forms.Select(attrs={'class': 'form-select'}),
-            'cultura': forms.Select(attrs={'class': 'form-select'}),
-            'peso_bruto_kg': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
-            'lacre_armador': forms.TextInput(attrs={'class': 'form-control'}),
-            'lacre_fiscal': forms.TextInput(attrs={'class': 'form-control'}),
-            'lacre_terminal': forms.TextInput(attrs={'class': 'form-control'}),
-            'porto_origem': forms.Select(attrs={'class': 'form-select'}),
-            'porto_destino': forms.Select(attrs={'class': 'form-select'}),
-            'data_coleta_prevista': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'booking':         forms.Select(attrs={'class': 'form-select'}),
+            'numero_container': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: ABCU1234567'}),
+            'tipo_container':  forms.Select(attrs={'class': 'form-select'}),
+            'status':          forms.Select(attrs={'class': 'form-select'}),
+            'cultura':         forms.Select(attrs={'class': 'form-select'}),
+            'porto_origem':    forms.Select(attrs={'class': 'form-select'}),
+            'porto_destino':   forms.Select(attrs={'class': 'form-select'}),
+            'data_coleta_prevista':  forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'data_coleta_realizada': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'hora_coleta_realizada': forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}),
+            'armador':         forms.Select(attrs={'class': 'form-select'}),
+            'transportadora':  forms.Select(attrs={'class': 'form-select'}),
+            'motorista':       forms.Select(attrs={'class': 'form-select'}),
+            'placa_principal': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'AAA-0000'}),
+            'placa_reboque':   forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: AAA-0000, BBB-1111'}),
+            'peso_bruto_kg':   forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'tara_container':  forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'kg'}),
+            'numero_genset':   forms.TextInput(attrs={'class': 'form-control'}),
+            'lacre_armador':   forms.TextInput(attrs={'class': 'form-control'}),
+            'lacre_fiscal':    forms.TextInput(attrs={'class': 'form-control'}),
+            'lacre_terminal':  forms.TextInput(attrs={'class': 'form-control'}),
+            'observacoes':     forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -164,6 +167,59 @@ class BookingContainerForm(ExportacaoBaseForm):
             self.fields['cultura'].queryset = Cultura.objects.filter(empresa=self.empresa).order_by('nome')
             self.fields['porto_origem'].queryset = Porto.objects.filter(empresa=self.empresa, ativo=True).order_by('nome')
             self.fields['porto_destino'].queryset = Porto.objects.filter(empresa=self.empresa, ativo=True).order_by('nome')
+            self.fields['armador'].queryset = Armador.objects.filter(empresa=self.empresa).order_by('nome')
+            self.fields['transportadora'].queryset = Transportadora.objects.filter(empresa=self.empresa, ativa=True).order_by('razao_social')
+            self.fields['motorista'].queryset = Motorista.objects.filter(empresa=self.empresa, ativo=True).order_by('nome')
+
+
+class ContainerTransferenciaForm(forms.Form):
+    booking_destino = forms.ModelChoiceField(
+        queryset=Booking.objects.none(),
+        label='Booking Destino',
+        widget=forms.Select(attrs={'class': 'form-select'}),
+    )
+    porto_destino = forms.ModelChoiceField(
+        queryset=Porto.objects.none(),
+        label='Porto de Destino (novo)',
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-select'}),
+    )
+    cultura = forms.ModelChoiceField(
+        queryset=Cultura.objects.none(),
+        label='Cultura (novo)',
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-select'}),
+    )
+    observacao = forms.CharField(
+        label='Motivo da Transferência',
+        required=False,
+        max_length=300,
+        widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 3,
+                                     'placeholder': 'Descreva o motivo da transferência...'}),
+    )
+
+    def __init__(self, *args, empresa=None, container=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._container = container
+        if empresa and container:
+            self.fields['booking_destino'].queryset = (
+                Booking.objects.filter(empresa=empresa)
+                .exclude(pk=container.booking_id)
+                .order_by('-data_embarque_previsto')
+            )
+            self.fields['porto_destino'].queryset = Porto.objects.filter(empresa=empresa, ativo=True).order_by('nome')
+            self.fields['cultura'].queryset = Cultura.objects.filter(empresa=empresa).order_by('nome')
+            self.fields['porto_destino'].initial = container.porto_destino_id
+            self.fields['cultura'].initial = container.cultura_id
+
+    def clean_booking_destino(self):
+        destino = self.cleaned_data['booking_destino']
+        numero = self._container.numero_container
+        if BookingContainer.objects.filter(booking=destino, numero_container=numero).exists():
+            raise forms.ValidationError(
+                f'O container {numero} já existe no booking {destino.codigo}.'
+            )
+        return destino
 
 
 class OrdemColetaForm(ExportacaoBaseForm):

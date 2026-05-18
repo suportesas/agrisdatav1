@@ -672,3 +672,256 @@ class AjusteContaPagar(models.Model):
     
     def __str__(self):
         return f"{self.conta_pagar.numero} - {self.get_tipo_display()}"
+
+
+# ============================================
+# 6. CONTA A RECEBER
+# ============================================
+
+class ContaReceber(models.Model):
+    """Conta a receber — gerada a partir de pedido de venda, NF-e, invoice ou manualmente."""
+
+    STATUS_CHOICES = [
+        ('ABERTA', 'Aberta'),
+        ('PARCIALMENTE_PAGA', 'Parcialmente Paga'),
+        ('PAGA', 'Paga'),
+        ('VENCIDA', 'Vencida'),
+        ('CANCELADA', 'Cancelada'),
+    ]
+
+    ORIGEM_CHOICES = [
+        ('PEDIDO_VENDA', 'Pedido de Venda'),
+        ('NOTA_FISCAL', 'Nota Fiscal'),
+        ('INVOICE_EXPORTACAO', 'Invoice de Exportação'),
+        ('MANUAL', 'Manual'),
+    ]
+
+    MOEDA_CHOICES = [
+        ('BRL', 'Real (BRL)'),
+        ('USD', 'Dólar (USD)'),
+        ('EUR', 'Euro (EUR)'),
+        ('GBP', 'Libra (GBP)'),
+    ]
+
+    empresa = models.ForeignKey(
+        'empresas.Empresa',
+        on_delete=models.PROTECT,
+        related_name='contas_receber',
+        verbose_name='Empresa',
+    )
+    numero = models.CharField('Número', max_length=30, unique=True)
+    cliente = models.ForeignKey(
+        'cadastros.Cliente',
+        on_delete=models.PROTECT,
+        related_name='contas_receber',
+        verbose_name='Cliente',
+    )
+    data_emissao = models.DateField('Data de Emissão', default=timezone.now)
+    data_vencimento = models.DateField('Data de Vencimento')
+    status = models.CharField('Status', max_length=20, choices=STATUS_CHOICES, default='ABERTA')
+    origem = models.CharField('Origem', max_length=30, choices=ORIGEM_CHOICES, default='MANUAL')
+
+    # Vínculos opcionais com documentos de origem
+    pedido_venda = models.OneToOneField(
+        'vendas.PedidoVenda',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='conta_receber_obj',
+        verbose_name='Pedido de Venda',
+    )
+    nota_fiscal = models.OneToOneField(
+        'faturamento.NotaFiscal',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='conta_receber_obj',
+        verbose_name='Nota Fiscal',
+    )
+    invoice = models.OneToOneField(
+        'faturamento.InvoiceExportacao',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='conta_receber_obj',
+        verbose_name='Invoice de Exportação',
+    )
+
+    # Valores dual-moeda
+    moeda = models.CharField('Moeda', max_length=3, choices=MOEDA_CHOICES, default='BRL')
+    valor_moeda = models.DecimalField(
+        'Valor (moeda original)', max_digits=15, decimal_places=2,
+        validators=[MinValueValidator(Decimal('0.01'))],
+    )
+    taxa_cambio = models.DecimalField(
+        'Taxa de Câmbio (para BRL)', max_digits=10, decimal_places=4,
+        null=True, blank=True,
+        help_text='Câmbio utilizado na emissão. Deixar vazio para BRL.',
+    )
+    valor_brl = models.DecimalField(
+        'Valor em BRL', max_digits=15, decimal_places=2,
+        validators=[MinValueValidator(Decimal('0.00'))],
+        help_text='Equivalente em BRL para controle interno.',
+    )
+
+    descricao = models.CharField('Descrição / Referência', max_length=200)
+    observacoes = models.TextField('Observações', blank=True)
+
+    criado_por = models.ForeignKey(
+        'usuarios.Usuario',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='contas_receber_criadas',
+        verbose_name='Criado por',
+    )
+    criado_em = models.DateTimeField('Criado em', auto_now_add=True)
+    atualizado_em = models.DateTimeField('Atualizado em', auto_now=True)
+
+    class Meta:
+        verbose_name = 'Conta a Receber'
+        verbose_name_plural = 'Contas a Receber'
+        ordering = ['-data_emissao', '-numero']
+        indexes = [
+            models.Index(fields=['empresa', 'status']),
+            models.Index(fields=['cliente', 'status']),
+        ]
+
+    def __str__(self):
+        return f"{self.numero} - {self.cliente.razao_social}"
+
+    @property
+    def total_recebido_brl(self):
+        return self.recebimentos.aggregate(
+            s=models.Sum('valor_recebido_brl')
+        )['s'] or Decimal('0.00')
+
+    @property
+    def saldo_brl(self):
+        return self.valor_brl - self.total_recebido_brl
+
+    def atualizar_status(self):
+        """Recalcula status baseado nos recebimentos."""
+        recebido = self.total_recebido_brl
+        if recebido <= Decimal('0.00'):
+            if timezone.now().date() > self.data_vencimento:
+                self.status = 'VENCIDA'
+            else:
+                self.status = 'ABERTA'
+        elif recebido < self.valor_brl:
+            self.status = 'PARCIALMENTE_PAGA'
+        else:
+            self.status = 'PAGA'
+        self.save(update_fields=['status'])
+
+
+# ============================================
+# 7. PARCELA DA CONTA A RECEBER
+# ============================================
+
+class ParcelaContaReceber(models.Model):
+    """Parcelas de uma conta a receber."""
+
+    STATUS_CHOICES = [
+        ('ABERTA', 'Aberta'),
+        ('PAGA', 'Paga'),
+        ('VENCIDA', 'Vencida'),
+        ('CANCELADA', 'Cancelada'),
+    ]
+
+    conta_receber = models.ForeignKey(
+        ContaReceber,
+        on_delete=models.CASCADE,
+        related_name='parcelas',
+        verbose_name='Conta a Receber',
+    )
+    numero_parcela = models.PositiveIntegerField('Nº Parcela')
+    valor_parcela_moeda = models.DecimalField(
+        'Valor (moeda original)', max_digits=15, decimal_places=2,
+        validators=[MinValueValidator(Decimal('0.01'))],
+    )
+    valor_parcela_brl = models.DecimalField(
+        'Valor em BRL', max_digits=15, decimal_places=2,
+        validators=[MinValueValidator(Decimal('0.01'))],
+    )
+    data_vencimento = models.DateField('Vencimento')
+    data_pagamento = models.DateField('Data do Pagamento', null=True, blank=True)
+    status = models.CharField('Status', max_length=20, choices=STATUS_CHOICES, default='ABERTA')
+    observacoes = models.CharField('Observações', max_length=200, blank=True)
+
+    class Meta:
+        verbose_name = 'Parcela de Conta a Receber'
+        verbose_name_plural = 'Parcelas de Contas a Receber'
+        ordering = ['conta_receber', 'numero_parcela']
+        unique_together = [('conta_receber', 'numero_parcela')]
+
+    def __str__(self):
+        return f"{self.conta_receber.numero} – Parcela {self.numero_parcela}"
+
+
+# ============================================
+# 8. RECEBIMENTO DA CONTA A RECEBER
+# ============================================
+
+class RecebimentoContaReceber(models.Model):
+    """Registro de um pagamento recebido."""
+
+    FORMA_CHOICES = [
+        ('WIRE_TRANSFER', 'Wire Transfer'),
+        ('PIX', 'PIX'),
+        ('BOLETO', 'Boleto'),
+        ('TED', 'TED'),
+        ('OUTRO', 'Outro'),
+    ]
+
+    parcela = models.ForeignKey(
+        ParcelaContaReceber,
+        on_delete=models.CASCADE,
+        related_name='recebimentos',
+        verbose_name='Parcela',
+    )
+    conta_receber = models.ForeignKey(
+        ContaReceber,
+        on_delete=models.CASCADE,
+        related_name='recebimentos',
+        verbose_name='Conta a Receber',
+    )
+    data_pagamento = models.DateField('Data do Recebimento')
+    valor_recebido_moeda = models.DecimalField(
+        'Valor Recebido (moeda original)', max_digits=15, decimal_places=2,
+        validators=[MinValueValidator(Decimal('0.01'))],
+    )
+    valor_recebido_brl = models.DecimalField(
+        'Valor Recebido em BRL', max_digits=15, decimal_places=2,
+        validators=[MinValueValidator(Decimal('0.01'))],
+        help_text='BRL efetivamente recebido (pode diferir do câmbio previsto).',
+    )
+    taxa_cambio_realizada = models.DecimalField(
+        'Câmbio Realizado', max_digits=10, decimal_places=4,
+        null=True, blank=True,
+        help_text='Câmbio utilizado no dia do recebimento.',
+    )
+    forma_pagamento = models.CharField('Forma de Pagamento', max_length=20, choices=FORMA_CHOICES)
+    numero_documento = models.CharField('Nº Documento / Referência', max_length=100, blank=True)
+    banco = models.CharField('Banco', max_length=100, blank=True)
+    comprovante = models.FileField(
+        'Comprovante', upload_to='recebimentos/%Y/%m/', null=True, blank=True,
+    )
+    recebido_por = models.ForeignKey(
+        'usuarios.Usuario',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='recebimentos_registrados',
+        verbose_name='Registrado por',
+    )
+    observacoes = models.CharField('Observações', max_length=200, blank=True)
+    criado_em = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Recebimento'
+        verbose_name_plural = 'Recebimentos'
+        ordering = ['-data_pagamento']
+
+    def __str__(self):
+        return f"Recebimento {self.pk} – {self.conta_receber.numero}"
+
+    @property
+    def variacao_cambial_brl(self):
+        """Diferença BRL entre o previsto na emissão e o efetivamente recebido."""
+        return self.valor_recebido_brl - self.parcela.valor_parcela_brl

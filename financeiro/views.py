@@ -12,13 +12,19 @@ from django.db import transaction
 from datetime import datetime, timedelta
 from decimal import Decimal
 
-from .models import ContaPagar, ParcelaContaPagar, PagamentoContaPagar, AjusteContaPagar, FormaPagemento
+from .models import (
+    ContaPagar, ParcelaContaPagar, PagamentoContaPagar, AjusteContaPagar, FormaPagemento,
+    ContaReceber, ParcelaContaReceber, RecebimentoContaReceber,
+)
 from .forms import (
     ContaPageForm,
     ParcelaContaPageForm,
     ParcelaContaPageFormSet,
     PagamentoContaPageForm,
-    AjusteContaPageForm
+    AjusteContaPageForm,
+    ContaReceberForm,
+    ParcelaContaReceberFormSet,
+    RecebimentoContaReceberForm,
 )
 
 
@@ -674,3 +680,152 @@ def recalcular_juros_multas(request, conta_pk):
     
     messages.success(request, 'Juros e multas recalculados com sucesso!')
     return redirect('financeiro:conta_pagar_detail', pk=conta.pk)
+
+
+# ============================================
+# CONTAS A RECEBER
+# ============================================
+
+def _gerar_numero_cr(empresa):
+    """Gera próximo número CR-YYYY-NNNN para a empresa."""
+    from django.utils import timezone as tz
+    ano = tz.now().year
+    prefixo = f"CR-{ano}-"
+    ultimo = (
+        ContaReceber.objects
+        .filter(empresa=empresa, numero__startswith=prefixo)
+        .order_by('numero')
+        .last()
+    )
+    if ultimo:
+        seq = int(ultimo.numero.split('-')[-1]) + 1
+    else:
+        seq = 1
+    return f"{prefixo}{seq:04d}"
+
+
+@login_required
+def conta_receber_list(request):
+    empresa = request.user.empresa
+    qs = ContaReceber.objects.filter(empresa=empresa).select_related('cliente')
+
+    status_f = request.GET.get('status', '')
+    moeda_f = request.GET.get('moeda', '')
+    q = request.GET.get('q', '')
+    data_ini = request.GET.get('data_ini', '')
+    data_fim = request.GET.get('data_fim', '')
+
+    if status_f:
+        qs = qs.filter(status=status_f)
+    if moeda_f:
+        qs = qs.filter(moeda=moeda_f)
+    if q:
+        qs = qs.filter(
+            Q(numero__icontains=q) | Q(cliente__razao_social__icontains=q) | Q(descricao__icontains=q)
+        )
+    if data_ini:
+        qs = qs.filter(data_vencimento__gte=data_ini)
+    if data_fim:
+        qs = qs.filter(data_vencimento__lte=data_fim)
+
+    # Totais
+    totais = qs.aggregate(
+        total_brl=Sum('valor_brl'),
+        total_recebido=Sum('recebimentos__valor_recebido_brl'),
+    )
+
+    paginator = Paginator(qs.order_by('-data_emissao'), 20)
+    page = paginator.get_page(request.GET.get('page'))
+
+    return render(request, 'financeiro/conta_receber/list.html', {
+        'page_obj': page,
+        'status_choices': ContaReceber.STATUS_CHOICES,
+        'moeda_choices': ContaReceber.MOEDA_CHOICES,
+        'filtros': {'status': status_f, 'moeda': moeda_f, 'q': q, 'data_ini': data_ini, 'data_fim': data_fim},
+        'totais': totais,
+    })
+
+
+@login_required
+def conta_receber_create(request):
+    empresa = request.user.empresa
+    if request.method == 'POST':
+        form = ContaReceberForm(request.POST, empresa=empresa)
+        formset = ParcelaContaReceberFormSet(request.POST, prefix='parcelas')
+        if form.is_valid() and formset.is_valid():
+            with transaction.atomic():
+                cr = form.save(commit=False)
+                cr.empresa = empresa
+                cr.numero = _gerar_numero_cr(empresa)
+                cr.origem = 'MANUAL'
+                cr.criado_por = request.user
+                cr.save()
+                formset.instance = cr
+                formset.save()
+            messages.success(request, f'Conta a Receber {cr.numero} criada.')
+            return redirect('financeiro:conta_receber_detail', pk=cr.pk)
+    else:
+        form = ContaReceberForm(empresa=empresa)
+        formset = ParcelaContaReceberFormSet(prefix='parcelas')
+    return render(request, 'financeiro/conta_receber/form.html', {
+        'form': form, 'formset': formset, 'title': 'Nova Conta a Receber',
+    })
+
+
+@login_required
+def conta_receber_detail(request, pk):
+    empresa = request.user.empresa
+    cr = get_object_or_404(ContaReceber, pk=pk, empresa=empresa)
+    parcelas = cr.parcelas.order_by('numero_parcela')
+    recebimentos = cr.recebimentos.order_by('-data_pagamento')
+    return render(request, 'financeiro/conta_receber/detail.html', {
+        'cr': cr, 'parcelas': parcelas, 'recebimentos': recebimentos,
+    })
+
+
+@login_required
+def conta_receber_cancelar(request, pk):
+    if request.method == 'POST':
+        empresa = request.user.empresa
+        cr = get_object_or_404(ContaReceber, pk=pk, empresa=empresa)
+        if cr.status == 'CANCELADA':
+            messages.warning(request, 'Conta já está cancelada.')
+        else:
+            cr.status = 'CANCELADA'
+            cr.save()
+            messages.success(request, f'Conta {cr.numero} cancelada.')
+    return redirect('financeiro:conta_receber_detail', pk=pk)
+
+
+@login_required
+def parcela_receber_registrar(request, parcela_pk):
+    """Registra recebimento de uma parcela."""
+    empresa = request.user.empresa
+    parcela = get_object_or_404(ParcelaContaReceber, pk=parcela_pk, conta_receber__empresa=empresa)
+    cr = parcela.conta_receber
+
+    if request.method == 'POST':
+        form = RecebimentoContaReceberForm(request.POST, request.FILES)
+        if form.is_valid():
+            with transaction.atomic():
+                rec = form.save(commit=False)
+                rec.parcela = parcela
+                rec.conta_receber = cr
+                rec.recebido_por = request.user
+                rec.save()
+                parcela.status = 'PAGA'
+                parcela.data_pagamento = rec.data_pagamento
+                parcela.save()
+                cr.atualizar_status()
+            messages.success(request, 'Recebimento registrado.')
+            return redirect('financeiro:conta_receber_detail', pk=cr.pk)
+    else:
+        from django.utils import timezone as tz
+        form = RecebimentoContaReceberForm(initial={
+            'data_pagamento': tz.now().date(),
+            'valor_recebido_moeda': parcela.valor_parcela_moeda,
+            'valor_recebido_brl': parcela.valor_parcela_brl,
+        })
+    return render(request, 'financeiro/conta_receber/registrar_recebimento.html', {
+        'form': form, 'parcela': parcela, 'cr': cr,
+    })

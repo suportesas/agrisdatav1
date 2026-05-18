@@ -1,0 +1,191 @@
+{% extends 'base.html' %}
+{% block title %}{{ invoice.numero }}{% endblock %}
+{% block page_title %}Invoice de Exportação{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+  <div class="d-flex justify-content-between align-items-start mb-4">
+    <div class="d-flex align-items-center">
+      <a href="{% url 'faturamento:invoice_list' %}" class="btn btn-outline-secondary me-3">
+        <i class="bi bi-arrow-left"></i>
+      </a>
+      <div>
+        <h3 class="mb-0">{{ invoice.numero|default:"Invoice" }}</h3>
+        <small class="text-muted">Emitida em {{ invoice.data_emissao|date:"d/m/Y" }}</small>
+      </div>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{% url 'faturamento:invoice_pdf' invoice.pk %}" class="btn btn-outline-danger" target="_blank">
+        <i class="bi bi-file-pdf me-1"></i>PDF
+      </a>
+      {% if invoice.status == 'EMITIDA' %}
+      <a href="{% url 'faturamento:packing_list_create' %}?invoice={{ invoice.pk }}" class="btn btn-outline-info">
+        <i class="bi bi-box-seam me-1"></i>Gerar Packing List
+      </a>
+      {% endif %}
+      {% if invoice.status == 'RASCUNHO' %}
+      <a href="{% url 'faturamento:invoice_update' invoice.pk %}" class="btn btn-outline-secondary">
+        <i class="bi bi-pencil me-1"></i>Editar
+      </a>
+      <form method="post" action="{% url 'faturamento:invoice_emitir' invoice.pk %}" class="d-inline">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-success" onclick="return confirm('Emitir esta invoice?')">
+          <i class="bi bi-check-circle me-1"></i>Emitir
+        </button>
+      </form>
+      {% endif %}
+      {% if invoice.status != 'CANCELADA' %}
+      <form method="post" action="{% url 'faturamento:invoice_cancelar' invoice.pk %}" class="d-inline">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-outline-danger" onclick="return confirm('Cancelar esta invoice?')">
+          <i class="bi bi-x-circle me-1"></i>Cancelar
+        </button>
+      </form>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="mb-3">
+    {% if invoice.status == 'RASCUNHO' %}<span class="badge bg-secondary fs-6">Rascunho</span>
+    {% elif invoice.status == 'EMITIDA' %}<span class="badge bg-success fs-6">Emitida</span>
+    {% else %}<span class="badge bg-danger fs-6">Cancelada</span>{% endif %}
+    <span class="badge bg-info text-dark fs-6 ms-2">{{ invoice.incoterm }}</span>
+    <span class="badge bg-secondary fs-6 ms-1">{{ invoice.moeda }}</span>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-md-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header fw-semibold">Dados da Invoice</div>
+        <div class="card-body">
+          <dl class="row mb-0">
+            <dt class="col-sm-5">Importador</dt>
+            <dd class="col-sm-7">{{ invoice.cliente.razao_social }}</dd>
+            <dt class="col-sm-5">Booking</dt>
+            <dd class="col-sm-7">{{ invoice.booking.codigo|default:"—" }}</dd>
+            <dt class="col-sm-5">Emissão</dt>
+            <dd class="col-sm-7">{{ invoice.data_emissao|date:"d/m/Y" }}</dd>
+            <dt class="col-sm-5">Embarque Previsto</dt>
+            <dd class="col-sm-7">{{ invoice.data_embarque_previsto|date:"d/m/Y"|default:"—" }}</dd>
+            <dt class="col-sm-5">Incoterm</dt>
+            <dd class="col-sm-7">{{ invoice.incoterm }}</dd>
+            <dt class="col-sm-5">Porto de Embarque</dt>
+            <dd class="col-sm-7">{{ invoice.porto_embarque|default:"—" }}</dd>
+            <dt class="col-sm-5">Porto de Destino</dt>
+            <dd class="col-sm-7">{{ invoice.porto_destino|default:"—" }}</dd>
+            <dt class="col-sm-5">Cond. de Pagamento</dt>
+            <dd class="col-sm-7">{{ invoice.condicao_pagamento|default:"—" }}</dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header fw-semibold">Totais ({{ invoice.moeda }})</div>
+        <div class="card-body">
+          <dl class="row mb-0">
+            <dt class="col-sm-6">Valor da Mercadoria</dt>
+            <dd class="col-sm-6 text-end">{{ invoice.valor_mercadoria|floatformat:2 }}</dd>
+            <dt class="col-sm-6">Frete</dt>
+            <dd class="col-sm-6 text-end">{{ invoice.valor_frete|floatformat:2 }}</dd>
+            <dt class="col-sm-6">Seguro</dt>
+            <dd class="col-sm-6 text-end">{{ invoice.valor_seguro|floatformat:2 }}</dd>
+            <dt class="col-sm-6 fw-bold border-top pt-2">TOTAL {{ invoice.incoterm }}</dt>
+            <dd class="col-sm-6 text-end fw-bold border-top pt-2 text-primary">{{ invoice.valor_total|floatformat:2 }}</dd>
+            <dt class="col-sm-6">Peso Bruto Total</dt>
+            <dd class="col-sm-6 text-end">{{ invoice.peso_bruto_total|floatformat:3 }} kg</dd>
+            <dt class="col-sm-6">Peso Líquido Total</dt>
+            <dd class="col-sm-6 text-end">{{ invoice.peso_liquido_total|floatformat:3 }} kg</dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header fw-semibold">Itens da Invoice</div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-bordered table-sm mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Container</th>
+                  <th>Descrição</th>
+                  <th>Qtd</th>
+                  <th>UN</th>
+                  <th class="text-end">Peso Bruto</th>
+                  <th class="text-end">Peso Líq.</th>
+                  <th class="text-end">Vl. Unit. FOB</th>
+                  <th class="text-end">Vl. Total FOB</th>
+                  <th>Marks</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for item in invoice.itens.all %}
+                <tr>
+                  <td>{{ item.container.numero_container|default:"—" }}</td>
+                  <td>{{ item.descricao }}</td>
+                  <td>{{ item.quantidade|floatformat:4 }}</td>
+                  <td>{{ item.unidade }}</td>
+                  <td class="text-end">{{ item.peso_bruto_kg|floatformat:3 }} kg</td>
+                  <td class="text-end">{{ item.peso_liquido_kg|floatformat:3 }} kg</td>
+                  <td class="text-end">{{ invoice.moeda }} {{ item.valor_unitario_fob|floatformat:4 }}</td>
+                  <td class="text-end fw-semibold">{{ invoice.moeda }} {{ item.valor_total_fob|floatformat:2 }}</td>
+                  <td>{{ item.marks_numbers|default:"—" }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="9" class="text-center text-muted py-3">Nenhum item.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {% if invoice.banco_beneficiario %}
+    <div class="col-md-6">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header fw-semibold">Dados Bancários do Beneficiário</div>
+        <div class="card-body" style="white-space:pre-line">{{ invoice.banco_beneficiario }}</div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Packing Lists Vinculados -->
+    {% if invoice.packing_lists.exists %}
+    <div class="col-12">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header fw-semibold">Packing Lists Vinculados</div>
+        <div class="card-body p-0">
+          <table class="table table-sm mb-0">
+            <thead class="table-light">
+              <tr><th>Número</th><th>Data</th><th>Status</th><th></th></tr>
+            </thead>
+            <tbody>
+              {% for pl in invoice.packing_lists.all %}
+              <tr>
+                <td>{{ pl.numero }}</td>
+                <td>{{ pl.data_emissao|date:"d/m/Y" }}</td>
+                <td>
+                  {% if pl.status == 'RASCUNHO' %}<span class="badge bg-secondary">Rascunho</span>
+                  {% elif pl.status == 'EMITIDO' %}<span class="badge bg-success">Emitido</span>
+                  {% else %}<span class="badge bg-danger">Cancelado</span>{% endif %}
+                </td>
+                <td>
+                  <a href="{% url 'faturamento:packing_list_detail' pl.pk %}" class="btn btn-sm btn-outline-primary">Ver</a>
+                  <a href="{% url 'faturamento:packing_list_pdf' pl.pk %}" class="btn btn-sm btn-outline-danger" target="_blank">PDF</a>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

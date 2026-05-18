@@ -1,0 +1,180 @@
+{% extends 'base.html' %}
+{% block title %}Nova Ordem de Embalagem{% endblock %}
+{% block page_title %}Ordens de Embalagem{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width: 860px">
+  <div class="d-flex align-items-center mb-4">
+    <a href="{% url 'embalagem:ordem_list' %}" class="btn btn-outline-secondary me-3"><i class="bi bi-arrow-left"></i></a>
+    <h3 class="mb-0 me-auto">Nova Ordem de Embalagem</h3>
+    <button type="button" class="btn btn-outline-info" data-bs-toggle="modal" data-bs-target="#modalAjuda">
+      <i class="bi bi-question-circle me-1"></i>Ajuda
+    </button>
+  </div>
+
+  <!-- Modal de Ajuda -->
+  <div class="modal fade" id="modalAjuda" tabindex="-1" aria-labelledby="modalAjudaLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header bg-info bg-opacity-10">
+          <h5 class="modal-title" id="modalAjudaLabel">
+            <i class="bi bi-question-circle-fill text-info me-2"></i>Ajuda — Ordem de Embalagem
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+
+          <!-- O que é -->
+          <div class="alert alert-primary border-0 mb-4">
+            <strong><i class="bi bi-lightbulb me-1"></i>O que é uma Ordem de Embalagem?</strong><br>
+            É o registro do trabalho do packing house: você informa <em>qual produto a granel</em> entrou,
+            <em>como será embalado</em> e <em>onde os pallets ficarão guardados</em>.
+            Ao salvar, o sistema calcula automaticamente quantos pallets serão gerados.
+          </div>
+
+          <!-- Fluxo rápido -->
+          <h6 class="fw-bold border-bottom pb-1 mb-3">O que acontece depois?</h6>
+          <ol class="small mb-4">
+            <li>Preencha este formulário e clique em <strong>Criar Ordem</strong>.</li>
+            <li>No detalhe da ordem, clique em <strong>Gerar Pallets</strong> — o sistema cria um pallet para cada conjunto de caixas.</li>
+            <li>Imprima as <strong>Etiquetas PDF</strong> (código de barras, pesos, lote) — botão aparece após gerar os pallets.</li>
+            <li>Depois crie um <strong>Romaneio de Venda</strong> para selecionar os pallets para um cliente.</li>
+          </ol>
+
+          <!-- Campos -->
+          <h6 class="fw-bold border-bottom pb-1 mb-3">Campos do formulário</h6>
+          <dl class="row small mb-4">
+            <dt class="col-sm-4">Data <span class="text-danger">*</span></dt>
+            <dd class="col-sm-8">Data de início do processo de embalagem no packing house.</dd>
+
+            <dt class="col-sm-4">Tipo de Embalagem <span class="text-danger">*</span></dt>
+            <dd class="col-sm-8">
+              Padrão da caixa e do pallet (peso, marca, calibre, caixas/pallet).
+              Se não aparecer nenhum, <a href="{% url 'embalagem:tipo_embalagem_create' %}" target="_blank">cadastre um Tipo de Embalagem primeiro</a>.
+            </dd>
+
+            <dt class="col-sm-4">Lote de Origem <span class="text-danger">*</span></dt>
+            <dd class="col-sm-8">
+              Lote do produto a granel que será embalado. Deve estar com status <em>Disponível</em> no estoque.
+              Só aparecem lotes disponíveis nesta lista.
+            </dd>
+
+            <dt class="col-sm-4">Quantidade de Entrada (kg) <span class="text-danger">*</span></dt>
+            <dd class="col-sm-8">
+              Total de quilos de produto bruto que entrou no packing house.
+              O número de pallets gerados = <em>floor(kg entrada ÷ kg líquido por pallet)</em>.
+              <br><span class="text-muted">Ex: 5.000 kg ÷ 240 kg/pallet = 20 pallets.</span>
+            </dd>
+
+            <dt class="col-sm-4">Responsável</dt>
+            <dd class="col-sm-8">Usuário responsável pela operação de embalagem (opcional).</dd>
+
+            <dt class="col-sm-4">Armazém Destino <span class="text-danger">*</span></dt>
+            <dd class="col-sm-8">Câmara fria ou armazém onde os pallets prontos serão guardados após o embalamento.</dd>
+
+            <dt class="col-sm-4">Local de Estocagem</dt>
+            <dd class="col-sm-8">Posição específica dentro do armazém (opcional). Ex: Corredor A, Câmara 2.</dd>
+
+            <dt class="col-sm-4">Observações</dt>
+            <dd class="col-sm-8">Informações adicionais sobre a operação (temperatura, turno, ocorrências, etc.).</dd>
+          </dl>
+
+          <div class="alert alert-warning py-2 small mb-0">
+            <i class="bi bi-exclamation-triangle me-1"></i>
+            <strong>Atenção:</strong> Os pallets só são criados <em>após</em> clicar em
+            <strong>Gerar Pallets</strong> no detalhe da ordem — não no momento do cadastro.
+          </div>
+
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% if messages %}
+  {% for msg in messages %}
+  <div class="alert alert-{{ msg.tags }} alert-dismissible fade show">
+    {{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  {% endfor %}
+  {% endif %}
+
+  <form method="post">
+    {% csrf_token %}
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-header fw-semibold">Dados da Ordem</div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Data <span class="text-danger">*</span></label>
+            {{ form.data }}
+            {% if form.data.errors %}<div class="text-danger small mt-1">{{ form.data.errors }}</div>{% endif %}
+          </div>
+          <div class="col-md-5">
+            <label class="form-label fw-semibold">Tipo de Embalagem <span class="text-danger">*</span></label>
+            {{ form.tipo_embalagem }}
+            {% if form.tipo_embalagem.errors %}<div class="text-danger small mt-1">{{ form.tipo_embalagem.errors }}</div>{% endif %}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Responsável</label>
+            {{ form.responsavel }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Lote de Origem <span class="text-danger">*</span></label>
+            {{ form.lote_origem }}
+            {% if form.lote_origem.errors %}<div class="text-danger small mt-1">{{ form.lote_origem.errors }}</div>{% endif %}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Quantidade de Entrada (kg) <span class="text-danger">*</span></label>
+            {{ form.quantidade_entrada_kg }}
+            <div id="pallets-estimados" class="form-text text-info fw-semibold"></div>
+            {% if form.quantidade_entrada_kg.errors %}<div class="text-danger small mt-1">{{ form.quantidade_entrada_kg.errors }}</div>{% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-header fw-semibold">Destino</div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Armazém Destino <span class="text-danger">*</span></label>
+            {{ form.armazem_destino }}
+            {% if form.armazem_destino.errors %}<div class="text-danger small mt-1">{{ form.armazem_destino.errors }}</div>{% endif %}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Local de Estocagem</label>
+            {{ form.local_destino }}
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-semibold">Observações</label>
+            {{ form.observacoes }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="d-flex gap-2">
+      <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>Criar Ordem</button>
+      <a href="{% url 'embalagem:ordem_list' %}" class="btn btn-outline-secondary">Cancelar</a>
+    </div>
+  </form>
+</div>
+
+<script>
+// Estima pallets a partir da qtd de entrada e do tipo embalagem selecionado
+// Os dados de peso por pallet precisariam vir via AJAX; aqui é um aviso simplificado
+document.getElementById('id_quantidade_entrada_kg')?.addEventListener('input', function() {
+  const v = parseFloat(this.value);
+  const el = document.getElementById('pallets-estimados');
+  if (v > 0) {
+    el.textContent = 'Selecione o tipo de embalagem para estimar pallets.';
+  } else {
+    el.textContent = '';
+  }
+});
+</script>
+{% endblock %}

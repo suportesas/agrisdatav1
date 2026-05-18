@@ -1,0 +1,197 @@
+{% extends 'base.html' %}
+{% block title %}{% if object %}Editar{% else %}Novo{% endif %} Tipo de Embalagem{% endblock %}
+{% block page_title %}Tipos de Embalagem{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width: 860px">
+  <div class="d-flex align-items-center mb-4">
+    <a href="{% url 'embalagem:tipo_embalagem_list' %}" class="btn btn-outline-secondary me-3"><i class="bi bi-arrow-left"></i></a>
+    <h3 class="mb-0 me-auto">{% if object %}Editar Tipo de Embalagem{% else %}Novo Tipo de Embalagem{% endif %}</h3>
+    <button type="button" class="btn btn-outline-info" data-bs-toggle="modal" data-bs-target="#modalAjuda">
+      <i class="bi bi-question-circle me-1"></i>Ajuda
+    </button>
+  </div>
+
+  <!-- Modal de Ajuda -->
+  <div class="modal fade" id="modalAjuda" tabindex="-1" aria-labelledby="modalAjudaLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header bg-info bg-opacity-10">
+          <h5 class="modal-title" id="modalAjudaLabel">
+            <i class="bi bi-question-circle-fill text-info me-2"></i>Ajuda — Tipo de Embalagem
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+
+          <p class="text-muted mb-4">
+            Um <strong>Tipo de Embalagem</strong> define o padrão de caixas e pallet usado no packing house.
+            Ele é a base para gerar pallets automaticamente a partir de uma Ordem de Embalagem.
+          </p>
+
+          <h6 class="fw-bold border-bottom pb-1 mb-3">Identificação</h6>
+          <dl class="row small mb-4">
+            <dt class="col-sm-3">Nome <span class="text-danger">*</span></dt>
+            <dd class="col-sm-9">Descrição curta e clara que identifica o padrão. Ex: <em>Manga Tommy 4kg Cx18</em>. Aparecerá nas Ordens de Embalagem e nas etiquetas de pallet.</dd>
+
+            <dt class="col-sm-3">Produto</dt>
+            <dd class="col-sm-9">Produto do cadastro (opcional). Usado para vincular à pré-venda ao gerar o Pedido de Venda a partir do Romaneio.</dd>
+
+            <dt class="col-sm-3">Cultura</dt>
+            <dd class="col-sm-9">Alternativa ao Produto para classificar por cultura agrícola (ex: Manga, Limão). Preencha <em>Produto</em> ou <em>Cultura</em>, não os dois.</dd>
+
+            <dt class="col-sm-3">Variedade</dt>
+            <dd class="col-sm-9">Variedade da fruta ou produto. Ex: <em>Tommy Atkins</em>, <em>Kent</em>, <em>Palmer</em>. Aparece na etiqueta de pallet.</dd>
+
+            <dt class="col-sm-3">Marca</dt>
+            <dd class="col-sm-9">Marca comercial impressa na caixa. Ex: <em>Salutaris</em>, <em>Gold</em>. Aparece na etiqueta de pallet.</dd>
+
+            <dt class="col-sm-3">Tipo / Calibre</dt>
+            <dd class="col-sm-9">Tamanho do fruto conforme padrão do mercado. Ex: <em>2</em>, <em>3</em>, <em>14</em>. Aparece na etiqueta de pallet e nos documentos de exportação.</dd>
+          </dl>
+
+          <h6 class="fw-bold border-bottom pb-1 mb-3">Pesos e Quantidades</h6>
+          <dl class="row small mb-3">
+            <dt class="col-sm-4">Peso líquido / Cx (kg) <span class="text-danger">*</span></dt>
+            <dd class="col-sm-8">Peso do produto dentro da caixa, sem a embalagem. É o peso que conta para cálculo de capacidade do pallet e para os documentos de venda.</dd>
+
+            <dt class="col-sm-4">Peso bruto / Cx (kg) <span class="text-danger">*</span></dt>
+            <dd class="col-sm-8">Peso total da caixa incluindo a embalagem (papelão, espuma, etc.). Usado para calcular o peso bruto do pallet.</dd>
+
+            <dt class="col-sm-4">Caixas / Pallet <span class="text-danger">*</span></dt>
+            <dd class="col-sm-8">Quantidade de caixas empilhadas em cada pallet. Define quantos pallets serão gerados automaticamente pela Ordem de Embalagem.</dd>
+
+            <dt class="col-sm-4">Tara do Pallet (kg)</dt>
+            <dd class="col-sm-8">Peso do estrado (pallet de madeira) vazio. Somado ao peso bruto das caixas para calcular o peso bruto total do pallet.</dd>
+          </dl>
+
+          <div class="alert alert-success py-2 small mb-0">
+            <i class="bi bi-calculator me-1"></i>
+            <strong>Cálculo automático:</strong>
+            Peso líq. pallet = <em>Peso líq./Cx × Caixas/Pallet</em> &nbsp;|&nbsp;
+            Peso bruto pallet = <em>(Peso bruto/Cx × Caixas/Pallet) + Tara</em>.
+            O sistema exibe o resultado em tempo real enquanto você preenche os campos.
+          </div>
+
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% if messages %}
+  {% for msg in messages %}
+  <div class="alert alert-{{ msg.tags }} alert-dismissible fade show" role="alert">
+    {{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  {% endfor %}
+  {% endif %}
+
+  <form method="post">
+    {% csrf_token %}
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-header fw-semibold">Identificação</div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Nome <span class="text-danger">*</span></label>
+            {{ form.nome }}
+            {% if form.nome.errors %}<div class="text-danger small mt-1">{{ form.nome.errors }}</div>{% endif %}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Variedade</label>
+            {{ form.variedade }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Produto</label>
+            {{ form.produto }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Cultura</label>
+            {{ form.cultura }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Marca</label>
+            {{ form.marca }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Tipo / Calibre</label>
+            {{ form.tipo_calibre }}
+            <small class="text-muted">Ex: 2, 3, 14</small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-header fw-semibold">Pesos e Quantidades</div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Peso líquido / Cx (kg) <span class="text-danger">*</span></label>
+            {{ form.peso_liquido_cx }}
+            {% if form.peso_liquido_cx.errors %}<div class="text-danger small mt-1">{{ form.peso_liquido_cx.errors }}</div>{% endif %}
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Peso bruto / Cx (kg) <span class="text-danger">*</span></label>
+            {{ form.peso_bruto_cx }}
+            {% if form.peso_bruto_cx.errors %}<div class="text-danger small mt-1">{{ form.peso_bruto_cx.errors }}</div>{% endif %}
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Caixas / Pallet <span class="text-danger">*</span></label>
+            {{ form.caixas_por_pallet }}
+            {% if form.caixas_por_pallet.errors %}<div class="text-danger small mt-1">{{ form.caixas_por_pallet.errors }}</div>{% endif %}
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Tara do Pallet (kg)</label>
+            {{ form.peso_pallet_vazio }}
+          </div>
+        </div>
+        <div class="row g-3 mt-1">
+          <div class="col-md-6">
+            <div class="alert alert-info py-2 mb-0" id="calc-resultado">
+              <i class="bi bi-calculator me-1"></i>
+              <span id="calc-text">Preencha os campos para calcular automaticamente.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-body">
+        <div class="form-check form-switch">
+          {{ form.ativo }}
+          <label class="form-check-label fw-semibold" for="{{ form.ativo.id_for_label }}">Ativo</label>
+        </div>
+      </div>
+    </div>
+
+    <div class="d-flex gap-2">
+      <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>Salvar</button>
+      <a href="{% url 'embalagem:tipo_embalagem_list' %}" class="btn btn-outline-secondary">Cancelar</a>
+    </div>
+  </form>
+</div>
+
+<script>
+function calcular() {
+  const liqCx = parseFloat(document.getElementById('id_peso_liquido_cx')?.value) || 0;
+  const brutoCx = parseFloat(document.getElementById('id_peso_bruto_cx')?.value) || 0;
+  const cxPallet = parseInt(document.getElementById('id_caixas_por_pallet')?.value) || 0;
+  const taraPallet = parseFloat(document.getElementById('id_peso_pallet_vazio')?.value) || 0;
+  const el = document.getElementById('calc-text');
+  if (liqCx > 0 && cxPallet > 0) {
+    const liqPallet = (liqCx * cxPallet).toFixed(3);
+    const brutoPallet = (brutoCx * cxPallet + taraPallet).toFixed(3);
+    el.textContent = `Pallet: ${liqPallet} kg líq. | ${brutoPallet} kg bruto`;
+  }
+}
+['id_peso_liquido_cx','id_peso_bruto_cx','id_caixas_por_pallet','id_peso_pallet_vazio'].forEach(id => {
+  document.getElementById(id)?.addEventListener('input', calcular);
+});
+calcular();
+</script>
+{% endblock %}

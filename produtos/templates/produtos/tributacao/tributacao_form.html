@@ -58,12 +58,50 @@
   </div>
   {% endif %}
   
+  <!-- ══ PAINEL DE PREENCHIMENTO RÁPIDO ══════════════════════════════════ -->
+  <div class="card mb-3 border-0 shadow-sm">
+    <div class="card-header bg-primary text-white fw-semibold d-flex align-items-center justify-content-between">
+      <span><i class="bi bi-lightning-fill me-2"></i>Preenchimento Rápido de Tributos</span>
+      <small class="fw-normal opacity-75">Regime: <strong>{{ regime_tributario_display|default:"—" }}</strong></small>
+    </div>
+    <div class="card-body pb-2">
+
+      <!-- Perfis Fiscais -->
+      <p class="text-muted small mb-2">Clique em um perfil para preencher automaticamente todos os campos de tributos:</p>
+      <div class="d-flex flex-wrap gap-2 mb-3" id="perfisContainer">
+        <!-- gerado pelo JS abaixo -->
+      </div>
+
+      <!-- Copiar de outro produto -->
+      <hr class="my-3">
+      <p class="text-muted small mb-2"><i class="bi bi-files me-1"></i><strong>Copiar tributação de outro produto</strong> — busca e aplica as configurações de um produto já cadastrado:</p>
+      <div class="row g-2 align-items-end">
+        <div class="col-md-5">
+          <input type="text" id="copiarProdutoInput" class="form-control form-control-sm"
+                 placeholder="Digite código ou nome do produto..." autocomplete="off">
+        </div>
+        <div class="col-auto">
+          <button type="button" id="btnBuscarProdutoCopiar" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-search"></i> Buscar
+          </button>
+        </div>
+      </div>
+      <div id="copiarResultados" class="mt-2" style="display:none">
+        <p class="text-muted small mb-1" id="copiarProdutoNome"></p>
+        <div class="list-group list-group-flush border rounded" id="copiarListaTributos"></div>
+      </div>
+      <div id="copiarErro" class="text-danger small mt-1" style="display:none"></div>
+
+    </div>
+  </div>
+  <!-- ══════════════════════════════════════════════════════════════════ -->
+
   <form method="post" id="tributacaoForm">
     {% csrf_token %}
-    
+
     <!-- Campo produto hidden -->
     <input type="hidden" name="produto" value="{{ produto.id }}" id="id_produto">
-    
+
     <div class="card mb-3">
       <div class="card-header"><strong>Identificação</strong></div>
       <div class="card-body">
@@ -556,5 +594,237 @@ document.addEventListener('DOMContentLoaded', function() {
     // Não é mais necessário manipular select para Natureza da Operação
     // O campo agora é input texto e será preenchido pela busca do CFOP
 });
+</script>
+
+<script>
+// ══ PERFIS FISCAIS E COPIAR TRIBUTAÇÃO ══════════════════════════════════════
+(function () {
+  const REGIME = '{{ regime_tributario|default:"SIMPLES_NACIONAL" }}';
+
+  // ── Definição dos perfis por regime ─────────────────────────────────────
+  const PERFIS = {
+    SIMPLES_NACIONAL: [
+      { label: 'Isento de ICMS',          cor: 'success',
+        icms_cst:'40', icms_aliq:'0',  icms_base:'100', icms_red:'0',  icms_mod:'3',
+        pis_cst:'07',  pis_aliq:'0',   pis_base:'100',
+        cof_cst:'07',  cof_aliq:'0',   cof_base:'100',
+        ipi_cst:'99',  ipi_aliq:'0' },
+      { label: 'ICMS 7%',                 cor: 'primary',
+        icms_cst:'00', icms_aliq:'7',  icms_base:'100', icms_red:'0',  icms_mod:'3',
+        pis_cst:'07',  pis_aliq:'0',   pis_base:'100',
+        cof_cst:'07',  cof_aliq:'0',   cof_base:'100',
+        ipi_cst:'99',  ipi_aliq:'0' },
+      { label: 'ICMS 12%',                cor: 'primary',
+        icms_cst:'00', icms_aliq:'12', icms_base:'100', icms_red:'0',  icms_mod:'3',
+        pis_cst:'07',  pis_aliq:'0',   pis_base:'100',
+        cof_cst:'07',  cof_aliq:'0',   cof_base:'100',
+        ipi_cst:'99',  ipi_aliq:'0' },
+      { label: 'ICMS 17%',                cor: 'primary',
+        icms_cst:'00', icms_aliq:'17', icms_base:'100', icms_red:'0',  icms_mod:'3',
+        pis_cst:'07',  pis_aliq:'0',   pis_base:'100',
+        cof_cst:'07',  cof_aliq:'0',   cof_base:'100',
+        ipi_cst:'99',  ipi_aliq:'0' },
+      { label: 'ST — ICMS Cobrado Antes', cor: 'warning',
+        icms_cst:'60', icms_aliq:'0',  icms_base:'100', icms_red:'0',  icms_mod:'3',
+        pis_cst:'07',  pis_aliq:'0',   pis_base:'100',
+        cof_cst:'07',  cof_aliq:'0',   cof_base:'100',
+        ipi_cst:'99',  ipi_aliq:'0' },
+      { label: 'Exportação',              cor: 'secondary',
+        icms_cst:'40', icms_aliq:'0',  icms_base:'100', icms_red:'0',  icms_mod:'3',
+        pis_cst:'06',  pis_aliq:'0',   pis_base:'100',
+        cof_cst:'06',  cof_aliq:'0',   cof_base:'100',
+        ipi_cst:'99',  ipi_aliq:'0' },
+    ],
+    LUCRO_PRESUMIDO: [
+      { label: 'ICMS 12% + PIS/COFINS',  cor: 'primary',
+        icms_cst:'00', icms_aliq:'12', icms_base:'100', icms_red:'0',  icms_mod:'3',
+        pis_cst:'01',  pis_aliq:'0.65', pis_base:'100',
+        cof_cst:'01',  cof_aliq:'3',    cof_base:'100',
+        ipi_cst:'99',  ipi_aliq:'0' },
+      { label: 'ICMS 7%  + PIS/COFINS',  cor: 'primary',
+        icms_cst:'00', icms_aliq:'7',  icms_base:'100', icms_red:'0',  icms_mod:'3',
+        pis_cst:'01',  pis_aliq:'0.65', pis_base:'100',
+        cof_cst:'01',  cof_aliq:'3',    cof_base:'100',
+        ipi_cst:'99',  ipi_aliq:'0' },
+      { label: 'Isento ICMS + PIS/COFINS', cor: 'success',
+        icms_cst:'40', icms_aliq:'0',  icms_base:'100', icms_red:'0',  icms_mod:'3',
+        pis_cst:'01',  pis_aliq:'0.65', pis_base:'100',
+        cof_cst:'01',  cof_aliq:'3',    cof_base:'100',
+        ipi_cst:'99',  ipi_aliq:'0' },
+      { label: 'ST + PIS/COFINS',         cor: 'warning',
+        icms_cst:'60', icms_aliq:'0',  icms_base:'100', icms_red:'0',  icms_mod:'3',
+        pis_cst:'01',  pis_aliq:'0.65', pis_base:'100',
+        cof_cst:'01',  cof_aliq:'3',    cof_base:'100',
+        ipi_cst:'99',  ipi_aliq:'0' },
+      { label: 'Exportação',              cor: 'secondary',
+        icms_cst:'40', icms_aliq:'0',  icms_base:'100', icms_red:'0',  icms_mod:'3',
+        pis_cst:'06',  pis_aliq:'0',   pis_base:'100',
+        cof_cst:'06',  cof_aliq:'0',   cof_base:'100',
+        ipi_cst:'99',  ipi_aliq:'0' },
+    ],
+    LUCRO_REAL: [
+      { label: 'ICMS 12% + PIS/COFINS',  cor: 'primary',
+        icms_cst:'00', icms_aliq:'12', icms_base:'100', icms_red:'0',  icms_mod:'3',
+        pis_cst:'01',  pis_aliq:'7.6',  pis_base:'100',
+        cof_cst:'01',  cof_aliq:'3',    cof_base:'100',
+        ipi_cst:'99',  ipi_aliq:'0' },
+      { label: 'ICMS 7% + PIS/COFINS',   cor: 'primary',
+        icms_cst:'00', icms_aliq:'7',  icms_base:'100', icms_red:'0',  icms_mod:'3',
+        pis_cst:'01',  pis_aliq:'7.6',  pis_base:'100',
+        cof_cst:'01',  cof_aliq:'3',    cof_base:'100',
+        ipi_cst:'99',  ipi_aliq:'0' },
+      { label: 'Isento ICMS + PIS/COFINS', cor: 'success',
+        icms_cst:'40', icms_aliq:'0',  icms_base:'100', icms_red:'0',  icms_mod:'3',
+        pis_cst:'01',  pis_aliq:'7.6',  pis_base:'100',
+        cof_cst:'01',  cof_aliq:'3',    cof_base:'100',
+        ipi_cst:'99',  ipi_aliq:'0' },
+      { label: 'Exportação',              cor: 'secondary',
+        icms_cst:'40', icms_aliq:'0',  icms_base:'100', icms_red:'0',  icms_mod:'3',
+        pis_cst:'06',  pis_aliq:'0',   pis_base:'100',
+        cof_cst:'06',  cof_aliq:'0',   cof_base:'100',
+        ipi_cst:'99',  ipi_aliq:'0' },
+    ],
+  };
+
+  // ── Aplica um perfil nos campos do formulário ────────────────────────────
+  function aplicarPerfil(p) {
+    const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val; };
+    set('id_icms_situacao_tributaria', p.icms_cst);
+    set('id_icms_modalidade_base',     p.icms_mod);
+    set('id_icms_aliquota',            p.icms_aliq);
+    set('id_icms_base_calculo',        p.icms_base);
+    set('id_icms_reducao_base',        p.icms_red);
+    set('id_ipi_situacao_tributaria',  p.ipi_cst);
+    set('id_ipi_aliquota',             p.ipi_aliq);
+    set('id_pis_situacao_tributaria',  p.pis_cst);
+    set('id_pis_aliquota',             p.pis_aliq);
+    set('id_pis_base_calculo',         p.pis_base);
+    set('id_cofins_situacao_tributaria', p.cof_cst);
+    set('id_cofins_aliquota',            p.cof_aliq);
+    set('id_cofins_base_calculo',        p.cof_base);
+    // Scroll para os campos de tributos como confirmação visual
+    document.getElementById('id_icms_situacao_tributaria')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  // ── Renderiza os botões de perfil ────────────────────────────────────────
+  const container = document.getElementById('perfisContainer');
+  const perfis = PERFIS[REGIME] || PERFIS.SIMPLES_NACIONAL;
+  perfis.forEach(p => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = `btn btn-outline-${p.cor} btn-sm`;
+    btn.textContent = p.label;
+    btn.addEventListener('click', () => {
+      aplicarPerfil(p);
+      container.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+    container.appendChild(btn);
+  });
+
+  // ── Copiar tributação de outro produto ───────────────────────────────────
+  const inputCopiar  = document.getElementById('copiarProdutoInput');
+  const btnCopiar    = document.getElementById('btnBuscarProdutoCopiar');
+  const divResultados = document.getElementById('copiarResultados');
+  const divErro      = document.getElementById('copiarErro');
+  const listaTributos = document.getElementById('copiarListaTributos');
+  const nomeProduto  = document.getElementById('copiarProdutoNome');
+
+  let searchTimeout = null;
+
+  function buscarProdutos() {
+    const q = inputCopiar.value.trim();
+    divErro.style.display = 'none';
+    divResultados.style.display = 'none';
+    if (q.length < 2) return;
+
+    btnCopiar.disabled = true;
+    btnCopiar.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+
+    fetch(`/produtos/ajax/buscar/?q=${encodeURIComponent(q)}`)
+      .then(r => r.json())
+      .then(data => {
+        if (!data.results || !data.results.length) {
+          divErro.textContent = 'Nenhum produto encontrado.';
+          divErro.style.display = '';
+          return;
+        }
+        // Mostra lista de produtos encontrados para o usuário escolher
+        listaTributos.innerHTML = '';
+        nomeProduto.textContent = 'Selecione o produto para ver as tributações:';
+        divResultados.style.display = '';
+
+        data.results.forEach(prod => {
+          const item = document.createElement('button');
+          item.type = 'button';
+          item.className = 'list-group-item list-group-item-action py-1 px-3 small';
+          item.textContent = prod.text;
+          item.addEventListener('click', () => carregarTributacoes(prod.id, prod.text));
+          listaTributos.appendChild(item);
+        });
+      })
+      .catch(() => { divErro.textContent = 'Erro na busca.'; divErro.style.display = ''; })
+      .finally(() => { btnCopiar.disabled = false; btnCopiar.innerHTML = '<i class="bi bi-search"></i> Buscar'; });
+  }
+
+  function carregarTributacoes(prodId, prodNome) {
+    listaTributos.innerHTML = '<div class="list-group-item text-muted small">Carregando...</div>';
+    fetch(`/produtos/ajax/${prodId}/tributacoes/`)
+      .then(r => r.json())
+      .then(data => {
+        if (!data.success || !data.tributacoes.length) {
+          listaTributos.innerHTML = '<div class="list-group-item text-muted small">Este produto não tem tributações cadastradas.</div>';
+          return;
+        }
+        nomeProduto.textContent = `Tributações de: ${prodNome}`;
+        listaTributos.innerHTML = '';
+        data.tributacoes.forEach(t => {
+          const item = document.createElement('button');
+          item.type = 'button';
+          item.className = 'list-group-item list-group-item-action py-1 px-3 small d-flex justify-content-between align-items-center';
+          item.innerHTML = `
+            <span>
+              <strong>CFOP ${t.cfop_codigo}</strong>
+              <span class="text-muted"> — ICMS ${t.icms_situacao_tributaria} ${parseFloat(t.icms_aliquota) > 0 ? t.icms_aliquota + '%' : '(isento)'}
+              · PIS ${t.pis_situacao_tributaria} · COFINS ${t.cofins_situacao_tributaria}</span>
+            </span>
+            <span class="badge bg-primary">Aplicar</span>`;
+          item.addEventListener('click', () => aplicarTributacao(t));
+          listaTributos.appendChild(item);
+        });
+      })
+      .catch(() => { listaTributos.innerHTML = '<div class="list-group-item text-danger small">Erro ao carregar.</div>'; });
+  }
+
+  function aplicarTributacao(t) {
+    // Preenche CFOP
+    const cfopInput = document.getElementById('cfopCodigoInput');
+    if (cfopInput) { cfopInput.value = t.cfop_codigo; document.getElementById('btnBuscarCfop')?.click(); }
+
+    // Preenche todos os campos de tributos
+    aplicarPerfil({
+      icms_cst: t.icms_situacao_tributaria, icms_aliq: t.icms_aliquota,
+      icms_base: t.icms_base_calculo, icms_red: t.icms_reducao_base, icms_mod: t.icms_modalidade_base,
+      ipi_cst: t.ipi_situacao_tributaria, ipi_aliq: t.ipi_aliquota,
+      pis_cst: t.pis_situacao_tributaria, pis_aliq: t.pis_aliquota, pis_base: t.pis_base_calculo,
+      cof_cst: t.cofins_situacao_tributaria, cof_aliq: t.cofins_aliquota, cof_base: t.cofins_base_calculo,
+    });
+
+    // Preenche campos extras (IPI enquadramento, origem)
+    const ipiEnq = document.getElementById('id_ipi_codigo_enquadramento');
+    if (ipiEnq) ipiEnq.value = t.ipi_codigo_enquadramento;
+    const origem = document.getElementById('id_origem_mercadoria');
+    if (origem) origem.value = t.origem_mercadoria;
+    const desc = document.getElementById('id_descricao');
+    if (desc && !desc.value) desc.value = t.descricao;
+
+    // Feedback visual
+    listaTributos.querySelectorAll('.list-group-item').forEach(i => i.classList.remove('active'));
+    event.currentTarget.classList.add('active');
+  }
+
+  btnCopiar.addEventListener('click', buscarProdutos);
+  inputCopiar.addEventListener('keypress', e => { if (e.key === 'Enter') { e.preventDefault(); buscarProdutos(); } });
+})();
 </script>
 {% endblock %}

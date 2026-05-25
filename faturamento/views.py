@@ -2,17 +2,20 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db.models import Count, Q, Sum
-from django.http import JsonResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
+from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 
 from .forms import (
+    CertificadoDigitalForm,
     ConfiguracaoFiscalForm,
     InvoiceExportacaoForm,
     ItemInvoiceFormSet,
     ItemNotaFiscalFormSet,
     ItemPackingListFormSet,
+    NotaFiscalCancelarForm,
     NotaFiscalForm,
     PackingListForm,
 )
@@ -120,10 +123,14 @@ def nota_fiscal_create(request):
         formset = ItemNotaFiscalFormSet(request.POST, prefix='itens')
         if form.is_valid() and formset.is_valid():
             nf = form.save(user=request.user)
-            # Auto-numerar
+            # Auto-numerar — respeita numero_nfe_inicial para migração de outro sistema
             if not nf.numero:
                 ultimo = NotaFiscal.objects.filter(empresa=empresa).exclude(numero__isnull=True).order_by('-numero').first()
-                nf.numero = (ultimo.numero + 1) if ultimo else 1
+                if ultimo:
+                    nf.numero = ultimo.numero + 1
+                else:
+                    cfg = ConfiguracaoFiscal.objects.filter(empresa=empresa).first()
+                    nf.numero = cfg.numero_nfe_inicial if cfg else 1
             formset.instance = nf
             items = formset.save(commit=False)
             for idx, item in enumerate(items, start=1):
@@ -196,6 +203,8 @@ def nota_fiscal_update(request, pk):
 @login_required
 @require_POST
 def nota_fiscal_emitir(request, pk):
+    from .services.integranotas import IntegranNotasClient, IntegranNotasError
+
     empresa = _get_empresa(request)
     nf = get_object_or_404(NotaFiscal, pk=pk, empresa=empresa)
 
@@ -207,16 +216,58 @@ def nota_fiscal_emitir(request, pk):
         messages.error(request, 'Adicione pelo menos um item antes de emitir.')
         return redirect('faturamento:nota_fiscal_detail', pk=pk)
 
-    nf.status = 'EMITIDA'
-    nf.atualizado_por = request.user
-    nf.save(update_fields=['status', 'atualizado_por'])
-    messages.success(request, f'NF {nf.numero}/{nf.serie} emitida com sucesso.')
+    config = ConfiguracaoFiscal.objects.filter(empresa=empresa).first()
+    if not config or not config.token_integranotas:
+        messages.error(request, 'Configure o token IntegraNota em Faturamento → Configuração Fiscal antes de emitir.')
+        return redirect('faturamento:nota_fiscal_detail', pk=pk)
+
+    try:
+        client = IntegranNotasClient(config.token_integranotas, config.ambiente_nfe)
+        data = client.emitir_nfe(nf)
+
+        chave = data.get('chave', '')
+        protocolo = data.get('protocolo', '')
+        xml_b64 = data.get('xml', '')
+        pdf_b64 = data.get('pdf', '')
+        codigo = data.get('codigo')
+
+        if codigo == 5023:
+            # Queued — salva chave e aguarda webhook / polling
+            nf.chave_acesso = chave
+            nf.status = 'EMITIDA'
+            nf.data_hora_emissao = timezone.now()
+            nf.atualizado_por = request.user
+            nf.save(update_fields=['chave_acesso', 'status', 'data_hora_emissao', 'atualizado_por'])
+            messages.info(request, f'NF {nf.numero}/{nf.serie} enviada à SEFAZ — aguardando autorização. Chave: {chave}')
+        else:
+            # Authorized immediately (codigo == 100)
+            nf.chave_acesso = chave
+            nf.protocolo_autorizacao = protocolo
+            nf.xml_autorizacao = xml_b64
+            nf.pdf_danfe = pdf_b64
+            nf.status = 'EMITIDA'
+            nf.data_hora_emissao = timezone.now()
+            nf.atualizado_por = request.user
+            nf.save(update_fields=[
+                'chave_acesso', 'protocolo_autorizacao', 'xml_autorizacao',
+                'pdf_danfe', 'status', 'data_hora_emissao', 'atualizado_por',
+            ])
+            messages.success(request, f'NF {nf.numero}/{nf.serie} autorizada! Chave: {chave}')
+
+    except IntegranNotasError as exc:
+        erros = '; '.join(str(e) for e in exc.erros) if exc.erros else ''
+        msg = f'Erro IntegraNota [{exc.codigo}]: {exc} {erros}'.strip()
+        messages.error(request, msg)
+    except Exception as exc:
+        messages.error(request, f'Falha na comunicação com IntegraNota: {exc}')
+
     return redirect('faturamento:nota_fiscal_detail', pk=pk)
 
 
 @login_required
-@require_POST
 def nota_fiscal_cancelar(request, pk):
+    from .services.integranotas import IntegranNotasClient, IntegranNotasError
+
     empresa = _get_empresa(request)
     nf = get_object_or_404(NotaFiscal, pk=pk, empresa=empresa)
 
@@ -224,11 +275,92 @@ def nota_fiscal_cancelar(request, pk):
         messages.warning(request, 'NF-e já está cancelada.')
         return redirect('faturamento:nota_fiscal_detail', pk=pk)
 
-    nf.status = 'CANCELADA'
-    nf.atualizado_por = request.user
-    nf.save(update_fields=['status', 'atualizado_por'])
-    messages.success(request, f'NF {nf.numero}/{nf.serie} cancelada.')
-    return redirect('faturamento:nota_fiscal_detail', pk=pk)
+    if request.method == 'POST':
+        form = NotaFiscalCancelarForm(request.POST)
+        if form.is_valid():
+            justificativa = form.cleaned_data['justificativa']
+
+            # Se NF tem chave, tenta cancelar na SEFAZ via IntegraNota
+            if nf.chave_acesso:
+                config = ConfiguracaoFiscal.objects.filter(empresa=empresa).first()
+                if not config or not config.token_integranotas:
+                    messages.error(request, 'Configure o token IntegraNota para cancelar via SEFAZ.')
+                    return render(request, 'faturamento/nota_fiscal/cancelar_form.html', {'form': form, 'nf': nf})
+                try:
+                    client = IntegranNotasClient(config.token_integranotas, config.ambiente_nfe)
+                    client.cancelar_nfe(nf.chave_acesso, justificativa)
+                except IntegranNotasError as exc:
+                    messages.error(request, f'Erro ao cancelar na SEFAZ [{exc.codigo}]: {exc}')
+                    return render(request, 'faturamento/nota_fiscal/cancelar_form.html', {'form': form, 'nf': nf})
+                except Exception as exc:
+                    messages.error(request, f'Falha na comunicação com IntegraNota: {exc}')
+                    return render(request, 'faturamento/nota_fiscal/cancelar_form.html', {'form': form, 'nf': nf})
+
+            nf.status = 'CANCELADA'
+            nf.motivo_cancelamento = justificativa
+            nf.data_cancelamento = timezone.now()
+            nf.atualizado_por = request.user
+            nf.save(update_fields=['status', 'motivo_cancelamento', 'data_cancelamento', 'atualizado_por'])
+            messages.success(request, f'NF {nf.numero}/{nf.serie} cancelada.')
+            return redirect('faturamento:nota_fiscal_detail', pk=pk)
+    else:
+        form = NotaFiscalCancelarForm()
+
+    return render(request, 'faturamento/nota_fiscal/cancelar_form.html', {'form': form, 'nf': nf})
+
+
+@csrf_exempt
+def integranotas_webhook(request):
+    """Receives async status notifications from IntegraNota."""
+    import json
+    if request.method != 'POST':
+        return HttpResponse(status=405)
+
+    try:
+        payload = json.loads(request.body)
+    except Exception:
+        return HttpResponse(status=400)
+
+    chave = payload.get('chave') or payload.get('chave_acesso', '')
+    if not chave:
+        return HttpResponse(status=200)
+
+    try:
+        nf = NotaFiscal.objects.get(chave_acesso=chave)
+    except NotaFiscal.DoesNotExist:
+        return HttpResponse(status=200)
+
+    codigo = payload.get('codigo')
+    if codigo == 100:
+        nf.protocolo_autorizacao = payload.get('protocolo', nf.protocolo_autorizacao)
+        nf.xml_autorizacao = payload.get('xml', nf.xml_autorizacao)
+        nf.pdf_danfe = payload.get('pdf', nf.pdf_danfe)
+        if not nf.data_hora_emissao:
+            nf.data_hora_emissao = timezone.now()
+        nf.status = 'EMITIDA'
+        nf.save(update_fields=['protocolo_autorizacao', 'xml_autorizacao', 'pdf_danfe', 'data_hora_emissao', 'status'])
+    elif codigo == 101:
+        nf.status = 'CANCELADA'
+        if not nf.data_cancelamento:
+            nf.data_cancelamento = timezone.now()
+        nf.save(update_fields=['status', 'data_cancelamento'])
+
+    return HttpResponse(status=200)
+
+
+@login_required
+def nota_fiscal_danfe(request, pk):
+    """Download the DANFE PDF returned by IntegraNota (base64 stored in pdf_danfe)."""
+    import base64
+    empresa = _get_empresa(request)
+    nf = get_object_or_404(NotaFiscal, pk=pk, empresa=empresa)
+    if not nf.pdf_danfe:
+        messages.error(request, 'DANFE não disponível — a NF-e ainda não foi autorizada pela SEFAZ.')
+        return redirect('faturamento:nota_fiscal_detail', pk=pk)
+    pdf_bytes = base64.b64decode(nf.pdf_danfe)
+    response = HttpResponse(pdf_bytes, content_type='application/pdf')
+    response['Content-Disposition'] = f'inline; filename="DANFE_{nf.numero}_{nf.serie}.pdf"'
+    return response
 
 
 @login_required
@@ -627,6 +759,9 @@ def packing_list_pdf(request, pk):
 
 @login_required
 def configuracao_fiscal(request):
+    from datetime import timedelta
+    from empresas.forms import EmpresaFiscalForm
+
     empresa = _get_empresa(request)
     if not empresa:
         return redirect('dashboard:index')
@@ -635,14 +770,73 @@ def configuracao_fiscal(request):
 
     if request.method == 'POST':
         form = ConfiguracaoFiscalForm(request.POST, instance=config)
-        if form.is_valid():
+        empresa_form = EmpresaFiscalForm(request.POST, instance=empresa)
+        if form.is_valid() and empresa_form.is_valid():
             form.save()
+            empresa_form.save()
             messages.success(request, 'Configuração fiscal salva com sucesso.')
             return redirect('faturamento:configuracao')
     else:
         form = ConfiguracaoFiscalForm(instance=config)
+        empresa_form = EmpresaFiscalForm(instance=empresa)
 
-    return render(request, 'faturamento/configuracao.html', {'form': form, 'config': config})
+    today = timezone.now().date()
+    cert_expirado = config.certificado_validade and config.certificado_validade < today
+    cert_expira_breve = (
+        config.certificado_validade
+        and not cert_expirado
+        and config.certificado_validade <= today + timedelta(days=30)
+    )
+
+    return render(request, 'faturamento/configuracao.html', {
+        'form': form,
+        'config': config,
+        'empresa_form': empresa_form,
+        'cert_form': CertificadoDigitalForm(),
+        'cert_expirado': cert_expirado,
+        'cert_expira_breve': cert_expira_breve,
+    })
+
+
+@login_required
+@require_POST
+def certificado_upload(request):
+    from .services.integranotas import parse_pfx
+
+    empresa = _get_empresa(request)
+    if not empresa:
+        return redirect('dashboard:index')
+
+    config, _ = ConfiguracaoFiscal.objects.get_or_create(empresa=empresa)
+    form = CertificadoDigitalForm(request.POST, request.FILES)
+
+    if form.is_valid():
+        arquivo = form.cleaned_data['arquivo_pfx']
+        senha = form.cleaned_data['senha_certificado']
+        pfx_bytes = arquivo.read()
+        try:
+            info = parse_pfx(pfx_bytes, senha)
+            config.certificado_pfx = pfx_bytes
+            config.senha_certificado = senha
+            config.certificado_validade = info['validade']
+            config.certificado_cnpj = info['cnpj']
+            config.certificado_arquivo_nome = arquivo.name
+            config.save()
+            messages.success(
+                request,
+                f'Certificado "{arquivo.name}" importado. '
+                f'Válido até {info["validade"].strftime("%d/%m/%Y")}.'
+            )
+        except ValueError as exc:
+            messages.error(request, str(exc))
+        except Exception as exc:
+            messages.error(request, f'Erro inesperado ao processar certificado: {exc}')
+    else:
+        for field_errors in form.errors.values():
+            for error in field_errors:
+                messages.error(request, error)
+
+    return redirect('faturamento:configuracao')
 
 
 # ─────────────────────────── AJAX ───────────────────────────
@@ -665,6 +859,7 @@ def ajax_produto_detail(request, pk):
             'cst_cofins': t.cofins_situacao_tributaria,
             'aliquota_icms': float(t.icms_aliquota),
             'aliquota_ipi': float(t.ipi_aliquota),
+            'ipi_codigo_enquadramento': t.ipi_codigo_enquadramento or '999',
             'aliquota_pis': float(t.pis_aliquota),
             'aliquota_cofins': float(t.cofins_aliquota),
         })
@@ -672,6 +867,8 @@ def ajax_produto_detail(request, pk):
     return JsonResponse({
         'nome': produto.nome,
         'ncm': produto.ncm.codigo if produto.ncm_id else '',
+        'cest': produto.cest or '',
+        'origem_mercadoria': produto.origem_mercadoria or '0',
         'unidade': produto.unidade_venda.sigla if produto.unidade_venda_id else '',
         'preco_venda': float(produto.preco_venda),
         'tributacoes': tributacoes,

@@ -15,6 +15,7 @@ urlpatterns = [
     path('notas-fiscais/<int:pk>/emitir/', views.nota_fiscal_emitir, name='nota_fiscal_emitir'),
     path('notas-fiscais/<int:pk>/cancelar/', views.nota_fiscal_cancelar, name='nota_fiscal_cancelar'),
     path('notas-fiscais/<int:pk>/pdf/', views.nota_fiscal_pdf, name='nota_fiscal_pdf'),
+    path('notas-fiscais/<int:pk>/danfe/', views.nota_fiscal_danfe, name='nota_fiscal_danfe'),
 
     # Invoice de Exportação
     path('invoices/', views.invoice_list, name='invoice_list'),
@@ -35,6 +36,10 @@ urlpatterns = [
 
     # Configuração
     path('configuracao/', views.configuracao_fiscal, name='configuracao'),
+    path('configuracao/certificado/', views.certificado_upload, name='certificado_upload'),
+
+    # Webhook IntegraNota
+    path('webhook/integranotas/', views.integranotas_webhook, name='integranotas_webhook'),
 
     # AJAX
     path('ajax/produto/<int:pk>/', views.ajax_produto_detail, name='ajax_produto_detail'),

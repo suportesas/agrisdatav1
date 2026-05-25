@@ -23,6 +23,12 @@ urlpatterns = [
     path('pallets/', views.pallet_list, name='pallet_list'),
     path('pallets/<int:pk>/etiqueta/', views.pallet_etiqueta_pdf, name='pallet_etiqueta_pdf'),
 
+    # Pallet Misto
+    path('ordens/<int:ordem_pk>/pallet-misto/', views.pallet_misto_create, name='pallet_misto_create'),
+    path('pallets/<int:pk>/misto/', views.pallet_misto_detail, name='pallet_misto_detail'),
+    path('pallets/<int:pk>/misto/adicionar/', views.pallet_misto_add_item, name='pallet_misto_add_item'),
+    path('pallets/<int:pk>/misto/remover/<int:item_pk>/', views.pallet_misto_remove_item, name='pallet_misto_remove_item'),
+
     # Romaneios
     path('romaneios/', views.romaneio_list, name='romaneio_list'),
     path('romaneios/novo/', views.romaneio_create, name='romaneio_create'),
@@ -32,7 +38,11 @@ urlpatterns = [
     path('romaneios/<int:pk>/gerar-pedido/', views.romaneio_gerar_pedido, name='romaneio_gerar_pedido'),
     path('romaneios/<int:pk>/etiquetas/', views.romaneio_etiquetas_pdf, name='romaneio_etiquetas_pdf'),
     path('romaneios/<int:pk>/conferencia/', views.romaneio_conferencia, name='romaneio_conferencia'),
+    path('romaneios/<int:pk>/conferencia-pdf/', views.romaneio_conferencia_pdf, name='romaneio_conferencia_pdf'),
     path('romaneios/<int:pk>/remover-pallet/<int:item_pk>/', views.romaneio_remover_pallet, name='romaneio_remover_pallet'),
+    path('romaneios/<int:pk>/trocar-cliente/', views.romaneio_trocar_cliente, name='romaneio_trocar_cliente'),
+    path('romaneios/<int:pk>/gerar-invoice/', views.romaneio_gerar_invoice, name='romaneio_gerar_invoice'),
+    path('romaneios/<int:pk>/gerar-nota-fiscal/', views.romaneio_gerar_nota_fiscal, name='romaneio_gerar_nota_fiscal'),
 
     # AJAX
     path('ajax/pallets/', views.ajax_pallets_disponiveis, name='ajax_pallets_disponiveis'),

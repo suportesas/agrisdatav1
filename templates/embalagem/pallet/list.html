@@ -180,7 +180,7 @@
             {% for p in page_obj %}
             <tr>
               <td><strong>{{ p.codigo_pallet }}</strong></td>
-              <td>{{ p.tipo_embalagem.nome }}</td>
+              <td>{{ p.tipo_embalagem.nome|default:"Misto" }}{% if p.is_misto %} <span class="badge bg-warning text-dark ms-1" style="font-size:.7em">MISTO</span>{% endif %}</td>
               <td>{{ p.data_embalagem|date:"d/m/Y" }}</td>
               <td class="text-end">{{ p.quantidade_caixas }}</td>
               <td class="text-end">{{ p.peso_liquido_kg|floatformat:3 }}</td>

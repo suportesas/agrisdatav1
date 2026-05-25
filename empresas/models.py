@@ -528,6 +528,42 @@ class Empresa(models.Model):
         auto_now=True
     )
 
+    # Fiscal NF-e
+    inscricao_estadual = models.CharField(
+        'Inscrição Estadual',
+        max_length=30,
+        blank=True,
+        null=True,
+        help_text='IE do emitente para NF-e'
+    )
+    cep = models.CharField(
+        'CEP',
+        max_length=9,
+        blank=True,
+        null=True,
+        help_text='Formato: 00000-000'
+    )
+    numero_endereco = models.CharField(
+        'Número',
+        max_length=10,
+        blank=True,
+        null=True,
+        help_text='Número do logradouro'
+    )
+    complemento_endereco = models.CharField(
+        'Complemento',
+        max_length=60,
+        blank=True,
+        null=True,
+    )
+    codigo_municipio = models.CharField(
+        'Código IBGE do Município',
+        max_length=7,
+        blank=True,
+        null=True,
+        help_text='Código IBGE do município (7 dígitos) — obrigatório para NF-e'
+    )
+
     # NCM seeding and sync control
     auto_seed_ncm = models.BooleanField(
         'Popular NCMs automaticamente ao criar empresa',

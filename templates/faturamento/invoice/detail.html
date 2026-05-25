@@ -62,6 +62,10 @@
           <dl class="row mb-0">
             <dt class="col-sm-5">Importador</dt>
             <dd class="col-sm-7">{{ invoice.cliente.razao_social }}</dd>
+            {% if invoice.romaneio_origem %}
+            <dt class="col-sm-5">Romaneio</dt>
+            <dd class="col-sm-7"><a href="{% url 'embalagem:romaneio_detail' invoice.romaneio_origem.pk %}">{{ invoice.romaneio_origem.numero }}</a></dd>
+            {% endif %}
             <dt class="col-sm-5">Booking</dt>
             <dd class="col-sm-7">{{ invoice.booking.codigo|default:"—" }}</dd>
             <dt class="col-sm-5">Emissão</dt>

@@ -16,27 +16,29 @@
       </div>
     </div>
     <div class="d-flex gap-2">
-      <a href="{% url 'faturamento:nota_fiscal_pdf' nf.pk %}" class="btn btn-outline-danger" target="_blank">
-        <i class="bi bi-file-pdf me-1"></i>PDF
+      <a href="{% url 'faturamento:nota_fiscal_pdf' nf.pk %}" class="btn btn-outline-secondary" target="_blank">
+        <i class="bi bi-file-earmark-text me-1"></i>PDF Interno
       </a>
+      {% if nf.pdf_danfe %}
+      <a href="{% url 'faturamento:nota_fiscal_danfe' nf.pk %}" class="btn btn-outline-danger" target="_blank">
+        <i class="bi bi-file-pdf me-1"></i>DANFE
+      </a>
+      {% endif %}
       {% if nf.status == 'RASCUNHO' %}
       <a href="{% url 'faturamento:nota_fiscal_update' nf.pk %}" class="btn btn-outline-secondary">
         <i class="bi bi-pencil me-1"></i>Editar
       </a>
       <form method="post" action="{% url 'faturamento:nota_fiscal_emitir' nf.pk %}" class="d-inline">
         {% csrf_token %}
-        <button type="submit" class="btn btn-success" onclick="return confirm('Emitir esta NF-e?')">
-          <i class="bi bi-check-circle me-1"></i>Emitir
+        <button type="submit" class="btn btn-success" onclick="return confirm('Transmitir esta NF-e ao IntegraNota/SEFAZ?')">
+          <i class="bi bi-send me-1"></i>Emitir NF-e
         </button>
       </form>
       {% endif %}
       {% if nf.status != 'CANCELADA' %}
-      <form method="post" action="{% url 'faturamento:nota_fiscal_cancelar' nf.pk %}" class="d-inline">
-        {% csrf_token %}
-        <button type="submit" class="btn btn-outline-danger" onclick="return confirm('Cancelar esta NF-e?')">
-          <i class="bi bi-x-circle me-1"></i>Cancelar
-        </button>
-      </form>
+      <a href="{% url 'faturamento:nota_fiscal_cancelar' nf.pk %}" class="btn btn-outline-danger">
+        <i class="bi bi-x-circle me-1"></i>Cancelar
+      </a>
       {% endif %}
     </div>
   </div>
@@ -46,7 +48,24 @@
     {% if nf.status == 'RASCUNHO' %}<span class="badge bg-secondary fs-6">Rascunho</span>
     {% elif nf.status == 'EMITIDA' %}<span class="badge bg-success fs-6">Emitida</span>
     {% else %}<span class="badge bg-danger fs-6">Cancelada</span>{% endif %}
+    {% if nf.chave_acesso %}
+    <span class="badge bg-light text-dark border fs-6 ms-2 font-monospace" title="{{ nf.chave_acesso }}">Chave: {{ nf.chave_acesso|truncatechars:12 }}…</span>
+    {% endif %}
   </div>
+
+  {% if nf.chave_acesso %}
+  <div class="alert alert-light border py-2 px-3 mb-3 d-flex align-items-center gap-4 flex-wrap">
+    <div><small class="text-muted d-block">Chave de Acesso</small><code class="small">{{ nf.chave_acesso }}</code></div>
+    {% if nf.protocolo_autorizacao %}<div><small class="text-muted d-block">Protocolo SEFAZ</small><code class="small">{{ nf.protocolo_autorizacao }}</code></div>{% endif %}
+    {% if nf.data_hora_emissao %}<div><small class="text-muted d-block">Emissão SEFAZ</small><span class="small">{{ nf.data_hora_emissao|date:"d/m/Y H:i" }}</span></div>{% endif %}
+  </div>
+  {% endif %}
+
+  {% if nf.status == 'CANCELADA' and nf.motivo_cancelamento %}
+  <div class="alert alert-danger py-2 px-3 mb-3">
+    <strong>Cancelada em {{ nf.data_cancelamento|date:"d/m/Y H:i" }}:</strong> {{ nf.motivo_cancelamento }}
+  </div>
+  {% endif %}
 
   <div class="row g-3">
     <!-- Dados Principais -->
@@ -57,6 +76,10 @@
           <dl class="row mb-0">
             <dt class="col-sm-5">Cliente</dt>
             <dd class="col-sm-7">{{ nf.cliente.razao_social }}</dd>
+            {% if nf.romaneio_origem %}
+            <dt class="col-sm-5">Romaneio</dt>
+            <dd class="col-sm-7"><a href="{% url 'embalagem:romaneio_detail' nf.romaneio_origem.pk %}">{{ nf.romaneio_origem.numero }}</a></dd>
+            {% endif %}
             <dt class="col-sm-5">CNPJ / CPF</dt>
             <dd class="col-sm-7">{{ nf.cliente.cnpj_cpf|default:"—" }}</dd>
             <dt class="col-sm-5">Natureza da Operação</dt>

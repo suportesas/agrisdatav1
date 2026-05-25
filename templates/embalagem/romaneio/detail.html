@@ -53,6 +53,11 @@
         </button>
       </form>
       {% endif %}
+      {% if romaneio.status in 'CONFIRMADO,CARREGANDO' %}
+      <a href="{% url 'embalagem:romaneio_trocar_cliente' romaneio.pk %}" class="btn btn-outline-secondary">
+        <i class="bi bi-person-gear me-1"></i>Trocar Cliente
+      </a>
+      {% endif %}
       {% if romaneio.status == 'CONFIRMADO' and not romaneio.pedido_venda %}
       <form method="post" action="{% url 'embalagem:romaneio_gerar_pedido' romaneio.pk %}" class="d-inline">
         {% csrf_token %}
@@ -62,6 +67,36 @@
         </button>
       </form>
       {% endif %}
+      {% if romaneio.tipo == 'EXPORTACAO' and romaneio.status in 'CONFIRMADO,CARREGANDO,CONCLUIDO' %}
+        {% if romaneio.invoice_exportacao %}
+        <a href="{% url 'faturamento:invoice_detail' romaneio.invoice_exportacao.pk %}" class="btn btn-outline-info">
+          <i class="bi bi-file-earmark-text me-1"></i>Ver Invoice
+        </a>
+        {% else %}
+        <form method="post" action="{% url 'embalagem:romaneio_gerar_invoice' romaneio.pk %}" class="d-inline">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-outline-info"
+            onclick="return confirm('Gerar Invoice e Packing List em Rascunho a partir deste romaneio?')">
+            <i class="bi bi-file-earmark-plus me-1"></i>Gerar Invoice
+          </button>
+        </form>
+        {% endif %}
+      {% endif %}
+      {% if romaneio.tipo == 'MERCADO_INTERNO' and romaneio.status in 'CONFIRMADO,CARREGANDO,CONCLUIDO' %}
+        {% if romaneio.nota_fiscal %}
+        <a href="{% url 'faturamento:nota_fiscal_detail' romaneio.nota_fiscal.pk %}" class="btn btn-outline-info">
+          <i class="bi bi-file-earmark-text me-1"></i>Ver Nota Fiscal
+        </a>
+        {% else %}
+        <form method="post" action="{% url 'embalagem:romaneio_gerar_nota_fiscal' romaneio.pk %}" class="d-inline">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-outline-info"
+            onclick="return confirm('Gerar Pré-Nota Fiscal em Rascunho a partir deste romaneio?')">
+            <i class="bi bi-file-earmark-plus me-1"></i>Gerar NF
+          </button>
+        </form>
+        {% endif %}
+      {% endif %}
       {% if romaneio.itens.count > 0 %}
       <a href="{% url 'embalagem:romaneio_etiquetas_pdf' romaneio.pk %}" class="btn btn-outline-primary" target="_blank">
         <i class="bi bi-printer me-1"></i>Etiquetas PDF
@@ -70,6 +105,11 @@
       {% if romaneio.status in 'CONFIRMADO,CARREGANDO' %}
       <a href="{% url 'embalagem:romaneio_conferencia' romaneio.pk %}" class="btn btn-warning text-dark">
         <i class="bi bi-upc-scan me-1"></i>Conferência
+      </a>
+      {% endif %}
+      {% if romaneio.status in 'CARREGANDO,CONCLUIDO' %}
+      <a href="{% url 'embalagem:romaneio_conferencia_pdf' romaneio.pk %}" class="btn btn-outline-dark" target="_blank">
+        <i class="bi bi-file-earmark-ruled me-1"></i>Relatório PDF
       </a>
       {% endif %}
     </div>
@@ -106,6 +146,14 @@
             {% if romaneio.pedido_venda %}
             <dt class="col-sm-5">Pedido</dt>
             <dd class="col-sm-7"><a href="{% url 'vendas:pedido_detail' romaneio.pedido_venda.pk %}">{{ romaneio.pedido_venda.numero }}</a></dd>
+            {% endif %}
+            {% if romaneio.invoice_exportacao %}
+            <dt class="col-sm-5">Invoice</dt>
+            <dd class="col-sm-7"><a href="{% url 'faturamento:invoice_detail' romaneio.invoice_exportacao.pk %}">{{ romaneio.invoice_exportacao.numero|default:"Rascunho" }}</a></dd>
+            {% endif %}
+            {% if romaneio.nota_fiscal %}
+            <dt class="col-sm-5">Nota Fiscal</dt>
+            <dd class="col-sm-7"><a href="{% url 'faturamento:nota_fiscal_detail' romaneio.nota_fiscal.pk %}">NF {{ romaneio.nota_fiscal.numero|default:"Rascunho" }}</a></dd>
             {% endif %}
             {% if romaneio.observacoes %}<dt class="col-sm-5">Obs.</dt><dd class="col-sm-7">{{ romaneio.observacoes }}</dd>{% endif %}
           </dl>
@@ -207,7 +255,7 @@
             {% for item in romaneio.itens.all %}
             <tr id="item-row-{{ item.pk }}">
               <td><strong>{{ item.pallet.codigo_pallet }}</strong></td>
-              <td>{{ item.pallet.tipo_embalagem.nome }}</td>
+              <td>{{ item.pallet.tipo_embalagem.nome|default:"Misto" }}{% if item.pallet.is_misto %} <span class="badge bg-warning text-dark ms-1" style="font-size:.7em">MISTO</span>{% endif %}</td>
               <td class="text-end">{{ item.quantidade_caixas }}</td>
               <td class="text-end">{{ item.peso_liquido_kg|floatformat:3 }}</td>
               <td class="text-end">{{ item.peso_bruto_kg|floatformat:3 }}</td>

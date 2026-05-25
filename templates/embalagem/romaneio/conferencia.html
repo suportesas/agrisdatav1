@@ -94,7 +94,7 @@
       id="pallet-item-{{ item.pallet.codigo_pallet|slugify }}">
       <div>
         <div class="pallet-codigo">{{ item.pallet.codigo_pallet }}</div>
-        <div class="pallet-tipo">{{ item.pallet.tipo_embalagem.nome }} — {{ item.quantidade_caixas }} cx</div>
+        <div class="pallet-tipo">{{ item.pallet.tipo_embalagem.nome|default:"Misto" }}{% if item.pallet.is_misto %} <span class="badge bg-warning text-dark" style="font-size:.65em">MISTO</span>{% endif %} — {{ item.quantidade_caixas }} cx</div>
       </div>
       <div id="status-{{ item.pallet.codigo_pallet|slugify }}">
         {% if item.status_conferencia == 'CONFERIDO' %}

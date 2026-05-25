@@ -1,4 +1,5 @@
 from django import forms
+from django.core.validators import MinLengthValidator
 from django.forms import inlineformset_factory
 
 from .models import (
@@ -36,26 +37,64 @@ class FaturamentoBaseForm(forms.ModelForm):
         return instance
 
 
+class CertificadoDigitalForm(forms.Form):
+    arquivo_pfx = forms.FileField(
+        label='Arquivo do Certificado (.pfx / .p12)',
+        widget=forms.FileInput(attrs={'class': 'form-control', 'accept': '.pfx,.p12'}),
+    )
+    senha_certificado = forms.CharField(
+        label='Senha do Certificado',
+        widget=forms.PasswordInput(attrs={'class': 'form-control', 'autocomplete': 'new-password'}),
+    )
+
+    def clean_arquivo_pfx(self):
+        arquivo = self.cleaned_data.get('arquivo_pfx')
+        if arquivo:
+            nome = arquivo.name.lower()
+            if not (nome.endswith('.pfx') or nome.endswith('.p12')):
+                raise forms.ValidationError('Somente arquivos .pfx ou .p12 são aceitos.')
+            if arquivo.size > 1024 * 1024:  # 1 MB
+                raise forms.ValidationError('O arquivo não pode exceder 1 MB.')
+        return arquivo
+
+
+class NotaFiscalCancelarForm(forms.Form):
+    justificativa = forms.CharField(
+        label='Justificativa do Cancelamento',
+        min_length=15,
+        max_length=255,
+        widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 4,
+                                     'placeholder': 'Informe o motivo do cancelamento (mínimo 15 caracteres)'}),
+        validators=[MinLengthValidator(15)],
+    )
+
+
 class ConfiguracaoFiscalForm(forms.ModelForm):
     class Meta:
         model = ConfiguracaoFiscal
         fields = [
             'regime_tributario',
             'serie_nfe',
+            'numero_nfe_inicial',
             'cfop_venda_interna',
             'cfop_venda_exportacao',
             'natureza_operacao_padrao',
             'observacoes_padrao_nfe',
             'observacoes_padrao_invoice',
+            'ambiente_nfe',
+            'token_integranotas',
         ]
         widgets = {
             'regime_tributario': forms.Select(attrs={'class': 'form-select'}),
             'serie_nfe': forms.NumberInput(attrs={'class': 'form-control'}),
+            'numero_nfe_inicial': forms.NumberInput(attrs={'class': 'form-control', 'min': 1}),
             'cfop_venda_interna': forms.TextInput(attrs={'class': 'form-control'}),
             'cfop_venda_exportacao': forms.TextInput(attrs={'class': 'form-control'}),
             'natureza_operacao_padrao': forms.TextInput(attrs={'class': 'form-control'}),
             'observacoes_padrao_nfe': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'observacoes_padrao_invoice': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'ambiente_nfe': forms.Select(attrs={'class': 'form-select'}),
+            'token_integranotas': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Bearer token da API IntegraNota'}),
         }
 
 
@@ -106,16 +145,20 @@ class ItemNotaFiscalForm(forms.ModelForm):
             'descricao',
             'produto',
             'ncm',
+            'cest',
+            'ean',
             'cfop',
             'cst_icms',
             'cst_pis',
             'cst_cofins',
+            'origem_mercadoria',
             'unidade',
             'quantidade',
             'valor_unitario',
             'valor_desconto',
             'aliquota_icms',
             'aliquota_ipi',
+            'ipi_codigo_enquadramento',
             'aliquota_pis',
             'aliquota_cofins',
         ]
@@ -124,16 +167,28 @@ class ItemNotaFiscalForm(forms.ModelForm):
             'descricao': forms.TextInput(attrs={'class': 'form-control form-control-sm'}),
             'produto': forms.Select(attrs={'class': 'form-select form-select-sm'}),
             'ncm': forms.TextInput(attrs={'class': 'form-control form-control-sm', 'maxlength': '8', 'placeholder': '00000000'}),
+            'cest': forms.TextInput(attrs={'class': 'form-control form-control-sm', 'maxlength': '7', 'placeholder': '0000000'}),
+            'ean': forms.TextInput(attrs={'class': 'form-control form-control-sm', 'placeholder': 'Deixe vazio para SEM GTIN'}),
             'cfop': forms.TextInput(attrs={'class': 'form-control form-control-sm', 'placeholder': '5102'}),
             'cst_icms': forms.TextInput(attrs={'class': 'form-control form-control-sm', 'placeholder': '000'}),
             'cst_pis': forms.TextInput(attrs={'class': 'form-control form-control-sm', 'placeholder': '07'}),
             'cst_cofins': forms.TextInput(attrs={'class': 'form-control form-control-sm', 'placeholder': '07'}),
+            'origem_mercadoria': forms.Select(attrs={'class': 'form-select form-select-sm'},
+                                              choices=[('0','0-Nacional'),('1','1-Estrangeira (importada)'),
+                                                       ('2','2-Estrangeira (adquirida no mercado interno)'),
+                                                       ('3','3-Nacional, mercadoria ou bem com Conteúdo de Importação > 40%'),
+                                                       ('4','4-Nacional, cuja produção tenha sido feita em conformidade com os processos produtivos básicos'),
+                                                       ('5','5-Nacional, mercadoria ou bem com Conteúdo de Importação ≤ 40%'),
+                                                       ('6','6-Estrangeira (importada diretamente), sem produto nacional similar'),
+                                                       ('7','7-Estrangeira (adquirida no mercado interno), sem produto nacional similar'),
+                                                       ('8','8-Nacional, mercadoria ou bem com Conteúdo de Importação > 70%')]),
             'unidade': forms.TextInput(attrs={'class': 'form-control form-control-sm', 'placeholder': 'UN'}),
             'quantidade': forms.NumberInput(attrs={'class': 'form-control form-control-sm', 'step': '0.0001'}),
             'valor_unitario': forms.NumberInput(attrs={'class': 'form-control form-control-sm', 'step': '0.0001'}),
             'valor_desconto': forms.NumberInput(attrs={'class': 'form-control form-control-sm', 'step': '0.01'}),
             'aliquota_icms': forms.NumberInput(attrs={'class': 'form-control form-control-sm', 'step': '0.01'}),
             'aliquota_ipi': forms.NumberInput(attrs={'class': 'form-control form-control-sm', 'step': '0.01'}),
+            'ipi_codigo_enquadramento': forms.TextInput(attrs={'class': 'form-control form-control-sm', 'placeholder': '999'}),
             'aliquota_pis': forms.NumberInput(attrs={'class': 'form-control form-control-sm', 'step': '0.01'}),
             'aliquota_cofins': forms.NumberInput(attrs={'class': 'form-control form-control-sm', 'step': '0.01'}),
         }

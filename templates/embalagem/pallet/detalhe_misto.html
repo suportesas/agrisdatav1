@@ -1,0 +1,236 @@
+{% extends 'base.html' %}
+{% block title %}Pallet Misto {{ pallet.codigo_pallet }}{% endblock %}
+{% block page_title %}Embalagem{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+  <!-- Faixa de fluxo -->
+  <div class="alert alert-light border shadow-sm py-2 px-3 mb-3 d-flex align-items-center gap-3 flex-wrap" style="font-size:.85rem">
+    <span class="text-muted">Você está em:</span>
+    <span class="badge bg-secondary">1 · Configurar</span>
+    <i class="bi bi-chevron-right text-muted"></i>
+    <span class="badge bg-primary">2 · Pallet Misto (aqui)</span>
+    <i class="bi bi-chevron-right text-muted"></i>
+    <span class="badge bg-light text-dark border">3 · Etiquetas</span>
+    <i class="bi bi-chevron-right text-muted"></i>
+    <span class="badge bg-light text-dark border">4 · Romaneio</span>
+  </div>
+
+  <div class="d-flex justify-content-between align-items-start mb-4">
+    <div class="d-flex align-items-center gap-3">
+      <a href="{% url 'embalagem:ordem_detail' pallet.ordem_embalagem.pk %}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i>
+      </a>
+      <div>
+        <h4 class="mb-0">
+          <span class="badge bg-warning text-dark me-2">MISTO</span>
+          {{ pallet.codigo_pallet }}
+        </h4>
+        <small class="text-muted">Ordem {{ pallet.ordem_embalagem.numero }} — {{ pallet.data_embalagem|date:"d/m/Y" }}</small>
+      </div>
+    </div>
+    <a href="{% url 'embalagem:pallet_etiqueta_pdf' pallet.pk %}" class="btn btn-outline-primary" target="_blank">
+      <i class="bi bi-printer me-1"></i>Etiqueta PDF
+    </a>
+  </div>
+
+  {% if messages %}
+  {% for msg in messages %}
+  <div class="alert alert-{{ msg.tags }} alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+  {% endfor %}
+  {% endif %}
+
+  <div class="row g-4">
+
+    <!-- Coluna esquerda: totais + alerta -->
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header fw-semibold">Totais do Pallet</div>
+        <div class="card-body" id="card-totais">
+          <dl class="row mb-0 small">
+            <dt class="col-6">Total de Caixas</dt>
+            <dd class="col-6 fw-bold fs-5" id="total-caixas">{{ pallet.quantidade_caixas }}</dd>
+            {% if capacidade %}
+            <dt class="col-6">Capacidade</dt>
+            <dd class="col-6">{{ capacidade }} cx</dd>
+            {% endif %}
+            <dt class="col-6">Peso Líquido</dt>
+            <dd class="col-6" id="total-liquido">{{ pallet.peso_liquido_kg|floatformat:3 }} kg</dd>
+            <dt class="col-6">Peso Bruto</dt>
+            <dd class="col-6" id="total-bruto">{{ pallet.peso_bruto_kg|floatformat:3 }} kg</dd>
+          </dl>
+        </div>
+      </div>
+
+      {% if alerta_capacidade %}
+      <div class="alert alert-warning d-flex align-items-center gap-2" id="alerta-box">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+        <span id="alerta-msg">
+          Total de caixas ({{ pallet.quantidade_caixas }}) ≠ capacidade esperada ({{ capacidade }})
+        </span>
+      </div>
+      {% else %}
+      <div class="alert alert-success d-flex align-items-center gap-2 {% if not pallet.quantidade_caixas %}d-none{% endif %}" id="alerta-box" style="display:none!important">
+        <i class="bi bi-check-circle-fill"></i>
+        <span id="alerta-msg"></span>
+      </div>
+      {% endif %}
+
+      <!-- Formulário adicionar item -->
+      <div class="card border-0 shadow-sm">
+        <div class="card-header fw-semibold"><i class="bi bi-plus-circle me-1"></i>Adicionar Item</div>
+        <div class="card-body">
+          <form id="form-add-item">
+            {% csrf_token %}
+            <div class="mb-2">
+              <label class="form-label small fw-semibold">Tipo de Embalagem</label>
+              {{ form.tipo_embalagem }}
+            </div>
+            <div class="mb-3">
+              <label class="form-label small fw-semibold">Quantidade de Caixas</label>
+              {{ form.quantidade_caixas }}
+            </div>
+            <button type="submit" class="btn btn-success w-100">
+              <i class="bi bi-plus me-1"></i>Adicionar
+            </button>
+          </form>
+          <div id="form-erro" class="text-danger small mt-2 d-none"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Coluna direita: composição do pallet -->
+    <div class="col-md-8">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header fw-semibold">
+          <i class="bi bi-layers me-1"></i>Composição do Pallet
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover table-sm mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Tipo de Embalagem</th>
+                  <th class="text-end">Caixas</th>
+                  <th class="text-end">Peso Líq. (kg)</th>
+                  <th class="text-end">Peso Bruto (kg)</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="tbody-itens">
+                {% for item in itens %}
+                <tr id="item-{{ item.pk }}">
+                  <td>{{ item.tipo_embalagem.descricao_completa }}</td>
+                  <td class="text-end">{{ item.quantidade_caixas }}</td>
+                  <td class="text-end">{{ item.peso_liquido_kg|floatformat:3 }}</td>
+                  <td class="text-end">{{ item.peso_bruto_kg|floatformat:3 }}</td>
+                  <td class="text-end">
+                    <button class="btn btn-sm btn-outline-danger btn-remover" data-item="{{ item.pk }}" title="Remover">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </td>
+                </tr>
+                {% empty %}
+                <tr id="linha-vazia">
+                  <td colspan="5" class="text-center text-muted py-4">
+                    Nenhum item adicionado. Use o formulário ao lado.
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const CSRF = '{{ csrf_token }}';
+const URL_ADD  = '{% url "embalagem:pallet_misto_add_item" pallet.pk %}';
+const URL_REM  = (itemPk) => `{% url "embalagem:pallet_misto_remove_item" pallet.pk 0 %}`.replace('/0/', `/${itemPk}/`);
+{% if capacidade %}const CAPACIDADE = {{ capacidade }};{% else %}const CAPACIDADE = null;{% endif %}
+
+function atualizarTotais(data) {
+  document.getElementById('total-caixas').textContent = data.total_caixas;
+  document.getElementById('total-liquido').textContent = parseFloat(data.total_liquido).toFixed(3) + ' kg';
+  document.getElementById('total-bruto').textContent   = parseFloat(data.total_bruto).toFixed(3) + ' kg';
+
+  const alertaBox = document.getElementById('alerta-box');
+  const alertaMsg = document.getElementById('alerta-msg');
+  if (data.alerta) {
+    alertaBox.className = 'alert alert-warning d-flex align-items-center gap-2';
+    alertaMsg.textContent = data.alerta_msg;
+  } else if (data.total_caixas > 0) {
+    alertaBox.className = 'alert alert-success d-flex align-items-center gap-2';
+    alertaMsg.textContent = '✓ Total de caixas confere com a capacidade.';
+  } else {
+    alertaBox.className = 'alert d-none';
+  }
+}
+
+// Adicionar item
+document.getElementById('form-add-item').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const erroEl = document.getElementById('form-erro');
+  erroEl.classList.add('d-none');
+  const fd = new FormData(e.target);
+  const resp = await fetch(URL_ADD, {
+    method: 'POST',
+    headers: {'X-CSRFToken': CSRF},
+    body: fd,
+  });
+  const data = await resp.json();
+  if (!resp.ok || !data.ok) {
+    erroEl.textContent = data.erro || 'Erro ao adicionar item.';
+    erroEl.classList.remove('d-none');
+    return;
+  }
+  // Remove linha vazia se existir
+  const linhaVazia = document.getElementById('linha-vazia');
+  if (linhaVazia) linhaVazia.remove();
+
+  // Adiciona linha na tabela
+  const tbody = document.getElementById('tbody-itens');
+  const tr = document.createElement('tr');
+  tr.id = `item-${data.item_pk}`;
+  tr.innerHTML = `
+    <td>${data.descricao}</td>
+    <td class="text-end">${data.quantidade_caixas}</td>
+    <td class="text-end">${parseFloat(data.peso_liquido_kg).toFixed(3)}</td>
+    <td class="text-end">${parseFloat(data.peso_bruto_kg).toFixed(3)}</td>
+    <td class="text-end">
+      <button class="btn btn-sm btn-outline-danger btn-remover" data-item="${data.item_pk}" title="Remover">
+        <i class="bi bi-trash"></i>
+      </button>
+    </td>`;
+  tbody.appendChild(tr);
+  atualizarTotais(data);
+  e.target.reset();
+});
+
+// Remover item (delegação de eventos)
+document.getElementById('tbody-itens').addEventListener('click', async (e) => {
+  const btn = e.target.closest('.btn-remover');
+  if (!btn) return;
+  const itemPk = btn.dataset.item;
+  if (!confirm('Remover este item do pallet?')) return;
+  const resp = await fetch(URL_REM(itemPk), {
+    method: 'POST',
+    headers: {'X-CSRFToken': CSRF, 'Content-Type': 'application/json'},
+    body: JSON.stringify({}),
+  });
+  const data = await resp.json();
+  if (data.ok) {
+    document.getElementById(`item-${itemPk}`).remove();
+    atualizarTotais(data);
+    if (document.querySelectorAll('#tbody-itens tr').length === 0) {
+      document.getElementById('tbody-itens').innerHTML =
+        '<tr id="linha-vazia"><td colspan="5" class="text-center text-muted py-4">Nenhum item adicionado.</td></tr>';
+    }
+  }
+});
+</script>
+{% endblock %}

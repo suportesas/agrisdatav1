@@ -43,6 +43,13 @@
           <i class="bi bi-stack me-1"></i>Gerar Pallets
         </button>
       </form>
+      <form method="post" action="{% url 'embalagem:pallet_misto_create' ordem.pk %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-outline-warning"
+          title="Cria um pallet com composição manual de múltiplos tipos">
+          <i class="bi bi-layers me-1"></i>Novo Pallet Misto
+        </button>
+      </form>
       {% endif %}
       {% if ordem.pallets.count > 0 %}
       <a href="{% url 'embalagem:ordem_etiquetas_pdf' ordem.pk %}" class="btn btn-outline-primary" target="_blank">
@@ -136,7 +143,10 @@
             {% for p in ordem.pallets.all %}
             <tr>
               <td>{{ p.numero_sequencial }}</td>
-              <td><strong>{{ p.codigo_pallet }}</strong></td>
+              <td>
+                <strong>{{ p.codigo_pallet }}</strong>
+                {% if p.is_misto %}<span class="badge bg-warning text-dark ms-1">MISTO</span>{% endif %}
+              </td>
               <td class="text-end">{{ p.quantidade_caixas }}</td>
               <td class="text-end">{{ p.peso_liquido_kg|floatformat:3 }}</td>
               <td class="text-end">{{ p.peso_bruto_kg|floatformat:3 }}</td>
@@ -148,7 +158,12 @@
                 {% elif p.status == 'CARREGADO' %}<span class="badge bg-info">Carregado</span>
                 {% else %}<span class="badge bg-danger">Cancelado</span>{% endif %}
               </td>
-              <td>
+              <td class="d-flex gap-1">
+                {% if p.is_misto %}
+                <a href="{% url 'embalagem:pallet_misto_detail' p.pk %}" class="btn btn-sm btn-outline-warning" title="Editar composição">
+                  <i class="bi bi-layers"></i>
+                </a>
+                {% endif %}
                 <a href="{% url 'embalagem:pallet_etiqueta_pdf' p.pk %}" class="btn btn-sm btn-outline-secondary" target="_blank" title="Etiqueta PDF">
                   <i class="bi bi-printer"></i>
                 </a>

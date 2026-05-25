@@ -47,6 +47,35 @@ class EmpresaForm(forms.ModelForm):
         }
 
 
+class EmpresaFiscalForm(forms.ModelForm):
+    """Dados fiscais da Empresa para emissão de NF-e (IE, endereço completo, código IBGE)."""
+
+    class Meta:
+        model = Empresa
+        fields = [
+            'inscricao_estadual',
+            'endereco',
+            'numero_endereco',
+            'complemento_endereco',
+            'bairro',
+            'cidade',
+            'uf',
+            'cep',
+            'codigo_municipio',
+        ]
+        widgets = {
+            'inscricao_estadual': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: 123456789.01-23'}),
+            'endereco': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Rua / Avenida'}),
+            'numero_endereco': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Número'}),
+            'complemento_endereco': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Sala, Bloco, etc.'}),
+            'bairro': forms.TextInput(attrs={'class': 'form-control'}),
+            'cidade': forms.TextInput(attrs={'class': 'form-control'}),
+            'uf': forms.TextInput(attrs={'class': 'form-control', 'maxlength': 2}),
+            'cep': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '00000-000', 'id': 'id_empresa_cep'}),
+            'codigo_municipio': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '7 dígitos — ex: 3550308', 'maxlength': 7}),
+        }
+
+
 class EmpresaLogoForm(forms.ModelForm):
     """Formulario simples para atualizar apenas a logo da empresa"""
 

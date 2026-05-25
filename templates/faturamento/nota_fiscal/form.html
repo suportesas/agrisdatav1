@@ -180,6 +180,18 @@
                           {{ item_form.ncm }}
                         </div>
                         <div class="col-auto">
+                          <label class="d-block">CEST</label>
+                          {{ item_form.cest }}
+                        </div>
+                        <div class="col-auto">
+                          <label class="d-block">EAN</label>
+                          {{ item_form.ean }}
+                        </div>
+                        <div class="col-auto">
+                          <label class="d-block">Origem</label>
+                          {{ item_form.origem_mercadoria }}
+                        </div>
+                        <div class="col-auto">
                           <label class="d-block">CFOP</label>
                           {{ item_form.cfop }}
                         </div>
@@ -202,6 +214,10 @@
                         <div class="col-auto">
                           <label class="d-block">% IPI</label>
                           {{ item_form.aliquota_ipi }}
+                        </div>
+                        <div class="col-auto">
+                          <label class="d-block">Enq. IPI</label>
+                          {{ item_form.ipi_codigo_enquadramento }}
                         </div>
                         <div class="col-auto">
                           <label class="d-block">% PIS</label>
@@ -231,12 +247,36 @@
     </div>
 
     <div class="d-flex gap-2 mt-4">
-      <button type="submit" class="btn btn-primary">
+      <button type="button" class="btn btn-primary" id="btn-salvar-nf">
         <i class="bi bi-check-circle me-1"></i>Salvar
       </button>
       <a href="{% url 'faturamento:nota_fiscal_list' %}" class="btn btn-outline-secondary">Cancelar</a>
     </div>
   </form>
+</div>
+
+<!-- Modal de pré-validação fiscal ─────────────────────────────────────── -->
+<div class="modal fade" id="modalValidacaoFiscal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-warning">
+        <h5 class="modal-title"><i class="bi bi-exclamation-triangle-fill me-2"></i>Dados Fiscais Incompletos</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted mb-3">Os itens abaixo têm campos fiscais obrigatórios em branco. Corrija antes de salvar, ou salve assim mesmo (a nota ficará como rascunho e não poderá ser emitida).</p>
+        <div id="validacao-lista"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          <i class="bi bi-pencil me-1"></i>Corrigir Agora
+        </button>
+        <button type="button" class="btn btn-warning" id="btn-salvar-mesmo-assim">
+          <i class="bi bi-save me-1"></i>Salvar Assim Mesmo (Rascunho)
+        </button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -256,6 +296,76 @@
       fiscalRow.style.display = collapsed ? '' : 'none';
       btn.querySelector('i').className = collapsed ? 'bi bi-chevron-up' : 'bi bi-chevron-down';
     });
+  }
+
+  // ── Badge de status fiscal no botão toggle ────────────────────────
+  function updateFiscalBadge(mainRow, fiscalRow) {
+    const btn = mainRow.querySelector('.btn-toggle-fiscal');
+    if (!btn) return;
+    const src  = (fiscalRow && fiscalRow.classList.contains('item-fiscal-row')) ? fiscalRow : mainRow;
+    const prod = mainRow.querySelector('select[name$="-produto"]')?.value;
+    const ncm  = (src.querySelector('[name$="-ncm"]')  || mainRow.querySelector('[name$="-ncm"]'))?.value?.trim();
+    const cfop = (src.querySelector('[name$="-cfop"]') || mainRow.querySelector('[name$="-cfop"]'))?.value?.trim();
+    const cst  = (src.querySelector('[name$="-cst_icms"]') || mainRow.querySelector('[name$="-cst_icms"]'))?.value?.trim();
+
+    btn.classList.remove('btn-outline-secondary','btn-outline-warning','btn-outline-success');
+    if (!prod) {
+      btn.classList.add('btn-outline-secondary');
+      btn.setAttribute('data-bs-original-title','Dados Fiscais');
+      btn.title = 'Dados Fiscais';
+      return;
+    }
+    if (!ncm || !cfop || !cst) {
+      btn.classList.add('btn-outline-warning');
+      btn.title = 'Dados Fiscais incompletos — clique para revisar NCM, CFOP e CST ICMS';
+    } else {
+      btn.classList.add('btn-outline-success');
+      btn.title = 'Dados Fiscais OK';
+    }
+  }
+
+  // ── Aplicar uma tributação nas linhas fiscais ─────────────────────
+  function applyTributacao(mainRow, fiscalRow, t) {
+    if (!t) return;
+    const setF = (sel, val) => {
+      const el = (fiscalRow && fiscalRow.querySelector(sel)) || mainRow.querySelector(sel);
+      if (el && val !== undefined && val !== null) el.value = val;
+    };
+    setF('input[name$="-cfop"]',                   t.cfop);
+    setF('input[name$="-cst_icms"]',               t.cst_icms);
+    setF('input[name$="-cst_pis"]',                t.cst_pis);
+    setF('input[name$="-cst_cofins"]',             t.cst_cofins);
+    setF('input[name$="-aliquota_icms"]',          t.aliquota_icms);
+    setF('input[name$="-aliquota_ipi"]',           t.aliquota_ipi);
+    setF('input[name$="-ipi_codigo_enquadramento"]', t.ipi_codigo_enquadramento);
+    setF('input[name$="-aliquota_pis"]',           t.aliquota_pis);
+    setF('input[name$="-aliquota_cofins"]',        t.aliquota_cofins);
+    updateFiscalBadge(mainRow, fiscalRow);
+  }
+
+  // ── Seletor de tributação (quando o produto tem mais de uma regra) ─
+  function injectTributacaoSelector(fiscalRow, tributacoes, onSelect) {
+    const existing = fiscalRow.querySelector('.trib-selector-wrap');
+    if (existing) existing.remove();
+    if (!tributacoes || tributacoes.length <= 1) return;
+
+    const wrap = document.createElement('div');
+    wrap.className = 'trib-selector-wrap col-12 mb-2';
+    wrap.innerHTML = `
+      <label class="d-block fw-semibold text-primary mb-1" style="font-size:.72rem">
+        <i class="bi bi-collection me-1"></i>Tributação — selecione a regra fiscal
+      </label>
+      <select class="form-select form-select-sm trib-select">
+        ${tributacoes.map((t,i) =>
+          `<option value="${i}">CFOP ${t.cfop} · ICMS CST-${t.cst_icms}${t.aliquota_icms > 0 ? ' '+t.aliquota_icms+'%' : ' (isento)'} · PIS ${t.cst_pis} · COFINS ${t.cst_cofins}</option>`
+        ).join('')}
+      </select>`;
+    wrap.querySelector('.trib-select').addEventListener('change', function () {
+      onSelect(tributacoes[parseInt(this.value)]);
+    });
+
+    const innerDiv = fiscalRow.querySelector('td > div');
+    if (innerDiv) innerDiv.prepend(wrap);
   }
 
   // ── Remover linha ────────────────────────────────────────────────
@@ -333,49 +443,76 @@
   // ── AJAX: preencher produto ──────────────────────────────────────
   function attachProdutoAjax(mainRow) {
     const fiscalRow = mainRow.nextElementSibling;
+    const rowFiscal = fiscalRow && fiscalRow.classList.contains('item-fiscal-row') ? fiscalRow : null;
     const prodSel   = mainRow.querySelector('select[name$="-produto"]');
     if (!prodSel) return;
 
     prodSel.addEventListener('change', function () {
       const pk = this.value;
-      if (!pk) return;
+      // Sem produto → resetar badge
+      if (!pk) { updateFiscalBadge(mainRow, rowFiscal); return; }
+
       fetch(`/faturamento/ajax/produto/${pk}/`)
         .then(r => r.json())
         .then(data => {
           if (data.erro) return;
 
-          const desc = mainRow.querySelector('input[name$="-descricao"]');
-          if (desc && !desc.value) desc.value = data.nome || '';
-
-          const un = mainRow.querySelector('input[name$="-unidade"]');
-          if (un) un.value = data.unidade || '';
-
-          const vu = mainRow.querySelector('input[name$="-valor_unitario"]');
-          if (vu && (!vu.value || vu.value === '0')) vu.value = data.preco_venda || '';
-
-          const t = data.tributacoes && data.tributacoes[0];
-          const rowFiscal = fiscalRow && fiscalRow.classList.contains('item-fiscal-row') ? fiscalRow : null;
-
-          const setField = (sel, val) => {
+          // Campos gerais
+          const setF = (sel, val) => {
             const el = (rowFiscal && rowFiscal.querySelector(sel)) || mainRow.querySelector(sel);
             if (el && val !== undefined && val !== null) el.value = val;
           };
 
-          setField('input[name$="-ncm"]', data.ncm);
+          const desc = mainRow.querySelector('input[name$="-descricao"]');
+          if (desc && !desc.value) desc.value = data.nome || '';
+          const un = mainRow.querySelector('input[name$="-unidade"]');
+          if (un) un.value = data.unidade || '';
+          const vu = mainRow.querySelector('input[name$="-valor_unitario"]');
+          if (vu && (!vu.value || vu.value === '0')) vu.value = data.preco_venda || '';
 
-          if (t) {
-            setField('input[name$="-cfop"]', t.cfop);
-            setField('input[name$="-cst_icms"]', t.cst_icms);
-            setField('input[name$="-cst_pis"]', t.cst_pis);
-            setField('input[name$="-cst_cofins"]', t.cst_cofins);
-            setField('input[name$="-aliquota_icms"]', t.aliquota_icms);
-            setField('input[name$="-aliquota_ipi"]', t.aliquota_ipi);
-            setField('input[name$="-aliquota_pis"]', t.aliquota_pis);
-            setField('input[name$="-aliquota_cofins"]', t.aliquota_cofins);
+          setF('input[name$="-ncm"]',               data.ncm);
+          setF('input[name$="-cest"]',              data.cest);
+          setF('select[name$="-origem_mercadoria"]', data.origem_mercadoria);
+
+          const tributacoes = data.tributacoes || [];
+
+          if (tributacoes.length === 0) {
+            // Produto sem tributação — abre painel fiscal e marca como incompleto
+            if (rowFiscal) {
+              rowFiscal.style.display = '';
+              const icon = mainRow.querySelector('.btn-toggle-fiscal i');
+              if (icon) icon.className = 'bi bi-chevron-up';
+              // Injeta aviso visual
+              let warn = rowFiscal.querySelector('.trib-no-data-warn');
+              if (!warn) {
+                warn = document.createElement('div');
+                warn.className = 'trib-no-data-warn col-12 mb-2';
+                warn.innerHTML = '<div class="alert alert-warning py-1 px-2 small mb-0"><i class="bi bi-exclamation-triangle me-1"></i>Produto sem tributação cadastrada — preencha manualmente os campos abaixo.</div>';
+                const inner = rowFiscal.querySelector('td > div');
+                if (inner) inner.prepend(warn);
+              }
+            }
+          } else {
+            // Remove aviso se existia
+            rowFiscal && rowFiscal.querySelector('.trib-no-data-warn')?.remove();
+            // Aplica a primeira tributação
+            applyTributacao(mainRow, rowFiscal, tributacoes[0]);
+            // Seletor de tributação se houver mais de uma
+            if (rowFiscal) {
+              injectTributacaoSelector(rowFiscal, tributacoes, t => applyTributacao(mainRow, rowFiscal, t));
+            }
           }
+
+          updateFiscalBadge(mainRow, rowFiscal);
           recalcularTotais();
         })
         .catch(() => {});
+    });
+
+    // Badge em tempo real ao editar campos fiscais manualmente
+    ['[name$="-ncm"]','[name$="-cfop"]','[name$="-cst_icms"]'].forEach(sel => {
+      const el = (rowFiscal && rowFiscal.querySelector(sel)) || mainRow.querySelector(sel);
+      if (el) el.addEventListener('input', () => updateFiscalBadge(mainRow, rowFiscal));
     });
   }
 
@@ -385,6 +522,9 @@
     attachRemove(row);
     attachCalcListeners(row);
     attachProdutoAjax(row);
+    // Badge inicial para NFs em edição (já têm produto selecionado)
+    const fiscalRow = row.nextElementSibling;
+    updateFiscalBadge(row, fiscalRow && fiscalRow.classList.contains('item-fiscal-row') ? fiscalRow : null);
   });
 
   // Recalcular quando campos globais mudam
@@ -448,6 +588,72 @@
     // Focar no select de produto da nova linha
     const prodSel = newMain.querySelector('select[name$="-produto"]');
     if (prodSel) prodSel.focus();
+  });
+
+  // ── Pré-validação fiscal antes de salvar ─────────────────────────────
+  const nfForm         = document.querySelector('form');
+  const btnSalvar      = document.getElementById('btn-salvar-nf');
+  const modalValidacao = new bootstrap.Modal(document.getElementById('modalValidacaoFiscal'));
+  let   forceSubmit    = false;
+
+  function validarItensFiscal() {
+    const problemas = [];
+    body.querySelectorAll('.item-row').forEach((mainRow, idx) => {
+      if (mainRow.style.display === 'none') return;
+      const fiscalRow = mainRow.nextElementSibling;
+      const src = fiscalRow && fiscalRow.classList.contains('item-fiscal-row') ? fiscalRow : mainRow;
+      const prod  = mainRow.querySelector('select[name$="-produto"]')?.value;
+      const ncm   = (src.querySelector('[name$="-ncm"]')     || mainRow.querySelector('[name$="-ncm"]'))?.value?.trim();
+      const cfop  = (src.querySelector('[name$="-cfop"]')    || mainRow.querySelector('[name$="-cfop"]'))?.value?.trim();
+      const cst   = (src.querySelector('[name$="-cst_icms"]')|| mainRow.querySelector('[name$="-cst_icms"]'))?.value?.trim();
+      const desc  = mainRow.querySelector('[name$="-descricao"]')?.value?.trim() || `Item ${idx + 1}`;
+
+      if (!prod) return; // linha vazia, ignora
+
+      const faltando = [];
+      if (!ncm)  faltando.push('NCM');
+      if (!cfop) faltando.push('CFOP');
+      if (!cst)  faltando.push('CST ICMS');
+
+      if (faltando.length) {
+        problemas.push({ desc, faltando, mainRow, fiscalRow });
+      }
+    });
+    return problemas;
+  }
+
+  btnSalvar.addEventListener('click', function () {
+    if (forceSubmit) { nfForm.submit(); return; }
+    const problemas = validarItensFiscal();
+    if (!problemas.length) { nfForm.submit(); return; }
+
+    // Monta lista no modal
+    const lista = document.getElementById('validacao-lista');
+    lista.innerHTML = '';
+    problemas.forEach(p => {
+      const div = document.createElement('div');
+      div.className = 'alert alert-warning py-2 px-3 mb-2';
+      div.innerHTML = `<strong>${p.desc}:</strong> faltando <strong>${p.faltando.join(', ')}</strong>
+        <button type="button" class="btn btn-link btn-sm py-0 ms-2 text-primary">Ver campos</button>`;
+      div.querySelector('button').addEventListener('click', () => {
+        modalValidacao.hide();
+        if (p.fiscalRow) {
+          p.fiscalRow.style.display = '';
+          const icon = p.mainRow.querySelector('.btn-toggle-fiscal i');
+          if (icon) icon.className = 'bi bi-chevron-up';
+        }
+        p.mainRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      });
+      lista.appendChild(div);
+    });
+
+    modalValidacao.show();
+  });
+
+  document.getElementById('btn-salvar-mesmo-assim').addEventListener('click', function () {
+    modalValidacao.hide();
+    forceSubmit = true;
+    nfForm.submit();
   });
 })();
 </script>

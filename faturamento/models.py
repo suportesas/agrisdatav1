@@ -46,6 +46,11 @@ class ConfiguracaoFiscal(models.Model):
         related_name='configuracao_fiscal',
         verbose_name='Empresa',
     )
+    AMBIENTE_NFE = [
+        ('1', 'Produção'),
+        ('2', 'Homologação'),
+    ]
+
     regime_tributario = models.CharField('Regime Tributário', max_length=20, choices=REGIME, default='SIMPLES_NACIONAL')
     serie_nfe = models.IntegerField('Série NF-e', default=1)
     cfop_venda_interna = models.CharField('CFOP Venda Interna', max_length=10, default='5102')
@@ -53,6 +58,21 @@ class ConfiguracaoFiscal(models.Model):
     natureza_operacao_padrao = models.CharField('Natureza da Operação Padrão', max_length=100, default='VENDA DE MERCADORIA')
     observacoes_padrao_nfe = models.TextField('Obs. Padrão NF-e', blank=True)
     observacoes_padrao_invoice = models.TextField('Obs. Padrão Invoice', blank=True)
+    token_integranotas = models.CharField('Token IntegraNota', max_length=500, blank=True, help_text='Bearer token da API IntegraNota')
+    ambiente_nfe = models.CharField('Ambiente NF-e', max_length=1, choices=AMBIENTE_NFE, default='2', help_text='2=Homologação (testes), 1=Produção')
+    numero_nfe_inicial = models.PositiveIntegerField(
+        'Número Inicial da NF-e',
+        default=1,
+        help_text='Usado somente quando não há notas emitidas neste sistema. '
+                  'Para migrar de outro sistema, informe o próximo número (ex: última nota foi 3365 → informe 3366).',
+    )
+
+    # Certificado Digital A1
+    certificado_pfx = models.BinaryField('Certificado Digital (.pfx)', blank=True, null=True)
+    senha_certificado = models.CharField('Senha do Certificado', max_length=100, blank=True)
+    certificado_validade = models.DateField('Validade do Certificado', null=True, blank=True)
+    certificado_cnpj = models.CharField('CNPJ Titular', max_length=18, blank=True)
+    certificado_arquivo_nome = models.CharField('Nome do Arquivo (.pfx)', max_length=255, blank=True)
 
     class Meta:
         verbose_name = 'Configuração Fiscal'
@@ -110,6 +130,14 @@ class NotaFiscal(FaturamentoBaseModel):
     valor_total = models.DecimalField('Valor Total', max_digits=14, decimal_places=2, default=0)
     informacoes_complementares = models.TextField('Informações Complementares', blank=True)
     chave_acesso = models.CharField('Chave de Acesso', max_length=44, blank=True)
+    protocolo_autorizacao = models.CharField('Protocolo de Autorização', max_length=60, blank=True)
+    xml_autorizacao = models.TextField('XML Autorizado (base64)', blank=True)
+    pdf_danfe = models.TextField('DANFE PDF (base64)', blank=True)
+    presenca_comprador = models.CharField('Presença do Comprador', max_length=1, default='9', help_text='9=Operação não presencial')
+    tipo_emissao = models.IntegerField('Tipo de Emissão', default=1, help_text='1=Normal')
+    data_hora_emissao = models.DateTimeField('Data/Hora de Emissão SEFAZ', null=True, blank=True)
+    motivo_cancelamento = models.CharField('Motivo do Cancelamento', max_length=255, blank=True)
+    data_cancelamento = models.DateTimeField('Data/Hora do Cancelamento', null=True, blank=True)
 
     class Meta:
         verbose_name = 'Nota Fiscal'
@@ -169,12 +197,19 @@ class ItemNotaFiscal(models.Model):
     valor_desconto = models.DecimalField('Desconto', max_digits=14, decimal_places=2, default=0)
     aliquota_icms = models.DecimalField('Alíq. ICMS (%)', max_digits=5, decimal_places=2, default=0)
     valor_icms = models.DecimalField('Valor ICMS', max_digits=14, decimal_places=2, default=0)
+    icms_base_calculo = models.DecimalField('Base de Cálculo ICMS', max_digits=14, decimal_places=2, default=0)
     aliquota_ipi = models.DecimalField('Alíq. IPI (%)', max_digits=5, decimal_places=2, default=0)
     valor_ipi = models.DecimalField('Valor IPI', max_digits=14, decimal_places=2, default=0)
+    ipi_codigo_enquadramento = models.CharField('Código Enquadramento IPI', max_length=3, default='999', blank=True)
     aliquota_pis = models.DecimalField('Alíq. PIS (%)', max_digits=5, decimal_places=2, default=0)
     valor_pis = models.DecimalField('Valor PIS', max_digits=14, decimal_places=2, default=0)
+    pis_base_calculo = models.DecimalField('Base de Cálculo PIS', max_digits=14, decimal_places=2, default=0)
     aliquota_cofins = models.DecimalField('Alíq. COFINS (%)', max_digits=5, decimal_places=2, default=0)
     valor_cofins = models.DecimalField('Valor COFINS', max_digits=14, decimal_places=2, default=0)
+    cofins_base_calculo = models.DecimalField('Base de Cálculo COFINS', max_digits=14, decimal_places=2, default=0)
+    origem_mercadoria = models.CharField('Origem da Mercadoria', max_length=1, default='0', help_text='0=Nacional, 1-8=Estrangeira')
+    cest = models.CharField('CEST', max_length=7, blank=True, help_text='Código Especificador da Substituição Tributária')
+    ean = models.CharField('EAN/Código de Barras', max_length=14, blank=True, help_text='Deixe em branco para usar SEM GTIN')
 
     class Meta:
         verbose_name = 'Item da Nota Fiscal'
@@ -187,10 +222,13 @@ class ItemNotaFiscal(models.Model):
 
     def save(self, *args, **kwargs):
         self.valor_total = (self.quantidade * self.valor_unitario) - self.valor_desconto
-        self.valor_icms = self.valor_total * self.aliquota_icms / 100
+        self.icms_base_calculo = self.valor_total
+        self.valor_icms = self.icms_base_calculo * self.aliquota_icms / 100
         self.valor_ipi = self.valor_total * self.aliquota_ipi / 100
-        self.valor_pis = self.valor_total * self.aliquota_pis / 100
-        self.valor_cofins = self.valor_total * self.aliquota_cofins / 100
+        self.pis_base_calculo = self.valor_total
+        self.valor_pis = self.pis_base_calculo * self.aliquota_pis / 100
+        self.cofins_base_calculo = self.valor_total
+        self.valor_cofins = self.cofins_base_calculo * self.aliquota_cofins / 100
         super().save(*args, **kwargs)
 
 

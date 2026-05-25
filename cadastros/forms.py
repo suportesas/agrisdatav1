@@ -725,7 +725,7 @@ class EnderecoClienteForm(forms.ModelForm):
 
     class Meta:
         model = EnderecoCliente
-        fields = ['tipo', 'cep', 'logradouro', 'numero', 'complemento', 'bairro', 'cidade', 'uf', 'pais', 'recebedor_notify', 'padrao']
+        fields = ['tipo', 'cep', 'logradouro', 'numero', 'complemento', 'bairro', 'cidade', 'uf', 'codigo_municipio', 'pais', 'recebedor_notify', 'padrao']
         widgets = {
             'tipo': forms.Select(attrs={'class': 'form-select'}),
             'cep': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '00000-000', 'data-mask': 'cep'}),
@@ -735,6 +735,7 @@ class EnderecoClienteForm(forms.ModelForm):
             'bairro': forms.TextInput(attrs={'class': 'form-control'}),
             'cidade': forms.TextInput(attrs={'class': 'form-control'}),
             'uf': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_endereco_uf', 'maxlength': 2}),
+            'codigo_municipio': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '7 dígitos IBGE', 'maxlength': 7}),
             'pais': forms.TextInput(attrs={'class': 'form-control'}),
             'recebedor_notify': forms.TextInput(attrs={'class': 'form-control'}),
             'padrao': forms.CheckboxInput(attrs={'class': 'form-check-input'})
@@ -774,6 +775,9 @@ class EnderecoClienteForm(forms.ModelForm):
                                 self.data['cidade'] = data.get('localidade') or data.get('cidade')
                             if data.get('cep') and not self.data.get('cep'):
                                 self.data['cep'] = data.get('cep')
+                            # Auto-fill código IBGE do município para NF-e
+                            if data.get('ibge') and not self.data.get('codigo_municipio'):
+                                self.data['codigo_municipio'] = data.get('ibge')
                         except Exception:
                             pass
             except Exception:
@@ -2822,9 +2826,14 @@ class SafraForm(forms.ModelForm):
     
     class Meta:
         model = Safra
-        fields = ['nome', 'fazenda', 'cultura', 'ano', 'periodo_inicio', 'periodo_fim', 'status', 'imagem']
+        fields = ['nome', 'codigo', 'fazenda', 'cultura', 'ano', 'periodo_inicio', 'periodo_fim', 'status', 'imagem']
         widgets = {
             'nome': forms.TextInput(attrs={'class': 'form-control'}),
+            'codigo': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ex: 202526',
+                'maxlength': '10',
+            }),
             'fazenda': forms.Select(attrs={'class': 'form-select'}),
             'cultura': forms.Select(attrs={'class': 'form-select'}),
             'ano': forms.NumberInput(attrs={'class': 'form-control'}),

@@ -12,7 +12,7 @@
       {% endif %}
     </div>
     <div class="brand-text">
-      <h4>{% if user.is_superuser %}NexSafra SaaS{% else %}ERP Agrícola{% endif %}</h4>
+      <h4>{% if user.is_superuser %}Agrisdata SaaS{% else %}ERP Agrícola{% endif %}</h4>
       {% if user.empresa %}
       <span class="brand-subtitle">{{ user.empresa.nome|truncatewords:3 }}</span>
       {% elif user.is_superuser %}
@@ -424,7 +424,7 @@
         <a href="#" class="nav-link">
           <i class="bi bi-cart-check-fill"></i>
           <span>Compras</span>
-          <span class="badge-new">Novo</span>
+
           <i class="bi bi-chevron-down submenu-arrow"></i>
         </a>
         <ul class="nav-submenu">

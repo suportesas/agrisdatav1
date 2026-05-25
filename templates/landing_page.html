@@ -3,699 +3,1174 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Nexsafra — A Próxima Geração da Gestão de Safras</title>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=Barlow:wght@300;400;500;600;700&family=Barlow+Condensed:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<title>Agrisdata — Gestão Agrícola Inteligente</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --g900: #1B5E20;
-  --g800: #2E7D32;
-  --g700: #388E3C;
-  --g600: #43A047;
-  --g500: #4CAF50;
-  --g400: #66BB6A;
-  --g300: #81C784;
-  --g200: #C8E6C9;
-  --g100: #E8F5E9;
-  --lime: #76FF03;
-  --lime2:#CCFF90;
-  --soil: #080F09;
-  --earth:#0D1F0E;
-  --dark2:#111D12;
-  --white:#FAFFF8;
-  --muted:#8BA889;
+  --white:    #ffffff;
+  --bg:       #f7faf8;
+  --bg2:      #eef5ef;
+  --card:     #ffffff;
+  --border:   #e3ece4;
+  --border2:  #c6dbc8;
+  --text:     #1a2c1c;
+  --text2:    #3d5c41;
+  --muted:    #7a9a7e;
+  --green:    #1a7a3c;
+  --green2:   #22a24f;
+  --green3:   #d4edda;
+  --teal:     #0f766e;
+  --orange:   #c2500a;
+  --shadow:   0 1px 3px rgba(0,0,0,.08), 0 4px 16px rgba(0,0,0,.06);
+  --shadow2:  0 4px 24px rgba(0,0,0,.1), 0 1px 4px rgba(0,0,0,.06);
 }
 
 html { scroll-behavior: smooth; }
+body { background: var(--white); color: var(--text); font-family: 'Inter', sans-serif; overflow-x: hidden; -webkit-font-smoothing: antialiased; }
+img  { display: block; max-width: 100%; }
+a    { text-decoration: none; color: inherit; }
 
-body {
-  background: var(--soil);
-  color: var(--white);
-  font-family: 'Barlow', sans-serif;
-  overflow-x: hidden;
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+::selection { background: var(--green3); }
+
+.container { max-width: 1200px; margin: 0 auto; padding: 0 40px; }
+
+.chip {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-size: 12px; font-weight: 600; letter-spacing: .5px;
+  color: var(--green); background: var(--green3);
+  padding: 5px 14px; border-radius: 20px;
+  border: 1px solid rgba(26,122,60,.15);
 }
+.chip-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green2); animation: blink 2s infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
 
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: var(--soil); }
-::-webkit-scrollbar-thumb { background: var(--g800); border-radius: 3px; }
+.reveal   { opacity:0; transform:translateY(28px); transition:opacity .65s ease, transform .65s ease; }
+.reveal-l { opacity:0; transform:translateX(-28px); transition:opacity .65s ease, transform .65s ease; }
+.reveal-r { opacity:0; transform:translateX(28px);  transition:opacity .65s ease, transform .65s ease; }
+.reveal.on, .reveal-l.on, .reveal-r.on { opacity:1; transform:none; }
 
-::selection { background: var(--g700); color: var(--white); }
-
-/* ══════════════════════════════ NAV ══════════════════════════════ */
-nav {
-  position: fixed;
-  top: 0; left: 0; right: 0;
-  z-index: 1000;
-  padding: 0 80px;
-  height: 72px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  transition: background 0.4s, border-color 0.4s;
-  border-bottom: 1px solid transparent;
+/* ── NAV ── */
+#nav {
+  position: fixed; inset: 0 0 auto; z-index: 900;
+  height: 64px;
+  background: rgba(255,255,255,.88);
+  backdrop-filter: blur(16px) saturate(1.8);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center;
+  padding: 0 60px;
+  transition: box-shadow .3s;
 }
+#nav.scrolled { box-shadow: var(--shadow); }
 
-nav.scrolled {
-  background: rgba(8,15,9,0.95);
-  border-bottom-color: rgba(46,125,50,0.2);
-  backdrop-filter: blur(12px);
+.nav-inner { width:100%; display:flex; align-items:center; justify-content:space-between; gap:32px; }
+
+.logo { display:flex; align-items:center; gap:9px; }
+.logo-mark {
+  width:32px; height:32px; border-radius:8px;
+  background: linear-gradient(135deg, var(--green), var(--green2));
+  display:flex; align-items:center; justify-content:center;
+  box-shadow: 0 2px 8px rgba(26,122,60,.3);
 }
-
-.nav-logo {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  text-decoration: none;
+.logo-mark svg { width:16px; height:16px; color:#fff; }
+.logo-name {
+  font-family:'Space Grotesk',sans-serif;
+  font-size:20px; font-weight:700;
+  color: var(--text); letter-spacing:-.2px;
 }
+.logo-name b { color: var(--green2); font-weight:700; }
 
-.nav-logo svg { width: 36px; height: 42px; }
-
-.nav-logo-text {
-  display: flex;
-  align-items: baseline;
-  gap: 0;
-}
-
-.nav-logo-text .n {
-  font-family: 'Playfair Display', serif;
-  font-size: 28px;
-  font-weight: 900;
-  color: var(--white);
-  letter-spacing: -1px;
-  line-height: 1;
-}
-
-.nav-logo-text .s {
-  font-family: 'Playfair Display', serif;
-  font-size: 28px;
-  font-weight: 300;
-  color: var(--g400);
-  letter-spacing: 2px;
-  line-height: 1;
-}
-
-.nav-links {
-  display: flex;
-  align-items: center;
-  gap: 40px;
-  list-style: none;
-}
-
+.nav-links { display:flex; align-items:center; gap:32px; list-style:none; }
 .nav-links a {
-  font-family: 'Barlow', sans-serif;
-  font-size: 13px;
-  font-weight: 500;
-  letter-spacing: 1px;
-  color: var(--muted);
-  text-decoration: none;
-  text-transform: uppercase;
-  transition: color 0.2s;
+  font-size:14px; font-weight:500;
+  color: var(--text2); transition:color .2s;
 }
+.nav-links a:hover { color: var(--green); }
 
-.nav-links a:hover { color: var(--white); }
-
-.nav-cta {
-  background: var(--g800);
-  color: var(--white) !important;
-  padding: 10px 24px !important;
-  border: 1px solid var(--g600) !important;
-  transition: background 0.2s, border-color 0.2s !important;
+.nav-actions { display:flex; align-items:center; gap:10px; }
+.btn-nav-ghost {
+  font-size:13px; font-weight:600; color:var(--text2);
+  padding:8px 18px; border-radius:8px;
+  border:1px solid var(--border); transition:all .2s;
 }
-
-.nav-cta:hover {
-  background: var(--g700) !important;
-  border-color: var(--lime) !important;
-  color: var(--lime) !important;
+.btn-nav-ghost:hover { border-color:var(--green2); color:var(--green); background:var(--green3); }
+.btn-nav-solid {
+  font-size:13px; font-weight:700; color:#fff;
+  padding:8px 20px; border-radius:8px;
+  background:var(--green); transition:all .2s;
+  box-shadow: 0 1px 4px rgba(26,122,60,.3);
 }
+.btn-nav-solid:hover { background:var(--green2); box-shadow:0 4px 12px rgba(26,122,60,.35); transform:translateY(-1px); }
 
-.nav-hamburger {
-  display: none;
-  flex-direction: column;
-  gap: 5px;
-  cursor: pointer;
-  background: none;
-  border: none;
-  padding: 4px;
-}
+.hamburger { display:none; flex-direction:column; gap:5px; background:none; border:none; cursor:pointer; padding:4px; }
+.hamburger span { display:block; width:22px; height:2px; background:var(--text); border-radius:2px; }
 
-.nav-hamburger span {
-  display: block;
-  width: 24px;
-  height: 2px;
-  background: var(--white);
-  transition: 0.3s;
-}
-
-.nav-buttons {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  list-style: none;
-}
-
-.nav-buttons a {
-  text-decoration: none;
-  padding: 10px 20px;
-  border-radius: 25px;
-  font-family: 'Barlow Condensed', sans-serif;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  transition: all 0.3s;
-  cursor: pointer;
-}
-
-.nav-buttons .btn-login {
-  color: var(--white);
-  border: 1px solid var(--white);
-  background: transparent;
-}
-
-.nav-buttons .btn-login:hover {
-  background: var(--white);
-  color: var(--g700);
-  transform: translateY(-2px);
-}
-
-.nav-buttons .btn-contratar {
-  background: var(--lime);
-  color: var(--soil);
-  border: 1px solid var(--lime);
-  font-weight: 800;
-}
-
-.nav-buttons .btn-contratar:hover {
-  background: var(--white);
-  border-color: var(--white);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 16px rgba(118,255,3,0.3);
-}
-
-/* ══════════════════════════════ HERO ══════════════════════════════ */
+/* ── HERO ── */
 #hero {
+  padding-top: 64px;
   min-height: 100vh;
   display: grid;
   grid-template-columns: 1fr 1fr;
+  align-items: center;
   position: relative;
   overflow: hidden;
-  padding-top: 72px;
+  background: var(--white);
 }
 
-.hero-bg {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
+.hero-bg-shape {
+  position:absolute; top:-120px; right:-200px;
+  width:700px; height:700px; border-radius:50%;
+  background:radial-gradient(circle, #e8f5ec 0%, transparent 65%);
+  pointer-events:none;
 }
-
-.hero-bg::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(ellipse 70% 60% at 30% 50%, rgba(27,94,32,0.15) 0%, transparent 60%),
-    radial-gradient(ellipse 50% 50% at 80% 30%, rgba(118,255,3,0.04) 0%, transparent 50%);
-}
-
-.hero-bg::after {
-  content: '';
-  position: absolute;
-  right: 0; top: 0;
-  width: 55%;
-  height: 100%;
-  background:
-    linear-gradient(rgba(76,175,80,0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(76,175,80,0.04) 1px, transparent 1px);
-  background-size: 48px 48px;
-  mask-image: radial-gradient(ellipse 90% 80% at 70% 50%, black, transparent 80%);
-  -webkit-mask-image: radial-gradient(ellipse 90% 80% at 70% 50%, black, transparent 80%);
+.hero-bg-dots {
+  position:absolute; right:0; top:0; bottom:0;
+  width:52%;
+  background-image: radial-gradient(circle, var(--border) 1.5px, transparent 1.5px);
+  background-size: 28px 28px;
+  opacity:.7;
+  mask-image: radial-gradient(ellipse 80% 80% at 70% 50%, black, transparent 80%);
+  -webkit-mask-image: radial-gradient(ellipse 80% 80% at 70% 50%, black, transparent 80%);
+  pointer-events:none;
 }
 
 .hero-left {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  padding: 100px 80px 100px 100px;
-  position: relative;
-  z-index: 2;
+  position:relative; z-index:2;
+  padding: 100px 60px 100px 80px;
 }
-
-.hero-eyebrow {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 32px;
-  animation: fadeUp 0.8s ease both;
-}
-
-.hero-eyebrow-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--lime);
-  animation: pulseDot 2s ease-in-out infinite;
-}
-
-@keyframes pulseDot {
-  0%,100% { box-shadow: 0 0 0 0 rgba(118,255,3,0.4); }
-  50%      { box-shadow: 0 0 0 8px rgba(118,255,3,0); }
-}
-
-.hero-eyebrow-text {
-  font-family: 'Barlow Condensed', sans-serif;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 5px;
-  text-transform: uppercase;
-  color: var(--lime);
-  opacity: 0.9;
-}
+.hero-chip { margin-bottom:28px; }
 
 .hero-title {
-  font-family: 'Playfair Display', serif;
-  font-size: clamp(42px, 5vw, 72px);
-  font-weight: 900;
-  line-height: 1.05;
-  margin-bottom: 28px;
-  animation: fadeUp 0.8s ease 0.1s both;
+  font-family:'Space Grotesk',sans-serif;
+  font-size: clamp(38px, 4vw, 62px);
+  font-weight:700; line-height:1.1;
+  letter-spacing:-.5px;
+  color:var(--text);
+  margin-bottom:20px;
 }
+.hero-title em { font-style:normal; color:var(--green); }
 
-.hero-title em {
-  font-style: italic;
-  color: var(--g400);
+.hero-desc {
+  font-size:17px; font-weight:400; line-height:1.75;
+  color:var(--muted); max-width:430px; margin-bottom:40px;
 }
+.hero-desc strong { color:var(--text2); font-weight:600; }
 
-.hero-title .highlight {
-  position: relative;
-  display: inline-block;
-}
-
-.hero-title .highlight::after {
-  content: '';
-  position: absolute;
-  bottom: 4px; left: 0; right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, var(--lime), transparent);
-}
-
-.hero-sub {
-  font-size: 17px;
-  font-weight: 300;
-  color: var(--g200);
-  line-height: 1.75;
-  max-width: 480px;
-  margin-bottom: 48px;
-  animation: fadeUp 0.8s ease 0.2s both;
-}
-
-.hero-sub strong {
-  font-weight: 600;
-  color: var(--lime);
-}
-
-.hero-actions {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  flex-wrap: wrap;
-  animation: fadeUp 0.8s ease 0.3s both;
-}
+.hero-btns { display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:56px; }
 
 .btn-primary {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  background: var(--g800);
-  color: var(--white);
-  padding: 16px 36px;
-  font-family: 'Barlow Condensed', sans-serif;
-  font-size: 14px;
-  font-weight: 700;
-  letter-spacing: 3px;
-  text-transform: uppercase;
-  border: 1px solid var(--g600);
-  cursor: pointer;
-  text-decoration: none;
-  transition: all 0.25s;
+  display:inline-flex; align-items:center; gap:9px;
+  background:var(--green); color:#fff;
+  font-size:14px; font-weight:700;
+  padding:13px 28px; border-radius:9px;
+  box-shadow: 0 2px 12px rgba(26,122,60,.3);
+  transition:all .2s;
 }
+.btn-primary:hover { background:var(--green2); transform:translateY(-2px); box-shadow:0 6px 20px rgba(26,122,60,.35); }
+.btn-primary svg { width:17px; height:17px; }
 
-.btn-primary:hover {
-  background: var(--g700);
-  border-color: var(--lime);
-  color: var(--lime);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 32px rgba(27,94,32,0.3);
+.btn-secondary {
+  display:inline-flex; align-items:center; gap:8px;
+  color:var(--text2); font-size:14px; font-weight:600;
+  padding:13px 22px; border-radius:9px;
+  border:1.5px solid var(--border2);
+  transition:all .2s;
 }
+.btn-secondary:hover { border-color:var(--green2); color:var(--green); background:var(--green3); }
+.btn-secondary svg { width:17px; height:17px; color:var(--green); }
 
-.btn-ghost {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--g300);
-  font-family: 'Barlow', sans-serif;
-  font-size: 14px;
-  font-weight: 500;
-  letter-spacing: 1px;
-  cursor: pointer;
-  text-decoration: none;
-  padding: 16px 4px;
-  border-bottom: 1px solid rgba(129,199,132,0.3);
-  transition: color 0.2s, border-color 0.2s;
+.hero-social {
+  display:flex; align-items:center; gap:14px;
+  padding-top:28px; border-top:1px solid var(--border);
 }
-
-.btn-ghost:hover { color: var(--white); border-color: var(--g400); }
-
-.hero-badges {
-  display: flex;
-  align-items: center;
-  gap: 24px;
-  margin-top: 48px;
-  animation: fadeUp 0.8s ease 0.4s both;
+.proof-imgs { display:flex; }
+.proof-imgs img {
+  width:34px; height:34px; border-radius:50%;
+  border:2.5px solid var(--white); margin-left:-9px; object-fit:cover;
+  box-shadow:0 1px 4px rgba(0,0,0,.12);
 }
+.proof-imgs img:first-child { margin-left:0; }
+.proof-copy { font-size:13px; color:var(--muted); line-height:1.4; }
+.proof-copy strong { color:var(--green); }
 
-.hero-badge {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 12px;
-  font-weight: 300;
-  color: var(--muted);
-  letter-spacing: 0.5px;
-}
-
-.hero-badge-icon {
-  font-size: 16px;
-  opacity: 0.8;
-}
-
-/* Hero right — visual */
+/* Hero right */
 .hero-right {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  z-index: 2;
-  padding: 100px 80px 100px 40px;
-  animation: fadeIn 1.2s ease 0.3s both;
+  position:relative; z-index:2;
+  padding:80px 80px 80px 20px;
+  display:flex; align-items:center; justify-content:center;
 }
 
-.hero-visual {
-  position: relative;
-  width: 100%;
-  max-width: 480px;
-  height: 500px;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 32px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(76,175,80,0.1);
+.hero-img-wrap {
+  position:relative; width:100%; max-width:520px;
+}
+.hero-img-main {
+  width:100%; border-radius:20px;
+  box-shadow: 0 24px 64px rgba(0,0,0,.16), 0 4px 16px rgba(0,0,0,.08);
+  border:1px solid var(--border);
+  height:420px; object-fit:cover;
 }
 
-.hero-visual img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  filter: brightness(0.9) contrast(1.1);
+/* HUD overlay */
+.hud { position:absolute; inset:0; pointer-events:none; border-radius:20px; overflow:hidden; }
+.hud-scan {
+  position:absolute; left:0; right:0; height:1.5px;
+  background:linear-gradient(90deg,transparent,rgba(26,122,60,.5),transparent);
+  animation:scan 3.5s ease-in-out infinite; opacity:.6;
+}
+@keyframes scan { 0%,100%{top:10%} 50%{top:90%} }
+
+.hud-badge {
+  position:absolute; background:rgba(255,255,255,.92);
+  backdrop-filter:blur(10px); border:1px solid var(--border2);
+  border-radius:10px; padding:10px 14px;
+  box-shadow:var(--shadow);
+}
+.hud-badge-tl { top:16px; left:16px; }
+.hud-badge-tr { top:16px; right:16px; }
+.hud-badge-b  { bottom:16px; left:50%; transform:translateX(-50%); white-space:nowrap; }
+.hud-lbl { font-size:10px; font-weight:600; letter-spacing:1px; text-transform:uppercase; color:var(--muted); margin-bottom:1px; }
+.hud-val { font-family:'Space Grotesk',sans-serif; font-size:15px; font-weight:700; color:var(--green); }
+.hud-val.t { color:var(--teal); }
+.hud-val.o { color:var(--orange); }
+.hud-row { display:flex; gap:20px; }
+
+/* Floating cards */
+.card-float {
+  position:absolute;
+  background:var(--white); border:1px solid var(--border2);
+  border-radius:12px; padding:12px 16px;
+  display:flex; align-items:center; gap:12px;
+  box-shadow:var(--shadow2);
+}
+.card-float-1 { right:-32px; top:64px; animation:floatUp 4s ease-in-out infinite; }
+.card-float-2 { left:-36px; bottom:80px; animation:floatDown 4s ease-in-out infinite .6s; }
+@keyframes floatUp   { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-7px)} }
+@keyframes floatDown { 0%,100%{transform:translateY(0)} 50%{transform:translateY(7px)} }
+
+.cf-icon { font-size:24px; }
+.cf-val { font-family:'Space Grotesk',sans-serif; font-size:18px; font-weight:700; color:var(--text); line-height:1; }
+.cf-lbl { font-size:11px; color:var(--muted); margin-top:2px; }
+
+/* ── TRUSTED ── */
+#trusted {
+  padding:28px 0;
+  background:var(--bg);
+  border-top:1px solid var(--border);
+  border-bottom:1px solid var(--border);
+}
+.trusted-row { display:flex; align-items:center; gap:40px; flex-wrap:wrap; }
+.trusted-lbl { font-size:12px; font-weight:600; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); white-space:nowrap; }
+.trusted-sep { width:1px; height:24px; background:var(--border); flex-shrink:0; }
+.trusted-names { display:flex; align-items:center; gap:36px; flex-wrap:wrap; }
+.trusted-name { font-family:'Space Grotesk',sans-serif; font-size:14px; font-weight:600; color:var(--border2); letter-spacing:.3px; transition:color .2s; }
+.trusted-name:hover { color:var(--muted); }
+
+/* ── SECTION HEADER ── */
+.section-hd { text-align:center; margin-bottom:64px; }
+.section-title {
+  font-family:'Space Grotesk',sans-serif;
+  font-size:clamp(28px,3.2vw,46px); font-weight:700;
+  color:var(--text); line-height:1.15; letter-spacing:-.3px;
+  margin:14px 0 14px;
+}
+.section-sub { font-size:16px; color:var(--muted); line-height:1.7; max-width:500px; margin:0 auto; }
+
+/* ── FEATURES ── */
+#features { padding:100px 0; background:var(--white); }
+.features-grid {
+  display:grid; grid-template-columns:repeat(3,1fr); gap:20px;
+}
+.feat-card {
+  background:var(--white); border:1.5px solid var(--border);
+  border-radius:16px; padding:32px 28px;
+  transition:border-color .25s, box-shadow .25s, transform .25s;
+  cursor:default;
+}
+.feat-card:hover {
+  border-color:var(--border2);
+  box-shadow:var(--shadow2);
+  transform:translateY(-3px);
+}
+.feat-icon {
+  width:46px; height:46px; border-radius:12px;
+  background:var(--green3); display:flex; align-items:center; justify-content:center;
+  margin-bottom:18px;
+}
+.feat-icon svg { width:22px; height:22px; color:var(--green); }
+.feat-icon.t { background:#ccf2ef; } .feat-icon.t svg { color:var(--teal); }
+.feat-icon.o { background:#fde8d8; } .feat-icon.o svg { color:var(--orange); }
+.feat-title { font-family:'Space Grotesk',sans-serif; font-size:17px; font-weight:600; color:var(--text); margin-bottom:8px; }
+.feat-desc  { font-size:14px; color:var(--muted); line-height:1.7; }
+
+/* ── SHOWCASE ── */
+#showcase { padding:80px 0 100px; background:var(--bg); }
+.showcase-wrap {
+  display:grid; grid-template-columns:1fr 1fr; gap:72px; align-items:center;
+}
+.showcase-img { position:relative; }
+.showcase-img img {
+  width:100%; border-radius:18px;
+  box-shadow:var(--shadow2);
+  border:1px solid var(--border);
+}
+.showcase-badge {
+  position:absolute; bottom:-18px; right:-18px;
+  background:var(--white); border:1.5px solid var(--border2);
+  border-radius:12px; padding:16px 20px;
+  display:flex; align-items:center; gap:12px;
+  box-shadow:var(--shadow);
+}
+.sb-icon { font-size:26px; }
+.sb-num { font-family:'Space Grotesk',sans-serif; font-size:22px; font-weight:700; color:var(--green); line-height:1; }
+.sb-lbl { font-size:11px; color:var(--muted); margin-top:2px; }
+
+.showcase-text { padding-left:16px; }
+.showcase-title { font-family:'Space Grotesk',sans-serif; font-size:clamp(26px,2.8vw,40px); font-weight:700; color:var(--text); line-height:1.2; letter-spacing:-.2px; margin:14px 0 16px; }
+.showcase-desc  { font-size:15px; color:var(--muted); line-height:1.8; margin-bottom:28px; }
+.check-list { list-style:none; display:flex; flex-direction:column; gap:11px; margin-bottom:32px; }
+.check-list li { display:flex; align-items:flex-start; gap:10px; font-size:14px; color:var(--text2); line-height:1.5; }
+.check-list li::before { content:''; flex-shrink:0; margin-top:5px; width:14px; height:14px; border-radius:4px; background:var(--green3); background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpolyline points='2,6 5,9 10,3' fill='none' stroke='%231a7a3c' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:center; }
+
+/* ── STATS ── */
+#stats {
+  padding:72px 0;
+  background:var(--green);
+}
+.stats-grid { display:grid; grid-template-columns:repeat(4,1fr); }
+.stat-item {
+  padding:28px 40px; text-align:center;
+  border-right:1px solid rgba(255,255,255,.15);
+}
+.stat-item:last-child { border-right:none; }
+.stat-num {
+  font-family:'Space Grotesk',sans-serif;
+  font-size:clamp(36px,4vw,54px); font-weight:700;
+  color:#fff; line-height:1; letter-spacing:-1px; margin-bottom:6px;
+}
+.stat-num sup { font-size:.55em; letter-spacing:0; font-weight:600; vertical-align:super; }
+.stat-lbl { font-size:13px; color:rgba(255,255,255,.65); line-height:1.5; }
+
+/* ── HOW IT WORKS ── */
+#how { padding:100px 0; background:var(--white); }
+.steps-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:32px; margin-top:56px; }
+.step {
+  position:relative; padding:36px 28px;
+  background:var(--bg); border:1.5px solid var(--border);
+  border-radius:18px; overflow:hidden;
+  transition:border-color .25s, transform .25s;
+}
+.step:hover { border-color:var(--border2); transform:translateY(-3px); }
+.step-n {
+  font-family:'Space Grotesk',sans-serif; font-size:80px; font-weight:900;
+  color:var(--border2); line-height:1; opacity:.4;
+  position:absolute; top:12px; right:20px; user-select:none;
+}
+.step-icon {
+  width:50px; height:50px; border-radius:14px;
+  background:linear-gradient(135deg, var(--green3), #c7eddb);
+  display:flex; align-items:center; justify-content:center;
+  margin-bottom:20px;
+}
+.step-icon svg { width:24px; height:24px; color:var(--green); }
+.step-title { font-family:'Space Grotesk',sans-serif; font-size:18px; font-weight:600; color:var(--text); margin-bottom:10px; }
+.step-desc  { font-size:14px; color:var(--muted); line-height:1.7; }
+
+/* ── TECHNOLOGY ── */
+#technology { padding:80px 0 100px; background:var(--bg); }
+.tech-wrap { display:grid; grid-template-columns:1fr 1fr; gap:72px; align-items:center; }
+.tech-text {}
+.tech-img { position:relative; }
+.tech-img img {
+  width:100%; border-radius:18px;
+  box-shadow:var(--shadow2); border:1px solid var(--border);
+}
+.tech-img-caption {
+  position:absolute; bottom:-1px; left:0; right:0;
+  background:linear-gradient(to top, rgba(255,255,255,.96), transparent);
+  border-radius:0 0 18px 18px; padding:28px 24px 20px;
+  display:flex; justify-content:space-around;
+}
+.tech-cap-item { text-align:center; }
+.tech-cap-val { font-family:'Space Grotesk',sans-serif; font-size:20px; font-weight:700; color:var(--green); }
+.tech-cap-lbl { font-size:11px; color:var(--muted); margin-top:2px; }
+
+.tabs { display:flex; gap:4px; margin:16px 0 28px; background:var(--bg2); border-radius:10px; padding:4px; width:fit-content; }
+.tab-btn {
+  font-size:13px; font-weight:600; padding:7px 16px;
+  border-radius:7px; background:none; border:none;
+  color:var(--muted); cursor:pointer; transition:all .2s;
+}
+.tab-btn.active { background:var(--white); color:var(--green); box-shadow:0 1px 4px rgba(0,0,0,.1); }
+
+.tab-panel { display:none; }
+.tab-panel.active { display:block; }
+.tab-panel > p { font-size:15px; color:var(--muted); line-height:1.8; margin-bottom:20px; }
+
+.mbar-list { display:flex; flex-direction:column; gap:12px; }
+.mbar {}
+.mbar-top { display:flex; justify-content:space-between; margin-bottom:5px; }
+.mbar-lbl { font-size:13px; color:var(--text2); font-weight:500; }
+.mbar-val { font-size:13px; font-weight:700; color:var(--green); }
+.mbar-track { height:6px; background:var(--bg2); border-radius:3px; overflow:hidden; }
+.mbar-fill {
+  height:100%; border-radius:3px;
+  background:linear-gradient(90deg, var(--green), var(--green2));
+  width:0; transition:width 1.1s cubic-bezier(.25,.46,.45,.94) .2s;
 }
 
-/* ══════════════════════════════ NUMBERS ══════════════════════════════ */
-.numbers-strip {
-  background: var(--g900);
-  padding: 56px 100px;
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 0;
-  border-top: 1px solid rgba(76,175,80,0.15);
-  border-bottom: 1px solid rgba(76,175,80,0.15);
-  position: relative;
-  overflow: hidden;
+/* ── TESTIMONIALS ── */
+#testimonials { padding:100px 0; background:var(--white); }
+.testi-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:22px; margin-top:56px; }
+.testi-card {
+  background:var(--bg); border:1.5px solid var(--border);
+  border-radius:18px; padding:28px;
+  transition:border-color .25s, transform .25s, box-shadow .25s;
 }
+.testi-card:hover { border-color:var(--border2); transform:translateY(-3px); box-shadow:var(--shadow); }
+.testi-stars { margin-bottom:16px; font-size:13px; letter-spacing:1px; }
+.testi-txt { font-size:14px; color:var(--text2); line-height:1.75; margin-bottom:20px; font-style:italic; }
+.testi-author { display:flex; align-items:center; gap:11px; padding-top:18px; border-top:1px solid var(--border); }
+.testi-av { width:42px; height:42px; border-radius:50%; object-fit:cover; border:2px solid var(--border2); }
+.testi-name { font-size:14px; font-weight:600; color:var(--text); }
+.testi-role { font-size:12px; color:var(--muted); margin-top:1px; }
 
-.numbers-strip::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: repeating-linear-gradient(
-    90deg,
-    transparent, transparent calc(25% - 1px),
-    rgba(76,175,80,0.1) calc(25% - 1px), rgba(76,175,80,0.1) 25%
-  );
-  pointer-events: none;
+/* ── PLANS ── */
+#plans { padding:100px 0; background:var(--bg); }
+.plans-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:22px; margin-top:56px; align-items:start; }
+.plan-card {
+  background:var(--white); border:1.5px solid var(--border);
+  border-radius:20px; padding:36px 32px;
+  display:flex; flex-direction:column;
+  position:relative; transition:border-color .25s, box-shadow .25s;
 }
+.plan-card:hover { border-color:var(--border2); box-shadow:var(--shadow); }
+.plan-card.pop { border-color:var(--green2); box-shadow:0 4px 24px rgba(26,122,60,.14); }
 
-.num-item {
-  padding: 0 40px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  position: relative;
-  z-index: 1;
+.pop-tag {
+  position:absolute; top:-13px; left:50%; transform:translateX(-50%);
+  background:var(--green); color:#fff;
+  font-size:11px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase;
+  padding:4px 14px; border-radius:20px;
 }
+.plan-name { font-size:13px; font-weight:700; color:var(--muted); letter-spacing:.5px; text-transform:uppercase; margin-bottom:20px; }
+.plan-price { display:flex; align-items:baseline; gap:3px; margin-bottom:6px; }
+.plan-amount { font-family:'Space Grotesk',sans-serif; font-size:48px; font-weight:700; color:var(--text); line-height:1; letter-spacing:-1.5px; }
+.plan-period { font-size:15px; color:var(--muted); }
+.plan-desc { font-size:14px; color:var(--muted); line-height:1.6; margin-bottom:28px; padding-bottom:28px; border-bottom:1px solid var(--border); }
+.plan-feats { list-style:none; display:flex; flex-direction:column; gap:10px; flex:1; margin-bottom:28px; }
+.plan-feats li { font-size:13px; color:var(--text2); display:flex; align-items:center; gap:8px; }
+.plan-feats li::before { content:'✓'; color:var(--green); font-weight:800; font-size:12px; }
+.plan-feats li.no { color:var(--muted); }
+.plan-feats li.no::before { content:'–'; color:var(--border2); }
 
-.num-value {
-  font-family: 'Playfair Display', serif;
-  font-size: 52px;
-  font-weight: 900;
-  color: var(--lime);
-  line-height: 1;
-  letter-spacing: -2px;
+.btn-plan {
+  display:block; text-align:center;
+  font-size:14px; font-weight:700; padding:13px; border-radius:9px;
+  transition:all .2s;
 }
+.btn-plan-out { border:1.5px solid var(--border2); color:var(--text2); }
+.btn-plan-out:hover { border-color:var(--green2); color:var(--green); background:var(--green3); }
+.btn-plan-fill { background:var(--green); color:#fff; box-shadow:0 2px 12px rgba(26,122,60,.3); }
+.btn-plan-fill:hover { background:var(--green2); box-shadow:0 4px 18px rgba(26,122,60,.4); transform:translateY(-1px); }
 
-.num-label {
-  font-size: 13px;
-  font-weight: 300;
-  color: var(--g200);
-  line-height: 1.5;
-  letter-spacing: 0.5px;
+/* ── CTA ── */
+#cta {
+  padding:100px 0;
+  background:linear-gradient(135deg, var(--green) 0%, #0f5c2a 100%);
+  text-align:center; position:relative; overflow:hidden;
 }
-
-/* ══════════════════════════════ ANIMAÇÕES ══════════════════════════════ */
-@keyframes fadeUp {
-  from { opacity: 0; transform: translateY(40px); }
-  to   { opacity: 1; transform: translateY(0); }
+.cta-pattern {
+  position:absolute; inset:0;
+  background-image: radial-gradient(circle, rgba(255,255,255,.05) 1.5px, transparent 1.5px);
+  background-size:28px 28px;
+  pointer-events:none;
 }
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+.cta-title {
+  font-family:'Space Grotesk',sans-serif;
+  font-size:clamp(32px,4vw,56px); font-weight:700;
+  color:#fff; line-height:1.1; letter-spacing:-.3px;
+  margin:16px 0 16px; position:relative;
 }
-
-.reveal {
-  opacity: 0;
-  transform: translateY(40px);
-  transition: opacity 0.7s ease, transform 0.7s ease;
+.cta-sub { font-size:16px; color:rgba(255,255,255,.75); max-width:480px; margin:0 auto 40px; line-height:1.7; position:relative; }
+.cta-form {
+  display:flex; gap:10px; max-width:420px; margin:0 auto;
+  position:relative;
 }
-
-.reveal.visible {
-  opacity: 1;
-  transform: translateY(0);
+.cta-input {
+  flex:1; padding:13px 18px;
+  background:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.3);
+  border-radius:9px; color:#fff; font-size:14px;
+  outline:none; transition:border-color .2s;
+  font-family:'Inter',sans-serif;
 }
-
-/* ══════════════════════════════ MOBILE NAV ══════════════════════════════ */
-@media (max-width: 1024px) {
-  nav { padding: 0 32px; }
-  .nav-links { display: none; }
-  .nav-buttons { display: none; }
-  .nav-hamburger { display: flex; }
-
-  #hero { grid-template-columns: 1fr; }
-  .hero-right { display: none; }
-  .hero-left { padding: 100px 32px 80px; }
-
-  .numbers-strip { grid-template-columns: repeat(2,1fr); padding: 48px 32px; }
+.cta-input::placeholder { color:rgba(255,255,255,.55); }
+.cta-input:focus { border-color:rgba(255,255,255,.7); background:rgba(255,255,255,.2); }
+.btn-cta {
+  background:#fff; color:var(--green);
+  font-size:14px; font-weight:700; padding:13px 24px;
+  border-radius:9px; border:none; cursor:pointer;
+  white-space:nowrap; transition:all .2s; font-family:'Inter',sans-serif;
 }
+.btn-cta:hover { background:var(--green3); box-shadow:0 4px 16px rgba(0,0,0,.2); }
+.cta-note { font-size:12px; color:rgba(255,255,255,.55); margin-top:14px; position:relative; }
 
-@media (max-width: 768px) {
-  nav { padding: 0 24px; }
-  .nav-logo svg { width: 28px; height: 32px; }
-  .nav-logo-text .n { font-size: 20px; }
-  .nav-logo-text .s { font-size: 20px; }
+/* ── FOOTER ── */
+footer {
+  background:var(--text); padding:64px 0 36px;
+}
+.footer-top {
+  display:grid; grid-template-columns:2fr 1fr 1fr 1fr; gap:48px;
+  padding-bottom:48px; border-bottom:1px solid rgba(255,255,255,.1);
+}
+.footer-desc { font-size:14px; color:rgba(255,255,255,.45); line-height:1.7; margin-top:14px; max-width:260px; }
+.footer-col-title { font-size:12px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:rgba(255,255,255,.35); margin-bottom:18px; }
+.footer-list { list-style:none; display:flex; flex-direction:column; gap:10px; }
+.footer-list a { font-size:14px; color:rgba(255,255,255,.55); transition:color .2s; }
+.footer-list a:hover { color:rgba(255,255,255,.9); }
+.footer-bot { padding-top:28px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px; }
+.footer-copy { font-size:12px; color:rgba(255,255,255,.35); }
+.footer-social { display:flex; gap:10px; }
+.s-btn {
+  width:32px; height:32px; border-radius:8px;
+  background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.1);
+  display:flex; align-items:center; justify-content:center;
+  color:rgba(255,255,255,.45); transition:all .2s;
+}
+.s-btn:hover { background:rgba(255,255,255,.14); color:#fff; border-color:rgba(255,255,255,.25); }
+.s-btn svg { width:14px; height:14px; }
+
+/* ── RESPONSIVE ── */
+@media (max-width:1024px) {
+  #nav { padding:0 28px; }
+  .nav-links, .btn-nav-ghost { display:none; }
+  .hamburger { display:flex; }
+  #hero { grid-template-columns:1fr; }
+  .hero-right { display:none; }
+  .hero-left { padding:80px 28px 60px; }
+  .features-grid, .testi-grid, .plans-grid { grid-template-columns:repeat(2,1fr); }
+  .showcase-wrap, .tech-wrap { grid-template-columns:1fr; }
+  .showcase-img { order:2; }
+  .stats-grid { grid-template-columns:repeat(2,1fr); }
+  .stat-item { border-right:none; border-bottom:1px solid rgba(255,255,255,.15); }
+  .steps-grid { grid-template-columns:1fr; }
+  .footer-top { grid-template-columns:1fr 1fr; }
+}
+@media (max-width:640px) {
+  .container { padding:0 20px; }
+  .features-grid, .testi-grid, .plans-grid { grid-template-columns:1fr; }
+  .footer-top { grid-template-columns:1fr; }
+  .cta-form { flex-direction:column; }
+  .trusted-row { flex-direction:column; align-items:flex-start; }
+  .stats-grid { grid-template-columns:1fr 1fr; }
 }
 </style>
 </head>
 <body>
 
-<!-- ══ NAV ══ -->
-<nav id="navbar">
-  <a class="nav-logo" href="#">
-    <svg viewBox="0 0 80 90" xmlns="http://www.w3.org/2000/svg" overflow="visible">
-      <defs>
-        <linearGradient id="nl1" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" style="stop-color:#2E7D32"/><stop offset="100%" style="stop-color:#66BB6A"/>
-        </linearGradient>
-      </defs>
-      <line x1="40" y1="64" x2="40" y2="78" stroke="#388E3C" stroke-width="2" stroke-linecap="round"/>
-      <path d="M40,64 C26,50 16,36 22,22 C28,10 40,14 40,32 Z" fill="url(#nl1)"/>
-      <path d="M40,64 C54,48 62,34 56,20 C50,10 40,14 40,32 Z" fill="#388E3C" opacity="0.8"/>
-      <circle cx="18" cy="22" r="4" fill="#76FF03"/>
-      <circle cx="62" cy="22" r="4" fill="#76FF03"/>
-    </svg>
-    <div class="nav-logo-text">
-      <span class="n">NEX</span><span class="s">SAFRA</span>
+<!-- NAV -->
+<nav id="nav">
+  <div class="nav-inner">
+    <a href="#" class="logo">
+      <div class="logo-mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2L3 7l9 5 9-5-9-5z"/><path d="M3 17l9 5 9-5"/><path d="M3 12l9 5 9-5"/>
+        </svg>
+      </div>
+      <span class="logo-name">Nex<b>safra</b></span>
+    </a>
+
+    <ul class="nav-links">
+      <li><a href="#features">Módulos</a></li>
+      <li><a href="#how">Como Funciona</a></li>
+      <li><a href="#technology">Tecnologia</a></li>
+      <li><a href="#plans">Planos</a></li>
+      <li><a href="#testimonials">Clientes</a></li>
+    </ul>
+
+    <div class="nav-actions">
+      <a href="/login/" class="btn-nav-ghost">Entrar</a>
+      <a href="#cta" class="btn-nav-solid">Agendar Demo</a>
     </div>
-  </a>
 
-  <ul class="nav-links">
-    <li><a href="#hero">Início</a></li>
-    <li><a href="/recursos/">Funcionalidades</a></li>
-    <li><a href="/planos/">Planos</a></li>
-    <li><a href="/faq/">FAQ</a></li>
-    <li><a href="/sobre/">Sobre</a></li>
-    <li><a href="/contato/" class="nav-cta">Contato</a></li>
-  </ul>
-
-  <ul class="nav-buttons">
-    <li><a href="/login/" class="btn-login">Login</a></li>
-    <li><a href="#cta" class="btn-contratar">Contratar</a></li>
-  </ul>
-
-  <button class="nav-hamburger" onclick="toggleMenu()" aria-label="Menu">
-    <span></span><span></span><span></span>
-  </button>
+    <button class="hamburger" id="hamburger" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
 </nav>
 
-<!-- ══ HERO ══ -->
+<!-- HERO -->
 <section id="hero">
-  <div class="hero-bg"></div>
+  <div class="hero-bg-shape"></div>
+  <div class="hero-bg-dots"></div>
 
   <div class="hero-left">
-    <div class="hero-eyebrow">
-      <div class="hero-eyebrow-dot"></div>
-      <span class="hero-eyebrow-text">Plataforma SaaS Agrícola · 36 Módulos</span>
+    <div class="hero-chip chip">
+      <span class="chip-dot"></span> Plataforma SaaS Agrícola · 36 Módulos
     </div>
 
     <h1 class="hero-title">
-      A próxima geração<br>
-      da <em>gestão de<br>
-      <span class="highlight">safras</span></em>
+      Gestão agrícola<br>
+      <em>inteligente</em><br>
+      do campo ao mundo
     </h1>
 
-    <p class="hero-sub">
-      <strong>Next + Safra.</strong> Nexsafra conecta cada etapa da sua produção — do talhão ao container, do produtor ao importador — em tempo real.
+    <p class="hero-desc">
+      Do talhão ao container, do produtor ao importador.
+      <strong>Agrisdata conecta</strong> toda sua operação em tempo real com tecnologia de precisão.
     </p>
 
-    <div class="hero-actions">
-      <a href="#planos" class="btn-primary">Começar agora →</a>
-      <a href="#hero" class="btn-ghost">Saber mais ↓</a>
+    <div class="hero-btns">
+      <a href="#cta" class="btn-primary">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3l14 9-14 9V3z"/></svg>
+        Começar Gratuitamente
+      </a>
+      <a href="#showcase" class="btn-secondary">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>
+        Ver Demo
+      </a>
     </div>
 
-    <div class="hero-badges">
-      <div class="hero-badge">
-        <span class="hero-badge-icon">🌿</span>
-        GLOBALG.A.P. Ready
+    <div class="hero-social">
+      <div class="proof-imgs">
+        <img src="https://i.pravatar.cc/40?img=3"  alt="">
+        <img src="https://i.pravatar.cc/40?img=7"  alt="">
+        <img src="https://i.pravatar.cc/40?img=12" alt="">
+        <img src="https://i.pravatar.cc/40?img=25" alt="">
       </div>
-      <div class="hero-badge">
-        <span class="hero-badge-icon">🔒</span>
-        LGPD & GDPR
-      </div>
-      <div class="hero-badge">
-        <span class="hero-badge-icon">📱</span>
-        Mobile Offline
-      </div>
+      <p class="proof-copy">
+        <strong>+2.400 produtores</strong> já usam o Agrisdata<br>em 18 estados do Brasil
+      </p>
     </div>
   </div>
 
   <div class="hero-right">
-    <div class="hero-visual">
-      <img src="{{ imagem_hero }}" alt="Operação agrícola em tempo real com trator">
+    <div class="hero-img-wrap">
+      <img
+        class="hero-img-main"
+        src="https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=900&h=560&fit=crop&q=85"
+        alt="Drone monitorando lavoura"
+      >
+      <div class="hud">
+        <div class="hud-scan"></div>
+        <div class="hud-badge hud-badge-tl">
+          <div class="hud-lbl">Altitude</div>
+          <div class="hud-val">120 m</div>
+        </div>
+        <div class="hud-badge hud-badge-tr">
+          <div class="hud-lbl">Cobertura</div>
+          <div class="hud-val t">94.2 ha</div>
+        </div>
+        <div class="hud-badge hud-badge-b">
+          <div class="hud-row">
+            <div><div class="hud-lbl">Velocidade</div><div class="hud-val o">8.4 m/s</div></div>
+            <div><div class="hud-lbl">Bateria</div><div class="hud-val">78%</div></div>
+            <div><div class="hud-lbl">GPS</div><div class="hud-val t">Forte</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card-float card-float-1">
+        <span class="cf-icon">📈</span>
+        <div><div class="cf-val">+32%</div><div class="cf-lbl">Produtividade</div></div>
+      </div>
+      <div class="card-float card-float-2">
+        <span class="cf-icon">🛰️</span>
+        <div><div class="cf-val" style="color:var(--teal)">5 satélites</div><div class="cf-lbl">Online agora</div></div>
+      </div>
     </div>
   </div>
 </section>
 
-<!-- ══ NUMBERS ══ -->
-<div class="numbers-strip reveal">
-  <div class="num-item">
-    <div class="num-value">36</div>
-    <div class="num-label">Módulos integrados — campo, packing, exportação e compliance</div>
-  </div>
-  <div class="num-item">
-    <div class="num-value">100%</div>
-    <div class="num-label">Rastreabilidade da semente ao cliente final</div>
-  </div>
-  <div class="num-item">
-    <div class="num-value">99,9%</div>
-    <div class="num-label">SLA garantido para planos Enterprise</div>
-  </div>
-  <div class="num-item">
-    <div class="num-value">24h</div>
-    <div class="num-label">Deploy em produção — sem instalação local</div>
+<!-- TRUSTED -->
+<div id="trusted">
+  <div class="container">
+    <div class="trusted-row">
+      <span class="trusted-lbl">Usado por</span>
+      <div class="trusted-sep"></div>
+      <div class="trusted-names">
+        <span class="trusted-name">AgroExport BR</span>
+        <span class="trusted-name">Fazenda Palmeira</span>
+        <span class="trusted-name">Grupo Cerrado</span>
+        <span class="trusted-name">CampoPrime</span>
+        <span class="trusted-name">Safra & Cia</span>
+        <span class="trusted-name">HortiFresh</span>
+      </div>
+    </div>
   </div>
 </div>
 
-<!-- ══ CTA FINAL ══ -->
-<section id="cta" style="padding: 160px 100px; background: var(--g900); text-align: center; position: relative; overflow: hidden;">
-  <span style="font-family: 'Barlow Condensed', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 6px; text-transform: uppercase; color: var(--lime); opacity: 0.8; margin-bottom: 24px; display: block;">Pronto para transformar sua operação?</span>
-  <h2 style="font-family: 'Playfair Display', serif; font-size: clamp(36px, 5vw, 64px); font-weight: 900; line-height: 1.1; margin-bottom: 24px;">
-    Sua safra merece<br>
-    <em style="font-style: italic; color: var(--g400);">tecnologia de verdade.</em>
-  </h2>
-  <p style="font-size: 17px; font-weight: 300; color: var(--g200); line-height: 1.7; max-width: 560px; margin: 0 auto 48px;">
-    Agende uma demo gratuita e veja como a Nexsafra transforma sua operação em <strong style="color: var(--lime); font-weight: 600;">30 dias</strong>.
-  </p>
-  <div style="display: flex; align-items: center; justify-content: center; gap: 24px; flex-wrap: wrap;">
-    <a href="#cta" class="btn-primary">Agendar demo gratuita →</a>
+<!-- FEATURES -->
+<section id="features">
+  <div class="container">
+    <div class="section-hd reveal">
+      <div class="chip"><span class="chip-dot"></span>Módulos & Funcionalidades</div>
+      <h2 class="section-title">Tudo que sua operação precisa,<br>em um único sistema</h2>
+      <p class="section-sub">36 módulos integrados, do campo ao faturamento, todos conectados em tempo real.</p>
+    </div>
+
+    <div class="features-grid reveal">
+      <div class="feat-card">
+        <div class="feat-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l18 18"/><path d="M8.67 8.67A4 4 0 0 0 12 16a4 4 0 0 0 3.33-7.33"/><path d="M12 2a10 10 0 0 1 10 10 10 10 0 0 1-2.93 7.07"/><path d="M2.93 7A10 10 0 0 0 2 12a10 10 0 0 0 10 10"/></svg>
+        </div>
+        <h3 class="feat-title">Monitoramento de Safra</h3>
+        <p class="feat-desc">Acompanhe cada talhão em tempo real. Dados de solo, clima e desenvolvimento vegetativo integrados.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon t">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        </div>
+        <h3 class="feat-title">Dashboard em Tempo Real</h3>
+        <p class="feat-desc">Painéis com KPIs consolidados. Visualize performance por fazenda, safra ou cultura com um clique.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon o">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+        </div>
+        <h3 class="feat-title">Gestão de Estoque</h3>
+        <p class="feat-desc">Controle total de insumos, produtos e movimentações. Alertas automáticos de reposição e validade.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        </div>
+        <h3 class="feat-title">Financeiro Integrado</h3>
+        <p class="feat-desc">Contas a pagar e receber, fluxo de caixa, conciliação bancária e relatórios por centro de custo.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon t">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+        </div>
+        <h3 class="feat-title">Exportação & Logística</h3>
+        <p class="feat-desc">Gestão de Booking, BL, certificados de origem e rastreabilidade para exportação de grãos e frutas.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon o">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        </div>
+        <h3 class="feat-title">Gestão de Pessoas & RH</h3>
+        <p class="feat-desc">Controle de funcionários, funções, ASO, treinamentos e folha de ponto integrada à operação.</p>
+      </div>
+    </div>
   </div>
 </section>
 
-<!-- ══ FOOTER ══ -->
-<footer style="background: var(--soil); border-top: 1px solid rgba(46,125,50,0.15); padding: 80px 100px 40px;">
-  <div style="border-top: 1px solid rgba(46,125,50,0.1); padding-top: 32px; text-align: center;">
-    <span style="font-size: 12px; font-weight: 300; color: var(--muted); opacity: 0.6; letter-spacing: 0.5px;">© 2026 Nexsafra. Todos os direitos reservados. | Do talhão ao mundo.</span>
+<!-- SHOWCASE -->
+<section id="showcase">
+  <div class="container">
+    <div class="showcase-wrap">
+      <div class="showcase-img reveal-l">
+        <img
+          src="https://images.unsplash.com/photo-1560693225-b8507d6f3aa1?w=800&h=560&fit=crop&q=85"
+          alt="App de gestão agrícola em tablet"
+        >
+        <div class="showcase-badge">
+          <span class="sb-icon">🌾</span>
+          <div><div class="sb-num">247 ha</div><div class="sb-lbl">Área monitorada hoje</div></div>
+        </div>
+      </div>
+
+      <div class="showcase-text reveal-r">
+        <div class="chip"><span class="chip-dot"></span>Visão Integrada</div>
+        <h2 class="showcase-title">Sua fazenda toda na palma da mão</h2>
+        <p class="showcase-desc">Acesse dados de campo, estoque, equipe e financeiro em qualquer dispositivo, online ou offline. O Agrisdata centraliza sua operação sem complexidade.</p>
+        <ul class="check-list">
+          <li>Rastreabilidade da semente ao produto final exportado</li>
+          <li>Integração com certificadoras (GlobalG.A.P., USDA Organic)</li>
+          <li>Alertas via WhatsApp e e-mail automáticos</li>
+          <li>Multi-empresa e multi-safra com isolamento total de dados</li>
+        </ul>
+        <a href="#cta" class="btn-primary" style="width:fit-content">Ver demonstração ao vivo →</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STATS -->
+<section id="stats">
+  <div class="container">
+    <div class="stats-grid">
+      <div class="stat-item reveal">
+        <div class="stat-num" data-target="36">0<sup>+</sup></div>
+        <div class="stat-lbl">Módulos integrados do campo à exportação</div>
+      </div>
+      <div class="stat-item reveal">
+        <div class="stat-num" data-target="2400">0<sup>+</sup></div>
+        <div class="stat-lbl">Produtores ativos em 18 estados</div>
+      </div>
+      <div class="stat-item reveal">
+        <div class="stat-num" data-target="99" data-suffix=".9%">99<sup>.9%</sup></div>
+        <div class="stat-lbl">SLA garantido em planos Enterprise</div>
+      </div>
+      <div class="stat-item reveal">
+        <div class="stat-num" data-target="24">0<sup>h</sup></div>
+        <div class="stat-lbl">Deploy em produção, sem instalação local</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section id="how">
+  <div class="container">
+    <div class="section-hd reveal">
+      <div class="chip"><span class="chip-dot"></span>Como Funciona</div>
+      <h2 class="section-title">De zero a 100% operacional<br>em 3 passos simples</h2>
+      <p class="section-sub">Implementação guiada com suporte dedicado. Sem complexidade técnica.</p>
+    </div>
+
+    <div class="steps-grid">
+      <div class="step reveal">
+        <div class="step-n">01</div>
+        <div class="step-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+        </div>
+        <h3 class="step-title">Cadastre sua operação</h3>
+        <p class="step-desc">Em menos de 30 minutos, configure sua empresa, talhões, culturas e equipe. Importe dados existentes automaticamente.</p>
+      </div>
+      <div class="step reveal" style="transition-delay:.12s">
+        <div class="step-n">02</div>
+        <div class="step-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        </div>
+        <h3 class="step-title">Ative os módulos</h3>
+        <p class="step-desc">Escolha os módulos que fazem sentido para sua fase atual. Financeiro, estoque, RH ou exportação — ative conforme cresce.</p>
+      </div>
+      <div class="step reveal" style="transition-delay:.24s">
+        <div class="step-n">03</div>
+        <div class="step-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        </div>
+        <h3 class="step-title">Monitore e decida</h3>
+        <p class="step-desc">Dashboards em tempo real, alertas automáticos e relatórios para tomadas de decisão rápidas e seguras no campo.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TECHNOLOGY -->
+<section id="technology">
+  <div class="container">
+    <div class="tech-wrap">
+      <div class="tech-text reveal-l">
+        <div class="chip"><span class="chip-dot"></span>Tecnologia de Precisão</div>
+        <h2 class="showcase-title">Dados que transformam decisões em resultado</h2>
+        <p class="showcase-desc">Combine sensoriamento remoto, IoT e inteligência agrícola para ter uma visão precisa de cada hectare da sua propriedade.</p>
+
+        <div class="tabs">
+          <button class="tab-btn active" data-tab="ia">IA Agrícola</button>
+          <button class="tab-btn" data-tab="iot">IoT & Sensores</button>
+          <button class="tab-btn" data-tab="rastreio">Rastreio</button>
+        </div>
+
+        <div class="tab-panel active" id="tab-ia">
+          <p>Algoritmos treinados com dados de milhares de safras identificam pragas, doenças e deficiências nutricionais antes de se tornarem problema.</p>
+          <div class="mbar-list">
+            <div class="mbar">
+              <div class="mbar-top"><span class="mbar-lbl">Detecção de pragas precoce</span><span class="mbar-val">94%</span></div>
+              <div class="mbar-track"><div class="mbar-fill" data-w="94%"></div></div>
+            </div>
+            <div class="mbar">
+              <div class="mbar-top"><span class="mbar-lbl">Precisão de previsão de colheita</span><span class="mbar-val">87%</span></div>
+              <div class="mbar-track"><div class="mbar-fill" data-w="87%"></div></div>
+            </div>
+            <div class="mbar">
+              <div class="mbar-top"><span class="mbar-lbl">Redução de desperdício de insumos</span><span class="mbar-val">31%</span></div>
+              <div class="mbar-track"><div class="mbar-fill" data-w="31%"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tab-panel" id="tab-iot">
+          <p>Conecte estações meteorológicas, sensores de solo, irrigação e equipamentos da fazenda via protocolo MQTT e API aberta.</p>
+          <div class="mbar-list">
+            <div class="mbar">
+              <div class="mbar-top"><span class="mbar-lbl">Sensores compatíveis</span><span class="mbar-val">200+</span></div>
+              <div class="mbar-track"><div class="mbar-fill" data-w="80%"></div></div>
+            </div>
+            <div class="mbar">
+              <div class="mbar-top"><span class="mbar-lbl">Latência de dados</span><span class="mbar-val">&lt; 3s</span></div>
+              <div class="mbar-track"><div class="mbar-fill" data-w="97%"></div></div>
+            </div>
+            <div class="mbar">
+              <div class="mbar-top"><span class="mbar-lbl">Uptime da plataforma</span><span class="mbar-val">99.9%</span></div>
+              <div class="mbar-track"><div class="mbar-fill" data-w="99%"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tab-panel" id="tab-rastreio">
+          <p>Rastreabilidade da semente ao prato. Gere QR Codes, laudos e certificados para exportação em segundos.</p>
+          <div class="mbar-list">
+            <div class="mbar">
+              <div class="mbar-top"><span class="mbar-lbl">Pontos de rastreio por lote</span><span class="mbar-val">48</span></div>
+              <div class="mbar-track"><div class="mbar-fill" data-w="75%"></div></div>
+            </div>
+            <div class="mbar">
+              <div class="mbar-top"><span class="mbar-lbl">Certificações suportadas</span><span class="mbar-val">12</span></div>
+              <div class="mbar-track"><div class="mbar-fill" data-w="60%"></div></div>
+            </div>
+            <div class="mbar">
+              <div class="mbar-top"><span class="mbar-lbl">Tempo para gerar laudo</span><span class="mbar-val">&lt; 60s</span></div>
+              <div class="mbar-track"><div class="mbar-fill" data-w="90%"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tech-img reveal-r">
+        <img
+          src="https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=720&h=520&fit=crop&q=85"
+          alt="Vista aérea de lavoura monitorada"
+        >
+        <div class="tech-img-caption">
+          <div class="tech-cap-item"><div class="tech-cap-val">94.2 ha</div><div class="tech-cap-lbl">Área coberta</div></div>
+          <div class="tech-cap-item"><div class="tech-cap-val">12 alertas</div><div class="tech-cap-lbl">Última semana</div></div>
+          <div class="tech-cap-item"><div class="tech-cap-val">3 drones</div><div class="tech-cap-lbl">Em operação</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TESTIMONIALS -->
+<section id="testimonials">
+  <div class="container">
+    <div class="section-hd reveal">
+      <div class="chip"><span class="chip-dot"></span>Clientes Reais</div>
+      <h2 class="section-title">O que os produtores dizem</h2>
+      <p class="section-sub">Mais de 2.400 produtores em todo o Brasil confiam no Agrisdata para gerir suas operações.</p>
+    </div>
+    <div class="testi-grid">
+      <div class="testi-card reveal">
+        <div class="testi-stars">★★★★★</div>
+        <p class="testi-txt">"O Agrisdata transformou completamente nossa gestão. Antes tínhamos planilhas espalhadas; hoje tudo está integrado e consigo ver o resultado da safra em tempo real de qualquer lugar."</p>
+        <div class="testi-author">
+          <img src="https://i.pravatar.cc/60?img=12" alt="" class="testi-av">
+          <div><div class="testi-name">Carlos Mendes</div><div class="testi-role">Produtor de Soja & Milho, MT</div></div>
+        </div>
+      </div>
+      <div class="testi-card reveal" style="transition-delay:.12s">
+        <div class="testi-stars">★★★★★</div>
+        <p class="testi-txt">"A parte de exportação é sensacional. Gerenciar Booking, BL e certificados ficou muito mais simples. Economizamos 3 funcionários administrativos com a automação."</p>
+        <div class="testi-author">
+          <img src="https://i.pravatar.cc/60?img=5" alt="" class="testi-av">
+          <div><div class="testi-name">Ana Lima</div><div class="testi-role">Gerente de Exportação — AgroExport</div></div>
+        </div>
+      </div>
+      <div class="testi-card reveal" style="transition-delay:.24s">
+        <div class="testi-stars">★★★★★</div>
+        <p class="testi-txt">"Implementamos em 48 horas. O suporte foi excepcional — migraram todos nossos dados históricos sem perder nada. Recomendo para qualquer produtor que quer escalar com controle."</p>
+        <div class="testi-author">
+          <img src="https://i.pravatar.cc/60?img=22" alt="" class="testi-av">
+          <div><div class="testi-name">Roberto Pereira</div><div class="testi-role">Diretor Operacional — Grupo Cerrado</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PLANS -->
+<section id="plans">
+  <div class="container">
+    <div class="section-hd reveal">
+      <div class="chip"><span class="chip-dot"></span>Planos e Preços</div>
+      <h2 class="section-title">Comece pequeno, escale sem limites</h2>
+      <p class="section-sub">Sem taxa de adesão. Cancele quando quiser. Upgrade instantâneo.</p>
+    </div>
+    <div class="plans-grid">
+      <div class="plan-card reveal">
+        <div class="plan-name">Starter</div>
+        <div class="plan-price"><span class="plan-amount">R$199</span><span class="plan-period">/mês</span></div>
+        <p class="plan-desc">Para pequenos produtores que querem começar com gestão profissional.</p>
+        <ul class="plan-feats">
+          <li>Até 3 usuários</li>
+          <li>1 safra ativa</li>
+          <li>Módulo Financeiro básico</li>
+          <li>Dashboard simplificado</li>
+          <li>Suporte por e-mail</li>
+          <li class="no">Módulos de exportação</li>
+          <li class="no">API & Integrações</li>
+        </ul>
+        <a href="#cta" class="btn-plan btn-plan-out">Começar grátis por 14 dias</a>
+      </div>
+
+      <div class="plan-card pop reveal" style="transition-delay:.12s">
+        <div class="pop-tag">Mais Popular</div>
+        <div class="plan-name">Professional</div>
+        <div class="plan-price"><span class="plan-amount">R$499</span><span class="plan-period">/mês</span></div>
+        <p class="plan-desc">Para operações em crescimento que precisam de gestão completa e integrada.</p>
+        <ul class="plan-feats">
+          <li>Até 15 usuários</li>
+          <li>Safras ilimitadas</li>
+          <li>Todos os módulos agrícolas</li>
+          <li>Financeiro completo</li>
+          <li>Monitoramento de pragas</li>
+          <li>Suporte prioritário</li>
+          <li class="no">API & Integrações</li>
+        </ul>
+        <a href="#cta" class="btn-plan btn-plan-fill">Começar grátis por 14 dias</a>
+      </div>
+
+      <div class="plan-card reveal" style="transition-delay:.24s">
+        <div class="plan-name">Enterprise</div>
+        <div class="plan-price"><span class="plan-amount" style="font-size:30px;letter-spacing:-.5px">Sob medida</span></div>
+        <p class="plan-desc">Para grandes grupos agrícolas com múltiplas fazendas e necessidades complexas.</p>
+        <ul class="plan-feats">
+          <li>Usuários ilimitados</li>
+          <li>Multi-empresa & multi-safra</li>
+          <li>Módulos de exportação</li>
+          <li>API & webhooks</li>
+          <li>Suporte 24/7 dedicado</li>
+          <li>Treinamento presencial</li>
+          <li>SLA 99.9% garantido</li>
+        </ul>
+        <a href="#cta" class="btn-plan btn-plan-out">Falar com consultor</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section id="cta">
+  <div class="cta-pattern"></div>
+  <div class="container" style="position:relative">
+    <div class="reveal">
+      <div class="chip" style="background:rgba(255,255,255,.15);color:#fff;border-color:rgba(255,255,255,.3);margin:0 auto 20px;width:fit-content">
+        <span style="background:#fff;width:6px;height:6px;border-radius:50%;display:inline-block"></span>
+        Comece Hoje
+      </div>
+      <h2 class="cta-title">Sua safra merece<br>tecnologia de verdade.</h2>
+      <p class="cta-sub">Agende uma demo gratuita e veja como o Agrisdata transforma sua operação em 30 dias — sem compromisso.</p>
+      <form class="cta-form" onsubmit="return false">
+        <input type="email" class="cta-input" placeholder="Seu melhor e-mail">
+        <button type="submit" class="btn-cta">Agendar Demo</button>
+      </form>
+      <p class="cta-note">✓ Sem cartão de crédito &nbsp;·&nbsp; ✓ 14 dias grátis &nbsp;·&nbsp; ✓ Suporte na implementação</p>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="container">
+    <div class="footer-top">
+      <div>
+        <a href="#" class="logo">
+          <div class="logo-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><path d="M12 2L3 7l9 5 9-5-9-5z"/><path d="M3 17l9 5 9-5"/><path d="M3 12l9 5 9-5"/></svg></div>
+          <span class="logo-name" style="color:#fff">Nex<b>safra</b></span>
+        </a>
+        <p class="footer-desc">Plataforma SaaS de gestão agrícola completa. Do talhão ao mundo, com tecnologia e precisão.</p>
+      </div>
+      <div>
+        <div class="footer-col-title">Produto</div>
+        <ul class="footer-list">
+          <li><a href="#features">Módulos</a></li>
+          <li><a href="#plans">Planos</a></li>
+          <li><a href="#how">Como funciona</a></li>
+          <li><a href="/recursos/">Recursos</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="footer-col-title">Empresa</div>
+        <ul class="footer-list">
+          <li><a href="/sobre/">Sobre nós</a></li>
+          <li><a href="/contato/">Contato</a></li>
+          <li><a href="/faq/">FAQ</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="footer-col-title">Contato</div>
+        <ul class="footer-list">
+          <li><a href="#">contato@agrisdata.com.br</a></li>
+          <li><a href="#">(65) 99999-0000</a></li>
+          <li><a href="#">Cuiabá, MT — Brasil</a></li>
+          <li><a href="/login/">Área do Cliente</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bot">
+      <span class="footer-copy">© 2026 Agrisdata. Todos os direitos reservados. LGPD compliant.</span>
+      <div class="footer-social">
+        <a href="#" class="s-btn" title="Instagram"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg></a>
+        <a href="#" class="s-btn" title="LinkedIn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg></a>
+        <a href="#" class="s-btn" title="YouTube"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46A2.78 2.78 0 0 0 1.46 6.42 29 29 0 0 0 1 12a29 29 0 0 0 .46 5.58A2.78 2.78 0 0 0 3.41 19.6C5.12 20 12 20 12 20s6.88 0 8.59-.46a2.78 2.78 0 0 0 1.95-1.95A29 29 0 0 0 23 12a29 29 0 0 0-.46-5.58z"/><polygon points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02"/></svg></a>
+      </div>
+    </div>
   </div>
 </footer>
 
 <script>
-const navbar = document.getElementById('navbar');
-window.addEventListener('scroll', () => {
-  navbar.classList.toggle('scrolled', window.scrollY > 40);
+/* Nav scroll */
+const nav = document.getElementById('nav');
+window.addEventListener('scroll', () => nav.classList.toggle('scrolled', scrollY > 40), { passive: true });
+
+/* Hamburger */
+let open = false;
+document.getElementById('hamburger').addEventListener('click', () => {
+  open = !open;
+  const ul = nav.querySelector('.nav-links');
+  ul.style.cssText = open
+    ? 'display:flex;flex-direction:column;position:fixed;top:64px;left:0;right:0;background:rgba(255,255,255,.97);backdrop-filter:blur(16px);padding:24px 28px;gap:18px;z-index:899;border-bottom:1px solid var(--border);box-shadow:0 8px 24px rgba(0,0,0,.08)'
+    : '';
 });
 
-const reveals = document.querySelectorAll('.reveal');
-const observer = new IntersectionObserver((entries) => {
+/* Scroll reveal */
+const ro = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('on'); ro.unobserve(e.target); } });
+}, { threshold: 0.08, rootMargin: '0px 0px -48px 0px' });
+document.querySelectorAll('.reveal,.reveal-l,.reveal-r').forEach(el => ro.observe(el));
+
+/* Counter */
+function runCounter(el) {
+  const target = parseFloat(el.dataset.target);
+  const sup = el.querySelector('sup')?.outerHTML || '';
+  const dur = 1500;
+  const s = performance.now();
+  (function tick(now) {
+    const p = Math.min((now - s) / dur, 1);
+    const v = target * (1 - Math.pow(1 - p, 4));
+    el.innerHTML = (Number.isInteger(target) ? Math.floor(v) : v.toFixed(1)) + sup;
+    if (p < 1) requestAnimationFrame(tick);
+  })(s);
+}
+new IntersectionObserver(entries => {
   entries.forEach(e => {
     if (e.isIntersecting) {
-      e.target.classList.add('visible');
-      observer.unobserve(e.target);
+      e.target.querySelectorAll('[data-target]').forEach(runCounter);
     }
   });
-}, { threshold: 0.1, rootMargin: '0px 0px -60px 0px' });
+}, { threshold: 0.4 }).observe(document.getElementById('stats'));
 
-reveals.forEach(r => observer.observe(r));
-
-function animateCounters() {
-  document.querySelectorAll('.num-value').forEach(el => {
-    const target = el.textContent;
-    const num = parseFloat(target.replace(/[^0-9.]/g, ''));
-    if (!num) return;
-    const suffix = target.replace(/[0-9.]/g, '');
-    let current = 0;
-    const step = num / 60;
-    const timer = setInterval(() => {
-      current = Math.min(current + step, num);
-      el.textContent = (Number.isInteger(num) ? Math.floor(current) : current.toFixed(1)) + suffix;
-      if (current >= num) clearInterval(timer);
-    }, 20);
+/* Metric bars — init on first visible */
+function animateBars(container) {
+  container.querySelectorAll('.mbar-fill').forEach(b => {
+    b.style.width = b.dataset.w || '0%';
   });
 }
+new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) animateBars(e.target); });
+}, { threshold: 0.3 }).observe(document.getElementById('technology'));
 
-const stripObserver = new IntersectionObserver((entries) => {
-  entries.forEach(e => {
-    if (e.isIntersecting) { animateCounters(); stripObserver.unobserve(e.target); }
+/* Tabs */
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const wrap = btn.closest('.tech-text');
+    wrap.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    wrap.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    const panel = document.getElementById('tab-' + btn.dataset.tab);
+    panel.classList.add('active');
+    panel.querySelectorAll('.mbar-fill').forEach(b => {
+      b.style.width = '0';
+      requestAnimationFrame(() => requestAnimationFrame(() => { b.style.width = b.dataset.w || '0%'; }));
+    });
   });
-}, { threshold: 0.5 });
-
-const strip = document.querySelector('.numbers-strip');
-if (strip) stripObserver.observe(strip);
-
-let menuOpen = false;
-function toggleMenu() {
-  menuOpen = !menuOpen;
-  const links = document.querySelector('.nav-links');
-  if (menuOpen) {
-    links.style.cssText = `display: flex; flex-direction: column; position: fixed; top: 72px; left: 0; right: 0; background: rgba(8,15,9,0.98); backdrop-filter: blur(12px); padding: 32px; gap: 24px; z-index: 999; border-bottom: 1px solid rgba(76,175,80,0.15);`;
-  } else {
-    links.style.cssText = 'display:none';
-  }
-}
+});
 </script>
 </body>
 </html>

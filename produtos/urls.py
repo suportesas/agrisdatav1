@@ -61,6 +61,8 @@ urlpatterns = [
     path('<int:produto_id>/tributacao/cadastrar/', views.produtotributacao_create, name='tributacao_create'),
     path('tributacao/<int:pk>/editar/', views.produtotributacao_update, name='tributacao_update'),
     path('tributacao/<int:pk>/excluir/', views.produtotributacao_delete, name='tributacao_delete'),
+    path('ajax/buscar/', views.ajax_buscar_produtos, name='ajax_buscar_produtos'),
+    path('ajax/<int:produto_id>/tributacoes/', views.ajax_produto_tributacoes, name='ajax_produto_tributacoes'),
     
     # Defensivo Cultura
     path('<int:produto_pk>/defensivo-cultura/cadastrar/', views.defensivo_cultura_create, name='defensivo_cultura_create'),

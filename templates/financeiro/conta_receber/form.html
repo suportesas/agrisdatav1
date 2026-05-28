@@ -1,0 +1,222 @@
+{% extends 'base.html' %}
+{% block title %}{{ title }}{% endblock %}
+{% block page_title %}Contas a Receber{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="d-flex align-items-center mb-4">
+    <a href="{% url 'financeiro:conta_receber_list' %}" class="btn btn-outline-secondary me-3"><i class="bi bi-arrow-left"></i></a>
+    <h3 class="mb-0">{{ title }}</h3>
+  </div>
+
+  <form method="post">
+    {% csrf_token %}
+    {{ formset.management_form }}
+
+    {% if form.non_field_errors %}
+    <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+    {% endif %}
+
+    <div class="row g-3">
+      <div class="col-md-6">
+        <div class="card border-0 shadow-sm">
+          <div class="card-header fw-semibold">Dados da Conta</div>
+          <div class="card-body">
+            <div class="mb-3">
+              <label class="form-label">Cliente *</label>
+              {{ form.cliente }}
+              {% if form.cliente.errors %}<div class="text-danger small">{{ form.cliente.errors }}</div>{% endif %}
+            </div>
+            <div class="row g-2">
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Emissão *</label>
+                {{ form.data_emissao }}
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Vencimento *</label>
+                {{ form.data_vencimento }}
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Descrição / Referência *</label>
+              {{ form.descricao }}
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Observações</label>
+              {{ form.observacoes }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-6">
+        <div class="card border-0 shadow-sm">
+          <div class="card-header fw-semibold">Valores</div>
+          <div class="card-body">
+            <div class="mb-3">
+              <label class="form-label">Moeda *</label>
+              {{ form.moeda }}
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Valor na Moeda Original *</label>
+              {{ form.valor_moeda }}
+            </div>
+            <div class="mb-3">
+              <label class="form-label d-flex justify-content-between">
+                Taxa de Câmbio (para BRL)
+                <button type="button" class="btn btn-link btn-sm p-0 text-success" id="btn-cotacao-bcb" title="Buscar PTAX do BCB (dia útil anterior)">
+                  <i class="bi bi-bank me-1"></i>Buscar BCB
+                </button>
+              </label>
+              {{ form.taxa_cambio }}
+              <div id="info-cotacao" class="form-text text-success mt-1" style="display:none"></div>
+              <div class="form-text">Deixar em branco para BRL. Para USD/EUR, informar o câmbio do dia.</div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Valor em BRL *</label>
+              {{ form.valor_brl }}
+              <div class="form-text">Para BRL = mesmo valor. Para moeda estrangeira = valor × câmbio.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12">
+        <div class="card border-0 shadow-sm">
+          <div class="card-header fw-semibold d-flex justify-content-between align-items-center">
+            Parcelas
+            <button type="button" class="btn btn-sm btn-outline-primary" id="add-parcela">
+              <i class="bi bi-plus"></i> Adicionar Parcela
+            </button>
+          </div>
+          <div class="card-body p-0">
+            <table class="table table-sm mb-0" id="parcelas-table">
+              <thead class="table-light">
+                <tr>
+                  <th style="width:80px">Nº</th>
+                  <th>Valor Moeda</th>
+                  <th>Valor BRL</th>
+                  <th>Vencimento</th>
+                  <th>Observações</th>
+                  <th style="width:40px"></th>
+                </tr>
+              </thead>
+              <tbody id="parcelas-body">
+                {% for pf in formset %}
+                <tr class="parcela-row">
+                  <td>{{ pf.id }}{{ pf.DELETE }}{{ pf.numero_parcela }}</td>
+                  <td>{{ pf.valor_parcela_moeda }}</td>
+                  <td>{{ pf.valor_parcela_brl }}</td>
+                  <td>{{ pf.data_vencimento }}</td>
+                  <td>{{ pf.observacoes }}</td>
+                  <td>
+                    <button type="button" class="btn btn-sm btn-outline-danger remove-parcela">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="d-flex gap-2 mt-4">
+      <button type="submit" class="btn btn-primary"><i class="bi bi-check-circle me-1"></i>Salvar</button>
+      <a href="{% url 'financeiro:conta_receber_list' %}" class="btn btn-outline-secondary">Cancelar</a>
+    </div>
+  </form>
+</div>
+
+<script>
+(function() {
+  const TOTAL = document.getElementById('id_parcelas-TOTAL_FORMS');
+  const body = document.getElementById('parcelas-body');
+
+  document.getElementById('add-parcela').addEventListener('click', function() {
+    const idx = parseInt(TOTAL.value);
+    const tpl = body.querySelector('.parcela-row');
+    if (!tpl) return;
+    const clone = tpl.cloneNode(true);
+    clone.querySelectorAll('input, select, textarea').forEach(el => {
+      el.name = el.name.replace(/-\d+-/, `-${idx}-`);
+      el.id = el.id ? el.id.replace(/-\d+-/, `-${idx}-`) : '';
+      if (el.type !== 'checkbox') el.value = '';
+      if (el.type === 'checkbox') el.checked = false;
+    });
+    body.appendChild(clone);
+    TOTAL.value = idx + 1;
+    attachRemove(clone);
+  });
+
+  function attachRemove(row) {
+    const btn = row.querySelector('.remove-parcela');
+    if (btn) btn.addEventListener('click', function() {
+      const chk = row.querySelector('input[type=checkbox][name$="-DELETE"]');
+      if (chk) { chk.checked = true; row.style.display = 'none'; }
+      else row.remove();
+    });
+  }
+  body.querySelectorAll('.parcela-row').forEach(r => attachRemove(r));
+
+  // Auto-calcula valor_brl quando valor_moeda ou taxa_cambio mudam
+  const elMoeda = document.getElementById('id_moeda');
+  const elValorMoeda = document.getElementById('id_valor_moeda');
+  const elTaxa = document.getElementById('id_taxa_cambio');
+  const elValorBrl = document.getElementById('id_valor_brl');
+
+  function recalcularBrl() {
+    if (!elValorMoeda || !elTaxa || !elValorBrl) return;
+    const moeda = elMoeda?.value || 'BRL';
+    const valor = parseFloat(elValorMoeda.value.replace(',', '.')) || 0;
+    if (moeda === 'BRL') {
+      elValorBrl.value = valor.toFixed(2);
+    } else {
+      const taxa = parseFloat(elTaxa.value.replace(',', '.')) || 0;
+      if (taxa > 0) elValorBrl.value = (valor * taxa).toFixed(2);
+    }
+  }
+
+  if (elValorMoeda) elValorMoeda.addEventListener('input', recalcularBrl);
+  if (elTaxa) elTaxa.addEventListener('input', recalcularBrl);
+  if (elMoeda) elMoeda.addEventListener('change', recalcularBrl);
+
+  // Cotação BCB — busca PTAX do dia útil anterior
+  const btnBCB = document.getElementById('btn-cotacao-bcb');
+  const infoCotacao = document.getElementById('info-cotacao');
+  if (btnBCB) {
+    btnBCB.addEventListener('click', function() {
+      const moeda = elMoeda?.value || 'USD';
+      if (moeda === 'BRL') {
+        alert('A taxa de câmbio só é necessária para moedas estrangeiras.');
+        return;
+      }
+      btnBCB.disabled = true;
+      btnBCB.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+      fetch(`/faturamento/ajax/cotacao-bcb/?moedas=${moeda}`)
+        .then(r => r.json())
+        .then(data => {
+          if (data.erro) { alert('BCB: ' + data.erro); return; }
+          const c = data.cotacoes[moeda];
+          if (!c) { alert('Cotação não disponível para ' + moeda); return; }
+          elTaxa.value = c.venda.toFixed(4);
+          recalcularBrl();
+          infoCotacao.style.display = 'block';
+          infoCotacao.innerHTML =
+            `<i class="bi bi-check-circle-fill me-1"></i>PTAX BCB ${moeda} — ${data.data} &nbsp;|&nbsp; ` +
+            `Compra: <strong>R$ ${c.compra.toFixed(4)}</strong> &nbsp;|&nbsp; ` +
+            `Venda: <strong>R$ ${c.venda.toFixed(4)}</strong> &nbsp;` +
+            `<a href="https://www.bcb.gov.br/estabilidadefinanceira/historicocotacoes" target="_blank" class="text-muted small">BCB ↗</a>`;
+        })
+        .catch(e => alert('Erro ao conectar ao BCB: ' + e))
+        .finally(() => {
+          btnBCB.disabled = false;
+          btnBCB.innerHTML = '<i class="bi bi-bank me-1"></i>Buscar BCB';
+        });
+    });
+  }
+})();
+</script>
+{% endblock %}

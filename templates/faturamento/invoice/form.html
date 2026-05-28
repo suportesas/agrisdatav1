@@ -1,0 +1,261 @@
+{% extends 'base.html' %}
+{% block title %}{{ title }}{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="d-flex align-items-center mb-4">
+    <a href="{% url 'faturamento:invoice_list' %}" class="btn btn-outline-secondary me-3">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    <h3 class="mb-0">{{ title }}</h3>
+  </div>
+
+  <form method="post" id="invoice-form">
+    {% csrf_token %}
+    {{ formset.management_form }}
+
+    {% if form.non_field_errors %}
+    <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+    {% endif %}
+
+    <div class="row g-3">
+      <!-- Booking e Partes -->
+      <div class="col-md-8">
+        <div class="card border-0 shadow-sm mb-3">
+          <div class="card-header fw-semibold">Dados da Invoice</div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label">Booking (Confirmado)</label>
+                {{ form.booking }}
+                {% if form.booking.errors %}<div class="text-danger small">{{ form.booking.errors }}</div>{% endif %}
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Importador / Cliente *</label>
+                {{ form.cliente }}
+                {% if form.cliente.errors %}<div class="text-danger small">{{ form.cliente.errors }}</div>{% endif %}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Data de Emissão *</label>
+                {{ form.data_emissao }}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Data de Embarque Previsto</label>
+                {{ form.data_embarque_previsto }}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Incoterm *</label>
+                {{ form.incoterm }}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Moeda *</label>
+                {{ form.moeda }}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label d-flex justify-content-between">
+                  Taxa de Câmbio (R$)
+                  <button type="button" class="btn btn-link btn-sm p-0 text-success" id="btn-cotacao-bcb" title="Buscar PTAX do BCB (dia útil anterior)">
+                    <i class="bi bi-bank me-1"></i>Buscar BCB
+                  </button>
+                </label>
+                {{ form.taxa_cambio }}
+                <div id="info-cotacao" class="form-text text-success mt-1" style="display:none"></div>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Condição de Pagamento</label>
+                {{ form.condicao_pagamento }}
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Porto de Embarque</label>
+                {{ form.porto_embarque }}
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Porto de Destino</label>
+                {{ form.porto_destino }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Financeiro e Obs -->
+      <div class="col-md-4">
+        <div class="card border-0 shadow-sm mb-3">
+          <div class="card-header fw-semibold">Valores</div>
+          <div class="card-body">
+            <div class="mb-3">
+              <label class="form-label">Frete</label>
+              {{ form.valor_frete }}
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Seguro</label>
+              {{ form.valor_seguro }}
+            </div>
+          </div>
+        </div>
+        <div class="card border-0 shadow-sm">
+          <div class="card-header fw-semibold">Dados Bancários</div>
+          <div class="card-body">
+            {{ form.banco_beneficiario }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Observações -->
+      <div class="col-12">
+        <div class="card border-0 shadow-sm">
+          <div class="card-header fw-semibold">Observações</div>
+          <div class="card-body">{{ form.observacoes }}</div>
+        </div>
+      </div>
+
+      <!-- Itens -->
+      <div class="col-12">
+        <div class="card border-0 shadow-sm">
+          <div class="card-header fw-semibold d-flex justify-content-between align-items-center">
+            Itens da Invoice
+            <button type="button" class="btn btn-sm btn-outline-primary" id="add-item">
+              <i class="bi bi-plus"></i> Adicionar Item
+            </button>
+          </div>
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table table-bordered table-sm mb-0" id="items-table">
+                <thead class="table-light">
+                  <tr>
+                    <th>Container</th>
+                    <th>Descrição *</th>
+                    <th style="width:80px">Qtd</th>
+                    <th style="width:60px">UN</th>
+                    <th style="width:100px">Peso Bruto (kg)</th>
+                    <th style="width:100px">Peso Líq. (kg)</th>
+                    <th style="width:110px">Vl. Unit. FOB</th>
+                    <th>Marks & Numbers</th>
+                    <th style="width:40px"></th>
+                  </tr>
+                </thead>
+                <tbody id="items-body">
+                  {% for item_form in formset %}
+                  <tr class="item-row">
+                    <td>{{ item_form.id }}{{ item_form.DELETE }}{{ item_form.container }}</td>
+                    <td>{{ item_form.descricao }}</td>
+                    <td>{{ item_form.quantidade }}</td>
+                    <td>{{ item_form.unidade }}</td>
+                    <td>{{ item_form.peso_bruto_kg }}</td>
+                    <td>{{ item_form.peso_liquido_kg }}</td>
+                    <td>{{ item_form.valor_unitario_fob }}</td>
+                    <td>{{ item_form.marks_numbers }}</td>
+                    <td>
+                      <button type="button" class="btn btn-sm btn-outline-danger remove-item">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="d-flex gap-2 mt-4">
+      <button type="submit" class="btn btn-primary">
+        <i class="bi bi-check-circle me-1"></i>Salvar
+      </button>
+      <a href="{% url 'faturamento:invoice_list' %}" class="btn btn-outline-secondary">Cancelar</a>
+    </div>
+  </form>
+</div>
+
+<script>
+(function() {
+  const TOTAL_FORMS = document.getElementById('id_itens-TOTAL_FORMS');
+  const body = document.getElementById('items-body');
+
+  document.getElementById('add-item').addEventListener('click', function() {
+    const idx = parseInt(TOTAL_FORMS.value);
+    const template = body.querySelector('.item-row');
+    if (!template) return;
+    const clone = template.cloneNode(true);
+    clone.querySelectorAll('input, select, textarea').forEach(el => {
+      el.name = el.name.replace(/-\d+-/, `-${idx}-`);
+      el.id = el.id ? el.id.replace(/-\d+-/, `-${idx}-`) : '';
+      if (el.type !== 'checkbox') el.value = '';
+      if (el.type === 'checkbox') el.checked = false;
+    });
+    body.appendChild(clone);
+    TOTAL_FORMS.value = idx + 1;
+    attachRemove(clone);
+  });
+
+  function attachRemove(row) {
+    const btn = row.querySelector('.remove-item');
+    if (btn) btn.addEventListener('click', function() {
+      const chk = row.querySelector('input[type=checkbox][name$="-DELETE"]');
+      if (chk) { chk.checked = true; row.style.display = 'none'; }
+      else row.remove();
+    });
+  }
+
+  body.querySelectorAll('.item-row').forEach(r => attachRemove(r));
+
+  // Pré-fill do booking via AJAX
+  const bookingSel = document.getElementById('id_booking');
+  if (bookingSel) {
+    bookingSel.addEventListener('change', function() {
+      const pk = this.value;
+      if (!pk) return;
+      fetch(`/faturamento/ajax/booking/${pk}/`)
+        .then(r => r.json())
+        .then(data => {
+          const pe = document.getElementById('id_porto_embarque');
+          const pd = document.getElementById('id_porto_destino');
+          const deb = document.getElementById('id_data_embarque_previsto');
+          if (pe && data.porto_embarque) pe.value = data.porto_embarque;
+          if (pd && data.porto_destino) pd.value = data.porto_destino;
+          if (deb && data.data_embarque_previsto) deb.value = data.data_embarque_previsto;
+        })
+        .catch(() => {});
+    });
+  }
+
+  // Cotação BCB — busca PTAX do dia útil anterior
+  const btnBCB = document.getElementById('btn-cotacao-bcb');
+  const infoCotacao = document.getElementById('info-cotacao');
+  if (btnBCB) {
+    btnBCB.addEventListener('click', function() {
+      const moeda = document.getElementById('id_moeda')?.value || 'USD';
+      if (moeda === 'BRL') {
+        alert('A taxa de câmbio só é necessária para moedas estrangeiras.');
+        return;
+      }
+      btnBCB.disabled = true;
+      btnBCB.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+      fetch(`/faturamento/ajax/cotacao-bcb/?moedas=${moeda}`)
+        .then(r => r.json())
+        .then(data => {
+          if (data.erro) { alert('BCB: ' + data.erro); return; }
+          const c = data.cotacoes[moeda];
+          if (!c) { alert('Cotação não disponível para ' + moeda); return; }
+          // Usa taxa de VENDA (referência para exportação / conversão BRL)
+          document.getElementById('id_taxa_cambio').value = c.venda.toFixed(4);
+          infoCotacao.style.display = 'block';
+          infoCotacao.innerHTML =
+            `<i class="bi bi-check-circle-fill me-1"></i>PTAX BCB ${moeda} — ${data.data} &nbsp;|&nbsp; `+
+            `Compra: <strong>R$ ${c.compra.toFixed(4)}</strong> &nbsp;|&nbsp; `+
+            `Venda: <strong>R$ ${c.venda.toFixed(4)}</strong> &nbsp;`+
+            `<a href="https://www.bcb.gov.br/estabilidadefinanceira/historicocotacoes" target="_blank" class="text-muted small">BCB ↗</a>`;
+        })
+        .catch(e => alert('Erro ao conectar ao BCB: ' + e))
+        .finally(() => {
+          btnBCB.disabled = false;
+          btnBCB.innerHTML = '<i class="bi bi-bank me-1"></i>Buscar BCB';
+        });
+    });
+  }
+})();
+</script>
+{% endblock %}

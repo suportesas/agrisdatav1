@@ -5,7 +5,7 @@ from django.shortcuts import render, redirect
 
 
 def landing_page(request):
-    """Página inicial de divulgação do Nexsafra"""
+    """Página inicial de divulgação do Agrisdata"""
     if request.user.is_authenticated:
         return redirect('dashboard:index')
     
@@ -132,7 +132,7 @@ def faq_page(request):
     
     faq_items = [
         {
-            'pergunta': 'O Nexsafra funciona em dispositivos móveis?',
+            'pergunta': 'O Agrisdata funciona em dispositivos móveis?',
             'resposta': 'Sim! Nossa plataforma é totalmente responsiva e funciona perfeitamente em tablets e smartphones.'
         },
         {

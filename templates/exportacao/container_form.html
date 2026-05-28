@@ -1,21 +1,374 @@
 {% extends 'base.html' %}
-
 {% block title %}{{ action }}{% endblock %}
 {% block page_title %}{{ action }}{% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4">
-  <div class="card">
-    <div class="card-body">
-      <form method="post">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <div class="mt-3">
-          <button type="submit" class="btn btn-primary">Salvar</button>
-          <a href="{% if booking %}{% url 'exportacao:booking_detail' booking.pk %}{% else %}{% url 'exportacao:container_list' %}{% endif %}" class="btn btn-secondary">Cancelar</a>
+  <form method="post" id="container-form">
+    {% csrf_token %}
+    <input type="hidden" name="ordem_coleta_id" id="ordem_coleta_id_hidden">
+
+    <!-- Booking -->
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-white border-bottom fw-semibold">
+        <i class="bi bi-bookmarks me-2 text-primary"></i>Booking
+      </div>
+      <div class="card-body">
+        <div class="mb-0">
+          <label class="form-label fw-semibold">{{ form.booking.label }}</label>
+          {{ form.booking }}
+          {% if form.booking.errors %}<div class="text-danger small mt-1">{{ form.booking.errors }}</div>{% endif %}
         </div>
-      </form>
+      </div>
     </div>
-  </div>
+
+    <!-- Botão + painel de Ordens de Coleta -->
+    <div id="bloco-ordens" style="display:none;" class="mb-4">
+      <button type="button" id="btn-toggle-ordens" class="btn btn-outline-primary w-100"
+              onclick="togglePainelOrdens()">
+        <i class="bi bi-clipboard-list me-2"></i>Selecionar Ordem de Coleta
+        <span id="oc-selecionada-badge" class="badge bg-primary ms-2" style="display:none;"></span>
+      </button>
+      <div class="card border-0 shadow-sm mt-2" id="painel-ordens" style="display:none;">
+        <div class="card-header bg-white border-bottom fw-semibold d-flex justify-content-between align-items-center">
+          <span><i class="bi bi-clipboard-list me-2 text-primary"></i>Ordens de Coleta</span>
+          <button type="button" class="btn-close" onclick="togglePainelOrdens()"></button>
+        </div>
+        <div id="lista-ordens"></div>
+      </div>
+    </div>
+
+    <!-- Identificação -->
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-white border-bottom fw-semibold">
+        <i class="bi bi-box-seam me-2 text-secondary"></i>Identificação
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">{{ form.numero_container.label }} <span class="text-danger">*</span></label>
+            {{ form.numero_container }}
+            {% if form.numero_container.errors %}<div class="text-danger small mt-1">{{ form.numero_container.errors }}</div>{% endif %}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">{{ form.tipo_container.label }}</label>
+            {{ form.tipo_container }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">{{ form.status.label }}</label>
+            {{ form.status }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dados da Coleta -->
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-white border-bottom fw-semibold">
+        <i class="bi bi-calendar-check me-2 text-success"></i>Dados da Coleta
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">{{ form.cultura.label }}</label>
+            {{ form.cultura }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">{{ form.data_coleta_prevista.label }}</label>
+            {{ form.data_coleta_prevista }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">{{ form.hora_coleta_realizada.label }}</label>
+            {{ form.hora_coleta_realizada }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Portos -->
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-white border-bottom fw-semibold">
+        <i class="bi bi-geo-alt me-2 text-info"></i>Portos
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">{{ form.porto_origem.label }}</label>
+            {{ form.porto_origem }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">{{ form.porto_destino.label }}</label>
+            {{ form.porto_destino }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Armador / Transporte -->
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-white border-bottom fw-semibold">
+        <i class="bi bi-truck me-2 text-warning"></i>Armador / Transporte
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">{{ form.armador.label }}</label>
+            {{ form.armador }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">{{ form.transportadora.label }}</label>
+            {{ form.transportadora }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">{{ form.motorista.label }}</label>
+            {{ form.motorista }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">{{ form.placa_principal.label }}</label>
+            {{ form.placa_principal }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">{{ form.placa_reboque.label }}</label>
+            {{ form.placa_reboque }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Veículo</label>
+            <div id="veiculo_info" class="form-control bg-light text-muted">—</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pesos e Genset -->
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-white border-bottom fw-semibold">
+        <i class="bi bi-box me-2 text-secondary"></i>Pesos e Genset
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">{{ form.peso_bruto_kg.label }}</label>
+            {{ form.peso_bruto_kg }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">{{ form.tara_container.label }}</label>
+            {{ form.tara_container }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">{{ form.numero_genset.label }}</label>
+            {{ form.numero_genset }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Lacres -->
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-white border-bottom fw-semibold">
+        <i class="bi bi-shield-lock me-2 text-danger"></i>Lacres
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">{{ form.lacre_armador.label }}</label>
+            {{ form.lacre_armador }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">{{ form.lacre_fiscal.label }}</label>
+            {{ form.lacre_fiscal }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">{{ form.lacre_terminal.label }}</label>
+            {{ form.lacre_terminal }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Realização e Observações -->
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-white border-bottom fw-semibold">
+        <i class="bi bi-check2-circle me-2 text-success"></i>Realização e Observações
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">{{ form.data_coleta_realizada.label }}</label>
+            {{ form.data_coleta_realizada }}
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-semibold">{{ form.observacoes.label }}</label>
+            {{ form.observacoes }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="d-flex gap-2">
+      <button type="submit" class="btn btn-primary px-4">
+        <i class="bi bi-floppy me-1"></i>Salvar
+      </button>
+      <a href="{% if booking %}{% url 'exportacao:booking_detail' booking.pk %}{% else %}{% url 'exportacao:container_list' %}{% endif %}"
+         class="btn btn-outline-secondary">Cancelar</a>
+    </div>
+
+  </form>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+
+  /* ── Helpers de preenchimento ───────────────────────── */
+  function setSelect(id, val) {
+    var el = document.getElementById(id);
+    if (el && val != null) el.value = String(val);
+  }
+  function setField(id, val) {
+    var el = document.getElementById(id);
+    if (el != null) el.value = val || '';
+  }
+
+  /* ── Badge de status ─────────────────────────────────── */
+  function statusBadge(status) {
+    var map = {
+      'PENDENTE':     'bg-warning text-dark',
+      'EM_ANDAMENTO': 'bg-primary',
+      'CONCLUIDA':    'bg-success',
+      'CANCELADA':    'bg-danger',
+    };
+    return map[status] || 'bg-secondary';
+  }
+
+  /* ── Preenche campos com dados da OC ou do Booking ───── */
+  function preencherCampos(d) {
+    setSelect('id_cultura',            d.cultura_id);
+    setSelect('id_porto_origem',       d.porto_origem_id);
+    setSelect('id_porto_destino',      d.porto_destino_id);
+    setField ('id_data_coleta_prevista', d.data_coleta_prevista);
+    setSelect('id_armador',            d.armador_id);
+    setSelect('id_transportadora',     d.transportadora_id);
+    setSelect('id_motorista',          d.motorista_id);
+    setField ('id_placa_principal',    d.placa_principal);
+    setField ('id_placa_reboque',      d.placa_reboque);
+    var vi = document.getElementById('veiculo_info');
+    if (vi) vi.textContent = d.veiculo || '—';
+  }
+
+  /* ── Seleciona OC: destaca card + preenche form + fecha painel ── */
+  function selecionarOrdem(ordemId, cardEl, numero) {
+    document.querySelectorAll('.ordem-card-item').forEach(function(c) {
+      c.classList.remove('border-primary', 'bg-primary-subtle');
+      c.classList.add('border-transparent');
+    });
+    cardEl.classList.remove('border-transparent');
+    cardEl.classList.add('border-primary', 'bg-primary-subtle');
+    document.getElementById('ordem_coleta_id_hidden').value = ordemId;
+
+    // Mostra número da OC no botão toggle e fecha o painel
+    var badge = document.getElementById('oc-selecionada-badge');
+    if (badge) { badge.textContent = numero; badge.style.display = ''; }
+    document.getElementById('painel-ordens').style.display = 'none';
+
+    fetch('/exportacao/ajax/ordem-coleta/' + ordemId + '/container-dados/')
+      .then(function(r) { return r.json(); })
+      .then(preencherCampos)
+      .catch(function() {});
+  }
+
+  /* ── Toggle visibilidade do painel ──────────────────── */
+  window.togglePainelOrdens = function() {
+    var painel = document.getElementById('painel-ordens');
+    painel.style.display = painel.style.display === 'none' ? '' : 'none';
+  };
+
+  /* ── Renderiza painel de OCs ─────────────────────────── */
+  function renderOrdens(ordens) {
+    var lista  = document.getElementById('lista-ordens');
+    var bloco  = document.getElementById('bloco-ordens');
+    lista.innerHTML = '';
+
+    if (!ordens.length) {
+      bloco.style.display = 'none';
+      return;
+    }
+
+    ordens.forEach(function(o) {
+      var vinculada = o.container_vinculado;
+      var div = document.createElement('div');
+      div.className = 'p-3 border-bottom border-2 border-transparent ' + (vinculada ? 'bg-light text-muted' : 'ordem-card-item');
+      div.style.cursor = vinculada ? 'default' : 'pointer';
+      div.style.transition = 'background 0.15s';
+
+      var badgeVinc = vinculada
+        ? '<span class="badge bg-warning text-dark ms-2"><i class="bi bi-link-45deg"></i> Vinculada: ' + o.container_numero + '</span>'
+        : '';
+      var badgeStatus = '<span class="badge ms-1 ' + statusBadge(o.status) + '">' + o.status_display + '</span>';
+
+      div.innerHTML =
+        '<div class="d-flex justify-content-between align-items-center">' +
+          '<div>' +
+            '<strong>' + o.numero + '</strong>' + badgeStatus + badgeVinc +
+            '<div class="small text-muted mt-1"><i class="bi bi-building me-1"></i>' + o.transportadora_nome + '</div>' +
+          '</div>' +
+          '<div class="text-end small">' +
+            '<div><i class="bi bi-person me-1"></i>' + o.motorista_nome + '</div>' +
+            '<div class="text-muted"><i class="bi bi-calendar me-1"></i>' + o.data_prevista + '</div>' +
+          '</div>' +
+        '</div>';
+
+      if (!vinculada) {
+        div.addEventListener('click', function() { selecionarOrdem(o.id, div, o.numero); });
+        div.addEventListener('mouseenter', function() {
+          if (!div.classList.contains('border-primary')) div.style.background = '#f0f4ff';
+        });
+        div.addEventListener('mouseleave', function() {
+          if (!div.classList.contains('border-primary')) div.style.background = '';
+        });
+      }
+      lista.appendChild(div);
+    });
+
+    bloco.style.display = '';
+    document.getElementById('painel-ordens').style.display = 'none'; // começa oculto
+  }
+
+  /* ── Carrega dados do booking (preenche campos base) ─── */
+  function loadBookingData(pk) {
+    if (!pk) return;
+
+    // Limpa seleção de OC anterior
+    document.getElementById('ordem_coleta_id_hidden').value = '';
+    document.getElementById('painel-ordens').style.display = 'none';
+    document.getElementById('lista-ordens').innerHTML = '';
+
+    // Preenche campos base com dados do booking
+    fetch('/exportacao/ajax/booking/' + pk + '/container-preview/')
+      .then(function(r) { return r.json(); })
+      .then(preencherCampos)
+      .catch(function() {});
+
+    // Carrega lista de OCs do booking
+    fetch('/exportacao/ajax/booking/' + pk + '/ordens-coleta/')
+      .then(function(r) { return r.json(); })
+      .then(function(d) { renderOrdens(d.ordens || []); })
+      .catch(function() {});
+  }
+
+  /* ── Event listener no select de booking ────────────── */
+  var bookingSelect = document.getElementById('id_booking');
+  if (bookingSelect) {
+    bookingSelect.addEventListener('change', function() {
+      loadBookingData(this.value);
+    });
+    {% if not form.instance.pk %}
+    if (bookingSelect.value) {
+      loadBookingData(bookingSelect.value);
+    }
+    {% endif %}
+  }
+
+})();
+</script>
 {% endblock %}

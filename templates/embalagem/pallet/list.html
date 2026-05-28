@@ -1,0 +1,221 @@
+{% extends 'base.html' %}
+{% block title %}Pallets{% endblock %}
+{% block page_title %}Pallets{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="mb-0">Pallets</h3>
+    <button type="button" class="btn btn-outline-info" data-bs-toggle="modal" data-bs-target="#modalAjuda">
+      <i class="bi bi-question-circle me-1"></i>Ajuda
+    </button>
+  </div>
+
+  <!-- Modal de Ajuda -->
+  <div class="modal fade" id="modalAjuda" tabindex="-1" aria-labelledby="modalAjudaLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header bg-info bg-opacity-10">
+          <h5 class="modal-title" id="modalAjudaLabel">
+            <i class="bi bi-question-circle-fill text-info me-2"></i>Ajuda — Pallets
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+
+          <div class="alert alert-primary border-0 mb-4">
+            <strong><i class="bi bi-lightbulb me-1"></i>O que é esta tela?</strong><br>
+            Lista todos os pallets físicos gerados pelo packing house. Cada pallet tem um código único
+            de rastreamento, pesos registrados e status que muda conforme avança no fluxo de venda.
+          </div>
+
+          <!-- Status -->
+          <h6 class="fw-bold border-bottom pb-1 mb-3">Status dos Pallets</h6>
+          <div class="row g-2 mb-4">
+            <div class="col-md-6">
+              <div class="d-flex align-items-start gap-2 p-2 border rounded">
+                <span class="badge bg-success mt-1">Disponível</span>
+                <div class="small">Pallet no estoque, pronto para ser selecionado em um Romaneio de Venda. Pode ser impresso a etiqueta a qualquer momento.</div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="d-flex align-items-start gap-2 p-2 border rounded">
+                <span class="badge bg-warning text-dark mt-1">Reservado</span>
+                <div class="small">Pallet foi incluído em um Romaneio de Venda confirmado. Aguardando carregamento.</div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="d-flex align-items-start gap-2 p-2 border rounded">
+                <span class="badge bg-info mt-1">Carregado</span>
+                <div class="small">Pallet foi conferido na doca e confirmado como carregado no caminhão ou container.</div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="d-flex align-items-start gap-2 p-2 border rounded">
+                <span class="badge bg-danger mt-1">Cancelado</span>
+                <div class="small">Pallet foi cancelado e não está mais disponível para uso.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Etiqueta -->
+          <h6 class="fw-bold border-bottom pb-1 mb-3">Como imprimir etiquetas?</h6>
+          <div class="row g-2 mb-4">
+            <div class="col-md-6">
+              <div class="card border-success h-100">
+                <div class="card-body py-2 px-3 small">
+                  <div class="fw-bold text-success mb-1"><i class="bi bi-printer me-1"></i>Etiqueta simples</div>
+                  Clique no ícone <i class="bi bi-printer"></i> na coluna direita de qualquer pallet desta lista.<br>
+                  <span class="text-muted">Contém: código de barras, tipo, pesos, lote, data.</span>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="card border-info h-100">
+                <div class="card-body py-2 px-3 small">
+                  <div class="fw-bold text-info mb-1"><i class="bi bi-printer me-1"></i>Etiqueta com cliente/exportação</div>
+                  Acesse o <a href="{% url 'embalagem:romaneio_list' %}">Romaneio de Venda</a> confirmado → botão <strong>Etiquetas PDF</strong>.<br>
+                  <span class="text-muted">Inclui: cliente, cidade, país, armador, navio, container.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- De onde vêm -->
+          <h6 class="fw-bold border-bottom pb-1 mb-3">De onde vêm os pallets?</h6>
+          <p class="small mb-1">Os pallets são gerados automaticamente ao clicar em <strong>Gerar Pallets</strong> no detalhe de uma <a href="{% url 'embalagem:ordem_list' %}">Ordem de Embalagem</a>.</p>
+          <p class="small text-muted mb-4">Fórmula: <em>Nº de pallets = floor(kg de entrada ÷ kg líquido por pallet)</em>.</p>
+
+          <!-- Filtros -->
+          <h6 class="fw-bold border-bottom pb-1 mb-3">Filtros disponíveis</h6>
+          <dl class="row small mb-0">
+            <dt class="col-sm-4">Código do pallet</dt>
+            <dd class="col-sm-8">Busca parcial pelo código. Ex: <em>PLT-20260518</em>.</dd>
+            <dt class="col-sm-4">Status</dt>
+            <dd class="col-sm-8">Filtre por Disponível, Reservado, Carregado ou Cancelado.</dd>
+            <dt class="col-sm-4">Armazém</dt>
+            <dd class="col-sm-8">Mostra apenas os pallets de um armazém ou câmara específica.</dd>
+            <dt class="col-sm-4">Período</dt>
+            <dd class="col-sm-8">Filtra pela data de embalagem (data em que o pallet foi gerado).</dd>
+          </dl>
+
+        </div>
+        <div class="modal-footer">
+          <a href="{% url 'embalagem:ordem_create' %}" class="btn btn-primary me-auto">
+            <i class="bi bi-plus-circle me-1"></i>Nova Ordem de Embalagem
+          </a>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm mb-3">
+    <div class="card-body py-2">
+      <form method="get" class="row g-2 align-items-end">
+        <div class="col-md-3">
+          <input type="text" name="q" class="form-control form-control-sm" placeholder="Código do pallet" value="{{ filtros.q }}">
+        </div>
+        <div class="col-md-2">
+          <select name="status" class="form-select form-select-sm">
+            <option value="">Todos status</option>
+            {% for val, lbl in status_choices %}
+            <option value="{{ val }}" {% if filtros.status == val %}selected{% endif %}>{{ lbl }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2">
+          <select name="armazem" class="form-select form-select-sm">
+            <option value="">Todos armazéns</option>
+            {% for a in armazens %}
+            <option value="{{ a.pk }}" {% if filtros.armazem == a.pk|stringformat:"s" %}selected{% endif %}>{{ a.nome }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2">
+          <input type="date" name="data_ini" class="form-control form-control-sm" value="{{ filtros.data_ini }}">
+        </div>
+        <div class="col-md-2">
+          <input type="date" name="data_fim" class="form-control form-control-sm" value="{{ filtros.data_fim }}">
+        </div>
+        <div class="col-md-1">
+          <button type="submit" class="btn btn-sm btn-outline-secondary w-100"><i class="bi bi-search"></i></button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Resumo -->
+  <div class="row g-2 mb-3">
+    <div class="col-auto">
+      <span class="badge bg-success fs-6 px-3">Disponíveis: {{ stats.disponiveis }}</span>
+    </div>
+    <div class="col-auto">
+      <span class="badge bg-warning text-dark fs-6 px-3">Reservados: {{ stats.reservados }}</span>
+    </div>
+    <div class="col-auto">
+      <span class="badge bg-info fs-6 px-3">Carregados: {{ stats.carregados }}</span>
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover table-sm mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Código</th>
+              <th>Tipo Embalagem</th>
+              <th>Data Embalagem</th>
+              <th class="text-end">Caixas</th>
+              <th class="text-end">Peso Líq. (kg)</th>
+              <th class="text-end">Peso Bruto (kg)</th>
+              <th>Armazém</th>
+              <th>Local</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for p in page_obj %}
+            <tr>
+              <td><strong>{{ p.codigo_pallet }}</strong></td>
+              <td>{{ p.tipo_embalagem.nome|default:"Misto" }}{% if p.is_misto %} <span class="badge bg-warning text-dark ms-1" style="font-size:.7em">MISTO</span>{% endif %}</td>
+              <td>{{ p.data_embalagem|date:"d/m/Y" }}</td>
+              <td class="text-end">{{ p.quantidade_caixas }}</td>
+              <td class="text-end">{{ p.peso_liquido_kg|floatformat:3 }}</td>
+              <td class="text-end">{{ p.peso_bruto_kg|floatformat:3 }}</td>
+              <td>{{ p.armazem.nome }}</td>
+              <td>{{ p.local_estocagem|default:"—" }}</td>
+              <td>
+                {% if p.status == 'DISPONIVEL' %}<span class="badge bg-success">Disponível</span>
+                {% elif p.status == 'RESERVADO' %}<span class="badge bg-warning text-dark">Reservado</span>
+                {% elif p.status == 'CARREGADO' %}<span class="badge bg-info">Carregado</span>
+                {% else %}<span class="badge bg-danger">Cancelado</span>{% endif %}
+              </td>
+              <td>
+                <a href="{% url 'embalagem:pallet_etiqueta_pdf' p.pk %}" class="btn btn-sm btn-outline-secondary" target="_blank" title="Etiqueta PDF">
+                  <i class="bi bi-printer"></i>
+                </a>
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="10" class="text-center text-muted py-4">Nenhum pallet encontrado.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  {% if page_obj.has_other_pages %}
+  <nav class="mt-3">
+    <ul class="pagination justify-content-center">
+      {% if page_obj.has_previous %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&q={{ filtros.q }}&status={{ filtros.status }}">«</a></li>{% endif %}
+      <li class="page-item disabled"><span class="page-link">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span></li>
+      {% if page_obj.has_next %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&q={{ filtros.q }}&status={{ filtros.status }}">»</a></li>{% endif %}
+    </ul>
+  </nav>
+  {% endif %}
+</div>
+{% endblock %}

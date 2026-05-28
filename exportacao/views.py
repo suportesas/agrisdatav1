@@ -10,9 +10,9 @@ from django.template.loader import get_template
 from django.utils import timezone
 from xhtml2pdf import pisa
 
-from cadastros.models import Cultura, Motorista, Transportadora
-from .forms import BookingContainerForm, BookingForm, OrdemColetaForm, SolicitacaoBookingForm
-from .models import Booking, BookingContainer, OrdemColeta, SolicitacaoBooking
+from cadastros.models import Cultura, Motorista, MotoristaVinculoPlaca, Transportadora
+from .forms import BookingContainerForm, BookingForm, ContainerTransferenciaForm, OrdemColetaForm, SolicitacaoBookingForm
+from .models import Booking, BookingContainer, BookingContainerHistory, OrdemColeta, SolicitacaoBooking
 
 
 @login_required
@@ -143,11 +143,17 @@ def booking_detail(request, pk):
     booking = get_object_or_404(Booking, pk=pk, empresa=request.user.empresa)
     containers = booking.containers.order_by('numero_container')
     ordens = booking.ordens_coleta.order_by('-data_prevista')
+    qtd_solicitada = int(booking.solicitacao.quantidade or 0) if booking.solicitacao else 0
+    n_containers = containers.count()
+    saldo = qtd_solicitada - n_containers
     return render(request, 'exportacao/booking_detail.html', {
         'booking': booking,
         'containers': containers,
         'ordens': ordens,
-        'request': request
+        'saldo': saldo,
+        'qtd_solicitada': qtd_solicitada,
+        'n_containers': n_containers,
+        'request': request,
     })
 
 
@@ -216,10 +222,25 @@ def container_list(request, booking_pk=None):
 @login_required
 def container_create(request, booking_pk):
     booking = get_object_or_404(Booking, pk=booking_pk, empresa=request.user.empresa)
+    qtd_solicitada = int(booking.solicitacao.quantidade or 0) if booking.solicitacao else 0
+    saldo = qtd_solicitada - booking.containers.count()
+    if saldo <= 0:
+        messages.error(
+            request,
+            f'❌ O booking {booking.codigo} já atingiu o limite de '
+            f'{qtd_solicitada} contêiner(es). Saldo esgotado.',
+        )
+        return redirect('exportacao:booking_detail', pk=booking.pk)
     if request.method == 'POST':
         form = BookingContainerForm(request.POST, empresa=request.user.empresa)
         if form.is_valid():
             container = form.save(user=request.user)
+            ordem_coleta_id = request.POST.get('ordem_coleta_id')
+            if ordem_coleta_id:
+                OrdemColeta.objects.filter(
+                    pk=ordem_coleta_id,
+                    booking__empresa=request.user.empresa,
+                ).update(container=container)
             messages.success(request, f'✅ Contêiner "{container.numero_container}" criado com sucesso!')
             return redirect('exportacao:booking_detail', pk=booking.pk)
         messages.error(request, '❌ Corrija os erros no formulário antes de salvar.')
@@ -230,7 +251,6 @@ def container_create(request, booking_pk):
         'form': form,
         'action': 'Cadastrar Contêiner',
         'booking': booking,
-        'request': request
     })
 
 
@@ -252,6 +272,98 @@ def container_update(request, pk):
         'action': 'Editar Contêiner',
         'booking': container.booking,
         'request': request
+    })
+
+
+@login_required
+def container_transferir(request, pk):
+    """Transfere um container para outro booking, marcando o original como DESLOCADO."""
+    container = get_object_or_404(BookingContainer, pk=pk, empresa=request.user.empresa)
+
+    if request.method == 'POST':
+        form = ContainerTransferenciaForm(
+            request.POST, empresa=request.user.empresa, container=container,
+        )
+        if form.is_valid():
+            booking_destino = form.cleaned_data['booking_destino']
+            porto_destino   = form.cleaned_data['porto_destino'] or container.porto_destino
+            cultura         = form.cleaned_data['cultura'] or container.cultura
+            observacao      = form.cleaned_data['observacao'] or ''
+
+            novo = BookingContainer.objects.create(
+                booking=booking_destino,
+                empresa=container.empresa,
+                numero_container=container.numero_container,
+                tipo_container=container.tipo_container,
+                status='PENDENTE',
+                cultura=cultura,
+                porto_origem=container.porto_origem,
+                porto_destino=porto_destino,
+                armador=container.armador,
+                transportadora=container.transportadora,
+                motorista=container.motorista,
+                placa_principal=container.placa_principal,
+                placa_reboque=container.placa_reboque,
+                tara_container=container.tara_container,
+                numero_genset=container.numero_genset,
+                peso_bruto_kg=container.peso_bruto_kg,
+                data_coleta_prevista=container.data_coleta_prevista,
+                data_coleta_realizada=container.data_coleta_realizada,
+                hora_coleta_realizada=container.hora_coleta_realizada,
+                criado_por=request.user,
+                atualizado_por=request.user,
+            )
+
+            status_anterior = container.status
+            container.status = 'DESLOCADO'
+            container.atualizado_por = request.user
+            container.save(update_fields=['status', 'atualizado_por', 'atualizado_em'])
+
+            BookingContainerHistory.objects.create(
+                container=container,
+                empresa=container.empresa,
+                usuario=request.user,
+                status_from=status_anterior,
+                status_to='DESLOCADO',
+                observacoes=(
+                    f'Transferido para booking {booking_destino.codigo} '
+                    f'(novo container ID {novo.pk}). {observacao}'
+                ).strip(),
+            )
+
+            messages.success(
+                request,
+                f'✅ Container {container.numero_container} transferido para o booking '
+                f'"{booking_destino.codigo}" com sucesso. '
+                f'O container original foi marcado como Deslocado.',
+            )
+            return redirect('exportacao:booking_detail', pk=booking_destino.pk)
+        messages.error(request, '❌ Corrija os erros antes de prosseguir.')
+    else:
+        form = ContainerTransferenciaForm(empresa=request.user.empresa, container=container)
+
+    campos_copiados = [
+        'Número do contêiner', 'Tipo do contêiner', 'Armador', 'Transportadora',
+        'Motorista', 'Placa principal', 'Placa reboque', 'Cultura', 'Porto origem',
+        'Porto destino', 'Peso bruto', 'Tara', 'Nº Genset', 'Data coleta prevista',
+    ]
+
+    return render(request, 'exportacao/container_transferencia.html', {
+        'form': form,
+        'container': container,
+        'booking': container.booking,
+        'campos_copiados': campos_copiados,
+    })
+
+
+@login_required
+def container_historico(request, pk):
+    container = get_object_or_404(BookingContainer, pk=pk, empresa=request.user.empresa)
+    historico = container.historico.select_related('usuario').order_by('-data')
+    return render(request, 'exportacao/container_historico.html', {
+        'container': container,
+        'booking': container.booking,
+        'historico': historico,
     })
 
 
@@ -337,7 +449,6 @@ def ordem_coleta_update(request, pk):
 def ordem_coleta_print(request, pk):
     from datetime import date as _date
     from django.db.models import Q as _Q
-    from cadastros.models import MotoristaVinculoPlaca
 
     ordem = get_object_or_404(
         OrdemColeta.objects.select_related(
@@ -539,6 +650,69 @@ def ajax_booking_coleta_preview(request, pk):
 
 
 @login_required
+def ajax_booking_container_preview(request, pk):
+    """Dados do Booking + OrdemColeta para pré-preencher o form de container."""
+    from datetime import date as _date
+    from django.db.models import Q as _Q
+    b = get_object_or_404(
+        Booking.objects.select_related(
+            'solicitacao__cultura', 'solicitacao__armador',
+            'porto_origem', 'porto_destino', 'transportadora',
+        ),
+        pk=pk, empresa=request.user.empresa,
+    )
+    s = b.solicitacao
+    data = {
+        'codigo':               b.codigo,
+        'cultura_id':           s.cultura_id if s else None,
+        'cultura':              str(s.cultura) if s and s.cultura else '',
+        'porto_origem_id':      b.porto_origem_id,
+        'porto_destino_id':     b.porto_destino_id,
+        'porto_destino':        str(b.porto_destino) if b.porto_destino else '',
+        'data_coleta_prevista': b.data_embarque_previsto.strftime('%Y-%m-%d') if b.data_embarque_previsto else '',
+        'armador_id':           s.armador_id if s else None,
+        'armador':              str(s.armador) if s and s.armador else '',
+        'navio':                str(s.navio) if s and s.navio else '',
+        'transportadora_id':    b.transportadora_id,
+        'motorista_id':         None,
+        'placa_principal':      '',
+        'placa_reboque':        '',
+        'veiculo':              '',
+    }
+    # Motorista e placas vêm da OrdemColeta vinculada (se existir)
+    ordem = (
+        OrdemColeta.objects
+        .filter(booking=b)
+        .select_related('transportadora', 'motorista')
+        .order_by('-data_prevista')
+        .first()
+    )
+    if ordem:
+        # OrdemColeta pode ter transportadora diferente (sobrescreve a do Booking)
+        if ordem.transportadora_id:
+            data['transportadora_id'] = ordem.transportadora_id
+        data['motorista_id'] = ordem.motorista_id
+        if ordem.motorista_id:
+            hoje = _date.today()
+            vinculo = (
+                MotoristaVinculoPlaca.objects
+                .filter(motorista_id=ordem.motorista_id, ativo=True)
+                .filter(_Q(data_fim__isnull=True) | _Q(data_fim__gte=hoje))
+                .select_related('placa_principal__vehicle')
+                .prefetch_related('reboques')
+                .order_by('-data_inicio')
+                .first()
+            )
+            if vinculo and vinculo.placa_principal:
+                data['placa_principal'] = vinculo.placa_principal.placa
+                v = getattr(vinculo.placa_principal, 'vehicle', None)
+                if v:
+                    data['veiculo'] = f'{v.marca} {v.modelo}'.strip()
+                data['placa_reboque'] = ', '.join(rp.placa for rp in vinculo.reboques.all())
+    return JsonResponse(data)
+
+
+@login_required
 def ajax_transportadora_preview(request, pk):
     t = get_object_or_404(Transportadora, pk=pk, empresa=request.user.empresa)
     return JsonResponse({
@@ -593,3 +767,84 @@ def ajax_motoristas_por_transportadora(request, pk):
         ).values('id', 'nome').order_by('nome')
     )
     return JsonResponse({'motoristas': motoristas})
+
+
+@login_required
+def ajax_booking_ordens_coleta(request, pk):
+    """Lista de Ordens de Coleta de um booking com status de vínculo a container."""
+    b = get_object_or_404(Booking, pk=pk, empresa=request.user.empresa)
+    ordens = (
+        OrdemColeta.objects
+        .filter(booking=b)
+        .select_related('motorista', 'transportadora', 'container')
+        .order_by('data_prevista', 'numero')
+    )
+    result = []
+    for o in ordens:
+        result.append({
+            'id':                  o.pk,
+            'numero':              o.numero or f'OC #{o.pk}',
+            'status':              o.status,
+            'status_display':      o.get_status_display(),
+            'data_prevista':       o.data_prevista.strftime('%d/%m/%Y') if o.data_prevista else '—',
+            'motorista_nome':      o.motorista.nome if o.motorista else '—',
+            'transportadora_nome': o.transportadora.razao_social if o.transportadora else '—',
+            'container_vinculado': o.container_id is not None,
+            'container_numero':    o.container.numero_container if o.container else '',
+        })
+    return JsonResponse({'ordens': result})
+
+
+@login_required
+def ajax_ordem_coleta_container_dados(request, pk):
+    """Dados completos de uma OC para pré-preencher o formulário de container."""
+    from datetime import date as _date
+    from django.db.models import Q as _Q
+    ordem = get_object_or_404(
+        OrdemColeta.objects.select_related(
+            'booking__solicitacao__cultura',
+            'booking__solicitacao__armador',
+            'booking__porto_origem',
+            'booking__porto_destino',
+            'booking__transportadora',
+            'motorista',
+            'transportadora',
+        ),
+        pk=pk, booking__empresa=request.user.empresa,
+    )
+    b = ordem.booking
+    s = b.solicitacao
+    data = {
+        'cultura_id':           s.cultura_id if s else None,
+        'porto_origem_id':      b.porto_origem_id,
+        'porto_destino_id':     b.porto_destino_id,
+        'data_coleta_prevista': (
+            ordem.data_prevista.strftime('%Y-%m-%d') if ordem.data_prevista else (
+                b.data_embarque_previsto.strftime('%Y-%m-%d') if b.data_embarque_previsto else ''
+            )
+        ),
+        'armador_id':         s.armador_id if s else None,
+        'transportadora_id':  ordem.transportadora_id or b.transportadora_id,
+        'motorista_id':       ordem.motorista_id,
+        'placa_principal':    '',
+        'placa_reboque':      '',
+        'veiculo':            '',
+    }
+    if ordem.motorista_id:
+        hoje = _date.today()
+        vinculo = (
+            MotoristaVinculoPlaca.objects
+            .filter(motorista_id=ordem.motorista_id, ativo=True)
+            .filter(_Q(data_fim__isnull=True) | _Q(data_fim__gte=hoje))
+            .select_related('placa_principal__vehicle')
+            .prefetch_related('reboques')
+            .order_by('-data_inicio')
+            .first()
+        )
+        if vinculo and vinculo.placa_principal:
+            data['placa_principal'] = vinculo.placa_principal.placa
+            v = getattr(vinculo.placa_principal, 'vehicle', None)
+            if v:
+                data['veiculo'] = f'{v.marca} {v.modelo}'.strip()
+            data['placa_reboque'] = ', '.join(rp.placa for rp in vinculo.reboques.all())
+    return JsonResponse(data)

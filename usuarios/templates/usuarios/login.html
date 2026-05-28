@@ -1,204 +1,475 @@
 {% extends 'base_login.html' %}
 {% load static %}
 
-{% block title %}Login - Nexsafra{% endblock %}
+{% block title %}Entrar — Agrisdata{% endblock %}
 
 {% block extra_head %}
-<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 <style>
+/* ── RESET SOBRE O BASE ── */
 body, html {
   height: 100%;
   margin: 0;
   padding: 0;
-  background: #fff !important;
-  font-family: 'Barlow', sans-serif;
+  font-family: 'Inter', sans-serif;
+  background: #f7faf8 !important;
+  -webkit-font-smoothing: antialiased;
 }
-.login-bg {
+
+/* sobrescreve o body do base_login */
+body {
+  display: block !important;
+  align-items: unset !important;
+  justify-content: unset !important;
+}
+
+footer { display: none !important; }
+
+/* ── LAYOUT SPLIT ── */
+.login-page {
   min-height: 100vh;
+  display: grid;
+  grid-template-columns: 480px 1fr;
+}
+
+/* ── PAINEL ESQUERDO ── */
+.login-panel {
+  background: linear-gradient(160deg, #1a7a3c 0%, #0d4f26 60%, #082e17 100%);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 48px 52px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* padrão de pontos */
+.login-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle, rgba(255,255,255,.07) 1.5px, transparent 1.5px);
+  background-size: 28px 28px;
+  pointer-events: none;
+}
+/* glow suave */
+.login-panel::after {
+  content: '';
+  position: absolute;
+  bottom: -120px; left: -80px;
+  width: 500px; height: 500px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(118,255,3,.08) 0%, transparent 65%);
+  pointer-events: none;
+}
+
+.panel-top { position: relative; z-index: 2; }
+
+.panel-logo {
   display: flex;
   align-items: center;
+  gap: 10px;
+  margin-bottom: 72px;
+}
+.panel-logo-mark {
+  width: 36px; height: 36px;
+  background: rgba(255,255,255,.15);
+  border: 1px solid rgba(255,255,255,.25);
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+}
+.panel-logo-mark svg { width: 18px; height: 18px; color: #fff; }
+.panel-logo-name {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 22px; font-weight: 700;
+  color: #fff; letter-spacing: -.2px;
+}
+.panel-logo-name span { color: rgba(255,255,255,.6); font-weight: 400; }
+
+.panel-headline {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 36px; font-weight: 700;
+  color: #fff; line-height: 1.15;
+  letter-spacing: -.4px;
+  margin-bottom: 16px;
+}
+.panel-headline em { font-style: normal; color: #69f0ae; }
+
+.panel-sub {
+  font-size: 15px; color: rgba(255,255,255,.6);
+  line-height: 1.7; max-width: 320px;
+  margin-bottom: 48px;
+}
+
+.panel-features {
+  display: flex; flex-direction: column; gap: 16px;
+  position: relative; z-index: 2;
+}
+.panel-feat {
+  display: flex; align-items: flex-start; gap: 14px;
+}
+.pf-icon {
+  width: 36px; height: 36px;
+  background: rgba(255,255,255,.1);
+  border: 1px solid rgba(255,255,255,.15);
+  border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.pf-icon svg { width: 17px; height: 17px; color: #69f0ae; }
+.pf-title { font-size: 14px; font-weight: 600; color: #fff; margin-bottom: 2px; }
+.pf-desc  { font-size: 12px; color: rgba(255,255,255,.5); line-height: 1.4; }
+
+.panel-bottom { position: relative; z-index: 2; }
+.panel-copy { font-size: 12px; color: rgba(255,255,255,.3); }
+
+/* ── PAINEL DIREITO ── */
+.login-form-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   justify-content: center;
-  background: #fff;
+  padding: 60px 40px;
+  background: #f7faf8;
 }
-.login-center-card {
-  background: #fff;
-  border-radius: 18px;
-  box-shadow: 0 4px 32px rgba(0,0,0,0.08);
-  padding: 40px 32px 32px 32px;
+
+.form-card {
   width: 100%;
-  max-width: 380px;
-  text-align: center;
+  max-width: 400px;
 }
-.login-logo {
-  width: 220px;
-  height: 220px;
-  margin-bottom: 18px;
+
+.form-card-header { margin-bottom: 36px; }
+
+.form-welcome {
+  font-size: 12px; font-weight: 700;
+  letter-spacing: 2px; text-transform: uppercase;
+  color: #1a7a3c;
+  display: flex; align-items: center; gap: 7px;
+  margin-bottom: 10px;
 }
-.login-title {
-  font-size: 1.5rem;
-  font-weight: 700;
-  margin-bottom: 8px;
-  color: #1a1a1a;
+.form-welcome-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: #22a24f;
+  animation: blink 2s infinite;
 }
-.login-subtitle {
-  color: #6b7280;
-  font-size: 1rem;
-  margin-bottom: 24px;
-}
-.login-form {
-  text-align: left;
-}
-.login-links {
-  margin-top: 18px;
-  font-size: 0.95rem;
-}
-.form-group {
-  margin-bottom: 20px;
-}
-.form-label {
-  display: block;
-  font-size: 13px;
-  font-weight: 600;
-  color: #1a1a1a;
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+.form-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 28px; font-weight: 700;
+  color: #1a2c1c; letter-spacing: -.3px;
   margin-bottom: 6px;
 }
-.password-wrapper {
-  position: relative;
+.form-subtitle { font-size: 14px; color: #7a9a7e; line-height: 1.5; }
+
+/* ── CAMPO ── */
+.field { margin-bottom: 18px; }
+.field-label {
+  display: block;
+  font-size: 13px; font-weight: 600;
+  color: #3d5c41; margin-bottom: 7px;
 }
-.toggle-password {
-  position: absolute;
-  right: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  background: transparent;
-  border: none;
-  color: #6b7280;
-  cursor: pointer;
-  font-size: 1.05rem;
-  line-height: 1;
-  padding: 4px;
-}
-.toggle-password:hover {
-  color: #1B5E20;
-}
-.btn-login {
+.field-wrap { position: relative; }
+
+/* força estilo nos inputs gerados pelo Django */
+.field-wrap input,
+#id_username,
+#id_password {
   width: 100%;
-  background: #76FF03;
-  color: #1a1a1a;
-  border: none;
-  padding: 14px;
-  border-radius: 8px;
-  font-family: 'Barlow', sans-serif;
-  font-size: 14px;
-  font-weight: 700;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  cursor: pointer;
-  transition: all 0.3s;
-  margin-bottom: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-}
-.btn-login:hover {
-  background: #e8ffe8;
-}
-.alert {
   padding: 12px 16px;
+  background: #fff;
+  border: 1.5px solid #e3ece4;
+  border-radius: 9px;
+  font-size: 14px;
+  color: #1a2c1c;
+  font-family: 'Inter', sans-serif;
+  outline: none;
+  transition: border-color .2s, box-shadow .2s;
+  box-sizing: border-box;
+}
+.field-wrap input:focus,
+#id_username:focus,
+#id_password:focus {
+  border-color: #1a7a3c;
+  box-shadow: 0 0 0 3px rgba(26,122,60,.1);
+}
+.field-wrap input::placeholder,
+#id_username::placeholder,
+#id_password::placeholder {
+  color: #b0c4b3;
+}
+#id_password { padding-right: 44px; }
+
+.toggle-pw {
+  position: absolute; right: 12px; top: 50%;
+  transform: translateY(-50%);
+  background: none; border: none;
+  color: #7a9a7e; cursor: pointer;
+  font-size: 16px; padding: 4px; line-height: 1;
+  transition: color .2s;
+}
+.toggle-pw:hover { color: #1a7a3c; }
+
+/* ── ALERTAS ── */
+.alert {
+  padding: 11px 14px;
   border-radius: 8px;
-  margin-bottom: 20px;
+  margin-bottom: 18px;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 500;
   line-height: 1.45;
-  border-left: 3px solid;
-  border: 1px solid transparent;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  border: 1.5px solid;
 }
-.alert-danger {
-  background: #ffeaea;
-  color: #b91c1c;
-  border-left-color: #ff6b6b;
-  border-color: #ffb3b3;
+.alert i { flex-shrink: 0; margin-top: 1px; }
+.alert-danger  { background: #fff5f5; color: #b91c1c; border-color: #fca5a5; }
+.alert-warning { background: #fffbeb; color: #92400e; border-color: #fcd34d; }
+.alert-success { background: #f0fdf4; color: #15803d; border-color: #86efac; }
+
+/* ── BOTÃO ENTRAR ── */
+.btn-entrar {
+  width: 100%; padding: 13px;
+  background: #1a7a3c; color: #fff;
+  font-size: 15px; font-weight: 700;
+  border: none; border-radius: 9px;
+  cursor: pointer; font-family: 'Inter', sans-serif;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  transition: all .2s;
+  box-shadow: 0 2px 10px rgba(26,122,60,.3);
+  margin-top: 4px;
 }
-.alert-warning {
-  background: #fffbe5;
-  color: #b45309;
-  border-left-color: #ffd54f;
-  border-color: #ffe28a;
+.btn-entrar:hover {
+  background: #22a24f;
+  box-shadow: 0 4px 16px rgba(26,122,60,.4);
+  transform: translateY(-1px);
 }
-.alert-success {
-  background: #f0fff4;
-  color: #15803d;
-  border-left-color: #76FF03;
-  border-color: #d7ffc0;
+.btn-entrar:active { transform: none; box-shadow: none; }
+
+/* ── LINKS ── */
+.form-links {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid #e3ece4;
+}
+.form-link {
+  font-size: 13px; color: #7a9a7e;
+  display: inline-flex; align-items: center; gap: 5px;
+  transition: color .2s;
+}
+.form-link:hover { color: #1a7a3c; }
+
+/* ── PORTAL MOTORISTA ── */
+.driver-block {
+  margin-top: 24px;
+  padding: 14px 16px;
+  background: #fff;
+  border: 1.5px solid #e3ece4;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+}
+.driver-text { font-size: 12px; color: #7a9a7e; line-height: 1.4; }
+.driver-text strong { display: block; font-size: 13px; color: #3d5c41; font-weight: 600; margin-bottom: 1px; }
+.btn-driver {
+  flex-shrink: 0;
+  background: #1a7a3c; color: #fff;
+  font-size: 12px; font-weight: 700;
+  padding: 8px 14px; border-radius: 7px;
+  white-space: nowrap; transition: all .2s;
+}
+.btn-driver:hover { background: #22a24f; }
+
+/* ── DIVISOR OU BADGE VERSÃO ── */
+.form-version {
+  text-align: center; margin-top: 32px;
+  font-size: 11px; color: #c6dbc8; letter-spacing: .5px;
+}
+
+/* ── RESPONSIVE ── */
+@media (max-width: 900px) {
+  .login-page { grid-template-columns: 1fr; }
+  .login-panel { display: none; }
+  .login-form-area { padding: 48px 24px; min-height: 100vh; }
 }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="login-bg">
-  <div class="login-center-card">
-    <img src="{% static 'img/logo.png' %}" alt="Logo" class="login-logo">
-    <h2 class="login-title">Acesse sua conta</h2>
-    <p class="login-subtitle">Insira seus dados para acessar o sistema</p>
-    <form method="post" class="login-form">
-      {% csrf_token %}
+<div class="login-page">
+
+  <!-- ══ PAINEL ESQUERDO ══ -->
+  <aside class="login-panel">
+    <div class="panel-top">
+      <!-- Logo -->
+      <div class="panel-logo">
+        <div class="panel-logo-mark">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2L3 7l9 5 9-5-9-5z"/>
+            <path d="M3 17l9 5 9-5"/>
+            <path d="M3 12l9 5 9-5"/>
+          </svg>
+        </div>
+        <span class="panel-logo-name">Nex<span>safra</span></span>
+      </div>
+
+      <!-- Headline -->
+      <h2 class="panel-headline">
+        Gestão agrícola<br>
+        <em>inteligente</em><br>
+        do campo ao mundo
+      </h2>
+      <p class="panel-sub">
+        Plataforma completa com 36 módulos integrados para produtores rurais, cooperativas e exportadores.
+      </p>
+
+      <!-- Features -->
+      <div class="panel-features">
+        <div class="panel-feat">
+          <div class="pf-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 3l18 18"/><path d="M8.67 8.67A4 4 0 0 0 12 16a4 4 0 0 0 3.33-7.33"/>
+              <path d="M12 2a10 10 0 0 1 10 10 10 10 0 0 1-2.93 7.07"/>
+              <path d="M2.93 7A10 10 0 0 0 2 12a10 10 0 0 0 10 10"/>
+            </svg>
+          </div>
+          <div>
+            <div class="pf-title">Monitoramento em tempo real</div>
+            <div class="pf-desc">Talhões, estoque, equipe e financeiro em um único painel</div>
+          </div>
+        </div>
+        <div class="panel-feat">
+          <div class="pf-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/>
+              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+            </svg>
+          </div>
+          <div>
+            <div class="pf-title">Rastreabilidade total</div>
+            <div class="pf-desc">Da semente ao container, com certificações de exportação</div>
+          </div>
+        </div>
+        <div class="panel-feat">
+          <div class="pf-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/>
+            </svg>
+          </div>
+          <div>
+            <div class="pf-title">Mobile &amp; Offline</div>
+            <div class="pf-desc">Funciona em campo sem conexão, sincroniza ao reconectar</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel-bottom">
+      <p class="panel-copy">© 2026 Agrisdata · Todos os direitos reservados</p>
+    </div>
+  </aside>
+
+  <!-- ══ PAINEL DIREITO ══ -->
+  <main class="login-form-area">
+    <div class="form-card">
+
+      <div class="form-card-header">
+        <div class="form-welcome">
+          <span class="form-welcome-dot"></span>
+          Plataforma Segura
+        </div>
+        <h1 class="form-title">Bem-vindo de volta</h1>
+        <p class="form-subtitle">Insira suas credenciais para acessar o sistema</p>
+      </div>
+
+      <!-- Alertas -->
       {% if messages %}
         {% for message in messages %}
           <div class="alert alert-{{ message.tags }}">
-            <i class="bi bi-exclamation-triangle"></i> {{ message }}
+            <i class="bi bi-{% if message.tags == 'danger' %}exclamation-circle{% elif message.tags == 'warning' %}exclamation-triangle{% else %}check-circle{% endif %}"></i>
+            {{ message }}
           </div>
         {% endfor %}
       {% endif %}
-      <div class="form-group">
-        <label class="form-label" for="id_username">
-          <i class="bi bi-person"></i> Usuário
-        </label>
-        {{ form.username }}
-      </div>
-      <div class="form-group">
-        <label class="form-label" for="id_password">
-          <i class="bi bi-lock"></i> Senha
-        </label>
-        <div class="password-wrapper">
-          {{ form.password }}
-          <button type="button" class="toggle-password" id="togglePassword" aria-label="Mostrar senha">
-            <i class="bi bi-eye" id="togglePasswordIcon"></i>
-          </button>
+
+      <form method="post">
+        {% csrf_token %}
+
+        <!-- Usuário -->
+        <div class="field">
+          <label class="field-label" for="id_username">
+            <i class="bi bi-person" style="color:#1a7a3c"></i> Usuário
+          </label>
+          <div class="field-wrap">
+            {{ form.username }}
+          </div>
         </div>
+
+        <!-- Senha -->
+        <div class="field">
+          <label class="field-label" for="id_password">
+            <i class="bi bi-lock" style="color:#1a7a3c"></i> Senha
+          </label>
+          <div class="field-wrap">
+            {{ form.password }}
+            <button type="button" class="toggle-pw" id="togglePassword" aria-label="Mostrar senha">
+              <i class="bi bi-eye" id="toggleIcon"></i>
+            </button>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-entrar">
+          <i class="bi bi-box-arrow-in-right"></i> Entrar no sistema
+        </button>
+      </form>
+
+      <div class="form-links">
+        <a href="{% url 'password_reset' %}" class="form-link">
+          <i class="bi bi-key"></i> Esqueceu a senha?
+        </a>
+        <a href="/landing/" class="form-link">
+          <i class="bi bi-arrow-left"></i> Voltar ao site
+        </a>
       </div>
-      <button type="submit" class="btn-login">
-        <i class="bi bi-box-arrow-in-right"></i> Entrar Agora
-      </button>
-    </form>
-    <div class="login-links">
-      <a href="{% url 'password_reset' %}"><i class="bi bi-key"></i> Esqueceu a senha?</a>
-      &nbsp;|&nbsp;
-      <a href="/"><i class="bi bi-house"></i> Voltar ao Início</a>
+
+      <!-- Portal Motorista -->
+      <div class="driver-block">
+        <div class="driver-text">
+          <strong>🚛 Portal do Motorista</strong>
+          Esta não é a tela de acesso para motoristas
+        </div>
+        <a href="{% url 'portal_motorista:login' %}" class="btn-driver">Acessar portal</a>
+      </div>
+
+      <p class="form-version">Agrisdata v2.0 · LGPD Compliant</p>
+
     </div>
-    <div style="margin-top:16px; padding:12px 16px; background:#f0faf4; border:1px solid #b7e5c9; border-radius:8px; text-align:center;">
-      <div style="font-size:0.8rem; color:#555; margin-bottom:6px;">É motorista? Esta não é sua tela de acesso.</div>
-      <a href="{% url 'portal_motorista:login' %}" style="display:inline-block; background:#1a6e3c; color:#fff; padding:8px 18px; border-radius:6px; font-size:0.85rem; font-weight:600; text-decoration:none;">
-        🚛 Acessar Portal do Motorista
-      </a>
-    </div>
-  </div>
+  </main>
+
 </div>
+
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-  const passwordInput = document.getElementById('id_password');
-  const toggleButton = document.getElementById('togglePassword');
-  const toggleIcon = document.getElementById('togglePasswordIcon');
-  if (passwordInput && toggleButton && toggleIcon) {
-    toggleButton.addEventListener('click', function () {
-      const isHidden = passwordInput.getAttribute('type') === 'password';
-      passwordInput.setAttribute('type', isHidden ? 'text' : 'password');
-      toggleIcon.classList.toggle('bi-eye', !isHidden);
-      toggleIcon.classList.toggle('bi-eye-slash', isHidden);
-      toggleButton.setAttribute('aria-label', isHidden ? 'Ocultar senha' : 'Mostrar senha');
+  /* toggle senha */
+  const pwInput = document.getElementById('id_password');
+  const toggle  = document.getElementById('togglePassword');
+  const icon    = document.getElementById('toggleIcon');
+  if (pwInput && toggle) {
+    toggle.addEventListener('click', function () {
+      const show = pwInput.type === 'password';
+      pwInput.type = show ? 'text' : 'password';
+      icon.className = show ? 'bi bi-eye-slash' : 'bi bi-eye';
+      toggle.setAttribute('aria-label', show ? 'Ocultar senha' : 'Mostrar senha');
     });
   }
+
+  /* placeholder nos inputs do Django */
+  const u = document.getElementById('id_username');
+  const p = document.getElementById('id_password');
+  if (u) u.setAttribute('placeholder', 'seu.usuario');
+  if (p) p.setAttribute('placeholder', '••••••••');
 });
 </script>
 {% endblock %}

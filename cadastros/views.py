@@ -2,19 +2,6 @@
 from django.contrib.auth.decorators import login_required
 
 @login_required
-def ncm_seed(request):
-    empresa = request.user.empresa
-    from cadastros.tasks import seed_ncms_for_company
-    res = seed_ncms_for_company(empresa.pk)
-    from django.contrib import messages
-    messages.success(request, f'NCMs padrão populados! Criados: {res.get("created",0)}, já existentes: {res.get("skipped",0)}')
-    return redirect('cadastros:ncm_list')
-
-# ...existing code...
-
-from django.contrib.auth.decorators import login_required
-
-@login_required
 def cfop_seed(request):
     empresa = request.user.empresa
     from cadastros.models import CFOP, EmpresaCFOP
@@ -47,10 +34,8 @@ CRUD completo + integração com APIs externas
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
-from django.http import JsonResponse
-from django.http import HttpResponse
+from django.http import JsonResponse, HttpResponse
 from django.template.loader import render_to_string
 from django.core.exceptions import ValidationError, PermissionDenied
 from django.db.models import Q, Count, Sum, Avg, Case, When, Value, IntegerField
@@ -62,8 +47,7 @@ import requests
 import re
 from django.core.cache import cache
 from .models import FornecedorEndereco, Funcionario, FuncaoFuncionario, HistoricoFuncionario, VinculoContrato
-from .forms import FornecedorEnderecoForm, FuncionarioForm, FuncaoFuncionarioForm, DocumentoFuncionarioFormSet
-from .forms import DocumentoFuncionarioForm
+from .forms import FornecedorEnderecoForm, FuncionarioForm, FuncaoFuncionarioForm, DocumentoFuncionarioFormSet, DocumentoFuncionarioForm
 
 from .models import (
     Fazenda, EnderecoFazenda, ContatoFazenda,

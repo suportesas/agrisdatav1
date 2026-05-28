@@ -1,0 +1,223 @@
+{% extends 'base.html' %}
+{% block title %}Transferir Contêiner — {{ container.numero_container }}{% endblock %}
+{% block page_title %}Transferir Contêiner{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4" style="max-width:900px;">
+
+  <!-- Explicação em linguagem simples -->
+  <div class="alert alert-warning border-warning mb-4">
+    <div class="fw-semibold mb-1"><i class="bi bi-info-circle-fill me-2"></i>O que acontece ao transferir?</div>
+    <ul class="mb-0 ps-3 small">
+      <li>O contêiner <strong>{{ container.numero_container }}</strong> será <strong>removido do booking atual</strong> ({{ booking.codigo }}) e receberá o status <strong>"Deslocado"</strong>.</li>
+      <li>Um <strong>novo contêiner idêntico</strong> será criado no booking de destino, com status <strong>"Pendente"</strong>.</li>
+      <li>As <strong>Ordens de Coleta</strong> vinculadas permanecem no booking original como histórico — <u>não são transferidas</u>.</li>
+      <li>Todo o histórico de alterações do contêiner original é preservado.</li>
+    </ul>
+  </div>
+
+  <!-- Visão ANTES → DEPOIS -->
+  <div class="row g-3 mb-4 align-items-stretch">
+
+    <!-- Booking ORIGEM -->
+    <div class="col-md-5">
+      <div class="card border-danger h-100">
+        <div class="card-header bg-danger text-white fw-semibold small">
+          <i class="bi bi-box-seam me-2"></i>ORIGEM — {{ booking.codigo }}
+        </div>
+        <div class="card-body small">
+          <div class="row g-2">
+            <div class="col-6">
+              <span class="text-muted d-block">Número</span>
+              <strong>{{ container.numero_container }}</strong>
+            </div>
+            <div class="col-6">
+              <span class="text-muted d-block">Tipo</span>
+              <strong>{{ container.get_tipo_container_display }}</strong>
+            </div>
+            <div class="col-6">
+              <span class="text-muted d-block">Status atual</span>
+              <span class="badge
+                {% if container.status == 'PENDENTE' %}bg-warning text-dark
+                {% elif container.status == 'CONFIRMADO' %}bg-primary
+                {% elif container.status == 'EMBARCADO' %}bg-success
+                {% else %}bg-secondary{% endif %}">
+                {{ container.get_status_display }}
+              </span>
+            </div>
+            <div class="col-6">
+              <span class="text-muted d-block">Status após</span>
+              <span class="badge bg-secondary">Deslocado</span>
+            </div>
+            {% if container.cultura %}
+            <div class="col-6">
+              <span class="text-muted d-block">Cultura</span>
+              <strong>{{ container.cultura }}</strong>
+            </div>
+            {% endif %}
+            {% if container.porto_destino %}
+            <div class="col-6">
+              <span class="text-muted d-block">Porto Destino</span>
+              <strong>{{ container.porto_destino }}</strong>
+            </div>
+            {% endif %}
+            {% if container.motorista %}
+            <div class="col-6">
+              <span class="text-muted d-block">Motorista</span>
+              <strong>{{ container.motorista.nome }}</strong>
+            </div>
+            {% endif %}
+            {% if container.peso_bruto_kg %}
+            <div class="col-6">
+              <span class="text-muted d-block">Peso Bruto</span>
+              <strong>{{ container.peso_bruto_kg|floatformat:0 }} kg</strong>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Seta central -->
+    <div class="col-md-2 d-flex align-items-center justify-content-center">
+      <div class="text-center text-warning fs-2">
+        <i class="bi bi-arrow-right-circle-fill"></i>
+        <div class="small text-muted mt-1" style="font-size:.7rem;">NOVO<br>PENDENTE</div>
+      </div>
+    </div>
+
+    <!-- Booking DESTINO (preview dinâmico) -->
+    <div class="col-md-5">
+      <div class="card border-success h-100" id="card-destino">
+        <div class="card-header bg-success text-white fw-semibold small">
+          <i class="bi bi-box-seam me-2"></i>DESTINO — <span id="destino-codigo">selecione abaixo</span>
+        </div>
+        <div class="card-body small" id="destino-preview">
+          <p class="text-muted fst-italic mb-0">Selecione o booking de destino para ver o preview.</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Formulário de transferência -->
+  <form method="post">
+    {% csrf_token %}
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-white border-bottom fw-semibold">
+        <i class="bi bi-arrow-left-right me-2 text-warning"></i>Escolha o Destino
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+
+          <div class="col-12">
+            <label class="form-label fw-semibold">
+              {{ form.booking_destino.label }} <span class="text-danger">*</span>
+            </label>
+            {{ form.booking_destino }}
+            {% if form.booking_destino.errors %}
+            <div class="text-danger small mt-1">{{ form.booking_destino.errors }}</div>
+            {% endif %}
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">{{ form.porto_destino.label }}</label>
+            <small class="text-muted ms-1 d-block mb-1">Se não preenchido, mantém: <strong>{{ container.porto_destino|default:"—" }}</strong></small>
+            {{ form.porto_destino }}
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">{{ form.cultura.label }}</label>
+            <small class="text-muted ms-1 d-block mb-1">Se não preenchido, mantém: <strong>{{ container.cultura|default:"—" }}</strong></small>
+            {{ form.cultura }}
+          </div>
+
+          <div class="col-12">
+            <label class="form-label fw-semibold">
+              {{ form.observacao.label }}
+              <span class="text-muted fw-normal small">(opcional, mas recomendado)</span>
+            </label>
+            {{ form.observacao }}
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- O que será copiado -->
+    <div class="card border-0 bg-light mb-4">
+      <div class="card-body small">
+        <div class="fw-semibold mb-2 text-muted">
+          <i class="bi bi-clipboard-check me-1"></i>Dados que serão copiados para o novo contêiner:
+        </div>
+        <div class="row g-1">
+          {% for campo in campos_copiados %}
+          <div class="col-6 col-md-4"><i class="bi bi-check2 text-success me-1"></i>{{ campo }}</div>
+          {% endfor %}
+        </div>
+        <div class="mt-2 text-muted">
+          <i class="bi bi-x-circle text-danger me-1"></i>
+          <strong>Não transferidos:</strong> Lacres, datas de coleta realizada, Ordens de Coleta vinculadas
+        </div>
+      </div>
+    </div>
+
+    <div class="d-flex gap-2">
+      <button type="submit" class="btn btn-warning px-4">
+        <i class="bi bi-arrow-left-right me-1"></i>Confirmar Transferência
+      </button>
+      <a href="{% url 'exportacao:booking_detail' booking.pk %}" class="btn btn-outline-secondary">
+        Cancelar
+      </a>
+    </div>
+  </form>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  var selectBooking = document.getElementById('id_booking_destino');
+  var selectPorto   = document.getElementById('id_porto_destino');
+  var selectCultura = document.getElementById('id_cultura');
+  var previewDiv    = document.getElementById('destino-preview');
+  var codigoSpan    = document.getElementById('destino-codigo');
+
+  if (!selectBooking) return;
+
+  selectBooking.addEventListener('change', function () {
+    var pk = this.value;
+    if (!pk) {
+      codigoSpan.textContent = 'selecione abaixo';
+      previewDiv.innerHTML = '<p class="text-muted fst-italic mb-0">Selecione o booking de destino para ver o preview.</p>';
+      return;
+    }
+
+    fetch('/exportacao/ajax/booking/' + pk + '/container-preview/')
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        // Atualiza selects
+        if (selectPorto && d.porto_destino_id) selectPorto.value = String(d.porto_destino_id);
+        if (selectCultura && d.cultura_id)     selectCultura.value = String(d.cultura_id);
+
+        // Monta preview do destino
+        var html = '<div class="row g-2">';
+        html += '<div class="col-6"><span class="text-muted d-block">Número (cópia)</span><strong>{{ container.numero_container }}</strong></div>';
+        html += '<div class="col-6"><span class="text-muted d-block">Status inicial</span><span class="badge bg-warning text-dark">Pendente</span></div>';
+        if (d.porto_destino)  html += '<div class="col-6"><span class="text-muted d-block">Porto Destino</span><strong>' + d.porto_destino + '</strong></div>';
+        if (d.cultura)        html += '<div class="col-6"><span class="text-muted d-block">Cultura</span><strong>' + d.cultura + '</strong></div>';
+        if (d.armador)        html += '<div class="col-6"><span class="text-muted d-block">Armador</span><strong>' + d.armador + '</strong></div>';
+        if (d.navio)          html += '<div class="col-6"><span class="text-muted d-block">Navio</span><strong>' + d.navio + '</strong></div>';
+        html += '</div>';
+
+        codigoSpan.textContent = d.codigo || '—';
+        previewDiv.innerHTML = html;
+      })
+      .catch(function () {
+        previewDiv.innerHTML = '<p class="text-danger small mb-0">Não foi possível carregar o preview.</p>';
+      });
+  });
+})();
+</script>
+{% endblock %}

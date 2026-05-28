@@ -1,0 +1,389 @@
+{% extends 'base.html' %}
+{% block title %}{{ romaneio.numero }}{% endblock %}
+{% block page_title %}Romaneios de Venda{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+  <!-- Faixa de contexto do fluxo -->
+  <div class="alert alert-light border shadow-sm py-2 px-3 mb-3 d-flex align-items-center gap-3 flex-wrap" style="font-size:.85rem">
+    <span class="text-muted">Você está em:</span>
+    <span class="badge bg-secondary">1 · Configurar</span>
+    <i class="bi bi-chevron-right text-muted"></i>
+    <span class="badge bg-secondary">2 · Embalar</span>
+    <i class="bi bi-chevron-right text-muted"></i>
+    <span class="badge bg-secondary">3 · Etiquetas</span>
+    <i class="bi bi-chevron-right text-muted"></i>
+    <span class="badge bg-info">4 · Romaneio (aqui)</span>
+    <i class="bi bi-chevron-right text-muted"></i>
+    <span class="badge bg-light text-dark border">5 · Conferência</span>
+    <span class="ms-auto text-muted">
+      {% if romaneio.status == 'RASCUNHO' %}
+        <i class="bi bi-info-circle text-primary"></i> Adicione pallets e clique em <strong>Confirmar</strong>.
+      {% elif romaneio.status == 'CONFIRMADO' and not romaneio.pedido_venda %}
+        <i class="bi bi-info-circle text-success"></i> Imprima as <strong>Etiquetas PDF</strong> (com dados do cliente) e depois vá para <strong>Conferência</strong>.
+      {% elif romaneio.status == 'CONFIRMADO' %}
+        <i class="bi bi-check-circle text-success"></i> Imprima as <strong>Etiquetas PDF</strong> e use o botão <strong>Conferência</strong> na doca.
+      {% elif romaneio.status == 'CARREGANDO' %}
+        <i class="bi bi-upc-scan text-warning"></i> Conferência em andamento — use o botão <strong>Conferência</strong>.
+      {% elif romaneio.status == 'CONCLUIDO' %}
+        <i class="bi bi-check-circle-fill text-success"></i> Carregamento concluído.
+      {% endif %}
+    </span>
+  </div>
+
+  <div class="d-flex justify-content-between align-items-start mb-4">
+    <div class="d-flex align-items-center">
+      <a href="{% url 'embalagem:romaneio_list' %}" class="btn btn-outline-secondary me-3"><i class="bi bi-arrow-left"></i></a>
+      <div>
+        <h3 class="mb-0">{{ romaneio.numero }}</h3>
+        <small class="text-muted">{{ romaneio.cliente.razao_social }} — {{ romaneio.get_tipo_display }}</small>
+      </div>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      {% if romaneio.status == 'RASCUNHO' %}
+      <a href="{% url 'embalagem:romaneio_update' romaneio.pk %}" class="btn btn-outline-secondary">
+        <i class="bi bi-pencil me-1"></i>Editar
+      </a>
+      <form method="post" action="{% url 'embalagem:romaneio_confirmar' romaneio.pk %}" class="d-inline">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-info text-white"
+          onclick="return confirm('Confirmar romaneio e reservar os pallets selecionados?')">
+          <i class="bi bi-check-circle me-1"></i>Confirmar
+        </button>
+      </form>
+      {% endif %}
+      {% if romaneio.status in 'CONFIRMADO,CARREGANDO' %}
+      <a href="{% url 'embalagem:romaneio_trocar_cliente' romaneio.pk %}" class="btn btn-outline-secondary">
+        <i class="bi bi-person-gear me-1"></i>Trocar Cliente
+      </a>
+      {% endif %}
+      {% if romaneio.status == 'CONFIRMADO' and not romaneio.pedido_venda %}
+      <form method="post" action="{% url 'embalagem:romaneio_gerar_pedido' romaneio.pk %}" class="d-inline">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-success"
+          onclick="return confirm('Gerar Pré-venda a partir deste romaneio?')">
+          <i class="bi bi-cart-plus me-1"></i>Gerar Pré-venda
+        </button>
+      </form>
+      {% endif %}
+      {% if romaneio.tipo == 'EXPORTACAO' and romaneio.status in 'CONFIRMADO,CARREGANDO,CONCLUIDO' %}
+        {% if romaneio.invoice_exportacao %}
+        <a href="{% url 'faturamento:invoice_detail' romaneio.invoice_exportacao.pk %}" class="btn btn-outline-info">
+          <i class="bi bi-file-earmark-text me-1"></i>Ver Invoice
+        </a>
+        {% else %}
+        <form method="post" action="{% url 'embalagem:romaneio_gerar_invoice' romaneio.pk %}" class="d-inline">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-outline-info"
+            onclick="return confirm('Gerar Invoice e Packing List em Rascunho a partir deste romaneio?')">
+            <i class="bi bi-file-earmark-plus me-1"></i>Gerar Invoice
+          </button>
+        </form>
+        {% endif %}
+      {% endif %}
+      {% if romaneio.tipo == 'MERCADO_INTERNO' and romaneio.status in 'CONFIRMADO,CARREGANDO,CONCLUIDO' %}
+        {% if romaneio.nota_fiscal %}
+        <a href="{% url 'faturamento:nota_fiscal_detail' romaneio.nota_fiscal.pk %}" class="btn btn-outline-info">
+          <i class="bi bi-file-earmark-text me-1"></i>Ver Nota Fiscal
+        </a>
+        {% else %}
+        <form method="post" action="{% url 'embalagem:romaneio_gerar_nota_fiscal' romaneio.pk %}" class="d-inline">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-outline-info"
+            onclick="return confirm('Gerar Pré-Nota Fiscal em Rascunho a partir deste romaneio?')">
+            <i class="bi bi-file-earmark-plus me-1"></i>Gerar NF
+          </button>
+        </form>
+        {% endif %}
+      {% endif %}
+      {% if romaneio.itens.count > 0 %}
+      <a href="{% url 'embalagem:romaneio_etiquetas_pdf' romaneio.pk %}" class="btn btn-outline-primary" target="_blank">
+        <i class="bi bi-printer me-1"></i>Etiquetas PDF
+      </a>
+      {% endif %}
+      {% if romaneio.status in 'CONFIRMADO,CARREGANDO' %}
+      <a href="{% url 'embalagem:romaneio_conferencia' romaneio.pk %}" class="btn btn-warning text-dark">
+        <i class="bi bi-upc-scan me-1"></i>Conferência
+      </a>
+      {% endif %}
+      {% if romaneio.status in 'CARREGANDO,CONCLUIDO' %}
+      <a href="{% url 'embalagem:romaneio_conferencia_pdf' romaneio.pk %}" class="btn btn-outline-dark" target="_blank">
+        <i class="bi bi-file-earmark-ruled me-1"></i>Relatório PDF
+      </a>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if messages %}
+  {% for msg in messages %}
+  <div class="alert alert-{{ msg.tags }} alert-dismissible fade show">
+    {{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  {% endfor %}
+  {% endif %}
+
+  <!-- Status -->
+  <div class="mb-3">
+    {% if romaneio.status == 'RASCUNHO' %}<span class="badge bg-secondary fs-6">Rascunho</span>
+    {% elif romaneio.status == 'CONFIRMADO' %}<span class="badge bg-info fs-6">Confirmado</span>
+    {% elif romaneio.status == 'CARREGANDO' %}<span class="badge bg-warning text-dark fs-6">Carregando</span>
+    {% elif romaneio.status == 'CONCLUIDO' %}<span class="badge bg-success fs-6">Concluído</span>
+    {% else %}<span class="badge bg-danger fs-6">Cancelado</span>{% endif %}
+  </div>
+
+  <div class="row g-3 mb-4">
+    <!-- Info principal -->
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header fw-semibold">Dados do Romaneio</div>
+        <div class="card-body">
+          <dl class="row mb-0 small">
+            <dt class="col-sm-5">Número</dt><dd class="col-sm-7">{{ romaneio.numero }}</dd>
+            <dt class="col-sm-5">Tipo</dt><dd class="col-sm-7">{{ romaneio.get_tipo_display }}</dd>
+            <dt class="col-sm-5">Cliente</dt><dd class="col-sm-7">{{ romaneio.cliente.razao_social }}</dd>
+            <dt class="col-sm-5">Data</dt><dd class="col-sm-7">{{ romaneio.data|date:"d/m/Y" }}</dd>
+            {% if romaneio.pedido_venda %}
+            <dt class="col-sm-5">Pedido</dt>
+            <dd class="col-sm-7"><a href="{% url 'vendas:pedido_detail' romaneio.pedido_venda.pk %}">{{ romaneio.pedido_venda.numero }}</a></dd>
+            {% endif %}
+            {% if romaneio.invoice_exportacao %}
+            <dt class="col-sm-5">Invoice</dt>
+            <dd class="col-sm-7"><a href="{% url 'faturamento:invoice_detail' romaneio.invoice_exportacao.pk %}">{{ romaneio.invoice_exportacao.numero|default:"Rascunho" }}</a></dd>
+            {% endif %}
+            {% if romaneio.nota_fiscal %}
+            <dt class="col-sm-5">Nota Fiscal</dt>
+            <dd class="col-sm-7"><a href="{% url 'faturamento:nota_fiscal_detail' romaneio.nota_fiscal.pk %}">NF {{ romaneio.nota_fiscal.numero|default:"Rascunho" }}</a></dd>
+            {% endif %}
+            {% if romaneio.observacoes %}<dt class="col-sm-5">Obs.</dt><dd class="col-sm-7">{{ romaneio.observacoes }}</dd>{% endif %}
+          </dl>
+        </div>
+      </div>
+    </div>
+
+    <!-- Totais -->
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header fw-semibold">Totais</div>
+        <div class="card-body">
+          <dl class="row mb-0 small">
+            <dt class="col-sm-6">Pallets</dt><dd class="col-sm-6 fw-bold">{{ romaneio.total_pallets }}</dd>
+            <dt class="col-sm-6">Caixas</dt><dd class="col-sm-6 fw-bold">{{ romaneio.total_caixas }}</dd>
+            <dt class="col-sm-6">Peso Líq.</dt><dd class="col-sm-6 fw-bold">{{ romaneio.peso_liquido_total|floatformat:3 }} kg</dd>
+            <dt class="col-sm-6">Peso Bruto</dt><dd class="col-sm-6 fw-bold">{{ romaneio.peso_bruto_total|floatformat:3 }} kg</dd>
+            <dt class="col-sm-6">Conferidos</dt>
+            <dd class="col-sm-6">
+              <span class="badge {% if romaneio.pallets_conferidos == romaneio.total_pallets and romaneio.total_pallets > 0 %}bg-success{% else %}bg-secondary{% endif %}">
+                {{ romaneio.pallets_conferidos }} / {{ romaneio.total_pallets }}
+              </span>
+            </dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+
+    <!-- Exportação (se aplicável) -->
+    {% if romaneio.booking %}
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header fw-semibold">Exportação</div>
+        <div class="card-body">
+          <dl class="row mb-0 small">
+            <dt class="col-sm-5">Booking</dt><dd class="col-sm-7">{{ romaneio.booking.numero }}</dd>
+            {% if romaneio.container %}<dt class="col-sm-5">Container</dt><dd class="col-sm-7">{{ romaneio.container.numero_container }}</dd>{% endif %}
+            {% if romaneio.booking.armador %}<dt class="col-sm-5">Armador</dt><dd class="col-sm-7">{{ romaneio.booking.armador.nome }}</dd>{% endif %}
+            {% if romaneio.booking.navio %}<dt class="col-sm-5">Navio</dt><dd class="col-sm-7">{{ romaneio.booking.navio.nome }}</dd>{% endif %}
+            {% if romaneio.booking.porto_destino %}<dt class="col-sm-5">Destino</dt><dd class="col-sm-7">{{ romaneio.booking.porto_destino.nome }}</dd>{% endif %}
+          </dl>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Seleção de Pallets (apenas rascunho) -->
+  {% if romaneio.status == 'RASCUNHO' %}
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-header fw-semibold d-flex justify-content-between align-items-center">
+      <span><i class="bi bi-plus-circle me-1 text-primary"></i>Adicionar Pallets</span>
+    </div>
+    <div class="card-body">
+      <div class="row g-2 mb-3" id="filtro-pallets">
+        <div class="col-md-4">
+          <input type="text" id="busca-pallet" class="form-control form-control-sm" placeholder="Código do pallet ou tipo embalagem">
+        </div>
+        <div class="col-md-3">
+          <select id="filtro-armazem" class="form-select form-select-sm">
+            <option value="">Todos armazéns</option>
+            {% for a in armazens %}
+            <option value="{{ a.pk }}">{{ a.nome }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2">
+          <button class="btn btn-sm btn-outline-secondary w-100" onclick="buscarPallets()">
+            <i class="bi bi-search"></i> Buscar
+          </button>
+        </div>
+      </div>
+      <div id="resultado-pallets" class="table-responsive">
+        <p class="text-muted small">Use a busca acima para encontrar pallets disponíveis.</p>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Itens do Romaneio -->
+  <div class="card border-0 shadow-sm">
+    <div class="card-header fw-semibold"><i class="bi bi-list-ul me-1"></i>Pallets do Romaneio ({{ romaneio.itens.count }})</div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover table-sm mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Código Pallet</th>
+              <th>Tipo Embalagem</th>
+              <th class="text-end">Caixas</th>
+              <th class="text-end">Peso Líq. (kg)</th>
+              <th class="text-end">Peso Bruto (kg)</th>
+              <th>Marks</th>
+              <th>Conferência</th>
+              {% if romaneio.status == 'RASCUNHO' %}<th></th>{% endif %}
+            </tr>
+          </thead>
+          <tbody id="itens-romaneio">
+            {% for item in romaneio.itens.all %}
+            <tr id="item-row-{{ item.pk }}">
+              <td><strong>{{ item.pallet.codigo_pallet }}</strong></td>
+              <td>{{ item.pallet.tipo_embalagem.nome|default:"Misto" }}{% if item.pallet.is_misto %} <span class="badge bg-warning text-dark ms-1" style="font-size:.7em">MISTO</span>{% endif %}</td>
+              <td class="text-end">{{ item.quantidade_caixas }}</td>
+              <td class="text-end">{{ item.peso_liquido_kg|floatformat:3 }}</td>
+              <td class="text-end">{{ item.peso_bruto_kg|floatformat:3 }}</td>
+              <td>{{ item.marks_numbers|default:"—" }}</td>
+              <td>
+                {% if item.status_conferencia == 'PENDENTE' %}<span class="badge bg-secondary">Pendente</span>
+                {% elif item.status_conferencia == 'CONFERIDO' %}<span class="badge bg-success">Conferido</span>
+                {% else %}<span class="badge bg-danger">Divergente</span>{% endif %}
+              </td>
+              {% if romaneio.status == 'RASCUNHO' %}
+              <td>
+                <form method="post" action="{% url 'embalagem:romaneio_remover_pallet' romaneio.pk item.pk %}" class="d-inline">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-sm btn-outline-danger"
+                    onclick="return confirm('Remover este pallet do romaneio?')">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </form>
+              </td>
+              {% endif %}
+            </tr>
+            {% empty %}
+            <tr><td colspan="8" class="text-center text-muted py-4">Nenhum pallet adicionado.</td></tr>
+            {% endfor %}
+          </tbody>
+          {% if romaneio.itens.count > 0 %}
+          <tfoot class="table-light fw-bold">
+            <tr>
+              <td colspan="2">Total</td>
+              <td class="text-end">{{ romaneio.total_caixas }}</td>
+              <td class="text-end">{{ romaneio.peso_liquido_total|floatformat:3 }}</td>
+              <td class="text-end">{{ romaneio.peso_bruto_total|floatformat:3 }}</td>
+              <td colspan="{% if romaneio.status == 'RASCUNHO' %}3{% else %}2{% endif %}"></td>
+            </tr>
+          </tfoot>
+          {% endif %}
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if romaneio.status == 'RASCUNHO' %}
+<script>
+const ROMANEIO_PK = {{ romaneio.pk }};
+const AJAX_BUSCAR_URL = "{% url 'embalagem:ajax_pallets_disponiveis' %}";
+const AJAX_ADD_URL = "{% url 'embalagem:ajax_adicionar_pallet' %}";
+const CSRF = "{{ csrf_token }}";
+
+function buscarPallets() {
+  const q = document.getElementById('busca-pallet').value;
+  const armazem = document.getElementById('filtro-armazem').value;
+  const params = new URLSearchParams({ q, armazem, romaneio_pk: ROMANEIO_PK });
+  fetch(AJAX_BUSCAR_URL + '?' + params)
+    .then(r => r.json())
+    .then(data => renderizarPallets(data.pallets || []));
+}
+
+function renderizarPallets(pallets) {
+  const div = document.getElementById('resultado-pallets');
+  if (!pallets.length) {
+    div.innerHTML = '<p class="text-muted small">Nenhum pallet disponível com esses filtros.</p>';
+    return;
+  }
+  let html = `<table class="table table-sm table-bordered mb-0">
+    <thead class="table-success"><tr>
+      <th>Código</th><th>Tipo Embalagem</th><th class="text-end">Cx</th>
+      <th class="text-end">Kg Líq.</th><th>Armazém</th><th></th>
+    </tr></thead><tbody>`;
+  pallets.forEach(p => {
+    html += `<tr>
+      <td><strong>${p.codigo_pallet}</strong></td>
+      <td>${p.tipo_embalagem}</td>
+      <td class="text-end">${p.quantidade_caixas}</td>
+      <td class="text-end">${parseFloat(p.peso_liquido_kg).toFixed(3)}</td>
+      <td>${p.armazem}</td>
+      <td><button class="btn btn-sm btn-success" onclick="adicionarPallet(${p.pk})">
+        <i class="bi bi-plus-circle"></i> Adicionar
+      </button></td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  div.innerHTML = html;
+}
+
+function adicionarPallet(palletPk) {
+  fetch(AJAX_ADD_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+    body: JSON.stringify({ pallet_pk: palletPk, romaneio_pk: ROMANEIO_PK }),
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.ok) {
+      // Adicionar linha na tabela de itens
+      const tbody = document.getElementById('itens-romaneio');
+      const vazio = tbody.querySelector('.text-muted');
+      if (vazio) vazio.parentElement.remove();
+      tbody.insertAdjacentHTML('beforeend', `
+        <tr id="item-row-${data.item_pk}">
+          <td><strong>${data.codigo_pallet}</strong></td>
+          <td>${data.tipo_embalagem}</td>
+          <td class="text-end">${data.quantidade_caixas}</td>
+          <td class="text-end">${parseFloat(data.peso_liquido_kg).toFixed(3)}</td>
+          <td class="text-end">${parseFloat(data.peso_bruto_kg).toFixed(3)}</td>
+          <td>—</td>
+          <td><span class="badge bg-secondary">Pendente</span></td>
+          <td>
+            <form method="post" action="/embalagem/romaneios/${ROMANEIO_PK}/remover-pallet/${data.item_pk}/" class="d-inline">
+              <input type="hidden" name="csrfmiddlewaretoken" value="${CSRF}">
+              <button type="submit" class="btn btn-sm btn-outline-danger"
+                onclick="return confirm('Remover este pallet do romaneio?')">
+                <i class="bi bi-trash"></i>
+              </button>
+            </form>
+          </td>
+        </tr>`);
+      buscarPallets();
+    } else {
+      alert(data.erro || 'Erro ao adicionar pallet.');
+    }
+  });
+}
+
+// Busca inicial ao carregar
+document.getElementById('busca-pallet').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') { e.preventDefault(); buscarPallets(); }
+});
+</script>
+{% endif %}
+{% endblock %}

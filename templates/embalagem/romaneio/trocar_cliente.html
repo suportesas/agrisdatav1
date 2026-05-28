@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% block title %}Trocar Cliente — {{ romaneio.numero }}{% endblock %}
+{% block page_title %}Romaneios de Venda{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width:600px">
+
+  <div class="d-flex align-items-center mb-4 gap-3">
+    <a href="{% url 'embalagem:romaneio_detail' romaneio.pk %}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    <div>
+      <h4 class="mb-0">Trocar Cliente / Booking</h4>
+      <small class="text-muted">{{ romaneio.numero }} — pallets reservados não serão alterados</small>
+    </div>
+  </div>
+
+  <div class="alert alert-info d-flex gap-2 align-items-start">
+    <i class="bi bi-info-circle-fill mt-1"></i>
+    <div>
+      Apenas os campos <strong>Cliente</strong>, <strong>Booking</strong> e <strong>Container</strong> serão alterados.
+      Os pallets reservados continuam vinculados ao romaneio sem mudança.
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-body">
+      <form method="post">
+        {% csrf_token %}
+        {% for field in form %}
+        <div class="mb-3">
+          <label class="form-label fw-semibold">{{ field.label }}</label>
+          {{ field }}
+          {% if field.errors %}
+          <div class="text-danger small mt-1">{{ field.errors.0 }}</div>
+          {% endif %}
+        </div>
+        {% endfor %}
+        <div class="d-flex gap-2 mt-4">
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-check-lg me-1"></i>Salvar Alterações
+          </button>
+          <a href="{% url 'embalagem:romaneio_detail' romaneio.pk %}" class="btn btn-outline-secondary">Cancelar</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

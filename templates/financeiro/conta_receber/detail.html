@@ -1,0 +1,160 @@
+{% extends 'base.html' %}
+{% block title %}{{ cr.numero }}{% endblock %}
+{% block page_title %}Conta a Receber{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+  <div class="d-flex justify-content-between align-items-start mb-4">
+    <div class="d-flex align-items-center">
+      <a href="{% url 'financeiro:conta_receber_list' %}" class="btn btn-outline-secondary me-3"><i class="bi bi-arrow-left"></i></a>
+      <div>
+        <h3 class="mb-0">{{ cr.numero }}</h3>
+        <small class="text-muted">{{ cr.cliente.razao_social }} — {{ cr.get_origem_display }}</small>
+      </div>
+    </div>
+    <div class="d-flex gap-2">
+      {% if cr.status != 'CANCELADA' and cr.status != 'PAGA' %}
+      <form method="post" action="{% url 'financeiro:conta_receber_cancelar' cr.pk %}" class="d-inline">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-outline-danger" onclick="return confirm('Cancelar esta conta?')">
+          <i class="bi bi-x-circle me-1"></i>Cancelar
+        </button>
+      </form>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="mb-3">
+    {% if cr.status == 'ABERTA' %}<span class="badge bg-primary fs-6">Aberta</span>
+    {% elif cr.status == 'PARCIALMENTE_PAGA' %}<span class="badge bg-warning text-dark fs-6">Parcialmente Paga</span>
+    {% elif cr.status == 'PAGA' %}<span class="badge bg-success fs-6">Paga</span>
+    {% elif cr.status == 'VENCIDA' %}<span class="badge bg-danger fs-6">Vencida</span>
+    {% else %}<span class="badge bg-secondary fs-6">Cancelada</span>{% endif %}
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-5">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header fw-semibold">Dados da Conta</div>
+        <div class="card-body">
+          <dl class="row mb-0">
+            <dt class="col-sm-5">Número</dt><dd class="col-sm-7">{{ cr.numero }}</dd>
+            <dt class="col-sm-5">Cliente</dt><dd class="col-sm-7">{{ cr.cliente.razao_social }}</dd>
+            <dt class="col-sm-5">Emissão</dt><dd class="col-sm-7">{{ cr.data_emissao|date:"d/m/Y" }}</dd>
+            <dt class="col-sm-5">Vencimento</dt><dd class="col-sm-7">{{ cr.data_vencimento|date:"d/m/Y" }}</dd>
+            <dt class="col-sm-5">Descrição</dt><dd class="col-sm-7">{{ cr.descricao }}</dd>
+            {% if cr.observacoes %}<dt class="col-sm-5">Obs.</dt><dd class="col-sm-7">{{ cr.observacoes }}</dd>{% endif %}
+            {% if cr.pedido_venda %}<dt class="col-sm-5">Pedido Venda</dt><dd class="col-sm-7"><a href="{% url 'vendas:pedido_detail' cr.pedido_venda.pk %}">{{ cr.pedido_venda.numero }}</a></dd>{% endif %}
+            {% if cr.nota_fiscal %}<dt class="col-sm-5">NF-e</dt><dd class="col-sm-7"><a href="{% url 'faturamento:nota_fiscal_detail' cr.nota_fiscal.pk %}">NF {{ cr.nota_fiscal.numero }}</a></dd>{% endif %}
+            {% if cr.invoice %}<dt class="col-sm-5">Invoice</dt><dd class="col-sm-7"><a href="{% url 'faturamento:invoice_detail' cr.invoice.pk %}">{{ cr.invoice.numero }}</a></dd>{% endif %}
+          </dl>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header fw-semibold">Valores</div>
+        <div class="card-body">
+          <dl class="row mb-0">
+            <dt class="col-sm-6">Moeda</dt><dd class="col-sm-6"><strong>{{ cr.moeda }}</strong></dd>
+            <dt class="col-sm-6">Valor {{ cr.moeda }}</dt><dd class="col-sm-6 fw-bold">{{ cr.valor_moeda|floatformat:2 }}</dd>
+            {% if cr.taxa_cambio %}<dt class="col-sm-6">Câmbio Emissão</dt><dd class="col-sm-6">{{ cr.taxa_cambio|floatformat:4 }}</dd>{% endif %}
+            <dt class="col-sm-6">Valor BRL</dt><dd class="col-sm-6 fw-bold">R$ {{ cr.valor_brl|floatformat:2 }}</dd>
+            <dt class="col-sm-6">Recebido BRL</dt><dd class="col-sm-6 text-success fw-bold">R$ {{ cr.total_recebido_brl|floatformat:2 }}</dd>
+            <dt class="col-sm-6">Saldo BRL</dt>
+            <dd class="col-sm-6 fw-bold {% if cr.saldo_brl > 0 %}text-danger{% else %}text-success{% endif %}">R$ {{ cr.saldo_brl|floatformat:2 }}</dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Parcelas -->
+  <div class="card border-0 shadow-sm mb-3">
+    <div class="card-header fw-semibold">Parcelas</div>
+    <div class="card-body p-0">
+      <table class="table table-sm mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Nº</th>
+            <th>Vencimento</th>
+            <th class="text-end">Valor {{ cr.moeda }}</th>
+            <th class="text-end">Valor BRL</th>
+            <th>Status</th>
+            <th>Pagamento</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for parc in parcelas %}
+          <tr>
+            <td>{{ parc.numero_parcela }}</td>
+            <td>{{ parc.data_vencimento|date:"d/m/Y" }}</td>
+            <td class="text-end">{{ parc.valor_parcela_moeda|floatformat:2 }}</td>
+            <td class="text-end">R$ {{ parc.valor_parcela_brl|floatformat:2 }}</td>
+            <td>
+              {% if parc.status == 'ABERTA' %}<span class="badge bg-primary">Aberta</span>
+              {% elif parc.status == 'PAGA' %}<span class="badge bg-success">Paga</span>
+              {% elif parc.status == 'VENCIDA' %}<span class="badge bg-danger">Vencida</span>
+              {% else %}<span class="badge bg-secondary">Cancelada</span>{% endif %}
+            </td>
+            <td>{{ parc.data_pagamento|date:"d/m/Y"|default:"—" }}</td>
+            <td>
+              {% if parc.status == 'ABERTA' or parc.status == 'VENCIDA' %}
+              <a href="{% url 'financeiro:parcela_receber_registrar' parc.pk %}" class="btn btn-sm btn-success">
+                <i class="bi bi-cash-coin me-1"></i>Registrar
+              </a>
+              {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="7" class="text-center text-muted py-3">Sem parcelas.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Recebimentos -->
+  {% if recebimentos %}
+  <div class="card border-0 shadow-sm">
+    <div class="card-header fw-semibold">Histórico de Recebimentos</div>
+    <div class="card-body p-0">
+      <table class="table table-sm mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Data</th>
+            <th>Parcela</th>
+            <th class="text-end">Valor {{ cr.moeda }}</th>
+            <th class="text-end">Valor BRL</th>
+            <th>Câmbio Real.</th>
+            <th class="text-end">Var. Cambial BRL</th>
+            <th>Forma</th>
+            <th>Documento</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for rec in recebimentos %}
+          <tr>
+            <td>{{ rec.data_pagamento|date:"d/m/Y" }}</td>
+            <td>Parcela {{ rec.parcela.numero_parcela }}</td>
+            <td class="text-end">{{ rec.valor_recebido_moeda|floatformat:2 }}</td>
+            <td class="text-end">R$ {{ rec.valor_recebido_brl|floatformat:2 }}</td>
+            <td>{{ rec.taxa_cambio_realizada|floatformat:4|default:"—" }}</td>
+            <td class="text-end {% if rec.variacao_cambial_brl >= 0 %}text-success{% else %}text-danger{% endif %}">
+              R$ {{ rec.variacao_cambial_brl|floatformat:2 }}
+            </td>
+            <td>{{ rec.get_forma_pagamento_display }}</td>
+            <td>{{ rec.numero_documento|default:"—" }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

@@ -1568,6 +1568,7 @@ class EnderecoCliente(models.Model):
     bairro = models.CharField('Bairro', max_length=100)
     cidade = models.CharField('Cidade', max_length=100)
     uf = models.CharField('UF', max_length=2)
+    codigo_municipio = models.CharField('Código IBGE', max_length=7, blank=True, null=True, help_text='Código IBGE do município — obrigatório para NF-e')
     pais = models.CharField('País', max_length=100, default='Brasil')
     recebedor_notify = models.CharField('Recebedor Notify', max_length=150, blank=True)
     padrao = models.BooleanField('Endereço Padrão', default=False)
@@ -6106,6 +6107,12 @@ class Safra(models.Model):
     ]
 
     nome = models.CharField('Nome da Safra', max_length=200, blank=True)
+    codigo = models.CharField(
+        'Código da Safra',
+        max_length=10,
+        blank=True,
+        help_text='Código usado no início do código de barras dos pallets. Ex: 202526 (safra 2025/2026)',
+    )
     fazenda = models.ForeignKey(Fazenda, on_delete=models.CASCADE, related_name='safras')
     cultura = models.ForeignKey(Cultura, on_delete=models.PROTECT, related_name='safras')
     ano = models.IntegerField('Ano', null=True, blank=True)

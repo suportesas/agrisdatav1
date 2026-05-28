@@ -56,7 +56,17 @@
       "Bash(find /c:/erp_agricola_novo/exportacao -name \"urls.py\" -type f)",
       "Read(//c:/erp_agricola_novo/**)",
       "PowerShell(venv\\\\Scripts\\\\python.exe manage.py makemigrations exportacao --name add_booking_shipping_fields 2>&1)",
-      "Bash(Get-ChildItem -Path \"c:\\\\erp_agricola_novo\" -Directory)"
+      "Bash(Get-ChildItem -Path \"c:\\\\erp_agricola_novo\" -Directory)",
+      "Bash(find c:\\\\\\\\erp_agricola_novo -type d -iname \"*cadastro*\" -o -type d -iname \"*frota*\" -o -type d -iname \"*transporte*\")",
+      "PowerShell(cd c:\\\\erp_agricola_novo; $env:DJANGO_SETTINGS_MODULE=\"core.settings\"; venv\\\\Scripts\\\\python.exe manage.py check exportacao 2>&1 | Select-String -Pattern \"error|Error|issue|System check\")",
+      "Bash(.\\\\.venv\\\\Scripts\\\\python.exe manage.py check)",
+      "PowerShell(.\\\\.venv\\\\Scripts\\\\python.exe manage.py check 2>&1)",
+      "PowerShell(c:\\\\erp_agricola_novo\\\\venv\\\\Scripts\\\\python.exe c:\\\\erp_agricola_novo\\\\manage.py check 2>&1)",
+      "Bash(Find c:\\\\erp_agricola_novo -type d -name migrations)",
+      "Bash(python manage.py makemigrations faturamento)",
+      "Bash(dir *.bat)",
+      "Bash(dir venv *)",
+      "Bash(dir .venv)"
     ]
   }
 }

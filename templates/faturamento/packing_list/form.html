@@ -1,0 +1,147 @@
+{% extends 'base.html' %}
+{% block title %}{{ title }}{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="d-flex align-items-center mb-4">
+    <a href="{% url 'faturamento:packing_list_list' %}" class="btn btn-outline-secondary me-3">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    <h3 class="mb-0">{{ title }}</h3>
+  </div>
+
+  <form method="post">
+    {% csrf_token %}
+    {{ formset.management_form }}
+
+    {% if form.non_field_errors %}
+    <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+    {% endif %}
+
+    <div class="row g-3">
+      <div class="col-md-6">
+        <div class="card border-0 shadow-sm">
+          <div class="card-header fw-semibold">Dados do Packing List</div>
+          <div class="card-body">
+            <div class="mb-3">
+              <label class="form-label">Invoice *</label>
+              {{ form.invoice }}
+              {% if form.invoice.errors %}<div class="text-danger small">{{ form.invoice.errors }}</div>{% endif %}
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Data de Emissão *</label>
+              {{ form.data_emissao }}
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Observações</label>
+              {{ form.observacoes }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Itens -->
+      <div class="col-12">
+        <div class="card border-0 shadow-sm">
+          <div class="card-header fw-semibold d-flex justify-content-between align-items-center">
+            Itens / Containers
+            <button type="button" class="btn btn-sm btn-outline-primary" id="add-item">
+              <i class="bi bi-plus"></i> Adicionar Container
+            </button>
+          </div>
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table table-bordered table-sm mb-0" id="items-table">
+                <thead class="table-light">
+                  <tr>
+                    <th>Container (Ref.)</th>
+                    <th>Nº Container</th>
+                    <th>Tipo</th>
+                    <th>Lacre Arm.</th>
+                    <th>Lacre Fiscal</th>
+                    <th>Descrição Produto *</th>
+                    <th style="width:90px">Qtd Caixas</th>
+                    <th style="width:80px">Pallets</th>
+                    <th style="width:100px">Peso Bruto</th>
+                    <th style="width:100px">Peso Líq.</th>
+                    <th style="width:80px">Volume m³</th>
+                    <th>Marks</th>
+                    <th style="width:60px">Ordem</th>
+                    <th style="width:40px"></th>
+                  </tr>
+                </thead>
+                <tbody id="items-body">
+                  {% for item_form in formset %}
+                  <tr class="item-row">
+                    <td>{{ item_form.id }}{{ item_form.DELETE }}{{ item_form.container }}</td>
+                    <td>{{ item_form.numero_container }}</td>
+                    <td>{{ item_form.tipo_container }}</td>
+                    <td>{{ item_form.lacre_armador }}</td>
+                    <td>{{ item_form.lacre_fiscal }}</td>
+                    <td>{{ item_form.descricao_produto }}</td>
+                    <td>{{ item_form.quantidade_caixas }}</td>
+                    <td>{{ item_form.quantidade_pallets }}</td>
+                    <td>{{ item_form.peso_bruto_kg }}</td>
+                    <td>{{ item_form.peso_liquido_kg }}</td>
+                    <td>{{ item_form.volume_m3 }}</td>
+                    <td>{{ item_form.marks_numbers }}</td>
+                    <td>{{ item_form.ordem }}</td>
+                    <td>
+                      <button type="button" class="btn btn-sm btn-outline-danger remove-item">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="d-flex gap-2 mt-4">
+      <button type="submit" class="btn btn-primary">
+        <i class="bi bi-check-circle me-1"></i>Salvar
+      </button>
+      <a href="{% url 'faturamento:packing_list_list' %}" class="btn btn-outline-secondary">Cancelar</a>
+    </div>
+  </form>
+</div>
+
+<script>
+(function() {
+  const TOTAL_FORMS = document.getElementById('id_itens-TOTAL_FORMS');
+  const body = document.getElementById('items-body');
+
+  document.getElementById('add-item').addEventListener('click', function() {
+    const idx = parseInt(TOTAL_FORMS.value);
+    const template = body.querySelector('.item-row');
+    if (!template) return;
+    const clone = template.cloneNode(true);
+    clone.querySelectorAll('input, select, textarea').forEach(el => {
+      el.name = el.name.replace(/-\d+-/, `-${idx}-`);
+      el.id = el.id ? el.id.replace(/-\d+-/, `-${idx}-`) : '';
+      if (el.type !== 'checkbox') el.value = '';
+      if (el.type === 'checkbox') el.checked = false;
+    });
+    body.appendChild(clone);
+    TOTAL_FORMS.value = idx + 1;
+    attachRemove(clone);
+  });
+
+  function attachRemove(row) {
+    const btn = row.querySelector('.remove-item');
+    if (btn) btn.addEventListener('click', function() {
+      const chk = row.querySelector('input[type=checkbox][name$="-DELETE"]');
+      if (chk) { chk.checked = true; row.style.display = 'none'; }
+      else row.remove();
+    });
+  }
+
+  body.querySelectorAll('.item-row').forEach(r => attachRemove(r));
+})();
+</script>
+{% endblock %}

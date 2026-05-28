@@ -54,9 +54,13 @@
                 {% endif %}
               {% else %}—{% endif %}
             </td>
-            <td>
-              <a class="btn btn-sm btn-outline-primary" href="{% url 'exportacao:booking_detail' booking.pk %}">Ver</a>
-              <a class="btn btn-sm btn-outline-secondary" href="{% url 'exportacao:booking_update' booking.pk %}">Editar</a>
+            <td class="text-nowrap">
+              <a class="btn btn-sm btn-outline-primary" href="{% url 'exportacao:booking_detail' booking.pk %}" title="Ver detalhes">
+                <i class="bi bi-eye"></i>
+              </a>
+              <a class="btn btn-sm btn-outline-secondary ms-1" href="{% url 'exportacao:booking_update' booking.pk %}" title="Editar">
+                <i class="bi bi-pencil"></i>
+              </a>
             </td>
           </tr>
         {% empty %}

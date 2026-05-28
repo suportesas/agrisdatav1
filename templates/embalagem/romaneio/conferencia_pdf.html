@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<style>
+  @page { size: A4; margin: 15mm 12mm; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, Helvetica, sans-serif; font-size: 9pt; color: #000; }
+
+  .header { border-bottom: 2pt solid #000; padding-bottom: 4mm; margin-bottom: 4mm; }
+  .header-top { display: flex; justify-content: space-between; align-items: flex-start; }
+  .empresa-nome { font-size: 13pt; font-weight: bold; text-transform: uppercase; }
+  .doc-titulo { font-size: 11pt; font-weight: bold; text-align: right; }
+  .doc-num { font-size: 9pt; color: #555; text-align: right; }
+
+  .info-grid { display: flex; gap: 5mm; margin-bottom: 4mm; }
+  .info-box { border: 0.5pt solid #aaa; padding: 2mm 3mm; flex: 1; }
+  .info-label { font-size: 7pt; color: #666; text-transform: uppercase; letter-spacing: 0.3px; }
+  .info-value { font-size: 9pt; font-weight: bold; }
+
+  table.pallets { width: 100%; border-collapse: collapse; margin-bottom: 4mm; }
+  table.pallets th { background: #222; color: #fff; font-size: 7.5pt; padding: 2mm 1.5mm; text-align: left; }
+  table.pallets th.r { text-align: right; }
+  table.pallets td { padding: 1.5mm 1.5mm; font-size: 8pt; border-bottom: 0.3pt solid #ddd; vertical-align: top; }
+  table.pallets td.r { text-align: right; }
+  table.pallets tr:nth-child(even) td { background: #f7f7f7; }
+  table.pallets tfoot td { font-weight: bold; border-top: 1pt solid #000; background: #eee; }
+
+  .status-conferido { color: #1a7c3a; font-weight: bold; }
+  .status-pendente  { color: #777; }
+  .status-divergente{ color: #c0392b; font-weight: bold; }
+
+  .assinaturas { margin-top: 12mm; display: flex; gap: 10mm; }
+  .ass-box { flex: 1; border-top: 0.8pt solid #000; padding-top: 2mm; font-size: 8pt; text-align: center; color: #555; }
+
+  .footer { font-size: 6.5pt; color: #888; text-align: center; border-top: 0.3pt solid #ccc; padding-top: 2mm; margin-top: 4mm; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-top">
+    <div>
+      <div class="empresa-nome">{{ empresa.nome }}</div>
+      {% if empresa.cnpj %}<div style="font-size:8pt;color:#555">CNPJ: {{ empresa.cnpj }}</div>{% endif %}
+    </div>
+    <div>
+      <div class="doc-titulo">RELATÓRIO DE CARREGAMENTO</div>
+      <div class="doc-num">{{ romaneio.numero }} · {{ hoje|date:"d/m/Y H\hi" }}</div>
+    </div>
+  </div>
+</div>
+
+<div class="info-grid">
+  <div class="info-box">
+    <div class="info-label">Cliente / Destinatário</div>
+    <div class="info-value">{{ romaneio.cliente.razao_social }}</div>
+  </div>
+  <div class="info-box">
+    <div class="info-label">Tipo</div>
+    <div class="info-value">{{ romaneio.get_tipo_display }}</div>
+  </div>
+  <div class="info-box">
+    <div class="info-label">Data</div>
+    <div class="info-value">{{ romaneio.data|date:"d/m/Y" }}</div>
+  </div>
+  <div class="info-box">
+    <div class="info-label">Status</div>
+    <div class="info-value">{{ romaneio.get_status_display }}</div>
+  </div>
+</div>
+
+{% if romaneio.booking %}
+<div class="info-grid">
+  <div class="info-box">
+    <div class="info-label">Booking</div>
+    <div class="info-value">{{ romaneio.booking.numero }}</div>
+  </div>
+  {% if romaneio.container %}
+  <div class="info-box">
+    <div class="info-label">Container</div>
+    <div class="info-value">{{ romaneio.container.numero_container }}</div>
+  </div>
+  {% endif %}
+  {% if romaneio.booking.navio %}
+  <div class="info-box">
+    <div class="info-label">Navio</div>
+    <div class="info-value">{{ romaneio.booking.navio.nome }}</div>
+  </div>
+  {% endif %}
+  {% if romaneio.booking.porto_destino %}
+  <div class="info-box">
+    <div class="info-label">Porto Destino</div>
+    <div class="info-value">{{ romaneio.booking.porto_destino.nome }}</div>
+  </div>
+  {% endif %}
+</div>
+{% endif %}
+
+<table class="pallets">
+  <thead>
+    <tr>
+      <th style="width:4%">#</th>
+      <th style="width:22%">Código Pallet</th>
+      <th>Produto / Tipo</th>
+      <th class="r" style="width:8%">Caixas</th>
+      <th class="r" style="width:11%">Peso Líq. (kg)</th>
+      <th class="r" style="width:11%">Peso Bruto (kg)</th>
+      <th style="width:13%">Conferência</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for item in itens %}
+    <tr>
+      <td>{{ forloop.counter }}</td>
+      <td><strong>{{ item.pallet.codigo_pallet }}</strong>{% if item.pallet.is_misto %} <em style="font-size:7pt;color:#888">(misto)</em>{% endif %}</td>
+      <td>
+        {% if item.pallet.is_misto %}
+          {% for comp in item.pallet.composicao.all %}
+          <div style="font-size:7.5pt">{{ comp.quantidade_caixas }}cx {{ comp.tipo_embalagem.nome }}</div>
+          {% endfor %}
+        {% else %}
+          {{ item.pallet.tipo_embalagem.nome }}
+        {% endif %}
+      </td>
+      <td class="r">{{ item.quantidade_caixas }}</td>
+      <td class="r">{{ item.peso_liquido_kg|floatformat:3 }}</td>
+      <td class="r">{{ item.peso_bruto_kg|floatformat:3 }}</td>
+      <td>
+        {% if item.status_conferencia == 'CONFERIDO' %}
+          <span class="status-conferido">✔ Conferido</span>
+          {% if item.data_conferencia %}<div style="font-size:6.5pt;color:#666">{{ item.data_conferencia|date:"d/m H\hi" }}</div>{% endif %}
+        {% elif item.status_conferencia == 'DIVERGENTE' %}
+          <span class="status-divergente">✘ Divergente</span>
+        {% else %}
+          <span class="status-pendente">— Pendente</span>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+  <tfoot>
+    <tr>
+      <td colspan="3">TOTAL</td>
+      <td class="r">{{ romaneio.total_caixas }}</td>
+      <td class="r">{{ romaneio.peso_liquido_total|floatformat:3 }}</td>
+      <td class="r">{{ romaneio.peso_bruto_total|floatformat:3 }}</td>
+      <td>{{ romaneio.pallets_conferidos }}/{{ romaneio.total_pallets }} conf.</td>
+    </tr>
+  </tfoot>
+</table>
+
+{% if romaneio.observacoes %}
+<div style="border:0.5pt solid #aaa;padding:2mm 3mm;font-size:8pt;margin-bottom:4mm">
+  <strong>Observações:</strong> {{ romaneio.observacoes }}
+</div>
+{% endif %}
+
+<div class="assinaturas">
+  <div class="ass-box">Responsável pelo Carregamento</div>
+  <div class="ass-box">Motorista / Transportadora</div>
+  <div class="ass-box">Conferente / Fiscal</div>
+</div>
+
+<div class="footer">
+  Documento gerado em {{ hoje|date:"d/m/Y \à\s H:i" }} · {{ romaneio.numero }} · {{ empresa.nome }}
+</div>
+
+</body>
+</html>

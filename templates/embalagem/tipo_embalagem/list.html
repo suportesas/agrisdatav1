@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+{% block title %}Tipos de Embalagem{% endblock %}
+{% block page_title %}Tipos de Embalagem{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="mb-0">Tipos de Embalagem</h3>
+    <a href="{% url 'embalagem:tipo_embalagem_create' %}" class="btn btn-primary">
+      <i class="bi bi-plus-circle me-1"></i>Novo Tipo
+    </a>
+  </div>
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Nome</th>
+              <th>Cultura / Produto</th>
+              <th>Variedade</th>
+              <th>Marca</th>
+              <th>Calibre</th>
+              <th class="text-end">Kg/Cx (líq.)</th>
+              <th class="text-end">Cx/Pallet</th>
+              <th class="text-end">Kg líq./Pallet</th>
+              <th>Ativo</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for t in tipos %}
+            <tr>
+              <td><strong>{{ t.nome }}</strong></td>
+              <td>{{ t.cultura|default:t.produto|default:"—" }}</td>
+              <td>{{ t.variedade|default:"—" }}</td>
+              <td>{{ t.marca|default:"—" }}</td>
+              <td>{{ t.tipo_calibre|default:"—" }}</td>
+              <td class="text-end">{{ t.peso_liquido_cx|floatformat:3 }}</td>
+              <td class="text-end">{{ t.caixas_por_pallet }}</td>
+              <td class="text-end">{{ t.peso_liquido_pallet|floatformat:3 }}</td>
+              <td>
+                {% if t.ativo %}<span class="badge bg-success">Ativo</span>
+                {% else %}<span class="badge bg-secondary">Inativo</span>{% endif %}
+              </td>
+              <td>
+                <a href="{% url 'embalagem:tipo_embalagem_update' t.pk %}" class="btn btn-sm btn-outline-secondary">
+                  <i class="bi bi-pencil"></i>
+                </a>
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="10" class="text-center text-muted py-4">Nenhum tipo de embalagem cadastrado.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,274 @@
+{% extends 'base.html' %}
+{% block title %}Embalagem{% endblock %}
+{% block page_title %}Embalagem{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+  <!-- Título -->
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <div>
+      <h3 class="mb-0">Módulo de Embalagem</h3>
+      <p class="text-muted mb-0 small">Siga as etapas abaixo — do packing house à expedição.</p>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════
+       FLUXO EM ETAPAS
+  ══════════════════════════════════════════════ -->
+  <div class="row g-0 align-items-stretch mb-4 mt-3" id="fluxo-embalagem">
+
+    <!-- ── Etapa 1 ── -->
+    <div class="col-12 col-md">
+      <div class="card border-0 shadow-sm h-100 {% if fluxo.tem_tipo %}border-start border-4 border-success{% else %}border-start border-4 border-warning{% endif %}">
+        <div class="card-body p-3">
+          <div class="d-flex align-items-center gap-2 mb-2">
+            <span class="badge rounded-pill {% if fluxo.tem_tipo %}bg-success{% else %}bg-warning text-dark{% endif %} fs-6 px-3">1</span>
+            <span class="fw-bold">Configurar</span>
+            {% if not fluxo.tem_tipo %}
+            <span class="badge bg-warning text-dark ms-auto">Pendente</span>
+            {% else %}
+            <span class="badge bg-success ms-auto"><i class="bi bi-check"></i> OK</span>
+            {% endif %}
+          </div>
+          <p class="small text-muted mb-2">
+            Cadastre o <strong>Tipo de Embalagem</strong>: define o padrão de caixa, peso, marca, calibre e quantas caixas cabem num pallet.
+          </p>
+          <a href="{% url 'embalagem:tipo_embalagem_list' %}" class="btn btn-sm {% if not fluxo.tem_tipo %}btn-warning{% else %}btn-outline-success{% endif %} w-100">
+            {% if not fluxo.tem_tipo %}
+            <i class="bi bi-plus-circle me-1"></i>Criar Tipo de Embalagem
+            {% else %}
+            <i class="bi bi-gear me-1"></i>Gerenciar Tipos
+            {% endif %}
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-auto d-none d-md-flex align-items-center px-1">
+      <i class="bi bi-chevron-right text-muted fs-4"></i>
+    </div>
+
+    <!-- ── Etapa 2 ── -->
+    <div class="col-12 col-md">
+      <div class="card border-0 shadow-sm h-100 border-start border-4 {% if fluxo.ordens_abertas > 0 %}border-primary{% else %}border-secondary{% endif %}">
+        <div class="card-body p-3">
+          <div class="d-flex align-items-center gap-2 mb-2">
+            <span class="badge rounded-pill {% if fluxo.ordens_abertas > 0 %}bg-primary{% else %}bg-secondary{% endif %} fs-6 px-3">2</span>
+            <span class="fw-bold">Embalar</span>
+            {% if fluxo.ordens_abertas > 0 %}
+            <span class="badge bg-primary ms-auto">{{ fluxo.ordens_abertas }} em aberto</span>
+            {% endif %}
+          </div>
+          <p class="small text-muted mb-2">
+            Crie uma <strong>Ordem de Embalagem</strong> vinculando um lote de produto a granel ao tipo de embalagem. O sistema calcula e gera os pallets automaticamente.
+          </p>
+          <div class="d-flex gap-1">
+            <a href="{% url 'embalagem:ordem_create' %}" class="btn btn-sm btn-primary flex-grow-1">
+              <i class="bi bi-plus-circle me-1"></i>Nova Ordem
+            </a>
+            <a href="{% url 'embalagem:ordem_list' %}" class="btn btn-sm btn-outline-primary">
+              <i class="bi bi-list-ul"></i>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-auto d-none d-md-flex align-items-center px-1">
+      <i class="bi bi-chevron-right text-muted fs-4"></i>
+    </div>
+
+    <!-- ── Etapa 3 ── -->
+    <div class="col-12 col-md">
+      <div class="card border-0 shadow-sm h-100 border-start border-4 {% if fluxo.pallets_disponiveis > 0 %}border-success{% else %}border-secondary{% endif %}">
+        <div class="card-body p-3">
+          <div class="d-flex align-items-center gap-2 mb-2">
+            <span class="badge rounded-pill {% if fluxo.pallets_disponiveis > 0 %}bg-success{% else %}bg-secondary{% endif %} fs-6 px-3">3</span>
+            <span class="fw-bold">Etiquetas</span>
+            {% if fluxo.pallets_disponiveis > 0 %}
+            <span class="badge bg-success ms-auto">{{ fluxo.pallets_disponiveis }} pallets</span>
+            {% endif %}
+          </div>
+          <p class="small text-muted mb-2">
+            Após gerar os pallets na Ordem, imprima as <strong>etiquetas PDF</strong> (código de barras, pesos, rastreamento). Acesse direto pelo detalhe da Ordem ou pelo botão abaixo.
+          </p>
+          <a href="{% url 'embalagem:pallet_list' %}" class="btn btn-sm btn-outline-success w-100">
+            <i class="bi bi-stack me-1"></i>Ver Pallets / Imprimir Etiquetas
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-auto d-none d-md-flex align-items-center px-1">
+      <i class="bi bi-chevron-right text-muted fs-4"></i>
+    </div>
+
+    <!-- ── Etapa 4 ── -->
+    <div class="col-12 col-md">
+      <div class="card border-0 shadow-sm h-100 border-start border-4 {% if fluxo.romaneios_rascunho > 0 or fluxo.romaneios_confirmados > 0 %}border-info{% else %}border-secondary{% endif %}">
+        <div class="card-body p-3">
+          <div class="d-flex align-items-center gap-2 mb-2">
+            <span class="badge rounded-pill {% if fluxo.romaneios_rascunho > 0 or fluxo.romaneios_confirmados > 0 %}bg-info{% else %}bg-secondary{% endif %} fs-6 px-3">4</span>
+            <span class="fw-bold">Romaneio</span>
+            {% if fluxo.romaneios_rascunho > 0 %}
+            <span class="badge bg-secondary ms-auto">{{ fluxo.romaneios_rascunho }} rascunho</span>
+            {% elif fluxo.romaneios_confirmados > 0 %}
+            <span class="badge bg-info ms-auto">{{ fluxo.romaneios_confirmados }} confirmado</span>
+            {% endif %}
+          </div>
+          <p class="small text-muted mb-2">
+            Crie um <strong>Romaneio de Venda</strong>, selecione os pallets disponíveis para um cliente (exportação ou mercado interno) e confirme para reservá-los.
+          </p>
+          <div class="d-flex gap-1">
+            <a href="{% url 'embalagem:romaneio_create' %}" class="btn btn-sm btn-info text-white flex-grow-1">
+              <i class="bi bi-plus-circle me-1"></i>Novo Romaneio
+            </a>
+            <a href="{% url 'embalagem:romaneio_list' %}" class="btn btn-sm btn-outline-info">
+              <i class="bi bi-list-ul"></i>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-auto d-none d-md-flex align-items-center px-1">
+      <i class="bi bi-chevron-right text-muted fs-4"></i>
+    </div>
+
+    <!-- ── Etapa 5 ── -->
+    <div class="col-12 col-md">
+      <div class="card border-0 shadow-sm h-100 border-start border-4 {% if fluxo.romaneios_confirmados > 0 %}border-warning{% else %}border-secondary{% endif %}">
+        <div class="card-body p-3">
+          <div class="d-flex align-items-center gap-2 mb-2">
+            <span class="badge rounded-pill {% if fluxo.romaneios_confirmados > 0 %}bg-warning text-dark{% else %}bg-secondary{% endif %} fs-6 px-3">5</span>
+            <span class="fw-bold">Conferência</span>
+            {% if fluxo.romaneios_confirmados > 0 %}
+            <span class="badge bg-warning text-dark ms-auto">{{ fluxo.romaneios_confirmados }} aguardando</span>
+            {% endif %}
+          </div>
+          <p class="small text-muted mb-2">
+            Na doca, use o celular para <strong>escanear o código</strong> de cada pallet carregado. O sistema valida se o pallet pertence ao romaneio e emite alerta se não pertencer.
+          </p>
+          <a href="{% url 'embalagem:romaneio_list' %}?status=CONFIRMADO" class="btn btn-sm btn-outline-warning w-100">
+            <i class="bi bi-upc-scan me-1"></i>Ir para Conferência
+          </a>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /fluxo -->
+
+  <!-- ════════════════════════════════════════════
+       ONDE ESTÃO AS ETIQUETAS?
+  ══════════════════════════════════════════════ -->
+  <div class="alert alert-info border-0 shadow-sm mb-4" role="alert">
+    <div class="d-flex gap-3 align-items-start">
+      <i class="bi bi-printer-fill fs-4 flex-shrink-0 mt-1"></i>
+      <div>
+        <strong>Onde imprimir etiquetas?</strong>
+        <ul class="mb-0 mt-1 small">
+          <li>
+            <strong>Etiqueta simples (sem dados do cliente):</strong>
+            Abra a <a href="{% url 'embalagem:ordem_list' %}">Ordem de Embalagem</a> → clique em <em>Etiquetas PDF</em>.
+            Gera uma etiqueta por pallet com código de barras, rastreamento, pesos e lote.
+          </li>
+          <li class="mt-1">
+            <strong>Etiqueta com dados do cliente/exportação:</strong>
+            Abra o <a href="{% url 'embalagem:romaneio_list' %}">Romaneio de Venda</a> (confirmado) → clique em <em>Etiquetas PDF</em>.
+            Inclui cliente, cidade, país, armador, navio, container (para exportação).
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════
+       ATIVIDADE RECENTE
+  ══════════════════════════════════════════════ -->
+  <div class="row g-3">
+
+    <!-- Últimas Ordens -->
+    <div class="col-md-6">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <span class="fw-semibold"><i class="bi bi-clipboard-check me-1 text-primary"></i>Últimas Ordens de Embalagem</span>
+          <a href="{% url 'embalagem:ordem_list' %}" class="btn btn-sm btn-outline-primary">Ver todas</a>
+        </div>
+        {% if ultimas_ordens %}
+        <div class="list-group list-group-flush">
+          {% for o in ultimas_ordens %}
+          <a href="{% url 'embalagem:ordem_detail' o.pk %}" class="list-group-item list-group-item-action py-2 px-3">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <span class="fw-semibold">{{ o.numero }}</span>
+                <small class="text-muted ms-2">{{ o.tipo_embalagem.nome }}</small>
+              </div>
+              <div class="d-flex align-items-center gap-2">
+                <small class="text-muted">{{ o.data|date:"d/m/Y" }}</small>
+                {% if o.status == 'ABERTA' %}<span class="badge bg-secondary">Aberta</span>
+                {% elif o.status == 'EM_ANDAMENTO' %}<span class="badge bg-primary">Andamento</span>
+                {% elif o.status == 'CONCLUIDA' %}<span class="badge bg-success">Concluída</span>
+                {% else %}<span class="badge bg-danger">Cancelada</span>{% endif %}
+              </div>
+            </div>
+            <small class="text-muted">{{ o.n_pallets }} pallet(s) gerado(s)</small>
+          </a>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="card-body text-center text-muted py-4">
+          <i class="bi bi-clipboard-x fs-2 d-block mb-2 text-muted"></i>
+          Nenhuma ordem ainda.
+          <a href="{% url 'embalagem:ordem_create' %}" class="d-block mt-2">Criar primeira Ordem de Embalagem →</a>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Últimos Romaneios -->
+    <div class="col-md-6">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <span class="fw-semibold"><i class="bi bi-file-earmark-text me-1 text-info"></i>Últimos Romaneios de Venda</span>
+          <a href="{% url 'embalagem:romaneio_list' %}" class="btn btn-sm btn-outline-info">Ver todos</a>
+        </div>
+        {% if ultimos_romaneios %}
+        <div class="list-group list-group-flush">
+          {% for r in ultimos_romaneios %}
+          <a href="{% url 'embalagem:romaneio_detail' r.pk %}" class="list-group-item list-group-item-action py-2 px-3">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <span class="fw-semibold">{{ r.numero }}</span>
+                <small class="text-muted ms-2">{{ r.cliente.razao_social|truncatechars:25 }}</small>
+              </div>
+              <div class="d-flex align-items-center gap-2">
+                <small class="text-muted">{{ r.data|date:"d/m/Y" }}</small>
+                {% if r.status == 'RASCUNHO' %}<span class="badge bg-secondary">Rascunho</span>
+                {% elif r.status == 'CONFIRMADO' %}<span class="badge bg-info">Confirmado</span>
+                {% elif r.status == 'CARREGANDO' %}<span class="badge bg-warning text-dark">Carregando</span>
+                {% elif r.status == 'CONCLUIDO' %}<span class="badge bg-success">Concluído</span>
+                {% else %}<span class="badge bg-danger">Cancelado</span>{% endif %}
+              </div>
+            </div>
+            <small class="text-muted">
+              {% if r.tipo == 'EXPORTACAO' %}<i class="bi bi-globe me-1"></i>Exportação{% else %}<i class="bi bi-shop me-1"></i>Mercado Interno{% endif %}
+              — {{ r.total_pallets }} pallet(s)
+            </small>
+          </a>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="card-body text-center text-muted py-4">
+          <i class="bi bi-file-earmark-x fs-2 d-block mb-2 text-muted"></i>
+          Nenhum romaneio ainda.
+          <a href="{% url 'embalagem:romaneio_create' %}" class="d-block mt-2">Criar primeiro Romaneio de Venda →</a>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+  </div>
+
+</div>
+{% endblock %}

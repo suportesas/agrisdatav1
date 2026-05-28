@@ -274,9 +274,110 @@
       </h2>
       <p class="text-muted mb-0">Configure o planejamento e selecione os talhões</p>
     </div>
-    <a href="{% url 'cadastros:safra_list' %}" class="btn btn-outline-secondary">
-      <i class="bi bi-arrow-left"></i> Voltar
-    </a>
+    <div class="d-flex gap-2">
+      <button type="button" class="btn btn-outline-info" data-bs-toggle="modal" data-bs-target="#modalAjudaSafra">
+        <i class="bi bi-question-circle"></i> Ajuda
+      </button>
+      <a href="{% url 'cadastros:safra_list' %}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Voltar
+      </a>
+    </div>
+  </div>
+
+  <!-- Modal de Ajuda: Passo a Passo do Cadastro de Safra -->
+  <div class="modal fade" id="modalAjudaSafra" tabindex="-1" aria-labelledby="modalAjudaSafraLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white;">
+          <h5 class="modal-title fw-bold" id="modalAjudaSafraLabel">
+            <i class="bi bi-question-circle me-2"></i> Como cadastrar uma Safra
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body p-4">
+
+          <p class="text-muted mb-4">Siga os passos abaixo para cadastrar uma safra corretamente no sistema.</p>
+
+          <!-- Passo 1 -->
+          <div class="d-flex gap-3 mb-4">
+            <div class="flex-shrink-0 d-flex align-items-center justify-content-center rounded-circle bg-success text-white fw-bold" style="width:40px; height:40px; font-size:16px;">1</div>
+            <div>
+              <h6 class="fw-bold mb-1">Nome da Safra</h6>
+              <p class="text-muted mb-0">Informe um nome identificador para a safra, como <strong>Safra 2024/25</strong>. O sistema pode preencher automaticamente com base nas datas de início e fim — basta preencher os períodos e o nome será gerado.</p>
+            </div>
+          </div>
+
+          <!-- Passo 2 -->
+          <div class="d-flex gap-3 mb-4">
+            <div class="flex-shrink-0 d-flex align-items-center justify-content-center rounded-circle bg-success text-white fw-bold" style="width:40px; height:40px; font-size:16px;">2</div>
+            <div>
+              <h6 class="fw-bold mb-1">Fazenda e Cultura</h6>
+              <p class="text-muted mb-0">Selecione a <strong>fazenda</strong> onde a safra será realizada e a <strong>cultura</strong> que será plantada (ex.: Soja, Milho, Cana). Ambos os campos são obrigatórios. Ao trocar a fazenda, os talhões disponíveis serão carregados automaticamente.</p>
+            </div>
+          </div>
+
+          <!-- Passo 3 -->
+          <div class="d-flex gap-3 mb-4">
+            <div class="flex-shrink-0 d-flex align-items-center justify-content-center rounded-circle bg-success text-white fw-bold" style="width:40px; height:40px; font-size:16px;">3</div>
+            <div>
+              <h6 class="fw-bold mb-1">Ano e Período</h6>
+              <p class="text-muted mb-0">Informe o <strong>ano</strong> da safra e as datas de <strong>início</strong> e <strong>fim</strong> do período de plantio. A data de início deve ser anterior à data de fim. O sistema não permitirá cadastrar duas safras com a mesma fazenda, cultura e ano.</p>
+            </div>
+          </div>
+
+          <!-- Passo 4 -->
+          <div class="d-flex gap-3 mb-4">
+            <div class="flex-shrink-0 d-flex align-items-center justify-content-center rounded-circle bg-success text-white fw-bold" style="width:40px; height:40px; font-size:16px;">4</div>
+            <div>
+              <h6 class="fw-bold mb-1">Status da Safra</h6>
+              <p class="text-muted mb-0">Defina o status inicial da safra:
+                <ul class="mt-1 mb-0">
+                  <li><strong>Planejada</strong> — safra ainda não iniciada, em fase de planejamento.</li>
+                  <li><strong>Em Andamento</strong> — plantio ou colheita em execução.</li>
+                  <li><strong>Finalizada</strong> — safra concluída.</li>
+                </ul>
+              </p>
+            </div>
+          </div>
+
+          <!-- Passo 5 -->
+          <div class="d-flex gap-3 mb-4">
+            <div class="flex-shrink-0 d-flex align-items-center justify-content-center rounded-circle bg-success text-white fw-bold" style="width:40px; height:40px; font-size:16px;">5</div>
+            <div>
+              <h6 class="fw-bold mb-1">Imagem (opcional)</h6>
+              <p class="text-muted mb-0">Você pode anexar uma <strong>foto ou imagem</strong> representativa da safra (ex.: foto da lavoura). Este campo é opcional e aceita formatos JPG, PNG e similares.</p>
+            </div>
+          </div>
+
+          <!-- Passo 6 -->
+          <div class="d-flex gap-3 mb-4">
+            <div class="flex-shrink-0 d-flex align-items-center justify-content-center rounded-circle bg-success text-white fw-bold" style="width:40px; height:40px; font-size:16px;">6</div>
+            <div>
+              <h6 class="fw-bold mb-1">Seleção de Talhões</h6>
+              <p class="text-muted mb-0">Após selecionar a fazenda, os talhões disponíveis serão exibidos em cards. Clique nos talhões que farão parte desta safra. Use os filtros para exibir apenas talhões <strong>Disponíveis</strong>, <strong>Plantados</strong> ou <strong>Em Preparação</strong>. Talhões bloqueados (<span class="text-danger fw-semibold">Em uso</span>) já estão vinculados a outra safra ativa e não podem ser selecionados.</p>
+              <div class="alert alert-warning mt-2 mb-0 py-2">
+                <i class="bi bi-exclamation-triangle me-1"></i> <strong>Atenção:</strong> a seleção de talhões é opcional — você pode salvar a safra e adicionar os talhões depois.
+              </div>
+            </div>
+          </div>
+
+          <!-- Passo 7 -->
+          <div class="d-flex gap-3 mb-2">
+            <div class="flex-shrink-0 d-flex align-items-center justify-content-center rounded-circle bg-success text-white fw-bold" style="width:40px; height:40px; font-size:16px;">7</div>
+            <div>
+              <h6 class="fw-bold mb-1">Salvar a Safra</h6>
+              <p class="text-muted mb-0">Revise todas as informações e clique em <strong>Salvar Safra</strong>. Após salvar, você poderá acessar o detalhamento da safra para adicionar o <strong>planejamento de produção</strong> (área, produtividade esperada, custos) e registrar os <strong>resultados reais</strong> ao final da safra.</p>
+            </div>
+          </div>
+
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-success" data-bs-dismiss="modal">
+            <i class="bi bi-check-circle me-1"></i> Entendido, vamos começar!
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <form method="post" id="safra-form">
@@ -305,6 +406,15 @@
             {% if form.fazenda.errors %}
               <div class="text-danger small">{{ form.fazenda.errors|striptags }}</div>
             {% endif %}
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">{{ form.codigo.label }}</label>
+            {{ form.codigo }}
+            {% if form.codigo.errors %}
+              <div class="text-danger small">{{ form.codigo.errors|striptags }}</div>
+            {% endif %}
+            <small class="text-muted">Prefixo do código de barras dos pallets. Ex: 202526</small>
           </div>
 
           <div class="col-md-6">

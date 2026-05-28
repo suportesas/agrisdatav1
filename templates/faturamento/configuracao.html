@@ -1,0 +1,234 @@
+{% extends 'base.html' %}
+{% block title %}Configuração Fiscal{% endblock %}
+{% block page_title %}Configuração Fiscal{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="d-flex align-items-center mb-4">
+    <a href="{% url 'faturamento:dashboard' %}" class="btn btn-outline-secondary me-3">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    <h3 class="mb-0">Configuração Fiscal</h3>
+  </div>
+
+  <div class="row">
+    <div class="col-md-8">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header fw-semibold">Parâmetros Fiscais da Empresa</div>
+        <div class="card-body">
+          <form method="post">
+            {% csrf_token %}
+            {% if form.non_field_errors %}
+            <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+            {% endif %}
+
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label">Regime Tributário *</label>
+                {{ form.regime_tributario }}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">Série NF-e</label>
+                {{ form.serie_nfe }}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">Número Inicial NF-e
+                  <i class="bi bi-info-circle text-muted" data-bs-toggle="tooltip"
+                     title="Número de partida ao migrar de outro sistema. Após a primeira NF ser emitida aqui, a numeração continua automaticamente e este campo é ignorado."></i>
+                </label>
+                {{ form.numero_nfe_inicial }}
+                <small class="text-muted">Para migração: informe o próximo número (ex: última = 3365 → informe <strong>3366</strong>).</small>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">CFOP Venda Interna</label>
+                {{ form.cfop_venda_interna }}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">CFOP Venda Exportação</label>
+                {{ form.cfop_venda_exportacao }}
+              </div>
+              <div class="col-md-9">
+                <label class="form-label">Natureza da Operação Padrão</label>
+                {{ form.natureza_operacao_padrao }}
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Observações Padrão NF-e</label>
+                {{ form.observacoes_padrao_nfe }}
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Observações Padrão Invoice</label>
+                {{ form.observacoes_padrao_invoice }}
+              </div>
+            </div>
+
+            <!-- IntegraNota API -->
+            <hr class="my-4">
+            <h6 class="fw-semibold mb-3"><i class="bi bi-cloud-upload me-2"></i>Integração IntegraNota (Emissão NF-e)</h6>
+            <div class="row g-3">
+              <div class="col-md-4">
+                <label class="form-label">Ambiente</label>
+                {{ form.ambiente_nfe }}
+                <small class="text-muted">Use <strong>Homologação</strong> para testes antes de ir para produção.</small>
+              </div>
+              <div class="col-md-8">
+                <label class="form-label">Token IntegraNota</label>
+                {{ form.token_integranotas }}
+                <small class="text-muted">Token Bearer obtido no painel IntegraNota → Configurações → API.</small>
+              </div>
+            </div>
+
+            <!-- Dados Fiscais da Empresa (Emitente NF-e) -->
+            <hr class="my-4">
+            <h6 class="fw-semibold mb-3"><i class="bi bi-building me-2"></i>Dados do Emitente (Empresa)</h6>
+            {% if empresa_form.non_field_errors %}
+            <div class="alert alert-danger">{{ empresa_form.non_field_errors }}</div>
+            {% endif %}
+            <div class="row g-3">
+              <div class="col-md-4">
+                <label class="form-label">Inscrição Estadual</label>
+                {{ empresa_form.inscricao_estadual }}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">CEP <small class="text-muted">(busca automática)</small></label>
+                <div class="input-group">
+                  {{ empresa_form.cep }}
+                  <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-buscar-cep-empresa">
+                    <i class="bi bi-search"></i>
+                  </button>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Código IBGE do Município</label>
+                {{ empresa_form.codigo_municipio }}
+                <small class="text-muted">7 dígitos — ex: 3550308 (São Paulo)</small>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Logradouro</label>
+                {{ empresa_form.endereco }}
+              </div>
+              <div class="col-md-2">
+                <label class="form-label">Número</label>
+                {{ empresa_form.numero_endereco }}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Complemento</label>
+                {{ empresa_form.complemento_endereco }}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Bairro</label>
+                {{ empresa_form.bairro }}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Cidade</label>
+                {{ empresa_form.cidade }}
+              </div>
+              <div class="col-md-2">
+                <label class="form-label">UF</label>
+                {{ empresa_form.uf }}
+              </div>
+            </div>
+
+            <div class="mt-4 d-flex gap-2">
+              <button type="submit" class="btn btn-primary">
+                <i class="bi bi-check-circle me-1"></i>Salvar Configuração
+              </button>
+              <a href="{% url 'faturamento:dashboard' %}" class="btn btn-outline-secondary">Cancelar</a>
+            </div>
+          </form>
+
+          <!-- ── Certificado Digital A1 ── -->
+          <hr class="my-4">
+          <h6 class="fw-semibold mb-3"><i class="bi bi-shield-lock me-2"></i>Certificado Digital A1</h6>
+
+          {% if config.certificado_validade %}
+          <div class="alert {% if cert_expirado %}alert-danger{% elif cert_expira_breve %}alert-warning{% else %}alert-success{% endif %} d-flex align-items-start mb-3">
+            <i class="bi bi-{% if cert_expirado %}x-circle-fill{% elif cert_expira_breve %}exclamation-triangle-fill{% else %}patch-check-fill{% endif %} me-2 mt-1 flex-shrink-0"></i>
+            <div>
+              <strong>{{ config.certificado_arquivo_nome }}</strong><br>
+              <span class="small">
+                CNPJ: <strong>{{ config.certificado_cnpj }}</strong>
+                &bull; Válido até: <strong>{{ config.certificado_validade|date:"d/m/Y" }}</strong>
+                {% if cert_expirado %}<span class="text-danger fw-bold ms-1">— VENCIDO</span>{% endif %}
+                {% if cert_expira_breve %}<span class="fw-bold ms-1">— vence em breve</span>{% endif %}
+              </span>
+            </div>
+          </div>
+          {% else %}
+          <div class="alert alert-secondary d-flex align-items-center mb-3">
+            <i class="bi bi-shield-exclamation me-2"></i>
+            Nenhum certificado digital importado. Sem ele, a emissão de NF-e não é possível.
+          </div>
+          {% endif %}
+
+          <form method="post" action="{% url 'faturamento:certificado_upload' %}" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="row g-3 align-items-end">
+              <div class="col-md-5">
+                <label class="form-label">Arquivo (.pfx / .p12)</label>
+                {{ cert_form.arquivo_pfx }}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Senha do Certificado</label>
+                {{ cert_form.senha_certificado }}
+              </div>
+              <div class="col-md-3">
+                <button type="submit" class="btn btn-outline-primary w-100">
+                  <i class="bi bi-upload me-1"></i>Importar Certificado
+                </button>
+              </div>
+            </div>
+            <small class="text-muted d-block mt-2">
+              Use o certificado tipo <strong>A1</strong> (.pfx ou .p12) emitido pela sua Autoridade Certificadora (ex: Certisign, Serasa, Receita Federal).
+              O arquivo é armazenado de forma segura e utilizado para assinar as NF-e via IntegraNota.
+            </small>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header fw-semibold">Dicas</div>
+        <div class="card-body text-muted small">
+          <p><strong>CFOP 5102</strong> — Venda de mercadoria adquirida ou recebida de terceiros (mercado interno).</p>
+          <p><strong>CFOP 7101</strong> — Venda de produção do estabelecimento (exportação).</p>
+          <p>A <strong>Série NF-e</strong> padrão é 1. Use outras séries para contingência ou filiais.</p>
+          <p>As observações padrão serão pré-preenchidas automaticamente ao criar novas notas/invoices.</p>
+          <hr>
+          <p><strong>Webhook IntegraNota:</strong> Configure no painel IntegraNota a URL:</p>
+          <code class="d-block bg-light p-1 rounded">/faturamento/webhook/integranotas/</code>
+          <p class="mt-2">Isso dispensa o polling manual — a NF-e será atualizada automaticamente quando a SEFAZ responder.</p>
+          <hr>
+          <p><strong>Certificado Digital:</strong> Use o tipo <strong>A1</strong> (.pfx / .p12). Certificados A3 (token/cartão) precisam ser exportados para A1 antes de importar.</p>
+          <p>O certificado deve ser emitido em nome do <strong>CNPJ da empresa emitente</strong>. Verifique a validade regularmente — certificados vencidos bloqueiam a emissão.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('btn-buscar-cep-empresa')?.addEventListener('click', function () {
+  const cepEl = document.getElementById('id_empresa_cep');
+  const cep = (cepEl?.value || '').replace(/\D/g, '');
+  if (cep.length !== 8) { alert('CEP inválido — informe 8 dígitos.'); return; }
+  fetch('https://viacep.com.br/ws/' + cep + '/json/')
+    .then(r => r.json())
+    .then(d => {
+      if (d.erro) { alert('CEP não encontrado.'); return; }
+      const set = (name, val) => {
+        const el = document.querySelector('[name="' + name + '"]');
+        if (el && val) el.value = val;
+      };
+      set('endereco', d.logradouro);
+      set('bairro', d.bairro);
+      set('cidade', d.localidade);
+      set('uf', d.uf);
+      set('codigo_municipio', d.ibge);
+    })
+    .catch(() => alert('Erro ao consultar ViaCEP.'));
+});
+</script>
+{% endblock %}

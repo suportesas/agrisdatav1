@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>NF-e {{ nf.numero }}/{{ nf.serie }}</title>
+  <style>
+    body { font-family: Arial, sans-serif; font-size: 9pt; margin: 0; padding: 10px; color: #000; }
+    h1 { font-size: 12pt; margin: 0 0 4px; }
+    .header { display: flex; justify-content: space-between; border: 1px solid #000; padding: 6px; margin-bottom: 6px; }
+    .header-left { flex: 1; }
+    .header-right { text-align: right; min-width: 200px; }
+    .section { border: 1px solid #000; margin-bottom: 4px; }
+    .section-title { background: #eee; font-weight: bold; padding: 2px 6px; font-size: 8pt; border-bottom: 1px solid #000; }
+    .section-body { padding: 4px 6px; }
+    .row { display: flex; gap: 20px; }
+    .col { flex: 1; }
+    .label { font-size: 7pt; color: #555; }
+    .value { font-size: 9pt; }
+    table { width: 100%; border-collapse: collapse; font-size: 8pt; }
+    th { background: #eee; border: 1px solid #aaa; padding: 3px 4px; text-align: left; }
+    td { border: 1px solid #ccc; padding: 3px 4px; }
+    .text-right { text-align: right; }
+    .totals-table td { font-weight: bold; }
+    .stamp { border: 2px solid #c00; color: #c00; font-size: 16pt; font-weight: bold; text-align: center; padding: 6px; margin: 8px 0; }
+    .danfe-title { text-align: center; font-size: 11pt; font-weight: bold; border: 1px solid #000; padding: 4px; margin-bottom: 6px; }
+  </style>
+</head>
+<body>
+
+<div class="danfe-title">DANFE SIMPLIFICADO — NOTA FISCAL ELETRÔNICA</div>
+
+{% if nf.status == 'CANCELADA' %}
+<div class="stamp">CANCELADA</div>
+{% endif %}
+
+<!-- Cabeçalho -->
+<div class="header">
+  <div class="header-left">
+    <h1>{{ empresa.razao_social|default:"EMPRESA" }}</h1>
+    <div>CNPJ: {{ empresa.cnpj|default:"—" }}</div>
+    <div>{{ empresa.logradouro|default:"" }} — {{ empresa.cidade|default:"" }}/{{ empresa.uf|default:"" }}</div>
+    <div>Fone: {{ empresa.telefone|default:"" }}</div>
+  </div>
+  <div class="header-right">
+    <div class="label">NF-e Nº</div>
+    <div class="value" style="font-size:14pt;font-weight:bold">{{ nf.numero|default:"0" }}</div>
+    <div class="label">Série: {{ nf.serie }} &nbsp;|&nbsp; Emissão: {{ nf.data_emissao|date:"d/m/Y" }}</div>
+    <div class="label">Natureza da Operação</div>
+    <div class="value">{{ nf.natureza_operacao }}</div>
+    <div class="label">CFOP: {{ nf.cfop }}</div>
+  </div>
+</div>
+
+<!-- Destinatário -->
+<div class="section">
+  <div class="section-title">DESTINATÁRIO / REMETENTE</div>
+  <div class="section-body">
+    <div class="row">
+      <div class="col">
+        <div class="label">NOME / RAZÃO SOCIAL</div>
+        <div class="value">{{ nf.cliente.razao_social }}</div>
+      </div>
+      <div class="col">
+        <div class="label">CNPJ / CPF</div>
+        <div class="value">{{ nf.cliente.cnpj_cpf|default:"—" }}</div>
+      </div>
+      <div class="col">
+        <div class="label">DATA DE EMISSÃO</div>
+        <div class="value">{{ nf.data_emissao|date:"d/m/Y" }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Itens -->
+<div class="section">
+  <div class="section-title">DADOS DOS PRODUTOS / SERVIÇOS</div>
+  <table>
+    <thead>
+      <tr>
+        <th>Nº</th>
+        <th>Descrição</th>
+        <th>NCM</th>
+        <th>CFOP</th>
+        <th>UN</th>
+        <th class="text-right">Qtd</th>
+        <th class="text-right">Vl. Unit.</th>
+        <th class="text-right">Desc.</th>
+        <th class="text-right">Vl. Total</th>
+        <th class="text-right">%ICMS</th>
+        <th class="text-right">Vl. ICMS</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in nf.itens.all %}
+      <tr>
+        <td>{{ item.numero_item }}</td>
+        <td>{{ item.descricao }}</td>
+        <td>{{ item.ncm|default:"" }}</td>
+        <td>{{ item.cfop|default:"" }}</td>
+        <td>{{ item.unidade }}</td>
+        <td class="text-right">{{ item.quantidade|floatformat:4 }}</td>
+        <td class="text-right">{{ item.valor_unitario|floatformat:4 }}</td>
+        <td class="text-right">{{ item.valor_desconto|floatformat:2 }}</td>
+        <td class="text-right">{{ item.valor_total|floatformat:2 }}</td>
+        <td class="text-right">{{ item.aliquota_icms|floatformat:2 }}%</td>
+        <td class="text-right">{{ item.valor_icms|floatformat:2 }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- Frete -->
+{% if nf.modalidade_frete != 'SEM_FRETE' %}
+<div class="section">
+  <div class="section-title">TRANSPORTADOR</div>
+  <div class="section-body">
+    <div class="row">
+      <div class="col">
+        <div class="label">MODALIDADE</div>
+        <div class="value">{{ nf.get_modalidade_frete_display }}</div>
+      </div>
+      {% if nf.transportadora %}
+      <div class="col">
+        <div class="label">TRANSPORTADORA</div>
+        <div class="value">{{ nf.transportadora.razao_social }}</div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Totais -->
+<div class="section">
+  <div class="section-title">TOTAIS DA NF-e</div>
+  <div class="section-body">
+    <table class="totals-table" style="width:50%;margin-left:auto">
+      <tr><td>Valor dos Produtos</td><td class="text-right">R$ {{ nf.valor_produtos|floatformat:2 }}</td></tr>
+      {% if nf.valor_frete %}<tr><td>Frete</td><td class="text-right">R$ {{ nf.valor_frete|floatformat:2 }}</td></tr>{% endif %}
+      {% if nf.valor_seguro %}<tr><td>Seguro</td><td class="text-right">R$ {{ nf.valor_seguro|floatformat:2 }}</td></tr>{% endif %}
+      {% if nf.valor_desconto %}<tr><td>Desconto</td><td class="text-right">- R$ {{ nf.valor_desconto|floatformat:2 }}</td></tr>{% endif %}
+      {% if nf.valor_ipi %}<tr><td>IPI</td><td class="text-right">R$ {{ nf.valor_ipi|floatformat:2 }}</td></tr>{% endif %}
+      <tr style="background:#eee"><td><strong>VALOR TOTAL</strong></td><td class="text-right"><strong>R$ {{ nf.valor_total|floatformat:2 }}</strong></td></tr>
+    </table>
+  </div>
+</div>
+
+{% if nf.informacoes_complementares %}
+<div class="section">
+  <div class="section-title">INFORMAÇÕES COMPLEMENTARES</div>
+  <div class="section-body">{{ nf.informacoes_complementares }}</div>
+</div>
+{% endif %}
+
+</body>
+</html>

@@ -609,11 +609,22 @@ def produto_clone(request, pk):
 
 # ============== TRIBUTAÇÃO ==============
 
+def _get_regime_tributario(empresa):
+    """Return (codigo, display) for the company's fiscal regime."""
+    try:
+        from faturamento.models import ConfiguracaoFiscal
+        cfg = ConfiguracaoFiscal.objects.get(empresa=empresa)
+        return cfg.regime_tributario, cfg.get_regime_tributario_display()
+    except Exception:
+        return 'SIMPLES_NACIONAL', 'Simples Nacional'
+
+
 @login_required
 def produtotributacao_create(request, produto_id):
-    produto = get_object_or_404(Produto.objects.filter(categoria__empresa=request.user.empresa), pk=produto_id)
+    empresa = request.user.empresa
+    produto = get_object_or_404(Produto.objects.filter(categoria__empresa=empresa), pk=produto_id)
     if request.method == 'POST':
-        form = ProdutoTributacaoForm(request.POST, empresa=request.user.empresa)
+        form = ProdutoTributacaoForm(request.POST, empresa=empresa)
         if form.is_valid():
             tributacao = form.save(commit=False)
             tributacao.produto = produto
@@ -621,11 +632,14 @@ def produtotributacao_create(request, produto_id):
             messages.success(request, 'Tributação cadastrada com sucesso!')
             return redirect('produtos:produto_detail', pk=produto.pk)
     else:
-        form = ProdutoTributacaoForm(initial={'produto': produto}, empresa=request.user.empresa)
+        form = ProdutoTributacaoForm(initial={'produto': produto, 'origem_mercadoria': produto.origem_mercadoria}, empresa=empresa)
+    regime, regime_display = _get_regime_tributario(empresa)
     return render(request, 'produtos/tributacao/tributacao_form.html', {
         'form': form,
         'produto': produto,
-        'action': 'Cadastrar'
+        'action': 'Cadastrar',
+        'regime_tributario': regime,
+        'regime_tributario_display': regime_display,
     })
 
 
@@ -653,12 +667,15 @@ def produtotributacao_update(request, pk):
             natureza_descricao = form.fields['natureza_operacao'].queryset.get(pk=form.instance.natureza_operacao_id).descricao
         except Exception:
             natureza_descricao = ''
+    regime, regime_display = _get_regime_tributario(request.user.empresa)
     return render(request, 'produtos/tributacao/tributacao_form.html', {
         'form': form,
         'produto': tributacao.produto,
         'action': 'Editar',
         'cfop_codigo': cfop_codigo,
         'natureza_descricao': natureza_descricao,
+        'regime_tributario': regime,
+        'regime_tributario_display': regime_display,
     })
 
 
@@ -678,6 +695,62 @@ def produtotributacao_delete(request, pk):
     return render(request, 'produtos/tributacao/tributacao_confirm_delete.html', {
         'object': tributacao
     })
+
+
+@login_required
+def ajax_buscar_produtos(request):
+    """Autocomplete: busca produtos por nome ou código (max 15 resultados)."""
+    q = request.GET.get('q', '').strip()
+    empresa = request.user.empresa
+    if not q or len(q) < 2:
+        return JsonResponse({'results': []})
+    qs = Produto.objects.filter(
+        categoria__empresa=empresa, ativo=True
+    ).filter(
+        models.Q(nome__icontains=q) | models.Q(codigo__icontains=q)
+    ).select_related('ncm')[:15]
+    results = [{'id': p.pk, 'text': f'{p.codigo} — {p.nome}'} for p in qs]
+    return JsonResponse({'results': results})
+
+
+@login_required
+def ajax_produto_tributacoes(request, produto_id):
+    """Retorna tributações de um produto para o recurso 'copiar de outro produto'."""
+    empresa = request.user.empresa
+    try:
+        produto = Produto.objects.get(pk=produto_id, categoria__empresa=empresa)
+    except Produto.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Produto não encontrado'}, status=404)
+
+    tributacoes = []
+    for t in produto.tributacoes.select_related('cfop', 'natureza_operacao').filter(ativo=True):
+        tributacoes.append({
+            'cfop_id':  t.cfop_id,
+            'cfop_codigo': t.cfop.codigo,
+            'cfop_nome': t.cfop.nome,
+            'natureza_id': t.natureza_operacao_id or '',
+            'natureza_descricao': t.natureza_operacao.descricao if t.natureza_operacao else '',
+            'descricao': t.descricao or '',
+            'origem_mercadoria': t.origem_mercadoria,
+            'icms_situacao_tributaria': t.icms_situacao_tributaria,
+            'icms_modalidade_base': t.icms_modalidade_base,
+            'icms_aliquota': str(t.icms_aliquota),
+            'icms_base_calculo': str(t.icms_base_calculo),
+            'icms_reducao_base': str(t.icms_reducao_base),
+            'icms_st_aliquota': str(t.icms_st_aliquota),
+            'icms_st_mva': str(t.icms_st_mva),
+            'icms_st_reducao_base': str(t.icms_st_reducao_base),
+            'ipi_situacao_tributaria': t.ipi_situacao_tributaria,
+            'ipi_aliquota': str(t.ipi_aliquota),
+            'ipi_codigo_enquadramento': t.ipi_codigo_enquadramento,
+            'pis_situacao_tributaria': t.pis_situacao_tributaria,
+            'pis_aliquota': str(t.pis_aliquota),
+            'pis_base_calculo': str(t.pis_base_calculo),
+            'cofins_situacao_tributaria': t.cofins_situacao_tributaria,
+            'cofins_aliquota': str(t.cofins_aliquota),
+            'cofins_base_calculo': str(t.cofins_base_calculo),
+        })
+    return JsonResponse({'success': True, 'produto_nome': produto.nome, 'tributacoes': tributacoes})
 
 
 # ============== CADASTRO RÁPIDO VIA AJAX ==============

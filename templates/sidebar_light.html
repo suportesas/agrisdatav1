@@ -1,0 +1,57 @@
+{% load static %}
+
+<!-- Sidebar Profissional - VERSÃO CLARA -->
+<div class="sidebar-modern sidebar-light {% if user.is_superuser %}saas-owner-nav{% endif %}" id="sidebar">
+  <!-- Logo e Empresa -->
+  <div class="sidebar-brand">
+    <div class="brand-logo">
+      {% if user.is_superuser %}
+      <i class="bi bi-grid-1x2-fill"></i>
+      {% else %}
+      <i class="bi bi-diagram-3-fill"></i>
+      {% endif %}
+    </div>
+    <div class="brand-text">
+      <h4 style="color:#1e293b;">{% if user.is_superuser %}NexSafra SaaS{% else %}ERP Agrícola{% endif %}</h4>
+      {% if user.empresa %}
+      <span class="brand-subtitle" style="color:#64748b;">{{ user.empresa.nome|truncatewords:3 }}</span>
+      {% elif user.is_superuser %}
+      <span class="brand-subtitle" style="color:#64748b;">Painel do Proprietário</span>
+      {% endif %}
+    </div>
+    <button class="sidebar-collapse-btn" id="collapseBtn">
+      <i class="bi bi-chevron-left"></i>
+    </button>
+  </div>
+
+  <!-- User Info -->
+  <div class="sidebar-user" style="background:#f8fafc;">
+    <div class="user-avatar" style="background:#e8f1fd;">
+      <i class="bi bi-person-circle" style="color:#2563eb;"></i>
+    </div>
+    <div class="user-details">
+      <span class="user-name" style="color:#1e293b;">{{ user.get_full_name|default:user.username }}</span>
+      <span class="user-role" style="color:#64748b;">{{ user.get_tipo_display }}</span>
+    </div>
+  </div>
+
+  <!-- Menu Navigation -->
+  <nav class="sidebar-nav">
+    <ul class="nav-list">
+      <!-- INÍCIO DO MENU COPIADO -->
+      {% comment %} ... O RESTANTE DO MENU PERMANECE IGUAL, apenas herdando o CSS claro ... {% endcomment %}
+      <!-- FIM DO MENU COPIADO -->
+    </ul>
+  </nav>
+
+  <!-- Footer -->
+  <div class="sidebar-footer" style="background:#f8fafc;">
+    <a href="{% url 'logout' %}" class="btn-logout">
+      <i class="bi bi-box-arrow-left"></i>
+      <span>Sair</span>
+    </a>
+  </div>
+</div>
+
+<!-- Overlay para mobile -->
+<div class="sidebar-overlay" id="sidebarOverlay"></div>

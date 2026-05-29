@@ -1,0 +1,1278 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mapeamento de APIs — IntegraNotas × AgrísData</title>
+  <style>
+    :root {
+      --blue: #0d6efd; --green: #198754; --yellow: #ffc107;
+      --red: #dc3545; --gray: #6c757d; --dark: #212529;
+      --light: #f8f9fa; --border: #dee2e6;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 13px; color: var(--dark); background: #fff; }
+    /* Layout */
+    .sidebar { position: fixed; top: 0; left: 0; width: 240px; height: 100vh; background: #1e2a3a; overflow-y: auto; padding: 0; z-index: 100; }
+    .main { margin-left: 240px; padding: 32px 40px; max-width: 1200px; }
+    /* Sidebar */
+    .sidebar-logo { padding: 20px 16px 12px; border-bottom: 1px solid #2d3e52; }
+    .sidebar-logo h2 { color: #fff; font-size: 15px; line-height: 1.3; }
+    .sidebar-logo span { color: #7eb3d8; font-size: 11px; }
+    .sidebar-section { padding: 10px 0 4px 16px; color: #7eb3d8; font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
+    .sidebar a { display: block; padding: 7px 16px; color: #b8cfe0; font-size: 12px; text-decoration: none; border-left: 3px solid transparent; transition: all 0.2s; }
+    .sidebar a:hover, .sidebar a.active { background: #2d3e52; color: #fff; border-left-color: var(--blue); }
+    .sidebar a .badge { float: right; background: var(--blue); color: #fff; font-size: 9px; padding: 2px 5px; border-radius: 8px; }
+    .sidebar a .badge.green { background: var(--green); }
+    .sidebar a .badge.red { background: var(--red); }
+    .sidebar a .badge.yellow { background: #a07c00; }
+    /* Header */
+    .page-header { border-bottom: 3px solid var(--blue); padding-bottom: 16px; margin-bottom: 28px; }
+    .page-header h1 { font-size: 26px; color: var(--blue); }
+    .page-header .meta { color: var(--gray); font-size: 12px; margin-top: 4px; }
+    .page-header .badges { margin-top: 10px; }
+    .badge-pill { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; margin-right: 6px; }
+    .bp-blue { background: #dbeafe; color: #1d4ed8; }
+    .bp-green { background: #dcfce7; color: #166534; }
+    .bp-red { background: #fee2e2; color: #991b1b; }
+    .bp-yellow { background: #fef9c3; color: #92400e; }
+    .bp-gray { background: #f3f4f6; color: #374151; }
+    /* Sections */
+    section { margin-bottom: 48px; }
+    h2.section-title { font-size: 20px; color: var(--dark); border-left: 4px solid var(--blue); padding-left: 12px; margin-bottom: 16px; padding-top: 4px; padding-bottom: 4px; }
+    h3.sub-title { font-size: 15px; color: var(--blue); margin: 20px 0 10px; border-bottom: 1px dashed var(--border); padding-bottom: 6px; }
+    h4 { font-size: 13px; font-weight: 700; margin: 14px 0 6px; color: var(--dark); }
+    /* Cards de status */
+    .status-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; margin-bottom: 20px; }
+    .status-card { border: 1px solid var(--border); border-radius: 8px; padding: 14px; }
+    .status-card .icon { font-size: 22px; margin-bottom: 6px; }
+    .status-card h4 { margin: 0 0 4px; font-size: 13px; }
+    .status-card p { font-size: 11px; color: var(--gray); margin: 0; }
+    .sc-green { border-top: 3px solid var(--green); }
+    .sc-red { border-top: 3px solid var(--red); }
+    .sc-yellow { border-top: 3px solid var(--yellow); }
+    .sc-blue { border-top: 3px solid var(--blue); }
+    /* Tabelas */
+    table { width: 100%; border-collapse: collapse; margin-bottom: 12px; font-size: 12px; }
+    th { background: #1e2a3a; color: #fff; padding: 8px 10px; text-align: left; font-size: 11px; font-weight: 600; }
+    td { padding: 7px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    tr:nth-child(even) { background: #f8fafc; }
+    tr:hover { background: #edf4ff; }
+    /* Endpoint cards */
+    .endpoint-block { border: 1px solid var(--border); border-radius: 8px; margin-bottom: 16px; overflow: hidden; }
+    .endpoint-header { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: var(--light); cursor: pointer; }
+    .endpoint-header:hover { background: #e8f0fe; }
+    .method { font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 4px; min-width: 46px; text-align: center; }
+    .method.GET { background: #dcfce7; color: #166534; }
+    .method.POST { background: #dbeafe; color: #1d4ed8; }
+    .method.PUT { background: #fef9c3; color: #92400e; }
+    .method.DELETE { background: #fee2e2; color: #991b1b; }
+    .endpoint-path { font-family: monospace; font-size: 13px; font-weight: 600; color: var(--dark); }
+    .endpoint-desc { font-size: 12px; color: var(--gray); margin-left: auto; }
+    .endpoint-body { padding: 12px 14px; border-top: 1px solid var(--border); display: none; }
+    .endpoint-body.open { display: block; }
+    .endpoint-block.implemented .endpoint-header { border-left: 4px solid var(--green); }
+    .endpoint-block.pending .endpoint-header { border-left: 4px solid var(--yellow); }
+    .endpoint-block.new .endpoint-header { border-left: 4px solid var(--red); }
+    /* Code */
+    pre { background: #1e2a3a; color: #e2e8f0; padding: 12px 14px; border-radius: 6px; font-size: 11px; overflow-x: auto; line-height: 1.6; margin: 8px 0; }
+    code { font-family: 'Courier New', monospace; }
+    code.inline { background: #f1f3f5; color: #d63384; padding: 1px 5px; border-radius: 3px; font-size: 11px; }
+    /* Info boxes */
+    .info-box { border-radius: 6px; padding: 12px 14px; margin: 10px 0; font-size: 12px; line-height: 1.6; }
+    .info-box.blue { background: #dbeafe; border-left: 4px solid var(--blue); }
+    .info-box.green { background: #dcfce7; border-left: 4px solid var(--green); }
+    .info-box.yellow { background: #fef9c3; border-left: 4px solid var(--yellow); }
+    .info-box.red { background: #fee2e2; border-left: 4px solid var(--red); }
+    /* Two columns */
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    @media (max-width: 900px) { .two-col { grid-template-columns: 1fr; } }
+    /* Tag */
+    .tag { display: inline-block; padding: 2px 7px; border-radius: 4px; font-size: 10px; font-weight: 600; margin-right: 4px; }
+    .tag.required { background: #fee2e2; color: #991b1b; }
+    .tag.optional { background: #f3f4f6; color: #374151; }
+    .tag.auto { background: #dcfce7; color: #166534; }
+    /* Print */
+    @media print {
+      .sidebar { display: none; }
+      .main { margin-left: 0; padding: 20px; }
+      .endpoint-body { display: block !important; }
+      .endpoint-header { cursor: default; }
+    }
+    /* Scroll anchor offset */
+    [id] { scroll-margin-top: 24px; }
+  </style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="sidebar-logo">
+    <h2>IntegraNotas × AgrísData</h2>
+    <span>Mapeamento de APIs</span>
+  </div>
+  <div class="sidebar-section">Visão Geral</div>
+  <a href="#resumo">Resumo Executivo</a>
+  <a href="#autenticacao">Autenticação e Limites</a>
+  <a href="#status-impl">Status de Implementação</a>
+  <div class="sidebar-section">APIs por Módulo</div>
+  <a href="#monitor">Monitor SEFAZ <span class="badge green">Público</span></a>
+  <a href="#nfe">NF-e <span class="badge green">Impl.</span></a>
+  <a href="#cte">CT-e <span class="badge red">Novo</span></a>
+  <a href="#mdfe">MDF-e <span class="badge red">Novo</span></a>
+  <a href="#nfse">NFS-e <span class="badge yellow">Futuro</span></a>
+  <div class="sidebar-section">Integração</div>
+  <a href="#mapeamento">Mapeamento no Sistema</a>
+  <a href="#models">Models Necessários</a>
+  <a href="#services">Services / Código</a>
+  <a href="#webhook">Webhook e Callbacks</a>
+  <a href="#erros">Códigos de Erro</a>
+  <a href="#checklist">Checklist de Implementação</a>
+  <div style="padding: 20px 16px; margin-top: 20px; border-top: 1px solid #2d3e52;">
+    <button onclick="window.print()" style="width:100%;padding:8px;background:var(--blue);color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;">
+      🖨 Imprimir / Gerar PDF
+    </button>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<main class="main">
+
+  <!-- PAGE HEADER -->
+  <div class="page-header">
+    <h1>Mapeamento de APIs — IntegraNotas × AgrísData v1</h1>
+    <div class="meta">
+      Repositório: <strong>github.com/sueldoserafim/agrisdatav1</strong> &nbsp;|&nbsp;
+      API: <strong>api.integranotas.com.br/v1</strong> &nbsp;|&nbsp;
+      Gerado em: <strong id="dataGer"></strong>
+    </div>
+    <div class="badges" style="margin-top:12px;">
+      <span class="badge-pill bp-green">✅ NF-e Implementada</span>
+      <span class="badge-pill bp-red">🔴 CT-e — Novo</span>
+      <span class="badge-pill bp-red">🔴 MDF-e — Novo</span>
+      <span class="badge-pill bp-yellow">🟡 NFS-e — Futuro</span>
+      <span class="badge-pill bp-blue">🔵 Monitor SEFAZ — Público</span>
+    </div>
+  </div>
+
+  <!-- ===================================================
+       SEÇÃO 1 — RESUMO EXECUTIVO
+  ==================================================== -->
+  <section id="resumo">
+    <h2 class="section-title">1. Resumo Executivo</h2>
+    <div class="two-col">
+      <div>
+        <h4>O que é o AgrísData v1?</h4>
+        <p style="line-height:1.7;font-size:12px;">ERP Agrícola multi-tenant desenvolvido em <strong>Django 4.2+ / Python 3.9+</strong> com banco de dados PostgreSQL. Possui 15 apps Django cobrindo cadastros, faturamento, compras, exportação, vendas, estoque, financeiro, portal e outros. O módulo fiscal já possui integração básica com a API IntegraNotas para <strong>emissão e cancelamento de NF-e</strong>. As integrações de <strong>CT-e e MDF-e precisam ser construídas do zero</strong>.</p>
+      </div>
+      <div>
+        <h4>O que precisa ser feito?</h4>
+        <ul style="line-height:2;font-size:12px;padding-left:16px;">
+          <li>Expandir o serviço <code class="inline">faturamento/services/integranotas.py</code> existente</li>
+          <li>Criar models Django para CT-e e MDF-e</li>
+          <li>Criar views, forms e templates para CT-e e MDF-e</li>
+          <li>Integrar Monitor SEFAZ no dashboard</li>
+          <li>Adicionar Carta de Correção e Manifestação na NF-e</li>
+          <li>Implementar consulta de status por chave de acesso</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="status-grid" style="margin-top:20px;">
+      <div class="status-card sc-green">
+        <div class="icon">📄</div>
+        <h4>NF-e</h4>
+        <p>Emissão, consulta e cancelamento já implementados em <code class="inline">integranotas.py</code></p>
+      </div>
+      <div class="status-card sc-red">
+        <div class="icon">🚚</div>
+        <h4>CT-e</h4>
+        <p>Conhecimento de Transporte. Nenhum model ou serviço implementado. Precisa ser criado do zero.</p>
+      </div>
+      <div class="status-card sc-red">
+        <div class="icon">📋</div>
+        <h4>MDF-e</h4>
+        <p>Manifesto de Documentos Fiscais. Precisa ser criado. Relaciona-se com Viagem, Motorista e CT-e.</p>
+      </div>
+      <div class="status-card sc-blue">
+        <div class="icon">📡</div>
+        <h4>Monitor SEFAZ</h4>
+        <p>API pública, sem autenticação. Integrar no dashboard de status do sistema.</p>
+      </div>
+      <div class="status-card sc-yellow">
+        <div class="icon">📝</div>
+        <h4>NF-e: Recursos Faltando</h4>
+        <p>Carta de Correção, Manifestação do Destinatário e Consulta por chave ainda não implementados.</p>
+      </div>
+      <div class="status-card sc-yellow">
+        <div class="icon">🔐</div>
+        <h4>Certificado Digital</h4>
+        <p>Parse de PFX já existe. Validação de vencimento e gestão de renovação precisam ser adicionadas.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================================================
+       SEÇÃO 2 — AUTENTICAÇÃO E LIMITES
+  ==================================================== -->
+  <section id="autenticacao">
+    <h2 class="section-title">2. Autenticação e Limites da API</h2>
+
+    <div class="two-col">
+      <div>
+        <h4>Autenticação</h4>
+        <table>
+          <tr><th>Item</th><th>Valor</th></tr>
+          <tr><td>Tipo</td><td>Bearer Token</td></tr>
+          <tr><td>Header</td><td><code class="inline">Authorization: Bearer {token}</code></td></tr>
+          <tr><td>Onde configurar</td><td>Model <code class="inline">ConfiguracaoFiscal.token_integranotas</code></td></tr>
+          <tr><td>Base URL Produção</td><td><code class="inline">https://api.integranotas.com.br/v1</code></td></tr>
+          <tr><td>Base URL Homologação</td><td><code class="inline">https://hom-api.integranotas.com.br/v1</code></td></tr>
+        </table>
+      </div>
+      <div>
+        <h4>Rate Limits</h4>
+        <table>
+          <tr><th>Rota</th><th>Limite</th><th>Bloqueio</th></tr>
+          <tr><td>Endpoints <code class="inline">/soft</code></td><td>5 req/min</td><td>5 min</td></tr>
+          <tr><td>Endpoints <code class="inline">/{chave}</code></td><td>2 req/min</td><td>5 min</td></tr>
+          <tr><td>Demais rotas</td><td>60 req/min</td><td>5 min</td></tr>
+          <tr><td>Tamanho máx. body</td><td>2 MB</td><td>HTTP 413</td></tr>
+          <tr><td>Timeout recomendado</td><td>60 segundos</td><td>—</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="info-box yellow" style="margin-top:12px;">
+      <strong>⚠ Processamento Assíncrono:</strong> A maioria dos endpoints de emissão retorna código <code class="inline">5023</code> (processando em lote). O sistema deve aguardar ~3 segundos e consultar novamente, ou usar o webhook para receber a resposta de forma passiva.
+    </div>
+
+    <h4 style="margin-top:16px;">Certificado Digital</h4>
+    <div class="info-box blue">
+      A API IntegraNotas suporta apenas certificados <strong>A1 (.pfx ou .p12)</strong>. O certificado deve ser configurado em <code class="inline">ConfiguracaoFiscal.certificado_pfx</code> (campo FileField). O parse já está implementado em <code class="inline">integranotas.py → parse_pfx()</code>. Arquivos XML ficam retidos por 1 ano + 1 ano comprimido.
+    </div>
+  </section>
+
+  <!-- ===================================================
+       SEÇÃO 3 — STATUS DE IMPLEMENTAÇÃO
+  ==================================================== -->
+  <section id="status-impl">
+    <h2 class="section-title">3. Status de Implementação no AgrísData</h2>
+    <table>
+      <thead>
+        <tr><th>Funcionalidade</th><th>Endpoint API</th><th>Arquivo no Sistema</th><th>Status</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Emitir NF-e</td><td><code class="inline">POST /nfe</code></td><td><code class="inline">faturamento/services/integranotas.py → emitir_nfe()</code></td><td><span class="badge-pill bp-green">✅ Implementado</span></td></tr>
+        <tr><td>Consultar NF-e por chave</td><td><code class="inline">GET /nfe/{chave}</code></td><td><code class="inline">integranotas.py → consultar_nfe()</code></td><td><span class="badge-pill bp-green">✅ Implementado</span></td></tr>
+        <tr><td>Cancelar NF-e</td><td><code class="inline">POST /nfe/cancela</code></td><td><code class="inline">integranotas.py → cancelar_nfe()</code></td><td><span class="badge-pill bp-green">✅ Implementado</span></td></tr>
+        <tr><td>Download DANFE (PDF)</td><td><code class="inline">GET /nfe/pdf</code></td><td><code class="inline">views.py → nota_fiscal_danfe</code></td><td><span class="badge-pill bp-green">✅ Implementado</span></td></tr>
+        <tr><td>Webhook de status NF-e</td><td>Recepção passiva</td><td><code class="inline">views.py → integranotas_webhook</code></td><td><span class="badge-pill bp-green">✅ Implementado</span></td></tr>
+        <tr><td>Carta de Correção NF-e</td><td><code class="inline">POST /nfe/correcao</code></td><td>Não existe</td><td><span class="badge-pill bp-yellow">🟡 Pendente</span></td></tr>
+        <tr><td>Manifestação NF-e</td><td><code class="inline">POST /nfe/manifesta</code></td><td>Não existe</td><td><span class="badge-pill bp-yellow">🟡 Pendente</span></td></tr>
+        <tr><td>Pré-visualização NF-e</td><td><code class="inline">POST /nfe/preview</code></td><td>Não existe</td><td><span class="badge-pill bp-yellow">🟡 Pendente</span></td></tr>
+        <tr><td>Importar XML NF-e recebida</td><td><code class="inline">POST /nfe/importa</code></td><td><code class="inline">compras/nfe_parser.py</code></td><td><span class="badge-pill bp-green">✅ Implementado</span></td></tr>
+        <tr><td>Monitor SEFAZ</td><td><code class="inline">GET /monitor</code></td><td>Não existe</td><td><span class="badge-pill bp-red">🔴 Não iniciado</span></td></tr>
+        <tr><td>Emitir CT-e</td><td><code class="inline">POST /cte</code></td><td>Não existe</td><td><span class="badge-pill bp-red">🔴 Não iniciado</span></td></tr>
+        <tr><td>Consultar CT-e</td><td><code class="inline">GET /cte/{chave}</code></td><td>Não existe</td><td><span class="badge-pill bp-red">🔴 Não iniciado</span></td></tr>
+        <tr><td>Cancelar CT-e</td><td><code class="inline">POST /cte/cancela</code></td><td>Não existe</td><td><span class="badge-pill bp-red">🔴 Não iniciado</span></td></tr>
+        <tr><td>DACTE (PDF CT-e)</td><td><code class="inline">GET /cte/pdf</code></td><td>Não existe</td><td><span class="badge-pill bp-red">🔴 Não iniciado</span></td></tr>
+        <tr><td>Carta de Correção CT-e</td><td><code class="inline">POST /cte/correcao</code></td><td>Não existe</td><td><span class="badge-pill bp-red">🔴 Não iniciado</span></td></tr>
+        <tr><td>Emitir MDF-e</td><td><code class="inline">POST /mdfe</code></td><td>Não existe</td><td><span class="badge-pill bp-red">🔴 Não iniciado</span></td></tr>
+        <tr><td>Encerrar MDF-e</td><td><code class="inline">POST /mdfe/encerra</code></td><td>Não existe</td><td><span class="badge-pill bp-red">🔴 Não iniciado</span></td></tr>
+        <tr><td>Cancelar MDF-e</td><td><code class="inline">POST /mdfe/cancela</code></td><td>Não existe</td><td><span class="badge-pill bp-red">🔴 Não iniciado</span></td></tr>
+        <tr><td>DAMDFE (PDF MDF-e)</td><td><code class="inline">GET /mdfe/pdf</code></td><td>Não existe</td><td><span class="badge-pill bp-red">🔴 Não iniciado</span></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ===================================================
+       SEÇÃO 4 — MONITOR SEFAZ
+  ==================================================== -->
+  <section id="monitor">
+    <h2 class="section-title">4. Monitor SEFAZ</h2>
+    <div class="info-box green">Rota pública — não requer autenticação. Ideal para integrar no dashboard do sistema como widget de status.</div>
+
+    <div class="endpoint-block">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method GET">GET</span>
+        <span class="endpoint-path">/monitor</span>
+        <span class="endpoint-desc">Status operacional da SEFAZ por estado</span>
+      </div>
+      <div class="endpoint-body">
+        <div class="two-col">
+          <div>
+            <h4>Parâmetros</h4>
+            <p style="color:var(--gray);font-size:12px;">Nenhum parâmetro necessário.</p>
+            <h4 style="margin-top:12px;">Estados Monitorados (27)</h4>
+            <p style="font-size:12px;line-height:1.8;">TO, BA, SE, PE, AL, RN, CE, PI, MA, AP, PA, RR, AM, AC, RO, MT, MS, GO, PR, SC, RS, SP, MG, RJ, ES, DF, PB</p>
+            <h4 style="margin-top:12px;">Documentos Monitorados</h4>
+            <ul style="font-size:12px;line-height:2;padding-left:16px;">
+              <li>NF-e / NFC-e</li>
+              <li>CT-e</li>
+              <li>MDF-e</li>
+              <li>GNR-e, NFCom, DC-e</li>
+            </ul>
+          </div>
+          <div>
+            <h4>Status Possíveis</h4>
+            <table>
+              <tr><th>Status</th><th>Significado</th></tr>
+              <tr><td><span class="badge-pill bp-green">Normal</span></td><td>SEFAZ operando normalmente</td></tr>
+              <tr><td><span class="badge-pill bp-yellow">Instável</span></td><td>Serviço com instabilidades</td></tr>
+              <tr><td><span class="badge-pill bp-yellow">Lentidão</span></td><td>Serviço lento</td></tr>
+              <tr><td><span class="badge-pill bp-red">Parada</span></td><td>Serviço fora do ar</td></tr>
+              <tr><td><span class="badge-pill bp-blue">Contingência</span></td><td>Modo contingência ativo</td></tr>
+            </table>
+            <h4 style="margin-top:12px;">Onde usar no sistema</h4>
+            <ul style="font-size:12px;line-height:2;padding-left:16px;">
+              <li>Widget no <code class="inline">dashboard</code> — mostrar status do estado da empresa</li>
+              <li>Antes de emitir NF-e/CT-e/MDF-e — verificar se SEFAZ está operacional</li>
+              <li>Alertas quando SEFAZ cair — notificar usuário</li>
+            </ul>
+          </div>
+        </div>
+        <h4>Exemplo de Chamada Python</h4>
+        <pre><code>import requests
+
+def verificar_sefaz(uf: str) -> dict:
+    """Verifica status da SEFAZ para um estado. Não requer auth."""
+    resp = requests.get("https://api.integranotas.com.br/v1/monitor", timeout=10)
+    resp.raise_for_status()
+    data = resp.json()
+    # Filtrar pelo estado desejado
+    return next((s for s in data if s.get("uf") == uf), None)</code></pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================================================
+       SEÇÃO 5 — NF-e
+  ==================================================== -->
+  <section id="nfe">
+    <h2 class="section-title">5. NF-e — Nota Fiscal Eletrônica</h2>
+    <div class="info-box green">Já implementado parcialmente em <code class="inline">faturamento/services/integranotas.py</code>. Os métodos faltantes (Carta de Correção, Manifestação, Preview) devem ser adicionados ao mesmo arquivo.</div>
+
+    <!-- POST /nfe -->
+    <div class="endpoint-block implemented">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method POST">POST</span>
+        <span class="endpoint-path">/nfe</span>
+        <span class="endpoint-desc">Emitir NF-e — <span class="badge-pill bp-green">✅ Implementado</span></span>
+      </div>
+      <div class="endpoint-body">
+        <div class="two-col">
+          <div>
+            <h4>Campos Obrigatórios do Body</h4>
+            <table>
+              <tr><th>Campo</th><th>Tipo</th><th>Descrição</th></tr>
+              <tr><td><code class="inline">natureza_operacao</code></td><td>string</td><td>Descrição da operação fiscal</td></tr>
+              <tr><td><code class="inline">serie</code></td><td>string</td><td>Série da NF-e (ex: "1")</td></tr>
+              <tr><td><code class="inline">numero</code></td><td>string (1-9 dígitos)</td><td>Número da NF-e</td></tr>
+              <tr><td><code class="inline">data_emissao</code></td><td>ISO 8601</td><td>Data/hora de emissão</td></tr>
+              <tr><td><code class="inline">data_entrada_saida</code></td><td>ISO 8601</td><td>Data de saída/entrada da mercadoria</td></tr>
+              <tr><td><code class="inline">tipo_operacao</code></td><td>string</td><td>"0"=Entrada, "1"=Saída</td></tr>
+              <tr><td><code class="inline">finalidade_emissao</code></td><td>string</td><td>"1"=Normal, "2"=Complementar, "3"=Ajuste, "4"=Devolução</td></tr>
+              <tr><td><code class="inline">destinatario</code></td><td>object</td><td>Dados do destinatário (ver abaixo)</td></tr>
+              <tr><td><code class="inline">itens[]</code></td><td>array</td><td>Itens da nota (produto + impostos)</td></tr>
+              <tr><td><code class="inline">pagamento</code></td><td>object</td><td>Formas de pagamento</td></tr>
+            </table>
+          </div>
+          <div>
+            <h4>Campos Opcionais Importantes</h4>
+            <table>
+              <tr><th>Campo</th><th>Uso</th></tr>
+              <tr><td><code class="inline">consumidor_final</code></td><td>"0" ou "1"</td></tr>
+              <tr><td><code class="inline">presenca_comprador</code></td><td>Código de presença</td></tr>
+              <tr><td><code class="inline">notas_referenciadas[]</code></td><td>Para NF-e de devolução/complementar</td></tr>
+              <tr><td><code class="inline">frete</code></td><td>Dados do transporte e transportadora</td></tr>
+              <tr><td><code class="inline">cobranca</code></td><td>Duplicatas e cobranças</td></tr>
+              <tr><td><code class="inline">informacoes_adicionais_contribuinte</code></td><td>Obs. ao contribuinte</td></tr>
+              <tr><td><code class="inline">pessoas_autorizadas[]</code></td><td>CPF/CNPJ com acesso ao XML</td></tr>
+            </table>
+            <h4 style="margin-top:12px;">Resposta de Sucesso (código 100)</h4>
+            <table>
+              <tr><th>Campo</th><th>Descrição</th></tr>
+              <tr><td><code class="inline">chave</code></td><td>Chave de acesso (44 dígitos)</td></tr>
+              <tr><td><code class="inline">xml</code></td><td>XML autorizado em BASE64</td></tr>
+              <tr><td><code class="inline">pdf</code></td><td>DANFE em BASE64</td></tr>
+              <tr><td><code class="inline">protocolo</code></td><td>Protocolo de autorização</td></tr>
+              <tr><td><code class="inline">status</code></td><td>"autorizado"</td></tr>
+            </table>
+          </div>
+        </div>
+        <div class="info-box yellow" style="margin-top:10px;">
+          <strong>Atenção — Processamento Assíncrono:</strong> Se retornar código <code class="inline">5023</code>, aguardar ~3 segundos e chamar <code class="inline">GET /nfe/{chave}</code> para obter resultado, ou aguardar callback via webhook.
+        </div>
+      </div>
+    </div>
+
+    <!-- GET /nfe/{chave} -->
+    <div class="endpoint-block implemented">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method GET">GET</span>
+        <span class="endpoint-path">/nfe/{chave}</span>
+        <span class="endpoint-desc">Consultar NF-e por chave — <span class="badge-pill bp-green">✅ Implementado</span></span>
+      </div>
+      <div class="endpoint-body">
+        <table>
+          <tr><th>Parâmetro</th><th>Onde</th><th>Obrigatório</th><th>Descrição</th></tr>
+          <tr><td><code class="inline">chave</code></td><td>URL path</td><td><span class="tag required">Obrigatório</span></td><td>Chave de acesso com 44 dígitos</td></tr>
+        </table>
+        <p style="font-size:12px;margin-top:8px;">Retorna o documento com status atual, XML e PDF se já autorizado.</p>
+      </div>
+    </div>
+
+    <!-- POST /nfe/cancela -->
+    <div class="endpoint-block implemented">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method POST">POST</span>
+        <span class="endpoint-path">/nfe/cancela</span>
+        <span class="endpoint-desc">Cancelar NF-e — <span class="badge-pill bp-green">✅ Implementado</span></span>
+      </div>
+      <div class="endpoint-body">
+        <table>
+          <tr><th>Campo</th><th>Tipo</th><th>Obrigatório</th><th>Descrição</th></tr>
+          <tr><td><code class="inline">chave</code></td><td>string</td><td><span class="tag required">Obrigatório</span></td><td>Chave de acesso (44 dígitos)</td></tr>
+          <tr><td><code class="inline">justificativa</code></td><td>string (15-255 chars)</td><td><span class="tag required">Obrigatório</span></td><td>Motivo do cancelamento</td></tr>
+        </table>
+        <p style="font-size:12px;margin-top:8px;">Resposta de sucesso: código <code class="inline">101</code> — NF-e cancelada.</p>
+      </div>
+    </div>
+
+    <!-- GET /nfe/pdf -->
+    <div class="endpoint-block implemented">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method GET">GET</span>
+        <span class="endpoint-path">/nfe/pdf</span>
+        <span class="endpoint-desc">Download DANFE — <span class="badge-pill bp-green">✅ Implementado</span></span>
+      </div>
+      <div class="endpoint-body">
+        <table>
+          <tr><th>Parâmetro</th><th>Onde</th><th>Descrição</th></tr>
+          <tr><td><code class="inline">chave</code></td><td>Query string</td><td>Chave de acesso (44 dígitos)</td></tr>
+        </table>
+        <p style="font-size:12px;margin-top:8px;">Retorna o PDF do DANFE em BASE64.</p>
+      </div>
+    </div>
+
+    <!-- POST /nfe/correcao -->
+    <div class="endpoint-block pending">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method POST">POST</span>
+        <span class="endpoint-path">/nfe/correcao</span>
+        <span class="endpoint-desc">Carta de Correção — <span class="badge-pill bp-yellow">🟡 Pendente</span></span>
+      </div>
+      <div class="endpoint-body">
+        <h4>Campos do Body</h4>
+        <table>
+          <tr><th>Campo</th><th>Tipo</th><th>Obrigatório</th><th>Descrição</th></tr>
+          <tr><td><code class="inline">chave</code></td><td>string</td><td><span class="tag required">Obrigatório</span></td><td>Chave da NF-e a corrigir</td></tr>
+          <tr><td><code class="inline">correcoes</code></td><td>array</td><td><span class="tag required">Obrigatório</span></td><td>Array com os dados a corrigir</td></tr>
+        </table>
+        <div class="info-box blue" style="margin-top:10px;">
+          <strong>Implementação necessária em:</strong> <code class="inline">integranotas.py</code> — adicionar método <code class="inline">corrigir_nfe(chave, correcoes)</code> e criar view + template para formulário de CC-e.
+        </div>
+      </div>
+    </div>
+
+    <!-- POST /nfe/manifesta -->
+    <div class="endpoint-block pending">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method POST">POST</span>
+        <span class="endpoint-path">/nfe/manifesta</span>
+        <span class="endpoint-desc">Manifestação do Destinatário — <span class="badge-pill bp-yellow">🟡 Pendente</span></span>
+      </div>
+      <div class="endpoint-body">
+        <h4>Tipos de Manifestação</h4>
+        <table>
+          <tr><th>Tipo</th><th>Código</th><th>Uso</th></tr>
+          <tr><td>Confirmação da Operação</td><td>210200</td><td>Confirma que a operação ocorreu</td></tr>
+          <tr><td>Ciência da Operação</td><td>210210</td><td>Tomou ciência, mas ainda não confirmou</td></tr>
+          <tr><td>Desconhecimento da Operação</td><td>210220</td><td>Destinatário não reconhece a operação</td></tr>
+          <tr><td>Operação não Realizada</td><td>210240</td><td>Operação não se concretizou</td></tr>
+        </table>
+        <div class="info-box blue" style="margin-top:10px;">
+          Útil no módulo de <strong>Compras</strong> para manifestar NF-e recebidas de fornecedores.
+        </div>
+      </div>
+    </div>
+
+    <!-- POST /nfe/preview -->
+    <div class="endpoint-block pending">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method POST">POST</span>
+        <span class="endpoint-path">/nfe/preview</span>
+        <span class="endpoint-desc">Pré-visualização do DANFE — <span class="badge-pill bp-yellow">🟡 Pendente</span></span>
+      </div>
+      <div class="endpoint-body">
+        <p style="font-size:12px;">Recebe o mesmo body da emissão e retorna um PDF de pré-visualização <strong>sem autorizar</strong> na SEFAZ. Útil para o usuário conferir antes de emitir.</p>
+        <div class="info-box blue">Integrar na view de criação de NF-e com botão "Pré-visualizar" antes de submeter.</div>
+      </div>
+    </div>
+
+    <!-- GET /nfe/eventos -->
+    <div class="endpoint-block pending">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method GET">GET</span>
+        <span class="endpoint-path">/nfe/eventos</span>
+        <span class="endpoint-desc">Histórico de Eventos — <span class="badge-pill bp-yellow">🟡 Pendente</span></span>
+      </div>
+      <div class="endpoint-body">
+        <p style="font-size:12px;">Lista todos os eventos registrados para uma NF-e: emissão, cancelamentos, cartas de correção, manifestações. Exibir na timeline da NF-e no sistema.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================================================
+       SEÇÃO 6 — CT-e
+  ==================================================== -->
+  <section id="cte">
+    <h2 class="section-title">6. CT-e — Conhecimento de Transporte Eletrônico</h2>
+    <div class="info-box red">Nenhum model, service ou view implementado no AgrísData para CT-e. Precisa ser construído do zero, seguindo o padrão do módulo NF-e existente.</div>
+
+    <h3 class="sub-title">6.1 Endpoints Disponíveis</h3>
+
+    <div class="endpoint-block new">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method POST">POST</span>
+        <span class="endpoint-path">/cte</span>
+        <span class="endpoint-desc">Emitir CT-e — <span class="badge-pill bp-red">🔴 Não iniciado</span></span>
+      </div>
+      <div class="endpoint-body">
+        <div class="two-col">
+          <div>
+            <h4>Campos Obrigatórios do Body</h4>
+            <table>
+              <tr><th>Campo</th><th>Tipo</th><th>Descrição</th></tr>
+              <tr><td><code class="inline">serie</code></td><td>string</td><td>Série do CT-e</td></tr>
+              <tr><td><code class="inline">numero</code></td><td>string</td><td>Número do CT-e</td></tr>
+              <tr><td><code class="inline">data_emissao</code></td><td>ISO 8601</td><td>Data/hora de emissão</td></tr>
+              <tr><td><code class="inline">remetente</code></td><td>object</td><td>Dados do remetente da carga</td></tr>
+              <tr><td><code class="inline">destinatario</code></td><td>object</td><td>Dados do destinatário</td></tr>
+              <tr><td><code class="inline">tomador</code></td><td>object</td><td>Responsável pelo pagamento do frete</td></tr>
+              <tr><td><code class="inline">valores</code></td><td>object</td><td>Valor total do serviço de transporte</td></tr>
+              <tr><td><code class="inline">nfe_vinculadas[]</code></td><td>array</td><td>Chaves das NF-e transportadas</td></tr>
+              <tr><td><code class="inline">modal_rodoviario</code></td><td>object</td><td>Dados do veículo e condutor</td></tr>
+              <tr><td><code class="inline">informacoes_adicionais</code></td><td>object</td><td>Impostos e observações</td></tr>
+            </table>
+          </div>
+          <div>
+            <h4>Resposta de Sucesso (código 100)</h4>
+            <table>
+              <tr><th>Campo</th><th>Descrição</th></tr>
+              <tr><td><code class="inline">chave</code></td><td>Chave de acesso CT-e (44 dígitos)</td></tr>
+              <tr><td><code class="inline">xml</code></td><td>XML autorizado em BASE64</td></tr>
+              <tr><td><code class="inline">pdf</code></td><td>DACTE em BASE64</td></tr>
+              <tr><td><code class="inline">protocolo</code></td><td>Protocolo de autorização SEFAZ</td></tr>
+              <tr><td><code class="inline">status</code></td><td>"autorizado"</td></tr>
+            </table>
+            <h4 style="margin-top:12px;">Models Django necessários</h4>
+            <ul style="font-size:12px;line-height:2;padding-left:16px;">
+              <li><code class="inline">ConhecimentoTransporte</code> — model principal</li>
+              <tr><td><code class="inline">CTEDocumentoVinculado</code></td></tr>
+              <li><code class="inline">ItemCTE</code> — cargas transportadas</li>
+            </ul>
+          </div>
+        </div>
+        <h4>Exemplo de Estrutura do Service Python</h4>
+        <pre><code># faturamento/services/integranotas.py — adicionar método:
+
+def emitir_cte(self, ct) -> dict:
+    """Emite CT-e na SEFAZ via IntegraNotas."""
+    payload = {
+        "serie": ct.serie,
+        "numero": str(ct.numero),
+        "data_emissao": ct.data_emissao.isoformat(),
+        "remetente": self._build_remetente_cte(ct),
+        "destinatario": self._build_destinatario_cte(ct),
+        "tomador": self._build_tomador_cte(ct),
+        "valores": {"valor_total_servico": float(ct.valor_servico)},
+        "nfe_vinculadas": [{"chave": doc.chave_nfe} for doc in ct.documentos.all()],
+        "modal_rodoviario": self._build_modal_rodoviario(ct),
+    }
+    resp = self._post("/cte", payload)
+    if resp.get("codigo") == 5023:
+        # Processando em lote — aguardar e consultar
+        import time; time.sleep(3)
+        return self._get(f"/cte/{resp['chave']}")
+    return resp</code></pre>
+      </div>
+    </div>
+
+    <div class="endpoint-block new">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method GET">GET</span>
+        <span class="endpoint-path">/cte/{chave}</span>
+        <span class="endpoint-desc">Consultar CT-e — <span class="badge-pill bp-red">🔴 Não iniciado</span></span>
+      </div>
+      <div class="endpoint-body">
+        <p style="font-size:12px;">Consulta o CT-e pela chave de acesso (44 dígitos). Retorna status, XML e PDF. Usar após emissão assíncrona (código 5023).</p>
+      </div>
+    </div>
+
+    <div class="endpoint-block new">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method POST">POST</span>
+        <span class="endpoint-path">/cte/cancela</span>
+        <span class="endpoint-desc">Cancelar CT-e — <span class="badge-pill bp-red">🔴 Não iniciado</span></span>
+      </div>
+      <div class="endpoint-body">
+        <table>
+          <tr><th>Campo</th><th>Obrigatório</th><th>Descrição</th></tr>
+          <tr><td><code class="inline">chave</code></td><td><span class="tag required">Obrigatório</span></td><td>Chave de acesso (44 dígitos)</td></tr>
+          <tr><td><code class="inline">justificativa</code></td><td><span class="tag required">Obrigatório</span></td><td>Motivo do cancelamento (15-255 chars)</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="endpoint-block new">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method GET">GET</span>
+        <span class="endpoint-path">/cte/pdf</span>
+        <span class="endpoint-desc">Download DACTE — <span class="badge-pill bp-red">🔴 Não iniciado</span></span>
+      </div>
+      <div class="endpoint-body">
+        <p style="font-size:12px;">Parâmetro: <code class="inline">chave</code> (query string). Retorna o PDF do DACTE em BASE64.</p>
+      </div>
+    </div>
+
+    <div class="endpoint-block new">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method POST">POST</span>
+        <span class="endpoint-path">/cte/correcao</span>
+        <span class="endpoint-desc">Carta de Correção CT-e — <span class="badge-pill bp-red">🔴 Não iniciado</span></span>
+      </div>
+      <div class="endpoint-body">
+        <p style="font-size:12px;">Envia CC-e para corrigir informações do CT-e sem cancelá-lo. Campos: <code class="inline">chave</code> (obrigatório) e <code class="inline">correcoes[]</code> (obrigatório).</p>
+      </div>
+    </div>
+
+    <div class="endpoint-block new">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method POST">POST</span>
+        <span class="endpoint-path">/cte/desacordo</span>
+        <span class="endpoint-desc">Manifestação de Desacordo — <span class="badge-pill bp-red">🔴 Não iniciado</span></span>
+      </div>
+      <div class="endpoint-body">
+        <p style="font-size:12px;">Permite ao tomador do serviço registrar desacordo com a prestação do serviço de transporte descrita no CT-e.</p>
+      </div>
+    </div>
+
+    <div class="endpoint-block new">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method GET">GET</span>
+        <span class="endpoint-path">/cte/status</span>
+        <span class="endpoint-desc">Status do Serviço CT-e — <span class="badge-pill bp-red">🔴 Não iniciado</span></span>
+      </div>
+      <div class="endpoint-body">
+        <p style="font-size:12px;">Verifica se o serviço de autorização CT-e da SEFAZ está operacional. Usar antes de tentar emitir.</p>
+      </div>
+    </div>
+
+    <div class="endpoint-block new">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method POST">POST</span>
+        <span class="endpoint-path">/cte/preview</span>
+        <span class="endpoint-desc">Pré-visualização DACTE — <span class="badge-pill bp-red">🔴 Não iniciado</span></span>
+      </div>
+      <div class="endpoint-body">
+        <p style="font-size:12px;">Gera PDF do DACTE sem autorizar na SEFAZ. Mesmo body que <code class="inline">POST /cte</code>.</p>
+      </div>
+    </div>
+
+    <div class="endpoint-block new">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method POST">POST</span>
+        <span class="endpoint-path">/cte/importa</span>
+        <span class="endpoint-desc">Importar XML CT-e Recebido — <span class="badge-pill bp-red">🔴 Não iniciado</span></span>
+      </div>
+      <div class="endpoint-body">
+        <p style="font-size:12px;">Importa CT-e de terceiros (recebidos de transportadoras) para o sistema. Funcionalidade similar ao parser de NF-e existente em <code class="inline">compras/nfe_parser.py</code>.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================================================
+       SEÇÃO 7 — MDF-e
+  ==================================================== -->
+  <section id="mdfe">
+    <h2 class="section-title">7. MDF-e — Manifesto de Documentos Fiscais Eletrônico</h2>
+    <div class="info-box red">Nenhuma implementação existe no AgrísData. O MDF-e agrupa NF-e e CT-e de uma viagem e é obrigatório para transporte interestadual. Precisa ser criado do zero, com relacionamento direto aos models de <code class="inline">Viagem</code>, <code class="inline">Motorista</code> e <code class="inline">Veiculo</code> já existentes no sistema.</div>
+
+    <div class="endpoint-block new">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method POST">POST</span>
+        <span class="endpoint-path">/mdfe</span>
+        <span class="endpoint-desc">Emitir MDF-e — <span class="badge-pill bp-red">🔴 Não iniciado</span></span>
+      </div>
+      <div class="endpoint-body">
+        <div class="two-col">
+          <div>
+            <h4>Campos Obrigatórios do Body</h4>
+            <table>
+              <tr><th>Campo</th><th>Tipo</th><th>Descrição</th></tr>
+              <tr><td><code class="inline">tipo_operacao</code></td><td>string</td><td>"1"=Normal, "3"=Regime Especial NFF</td></tr>
+              <tr><td><code class="inline">numero</code></td><td>string (1-9 dígitos)</td><td>Número do MDF-e</td></tr>
+              <tr><td><code class="inline">serie</code></td><td>string</td><td>Série do MDF-e</td></tr>
+              <tr><td><code class="inline">data_emissao</code></td><td>ISO 8601</td><td>Data/hora de emissão</td></tr>
+              <tr><td><code class="inline">uf_inicio</code></td><td>string</td><td>UF de início da viagem (ex: "SP")</td></tr>
+              <tr><td><code class="inline">uf_fim</code></td><td>string</td><td>UF de destino final</td></tr>
+              <tr><td><code class="inline">municipios_carregamento[]</code></td><td>array</td><td>Municípios onde há carga</td></tr>
+              <tr><td><code class="inline">percursos[]</code></td><td>array</td><td>Estados do percurso com infos adicionais</td></tr>
+              <tr><td><code class="inline">municipios_descarregamento[]</code></td><td>array</td><td>Municípios + chaves NF-e/CT-e vinculadas</td></tr>
+              <tr><td><code class="inline">valores.valor_carga</code></td><td>number</td><td>Valor total da carga</td></tr>
+              <tr><td><code class="inline">valores.unidade_medida</code></td><td>string</td><td>Unidade de peso/medida</td></tr>
+              <tr><td><code class="inline">valores.peso_bruto</code></td><td>number</td><td>Peso bruto da carga</td></tr>
+              <tr><td><code class="inline">modal_rodoviario.veiculo</code></td><td>object</td><td>Dados do veículo (placa, RENAVAM)</td></tr>
+              <tr><td><code class="inline">modal_rodoviario.condutor</code></td><td>object</td><td>Motorista (nome, CPF)</td></tr>
+              <tr><td><code class="inline">tipo_transporte</code></td><td>string</td><td>Tipo de carregamento</td></tr>
+            </table>
+          </div>
+          <div>
+            <h4>Campos Opcionais</h4>
+            <table>
+              <tr><th>Campo</th><th>Descrição</th></tr>
+              <tr><td><code class="inline">informacoes_adicionais_fisco</code></td><td>Observações para o fisco</td></tr>
+              <tr><td><code class="inline">informacoes_adicionais_contribuinte</code></td><td>Observações do contribuinte</td></tr>
+            </table>
+            <h4 style="margin-top:12px;">Resposta de Sucesso (código 100)</h4>
+            <table>
+              <tr><th>Campo</th><th>Descrição</th></tr>
+              <tr><td><code class="inline">chave</code></td><td>Chave acesso MDF-e (44 dígitos)</td></tr>
+              <tr><td><code class="inline">xml</code></td><td>XML autorizado em BASE64</td></tr>
+              <tr><td><code class="inline">pdf</code></td><td>DAMDFE em BASE64</td></tr>
+              <tr><td><code class="inline">protocolo</code></td><td>Protocolo SEFAZ</td></tr>
+            </table>
+            <h4 style="margin-top:12px;">Código 2 — SEFAZ Indisponível</h4>
+            <p style="font-size:12px;">Documento enfileirado para envio posterior quando a SEFAZ voltar. O sistema deve salvar o MDF-e localmente e monitorar o status.</p>
+            <h4 style="margin-top:12px;">Models Django necessários</h4>
+            <ul style="font-size:12px;line-height:2;padding-left:16px;">
+              <li><code class="inline">ManifestoDocumentoFiscal</code> — model principal</li>
+              <li><code class="inline">MDFEDocumentoVinculado</code> — NF-e/CT-e do manifesto</li>
+              <li><code class="inline">MDFEPercurso</code> — estados do percurso</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="endpoint-block new">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method GET">GET</span>
+        <span class="endpoint-path">/mdfe/abertos</span>
+        <span class="endpoint-desc">Listar MDF-e em Aberto — <span class="badge-pill bp-red">🔴 Não iniciado</span></span>
+      </div>
+      <div class="endpoint-body">
+        <p style="font-size:12px;">Lista todos os MDF-e emitidos e ainda não encerrados. <strong>Importante:</strong> é obrigatório encerrar o MDF-e ao finalizar a viagem. Esta consulta permite verificar quais estão pendentes de encerramento.</p>
+      </div>
+    </div>
+
+    <div class="endpoint-block new">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method POST">POST</span>
+        <span class="endpoint-path">/mdfe/encerra</span>
+        <span class="endpoint-desc">Encerrar MDF-e — <span class="badge-pill bp-red">🔴 Não iniciado</span></span>
+      </div>
+      <div class="endpoint-body">
+        <p style="font-size:12px;">Encerra o MDF-e ao final da viagem. <strong>Obrigatório</strong> quando todos os documentos vinculados foram entregues no destino. Campos: <code class="inline">chave</code> (obrigatório), <code class="inline">municipio_encerramento</code>, <code class="inline">data_encerramento</code>.</p>
+      </div>
+    </div>
+
+    <div class="endpoint-block new">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method POST">POST</span>
+        <span class="endpoint-path">/mdfe/cancela</span>
+        <span class="endpoint-desc">Cancelar MDF-e — <span class="badge-pill bp-red">🔴 Não iniciado</span></span>
+      </div>
+      <div class="endpoint-body">
+        <table>
+          <tr><th>Campo</th><th>Obrigatório</th><th>Descrição</th></tr>
+          <tr><td><code class="inline">chave</code></td><td><span class="tag required">Obrigatório</span></td><td>Chave de acesso (44 dígitos)</td></tr>
+          <tr><td><code class="inline">justificativa</code></td><td><span class="tag required">Obrigatório</span></td><td>Motivo do cancelamento (15-255 chars)</td></tr>
+        </table>
+        <div class="info-box yellow" style="margin-top:8px;">MDF-e só pode ser cancelado se ainda estiver em aberto (não encerrado).</div>
+      </div>
+    </div>
+
+    <div class="endpoint-block new">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method GET">GET</span>
+        <span class="endpoint-path">/mdfe/pdf</span>
+        <span class="endpoint-desc">Download DAMDFE — <span class="badge-pill bp-red">🔴 Não iniciado</span></span>
+      </div>
+      <div class="endpoint-body">
+        <p style="font-size:12px;">Parâmetro: <code class="inline">chave</code> (query string). Retorna o PDF do DAMDFE em BASE64. Motorista precisa apresentar este documento na balança/fiscalização.</p>
+      </div>
+    </div>
+
+    <div class="endpoint-block new">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method GET">GET</span>
+        <span class="endpoint-path">/mdfe/mostra</span>
+        <span class="endpoint-desc">Consultar MDF-e — <span class="badge-pill bp-red">🔴 Não iniciado</span></span>
+      </div>
+      <div class="endpoint-body">
+        <p style="font-size:12px;">Consulta o MDF-e pela chave de acesso. Parâmetro: <code class="inline">chave</code> (query string).</p>
+      </div>
+    </div>
+
+    <div class="endpoint-block new">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method GET">GET</span>
+        <span class="endpoint-path">/mdfe/status</span>
+        <span class="endpoint-desc">Status do Serviço MDF-e — <span class="badge-pill bp-red">🔴 Não iniciado</span></span>
+      </div>
+      <div class="endpoint-body">
+        <p style="font-size:12px;">Verifica se o serviço de autorização MDF-e está operacional. Usar antes de tentar emitir.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================================================
+       SEÇÃO 8 — NFS-e (FUTURO)
+  ==================================================== -->
+  <section id="nfse">
+    <h2 class="section-title">8. NFS-e — Nota Fiscal de Serviços (Futuro)</h2>
+    <div class="info-box yellow">Não identificado uso imediato no AgrísData v1. Documentar para implementação futura caso o sistema passe a emitir NF-e de serviços (consultoria, assistência técnica, etc.).</div>
+    <table>
+      <tr><th>Endpoint</th><th>Método</th><th>Descrição</th></tr>
+      <tr><td><code class="inline">/nfse</code></td><td>POST</td><td>Emitir NFS-e</td></tr>
+      <tr><td><code class="inline">/nfse/mostra</code></td><td>GET</td><td>Consultar NFS-e por chave</td></tr>
+      <tr><td><code class="inline">/nfse/cancela</code></td><td>POST</td><td>Cancelar NFS-e</td></tr>
+      <tr><td><code class="inline">/nfse/pdf</code></td><td>GET</td><td>Gerar DANFSe em BASE64</td></tr>
+    </table>
+  </section>
+
+  <!-- ===================================================
+       SEÇÃO 9 — MAPEAMENTO NO SISTEMA
+  ==================================================== -->
+  <section id="mapeamento">
+    <h2 class="section-title">9. Mapeamento no Sistema AgrísData</h2>
+
+    <h3 class="sub-title">9.1 Fluxo NF-e (Existente + Expansão)</h3>
+    <table>
+      <tr><th>Ação do Usuário</th><th>View Django</th><th>Endpoint API</th><th>Status</th></tr>
+      <tr><td>Criar NF-e</td><td>nota_fiscal_create</td><td>—</td><td><span class="badge-pill bp-green">✅</span></td></tr>
+      <tr><td>Emitir NF-e</td><td>nota_fiscal_emitir</td><td>POST /nfe</td><td><span class="badge-pill bp-green">✅</span></td></tr>
+      <tr><td>Consultar status NF-e</td><td>nota_fiscal_detail</td><td>GET /nfe/{chave}</td><td><span class="badge-pill bp-green">✅</span></td></tr>
+      <tr><td>Cancelar NF-e</td><td>nota_fiscal_cancelar</td><td>POST /nfe/cancela</td><td><span class="badge-pill bp-green">✅</span></td></tr>
+      <tr><td>Baixar DANFE</td><td>nota_fiscal_danfe</td><td>GET /nfe/pdf</td><td><span class="badge-pill bp-green">✅</span></td></tr>
+      <tr><td>Pré-visualizar DANFE</td><td>nota_fiscal_preview (criar)</td><td>POST /nfe/preview</td><td><span class="badge-pill bp-yellow">🟡</span></td></tr>
+      <tr><td>Emitir CC-e</td><td>nota_fiscal_correcao (criar)</td><td>POST /nfe/correcao</td><td><span class="badge-pill bp-yellow">🟡</span></td></tr>
+      <tr><td>Manifestar NF-e recebida</td><td>nota_fiscal_manifestar (criar)</td><td>POST /nfe/manifesta</td><td><span class="badge-pill bp-yellow">🟡</span></td></tr>
+      <tr><td>Ver eventos da NF-e</td><td>nota_fiscal_eventos (criar)</td><td>GET /nfe/eventos</td><td><span class="badge-pill bp-yellow">🟡</span></td></tr>
+    </table>
+
+    <h3 class="sub-title">9.2 Fluxo CT-e (Novo)</h3>
+    <table>
+      <tr><th>Ação do Usuário</th><th>View Django (criar)</th><th>Endpoint API</th></tr>
+      <tr><td>Criar CT-e</td><td>cte_create</td><td>—</td></tr>
+      <tr><td>Emitir CT-e</td><td>cte_emitir</td><td>POST /cte</td></tr>
+      <tr><td>Consultar CT-e</td><td>cte_detail</td><td>GET /cte/{chave}</td></tr>
+      <tr><td>Cancelar CT-e</td><td>cte_cancelar</td><td>POST /cte/cancela</td></tr>
+      <tr><td>Baixar DACTE</td><td>cte_dacte</td><td>GET /cte/pdf</td></tr>
+      <tr><td>Emitir CC-e CT-e</td><td>cte_correcao</td><td>POST /cte/correcao</td></tr>
+      <tr><td>Pré-visualizar DACTE</td><td>cte_preview</td><td>POST /cte/preview</td></tr>
+      <tr><td>Manifestar desacordo</td><td>cte_desacordo</td><td>POST /cte/desacordo</td></tr>
+    </table>
+
+    <h3 class="sub-title">9.3 Fluxo MDF-e (Novo)</h3>
+    <table>
+      <tr><th>Ação do Usuário</th><th>View Django (criar)</th><th>Endpoint API</th></tr>
+      <tr><td>Criar MDF-e</td><td>mdfe_create</td><td>—</td></tr>
+      <tr><td>Emitir MDF-e</td><td>mdfe_emitir</td><td>POST /mdfe</td></tr>
+      <tr><td>Consultar MDF-e</td><td>mdfe_detail</td><td>GET /mdfe/mostra</td></tr>
+      <tr><td>Ver MDF-e em aberto</td><td>mdfe_abertos</td><td>GET /mdfe/abertos</td></tr>
+      <tr><td>Encerrar MDF-e</td><td>mdfe_encerrar</td><td>POST /mdfe/encerra</td></tr>
+      <tr><td>Cancelar MDF-e</td><td>mdfe_cancelar</td><td>POST /mdfe/cancela</td></tr>
+      <tr><td>Baixar DAMDFE</td><td>mdfe_damdfe</td><td>GET /mdfe/pdf</td></tr>
+    </table>
+  </section>
+
+  <!-- ===================================================
+       SEÇÃO 10 — MODELS NECESSÁRIOS
+  ==================================================== -->
+  <section id="models">
+    <h2 class="section-title">10. Models Django Necessários</h2>
+
+    <h3 class="sub-title">10.1 ConhecimentoTransporte (CT-e)</h3>
+    <pre><code># faturamento/models.py — adicionar:
+
+class ConhecimentoTransporte(models.Model):
+    STATUS = [('rascunho','Rascunho'),('emitido','Emitido'),('cancelado','Cancelado')]
+
+    empresa          = models.ForeignKey('empresas.Empresa', on_delete=models.PROTECT)
+    numero           = models.PositiveIntegerField()
+    serie            = models.CharField(max_length=3, default='1')
+    data_emissao     = models.DateTimeField()
+    cfop             = models.CharField(max_length=4)
+
+    # Partes envolvidas
+    remetente        = models.ForeignKey('cadastros.Cliente', on_delete=models.PROTECT, related_name='cte_remetente')
+    destinatario     = models.ForeignKey('cadastros.Cliente', on_delete=models.PROTECT, related_name='cte_destinatario')
+    tomador          = models.ForeignKey('cadastros.Cliente', on_delete=models.PROTECT, related_name='cte_tomador')
+    transportadora   = models.ForeignKey('cadastros.Transportadora', on_delete=models.PROTECT, null=True, blank=True)
+
+    # Percurso
+    uf_inicio        = models.CharField(max_length=2)
+    uf_fim           = models.CharField(max_length=2)
+    municipio_ini    = models.CharField(max_length=100)
+    municipio_fim    = models.CharField(max_length=100)
+
+    # Valores
+    valor_servico    = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    valor_carga      = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+
+    # SEFAZ
+    chave_acesso     = models.CharField(max_length=44, blank=True)
+    protocolo        = models.CharField(max_length=20, blank=True)
+    xml_autorizacao  = models.TextField(blank=True)
+    pdf_dacte        = models.TextField(blank=True)  # BASE64
+    status           = models.CharField(max_length=20, choices=STATUS, default='rascunho')
+    ambiente         = models.CharField(max_length=1, choices=[('1','Produção'),('2','Homologação')])
+
+    class Meta:
+        unique_together = ['empresa', 'serie', 'numero']</code></pre>
+
+    <h3 class="sub-title">10.2 ManifestoDocumentoFiscal (MDF-e)</h3>
+    <pre><code># faturamento/models.py — adicionar:
+
+class ManifestoDocumentoFiscal(models.Model):
+    STATUS = [('rascunho','Rascunho'),('emitido','Emitido'),
+              ('encerrado','Encerrado'),('cancelado','Cancelado')]
+
+    empresa          = models.ForeignKey('empresas.Empresa', on_delete=models.PROTECT)
+    numero           = models.PositiveIntegerField()
+    serie            = models.CharField(max_length=3, default='1')
+    data_emissao     = models.DateTimeField()
+
+    # Percurso
+    uf_inicio        = models.CharField(max_length=2)
+    uf_fim           = models.CharField(max_length=2)
+
+    # Carga
+    valor_carga      = models.DecimalField(max_digits=15, decimal_places=2)
+    peso_bruto       = models.DecimalField(max_digits=12, decimal_places=3)
+    unidade_medida   = models.CharField(max_length=2, default='01')  # 01=KG
+
+    # Veículo e condutor (FK para models existentes)
+    veiculo          = models.ForeignKey('cadastros.Veiculo', on_delete=models.PROTECT, null=True)
+    motorista        = models.ForeignKey('cadastros.Motorista', on_delete=models.PROTECT, null=True)
+
+    # SEFAZ
+    chave_acesso     = models.CharField(max_length=44, blank=True)
+    protocolo        = models.CharField(max_length=20, blank=True)
+    xml_autorizacao  = models.TextField(blank=True)
+    pdf_damdfe       = models.TextField(blank=True)  # BASE64
+    status           = models.CharField(max_length=20, choices=STATUS, default='rascunho')
+    data_encerramento = models.DateTimeField(null=True, blank=True)
+    municipio_encerramento = models.CharField(max_length=100, blank=True)
+
+    class Meta:
+        unique_together = ['empresa', 'serie', 'numero']
+
+
+class MDFEDocumentoVinculado(models.Model):
+    mdfe             = models.ForeignKey(ManifestoDocumentoFiscal, on_delete=models.CASCADE, related_name='documentos')
+    tipo             = models.CharField(max_length=3, choices=[('nfe','NF-e'),('cte','CT-e')])
+    chave            = models.CharField(max_length=44)
+    municipio_descarregamento = models.CharField(max_length=100)</code></pre>
+  </section>
+
+  <!-- ===================================================
+       SEÇÃO 11 — SERVICES / CÓDIGO
+  ==================================================== -->
+  <section id="services">
+    <h2 class="section-title">11. Estrutura do Service Python</h2>
+    <p style="font-size:12px;margin-bottom:12px;">Expandir o arquivo existente <code class="inline">faturamento/services/integranotas.py</code> com os novos métodos:</p>
+
+    <pre><code># faturamento/services/integranotas.py — estrutura completa após expansão:
+
+class IntegraNotasAPI:
+    def __init__(self, config: ConfiguracaoFiscal):
+        self.token = config.token_integranotas
+        base = "https://api.integranotas.com.br/v1" if config.ambiente == "1" \
+               else "https://hom-api.integranotas.com.br/v1"
+        self.base_url = base
+        self.timeout = 60
+
+    def _headers(self):
+        return {"Authorization": f"Bearer {self.token}", "Content-Type": "application/json"}
+
+    def _post(self, path, payload):
+        resp = requests.post(f"{self.base_url}{path}", json=payload,
+                             headers=self._headers(), timeout=self.timeout)
+        return resp.json()
+
+    def _get(self, path, params=None):
+        resp = requests.get(f"{self.base_url}{path}", params=params,
+                            headers=self._headers(), timeout=self.timeout)
+        return resp.json()
+
+    # ── MONITOR ──────────────────────────────────────────
+    def monitor_sefaz(self):
+        """Público — sem autenticação."""
+        return requests.get(f"{self.base_url}/monitor", timeout=10).json()
+
+    # ── NF-e ─────────────────────────────────────────────
+    def emitir_nfe(self, nf): ...          # ✅ JÁ EXISTE
+    def consultar_nfe(self, chave): ...    # ✅ JÁ EXISTE
+    def cancelar_nfe(self, chave, just): ...  # ✅ JÁ EXISTE
+    def danfe_nfe(self, chave): ...        # ✅ JÁ EXISTE
+
+    def preview_nfe(self, nf):             # 🟡 ADICIONAR
+        payload = self._build_nfe_payload(nf)
+        return self._post("/nfe/preview", payload)
+
+    def corrigir_nfe(self, chave, correcoes):  # 🟡 ADICIONAR
+        return self._post("/nfe/correcao", {"chave": chave, "correcoes": correcoes})
+
+    def manifestar_nfe(self, chave, tipo):     # 🟡 ADICIONAR
+        return self._post("/nfe/manifesta", {"chave": chave, "tipo": tipo})
+
+    def eventos_nfe(self, chave):              # 🟡 ADICIONAR
+        return self._get("/nfe/eventos", {"chave": chave})
+
+    # ── CT-e ─────────────────────────────────────────────
+    def emitir_cte(self, ct):              # 🔴 CRIAR
+        payload = self._build_cte_payload(ct)
+        resp = self._post("/cte", payload)
+        if resp.get("codigo") == 5023:
+            import time; time.sleep(3)
+            return self._get(f"/cte/{resp['chave']}")
+        return resp
+
+    def consultar_cte(self, chave):        # 🔴 CRIAR
+        return self._get(f"/cte/{chave}")
+
+    def cancelar_cte(self, chave, just):   # 🔴 CRIAR
+        return self._post("/cte/cancela", {"chave": chave, "justificativa": just})
+
+    def dacte(self, chave):                # 🔴 CRIAR
+        return self._get("/cte/pdf", {"chave": chave})
+
+    def corrigir_cte(self, chave, corr):   # 🔴 CRIAR
+        return self._post("/cte/correcao", {"chave": chave, "correcoes": corr})
+
+    def preview_cte(self, ct):             # 🔴 CRIAR
+        return self._post("/cte/preview", self._build_cte_payload(ct))
+
+    def desacordo_cte(self, chave, obs):   # 🔴 CRIAR
+        return self._post("/cte/desacordo", {"chave": chave, "observacao": obs})
+
+    # ── MDF-e ─────────────────────────────────────────────
+    def emitir_mdfe(self, mdfe):           # 🔴 CRIAR
+        payload = self._build_mdfe_payload(mdfe)
+        resp = self._post("/mdfe", payload)
+        if resp.get("codigo") == 5023:
+            import time; time.sleep(3)
+            return self._get("/mdfe/mostra", {"chave": resp['chave']})
+        return resp
+
+    def mdfe_abertos(self):                # 🔴 CRIAR
+        return self._get("/mdfe/abertos")
+
+    def encerrar_mdfe(self, chave, municipio, data):  # 🔴 CRIAR
+        return self._post("/mdfe/encerra", {
+            "chave": chave,
+            "municipio_encerramento": municipio,
+            "data_encerramento": data.isoformat()
+        })
+
+    def cancelar_mdfe(self, chave, just):  # 🔴 CRIAR
+        return self._post("/mdfe/cancela", {"chave": chave, "justificativa": just})
+
+    def damdfe(self, chave):               # 🔴 CRIAR
+        return self._get("/mdfe/pdf", {"chave": chave})</code></pre>
+  </section>
+
+  <!-- ===================================================
+       SEÇÃO 12 — WEBHOOK
+  ==================================================== -->
+  <section id="webhook">
+    <h2 class="section-title">12. Webhook e Callbacks</h2>
+    <div class="info-box blue">O webhook já existe em <code class="inline">faturamento/views.py → integranotas_webhook</code> para NF-e. Deve ser expandido para tratar eventos de CT-e e MDF-e.</div>
+
+    <h4>Estrutura do Webhook Expandido</h4>
+    <pre><code># faturamento/views.py — expandir view existente:
+
+@csrf_exempt
+@require_POST
+def integranotas_webhook(request):
+    """Recebe callbacks assíncronos do IntegraNotas para NF-e, CT-e e MDF-e."""
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({"erro": "JSON inválido"}, status=400)
+
+    tipo = data.get("tipo")           # "nfe", "cte", "mdfe"
+    chave = data.get("chave")
+    status = data.get("status")       # "autorizado", "cancelado", "rejeitado"
+    xml = data.get("xml")             # BASE64
+    pdf = data.get("pdf")             # BASE64
+
+    if tipo == "nfe":
+        nf = NotaFiscal.objects.filter(chave_acesso=chave).first()
+        if nf and status == "autorizado":
+            nf.status = "emitida"
+            nf.xml_autorizacao = xml
+            nf.pdf_danfe = pdf
+            nf.protocolo_autorizacao = data.get("protocolo")
+            nf.save()
+
+    elif tipo == "cte":   # 🔴 ADICIONAR
+        ct = ConhecimentoTransporte.objects.filter(chave_acesso=chave).first()
+        if ct and status == "autorizado":
+            ct.status = "emitido"
+            ct.xml_autorizacao = xml
+            ct.pdf_dacte = pdf
+            ct.protocolo = data.get("protocolo")
+            ct.save()
+
+    elif tipo == "mdfe":  # 🔴 ADICIONAR
+        mdfe = ManifestoDocumentoFiscal.objects.filter(chave_acesso=chave).first()
+        if mdfe and status == "autorizado":
+            mdfe.status = "emitido"
+            mdfe.xml_autorizacao = xml
+            mdfe.pdf_damdfe = pdf
+            mdfe.protocolo = data.get("protocolo")
+            mdfe.save()
+
+    return JsonResponse({"ok": True})</code></pre>
+
+    <div class="info-box yellow" style="margin-top:12px;">
+      <strong>URL do Webhook:</strong> Configurar no painel IntegraNotas apontando para <code class="inline">https://seudominio.com/faturamento/webhook/integranotas/</code>. O endpoint deve ser acessível publicamente (sem VPN/firewall).
+    </div>
+  </section>
+
+  <!-- ===================================================
+       SEÇÃO 13 — CÓDIGOS DE ERRO
+  ==================================================== -->
+  <section id="erros">
+    <h2 class="section-title">13. Códigos de Resposta e Erro</h2>
+    <div class="two-col">
+      <div>
+        <h4>Sucesso</h4>
+        <table>
+          <tr><th>Código</th><th>Significado</th></tr>
+          <tr><td><code class="inline">100</code></td><td>Documento autorizado</td></tr>
+          <tr><td><code class="inline">101</code></td><td>Documento cancelado</td></tr>
+          <tr><td><code class="inline">103</code></td><td>Documento fechado/encerrado</td></tr>
+          <tr><td><code class="inline">135</code></td><td>Evento registrado com sucesso</td></tr>
+          <tr><td><code class="inline">1000</code></td><td>Dados encontrados</td></tr>
+          <tr><td><code class="inline">1001</code></td><td>Requisição processada</td></tr>
+        </table>
+        <h4 style="margin-top:12px;">Processamento</h4>
+        <table>
+          <tr><th>Código</th><th>Significado</th></tr>
+          <tr><td><code class="inline">2</code></td><td>SEFAZ indisponível — documento enfileirado</td></tr>
+          <tr><td><code class="inline">5023</code></td><td>Processando em lote — consultar em ~3s</td></tr>
+        </table>
+      </div>
+      <div>
+        <h4>Erros de Autenticação (6xxx)</h4>
+        <table>
+          <tr><th>Código</th><th>Significado</th></tr>
+          <tr><td><code class="inline">6000</code></td><td>Token não fornecido</td></tr>
+          <tr><td><code class="inline">6001</code></td><td>Token corrompido ou copiado errado</td></tr>
+          <tr><td><code class="inline">6002</code></td><td>Token inválido</td></tr>
+          <tr><td><code class="inline">6003</code></td><td>Acesso do usuário bloqueado</td></tr>
+        </table>
+        <h4 style="margin-top:12px;">Erros de Validação (5xxx)</h4>
+        <table>
+          <tr><th>Código</th><th>Significado</th></tr>
+          <tr><td><code class="inline">5000</code></td><td>Estrutura JSON inválida</td></tr>
+          <tr><td><code class="inline">5001</code></td><td>Campos inválidos/faltando</td></tr>
+          <tr><td><code class="inline">5002</code></td><td>Erro na geração do XML</td></tr>
+          <tr><td><code class="inline">5003</code></td><td>Problema com certificado digital</td></tr>
+          <tr><td><code class="inline">5006</code></td><td>Recurso não encontrado</td></tr>
+          <tr><td><code class="inline">5008</code></td><td>Documento já existe</td></tr>
+          <tr><td><code class="inline">5029</code></td><td>Certificado não corresponde ao CNPJ/CPF</td></tr>
+          <tr><td><code class="inline">4400</code></td><td>Requisição malformada</td></tr>
+          <tr><td><code class="inline">413</code></td><td>Body maior que 2 MB</td></tr>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================================================
+       SEÇÃO 14 — CHECKLIST
+  ==================================================== -->
+  <section id="checklist">
+    <h2 class="section-title">14. Checklist de Implementação</h2>
+
+    <h3 class="sub-title">Alta Prioridade — CT-e</h3>
+    <table>
+      <tr><th>#</th><th>Tarefa</th><th>Arquivo</th><th>Dependência</th></tr>
+      <tr><td>1</td><td>Criar model <code class="inline">ConhecimentoTransporte</code></td><td>faturamento/models.py</td><td>—</td></tr>
+      <tr><td>2</td><td>Criar model <code class="inline">CTEDocumentoVinculado</code></td><td>faturamento/models.py</td><td>Task 1</td></tr>
+      <tr><td>3</td><td>Rodar <code class="inline">makemigrations</code> e <code class="inline">migrate</code></td><td>—</td><td>Task 2</td></tr>
+      <tr><td>4</td><td>Adicionar método <code class="inline">emitir_cte()</code> e <code class="inline">_build_cte_payload()</code></td><td>faturamento/services/integranotas.py</td><td>Task 3</td></tr>
+      <tr><td>5</td><td>Adicionar métodos <code class="inline">cancelar_cte()</code>, <code class="inline">dacte()</code>, <code class="inline">corrigir_cte()</code></td><td>faturamento/services/integranotas.py</td><td>Task 4</td></tr>
+      <tr><td>6</td><td>Criar form <code class="inline">ConhecimentoTransporteForm</code></td><td>faturamento/forms.py</td><td>Task 3</td></tr>
+      <tr><td>7</td><td>Criar views: cte_list, cte_create, cte_emitir, cte_cancelar, cte_dacte</td><td>faturamento/views.py</td><td>Task 6</td></tr>
+      <tr><td>8</td><td>Criar templates CT-e</td><td>faturamento/templates/faturamento/cte/</td><td>Task 7</td></tr>
+      <tr><td>9</td><td>Adicionar URLs de CT-e</td><td>faturamento/urls.py</td><td>Task 7</td></tr>
+      <tr><td>10</td><td>Expandir webhook para eventos CT-e</td><td>faturamento/views.py</td><td>Task 7</td></tr>
+    </table>
+
+    <h3 class="sub-title">Alta Prioridade — MDF-e</h3>
+    <table>
+      <tr><th>#</th><th>Tarefa</th><th>Arquivo</th><th>Dependência</th></tr>
+      <tr><td>11</td><td>Criar model <code class="inline">ManifestoDocumentoFiscal</code></td><td>faturamento/models.py</td><td>CT-e (Task 1-2)</td></tr>
+      <tr><td>12</td><td>Criar model <code class="inline">MDFEDocumentoVinculado</code> e <code class="inline">MDFEPercurso</code></td><td>faturamento/models.py</td><td>Task 11</td></tr>
+      <tr><td>13</td><td>Rodar migrations</td><td>—</td><td>Task 12</td></tr>
+      <tr><td>14</td><td>Adicionar métodos <code class="inline">emitir_mdfe()</code>, <code class="inline">encerrar_mdfe()</code>, etc.</td><td>faturamento/services/integranotas.py</td><td>Task 13</td></tr>
+      <tr><td>15</td><td>Criar views: mdfe_list, mdfe_create, mdfe_emitir, mdfe_encerrar, mdfe_cancelar</td><td>faturamento/views.py</td><td>Task 14</td></tr>
+      <tr><td>16</td><td>Criar templates MDF-e</td><td>faturamento/templates/faturamento/mdfe/</td><td>Task 15</td></tr>
+      <tr><td>17</td><td>Adicionar URLs de MDF-e</td><td>faturamento/urls.py</td><td>Task 15</td></tr>
+      <tr><td>18</td><td>Expandir webhook para eventos MDF-e</td><td>faturamento/views.py</td><td>Task 15</td></tr>
+    </table>
+
+    <h3 class="sub-title">Média Prioridade — NF-e (Recursos Faltantes)</h3>
+    <table>
+      <tr><th>#</th><th>Tarefa</th><th>Arquivo</th></tr>
+      <tr><td>19</td><td>Adicionar <code class="inline">preview_nfe()</code></td><td>integranotas.py</td></tr>
+      <tr><td>20</td><td>Adicionar <code class="inline">corrigir_nfe()</code> + view + template CC-e</td><td>integranotas.py + views.py</td></tr>
+      <tr><td>21</td><td>Adicionar <code class="inline">manifestar_nfe()</code> + view no módulo compras</td><td>integranotas.py + compras/views.py</td></tr>
+      <tr><td>22</td><td>Adicionar <code class="inline">eventos_nfe()</code> + timeline na view de detalhe</td><td>integranotas.py + views.py</td></tr>
+    </table>
+
+    <h3 class="sub-title">Baixa Prioridade — Infraestrutura</h3>
+    <table>
+      <tr><th>#</th><th>Tarefa</th></tr>
+      <tr><td>23</td><td>Widget de Monitor SEFAZ no dashboard (GET /monitor)</td></tr>
+      <tr><td>24</td><td>Alerta de vencimento de certificado digital (verificar data via parse_pfx)</td></tr>
+      <tr><td>25</td><td>Retentativa automática para código 5023 com Celery/threading</td></tr>
+      <tr><td>26</td><td>Log de todas as requisições/respostas da API para auditoria</td></tr>
+    </table>
+  </section>
+
+  <footer style="border-top: 1px solid var(--border); padding-top: 16px; margin-top: 40px; font-size: 11px; color: var(--gray); text-align: center;">
+    Documentação gerada a partir da análise do repositório <strong>github.com/sueldoserafim/agrisdatav1</strong>
+    e da documentação oficial <strong>integranotas.com.br/doc</strong>
+  </footer>
+
+</main>
+
+<script>
+  document.getElementById('dataGer').textContent = new Date().toLocaleString('pt-BR');
+
+  function toggle(header) {
+    const body = header.nextElementSibling;
+    body.classList.toggle('open');
+  }
+
+  // Highlight sidebar link on scroll
+  const sections = document.querySelectorAll('section[id]');
+  window.addEventListener('scroll', () => {
+    let current = '';
+    sections.forEach(s => { if (window.scrollY >= s.offsetTop - 60) current = s.id; });
+    document.querySelectorAll('.sidebar a').forEach(a => {
+      a.classList.toggle('active', a.getAttribute('href') === '#' + current);
+    });
+  });
+</script>
+</body>
+</html>

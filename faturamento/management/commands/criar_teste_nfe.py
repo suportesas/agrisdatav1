@@ -309,7 +309,7 @@ class Command(BaseCommand):
         self.stdout.write(f'  IE         : {empresa.inscricao_estadual}')
         amb = 'HOMOLOGACAO (OK)' if config.ambiente_nfe == '2' else 'PRODUCAO (!)'
         self.stdout.write(f'  Ambiente   : {amb}')
-        tok = 'configurado (OK)' if config.token_integranotas else 'NAO configurado (!)'
+        tok = 'configurado (OK)' if config.has_token else 'NAO configurado (!)'
         self.stdout.write(f'  Token API  : {tok}')
         self.stdout.write('')
         self.stdout.write(f'  Cliente    : {cliente.razao_social}')
@@ -324,7 +324,7 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS(sep))
         self.stdout.write('')
 
-        if not config.token_integranotas:
+        if not config.has_token:
             self.stdout.write(self.style.WARNING(
                 '  [!] Token IntegraNota nao configurado.\n'
                 '      Acesse: Faturamento > Configuracao Fiscal > Token IntegraNota\n'

@@ -48,11 +48,13 @@ class EmpresaForm(forms.ModelForm):
 
 
 class EmpresaFiscalForm(forms.ModelForm):
-    """Dados fiscais da Empresa para emissão de NF-e (IE, endereço completo, código IBGE)."""
+    """Dados fiscais da Empresa para emissão de NF-e (razão social, CNPJ, IE, endereço)."""
 
     class Meta:
         model = Empresa
         fields = [
+            'nome',
+            'cnpj',
             'inscricao_estadual',
             'endereco',
             'numero_endereco',
@@ -64,6 +66,8 @@ class EmpresaFiscalForm(forms.ModelForm):
             'codigo_municipio',
         ]
         widgets = {
+            'nome': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Razão Social completa'}),
+            'cnpj': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '00.000.000/0000-00'}),
             'inscricao_estadual': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: 123456789.01-23'}),
             'endereco': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Rua / Avenida'}),
             'numero_endereco': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Número'}),

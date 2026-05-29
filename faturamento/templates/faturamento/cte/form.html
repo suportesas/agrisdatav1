@@ -1,0 +1,159 @@
+{% extends 'base.html' %}
+{% block page_title %}{{ action }} CT-e{% endblock %}
+{% block content %}
+<div class="container-fluid mt-3 px-3 px-xl-4">
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <h1 class="mb-0">{{ action }} CT-e</h1>
+    <a href="{% url 'faturamento:cte_list' %}" class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-arrow-left me-1"></i> Voltar
+    </a>
+  </div>
+
+  {% if form.errors or docs_formset.errors %}
+  <div class="alert alert-danger"><strong>Verifique os campos:</strong> {{ form.errors }} {{ docs_formset.errors }}</div>
+  {% endif %}
+
+  <form method="post">
+    {% csrf_token %}
+    <div class="row g-3">
+
+      <!-- Dados Gerais -->
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header bg-primary text-white py-2"><i class="bi bi-truck me-1"></i> Dados Gerais</div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-md-4">
+                <label class="form-label">Remetente <span class="text-danger">*</span></label>
+                {{ form.remetente }}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Destinatário <span class="text-danger">*</span></label>
+                {{ form.destinatario }}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Tomador do Serviço <span class="text-danger">*</span></label>
+                {{ form.tomador }}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Transportadora <span class="text-danger">*</span></label>
+                {{ form.transportadora }}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Motorista</label>
+                {{ form.motorista }}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Veículo</label>
+                {{ form.veiculo }}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">Data de Emissão <span class="text-danger">*</span></label>
+                {{ form.data_emissao }}
+              </div>
+              <div class="col-md-2">
+                <label class="form-label">CFOP</label>
+                {{ form.cfop }}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Natureza da Operação</label>
+                {{ form.natureza_operacao }}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">Tipo de Serviço</label>
+                {{ form.tipo_servico }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Percurso -->
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header bg-secondary text-white py-2"><i class="bi bi-map me-1"></i> Percurso</div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-md-2">
+                <label class="form-label">UF de Início <span class="text-danger">*</span></label>
+                {{ form.uf_inicio }}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Município de Início <span class="text-danger">*</span></label>
+                {{ form.municipio_inicio }}
+              </div>
+              <div class="col-md-2">
+                <label class="form-label">UF de Fim <span class="text-danger">*</span></label>
+                {{ form.uf_fim }}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Município de Fim <span class="text-danger">*</span></label>
+                {{ form.municipio_fim }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Valores -->
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header bg-success text-white py-2"><i class="bi bi-currency-dollar me-1"></i> Valores e Carga</div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-md-3">
+                <label class="form-label">Valor do Frete (R$) <span class="text-danger">*</span></label>
+                {{ form.valor_servico }}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">Valor da Carga (R$)</label>
+                {{ form.valor_carga }}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">Peso Bruto (kg)</label>
+                {{ form.peso_bruto_kg }}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">Modalidade de Frete</label>
+                {{ form.modalidade_frete }}
+              </div>
+              <div class="col-12">
+                <label class="form-label">Observações</label>
+                {{ form.observacoes }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Documentos Vinculados (NF-e) -->
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header bg-info text-white py-2"><i class="bi bi-file-earmark-text me-1"></i> NF-e Transportadas</div>
+          <div class="card-body">
+            {{ docs_formset.management_form }}
+            <table class="table table-sm" id="docs-table">
+              <thead class="table-light"><tr><th>Chave NF-e (44 dígitos)</th><th>Descrição</th><th></th></tr></thead>
+              <tbody>
+                {% for df in docs_formset %}
+                <tr>
+                  <td>{{ df.chave_nfe }}{{ df.id }}</td>
+                  <td>{{ df.descricao }}</td>
+                  <td>{{ df.DELETE }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /row -->
+
+    <div class="mt-3 d-flex gap-2">
+      <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i> Salvar CT-e</button>
+      <a href="{% url 'faturamento:cte_list' %}" class="btn btn-outline-secondary">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

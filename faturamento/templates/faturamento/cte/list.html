@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+{% block page_title %}CT-e — Conhecimentos de Transporte{% endblock %}
+{% block content %}
+<div class="container-fluid mt-3 px-3 px-xl-4">
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <h1 class="mb-0">CT-e — Conhecimentos de Transporte</h1>
+    <a href="{% url 'faturamento:cte_create' %}" class="btn btn-primary btn-sm">
+      <i class="bi bi-plus-circle me-1"></i> Novo CT-e
+    </a>
+  </div>
+
+  <!-- Filtros -->
+  <form method="get" class="row g-2 mb-3">
+    <div class="col-md-5">
+      <input type="text" name="q" value="{{ q }}" class="form-control form-control-sm" placeholder="Buscar por remetente, destinatário ou chave...">
+    </div>
+    <div class="col-md-3">
+      <select name="status" class="form-select form-select-sm">
+        <option value="">Todos os status</option>
+        {% for val, label in status_choices %}
+          <option value="{{ val }}" {% if status_filtro == val %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-auto">
+      <button type="submit" class="btn btn-secondary btn-sm">Filtrar</button>
+      <a href="{% url 'faturamento:cte_list' %}" class="btn btn-outline-secondary btn-sm">Limpar</a>
+    </div>
+  </form>
+
+  <div class="table-responsive">
+    <table class="table table-sm table-hover align-middle">
+      <thead class="table-dark">
+        <tr>
+          <th>Número</th>
+          <th>Emissão</th>
+          <th>Remetente</th>
+          <th>Destinatário</th>
+          <th>Percurso</th>
+          <th class="text-end">Valor Frete</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for ct in page_obj %}
+        <tr>
+          <td><strong>{{ ct.numero|default:"S/N" }}/{{ ct.serie }}</strong></td>
+          <td>{{ ct.data_emissao|date:"d/m/Y" }}</td>
+          <td>{{ ct.remetente.razao_social }}</td>
+          <td>{{ ct.destinatario.razao_social }}</td>
+          <td><span class="badge bg-secondary">{{ ct.uf_inicio }}</span> → <span class="badge bg-secondary">{{ ct.uf_fim }}</span></td>
+          <td class="text-end">R$ {{ ct.valor_servico|floatformat:2 }}</td>
+          <td>
+            {% if ct.status == 'EMITIDO' %}<span class="badge bg-success">Emitido</span>
+            {% elif ct.status == 'CANCELADO' %}<span class="badge bg-danger">Cancelado</span>
+            {% else %}<span class="badge bg-warning text-dark">Rascunho</span>{% endif %}
+          </td>
+          <td>
+            <a href="{% url 'faturamento:cte_detail' ct.pk %}" class="btn btn-outline-primary btn-sm">
+              <i class="bi bi-eye"></i>
+            </a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="8" class="text-center text-muted py-4">Nenhum CT-e encontrado.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if page_obj.has_other_pages %}
+  <nav><ul class="pagination pagination-sm justify-content-center">
+    {% if page_obj.has_previous %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&status={{ status_filtro }}&q={{ q }}">«</a></li>{% endif %}
+    <li class="page-item disabled"><span class="page-link">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span></li>
+    {% if page_obj.has_next %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&status={{ status_filtro }}&q={{ q }}">»</a></li>{% endif %}
+  </ul></nav>
+  {% endif %}
+</div>
+{% endblock %}

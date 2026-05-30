@@ -16,6 +16,7 @@ from .forms import (
     ConhecimentoTransporteForm,
     DocumentoVinculadoCTeFormSet,
     DocumentoVinculadoMDFeFormSet,
+    DuplicataNFFormSet,
     EncerrarMDFeForm,
     InvoiceExportacaoForm,
     ItemInvoiceFormSet,
@@ -25,6 +26,7 @@ from .forms import (
     NotaFiscalCancelarForm,
     NotaFiscalForm,
     PackingListForm,
+    PagamentoNFFormSet,
     PercursoMDFeFormSet,
 )
 from .models import (
@@ -134,9 +136,10 @@ def nota_fiscal_create(request):
     if request.method == 'POST':
         form = NotaFiscalForm(request.POST, empresa=empresa)
         formset = ItemNotaFiscalFormSet(request.POST, prefix='itens')
-        if form.is_valid() and formset.is_valid():
+        pag_formset = PagamentoNFFormSet(request.POST, prefix='pagamentos')
+        dup_formset = DuplicataNFFormSet(request.POST, prefix='duplicatas')
+        if form.is_valid() and formset.is_valid() and pag_formset.is_valid() and dup_formset.is_valid():
             nf = form.save(user=request.user)
-            # Auto-numerar — respeita numero_nfe_inicial para migração de outro sistema
             if not nf.numero:
                 ultimo = NotaFiscal.objects.filter(empresa=empresa).exclude(numero__isnull=True).order_by('-numero').first()
                 if ultimo:
@@ -151,6 +154,10 @@ def nota_fiscal_create(request):
                 item.save()
             for obj in formset.deleted_objects:
                 obj.delete()
+            pag_formset.instance = nf
+            pag_formset.save()
+            dup_formset.instance = nf
+            dup_formset.save()
             nf.calcular_totais()
             messages.success(request, f'NF {nf.numero}/{nf.serie} criada com sucesso.')
             return redirect('faturamento:nota_fiscal_detail', pk=nf.pk)
@@ -163,10 +170,14 @@ def nota_fiscal_create(request):
             initial['informacoes_complementares'] = config.observacoes_padrao_nfe
         form = NotaFiscalForm(empresa=empresa, initial=initial)
         formset = ItemNotaFiscalFormSet(prefix='itens')
+        pag_formset = PagamentoNFFormSet(prefix='pagamentos')
+        dup_formset = DuplicataNFFormSet(prefix='duplicatas')
 
     return render(request, 'faturamento/nota_fiscal/form.html', {
         'form': form,
         'formset': formset,
+        'pag_formset': pag_formset,
+        'dup_formset': dup_formset,
         'title': 'Nova Nota Fiscal',
     })
 
@@ -190,7 +201,9 @@ def nota_fiscal_update(request, pk):
     if request.method == 'POST':
         form = NotaFiscalForm(request.POST, instance=nf, empresa=empresa)
         formset = ItemNotaFiscalFormSet(request.POST, instance=nf, prefix='itens')
-        if form.is_valid() and formset.is_valid():
+        pag_formset = PagamentoNFFormSet(request.POST, instance=nf, prefix='pagamentos')
+        dup_formset = DuplicataNFFormSet(request.POST, instance=nf, prefix='duplicatas')
+        if form.is_valid() and formset.is_valid() and pag_formset.is_valid() and dup_formset.is_valid():
             form.save(user=request.user)
             items = formset.save(commit=False)
             for idx, item in enumerate(items, start=1):
@@ -198,16 +211,22 @@ def nota_fiscal_update(request, pk):
                 item.save()
             for obj in formset.deleted_objects:
                 obj.delete()
+            pag_formset.save()
+            dup_formset.save()
             nf.calcular_totais()
             messages.success(request, 'NF-e atualizada com sucesso.')
             return redirect('faturamento:nota_fiscal_detail', pk=pk)
     else:
         form = NotaFiscalForm(instance=nf, empresa=empresa)
         formset = ItemNotaFiscalFormSet(instance=nf, prefix='itens')
+        pag_formset = PagamentoNFFormSet(instance=nf, prefix='pagamentos')
+        dup_formset = DuplicataNFFormSet(instance=nf, prefix='duplicatas')
 
     return render(request, 'faturamento/nota_fiscal/form.html', {
         'form': form,
         'formset': formset,
+        'pag_formset': pag_formset,
+        'dup_formset': dup_formset,
         'nf': nf,
         'title': f'Editar NF {nf.numero}/{nf.serie}',
     })
@@ -900,12 +919,18 @@ def ajax_produto_detail(request, pk):
         tributacoes.append({
             'cfop': t.cfop.codigo,
             'cst_icms': t.icms_situacao_tributaria,
-            'cst_pis': t.pis_situacao_tributaria,
-            'cst_cofins': t.cofins_situacao_tributaria,
+            'icms_modalidade_base': t.icms_modalidade_base or '3',
+            'icms_reducao_base': float(t.icms_reducao_base or 0),
             'aliquota_icms': float(t.icms_aliquota),
+            'icms_st_aliquota': float(t.icms_st_aliquota or 0),
+            'icms_st_mva': float(t.icms_st_mva or 0),
+            'icms_st_reducao_base': float(t.icms_st_reducao_base or 0),
+            'cst_ipi': t.ipi_situacao_tributaria or '99',
             'aliquota_ipi': float(t.ipi_aliquota),
             'ipi_codigo_enquadramento': t.ipi_codigo_enquadramento or '999',
+            'cst_pis': t.pis_situacao_tributaria,
             'aliquota_pis': float(t.pis_aliquota),
+            'cst_cofins': t.cofins_situacao_tributaria,
             'aliquota_cofins': float(t.cofins_aliquota),
         })
 

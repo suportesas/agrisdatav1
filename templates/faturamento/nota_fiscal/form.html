@@ -4,14 +4,21 @@
 
 {% block content %}
 <style>
-  #items-table td, #items-table th { vertical-align: middle; padding: 6px 8px; }
+  #items-table td, #items-table th { vertical-align: middle; padding: 5px 7px; }
   #items-table input.form-control-sm, #items-table select.form-select-sm { font-size: .8rem; }
   .item-fiscal-row td { background: #f8f9fa; border-top: none !important; }
-  .item-fiscal-row .row { padding: 8px 4px; }
-  .item-fiscal-row label { font-size: .72rem; font-weight: 600; color: #6c757d; margin-bottom: 2px; }
+  .item-fiscal-row .fiscal-section { border-left: 3px solid #dee2e6; padding: 6px 10px; margin-bottom: 6px; }
+  .item-fiscal-row .fiscal-section.icms { border-color: #0d6efd; }
+  .item-fiscal-row .fiscal-section.st   { border-color: #fd7e14; }
+  .item-fiscal-row .fiscal-section.ipi  { border-color: #6f42c1; }
+  .item-fiscal-row .fiscal-section.piscofins { border-color: #20c997; }
+  .fiscal-label { font-size: .68rem; font-weight: 700; color: #6c757d; margin-bottom: 2px; display: block; text-transform: uppercase; letter-spacing: .02em; }
+  .fiscal-section-title { font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 6px; }
   .item-total { font-size: .85rem; }
-  #items-table .btn-toggle-fiscal { padding: 2px 6px; }
-  #items-table .remove-item { padding: 2px 6px; }
+  .btn-toggle-fiscal { padding: 2px 7px; }
+  .remove-item { padding: 2px 6px; }
+  /* Pagamentos / Duplicatas */
+  .pag-row td, .dup-row td { vertical-align: middle; }
 </style>
 
 <div class="container-fluid py-4">
@@ -25,9 +32,12 @@
   <form method="post" id="nf-form">
     {% csrf_token %}
     {{ formset.management_form }}
+    {{ pag_formset.management_form }}
+    {{ dup_formset.management_form }}
 
     <div class="row g-3">
-      <!-- Dados Principais -->
+
+      <!-- ── Dados Principais ─────────────────────────────────────── -->
       <div class="col-md-8">
         <div class="card border-0 shadow-sm">
           <div class="card-header fw-semibold">Dados da Nota Fiscal</div>
@@ -45,23 +55,31 @@
                 <label class="form-label">Data de Emissão *</label>
                 {{ form.data_emissao }}
               </div>
-              <div class="col-md-8">
+              <div class="col-md-6">
                 <label class="form-label">Natureza da Operação *</label>
                 {{ form.natureza_operacao }}
               </div>
-              <div class="col-md-4">
+              <div class="col-md-3">
+                <label class="form-label">Finalidade NF-e</label>
+                {{ form.finalidade_nfe }}
+              </div>
+              <div class="col-md-3">
                 <label class="form-label">CFOP Padrão</label>
                 {{ form.cfop }}
               </div>
-              <div class="col-md-4">
+              <div class="col-md-3">
                 <label class="form-label">Data de Saída</label>
                 {{ form.data_saida }}
               </div>
               <div class="col-md-4">
+                <label class="form-label">Presença do Comprador</label>
+                {{ form.presenca_comprador }}
+              </div>
+              <div class="col-md-5">
                 <label class="form-label">Modalidade de Frete</label>
                 {{ form.modalidade_frete }}
               </div>
-              <div class="col-md-4">
+              <div class="col-md-5">
                 <label class="form-label">Transportadora</label>
                 {{ form.transportadora }}
               </div>
@@ -70,7 +88,7 @@
         </div>
       </div>
 
-      <!-- Totais -->
+      <!-- ── Totais ────────────────────────────────────────────────── -->
       <div class="col-md-4">
         <div class="card border-0 shadow-sm">
           <div class="card-header fw-semibold">Valores</div>
@@ -89,24 +107,25 @@
             </div>
             <hr class="my-2">
             <div class="d-flex justify-content-between text-muted small mb-1">
-              <span>Subtotal Produtos</span>
-              <span id="resumo-produtos">R$ 0,00</span>
+              <span>Subtotal Produtos</span><span id="resumo-produtos">R$ 0,00</span>
             </div>
             <div class="d-flex justify-content-between text-muted small mb-1">
-              <span>+ Frete</span>
-              <span id="resumo-frete">R$ 0,00</span>
+              <span>+ IPI</span><span id="resumo-ipi">R$ 0,00</span>
             </div>
             <div class="d-flex justify-content-between text-muted small mb-1">
-              <span>+ Seguro</span>
-              <span id="resumo-seguro">R$ 0,00</span>
+              <span>+ ICMS ST</span><span id="resumo-icms-st">R$ 0,00</span>
             </div>
             <div class="d-flex justify-content-between text-muted small mb-1">
-              <span>- Desconto NF</span>
-              <span id="resumo-desconto-nf" class="text-danger">R$ 0,00</span>
+              <span>+ Frete</span><span id="resumo-frete">R$ 0,00</span>
+            </div>
+            <div class="d-flex justify-content-between text-muted small mb-1">
+              <span>+ Seguro</span><span id="resumo-seguro">R$ 0,00</span>
+            </div>
+            <div class="d-flex justify-content-between text-muted small mb-1">
+              <span>- Desconto NF</span><span id="resumo-desconto-nf" class="text-danger">R$ 0,00</span>
             </div>
             <div class="d-flex justify-content-between fw-bold border-top pt-2 mt-1 fs-6">
-              <span>Total NF</span>
-              <span id="resumo-total" class="text-success">R$ 0,00</span>
+              <span>Total NF</span><span id="resumo-total" class="text-success">R$ 0,00</span>
             </div>
           </div>
         </div>
@@ -114,12 +133,15 @@
         <div class="card border-0 shadow-sm mt-3">
           <div class="card-header fw-semibold">Informações Complementares</div>
           <div class="card-body">
+            <label class="form-label mb-1 small text-muted">Inf. Complementares (infCpl)</label>
             {{ form.informacoes_complementares }}
+            <label class="form-label mt-2 mb-1 small text-muted">Inf. para o Fisco (infAdFisco)</label>
+            {{ form.informacoes_fisco }}
           </div>
         </div>
       </div>
 
-      <!-- Itens -->
+      <!-- ── Itens ──────────────────────────────────────────────────── -->
       <div class="col-12">
         <div class="card border-0 shadow-sm">
           <div class="card-header fw-semibold d-flex justify-content-between align-items-center">
@@ -134,16 +156,14 @@
                 <thead class="table-light">
                   <tr>
                     <th style="width:40px" class="text-center">#</th>
-                    <th style="width:190px">Produto</th>
+                    <th style="width:185px">Produto</th>
                     <th>Descrição</th>
-                    <th style="width:52px">UN</th>
-                    <th style="width:90px">Quantidade</th>
-                    <th style="width:110px">Vl. Unitário</th>
-                    <th style="width:100px">Desconto</th>
-                    <th style="width:115px" class="text-end">Total Item</th>
-                    <th style="width:72px" class="text-center">
-                      <i class="bi bi-gear text-muted" title="Ações"></i>
-                    </th>
+                    <th style="width:48px">UN</th>
+                    <th style="width:88px">Qtd.</th>
+                    <th style="width:108px">Vl. Unit.</th>
+                    <th style="width:95px">Desconto</th>
+                    <th style="width:110px" class="text-end">Total Item</th>
+                    <th style="width:72px" class="text-center"><i class="bi bi-gear text-muted"></i></th>
                   </tr>
                 </thead>
                 <tbody id="items-body">
@@ -172,61 +192,122 @@
                       </button>
                     </td>
                   </tr>
+                  <!-- painel fiscal expandível -->
                   <tr class="item-fiscal-row" style="display:none">
                     <td colspan="9">
-                      <div class="row g-2 align-items-end px-1 py-1">
-                        <div class="col-auto">
-                          <label class="d-block">NCM</label>
-                          {{ item_form.ncm }}
+                      <div class="row g-0 px-1 py-2">
+
+                        <!-- Classificação -->
+                        <div class="col-12 mb-2">
+                          <div class="fiscal-section d-flex flex-wrap gap-2 align-items-end">
+                            <span class="fiscal-section-title w-100 text-secondary"><i class="bi bi-tag me-1"></i>Classificação Fiscal</span>
+                            <div>
+                              <label class="fiscal-label">NCM</label>
+                              {{ item_form.ncm }}
+                            </div>
+                            <div>
+                              <label class="fiscal-label">CEST</label>
+                              {{ item_form.cest }}
+                            </div>
+                            <div>
+                              <label class="fiscal-label">EAN/GTIN</label>
+                              {{ item_form.ean }}
+                            </div>
+                            <div>
+                              <label class="fiscal-label">Origem</label>
+                              {{ item_form.origem_mercadoria }}
+                            </div>
+                            <div>
+                              <label class="fiscal-label">CFOP</label>
+                              {{ item_form.cfop }}
+                            </div>
+                          </div>
                         </div>
-                        <div class="col-auto">
-                          <label class="d-block">CEST</label>
-                          {{ item_form.cest }}
+
+                        <!-- ICMS -->
+                        <div class="col-md-6 mb-2 pe-md-1">
+                          <div class="fiscal-section icms d-flex flex-wrap gap-2 align-items-end h-100">
+                            <span class="fiscal-section-title w-100 text-primary"><i class="bi bi-percent me-1"></i>ICMS</span>
+                            <div>
+                              <label class="fiscal-label">CST ICMS</label>
+                              {{ item_form.cst_icms }}
+                            </div>
+                            <div>
+                              <label class="fiscal-label">Modalidade BC</label>
+                              {{ item_form.icms_modalidade_base }}
+                            </div>
+                            <div>
+                              <label class="fiscal-label">Red. BC (%)</label>
+                              {{ item_form.icms_reducao_base }}
+                            </div>
+                            <div>
+                              <label class="fiscal-label">Alíq. ICMS (%)</label>
+                              {{ item_form.aliquota_icms }}
+                            </div>
+                          </div>
                         </div>
-                        <div class="col-auto">
-                          <label class="d-block">EAN</label>
-                          {{ item_form.ean }}
+
+                        <!-- ICMS ST -->
+                        <div class="col-md-6 mb-2 ps-md-1">
+                          <div class="fiscal-section st d-flex flex-wrap gap-2 align-items-end h-100">
+                            <span class="fiscal-section-title w-100 text-warning"><i class="bi bi-arrow-repeat me-1"></i>ICMS-ST</span>
+                            <div>
+                              <label class="fiscal-label">Alíq. ST (%)</label>
+                              {{ item_form.icms_st_aliquota }}
+                            </div>
+                            <div>
+                              <label class="fiscal-label">MVA ST (%)</label>
+                              {{ item_form.icms_st_mva }}
+                            </div>
+                            <div>
+                              <label class="fiscal-label">Red. BC ST (%)</label>
+                              {{ item_form.icms_st_reducao_base }}
+                            </div>
+                          </div>
                         </div>
-                        <div class="col-auto">
-                          <label class="d-block">Origem</label>
-                          {{ item_form.origem_mercadoria }}
+
+                        <!-- IPI -->
+                        <div class="col-md-5 mb-2 pe-md-1">
+                          <div class="fiscal-section ipi d-flex flex-wrap gap-2 align-items-end h-100">
+                            <span class="fiscal-section-title w-100" style="color:#6f42c1"><i class="bi bi-box me-1"></i>IPI</span>
+                            <div>
+                              <label class="fiscal-label">CST IPI</label>
+                              {{ item_form.cst_ipi }}
+                            </div>
+                            <div>
+                              <label class="fiscal-label">Alíq. IPI (%)</label>
+                              {{ item_form.aliquota_ipi }}
+                            </div>
+                            <div>
+                              <label class="fiscal-label">Cód. Enquadramento</label>
+                              {{ item_form.ipi_codigo_enquadramento }}
+                            </div>
+                          </div>
                         </div>
-                        <div class="col-auto">
-                          <label class="d-block">CFOP</label>
-                          {{ item_form.cfop }}
+
+                        <!-- PIS / COFINS -->
+                        <div class="col-md-7 mb-2 ps-md-1">
+                          <div class="fiscal-section piscofins d-flex flex-wrap gap-2 align-items-end h-100">
+                            <span class="fiscal-section-title w-100 text-success"><i class="bi bi-bank me-1"></i>PIS / COFINS</span>
+                            <div>
+                              <label class="fiscal-label">CST PIS</label>
+                              {{ item_form.cst_pis }}
+                            </div>
+                            <div>
+                              <label class="fiscal-label">Alíq. PIS (%)</label>
+                              {{ item_form.aliquota_pis }}
+                            </div>
+                            <div>
+                              <label class="fiscal-label">CST COFINS</label>
+                              {{ item_form.cst_cofins }}
+                            </div>
+                            <div>
+                              <label class="fiscal-label">Alíq. COFINS (%)</label>
+                              {{ item_form.aliquota_cofins }}
+                            </div>
+                          </div>
                         </div>
-                        <div class="col-auto">
-                          <label class="d-block">CST ICMS</label>
-                          {{ item_form.cst_icms }}
-                        </div>
-                        <div class="col-auto">
-                          <label class="d-block">CST PIS</label>
-                          {{ item_form.cst_pis }}
-                        </div>
-                        <div class="col-auto">
-                          <label class="d-block">CST COFINS</label>
-                          {{ item_form.cst_cofins }}
-                        </div>
-                        <div class="col-auto">
-                          <label class="d-block">% ICMS</label>
-                          {{ item_form.aliquota_icms }}
-                        </div>
-                        <div class="col-auto">
-                          <label class="d-block">% IPI</label>
-                          {{ item_form.aliquota_ipi }}
-                        </div>
-                        <div class="col-auto">
-                          <label class="d-block">Enq. IPI</label>
-                          {{ item_form.ipi_codigo_enquadramento }}
-                        </div>
-                        <div class="col-auto">
-                          <label class="d-block">% PIS</label>
-                          {{ item_form.aliquota_pis }}
-                        </div>
-                        <div class="col-auto">
-                          <label class="d-block">% COFINS</label>
-                          {{ item_form.aliquota_cofins }}
-                        </div>
+
                       </div>
                     </td>
                   </tr>
@@ -234,7 +315,7 @@
                 </tbody>
                 <tfoot class="table-light">
                   <tr>
-                    <td colspan="7" class="text-end text-muted small fw-semibold pe-3">Subtotal dos Produtos:</td>
+                    <td colspan="7" class="text-end text-muted small fw-semibold pe-3">Subtotal Produtos:</td>
                     <td class="text-end fw-bold text-success" id="tfoot-subtotal">R$ 0,00</td>
                     <td></td>
                   </tr>
@@ -244,7 +325,96 @@
           </div>
         </div>
       </div>
-    </div>
+
+      <!-- ── Pagamentos ─────────────────────────────────────────────── -->
+      <div class="col-md-6">
+        <div class="card border-0 shadow-sm">
+          <div class="card-header fw-semibold d-flex justify-content-between align-items-center">
+            <span><i class="bi bi-credit-card me-2 text-success"></i>Formas de Pagamento</span>
+            <button type="button" class="btn btn-sm btn-outline-success" id="add-pagamento">
+              <i class="bi bi-plus-lg"></i>
+            </button>
+          </div>
+          <div class="card-body p-0">
+            <table class="table table-sm mb-0" id="pag-table">
+              <thead class="table-light">
+                <tr>
+                  <th>Meio de Pagamento</th>
+                  <th style="width:130px">Valor (R$)</th>
+                  <th style="width:40px"></th>
+                </tr>
+              </thead>
+              <tbody id="pag-body">
+                {% for pf in pag_formset %}
+                <tr class="pag-row">
+                  {{ pf.id }}
+                  <td>
+                    {{ pf.DELETE }}
+                    {{ pf.meio_pagamento }}
+                  </td>
+                  <td>{{ pf.valor }}</td>
+                  <td class="text-center">
+                    <button type="button" class="btn btn-outline-danger btn-sm remove-pag" style="padding:1px 6px">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          <div class="card-footer text-muted small">
+            <i class="bi bi-info-circle me-1"></i>Se nenhum pagamento for adicionado, a NF será enviada como "Outros (90)".
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Duplicatas ─────────────────────────────────────────────── -->
+      <div class="col-md-6">
+        <div class="card border-0 shadow-sm">
+          <div class="card-header fw-semibold d-flex justify-content-between align-items-center">
+            <span><i class="bi bi-calendar-check me-2 text-warning"></i>Duplicatas / Parcelas</span>
+            <button type="button" class="btn btn-sm btn-outline-warning" id="add-duplicata">
+              <i class="bi bi-plus-lg"></i>
+            </button>
+          </div>
+          <div class="card-body p-0">
+            <table class="table table-sm mb-0" id="dup-table">
+              <thead class="table-light">
+                <tr>
+                  <th style="width:80px">Nº Dup.</th>
+                  <th>Vencimento</th>
+                  <th style="width:130px">Valor (R$)</th>
+                  <th style="width:40px"></th>
+                </tr>
+              </thead>
+              <tbody id="dup-body">
+                {% for df in dup_formset %}
+                <tr class="dup-row">
+                  {{ df.id }}
+                  <td>
+                    {{ df.DELETE }}
+                    {{ df.numero }}
+                  </td>
+                  <td>{{ df.vencimento }}</td>
+                  <td>{{ df.valor }}</td>
+                  <td class="text-center">
+                    <button type="button" class="btn btn-outline-danger btn-sm remove-dup" style="padding:1px 6px">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          <div class="card-footer text-muted small">
+            <i class="bi bi-info-circle me-1"></i>Duplicatas são enviadas à SEFAZ no bloco de cobrança da NF-e.
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /row -->
 
     <div class="d-flex gap-2 mt-4">
       <button type="button" class="btn btn-primary" id="btn-salvar-nf">
@@ -255,7 +425,7 @@
   </form>
 </div>
 
-<!-- Modal de pré-validação fiscal ─────────────────────────────────────── -->
+<!-- Modal pré-validação fiscal -->
 <div class="modal fade" id="modalValidacaoFiscal" tabindex="-1">
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
@@ -264,7 +434,7 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
-        <p class="text-muted mb-3">Os itens abaixo têm campos fiscais obrigatórios em branco. Corrija antes de salvar, ou salve assim mesmo (a nota ficará como rascunho e não poderá ser emitida).</p>
+        <p class="text-muted mb-3">Os itens abaixo têm campos fiscais obrigatórios em branco. Corrija antes de salvar ou salve assim mesmo (ficará como rascunho).</p>
         <div id="validacao-lista"></div>
       </div>
       <div class="modal-footer">
@@ -281,11 +451,15 @@
 
 <script>
 (function () {
-  const TOTAL_FORMS = document.getElementById('id_itens-TOTAL_FORMS');
-  const body = document.getElementById('items-body');
+  const TOTAL_ITENS = document.getElementById('id_itens-TOTAL_FORMS');
+  const TOTAL_PAG   = document.getElementById('id_pagamentos-TOTAL_FORMS');
+  const TOTAL_DUP   = document.getElementById('id_duplicatas-TOTAL_FORMS');
+  const body        = document.getElementById('items-body');
+  const pagBody     = document.getElementById('pag-body');
+  const dupBody     = document.getElementById('dup-body');
   const fmt = v => 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-  // ── Toggle sub-linha fiscal ───────────────────────────────────────
+  // ── Toggle fiscal panel ───────────────────────────────────────────
   function attachToggleFiscal(mainRow) {
     const btn = mainRow.querySelector('.btn-toggle-fiscal');
     if (!btn) return;
@@ -298,89 +472,89 @@
     });
   }
 
-  // ── Badge de status fiscal no botão toggle ────────────────────────
+  // ── Badge status fiscal ───────────────────────────────────────────
   function updateFiscalBadge(mainRow, fiscalRow) {
     const btn = mainRow.querySelector('.btn-toggle-fiscal');
     if (!btn) return;
-    const src  = (fiscalRow && fiscalRow.classList.contains('item-fiscal-row')) ? fiscalRow : mainRow;
+    const src  = fiscalRow && fiscalRow.classList.contains('item-fiscal-row') ? fiscalRow : mainRow;
     const prod = mainRow.querySelector('select[name$="-produto"]')?.value;
-    const ncm  = (src.querySelector('[name$="-ncm"]')  || mainRow.querySelector('[name$="-ncm"]'))?.value?.trim();
-    const cfop = (src.querySelector('[name$="-cfop"]') || mainRow.querySelector('[name$="-cfop"]'))?.value?.trim();
-    const cst  = (src.querySelector('[name$="-cst_icms"]') || mainRow.querySelector('[name$="-cst_icms"]'))?.value?.trim();
+    const ncm  = src.querySelector('[name$="-ncm"]')?.value?.trim();
+    const cfop = src.querySelector('[name$="-cfop"]')?.value?.trim();
+    const cst  = src.querySelector('[name$="-cst_icms"]')?.value?.trim();
+    const stAl = parseFloat(src.querySelector('[name$="-icms_st_aliquota"]')?.value || 0);
 
-    btn.classList.remove('btn-outline-secondary','btn-outline-warning','btn-outline-success');
-    if (!prod) {
-      btn.classList.add('btn-outline-secondary');
-      btn.setAttribute('data-bs-original-title','Dados Fiscais');
-      btn.title = 'Dados Fiscais';
-      return;
-    }
+    btn.classList.remove('btn-outline-secondary','btn-outline-warning','btn-outline-success','btn-outline-info');
+    if (!prod) { btn.classList.add('btn-outline-secondary'); return; }
     if (!ncm || !cfop || !cst) {
       btn.classList.add('btn-outline-warning');
-      btn.title = 'Dados Fiscais incompletos — clique para revisar NCM, CFOP e CST ICMS';
+      btn.title = 'Dados Fiscais incompletos — revise NCM, CFOP e CST ICMS';
+    } else if (stAl > 0) {
+      btn.classList.add('btn-outline-info');
+      btn.title = 'Dados Fiscais OK (com ICMS ST)';
     } else {
       btn.classList.add('btn-outline-success');
       btn.title = 'Dados Fiscais OK';
     }
   }
 
-  // ── Aplicar uma tributação nas linhas fiscais ─────────────────────
+  // ── Aplicar tributação vinda do AJAX ─────────────────────────────
   function applyTributacao(mainRow, fiscalRow, t) {
     if (!t) return;
     const setF = (sel, val) => {
       const el = (fiscalRow && fiscalRow.querySelector(sel)) || mainRow.querySelector(sel);
       if (el && val !== undefined && val !== null) el.value = val;
     };
-    setF('input[name$="-cfop"]',                   t.cfop);
-    setF('input[name$="-cst_icms"]',               t.cst_icms);
-    setF('input[name$="-cst_pis"]',                t.cst_pis);
-    setF('input[name$="-cst_cofins"]',             t.cst_cofins);
-    setF('input[name$="-aliquota_icms"]',          t.aliquota_icms);
-    setF('input[name$="-aliquota_ipi"]',           t.aliquota_ipi);
-    setF('input[name$="-ipi_codigo_enquadramento"]', t.ipi_codigo_enquadramento);
-    setF('input[name$="-aliquota_pis"]',           t.aliquota_pis);
-    setF('input[name$="-aliquota_cofins"]',        t.aliquota_cofins);
+    setF('input[name$="-cfop"]',                      t.cfop);
+    setF('input[name$="-cst_icms"]',                  t.cst_icms);
+    setF('select[name$="-icms_modalidade_base"]',      t.icms_modalidade_base);
+    setF('input[name$="-icms_reducao_base"]',          t.icms_reducao_base);
+    setF('input[name$="-aliquota_icms"]',              t.aliquota_icms);
+    setF('input[name$="-icms_st_aliquota"]',           t.icms_st_aliquota);
+    setF('input[name$="-icms_st_mva"]',                t.icms_st_mva);
+    setF('input[name$="-icms_st_reducao_base"]',       t.icms_st_reducao_base);
+    setF('select[name$="-cst_ipi"]',                   t.cst_ipi);
+    setF('input[name$="-aliquota_ipi"]',               t.aliquota_ipi);
+    setF('input[name$="-ipi_codigo_enquadramento"]',   t.ipi_codigo_enquadramento);
+    setF('input[name$="-cst_pis"]',                    t.cst_pis);
+    setF('input[name$="-aliquota_pis"]',               t.aliquota_pis);
+    setF('input[name$="-cst_cofins"]',                 t.cst_cofins);
+    setF('input[name$="-aliquota_cofins"]',            t.aliquota_cofins);
     updateFiscalBadge(mainRow, fiscalRow);
   }
 
-  // ── Seletor de tributação (quando o produto tem mais de uma regra) ─
+  // ── Seletor de tributação (múltiplas regras) ──────────────────────
   function injectTributacaoSelector(fiscalRow, tributacoes, onSelect) {
-    const existing = fiscalRow.querySelector('.trib-selector-wrap');
-    if (existing) existing.remove();
+    fiscalRow.querySelector('.trib-selector-wrap')?.remove();
     if (!tributacoes || tributacoes.length <= 1) return;
 
     const wrap = document.createElement('div');
-    wrap.className = 'trib-selector-wrap col-12 mb-2';
+    wrap.className = 'trib-selector-wrap col-12 mb-2 px-1';
+    const hasst = t => t.icms_st_aliquota > 0 ? ' 🔶ST' : '';
     wrap.innerHTML = `
-      <label class="d-block fw-semibold text-primary mb-1" style="font-size:.72rem">
-        <i class="bi bi-collection me-1"></i>Tributação — selecione a regra fiscal
-      </label>
+      <label class="fiscal-label text-primary"><i class="bi bi-collection me-1"></i>Selecione a regra fiscal do produto</label>
       <select class="form-select form-select-sm trib-select">
         ${tributacoes.map((t,i) =>
-          `<option value="${i}">CFOP ${t.cfop} · ICMS CST-${t.cst_icms}${t.aliquota_icms > 0 ? ' '+t.aliquota_icms+'%' : ' (isento)'} · PIS ${t.cst_pis} · COFINS ${t.cst_cofins}</option>`
+          `<option value="${i}">CFOP ${t.cfop} · CST-${t.cst_icms} · ICMS ${t.aliquota_icms}%${hasst(t)} · PIS ${t.cst_pis} · COFINS ${t.cst_cofins}</option>`
         ).join('')}
       </select>`;
-    wrap.querySelector('.trib-select').addEventListener('change', function () {
+    wrap.querySelector('.trib-select').addEventListener('change', function() {
       onSelect(tributacoes[parseInt(this.value)]);
     });
-
-    const innerDiv = fiscalRow.querySelector('td > div');
-    if (innerDiv) innerDiv.prepend(wrap);
+    const inner = fiscalRow.querySelector('td > div');
+    if (inner) inner.prepend(wrap);
   }
 
-  // ── Remover linha ────────────────────────────────────────────────
+  // ── Remover item ──────────────────────────────────────────────────
   function attachRemove(mainRow) {
-    const btn = mainRow.querySelector('.remove-item');
-    if (!btn) return;
-    btn.addEventListener('click', function () {
+    mainRow.querySelector('.remove-item')?.addEventListener('click', function() {
       const fiscalRow = mainRow.nextElementSibling;
       const chk = mainRow.querySelector('input[type=checkbox][name$="-DELETE"]');
       if (chk) {
         chk.checked = true;
         mainRow.style.display = 'none';
-        if (fiscalRow && fiscalRow.classList.contains('item-fiscal-row')) fiscalRow.style.display = 'none';
+        if (fiscalRow?.classList.contains('item-fiscal-row')) fiscalRow.style.display = 'none';
       } else {
-        if (fiscalRow && fiscalRow.classList.contains('item-fiscal-row')) fiscalRow.remove();
+        if (fiscalRow?.classList.contains('item-fiscal-row')) fiscalRow.remove();
         mainRow.remove();
       }
       renumerarItens();
@@ -388,7 +562,6 @@
     });
   }
 
-  // ── Renumerar itens visíveis ─────────────────────────────────────
   function renumerarItens() {
     let n = 1;
     body.querySelectorAll('.item-row').forEach(row => {
@@ -399,21 +572,45 @@
     });
   }
 
-  // ── Calcular total da linha ──────────────────────────────────────
+  // ── Cálculo de totais ─────────────────────────────────────────────
   function calcLinha(row) {
-    const qtd = parseFloat(row.querySelector('input[name$="-quantidade"]')?.value) || 0;
-    const vu  = parseFloat(row.querySelector('input[name$="-valor_unitario"]')?.value) || 0;
+    const qtd  = parseFloat(row.querySelector('input[name$="-quantidade"]')?.value) || 0;
+    const vu   = parseFloat(row.querySelector('input[name$="-valor_unitario"]')?.value) || 0;
     const desc = parseFloat(row.querySelector('input[name$="-valor_desconto"]')?.value) || 0;
     return Math.max(0, qtd * vu - desc);
   }
 
-  // ── Recalcular todos os totais ───────────────────────────────────
+  function calcST(row, fiscalRow) {
+    const src = fiscalRow?.classList.contains('item-fiscal-row') ? fiscalRow : row;
+    const total  = calcLinha(row);
+    const aliqSt = parseFloat(src.querySelector('[name$="-icms_st_aliquota"]')?.value || 0);
+    const mva    = parseFloat(src.querySelector('[name$="-icms_st_mva"]')?.value || 0);
+    const redSt  = parseFloat(src.querySelector('[name$="-icms_st_reducao_base"]')?.value || 0);
+    const redBc  = parseFloat(src.querySelector('[name$="-icms_reducao_base"]')?.value || 0);
+    const aliqIc = parseFloat(src.querySelector('[name$="-aliquota_icms"]')?.value || 0);
+    if (aliqSt <= 0) return 0;
+    const bcIcms = total * (1 - redBc / 100);
+    const vIcms  = bcIcms * aliqIc / 100;
+    const bcSt   = total * (1 + mva / 100) * (1 - redSt / 100);
+    return Math.max(0, bcSt * aliqSt / 100 - vIcms);
+  }
+
+  function calcIPI(row, fiscalRow) {
+    const src = fiscalRow?.classList.contains('item-fiscal-row') ? fiscalRow : row;
+    const total = calcLinha(row);
+    const aliq  = parseFloat(src.querySelector('[name$="-aliquota_ipi"]')?.value || 0);
+    return total * aliq / 100;
+  }
+
   function recalcularTotais() {
-    let subtotal = 0;
+    let subtotal = 0, totalIpi = 0, totalSt = 0;
     body.querySelectorAll('.item-row').forEach(row => {
       if (row.style.display !== 'none') {
+        const fiscalRow = row.nextElementSibling;
         const t = calcLinha(row);
         subtotal += t;
+        totalSt  += calcST(row, fiscalRow);
+        totalIpi += calcIPI(row, fiscalRow);
         const span = row.querySelector('.item-total');
         if (span) span.textContent = fmt(t);
       }
@@ -422,46 +619,43 @@
     const frete  = parseFloat(document.getElementById('id_valor_frete')?.value)   || 0;
     const seguro = parseFloat(document.getElementById('id_valor_seguro')?.value)   || 0;
     const descNF = parseFloat(document.getElementById('id_valor_desconto')?.value) || 0;
-    const total  = subtotal + frete + seguro - descNF;
+    const total  = subtotal + totalIpi + totalSt + frete + seguro - descNF;
 
-    document.getElementById('tfoot-subtotal').textContent    = fmt(subtotal);
-    document.getElementById('resumo-produtos').textContent   = fmt(subtotal);
-    document.getElementById('resumo-frete').textContent      = fmt(frete);
-    document.getElementById('resumo-seguro').textContent     = fmt(seguro);
-    document.getElementById('resumo-desconto-nf').textContent = fmt(descNF);
-    document.getElementById('resumo-total').textContent      = fmt(total);
+    document.getElementById('tfoot-subtotal').textContent        = fmt(subtotal);
+    document.getElementById('resumo-produtos').textContent       = fmt(subtotal);
+    document.getElementById('resumo-ipi').textContent            = fmt(totalIpi);
+    document.getElementById('resumo-icms-st').textContent        = fmt(totalSt);
+    document.getElementById('resumo-frete').textContent          = fmt(frete);
+    document.getElementById('resumo-seguro').textContent         = fmt(seguro);
+    document.getElementById('resumo-desconto-nf').textContent    = fmt(descNF);
+    document.getElementById('resumo-total').textContent          = fmt(total);
   }
 
-  // ── Listeners de recálculo nos campos da linha ───────────────────
   function attachCalcListeners(row) {
-    ['input[name$="-quantidade"]', 'input[name$="-valor_unitario"]', 'input[name$="-valor_desconto"]'].forEach(sel => {
-      const el = row.querySelector(sel);
+    ['input[name$="-quantidade"]','input[name$="-valor_unitario"]','input[name$="-valor_desconto"]',
+     'input[name$="-aliquota_icms"]','input[name$="-aliquota_ipi"]',
+     'input[name$="-icms_reducao_base"]','input[name$="-icms_st_aliquota"]',
+     'input[name$="-icms_st_mva"]','input[name$="-icms_st_reducao_base"]'].forEach(sel => {
+      const el = row.querySelector(sel) || row.nextElementSibling?.querySelector(sel);
       if (el) el.addEventListener('input', recalcularTotais);
     });
   }
 
-  // ── AJAX: preencher produto ──────────────────────────────────────
+  // ── AJAX: produto selecionado ─────────────────────────────────────
   function attachProdutoAjax(mainRow) {
     const fiscalRow = mainRow.nextElementSibling;
-    const rowFiscal = fiscalRow && fiscalRow.classList.contains('item-fiscal-row') ? fiscalRow : null;
+    const rowFiscal = fiscalRow?.classList.contains('item-fiscal-row') ? fiscalRow : null;
     const prodSel   = mainRow.querySelector('select[name$="-produto"]');
     if (!prodSel) return;
 
     prodSel.addEventListener('change', function () {
       const pk = this.value;
-      // Sem produto → resetar badge
       if (!pk) { updateFiscalBadge(mainRow, rowFiscal); return; }
 
       fetch(`/faturamento/ajax/produto/${pk}/`)
         .then(r => r.json())
         .then(data => {
           if (data.erro) return;
-
-          // Campos gerais
-          const setF = (sel, val) => {
-            const el = (rowFiscal && rowFiscal.querySelector(sel)) || mainRow.querySelector(sel);
-            if (el && val !== undefined && val !== null) el.value = val;
-          };
 
           const desc = mainRow.querySelector('input[name$="-descricao"]');
           if (desc && !desc.value) desc.value = data.nome || '';
@@ -470,34 +664,31 @@
           const vu = mainRow.querySelector('input[name$="-valor_unitario"]');
           if (vu && (!vu.value || vu.value === '0')) vu.value = data.preco_venda || '';
 
-          setF('input[name$="-ncm"]',               data.ncm);
-          setF('input[name$="-cest"]',              data.cest);
-          setF('select[name$="-origem_mercadoria"]', data.origem_mercadoria);
+          const setF = (sel, val) => {
+            const el = (rowFiscal && rowFiscal.querySelector(sel)) || mainRow.querySelector(sel);
+            if (el && val !== undefined && val !== null) el.value = val;
+          };
+          setF('input[name$="-ncm"]',                data.ncm);
+          setF('input[name$="-cest"]',               data.cest);
+          setF('select[name$="-origem_mercadoria"]',  data.origem_mercadoria);
 
           const tributacoes = data.tributacoes || [];
+          rowFiscal?.querySelector('.trib-no-data-warn')?.remove();
+          rowFiscal?.querySelector('.trib-selector-wrap')?.remove();
 
           if (tributacoes.length === 0) {
-            // Produto sem tributação — abre painel fiscal e marca como incompleto
             if (rowFiscal) {
               rowFiscal.style.display = '';
-              const icon = mainRow.querySelector('.btn-toggle-fiscal i');
-              if (icon) icon.className = 'bi bi-chevron-up';
-              // Injeta aviso visual
-              let warn = rowFiscal.querySelector('.trib-no-data-warn');
-              if (!warn) {
-                warn = document.createElement('div');
-                warn.className = 'trib-no-data-warn col-12 mb-2';
-                warn.innerHTML = '<div class="alert alert-warning py-1 px-2 small mb-0"><i class="bi bi-exclamation-triangle me-1"></i>Produto sem tributação cadastrada — preencha manualmente os campos abaixo.</div>';
-                const inner = rowFiscal.querySelector('td > div');
-                if (inner) inner.prepend(warn);
+              mainRow.querySelector('.btn-toggle-fiscal i').className = 'bi bi-chevron-up';
+              if (!rowFiscal.querySelector('.trib-no-data-warn')) {
+                const warn = document.createElement('div');
+                warn.className = 'trib-no-data-warn px-1 mb-2';
+                warn.innerHTML = '<div class="alert alert-warning py-1 px-2 small mb-0"><i class="bi bi-exclamation-triangle me-1"></i>Produto sem tributação cadastrada — preencha os campos manualmente.</div>';
+                rowFiscal.querySelector('td > div')?.prepend(warn);
               }
             }
           } else {
-            // Remove aviso se existia
-            rowFiscal && rowFiscal.querySelector('.trib-no-data-warn')?.remove();
-            // Aplica a primeira tributação
             applyTributacao(mainRow, rowFiscal, tributacoes[0]);
-            // Seletor de tributação se houver mais de uma
             if (rowFiscal) {
               injectTributacaoSelector(rowFiscal, tributacoes, t => applyTributacao(mainRow, rowFiscal, t));
             }
@@ -509,93 +700,172 @@
         .catch(() => {});
     });
 
-    // Badge em tempo real ao editar campos fiscais manualmente
-    ['[name$="-ncm"]','[name$="-cfop"]','[name$="-cst_icms"]'].forEach(sel => {
+    // Badge ao editar manualmente
+    ['[name$="-ncm"]','[name$="-cfop"]','[name$="-cst_icms"]','[name$="-icms_st_aliquota"]'].forEach(sel => {
       const el = (rowFiscal && rowFiscal.querySelector(sel)) || mainRow.querySelector(sel);
       if (el) el.addEventListener('input', () => updateFiscalBadge(mainRow, rowFiscal));
     });
   }
 
-  // ── Inicializar linhas já existentes ─────────────────────────────
+  // ── Inicializar linhas existentes ─────────────────────────────────
   body.querySelectorAll('.item-row').forEach(row => {
     attachToggleFiscal(row);
     attachRemove(row);
     attachCalcListeners(row);
     attachProdutoAjax(row);
-    // Badge inicial para NFs em edição (já têm produto selecionado)
-    const fiscalRow = row.nextElementSibling;
-    updateFiscalBadge(row, fiscalRow && fiscalRow.classList.contains('item-fiscal-row') ? fiscalRow : null);
+    const fr = row.nextElementSibling;
+    updateFiscalBadge(row, fr?.classList.contains('item-fiscal-row') ? fr : null);
   });
 
-  // Recalcular quando campos globais mudam
-  ['id_valor_frete', 'id_valor_seguro', 'id_valor_desconto'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.addEventListener('input', recalcularTotais);
+  ['id_valor_frete','id_valor_seguro','id_valor_desconto'].forEach(id => {
+    document.getElementById(id)?.addEventListener('input', recalcularTotais);
   });
-
   recalcularTotais();
 
-  // ── Adicionar nova linha ──────────────────────────────────────────
+  // ── Adicionar novo item ───────────────────────────────────────────
   document.getElementById('add-item').addEventListener('click', function () {
-    const allMainRows = [...body.querySelectorAll('.item-row')];
-    if (!allMainRows.length) return;
-
-    const lastMain   = allMainRows.at(-1);
+    const allMain = [...body.querySelectorAll('.item-row')];
+    if (!allMain.length) return;
+    const lastMain   = allMain.at(-1);
     const lastFiscal = lastMain.nextElementSibling;
-    const idx        = parseInt(TOTAL_FORMS.value);
+    const idx = parseInt(TOTAL_ITENS.value);
 
     const newMain   = lastMain.cloneNode(true);
-    const newFiscal = lastFiscal && lastFiscal.classList.contains('item-fiscal-row')
-      ? lastFiscal.cloneNode(true)
-      : null;
+    const newFiscal = lastFiscal?.classList.contains('item-fiscal-row') ? lastFiscal.cloneNode(true) : null;
 
-    // Reindexar e limpar campos
     [newMain, newFiscal].filter(Boolean).forEach(row => {
-      row.querySelectorAll('input, select, textarea').forEach(el => {
+      row.querySelectorAll('input,select,textarea').forEach(el => {
         el.name = el.name.replace(/-\d+-/, `-${idx}-`);
-        el.id   = el.id   ? el.id.replace(/-\d+-/, `-${idx}-`)   : '';
-        if (el.type === 'checkbox') {
-          el.checked = false;
-        } else if (el.name.endsWith('-numero_item')) {
-          el.value = idx + 1;
-        } else {
-          el.value = '';
-        }
+        if (el.id) el.id = el.id.replace(/-\d+-/, `-${idx}-`);
+        if (el.type === 'checkbox') el.checked = false;
+        else if (el.name.endsWith('-numero_item')) el.value = idx + 1;
+        else el.value = '';
       });
     });
 
-    // Resetar display e ícone do toggle
     newMain.style.display = '';
-    const icon = newMain.querySelector('.btn-toggle-fiscal i');
-    if (icon) icon.className = 'bi bi-chevron-down';
+    newMain.querySelector('.btn-toggle-fiscal i').className = 'bi bi-chevron-down';
     if (newFiscal) newFiscal.style.display = 'none';
-
-    // Limpar total
-    const totalSpan = newMain.querySelector('.item-total');
-    if (totalSpan) totalSpan.textContent = '—';
+    newMain.querySelector('.item-total').textContent = '—';
+    newFiscal?.querySelector('.trib-selector-wrap')?.remove();
+    newFiscal?.querySelector('.trib-no-data-warn')?.remove();
 
     body.appendChild(newMain);
     if (newFiscal) body.appendChild(newFiscal);
-
-    TOTAL_FORMS.value = idx + 1;
+    TOTAL_ITENS.value = idx + 1;
 
     attachToggleFiscal(newMain);
     attachRemove(newMain);
     attachCalcListeners(newMain);
     attachProdutoAjax(newMain);
     renumerarItens();
-
-    // Focar no select de produto da nova linha
-    const prodSel = newMain.querySelector('select[name$="-produto"]');
-    if (prodSel) prodSel.focus();
+    newMain.querySelector('select[name$="-produto"]')?.focus();
   });
 
-  // ── Pré-validação fiscal antes de salvar ─────────────────────────────
+  // ── Pagamentos ────────────────────────────────────────────────────
+  function attachRemovePag(row) {
+    row.querySelector('.remove-pag')?.addEventListener('click', function() {
+      const chk = row.querySelector('input[type=checkbox][name$="-DELETE"]');
+      if (chk) { chk.checked = true; row.style.display = 'none'; }
+      else row.remove();
+    });
+  }
+
+  pagBody.querySelectorAll('.pag-row').forEach(attachRemovePag);
+
+  document.getElementById('add-pagamento').addEventListener('click', function() {
+    const rows = [...pagBody.querySelectorAll('.pag-row')];
+    const idx  = parseInt(TOTAL_PAG.value);
+    const tmpl = rows.at(-1) || pagBody.querySelector('tr');
+
+    if (!tmpl) {
+      // Sem template — cria linha mínima
+      const tr = document.createElement('tr');
+      tr.className = 'pag-row';
+      tr.innerHTML = `
+        <td>
+          <input type="hidden" name="pagamentos-${idx}-DELETE">
+          <select name="pagamentos-${idx}-meio_pagamento" class="form-select form-select-sm">
+            <option value="01">Dinheiro</option><option value="02">Cheque</option>
+            <option value="03">Cartão de Crédito</option><option value="04">Cartão de Débito</option>
+            <option value="14">Duplicata Mercantil</option><option value="15">Boleto Bancário</option>
+            <option value="16">Depósito Bancário</option><option value="17" selected>PIX</option>
+            <option value="18">TED/Transferência</option><option value="90">Sem Pagamento</option>
+            <option value="99">Outros</option>
+          </select>
+        </td>
+        <td><input type="number" name="pagamentos-${idx}-valor" class="form-control form-control-sm" step="0.01" value="0"></td>
+        <td class="text-center">
+          <button type="button" class="btn btn-outline-danger btn-sm remove-pag" style="padding:1px 6px"><i class="bi bi-trash"></i></button>
+        </td>`;
+      pagBody.appendChild(tr);
+      attachRemovePag(tr);
+    } else {
+      const newRow = tmpl.cloneNode(true);
+      newRow.querySelectorAll('input,select').forEach(el => {
+        el.name = el.name.replace(/-\d+-/, `-${idx}-`);
+        if (el.id) el.id = el.id.replace(/-\d+-/, `-${idx}-`);
+        if (el.type === 'checkbox') el.checked = false;
+        else el.value = el.name.endsWith('-valor') ? '' : el.value;
+      });
+      newRow.style.display = '';
+      pagBody.appendChild(newRow);
+      attachRemovePag(newRow);
+    }
+    TOTAL_PAG.value = idx + 1;
+  });
+
+  // ── Duplicatas ────────────────────────────────────────────────────
+  function attachRemoveDup(row) {
+    row.querySelector('.remove-dup')?.addEventListener('click', function() {
+      const chk = row.querySelector('input[type=checkbox][name$="-DELETE"]');
+      if (chk) { chk.checked = true; row.style.display = 'none'; }
+      else row.remove();
+    });
+  }
+
+  dupBody.querySelectorAll('.dup-row').forEach(attachRemoveDup);
+
+  document.getElementById('add-duplicata').addEventListener('click', function() {
+    const rows = [...dupBody.querySelectorAll('.dup-row')];
+    const idx  = parseInt(TOTAL_DUP.value);
+    const tmpl = rows.at(-1);
+
+    if (!tmpl) {
+      const tr = document.createElement('tr');
+      tr.className = 'dup-row';
+      tr.innerHTML = `
+        <td>
+          <input type="hidden" name="duplicatas-${idx}-DELETE">
+          <input type="text" name="duplicatas-${idx}-numero" class="form-control form-control-sm" placeholder="001">
+        </td>
+        <td><input type="date" name="duplicatas-${idx}-vencimento" class="form-control form-control-sm"></td>
+        <td><input type="number" name="duplicatas-${idx}-valor" class="form-control form-control-sm" step="0.01"></td>
+        <td class="text-center">
+          <button type="button" class="btn btn-outline-danger btn-sm remove-dup" style="padding:1px 6px"><i class="bi bi-trash"></i></button>
+        </td>`;
+      dupBody.appendChild(tr);
+      attachRemoveDup(tr);
+    } else {
+      const newRow = tmpl.cloneNode(true);
+      newRow.querySelectorAll('input').forEach(el => {
+        el.name = el.name.replace(/-\d+-/, `-${idx}-`);
+        if (el.id) el.id = el.id.replace(/-\d+-/, `-${idx}-`);
+        if (el.type !== 'checkbox') el.value = '';
+        else el.checked = false;
+      });
+      newRow.style.display = '';
+      dupBody.appendChild(newRow);
+      attachRemoveDup(newRow);
+    }
+    TOTAL_DUP.value = idx + 1;
+  });
+
+  // ── Pré-validação antes de salvar ─────────────────────────────────
   const nfForm    = document.getElementById('nf-form');
   const btnSalvar = document.getElementById('btn-salvar-nf');
-  let   forceSubmit = false;
+  let forceSubmit = false;
 
-  // Lazy: Bootstrap só está disponível após o script ser carregado (final do body)
   function getModal() {
     return bootstrap.Modal.getOrCreateInstance(document.getElementById('modalValidacaoFiscal'));
   }
@@ -604,24 +874,18 @@
     const problemas = [];
     body.querySelectorAll('.item-row').forEach((mainRow, idx) => {
       if (mainRow.style.display === 'none') return;
-      const fiscalRow = mainRow.nextElementSibling;
-      const src = fiscalRow && fiscalRow.classList.contains('item-fiscal-row') ? fiscalRow : mainRow;
-      const prod  = mainRow.querySelector('select[name$="-produto"]')?.value;
-      const ncm   = (src.querySelector('[name$="-ncm"]')     || mainRow.querySelector('[name$="-ncm"]'))?.value?.trim();
-      const cfop  = (src.querySelector('[name$="-cfop"]')    || mainRow.querySelector('[name$="-cfop"]'))?.value?.trim();
-      const cst   = (src.querySelector('[name$="-cst_icms"]')|| mainRow.querySelector('[name$="-cst_icms"]'))?.value?.trim();
-      const desc  = mainRow.querySelector('[name$="-descricao"]')?.value?.trim() || `Item ${idx + 1}`;
-
-      if (!prod) return; // linha vazia, ignora
-
+      const src  = mainRow.nextElementSibling;
+      const prod = mainRow.querySelector('select[name$="-produto"]')?.value;
+      if (!prod) return;
+      const ncm  = (src?.querySelector('[name$="-ncm"]')      || mainRow.querySelector('[name$="-ncm"]'))?.value?.trim();
+      const cfop = (src?.querySelector('[name$="-cfop"]')     || mainRow.querySelector('[name$="-cfop"]'))?.value?.trim();
+      const cst  = (src?.querySelector('[name$="-cst_icms"]') || mainRow.querySelector('[name$="-cst_icms"]'))?.value?.trim();
+      const desc = mainRow.querySelector('[name$="-descricao"]')?.value?.trim() || `Item ${idx + 1}`;
       const faltando = [];
       if (!ncm)  faltando.push('NCM');
       if (!cfop) faltando.push('CFOP');
       if (!cst)  faltando.push('CST ICMS');
-
-      if (faltando.length) {
-        problemas.push({ desc, faltando, mainRow, fiscalRow });
-      }
+      if (faltando.length) problemas.push({ desc, faltando, mainRow, fiscalRow: src });
     });
     return problemas;
   }
@@ -631,7 +895,6 @@
     const problemas = validarItensFiscal();
     if (!problemas.length) { nfForm.submit(); return; }
 
-    // Monta lista no modal
     const modal = getModal();
     const lista = document.getElementById('validacao-lista');
     lista.innerHTML = '';
@@ -644,14 +907,12 @@
         modal.hide();
         if (p.fiscalRow) {
           p.fiscalRow.style.display = '';
-          const icon = p.mainRow.querySelector('.btn-toggle-fiscal i');
-          if (icon) icon.className = 'bi bi-chevron-up';
+          p.mainRow.querySelector('.btn-toggle-fiscal i').className = 'bi bi-chevron-up';
         }
         p.mainRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
       });
       lista.appendChild(div);
     });
-
     modal.show();
   });
 
@@ -660,6 +921,7 @@
     forceSubmit = true;
     nfForm.submit();
   });
+
 })();
 </script>
 {% endblock %}

@@ -162,12 +162,13 @@ class IntegranNotasClient:
         except Exception:
             config = None
 
-        return {
+        payload: dict = {
             'natureza_operacao': nf.natureza_operacao,
             'serie': str(nf.serie),
             'numero': str(nf.numero),
             'data_emissao': nf.data_emissao.strftime('%Y-%m-%dT%H:%M:%S') if hasattr(nf.data_emissao, 'strftime') else str(nf.data_emissao),
-            'tipo_documento': '1',  # 1=NF-e
+            'tipo_documento': '1',
+            'finalidade': getattr(nf, 'finalidade_nfe', '1') or '1',
             'presenca_comprador': nf.presenca_comprador or '9',
             'tipo_emissao': str(nf.tipo_emissao or 1),
             'emitente': self._build_emitente(empresa, config),
@@ -178,8 +179,30 @@ class IntegranNotasClient:
             'pagamento': self._build_pagamento(nf),
             'informacoes_adicionais': {
                 'informacoes_complementares': nf.informacoes_complementares or '',
+                'informacoes_fisco': getattr(nf, 'informacoes_fisco', '') or '',
             },
         }
+
+        # Cobrança (duplicatas)
+        duplicatas = list(nf.duplicatas.all()) if hasattr(nf, 'duplicatas') else []
+        if duplicatas:
+            payload['cobranca'] = {
+                'fatura': {
+                    'numero': duplicatas[0].numero or str(nf.numero),
+                    'valor_original': str(nf.valor_total),
+                    'valor_liquido': str(nf.valor_total),
+                },
+                'duplicatas': [
+                    {
+                        'numero': d.numero or str(i + 1).zfill(3),
+                        'vencimento': d.vencimento.strftime('%Y-%m-%d'),
+                        'valor': str(d.valor),
+                    }
+                    for i, d in enumerate(duplicatas)
+                ],
+            }
+
+        return payload
 
     def _build_emitente(self, empresa, config) -> dict:
         crt = CRT_MAP.get(getattr(config, 'regime_tributario', 'SIMPLES_NACIONAL'), '1')
@@ -263,20 +286,43 @@ class IntegranNotasClient:
 
         # ICMS
         cst_icms = item.cst_icms or '40'
+        modalidade_bc = getattr(item, 'icms_modalidade_base', '3') or '3'
+        reducao_bc = float(getattr(item, 'icms_reducao_base', 0) or 0)
+
         icms_block: dict = {'situacao_tributaria': cst_icms}
         if item.aliquota_icms and float(item.aliquota_icms) > 0:
             icms_block.update({
-                'modalidade_base_calculo': '3',
+                'modalidade_base_calculo': modalidade_bc,
                 'base_calculo': str(item.icms_base_calculo),
                 'aliquota': str(item.aliquota_icms),
                 'valor': str(item.valor_icms),
             })
+            if reducao_bc > 0:
+                icms_block['percentual_reducao_base'] = str(reducao_bc)
+
+        # ICMS ST (CST 10, 30, 70, 90 etc.)
+        valor_st = float(getattr(item, 'valor_icms_st', 0) or 0)
+        if valor_st > 0:
+            mva = float(getattr(item, 'icms_st_mva', 0) or 0)
+            red_st = float(getattr(item, 'icms_st_reducao_base', 0) or 0)
+            aliq_st = float(getattr(item, 'icms_st_aliquota', 0) or 0)
+            bc_st = float(getattr(item, 'icms_st_base_calculo', 0) or 0)
+            icms_block.update({
+                'modalidade_base_calculo_st': '4',
+                'percentual_mva_st': str(mva),
+                'percentual_reducao_base_st': str(red_st),
+                'base_calculo_st': str(bc_st),
+                'aliquota_st': str(aliq_st),
+                'valor_st': str(valor_st),
+            })
+
         impostos['icms'] = icms_block
 
-        # IPI (only when there's an aliquota or enquadramento)
+        # IPI
+        cst_ipi = getattr(item, 'cst_ipi', '') or ('50' if item.aliquota_ipi and float(item.aliquota_ipi) > 0 else '99')
         if item.aliquota_ipi and float(item.aliquota_ipi) > 0:
             impostos['ipi'] = {
-                'situacao_tributaria': '50',
+                'situacao_tributaria': cst_ipi,
                 'codigo_enquadramento': item.ipi_codigo_enquadramento or '999',
                 'base_calculo': str(item.valor_total),
                 'aliquota': str(item.aliquota_ipi),
@@ -284,7 +330,7 @@ class IntegranNotasClient:
             }
         else:
             impostos['ipi'] = {
-                'situacao_tributaria': '99',
+                'situacao_tributaria': cst_ipi or '99',
                 'codigo_enquadramento': item.ipi_codigo_enquadramento or '999',
                 'valor': '0.00',
             }
@@ -318,9 +364,12 @@ class IntegranNotasClient:
         return impostos
 
     def _build_totais(self, nf) -> dict:
+        itens = list(nf.itens.all())
         return {
-            'base_calculo_icms': str(sum(i.icms_base_calculo for i in nf.itens.all())),
+            'base_calculo_icms': str(sum(i.icms_base_calculo for i in itens)),
             'valor_icms': str(nf.valor_icms),
+            'valor_icms_st': str(getattr(nf, 'valor_icms_st', 0) or 0),
+            'base_calculo_icms_st': str(sum(getattr(i, 'icms_st_base_calculo', 0) or 0 for i in itens)),
             'valor_ipi': str(nf.valor_ipi),
             'valor_pis': str(nf.valor_pis),
             'valor_cofins': str(nf.valor_cofins),
@@ -343,14 +392,16 @@ class IntegranNotasClient:
         return transporte
 
     def _build_pagamento(self, nf) -> dict:
-        # Default: À vista / outros (código 90)
+        pagamentos = list(nf.pagamentos.all())
+        if pagamentos:
+            return {
+                'formas_pagamento': [
+                    {'meio_pagamento': p.meio_pagamento, 'valor': str(p.valor)}
+                    for p in pagamentos
+                ]
+            }
         return {
-            'formas_pagamento': [
-                {
-                    'meio_pagamento': '90',
-                    'valor': str(nf.valor_total),
-                }
-            ]
+            'formas_pagamento': [{'meio_pagamento': '90', 'valor': str(nf.valor_total)}]
         }
 
     # ─── CT-e ─────────────────────────────────────────────────────

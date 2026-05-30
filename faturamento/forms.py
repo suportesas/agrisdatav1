@@ -7,6 +7,7 @@ from .models import (
     ConhecimentoTransporte,
     DocumentoVinculadoCTe,
     DocumentoVinculadoMDFe,
+    DuplicataNF,
     InvoiceExportacao,
     ItemInvoice,
     ItemNotaFiscal,
@@ -14,6 +15,7 @@ from .models import (
     ManifestoDocumentoFiscal,
     NotaFiscal,
     PackingList,
+    PagamentoNF,
     PercursoMDFe,
 )
 
@@ -140,28 +142,35 @@ class NotaFiscalForm(FaturamentoBaseForm):
         fields = [
             'cliente',
             'natureza_operacao',
+            'finalidade_nfe',
             'data_emissao',
             'data_saida',
             'cfop',
+            'presenca_comprador',
             'modalidade_frete',
             'transportadora',
             'valor_frete',
             'valor_seguro',
             'valor_desconto',
             'informacoes_complementares',
+            'informacoes_fisco',
         ]
         widgets = {
             'cliente': forms.Select(attrs={'class': 'form-select'}),
             'natureza_operacao': forms.TextInput(attrs={'class': 'form-control'}),
+            'finalidade_nfe': forms.Select(attrs={'class': 'form-select'}),
             'data_emissao': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'),
             'data_saida': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'),
             'cfop': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '5102'}),
+            'presenca_comprador': forms.Select(attrs={'class': 'form-select'}),
             'modalidade_frete': forms.Select(attrs={'class': 'form-select'}),
             'transportadora': forms.Select(attrs={'class': 'form-select'}),
             'valor_frete': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'valor_seguro': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'valor_desconto': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
-            'informacoes_complementares': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'informacoes_complementares': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+            'informacoes_fisco': forms.Textarea(attrs={'class': 'form-control', 'rows': 2,
+                                                       'placeholder': 'Informações para o Fisco (infAdFisco)'}),
         }
 
     def __init__(self, *args, empresa=None, **kwargs):
@@ -171,62 +180,93 @@ class NotaFiscalForm(FaturamentoBaseForm):
             self.fields['cliente'].queryset = Cliente.objects.filter(empresa=empresa, status='ATIVO').order_by('razao_social')
             self.fields['transportadora'].queryset = Fornecedor.objects.filter(empresa=empresa, ativa=True).order_by('nome')
             self.fields['transportadora'].required = False
+            self.fields['informacoes_fisco'].required = False
+
+
+_sm = {'class': 'form-control form-control-sm'}
+_sm_sel = {'class': 'form-select form-select-sm'}
+_sm_num = {'class': 'form-control form-control-sm', 'step': '0.01'}
+_sm_num4 = {'class': 'form-control form-control-sm', 'step': '0.0001'}
+
+ORIGEM_CHOICES = [
+    ('0', '0 - Nacional'),
+    ('1', '1 - Estrangeira (importação direta)'),
+    ('2', '2 - Estrangeira (mercado interno)'),
+    ('3', '3 - Nacional c/ Importação > 40%'),
+    ('4', '4 - Nacional (PPB)'),
+    ('5', '5 - Nacional c/ Importação ≤ 40%'),
+    ('6', '6 - Estrangeira direta s/ similar'),
+    ('7', '7 - Estrangeira interna s/ similar'),
+    ('8', '8 - Nacional c/ Importação > 70%'),
+]
+
+MODALIDADE_BC_ICMS_CHOICES = [
+    ('0', '0 - Margem Valor Agregado (MVA)'),
+    ('1', '1 - Pauta'),
+    ('2', '2 - Preço Tabelado Máximo'),
+    ('3', '3 - Valor da Operação'),
+]
+
+CST_IPI_CHOICES = [
+    ('00', '00 - Entrada com Recuperação de Crédito'),
+    ('49', '49 - Outras entradas'),
+    ('50', '50 - Saída tributada'),
+    ('51', '51 - Saída tributada com alíquota zero'),
+    ('52', '52 - Saída isenta'),
+    ('53', '53 - Saída não tributada'),
+    ('54', '54 - Saída imune'),
+    ('55', '55 - Saída com suspensão'),
+    ('99', '99 - Outras saídas'),
+]
 
 
 class ItemNotaFiscalForm(forms.ModelForm):
     class Meta:
         model = ItemNotaFiscal
         fields = [
-            'numero_item',
-            'descricao',
-            'produto',
-            'ncm',
-            'cest',
-            'ean',
-            'cfop',
-            'cst_icms',
-            'cst_pis',
-            'cst_cofins',
-            'origem_mercadoria',
-            'unidade',
-            'quantidade',
-            'valor_unitario',
-            'valor_desconto',
-            'aliquota_icms',
-            'aliquota_ipi',
-            'ipi_codigo_enquadramento',
-            'aliquota_pis',
-            'aliquota_cofins',
+            'numero_item', 'descricao', 'produto',
+            'ncm', 'cest', 'ean', 'origem_mercadoria',
+            'cfop', 'unidade', 'quantidade', 'valor_unitario', 'valor_desconto',
+            # ICMS
+            'cst_icms', 'icms_modalidade_base', 'icms_reducao_base', 'aliquota_icms',
+            # ICMS ST
+            'icms_st_aliquota', 'icms_st_mva', 'icms_st_reducao_base',
+            # IPI
+            'cst_ipi', 'aliquota_ipi', 'ipi_codigo_enquadramento',
+            # PIS / COFINS
+            'cst_pis', 'aliquota_pis', 'cst_cofins', 'aliquota_cofins',
         ]
         widgets = {
-            'numero_item': forms.NumberInput(attrs={'class': 'form-control form-control-sm', 'style': 'width:70px'}),
-            'descricao': forms.TextInput(attrs={'class': 'form-control form-control-sm'}),
-            'produto': forms.Select(attrs={'class': 'form-select form-select-sm'}),
-            'ncm': forms.TextInput(attrs={'class': 'form-control form-control-sm', 'maxlength': '8', 'placeholder': '00000000'}),
-            'cest': forms.TextInput(attrs={'class': 'form-control form-control-sm', 'maxlength': '7', 'placeholder': '0000000'}),
-            'ean': forms.TextInput(attrs={'class': 'form-control form-control-sm', 'placeholder': 'Deixe vazio para SEM GTIN'}),
-            'cfop': forms.TextInput(attrs={'class': 'form-control form-control-sm', 'placeholder': '5102'}),
-            'cst_icms': forms.TextInput(attrs={'class': 'form-control form-control-sm', 'placeholder': '000'}),
-            'cst_pis': forms.TextInput(attrs={'class': 'form-control form-control-sm', 'placeholder': '07'}),
-            'cst_cofins': forms.TextInput(attrs={'class': 'form-control form-control-sm', 'placeholder': '07'}),
-            'origem_mercadoria': forms.Select(attrs={'class': 'form-select form-select-sm'},
-                                              choices=[('0','0-Nacional'),('1','1-Estrangeira (importada)'),
-                                                       ('2','2-Estrangeira (adquirida no mercado interno)'),
-                                                       ('3','3-Nacional, mercadoria ou bem com Conteúdo de Importação > 40%'),
-                                                       ('4','4-Nacional, cuja produção tenha sido feita em conformidade com os processos produtivos básicos'),
-                                                       ('5','5-Nacional, mercadoria ou bem com Conteúdo de Importação ≤ 40%'),
-                                                       ('6','6-Estrangeira (importada diretamente), sem produto nacional similar'),
-                                                       ('7','7-Estrangeira (adquirida no mercado interno), sem produto nacional similar'),
-                                                       ('8','8-Nacional, mercadoria ou bem com Conteúdo de Importação > 70%')]),
-            'unidade': forms.TextInput(attrs={'class': 'form-control form-control-sm', 'placeholder': 'UN'}),
-            'quantidade': forms.NumberInput(attrs={'class': 'form-control form-control-sm', 'step': '0.0001'}),
-            'valor_unitario': forms.NumberInput(attrs={'class': 'form-control form-control-sm', 'step': '0.0001'}),
-            'valor_desconto': forms.NumberInput(attrs={'class': 'form-control form-control-sm', 'step': '0.01'}),
-            'aliquota_icms': forms.NumberInput(attrs={'class': 'form-control form-control-sm', 'step': '0.01'}),
-            'aliquota_ipi': forms.NumberInput(attrs={'class': 'form-control form-control-sm', 'step': '0.01'}),
-            'ipi_codigo_enquadramento': forms.TextInput(attrs={'class': 'form-control form-control-sm', 'placeholder': '999'}),
-            'aliquota_pis': forms.NumberInput(attrs={'class': 'form-control form-control-sm', 'step': '0.01'}),
-            'aliquota_cofins': forms.NumberInput(attrs={'class': 'form-control form-control-sm', 'step': '0.01'}),
+            'numero_item': forms.NumberInput(attrs={**_sm, 'style': 'width:60px'}),
+            'descricao': forms.TextInput(attrs=_sm),
+            'produto': forms.Select(attrs=_sm_sel),
+            'ncm': forms.TextInput(attrs={**_sm, 'maxlength': '8', 'placeholder': '00000000'}),
+            'cest': forms.TextInput(attrs={**_sm, 'maxlength': '7', 'placeholder': '0000000'}),
+            'ean': forms.TextInput(attrs={**_sm, 'placeholder': 'Vazio = SEM GTIN'}),
+            'origem_mercadoria': forms.Select(attrs=_sm_sel, choices=ORIGEM_CHOICES),
+            'cfop': forms.TextInput(attrs={**_sm, 'placeholder': '5102'}),
+            'unidade': forms.TextInput(attrs={**_sm, 'placeholder': 'UN'}),
+            'quantidade': forms.NumberInput(attrs=_sm_num4),
+            'valor_unitario': forms.NumberInput(attrs=_sm_num4),
+            'valor_desconto': forms.NumberInput(attrs=_sm_num),
+            # ICMS
+            'cst_icms': forms.TextInput(attrs={**_sm, 'placeholder': '000', 'style': 'width:60px'}),
+            'icms_modalidade_base': forms.Select(attrs=_sm_sel, choices=MODALIDADE_BC_ICMS_CHOICES),
+            'icms_reducao_base': forms.NumberInput(attrs={**_sm_num, 'placeholder': '0.00'}),
+            'aliquota_icms': forms.NumberInput(attrs=_sm_num),
+            # ICMS ST
+            'icms_st_aliquota': forms.NumberInput(attrs=_sm_num),
+            'icms_st_mva': forms.NumberInput(attrs=_sm_num),
+            'icms_st_reducao_base': forms.NumberInput(attrs=_sm_num),
+            # IPI
+            'cst_ipi': forms.Select(attrs=_sm_sel, choices=CST_IPI_CHOICES),
+            'aliquota_ipi': forms.NumberInput(attrs=_sm_num),
+            'ipi_codigo_enquadramento': forms.TextInput(attrs={**_sm, 'placeholder': '999', 'style': 'width:60px'}),
+            # PIS / COFINS
+            'cst_pis': forms.TextInput(attrs={**_sm, 'placeholder': '07', 'style': 'width:55px'}),
+            'aliquota_pis': forms.NumberInput(attrs=_sm_num),
+            'cst_cofins': forms.TextInput(attrs={**_sm, 'placeholder': '07', 'style': 'width:55px'}),
+            'aliquota_cofins': forms.NumberInput(attrs=_sm_num),
         }
 
 
@@ -238,6 +278,41 @@ ItemNotaFiscalFormSet = inlineformset_factory(
     can_delete=True,
     min_num=1,
     validate_min=True,
+)
+
+
+class PagamentoNFForm(forms.ModelForm):
+    class Meta:
+        model = PagamentoNF
+        fields = ['meio_pagamento', 'valor']
+        widgets = {
+            'meio_pagamento': forms.Select(attrs={'class': 'form-select form-select-sm'}),
+            'valor': forms.NumberInput(attrs={'class': 'form-control form-control-sm', 'step': '0.01'}),
+        }
+
+
+PagamentoNFFormSet = inlineformset_factory(
+    NotaFiscal, PagamentoNF,
+    form=PagamentoNFForm,
+    extra=1, can_delete=True, min_num=0,
+)
+
+
+class DuplicataNFForm(forms.ModelForm):
+    class Meta:
+        model = DuplicataNF
+        fields = ['numero', 'vencimento', 'valor']
+        widgets = {
+            'numero': forms.TextInput(attrs={'class': 'form-control form-control-sm', 'placeholder': '001'}),
+            'vencimento': forms.DateInput(attrs={'class': 'form-control form-control-sm', 'type': 'date'}, format='%Y-%m-%d'),
+            'valor': forms.NumberInput(attrs={'class': 'form-control form-control-sm', 'step': '0.01'}),
+        }
+
+
+DuplicataNFFormSet = inlineformset_factory(
+    NotaFiscal, DuplicataNF,
+    form=DuplicataNFForm,
+    extra=1, can_delete=True, min_num=0,
 )
 
 

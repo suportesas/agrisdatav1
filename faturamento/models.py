@@ -112,9 +112,26 @@ class NotaFiscal(FaturamentoBaseModel):
         ('DESTINATARIO', 'Por conta do Destinatário'),
     ]
 
+    FINALIDADE_NFE = [
+        ('1', '1 - NF-e Normal'),
+        ('2', '2 - NF-e Complementar'),
+        ('3', '3 - NF-e de Ajuste'),
+        ('4', '4 - Devolução de Mercadoria'),
+    ]
+
+    PRESENCA_COMPRADOR = [
+        ('0', '0 - Não se aplica'),
+        ('1', '1 - Operação presencial'),
+        ('2', '2 - Operação não presencial, Internet'),
+        ('3', '3 - Operação não presencial, Teleatendimento'),
+        ('4', '4 - NFC-e em operação com entrega em domicílio'),
+        ('9', '9 - Operação não presencial, Outros'),
+    ]
+
     numero = models.PositiveIntegerField('Número NF', null=True, blank=True)
     serie = models.IntegerField('Série', default=1)
     natureza_operacao = models.CharField('Natureza da Operação', max_length=100, default='VENDA DE MERCADORIA')
+    finalidade_nfe = models.CharField('Finalidade NF-e', max_length=1, choices=FINALIDADE_NFE, default='1')
     cliente = models.ForeignKey(
         'cadastros.Cliente',
         on_delete=models.PROTECT,
@@ -139,16 +156,18 @@ class NotaFiscal(FaturamentoBaseModel):
     valor_seguro = models.DecimalField('Valor do Seguro', max_digits=14, decimal_places=2, default=0)
     valor_desconto = models.DecimalField('Valor de Desconto', max_digits=14, decimal_places=2, default=0)
     valor_icms = models.DecimalField('Valor ICMS', max_digits=14, decimal_places=2, default=0)
+    valor_icms_st = models.DecimalField('Valor ICMS ST', max_digits=14, decimal_places=2, default=0)
     valor_ipi = models.DecimalField('Valor IPI', max_digits=14, decimal_places=2, default=0)
     valor_pis = models.DecimalField('Valor PIS', max_digits=14, decimal_places=2, default=0)
     valor_cofins = models.DecimalField('Valor COFINS', max_digits=14, decimal_places=2, default=0)
     valor_total = models.DecimalField('Valor Total', max_digits=14, decimal_places=2, default=0)
     informacoes_complementares = models.TextField('Informações Complementares', blank=True)
+    informacoes_fisco = models.TextField('Informações para o Fisco (infAdFisco)', blank=True)
     chave_acesso = models.CharField('Chave de Acesso', max_length=44, blank=True)
     protocolo_autorizacao = models.CharField('Protocolo de Autorização', max_length=60, blank=True)
     xml_autorizacao = models.TextField('XML Autorizado (base64)', blank=True)
     pdf_danfe = models.TextField('DANFE PDF (base64)', blank=True)
-    presenca_comprador = models.CharField('Presença do Comprador', max_length=1, default='9', help_text='9=Operação não presencial')
+    presenca_comprador = models.CharField('Presença do Comprador', max_length=1, choices=PRESENCA_COMPRADOR, default='9')
     tipo_emissao = models.IntegerField('Tipo de Emissão', default=1, help_text='1=Normal')
     data_hora_emissao = models.DateTimeField('Data/Hora de Emissão SEFAZ', null=True, blank=True)
     motivo_cancelamento = models.CharField('Motivo do Cancelamento', max_length=255, blank=True)
@@ -167,6 +186,7 @@ class NotaFiscal(FaturamentoBaseModel):
         items = self.itens.all()
         self.valor_produtos = sum(i.valor_total for i in items)
         self.valor_icms = sum(i.valor_icms for i in items)
+        self.valor_icms_st = sum(i.valor_icms_st for i in items)
         self.valor_ipi = sum(i.valor_ipi for i in items)
         self.valor_pis = sum(i.valor_pis for i in items)
         self.valor_cofins = sum(i.valor_cofins for i in items)
@@ -175,10 +195,11 @@ class NotaFiscal(FaturamentoBaseModel):
             + self.valor_frete
             + self.valor_seguro
             + self.valor_ipi
+            + self.valor_icms_st
             - self.valor_desconto
         )
         self.save(update_fields=[
-            'valor_produtos', 'valor_icms', 'valor_ipi',
+            'valor_produtos', 'valor_icms', 'valor_icms_st', 'valor_ipi',
             'valor_pis', 'valor_cofins', 'valor_total',
         ])
 
@@ -210,15 +231,29 @@ class ItemNotaFiscal(models.Model):
     valor_unitario = models.DecimalField('Valor Unitário', max_digits=14, decimal_places=4, default=0)
     valor_total = models.DecimalField('Valor Total', max_digits=14, decimal_places=2, default=0)
     valor_desconto = models.DecimalField('Desconto', max_digits=14, decimal_places=2, default=0)
+    # ICMS
     aliquota_icms = models.DecimalField('Alíq. ICMS (%)', max_digits=5, decimal_places=2, default=0)
     valor_icms = models.DecimalField('Valor ICMS', max_digits=14, decimal_places=2, default=0)
     icms_base_calculo = models.DecimalField('Base de Cálculo ICMS', max_digits=14, decimal_places=2, default=0)
+    icms_modalidade_base = models.CharField('Modalidade BC ICMS', max_length=1, default='3',
+        help_text='0=MVA, 1=Pauta, 2=Preço Tabelado, 3=Valor da Operação, 4=Margem Valor Agregado')
+    icms_reducao_base = models.DecimalField('Redução BC ICMS (%)', max_digits=5, decimal_places=2, default=0)
+    # ICMS ST
+    icms_st_aliquota = models.DecimalField('Alíq. ICMS ST (%)', max_digits=5, decimal_places=2, default=0)
+    icms_st_mva = models.DecimalField('MVA ST (%)', max_digits=5, decimal_places=2, default=0)
+    icms_st_reducao_base = models.DecimalField('Redução BC ST (%)', max_digits=5, decimal_places=2, default=0)
+    icms_st_base_calculo = models.DecimalField('BC ICMS ST', max_digits=14, decimal_places=2, default=0)
+    valor_icms_st = models.DecimalField('Valor ICMS ST', max_digits=14, decimal_places=2, default=0)
+    # IPI
+    cst_ipi = models.CharField('CST IPI', max_length=2, blank=True, default='99')
     aliquota_ipi = models.DecimalField('Alíq. IPI (%)', max_digits=5, decimal_places=2, default=0)
     valor_ipi = models.DecimalField('Valor IPI', max_digits=14, decimal_places=2, default=0)
     ipi_codigo_enquadramento = models.CharField('Código Enquadramento IPI', max_length=3, default='999', blank=True)
+    # PIS
     aliquota_pis = models.DecimalField('Alíq. PIS (%)', max_digits=5, decimal_places=2, default=0)
     valor_pis = models.DecimalField('Valor PIS', max_digits=14, decimal_places=2, default=0)
     pis_base_calculo = models.DecimalField('Base de Cálculo PIS', max_digits=14, decimal_places=2, default=0)
+    # COFINS
     aliquota_cofins = models.DecimalField('Alíq. COFINS (%)', max_digits=5, decimal_places=2, default=0)
     valor_cofins = models.DecimalField('Valor COFINS', max_digits=14, decimal_places=2, default=0)
     cofins_base_calculo = models.DecimalField('Base de Cálculo COFINS', max_digits=14, decimal_places=2, default=0)
@@ -237,14 +272,73 @@ class ItemNotaFiscal(models.Model):
 
     def save(self, *args, **kwargs):
         self.valor_total = (self.quantidade * self.valor_unitario) - self.valor_desconto
-        self.icms_base_calculo = self.valor_total
-        self.valor_icms = self.icms_base_calculo * self.aliquota_icms / 100
-        self.valor_ipi = self.valor_total * self.aliquota_ipi / 100
+        # ICMS com redução de BC
+        reducao = self.icms_reducao_base or 0
+        self.icms_base_calculo = self.valor_total * (1 - reducao / 100)
+        self.valor_icms = self.icms_base_calculo * (self.aliquota_icms or 0) / 100
+        # ICMS ST
+        if self.icms_st_aliquota and self.icms_st_aliquota > 0:
+            mva = self.icms_st_mva or 0
+            red_st = self.icms_st_reducao_base or 0
+            bc_st = self.valor_total * (1 + mva / 100) * (1 - red_st / 100)
+            self.icms_st_base_calculo = bc_st
+            self.valor_icms_st = max(bc_st * self.icms_st_aliquota / 100 - self.valor_icms, 0)
+        else:
+            self.icms_st_base_calculo = 0
+            self.valor_icms_st = 0
+        # IPI
+        self.valor_ipi = self.valor_total * (self.aliquota_ipi or 0) / 100
+        # PIS
         self.pis_base_calculo = self.valor_total
-        self.valor_pis = self.pis_base_calculo * self.aliquota_pis / 100
+        self.valor_pis = self.pis_base_calculo * (self.aliquota_pis or 0) / 100
+        # COFINS
         self.cofins_base_calculo = self.valor_total
-        self.valor_cofins = self.cofins_base_calculo * self.aliquota_cofins / 100
+        self.valor_cofins = self.cofins_base_calculo * (self.aliquota_cofins or 0) / 100
         super().save(*args, **kwargs)
+
+
+MEIO_PAGAMENTO_CHOICES = [
+    ('01', 'Dinheiro'),
+    ('02', 'Cheque'),
+    ('03', 'Cartão de Crédito'),
+    ('04', 'Cartão de Débito'),
+    ('05', 'Crédito Loja'),
+    ('14', 'Duplicata Mercantil'),
+    ('15', 'Boleto Bancário'),
+    ('16', 'Depósito Bancário'),
+    ('17', 'PIX'),
+    ('18', 'Transferência Bancária / TED'),
+    ('90', 'Sem Pagamento'),
+    ('99', 'Outros'),
+]
+
+
+class PagamentoNF(models.Model):
+    nota_fiscal = models.ForeignKey(NotaFiscal, on_delete=models.CASCADE, related_name='pagamentos')
+    meio_pagamento = models.CharField('Meio de Pagamento', max_length=2, choices=MEIO_PAGAMENTO_CHOICES, default='17')
+    valor = models.DecimalField('Valor', max_digits=14, decimal_places=2, default=0)
+
+    class Meta:
+        verbose_name = 'Pagamento NF'
+        verbose_name_plural = 'Pagamentos NF'
+
+    def __str__(self):
+        return f'{self.get_meio_pagamento_display()} — R$ {self.valor}'
+
+
+class DuplicataNF(models.Model):
+    nota_fiscal = models.ForeignKey(NotaFiscal, on_delete=models.CASCADE, related_name='duplicatas')
+    numero = models.CharField('Número', max_length=60, blank=True)
+    vencimento = models.DateField('Vencimento')
+    valor = models.DecimalField('Valor', max_digits=14, decimal_places=2)
+
+    class Meta:
+        verbose_name = 'Duplicata NF'
+        verbose_name_plural = 'Duplicatas NF'
+        ordering = ['vencimento']
+
+    def __str__(self):
+        return f'Dup {self.numero} — {self.vencimento} — R$ {self.valor}'
 
 
 class InvoiceExportacao(FaturamentoBaseModel):

@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+{% block page_title %}MDF-e — Manifestos{% endblock %}
+{% block content %}
+<div class="container-fluid mt-3 px-3 px-xl-4">
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <h1 class="mb-0">MDF-e — Manifestos de Documentos Fiscais</h1>
+    <a href="{% url 'faturamento:mdfe_create' %}" class="btn btn-primary btn-sm">
+      <i class="bi bi-plus-circle me-1"></i> Novo MDF-e
+    </a>
+  </div>
+
+  <form method="get" class="row g-2 mb-3">
+    <div class="col-md-5">
+      <input type="text" name="q" value="{{ q }}" class="form-control form-control-sm" placeholder="Buscar por motorista ou chave...">
+    </div>
+    <div class="col-md-3">
+      <select name="status" class="form-select form-select-sm">
+        <option value="">Todos os status</option>
+        {% for val, label in status_choices %}
+          <option value="{{ val }}" {% if status_filtro == val %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-auto">
+      <button type="submit" class="btn btn-secondary btn-sm">Filtrar</button>
+      <a href="{% url 'faturamento:mdfe_list' %}" class="btn btn-outline-secondary btn-sm">Limpar</a>
+    </div>
+  </form>
+
+  <div class="table-responsive">
+    <table class="table table-sm table-hover align-middle">
+      <thead class="table-dark">
+        <tr>
+          <th>Número</th>
+          <th>Emissão</th>
+          <th>Motorista</th>
+          <th>Veículo</th>
+          <th>Percurso</th>
+          <th class="text-end">Valor Carga</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for m in page_obj %}
+        <tr>
+          <td><strong>{{ m.numero|default:"S/N" }}/{{ m.serie }}</strong></td>
+          <td>{{ m.data_emissao|date:"d/m/Y" }}</td>
+          <td>{{ m.motorista.nome }}</td>
+          <td>{{ m.veiculo.descricao|default:m.veiculo }}</td>
+          <td><span class="badge bg-secondary">{{ m.uf_inicio }}</span> → <span class="badge bg-secondary">{{ m.uf_fim }}</span></td>
+          <td class="text-end">R$ {{ m.valor_carga|floatformat:2 }}</td>
+          <td>
+            {% if m.status == 'EMITIDO' %}<span class="badge bg-success">Emitido</span>
+            {% elif m.status == 'ENCERRADO' %}<span class="badge bg-primary">Encerrado</span>
+            {% elif m.status == 'CANCELADO' %}<span class="badge bg-danger">Cancelado</span>
+            {% else %}<span class="badge bg-warning text-dark">Rascunho</span>{% endif %}
+          </td>
+          <td>
+            <a href="{% url 'faturamento:mdfe_detail' m.pk %}" class="btn btn-outline-primary btn-sm">
+              <i class="bi bi-eye"></i>
+            </a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="8" class="text-center text-muted py-4">Nenhum MDF-e encontrado.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if page_obj.has_other_pages %}
+  <nav><ul class="pagination pagination-sm justify-content-center">
+    {% if page_obj.has_previous %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&status={{ status_filtro }}&q={{ q }}">«</a></li>{% endif %}
+    <li class="page-item disabled"><span class="page-link">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span></li>
+    {% if page_obj.has_next %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&status={{ status_filtro }}&q={{ q }}">»</a></li>{% endif %}
+  </ul></nav>
+  {% endif %}
+</div>
+{% endblock %}

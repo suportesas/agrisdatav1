@@ -527,6 +527,22 @@ else:
 
 
 # ============================================
+# FIELD ENCRYPTION (Fernet — token_integranotas e outros campos sensíveis)
+# ============================================
+import warnings as _warnings
+
+FIELD_ENCRYPTION_KEY = os.getenv('FIELD_ENCRYPTION_KEY', '')
+
+if not FIELD_ENCRYPTION_KEY:
+    _warnings.warn(
+        'FIELD_ENCRYPTION_KEY não configurado. Campos sensíveis NÃO serão criptografados. '
+        'Gere a chave com: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"',
+        RuntimeWarning,
+        stacklevel=2,
+    )
+
+
+# ============================================
 # LOGGING
 # ============================================
 LOGGING = {

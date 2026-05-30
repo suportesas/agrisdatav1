@@ -60,7 +60,588 @@
 
 {% block content %}
 <div class="container-fluid mt-3 px-3 px-xl-4">
-  <h1>{{ action }} Produto</h1>
+  <div class="d-flex align-items-center justify-content-between mb-2">
+    <h1 class="mb-0">{{ action }} Produto</h1>
+    <button type="button" class="btn btn-outline-info btn-sm" data-bs-toggle="modal" data-bs-target="#modalDocumentacao" title="Ver documentação completa do módulo">
+      <i class="bi bi-file-earmark-text me-1"></i> Documentação do Módulo
+    </button>
+  </div>
+
+  <!-- Modal de Documentação -->
+  <div class="modal fade" id="modalDocumentacao" tabindex="-1" aria-labelledby="modalDocLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header bg-info text-white">
+          <h5 class="modal-title" id="modalDocLabel"><i class="bi bi-file-earmark-text me-2"></i>Documentação: Cadastro de Produtos</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body p-0">
+          <ul class="nav nav-tabs px-3 pt-2" id="docTabs" role="tablist">
+            <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#doc-visao" type="button">Visão Geral</button></li>
+            <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#doc-schema" type="button">Schema Principal</button></li>
+            <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#doc-relacionados" type="button">Tabelas Relacionadas</button></li>
+            <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#doc-validacoes" type="button">Validações e Regras</button></li>
+            <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#doc-fluxo" type="button">Fluxo e Views</button></li>
+          </ul>
+          <div class="tab-content px-3 py-3">
+
+            <!-- ABA: VISÃO GERAL -->
+            <div class="tab-pane fade show active" id="doc-visao">
+              <h5 class="text-primary">Funcionamento do Cadastro de Produtos</h5>
+              <p>O cadastro de produtos é organizado em <strong>abas</strong> para facilitar a entrada de dados por contexto. O produto é multi-tenant (filtrado por <code>empresa</code>) e possui lógica de exibição dinâmica de campos baseada na categoria agrícola selecionada.</p>
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <div class="card border-primary h-100">
+                    <div class="card-header bg-primary text-white py-1">Abas do Formulário</div>
+                    <div class="card-body p-2">
+                      <ul class="mb-0 small">
+                        <li><strong>Geral</strong> – Nome, código, categoria, subcategoria, NCM, unidades de medida</li>
+                        <li><strong>Fiscal</strong> – Origem, tipo de item, tributações (ICMS/IPI/PIS/COFINS)</li>
+                        <li><strong>Financeiro</strong> – Preço de custo, venda, margem de lucro, preço mínimo</li>
+                        <li><strong>Estoque</strong> – Controle de estoque, mínimo/máximo, lote, validade, armazém</li>
+                        <li><strong>Fornecedores</strong> – Fornecedor padrão, lista de fornecedores com código e preço</li>
+                        <li><strong>Agrícola</strong> – Categoria agrícola (Defensivo, Fertilizante, etc.)</li>
+                        <li><strong>Defensivo/Culturas</strong> – Culturas e pragas registradas, dosagens (visível só para DEFENSIVO)</li>
+                        <li><strong>Fertilizantes</strong> – Fórmula NPK e micronutrientes (visível só para FERTILIZANTE)</li>
+                        <li><strong>Documentos</strong> – Upload de arquivos (bula, FISPQ, certificado, laudo)</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="card border-success h-100">
+                    <div class="card-header bg-success text-white py-1">Comportamentos Automáticos</div>
+                    <div class="card-body p-2">
+                      <ul class="mb-0 small">
+                        <li><strong>Código</strong>: gerado automaticamente como <code>CATEG-000001</code> se não informado</li>
+                        <li><strong>Nome</strong>: convertido para Title Case ao salvar</li>
+                        <li><strong>CEST</strong>: preenchido automaticamente ao selecionar o NCM</li>
+                        <li><strong>Categoria agrícola</strong>: detectada automaticamente pelo código/nome da categoria</li>
+                        <li><strong>Campos irrelevantes</strong>: limpos automaticamente ao mudar categoria agrícola</li>
+                        <li><strong>Exclusão</strong>: soft-delete (campo <code>ativo=False</code>), produto não é removido do banco</li>
+                        <li><strong>Clone</strong>: copia o produto com tributações e configurações de defensivo</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ABA: SCHEMA PRINCIPAL -->
+            <div class="tab-pane fade" id="doc-schema">
+              <h5 class="text-primary">Tabela: <code>produtos_produto</code></h5>
+              <p class="text-muted small mb-2">Modelo Django: <code>produtos.models.Produto</code> | Arquivo: <code>produtos/models.py</code></p>
+
+              <!-- Identificação -->
+              <h6 class="bg-light p-2 rounded mt-3">Identificação</h6>
+              <div class="table-responsive">
+                <table class="table table-sm table-bordered small mb-0">
+                  <thead class="table-dark"><tr><th>Campo</th><th>Tipo</th><th>Restrições</th><th>Descrição</th></tr></thead>
+                  <tbody>
+                    <tr><td><code>id</code></td><td>AutoField (PK)</td><td>auto</td><td>Chave primária</td></tr>
+                    <tr><td><code>codigo</code></td><td>CharField(50)</td><td>unique, blank</td><td>Código do produto. Auto-gerado como CATEG-000001 se vazio</td></tr>
+                    <tr><td><code>codigo_barras</code></td><td>CharField(50)</td><td>blank</td><td>Código de barras / EAN</td></tr>
+                    <tr><td><code>nome</code></td><td>CharField(200)</td><td>required</td><td>Nome do produto (salvo em Title Case)</td></tr>
+                    <tr><td><code>nome_resumido</code></td><td>CharField(100)</td><td>blank</td><td>Nome curto para exibição em listagens</td></tr>
+                    <tr><td><code>descricao</code></td><td>TextField</td><td>blank</td><td>Descrição detalhada do produto</td></tr>
+                    <tr><td><code>imagem</code></td><td>ImageField</td><td>blank, null</td><td>Imagem do produto. Upload em <code>produtos/</code></td></tr>
+                    <tr><td><code>ativo</code></td><td>BooleanField</td><td>default=True</td><td>False = excluído (soft delete)</td></tr>
+                    <tr><td><code>created_at</code></td><td>DateTimeField</td><td>auto_now_add</td><td>Data de criação</td></tr>
+                    <tr><td><code>updated_at</code></td><td>DateTimeField</td><td>auto_now</td><td>Última atualização</td></tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Classificação -->
+              <h6 class="bg-light p-2 rounded mt-3">Classificação</h6>
+              <div class="table-responsive">
+                <table class="table table-sm table-bordered small mb-0">
+                  <thead class="table-dark"><tr><th>Campo</th><th>Tipo</th><th>Restrições</th><th>Descrição</th></tr></thead>
+                  <tbody>
+                    <tr><td><code>categoria_id</code></td><td>FK → Categoria</td><td>required, PROTECT</td><td>Categoria do produto. Determina prefixo do código</td></tr>
+                    <tr><td><code>subcategoria_id</code></td><td>FK → SubCategoria</td><td>blank, null, PROTECT</td><td>Subcategoria. Deve pertencer à categoria selecionada</td></tr>
+                    <tr><td><code>tipo_produto_id</code></td><td>FK → TipoProduto</td><td>blank, null, PROTECT</td><td>Tipo de produto da empresa</td></tr>
+                    <tr><td><code>ncm_id</code></td><td>FK → NCM</td><td>required, PROTECT</td><td>Código NCM fiscal</td></tr>
+                    <tr><td><code>cest</code></td><td>CharField(7)</td><td>blank</td><td>CEST fiscal, preenchido automaticamente pelo NCM</td></tr>
+                    <tr><td><code>origem_mercadoria</code></td><td>CharField(1)</td><td>choices</td><td>0=Nacional, 1=Estrangeira importação direta, 2=Estrangeira adquirida interno, 3=Nacional conteúdo &gt;40% import, 4=Nacional processos produtivos básicos, 5=Nacional conteúdo &lt;40%, 6=Estrangeira direta sem similar, 7=Estrangeira SUFRAMA, 8=Nacional &gt;70%</td></tr>
+                    <tr><td><code>tipo_item</code></td><td>CharField(2)</td><td>choices</td><td>00=Mercadoria Revenda, 01=Mat.Prima, 02=Embalagem, 03=Produto em Processo, 04=Produto Acabado, 05=Subproduto, 06=Produto Intermediário, 07=Material Uso/Consumo, 08=Ativo Imobilizado, 09=Serviços, 10=Outros insumos, 99=Outras</td></tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Unidades de Medida -->
+              <h6 class="bg-light p-2 rounded mt-3">Unidades de Medida</h6>
+              <div class="table-responsive">
+                <table class="table table-sm table-bordered small mb-0">
+                  <thead class="table-dark"><tr><th>Campo</th><th>Tipo</th><th>Restrições</th><th>Descrição</th></tr></thead>
+                  <tbody>
+                    <tr><td><code>unidade_medida_id</code></td><td>FK → UnidadeMedida</td><td>required, PROTECT</td><td>Unidade base de controle de estoque</td></tr>
+                    <tr><td><code>unidade_compra_id</code></td><td>FK → UnidadeMedida</td><td>required, PROTECT</td><td>Unidade usada nas compras</td></tr>
+                    <tr><td><code>unidade_venda_id</code></td><td>FK → UnidadeMedida</td><td>required, PROTECT</td><td>Unidade usada nas vendas</td></tr>
+                    <tr><td><code>fator_conversao</code></td><td>Decimal(10,4)</td><td>default=1, &gt;0</td><td>Fator de conversão entre unidades. Ex: 1 cx = 12 un</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <div class="alert alert-warning small py-1 mt-1">As três unidades (medida, compra, venda) devem ser do mesmo tipo (PESO, VOLUME, UNIDADE, AREA, COMPRIMENTO).</div>
+
+              <!-- Financeiro -->
+              <h6 class="bg-light p-2 rounded mt-3">Financeiro</h6>
+              <div class="table-responsive">
+                <table class="table table-sm table-bordered small mb-0">
+                  <thead class="table-dark"><tr><th>Campo</th><th>Tipo</th><th>Restrições</th><th>Descrição</th></tr></thead>
+                  <tbody>
+                    <tr><td><code>preco_custo</code></td><td>Decimal(15,2)</td><td>default=0</td><td>Preço de custo do produto</td></tr>
+                    <tr><td><code>preco_venda</code></td><td>Decimal(15,2)</td><td>default=0</td><td>Preço de venda padrão</td></tr>
+                    <tr><td><code>margem_lucro</code></td><td>Decimal(5,2)</td><td>default=0</td><td>Margem de lucro em percentual (%)</td></tr>
+                    <tr><td><code>preco_minimo</code></td><td>Decimal(15,2)</td><td>default=0</td><td>Preço mínimo permitido de venda</td></tr>
+                    <tr><td><code>fornecedor_padrao_id</code></td><td>FK → Fornecedor</td><td>blank, null, SET_NULL</td><td>Fornecedor padrão para compras</td></tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Estoque -->
+              <h6 class="bg-light p-2 rounded mt-3">Estoque</h6>
+              <div class="table-responsive">
+                <table class="table table-sm table-bordered small mb-0">
+                  <thead class="table-dark"><tr><th>Campo</th><th>Tipo</th><th>Restrições</th><th>Descrição</th></tr></thead>
+                  <tbody>
+                    <tr><td><code>controla_estoque</code></td><td>BooleanField</td><td>default=True</td><td>Se False, não controla saldo em estoque</td></tr>
+                    <tr><td><code>estoque_minimo</code></td><td>Decimal(15,3)</td><td>default=0, ≤ estoque_maximo</td><td>Quantidade mínima para alerta de reposição</td></tr>
+                    <tr><td><code>estoque_maximo</code></td><td>Decimal(15,3)</td><td>default=0</td><td>Quantidade máxima em estoque</td></tr>
+                    <tr><td><code>estoque_atual</code></td><td>Decimal(15,3)</td><td>default=0</td><td>Saldo atual. Gerenciado via lotes, não editado diretamente</td></tr>
+                    <tr><td><code>localizacao</code></td><td>CharField(50)</td><td>blank</td><td>Localização física (prateleira, corredor)</td></tr>
+                    <tr><td><code>armazem_padrao_id</code></td><td>FK → estoque.Armazem</td><td>blank, null, SET_NULL</td><td>Armazém padrão para entrada de estoque</td></tr>
+                    <tr><td><code>lote_obrigatorio</code></td><td>BooleanField</td><td>default=False</td><td>Exige informar lote nas movimentações</td></tr>
+                    <tr><td><code>validade_obrigatoria</code></td><td>BooleanField</td><td>default=False</td><td>Exige informar validade nas movimentações</td></tr>
+                    <tr><td><code>dias_validade</code></td><td>IntegerField</td><td>blank, null. Required se validade_obrigatoria=True, ≥0</td><td>Validade padrão em dias</td></tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Agrícola -->
+              <h6 class="bg-light p-2 rounded mt-3">Categoria Agrícola e Campos Condicionais</h6>
+              <div class="table-responsive">
+                <table class="table table-sm table-bordered small mb-0">
+                  <thead class="table-dark"><tr><th>Campo</th><th>Tipo</th><th>Visível quando</th><th>Descrição</th></tr></thead>
+                  <tbody>
+                    <tr><td><code>categoria_agricola</code></td><td>CharField(20) choices</td><td>sempre</td><td>DEFENSIVO, FERTILIZANTE, SEMENTE, ADUBO, CORRETIVO, INOCULANTE, ADJUVANTE</td></tr>
+                    <tr class="table-warning"><td colspan="4"><strong>Campos exclusivos para DEFENSIVO:</strong></td></tr>
+                    <tr><td><code>classe_agronomica</code></td><td>CharField(200)</td><td>DEFENSIVO</td><td>Múltiplos: HERBICIDA, INSETICIDA, FUNGICIDA, ACARICIDA, NEMATICIDA, BACTERICIDA, FORMICIDA, RODENTICIDA, DESSECANTE, DESFOLHANTE. Armazenado separado por vírgula</td></tr>
+                    <tr><td><code>ingrediente_ativo</code></td><td>CharField(200)</td><td>DEFENSIVO (required)</td><td>Princípio ativo do defensivo</td></tr>
+                    <tr><td><code>concentracao</code></td><td>CharField(50)</td><td>DEFENSIVO</td><td>Ex: "480 g/L"</td></tr>
+                    <tr><td><code>registro_mapa</code></td><td>CharField(50)</td><td>DEFENSIVO (required)</td><td>Número de registro no MAPA</td></tr>
+                    <tr><td><code>classe_toxicologica</code></td><td>CharField(3) choices</td><td>DEFENSIVO</td><td>I=Extremamente Tóxico, II=Altamente Tóxico, III=Moderadamente Tóxico, IV=Pouco Tóxico, V=Improvável de Causar Dano</td></tr>
+                    <tr><td><code>classe_ambiental</code></td><td>CharField(3) choices</td><td>DEFENSIVO</td><td>I=Altamente Perigoso, II=Muito Perigoso, III=Perigoso, IV=Pouco Perigoso</td></tr>
+                    <tr><td><code>periodo_carencia</code></td><td>IntegerField</td><td>DEFENSIVO</td><td>Carência em dias após aplicação</td></tr>
+                    <tr><td><code>intervalo_reaplicacao</code></td><td>IntegerField</td><td>DEFENSIVO</td><td>Intervalo mínimo entre aplicações (dias)</td></tr>
+                    <tr><td><code>periodo_reentrada</code></td><td>IntegerField</td><td>DEFENSIVO</td><td>Período de reentrada na área (horas)</td></tr>
+                    <tr><td><code>paises_proibidos</code></td><td>TextField</td><td>DEFENSIVO</td><td>Países onde o produto é proibido (separados por vírgula)</td></tr>
+                    <tr><td><code>culturas_registradas</code></td><td>TextField</td><td>DEFENSIVO</td><td>Culturas com registro de uso</td></tr>
+                    <tr><td><code>possui_certificado</code></td><td>BooleanField</td><td>DEFENSIVO</td><td>Se True, exige numero_certificado, data_vencimento_certificado e arquivo_certificado</td></tr>
+                    <tr><td><code>numero_certificado</code></td><td>CharField(100)</td><td>DEFENSIVO + possui_certificado</td><td>Número do certificado</td></tr>
+                    <tr><td><code>data_vencimento_certificado</code></td><td>DateField</td><td>DEFENSIVO + possui_certificado</td><td>Vencimento do certificado</td></tr>
+                    <tr><td><code>arquivo_certificado</code></td><td>FileField</td><td>DEFENSIVO + possui_certificado</td><td>PDF/PNG/JPG, max 10 MB. Upload em <code>produtos/certificados/YYYY/MM/</code></td></tr>
+                    <tr class="table-info"><td colspan="4"><strong>Campos exclusivos para FERTILIZANTE:</strong></td></tr>
+                    <tr><td><code>tipo_fertilizante</code></td><td>CharField(20) choices</td><td>FERTILIZANTE (required)</td><td>SIMPLES, COMPOSTO, ORGANICO, ORGANO_MINERAL, FOLIAR, FLUIDO</td></tr>
+                    <tr><td><code>formula_npk</code></td><td>CharField(20)</td><td>FERTILIZANTE</td><td>Ex: "20-05-20"</td></tr>
+                    <tr><td><code>nitrogenio_n</code></td><td>Decimal(5,2)</td><td>FERTILIZANTE</td><td>% de Nitrogênio (N)</td></tr>
+                    <tr><td><code>fosforo_p2o5</code></td><td>Decimal(5,2)</td><td>FERTILIZANTE</td><td>% de Fósforo (P₂O₅)</td></tr>
+                    <tr><td><code>potassio_k2o</code></td><td>Decimal(5,2)</td><td>FERTILIZANTE</td><td>% de Potássio (K₂O)</td></tr>
+                    <tr><td><code>enxofre_s</code></td><td>Decimal(5,2)</td><td>FERTILIZANTE</td><td>% de Enxofre (S)</td></tr>
+                    <tr><td><code>calcio_ca</code></td><td>Decimal(5,2)</td><td>FERTILIZANTE</td><td>% de Cálcio (Ca)</td></tr>
+                    <tr><td><code>magnesio_mg</code></td><td>Decimal(5,2)</td><td>FERTILIZANTE</td><td>% de Magnésio (Mg)</td></tr>
+                    <tr><td><code>micronutrientes</code></td><td>TextField</td><td>FERTILIZANTE</td><td>Ex: "Zn, B, Fe"</td></tr>
+                    <tr class="table-secondary"><td colspan="4"><strong>Campos de Dosagem e Aplicação (DEFENSIVO e FERTILIZANTE):</strong></td></tr>
+                    <tr><td><code>dosagem_minima</code></td><td>Decimal(10,3)</td><td>DEFENSIVO / FERTILIZANTE</td><td>Dosagem mínima recomendada</td></tr>
+                    <tr><td><code>dosagem_maxima</code></td><td>Decimal(10,3)</td><td>DEFENSIVO / FERTILIZANTE</td><td>Dosagem máxima. Deve ser ≥ dosagem_minima</td></tr>
+                    <tr><td><code>unidade_dosagem_id</code></td><td>FK → UnidadeMedida</td><td>DEFENSIVO / FERTILIZANTE</td><td>Unidade das dosagens (L/ha, kg/ha, etc.)</td></tr>
+                    <tr><td><code>modo_aplicacao</code></td><td>CharField(20) choices</td><td>DEFENSIVO / FERTILIZANTE</td><td>FOLIAR, SEMENTE, SULCO, COBERTURA, FERTIRRIGACAO</td></tr>
+                    <tr class="table-danger"><td colspan="4"><strong>Segurança e Armazenamento (DEFENSIVO):</strong></td></tr>
+                    <tr><td><code>intervalo_seguranca</code></td><td>IntegerField</td><td>DEFENSIVO</td><td>Intervalo de segurança em horas</td></tr>
+                    <tr><td><code>epi_obrigatorio</code></td><td>TextField</td><td>DEFENSIVO</td><td>EPIs obrigatórios para manuseio</td></tr>
+                    <tr><td><code>incompatibilidades</code></td><td>TextField</td><td>DEFENSIVO</td><td>Produtos incompatíveis para mistura em tanque</td></tr>
+                    <tr><td><code>temperatura_armazenamento</code></td><td>CharField(50)</td><td>DEFENSIVO</td><td>Ex: "15-25°C"</td></tr>
+                    <tr><td><code>inflamavel</code></td><td>BooleanField</td><td>DEFENSIVO</td><td>Produto inflamável</td></tr>
+                    <tr><td><code>corrosivo</code></td><td>BooleanField</td><td>DEFENSIVO</td><td>Produto corrosivo</td></tr>
+                    <tr><td><code>toxico</code></td><td>BooleanField</td><td>DEFENSIVO</td><td>Produto tóxico</td></tr>
+                    <tr><td><code>observacoes</code></td><td>TextField</td><td>sempre</td><td>Observações gerais sobre o produto</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- ABA: TABELAS RELACIONADAS -->
+            <div class="tab-pane fade" id="doc-relacionados">
+              <h5 class="text-primary">Tabelas Relacionadas ao Produto</h5>
+
+              <div class="row g-3">
+                <!-- Taxonomia -->
+                <div class="col-12">
+                  <h6 class="bg-primary text-white p-2 rounded">Taxonomia (ForeignKey no Produto)</h6>
+                </div>
+                <div class="col-md-6">
+                  <div class="card h-100">
+                    <div class="card-header py-1"><strong>Categoria</strong> <code class="small text-muted">produtos_categoria</code></div>
+                    <div class="card-body p-2 small">
+                      <table class="table table-sm table-bordered mb-0">
+                        <tr><td><code>id</code></td><td>PK</td></tr>
+                        <tr><td><code>empresa_id</code></td><td>FK → Empresa</td></tr>
+                        <tr><td><code>codigo</code></td><td>CharField(20) — usado como prefixo do código do produto</td></tr>
+                        <tr><td><code>nome</code></td><td>CharField(100)</td></tr>
+                        <tr><td><code>descricao</code></td><td>TextField</td></tr>
+                        <tr><td><code>condiciona_campos</code></td><td>BooleanField — se True, pode tornar campos obrigatórios</td></tr>
+                        <tr><td><code>patrimonial</code></td><td>BooleanField — indica se é ativo imobilizado</td></tr>
+                        <tr><td><code>ativo</code></td><td>BooleanField</td></tr>
+                      </table>
+                      <div class="text-muted mt-1">Unique: [empresa, codigo]</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="card h-100">
+                    <div class="card-header py-1"><strong>SubCategoria</strong> <code class="small text-muted">produtos_subcategoria</code></div>
+                    <div class="card-body p-2 small">
+                      <table class="table table-sm table-bordered mb-0">
+                        <tr><td><code>id</code></td><td>PK</td></tr>
+                        <tr><td><code>categoria_id</code></td><td>FK → Categoria</td></tr>
+                        <tr><td><code>codigo</code></td><td>CharField(20)</td></tr>
+                        <tr><td><code>nome</code></td><td>CharField(100)</td></tr>
+                        <tr><td><code>descricao</code></td><td>TextField</td></tr>
+                        <tr><td><code>ativo</code></td><td>BooleanField</td></tr>
+                      </table>
+                      <div class="text-muted mt-1">Unique: [categoria, codigo] | Validação: subcategoria.categoria deve ser igual à categoria do produto</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="card h-100">
+                    <div class="card-header py-1"><strong>TipoProduto</strong> <code class="small text-muted">produtos_tipoproduto</code></div>
+                    <div class="card-body p-2 small">
+                      <table class="table table-sm table-bordered mb-0">
+                        <tr><td><code>id</code></td><td>PK</td></tr>
+                        <tr><td><code>empresa_id</code></td><td>FK → Empresa</td></tr>
+                        <tr><td><code>codigo</code></td><td>CharField(20)</td></tr>
+                        <tr><td><code>nome</code></td><td>CharField(100)</td></tr>
+                        <tr><td><code>ativo</code></td><td>BooleanField</td></tr>
+                      </table>
+                      <div class="text-muted mt-1">Unique: [empresa, codigo]</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="card h-100">
+                    <div class="card-header py-1"><strong>UnidadeMedida</strong> <code class="small text-muted">produtos_unidademedida</code></div>
+                    <div class="card-body p-2 small">
+                      <table class="table table-sm table-bordered mb-0">
+                        <tr><td><code>id</code></td><td>PK</td></tr>
+                        <tr><td><code>empresa_id</code></td><td>FK → Empresa</td></tr>
+                        <tr><td><code>sigla</code></td><td>CharField(10) — ex: kg, L, un, m²</td></tr>
+                        <tr><td><code>nome</code></td><td>CharField(50)</td></tr>
+                        <tr><td><code>tipo</code></td><td>PESO | VOLUME | UNIDADE | AREA | COMPRIMENTO</td></tr>
+                        <tr><td><code>ativo</code></td><td>BooleanField</td></tr>
+                      </table>
+                      <div class="text-muted mt-1">Unique: [empresa, sigla] | Produto referencia 3x (medida, compra, venda) — todas devem ter o mesmo tipo</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="card h-100">
+                    <div class="card-header py-1"><strong>NCM</strong> <code class="small text-muted">cadastros_ncm</code></div>
+                    <div class="card-body p-2 small">
+                      <table class="table table-sm table-bordered mb-0">
+                        <tr><td><code>id</code></td><td>PK</td></tr>
+                        <tr><td><code>codigo</code></td><td>CharField(8) — código NCM com 8 dígitos</td></tr>
+                        <tr><td><code>nome</code></td><td>CharField</td></tr>
+                        <tr><td><code>descricao</code></td><td>TextField</td></tr>
+                        <tr><td><code>cest</code></td><td>CharField(7) — preenchido automaticamente no produto</td></tr>
+                        <tr><td><code>ativo</code></td><td>BooleanField</td></tr>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="card h-100">
+                    <div class="card-header py-1"><strong>Armazem</strong> <code class="small text-muted">estoque_armazem</code></div>
+                    <div class="card-body p-2 small">
+                      <table class="table table-sm table-bordered mb-0">
+                        <tr><td><code>id</code></td><td>PK</td></tr>
+                        <tr><td><code>empresa_id</code></td><td>FK → Empresa</td></tr>
+                        <tr><td><code>nome</code></td><td>CharField</td></tr>
+                        <tr><td><code>codigo</code></td><td>CharField</td></tr>
+                        <tr><td><code>ativo</code></td><td>BooleanField</td></tr>
+                      </table>
+                      <div class="text-muted mt-1">Armazém padrão do produto para entradas de estoque</div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Tabelas filhas -->
+                <div class="col-12 mt-2">
+                  <h6 class="bg-success text-white p-2 rounded">Tabelas Filhas (relacionamento reverso — 1 produto → N registros)</h6>
+                </div>
+                <div class="col-md-6">
+                  <div class="card h-100">
+                    <div class="card-header py-1"><strong>ProdutoTributacao</strong> <code class="small text-muted">produtos_produtotributacao</code></div>
+                    <div class="card-body p-2 small">
+                      <p>Configuração fiscal por CFOP/natureza de operação. Um produto pode ter múltiplas tributações.</p>
+                      <strong>Campos principais:</strong>
+                      <ul class="mb-0">
+                        <li><code>produto_id</code> FK, <code>cfop_id</code> FK, <code>natureza_operacao_id</code> FK</li>
+                        <li>ICMS: <code>cst, modalidade_base, aliquota, reducao_base, base_calculo, st_aliquota, st_mva, st_reducao_base</code></li>
+                        <li>IPI: <code>cst, aliquota, codigo_enquadramento</code></li>
+                        <li>PIS: <code>cst, aliquota, base_calculo</code></li>
+                        <li>COFINS: <code>cst, aliquota, base_calculo</code></li>
+                        <li><code>padrao</code> BooleanField — tributação padrão</li>
+                        <li><code>ativo</code> BooleanField</li>
+                      </ul>
+                      <div class="text-muted mt-1">Unique: [produto, cfop] | Métodos: calcular_icms(), calcular_icms_st(), calcular_ipi(), calcular_pis(), calcular_cofins(), calcular_tributos()</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="card h-100">
+                    <div class="card-header py-1"><strong>ProdutoFornecedor</strong> <code class="small text-muted">produtos_produtofornecedor</code></div>
+                    <div class="card-body p-2 small">
+                      <p>Vincula fornecedores ao produto com dados comerciais.</p>
+                      <table class="table table-sm table-bordered mb-0">
+                        <tr><td><code>produto_id</code></td><td>FK → Produto, PROTECT</td></tr>
+                        <tr><td><code>fornecedor_id</code></td><td>FK → Fornecedor, PROTECT</td></tr>
+                        <tr><td><code>codigo_fornecedor</code></td><td>CharField — código do produto no fornecedor</td></tr>
+                        <tr><td><code>preco_compra</code></td><td>Decimal(15,2)</td></tr>
+                        <tr><td><code>prazo_entrega</code></td><td>IntegerField (dias)</td></tr>
+                        <tr><td><code>quantidade_minima</code></td><td>Decimal</td></tr>
+                        <tr><td><code>fornecedor_preferencial</code></td><td>BooleanField</td></tr>
+                        <tr><td><code>ativo</code></td><td>BooleanField</td></tr>
+                        <tr><td><code>cadastrado_por_id</code></td><td>FK → Usuario</td></tr>
+                      </table>
+                      <div class="text-muted mt-1">Unique: [produto, fornecedor]</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="card h-100">
+                    <div class="card-header py-1"><strong>ProdutoDefensivoCultura</strong> <code class="small text-muted">produtos_produtodefensivocultura</code></div>
+                    <div class="card-body p-2 small">
+                      <p>Registros de uso do defensivo por cultura e praga.</p>
+                      <table class="table table-sm table-bordered mb-0">
+                        <tr><td><code>produto_id</code></td><td>FK → Produto</td></tr>
+                        <tr><td><code>cultura_id</code></td><td>FK → Cultura</td></tr>
+                        <tr><td><code>praga_id</code></td><td>FK → Praga</td></tr>
+                        <tr><td><code>dosagem_minima / maxima</code></td><td>Decimal(10,3)</td></tr>
+                        <tr><td><code>unidade_dosagem_id</code></td><td>FK → UnidadeMedida</td></tr>
+                        <tr><td><code>dosagem_minima/maxima_calc</code></td><td>Decimal — calculados</td></tr>
+                        <tr><td><code>volume_calda_minimo/maximo</code></td><td>Decimal (L/ha)</td></tr>
+                        <tr><td><code>carencia</code></td><td>IntegerField (dias)</td></tr>
+                        <tr><td><code>qtd_maxima_aplicacoes</code></td><td>IntegerField</td></tr>
+                        <tr><td><code>mrl</code></td><td>Decimal — limite máximo de resíduo (mg/kg)</td></tr>
+                      </table>
+                      <div class="text-muted mt-1">Unique: [produto, cultura, praga]</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="card h-100">
+                    <div class="card-header py-1"><strong>ProdutoDocumento</strong> <code class="small text-muted">produtos_produtodocumento</code></div>
+                    <div class="card-body p-2 small">
+                      <p>Arquivos anexados ao produto.</p>
+                      <table class="table table-sm table-bordered mb-0">
+                        <tr><td><code>produto_id</code></td><td>FK → Produto</td></tr>
+                        <tr><td><code>tipo</code></td><td>BULA | CERTIFICADO | FISPQ | FICHA_TECNICA | ANALISE | LAUDO | REGISTRO | ROTULO | MANUAL | OUTROS</td></tr>
+                        <tr><td><code>arquivo</code></td><td>FileField — upload em <code>produtos/documentos/YYYY/MM/</code></td></tr>
+                        <tr><td><code>cadastrado_por_id</code></td><td>FK → Usuario</td></tr>
+                        <tr><td><code>created_at</code></td><td>DateTimeField auto</td></tr>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Tabelas Agrícolas Auxiliares -->
+                <div class="col-12 mt-2">
+                  <h6 class="bg-warning p-2 rounded">Tabelas Agrícolas Auxiliares (usadas em ProdutoDefensivoCultura)</h6>
+                </div>
+                <div class="col-md-6">
+                  <div class="card h-100">
+                    <div class="card-header py-1"><strong>Cultura</strong> <code class="small text-muted">produtos_cultura</code></div>
+                    <div class="card-body p-2 small">
+                      <table class="table table-sm table-bordered mb-0">
+                        <tr><td><code>empresa_id</code></td><td>FK → Empresa</td></tr>
+                        <tr><td><code>nome</code></td><td>CharField</td></tr>
+                        <tr><td><code>tipo</code></td><td>CharField — tipo da cultura</td></tr>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="card h-100">
+                    <div class="card-header py-1"><strong>Praga</strong> <code class="small text-muted">produtos_praga</code></div>
+                    <div class="card-body p-2 small">
+                      <table class="table table-sm table-bordered mb-0">
+                        <tr><td><code>empresa_id</code></td><td>FK → Empresa</td></tr>
+                        <tr><td><code>nome_comum</code></td><td>CharField</td></tr>
+                        <tr><td><code>nome_cientifico</code></td><td>CharField</td></tr>
+                        <tr><td><code>ativa</code></td><td>BooleanField</td></tr>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ABA: VALIDAÇÕES E REGRAS -->
+            <div class="tab-pane fade" id="doc-validacoes">
+              <h5 class="text-primary">Validações e Regras de Negócio</h5>
+
+              <div class="accordion" id="accordionValidacoes">
+                <div class="accordion-item">
+                  <h2 class="accordion-header"><button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#val1">Validações do Modelo (Model.clean())</button></h2>
+                  <div id="val1" class="accordion-collapse collapse show" data-bs-parent="#accordionValidacoes">
+                    <div class="accordion-body small">
+                      <table class="table table-sm table-bordered">
+                        <thead class="table-dark"><tr><th>Regra</th><th>Condição</th><th>Erro</th></tr></thead>
+                        <tbody>
+                          <tr><td>Subcategoria consistente</td><td>Se subcategoria informada, sua categoria deve ser igual à categoria do produto</td><td>Campo <code>subcategoria</code></td></tr>
+                          <tr><td>Tipo das unidades igual</td><td>unidade_medida.tipo == unidade_compra.tipo == unidade_venda.tipo</td><td>Campos de unidade</td></tr>
+                          <tr><td>Fator de conversão positivo</td><td>fator_conversao &gt; 0</td><td>Campo <code>fator_conversao</code></td></tr>
+                          <tr><td>Dias de validade obrigatório</td><td>Se validade_obrigatoria=True → dias_validade required e ≥ 0</td><td>Campo <code>dias_validade</code></td></tr>
+                          <tr><td>Estoque mínimo ≤ máximo</td><td>estoque_minimo ≤ estoque_maximo (quando ambos &gt; 0)</td><td>Campo <code>estoque_minimo</code></td></tr>
+                          <tr><td>Dosagem mínima ≤ máxima</td><td>dosagem_minima ≤ dosagem_maxima (quando ambas informadas)</td><td>Campo <code>dosagem_minima</code></td></tr>
+                          <tr><td>Certificado completo</td><td>Se possui_certificado=True → numero_certificado, data_vencimento_certificado e arquivo_certificado são required</td><td>Campos respectivos</td></tr>
+                          <tr><td>Arquivo certificado</td><td>Extensão deve ser PDF, PNG ou JPG. Tamanho máx 10 MB</td><td>Campo <code>arquivo_certificado</code></td></tr>
+                          <tr><td>Defensivo: campos obrigatórios</td><td>Se categoria_agricola=DEFENSIVO → classe_agronomica, ingrediente_ativo e registro_mapa são required</td><td>Campos respectivos</td></tr>
+                          <tr><td>Fertilizante: campos obrigatórios</td><td>Se categoria_agricola=FERTILIZANTE → tipo_fertilizante required + (formula_npk OU pelo menos um valor NPK)</td><td>Campo <code>tipo_fertilizante</code> e NPK</td></tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="accordion-item">
+                  <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#val2">Regras de Negócio e Comportamentos</button></h2>
+                  <div id="val2" class="accordion-collapse collapse" data-bs-parent="#accordionValidacoes">
+                    <div class="accordion-body small">
+                      <table class="table table-sm table-bordered">
+                        <thead class="table-dark"><tr><th>Regra</th><th>Descrição</th></tr></thead>
+                        <tbody>
+                          <tr><td>Multi-tenancy</td><td>Todos os dados são filtrados por <code>empresa</code>. Categorias, subcategorias, unidades, tipos, fornecedores e armazéns pertencem à empresa do usuário logado</td></tr>
+                          <tr><td>Geração de código</td><td>Se <code>codigo</code> não informado, gera automaticamente como <code>PREFIXO_CATEGORIA-000001</code> incrementando pelo último código da mesma categoria</td></tr>
+                          <tr><td>Soft delete</td><td>A exclusão apenas define <code>ativo=False</code>. O produto permanece no banco e pode ser reativado</td></tr>
+                          <tr><td>Limpeza de campos agrícolas</td><td>Ao mudar <code>categoria_agricola</code>, os campos da categoria anterior são zerados automaticamente no save()</td></tr>
+                          <tr><td>Saldo de estoque</td><td><code>estoque_atual</code> não é editado diretamente; é recalculado a partir dos lotes via <code>recalcular_estoque()</code></td></tr>
+                          <tr><td>Sinal de auditoria</td><td>Alteração manual de <code>estoque_atual</code> dispara signal pre_save que registra a alteração no logger de auditoria de estoque</td></tr>
+                          <tr><td>Unique constraints</td><td><code>codigo</code> único global; [produto, fornecedor] único; [produto, cfop] único na tributação; [produto, cultura, praga] único nas culturas</td></tr>
+                          <tr><td>Clone de produto</td><td>Copia o produto com tributações (ProdutoTributacao) e culturas de defensivo (ProdutoDefensivoCultura). Novo código gerado automaticamente</td></tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="accordion-item">
+                  <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#val3">Campos com Exibição Condicional (JavaScript)</button></h2>
+                  <div id="val3" class="accordion-collapse collapse" data-bs-parent="#accordionValidacoes">
+                    <div class="accordion-body small">
+                      <p>O formulário oculta/exibe seções inteiras via JavaScript conforme <code>categoria_agricola</code>:</p>
+                      <table class="table table-sm table-bordered">
+                        <thead class="table-dark"><tr><th>Seção / Aba</th><th>Exibida quando</th></tr></thead>
+                        <tbody>
+                          <tr><td>Aba "Defensivo — Culturas/Pragas"</td><td>categoria_agricola = DEFENSIVO</td></tr>
+                          <tr><td>Aba "Fertilizantes"</td><td>categoria_agricola = FERTILIZANTE</td></tr>
+                          <tr><td>Campos de classe agronômica, ingrediente ativo, registro MAPA, toxicologia, segurança</td><td>categoria_agricola = DEFENSIVO</td></tr>
+                          <tr><td>Campos NPK, tipo de fertilizante, micronutrientes</td><td>categoria_agricola = FERTILIZANTE</td></tr>
+                          <tr><td>Campos de dosagem e modo de aplicação</td><td>DEFENSIVO ou FERTILIZANTE</td></tr>
+                          <tr><td>Campos de certificado (número, vencimento, arquivo)</td><td>possui_certificado = True</td></tr>
+                        </tbody>
+                      </table>
+                      <p class="mt-2">Além disso, <strong>subcategorias</strong> são filtradas dinamicamente no select pelo ID da categoria selecionada via atributo <code>data-categoria-id</code>.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ABA: FLUXO E VIEWS -->
+            <div class="tab-pane fade" id="doc-fluxo">
+              <h5 class="text-primary">Fluxo de Dados e Views</h5>
+              <div class="row g-3">
+                <div class="col-12">
+                  <div class="card border-primary">
+                    <div class="card-header bg-primary text-white py-1">Fluxo de Criação de Produto</div>
+                    <div class="card-body p-3 small">
+                      <ol class="mb-0">
+                        <li>Usuário acessa <code>GET /produtos/cadastrar/</code> → view <code>produto_create</code> retorna formulário com listas pré-carregadas (categorias, NCMs, unidades, etc.) filtradas pela empresa</li>
+                        <li>Usuário preenche as abas e submete <code>POST /produtos/cadastrar/</code></li>
+                        <li>View instancia <code>ProdutoForm</code>, chama <code>form.is_valid()</code></li>
+                        <li>Form.clean() detecta <code>categoria_agricola</code> automaticamente pelo código/nome da categoria se não informado explicitamente</li>
+                        <li>Form.clean() chama <code>instance.clean()</code> que executa todas as validações de negócio</li>
+                        <li>Se válido: <code>form.save()</code> → <code>Produto.save()</code> normaliza nome, gera código se vazio, limpa campos irrelevantes e persiste</li>
+                        <li>Produto salvo → redirect para edição com <code>continue_tab</code> para continuar nas demais abas (tributação, fornecedores, documentos)</li>
+                      </ol>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="col-12">
+                  <h6 class="bg-secondary text-white p-2 rounded">Endpoints Principais</h6>
+                  <div class="table-responsive">
+                    <table class="table table-sm table-bordered small">
+                      <thead class="table-dark"><tr><th>URL</th><th>Método</th><th>View</th><th>Descrição</th></tr></thead>
+                      <tbody>
+                        <tr><td><code>/produtos/</code></td><td>GET</td><td>produto_list</td><td>Lista com busca, filtro por categoria/status, paginação</td></tr>
+                        <tr><td><code>/produtos/cadastrar/</code></td><td>GET/POST</td><td>produto_create</td><td>Cadastro de novo produto</td></tr>
+                        <tr><td><code>/produtos/&lt;id&gt;/</code></td><td>GET</td><td>produto_detail</td><td>Detalhe somente leitura</td></tr>
+                        <tr><td><code>/produtos/&lt;id&gt;/editar/</code></td><td>GET/POST</td><td>produto_update</td><td>Edição completa com contexto</td></tr>
+                        <tr><td><code>/produtos/&lt;id&gt;/excluir/</code></td><td>POST</td><td>produto_delete</td><td>Soft-delete (ativo=False)</td></tr>
+                        <tr><td><code>/produtos/&lt;id&gt;/clonar/</code></td><td>POST</td><td>produto_clone</td><td>Clona produto com tributações e defensivos</td></tr>
+                        <tr class="table-warning"><td colspan="4"><strong>Tributação</strong></td></tr>
+                        <tr><td><code>/produtos/&lt;pk&gt;/tributacao/cadastrar/</code></td><td>GET/POST</td><td>produtotributacao_create</td><td>Adicionar tributação ao produto</td></tr>
+                        <tr><td><code>/produtos/tributacao/&lt;id&gt;/editar/</code></td><td>GET/POST</td><td>produtotributacao_update</td><td>Editar tributação</td></tr>
+                        <tr><td><code>/produtos/tributacao/&lt;id&gt;/excluir/</code></td><td>POST</td><td>produtotributacao_delete</td><td>Remover tributação</td></tr>
+                        <tr class="table-info"><td colspan="4"><strong>Defensivo – Culturas/Pragas</strong></td></tr>
+                        <tr><td><code>/produtos/&lt;pk&gt;/defensivo-cultura/cadastrar/</code></td><td>GET/POST</td><td>defensivo_cultura_create</td><td>Adicionar cultura/praga ao defensivo</td></tr>
+                        <tr><td><code>/produtos/defensivo-cultura/&lt;id&gt;/edit/</code></td><td>GET/POST</td><td>defensivo_cultura_edit</td><td>Editar dosagens por cultura/praga</td></tr>
+                        <tr class="table-secondary"><td colspan="4"><strong>Fornecedores, Documentos, AJAX</strong></td></tr>
+                        <tr><td><code>/produtos/&lt;pk&gt;/fornecedor/criar/</code></td><td>POST</td><td>produto_fornecedor_create</td><td>Vincular fornecedor via modal</td></tr>
+                        <tr><td><code>/produtos/fornecedor/&lt;id&gt;/editar/</code></td><td>POST JSON</td><td>produto_fornecedor_editar</td><td>Editar fornecedor via AJAX</td></tr>
+                        <tr><td><code>/produtos/&lt;pk&gt;/documentos/upload/</code></td><td>POST multipart</td><td>documento_upload</td><td>Upload de arquivo</td></tr>
+                        <tr><td><code>/produtos/ajax/buscar/</code></td><td>GET JSON</td><td>ajax_buscar_produtos</td><td>Autocomplete de produtos (máx 15 resultados)</td></tr>
+                        <tr><td><code>/produtos/ajax/ncm/</code></td><td>GET JSON</td><td>ncm_buscar_ajax</td><td>Busca NCM e retorna CEST automaticamente</td></tr>
+                        <tr><td><code>/produtos/ajax/cfop/</code></td><td>GET JSON</td><td>cfop_buscar_ajax</td><td>Busca CFOP com natureza de operação</td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <div class="col-12">
+                  <h6 class="bg-secondary text-white p-2 rounded">Criação Rápida via AJAX (modais inline)</h6>
+                  <p class="small mb-1">Durante o cadastro, é possível criar registros auxiliares sem sair da tela:</p>
+                  <div class="table-responsive">
+                    <table class="table table-sm table-bordered small">
+                      <thead class="table-dark"><tr><th>Endpoint</th><th>Cria</th></tr></thead>
+                      <tbody>
+                        <tr><td><code>/produtos/ajax/categoria/criar/</code></td><td>Nova Categoria (retorna JSON com id, nome, codigo)</td></tr>
+                        <tr><td><code>/produtos/ajax/subcategoria/criar/</code></td><td>Nova Subcategoria filtrada por categoria</td></tr>
+                        <tr><td><code>/produtos/ajax/cultura/criar/</code></td><td>Nova Cultura agrícola</td></tr>
+                        <tr><td><code>/produtos/ajax/unidademedida/criar/</code></td><td>Nova Unidade de Medida</td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div><!-- /tab-content -->
+        </div><!-- /modal-body -->
+        <div class="modal-footer py-2">
+          <small class="text-muted me-auto">Documentação gerada a partir do código-fonte. Módulo: <code>produtos</code> | Modelo principal: <code>Produto</code></small>
+          <button type="button" class="btn btn-danger btn-sm me-2" onclick="imprimirDocumentacao()">
+            <i class="bi bi-file-earmark-pdf me-1"></i> Gerar PDF / Imprimir
+          </button>
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Fechar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- /Modal de Documentação -->
 
   {% if form.errors %}
   <div class="alert alert-danger">
@@ -2671,6 +3252,93 @@ function editarFornecedor(id) {
     .catch(error => {
       alert('Erro ao buscar fornecedor: ' + error);
     });
+}
+</script>
+
+<script>
+function imprimirDocumentacao() {
+  const secoes = [
+    { id: 'doc-visao',        titulo: '1. Visão Geral — Funcionamento do Cadastro de Produtos' },
+    { id: 'doc-schema',       titulo: '2. Schema Principal — Tabela produtos_produto' },
+    { id: 'doc-relacionados', titulo: '3. Tabelas Relacionadas' },
+    { id: 'doc-validacoes',   titulo: '4. Validações e Regras de Negócio' },
+    { id: 'doc-fluxo',        titulo: '5. Fluxo de Dados e Views' },
+  ];
+
+  let corpo = '';
+  secoes.forEach(function(s) {
+    const el = document.getElementById(s.id);
+    if (!el) return;
+    // Clonar para não alterar o DOM original
+    const clone = el.cloneNode(true);
+    // Expandir todos os accordions colapsados
+    clone.querySelectorAll('.accordion-collapse').forEach(function(ac) {
+      ac.classList.add('show');
+    });
+    corpo += '<div class="secao"><h2>' + s.titulo + '</h2>' + clone.innerHTML + '</div>';
+  });
+
+  const html = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Documentação — Cadastro de Produtos</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; font-size: 11px; color: #212529; margin: 20px; }
+    h1 { font-size: 18px; border-bottom: 2px solid #0d6efd; padding-bottom: 6px; margin-bottom: 4px; }
+    h2 { font-size: 14px; background: #0d6efd; color: #fff; padding: 6px 10px; margin: 20px 0 8px; border-radius: 4px; page-break-before: auto; }
+    h5 { font-size: 13px; color: #0d6efd; margin: 12px 0 6px; }
+    h6 { font-size: 11px; font-weight: bold; padding: 4px 8px; border-radius: 3px; margin: 10px 0 4px; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 8px; font-size: 10px; }
+    th, td { border: 1px solid #dee2e6; padding: 3px 6px; vertical-align: top; }
+    thead tr { background: #343a40; color: #fff; }
+    tr:nth-child(even) { background: #f8f9fa; }
+    code { font-family: monospace; font-size: 10px; background: #f1f3f5; padding: 1px 3px; border-radius: 2px; }
+    .secao { margin-bottom: 16px; }
+    ul { margin: 4px 0; padding-left: 18px; }
+    li { margin-bottom: 2px; }
+    .card { border: 1px solid #dee2e6; border-radius: 4px; margin-bottom: 8px; break-inside: avoid; }
+    .card-header { background: #e9ecef; font-weight: bold; padding: 4px 8px; font-size: 10px; }
+    .card-body { padding: 6px 8px; }
+    .alert { border: 1px solid #ffc107; background: #fff3cd; padding: 4px 8px; border-radius: 3px; margin: 4px 0; }
+    .row { display: flex; flex-wrap: wrap; gap: 8px; }
+    .col-md-6 { flex: 1 1 45%; min-width: 280px; }
+    .col-12 { flex: 1 1 100%; }
+    .bg-primary { background: #0d6efd !important; color: #fff !important; }
+    .bg-success { background: #198754 !important; color: #fff !important; }
+    .bg-warning { background: #ffc107 !important; }
+    .bg-secondary { background: #6c757d !important; color: #fff !important; }
+    .table-warning td, .table-warning th { background: #fff3cd; }
+    .table-info td, .table-info th { background: #cff4fc; }
+    .table-secondary td, .table-secondary th { background: #e2e3e5; }
+    .table-danger td, .table-danger th { background: #f8d7da; }
+    .accordion-button { font-weight: bold; margin: 6px 0 2px; font-size: 11px; }
+    .accordion-body { padding: 4px 0; }
+    .text-muted { color: #6c757d; font-size: 9px; }
+    ol { margin: 4px 0; padding-left: 18px; }
+    ol li { margin-bottom: 3px; }
+    @media print {
+      body { margin: 10mm; }
+      h2 { page-break-before: always; }
+      h2:first-of-type { page-break-before: avoid; }
+      .card { break-inside: avoid; }
+      table { break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <h1>Documentação — Módulo de Cadastro de Produtos</h1>
+  <p style="font-size:10px;color:#6c757d;">Gerado em: ${new Date().toLocaleString('pt-BR')} &nbsp;|&nbsp; Sistema: ERP Agrícola &nbsp;|&nbsp; Modelo principal: <code>produtos.Produto</code></p>
+  ${corpo}
+  <script>window.onload = function(){ window.print(); }<\/script>
+</body>
+</html>`;
+
+  const janela = window.open('', '_blank', 'width=900,height=700');
+  janela.document.open();
+  janela.document.write(html);
+  janela.document.close();
 }
 </script>
 

@@ -4,12 +4,17 @@ from django.forms import inlineformset_factory
 
 from .models import (
     ConfiguracaoFiscal,
+    ConhecimentoTransporte,
+    DocumentoVinculadoCTe,
+    DocumentoVinculadoMDFe,
     InvoiceExportacao,
     ItemInvoice,
     ItemNotaFiscal,
     ItemPackingList,
+    ManifestoDocumentoFiscal,
     NotaFiscal,
     PackingList,
+    PercursoMDFe,
 )
 
 
@@ -70,6 +75,21 @@ class NotaFiscalCancelarForm(forms.Form):
 
 
 class ConfiguracaoFiscalForm(forms.ModelForm):
+    # Campo sobrescrito: usa PasswordInput e nunca devolve o ciphertext ao browser
+    token_integranotas = forms.CharField(
+        label='Token IntegraNota',
+        required=False,
+        widget=forms.PasswordInput(
+            attrs={
+                'class': 'form-control',
+                'placeholder': 'Deixe em branco para manter o token atual',
+                'autocomplete': 'new-password',
+            },
+            render_value=False,
+        ),
+        help_text='Deixe em branco para não alterar o token existente.',
+    )
+
     class Meta:
         model = ConfiguracaoFiscal
         fields = [
@@ -94,8 +114,24 @@ class ConfiguracaoFiscalForm(forms.ModelForm):
             'observacoes_padrao_nfe': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'observacoes_padrao_invoice': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'ambiente_nfe': forms.Select(attrs={'class': 'form-select'}),
-            'token_integranotas': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Bearer token da API IntegraNota'}),
         }
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        raw_token = self.cleaned_data.get('token_integranotas', '').strip()
+        if raw_token:
+            instance.set_token(raw_token)
+        else:
+            # super().save(commit=False) já sobrescreveu token_integranotas com ''
+            # Restauramos o valor atual do banco para não apagar o token existente
+            if instance.pk:
+                current = ConfiguracaoFiscal.objects.filter(pk=instance.pk).values_list(
+                    'token_integranotas', flat=True
+                ).first()
+                instance.token_integranotas = current or ''
+        if commit:
+            instance.save()
+        return instance
 
 
 class NotaFiscalForm(FaturamentoBaseForm):
@@ -387,4 +423,170 @@ ItemPackingListFormSet = inlineformset_factory(
     can_delete=True,
     min_num=1,
     validate_min=True,
+)
+
+# ═══════════════════════════════════════════════════════════════════
+#  CT-e — Formulários
+# ═══════════════════════════════════════════════════════════════════
+
+class ConhecimentoTransporteForm(FaturamentoBaseForm):
+    class Meta:
+        model = ConhecimentoTransporte
+        fields = [
+            'remetente', 'destinatario', 'tomador', 'transportadora',
+            'motorista', 'veiculo',
+            'data_emissao', 'cfop', 'natureza_operacao', 'tipo_servico',
+            'uf_inicio', 'municipio_inicio', 'uf_fim', 'municipio_fim',
+            'modalidade_frete', 'valor_servico', 'valor_carga', 'peso_bruto_kg',
+            'observacoes',
+        ]
+        widgets = {
+            'remetente':         forms.Select(attrs={'class': 'form-select'}),
+            'destinatario':      forms.Select(attrs={'class': 'form-select'}),
+            'tomador':           forms.Select(attrs={'class': 'form-select'}),
+            'transportadora':    forms.Select(attrs={'class': 'form-select'}),
+            'motorista':         forms.Select(attrs={'class': 'form-select'}),
+            'veiculo':           forms.Select(attrs={'class': 'form-select'}),
+            'data_emissao':      forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'),
+            'cfop':              forms.TextInput(attrs={'class': 'form-control', 'placeholder': '6351'}),
+            'natureza_operacao': forms.TextInput(attrs={'class': 'form-control'}),
+            'tipo_servico':      forms.Select(attrs={'class': 'form-select'}),
+            'uf_inicio':         forms.TextInput(attrs={'class': 'form-control', 'maxlength': '2', 'placeholder': 'SP'}),
+            'municipio_inicio':  forms.TextInput(attrs={'class': 'form-control'}),
+            'uf_fim':            forms.TextInput(attrs={'class': 'form-control', 'maxlength': '2', 'placeholder': 'MG'}),
+            'municipio_fim':     forms.TextInput(attrs={'class': 'form-control'}),
+            'modalidade_frete':  forms.Select(attrs={'class': 'form-select'}),
+            'valor_servico':     forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'valor_carga':       forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'peso_bruto_kg':     forms.NumberInput(attrs={'class': 'form-control', 'step': '0.001'}),
+            'observacoes':       forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+        }
+
+    def __init__(self, *args, empresa=None, **kwargs):
+        super().__init__(*args, empresa=empresa, **kwargs)
+        if empresa:
+            from cadastros.models import Cliente, Motorista, Transportadora, Vehicle
+            self.fields['remetente'].queryset = Cliente.objects.filter(empresa=empresa, status='ATIVO').order_by('razao_social')
+            self.fields['destinatario'].queryset = Cliente.objects.filter(empresa=empresa, status='ATIVO').order_by('razao_social')
+            self.fields['tomador'].queryset = Cliente.objects.filter(empresa=empresa, status='ATIVO').order_by('razao_social')
+            self.fields['transportadora'].queryset = Transportadora.objects.filter(empresa=empresa).order_by('razao_social')
+            self.fields['motorista'].queryset = Motorista.objects.filter(empresa=empresa, ativo=True).order_by('nome')
+            self.fields['veiculo'].queryset = Vehicle.objects.filter(empresa=empresa).order_by('descricao')
+            self.fields['motorista'].required = False
+            self.fields['veiculo'].required = False
+
+
+class CancelarCTeForm(forms.Form):
+    justificativa = forms.CharField(
+        label='Justificativa do Cancelamento',
+        min_length=15, max_length=255,
+        widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 4,
+                                     'placeholder': 'Informe o motivo do cancelamento (mínimo 15 caracteres)'}),
+        validators=[MinLengthValidator(15)],
+    )
+
+
+class DocumentoVinculadoCTeForm(forms.ModelForm):
+    class Meta:
+        model = DocumentoVinculadoCTe
+        fields = ['chave_nfe', 'descricao']
+        widgets = {
+            'chave_nfe':  forms.TextInput(attrs={'class': 'form-control form-control-sm', 'maxlength': '44', 'placeholder': 'Chave NF-e (44 dígitos)'}),
+            'descricao':  forms.TextInput(attrs={'class': 'form-control form-control-sm', 'placeholder': 'Descrição / Produto (opcional)'}),
+        }
+
+
+DocumentoVinculadoCTeFormSet = inlineformset_factory(
+    ConhecimentoTransporte, DocumentoVinculadoCTe,
+    form=DocumentoVinculadoCTeForm,
+    extra=1, can_delete=True, min_num=1, validate_min=True,
+)
+
+
+# ═══════════════════════════════════════════════════════════════════
+#  MDF-e — Formulários
+# ═══════════════════════════════════════════════════════════════════
+
+class ManifestoDocumentoFiscalForm(FaturamentoBaseForm):
+    class Meta:
+        model = ManifestoDocumentoFiscal
+        fields = [
+            'motorista', 'veiculo',
+            'data_emissao',
+            'uf_inicio', 'municipio_carregamento', 'uf_fim',
+            'tipo_transporte', 'valor_carga', 'peso_bruto_kg',
+            'informacoes_fisco', 'informacoes_contribuinte',
+        ]
+        widgets = {
+            'motorista':                 forms.Select(attrs={'class': 'form-select'}),
+            'veiculo':                   forms.Select(attrs={'class': 'form-select'}),
+            'data_emissao':              forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'),
+            'uf_inicio':                 forms.TextInput(attrs={'class': 'form-control', 'maxlength': '2', 'placeholder': 'SP'}),
+            'municipio_carregamento':    forms.TextInput(attrs={'class': 'form-control'}),
+            'uf_fim':                    forms.TextInput(attrs={'class': 'form-control', 'maxlength': '2', 'placeholder': 'MG'}),
+            'tipo_transporte':           forms.Select(attrs={'class': 'form-select'}),
+            'valor_carga':               forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'peso_bruto_kg':             forms.NumberInput(attrs={'class': 'form-control', 'step': '0.001'}),
+            'informacoes_fisco':         forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+            'informacoes_contribuinte':  forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+        }
+
+    def __init__(self, *args, empresa=None, **kwargs):
+        super().__init__(*args, empresa=empresa, **kwargs)
+        if empresa:
+            from cadastros.models import Motorista, Vehicle
+            self.fields['motorista'].queryset = Motorista.objects.filter(empresa=empresa, ativo=True).order_by('nome')
+            self.fields['veiculo'].queryset = Vehicle.objects.filter(empresa=empresa).order_by('descricao')
+
+
+class EncerrarMDFeForm(forms.Form):
+    municipio_encerramento = forms.CharField(
+        label='Município de Encerramento',
+        max_length=100,
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Cidade onde a viagem terminou'}),
+    )
+
+
+class CancelarMDFeForm(forms.Form):
+    justificativa = forms.CharField(
+        label='Justificativa do Cancelamento',
+        min_length=15, max_length=255,
+        widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 4,
+                                     'placeholder': 'Informe o motivo do cancelamento (mínimo 15 caracteres)'}),
+        validators=[MinLengthValidator(15)],
+    )
+
+
+class DocumentoVinculadoMDFeForm(forms.ModelForm):
+    class Meta:
+        model = DocumentoVinculadoMDFe
+        fields = ['tipo', 'chave', 'municipio_descarregamento']
+        widgets = {
+            'tipo':                     forms.Select(attrs={'class': 'form-select form-select-sm'}),
+            'chave':                    forms.TextInput(attrs={'class': 'form-control form-control-sm', 'maxlength': '44', 'placeholder': 'Chave (44 dígitos)'}),
+            'municipio_descarregamento': forms.TextInput(attrs={'class': 'form-control form-control-sm', 'placeholder': 'Cidade de entrega'}),
+        }
+
+
+DocumentoVinculadoMDFeFormSet = inlineformset_factory(
+    ManifestoDocumentoFiscal, DocumentoVinculadoMDFe,
+    form=DocumentoVinculadoMDFeForm,
+    extra=1, can_delete=True, min_num=1, validate_min=True,
+)
+
+
+class PercursoMDFeForm(forms.ModelForm):
+    class Meta:
+        model = PercursoMDFe
+        fields = ['uf', 'ordem']
+        widgets = {
+            'uf':    forms.TextInput(attrs={'class': 'form-control form-control-sm', 'maxlength': '2', 'placeholder': 'Ex: RJ'}),
+            'ordem': forms.NumberInput(attrs={'class': 'form-control form-control-sm', 'style': 'width:70px'}),
+        }
+
+
+PercursoMDFeFormSet = inlineformset_factory(
+    ManifestoDocumentoFiscal, PercursoMDFe,
+    form=PercursoMDFeForm,
+    extra=1, can_delete=True, min_num=0,
 )

@@ -22,6 +22,29 @@
   .form-section-body { padding: 1.25rem; }
   .cnpj-search-btn { transition: all 0.3s ease; }
   .cnpj-search-btn:hover { transform: scale(1.05); }
+
+  @media print {
+    body * { visibility: hidden !important; }
+    #ajuda-print-area, #ajuda-print-area * { visibility: visible !important; }
+    #ajuda-print-area {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%;
+      padding: 20px;
+      background: white;
+    }
+    .accordion-collapse { display: block !important; }
+    .accordion-button::after { display: none !important; }
+    .accordion-button { background: #e9ecef !important; color: #000 !important; font-weight: 600; padding: 8px 12px; }
+    .accordion-item { margin-bottom: 12px; border: 1px solid #dee2e6 !important; border-radius: 6px; }
+    table { border-collapse: collapse; width: 100%; font-size: 11px; }
+    th, td { border: 1px solid #ccc !important; padding: 4px 8px !important; }
+    thead { background-color: #d0e4ff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .badge { border: 1px solid #999; padding: 1px 4px; font-size: 9px; border-radius: 3px; }
+    .alert { border: 1px solid #ccc; padding: 8px; border-radius: 4px; }
+    h4.print-title { font-size: 16px; font-weight: bold; margin-bottom: 4px; }
+    p.print-subtitle { font-size: 11px; color: #555; margin-bottom: 16px; }
+  }
 </style>
 {% endblock %}
 
@@ -47,9 +70,197 @@
         <p class="text-muted mb-0">Preencha os dados do cliente</p>
       {% endif %}
     </div>
-    <a href="{% url 'cadastros:cliente_list' %}" class="btn btn-outline-secondary">
-      <i class="bi bi-arrow-left"></i> Voltar
-    </a>
+    <div class="d-flex gap-2">
+      <button type="button" class="btn btn-outline-info" data-bs-toggle="modal" data-bs-target="#ajudaClienteModal">
+        <i class="bi bi-question-circle"></i> Ajuda
+      </button>
+      <a href="{% url 'cadastros:cliente_list' %}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Voltar
+      </a>
+    </div>
+  </div>
+
+  <!-- Modal de Ajuda do Cadastro de Cliente -->
+  <div class="modal fade" id="ajudaClienteModal" tabindex="-1" aria-labelledby="ajudaClienteModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header" style="background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%); color: white;">
+          <h5 class="modal-title" id="ajudaClienteModalLabel">
+            <i class="bi bi-question-circle-fill"></i> Guia de Cadastro de Cliente
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body p-4">
+
+          <p class="text-muted mb-4">Este formulário registra todos os dados de um cliente no sistema. Abaixo você encontra a explicação de cada seção, campo e as tabelas do banco de dados envolvidas.</p>
+
+          <div class="accordion" id="ajudaAccordion">
+
+            <!-- Dados Básicos -->
+            <div class="accordion-item border-0 mb-2 shadow-sm">
+              <h2 class="accordion-header">
+                <button class="accordion-button fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#ajudaDadosBasicos">
+                  <i class="bi bi-person-fill text-primary me-2"></i> Dados Básicos
+                </button>
+              </h2>
+              <div id="ajudaDadosBasicos" class="accordion-collapse collapse show" data-bs-parent="#ajudaAccordion">
+                <div class="accordion-body">
+                  <table class="table table-sm table-bordered mb-0">
+                    <thead class="table-light"><tr><th>Campo</th><th>Obrigatório</th><th>Descrição</th></tr></thead>
+                    <tbody>
+                      <tr><td><strong>Razão Social / Nome</strong></td><td class="text-center"><span class="badge bg-danger">Sim</span></td><td>Nome completo ou razão social do cliente. Para pessoa física, use o nome completo.</td></tr>
+                      <tr><td><strong>Nome Comercial</strong></td><td class="text-center"><span class="badge bg-secondary">Não</span></td><td>Nome fantasia ou nome de uso comercial (diferente da razão social).</td></tr>
+                      <tr><td><strong>CNPJ/CPF</strong></td><td class="text-center"><span class="badge bg-danger">Sim</span></td><td>Documento fiscal principal. O botão <em>Buscar</em> consulta a Receita Federal via API ReceitaWS e preenche automaticamente endereço, razão social e dados de contato.</td></tr>
+                      <tr><td><strong>Tipo Cliente</strong></td><td class="text-center"><span class="badge bg-secondary">Não</span></td><td><strong>Nacional:</strong> cliente dentro do Brasil. <strong>Importador:</strong> cliente no exterior — habilita campos de exportação.</td></tr>
+                      <tr><td><strong>Tipo Pessoa</strong></td><td class="text-center"><span class="badge bg-secondary">Não</span></td><td><strong>PJ:</strong> Pessoa Jurídica (CNPJ). <strong>PF:</strong> Pessoa Física (CPF). Afeta o Indicador IE e validações fiscais.</td></tr>
+                      <tr><td><strong>Contato Principal</strong></td><td class="text-center"><span class="badge bg-secondary">Não</span></td><td>Nome, telefone e e-mail do contato principal do cliente. Pode ser complementado com contatos adicionais após o cadastro inicial.</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- Documentação Fiscal -->
+            <div class="accordion-item border-0 mb-2 shadow-sm">
+              <h2 class="accordion-header">
+                <button class="accordion-button collapsed fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#ajudaFiscal">
+                  <i class="bi bi-file-earmark-text text-warning me-2"></i> Documentação Fiscal
+                </button>
+              </h2>
+              <div id="ajudaFiscal" class="accordion-collapse collapse" data-bs-parent="#ajudaAccordion">
+                <div class="accordion-body">
+                  <table class="table table-sm table-bordered mb-0">
+                    <thead class="table-light"><tr><th>Campo</th><th>Descrição</th></tr></thead>
+                    <tbody>
+                      <tr><td><strong>Inscrição Estadual (IE)</strong></td><td>Número do registro estadual para contribuintes de ICMS. Obrigatório para emissão de NF-e em algumas operações.</td></tr>
+                      <tr><td><strong>Inscrição Municipal (IM)</strong></td><td>Número do cadastro municipal — necessário para serviços e NFS-e.</td></tr>
+                      <tr><td><strong>Inscrição SUFRAMA</strong></td><td>Obrigatório para clientes na Zona Franca de Manaus — garante benefícios fiscais da SUFRAMA.</td></tr>
+                      <tr><td><strong>EORI</strong></td><td>Economic Operators Registration and Identification — número de registro aduaneiro da União Europeia para exportações.</td></tr>
+                      <tr><td><strong>Regime Tributário</strong></td><td>Regime fiscal do cliente: Simples Nacional, Lucro Presumido, Lucro Real etc. Impacta o cálculo de impostos nas vendas.</td></tr>
+                      <tr><td><strong>VAT / Número Registro</strong></td><td>Identificação fiscal para clientes no exterior (IVA europeu, Tax ID americano, etc.).</td></tr>
+                      <tr><td><strong>Contribuinte ICMS</strong></td><td>Marque se o cliente é contribuinte do ICMS. Afeta o campo Indicador IE automaticamente.</td></tr>
+                      <tr><td><strong>Indicador IE</strong></td><td>Preenchido automaticamente com base em Tipo Pessoa e Contribuinte ICMS. Valores: <strong>1</strong>=Contribuinte ICMS, <strong>2</strong>=PJ isenta de IE, <strong>9</strong>=Não contribuinte (PF).</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- Exportação / Importação -->
+            <div class="accordion-item border-0 mb-2 shadow-sm">
+              <h2 class="accordion-header">
+                <button class="accordion-button collapsed fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#ajudaExport">
+                  <i class="bi bi-globe text-success me-2"></i> Exportação / Importação
+                </button>
+              </h2>
+              <div id="ajudaExport" class="accordion-collapse collapse" data-bs-parent="#ajudaAccordion">
+                <div class="accordion-body">
+                  <p class="text-muted small">Campos relevantes principalmente para clientes do tipo <strong>Importador</strong> (exterior).</p>
+                  <table class="table table-sm table-bordered mb-0">
+                    <thead class="table-light"><tr><th>Campo</th><th>Descrição</th></tr></thead>
+                    <tbody>
+                      <tr><td><strong>País</strong></td><td>País de localização do cliente. Padrão: Brasil.</td></tr>
+                      <tr><td><strong>Moeda Padrão</strong></td><td>Moeda utilizada nas negociações com este cliente (ex: USD, EUR). Requer cadastro prévio em <em>Moedas</em> — ou crie direto aqui pelo botão <em>Adicionar</em>.</td></tr>
+                      <tr><td><strong>Porto Destino</strong></td><td>Porto de destino padrão para embarques. Vinculado ao cadastro de Portos do sistema.</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- Dados Comerciais -->
+            <div class="accordion-item border-0 mb-2 shadow-sm">
+              <h2 class="accordion-header">
+                <button class="accordion-button collapsed fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#ajudaComercial">
+                  <i class="bi bi-cash-stack text-danger me-2"></i> Dados Comerciais
+                </button>
+              </h2>
+              <div id="ajudaComercial" class="accordion-collapse collapse" data-bs-parent="#ajudaAccordion">
+                <div class="accordion-body">
+                  <table class="table table-sm table-bordered mb-0">
+                    <thead class="table-light"><tr><th>Campo</th><th>Descrição</th></tr></thead>
+                    <tbody>
+                      <tr><td><strong>Limite de Crédito</strong></td><td>Valor máximo de crédito concedido ao cliente. Utilizado para controle de risco nas vendas.</td></tr>
+                      <tr><td><strong>Forma de Pagamento Padrão</strong></td><td>Método de pagamento preferencial (Boleto, PIX, Transferência, Cartão etc.). Pode ser sobrescrito em cada pedido.</td></tr>
+                      <tr><td><strong>Desconto Padrão (%)</strong></td><td>Percentual de desconto concedido automaticamente nos pedidos deste cliente.</td></tr>
+                      <tr><td><strong>Vendedor Responsável</strong></td><td>Vendedor da empresa responsável pelo atendimento deste cliente. Vinculado ao cadastro de Vendedores.</td></tr>
+                      <tr><td><strong>Preset Prazo</strong></td><td>Define o prazo de pagamento padrão a partir de um conjunto de presets da empresa (ex: 30/60/90 dias). Crie novos presets clicando no botão <strong>+</strong>.</td></tr>
+                      <tr><td><strong>Observações Comerciais</strong></td><td>Campo livre para anotações internas sobre negociações, condições especiais ou histórico comercial.</td></tr>
+                      <tr><td><strong>Acesso ao Portal</strong></td><td>Habilita o acesso do cliente ao Portal do Produtor/Cliente. O campo <em>Usuário Vinculado</em> é preenchido automaticamente com o usuário logado.</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tabelas Relacionadas -->
+            <div class="accordion-item border-0 mb-2 shadow-sm">
+              <h2 class="accordion-header">
+                <button class="accordion-button collapsed fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#ajudaTabelas">
+                  <i class="bi bi-diagram-3 text-info me-2"></i> Tabelas Relacionadas no Banco de Dados
+                </button>
+              </h2>
+              <div id="ajudaTabelas" class="accordion-collapse collapse" data-bs-parent="#ajudaAccordion">
+                <div class="accordion-body">
+                  <p class="text-muted small mb-3">O registro de cliente se relaciona com as seguintes tabelas. As tabelas marcadas com <span class="badge bg-danger">CASCADE</span> são excluídas junto com o cliente; as com <span class="badge bg-warning text-dark">SET NULL</span> apenas perdem a referência.</p>
+                  <table class="table table-sm table-bordered mb-3">
+                    <thead class="table-primary"><tr><th>Tabela</th><th>Relação</th><th>Comportamento</th><th>Descrição</th></tr></thead>
+                    <tbody>
+                      <tr><td><code>cadastros_cliente</code></td><td>—</td><td><span class="badge bg-primary">Principal</span></td><td>Tabela principal com todos os dados do cliente.</td></tr>
+                      <tr><td><code>empresas_empresa</code></td><td>ForeignKey → Empresa</td><td><span class="badge bg-danger">CASCADE</span></td><td>Empresa proprietária do cliente (multi-tenant).</td></tr>
+                      <tr><td><code>cadastros_endereçocliente</code></td><td>← EnderecoCliente</td><td><span class="badge bg-danger">CASCADE</span></td><td>Endereços do cliente: Principal, Faturamento, Cobrança, Entrega, Notify.</td></tr>
+                      <tr><td><code>cadastros_contatocliente</code></td><td>← ContatoCliente</td><td><span class="badge bg-danger">CASCADE</span></td><td>Contatos adicionais: Principal, Financeiro, Operacional, Técnico, Emergência.</td></tr>
+                      <tr><td><code>cadastros_contabancáriacliente</code></td><td>← ContaBancariaCliente</td><td><span class="badge bg-danger">CASCADE</span></td><td>Contas bancárias e chaves PIX, SWIFT e IBAN do cliente.</td></tr>
+                      <tr><td><code>cadastros_documentocliente</code></td><td>← DocumentoCliente</td><td><span class="badge bg-danger">CASCADE</span></td><td>Documentos anexados: contratos, certidões, licenças etc.</td></tr>
+                      <tr><td><code>cadastros_vendedor</code></td><td>ForeignKey → Vendedor</td><td><span class="badge bg-warning text-dark">SET NULL</span></td><td>Vendedor responsável pela conta do cliente.</td></tr>
+                      <tr><td><code>cadastros_prazopagamentopadrao</code></td><td>ForeignKey → PrazoPagamentoPadrao</td><td><span class="badge bg-warning text-dark">SET NULL</span></td><td>Preset de prazo de pagamento (ex: 30/60/90 dias).</td></tr>
+                      <tr><td><code>cadastros_porto</code></td><td>ForeignKey → Porto</td><td><span class="badge bg-warning text-dark">SET NULL</span></td><td>Porto de destino padrão para operações de exportação.</td></tr>
+                      <tr><td><code>usuarios_usuario</code></td><td>ForeignKey → Usuario</td><td><span class="badge bg-warning text-dark">SET NULL</span></td><td>Usuário vinculado ao portal do cliente e usuário que realizou o cadastro.</td></tr>
+                    </tbody>
+                  </table>
+                  <div class="alert alert-info mb-0 small">
+                    <i class="bi bi-lightbulb-fill me-1"></i>
+                    <strong>Dados adicionados após o cadastro:</strong> Endereços, contatos adicionais, contas bancárias e documentos são gerenciados na página de <strong>detalhes do cliente</strong>, após salvar o cadastro inicial.
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Fluxo de Cadastro -->
+            <div class="accordion-item border-0 mb-2 shadow-sm">
+              <h2 class="accordion-header">
+                <button class="accordion-button collapsed fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#ajudaFluxo">
+                  <i class="bi bi-signpost-split text-secondary me-2"></i> Fluxo Recomendado de Cadastro
+                </button>
+              </h2>
+              <div id="ajudaFluxo" class="accordion-collapse collapse" data-bs-parent="#ajudaAccordion">
+                <div class="accordion-body">
+                  <ol class="mb-0">
+                    <li class="mb-2">Informe o <strong>CNPJ/CPF</strong> e clique em <strong>Buscar</strong> para preenchimento automático via Receita Federal.</li>
+                    <li class="mb-2">Confirme ou ajuste <strong>Razão Social</strong>, <strong>Tipo Cliente</strong> e <strong>Tipo Pessoa</strong>.</li>
+                    <li class="mb-2">Preencha os dados fiscais relevantes (IE, regime tributário, SUFRAMA se for Zona Franca).</li>
+                    <li class="mb-2">Para clientes no exterior: preencha <strong>País</strong>, <strong>Moeda Padrão</strong> e <strong>Porto Destino</strong>.</li>
+                    <li class="mb-2">Defina as condições comerciais: <strong>Limite de Crédito</strong>, <strong>Forma de Pagamento</strong>, <strong>Desconto</strong> e <strong>Vendedor Responsável</strong>.</li>
+                    <li class="mb-2">Selecione o <strong>Preset de Prazo</strong> de pagamento (crie novos presets pelo botão <strong>+</strong> se necessário).</li>
+                    <li class="mb-2">Clique em <strong>Salvar Cliente</strong>.</li>
+                    <li>Na página de detalhes, adicione <strong>endereços adicionais</strong>, <strong>contatos</strong>, <strong>contas bancárias</strong> e <strong>documentos</strong>.</li>
+                  </ol>
+                </div>
+              </div>
+            </div>
+
+          </div><!-- /accordion -->
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-primary" id="btnImprimirAjuda">
+            <i class="bi bi-printer"></i> Imprimir
+          </button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+            <i class="bi bi-x-circle"></i> Fechar
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <form method="post" enctype="multipart/form-data" id="clienteForm">
@@ -581,6 +792,111 @@ document.addEventListener('DOMContentLoaded', function() {
   } catch(e) {
     console.error('Erro ao inicializar modal de novo preset:', e);
   }
+});
+</script>
+
+<!-- Área de impressão do Guia de Cadastro (oculta na tela, visível apenas no print) -->
+<div id="ajuda-print-area" style="display:none;">
+  <h4 class="print-title">Guia de Cadastro de Cliente — ERP Agrícola</h4>
+  <p class="print-subtitle">Referência completa dos campos, seções e tabelas relacionadas.</p>
+
+  <div class="accordion-item">
+    <div class="accordion-button">Dados Básicos</div>
+    <div class="accordion-collapse">
+      <table><thead><tr><th>Campo</th><th>Obrigatório</th><th>Descrição</th></tr></thead><tbody>
+        <tr><td><strong>Razão Social / Nome</strong></td><td>Sim</td><td>Nome completo ou razão social do cliente. Para pessoa física, use o nome completo.</td></tr>
+        <tr><td><strong>Nome Comercial</strong></td><td>Não</td><td>Nome fantasia ou nome de uso comercial (diferente da razão social).</td></tr>
+        <tr><td><strong>CNPJ/CPF</strong></td><td>Sim</td><td>Documento fiscal principal. O botão Buscar consulta a Receita Federal via API ReceitaWS e preenche automaticamente endereço, razão social e dados de contato.</td></tr>
+        <tr><td><strong>Tipo Cliente</strong></td><td>Não</td><td>Nacional: cliente dentro do Brasil. Importador: cliente no exterior — habilita campos de exportação.</td></tr>
+        <tr><td><strong>Tipo Pessoa</strong></td><td>Não</td><td>PJ: Pessoa Jurídica (CNPJ). PF: Pessoa Física (CPF). Afeta o Indicador IE e validações fiscais.</td></tr>
+        <tr><td><strong>Contato Principal</strong></td><td>Não</td><td>Nome, telefone e e-mail do contato principal do cliente. Pode ser complementado com contatos adicionais após o cadastro inicial.</td></tr>
+      </tbody></table>
+    </div>
+  </div>
+
+  <div class="accordion-item">
+    <div class="accordion-button">Documentação Fiscal</div>
+    <div class="accordion-collapse">
+      <table><thead><tr><th>Campo</th><th>Descrição</th></tr></thead><tbody>
+        <tr><td><strong>Inscrição Estadual (IE)</strong></td><td>Número do registro estadual para contribuintes de ICMS. Obrigatório para emissão de NF-e em algumas operações.</td></tr>
+        <tr><td><strong>Inscrição Municipal (IM)</strong></td><td>Número do cadastro municipal — necessário para serviços e NFS-e.</td></tr>
+        <tr><td><strong>Inscrição SUFRAMA</strong></td><td>Obrigatório para clientes na Zona Franca de Manaus — garante benefícios fiscais da SUFRAMA.</td></tr>
+        <tr><td><strong>EORI</strong></td><td>Economic Operators Registration and Identification — número de registro aduaneiro da União Europeia para exportações.</td></tr>
+        <tr><td><strong>Regime Tributário</strong></td><td>Regime fiscal do cliente: Simples Nacional, Lucro Presumido, Lucro Real etc. Impacta o cálculo de impostos nas vendas.</td></tr>
+        <tr><td><strong>VAT / Número Registro</strong></td><td>Identificação fiscal para clientes no exterior (IVA europeu, Tax ID americano, etc.).</td></tr>
+        <tr><td><strong>Contribuinte ICMS</strong></td><td>Marque se o cliente é contribuinte do ICMS. Afeta o campo Indicador IE automaticamente.</td></tr>
+        <tr><td><strong>Indicador IE</strong></td><td>Preenchido automaticamente. Valores: 1=Contribuinte ICMS, 2=PJ isenta de IE, 9=Não contribuinte (PF).</td></tr>
+      </tbody></table>
+    </div>
+  </div>
+
+  <div class="accordion-item">
+    <div class="accordion-button">Exportação / Importação</div>
+    <div class="accordion-collapse">
+      <table><thead><tr><th>Campo</th><th>Descrição</th></tr></thead><tbody>
+        <tr><td><strong>País</strong></td><td>País de localização do cliente. Padrão: Brasil.</td></tr>
+        <tr><td><strong>Moeda Padrão</strong></td><td>Moeda utilizada nas negociações com este cliente (ex: USD, EUR). Requer cadastro prévio em Moedas — ou crie direto pelo botão Adicionar.</td></tr>
+        <tr><td><strong>Porto Destino</strong></td><td>Porto de destino padrão para embarques. Vinculado ao cadastro de Portos do sistema.</td></tr>
+      </tbody></table>
+    </div>
+  </div>
+
+  <div class="accordion-item">
+    <div class="accordion-button">Dados Comerciais</div>
+    <div class="accordion-collapse">
+      <table><thead><tr><th>Campo</th><th>Descrição</th></tr></thead><tbody>
+        <tr><td><strong>Limite de Crédito</strong></td><td>Valor máximo de crédito concedido ao cliente. Utilizado para controle de risco nas vendas.</td></tr>
+        <tr><td><strong>Forma de Pagamento Padrão</strong></td><td>Método de pagamento preferencial (Boleto, PIX, Transferência, Cartão etc.). Pode ser sobrescrito em cada pedido.</td></tr>
+        <tr><td><strong>Desconto Padrão (%)</strong></td><td>Percentual de desconto concedido automaticamente nos pedidos deste cliente.</td></tr>
+        <tr><td><strong>Vendedor Responsável</strong></td><td>Vendedor da empresa responsável pelo atendimento deste cliente. Vinculado ao cadastro de Vendedores.</td></tr>
+        <tr><td><strong>Preset Prazo</strong></td><td>Define o prazo de pagamento padrão a partir de um conjunto de presets da empresa (ex: 30/60/90 dias). Crie novos presets clicando no botão +.</td></tr>
+        <tr><td><strong>Observações Comerciais</strong></td><td>Campo livre para anotações internas sobre negociações, condições especiais ou histórico comercial.</td></tr>
+        <tr><td><strong>Acesso ao Portal</strong></td><td>Habilita o acesso do cliente ao Portal do Produtor/Cliente. O Usuário Vinculado é preenchido automaticamente com o usuário logado.</td></tr>
+      </tbody></table>
+    </div>
+  </div>
+
+  <div class="accordion-item">
+    <div class="accordion-button">Tabelas Relacionadas no Banco de Dados</div>
+    <div class="accordion-collapse">
+      <table><thead><tr><th>Tabela</th><th>Relação</th><th>Comportamento</th><th>Descrição</th></tr></thead><tbody>
+        <tr><td><strong>cadastros_cliente</strong></td><td>—</td><td>Principal</td><td>Tabela principal com todos os dados do cliente.</td></tr>
+        <tr><td><strong>empresas_empresa</strong></td><td>ForeignKey → Empresa</td><td>CASCADE</td><td>Empresa proprietária do cliente (multi-tenant).</td></tr>
+        <tr><td><strong>cadastros_endereçocliente</strong></td><td>← EnderecoCliente</td><td>CASCADE</td><td>Endereços: Principal, Faturamento, Cobrança, Entrega, Notify.</td></tr>
+        <tr><td><strong>cadastros_contatocliente</strong></td><td>← ContatoCliente</td><td>CASCADE</td><td>Contatos adicionais: Principal, Financeiro, Operacional, Técnico, Emergência.</td></tr>
+        <tr><td><strong>cadastros_contabancáriacliente</strong></td><td>← ContaBancariaCliente</td><td>CASCADE</td><td>Contas bancárias e chaves PIX, SWIFT e IBAN do cliente.</td></tr>
+        <tr><td><strong>cadastros_documentocliente</strong></td><td>← DocumentoCliente</td><td>CASCADE</td><td>Documentos anexados: contratos, certidões, licenças etc.</td></tr>
+        <tr><td><strong>cadastros_vendedor</strong></td><td>ForeignKey → Vendedor</td><td>SET NULL</td><td>Vendedor responsável pela conta do cliente.</td></tr>
+        <tr><td><strong>cadastros_prazopagamentopadrao</strong></td><td>ForeignKey → PrazoPagamentoPadrao</td><td>SET NULL</td><td>Preset de prazo de pagamento (ex: 30/60/90 dias).</td></tr>
+        <tr><td><strong>cadastros_porto</strong></td><td>ForeignKey → Porto</td><td>SET NULL</td><td>Porto de destino padrão para operações de exportação.</td></tr>
+        <tr><td><strong>usuarios_usuario</strong></td><td>ForeignKey → Usuario</td><td>SET NULL</td><td>Usuário vinculado ao portal do cliente e usuário que realizou o cadastro.</td></tr>
+      </tbody></table>
+    </div>
+  </div>
+
+  <div class="accordion-item">
+    <div class="accordion-button">Fluxo Recomendado de Cadastro</div>
+    <div class="accordion-collapse" style="padding: 8px 12px;">
+      <ol style="font-size:11px; margin:0; padding-left:20px;">
+        <li>Informe o CNPJ/CPF e clique em Buscar para preenchimento automático via Receita Federal.</li>
+        <li>Confirme ou ajuste Razão Social, Tipo Cliente e Tipo Pessoa.</li>
+        <li>Preencha os dados fiscais relevantes (IE, Regime Tributário, SUFRAMA se for Zona Franca).</li>
+        <li>Para clientes no exterior: preencha País, Moeda Padrão e Porto Destino.</li>
+        <li>Defina as condições comerciais: Limite de Crédito, Forma de Pagamento, Desconto e Vendedor Responsável.</li>
+        <li>Selecione o Preset de Prazo de pagamento (crie novos presets pelo botão + se necessário).</li>
+        <li>Clique em Salvar Cliente.</li>
+        <li>Na página de detalhes, adicione endereços adicionais, contatos, contas bancárias e documentos.</li>
+      </ol>
+    </div>
+  </div>
+</div>
+
+<script>
+document.getElementById('btnImprimirAjuda').addEventListener('click', function() {
+  const area = document.getElementById('ajuda-print-area');
+  area.style.display = 'block';
+  window.print();
+  area.style.display = 'none';
 });
 </script>
 

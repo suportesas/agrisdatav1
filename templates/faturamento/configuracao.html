@@ -73,17 +73,35 @@
               <div class="col-md-8">
                 <label class="form-label">Token IntegraNota</label>
                 {{ form.token_integranotas }}
-                <small class="text-muted">Token Bearer obtido no painel IntegraNota → Configurações → API.</small>
+                {% if config.has_token %}
+                  <small class="text-success"><i class="bi bi-check-circle"></i> Token configurado. Deixe em branco para manter o atual.</small>
+                {% else %}
+                  <small class="text-muted">Token Bearer obtido no painel IntegraNota → Configurações → API.</small>
+                {% endif %}
               </div>
             </div>
 
             <!-- Dados Fiscais da Empresa (Emitente NF-e) -->
             <hr class="my-4">
             <h6 class="fw-semibold mb-3"><i class="bi bi-building me-2"></i>Dados do Emitente (Empresa)</h6>
+            <div class="alert alert-info py-2 small mb-3">
+              <i class="bi bi-info-circle me-1"></i>
+              Estes dados são enviados como <strong>emitente</strong> em todas as NF-e. O <strong>CNPJ</strong> e a <strong>Razão Social</strong> devem ser exatamente os mesmos cadastrados no painel IntegraNotas.
+            </div>
             {% if empresa_form.non_field_errors %}
             <div class="alert alert-danger">{{ empresa_form.non_field_errors }}</div>
             {% endif %}
             <div class="row g-3">
+              <div class="col-md-7">
+                <label class="form-label">Razão Social <span class="text-danger">*</span></label>
+                {{ empresa_form.nome }}
+                {% if empresa_form.nome.errors %}<div class="text-danger small">{{ empresa_form.nome.errors }}</div>{% endif %}
+              </div>
+              <div class="col-md-5">
+                <label class="form-label">CNPJ <span class="text-danger">*</span></label>
+                {{ empresa_form.cnpj }}
+                {% if empresa_form.cnpj.errors %}<div class="text-danger small">{{ empresa_form.cnpj.errors }}</div>{% endif %}
+              </div>
               <div class="col-md-4">
                 <label class="form-label">Inscrição Estadual</label>
                 {{ empresa_form.inscricao_estadual }}

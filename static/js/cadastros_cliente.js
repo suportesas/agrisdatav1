@@ -735,27 +735,6 @@ window.addEventListener('error', function(e){ try { console.error('Uncaught erro
       console.log('setupClienteFormHandlers: clienteForm present?', !!clienteForm);
       if (!clienteForm) return;
 
-      // Create a small diagnostics badge so users without console can see binding status
-      try {
-        let diag = document.getElementById('clienteJsDiag');
-        if (!diag) {
-          diag = document.createElement('div');
-          diag.id = 'clienteJsDiag';
-          diag.style.position = 'fixed';
-          diag.style.top = '8px';
-          diag.style.right = '8px';
-          diag.style.zIndex = 1051;
-          diag.style.background = '#0d6efd';
-          diag.style.color = 'white';
-          diag.style.padding = '6px 10px';
-          diag.style.borderRadius = '6px';
-          diag.style.boxShadow = '0 2px 6px rgba(0,0,0,0.12)';
-          diag.style.fontSize = '12px';
-          diag.setAttribute('aria-hidden','true');
-          document.body.appendChild(diag);
-        }
-        diag.textContent = 'JS: clienteForm present';
-      } catch(e){}
 
       // mark when submit event happens to avoid duplicate submissions
       clienteForm.addEventListener('submit', function (ev) {
@@ -885,10 +864,8 @@ window.addEventListener('error', function(e){ try { console.error('Uncaught erro
         if (saveBtn) foundBy = 'by-id';
       }
       console.log('setupClienteFormHandlers: saveBtn present?', !!saveBtn, 'foundBy', foundBy);
-      try { const diag = document.getElementById('clienteJsDiag'); if (diag) diag.textContent = 'JS: form present; saveBtn present: ' + (!!saveBtn) + ' (' + foundBy + ')'; } catch(e){}
       if (saveBtn) {
         console.log('setupClienteFormHandlers: binding saveBtn click (foundBy=' + foundBy + ')');
-        try { const diag = document.getElementById('clienteJsDiag'); if (diag) diag.textContent = 'JS: bindings attached'; } catch(e){}
         saveBtn.addEventListener('click', function (ev) {
           console.log('saveBtn click handler invoked');
           try {
@@ -924,7 +901,6 @@ window.addEventListener('error', function(e){ try { console.error('Uncaught erro
 
         const topBtn = document.getElementById('clienteSaveBtn');
         console.log('setupClienteFormHandlers: topBtn present?', !!topBtn, 'topBtn===saveBtn?', topBtn===saveBtn);
-        try { const diag = document.getElementById('clienteJsDiag'); if (diag) diag.textContent = (diag.textContent||'') + ' | topBtn: '+ (!!topBtn); } catch(e){}
         if (topBtn && topBtn !== saveBtn) {
           console.log('setupClienteFormHandlers: binding topBtn click');
           // Ensure the button is clickable

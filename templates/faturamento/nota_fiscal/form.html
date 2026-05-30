@@ -591,10 +591,14 @@
   });
 
   // ── Pré-validação fiscal antes de salvar ─────────────────────────────
-  const nfForm         = document.querySelector('form');
-  const btnSalvar      = document.getElementById('btn-salvar-nf');
-  const modalValidacao = new bootstrap.Modal(document.getElementById('modalValidacaoFiscal'));
-  let   forceSubmit    = false;
+  const nfForm    = document.getElementById('nf-form');
+  const btnSalvar = document.getElementById('btn-salvar-nf');
+  let   forceSubmit = false;
+
+  // Lazy: Bootstrap só está disponível após o script ser carregado (final do body)
+  function getModal() {
+    return bootstrap.Modal.getOrCreateInstance(document.getElementById('modalValidacaoFiscal'));
+  }
 
   function validarItensFiscal() {
     const problemas = [];
@@ -628,6 +632,7 @@
     if (!problemas.length) { nfForm.submit(); return; }
 
     // Monta lista no modal
+    const modal = getModal();
     const lista = document.getElementById('validacao-lista');
     lista.innerHTML = '';
     problemas.forEach(p => {
@@ -636,7 +641,7 @@
       div.innerHTML = `<strong>${p.desc}:</strong> faltando <strong>${p.faltando.join(', ')}</strong>
         <button type="button" class="btn btn-link btn-sm py-0 ms-2 text-primary">Ver campos</button>`;
       div.querySelector('button').addEventListener('click', () => {
-        modalValidacao.hide();
+        modal.hide();
         if (p.fiscalRow) {
           p.fiscalRow.style.display = '';
           const icon = p.mainRow.querySelector('.btn-toggle-fiscal i');
@@ -647,11 +652,11 @@
       lista.appendChild(div);
     });
 
-    modalValidacao.show();
+    modal.show();
   });
 
   document.getElementById('btn-salvar-mesmo-assim').addEventListener('click', function () {
-    modalValidacao.hide();
+    getModal().hide();
     forceSubmit = true;
     nfForm.submit();
   });

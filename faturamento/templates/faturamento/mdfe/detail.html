@@ -1,0 +1,126 @@
+{% extends 'base.html' %}
+{% block page_title %}MDF-e {{ mdfe.numero|default:"S/N" }}/{{ mdfe.serie }}{% endblock %}
+{% block content %}
+<div class="container-fluid mt-3 px-3 px-xl-4">
+
+  <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+    <div>
+      <h1 class="mb-0">MDF-e {{ mdfe.numero|default:"S/N" }}/{{ mdfe.serie }}</h1>
+      <small class="text-muted">Emissão: {{ mdfe.data_emissao|date:"d/m/Y" }}
+        {% if mdfe.status == 'EMITIDO' %}<span class="badge bg-success ms-2">Emitido</span>
+        {% elif mdfe.status == 'ENCERRADO' %}<span class="badge bg-primary ms-2">Encerrado</span>
+        {% elif mdfe.status == 'CANCELADO' %}<span class="badge bg-danger ms-2">Cancelado</span>
+        {% else %}<span class="badge bg-warning text-dark ms-2">Rascunho</span>{% endif %}
+      </small>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      {% if mdfe.status == 'RASCUNHO' %}
+        <a href="{% url 'faturamento:mdfe_update' mdfe.pk %}" class="btn btn-outline-secondary btn-sm">
+          <i class="bi bi-pencil me-1"></i> Editar
+        </a>
+        <form method="post" action="{% url 'faturamento:mdfe_emitir' mdfe.pk %}" class="d-inline"
+              onsubmit="return confirm('Confirma a emissão do MDF-e na SEFAZ?')">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-success btn-sm">
+            <i class="bi bi-send me-1"></i> Emitir na SEFAZ
+          </button>
+        </form>
+      {% endif %}
+      {% if mdfe.status == 'EMITIDO' %}
+        <a href="{% url 'faturamento:mdfe_damdfe' mdfe.pk %}" class="btn btn-primary btn-sm" target="_blank">
+          <i class="bi bi-file-earmark-pdf me-1"></i> DAMDFE
+        </a>
+        <a href="{% url 'faturamento:mdfe_encerrar' mdfe.pk %}" class="btn btn-warning btn-sm">
+          <i class="bi bi-check2-circle me-1"></i> Encerrar
+        </a>
+        <a href="{% url 'faturamento:mdfe_cancelar' mdfe.pk %}" class="btn btn-outline-danger btn-sm">
+          <i class="bi bi-x-circle me-1"></i> Cancelar
+        </a>
+      {% endif %}
+      {% if mdfe.status == 'ENCERRADO' %}
+        <a href="{% url 'faturamento:mdfe_damdfe' mdfe.pk %}" class="btn btn-primary btn-sm" target="_blank">
+          <i class="bi bi-file-earmark-pdf me-1"></i> DAMDFE
+        </a>
+      {% endif %}
+      <a href="{% url 'faturamento:mdfe_list' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i> Voltar
+      </a>
+    </div>
+  </div>
+
+  {% if mdfe.chave_acesso %}
+  <div class="alert alert-success py-2 small">
+    <strong>Chave de Acesso:</strong> <code>{{ mdfe.chave_acesso }}</code>
+    {% if mdfe.protocolo %} &nbsp;|&nbsp; <strong>Protocolo:</strong> {{ mdfe.protocolo }}{% endif %}
+  </div>
+  {% endif %}
+  {% if mdfe.status == 'ENCERRADO' %}
+  <div class="alert alert-primary py-2 small">
+    <strong>Encerrado em {{ mdfe.data_encerramento|date:"d/m/Y H:i" }}</strong> — Município: {{ mdfe.municipio_encerramento }}
+  </div>
+  {% endif %}
+  {% if mdfe.status == 'CANCELADO' and mdfe.motivo_cancelamento %}
+  <div class="alert alert-danger py-2 small">
+    <strong>Cancelado em {{ mdfe.data_cancelamento|date:"d/m/Y H:i" }}:</strong> {{ mdfe.motivo_cancelamento }}
+  </div>
+  {% endif %}
+
+  <div class="row g-3">
+    <!-- Modal e Percurso -->
+    <div class="col-md-6">
+      <div class="card h-100">
+        <div class="card-header bg-primary text-white py-2">Modal e Percurso</div>
+        <div class="card-body">
+          <table class="table table-sm mb-0">
+            <tr><th class="w-35">Motorista</th><td>{{ mdfe.motorista.nome }}</td></tr>
+            <tr><th>Veículo</th><td>{{ mdfe.veiculo.descricao|default:mdfe.veiculo }}</td></tr>
+            <tr><th>UF Início</th><td>{{ mdfe.uf_inicio }}</td></tr>
+            <tr><th>Carregamento</th><td>{{ mdfe.municipio_carregamento }}</td></tr>
+            <tr><th>UF Destino</th><td>{{ mdfe.uf_fim }}</td></tr>
+            {% if mdfe.percursos.exists %}
+            <tr><th>Percursos</th><td>{% for p in mdfe.percursos.all %}{{ p.uf }}{% if not forloop.last %} → {% endif %}{% endfor %}</td></tr>
+            {% endif %}
+          </table>
+        </div>
+      </div>
+    </div>
+    <!-- Carga -->
+    <div class="col-md-6">
+      <div class="card h-100">
+        <div class="card-header bg-success text-white py-2">Carga</div>
+        <div class="card-body">
+          <table class="table table-sm mb-0">
+            <tr><th class="w-35">Tipo</th><td>{{ mdfe.get_tipo_transporte_display }}</td></tr>
+            <tr><th>Valor da Carga</th><td><strong>R$ {{ mdfe.valor_carga|floatformat:2 }}</strong></td></tr>
+            <tr><th>Peso Bruto</th><td>{{ mdfe.peso_bruto_kg|floatformat:3 }} kg</td></tr>
+            <tr><th>Documentos</th><td>{{ mdfe.documentos_vinculados.count }}</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+    <!-- Documentos Vinculados -->
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header bg-info text-white py-2">NF-e / CT-e Vinculados</div>
+        <div class="card-body p-0">
+          <table class="table table-sm mb-0">
+            <thead class="table-light"><tr><th>#</th><th>Tipo</th><th>Chave</th><th>Município de Entrega</th></tr></thead>
+            <tbody>
+              {% for doc in mdfe.documentos_vinculados.all %}
+              <tr>
+                <td>{{ forloop.counter }}</td>
+                <td><span class="badge bg-secondary">{{ doc.get_tipo_display }}</span></td>
+                <td><code class="small">{{ doc.chave }}</code></td>
+                <td>{{ doc.municipio_descarregamento }}</td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="4" class="text-center text-muted">Nenhum documento vinculado.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -352,3 +352,250 @@ class IntegranNotasClient:
                 }
             ]
         }
+
+    # ─── CT-e ─────────────────────────────────────────────────────
+
+    def emitir_cte(self, ct) -> dict:
+        """Submit CT-e to IntegraNotas. Returns API response dict."""
+        payload = self._build_cte_payload(ct)
+        logger.info('IntegraNotas: emitindo CT-e %s/%s', ct.numero, ct.serie)
+        resp = requests.post(
+            f'{self.base_url}/cte',
+            json=payload,
+            headers=self._headers(),
+            timeout=self.TIMEOUT,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        if not data.get('sucesso') and data.get('codigo') not in (100, 5023):
+            raise IntegranNotasError(
+                data.get('mensagem', 'Erro desconhecido na emissão do CT-e'),
+                codigo=data.get('codigo'),
+                erros=data.get('erros', []),
+            )
+        return data
+
+    def consultar_cte(self, chave: str) -> dict:
+        resp = requests.get(f'{self.base_url}/cte/{chave}', headers=self._headers(), timeout=self.TIMEOUT)
+        resp.raise_for_status()
+        return resp.json()
+
+    def cancelar_cte(self, chave: str, justificativa: str) -> dict:
+        resp = requests.post(
+            f'{self.base_url}/cte/cancela',
+            json={'chave': chave, 'justificativa': justificativa},
+            headers=self._headers(),
+            timeout=self.TIMEOUT,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        if not data.get('sucesso') and data.get('codigo') != 101:
+            raise IntegranNotasError(
+                data.get('mensagem', 'Erro ao cancelar CT-e'),
+                codigo=data.get('codigo'),
+                erros=data.get('erros', []),
+            )
+        return data
+
+    def dacte(self, chave: str) -> dict:
+        resp = requests.get(f'{self.base_url}/cte/pdf', params={'chave': chave}, headers=self._headers(), timeout=self.TIMEOUT)
+        resp.raise_for_status()
+        return resp.json()
+
+    def _build_cte_payload(self, ct) -> dict:
+        empresa = ct.empresa
+        try:
+            config = empresa.configuracao_fiscal
+        except Exception:
+            config = None
+
+        docs = [{'chave': d.chave_nfe} for d in ct.documentos_vinculados.all()]
+
+        payload: dict = {
+            'serie': str(ct.serie),
+            'numero': str(ct.numero),
+            'data_emissao': ct.data_emissao.strftime('%Y-%m-%dT%H:%M:%S') if hasattr(ct.data_emissao, 'strftime') else str(ct.data_emissao),
+            'cfop': ct.cfop,
+            'natureza_operacao': ct.natureza_operacao,
+            'tipo_servico': ct.tipo_servico,
+            'emitente': self._build_emitente(empresa, config),
+            'remetente': self._build_parte_cte(ct.remetente),
+            'destinatario': self._build_parte_cte(ct.destinatario),
+            'tomador': {'indicador': '3', **self._build_parte_cte(ct.tomador)},
+            'valores': {
+                'valor_total_servico': str(ct.valor_servico),
+                'valor_carga': str(ct.valor_carga),
+            },
+            'modal_rodoviario': self._build_modal_rodoviario_cte(ct),
+            'percurso': {
+                'uf_inicio': ct.uf_inicio,
+                'municipio_inicio': ct.municipio_inicio,
+                'uf_fim': ct.uf_fim,
+                'municipio_fim': ct.municipio_fim,
+            },
+            'documentos_originarios': docs,
+            'informacoes_adicionais': {'informacoes_contribuinte': ct.observacoes or ''},
+        }
+        return payload
+
+    def _build_parte_cte(self, cliente) -> dict:
+        doc = _digits(cliente.cnpj_cpf or '')
+        parte: dict = {'nome': cliente.razao_social}
+        if len(doc) == 14:
+            parte['cnpj'] = doc
+        else:
+            parte['cpf'] = doc
+        endereco = cliente.enderecos.filter(padrao=True).first()
+        if endereco:
+            parte['endereco'] = {
+                'logradouro': endereco.logradouro or '',
+                'numero': endereco.numero or 'S/N',
+                'bairro': endereco.bairro or '',
+                'municipio': endereco.cidade or '',
+                'uf': endereco.uf or '',
+                'cep': _digits(endereco.cep or ''),
+                'pais': '1058',
+            }
+        return parte
+
+    def _build_modal_rodoviario_cte(self, ct) -> dict:
+        modal: dict = {
+            'rntc': getattr(ct.transportadora, 'rntc', '') or '',
+        }
+        if ct.veiculo:
+            plates = ct.veiculo.plates.order_by('-id').first()
+            placa = plates.plate if plates else ''
+            modal['veiculo'] = {'placa': placa, 'uf': ct.uf_inicio}
+        if ct.motorista:
+            modal['condutor'] = {
+                'nome': ct.motorista.nome,
+                'cpf': _digits(getattr(ct.motorista, 'cpf', '') or ''),
+            }
+        return modal
+
+    # ─── MDF-e ────────────────────────────────────────────────────
+
+    def emitir_mdfe(self, mdfe) -> dict:
+        """Submit MDF-e to IntegraNotas. Returns API response dict."""
+        payload = self._build_mdfe_payload(mdfe)
+        logger.info('IntegraNotas: emitindo MDF-e %s/%s', mdfe.numero, mdfe.serie)
+        resp = requests.post(
+            f'{self.base_url}/mdfe',
+            json=payload,
+            headers=self._headers(),
+            timeout=self.TIMEOUT,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        if not data.get('sucesso') and data.get('codigo') not in (100, 2, 5023):
+            raise IntegranNotasError(
+                data.get('mensagem', 'Erro desconhecido na emissão do MDF-e'),
+                codigo=data.get('codigo'),
+                erros=data.get('erros', []),
+            )
+        return data
+
+    def consultar_mdfe(self, chave: str) -> dict:
+        resp = requests.get(f'{self.base_url}/mdfe/mostra', params={'chave': chave}, headers=self._headers(), timeout=self.TIMEOUT)
+        resp.raise_for_status()
+        return resp.json()
+
+    def cancelar_mdfe(self, chave: str, justificativa: str) -> dict:
+        resp = requests.post(
+            f'{self.base_url}/mdfe/cancela',
+            json={'chave': chave, 'justificativa': justificativa},
+            headers=self._headers(),
+            timeout=self.TIMEOUT,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        if not data.get('sucesso') and data.get('codigo') != 101:
+            raise IntegranNotasError(
+                data.get('mensagem', 'Erro ao cancelar MDF-e'),
+                codigo=data.get('codigo'),
+                erros=data.get('erros', []),
+            )
+        return data
+
+    def encerrar_mdfe(self, chave: str, municipio: str, data_enc) -> dict:
+        from datetime import datetime
+        data_str = data_enc.strftime('%Y-%m-%dT%H:%M:%S') if hasattr(data_enc, 'strftime') else str(data_enc)
+        resp = requests.post(
+            f'{self.base_url}/mdfe/encerra',
+            json={'chave': chave, 'municipio_encerramento': municipio, 'data_encerramento': data_str},
+            headers=self._headers(),
+            timeout=self.TIMEOUT,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        if not data.get('sucesso') and data.get('codigo') != 103:
+            raise IntegranNotasError(
+                data.get('mensagem', 'Erro ao encerrar MDF-e'),
+                codigo=data.get('codigo'),
+                erros=data.get('erros', []),
+            )
+        return data
+
+    def damdfe(self, chave: str) -> dict:
+        resp = requests.get(f'{self.base_url}/mdfe/pdf', params={'chave': chave}, headers=self._headers(), timeout=self.TIMEOUT)
+        resp.raise_for_status()
+        return resp.json()
+
+    def mdfe_abertos(self) -> dict:
+        resp = requests.get(f'{self.base_url}/mdfe/abertos', headers=self._headers(), timeout=self.TIMEOUT)
+        resp.raise_for_status()
+        return resp.json()
+
+    def _build_mdfe_payload(self, mdfe) -> dict:
+        empresa = mdfe.empresa
+        try:
+            config = empresa.configuracao_fiscal
+        except Exception:
+            config = None
+
+        # Agrupar documentos por município de descarregamento
+        municipios: dict = {}
+        for doc in mdfe.documentos_vinculados.all():
+            mun = doc.municipio_descarregamento
+            if mun not in municipios:
+                municipios[mun] = []
+            municipios[mun].append({'chave': doc.chave, 'tipo': doc.tipo})
+
+        municipios_list = [
+            {'municipio': mun, 'documentos': docs}
+            for mun, docs in municipios.items()
+        ]
+
+        percursos = [{'uf': p.uf} for p in mdfe.percursos.order_by('ordem')]
+
+        plates = mdfe.veiculo.plates.order_by('-id').first()
+        placa = plates.plate if plates else ''
+
+        payload: dict = {
+            'tipo_operacao': '1',
+            'serie': str(mdfe.serie),
+            'numero': str(mdfe.numero),
+            'data_emissao': mdfe.data_emissao.strftime('%Y-%m-%dT%H:%M:%S') if hasattr(mdfe.data_emissao, 'strftime') else str(mdfe.data_emissao),
+            'emitente': self._build_emitente(empresa, config),
+            'uf_inicio': mdfe.uf_inicio,
+            'uf_fim': mdfe.uf_fim,
+            'municipios_carregamento': [{'municipio': mdfe.municipio_carregamento}],
+            'percursos': percursos,
+            'municipios_descarregamento': municipios_list,
+            'valores': {
+                'valor_carga': str(mdfe.valor_carga),
+                'unidade_medida': '01',
+                'peso_bruto': str(mdfe.peso_bruto_kg),
+            },
+            'modal_rodoviario': {
+                'veiculo': {'placa': placa, 'uf': mdfe.uf_inicio},
+                'condutor': {
+                    'nome': mdfe.motorista.nome,
+                    'cpf': _digits(getattr(mdfe.motorista, 'cpf', '') or ''),
+                },
+            },
+            'tipo_transporte': mdfe.tipo_transporte,
+            'informacoes_adicionais_fisco': mdfe.informacoes_fisco or '',
+            'informacoes_adicionais_contribuinte': mdfe.informacoes_contribuinte or '',
+        }
+        return payload

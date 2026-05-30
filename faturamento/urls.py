@@ -41,6 +41,28 @@ urlpatterns = [
     # Webhook IntegraNota
     path('webhook/integranotas/', views.integranotas_webhook, name='integranotas_webhook'),
 
+    # CT-e
+    path('cte/', views.cte_list, name='cte_list'),
+    path('cte/novo/', views.cte_create, name='cte_create'),
+    path('cte/<int:pk>/', views.cte_detail, name='cte_detail'),
+    path('cte/<int:pk>/editar/', views.cte_update, name='cte_update'),
+    path('cte/<int:pk>/emitir/', views.cte_emitir, name='cte_emitir'),
+    path('cte/<int:pk>/cancelar/', views.cte_cancelar, name='cte_cancelar'),
+    path('cte/<int:pk>/dacte/', views.cte_dacte, name='cte_dacte'),
+
+    # MDF-e
+    path('mdfe/', views.mdfe_list, name='mdfe_list'),
+    path('mdfe/novo/', views.mdfe_create, name='mdfe_create'),
+    path('mdfe/<int:pk>/', views.mdfe_detail, name='mdfe_detail'),
+    path('mdfe/<int:pk>/editar/', views.mdfe_update, name='mdfe_update'),
+    path('mdfe/<int:pk>/emitir/', views.mdfe_emitir, name='mdfe_emitir'),
+    path('mdfe/<int:pk>/encerrar/', views.mdfe_encerrar, name='mdfe_encerrar'),
+    path('mdfe/<int:pk>/cancelar/', views.mdfe_cancelar, name='mdfe_cancelar'),
+    path('mdfe/<int:pk>/damdfe/', views.mdfe_damdfe, name='mdfe_damdfe'),
+
+    # Documentação IntegraNotas
+    path('docs/integranotas/', views.docs_integranotas, name='docs_integranotas'),
+
     # AJAX
     path('ajax/produto/<int:pk>/', views.ajax_produto_detail, name='ajax_produto_detail'),
     path('ajax/booking/<int:pk>/', views.ajax_booking_preview, name='ajax_booking_preview'),

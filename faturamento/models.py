@@ -392,6 +392,12 @@ class InvoiceExportacao(FaturamentoBaseModel):
     valor_mercadoria = models.DecimalField('Valor da Mercadoria', max_digits=14, decimal_places=2, default=0)
     valor_frete = models.DecimalField('Valor do Frete', max_digits=14, decimal_places=2, default=0)
     valor_seguro = models.DecimalField('Valor do Seguro', max_digits=14, decimal_places=2, default=0)
+    valor_desconto_adiantamento = models.DecimalField(
+        'Desconto Adiantamento Internacional',
+        max_digits=14,
+        decimal_places=2,
+        default=0,
+    )
     valor_total = models.DecimalField('Valor Total', max_digits=14, decimal_places=2, default=0)
 
     class Meta:
@@ -405,8 +411,11 @@ class InvoiceExportacao(FaturamentoBaseModel):
 
     def calcular_totais(self):
         self.valor_mercadoria = sum(i.valor_total_fob for i in self.itens.all())
-        self.valor_total = self.valor_mercadoria + self.valor_frete + self.valor_seguro
-        self.save(update_fields=['valor_mercadoria', 'valor_total'])
+        self.valor_total = (
+            self.valor_mercadoria + self.valor_frete + self.valor_seguro
+            - (self.valor_desconto_adiantamento or 0)
+        )
+        self.save(update_fields=['valor_mercadoria', 'valor_desconto_adiantamento', 'valor_total'])
 
     @property
     def peso_bruto_total(self):

@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% block title %}{{ conta.ativa|yesno:"Desativar,Ativar" }} Conta — {{ conta.banco }}{% endblock %}
+{% block content %}
+<div class="container-fluid">
+  <div class="row justify-content-center">
+    <div class="col-md-5">
+      <div class="card mt-4">
+        <div class="card-header bg-{% if conta.ativa %}danger{% else %}success{% endif %} text-white">
+          <h5 class="mb-0">{% if conta.ativa %}Desativar{% else %}Ativar{% endif %} Conta Bancária</h5>
+        </div>
+        <div class="card-body">
+          <p>Confirma a <strong>{% if conta.ativa %}desativação{% else %}ativação{% endif %}</strong> da conta:</p>
+          <div class="alert alert-light">
+            <strong>{{ conta.banco }}</strong> — Ag {{ conta.agencia }} / Cc {{ conta.conta }}
+          </div>
+          {% if conta.ativa %}
+          <div class="alert alert-warning">
+            <i class="bi bi-exclamation-triangle"></i>
+            Contas inativas não aparecem nos formulários de importação.
+          </div>
+          {% endif %}
+          <div class="d-flex gap-2">
+            <form method="post">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-{% if conta.ativa %}danger{% else %}success{% endif %}">
+                Confirmar
+              </button>
+            </form>
+            <a href="{% url 'bancario:conta_bancaria_detail' conta.pk %}" class="btn btn-outline-secondary">Cancelar</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

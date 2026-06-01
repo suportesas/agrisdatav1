@@ -73,6 +73,9 @@ INSTALLED_APPS = [
     'estoque',
     'compras',
     'financeiro',  # Módulo Contábil - Contas a Pagar, Juros, Multas
+    'plano_contas',  # Plano de Contas e Centros de Custo
+    'bancario',      # Contas Bancárias, Extrato OFX/CNAB, Conciliação Bancária
+    'adiantamentos',  # Adiantamentos Internacionais (Advance Payments)
     'exportacao',  # Módulo de Exportação e Booking
     'faturamento',  # Módulo de Faturamento (NF-e, Invoice, Packing List)
     'vendas',       # Módulo de Vendas (Pré-venda / Pedido de Venda)

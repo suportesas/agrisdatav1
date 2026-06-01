@@ -486,6 +486,46 @@
               <li><a href="{% url 'compras:forma_pagamento_list' %}"><i class="bi bi-credit-card"></i> Formas de Pagamento</a></li>
             </ul>
           </li>
+
+          <li class="submenu-divider"></li>
+
+          <!-- Plano de Contas (Submenu) -->
+          <li class="has-submenu">
+            <a href="#"><i class="bi bi-diagram-3"></i> Plano de Contas <i class="bi bi-chevron-right ms-auto"></i></a>
+            <ul class="nested-submenu">
+              <li><a href="{% url 'plano_contas:conta_list' %}"><i class="bi bi-list-ul"></i> Contas Contábeis</a></li>
+              <li><a href="{% url 'plano_contas:conta_arvore' %}"><i class="bi bi-diagram-2"></i> Ver Árvore</a></li>
+              <li><a href="{% url 'plano_contas:conta_create' %}"><i class="bi bi-plus-circle"></i> Nova Conta</a></li>
+              <li><a href="{% url 'plano_contas:balancete' %}"><i class="bi bi-file-earmark-bar-graph"></i> Balancete</a></li>
+              <li class="submenu-divider"></li>
+              <li><a href="{% url 'plano_contas:centro_list' %}"><i class="bi bi-grid-3x3-gap"></i> Centros de Custo</a></li>
+              <li><a href="{% url 'plano_contas:centro_create' %}"><i class="bi bi-plus-circle"></i> Novo Centro</a></li>
+            </ul>
+          </li>
+
+          <li class="submenu-divider"></li>
+
+          <!-- Contas Bancárias (Submenu) -->
+          <li class="has-submenu">
+            <a href="#"><i class="bi bi-bank"></i> Contas Bancárias <i class="bi bi-chevron-right ms-auto"></i></a>
+            <ul class="nested-submenu">
+              <li><a href="{% url 'bancario:conta_bancaria_list' %}"><i class="bi bi-list-ul"></i> Contas</a></li>
+              <li><a href="{% url 'bancario:conta_bancaria_create' %}"><i class="bi bi-plus-circle"></i> Nova Conta</a></li>
+              <li><a href="{% url 'bancario:relatorio_conciliacao' %}"><i class="bi bi-check2-all"></i> Conciliação</a></li>
+            </ul>
+          </li>
+
+          <li class="submenu-divider"></li>
+
+          <!-- Adiantamentos Internacionais (Submenu) -->
+          <li class="has-submenu">
+            <a href="#"><i class="bi bi-cash-coin"></i> Adiantamentos Intl. <i class="bi bi-chevron-right ms-auto"></i></a>
+            <ul class="nested-submenu">
+              <li><a href="{% url 'adiantamentos:adiantamento_list' %}"><i class="bi bi-list-ul"></i> Adiantamentos</a></li>
+              <li><a href="{% url 'adiantamentos:adiantamento_create' %}"><i class="bi bi-plus-circle"></i> Novo Adiantamento</a></li>
+              <li><a href="{% url 'adiantamentos:relatorio_adiantamentos' %}"><i class="bi bi-graph-up"></i> Relatório</a></li>
+            </ul>
+          </li>
         </ul>
       </li>
 

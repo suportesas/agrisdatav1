@@ -1,0 +1,212 @@
+{% extends 'base.html' %}
+
+{% block title %}Relatório de Conciliação — {{ request.user.empresa.nome }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+          <h1><i class="bi bi-file-earmark-check"></i> Relatório de Conciliação</h1>
+          <p class="text-muted mb-0">{{ request.user.empresa.nome }}</p>
+        </div>
+        <div class="d-flex gap-2">
+          <button class="btn btn-outline-secondary" onclick="window.print()">
+            <i class="bi bi-printer"></i> Imprimir
+          </button>
+          <a href="{% url 'bancario:conta_bancaria_list' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-bank"></i> Contas
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <div class="card mb-4 d-print-none">
+    <div class="card-body">
+      <form method="get" class="row g-3 align-items-end">
+        <div class="col-md-3">
+          <label class="form-label">Data Início</label>
+          <input type="date" name="data_inicio" class="form-control" value="{{ filtros.data_inicio }}">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Data Fim</label>
+          <input type="date" name="data_fim" class="form-control" value="{{ filtros.data_fim }}">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Conta Bancária</label>
+          <select name="conta" class="form-select">
+            <option value="">Todas as contas</option>
+            {% for c in contas %}
+            <option value="{{ c.pk }}" {% if filtros.conta_id == c.pk|stringformat:"s" %}selected{% endif %}>
+              {{ c.banco }} — Ag {{ c.agencia }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-3 d-flex gap-2">
+          <button type="submit" class="btn btn-primary w-100"><i class="bi bi-funnel"></i> Filtrar</button>
+          <a href="{% url 'bancario:relatorio_conciliacao' %}" class="btn btn-outline-secondary">Limpar</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Cards de totais -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-2 col-sm-4">
+      <div class="card text-center border-success">
+        <div class="card-body py-2">
+          <p class="text-muted small mb-1">Conciliados</p>
+          <h4 class="text-success mb-0">{{ stats.qtd_conciliados }}</h4>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-2 col-sm-4">
+      <div class="card text-center border-warning">
+        <div class="card-body py-2">
+          <p class="text-muted small mb-1">Pendentes</p>
+          <h4 class="text-warning mb-0">{{ stats.qtd_pendentes }}</h4>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-2 col-sm-4">
+      <div class="card text-center">
+        <div class="card-body py-2">
+          <p class="text-muted small mb-1">Ignorados</p>
+          <h4 class="text-secondary mb-0">{{ stats.qtd_ignorados }}</h4>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+      <div class="card text-center">
+        <div class="card-body py-2">
+          <p class="text-muted small mb-1">Débitos Conciliados</p>
+          <h5 class="text-danger mb-0">R$ {{ stats.debito_conciliado|floatformat:2 }}</h5>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+      <div class="card text-center">
+        <div class="card-body py-2">
+          <p class="text-muted small mb-1">Créditos Conciliados</p>
+          <h5 class="text-success mb-0">R$ {{ stats.credito_conciliado|floatformat:2 }}</h5>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lançamentos Conciliados -->
+  {% if conciliados %}
+  <div class="card mb-4">
+    <div class="card-header bg-success text-white">
+      <strong><i class="bi bi-check-circle-fill"></i> Lançamentos Conciliados ({{ stats.qtd_conciliados }})</strong>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-sm table-hover mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Data</th>
+            <th>Conta</th>
+            <th>Tipo</th>
+            <th>Descrição</th>
+            <th class="text-end">Valor</th>
+            <th>Vinculado a</th>
+            <th>Score</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for lanc in conciliados %}
+          <tr>
+            <td class="text-nowrap">{{ lanc.data_lancamento|date:"d/m/Y" }}</td>
+            <td class="small">{{ lanc.conta_bancaria.banco }}</td>
+            <td><span class="badge bg-{{ lanc.badge_tipo }}">{{ lanc.get_tipo_display }}</span></td>
+            <td class="small">{{ lanc.descricao|truncatechars:50 }}</td>
+            <td class="text-end text-nowrap {% if lanc.tipo == 'DEBITO' %}text-danger{% else %}text-success{% endif %}">
+              R$ {{ lanc.valor|floatformat:2 }}
+            </td>
+            <td class="small">
+              {% if lanc.conciliacao %}
+              {{ lanc.conciliacao.get_tipo_operacao_display }}
+              {% if lanc.conciliacao.conciliado_manualmente %}
+              <span class="badge bg-secondary">Manual</span>
+              {% endif %}
+              {% endif %}
+            </td>
+            <td>
+              {% if lanc.conciliacao %}
+              <span class="badge bg-{% if lanc.conciliacao.score_matching >= 80 %}success{% elif lanc.conciliacao.score_matching >= 50 %}warning{% else %}secondary{% endif %}">
+                {{ lanc.conciliacao.score_matching }}
+              </span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Pendentes -->
+  {% if pendentes %}
+  <div class="card">
+    <div class="card-header bg-warning">
+      <strong><i class="bi bi-clock"></i> Pendentes de Conciliação ({{ stats.qtd_pendentes }})</strong>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-sm table-hover mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Data</th>
+            <th>Conta</th>
+            <th>Tipo</th>
+            <th>Descrição</th>
+            <th class="text-end">Valor</th>
+            <th>Ação</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for lanc in pendentes %}
+          <tr>
+            <td class="text-nowrap">{{ lanc.data_lancamento|date:"d/m/Y" }}</td>
+            <td class="small">{{ lanc.conta_bancaria.banco }}</td>
+            <td><span class="badge bg-{{ lanc.badge_tipo }}">{{ lanc.get_tipo_display }}</span></td>
+            <td class="small">{{ lanc.descricao|truncatechars:50 }}</td>
+            <td class="text-end text-nowrap {% if lanc.tipo == 'DEBITO' %}text-danger{% else %}text-success{% endif %}">
+              R$ {{ lanc.valor|floatformat:2 }}
+            </td>
+            <td>
+              <a href="{% url 'bancario:conciliacao_workspace' lanc.importacao_id %}" class="btn btn-xs btn-outline-primary btn-sm py-0">
+                <i class="bi bi-check2-all"></i> Conciliar
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if not conciliados and not pendentes %}
+  <div class="card">
+    <div class="card-body text-center py-5 text-muted">
+      <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+      Nenhum lançamento encontrado para os filtros selecionados.
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+
+<style>
+@media print {
+  .d-print-none { display: none !important; }
+  .sidebar, .navbar { display: none !important; }
+}
+</style>
+{% endblock %}

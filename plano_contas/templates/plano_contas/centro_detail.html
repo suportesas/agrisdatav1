@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ centro.codigo }} — {{ centro.nome }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+  <!-- Header -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+          <h1><i class="bi bi-grid-3x3-gap"></i> {{ centro.nome }}</h1>
+          <p class="text-muted mb-0">
+            <code>{{ centro.codigo }}</code> · Nível {{ centro.nivel }}
+            {% if not centro.ativo %} · <span class="badge bg-danger">Inativo</span>{% endif %}
+          </p>
+        </div>
+        <div class="d-flex gap-2">
+          <a href="{% url 'plano_contas:centro_edit' centro.pk %}" class="btn btn-warning">
+            <i class="bi bi-pencil"></i> Editar
+          </a>
+          <a href="{% url 'plano_contas:centro_toggle' centro.pk %}" class="btn btn-outline-{% if centro.ativo %}danger{% else %}success{% endif %}">
+            {% if centro.ativo %}Desativar{% else %}Ativar{% endif %}
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <!-- Info -->
+    <div class="col-md-5 mb-4">
+      <div class="card">
+        <div class="card-header"><i class="bi bi-card-text"></i> Informações</div>
+        <div class="card-body">
+          <dl class="row mb-0">
+            <dt class="col-4">Código</dt>
+            <dd class="col-8"><code>{{ centro.codigo }}</code></dd>
+            <dt class="col-4">Nome</dt>
+            <dd class="col-8">{{ centro.nome }}</dd>
+            <dt class="col-4">Nível</dt>
+            <dd class="col-8">{{ centro.nivel }}</dd>
+            {% if centro.centro_pai %}
+            <dt class="col-4">Centro Pai</dt>
+            <dd class="col-8">
+              <a href="{% url 'plano_contas:centro_detail' centro.centro_pai.pk %}">{{ centro.centro_pai }}</a>
+            </dd>
+            {% endif %}
+          </dl>
+          {% if centro.descricao %}
+          <hr>
+          <p class="small text-muted mb-1">Descrição</p>
+          <p class="mb-0">{{ centro.descricao }}</p>
+          {% endif %}
+        </div>
+        <div class="card-footer text-muted small">Criado em {{ centro.created_at|date:"d/m/Y H:i" }}</div>
+      </div>
+    </div>
+
+    <!-- Subcentros -->
+    <div class="col-md-7 mb-4">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between">
+          <span><i class="bi bi-diagram-3"></i> Subcentros ({{ subcentros.count }})</span>
+          <a href="{% url 'plano_contas:centro_create' %}" class="btn btn-sm btn-outline-success">
+            <i class="bi bi-plus"></i> Novo
+          </a>
+        </div>
+        <div class="card-body p-0">
+          {% if subcentros %}
+          <ul class="list-group list-group-flush">
+            {% for sub in subcentros %}
+            <li class="list-group-item d-flex justify-content-between">
+              <div>
+                <code class="me-1">{{ sub.codigo }}</code>
+                <a href="{% url 'plano_contas:centro_detail' sub.pk %}" class="text-decoration-none">{{ sub.nome }}</a>
+              </div>
+              {% if not sub.ativo %}<span class="badge bg-secondary">Inativo</span>{% endif %}
+            </li>
+            {% endfor %}
+          </ul>
+          {% else %}
+          <p class="text-center text-muted py-3 mb-0">Sem subcentros cadastrados.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <a href="{% url 'plano_contas:centro_list' %}" class="btn btn-outline-secondary">
+    <i class="bi bi-arrow-left"></i> Voltar à Lista
+  </a>
+
+</div>
+{% endblock %}

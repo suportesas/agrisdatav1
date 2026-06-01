@@ -1,0 +1,176 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="d-flex align-items-center gap-2">
+        <a href="{% url 'adiantamentos:adiantamento_list' %}" class="btn btn-outline-secondary btn-sm">
+          <i class="bi bi-arrow-left"></i>
+        </a>
+        <h1 class="mb-0 fs-4">{{ titulo }}</h1>
+      </div>
+    </div>
+  </div>
+
+  <form method="post">
+    {% csrf_token %}
+    <div class="row g-4">
+
+      <!-- Coluna esquerda: dados principais -->
+      <div class="col-lg-8">
+        <div class="card mb-4">
+          <div class="card-header"><i class="bi bi-file-earmark-text"></i> Dados do Adiantamento</div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-sm-6">
+                <label class="form-label">{{ form.numero_referencia.label }} <span class="text-danger">*</span></label>
+                {{ form.numero_referencia }}
+                {% if form.numero_referencia.errors %}<div class="text-danger small">{{ form.numero_referencia.errors.0 }}</div>{% endif %}
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label">{{ form.data_adiantamento.label }} <span class="text-danger">*</span></label>
+                {{ form.data_adiantamento }}
+                {% if form.data_adiantamento.errors %}<div class="text-danger small">{{ form.data_adiantamento.errors.0 }}</div>{% endif %}
+              </div>
+              <div class="col-sm-8">
+                <label class="form-label">{{ form.cliente.label }} <span class="text-danger">*</span></label>
+                {{ form.cliente }}
+                {% if form.cliente.errors %}<div class="text-danger small">{{ form.cliente.errors.0 }}</div>{% endif %}
+              </div>
+              <div class="col-sm-4">
+                <label class="form-label">{{ form.status.label }}</label>
+                {{ form.status }}
+              </div>
+              <div class="col-sm-4">
+                <label class="form-label">{{ form.safra_referencia.label }} <span class="text-danger">*</span></label>
+                {{ form.safra_referencia }}
+                {% if form.safra_referencia.errors %}<div class="text-danger small">{{ form.safra_referencia.errors.0 }}</div>{% endif %}
+              </div>
+              <div class="col-sm-8">
+                <label class="form-label">{{ form.safra.label }}</label>
+                {{ form.safra }}
+                <small class="text-muted">Opcional — vincule a uma safra cadastrada no sistema</small>
+              </div>
+              <div class="col-12">
+                <label class="form-label">{{ form.invoice_origem.label }}</label>
+                {{ form.invoice_origem }}
+                <small class="text-muted">Invoice de referência que originou este adiantamento (opcional)</small>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Valores -->
+        <div class="card mb-4">
+          <div class="card-header"><i class="bi bi-currency-dollar"></i> Valores</div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-sm-3">
+                <label class="form-label">{{ form.moeda.label }} <span class="text-danger">*</span></label>
+                {{ form.moeda }}
+              </div>
+              <div class="col-sm-3">
+                <label class="form-label">{{ form.valor_estrangeiro.label }} <span class="text-danger">*</span></label>
+                {{ form.valor_estrangeiro }}
+                {% if form.valor_estrangeiro.errors %}<div class="text-danger small">{{ form.valor_estrangeiro.errors.0 }}</div>{% endif %}
+              </div>
+              <div class="col-sm-3">
+                <label class="form-label">{{ form.taxa_cambio.label }}</label>
+                {{ form.taxa_cambio }}
+              </div>
+              <div class="col-sm-3">
+                <label class="form-label">{{ form.valor_brl.label }}</label>
+                {{ form.valor_brl }}
+                <small class="text-muted">Calculado automaticamente</small>
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label">{{ form.data_prevista_reembolso.label }}</label>
+                {{ form.data_prevista_reembolso }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Regra de desconto -->
+        <div class="card">
+          <div class="card-header"><i class="bi bi-percent"></i> Regra de Desconto por Embarque</div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-12">
+                <label class="form-label">{{ form.tipo_regra_desconto.label }} <span class="text-danger">*</span></label>
+                {{ form.tipo_regra_desconto }}
+              </div>
+              <div class="col-sm-6" id="campo-valor-fixo">
+                <label class="form-label">{{ form.valor_desconto_padrao.label }}</label>
+                {{ form.valor_desconto_padrao }}
+                {% if form.valor_desconto_padrao.errors %}<div class="text-danger small">{{ form.valor_desconto_padrao.errors.0 }}</div>{% endif %}
+                <small class="text-muted">Valor em moeda estrangeira</small>
+              </div>
+              <div class="col-sm-6" id="campo-percentual" style="display:none">
+                <label class="form-label">{{ form.percentual_desconto.label }}</label>
+                {{ form.percentual_desconto }}
+                {% if form.percentual_desconto.errors %}<div class="text-danger small">{{ form.percentual_desconto.errors.0 }}</div>{% endif %}
+                <small class="text-muted">% sobre o valor total da invoice</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Coluna direita -->
+      <div class="col-lg-4">
+        <div class="card mb-4">
+          <div class="card-header"><i class="bi bi-chat-text"></i> Observações</div>
+          <div class="card-body">
+            {{ form.observacoes }}
+          </div>
+        </div>
+
+        <div class="d-grid gap-2">
+          <button type="submit" class="btn btn-primary btn-lg">
+            <i class="bi bi-check-lg"></i> Salvar Adiantamento
+          </button>
+          <a href="{% url 'adiantamentos:adiantamento_list' %}" class="btn btn-outline-secondary">Cancelar</a>
+        </div>
+      </div>
+
+    </div>
+  </form>
+</div>
+
+<script>
+  const tipoRegra = document.getElementById('id_tipo_regra_desconto');
+  const campoFixo = document.getElementById('campo-valor-fixo');
+  const campoPerc = document.getElementById('campo-percentual');
+
+  function toggleRegraCampos() {
+    if (tipoRegra.value === 'PERCENTUAL') {
+      campoFixo.style.display = 'none';
+      campoPerc.style.display = '';
+    } else {
+      campoFixo.style.display = '';
+      campoPerc.style.display = 'none';
+    }
+  }
+
+  tipoRegra.addEventListener('change', toggleRegraCampos);
+  toggleRegraCampos();
+
+  // Auto-calcula valor_brl
+  const valEstr = document.getElementById('id_valor_estrangeiro');
+  const taxa = document.getElementById('id_taxa_cambio');
+  const valBrl = document.getElementById('id_valor_brl');
+
+  function calcBrl() {
+    const v = parseFloat(valEstr.value) || 0;
+    const t = parseFloat(taxa.value) || 1;
+    valBrl.value = (v * t).toFixed(2);
+  }
+  valEstr.addEventListener('input', calcBrl);
+  taxa.addEventListener('input', calcBrl);
+</script>
+{% endblock %}

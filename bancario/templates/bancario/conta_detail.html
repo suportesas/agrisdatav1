@@ -1,0 +1,184 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ conta.banco }} — Conta Bancária{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+  <!-- Header -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+        <div>
+          <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+            <h1 class="mb-0"><i class="bi bi-bank"></i> {{ conta.banco }}</h1>
+            {% if conta.conta_principal %}<span class="badge bg-primary fs-6">Principal</span>{% endif %}
+            <span class="badge bg-{% if conta.ativa %}success{% else %}secondary{% endif %} fs-6">
+              {% if conta.ativa %}Ativa{% else %}Inativa{% endif %}
+            </span>
+          </div>
+          <p class="text-muted mb-0">{{ conta.get_tipo_conta_display }} · {{ conta.numero_formatado }}</p>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+          {% if conta.ativa %}
+          <a href="{% url 'bancario:importar_extrato' conta.pk %}" class="btn btn-success">
+            <i class="bi bi-upload"></i> Importar Extrato
+          </a>
+          {% endif %}
+          <a href="{% url 'bancario:conta_bancaria_edit' conta.pk %}" class="btn btn-warning">
+            <i class="bi bi-pencil"></i> Editar
+          </a>
+          <form method="post" action="{% url 'bancario:conta_bancaria_toggle' conta.pk %}" class="d-inline">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-outline-{% if conta.ativa %}danger{% else %}success{% endif %}">
+              {% if conta.ativa %}Desativar{% else %}Ativar{% endif %}
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <!-- Info da conta -->
+    <div class="col-lg-4">
+      <div class="card h-100">
+        <div class="card-header"><i class="bi bi-card-text"></i> Dados Bancários</div>
+        <div class="card-body">
+          <dl class="row mb-0">
+            <dt class="col-5">Banco</dt>
+            <dd class="col-7">{{ conta.banco }}{% if conta.codigo_banco %} ({{ conta.codigo_banco }}){% endif %}</dd>
+            <dt class="col-5">Agência</dt>
+            <dd class="col-7">{{ conta.agencia }}{% if conta.agencia_digito %}-{{ conta.agencia_digito }}{% endif %}</dd>
+            <dt class="col-5">Conta</dt>
+            <dd class="col-7">{{ conta.conta }}{% if conta.conta_digito %}-{{ conta.conta_digito }}{% endif %}</dd>
+            <dt class="col-5">Tipo</dt>
+            <dd class="col-7">{{ conta.get_tipo_conta_display }}</dd>
+            {% if conta.saldo_inicial is not None %}
+            <dt class="col-5">Saldo Inicial</dt>
+            <dd class="col-7">R$ {{ conta.saldo_inicial|floatformat:2 }}</dd>
+            {% endif %}
+            {% if conta.data_saldo_inicial %}
+            <dt class="col-5">Data Saldo</dt>
+            <dd class="col-7">{{ conta.data_saldo_inicial|date:"d/m/Y" }}</dd>
+            {% endif %}
+            {% if conta.pix_habilitado %}
+            <dt class="col-5">PIX</dt>
+            <dd class="col-7">{{ conta.get_tipo_chave_pix_display }}: <code>{{ conta.chave_pix }}</code></dd>
+            {% endif %}
+          </dl>
+          {% if conta.observacoes %}
+          <hr>
+          <p class="small text-muted mb-1">Observações</p>
+          <p class="mb-0 small">{{ conta.observacoes }}</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Resumo de lançamentos -->
+    <div class="col-lg-8">
+      <div class="row g-3">
+        <div class="col-sm-4">
+          <div class="card text-center">
+            <div class="card-body">
+              <p class="text-muted small mb-1">Total de Lançamentos</p>
+              <h3>{{ total_lancamentos }}</h3>
+            </div>
+          </div>
+        </div>
+        <div class="col-sm-4">
+          <div class="card text-center border-warning">
+            <div class="card-body">
+              <p class="text-muted small mb-1">Pendentes de Conciliação</p>
+              <h3 class="text-warning">{{ pendentes }}</h3>
+            </div>
+          </div>
+        </div>
+        <div class="col-sm-4">
+          <div class="card text-center border-success">
+            <div class="card-body">
+              <p class="text-muted small mb-1">Conciliados</p>
+              <h3 class="text-success">{{ conciliados }}</h3>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Histórico de importações -->
+  <div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <span><i class="bi bi-clock-history"></i> Histórico de Importações</span>
+      {% if conta.ativa %}
+      <a href="{% url 'bancario:importar_extrato' conta.pk %}" class="btn btn-sm btn-success">
+        <i class="bi bi-plus"></i> Nova Importação
+      </a>
+      {% endif %}
+    </div>
+    {% if importacoes %}
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Data</th>
+            <th>Tipo</th>
+            <th>Período do Extrato</th>
+            <th class="text-end">Lançamentos</th>
+            <th class="text-end">Débitos</th>
+            <th class="text-end">Créditos</th>
+            <th>Status</th>
+            <th class="text-end">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for imp in importacoes %}
+          <tr>
+            <td>{{ imp.importado_em|date:"d/m/Y H:i" }}</td>
+            <td><span class="badge bg-secondary">{{ imp.tipo_arquivo }}</span></td>
+            <td>
+              {% if imp.data_inicio_extrato %}
+              {{ imp.data_inicio_extrato|date:"d/m/Y" }} a {{ imp.data_fim_extrato|date:"d/m/Y" }}
+              {% else %}<span class="text-muted">—</span>{% endif %}
+            </td>
+            <td class="text-end">{{ imp.total_lancamentos }}</td>
+            <td class="text-end text-danger">R$ {{ imp.total_debitos|floatformat:2 }}</td>
+            <td class="text-end text-success">R$ {{ imp.total_creditos|floatformat:2 }}</td>
+            <td>
+              <span class="badge bg-{% if imp.status == 'CONCLUIDA' %}success{% elif imp.status == 'ERRO' %}danger{% elif imp.status == 'PROCESSANDO' %}info{% else %}secondary{% endif %}">
+                {{ imp.get_status_display }}
+              </span>
+            </td>
+            <td class="text-end">
+              {% if imp.status == 'CONCLUIDA' %}
+              <a href="{% url 'bancario:conciliacao_workspace' imp.pk %}" class="btn btn-sm btn-outline-primary" title="Conciliar">
+                <i class="bi bi-check2-all"></i>
+              </a>
+              <a href="{% url 'bancario:importacao_detail' imp.pk %}" class="btn btn-sm btn-outline-secondary" title="Detalhes">
+                <i class="bi bi-list-ul"></i>
+              </a>
+              {% elif imp.status == 'ERRO' %}
+              <a href="{% url 'bancario:importacao_detail' imp.pk %}" class="btn btn-sm btn-outline-danger" title="Ver erro">
+                <i class="bi bi-exclamation-triangle"></i>
+              </a>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="card-body text-center text-muted py-4">
+      <i class="bi bi-inbox fs-3 d-block mb-2"></i>
+      Nenhuma importação realizada ainda.
+      {% if conta.ativa %}
+      <a href="{% url 'bancario:importar_extrato' conta.pk %}">Importar primeiro extrato</a>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

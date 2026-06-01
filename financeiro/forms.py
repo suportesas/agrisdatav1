@@ -44,7 +44,18 @@ class ConfiguracaoJurosMultaForm(forms.ModelForm):
 
 class ContaPageForm(forms.ModelForm):
     """Form para criação/edição de conta a pagar"""
-    
+
+    def __init__(self, *args, empresa=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if empresa:
+            from plano_contas.models import ContaContabil, CentroCusto
+            self.fields['conta_contabil'].queryset = ContaContabil.objects.filter(
+                empresa=empresa, analitica=True, ativo=True
+            ).order_by('codigo')
+            self.fields['centro_custo'].queryset = CentroCusto.objects.filter(
+                empresa=empresa, ativo=True
+            ).order_by('codigo')
+
     class Meta:
         model = ContaPagar
         fields = [
@@ -55,6 +66,8 @@ class ContaPageForm(forms.ModelForm):
             'valor_total',
             'desconto_negociado',
             'requer_aprovacao',
+            'conta_contabil',
+            'centro_custo',
             'observacoes'
         ]
         widgets = {
@@ -80,6 +93,8 @@ class ContaPageForm(forms.ModelForm):
                 'value': '0.00'
             }),
             'requer_aprovacao': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'conta_contabil': forms.Select(attrs={'class': 'form-select'}),
+            'centro_custo': forms.Select(attrs={'class': 'form-select'}),
             'observacoes': forms.Textarea(attrs={
                 'class': 'form-control',
                 'rows': 3,
@@ -258,6 +273,7 @@ class ContaReceberForm(forms.ModelForm):
             'cliente', 'data_emissao', 'data_vencimento',
             'moeda', 'valor_moeda', 'taxa_cambio', 'valor_brl',
             'descricao', 'observacoes',
+            'conta_contabil', 'centro_custo',
         ]
         widgets = {
             'cliente': forms.Select(attrs={'class': 'form-select'}),
@@ -269,13 +285,22 @@ class ContaReceberForm(forms.ModelForm):
             'valor_brl': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0'}),
             'descricao': forms.TextInput(attrs={'class': 'form-control'}),
             'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'conta_contabil': forms.Select(attrs={'class': 'form-select'}),
+            'centro_custo': forms.Select(attrs={'class': 'form-select'}),
         }
 
     def __init__(self, *args, empresa=None, **kwargs):
         super().__init__(*args, **kwargs)
         if empresa:
             from cadastros.models import Cliente
+            from plano_contas.models import ContaContabil, CentroCusto
             self.fields['cliente'].queryset = Cliente.objects.filter(empresa=empresa, status='ATIVO')
+            self.fields['conta_contabil'].queryset = ContaContabil.objects.filter(
+                empresa=empresa, analitica=True, ativo=True
+            ).order_by('codigo')
+            self.fields['centro_custo'].queryset = CentroCusto.objects.filter(
+                empresa=empresa, ativo=True
+            ).order_by('codigo')
 
 
 class ParcelaContaReceberForm(forms.ModelForm):

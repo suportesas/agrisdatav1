@@ -1,0 +1,163 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ conta.codigo }} — {{ conta.nome }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+  <!-- Breadcrumb -->
+  <nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'plano_contas:conta_list' %}">Plano de Contas</a></li>
+      {% for ancestral in caminho %}
+        {% if not forloop.last %}
+        <li class="breadcrumb-item">
+          <a href="{% url 'plano_contas:conta_detail' ancestral.pk %}">{{ ancestral.codigo }}</a>
+        </li>
+        {% else %}
+        <li class="breadcrumb-item active">{{ ancestral.codigo }}</li>
+        {% endif %}
+      {% endfor %}
+    </ol>
+  </nav>
+
+  <!-- Header -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+        <div>
+          <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+            <h1 class="mb-0">{{ conta.nome }}</h1>
+            <span class="badge bg-{{ conta.badge_tipo }} fs-6">{{ conta.get_tipo_display }}</span>
+            {% if conta.analitica %}
+            <span class="badge bg-success fs-6">Analítica</span>
+            {% else %}
+            <span class="badge bg-secondary fs-6">Sintética</span>
+            {% endif %}
+            {% if not conta.ativo %}
+            <span class="badge bg-danger fs-6">Inativa</span>
+            {% endif %}
+          </div>
+          <p class="text-muted mb-0"><code>{{ conta.codigo }}</code> · Nível {{ conta.nivel }} · {{ conta.get_natureza_display }}</p>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+          <a href="{% url 'plano_contas:conta_create' %}?pai={{ conta.pk }}" class="btn btn-outline-success">
+            <i class="bi bi-plus-circle"></i> Subconta
+          </a>
+          <a href="{% url 'plano_contas:conta_edit' conta.pk %}" class="btn btn-warning">
+            <i class="bi bi-pencil"></i> Editar
+          </a>
+          <a href="{% url 'plano_contas:conta_toggle' conta.pk %}" class="btn btn-outline-{% if conta.ativo %}danger{% else %}success{% endif %}">
+            <i class="bi bi-{% if conta.ativo %}x-circle{% else %}check-circle{% endif %}"></i>
+            {% if conta.ativo %}Desativar{% else %}Ativar{% endif %}
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <!-- Informações -->
+    <div class="col-lg-4 mb-4">
+      <div class="card h-100">
+        <div class="card-header"><i class="bi bi-card-text"></i> Informações</div>
+        <div class="card-body">
+          <dl class="row mb-0">
+            <dt class="col-5">Código</dt>
+            <dd class="col-7"><code>{{ conta.codigo }}</code></dd>
+            <dt class="col-5">Tipo</dt>
+            <dd class="col-7"><span class="badge bg-{{ conta.badge_tipo }}">{{ conta.get_tipo_display }}</span></dd>
+            <dt class="col-5">Natureza</dt>
+            <dd class="col-7">{{ conta.get_natureza_display }}</dd>
+            <dt class="col-5">Nível</dt>
+            <dd class="col-7">{{ conta.nivel }}</dd>
+            <dt class="col-5">Analítica</dt>
+            <dd class="col-7">{% if conta.analitica %}<i class="bi bi-check-circle-fill text-success"></i>{% else %}<i class="bi bi-x-circle text-muted"></i>{% endif %}</dd>
+            <dt class="col-5">Gerencial</dt>
+            <dd class="col-7">{% if conta.gerencial %}<i class="bi bi-check-circle-fill text-info"></i>{% else %}<i class="bi bi-x-circle text-muted"></i>{% endif %}</dd>
+            {% if conta.conta_pai %}
+            <dt class="col-5">Conta Pai</dt>
+            <dd class="col-7">
+              <a href="{% url 'plano_contas:conta_detail' conta.conta_pai.pk %}">{{ conta.conta_pai }}</a>
+            </dd>
+            {% endif %}
+          </dl>
+          {% if conta.descricao %}
+          <hr>
+          <p class="small text-muted mb-1">Descrição</p>
+          <p class="mb-0">{{ conta.descricao }}</p>
+          {% endif %}
+          {% if conta.observacoes %}
+          <hr>
+          <p class="small text-muted mb-1">Observações</p>
+          <p class="mb-0">{{ conta.observacoes }}</p>
+          {% endif %}
+        </div>
+        <div class="card-footer text-muted small">
+          Criada em {{ conta.created_at|date:"d/m/Y H:i" }}
+          {% if conta.updated_at != conta.created_at %}
+          · Atualizada em {{ conta.updated_at|date:"d/m/Y H:i" }}
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Subcontas -->
+    <div class="col-lg-4 mb-4">
+      <div class="card h-100">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <span><i class="bi bi-diagram-3"></i> Subcontas ({{ subcontas.count }})</span>
+          <a href="{% url 'plano_contas:conta_create' %}?pai={{ conta.pk }}" class="btn btn-sm btn-outline-success">
+            <i class="bi bi-plus"></i>
+          </a>
+        </div>
+        <div class="card-body p-0">
+          {% if subcontas %}
+          <ul class="list-group list-group-flush">
+            {% for sub in subcontas %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              <div>
+                <code class="me-1">{{ sub.codigo }}</code>
+                <a href="{% url 'plano_contas:conta_detail' sub.pk %}" class="text-decoration-none">
+                  {{ sub.nome }}
+                </a>
+                {% if not sub.ativo %}<span class="badge bg-secondary ms-1">Inativa</span>{% endif %}
+              </div>
+              <span class="badge bg-{{ sub.badge_tipo }}">{{ sub.get_tipo_display }}</span>
+            </li>
+            {% endfor %}
+          </ul>
+          {% else %}
+          <p class="text-center text-muted py-3 mb-0">Sem subcontas cadastradas.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Uso no Financeiro -->
+    <div class="col-lg-4 mb-4">
+      <div class="card h-100">
+        <div class="card-header"><i class="bi bi-cash-stack"></i> Uso no Financeiro</div>
+        <div class="card-body">
+          {% if conta.analitica %}
+          <div class="d-flex justify-content-between mb-3">
+            <span>Contas a Pagar vinculadas</span>
+            <span class="badge bg-danger fs-6">{{ uso_cp }}</span>
+          </div>
+          <div class="d-flex justify-content-between">
+            <span>Contas a Receber vinculadas</span>
+            <span class="badge bg-success fs-6">{{ uso_cr }}</span>
+          </div>
+          {% else %}
+          <p class="text-muted mb-0">
+            <i class="bi bi-info-circle"></i>
+            Contas sintéticas não são vinculadas a lançamentos financeiros diretamente.
+          </p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

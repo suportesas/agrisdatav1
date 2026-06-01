@@ -1,0 +1,173 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ titulo }} — {{ request.user.empresa.nome }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+  <!-- Header -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <h1><i class="bi bi-diagram-3"></i> {{ titulo }}</h1>
+          <p class="text-muted mb-0">{{ request.user.empresa.nome }}</p>
+        </div>
+        <a href="{% url 'plano_contas:conta_list' %}" class="btn btn-outline-secondary">
+          <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <form method="post" novalidate>
+    {% csrf_token %}
+    <div class="row">
+      <div class="col-lg-8">
+
+        <!-- Identificação -->
+        <div class="card mb-4">
+          <div class="card-header"><strong><i class="bi bi-card-text"></i> Identificação</strong></div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-md-4">
+                <label class="form-label" for="{{ form.codigo.id_for_label }}">
+                  Código <span class="text-danger">*</span>
+                </label>
+                {{ form.codigo }}
+                {% if form.codigo.errors %}
+                <div class="invalid-feedback d-block">{{ form.codigo.errors|join:", " }}</div>
+                {% endif %}
+                <small class="text-muted">Ex: 1.1.01.001</small>
+              </div>
+              <div class="col-md-8">
+                <label class="form-label" for="{{ form.nome.id_for_label }}">
+                  Nome <span class="text-danger">*</span>
+                </label>
+                {{ form.nome }}
+                {% if form.nome.errors %}
+                <div class="invalid-feedback d-block">{{ form.nome.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+              <div class="col-12">
+                <label class="form-label" for="{{ form.conta_pai.id_for_label }}">Conta Pai</label>
+                {{ form.conta_pai }}
+                {% if form.conta_pai.errors %}
+                <div class="invalid-feedback d-block">{{ form.conta_pai.errors|join:", " }}</div>
+                {% endif %}
+                <small class="text-muted">Deixe em branco para criar uma conta raiz (grupo principal).</small>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Classificação -->
+        <div class="card mb-4">
+          <div class="card-header"><strong><i class="bi bi-tags"></i> Classificação</strong></div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label" for="{{ form.tipo.id_for_label }}">
+                  Tipo <span class="text-danger">*</span>
+                </label>
+                {{ form.tipo }}
+                {% if form.tipo.errors %}
+                <div class="invalid-feedback d-block">{{ form.tipo.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="{{ form.natureza.id_for_label }}">
+                  Natureza <span class="text-danger">*</span>
+                </label>
+                {{ form.natureza }}
+                {% if form.natureza.errors %}
+                <div class="invalid-feedback d-block">{{ form.natureza.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+              <div class="col-md-6">
+                <div class="form-check mt-2">
+                  {{ form.analitica }}
+                  <label class="form-check-label" for="{{ form.analitica.id_for_label }}">
+                    Conta Analítica
+                    <small class="text-muted d-block">Contas analíticas aceitam lançamentos financeiros. Sintéticas são apenas agrupamentos.</small>
+                  </label>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="form-check mt-2">
+                  {{ form.gerencial }}
+                  <label class="form-check-label" for="{{ form.gerencial.id_for_label }}">
+                    Uso Gerencial
+                    <small class="text-muted d-block">Marca como categoria de análise gerencial.</small>
+                  </label>
+                </div>
+              </div>
+              {% if conta %}
+              <div class="col-md-6">
+                <div class="form-check mt-2">
+                  {{ form.ativo }}
+                  <label class="form-check-label" for="{{ form.ativo.id_for_label }}">Conta Ativa</label>
+                </div>
+              </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <!-- Descrição -->
+        <div class="card mb-4">
+          <div class="card-header"><strong><i class="bi bi-chat-text"></i> Descrição</strong></div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-12">
+                <label class="form-label" for="{{ form.descricao.id_for_label }}">Descrição</label>
+                {{ form.descricao }}
+              </div>
+              <div class="col-12">
+                <label class="form-label" for="{{ form.observacoes.id_for_label }}">Observações</label>
+                {{ form.observacoes }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Botões -->
+        <div class="d-flex gap-2 mb-4">
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-check-circle"></i> Salvar
+          </button>
+          <a href="{% if conta %}{% url 'plano_contas:conta_detail' conta.pk %}{% else %}{% url 'plano_contas:conta_list' %}{% endif %}" class="btn btn-outline-secondary">
+            Cancelar
+          </a>
+        </div>
+
+      </div>
+
+      <!-- Dicas laterais -->
+      <div class="col-lg-4">
+        <div class="card">
+          <div class="card-header"><i class="bi bi-info-circle"></i> Dicas</div>
+          <div class="card-body small text-muted">
+            <p><strong>Código:</strong> Use o padrão numérico hierárquico, por exemplo:</p>
+            <ul>
+              <li><code>1</code> — Grupo raiz (Ativo)</li>
+              <li><code>1.1</code> — Subgrupo (Ativo Circulante)</li>
+              <li><code>1.1.01</code> — Grupo (Disponível)</li>
+              <li><code>1.1.01.001</code> — Conta analítica (Caixa)</li>
+            </ul>
+            <p><strong>Analítica vs Sintética:</strong><br>
+              Contas <em>analíticas</em> são as contas finais que recebem lançamentos.
+              Contas <em>sintéticas</em> (não analíticas) são grupos e subgrupos que organizam a estrutura.
+            </p>
+            <p><strong>Natureza:</strong><br>
+              Contas de Ativo e Despesa são geralmente <em>Devedoras</em>.
+              Contas de Passivo, PL e Receita são geralmente <em>Credoras</em>.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </form>
+
+</div>
+{% endblock %}

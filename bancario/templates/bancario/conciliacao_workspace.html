@@ -1,0 +1,400 @@
+{% extends 'base.html' %}
+
+{% block title %}Conciliação Bancária — {{ conta.banco }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+  <!-- Header -->
+  <div class="row mb-3">
+    <div class="col-12">
+      <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+          <h1 class="mb-0"><i class="bi bi-check2-all"></i> Conciliação Bancária</h1>
+          <p class="text-muted mb-0">
+            {{ conta.banco }} — {{ conta.numero_formatado }}
+            {% if importacao.data_inicio_extrato %}
+            · {{ importacao.data_inicio_extrato|date:"d/m/Y" }} a {{ importacao.data_fim_extrato|date:"d/m/Y" }}
+            {% endif %}
+          </p>
+        </div>
+        <div class="d-flex gap-2">
+          <a href="{% url 'bancario:importacao_detail' importacao.pk %}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-list-ul"></i> Ver Todos
+          </a>
+          <a href="{% url 'bancario:conta_bancaria_detail' conta.pk %}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left"></i> Voltar
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Progresso -->
+  <div class="row g-2 mb-3">
+    <div class="col-4">
+      <div class="card text-center py-2 border-warning">
+        <div class="h5 mb-0 text-warning" id="cnt-pendentes">{{ stats.pendentes }}</div>
+        <small class="text-muted">Pendentes</small>
+      </div>
+    </div>
+    <div class="col-4">
+      <div class="card text-center py-2 border-success">
+        <div class="h5 mb-0 text-success" id="cnt-conciliados">{{ stats.conciliados }}</div>
+        <small class="text-muted">Conciliados</small>
+      </div>
+    </div>
+    <div class="col-4">
+      <div class="card text-center py-2">
+        <div class="h5 mb-0 text-secondary" id="cnt-ignorados">{{ stats.ignorados }}</div>
+        <small class="text-muted">Ignorados</small>
+      </div>
+    </div>
+  </div>
+
+  <!-- Layout 3 colunas -->
+  <div class="row g-2" style="height: calc(100vh - 280px); min-height: 500px;">
+
+    <!-- COLUNA ESQUERDA: Lançamentos pendentes -->
+    <div class="col-md-4 h-100">
+      <div class="card h-100 d-flex flex-column">
+        <div class="card-header py-2">
+          <strong><i class="bi bi-list-check"></i> Lançamentos do Extrato</strong>
+          <div class="d-flex gap-1 mt-1">
+            <button class="btn btn-xs btn-outline-secondary btn-sm py-0 px-1 active" id="btn-tab-pendentes" onclick="mostrarAba('pendentes')">Pendentes</button>
+            <button class="btn btn-xs btn-outline-success btn-sm py-0 px-1" id="btn-tab-conciliados" onclick="mostrarAba('conciliados')">Conciliados</button>
+            <button class="btn btn-xs btn-outline-secondary btn-sm py-0 px-1" id="btn-tab-ignorados" onclick="mostrarAba('ignorados')">Ignorados</button>
+          </div>
+        </div>
+        <div class="card-body p-0 overflow-auto flex-fill">
+
+          <!-- Tab Pendentes -->
+          <div id="tab-pendentes">
+            {% for lanc in pendentes %}
+            <div class="lancamento-item p-2 border-bottom cursor-pointer {% if lanc.tipo == 'DEBITO' %}border-start border-danger border-3{% else %}border-start border-success border-3{% endif %}"
+                 id="lanc-{{ lanc.pk }}"
+                 onclick="selecionarLancamento({{ lanc.pk }}, '{{ lanc.tipo }}')"
+                 style="cursor:pointer;">
+              <div class="d-flex justify-content-between align-items-start">
+                <div>
+                  <span class="badge bg-{{ lanc.badge_tipo }} mb-1">{{ lanc.get_tipo_display }}</span>
+                  <div class="small text-truncate" style="max-width:180px;" title="{{ lanc.descricao }}">{{ lanc.descricao }}</div>
+                  <small class="text-muted">{{ lanc.data_lancamento|date:"d/m/Y" }}{% if lanc.numero_documento %} · {{ lanc.numero_documento }}{% endif %}</small>
+                </div>
+                <div class="text-end">
+                  <div class="fw-bold {% if lanc.tipo == 'DEBITO' %}text-danger{% else %}text-success{% endif %}">
+                    R$ {{ lanc.valor|floatformat:2 }}
+                  </div>
+                </div>
+              </div>
+            </div>
+            {% empty %}
+            <div class="text-center text-muted p-4">
+              <i class="bi bi-check-circle-fill text-success fs-3 d-block mb-2"></i>
+              Todos os lançamentos foram conciliados!
+            </div>
+            {% endfor %}
+          </div>
+
+          <!-- Tab Conciliados -->
+          <div id="tab-conciliados" style="display:none;">
+            {% for lanc in conciliados %}
+            <div class="p-2 border-bottom bg-success bg-opacity-10">
+              <div class="d-flex justify-content-between align-items-start">
+                <div>
+                  <span class="badge bg-{{ lanc.badge_tipo }} mb-1">{{ lanc.get_tipo_display }}</span>
+                  <div class="small text-truncate" style="max-width:180px;">{{ lanc.descricao }}</div>
+                  <small class="text-muted">{{ lanc.data_lancamento|date:"d/m/Y" }}</small>
+                  {% if lanc.conciliacao %}
+                  <div class="small text-success"><i class="bi bi-link-45deg"></i> {{ lanc.conciliacao.get_tipo_operacao_display }}</div>
+                  {% endif %}
+                </div>
+                <div class="text-end">
+                  <div class="fw-bold {% if lanc.tipo == 'DEBITO' %}text-danger{% else %}text-success{% endif %}">
+                    R$ {{ lanc.valor|floatformat:2 }}
+                  </div>
+                  <form method="post" action="{% url 'bancario:conciliacao_desfazer' %}" class="d-inline">
+                    {% csrf_token %}
+                    <input type="hidden" name="lancamento_id" value="{{ lanc.pk }}">
+                    <button type="submit" class="btn btn-xs btn-outline-secondary btn-sm py-0 px-1 mt-1" title="Desfazer conciliação"
+                            onclick="this.form.addEventListener('submit', e => { e.preventDefault(); desfazer({{ lanc.pk }}); })">
+                      <i class="bi bi-arrow-counterclockwise"></i>
+                    </button>
+                  </form>
+                </div>
+              </div>
+            </div>
+            {% empty %}
+            <div class="text-center text-muted p-4">Nenhum lançamento conciliado ainda.</div>
+            {% endfor %}
+          </div>
+
+          <!-- Tab Ignorados -->
+          <div id="tab-ignorados" style="display:none;">
+            {% for lanc in ignorados %}
+            <div class="p-2 border-bottom opacity-50">
+              <div class="d-flex justify-content-between">
+                <div>
+                  <span class="badge bg-secondary mb-1">{{ lanc.get_tipo_display }}</span>
+                  <div class="small text-truncate" style="max-width:180px;">{{ lanc.descricao }}</div>
+                  <small class="text-muted">{{ lanc.data_lancamento|date:"d/m/Y" }}</small>
+                </div>
+                <div class="text-end">
+                  <div class="fw-bold">R$ {{ lanc.valor|floatformat:2 }}</div>
+                  <form method="post" action="{% url 'bancario:conciliacao_desfazer' %}" class="d-inline">
+                    {% csrf_token %}
+                    <input type="hidden" name="lancamento_id" value="{{ lanc.pk }}">
+                    <button type="submit" class="btn btn-xs btn-outline-secondary btn-sm py-0 px-1 mt-1" title="Reativar">
+                      <i class="bi bi-arrow-counterclockwise"></i>
+                    </button>
+                  </form>
+                </div>
+              </div>
+            </div>
+            {% empty %}
+            <div class="text-center text-muted p-4">Nenhum lançamento ignorado.</div>
+            {% endfor %}
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- COLUNA CENTRAL: Sugestões de matching -->
+    <div class="col-md-5 h-100">
+      <div class="card h-100 d-flex flex-column">
+        <div class="card-header py-2">
+          <strong><i class="bi bi-stars"></i> Sugestões de Matching</strong>
+        </div>
+        <div class="card-body overflow-auto flex-fill p-2" id="painel-sugestoes">
+          <div class="text-center text-muted p-5" id="placeholder-sugestoes">
+            <i class="bi bi-hand-index fs-2 d-block mb-2"></i>
+            Selecione um lançamento à esquerda para ver sugestões de matching.
+          </div>
+          <div id="sugestoes-container" style="display:none;">
+            <div class="alert alert-light mb-2" id="info-lancamento"></div>
+            <div id="lista-sugestoes"></div>
+            <div class="mt-2 border-top pt-2">
+              <button class="btn btn-sm btn-outline-secondary w-100 mb-1" onclick="abrirManual()">
+                <i class="bi bi-pencil-square"></i> Registrar Manualmente
+              </button>
+              <button class="btn btn-sm btn-outline-danger w-100" onclick="ignorarAtual()">
+                <i class="bi bi-eye-slash"></i> Ignorar este Lançamento
+              </button>
+            </div>
+          </div>
+          <div class="spinner-border text-primary" id="spinner-sugestoes" style="display:none;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- COLUNA DIREITA: Resumo financeiro -->
+    <div class="col-md-3 h-100">
+      <div class="card h-100">
+        <div class="card-header py-2"><strong><i class="bi bi-bar-chart"></i> Resumo</strong></div>
+        <div class="card-body small">
+          <p class="text-muted mb-1">Importação</p>
+          <dl class="row mb-3">
+            <dt class="col-7">Total Débitos</dt>
+            <dd class="col-5 text-end text-danger">R$ {{ importacao.total_debitos|floatformat:2 }}</dd>
+            <dt class="col-7">Total Créditos</dt>
+            <dd class="col-5 text-end text-success">R$ {{ importacao.total_creditos|floatformat:2 }}</dd>
+            <dt class="col-7">Saldo</dt>
+            <dd class="col-5 text-end fw-bold">R$ {{ importacao.saldo_extrato|floatformat:2 }}</dd>
+          </dl>
+          <p class="text-muted mb-1">Pendentes</p>
+          <dl class="row mb-0">
+            <dt class="col-7">Débitos</dt>
+            <dd class="col-5 text-end text-danger">R$ {{ stats.total_debito_pendente|floatformat:2 }}</dd>
+            <dt class="col-7">Créditos</dt>
+            <dd class="col-5 text-end text-success">R$ {{ stats.total_credito_pendente|floatformat:2 }}</dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Modal de Lançamento Manual -->
+<div class="modal fade" id="modalManual" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-pencil-square"></i> Registrar Manualmente</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="form-manual" method="post" action="{% url 'bancario:conciliacao_manual' %}">
+          {% csrf_token %}
+          <input type="hidden" name="lancamento_id" id="manual-lancamento-id">
+          <div class="mb-3">
+            <label class="form-label">Descrição <span class="text-danger">*</span></label>
+            {{ manual_form.descricao_manual }}
+          </div>
+          <div class="mb-0">
+            <label class="form-label">Observações</label>
+            {{ manual_form.observacoes }}
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary" onclick="salvarManual()">
+          <i class="bi bi-check-circle"></i> Salvar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const CSRF = document.querySelector('[name=csrfmiddlewaretoken]').value;
+let lancamentoAtual = null;
+
+function mostrarAba(aba) {
+  ['pendentes','conciliados','ignorados'].forEach(a => {
+    document.getElementById('tab-' + a).style.display = a === aba ? '' : 'none';
+    document.getElementById('btn-tab-' + a).classList.toggle('active', a === aba);
+  });
+}
+
+function selecionarLancamento(id, tipo) {
+  document.querySelectorAll('.lancamento-item').forEach(el => el.classList.remove('table-active', 'fw-bold'));
+  const el = document.getElementById('lanc-' + id);
+  if (el) el.classList.add('table-active', 'fw-bold');
+
+  lancamentoAtual = id;
+  document.getElementById('placeholder-sugestoes').style.display = 'none';
+  document.getElementById('sugestoes-container').style.display = 'none';
+  document.getElementById('spinner-sugestoes').style.display = '';
+
+  fetch(`/bancario/ajax/sugestoes/${id}/`)
+    .then(r => r.json())
+    .then(dados => {
+      document.getElementById('spinner-sugestoes').style.display = 'none';
+      document.getElementById('sugestoes-container').style.display = '';
+      document.getElementById('info-lancamento').innerHTML =
+        `<strong>${dados.lancamento_tipo === 'DEBITO' ? '🔴 Débito' : '🟢 Crédito'}</strong>
+         &nbsp; R$ ${parseFloat(dados.lancamento_valor).toFixed(2)}
+         &nbsp;·&nbsp; ${dados.lancamento_data}
+         <div class="text-muted small">${dados.lancamento_descricao}</div>`;
+
+      const lista = document.getElementById('lista-sugestoes');
+      if (dados.sugestoes.length === 0) {
+        lista.innerHTML = '<div class="text-center text-muted py-3"><i class="bi bi-search"></i> Nenhuma sugestão encontrada.<br><small>Use "Registrar Manualmente" ou "Ignorar".</small></div>';
+        return;
+      }
+      lista.innerHTML = dados.sugestoes.map(s => `
+        <div class="card mb-2 border-${s.score_class}">
+          <div class="card-body py-2 px-3">
+            <div class="d-flex justify-content-between align-items-start">
+              <div class="small">${s.descricao}</div>
+              <span class="badge bg-${s.score_class} ms-2 flex-shrink-0">${s.score_label} (${s.score})</span>
+            </div>
+            <button class="btn btn-sm btn-${s.score_class} mt-2 w-100"
+              onclick="confirmar(${dados.lancamento_id}, '${s.tipo_operacao}', ${s.operacao_id}, ${s.score}, false)">
+              <i class="bi bi-check-circle"></i> Confirmar este Match
+            </button>
+          </div>
+        </div>
+      `).join('');
+    })
+    .catch(() => {
+      document.getElementById('spinner-sugestoes').style.display = 'none';
+      document.getElementById('lista-sugestoes').innerHTML = '<div class="alert alert-danger">Erro ao carregar sugestões.</div>';
+      document.getElementById('sugestoes-container').style.display = '';
+    });
+}
+
+function confirmar(lancamentoId, tipoOp, operacaoId, score, manual) {
+  const fd = new FormData();
+  fd.append('lancamento_id', lancamentoId);
+  fd.append('tipo_operacao', tipoOp);
+  fd.append('operacao_id', operacaoId);
+  fd.append('score', score);
+  fd.append('manual', manual ? 'true' : 'false');
+  fd.append('csrfmiddlewaretoken', CSRF);
+
+  fetch('{% url "bancario:conciliacao_confirmar" %}', {method:'POST', body:fd, headers:{'X-Requested-With':'XMLHttpRequest'}})
+    .then(r => r.json()).then(d => {
+      if (d.success) {
+        const el = document.getElementById('lanc-' + lancamentoId);
+        if (el) el.remove();
+        atualizarContadores(-1, 1, 0);
+        document.getElementById('painel-sugestoes').innerHTML =
+          '<div class="text-center text-success p-4"><i class="bi bi-check-circle-fill fs-2"></i><br>Lançamento conciliado!</div>';
+        setTimeout(() => {
+          document.getElementById('placeholder-sugestoes').style.display = '';
+          document.getElementById('painel-sugestoes').innerHTML = '';
+          lancamentoAtual = null;
+        }, 2000);
+      }
+    });
+}
+
+function ignorarAtual() {
+  if (!lancamentoAtual) return;
+  const fd = new FormData();
+  fd.append('lancamento_id', lancamentoAtual);
+  fd.append('csrfmiddlewaretoken', CSRF);
+
+  fetch('{% url "bancario:conciliacao_ignorar" %}', {method:'POST', body:fd, headers:{'X-Requested-With':'XMLHttpRequest'}})
+    .then(r => r.json()).then(d => {
+      if (d.success) {
+        const el = document.getElementById('lanc-' + lancamentoAtual);
+        if (el) el.remove();
+        atualizarContadores(-1, 0, 1);
+        document.getElementById('sugestoes-container').style.display = 'none';
+        document.getElementById('placeholder-sugestoes').style.display = '';
+        lancamentoAtual = null;
+      }
+    });
+}
+
+function desfazer(lancamentoId) {
+  const fd = new FormData();
+  fd.append('lancamento_id', lancamentoId);
+  fd.append('csrfmiddlewaretoken', CSRF);
+
+  fetch('{% url "bancario:conciliacao_desfazer" %}', {method:'POST', body:fd, headers:{'X-Requested-With':'XMLHttpRequest'}})
+    .then(r => r.json()).then(d => { if (d.success) location.reload(); });
+}
+
+function abrirManual() {
+  if (!lancamentoAtual) return;
+  document.getElementById('manual-lancamento-id').value = lancamentoAtual;
+  new bootstrap.Modal(document.getElementById('modalManual')).show();
+}
+
+function salvarManual() {
+  const form = document.getElementById('form-manual');
+  const fd = new FormData(form);
+  fd.append('csrfmiddlewaretoken', CSRF);
+  fd.append('X-Requested-With', 'XMLHttpRequest');
+
+  fetch('{% url "bancario:conciliacao_manual" %}', {
+    method:'POST', body:fd, headers:{'X-Requested-With':'XMLHttpRequest'}
+  }).then(r => r.json()).then(d => {
+    if (d.success) {
+      bootstrap.Modal.getInstance(document.getElementById('modalManual')).hide();
+      const el = document.getElementById('lanc-' + lancamentoAtual);
+      if (el) el.remove();
+      atualizarContadores(-1, 1, 0);
+      document.getElementById('sugestoes-container').style.display = 'none';
+      document.getElementById('placeholder-sugestoes').style.display = '';
+      lancamentoAtual = null;
+    }
+  });
+}
+
+function atualizarContadores(pendDelta, concDelta, ignDelta) {
+  const p = document.getElementById('cnt-pendentes');
+  const c = document.getElementById('cnt-conciliados');
+  const i = document.getElementById('cnt-ignorados');
+  p.textContent = Math.max(0, parseInt(p.textContent) + pendDelta);
+  c.textContent = Math.max(0, parseInt(c.textContent) + concDelta);
+  i.textContent = Math.max(0, parseInt(i.textContent) + ignDelta);
+}
+</script>
+{% endblock %}

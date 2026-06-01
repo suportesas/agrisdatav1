@@ -1,0 +1,234 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ adiantamento.numero_referencia }} — Adiantamento Internacional{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+  <!-- Header -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+        <div>
+          <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+            <a href="{% url 'adiantamentos:adiantamento_list' %}" class="btn btn-outline-secondary btn-sm">
+              <i class="bi bi-arrow-left"></i>
+            </a>
+            <h1 class="mb-0 fs-4"><i class="bi bi-cash-coin"></i> {{ adiantamento.numero_referencia }}</h1>
+            <span class="badge fs-6 bg-{% if adiantamento.status == 'QUITADO' %}success{% elif adiantamento.status == 'MIGRADO' %}info{% elif adiantamento.status == 'CANCELADO' %}secondary{% elif adiantamento.status == 'PARCIALMENTE_QUITADO' %}warning{% else %}primary{% endif %}">
+              {{ adiantamento.get_status_display }}
+            </span>
+          </div>
+          <p class="text-muted mb-0">{{ adiantamento.cliente.razao_social }} · Safra {{ adiantamento.safra_referencia }}</p>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+          {% if pode_aplicar %}
+          <a href="{% url 'adiantamentos:aplicar_desconto' adiantamento.pk %}" class="btn btn-success">
+            <i class="bi bi-check-circle"></i> Aplicar Desconto
+          </a>
+          <a href="{% url 'adiantamentos:pular_desconto' adiantamento.pk %}" class="btn btn-outline-warning">
+            <i class="bi bi-skip-forward"></i> Pular Embarque
+          </a>
+          {% endif %}
+          {% if pode_migrar %}
+          <a href="{% url 'adiantamentos:migrar_adiantamento' adiantamento.pk %}" class="btn btn-outline-info">
+            <i class="bi bi-arrow-right-circle"></i> Migrar Safra
+          </a>
+          {% endif %}
+          {% if pode_editar %}
+          <a href="{% url 'adiantamentos:adiantamento_edit' adiantamento.pk %}" class="btn btn-warning">
+            <i class="bi bi-pencil"></i> Editar
+          </a>
+          <a href="{% url 'adiantamentos:adiantamento_cancelar' adiantamento.pk %}" class="btn btn-outline-danger">
+            <i class="bi bi-x-circle"></i> Cancelar
+          </a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+
+    <!-- Dados + Saldo -->
+    <div class="col-lg-4">
+      <div class="card mb-3">
+        <div class="card-header"><i class="bi bi-info-circle"></i> Dados do Adiantamento</div>
+        <div class="card-body">
+          <dl class="row mb-0 small">
+            <dt class="col-5">Cliente</dt>
+            <dd class="col-7">{{ adiantamento.cliente.razao_social }}</dd>
+            <dt class="col-5">Safra</dt>
+            <dd class="col-7">{{ adiantamento.safra_referencia }}{% if adiantamento.safra %} / {{ adiantamento.safra }}{% endif %}</dd>
+            <dt class="col-5">Data</dt>
+            <dd class="col-7">{{ adiantamento.data_adiantamento|date:"d/m/Y" }}</dd>
+            <dt class="col-5">Moeda</dt>
+            <dd class="col-7">{{ adiantamento.moeda }}</dd>
+            <dt class="col-5">Valor Total</dt>
+            <dd class="col-7 fw-bold">{{ adiantamento.moeda }} {{ adiantamento.valor_estrangeiro|floatformat:2 }}</dd>
+            <dt class="col-5">Taxa Câmbio</dt>
+            <dd class="col-7">R$ {{ adiantamento.taxa_cambio|floatformat:4 }}</dd>
+            <dt class="col-5">Valor (BRL)</dt>
+            <dd class="col-7">R$ {{ adiantamento.valor_brl|floatformat:2 }}</dd>
+            {% if adiantamento.data_prevista_reembolso %}
+            <dt class="col-5">Prev. Reembolso</dt>
+            <dd class="col-7">{{ adiantamento.data_prevista_reembolso|date:"d/m/Y" }}</dd>
+            {% endif %}
+            <dt class="col-5">Regra</dt>
+            <dd class="col-7">
+              {% if adiantamento.tipo_regra_desconto == 'VALOR_FIXO' %}
+              Fixo: {{ adiantamento.moeda }} {{ adiantamento.valor_desconto_padrao|floatformat:2 }}/embarque
+              {% else %}
+              {{ adiantamento.percentual_desconto|floatformat:2 }}% da invoice
+              {% endif %}
+            </dd>
+            {% if adiantamento.invoice_origem %}
+            <dt class="col-5">Invoice Origem</dt>
+            <dd class="col-7"><a href="{% url 'faturamento:invoice_detail' adiantamento.invoice_origem.pk %}">{{ adiantamento.invoice_origem.numero }}</a></dd>
+            {% endif %}
+            {% if migracao_origem %}
+            <dt class="col-5">Migrado de</dt>
+            <dd class="col-7"><a href="{% url 'adiantamentos:adiantamento_detail' migracao_origem.adiantamento_origem.pk %}">{{ migracao_origem.adiantamento_origem.numero_referencia }}</a></dd>
+            {% endif %}
+          </dl>
+          {% if adiantamento.observacoes %}
+          <hr class="my-2">
+          <p class="small text-muted mb-0">{{ adiantamento.observacoes }}</p>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Saldo -->
+      <div class="card">
+        <div class="card-header"><i class="bi bi-piggy-bank"></i> Saldo Atual</div>
+        <div class="card-body text-center">
+          <div class="mb-2">
+            <small class="text-muted d-block">Total Adiantado</small>
+            <span class="fs-5 fw-bold">{{ adiantamento.moeda }} {{ adiantamento.valor_estrangeiro|floatformat:2 }}</span>
+          </div>
+          <div class="mb-2">
+            <small class="text-muted d-block">Total Descontado</small>
+            <span class="fs-5 fw-bold text-success">{{ adiantamento.moeda }} {{ adiantamento.total_descontado|floatformat:2 }}</span>
+          </div>
+          <hr>
+          <div class="mb-3">
+            <small class="text-muted d-block">Saldo Disponível</small>
+            <span class="fs-4 fw-bold {% if adiantamento.tem_saldo %}text-warning{% else %}text-success{% endif %}">
+              {{ adiantamento.moeda }} {{ adiantamento.saldo_estrangeiro|floatformat:2 }}
+            </span>
+          </div>
+          <div class="progress mb-1" style="height:10px">
+            <div class="progress-bar bg-success" style="width:{{ adiantamento.percentual_quitado|floatformat:0 }}%"></div>
+          </div>
+          <small class="text-muted">{{ adiantamento.percentual_quitado|floatformat:1 }}% quitado</small>
+        </div>
+      </div>
+    </div>
+
+    <!-- Timeline de descontos -->
+    <div class="col-lg-8">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <span><i class="bi bi-clock-history"></i> Histórico de Descontos</span>
+          {% if pode_aplicar %}
+          <a href="{% url 'adiantamentos:aplicar_desconto' adiantamento.pk %}" class="btn btn-sm btn-success">
+            <i class="bi bi-plus"></i> Aplicar Desconto
+          </a>
+          {% endif %}
+        </div>
+        {% if descontos %}
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Data</th>
+                <th>Invoice</th>
+                <th class="text-end">Valor Desconto</th>
+                <th>Taxa</th>
+                <th class="text-end">Valor BRL</th>
+                <th>Status</th>
+                <th class="text-end">Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for d in descontos %}
+              <tr>
+                <td>{{ d.data_desconto|date:"d/m/Y" }}</td>
+                <td>
+                  {% if d.invoice %}
+                  <a href="{% url 'faturamento:invoice_detail' d.invoice.pk %}">{{ d.invoice.numero }}</a>
+                  {% else %}
+                  <span class="text-muted">—</span>
+                  {% endif %}
+                  {% if d.motivo_pulo %}
+                  <br><small class="text-muted">{{ d.motivo_pulo|truncatechars:60 }}</small>
+                  {% endif %}
+                </td>
+                <td class="text-end">
+                  {% if d.valor_desconto_estrangeiro %}
+                  <strong>{{ adiantamento.moeda }} {{ d.valor_desconto_estrangeiro|floatformat:2 }}</strong>
+                  {% else %}—{% endif %}
+                </td>
+                <td>{{ d.taxa_cambio_aplicada|floatformat:4 }}</td>
+                <td class="text-end">
+                  {% if d.valor_desconto_brl %}
+                  R$ {{ d.valor_desconto_brl|floatformat:2 }}
+                  {% else %}—{% endif %}
+                </td>
+                <td>
+                  <span class="badge bg-{% if d.status == 'APLICADO' %}success{% elif d.status == 'PULADO' %}warning{% else %}secondary{% endif %}">
+                    {{ d.get_status_display }}
+                  </span>
+                </td>
+                <td class="text-end">
+                  {% if d.status == 'APLICADO' %}
+                  <form method="post" action="{% url 'adiantamentos:cancelar_desconto' d.pk %}" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Cancelar este desconto e reverter a invoice?')">
+                      <i class="bi bi-arrow-counterclockwise"></i>
+                    </button>
+                  </form>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="card-body text-center text-muted py-4">
+          <i class="bi bi-inbox fs-3 d-block mb-2"></i>
+          Nenhum desconto aplicado ainda.
+          {% if pode_aplicar %}
+          <br><a href="{% url 'adiantamentos:aplicar_desconto' adiantamento.pk %}" class="btn btn-success mt-2">Aplicar Primeiro Desconto</a>
+          {% endif %}
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Migrações geradas -->
+      {% if migracoes_geradas %}
+      <div class="card mt-3">
+        <div class="card-header"><i class="bi bi-arrow-right-circle"></i> Migrações Geradas</div>
+        <div class="table-responsive">
+          <table class="table table-sm mb-0">
+            <thead class="table-light"><tr><th>Destino</th><th>Safra</th><th class="text-end">Saldo Migrado</th><th>Data</th></tr></thead>
+            <tbody>
+              {% for m in migracoes_geradas %}
+              <tr>
+                <td><a href="{% url 'adiantamentos:adiantamento_detail' m.adiantamento_destino.pk %}">{{ m.adiantamento_destino.numero_referencia }}</a></td>
+                <td>{{ m.adiantamento_destino.safra_referencia }}</td>
+                <td class="text-end">{{ adiantamento.moeda }} {{ m.saldo_migrado_estrangeiro|floatformat:2 }}</td>
+                <td>{{ m.data_migracao|date:"d/m/Y" }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+{% endblock %}

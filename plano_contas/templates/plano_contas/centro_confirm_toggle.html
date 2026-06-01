@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ centro.ativo|yesno:"Desativar,Ativar" }} Centro — {{ centro.codigo }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="row justify-content-center">
+    <div class="col-md-6">
+      <div class="card mt-4">
+        <div class="card-header bg-{% if centro.ativo %}danger{% else %}success{% endif %} text-white">
+          <h5 class="mb-0">{% if centro.ativo %}Desativar{% else %}Ativar{% endif %} Centro de Custo</h5>
+        </div>
+        <div class="card-body">
+          <p>Você está prestes a <strong>{% if centro.ativo %}desativar{% else %}ativar{% endif %}</strong> o centro:</p>
+          <div class="alert alert-light">
+            <code>{{ centro.codigo }}</code> — <strong>{{ centro.nome }}</strong>
+          </div>
+
+          {% if centro.ativo and tem_subcentros %}
+          <div class="alert alert-danger">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            Este centro possui subcentros ativos. Desative-os primeiro.
+          </div>
+          {% endif %}
+
+          <div class="d-flex gap-2">
+            {% if not (centro.ativo and tem_subcentros) %}
+            <form method="post">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-{% if centro.ativo %}danger{% else %}success{% endif %}">
+                Confirmar {% if centro.ativo %}Desativação{% else %}Ativação{% endif %}
+              </button>
+            </form>
+            {% endif %}
+            <a href="{% url 'plano_contas:centro_detail' centro.pk %}" class="btn btn-outline-secondary">Cancelar</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

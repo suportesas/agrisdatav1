@@ -5,11 +5,32 @@
 {% block content %}
 <div class="container-fluid py-4">
   <div class="d-flex align-items-center mb-4">
-    <a href="{% url 'faturamento:invoice_list' %}" class="btn btn-outline-secondary me-3">
+    <a href="{% if invoice %}{% url 'faturamento:invoice_detail' invoice.pk %}{% else %}{% url 'faturamento:invoice_list' %}{% endif %}" class="btn btn-outline-secondary me-3">
       <i class="bi bi-arrow-left"></i>
     </a>
     <h3 class="mb-0">{{ title }}</h3>
   </div>
+
+  {% if editing_emitida %}
+  <div class="alert alert-warning d-flex align-items-center gap-2 mb-3">
+    <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+    <div>
+      <strong>Atenção:</strong> Esta invoice já foi <strong>emitida</strong>. Qualquer alteração salva será aplicada imediatamente ao documento.
+      Se necessário, gere uma nova invoice corrigida e cancele esta.
+    </div>
+  </div>
+  {% endif %}
+
+  {% if pedido_origem %}
+  <div class="alert alert-info d-flex align-items-center gap-2 mb-3">
+    <i class="bi bi-bag-check fs-5"></i>
+    <div>
+      Pré-preenchida a partir do <strong>Pedido de Venda {{ pedido_origem.numero }}</strong>
+      — {{ pedido_origem.cliente.razao_social }}.
+      Os itens foram importados do pedido; revise pesos e containers antes de salvar.
+    </div>
+  </div>
+  {% endif %}
 
   <form method="post" id="invoice-form">
     {% csrf_token %}
@@ -171,6 +192,8 @@
 </div>
 
 <script>
+const PEDIDO_ITEMS = {{ pedido_items_json|default:"[]" }};
+
 (function() {
   const TOTAL_FORMS = document.getElementById('id_itens-TOTAL_FORMS');
   const body = document.getElementById('items-body');
@@ -201,6 +224,48 @@
   }
 
   body.querySelectorAll('.item-row').forEach(r => attachRemove(r));
+
+  // Pré-preenchimento de itens do Pedido de Venda
+  if (PEDIDO_ITEMS && PEDIDO_ITEMS.length > 0) {
+    // Remove a linha vazia inicial (extra=1 do formset)
+    const emptyRows = body.querySelectorAll('.item-row');
+    emptyRows.forEach(r => {
+      const chk = r.querySelector('input[type=checkbox][name$="-DELETE"]');
+      if (chk) { chk.checked = true; r.style.display = 'none'; }
+      else r.remove();
+    });
+
+    PEDIDO_ITEMS.forEach(item => {
+      const idx = parseInt(TOTAL_FORMS.value);
+      const tmpl = document.querySelector('.item-row') || body.querySelector('tr');
+      // Cria nova linha clonando do template (pode estar oculto)
+      const allRows = body.querySelectorAll('tr');
+      const srcRow = allRows[0];
+      if (!srcRow) return;
+      const clone = srcRow.cloneNode(true);
+      clone.style.display = '';
+      clone.querySelectorAll('input, select, textarea').forEach(el => {
+        el.name = el.name.replace(/-\d+-/, `-${idx}-`);
+        el.id = el.id ? el.id.replace(/-\d+-/, `-${idx}-`) : '';
+        if (el.type === 'checkbox') el.checked = false;
+        else el.value = '';
+      });
+      // Preenche campos
+      const setVal = (suffix, val) => {
+        const el = clone.querySelector(`[name$="-${suffix}"]`);
+        if (el && val !== undefined) el.value = val;
+      };
+      setVal('descricao', item.descricao);
+      setVal('quantidade', item.quantidade);
+      setVal('unidade', item.unidade);
+      setVal('valor_unitario_fob', item.valor_unitario_fob);
+      setVal('peso_bruto_kg', item.peso_bruto_kg || '0.000');
+      setVal('peso_liquido_kg', item.peso_liquido_kg || '0.000');
+      body.appendChild(clone);
+      TOTAL_FORMS.value = idx + 1;
+      attachRemove(clone);
+    });
+  }
 
   // Pré-fill do booking via AJAX
   const bookingSel = document.getElementById('id_booking');

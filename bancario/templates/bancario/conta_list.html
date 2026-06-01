@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+
+{% block title %}Contas Bancárias — {{ request.user.empresa.nome }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+          <h1><i class="bi bi-bank"></i> Contas Bancárias</h1>
+          <p class="text-muted mb-0">{{ request.user.empresa.nome }}</p>
+        </div>
+        <div class="d-flex gap-2">
+          <a href="{% url 'bancario:relatorio_conciliacao' %}" class="btn btn-outline-info">
+            <i class="bi bi-check2-all"></i> Conciliação
+          </a>
+          <a href="{% url 'bancario:conta_bancaria_create' %}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Nova Conta
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% if contas %}
+  <div class="row g-3">
+    {% for conta in contas %}
+    <div class="col-md-6 col-xl-4">
+      <div class="card h-100 {% if not conta.ativa %}opacity-50{% endif %}">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <div>
+            <strong>{{ conta.banco }}</strong>
+            {% if conta.codigo_banco %}<small class="text-muted ms-1">({{ conta.codigo_banco }})</small>{% endif %}
+          </div>
+          <div class="d-flex gap-1">
+            {% if conta.conta_principal %}
+            <span class="badge bg-primary">Principal</span>
+            {% endif %}
+            <span class="badge bg-{% if conta.ativa %}success{% else %}secondary{% endif %}">
+              {% if conta.ativa %}Ativa{% else %}Inativa{% endif %}
+            </span>
+          </div>
+        </div>
+        <div class="card-body">
+          <dl class="row mb-2">
+            <dt class="col-5 text-muted small">Tipo</dt>
+            <dd class="col-7 small">{{ conta.get_tipo_conta_display }}</dd>
+            <dt class="col-5 text-muted small">Agência</dt>
+            <dd class="col-7 small">{{ conta.agencia }}{% if conta.agencia_digito %}-{{ conta.agencia_digito }}{% endif %}</dd>
+            <dt class="col-5 text-muted small">Conta</dt>
+            <dd class="col-7 small">{{ conta.conta }}{% if conta.conta_digito %}-{{ conta.conta_digito }}{% endif %}</dd>
+            {% if conta.saldo_inicial is not None %}
+            <dt class="col-5 text-muted small">Saldo Inicial</dt>
+            <dd class="col-7 small">R$ {{ conta.saldo_inicial|floatformat:2 }}</dd>
+            {% endif %}
+          </dl>
+          {% if conta.pix_habilitado %}
+          <span class="badge bg-info text-dark"><i class="bi bi-qr-code me-1"></i>PIX habilitado</span>
+          {% endif %}
+          {% if conta.ultima_importacao %}
+          <div class="mt-2 small text-muted">
+            <i class="bi bi-arrow-up-circle me-1"></i>
+            Última importação: {{ conta.ultima_importacao.importado_em|date:"d/m/Y" }}
+            <span class="badge bg-{% if conta.ultima_importacao.status == 'CONCLUIDA' %}success{% elif conta.ultima_importacao.status == 'ERRO' %}danger{% else %}warning{% endif %} ms-1">
+              {{ conta.ultima_importacao.get_status_display }}
+            </span>
+          </div>
+          {% endif %}
+        </div>
+        <div class="card-footer d-flex gap-2">
+          <a href="{% url 'bancario:conta_bancaria_detail' conta.pk %}" class="btn btn-sm btn-outline-primary flex-fill">
+            <i class="bi bi-eye"></i> Ver
+          </a>
+          {% if conta.ativa %}
+          <a href="{% url 'bancario:importar_extrato' conta.pk %}" class="btn btn-sm btn-outline-success flex-fill">
+            <i class="bi bi-upload"></i> Importar
+          </a>
+          {% endif %}
+          <a href="{% url 'bancario:conta_bancaria_edit' conta.pk %}" class="btn btn-sm btn-outline-warning">
+            <i class="bi bi-pencil"></i>
+          </a>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="card">
+    <div class="card-body text-center py-5 text-muted">
+      <i class="bi bi-bank fs-1 d-block mb-3"></i>
+      <h5>Nenhuma conta bancária cadastrada</h5>
+      <p class="mb-3">Cadastre as contas bancárias da empresa para habilitar a conciliação bancária.</p>
+      <a href="{% url 'bancario:conta_bancaria_create' %}" class="btn btn-primary">
+        <i class="bi bi-plus-circle"></i> Cadastrar Primeira Conta
+      </a>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

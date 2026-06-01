@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+
+{% block title %}Árvore do Plano de Contas — {{ request.user.empresa.nome }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+  <!-- Header -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+          <h1><i class="bi bi-diagram-2"></i> Árvore do Plano de Contas</h1>
+          <p class="text-muted mb-0">{{ request.user.empresa.nome }}</p>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+          <button class="btn btn-outline-secondary btn-sm" onclick="expandAll()">
+            <i class="bi bi-arrows-expand"></i> Expandir Tudo
+          </button>
+          <button class="btn btn-outline-secondary btn-sm" onclick="collapseAll()">
+            <i class="bi bi-arrows-collapse"></i> Colapsar Tudo
+          </button>
+          <a href="{% url 'plano_contas:conta_list' %}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-list-ul"></i> Ver Lista
+          </a>
+          <a href="{% url 'plano_contas:conta_create' %}" class="btn btn-primary btn-sm">
+            <i class="bi bi-plus-circle"></i> Nova Conta
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filtro de Tipo -->
+  <div class="card mb-3">
+    <div class="card-body py-2">
+      <form method="get" class="d-flex gap-2 align-items-center flex-wrap">
+        <label class="form-label mb-0">Tipo:</label>
+        <select name="tipo" class="form-select form-select-sm" style="width: auto;" onchange="this.form.submit()">
+          <option value="">Todos</option>
+          {% for tipo_key, tipo_label in tipos %}
+          <option value="{{ tipo_key }}" {% if tipo_filter == tipo_key %}selected{% endif %}>{{ tipo_label }}</option>
+          {% endfor %}
+        </select>
+        {% if tipo_filter %}
+        <a href="{% url 'plano_contas:conta_arvore' %}" class="btn btn-sm btn-outline-secondary">Limpar</a>
+        {% endif %}
+      </form>
+    </div>
+  </div>
+
+  <!-- Árvore -->
+  <div class="card">
+    <div class="card-body">
+      <ul class="list-unstyled mb-0" id="arvore-raiz">
+        {% for conta in contas_raiz %}
+          {% include 'plano_contas/partials/conta_node.html' with conta=conta nivel=0 %}
+        {% empty %}
+        <li class="text-center py-4 text-muted">
+          <i class="bi bi-inbox fs-3 d-block mb-2"></i>
+          Nenhuma conta cadastrada ainda.
+          <a href="{% url 'plano_contas:conta_create' %}">Cadastre a primeira conta</a>.
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function expandAll() {
+  document.querySelectorAll('.conta-children').forEach(el => el.classList.remove('d-none'));
+  document.querySelectorAll('.toggle-icon').forEach(el => {
+    el.classList.remove('bi-chevron-right');
+    el.classList.add('bi-chevron-down');
+  });
+}
+function collapseAll() {
+  document.querySelectorAll('.conta-children').forEach(el => el.classList.add('d-none'));
+  document.querySelectorAll('.toggle-icon').forEach(el => {
+    el.classList.remove('bi-chevron-down');
+    el.classList.add('bi-chevron-right');
+  });
+}
+function toggleNode(btn) {
+  const children = btn.closest('li').querySelector('.conta-children');
+  const icon = btn.querySelector('.toggle-icon');
+  if (children) {
+    children.classList.toggle('d-none');
+    icon.classList.toggle('bi-chevron-right');
+    icon.classList.toggle('bi-chevron-down');
+  }
+}
+</script>
+{% endblock %}

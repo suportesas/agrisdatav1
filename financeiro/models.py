@@ -270,12 +270,32 @@ class ContaPagar(models.Model):
         default=timezone.now
     )
     
+    # Categorização contábil/gerencial
+    conta_contabil = models.ForeignKey(
+        'plano_contas.ContaContabil',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='contas_pagar',
+        verbose_name='Conta Contábil',
+        limit_choices_to={'analitica': True, 'ativo': True},
+    )
+    centro_custo = models.ForeignKey(
+        'plano_contas.CentroCusto',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='contas_pagar',
+        verbose_name='Centro de Custo',
+        limit_choices_to={'ativo': True},
+    )
+
     # Auditoria
     observacoes = models.TextField(
         'Observações',
         blank=True
     )
-    
+
     criado_por = models.ForeignKey(
         'usuarios.Usuario',
         on_delete=models.SET_NULL,
@@ -528,7 +548,16 @@ class PagamentoContaPagar(models.Model):
         max_length=100,
         blank=True
     )
-    
+
+    conta_bancaria = models.ForeignKey(
+        'bancario.ContaBancaria',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='pagamentos_efetuados',
+        verbose_name='Conta Bancária',
+    )
+
     data_pagamento = models.DateField(
         'Data do Pagamento'
     )
@@ -764,6 +793,26 @@ class ContaReceber(models.Model):
     descricao = models.CharField('Descrição / Referência', max_length=200)
     observacoes = models.TextField('Observações', blank=True)
 
+    # Categorização contábil/gerencial
+    conta_contabil = models.ForeignKey(
+        'plano_contas.ContaContabil',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='contas_receber',
+        verbose_name='Conta Contábil',
+        limit_choices_to={'analitica': True, 'ativo': True},
+    )
+    centro_custo = models.ForeignKey(
+        'plano_contas.CentroCusto',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='contas_receber',
+        verbose_name='Centro de Custo',
+        limit_choices_to={'ativo': True},
+    )
+
     criado_por = models.ForeignKey(
         'usuarios.Usuario',
         on_delete=models.SET_NULL,
@@ -900,6 +949,14 @@ class RecebimentoContaReceber(models.Model):
     forma_pagamento = models.CharField('Forma de Pagamento', max_length=20, choices=FORMA_CHOICES)
     numero_documento = models.CharField('Nº Documento / Referência', max_length=100, blank=True)
     banco = models.CharField('Banco', max_length=100, blank=True)
+    conta_bancaria = models.ForeignKey(
+        'bancario.ContaBancaria',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='recebimentos_efetuados',
+        verbose_name='Conta Bancária',
+    )
     comprovante = models.FileField(
         'Comprovante', upload_to='recebimentos/%Y/%m/', null=True, blank=True,
     )

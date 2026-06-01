@@ -26,6 +26,11 @@
       </form>
       {% endif %}
       {% if pedido.status == 'APROVADO' or pedido.status == 'CONFIRMADO' %}
+      {% if pedido.tipo_venda == 'EXPORTACAO' and not pedido.invoice %}
+      <a href="{% url 'faturamento:invoice_create' %}?pedido={{ pedido.pk }}" class="btn btn-outline-primary">
+        <i class="bi bi-file-earmark-text me-1"></i>Gerar Invoice
+      </a>
+      {% endif %}
       <form method="post" action="{% url 'vendas:pedido_emitir' pedido.pk %}" class="d-inline">
         {% csrf_token %}
         <button type="submit" class="btn btn-success" onclick="return confirm('Emitir documentos e concluir o pedido?')">

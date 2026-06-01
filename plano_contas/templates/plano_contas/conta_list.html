@@ -1,0 +1,191 @@
+{% extends 'base.html' %}
+
+{% block title %}Plano de Contas — {{ request.user.empresa.nome }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+  <!-- Header -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+          <h1><i class="bi bi-diagram-3"></i> Plano de Contas</h1>
+          <p class="text-muted mb-0">{{ request.user.empresa.nome }}</p>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+          <a href="{% url 'plano_contas:conta_arvore' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-diagram-2"></i> Ver Árvore
+          </a>
+          <a href="{% url 'plano_contas:balancete' %}" class="btn btn-outline-info">
+            <i class="bi bi-file-earmark-bar-graph"></i> Balancete
+          </a>
+          <a href="{% url 'plano_contas:conta_create' %}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Nova Conta
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cards de Totais por Tipo -->
+  <div class="row mb-4">
+    {% for tipo_key, tipo_label, contagem in totais_lista %}
+    <div class="col-md-2 col-sm-4 mb-2">
+      <div class="card h-100 {% if tipo_filter == tipo_key %}border-primary{% endif %}">
+        <div class="card-body text-center py-2">
+          <p class="card-title mb-1 small text-muted">{{ tipo_label }}</p>
+          <h4 class="mb-0">
+            <a href="?tipo={{ tipo_key }}" class="text-decoration-none text-dark">
+              {{ contagem }}
+            </a>
+          </h4>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Filtros -->
+  <div class="card mb-4">
+    <div class="card-body">
+      <form method="get" class="row g-3 align-items-end">
+        <div class="col-md-4">
+          <label class="form-label">Buscar</label>
+          <input type="text" name="q" class="form-control" placeholder="Código ou nome..." value="{{ q }}">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Tipo</label>
+          <select name="tipo" class="form-select">
+            <option value="">Todos os tipos</option>
+            {% for tipo_key, tipo_label in tipos %}
+            <option value="{{ tipo_key }}" {% if tipo_filter == tipo_key %}selected{% endif %}>{{ tipo_label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">Situação</label>
+          <select name="ativo" class="form-select">
+            <option value="true" {% if ativo_filter == 'true' %}selected{% endif %}>Ativas</option>
+            <option value="false" {% if ativo_filter == 'false' %}selected{% endif %}>Inativas</option>
+            <option value="todos" {% if ativo_filter == 'todos' %}selected{% endif %}>Todas</option>
+          </select>
+        </div>
+        <div class="col-md-3 d-flex gap-2">
+          <button type="submit" class="btn btn-primary w-100">
+            <i class="bi bi-funnel"></i> Filtrar
+          </button>
+          <a href="{% url 'plano_contas:conta_list' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-x-circle"></i>
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Tabela -->
+  <div class="card">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Código</th>
+            <th>Nome</th>
+            <th>Tipo</th>
+            <th>Natureza</th>
+            <th class="text-center">Nível</th>
+            <th class="text-center">Analítica</th>
+            <th class="text-center">Situação</th>
+            <th class="text-end">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for conta in page_obj.object_list %}
+          <tr>
+            <td style="padding-left: calc(0.75rem + {{ conta.get_indent }}px)">
+              <code class="{% if not conta.analitica %}text-secondary{% endif %}">{{ conta.codigo }}</code>
+            </td>
+            <td>
+              {% if not conta.analitica %}
+              <strong>{{ conta.nome }}</strong>
+              {% else %}
+              {{ conta.nome }}
+              {% endif %}
+            </td>
+            <td>
+              <span class="badge bg-{{ conta.badge_tipo }}">{{ conta.get_tipo_display }}</span>
+            </td>
+            <td><small class="text-muted">{{ conta.get_natureza_display }}</small></td>
+            <td class="text-center"><span class="badge bg-light text-dark">{{ conta.nivel }}</span></td>
+            <td class="text-center">
+              {% if conta.analitica %}
+              <i class="bi bi-check-circle-fill text-success"></i>
+              {% else %}
+              <i class="bi bi-dash-circle text-muted"></i>
+              {% endif %}
+            </td>
+            <td class="text-center">
+              {% if conta.ativo %}
+              <span class="badge bg-success">Ativa</span>
+              {% else %}
+              <span class="badge bg-secondary">Inativa</span>
+              {% endif %}
+            </td>
+            <td class="text-end">
+              <a href="{% url 'plano_contas:conta_detail' conta.pk %}" class="btn btn-sm btn-outline-primary" title="Ver detalhe">
+                <i class="bi bi-eye"></i>
+              </a>
+              <a href="{% url 'plano_contas:conta_edit' conta.pk %}" class="btn btn-sm btn-outline-warning" title="Editar">
+                <i class="bi bi-pencil"></i>
+              </a>
+              <a href="{% url 'plano_contas:conta_create' %}?pai={{ conta.pk }}" class="btn btn-sm btn-outline-success" title="Adicionar subconta">
+                <i class="bi bi-plus"></i>
+              </a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="8" class="text-center py-4 text-muted">
+              <i class="bi bi-inbox fs-3 d-block mb-2"></i>
+              Nenhuma conta encontrada.
+              <a href="{% url 'plano_contas:conta_create' %}">Cadastre a primeira conta</a>
+              ou execute o comando <code>seed_plano_contas</code> para importar o plano padrão.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Paginação -->
+    {% if page_obj.has_other_pages %}
+    <div class="card-footer">
+      <nav>
+        <ul class="pagination pagination-sm mb-0">
+          {% if page_obj.has_previous %}
+          <li class="page-item">
+            <a class="page-link" href="?page=1&q={{ q }}&tipo={{ tipo_filter }}&ativo={{ ativo_filter }}">«</a>
+          </li>
+          <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}&q={{ q }}&tipo={{ tipo_filter }}&ativo={{ ativo_filter }}">‹</a>
+          </li>
+          {% endif %}
+          <li class="page-item active">
+            <span class="page-link">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+          </li>
+          {% if page_obj.has_next %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}&q={{ q }}&tipo={{ tipo_filter }}&ativo={{ ativo_filter }}">›</a>
+          </li>
+          <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}&q={{ q }}&tipo={{ tipo_filter }}&ativo={{ ativo_filter }}">»</a>
+          </li>
+          {% endif %}
+        </ul>
+      </nav>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

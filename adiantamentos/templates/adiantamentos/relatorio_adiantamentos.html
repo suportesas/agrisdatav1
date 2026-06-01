@@ -1,0 +1,141 @@
+{% extends 'base.html' %}
+{% block title %}Relatório de Adiantamentos Internacionais{% endblock %}
+{% block content %}
+<div class="container-fluid">
+
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <h1 class="mb-0"><i class="bi bi-graph-up"></i> Relatório de Adiantamentos</h1>
+          <p class="text-muted mb-0">Posição consolidada por cliente e safra</p>
+        </div>
+        <a href="{% url 'adiantamentos:adiantamento_list' %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> Voltar</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <div class="card mb-4">
+    <div class="card-body">
+      <form method="get" class="row g-2 align-items-end">
+        <div class="col-sm-2">
+          <label class="form-label small mb-1">De</label>
+          <input type="date" name="data_inicio" class="form-control form-control-sm" value="{{ filtros.data_inicio }}">
+        </div>
+        <div class="col-sm-2">
+          <label class="form-label small mb-1">Até</label>
+          <input type="date" name="data_fim" class="form-control form-control-sm" value="{{ filtros.data_fim }}">
+        </div>
+        <div class="col-sm-3">
+          <label class="form-label small mb-1">Cliente</label>
+          <select name="cliente" class="form-select form-select-sm">
+            <option value="">Todos</option>
+            {% for c in clientes %}
+            <option value="{{ c.pk }}" {% if filtros.cliente_id == c.pk|stringformat:"s" %}selected{% endif %}>{{ c.razao_social }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-sm-2">
+          <label class="form-label small mb-1">Safra</label>
+          <input type="text" name="safra_referencia" class="form-control form-control-sm" value="{{ filtros.safra_referencia }}" placeholder="2025/2026">
+        </div>
+        <div class="col-sm-2">
+          <label class="form-label small mb-1">Status</label>
+          <select name="status" class="form-select form-select-sm">
+            <option value="">Todos</option>
+            {% for val, label in status_choices %}
+            <option value="{{ val }}" {% if filtros.status == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-sm-1">
+          <button type="submit" class="btn btn-sm btn-primary w-100"><i class="bi bi-search"></i></button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Totais -->
+  <div class="row g-3 mb-4">
+    {% if agg.total_usd %}
+    <div class="col-sm-4">
+      <div class="card text-center border-success">
+        <div class="card-body py-3">
+          <p class="text-muted small mb-1">Total USD</p>
+          <h4 class="text-success">USD {{ agg.total_usd|floatformat:2 }}</h4>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+    {% if agg.total_eur %}
+    <div class="col-sm-4">
+      <div class="card text-center border-primary">
+        <div class="card-body py-3">
+          <p class="text-muted small mb-1">Total EUR</p>
+          <h4 class="text-primary">EUR {{ agg.total_eur|floatformat:2 }}</h4>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+    <div class="col-sm-4">
+      <div class="card text-center">
+        <div class="card-body py-3">
+          <p class="text-muted small mb-1">Total BRL (conversão)</p>
+          <h4>R$ {{ agg.total_brl|floatformat:2 }}</h4>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabela -->
+  <div class="card">
+    <div class="card-body p-0">
+      {% if adiantamentos %}
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Referência</th>
+              <th>Cliente</th>
+              <th>Safra</th>
+              <th>Moeda</th>
+              <th class="text-end">Valor Total</th>
+              <th class="text-end">Descontado</th>
+              <th class="text-end">Saldo</th>
+              <th>Status</th>
+              <th>Data</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for a in adiantamentos %}
+            <tr>
+              <td><a href="{% url 'adiantamentos:adiantamento_detail' a.pk %}">{{ a.numero_referencia }}</a></td>
+              <td>{{ a.cliente.razao_social }}</td>
+              <td>{{ a.safra_referencia }}</td>
+              <td>{{ a.moeda }}</td>
+              <td class="text-end">{{ a.valor_estrangeiro|floatformat:2 }}</td>
+              <td class="text-end text-success">{{ a.total_descontado|floatformat:2 }}</td>
+              <td class="text-end {% if a.tem_saldo %}fw-bold text-warning{% else %}text-success{% endif %}">{{ a.saldo_estrangeiro|floatformat:2 }}</td>
+              <td>
+                <span class="badge bg-{% if a.status == 'QUITADO' %}success{% elif a.status == 'MIGRADO' %}info{% elif a.status == 'CANCELADO' %}secondary{% elif a.status == 'PARCIALMENTE_QUITADO' %}warning{% else %}primary{% endif %}">
+                  {{ a.get_status_display }}
+                </span>
+              </td>
+              <td>{{ a.data_adiantamento|date:"d/m/Y" }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="text-center text-muted py-5">
+        <i class="bi bi-inbox fs-2 d-block mb-2"></i>
+        Nenhum adiantamento encontrado com os filtros aplicados.
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}

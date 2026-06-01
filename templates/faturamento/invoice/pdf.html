@@ -149,6 +149,9 @@
     <tr><td>Goods Value / Valor da Mercadoria</td><td class="text-right">{{ invoice.moeda }} {{ invoice.valor_mercadoria|floatformat:2 }}</td></tr>
     {% if invoice.valor_frete %}<tr><td>Freight / Frete</td><td class="text-right">{{ invoice.moeda }} {{ invoice.valor_frete|floatformat:2 }}</td></tr>{% endif %}
     {% if invoice.valor_seguro %}<tr><td>Insurance / Seguro</td><td class="text-right">{{ invoice.moeda }} {{ invoice.valor_seguro|floatformat:2 }}</td></tr>{% endif %}
+    {% if invoice.valor_desconto_adiantamento %}
+    <tr><td>ADVANCE DISCOUNT{% if desconto_adiantamento %} (Contract {{ desconto_adiantamento.adiantamento.numero_referencia }}){% endif %}</td><td class="text-right" style="color:#c00">– {{ invoice.moeda }} {{ invoice.valor_desconto_adiantamento|floatformat:2 }}</td></tr>
+    {% endif %}
     <tr class="total-row"><td>TOTAL {{ invoice.incoterm }}</td><td class="text-right">{{ invoice.moeda }} {{ invoice.valor_total|floatformat:2 }}</td></tr>
   </tbody>
 </table>

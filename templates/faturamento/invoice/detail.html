@@ -54,6 +54,37 @@
     <span class="badge bg-secondary fs-6 ms-1">{{ invoice.moeda }}</span>
   </div>
 
+  {% if desconto_adiantamento %}
+  <div class="alert alert-success d-flex align-items-center gap-3 mb-3">
+    <i class="bi bi-check-circle-fill fs-4"></i>
+    <div>
+      <strong>Desconto de Adiantamento Aplicado:</strong>
+      {{ invoice.moeda }} {{ invoice.valor_desconto_adiantamento|floatformat:2 }}
+      — Contrato <strong>{{ desconto_adiantamento.adiantamento.numero_referencia }}</strong>
+      (Safra {{ desconto_adiantamento.adiantamento.safra_referencia }})
+      <br><small>
+        <a href="{% url 'adiantamentos:adiantamento_detail' desconto_adiantamento.adiantamento.pk %}">Ver adiantamento</a>
+      </small>
+    </div>
+  </div>
+  {% elif adiantamentos_ativos %}
+  <div class="alert alert-warning d-flex align-items-center gap-3 mb-3">
+    <i class="bi bi-cash-coin fs-4"></i>
+    <div>
+      <strong>Este cliente possui adiantamento(s) com saldo disponível:</strong>
+      {% for a in adiantamentos_ativos %}
+      <span class="badge bg-warning text-dark ms-1">{{ a.numero_referencia }} · Saldo {{ a.moeda }} {{ a.saldo_estrangeiro|floatformat:2 }}</span>
+      {% endfor %}
+    </div>
+    <div class="ms-auto">
+      <a href="{% url 'adiantamentos:aplicar_desconto' adiantamentos_ativos.first.pk %}?invoice={{ invoice.pk }}"
+         class="btn btn-sm btn-warning text-nowrap">
+        <i class="bi bi-check-circle"></i> Aplicar Desconto
+      </a>
+    </div>
+  </div>
+  {% endif %}
+
   <div class="row g-3">
     <div class="col-md-6">
       <div class="card border-0 shadow-sm h-100">

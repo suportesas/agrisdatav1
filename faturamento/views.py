@@ -493,7 +493,11 @@ def invoice_create(request):
         return redirect('dashboard:index')
 
     booking_id = request.GET.get('booking')
+    pedido_id = request.GET.get('pedido')
     initial = {}
+    pedido_origem = None
+    pedido_items_json = '[]'
+
     if booking_id:
         from exportacao.models import Booking
         try:
@@ -510,6 +514,35 @@ def invoice_create(request):
         except Exception:
             pass
 
+    if pedido_id:
+        from vendas.models import PedidoVenda
+        import json as _json
+        try:
+            pedido_origem = PedidoVenda.objects.get(pk=pedido_id, empresa=empresa)
+            initial['cliente'] = pedido_origem.cliente
+            initial['moeda'] = pedido_origem.moeda
+            if pedido_origem.taxa_cambio:
+                initial['taxa_cambio'] = pedido_origem.taxa_cambio
+            if pedido_origem.condicao_pagamento:
+                initial['condicao_pagamento'] = pedido_origem.condicao_pagamento
+            if pedido_origem.valor_frete:
+                initial['valor_frete'] = pedido_origem.valor_frete
+            if pedido_origem.observacoes:
+                initial['observacoes'] = pedido_origem.observacoes
+            pedido_items_json = _json.dumps([
+                {
+                    'descricao': item.descricao,
+                    'quantidade': str(item.quantidade),
+                    'unidade': item.unidade,
+                    'valor_unitario_fob': str(item.preco_unitario),
+                    'peso_bruto_kg': '0.000',
+                    'peso_liquido_kg': '0.000',
+                }
+                for item in pedido_origem.itens.all()
+            ])
+        except Exception:
+            pass
+
     if request.method == 'POST':
         form = InvoiceExportacaoForm(request.POST, empresa=empresa)
         formset = ItemInvoiceFormSet(request.POST, prefix='itens')
@@ -520,6 +553,16 @@ def invoice_create(request):
             formset.instance = invoice
             formset.save()
             invoice.calcular_totais()
+            # Vincula pedido à invoice se veio de um pedido
+            if pedido_id:
+                from vendas.models import PedidoVenda
+                try:
+                    ped = PedidoVenda.objects.get(pk=pedido_id, empresa=empresa)
+                    if not ped.invoice_id:
+                        ped.invoice = invoice
+                        ped.save(update_fields=['invoice'])
+                except Exception:
+                    pass
             messages.success(request, f'Invoice {invoice.numero} criada com sucesso.')
             return redirect('faturamento:invoice_detail', pk=invoice.pk)
     else:
@@ -533,6 +576,8 @@ def invoice_create(request):
         'form': form,
         'formset': formset,
         'title': 'Nova Invoice de Exportação',
+        'pedido_origem': pedido_origem,
+        'pedido_items_json': pedido_items_json,
     })
 
 
@@ -556,7 +601,20 @@ def _gerar_numero_invoice(empresa):
 def invoice_detail(request, pk):
     empresa = _get_empresa(request)
     invoice = get_object_or_404(InvoiceExportacao, pk=pk, empresa=empresa)
-    return render(request, 'faturamento/invoice/detail.html', {'invoice': invoice})
+
+    from adiantamentos.models import AdiantamentoInternacional, DescontoAdiantamento
+    adiantamentos_ativos = AdiantamentoInternacional.objects.filter(
+        empresa=empresa,
+        cliente=invoice.cliente,
+        status__in=['PENDENTE_EMBARQUE', 'EM_ANDAMENTO', 'PARCIALMENTE_QUITADO'],
+    )
+    desconto_adiantamento = DescontoAdiantamento.objects.filter(invoice=invoice, status='APLICADO').select_related('adiantamento').first()
+
+    return render(request, 'faturamento/invoice/detail.html', {
+        'invoice': invoice,
+        'adiantamentos_ativos': adiantamentos_ativos,
+        'desconto_adiantamento': desconto_adiantamento,
+    })
 
 
 @login_required
@@ -564,9 +622,11 @@ def invoice_update(request, pk):
     empresa = _get_empresa(request)
     invoice = get_object_or_404(InvoiceExportacao, pk=pk, empresa=empresa)
 
-    if invoice.status != 'RASCUNHO':
-        messages.error(request, 'Apenas invoices em RASCUNHO podem ser editadas.')
+    if invoice.status == 'CANCELADA':
+        messages.error(request, 'Invoices canceladas não podem ser editadas.')
         return redirect('faturamento:invoice_detail', pk=pk)
+
+    editing_emitida = invoice.status == 'EMITIDA'
 
     if request.method == 'POST':
         form = InvoiceExportacaoForm(request.POST, instance=invoice, empresa=empresa)
@@ -586,6 +646,8 @@ def invoice_update(request, pk):
         'formset': formset,
         'invoice': invoice,
         'title': f'Editar {invoice.numero}',
+        'editing_emitida': editing_emitida,
+        'pedido_items_json': '[]',
     })
 
 
@@ -641,8 +703,11 @@ def invoice_pdf(request, pk):
     from django.http import HttpResponse
     import io
 
+    from adiantamentos.models import DescontoAdiantamento
+    desconto_adiantamento = DescontoAdiantamento.objects.filter(invoice=invoice, status='APLICADO').select_related('adiantamento').first()
+
     template = get_template('faturamento/invoice/pdf.html')
-    html = template.render({'invoice': invoice, 'empresa': empresa})
+    html = template.render({'invoice': invoice, 'empresa': empresa, 'desconto_adiantamento': desconto_adiantamento})
     result = io.BytesIO()
     pdf = pisa.pisaDocument(io.BytesIO(html.encode('utf-8')), result)
     if not pdf.err:

@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+
+{% block title %}Importar Extrato — {{ conta.banco }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <h1><i class="bi bi-upload"></i> Importar Extrato Bancário</h1>
+          <p class="text-muted mb-0">{{ conta.banco }} — Ag {{ conta.agencia }} / Cc {{ conta.conta }}</p>
+        </div>
+        <a href="{% url 'bancario:conta_bancaria_detail' conta.pk %}" class="btn btn-outline-secondary">
+          <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-lg-7">
+      <div class="card">
+        <div class="card-body">
+          <form method="post" enctype="multipart/form-data" novalidate>
+            {% csrf_token %}
+            <div class="mb-4">
+              <label class="form-label fw-semibold">Tipo de Arquivo <span class="text-danger">*</span></label>
+              {{ form.tipo_arquivo }}
+              {% if form.tipo_arquivo.errors %}<div class="invalid-feedback d-block">{{ form.tipo_arquivo.errors|join:", " }}</div>{% endif %}
+            </div>
+            <div id="instrucao-ofx" class="alert alert-info mb-3" style="display:none;">
+              <i class="bi bi-info-circle me-1"></i>
+              <strong>OFX:</strong> Exporte o extrato no formato OFX/QFX pelo internet banking do seu banco.
+              Geralmente disponível em: Extratos → Exportar → Formato OFX.
+            </div>
+            <div id="instrucao-cnab240" class="alert alert-info mb-3" style="display:none;">
+              <i class="bi bi-info-circle me-1"></i>
+              <strong>CNAB 240:</strong> Arquivo de retorno gerado pelo banco após processamento de lote de pagamentos.
+              Solicite ao seu gerente ou baixe pelo portal da empresa no banco.
+            </div>
+            <div id="instrucao-cnab150" class="alert alert-info mb-3" style="display:none;">
+              <i class="bi bi-info-circle me-1"></i>
+              <strong>CNAB 150:</strong> Versão reduzida do CNAB para cobrança bancária.
+            </div>
+            <div class="mb-4">
+              <label class="form-label fw-semibold">Arquivo <span class="text-danger">*</span></label>
+              {{ form.arquivo }}
+              {% if form.arquivo.errors %}<div class="invalid-feedback d-block">{{ form.arquivo.errors|join:", " }}</div>{% endif %}
+              <div class="form-text">{{ form.arquivo.help_text }}</div>
+            </div>
+            <div class="alert alert-warning d-flex gap-2 align-items-start">
+              <i class="bi bi-exclamation-triangle-fill flex-shrink-0 mt-1"></i>
+              <div>
+                <strong>Atenção:</strong> Lançamentos duplicados (mesmo FIT ID na mesma conta) serão ignorados automaticamente.
+                Se importar o mesmo período duas vezes, apenas os novos lançamentos serão adicionados.
+              </div>
+            </div>
+            <button type="submit" class="btn btn-success">
+              <i class="bi bi-upload"></i> Importar e Iniciar Conciliação
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-5">
+      <div class="card">
+        <div class="card-header"><i class="bi bi-question-circle"></i> Como obter o arquivo</div>
+        <div class="card-body small">
+          <p><strong>OFX (mais comum):</strong></p>
+          <ul>
+            <li>Acesse o internet banking</li>
+            <li>Vá em Extrato ou Consultas</li>
+            <li>Selecione o período desejado</li>
+            <li>Exporte no formato OFX ou QFX</li>
+          </ul>
+          <p><strong>CNAB 240 (retorno):</strong></p>
+          <ul>
+            <li>Após enviar um lote de pagamentos ao banco</li>
+            <li>Aguarde o processamento (geralmente D+1)</li>
+            <li>Baixe o arquivo de retorno no portal da empresa</li>
+          </ul>
+          <hr>
+          <p class="text-muted mb-0">
+            <i class="bi bi-shield-check me-1"></i>
+            Seus arquivos são armazenados com segurança e apenas acessíveis pela sua empresa.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function () {
+  const sel = document.querySelector('select[name="tipo_arquivo"]');
+  const divs = {
+    OFX: document.getElementById('instrucao-ofx'),
+    CNAB240: document.getElementById('instrucao-cnab240'),
+    CNAB150: document.getElementById('instrucao-cnab150'),
+  };
+  function show() {
+    Object.values(divs).forEach(d => { if (d) d.style.display = 'none'; });
+    const div = divs[sel.value];
+    if (div) div.style.display = '';
+  }
+  sel.addEventListener('change', show);
+  show();
+})();
+</script>
+{% endblock %}

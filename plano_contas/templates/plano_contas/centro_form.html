@@ -1,0 +1,278 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ titulo }} — {{ request.user.empresa.nome }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <h1><i class="bi bi-grid-3x3-gap"></i> {{ titulo }}</h1>
+          <p class="text-muted mb-0">{{ request.user.empresa.nome }}</p>
+        </div>
+        <div class="d-flex gap-2">
+          <button type="button" class="btn btn-outline-info" data-bs-toggle="modal" data-bs-target="#modalAjuda">
+            <i class="bi bi-question-circle"></i> Ajuda
+          </button>
+          <a href="{% url 'plano_contas:centro_list' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Voltar
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row justify-content-center">
+    <div class="col-lg-7">
+      <div class="card">
+        <div class="card-body">
+          <form method="post" novalidate>
+            {% csrf_token %}
+            <div class="row g-3">
+
+              <!-- Código -->
+              <div class="col-md-4">
+                <label class="form-label" for="{{ form.codigo.id_for_label }}">
+                  Código <span class="text-danger">*</span>
+                  <button type="button" class="btn btn-link btn-sm p-0 ms-1 text-info"
+                          data-bs-toggle="tooltip" data-bs-placement="top"
+                          title="Identificador único do centro. Ex: ADM, PROD-01, CC-001. Use letras, números ou hífens.">
+                    <i class="bi bi-info-circle-fill"></i>
+                  </button>
+                </label>
+                {{ form.codigo }}
+                {% if form.codigo.errors %}
+                <div class="invalid-feedback d-block">{{ form.codigo.errors|join:", " }}</div>
+                {% endif %}
+                <small class="text-muted">Ex: ADM, PROD-01, CC-CAMPO</small>
+              </div>
+
+              <!-- Nome -->
+              <div class="col-md-8">
+                <label class="form-label" for="{{ form.nome.id_for_label }}">
+                  Nome <span class="text-danger">*</span>
+                  <button type="button" class="btn btn-link btn-sm p-0 ms-1 text-info"
+                          data-bs-toggle="tooltip" data-bs-placement="top"
+                          title="Nome descritivo do centro de custo. Ex: Administrativo, Produção Campo, Logística.">
+                    <i class="bi bi-info-circle-fill"></i>
+                  </button>
+                </label>
+                {{ form.nome }}
+                {% if form.nome.errors %}
+                <div class="invalid-feedback d-block">{{ form.nome.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+
+              <!-- Centro Pai -->
+              <div class="col-12">
+                <label class="form-label" for="{{ form.centro_pai.id_for_label }}">
+                  Centro Pai
+                  <button type="button" class="btn btn-link btn-sm p-0 ms-1 text-info"
+                          data-bs-toggle="tooltip" data-bs-placement="top"
+                          title="Selecione um centro pai para criar uma hierarquia. Deixe em branco para criar um centro raiz (nível 1).">
+                    <i class="bi bi-info-circle-fill"></i>
+                  </button>
+                </label>
+                {{ form.centro_pai }}
+                {% if form.centro_pai.errors %}
+                <div class="invalid-feedback d-block">{{ form.centro_pai.errors|join:", " }}</div>
+                {% endif %}
+                <small class="text-muted">
+                  <i class="bi bi-diagram-3 me-1"></i>
+                  Deixe em branco para criar um centro raiz. Selecione um pai para criar subcategorias.
+                </small>
+              </div>
+
+              <!-- Descrição -->
+              <div class="col-12">
+                <label class="form-label" for="{{ form.descricao.id_for_label }}">
+                  Descrição
+                  <button type="button" class="btn btn-link btn-sm p-0 ms-1 text-info"
+                          data-bs-toggle="tooltip" data-bs-placement="top"
+                          title="Descreva o propósito deste centro de custo. Ajuda a identificar quais despesas/receitas devem ser alocadas aqui.">
+                    <i class="bi bi-info-circle-fill"></i>
+                  </button>
+                </label>
+                {{ form.descricao }}
+              </div>
+
+              {% if centro %}
+              <div class="col-12">
+                <div class="form-check">
+                  {{ form.ativo }}
+                  <label class="form-check-label" for="{{ form.ativo.id_for_label }}">
+                    Centro Ativo
+                  </label>
+                </div>
+              </div>
+              {% endif %}
+
+              <!-- Botões -->
+              <div class="col-12 d-flex gap-2 pt-2">
+                <button type="submit" class="btn btn-primary">
+                  <i class="bi bi-check-circle"></i> Salvar
+                </button>
+                <a href="{% if centro %}{% url 'plano_contas:centro_detail' centro.pk %}{% else %}{% url 'plano_contas:centro_list' %}{% endif %}"
+                   class="btn btn-outline-secondary">
+                  Cancelar
+                </a>
+              </div>
+
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Modal de Ajuda -->
+<div class="modal fade" id="modalAjuda" tabindex="-1" aria-labelledby="modalAjudaLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+
+      <div class="modal-header bg-info text-white">
+        <h5 class="modal-title" id="modalAjudaLabel">
+          <i class="bi bi-question-circle-fill me-2"></i>
+          Como cadastrar um Centro de Custo
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+
+        <!-- O que é -->
+        <div class="alert alert-info d-flex gap-3 align-items-start">
+          <i class="bi bi-lightbulb-fill fs-4 flex-shrink-0 mt-1"></i>
+          <div>
+            <strong>O que é um Centro de Custo?</strong><br>
+            É uma unidade de gestão que agrupa despesas e receitas por área, departamento ou atividade.
+            Permite analisar o desempenho financeiro de cada setor da empresa separadamente.
+          </div>
+        </div>
+
+        <!-- Campos -->
+        <h6 class="fw-bold mb-3"><i class="bi bi-card-list me-2"></i>Campos do formulário</h6>
+
+        <div class="table-responsive mb-4">
+          <table class="table table-bordered table-sm">
+            <thead class="table-light">
+              <tr>
+                <th>Campo</th>
+                <th>Obrigatório</th>
+                <th>Descrição</th>
+                <th>Exemplo</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Código</strong></td>
+                <td class="text-center"><span class="badge bg-danger">Sim</span></td>
+                <td>Identificador único e curto do centro. Deve ser único por empresa.</td>
+                <td><code>ADM</code>, <code>PROD-01</code>, <code>CC-CAMPO</code></td>
+              </tr>
+              <tr>
+                <td><strong>Nome</strong></td>
+                <td class="text-center"><span class="badge bg-danger">Sim</span></td>
+                <td>Nome completo e descritivo do centro de custo.</td>
+                <td>Administrativo, Produção Campo, Logística</td>
+              </tr>
+              <tr>
+                <td><strong>Centro Pai</strong></td>
+                <td class="text-center"><span class="badge bg-secondary">Não</span></td>
+                <td>Permite criar hierarquia de centros. Deixe em branco para centro raiz.</td>
+                <td>Operacional → Campo → Talhão 01</td>
+              </tr>
+              <tr>
+                <td><strong>Descrição</strong></td>
+                <td class="text-center"><span class="badge bg-secondary">Não</span></td>
+                <td>Explica o propósito do centro e quais custos pertencem a ele.</td>
+                <td>"Agrupa todos os custos do setor administrativo e de RH"</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Hierarquia -->
+        <h6 class="fw-bold mb-3"><i class="bi bi-diagram-3 me-2"></i>Como funciona a hierarquia</h6>
+
+        <div class="row g-3 mb-4">
+          <div class="col-md-6">
+            <div class="card border-primary h-100">
+              <div class="card-header bg-primary text-white py-2">
+                <small><strong>Exemplo — Estrutura Agrícola</strong></small>
+              </div>
+              <div class="card-body py-2">
+                <ul class="list-unstyled mb-0 small font-monospace">
+                  <li><i class="bi bi-folder2-open text-warning"></i> <strong>OPER</strong> — Operacional</li>
+                  <li class="ms-3"><i class="bi bi-folder2 text-warning"></i> <strong>CAMPO</strong> — Campo</li>
+                  <li class="ms-5"><i class="bi bi-circle text-muted"></i> <strong>TAL-01</strong> — Talhão 01</li>
+                  <li class="ms-5"><i class="bi bi-circle text-muted"></i> <strong>TAL-02</strong> — Talhão 02</li>
+                  <li class="ms-3"><i class="bi bi-folder2 text-warning"></i> <strong>ESTUFA</strong> — Estufas</li>
+                  <li><i class="bi bi-folder2-open text-warning"></i> <strong>ADM</strong> — Administrativo</li>
+                  <li class="ms-3"><i class="bi bi-circle text-muted"></i> <strong>RH</strong> — Recursos Humanos</li>
+                  <li class="ms-3"><i class="bi bi-circle text-muted"></i> <strong>TI</strong> — Tecnologia</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="card border-success h-100">
+              <div class="card-header bg-success text-white py-2">
+                <small><strong>Como criar passo a passo</strong></small>
+              </div>
+              <div class="card-body py-2">
+                <ol class="small mb-0 ps-3">
+                  <li class="mb-1">
+                    <strong>Crie os centros raiz primeiro</strong><br>
+                    <span class="text-muted">Ex: OPER (Operacional), ADM (Administrativo), FIN (Financeiro)</span>
+                  </li>
+                  <li class="mb-1">
+                    <strong>Crie os subcentros selecionando o pai</strong><br>
+                    <span class="text-muted">Ex: CAMPO com pai = OPER</span>
+                  </li>
+                  <li>
+                    <strong>Continue aprofundando a hierarquia</strong><br>
+                    <span class="text-muted">Ex: TAL-01 com pai = CAMPO</span>
+                  </li>
+                </ol>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dicas -->
+        <h6 class="fw-bold mb-2"><i class="bi bi-star me-2"></i>Dicas importantes</h6>
+        <ul class="small mb-0">
+          <li class="mb-1">Use <strong>códigos curtos e padronizados</strong>: maiúsculas, sem espaços, com hífen se necessário.</li>
+          <li class="mb-1">Centros com subcentros <strong>não podem ser desativados</strong> enquanto houver subcentros ativos.</li>
+          <li class="mb-1">Após criados, os centros aparecem nos formulários de <strong>Contas a Pagar e a Receber</strong> para categorização gerencial.</li>
+          <li>Você pode criar quantos níveis hierárquicos precisar, mas recomendamos <strong>até 3 níveis</strong> para facilitar os relatórios.</li>
+        </ul>
+
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-info text-white" data-bs-dismiss="modal">
+          <i class="bi bi-check2"></i> Entendido, vou cadastrar
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+// Ativar tooltips Bootstrap
+document.addEventListener('DOMContentLoaded', function () {
+  var tooltipEls = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+  tooltipEls.forEach(function (el) {
+    new bootstrap.Tooltip(el);
+  });
+});
+</script>
+
+{% endblock %}

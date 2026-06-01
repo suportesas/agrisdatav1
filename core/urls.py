@@ -117,6 +117,7 @@ urlpatterns = [
     path('plano-contas/', include(('plano_contas.urls', 'plano_contas'))),
     path('bancario/', include(('bancario.urls', 'bancario'))),
     path('adiantamentos/', include(('adiantamentos.urls', 'adiantamentos'))),
+    path('energia/', include(('energia.urls', 'energia'))),
     path('exportacao/', include(('exportacao.urls', 'exportacao'))),
     path('faturamento/', include(('faturamento.urls', 'faturamento'))),
     path('vendas/', include(('vendas.urls', 'vendas'))),

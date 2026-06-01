@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+{% block title %}{{ uc.nome }}{% endblock %}
+{% block content %}
+<div class="container-fluid">
+  <div class="d-flex align-items-center justify-content-between mb-4">
+    <div class="d-flex align-items-center gap-2">
+      <a href="{% url 'energia:uc_list' %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
+      <div>
+        <h1 class="mb-0 fs-4"><i class="bi bi-plug-fill text-info me-1"></i>{{ uc.nome }}</h1>
+        <small class="text-muted">{{ uc.codigo_cliente }} · {{ uc.get_tipo_display }}</small>
+      </div>
+    </div>
+    <a href="{% url 'energia:uc_update' uc.pk %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-pencil me-1"></i>Editar</a>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-lg-4">
+      <div class="card">
+        <div class="card-header">Dados da UC</div>
+        <div class="card-body">
+          <dl class="row mb-0 small">
+            <dt class="col-6 text-muted">Cód. Cliente</dt>
+            <dd class="col-6 font-monospace">{{ uc.codigo_cliente }}</dd>
+            <dt class="col-6 text-muted">Cód. Instalação</dt>
+            <dd class="col-6 font-monospace">{{ uc.codigo_instalacao|default:"—" }}</dd>
+            <dt class="col-6 text-muted">Tipo</dt>
+            <dd class="col-6">
+              {% if uc.tipo == 'GERADORA' %}<span class="badge bg-warning text-dark">Geradora</span>
+              {% elif uc.tipo == 'BENEFICIARIA' %}<span class="badge bg-info text-dark">Beneficiária</span>
+              {% else %}<span class="badge bg-secondary">Convencional</span>{% endif %}
+            </dd>
+            <dt class="col-6 text-muted">Usina</dt>
+            <dd class="col-6">
+              {% if uc.usina %}<a href="{% url 'energia:usina_detail' uc.usina.pk %}">{{ uc.usina.codigo }}</a>
+              {% else %}—{% endif %}
+            </dd>
+            <dt class="col-6 text-muted">Classificação</dt>
+            <dd class="col-6">{{ uc.classificacao|default:"—" }}</dd>
+            <dt class="col-6 text-muted">Tipo Fornecimento</dt>
+            <dd class="col-6">{{ uc.tipo_fornecimento|default:"—" }}</dd>
+            <dt class="col-6 text-muted">Medidor</dt>
+            <dd class="col-6 font-monospace">{{ uc.numero_medidor|default:"—" }}</dd>
+            <dt class="col-6 text-muted">Status</dt>
+            <dd class="col-6">{% if uc.ativa %}<span class="badge bg-success">Ativa</span>{% else %}<span class="badge bg-secondary">Inativa</span>{% endif %}</dd>
+          </dl>
+        </div>
+        <div class="card-footer">
+          <a href="{% url 'energia:lancamento_create' %}" class="btn btn-sm btn-outline-primary w-100">
+            <i class="bi bi-plus-circle me-1"></i>Novo Lançamento para esta UC
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-8">
+      <div class="card">
+        <div class="card-header"><i class="bi bi-receipt me-1"></i>Histórico de Lançamentos Mensais</div>
+        <div class="table-responsive">
+          <table class="table table-hover table-sm mb-0 align-middle">
+            <thead class="table-light">
+              <tr>
+                <th class="ps-3">Mês</th>
+                <th class="text-end">Consumo (kWh)</th>
+                <th class="text-end">Compensado (kWh)</th>
+                <th class="text-end">Injetado (kWh)</th>
+                <th class="text-end">Faturado (R$)</th>
+                <th class="text-end pe-3">Economizado (R$)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for l in lancamentos %}
+              <tr>
+                <td class="ps-3 fw-semibold">
+                  <a href="{% url 'energia:lancamento_detail' l.pk %}" class="text-decoration-none">{{ l.mes_referencia|date:"m/Y" }}</a>
+                </td>
+                <td class="text-end font-monospace">{{ l.consumo_registrado_kwh|floatformat:0 }}</td>
+                <td class="text-end font-monospace text-success">{{ l.energia_compensada_kwh|floatformat:0 }}</td>
+                <td class="text-end font-monospace text-info">{{ l.energia_injetada_kwh|floatformat:0 }}</td>
+                <td class="text-end font-monospace">{{ l.valor_faturado_rs|floatformat:2 }}</td>
+                <td class="text-end pe-3 font-monospace text-success fw-semibold">{{ l.valor_economizado_rs|floatformat:2 }}</td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="6" class="text-center py-4 text-muted">Nenhum lançamento registrado.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

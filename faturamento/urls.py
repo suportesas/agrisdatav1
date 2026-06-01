@@ -63,6 +63,10 @@ urlpatterns = [
     # Documentação IntegraNotas
     path('docs/integranotas/', views.docs_integranotas, name='docs_integranotas'),
 
+    # Histórico de Cotações BCB
+    path('cotacoes-bcb/', views.cotacoes_bcb_list, name='cotacoes_bcb_list'),
+    path('cotacoes-bcb/buscar-hoje/', views.cotacoes_bcb_buscar_hoje, name='cotacoes_bcb_buscar_hoje'),
+
     # AJAX
     path('ajax/produto/<int:pk>/', views.ajax_produto_detail, name='ajax_produto_detail'),
     path('ajax/booking/<int:pk>/', views.ajax_booking_preview, name='ajax_booking_preview'),

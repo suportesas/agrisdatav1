@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+{% block title %}Relatórios Mensais de Usinas{% endblock %}
+{% block content %}
+<div class="container-fluid">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="mb-0 fs-4"><i class="bi bi-file-earmark-bar-graph-fill text-success me-2"></i>Relatórios Mensais de Usinas</h1>
+    <a href="{% url 'energia:relatorio_usina_create' %}" class="btn btn-primary"><i class="bi bi-plus-circle me-1"></i>Novo Relatório</a>
+  </div>
+
+  <div class="card mb-3">
+    <div class="card-body py-2">
+      <form method="get" class="row g-2 align-items-end">
+        <div class="col-auto">
+          <label class="form-label mb-1 small text-muted">Mês</label>
+          <input type="month" name="mes" class="form-control form-control-sm" value="{{ mes }}" style="width:160px">
+        </div>
+        <div class="col-auto flex-grow-1">
+          <label class="form-label mb-1 small text-muted">Usina</label>
+          <select name="usina" class="form-select form-select-sm">
+            <option value="">Todas as usinas</option>
+            {% for u in usinas %}
+            <option value="{{ u.pk }}" {% if usina_id == u.pk|stringformat:"s" %}selected{% endif %}>{{ u.codigo }} — {{ u.nome }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-auto">
+          <button type="submit" class="btn btn-outline-primary btn-sm"><i class="bi bi-search"></i></button>
+          <a href="{% url 'energia:relatorio_usina_list' %}" class="btn btn-outline-secondary btn-sm ms-1">Limpar</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="table-responsive">
+      <table class="table table-hover table-sm mb-0 align-middle">
+        <thead class="table-light">
+          <tr>
+            <th class="ps-3">Mês</th>
+            <th>Usina</th>
+            <th class="text-end">Geração (kWh)</th>
+            <th class="text-end">Desempenho</th>
+            <th class="text-end">Consumo Total (kWh)</th>
+            <th class="text-end">Economia (R$)</th>
+            <th class="text-end">Faturado (R$)</th>
+            <th class="text-end">CO₂ (t)</th>
+            <th class="text-center pe-3">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in page_obj %}
+          <tr>
+            <td class="ps-3 fw-semibold">{{ r.mes_referencia|date:"m/Y" }}</td>
+            <td><a href="{% url 'energia:usina_detail' r.usina.pk %}" class="text-decoration-none">{{ r.usina.codigo }}</a>
+              <div class="text-muted" style="font-size:.75rem">{{ r.usina.nome }}</div>
+            </td>
+            <td class="text-end font-monospace">{{ r.geracao_kwh|floatformat:0 }}</td>
+            <td class="text-end">
+              <span class="badge {% if r.desempenho_pct >= 90 %}bg-success{% elif r.desempenho_pct >= 75 %}bg-warning text-dark{% else %}bg-danger{% endif %}">
+                {{ r.desempenho_pct }}%
+              </span>
+            </td>
+            <td class="text-end font-monospace">{{ r.consumo_total_kwh|floatformat:0 }}</td>
+            <td class="text-end font-monospace text-success fw-semibold">{{ r.economia_rs|floatformat:2 }}</td>
+            <td class="text-end font-monospace">{{ r.faturado_rs|floatformat:2 }}</td>
+            <td class="text-end text-muted small">{{ r.co2_nao_produzido_t|floatformat:2 }}</td>
+            <td class="text-center pe-3">
+              <a href="{% url 'energia:relatorio_usina_detail' r.pk %}" class="btn btn-sm btn-outline-info"><i class="bi bi-eye"></i></a>
+              <a href="{% url 'energia:relatorio_usina_update' r.pk %}" class="btn btn-sm btn-outline-secondary ms-1"><i class="bi bi-pencil"></i></a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="9" class="text-center py-5 text-muted">Nenhum relatório encontrado.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if page_obj.has_other_pages %}
+    <div class="card-footer">
+      <nav><ul class="pagination pagination-sm justify-content-center mb-0">
+        {% if page_obj.has_previous %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&mes={{ mes }}&usina={{ usina_id }}">«</a></li>{% endif %}
+        <li class="page-item disabled"><span class="page-link">{{ page_obj.number }}/{{ page_obj.paginator.num_pages }}</span></li>
+        {% if page_obj.has_next %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&mes={{ mes }}&usina={{ usina_id }}">»</a></li>{% endif %}
+      </ul></nav>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

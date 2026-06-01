@@ -1,0 +1,197 @@
+{% extends 'base.html' %}
+{% block title %}Energia Solar — Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+  <div class="d-flex align-items-center justify-content-between mb-4">
+    <h1 class="mb-0 fs-4"><i class="bi bi-sun-fill text-warning me-2"></i>Energia Solar — Dashboard</h1>
+    <span class="text-muted small">{{ mes_atual|date:"F/Y" }}</span>
+  </div>
+
+  <!-- Cards de resumo -->
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+      <div class="card text-center p-3 h-100">
+        <div class="text-muted small mb-1">Usinas Ativas</div>
+        <div class="fs-2 fw-bold text-primary">{{ total_usinas }}</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card text-center p-3 h-100">
+        <div class="text-muted small mb-1">Geração (mês atual)</div>
+        <div class="fs-2 fw-bold text-success">{{ totais_mes.geracao|default:0|floatformat:0 }}</div>
+        <div class="text-muted small">kWh</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card text-center p-3 h-100">
+        <div class="text-muted small mb-1">Economia (mês atual)</div>
+        <div class="fs-2 fw-bold text-success">R$ {{ totais_mes.economia|default:0|floatformat:2 }}</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card text-center p-3 h-100">
+        <div class="text-muted small mb-1">Desempenho Médio</div>
+        <div class="fs-2 fw-bold {% if totais_mes.desempenho >= 90 %}text-success{% elif totais_mes.desempenho >= 75 %}text-warning{% else %}text-danger{% endif %}">
+          {{ totais_mes.desempenho|default:0|floatformat:1 }}%
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <!-- Gráfico geração/economia 12 meses -->
+    <div class="col-lg-8">
+      <div class="card h-100">
+        <div class="card-header fw-semibold"><i class="bi bi-bar-chart-line me-1 text-success"></i>Geração e Economia — Últimos 12 Meses</div>
+        <div class="card-body">
+          <canvas id="chartGeracao" height="100"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Usinas ativas -->
+    <div class="col-lg-4">
+      <div class="card h-100">
+        <div class="card-header fw-semibold"><i class="bi bi-lightning-charge-fill text-warning me-1"></i>Usinas Cadastradas</div>
+        <ul class="list-group list-group-flush">
+          {% for u in usinas %}
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            <div>
+              <a href="{% url 'energia:usina_detail' u.pk %}" class="fw-semibold text-decoration-none">{{ u.nome }}</a>
+              <div class="text-muted small">{{ u.codigo }} · {{ u.capacidade_kwp }} kWp</div>
+            </div>
+            <span class="badge bg-success-subtle text-success border border-success-subtle">Ativa</span>
+          </li>
+          {% empty %}
+          <li class="list-group-item text-muted text-center py-4">
+            Nenhuma usina cadastrada.<br>
+            <a href="{% url 'energia:usina_create' %}" class="btn btn-sm btn-primary mt-2">Cadastrar Usina</a>
+          </li>
+          {% endfor %}
+        </ul>
+        {% if usinas %}
+        <div class="card-footer text-end">
+          <a href="{% url 'energia:usina_list' %}" class="btn btn-sm btn-outline-primary">Ver todas</a>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Lançamentos do mês atual -->
+  {% if lancamentos_mes %}
+  <div class="card mt-4">
+    <div class="card-header fw-semibold">
+      <i class="bi bi-receipt me-1"></i>Lançamentos — {{ mes_atual|date:"F/Y" }}
+    </div>
+    <div class="table-responsive">
+      <table class="table table-hover table-sm mb-0 align-middle">
+        <thead class="table-light">
+          <tr>
+            <th class="ps-3">Unidade Consumidora</th>
+            <th>Usina</th>
+            <th class="text-end">Consumo (kWh)</th>
+            <th class="text-end">Compensado (kWh)</th>
+            <th class="text-end">Injetado (kWh)</th>
+            <th class="text-end">Faturado (R$)</th>
+            <th class="text-end pe-3">Economizado (R$)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for l in lancamentos_mes %}
+          <tr>
+            <td class="ps-3">
+              <a href="{% url 'energia:lancamento_detail' l.pk %}" class="text-decoration-none fw-semibold">
+                {{ l.unidade_consumidora.nome }}
+              </a>
+              <div class="text-muted small">{{ l.unidade_consumidora.codigo_cliente }}</div>
+            </td>
+            <td class="text-muted small">{{ l.unidade_consumidora.usina.codigo|default:"—" }}</td>
+            <td class="text-end font-monospace">{{ l.consumo_registrado_kwh|floatformat:0 }}</td>
+            <td class="text-end font-monospace text-success">{{ l.energia_compensada_kwh|floatformat:0 }}</td>
+            <td class="text-end font-monospace text-info">{{ l.energia_injetada_kwh|floatformat:0 }}</td>
+            <td class="text-end font-monospace">R$ {{ l.valor_faturado_rs|floatformat:2 }}</td>
+            <td class="text-end pe-3 font-monospace text-success fw-semibold">R$ {{ l.valor_economizado_rs|floatformat:2 }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="card-footer text-end">
+      <a href="{% url 'energia:lancamento_list' %}" class="btn btn-sm btn-outline-secondary">Ver todos os lançamentos</a>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Atalhos rápidos -->
+  <div class="row g-3 mt-2">
+    <div class="col-6 col-md-3">
+      <a href="{% url 'energia:lancamento_create' %}" class="card p-3 text-center text-decoration-none h-100 border-0 shadow-sm">
+        <i class="bi bi-plus-circle-fill fs-2 text-primary mb-2"></i>
+        <div class="fw-semibold">Novo Lançamento</div>
+      </a>
+    </div>
+    <div class="col-6 col-md-3">
+      <a href="{% url 'energia:relatorio_usina_create' %}" class="card p-3 text-center text-decoration-none h-100 border-0 shadow-sm">
+        <i class="bi bi-file-earmark-bar-graph-fill fs-2 text-success mb-2"></i>
+        <div class="fw-semibold">Novo Relatório de Usina</div>
+      </a>
+    </div>
+    <div class="col-6 col-md-3">
+      <a href="{% url 'energia:usina_create' %}" class="card p-3 text-center text-decoration-none h-100 border-0 shadow-sm">
+        <i class="bi bi-lightning-charge-fill fs-2 text-warning mb-2"></i>
+        <div class="fw-semibold">Cadastrar Usina</div>
+      </a>
+    </div>
+    <div class="col-6 col-md-3">
+      <a href="{% url 'energia:uc_create' %}" class="card p-3 text-center text-decoration-none h-100 border-0 shadow-sm">
+        <i class="bi bi-plug-fill fs-2 text-info mb-2"></i>
+        <div class="fw-semibold">Cadastrar UC</div>
+      </a>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<script>
+(function() {
+  const meses = {{ meses|safe }};
+  const labels = meses.map(m => m.label);
+  const ctx = document.getElementById('chartGeracao').getContext('2d');
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Geração (kWh)',
+          data: meses.map(m => m.geracao),
+          backgroundColor: 'rgba(34,197,94,0.7)',
+          yAxisID: 'y',
+        },
+        {
+          label: 'Economia (R$)',
+          data: meses.map(m => m.economia),
+          type: 'line',
+          borderColor: '#7c3aed',
+          backgroundColor: 'rgba(124,58,237,0.1)',
+          tension: 0.3,
+          yAxisID: 'y2',
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { position: 'top' } },
+      scales: {
+        y: { title: { display: true, text: 'kWh' }, beginAtZero: true },
+        y2: { title: { display: true, text: 'R$' }, position: 'right', beginAtZero: true, grid: { drawOnChartArea: false } },
+      },
+    },
+  });
+})();
+</script>
+{% endblock %}

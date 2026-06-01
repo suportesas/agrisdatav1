@@ -1,0 +1,153 @@
+{% extends 'base.html' %}
+{% block title %}{{ usina.nome }}{% endblock %}
+{% block content %}
+<div class="container-fluid">
+
+  <div class="d-flex align-items-center justify-content-between mb-4">
+    <div class="d-flex align-items-center gap-2">
+      <a href="{% url 'energia:usina_list' %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
+      <div>
+        <h1 class="mb-0 fs-4"><i class="bi bi-lightning-charge-fill text-warning me-1"></i>{{ usina.nome }}</h1>
+        <small class="text-muted">{{ usina.codigo }} · {{ usina.capacidade_kwp }} kWp</small>
+      </div>
+    </div>
+    <a href="{% url 'energia:usina_update' usina.pk %}" class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-pencil me-1"></i>Editar
+    </a>
+  </div>
+
+  <div class="row g-4">
+    <!-- Dados gerais -->
+    <div class="col-lg-4">
+      <div class="card mb-4">
+        <div class="card-header">Dados da Usina</div>
+        <div class="card-body">
+          <dl class="row mb-0 small">
+            <dt class="col-6 text-muted">Código</dt>
+            <dd class="col-6 font-monospace fw-semibold">{{ usina.codigo }}</dd>
+            <dt class="col-6 text-muted">Capacidade</dt>
+            <dd class="col-6">{{ usina.capacidade_kwp }} kWp</dd>
+            <dt class="col-6 text-muted">Geração acordada/mês</dt>
+            <dd class="col-6">{{ usina.geracao_acordada_mensal_kwh|floatformat:0 }} kWh</dd>
+            <dt class="col-6 text-muted">Geração acordada/ano</dt>
+            <dd class="col-6">{{ usina.geracao_acordada_anual_kwh|floatformat:0 }} kWh</dd>
+            <dt class="col-6 text-muted">Prognóstico mensal</dt>
+            <dd class="col-6">{{ usina.prognostico_mensal_kwh|floatformat:0 }} kWh</dd>
+            <dt class="col-6 text-muted">Instalação</dt>
+            <dd class="col-6">{{ usina.data_instalacao|date:"d/m/Y"|default:"—" }}</dd>
+            <dt class="col-6 text-muted">Status</dt>
+            <dd class="col-6">{% if usina.ativa %}<span class="badge bg-success">Ativa</span>{% else %}<span class="badge bg-secondary">Inativa</span>{% endif %}</dd>
+          </dl>
+        </div>
+      </div>
+
+      <!-- Ocorrências pendentes -->
+      <div class="card mb-4 {% if ocorrencias_pendentes %}border-warning{% endif %}">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <span>
+            <i class="bi bi-exclamation-triangle-fill text-warning me-1"></i>Ocorrências
+            {% if ocorrencias_pendentes %}
+            <span class="badge bg-danger ms-1">{{ ocorrencias_pendentes }} pendente{{ ocorrencias_pendentes|pluralize }}</span>
+            {% endif %}
+          </span>
+          <a href="{% url 'energia:ocorrencia_create_usina' usina.pk %}" class="btn btn-sm btn-outline-warning">
+            <i class="bi bi-plus"></i>
+          </a>
+        </div>
+        {% if ocorrencias %}
+        <ul class="list-group list-group-flush">
+          {% for o in ocorrencias %}
+          <li class="list-group-item py-2 px-3">
+            <div class="d-flex justify-content-between align-items-start">
+              <div>
+                <a href="{% url 'energia:ocorrencia_detail' o.pk %}" class="text-decoration-none small fw-semibold">{{ o.titulo }}</a>
+                <div class="text-muted" style="font-size:.72rem">{{ o.data_ocorrencia|date:"d/m/Y" }} · {{ o.get_tipo_display }}</div>
+              </div>
+              {% if o.resolvido %}
+                <span class="badge bg-success-subtle text-success border border-success-subtle" style="font-size:.7rem">OK</span>
+              {% else %}
+                <span class="badge bg-danger-subtle text-danger border border-danger-subtle" style="font-size:.7rem">Pendente</span>
+              {% endif %}
+            </div>
+          </li>
+          {% endfor %}
+        </ul>
+        <div class="card-footer text-end py-1">
+          <a href="{% url 'energia:ocorrencia_list' %}?usina={{ usina.pk }}" class="small text-muted">Ver todas →</a>
+        </div>
+        {% else %}
+        <div class="card-body text-center text-muted small py-3">Sem ocorrências registradas.</div>
+        {% endif %}
+      </div>
+
+      <!-- UCs vinculadas -->
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          Unidades Consumidoras
+          <a href="{% url 'energia:uc_create' %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-plus"></i></a>
+        </div>
+        <ul class="list-group list-group-flush">
+          {% for uc in ucs %}
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            <div>
+              <a href="{% url 'energia:uc_detail' uc.pk %}" class="text-decoration-none fw-semibold small">{{ uc.nome }}</a>
+              <div class="text-muted" style="font-size:.75rem">{{ uc.codigo_cliente }} · {{ uc.get_tipo_display }}</div>
+            </div>
+          </li>
+          {% empty %}
+          <li class="list-group-item text-muted text-center small py-3">Nenhuma UC vinculada.</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+
+    <!-- Histórico de relatórios -->
+    <div class="col-lg-8">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <span><i class="bi bi-file-earmark-bar-graph me-1"></i>Histórico de Relatórios Mensais</span>
+          <a href="{% url 'energia:relatorio_usina_create' %}" class="btn btn-sm btn-outline-success">
+            <i class="bi bi-plus-circle me-1"></i>Novo Relatório
+          </a>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover table-sm mb-0 align-middle">
+            <thead class="table-light">
+              <tr>
+                <th class="ps-3">Mês</th>
+                <th class="text-end">Geração (kWh)</th>
+                <th class="text-end">Desempenho</th>
+                <th class="text-end">Economia (R$)</th>
+                <th class="text-end">Faturado (R$)</th>
+                <th class="text-end">CO₂ (t)</th>
+                <th class="text-center pe-3"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for r in relatorios %}
+              <tr>
+                <td class="ps-3 fw-semibold">{{ r.mes_referencia|date:"m/Y" }}</td>
+                <td class="text-end font-monospace">{{ r.geracao_kwh|floatformat:0 }}</td>
+                <td class="text-end">
+                  <span class="badge {% if r.desempenho_pct >= 90 %}bg-success{% elif r.desempenho_pct >= 75 %}bg-warning text-dark{% else %}bg-danger{% endif %}">
+                    {{ r.desempenho_pct }}%
+                  </span>
+                </td>
+                <td class="text-end font-monospace text-success">{{ r.economia_rs|floatformat:2 }}</td>
+                <td class="text-end font-monospace">{{ r.faturado_rs|floatformat:2 }}</td>
+                <td class="text-end text-muted small">{{ r.co2_nao_produzido_t|floatformat:2 }}</td>
+                <td class="text-center pe-3">
+                  <a href="{% url 'energia:relatorio_usina_detail' r.pk %}" class="btn btn-sm btn-outline-info"><i class="bi bi-eye"></i></a>
+                </td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="7" class="text-center py-4 text-muted">Nenhum relatório lançado.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -748,3 +748,27 @@ class ItemPackingList(models.Model):
 
     def __str__(self):
         return f'{self.numero_container or self.descricao_produto}'
+
+
+class CotacaoBCB(models.Model):
+    MOEDAS = [
+        ('USD', 'Dólar EUA (USD)'),
+        ('EUR', 'Euro (EUR)'),
+        ('GBP', 'Libra Esterlina (GBP)'),
+    ]
+
+    data = models.DateField('Data de Referência', db_index=True)
+    moeda = models.CharField('Moeda', max_length=3, choices=MOEDAS)
+    compra = models.DecimalField('Taxa Compra', max_digits=10, decimal_places=4)
+    venda = models.DecimalField('Taxa Venda', max_digits=10, decimal_places=4)
+    criado_em = models.DateTimeField('Criado em', auto_now_add=True)
+    atualizado_em = models.DateTimeField('Atualizado em', auto_now=True)
+
+    class Meta:
+        unique_together = [('data', 'moeda')]
+        ordering = ['-data', 'moeda']
+        verbose_name = 'Cotação BCB'
+        verbose_name_plural = 'Cotações BCB'
+
+    def __str__(self):
+        return f'{self.moeda} {self.data} — Compra: {self.compra} / Venda: {self.venda}'

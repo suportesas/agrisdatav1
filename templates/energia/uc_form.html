@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+{% block title %}{{ titulo }}{% endblock %}
+{% block content %}
+<div class="container-fluid">
+  <div class="d-flex align-items-center gap-2 mb-4">
+    <a href="{% url 'energia:uc_list' %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
+    <h1 class="mb-0 fs-4">{{ titulo }}</h1>
+  </div>
+
+  <form method="post">
+    {% csrf_token %}
+    <div class="row g-4">
+      <div class="col-lg-8">
+        <div class="card mb-4">
+          <div class="card-header"><i class="bi bi-plug-fill text-info me-1"></i> Identificação</div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-sm-8">
+                <label class="form-label">{{ form.nome.label }} *</label>
+                {{ form.nome }}
+                {% if form.nome.errors %}<div class="text-danger small">{{ form.nome.errors.0 }}</div>{% endif %}
+              </div>
+              <div class="col-sm-4">
+                <label class="form-label">{{ form.tipo.label }} *</label>
+                {{ form.tipo }}
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label">{{ form.codigo_cliente.label }} *</label>
+                {{ form.codigo_cliente }}
+                {% if form.codigo_cliente.errors %}<div class="text-danger small">{{ form.codigo_cliente.errors.0 }}</div>{% endif %}
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label">{{ form.codigo_instalacao.label }}</label>
+                {{ form.codigo_instalacao }}
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label">{{ form.classificacao.label }}</label>
+                {{ form.classificacao }}
+                <small class="text-muted">Ex: B2 Rural - Agropecuária Rural</small>
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label">{{ form.tipo_fornecimento.label }}</label>
+                {{ form.tipo_fornecimento }}
+                <small class="text-muted">Ex: Conv. Monômia - Trifásico</small>
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label">{{ form.numero_medidor.label }}</label>
+                {{ form.numero_medidor }}
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label">{{ form.usina.label }}</label>
+                {{ form.usina }}
+                <small class="text-muted">Usina fotovoltaica associada</small>
+              </div>
+              <div class="col-12">
+                <div class="form-check">
+                  {{ form.ativa }}
+                  <label class="form-check-label ms-1">{{ form.ativa.label }}</label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-4">
+        <div class="d-grid gap-2">
+          <button type="submit" class="btn btn-primary btn-lg"><i class="bi bi-check-lg me-1"></i>Salvar</button>
+          <a href="{% url 'energia:uc_list' %}" class="btn btn-outline-secondary">Cancelar</a>
+        </div>
+      </div>
+    </div>
+  </form>
+</div>
+{% endblock %}

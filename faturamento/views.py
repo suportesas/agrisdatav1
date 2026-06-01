@@ -1078,11 +1078,97 @@ def ajax_cotacao_bcb(request):
             'dataHora': dados.get('dataHora', ''),
         }
 
+    # Persiste automaticamente as cotações consultadas
+    data_ref_obj = date.fromisoformat(resultado['data_iso'])
+    MOEDAS_SALVAR = {'USD', 'EUR', 'GBP'}
+    from .models import CotacaoBCB
+    for moeda, dados in resultado['cotacoes'].items():
+        if moeda in MOEDAS_SALVAR:
+            CotacaoBCB.objects.update_or_create(
+                data=data_ref_obj,
+                moeda=moeda,
+                defaults={'compra': dados['compra'], 'venda': dados['venda']},
+            )
+
     return JsonResponse({
         'data': resultado['data'],
         'data_iso': resultado['data_iso'],
         'cotacoes': cotacoes_json,
     })
+
+
+# ───────────────────────── Histórico de Cotações BCB ─────────────────────
+
+@login_required
+def cotacoes_bcb_list(request):
+    from .models import CotacaoBCB
+    from datetime import date
+
+    # Filtro por período (padrão: últimos 90 dias)
+    data_fim = date.today()
+    data_ini_str = request.GET.get('data_ini', '')
+    data_fim_str = request.GET.get('data_fim', '')
+    try:
+        data_ini = date.fromisoformat(data_ini_str) if data_ini_str else None
+    except ValueError:
+        data_ini = None
+    try:
+        data_fim = date.fromisoformat(data_fim_str) if data_fim_str else date.today()
+    except ValueError:
+        data_fim = date.today()
+
+    qs = CotacaoBCB.objects.all()
+    if data_ini:
+        qs = qs.filter(data__gte=data_ini)
+    qs = qs.filter(data__lte=data_fim)
+
+    # Monta estrutura: {data: {moeda: {compra, venda}}}
+    from collections import defaultdict
+    por_data = defaultdict(dict)
+    for c in qs:
+        por_data[c.data][c.moeda] = {'compra': c.compra, 'venda': c.venda}
+
+    linhas = [
+        {'data': d, 'cotacoes': por_data[d]}
+        for d in sorted(por_data.keys(), reverse=True)
+    ]
+
+    return render(request, 'faturamento/cotacoes_bcb/list.html', {
+        'linhas': linhas,
+        'data_ini': data_ini_str,
+        'data_fim': data_fim_str,
+        'total': len(linhas),
+    })
+
+
+@login_required
+def cotacoes_bcb_buscar_hoje(request):
+    """Busca manualmente as cotações do dia e redireciona para o histórico."""
+    if request.method != 'POST':
+        from django.shortcuts import redirect
+        return redirect('faturamento:cotacoes_bcb_list')
+
+    from .bcb import buscar_cotacoes
+    from .models import CotacaoBCB
+    from datetime import date
+
+    try:
+        resultado = buscar_cotacoes(moedas=['USD', 'EUR', 'GBP'])
+        data_ref = date.fromisoformat(resultado['data_iso'])
+        for moeda, dados in resultado['cotacoes'].items():
+            CotacaoBCB.objects.update_or_create(
+                data=data_ref,
+                moeda=moeda,
+                defaults={'compra': dados['compra'], 'venda': dados['venda']},
+            )
+        from django.contrib import messages
+        messages.success(request, f"Cotações BCB salvas para {resultado['data']} — USD, EUR, GBP.")
+    except Exception as e:
+        from django.contrib import messages
+        messages.error(request, f'Erro ao buscar cotações do BCB: {e}')
+
+    from django.shortcuts import redirect
+    return redirect('faturamento:cotacoes_bcb_list')
 
 
 # ───────────────────────── Documentação IntegraNotas ──────────────────────

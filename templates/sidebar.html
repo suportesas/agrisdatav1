@@ -156,10 +156,12 @@
 
       <li class="nav-divider"></li>
 
-      <!-- OPERACIONAL (Apenas para Empresa) -->
+      <!-- ══════════ OPERACIONAL (Apenas para Empresa) ══════════ -->
       {% if not user.is_superuser and user.empresa %}
+
+      <!-- ── PRODUÇÃO AGRÍCOLA ── -->
       <li class="nav-section">
-        <span>OPERACIONAL</span>
+        <span>PRODUÇÃO AGRÍCOLA</span>
       </li>
 
       <!-- Agro -->
@@ -230,6 +232,12 @@
           <li><a href="{% url 'cadastros:replantio_list' %}"><i class="bi bi-arrow-repeat"></i> Replantios</a></li>
           <li><a href="{% url 'cadastros:dashboard_estufas' %}"><i class="bi bi-bar-chart-line"></i> Dashboard</a></li>
         </ul>
+      </li>
+
+      <li class="nav-divider"></li>
+      <!-- ── PESSOAS & PARCEIROS ── -->
+      <li class="nav-section">
+        <span>PESSOAS &amp; PARCEIROS</span>
       </li>
 
       <!-- Cadastros -->
@@ -346,6 +354,12 @@
         </ul>
       </li>
 
+      <li class="nav-divider"></li>
+      <!-- ── SUPRIMENTOS & ESTOQUE ── -->
+      <li class="nav-section">
+        <span>SUPRIMENTOS &amp; ESTOQUE</span>
+      </li>
+
       <!-- Produtos -->
       <li class="nav-item has-submenu">
         <a href="#" class="nav-link">
@@ -445,6 +459,12 @@
         </ul>
       </li>
 
+      <li class="nav-divider"></li>
+      <!-- ── FINANCEIRO & FISCAL ── -->
+      <li class="nav-section">
+        <span>FINANCEIRO &amp; FISCAL</span>
+      </li>
+
       <!-- Fiscal -->
       <li class="nav-item has-submenu">
         <a href="#" class="nav-link">
@@ -527,6 +547,12 @@
             </ul>
           </li>
         </ul>
+      </li>
+
+      <li class="nav-divider"></li>
+      <!-- ── COMERCIAL & EXPORTAÇÃO ── -->
+      <li class="nav-section">
+        <span>COMERCIAL &amp; EXPORTAÇÃO</span>
       </li>
 
       <!-- Exportação -->
@@ -615,10 +641,49 @@
           <li><a href="{% url 'faturamento:mdfe_list' %}"><i class="bi bi-clipboard-check text-warning"></i> MDF-e (Manifestos)</a></li>
           <li><a href="{% url 'faturamento:mdfe_create' %}"><i class="bi bi-plus-circle"></i> Novo MDF-e</a></li>
           <li class="submenu-divider"></li>
+          <li><a href="{% url 'faturamento:cotacoes_bcb_list' %}"><i class="bi bi-bank text-success"></i> Cotações BCB</a></li>
+          <li class="submenu-divider"></li>
           <li><a href="{% url 'faturamento:configuracao' %}"><i class="bi bi-gear"></i> Configuração Fiscal</a></li>
           <li class="submenu-divider"></li>
           <li><a href="{% url 'faturamento:docs_integranotas' %}" target="_blank"><i class="bi bi-file-earmark-code text-info"></i> Docs API IntegraNotas</a></li>
         </ul>
+      </li>
+
+      <li class="nav-divider"></li>
+      <!-- ── INFRAESTRUTURA ── -->
+      <li class="nav-section">
+        <span>INFRAESTRUTURA</span>
+      </li>
+
+      <!-- Energia Solar -->
+      <li class="nav-item has-submenu">
+        <a href="#" class="nav-link">
+          <i class="bi bi-sun-fill text-warning"></i>
+          <span>Energia Solar</span>
+          <i class="bi bi-chevron-down submenu-arrow"></i>
+        </a>
+        <ul class="nav-submenu">
+          <li><a href="{% url 'energia:dashboard' %}"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
+          <li><a href="{% url 'energia:consolidado' %}"><i class="bi bi-bar-chart-fill text-warning"></i> Consolidado / Ranking</a></li>
+          <li class="submenu-divider"></li>
+          <li><a href="{% url 'energia:usina_list' %}"><i class="bi bi-lightning-charge-fill text-warning"></i> Usinas</a></li>
+          <li><a href="{% url 'energia:uc_list' %}"><i class="bi bi-plug-fill text-info"></i> Unidades Consumidoras</a></li>
+          <li class="submenu-divider"></li>
+          <li><a href="{% url 'energia:lancamento_list' %}"><i class="bi bi-receipt"></i> Lançamentos Mensais</a></li>
+          <li><a href="{% url 'energia:lancamento_create' %}"><i class="bi bi-plus-circle"></i> Novo Lançamento</a></li>
+          <li class="submenu-divider"></li>
+          <li><a href="{% url 'energia:relatorio_usina_list' %}"><i class="bi bi-file-earmark-bar-graph-fill text-success"></i> Relatórios de Usina</a></li>
+          <li><a href="{% url 'energia:relatorio_usina_create' %}"><i class="bi bi-plus-circle"></i> Novo Relatório</a></li>
+          <li class="submenu-divider"></li>
+          <li><a href="{% url 'energia:ocorrencia_list' %}"><i class="bi bi-exclamation-triangle-fill text-warning"></i> Ocorrências</a></li>
+          <li><a href="{% url 'energia:ocorrencia_create' %}"><i class="bi bi-plus-circle"></i> Nova Ocorrência</a></li>
+        </ul>
+      </li>
+
+      <li class="nav-divider"></li>
+      <!-- ── RELATÓRIOS ── -->
+      <li class="nav-section">
+        <span>RELATÓRIOS</span>
       </li>
 
       <!-- Relatórios -->

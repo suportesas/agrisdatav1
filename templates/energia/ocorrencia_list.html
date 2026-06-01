@@ -1,0 +1,134 @@
+{% extends 'base.html' %}
+{% block title %}Ocorrências de Usinas{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h1 class="mb-0 fs-4"><i class="bi bi-exclamation-triangle-fill text-warning me-2"></i>Ocorrências de Usinas</h1>
+      {% if pendentes > 0 %}
+      <span class="badge bg-danger">{{ pendentes }} pendente{{ pendentes|pluralize }}</span>
+      {% endif %}
+    </div>
+    <a href="{% url 'energia:ocorrencia_create' %}" class="btn btn-warning">
+      <i class="bi bi-plus-circle me-1"></i>Nova Ocorrência
+    </a>
+  </div>
+
+  <!-- Filtros -->
+  <div class="card mb-3">
+    <div class="card-body py-2">
+      <form method="get" class="row g-2 align-items-end">
+        <div class="col-auto flex-grow-1">
+          <select name="usina" class="form-select form-select-sm">
+            <option value="">Todas as usinas</option>
+            {% for u in usinas %}
+            <option value="{{ u.pk }}" {% if usina_id == u.pk|stringformat:"s" %}selected{% endif %}>{{ u.codigo }} — {{ u.nome }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-auto">
+          <select name="tipo" class="form-select form-select-sm">
+            <option value="">Todos os tipos</option>
+            {% for val, label in tipo_choices %}
+            <option value="{{ val }}" {% if tipo == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-auto">
+          <select name="resolvido" class="form-select form-select-sm" style="width:150px">
+            <option value="">Todos</option>
+            <option value="0" {% if resolvido == '0' %}selected{% endif %}>Pendentes</option>
+            <option value="1" {% if resolvido == '1' %}selected{% endif %}>Resolvidos</option>
+          </select>
+        </div>
+        <div class="col-auto">
+          <button type="submit" class="btn btn-outline-primary btn-sm"><i class="bi bi-search"></i></button>
+          <a href="{% url 'energia:ocorrencia_list' %}" class="btn btn-outline-secondary btn-sm ms-1">Limpar</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0 align-middle">
+        <thead class="table-light">
+          <tr>
+            <th class="ps-3">Data</th>
+            <th>Usina</th>
+            <th>Tipo</th>
+            <th>Gravidade</th>
+            <th>Título</th>
+            <th class="text-end">Impacto (kWh)</th>
+            <th class="text-center">Status</th>
+            <th class="text-center pe-3">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for o in page_obj %}
+          <tr>
+            <td class="ps-3 text-muted small">{{ o.data_ocorrencia|date:"d/m/Y" }}</td>
+            <td>
+              <a href="{% url 'energia:usina_detail' o.usina.pk %}" class="text-decoration-none fw-semibold small">{{ o.usina.codigo }}</a>
+            </td>
+            <td class="small">{{ o.get_tipo_display }}</td>
+            <td>
+              <span class="badge
+                {% if o.gravidade == 'CRITICA' %}bg-danger
+                {% elif o.gravidade == 'ALTA' %}bg-orange
+                {% elif o.gravidade == 'MEDIA' %}bg-warning text-dark
+                {% else %}bg-success{% endif %}">
+                {{ o.get_gravidade_display }}
+              </span>
+            </td>
+            <td>
+              <a href="{% url 'energia:ocorrencia_detail' o.pk %}" class="text-decoration-none">{{ o.titulo }}</a>
+            </td>
+            <td class="text-end font-monospace">
+              {% if o.impacto_kwh_estimado %}{{ o.impacto_kwh_estimado|floatformat:0 }}{% else %}—{% endif %}
+            </td>
+            <td class="text-center">
+              {% if o.resolvido %}
+                <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Resolvido</span>
+              {% else %}
+                <span class="badge bg-danger"><i class="bi bi-clock me-1"></i>Pendente</span>
+              {% endif %}
+            </td>
+            <td class="text-center pe-3">
+              <a href="{% url 'energia:ocorrencia_detail' o.pk %}" class="btn btn-sm btn-outline-info"><i class="bi bi-eye"></i></a>
+              <a href="{% url 'energia:ocorrencia_update' o.pk %}" class="btn btn-sm btn-outline-secondary ms-1"><i class="bi bi-pencil"></i></a>
+              <form method="post" action="{% url 'energia:ocorrencia_resolver' o.pk %}" class="d-inline ms-1">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="energia:ocorrencia_list">
+                <button type="submit" class="btn btn-sm {% if o.resolvido %}btn-outline-warning{% else %}btn-outline-success{% endif %}"
+                  title="{% if o.resolvido %}Reabrir{% else %}Marcar como resolvido{% endif %}">
+                  <i class="bi {% if o.resolvido %}bi-arrow-counterclockwise{% else %}bi-check-lg{% endif %}"></i>
+                </button>
+              </form>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="8" class="text-center py-5 text-muted">
+              <i class="bi bi-check-circle fs-2 d-block mb-2 text-success"></i>
+              Nenhuma ocorrência registrada.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if page_obj.has_other_pages %}
+    <div class="card-footer">
+      <nav><ul class="pagination pagination-sm justify-content-center mb-0">
+        {% if page_obj.has_previous %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&usina={{ usina_id }}&resolvido={{ resolvido }}&tipo={{ tipo }}">«</a></li>{% endif %}
+        <li class="page-item disabled"><span class="page-link">{{ page_obj.number }}/{{ page_obj.paginator.num_pages }}</span></li>
+        {% if page_obj.has_next %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&usina={{ usina_id }}&resolvido={{ resolvido }}&tipo={{ tipo }}">»</a></li>{% endif %}
+      </ul></nav>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

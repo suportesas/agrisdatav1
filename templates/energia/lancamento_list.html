@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+{% block title %}Lançamentos Mensais — Energia{% endblock %}
+{% block content %}
+<div class="container-fluid">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="mb-0 fs-4"><i class="bi bi-receipt me-2"></i>Lançamentos Mensais</h1>
+    <a href="{% url 'energia:lancamento_create' %}" class="btn btn-primary"><i class="bi bi-plus-circle me-1"></i>Novo Lançamento</a>
+  </div>
+
+  <div class="card mb-3">
+    <div class="card-body py-2">
+      <form method="get" class="row g-2 align-items-end">
+        <div class="col-auto">
+          <label class="form-label mb-1 small text-muted">Mês</label>
+          <input type="month" name="mes" class="form-control form-control-sm" value="{{ mes }}" style="width:160px">
+        </div>
+        <div class="col-auto flex-grow-1">
+          <label class="form-label mb-1 small text-muted">Unidade Consumidora</label>
+          <select name="uc" class="form-select form-select-sm">
+            <option value="">Todas as UCs</option>
+            {% for u in ucs %}
+            <option value="{{ u.pk }}" {% if uc_id == u.pk|stringformat:"s" %}selected{% endif %}>{{ u.nome }} ({{ u.codigo_cliente }})</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-auto">
+          <button type="submit" class="btn btn-outline-primary btn-sm"><i class="bi bi-search"></i></button>
+          <a href="{% url 'energia:lancamento_list' %}" class="btn btn-outline-secondary btn-sm ms-1">Limpar</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Totais -->
+  {% if totais.consumo %}
+  <div class="row g-2 mb-3">
+    <div class="col"><div class="card text-center p-2"><div class="text-muted small">Consumo</div><div class="fw-bold">{{ totais.consumo|floatformat:0 }} kWh</div></div></div>
+    <div class="col"><div class="card text-center p-2"><div class="text-muted small">Compensado</div><div class="fw-bold text-success">{{ totais.compensado|floatformat:0 }} kWh</div></div></div>
+    <div class="col"><div class="card text-center p-2"><div class="text-muted small">Injetado</div><div class="fw-bold text-info">{{ totais.injetado|floatformat:0 }} kWh</div></div></div>
+    <div class="col"><div class="card text-center p-2"><div class="text-muted small">Faturado</div><div class="fw-bold">R$ {{ totais.faturado|floatformat:2 }}</div></div></div>
+    <div class="col"><div class="card text-center p-2"><div class="text-muted small">Economizado</div><div class="fw-bold text-success">R$ {{ totais.economizado|floatformat:2 }}</div></div></div>
+  </div>
+  {% endif %}
+
+  <div class="card shadow-sm">
+    <div class="table-responsive">
+      <table class="table table-hover table-sm mb-0 align-middle">
+        <thead class="table-light">
+          <tr>
+            <th class="ps-3">Mês</th>
+            <th>UC</th>
+            <th>Usina</th>
+            <th class="text-end">Consumo (kWh)</th>
+            <th class="text-end">Compensado</th>
+            <th class="text-end">Injetado</th>
+            <th class="text-end">Faturado (R$)</th>
+            <th class="text-end">Economizado (R$)</th>
+            <th class="text-center pe-3"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for l in page_obj %}
+          <tr>
+            <td class="ps-3 fw-semibold">{{ l.mes_referencia|date:"m/Y" }}</td>
+            <td><a href="{% url 'energia:uc_detail' l.unidade_consumidora.pk %}" class="text-decoration-none">{{ l.unidade_consumidora.nome }}</a></td>
+            <td class="text-muted small">{{ l.unidade_consumidora.usina.codigo|default:"—" }}</td>
+            <td class="text-end font-monospace">{{ l.consumo_registrado_kwh|floatformat:0 }}</td>
+            <td class="text-end font-monospace text-success">{{ l.energia_compensada_kwh|floatformat:0 }}</td>
+            <td class="text-end font-monospace text-info">{{ l.energia_injetada_kwh|floatformat:0 }}</td>
+            <td class="text-end font-monospace">{{ l.valor_faturado_rs|floatformat:2 }}</td>
+            <td class="text-end font-monospace text-success fw-semibold">{{ l.valor_economizado_rs|floatformat:2 }}</td>
+            <td class="text-center pe-3">
+              <a href="{% url 'energia:lancamento_detail' l.pk %}" class="btn btn-sm btn-outline-info"><i class="bi bi-eye"></i></a>
+              <a href="{% url 'energia:lancamento_update' l.pk %}" class="btn btn-sm btn-outline-secondary ms-1"><i class="bi bi-pencil"></i></a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="9" class="text-center py-5 text-muted">Nenhum lançamento encontrado.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if page_obj.has_other_pages %}
+    <div class="card-footer">
+      <nav><ul class="pagination pagination-sm justify-content-center mb-0">
+        {% if page_obj.has_previous %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&mes={{ mes }}&uc={{ uc_id }}">«</a></li>{% endif %}
+        <li class="page-item disabled"><span class="page-link">{{ page_obj.number }}/{{ page_obj.paginator.num_pages }}</span></li>
+        {% if page_obj.has_next %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&mes={{ mes }}&uc={{ uc_id }}">»</a></li>{% endif %}
+      </ul></nav>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

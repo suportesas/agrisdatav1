@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+{% block title %}{{ titulo }}{% endblock %}
+{% block content %}
+<div class="container-fluid">
+  <div class="d-flex align-items-center gap-2 mb-4">
+    <a href="{% url 'energia:usina_list' %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
+    <h1 class="mb-0 fs-4">{{ titulo }}</h1>
+  </div>
+
+  <form method="post">
+    {% csrf_token %}
+    <div class="row g-4">
+      <div class="col-lg-8">
+        <div class="card mb-4">
+          <div class="card-header"><i class="bi bi-lightning-charge-fill text-warning me-1"></i> Identificação</div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-sm-4">
+                <label class="form-label">{{ form.codigo.label }} *</label>
+                {{ form.codigo }}
+                {% if form.codigo.errors %}<div class="text-danger small">{{ form.codigo.errors.0 }}</div>{% endif %}
+              </div>
+              <div class="col-sm-8">
+                <label class="form-label">{{ form.nome.label }} *</label>
+                {{ form.nome }}
+                {% if form.nome.errors %}<div class="text-danger small">{{ form.nome.errors.0 }}</div>{% endif %}
+              </div>
+              <div class="col-sm-4">
+                <label class="form-label">{{ form.capacidade_kwp.label }} *</label>
+                {{ form.capacidade_kwp }}
+              </div>
+              <div class="col-sm-4">
+                <label class="form-label">{{ form.data_instalacao.label }}</label>
+                {{ form.data_instalacao }}
+              </div>
+              <div class="col-sm-4 d-flex align-items-end pb-1">
+                <div class="form-check">
+                  {{ form.ativa }}
+                  <label class="form-check-label ms-1">{{ form.ativa.label }}</label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><i class="bi bi-bar-chart me-1"></i> Geração Contratada / Prognóstico</div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-sm-4">
+                <label class="form-label">{{ form.geracao_acordada_mensal_kwh.label }}</label>
+                {{ form.geracao_acordada_mensal_kwh }}
+                <small class="text-muted">kWh/mês</small>
+              </div>
+              <div class="col-sm-4">
+                <label class="form-label">{{ form.geracao_acordada_anual_kwh.label }}</label>
+                {{ form.geracao_acordada_anual_kwh }}
+                <small class="text-muted">kWh/ano</small>
+              </div>
+              <div class="col-sm-4">
+                <label class="form-label">{{ form.prognostico_mensal_kwh.label }}</label>
+                {{ form.prognostico_mensal_kwh }}
+                <small class="text-muted">kWh/mês</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-4">
+        <div class="d-grid gap-2">
+          <button type="submit" class="btn btn-primary btn-lg"><i class="bi bi-check-lg me-1"></i>Salvar</button>
+          <a href="{% url 'energia:usina_list' %}" class="btn btn-outline-secondary">Cancelar</a>
+        </div>
+      </div>
+    </div>
+  </form>
+</div>
+{% endblock %}

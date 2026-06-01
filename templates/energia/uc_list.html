@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+{% block title %}Unidades Consumidoras{% endblock %}
+{% block content %}
+<div class="container-fluid">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="mb-0 fs-4"><i class="bi bi-plug-fill text-info me-2"></i>Unidades Consumidoras</h1>
+    <a href="{% url 'energia:uc_create' %}" class="btn btn-primary"><i class="bi bi-plus-circle me-1"></i>Nova UC</a>
+  </div>
+
+  <div class="card mb-3">
+    <div class="card-body py-2">
+      <form method="get" class="row g-2 align-items-end">
+        <div class="col-auto flex-grow-1">
+          <input type="text" name="q" class="form-control form-control-sm" placeholder="Nome ou código do cliente..." value="{{ q }}">
+        </div>
+        <div class="col-auto">
+          <select name="usina" class="form-select form-select-sm" style="min-width:200px">
+            <option value="">Todas as usinas</option>
+            {% for u in usinas %}
+            <option value="{{ u.pk }}" {% if usina_id == u.pk|stringformat:"s" %}selected{% endif %}>{{ u.codigo }} — {{ u.nome }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-auto">
+          <button type="submit" class="btn btn-outline-primary btn-sm"><i class="bi bi-search"></i></button>
+          <a href="{% url 'energia:uc_list' %}" class="btn btn-outline-secondary btn-sm ms-1">Limpar</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0 align-middle">
+        <thead class="table-light">
+          <tr>
+            <th class="ps-3">Nome</th>
+            <th>Cód. Cliente</th>
+            <th>Tipo</th>
+            <th>Usina</th>
+            <th>Classificação</th>
+            <th class="text-center">Status</th>
+            <th class="text-center pe-3">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for uc in page_obj %}
+          <tr>
+            <td class="ps-3 fw-semibold">
+              <a href="{% url 'energia:uc_detail' uc.pk %}" class="text-decoration-none">{{ uc.nome }}</a>
+            </td>
+            <td class="font-monospace">{{ uc.codigo_cliente }}</td>
+            <td>
+              {% if uc.tipo == 'GERADORA' %}
+                <span class="badge bg-warning text-dark">Geradora</span>
+              {% elif uc.tipo == 'BENEFICIARIA' %}
+                <span class="badge bg-info text-dark">Beneficiária</span>
+              {% else %}
+                <span class="badge bg-secondary">Convencional</span>
+              {% endif %}
+            </td>
+            <td class="text-muted small">{{ uc.usina.codigo|default:"—" }}</td>
+            <td class="text-muted small">{{ uc.classificacao|default:"—" }}</td>
+            <td class="text-center">
+              {% if uc.ativa %}<span class="badge bg-success">Ativa</span>
+              {% else %}<span class="badge bg-secondary">Inativa</span>{% endif %}
+            </td>
+            <td class="text-center pe-3">
+              <a href="{% url 'energia:uc_detail' uc.pk %}" class="btn btn-sm btn-outline-info"><i class="bi bi-eye"></i></a>
+              <a href="{% url 'energia:uc_update' uc.pk %}" class="btn btn-sm btn-outline-secondary ms-1"><i class="bi bi-pencil"></i></a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="7" class="text-center py-5 text-muted">
+            <i class="bi bi-plug fs-2 d-block mb-2"></i>Nenhuma UC cadastrada.
+          </td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if page_obj.has_other_pages %}
+    <div class="card-footer">
+      <nav><ul class="pagination pagination-sm justify-content-center mb-0">
+        {% if page_obj.has_previous %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&q={{ q }}&usina={{ usina_id }}">«</a></li>{% endif %}
+        <li class="page-item disabled"><span class="page-link">{{ page_obj.number }}/{{ page_obj.paginator.num_pages }}</span></li>
+        {% if page_obj.has_next %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&q={{ q }}&usina={{ usina_id }}">»</a></li>{% endif %}
+      </ul></nav>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,7 @@
+from django.apps import AppConfig
+
+
+class EnergiaConfig(AppConfig):
+    default_auto_field = 'django.db.models.BigAutoField'
+    name = 'energia'
+    verbose_name = 'Energia Solar'

@@ -1,0 +1,277 @@
+{% extends 'base.html' %}
+{% block title %}Consolidado de Usinas{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+  <!-- Cabeçalho -->
+  <div class="d-flex align-items-center justify-content-between mb-4">
+    <div>
+      <h1 class="mb-0 fs-4"><i class="bi bi-bar-chart-fill text-warning me-2"></i>Consolidado de Usinas</h1>
+      <small class="text-muted">Comparativo entre todas as usinas</small>
+    </div>
+    <form method="get" class="d-flex align-items-center gap-2">
+      <label class="text-muted small mb-0">Mês:</label>
+      <input type="month" name="mes" value="{{ mes_param }}" class="form-control form-control-sm" style="width:160px">
+      <button type="submit" class="btn btn-outline-primary btn-sm"><i class="bi bi-search"></i></button>
+    </form>
+  </div>
+
+  {% if not chart_labels %}
+  <div class="alert alert-info">
+    <i class="bi bi-info-circle me-2"></i>
+    Nenhum relatório lançado para <strong>{{ mes_ref|date:"F/Y" }}</strong>.
+    <a href="{% url 'energia:relatorio_usina_create' %}" class="alert-link ms-2">Lançar agora →</a>
+  </div>
+  {% endif %}
+
+  <!-- ── Gráfico 1: Ranking de Geração ── -->
+  {% if chart_labels %}
+  <div class="row g-4 mb-4">
+    <div class="col-lg-6">
+      <div class="card h-100">
+        <div class="card-header fw-semibold">
+          <i class="bi bi-trophy-fill text-warning me-1"></i>
+          Ranking de Geração — {{ mes_ref|date:"F/Y" }}
+          <span class="text-muted small fw-normal ms-2">(kWh — maior → menor)</span>
+        </div>
+        <div class="card-body">
+          <canvas id="chartGeracao"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Gráfico 2: Desempenho % ── -->
+    <div class="col-lg-6">
+      <div class="card h-100">
+        <div class="card-header fw-semibold">
+          <i class="bi bi-speedometer2 text-primary me-1"></i>
+          Desempenho — {{ mes_ref|date:"F/Y" }}
+          <span class="text-muted small fw-normal ms-2">(%)</span>
+        </div>
+        <div class="card-body">
+          <canvas id="chartDesempenho"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Gráfico 3: Economia R$ ── -->
+    <div class="col-lg-6">
+      <div class="card h-100">
+        <div class="card-header fw-semibold">
+          <i class="bi bi-currency-dollar text-success me-1"></i>
+          Economia — {{ mes_ref|date:"F/Y" }}
+          <span class="text-muted small fw-normal ms-2">(R$)</span>
+        </div>
+        <div class="card-body">
+          <canvas id="chartEconomia"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Gráfico 4: CO₂ ── -->
+    <div class="col-lg-6">
+      <div class="card h-100">
+        <div class="card-header fw-semibold">
+          <i class="bi bi-tree-fill text-success me-1"></i>
+          CO₂ não Produzido — {{ mes_ref|date:"F/Y" }}
+          <span class="text-muted small fw-normal ms-2">(toneladas)</span>
+        </div>
+        <div class="card-body">
+          <canvas id="chartCo2"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- ── Gráfico 5: Histórico 12 meses por usina (linhas) ── -->
+  {% if historico_usinas %}
+  <div class="card mb-4">
+    <div class="card-header fw-semibold">
+      <i class="bi bi-graph-up text-primary me-1"></i>
+      Geração por Usina — Últimos 12 Meses (kWh)
+    </div>
+    <div class="card-body">
+      <canvas id="chartHistorico" height="80"></canvas>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- ── Tabela comparativa ── -->
+  <div class="card shadow-sm">
+    <div class="card-header fw-semibold">
+      <i class="bi bi-table me-1"></i>Comparativo por Usina — {{ mes_ref|date:"F/Y" }}
+    </div>
+    <div class="table-responsive">
+      <table class="table table-hover table-sm mb-0 align-middle">
+        <thead class="table-dark">
+          <tr>
+            <th class="ps-3">Usina</th>
+            <th class="text-end">Capacidade (kWp)</th>
+            <th class="text-end">Geração (kWh)</th>
+            <th class="text-end">Desempenho</th>
+            <th class="text-end">Consumo (kWh)</th>
+            <th class="text-end">Injetado (kWh)</th>
+            <th class="text-end">Economia (R$)</th>
+            <th class="text-end">Faturado (R$)</th>
+            <th class="text-end">CO₂ (t)</th>
+            <th class="text-end pe-3">Árvores</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for linha in linhas %}
+          <tr {% if not linha.relatorio %}class="table-warning"{% endif %}>
+            <td class="ps-3">
+              <a href="{% url 'energia:usina_detail' linha.usina.pk %}" class="fw-semibold text-decoration-none">
+                {{ linha.usina.codigo }}
+              </a>
+              <div class="text-muted" style="font-size:.75rem">{{ linha.usina.nome }}</div>
+            </td>
+            <td class="text-end">{{ linha.usina.capacidade_kwp }} kWp</td>
+            {% if linha.relatorio %}
+              {% with r=linha.relatorio %}
+              <td class="text-end font-monospace fw-semibold">{{ r.geracao_kwh|floatformat:0 }}</td>
+              <td class="text-end">
+                <span class="badge {% if r.desempenho_pct >= 90 %}bg-success{% elif r.desempenho_pct >= 75 %}bg-warning text-dark{% else %}bg-danger{% endif %}">
+                  {{ r.desempenho_pct }}%
+                </span>
+              </td>
+              <td class="text-end font-monospace">{{ r.consumo_total_kwh|floatformat:0 }}</td>
+              <td class="text-end font-monospace text-info">{{ r.energia_injetada_kwh|floatformat:0 }}</td>
+              <td class="text-end font-monospace text-success fw-semibold">R$ {{ r.economia_rs|floatformat:2 }}</td>
+              <td class="text-end font-monospace">R$ {{ r.faturado_rs|floatformat:2 }}</td>
+              <td class="text-end text-muted">{{ r.co2_nao_produzido_t|floatformat:2 }}</td>
+              <td class="text-end pe-3 text-muted">{{ r.arvores_salvas }}</td>
+              {% endwith %}
+            {% else %}
+              <td colspan="8" class="text-center text-muted small pe-3">
+                Sem relatório lançado
+                <a href="{% url 'energia:relatorio_usina_create' %}" class="ms-2 btn btn-xs btn-outline-secondary btn-sm py-0 px-1">Lançar</a>
+              </td>
+            {% endif %}
+          </tr>
+          {% empty %}
+          <tr><td colspan="10" class="text-center py-5 text-muted">Nenhuma usina cadastrada.</td></tr>
+          {% endfor %}
+        </tbody>
+        {% if chart_labels %}
+        <tfoot class="table-secondary fw-semibold">
+          <tr>
+            <td class="ps-3">TOTAL</td>
+            <td></td>
+            <td class="text-end font-monospace">
+              {% with total=0 %}
+              {% for v in chart_geracao %}{{ forloop.first|yesno:"," }}{% endfor %}
+              {{ chart_geracao|join:"+" }}
+              {% endwith %}
+              —
+            </td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td class="text-end font-monospace text-success" id="total-economia">—</td>
+            <td class="text-end font-monospace" id="total-faturado">—</td>
+            <td class="text-end text-muted" id="total-co2">—</td>
+            <td class="text-end pe-3 text-muted" id="total-arvores">—</td>
+          </tr>
+        </tfoot>
+        {% endif %}
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<script>
+(function () {
+  const labels   = {{ chart_labels|safe }};
+  const geracao  = {{ chart_geracao|safe }};
+  const desemp   = {{ chart_desemp|safe }};
+  const economia = {{ chart_economia|safe }};
+  const co2      = {{ chart_co2|safe }};
+
+  // Cores dinâmicas por posição no ranking
+  function rankColors(values, goodHigh) {
+    const max = Math.max(...values);
+    const min = Math.min(...values);
+    return values.map(v => {
+      const ratio = max === min ? 1 : (v - min) / (max - min);
+      const r = goodHigh ? ratio : 1 - ratio;
+      return `rgba(${Math.round(220 - r*140)}, ${Math.round(80 + r*120)}, ${Math.round(60)}, 0.8)`;
+    });
+  }
+
+  const desempColors = desemp.map(v =>
+    v >= 90 ? 'rgba(34,197,94,0.8)' : v >= 75 ? 'rgba(234,179,8,0.8)' : 'rgba(239,68,68,0.8)'
+  );
+
+  const barOpts = (title, unit) => ({
+    responsive: true,
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: ctx => ` ${ctx.parsed.y.toLocaleString('pt-BR', {maximumFractionDigits:2})} ${unit}` }},
+    },
+    scales: { y: { beginAtZero: true, title: { display: true, text: unit } } },
+  });
+
+  if (labels.length) {
+    new Chart(document.getElementById('chartGeracao'), {
+      type: 'bar',
+      data: { labels, datasets: [{ data: geracao, backgroundColor: rankColors(geracao, true), borderRadius: 4 }] },
+      options: barOpts('Geração', 'kWh'),
+    });
+
+    new Chart(document.getElementById('chartDesempenho'), {
+      type: 'bar',
+      data: { labels, datasets: [{ data: desemp, backgroundColor: desempColors, borderRadius: 4 }] },
+      options: {
+        ...barOpts('Desempenho', '%'),
+        scales: { y: { min: 0, max: 110, title: { display: true, text: '%' } } },
+      },
+    });
+
+    new Chart(document.getElementById('chartEconomia'), {
+      type: 'bar',
+      data: { labels, datasets: [{ data: economia, backgroundColor: 'rgba(34,197,94,0.75)', borderRadius: 4 }] },
+      options: barOpts('Economia', 'R$'),
+    });
+
+    new Chart(document.getElementById('chartCo2'), {
+      type: 'bar',
+      data: { labels, datasets: [{ data: co2, backgroundColor: 'rgba(16,185,129,0.75)', borderRadius: 4 }] },
+      options: barOpts('CO₂', 't'),
+    });
+  }
+
+  // Gráfico histórico 12 meses — linhas por usina
+  const mesesLabels   = {{ meses_labels|safe }};
+  const historicoData = {{ historico_usinas|safe }};
+  const palette = ['#7c3aed','#06b6d4','#f59e0b','#10b981','#ef4444','#6366f1','#ec4899','#84cc16','#f97316'];
+
+  if (historicoData.length) {
+    new Chart(document.getElementById('chartHistorico'), {
+      type: 'line',
+      data: {
+        labels: mesesLabels,
+        datasets: historicoData.map((u, i) => ({
+          label: u.label,
+          data: u.data,
+          borderColor: palette[i % palette.length],
+          backgroundColor: palette[i % palette.length] + '22',
+          tension: 0.3,
+          spanGaps: true,
+          pointRadius: 4,
+        })),
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { position: 'bottom' } },
+        scales: { y: { beginAtZero: true, title: { display: true, text: 'kWh' } } },
+      },
+    });
+  }
+})();
+</script>
+{% endblock %}

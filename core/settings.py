@@ -76,6 +76,7 @@ INSTALLED_APPS = [
     'plano_contas',  # Plano de Contas e Centros de Custo
     'bancario',      # Contas Bancárias, Extrato OFX/CNAB, Conciliação Bancária
     'adiantamentos',  # Adiantamentos Internacionais (Advance Payments)
+    'energia',        # Controle de Energia Solar (Usinas, UCs, Lançamentos)
     'exportacao',  # Módulo de Exportação e Booking
     'faturamento',  # Módulo de Faturamento (NF-e, Invoice, Packing List)
     'vendas',       # Módulo de Vendas (Pré-venda / Pedido de Venda)

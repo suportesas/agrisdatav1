@@ -1,0 +1,140 @@
+{% extends 'base.html' %}
+
+{% block title %}Cotações BCB — Histórico{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+  <div class="d-flex align-items-center justify-content-between mb-4">
+    <div class="d-flex align-items-center gap-2">
+      <h1 class="mb-0 fs-4"><i class="bi bi-bank me-2 text-success"></i>Cotações BCB — PTAX</h1>
+      <span class="badge bg-secondary">{{ total }} dias</span>
+    </div>
+    <form method="post" action="{% url 'faturamento:cotacoes_bcb_buscar_hoje' %}">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-success">
+        <i class="bi bi-arrow-repeat me-1"></i>Buscar Cotações de Hoje
+      </button>
+    </form>
+  </div>
+
+  {% if messages %}
+    {% for msg in messages %}
+      <div class="alert alert-{{ msg.tags }} alert-dismissible fade show" role="alert">
+        {{ msg }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- Filtro de período -->
+  <div class="card mb-4">
+    <div class="card-body py-2">
+      <form method="get" class="row g-2 align-items-end">
+        <div class="col-auto">
+          <label class="form-label mb-1 small text-muted">De</label>
+          <input type="date" name="data_ini" value="{{ data_ini }}" class="form-control form-control-sm" style="width:150px">
+        </div>
+        <div class="col-auto">
+          <label class="form-label mb-1 small text-muted">Até</label>
+          <input type="date" name="data_fim" value="{{ data_fim }}" class="form-control form-control-sm" style="width:150px">
+        </div>
+        <div class="col-auto">
+          <button type="submit" class="btn btn-outline-primary btn-sm">
+            <i class="bi bi-funnel me-1"></i>Filtrar
+          </button>
+          <a href="{% url 'faturamento:cotacoes_bcb_list' %}" class="btn btn-outline-secondary btn-sm ms-1">Limpar</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Tabela -->
+  <div class="card shadow-sm">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover table-sm mb-0 align-middle">
+          <thead class="table-dark">
+            <tr>
+              <th class="ps-3" style="width:130px">Data</th>
+              <th colspan="2" class="text-center border-start" style="background:#1a3a1a">
+                <i class="bi bi-currency-dollar"></i> USD — Dólar
+              </th>
+              <th colspan="2" class="text-center border-start" style="background:#1a1a3a">
+                <i class="bi bi-currency-euro"></i> EUR — Euro
+              </th>
+              <th colspan="2" class="text-center border-start" style="background:#2a1a1a">
+                <i class="bi bi-cash"></i> GBP — Libra
+              </th>
+            </tr>
+            <tr class="small" style="background:#2d2d2d;color:#aaa">
+              <th class="ps-3"></th>
+              <th class="text-end border-start">Compra</th>
+              <th class="text-end">Venda</th>
+              <th class="text-end border-start">Compra</th>
+              <th class="text-end">Venda</th>
+              <th class="text-end border-start">Compra</th>
+              <th class="text-end pe-3">Venda</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for linha in linhas %}
+            <tr>
+              <td class="ps-3 fw-semibold">{{ linha.data|date:"d/m/Y" }}</td>
+
+              {% with u=linha.cotacoes.USD %}
+              {% if u %}
+              <td class="text-end border-start font-monospace">R$ {{ u.compra|floatformat:4 }}</td>
+              <td class="text-end font-monospace text-muted">{{ u.venda|floatformat:4 }}</td>
+              {% else %}
+              <td class="text-end border-start text-muted small">—</td>
+              <td class="text-end text-muted small">—</td>
+              {% endif %}
+              {% endwith %}
+
+              {% with e=linha.cotacoes.EUR %}
+              {% if e %}
+              <td class="text-end border-start font-monospace">R$ {{ e.compra|floatformat:4 }}</td>
+              <td class="text-end font-monospace text-muted">{{ e.venda|floatformat:4 }}</td>
+              {% else %}
+              <td class="text-end border-start text-muted small">—</td>
+              <td class="text-end text-muted small">—</td>
+              {% endif %}
+              {% endwith %}
+
+              {% with g=linha.cotacoes.GBP %}
+              {% if g %}
+              <td class="text-end border-start font-monospace">R$ {{ g.compra|floatformat:4 }}</td>
+              <td class="text-end pe-3 font-monospace text-muted">{{ g.venda|floatformat:4 }}</td>
+              {% else %}
+              <td class="text-end border-start text-muted small">—</td>
+              <td class="text-end pe-3 text-muted small">—</td>
+              {% endif %}
+              {% endwith %}
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="7" class="text-center py-5 text-muted">
+                <i class="bi bi-inbox fs-2 d-block mb-2"></i>
+                Nenhuma cotação registrada ainda.<br>
+                <span class="small">Clique em <strong>Buscar Cotações de Hoje</strong> ou utilize os formulários de Invoice / Adiantamento.</span>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% if linhas %}
+    <div class="card-footer text-muted small py-2 px-3">
+      <i class="bi bi-info-circle me-1"></i>
+      Taxas PTAX do Banco Central do Brasil (BCB). Coluna <strong>Compra</strong> é usada como referência nos formulários.
+      <a href="https://www.bcb.gov.br/estabilidadefinanceira/historicocotacoes" target="_blank" class="ms-2">
+        Histórico oficial BCB ↗
+      </a>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

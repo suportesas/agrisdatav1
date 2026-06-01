@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+{% block title %}Ocorrência — {{ obj.titulo }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="d-flex align-items-center justify-content-between mb-4">
+    <div class="d-flex align-items-center gap-2">
+      <a href="{% url 'energia:ocorrencia_list' %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
+      <div>
+        <h1 class="mb-0 fs-4">
+          <i class="bi bi-exclamation-triangle-fill text-warning me-1"></i>{{ obj.titulo }}
+        </h1>
+        <small class="text-muted">
+          {{ obj.usina.codigo }} — {{ obj.usina.nome }} &nbsp;|&nbsp;
+          {{ obj.data_ocorrencia|date:"d/m/Y" }}
+        </small>
+      </div>
+    </div>
+    <div class="d-flex gap-2">
+      <form method="post" action="{% url 'energia:ocorrencia_resolver' obj.pk %}">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="energia:ocorrencia_detail">
+        <button type="submit" class="btn btn-sm {% if obj.resolvido %}btn-outline-warning{% else %}btn-outline-success{% endif %}">
+          <i class="bi {% if obj.resolvido %}bi-arrow-counterclockwise{% else %}bi-check-lg{% endif %} me-1"></i>
+          {% if obj.resolvido %}Reabrir{% else %}Marcar Resolvido{% endif %}
+        </button>
+      </form>
+      <a href="{% url 'energia:ocorrencia_update' obj.pk %}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-pencil me-1"></i>Editar
+      </a>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <!-- Dados principais -->
+    <div class="col-md-4">
+      <div class="card mb-4">
+        <div class="card-header fw-semibold">Classificação</div>
+        <div class="card-body">
+          <dl class="row mb-0 small">
+            <dt class="col-5 text-muted">Usina</dt>
+            <dd class="col-7">
+              <a href="{% url 'energia:usina_detail' obj.usina.pk %}">{{ obj.usina.codigo }}</a>
+            </dd>
+            <dt class="col-5 text-muted">Tipo</dt>
+            <dd class="col-7">{{ obj.get_tipo_display }}</dd>
+            <dt class="col-5 text-muted">Gravidade</dt>
+            <dd class="col-7">
+              <span class="badge {{ badge }}">{{ obj.get_gravidade_display }}</span>
+            </dd>
+            <dt class="col-5 text-muted">Status</dt>
+            <dd class="col-7">
+              {% if obj.resolvido %}
+                <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Resolvido</span>
+              {% else %}
+                <span class="badge bg-danger"><i class="bi bi-clock me-1"></i>Pendente</span>
+              {% endif %}
+            </dd>
+            <dt class="col-5 text-muted">Ocorrência</dt>
+            <dd class="col-7">{{ obj.data_ocorrencia|date:"d/m/Y" }}</dd>
+            <dt class="col-5 text-muted">Resolução</dt>
+            <dd class="col-7">{{ obj.data_resolucao|date:"d/m/Y"|default:"—" }}</dd>
+            <dt class="col-5 text-muted">Responsável</dt>
+            <dd class="col-7">{{ obj.responsavel|default:"—" }}</dd>
+            <dt class="col-5 text-muted">Impacto Est.</dt>
+            <dd class="col-7 fw-semibold text-danger">
+              {% if obj.impacto_kwh_estimado %}{{ obj.impacto_kwh_estimado|floatformat:0 }} kWh{% else %}—{% endif %}
+            </dd>
+          </dl>
+        </div>
+      </div>
+
+      {% if obj.relatorio %}
+      <div class="card border-primary">
+        <div class="card-header fw-semibold text-primary">
+          <i class="bi bi-file-earmark-bar-graph me-1"></i>Relatório Vinculado
+        </div>
+        <div class="card-body small">
+          <div class="fw-semibold">{{ obj.relatorio }}</div>
+          <div class="text-muted mt-1">Desempenho: <strong>{{ obj.relatorio.desempenho_pct }}%</strong></div>
+          <div class="text-muted">Geração: <strong>{{ obj.relatorio.geracao_kwh|floatformat:0 }} kWh</strong></div>
+          <a href="{% url 'energia:relatorio_usina_detail' obj.relatorio.pk %}" class="btn btn-sm btn-outline-primary mt-2 w-100">
+            Ver Relatório
+          </a>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Descrição -->
+    <div class="col-md-8">
+      <div class="card h-100">
+        <div class="card-header fw-semibold"><i class="bi bi-card-text me-1"></i>Descrição / Justificativa</div>
+        <div class="card-body">
+          <p class="mb-0" style="white-space:pre-wrap">{{ obj.descricao }}</p>
+        </div>
+        <div class="card-footer text-muted small">
+          Registrado em {{ obj.criado_em|date:"d/m/Y H:i" }}
+          {% if obj.atualizado_em != obj.criado_em %}
+            · Atualizado em {{ obj.atualizado_em|date:"d/m/Y H:i" }}
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

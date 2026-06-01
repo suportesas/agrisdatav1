@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+{% block title %}Relatório {{ obj }}{% endblock %}
+{% block content %}
+<div class="container-fluid">
+  <div class="d-flex align-items-center justify-content-between mb-4">
+    <div class="d-flex align-items-center gap-2">
+      <a href="{% url 'energia:relatorio_usina_list' %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
+      <div>
+        <h1 class="mb-0 fs-4"><i class="bi bi-file-earmark-bar-graph-fill text-success me-1"></i>{{ obj.usina.nome }}</h1>
+        <small class="text-muted">{{ obj.mes_referencia|date:"F/Y" }} · {{ obj.usina.capacidade_kwp }} kWp</small>
+      </div>
+    </div>
+    <a href="{% url 'energia:relatorio_usina_update' obj.pk %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-pencil me-1"></i>Editar</a>
+  </div>
+
+  <!-- KPIs principais -->
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+      <div class="card text-center p-3">
+        <div class="text-muted small">Geração</div>
+        <div class="fs-3 fw-bold text-success">{{ obj.geracao_kwh|floatformat:0 }}</div>
+        <div class="text-muted small">kWh</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card text-center p-3">
+        <div class="text-muted small">Desempenho</div>
+        <div class="fs-3 fw-bold {% if obj.desempenho_pct >= 90 %}text-success{% elif obj.desempenho_pct >= 75 %}text-warning{% else %}text-danger{% endif %}">
+          {{ obj.desempenho_pct }}%
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card text-center p-3">
+        <div class="text-muted small">Economia</div>
+        <div class="fs-3 fw-bold text-success">R$ {{ obj.economia_rs|floatformat:2 }}</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card text-center p-3">
+        <div class="text-muted small">Faturado</div>
+        <div class="fs-3 fw-bold">R$ {{ obj.faturado_rs|floatformat:2 }}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-md-6">
+      <div class="card h-100">
+        <div class="card-header"><i class="bi bi-lightning text-warning me-1"></i> Energia</div>
+        <div class="card-body">
+          <dl class="row mb-0 small">
+            <dt class="col-7 text-muted">Consumo Total</dt>
+            <dd class="col-5 font-monospace">{{ obj.consumo_total_kwh|floatformat:2 }} kWh</dd>
+            <dt class="col-7 text-muted">Consumo Registrado</dt>
+            <dd class="col-5 font-monospace">{{ obj.consumo_registrado_kwh|floatformat:2 }} kWh</dd>
+            <dt class="col-7 text-muted">Unidade Geradora</dt>
+            <dd class="col-5 font-monospace">{{ obj.uc_geradora_kwh|floatformat:2 }} kWh</dd>
+            <dt class="col-7 text-muted">Consumo Instantâneo</dt>
+            <dd class="col-5 font-monospace">{{ obj.consumo_instantaneo_kwh|floatformat:2 }} kWh</dd>
+            <dt class="col-7 text-muted">Energia Injetada</dt>
+            <dd class="col-5 font-monospace text-info">{{ obj.energia_injetada_kwh|floatformat:2 }} kWh</dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="card mb-4">
+        <div class="card-header"><i class="bi bi-currency-dollar text-success me-1"></i> Financeiro Acumulado</div>
+        <div class="card-body">
+          <dl class="row mb-0 small">
+            <dt class="col-7 text-muted">Retorno Financeiro (mês)</dt>
+            <dd class="col-5 font-monospace">{{ obj.retorno_financeiro_pct }}%</dd>
+            <dt class="col-7 text-muted">Economia Total</dt>
+            <dd class="col-5 font-monospace text-success fw-bold">R$ {{ obj.economia_total_rs|floatformat:2 }}</dd>
+            <dt class="col-7 text-muted">Retorno Financeiro Total</dt>
+            <dd class="col-5 font-monospace text-success fw-bold">{{ obj.retorno_financeiro_total_pct }}%</dd>
+          </dl>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><i class="bi bi-tree text-success me-1"></i> Impacto Ambiental</div>
+        <div class="card-body">
+          <div class="row text-center">
+            <div class="col-6">
+              <div class="fs-4 fw-bold text-success">{{ obj.co2_nao_produzido_t|floatformat:2 }}t</div>
+              <div class="text-muted small">CO₂ não produzido</div>
+            </div>
+            <div class="col-6">
+              <div class="fs-4 fw-bold text-success">{{ obj.arvores_salvas }}</div>
+              <div class="text-muted small">Árvores salvas</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

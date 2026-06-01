@@ -79,8 +79,14 @@
                 {% if form.valor_estrangeiro.errors %}<div class="text-danger small">{{ form.valor_estrangeiro.errors.0 }}</div>{% endif %}
               </div>
               <div class="col-sm-3">
-                <label class="form-label">{{ form.taxa_cambio.label }}</label>
+                <label class="form-label d-flex justify-content-between">
+                  {{ form.taxa_cambio.label }}
+                  <button type="button" class="btn btn-link btn-sm p-0 text-success" id="btn-cotacao-bcb" title="Buscar PTAX do BCB (dia útil anterior)">
+                    <i class="bi bi-bank me-1"></i>Buscar BCB
+                  </button>
+                </label>
                 {{ form.taxa_cambio }}
+                <div id="info-cotacao" class="form-text text-success mt-1" style="display:none"></div>
               </div>
               <div class="col-sm-3">
                 <label class="form-label">{{ form.valor_brl.label }}</label>
@@ -172,5 +178,40 @@
   }
   valEstr.addEventListener('input', calcBrl);
   taxa.addEventListener('input', calcBrl);
+
+  // Cotação BCB — busca PTAX do dia útil anterior
+  const btnBCB = document.getElementById('btn-cotacao-bcb');
+  const infoCotacao = document.getElementById('info-cotacao');
+  if (btnBCB) {
+    btnBCB.addEventListener('click', function() {
+      const moeda = document.getElementById('id_moeda')?.value || 'USD';
+      if (moeda === 'BRL') {
+        alert('A taxa de câmbio só é necessária para moedas estrangeiras.');
+        return;
+      }
+      btnBCB.disabled = true;
+      btnBCB.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+      fetch(`/faturamento/ajax/cotacao-bcb/?moedas=${moeda}`)
+        .then(r => r.json())
+        .then(data => {
+          if (data.erro) { alert('BCB: ' + data.erro); return; }
+          const c = data.cotacoes[moeda];
+          if (!c) { alert('Cotação não disponível para ' + moeda); return; }
+          taxa.value = c.compra.toFixed(4);
+          calcBrl();
+          infoCotacao.style.display = 'block';
+          infoCotacao.innerHTML =
+            `<i class="bi bi-check-circle-fill me-1"></i>PTAX BCB ${moeda} — ${data.data} &nbsp;|&nbsp; ` +
+            `Compra: <strong>R$ ${c.compra.toFixed(4)}</strong> &nbsp;|&nbsp; ` +
+            `Venda: <strong>R$ ${c.venda.toFixed(4)}</strong> &nbsp;` +
+            `<a href="https://www.bcb.gov.br/estabilidadefinanceira/historicocotacoes" target="_blank" class="text-muted small">BCB ↗</a>`;
+        })
+        .catch(e => alert('Erro ao conectar ao BCB: ' + e))
+        .finally(() => {
+          btnBCB.disabled = false;
+          btnBCB.innerHTML = '<i class="bi bi-bank me-1"></i>Buscar BCB';
+        });
+    });
+  }
 </script>
 {% endblock %}

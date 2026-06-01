@@ -1,0 +1,120 @@
+{% extends 'base.html' %}
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="d-flex align-items-center gap-2 mb-4">
+    <a href="{% url 'energia:ocorrencia_list' %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
+    <h1 class="mb-0 fs-4"><i class="bi bi-exclamation-triangle-fill text-warning me-2"></i>{{ titulo }}</h1>
+  </div>
+
+  <form method="post">
+    {% csrf_token %}
+    <div class="row g-4">
+      <div class="col-lg-8">
+
+        <!-- Identificação -->
+        <div class="card mb-4">
+          <div class="card-header fw-semibold"><i class="bi bi-lightning-charge text-warning me-1"></i> Usina e Classificação</div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-sm-6">
+                <label class="form-label">{{ form.usina.label }} *</label>
+                {{ form.usina }}
+                {% if form.usina.errors %}<div class="text-danger small">{{ form.usina.errors.0 }}</div>{% endif %}
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label">{{ form.relatorio.label }}</label>
+                {{ form.relatorio }}
+                <small class="text-muted">Vincule ao mês para justificar o desempenho</small>
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label">{{ form.tipo.label }} *</label>
+                {{ form.tipo }}
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label">{{ form.gravidade.label }} *</label>
+                {{ form.gravidade }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Detalhes -->
+        <div class="card mb-4">
+          <div class="card-header fw-semibold"><i class="bi bi-card-text me-1"></i> Detalhes</div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-12">
+                <label class="form-label">{{ form.titulo.label }} *</label>
+                {{ form.titulo }}
+                {% if form.titulo.errors %}<div class="text-danger small">{{ form.titulo.errors.0 }}</div>{% endif %}
+              </div>
+              <div class="col-12">
+                <label class="form-label">{{ form.descricao.label }} *</label>
+                {{ form.descricao }}
+                <small class="text-muted">Descreva o problema e a justificativa para o desempenho</small>
+              </div>
+              <div class="col-sm-4">
+                <label class="form-label">{{ form.impacto_kwh_estimado.label }}</label>
+                {{ form.impacto_kwh_estimado }}
+                <small class="text-muted">kWh perdidos estimados</small>
+              </div>
+              <div class="col-sm-4">
+                <label class="form-label">{{ form.responsavel.label }}</label>
+                {{ form.responsavel }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Datas e resolução -->
+        <div class="card">
+          <div class="card-header fw-semibold"><i class="bi bi-calendar-check me-1"></i> Datas e Resolução</div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-sm-4">
+                <label class="form-label">{{ form.data_ocorrencia.label }} *</label>
+                {{ form.data_ocorrencia }}
+              </div>
+              <div class="col-sm-4">
+                <label class="form-label">{{ form.data_resolucao.label }}</label>
+                {{ form.data_resolucao }}
+              </div>
+              <div class="col-sm-4 d-flex align-items-end pb-1">
+                <div class="form-check">
+                  {{ form.resolvido }}
+                  <label class="form-check-label ms-1 fw-semibold">{{ form.resolvido.label }}</label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="col-lg-4">
+        <div class="card mb-3 border-warning">
+          <div class="card-body">
+            <h6 class="fw-semibold text-warning mb-2"><i class="bi bi-info-circle me-1"></i>Tipos de Ocorrência</h6>
+            <ul class="small text-muted mb-0 ps-3">
+              <li><strong>Falha de Equipamento</strong> — inversor, painel, fiação</li>
+              <li><strong>Manutenção Programada</strong> — parada planejada</li>
+              <li><strong>Sujeira / Limpeza</strong> — poeira, resíduos nos painéis</li>
+              <li><strong>Sombreamento</strong> — vegetação, construção próxima</li>
+              <li><strong>Conexão com a Rede</strong> — queda, instabilidade</li>
+              <li><strong>Condição Climática</strong> — chuva, neblina, nuvens</li>
+            </ul>
+          </div>
+        </div>
+        <div class="d-grid gap-2">
+          <button type="submit" class="btn btn-warning btn-lg fw-semibold">
+            <i class="bi bi-check-lg me-1"></i>Salvar Ocorrência
+          </button>
+          <a href="{% url 'energia:ocorrencia_list' %}" class="btn btn-outline-secondary">Cancelar</a>
+        </div>
+      </div>
+    </div>
+  </form>
+</div>
+{% endblock %}

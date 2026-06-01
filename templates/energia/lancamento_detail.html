@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+{% block title %}Lançamento — {{ obj }}{% endblock %}
+{% block content %}
+<div class="container-fluid">
+  <div class="d-flex align-items-center justify-content-between mb-4">
+    <div class="d-flex align-items-center gap-2">
+      <a href="{% url 'energia:lancamento_list' %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
+      <div>
+        <h1 class="mb-0 fs-4"><i class="bi bi-receipt me-1"></i>{{ obj.unidade_consumidora.nome }}</h1>
+        <small class="text-muted">{{ obj.mes_referencia|date:"F/Y" }}</small>
+      </div>
+    </div>
+    <a href="{% url 'energia:lancamento_update' obj.pk %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-pencil me-1"></i>Editar</a>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-md-6">
+      <div class="card mb-4">
+        <div class="card-header"><i class="bi bi-lightning text-warning me-1"></i> Energia</div>
+        <div class="card-body">
+          <dl class="row mb-0">
+            <dt class="col-7 text-muted">Consumo Registrado</dt>
+            <dd class="col-5 font-monospace fw-semibold">{{ obj.consumo_registrado_kwh|floatformat:2 }} kWh</dd>
+            <dt class="col-7 text-muted">Energia Compensada</dt>
+            <dd class="col-5 font-monospace text-success">{{ obj.energia_compensada_kwh|floatformat:2 }} kWh</dd>
+            <dt class="col-7 text-muted">Energia Faturada</dt>
+            <dd class="col-5 font-monospace">{{ obj.energia_faturada_kwh|floatformat:2 }} kWh</dd>
+            <dt class="col-7 text-muted">Energia Injetada</dt>
+            <dd class="col-5 font-monospace text-info">{{ obj.energia_injetada_kwh|floatformat:2 }} kWh</dd>
+            <dt class="col-7 text-muted">Crédito Anterior</dt>
+            <dd class="col-5 font-monospace">{{ obj.credito_anterior_kwh|floatformat:2 }} kWh</dd>
+            <dt class="col-7 text-muted">Crédito Acumulado</dt>
+            <dd class="col-5 font-monospace">{{ obj.credito_acumulado_kwh|floatformat:2 }} kWh</dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="card mb-4">
+        <div class="card-header"><i class="bi bi-currency-dollar text-success me-1"></i> Financeiro</div>
+        <div class="card-body">
+          <dl class="row mb-0">
+            <dt class="col-7 text-muted">Valor Faturado</dt>
+            <dd class="col-5 font-monospace fw-semibold">R$ {{ obj.valor_faturado_rs|floatformat:2 }}</dd>
+            <dt class="col-7 text-muted">Valor Economizado</dt>
+            <dd class="col-5 font-monospace text-success fw-bold">R$ {{ obj.valor_economizado_rs|floatformat:2 }}</dd>
+            <dt class="col-7 text-muted">Desconto Incondicional</dt>
+            <dd class="col-5 font-monospace">R$ {{ obj.desconto_incondicional_rs|floatformat:2 }}</dd>
+          </dl>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">Período de Leitura</div>
+        <div class="card-body">
+          <dl class="row mb-0 small">
+            <dt class="col-5 text-muted">Leitura Anterior</dt>
+            <dd class="col-7">{{ obj.data_leitura_anterior|date:"d/m/Y"|default:"—" }}</dd>
+            <dt class="col-5 text-muted">Leitura Atual</dt>
+            <dd class="col-7">{{ obj.data_leitura_atual|date:"d/m/Y"|default:"—" }}</dd>
+            <dt class="col-5 text-muted">Nº de Dias</dt>
+            <dd class="col-7">{{ obj.num_dias }}</dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+    {% if obj.observacoes %}
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">Observações</div>
+        <div class="card-body">{{ obj.observacoes|linebreaks }}</div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

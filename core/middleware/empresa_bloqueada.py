@@ -25,7 +25,7 @@ class EmpresaBloqueadaMiddleware:
             if request.path == PORTAL_MOTORISTA_LOGOUT:
                 return self.get_response(request)
             try:
-                from cadastros.models import Motorista
+                from frota.models import Motorista
                 motorista = Motorista.objects.select_related('empresa').get(pk=motorista_id, ativo=True)
                 empresa = motorista.empresa
                 if empresa and hasattr(empresa, 'is_blocked') and empresa.is_blocked():

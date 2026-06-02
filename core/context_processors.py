@@ -87,7 +87,7 @@ def notificacoes_emprestimo(request):
         return {'notificacoes_emprestimo': payload}
 
     try:
-        from cadastros.models import EmprestimoMensagem
+        from emprestimos.models import EmprestimoMensagem
 
         mensagens = EmprestimoMensagem.objects.filter(
             empresa=empresa,

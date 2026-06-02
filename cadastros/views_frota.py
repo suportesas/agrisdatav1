@@ -11,7 +11,7 @@ from django.forms import inlineformset_factory
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 
-from .forms import (
+from frota.forms import (
     AbastecimentoImportForm,
     AbastecimentoVeiculoForm,
     ManutencaoVeiculoForm,
@@ -20,7 +20,7 @@ from .forms import (
     TelemetriaVeiculoForm,
     ViagemFrotaForm,
 )
-from .models import (
+from frota.models import (
     AbastecimentoVeiculo,
     AlertaManutencao,
     ManutencaoItem,
@@ -31,8 +31,8 @@ from .models import (
     Vehicle,
     VehicleDocument,
     VehiclePlate,
-    Viagem,
 )
+from cadastros.models import Viagem
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -363,7 +363,7 @@ def manutencao_list(request):
 
 @login_required
 def manutencao_create(request):
-    from .models import ManutencaoVeiculo, ManutencaoItem
+    from frota.models import ManutencaoVeiculo, ManutencaoItem
     ManutencaoItemFormSet = inlineformset_factory(ManutencaoVeiculo, ManutencaoItem, form=ManutencaoItemForm, extra=1, can_delete=True)
 
     if request.method == 'POST':
@@ -421,7 +421,7 @@ def manutencao_detail(request, pk):
 
 @login_required
 def manutencao_documento_add(request, pk):
-    from .models import DocumentoManutencao
+    from frota.models import DocumentoManutencao
     from .forms import DocumentoManutencaoForm
     obj = get_object_or_404(ManutencaoVeiculo, pk=pk, empresa=request.user.empresa)
     if request.method == 'POST':
@@ -441,7 +441,7 @@ def manutencao_documento_add(request, pk):
 
 @login_required
 def manutencao_documento_delete(request, pk, doc_pk):
-    from .models import DocumentoManutencao
+    from frota.models import DocumentoManutencao
     obj = get_object_or_404(ManutencaoVeiculo, pk=pk, empresa=request.user.empresa)
     doc = get_object_or_404(DocumentoManutencao, pk=doc_pk, manutencao=obj)
     if request.method == 'POST':
@@ -453,7 +453,7 @@ def manutencao_documento_delete(request, pk, doc_pk):
 
 @login_required
 def manutencao_update(request, pk):
-    from .models import ManutencaoVeiculo, ManutencaoItem
+    from frota.models import ManutencaoVeiculo, ManutencaoItem
     ManutencaoItemFormSet = inlineformset_factory(ManutencaoVeiculo, ManutencaoItem, form=ManutencaoItemForm, extra=1, can_delete=True)
 
     obj = get_object_or_404(ManutencaoVeiculo, pk=pk, empresa=request.user.empresa)
@@ -599,7 +599,7 @@ def alerta_resolver(request, pk):
 def get_lote_produto_data(request):
     """Endpoint AJAX para buscar dados do produto via lote ou placa via vehicle_id."""
     from estoque.models import Lote
-    from .models import Vehicle
+    from frota.models import Vehicle
 
     vehicle_id = request.GET.get('vehicle_id')
     if vehicle_id:

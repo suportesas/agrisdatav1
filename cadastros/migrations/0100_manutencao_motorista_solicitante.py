@@ -14,6 +14,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='manutencaoveiculo',
             name='motorista_solicitante',
-            field=models.ForeignKey(blank=True, help_text='Preenchido quando a manutenção é solicitada via Portal do Motorista', null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='manutencoes_solicitadas', to='cadastros.motorista', verbose_name='Motorista Solicitante'),
+            field=models.ForeignKey(blank=True, help_text='Preenchido quando a manutenção é solicitada via Portal do Motorista', null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='manutencoes_solicitadas', to='frota.motorista', verbose_name='Motorista Solicitante'),
         ),
     ]

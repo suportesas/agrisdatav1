@@ -13,11 +13,11 @@
         </select>
         <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-search"></i></button>
         {% if vehicle_selecionado %}
-        <a href="{% url 'cadastros:telemetria_mapa' vehicle_selecionado %}" class="btn btn-outline-success btn-sm"><i class="bi bi-map"></i> Ver Mapa</a>
+        <a href="{% url 'frota:telemetria_mapa' vehicle_selecionado %}" class="btn btn-outline-success btn-sm"><i class="bi bi-map"></i> Ver Mapa</a>
         {% endif %}
       </form>
     </div>
-    <a href="{% url 'cadastros:telemetria_create' %}" class="btn btn-success btn-sm"><i class="bi bi-plus"></i> Registrar Posição</a>
+    <a href="{% url 'frota:telemetria_create' %}" class="btn btn-success btn-sm"><i class="bi bi-plus"></i> Registrar Posição</a>
   </div>
 
   <div class="card border-0 shadow-sm rounded-4">
@@ -39,7 +39,7 @@
             <td class="small">{% if r.velocidade_kmh %}{{ r.velocidade_kmh|floatformat:0 }} km/h{% else %}—{% endif %}</td>
             <td><span class="badge bg-secondary small">{{ r.get_fonte_display }}</span></td>
             <td>
-              <form method="post" action="{% url 'cadastros:telemetria_delete' r.pk %}" class="d-inline"
+              <form method="post" action="{% url 'frota:telemetria_delete' r.pk %}" class="d-inline"
                     onsubmit="return confirm('Excluir?')">{% csrf_token %}
                 <button class="btn btn-outline-danger btn-sm py-0 px-1"><i class="bi bi-trash"></i></button>
               </form>

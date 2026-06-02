@@ -65,8 +65,8 @@
         </div>
         <div class="col-md-3 d-flex gap-2">
           <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-search"></i> Filtrar</button>
-          <a href="{% url 'cadastros:abastecimento_list' %}" class="btn btn-outline-secondary btn-sm">Limpar</a>
-          <a href="{% url 'cadastros:abastecimento_create' %}" class="btn btn-info btn-sm ms-auto"><i class="bi bi-plus"></i> Novo</a>
+          <a href="{% url 'frota:abastecimento_list' %}" class="btn btn-outline-secondary btn-sm">Limpar</a>
+          <a href="{% url 'frota:abastecimento_create' %}" class="btn btn-info btn-sm ms-auto"><i class="bi bi-plus"></i> Novo</a>
         </div>
       </form>
     </div>
@@ -87,7 +87,7 @@
           {% for ab in abastecimentos %}
           <tr>
             <td class="small">{{ ab.data|date:"d/m/Y" }}</td>
-            <td><a href="{% url 'cadastros:abastecimento_detail' ab.pk %}">{{ ab.vehicle }}</a></td>
+            <td><a href="{% url 'frota:abastecimento_detail' ab.pk %}">{{ ab.vehicle }}</a></td>
             <td class="small text-muted">{{ ab.motorista.nome|default:"—" }}</td>
             <td><span class="badge bg-secondary small">{{ ab.get_tipo_combustivel_display }}</span></td>
             <td class="text-end small">{{ ab.litros|floatformat:1 }}</td>
@@ -96,7 +96,7 @@
             <td class="small text-muted">{% if ab.km_odometro %}{{ ab.km_odometro|floatformat:0 }} km{% else %}—{% endif %}</td>
             <td class="small text-muted">{{ ab.local_abastecimento|truncatechars:20|default:"—" }}</td>
             <td>
-              <a href="{% url 'cadastros:abastecimento_update' ab.pk %}" class="btn btn-outline-secondary btn-sm py-0 px-1"><i class="bi bi-pencil"></i></a>
+              <a href="{% url 'frota:abastecimento_update' ab.pk %}" class="btn btn-outline-secondary btn-sm py-0 px-1"><i class="bi bi-pencil"></i></a>
             </td>
           </tr>
           {% empty %}

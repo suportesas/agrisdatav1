@@ -82,6 +82,12 @@ INSTALLED_APPS = [
     'vendas',       # Módulo de Vendas (Pré-venda / Pedido de Venda)
     'portal',       # Portal do Cliente (acesso externo)
     'embalagem',    # Embalamento, Pallets, Romaneio de Venda
+    'frota',        # Módulo de Frota (veículos, motoristas, abastecimento, manutenção)
+    'mip',          # Módulo MIP - Monitoramento de Pragas
+    'emprestimos',  # Módulo de Empréstimos de Produtores
+    'estufas',      # Módulo de Estufas, Lotes de Mudas e Transplantio
+    'rh',           # Módulo de Recursos Humanos (Funcionários, Contratos, Férias, ASO)
+    'operacoes_campo',  # Módulo de Operações de Campo (OS, Colheita, Caderno de Campo)
 ]
 
 

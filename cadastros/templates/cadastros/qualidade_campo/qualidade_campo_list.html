@@ -54,7 +54,7 @@
           <div class="d-flex justify-content-between align-items-center">
             <div>
               <h6 class="mb-1">Nova Inspeção</h6>
-              <a href="{% url 'cadastros:qualidade_campo_create' %}" class="btn btn-dark btn-sm">
+              <a href="{% url 'operacoes_campo:qualidade_campo_create' %}" class="btn btn-dark btn-sm">
                 <i class="bi bi-plus-circle"></i> Registrar
               </a>
             </div>
@@ -117,7 +117,7 @@
           <button type="submit" class="btn btn-primary btn-sm w-100"><i class="bi bi-funnel"></i> Filtrar</button>
         </div>
         <div class="col-md-1">
-          <a href="{% url 'cadastros:qualidade_campo_list' %}" class="btn btn-outline-secondary btn-sm w-100"><i class="bi bi-x"></i></a>
+          <a href="{% url 'operacoes_campo:qualidade_campo_list' %}" class="btn btn-outline-secondary btn-sm w-100"><i class="bi bi-x"></i></a>
         </div>
       </form>
     </div>
@@ -163,16 +163,16 @@
             <td class="small">{{ insp.responsavel.get_full_name|default:insp.responsavel.username|default:"—" }}</td>
             <td class="text-center">
               <div class="btn-group btn-group-sm">
-                <a href="{% url 'cadastros:qualidade_campo_detail' insp.pk %}" class="btn btn-outline-info" title="Ver">
+                <a href="{% url 'operacoes_campo:qualidade_campo_detail' insp.pk %}" class="btn btn-outline-info" title="Ver">
                   <i class="bi bi-eye"></i>
                 </a>
-                <a href="{% url 'cadastros:qualidade_campo_update' insp.pk %}" class="btn btn-outline-primary" title="Editar">
+                <a href="{% url 'operacoes_campo:qualidade_campo_update' insp.pk %}" class="btn btn-outline-primary" title="Editar">
                   <i class="bi bi-pencil"></i>
                 </a>
-                <a href="{% url 'cadastros:qualidade_campo_pdf' insp.pk %}" class="btn btn-outline-secondary" title="PDF" target="_blank">
+                <a href="{% url 'operacoes_campo:qualidade_campo_pdf' insp.pk %}" class="btn btn-outline-secondary" title="PDF" target="_blank">
                   <i class="bi bi-file-pdf"></i>
                 </a>
-                <a href="{% url 'cadastros:qualidade_campo_delete' insp.pk %}" class="btn btn-outline-danger" title="Excluir">
+                <a href="{% url 'operacoes_campo:qualidade_campo_delete' insp.pk %}" class="btn btn-outline-danger" title="Excluir">
                   <i class="bi bi-trash"></i>
                 </a>
               </div>
@@ -184,7 +184,7 @@
               <i class="bi bi-patch-check fs-3 d-block mb-2"></i>
               Nenhuma inspeção encontrada.
               <br>
-              <a href="{% url 'cadastros:qualidade_campo_create' %}" class="btn btn-sm btn-success mt-2">
+              <a href="{% url 'operacoes_campo:qualidade_campo_create' %}" class="btn btn-sm btn-success mt-2">
                 <i class="bi bi-plus"></i> Registrar primeira inspeção
               </a>
             </td>

@@ -8,16 +8,16 @@
 
   <div class="row mb-3">
     <div class="col">
-      <a href="{% url 'cadastros:estufa_list' %}" class="btn btn-outline-secondary btn-sm">
+      <a href="{% url 'estufas:estufa_list' %}" class="btn btn-outline-secondary btn-sm">
         <i class="bi bi-arrow-left"></i> Voltar
       </a>
-      <a href="{% url 'cadastros:estufa_update' obj.pk %}" class="btn btn-primary btn-sm ms-2">
+      <a href="{% url 'estufas:estufa_update' obj.pk %}" class="btn btn-primary btn-sm ms-2">
         <i class="bi bi-pencil"></i> Editar
       </a>
-      <a href="{% url 'cadastros:lote_muda_create' %}" class="btn btn-success btn-sm ms-2">
+      <a href="{% url 'estufas:lote_muda_create' %}" class="btn btn-success btn-sm ms-2">
         <i class="bi bi-plus-circle"></i> Novo Lote
       </a>
-      <a href="{% url 'cadastros:estufa_delete' obj.pk %}" class="btn btn-outline-danger btn-sm ms-2">
+      <a href="{% url 'estufas:estufa_delete' obj.pk %}" class="btn btn-outline-danger btn-sm ms-2">
         <i class="bi bi-trash"></i> Excluir
       </a>
     </div>
@@ -55,7 +55,7 @@
       <div class="card shadow-sm border-0 rounded-4">
         <div class="card-header bg-white border-0 pt-3 pb-0 d-flex justify-content-between">
           <h6 class="fw-bold text-secondary mb-0"><i class="bi bi-grid-3x3-gap text-primary"></i> Lotes de Mudas</h6>
-          <a href="{% url 'cadastros:lote_muda_create' %}" class="btn btn-outline-success btn-sm">
+          <a href="{% url 'estufas:lote_muda_create' %}" class="btn btn-outline-success btn-sm">
             <i class="bi bi-plus"></i> Novo Lote
           </a>
         </div>
@@ -74,7 +74,7 @@
             <tbody>
               {% for lote in lotes %}
               <tr>
-                <td><a href="{% url 'cadastros:lote_muda_detail' lote.pk %}" class="fw-semibold">{{ lote.codigo_lote }}</a></td>
+                <td><a href="{% url 'estufas:lote_muda_detail' lote.pk %}" class="fw-semibold">{{ lote.codigo_lote }}</a></td>
                 <td>{{ lote.cultura.nome }}</td>
                 <td>{{ lote.data_semeadura|date:"d/m/Y" }}</td>
                 <td class="text-center">
@@ -90,7 +90,7 @@
                 </td>
                 <td class="text-end">{{ lote.quantidade_disponivel }}</td>
                 <td class="text-center">
-                  <a href="{% url 'cadastros:lote_muda_detail' lote.pk %}" class="btn btn-outline-info btn-sm"><i class="bi bi-eye"></i></a>
+                  <a href="{% url 'estufas:lote_muda_detail' lote.pk %}" class="btn btn-outline-info btn-sm"><i class="bi bi-eye"></i></a>
                 </td>
               </tr>
               {% empty %}

@@ -1,572 +1,345 @@
 <script>
-// Ícones por módulo
-const MODULE_ICONS = {
-  'cadastros': '📋',
-  'produtos': '📦',
-  'estoque': '📊',
-  'compras': '🛒',
-  'empresas': '🏢',
-  'usuarios': '👥',
-  'auth': '🔐',
-  'dashboard': '�',
-  'vendas': '💰',
+// ─────────────────────────────────────────────────────────────────────────────
+// Roles JS — carregamento e edição de permissões
+// ─────────────────────────────────────────────────────────────────────────────
+
+let currentRoleId = null;
+let pendingChanges = 0;
+// URL base lida do data-attribute para evitar avaliação server-side no JS
+const PERM_URL_TEMPLATE = document.getElementById('roles-url-config')?.dataset.permsUrl
+  || "{% url 'empresas:role_permissions' role_id=0 %}";
+
+// Nomes amigáveis para modelos comuns (app:model → label PT)
+const MODEL_LABELS = {
+  // Cadastros
+  'cadastros:fazenda': 'Fazenda', 'cadastros:enderecofazenda': 'Endereço de Fazenda',
+  'cadastros:contatofazenda': 'Contato de Fazenda', 'cadastros:contabancariafazenda': 'Banco de Fazenda',
+  'cadastros:documentofazenda': 'Documento de Fazenda', 'cadastros:cliente': 'Cliente',
+  'cadastros:produtor': 'Produtor', 'cadastros:fornecedor': 'Fornecedor',
+  'cadastros:transportadora': 'Transportadora', 'cadastros:area': 'Área Agrícola',
+  'cadastros:talhao': 'Talhão', 'cadastros:cultura': 'Cultura', 'cadastros:safra': 'Safra',
+  'cadastros:praga': 'Praga', 'cadastros:requisicao': 'Requisição',
+  'cadastros:vendedor': 'Vendedor', 'cadastros:cfop': 'CFOP', 'cadastros:ncm': 'NCM',
+  // RH
+  'rh:funcionario': 'Funcionário', 'rh:funcaofuncionario': 'Função/Cargo',
+  'rh:feriasfuncionario': 'Férias', 'rh:afastamentofuncionario': 'Afastamento',
+  'rh:rescisaocontrato': 'Rescisão', 'rh:vinculocontrato': 'Vínculo Contratual',
+  'rh:solicitacaoaso': 'Solicitação ASO', 'rh:laudorisco': 'Laudo de Risco',
+  // Operações de Campo
+  'operacoes_campo:ordemservico': 'Ordem de Serviço', 'operacoes_campo:custotalhao': 'Custo por Talhão',
+  'operacoes_campo:etapacolheita': 'Etapa de Colheita', 'operacoes_campo:registrocadernocampo': 'Caderno de Campo',
+  'operacoes_campo:registropluviometria': 'Pluviometria', 'operacoes_campo:planejamentocustosafra': 'Planejamento de Custo',
+  // Produtos / Estoque
+  'produtos:produto': 'Produto', 'produtos:unidademedida': 'Unidade de Medida',
+  'estoque:movimentacaoestoque': 'Movimentação de Estoque', 'estoque:armazem': 'Armazém',
+  // Compras
+  'compras:pedidocompra': 'Pedido de Compra', 'compras:recebimento': 'Recebimento de Compra',
+  // Financeiro
+  'financeiro:contapagar': 'Conta a Pagar', 'financeiro:contareceber': 'Conta a Receber',
+  'financeiro:parcelacontareceber': 'Parcela a Receber',
+  // Faturamento
+  'faturamento:notafiscal': 'Nota Fiscal (NF-e)', 'faturamento:invoice': 'Invoice de Exportação',
+  // Vendas
+  'vendas:pedidovenda': 'Pedido de Venda',
 };
 
-async function loadPermissions(roleId) {
-  console.log('loadPermissions called', roleId);
-  const area = document.getElementById('permissions-area');
-  area.innerHTML = '<div class="text-center py-5 loading-skeleton"><div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;"><span class="visually-hidden">Carregando...</span></div><p class="text-muted">Carregando permissões...</p></div>';
-  
-  try{
-    const resp = await fetch("{% url 'empresas:role_permissions' role_id=0 %}".replace('/0/','/'+roleId+'/'), {headers:{'X-Requested-With':'XMLHttpRequest'}});
-    if(!resp.ok){
-      const text = await resp.text();
-      console.error('Erro ao obter permissões:', resp.status, text);
-      if(resp.status === 403){
-        area.innerHTML = '<div class="alert alert-warning"><i class="bi bi-exclamation-triangle"></i> Você não tem permissão para visualizar estas permissões.</div>';
-      } else {
-        area.innerHTML = '<div class="alert alert-danger"><i class="bi bi-x-circle"></i> Erro ao carregar permissões</div>';
-      }
-      try{
-        fetch('/__e2e_log__', {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({level: 'error', msg: 'role_permissions_error', status: resp.status, text: text, roleId: roleId})
-        });
-      }catch(e){}
-      return;
-    }
+function getModelLabel(appLabel, modelName) {
+  const key = appLabel + ':' + modelName;
+  return MODEL_LABELS[key] || modelName.charAt(0).toUpperCase() + modelName.slice(1).replace(/_/g, ' ');
+}
 
-    const data = await resp.json();
-    const perms = data.permissions || [];
+function getCsrfToken() {
+  const match = document.cookie.match(/csrftoken=([^;]+)/);
+  return match ? match[1] : '';
+}
 
-    const selCard = document.querySelector('.role-card[data-role-id="'+roleId+'"]');
-    const roleName = selCard ? selCard.querySelector('.role-name').textContent.trim() : '';
+function showToast(message, type = 'success') {
+  const icons = { success: 'bi-check-circle', danger: 'bi-x-circle', info: 'bi-info-circle' };
+  const existing = document.querySelector('.roles-toast');
+  if (existing) existing.remove();
+  const toast = document.createElement('div');
+  toast.className = 'roles-toast ' + type;
+  toast.innerHTML = `<i class="bi ${icons[type] || icons.success}"></i> ${message}`;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 3500);
+}
 
-    if(!perms.length){
-      area.innerHTML = '<div class="alert alert-info"><i class="bi bi-info-circle"></i> Nenhuma permissão disponível</div>';
-      area.innerHTML += `<h2 class="mt-2">Permissões ${roleName ? '— <span id="selected-role-name">'+roleName+'</span>' : ''}</h2>`;
-      return;
-    }
-
-    // Agrupa por app_label
-    const groupedByApp = {};
-    perms.forEach(item => {
-      const app = item.app_label;
-      if (!groupedByApp[app]) {
-        groupedByApp[app] = [];
-      }
-      groupedByApp[app].push(item);
-    });
-
-    // Monta HTML com tabela moderna
-    let html = '';
-    
-    // Barra de ações fixa no topo
-    html += `
-      <div class="actions-bar">
-        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
-          <div>
-            <h5 class="mb-1"><i class="bi bi-sliders"></i> Ações Rápidas</h5>
-            <p class="text-muted small mb-0">Configure as permissões para esta função</p>
-          </div>
-          <div class="d-flex gap-2 flex-wrap">
-            <button id="select-all" class="btn btn-outline-primary btn-sm">
-              <i class="bi bi-check-all"></i> Marcar Todas
-            </button>
-            <button id="deselect-all" class="btn btn-outline-secondary btn-sm">
-              <i class="bi bi-x-lg"></i> Desmarcar Todas
-            </button>
-            <button id="save-perms" class="btn btn-save-perms">
-              <i class="bi bi-save"></i> Salvar Permissões
-            </button>
-          </div>
-        </div>
-        <div id="status-message" role="status" aria-live="polite" class="mt-2 visually-hidden"></div>
-      </div>
-    `;
-
-    // Tabela com permissões agrupadas por módulo
-    html += `<div class="permissions-table-wrapper">`;
-    html += `  <div class="table-scroll">`;
-    html += `    <table class="permissions-table table table-hover mb-0">`;
-    html += `      <thead>`;
-    html += `        <tr>`;
-    html += `          <th style="width: 40%;">Módulo / Modelo</th>`;
-    html += `          <th class="text-center" style="width: 15%;"><span class="permission-icon icon-add"><i class="bi bi-plus-circle"></i></span>Cadastrar</th>`;
-    html += `          <th class="text-center" style="width: 15%;"><span class="permission-icon icon-change"><i class="bi bi-pencil"></i></span>Editar</th>`;
-    html += `          <th class="text-center" style="width: 15%;"><span class="permission-icon icon-delete"><i class="bi bi-trash"></i></span>Excluir</th>`;
-    html += `          <th class="text-center" style="width: 15%;"><span class="permission-icon icon-view"><i class="bi bi-eye"></i></span>Visualizar</th>`;
-    html += `        </tr>`;
-    html += `      </thead>`;
-    html += `      <tbody>`;
-    
-    // Renderiza por módulo
-    Object.keys(groupedByApp).sort().forEach(app => {
-      const items = groupedByApp[app];
-      const icon = MODULE_ICONS[app] || '📌';
-      const appLabel = app.charAt(0).toUpperCase() + app.slice(1);
-      
-      // Linha de cabeçalho do módulo
-      html += `<tr class="module-group-header">`;
-      html += `  <td colspan="5"><span class="module-icon-large">${icon}</span><strong>${appLabel}</strong> <span class="badge bg-light text-dark ms-2">${items.length} modelo${items.length > 1 ? 's' : ''}</span></td>`;
-      html += `</tr>`;
-      
-      // Linhas de cada modelo
-      items.forEach(item => {
-        const k = item.key;
-        const model = item.model;
-        const display = item.display || (item.app_label + '.' + model);
-        const add = item.perms.add ? 'checked' : '';
-        const change = item.perms.change ? 'checked' : '';
-        const del = item.perms.delete ? 'checked' : '';
-        const view = item.perms.view ? 'checked' : '';
-        
-        html += `<tr data-key="${k}" data-model="${model}">`;
-        html += `  <td><strong>${display}</strong></td>`;
-        html += `  <td class="text-center"><input type="checkbox" class="permission-checkbox" name="add" ${add} aria-label="${display} - Cadastrar"></td>`;
-        html += `  <td class="text-center"><input type="checkbox" class="permission-checkbox" name="change" ${change} aria-label="${display} - Editar"></td>`;
-        html += `  <td class="text-center"><input type="checkbox" class="permission-checkbox" name="delete" ${del} aria-label="${display} - Excluir"></td>`;
-        html += `  <td class="text-center"><input type="checkbox" class="permission-checkbox" name="view" ${view} aria-label="${display} - Visualizar"></td>`;
-        html += `</tr>`;
-      });
-    });
-    
-    html += `      </tbody>`;
-    html += `    </table>`;
-    html += `  </div>`;
-    html += `</div>`;
-    
-    // Ações de template no final
-    html += `
-      <div class="actions-bar">
-        <div class="row g-3">
-          <div class="col-md-12">
-            <h6 class="mb-3"><i class="bi bi-file-earmark-code"></i> Gerenciar Templates</h6>
-            <div class="d-flex gap-2 flex-wrap align-items-center">
-              <button id="save-template" class="btn btn-outline-primary" title="Salvar como Template">
-                <i class="bi bi-bookmark-plus"></i> Salvar como Template
-              </button>
-              <span id="save-template-loading" class="spinner-border spinner-border-sm visually-hidden" role="status"></span>
-              
-              <select id="template-select" class="form-select" style="max-width: 300px;">
-                <option value="">-- Selecionar Template --</option>
-              </select>
-              <span id="template-loading" class="spinner-border spinner-border-sm visually-hidden" role="status"></span>
-              
-              <button id="apply-template" class="btn btn-outline-success" title="Aplicar template" disabled>
-                <i class="bi bi-arrow-down-circle"></i> Aplicar Template
-              </button>
-              
-              <button id="export-perms" class="btn btn-outline-secondary" title="Exportar permissões">
-                <i class="bi bi-download"></i> Exportar JSON
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    `;
-
-    area.innerHTML = html;
-
-    // Mark selected card visually
-    try{ 
-      document.querySelectorAll('.role-card').forEach(r=>r.classList.remove('selected')); 
-      const sel = document.querySelector('.role-card[data-role-id="'+roleId+'"]'); 
-      if(sel) sel.classList.add('selected'); 
-      try{ if(window.applyRolesHideState) window.applyRolesHideState(); }catch(e){} 
-    }catch(e){}
-
-    // Event listeners
-    document.getElementById('save-perms').onclick = function(){ savePermissions(roleId) };
-    document.getElementById('export-perms').onclick = function(){ exportPermissions(); };
-    document.getElementById('save-template').onclick = function(){ saveAsTemplate(roleId) };
-    document.getElementById('apply-template').onclick = function(){ applySelectedTemplate(roleId) };
-    document.getElementById('select-all').onclick = selectAllPermissions;
-    document.getElementById('deselect-all').onclick = deselectAllPermissions;
-
-    // Carrega templates
-    loadTemplatesIntoSelect(roleId);
-    loadTemplatesIntoBulkSelect();
-
-  }catch(err){
-    console.error('loadPermissions error', err);
-    area.innerHTML = '<div class="alert alert-danger"><i class="bi bi-x-circle"></i> Erro ao carregar permissões</div>';
+function updateUnsavedBadge() {
+  const badge = document.getElementById('unsaved-badge');
+  const countEl = document.getElementById('unsaved-count');
+  if (!badge) return;
+  if (pendingChanges > 0) {
+    badge.classList.remove('hidden');
+    if (countEl) countEl.textContent = pendingChanges;
+  } else {
+    badge.classList.add('hidden');
   }
 }
 
-function selectAllPermissions() {
-  document.querySelectorAll('.permission-checkbox').forEach(cb => {
-    cb.checked = true;
+function setSaveEnabled(enabled) {
+  ['btn-save-perms', 'btn-save-perms-bottom'].forEach(id => {
+    const btn = document.getElementById(id);
+    if (btn) btn.disabled = !enabled;
   });
-  showToast('Todas as permissões foram marcadas', 'info');
 }
 
-function deselectAllPermissions() {
-  document.querySelectorAll('.permission-checkbox').forEach(cb => {
-    cb.checked = false;
-  });
-  showToast('Todas as permissões foram desmarcadas', 'info');
-}
-
-async function savePermissions(roleId){
-  const rows = document.querySelectorAll('.permissions-table tbody tr[data-model]');
-  const codenames = [];
-  
+function updateModuleCount(moduleName) {
+  const tbody = document.getElementById('perms-tbody');
+  if (!tbody) return;
+  const rows = tbody.querySelectorAll(`tr[data-module="${moduleName}"]`);
+  let total = 0, active = 0;
   rows.forEach(row => {
-    const model = row.dataset.model;
-    const add = row.querySelector('input[name="add"]')?.checked;
-    const change = row.querySelector('input[name="change"]')?.checked;
-    const del = row.querySelector('input[name="delete"]')?.checked;
-    const view = row.querySelector('input[name="view"]')?.checked;
-    
-    if(add) codenames.push('add_' + model);
-    if(change) codenames.push('change_' + model);
-    if(del) codenames.push('delete_' + model);
-    if(view) codenames.push('view_' + model);
+    row.querySelectorAll('.perm-cb').forEach(cb => {
+      total++;
+      if (cb.checked) active++;
+    });
   });
+  const countEl = document.querySelector(`.module-count[data-module="${moduleName}"]`);
+  if (countEl) {
+    countEl.textContent = active + '/' + total;
+    countEl.className = 'module-count' + (active === total && total > 0 ? ' full' : active === 0 ? ' empty' : '');
+  }
+}
 
-  const saveBtn = document.getElementById('save-perms');
-  const originalText = saveBtn.innerHTML;
-  saveBtn.disabled = true;
-  saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Salvando...';
+function updateAllModuleCounts() {
+  const tbody = document.getElementById('perms-tbody');
+  if (!tbody) return;
+  const modules = new Set();
+  tbody.querySelectorAll('tr[data-module]').forEach(r => modules.add(r.dataset.module));
+  modules.forEach(m => updateModuleCount(m));
+
+  // Atualiza total geral
+  const allCbs = tbody.querySelectorAll('.perm-cb');
+  const allActive = tbody.querySelectorAll('.perm-cb:checked');
+  const label = document.getElementById('perms-total-label');
+  if (label) label.textContent = allActive.length + ' de ' + allCbs.length + ' permissões ativas';
+}
+
+async function loadPermissions(roleId) {
+  currentRoleId = roleId;
+  pendingChanges = 0;
+  updateUnsavedBadge();
+  setSaveEnabled(false);
+
+  // Mostra painel e loading
+  document.getElementById('perms-empty').classList.add('d-none');
+  document.getElementById('perms-content').classList.remove('d-none');
+  document.getElementById('perms-loading').classList.remove('d-none');
+  document.getElementById('perms-table-wrap').classList.add('d-none');
 
   try {
-    const res = await fetch("{% url 'empresas:role_permissions' role_id=0 %}".replace('/0/','/'+roleId+'/'), {
-      method:'POST',
-      headers:{'Content-Type':'application/json','X-CSRFToken': getCookie('csrftoken')},
-      body: JSON.stringify({'permissions': codenames})
+    const url = PERM_URL_TEMPLATE.replace('/0/', '/' + roleId + '/');
+    const resp = await fetch(url, {
+      headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
     });
-    const r = await res.json();
-    if(r.ok){
-      showToast('✅ Permissões atualizadas com sucesso!', 'success');
-    } else {
-      showToast('❌ Erro ao atualizar permissões', 'danger');
+    if (!resp.ok) {
+      const text = await resp.text();
+      document.getElementById('perms-loading').classList.add('d-none');
+      document.getElementById('perms-table-wrap').classList.remove('d-none');
+      document.getElementById('perms-tbody').innerHTML =
+        `<tr><td colspan="5"><div class="alert alert-danger m-3">
+          <i class="bi bi-x-circle me-2"></i>Erro ao carregar permissões (${resp.status}).
+        </div></td></tr>`;
+      return;
     }
-  } catch(e) {
-    showToast('❌ Erro ao salvar permissões', 'danger');
-  } finally {
-    saveBtn.disabled = false;
-    saveBtn.innerHTML = originalText;
+    const data = await resp.json();
+    renderPermissions(roleId, data.permissions || []);
+  } catch (err) {
+    document.getElementById('perms-loading').classList.add('d-none');
+    document.getElementById('perms-table-wrap').classList.remove('d-none');
+    document.getElementById('perms-tbody').innerHTML =
+      `<tr><td colspan="5"><div class="alert alert-danger m-3">
+        <i class="bi bi-x-circle me-2"></i>Erro de conexão.
+      </div></td></tr>`;
   }
 }
 
-function getCurrentPermissionsObject(){
-  const rows = document.querySelectorAll('.permissions-table tbody tr[data-model]');
-  const exportData = {};
-  
-  rows.forEach(row => {
-    const model = row.dataset.model;
-    exportData[model] = {
-      add: row.querySelector('input[name="add"]')?.checked || false,
-      change: row.querySelector('input[name="change"]')?.checked || false,
-      delete: row.querySelector('input[name="delete"]')?.checked || false,
-      view: row.querySelector('input[name="view"]')?.checked || false,
+function renderPermissions(roleId, perms) {
+  // Atualiza nome do role no cabeçalho
+  const roleItem = document.querySelector(`.role-item[data-role-id="${roleId}"]`);
+  const roleName = roleItem ? roleItem.querySelector('.role-name').textContent.trim() : 'Função';
+  document.getElementById('perms-role-name').textContent = roleName;
+  document.getElementById('perms-role-meta').textContent = 'Clique nos checkboxes para editar permissões';
+
+  const tbody = document.getElementById('perms-tbody');
+  tbody.innerHTML = '';
+
+  if (!perms.length) {
+    tbody.innerHTML = '<tr><td colspan="5"><div class="alert alert-info m-3">Nenhuma permissão disponível.</div></td></tr>';
+    document.getElementById('perms-loading').classList.add('d-none');
+    document.getElementById('perms-table-wrap').classList.remove('d-none');
+    return;
+  }
+
+  // Agrupa por app_label
+  const apps = {};
+  perms.forEach(p => {
+    if (!apps[p.app_label]) apps[p.app_label] = { nome: p.app_nome || p.app_label, items: [] };
+    apps[p.app_label].items.push(p);
+  });
+
+  Object.entries(apps).forEach(([app, group]) => {
+    const moduleName = app;
+    // Cabeçalho do módulo
+    const headerRow = document.createElement('tr');
+    headerRow.className = 'perms-module-header';
+    headerRow.innerHTML = `
+      <td colspan="5">
+        <div class="d-flex align-items-center justify-content-between gap-2">
+          <span class="fw-bold">${group.nome}</span>
+          <div class="d-flex align-items-center gap-2">
+            <span class="module-count empty" data-module="${moduleName}">0/0</span>
+            <button type="button"
+                    class="btn btn-link btn-sm p-0 fw-semibold text-decoration-none module-check-all"
+                    data-module="${moduleName}"
+                    style="font-size:.78rem;color:#7c3aed;">
+              Marcar todos
+            </button>
+            <button type="button"
+                    class="btn btn-link btn-sm p-0 fw-semibold text-decoration-none module-uncheck-all"
+                    data-module="${moduleName}"
+                    style="font-size:.78rem;color:#6b7280;">
+              Desmarcar
+            </button>
+          </div>
+        </div>
+      </td>`;
+    tbody.appendChild(headerRow);
+
+    // Linhas de modelo
+    group.items.forEach(item => {
+      const row = document.createElement('tr');
+      row.dataset.module = moduleName;
+      const label = getModelLabel(app, item.model);
+      const p = item.perms;
+      row.innerHTML = `
+        <td><span class="model-label">${label}</span></td>
+        <td class="text-center">
+          <input type="checkbox" class="perm-cb" ${p.add ? 'checked' : ''}
+                 data-codename="add_${item.model}" title="Criar ${label}">
+        </td>
+        <td class="text-center">
+          <input type="checkbox" class="perm-cb" ${p.change ? 'checked' : ''}
+                 data-codename="change_${item.model}" title="Editar ${label}">
+        </td>
+        <td class="text-center">
+          <input type="checkbox" class="perm-cb" ${p.delete ? 'checked' : ''}
+                 data-codename="delete_${item.model}" title="Excluir ${label}">
+        </td>
+        <td class="text-center">
+          <input type="checkbox" class="perm-cb" ${p.view ? 'checked' : ''}
+                 data-codename="view_${item.model}" title="Ver ${label}">
+        </td>`;
+      tbody.appendChild(row);
+    });
+  });
+
+  // Snapshot inicial
+  const initialState = getPermState();
+
+  // Evento de mudança nos checkboxes
+  tbody.addEventListener('change', function (e) {
+    if (!e.target.classList.contains('perm-cb')) return;
+    const module = e.target.closest('tr[data-module]')?.dataset.module;
+    if (module) updateModuleCount(module);
+
+    const current = getPermState();
+    pendingChanges = Object.keys(current).filter(k => current[k] !== initialState[k]).length;
+    updateUnsavedBadge();
+    setSaveEnabled(true);
+    updateAllModuleCounts();
+  });
+
+  // Marcar/desmarcar todos por módulo
+  tbody.addEventListener('click', function (e) {
+    const checkBtn = e.target.closest('.module-check-all');
+    const uncheckBtn = e.target.closest('.module-uncheck-all');
+    if (checkBtn) {
+      const m = checkBtn.dataset.module;
+      tbody.querySelectorAll(`tr[data-module="${m}"] .perm-cb`).forEach(cb => cb.checked = true);
+      updateModuleCount(m);
+      setSaveEnabled(true);
+      updateAllModuleCounts();
+      pendingChanges++;
+      updateUnsavedBadge();
+    }
+    if (uncheckBtn) {
+      const m = uncheckBtn.dataset.module;
+      tbody.querySelectorAll(`tr[data-module="${m}"] .perm-cb`).forEach(cb => cb.checked = false);
+      updateModuleCount(m);
+      setSaveEnabled(true);
+      updateAllModuleCounts();
+      pendingChanges++;
+      updateUnsavedBadge();
     }
   });
-  
-  return exportData;
+
+  // Selecionar/desmarcar todos globais
+  const btnAll    = document.getElementById('btn-select-all');
+  const btnNone   = document.getElementById('btn-deselect-all');
+  if (btnAll)  btnAll.onclick  = () => { tbody.querySelectorAll('.perm-cb').forEach(c => c.checked = true);  setSaveEnabled(true); pendingChanges++; updateUnsavedBadge(); updateAllModuleCounts(); };
+  if (btnNone) btnNone.onclick = () => { tbody.querySelectorAll('.perm-cb').forEach(c => c.checked = false); setSaveEnabled(true); pendingChanges++; updateUnsavedBadge(); updateAllModuleCounts(); };
+
+  // Salvar
+  ['btn-save-perms', 'btn-save-perms-bottom'].forEach(id => {
+    const btn = document.getElementById(id);
+    if (btn) btn.onclick = () => savePermissions(roleId);
+  });
+
+  // Exibe tabela
+  document.getElementById('perms-loading').classList.add('d-none');
+  document.getElementById('perms-table-wrap').classList.remove('d-none');
+  updateAllModuleCounts();
 }
 
-function exportPermissions(){
-  const exportData = getCurrentPermissionsObject();
-  const a = document.createElement('a');
-  a.href = 'data:application/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(exportData, null, 2));
-  a.download = 'role-permissions.json';
-  a.click();
+function getPermState() {
+  const state = {};
+  document.querySelectorAll('#perms-tbody .perm-cb').forEach(cb => {
+    state[cb.dataset.codename] = cb.checked;
+  });
+  return state;
 }
 
-async function saveAsTemplate(roleId){
-  const name = prompt('Nome do template:');
-  if(!name) return;
-  const saveBtn = document.getElementById('save-template');
-  const saveLoader = document.getElementById('save-template-loading');
-  if(saveBtn) saveBtn.disabled = true;
-  if(saveLoader) saveLoader.classList.remove('visually-hidden');
+async function savePermissions(roleId) {
+  const codenames = [];
+  document.querySelectorAll('#perms-tbody .perm-cb:checked').forEach(cb => {
+    codenames.push(cb.dataset.codename);
+  });
 
-  const dataObj = getCurrentPermissionsObject();
-  const url = "{% url 'empresas:save_permission_template' role_id=0 %}".replace('/0/','/'+roleId+'/');
-  try{
-    const res = await fetch(url, {
+  ['btn-save-perms', 'btn-save-perms-bottom'].forEach(id => {
+    const btn = document.getElementById(id);
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Salvando…';
+    }
+  });
+
+  try {
+    const url = PERM_URL_TEMPLATE.replace('/0/', '/' + roleId + '/');
+    const resp = await fetch(url, {
       method: 'POST',
-      headers: {'Content-Type':'application/json','X-CSRFToken': getCookie('csrftoken')},
-      body: JSON.stringify({'nome': name, 'dados': dataObj})
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken(), 'X-Requested-With': 'XMLHttpRequest' },
+      body: JSON.stringify({ permissions: codenames }),
     });
-    const r = await res.json();
-    if(r.ok){
-      showToast('Template salvo com sucesso', 'success');
-      await loadTemplatesIntoSelect(roleId);
-      await loadTemplatesIntoBulkSelect();
-    } else {
-      showToast('Erro ao salvar template', 'danger');
-    }
-  }catch(e){
-    showToast('Erro ao salvar template', 'danger');
-  }finally{
-    if(saveBtn) saveBtn.disabled = false;
-    if(saveLoader) saveLoader.classList.add('visually-hidden');
-  }
-}
-
-async function loadTemplatesIntoSelect(roleId){
-  const url = "{% url 'empresas:permission_templates_list' %}";
-  const sel = document.getElementById('template-select');
-  const loader = document.getElementById('template-loading');
-  const applyBtn = document.getElementById('apply-template');
-  if(!sel) return;
-
-  // Show loading
-  sel.innerHTML = '<option>Carregando...</option>';
-  if(loader) loader.classList.remove('visually-hidden');
-  if(applyBtn) applyBtn.disabled = true;
-
-  try{
-    const res = await fetch(url, {headers:{'X-Requested-With':'XMLHttpRequest'}});
-    const data = await res.json();
-    sel.innerHTML = '';
-    const opt = document.createElement('option'); opt.value=''; opt.text='-- Selecionar Template --'; sel.appendChild(opt);
-    (data.templates||[]).forEach(t=>{
-      const o = document.createElement('option'); o.value = t.id; o.text = t.nome + (t.criado_por ? ' ('+t.criado_por+')' : '');
-      sel.appendChild(o);
-    });
-    if(applyBtn) applyBtn.disabled = (data.templates || []).length === 0;
-  }catch(e){
-    sel.innerHTML = '<option value="">Erro ao carregar</option>';
-    if(applyBtn) applyBtn.disabled = true;
-  }finally{
-    if(loader) loader.classList.add('visually-hidden');
-  }
-} 
-
-async function applySelectedTemplate(roleId){
-  const sel = document.getElementById('template-select');
-  const id = sel.value;
-  if(!id){ showToast('Selecione um template', 'warning'); return; }
-  const url = "{% url 'empresas:apply_template_to_role' role_id=0 %}".replace('/0/','/'+roleId+'/');
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: {'Content-Type':'application/json','X-CSRFToken': getCookie('csrftoken')},
-    body: JSON.stringify({'template_id': Number(id)})
-  });
-  const r = await res.json();
-  if(r.ok){
-    showToast('Template aplicado com sucesso', 'success');
-    // reload permissions to reflect changes
-    loadPermissions(roleId);
-    loadTemplatesIntoBulkSelect();
-  } else {
-    showToast('Erro ao aplicar template', 'danger');
-  }
-}
-
-async function loadTemplatesIntoBulkSelect(){
-  const url = "{% url 'empresas:permission_templates_list' %}";
-  const sel = document.getElementById('bulk-template-select');
-  const loader = document.getElementById('bulk-template-loading');
-  const bulkBtn = document.getElementById('bulk-apply');
-  const status = document.getElementById('bulk-template-status');
-  if(!sel) return;
-
-  sel.innerHTML = '<option>Carregando...</option>';
-  if(loader) loader.classList.remove('visually-hidden');
-  if(bulkBtn) bulkBtn.disabled = true;
-  if(status) status.textContent = 'Carregando templates...';
-
-  try{
-    const res = await fetch(url, {headers:{'X-Requested-With':'XMLHttpRequest'}});
-    const data = await res.json();
-    sel.innerHTML = '';
-    const opt = document.createElement('option'); opt.value=''; opt.text='-- Selecionar Template para Bulk --'; sel.appendChild(opt);
-    (data.templates||[]).forEach(t=>{
-      const o = document.createElement('option'); o.value = t.id; o.text = t.nome + (t.criado_por ? ' ('+t.criado_por+')' : '');
-      sel.appendChild(o);
-    });
-    if(bulkBtn) bulkBtn.disabled = (data.templates || []).length === 0;
-    if(status) status.textContent = (data.templates||[]).length === 0 ? 'Nenhum template disponível' : '';
-  }catch(e){
-    sel.innerHTML = '<option value="">Erro ao carregar</option>';
-    if(status) status.textContent = 'Erro ao carregar templates';
-  }finally{
-    if(loader) loader.classList.add('visually-hidden');
-  }
-} 
-
-document.addEventListener('DOMContentLoaded', function(){
-  const btn = document.getElementById('bulk-apply');
-  if(btn){
-    btn.addEventListener('click', async function(){
-      const sel = document.getElementById('bulk-template-select');
-      const tplid = sel.value;
-      if(!tplid){ showToast('Selecione um template para aplicar', 'warning'); return; }
-      const selected = Array.from(document.querySelectorAll('.role-select:checked')).map(cb=>cb.dataset.roleId);
-      if(selected.length === 0){ showToast('Selecione ao menos uma função', 'warning'); return; }
-      const res = await fetch("{% url 'empresas:apply_template_bulk' %}", {
-        method: 'POST',
-        headers: {'Content-Type':'application/json','X-CSRFToken': getCookie('csrftoken')},
-        body: JSON.stringify({'template_id': Number(tplid), 'role_ids': selected})
+    const data = await resp.json();
+    if (data.ok) {
+      pendingChanges = 0;
+      updateUnsavedBadge();
+      setSaveEnabled(false);
+      ['btn-save-perms', 'btn-save-perms-bottom'].forEach(id => {
+        const btn = document.getElementById(id);
+        if (btn) btn.innerHTML = '<i class="bi bi-floppy me-1"></i> Salvar';
       });
-      const r = await res.json();
-      if(r.ok){ showToast(`Template aplicado a ${r.roles_updated} funções`, 'success'); loadTemplatesIntoBulkSelect(); } else { showToast('Erro no bulk apply', 'danger'); }
+      showToast(`${data.updated} permissão(ões) salva(s) com sucesso.`, 'success');
+    } else {
+      throw new Error(data.error || 'Erro desconhecido');
+    }
+  } catch (err) {
+    showToast('Erro ao salvar: ' + err.message, 'danger');
+    ['btn-save-perms', 'btn-save-perms-bottom'].forEach(id => {
+      const btn = document.getElementById(id);
+      if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-floppy me-1"></i> Salvar'; }
     });
   }
-});
-
-function getCookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-        const cookies = document.cookie.split(';');
-        for (let i = 0; i < cookies.length; i++) {
-            const cookie = cookies[i].trim();
-            if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
-            }
-        }
-    }
-    return cookieValue;
-}
-
-function showToast(message, type='info'){
-  // Update aria-live region
-  const region = document.getElementById('status-message');
-  if(region){
-    region.textContent = message;
-    region.classList.remove('visually-hidden');
-    region.classList.add('d-block');
-    setTimeout(()=>{
-      region.classList.add('visually-hidden');
-      region.textContent = '';
-    }, 4000);
-  }
-
-  // Cria um toast bonito e moderno
-  const toastContainer = document.getElementById('toast-container') || createToastContainer();
-  
-  const toast = document.createElement('div');
-  toast.className = `toast-modern toast-${type} show`;
-  toast.setAttribute('role', 'alert');
-  
-  const icons = {
-    'success': '<i class="bi bi-check-circle-fill"></i>',
-    'danger': '<i class="bi bi-x-circle-fill"></i>',
-    'warning': '<i class="bi bi-exclamation-triangle-fill"></i>',
-    'info': '<i class="bi bi-info-circle-fill"></i>'
-  };
-  
-  toast.innerHTML = `
-    <div class="toast-icon">${icons[type] || icons['info']}</div>
-    <div class="toast-message">${message}</div>
-    <button type="button" class="toast-close" onclick="this.parentElement.remove()">
-      <i class="bi bi-x"></i>
-    </button>
-  `;
-  
-  toastContainer.appendChild(toast);
-  
-  // Animação de entrada
-  setTimeout(() => toast.classList.add('toast-show'), 10);
-  
-  // Remove após 4 segundos
-  setTimeout(() => {
-    toast.classList.remove('toast-show');
-    setTimeout(() => toast.remove(), 300);
-  }, 4000);
-}
-
-function createToastContainer() {
-  const container = document.createElement('div');
-  container.id = 'toast-container';
-  container.style.cssText = `
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    z-index: 9999;
-    max-width: 400px;
-  `;
-  document.body.appendChild(container);
-  
-  // Adiciona CSS para os toasts
-  const style = document.createElement('style');
-  style.textContent = `
-    .toast-modern {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-      padding: 1rem 1.5rem;
-      margin-bottom: 0.5rem;
-      border-radius: 12px;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.15);
-      backdrop-filter: blur(10px);
-      opacity: 0;
-      transform: translateX(100%);
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    
-    .toast-modern.toast-show {
-      opacity: 1;
-      transform: translateX(0);
-    }
-    
-    .toast-success {
-      background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
-      border-left: 4px solid #28a745;
-      color: #155724;
-    }
-    
-    .toast-danger {
-      background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
-      border-left: 4px solid #dc3545;
-      color: #721c24;
-    }
-    
-    .toast-warning {
-      background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
-      border-left: 4px solid #ffc107;
-      color: #856404;
-    }
-    
-    .toast-info {
-      background: linear-gradient(135deg, #d1ecf1 0%, #bee5eb 100%);
-      border-left: 4px solid #17a2b8;
-      color: #0c5460;
-    }
-    
-    .toast-icon {
-      font-size: 1.5rem;
-      flex-shrink: 0;
-    }
-    
-    .toast-message {
-      flex-grow: 1;
-      font-weight: 500;
-    }
-    
-    .toast-close {
-      background: none;
-      border: none;
-      font-size: 1.2rem;
-      cursor: pointer;
-      opacity: 0.7;
-      transition: opacity 0.2s;
-      padding: 0;
-      color: inherit;
-    }
-    
-    .toast-close:hover {
-      opacity: 1;
-    }
-    
-    @media (max-width: 768px) {
-      #toast-container {
-        left: 20px;
-        right: 20px;
-        max-width: none;
-      }
-    }
-  `;
-  document.head.appendChild(style);
-  
-  return container;
 }
 </script>
-```

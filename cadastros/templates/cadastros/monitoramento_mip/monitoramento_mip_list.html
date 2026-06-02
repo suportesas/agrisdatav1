@@ -85,7 +85,7 @@
     <h4 class="fw-bold text-secondary mb-0">
       <i class="bi bi-graph-up text-success"></i> Monitoramentos Realizados
     </h4>
-    <a href="{% url 'cadastros:monitoramento_mip_create' %}" class="btn btn-success">
+    <a href="{% url 'mip:monitoramento_mip_create' %}" class="btn btn-success">
       <i class="bi bi-plus-circle"></i> Novo Monitoramento
     </a>
   </div>
@@ -132,7 +132,7 @@
           <button type="submit" class="btn btn-primary w-100">
             <i class="bi bi-funnel"></i> Filtrar
           </button>
-          <a href="{% url 'cadastros:monitoramento_mip_list' %}" class="btn btn-outline-secondary w-100 mt-2">
+          <a href="{% url 'mip:monitoramento_mip_list' %}" class="btn btn-outline-secondary w-100 mt-2">
             <i class="bi bi-x-circle"></i> Limpar
           </a>
         </div>
@@ -192,11 +192,11 @@
               </td>
               <td class="text-center">
                 <div class="btn-group btn-group-sm" role="group">
-                  <a href="{% url 'cadastros:monitoramento_mip_detail' mon.pk %}" 
+                  <a href="{% url 'mip:monitoramento_mip_detail' mon.pk %}" 
                      class="btn btn-outline-primary" title="Visualizar">
                     <i class="bi bi-eye"></i>
                   </a>
-                  <a href="{% url 'cadastros:monitoramento_mip_add_praga' mon.pk %}" 
+                  <a href="{% url 'mip:monitoramento_mip_add_praga' mon.pk %}" 
                      class="btn btn-outline-success" title="Adicionar Praga">
                     <i class="bi bi-plus"></i>
                   </a>

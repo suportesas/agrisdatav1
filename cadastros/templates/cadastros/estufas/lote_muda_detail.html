@@ -8,10 +8,10 @@
 
   <div class="row mb-3">
     <div class="col d-flex flex-wrap gap-2">
-      <a href="{% url 'cadastros:lote_muda_list' %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i> Voltar</a>
-      <a href="{% url 'cadastros:lote_muda_update' lote.pk %}" class="btn btn-primary btn-sm"><i class="bi bi-pencil"></i> Editar</a>
+      <a href="{% url 'estufas:lote_muda_list' %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i> Voltar</a>
+      <a href="{% url 'estufas:lote_muda_update' lote.pk %}" class="btn btn-primary btn-sm"><i class="bi bi-pencil"></i> Editar</a>
       {% if proximo_status %}
-      <form method="post" action="{% url 'cadastros:lote_muda_avancar_status' lote.pk %}" class="d-inline">
+      <form method="post" action="{% url 'estufas:lote_muda_avancar_status' lote.pk %}" class="d-inline">
         {% csrf_token %}
         <button type="submit" class="btn btn-success btn-sm">
           <i class="bi bi-arrow-right-circle"></i> Avançar Status
@@ -19,7 +19,7 @@
       </form>
       {% endif %}
       {% if lote.status == 'PRONTO' %}
-      <a href="{% url 'cadastros:transplantio_create' %}" class="btn btn-warning btn-sm">
+      <a href="{% url 'estufas:transplantio_create' %}" class="btn btn-warning btn-sm">
         <i class="bi bi-arrow-right-square"></i> Transplantar
       </a>
       {% endif %}
@@ -101,7 +101,7 @@
           <h6 class="fw-bold text-secondary mb-0">Registrar Perda</h6>
         </div>
         <div class="card-body border-bottom">
-          <form method="post" action="{% url 'cadastros:perda_estufa_create' lote.pk %}" class="row g-2 align-items-end">
+          <form method="post" action="{% url 'estufas:perda_estufa_create' lote.pk %}" class="row g-2 align-items-end">
             {% csrf_token %}
             <div class="col-md-2">
               <label class="form-label small fw-semibold">Data</label>
@@ -137,7 +137,7 @@
                 <td>{{ p.get_motivo_display }}</td>
                 <td class="small text-muted">{{ p.observacao|default:"—" }}</td>
                 <td>
-                  <form method="post" action="{% url 'cadastros:perda_estufa_delete' lote.pk p.pk %}" class="d-inline">
+                  <form method="post" action="{% url 'estufas:perda_estufa_delete' lote.pk p.pk %}" class="d-inline">
                     {% csrf_token %}
                     <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('Remover?')"><i class="bi bi-trash"></i></button>
                   </form>
@@ -159,7 +159,7 @@
           <h6 class="fw-bold text-secondary mb-0">Registrar Aplicação</h6>
         </div>
         <div class="card-body border-bottom">
-          <form method="post" action="{% url 'cadastros:aplicacao_estufa_create' lote.pk %}" class="row g-2 align-items-end">
+          <form method="post" action="{% url 'estufas:aplicacao_estufa_create' lote.pk %}" class="row g-2 align-items-end">
             {% csrf_token %}
             <div class="col-md-2">
               <label class="form-label small fw-semibold">Data</label>
@@ -205,7 +205,7 @@
                 <td>{{ a.unidade_medida }}</td>
                 <td class="text-end">R$ {{ a.custo_total|floatformat:2 }}</td>
                 <td>
-                  <form method="post" action="{% url 'cadastros:aplicacao_estufa_delete' lote.pk a.pk %}" class="d-inline">
+                  <form method="post" action="{% url 'estufas:aplicacao_estufa_delete' lote.pk a.pk %}" class="d-inline">
                     {% csrf_token %}
                     <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('Remover?')"><i class="bi bi-trash"></i></button>
                   </form>
@@ -227,7 +227,7 @@
           <h6 class="fw-bold text-secondary mb-0">Registrar Monitoramento</h6>
         </div>
         <div class="card-body border-bottom">
-          <form method="post" action="{% url 'cadastros:monitoramento_estufa_create' lote.pk %}" class="row g-2 align-items-end">
+          <form method="post" action="{% url 'estufas:monitoramento_estufa_create' lote.pk %}" class="row g-2 align-items-end">
             {% csrf_token %}
             <div class="col-md-2">
               <label class="form-label small fw-semibold">Data</label>
@@ -268,7 +268,7 @@
                 </td>
                 <td class="small">{{ m.acao_tomada|default:"—" }}</td>
                 <td>
-                  <form method="post" action="{% url 'cadastros:monitoramento_estufa_delete' lote.pk m.pk %}" class="d-inline">
+                  <form method="post" action="{% url 'estufas:monitoramento_estufa_delete' lote.pk m.pk %}" class="d-inline">
                     {% csrf_token %}
                     <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('Remover?')"><i class="bi bi-trash"></i></button>
                   </form>

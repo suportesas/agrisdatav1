@@ -24,7 +24,8 @@ from .forms import (
     PatrimonioAuditoriaForm,
     PatrimonioAuditoriaItemForm,
 )
-from cadastros.models import Vehicle, Funcionario
+from frota.models import Vehicle
+from rh.models import Funcionario
 
 
 @login_required

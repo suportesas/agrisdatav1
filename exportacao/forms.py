@@ -1,6 +1,7 @@
 from django import forms
 from .models import Booking, BookingContainer, OrdemColeta, SolicitacaoBooking
-from cadastros.models import Armador, Cultura, Motorista, Navio, Porto, Transportadora
+from cadastros.models import Armador, Cultura, Navio, Porto, Transportadora
+from frota.models import Motorista
 
 
 class ExportacaoBaseForm(forms.ModelForm):

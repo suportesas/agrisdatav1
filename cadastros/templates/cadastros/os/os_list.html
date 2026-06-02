@@ -13,7 +13,7 @@
       <h4 class="fw-bold mb-0"><i class="bi bi-clipboard-check text-success me-2"></i>Ordens de Serviço</h4>
       <small class="text-muted">Gestão de atividades no campo</small>
     </div>
-    <a href="{% url 'cadastros:os_create' %}" class="btn btn-success">
+    <a href="{% url 'operacoes_campo:os_create' %}" class="btn btn-success">
       <i class="bi bi-plus-circle me-1"></i> Nova OS
     </a>
   </div>
@@ -55,7 +55,7 @@
             <i class="bi bi-search me-1"></i>Filtrar
           </button>
           {% if search or status_filter or tipo_servico_filter or talhao_filter or safra_filter %}
-          <a href="{% url 'cadastros:os_list' %}" class="btn btn-outline-danger btn-sm ms-1" title="Limpar filtros">
+          <a href="{% url 'operacoes_campo:os_list' %}" class="btn btn-outline-danger btn-sm ms-1" title="Limpar filtros">
             <i class="bi bi-x-circle"></i>
           </a>
           {% endif %}
@@ -117,7 +117,7 @@
                 <i class="bi bi-exclamation-triangle-fill me-1"></i>Atrasada
               </span>
             </div>
-            <a href="{% url 'cadastros:os_detail' os.pk %}" class="text-decoration-none">
+            <a href="{% url 'operacoes_campo:os_detail' os.pk %}" class="text-decoration-none">
               <div class="fw-bold text-dark mb-1">{{ os.numero }}</div>
               <div class="text-muted small mb-1">
                 <i class="bi bi-tools me-1 text-success"></i>{{ os.descricao_servico|truncatechars:38 }}
@@ -136,13 +136,13 @@
               </small>
             </div>
             <div class="mt-2 d-flex gap-1">
-              <a href="{% url 'cadastros:os_detail' os.pk %}" class="btn btn-xs btn-outline-secondary py-0 px-2 flex-fill text-center" title="Ver detalhes">
+              <a href="{% url 'operacoes_campo:os_detail' os.pk %}" class="btn btn-xs btn-outline-secondary py-0 px-2 flex-fill text-center" title="Ver detalhes">
                 <i class="bi bi-eye"></i>
               </a>
-              <a href="{% url 'cadastros:os_update' os.pk %}" class="btn btn-xs btn-outline-warning py-0 px-2 flex-fill text-center" title="Editar">
+              <a href="{% url 'operacoes_campo:os_update' os.pk %}" class="btn btn-xs btn-outline-warning py-0 px-2 flex-fill text-center" title="Editar">
                 <i class="bi bi-pencil"></i>
               </a>
-              <form method="post" action="{% url 'cadastros:os_aprovar' os.pk %}" class="flex-fill">
+              <form method="post" action="{% url 'operacoes_campo:os_aprovar' os.pk %}" class="flex-fill">
                 {% csrf_token %}
                 <button type="submit" class="btn btn-xs btn-outline-primary py-0 w-100" title="Aprovar">
                   <i class="bi bi-check2-circle"></i> Aprovar
@@ -181,7 +181,7 @@
                 <i class="bi bi-exclamation-triangle-fill me-1"></i>Atrasada
               </span>
             </div>
-            <a href="{% url 'cadastros:os_detail' os.pk %}" class="text-decoration-none">
+            <a href="{% url 'operacoes_campo:os_detail' os.pk %}" class="text-decoration-none">
               <div class="fw-bold text-dark mb-1">{{ os.numero }}</div>
               <div class="text-muted small mb-1">
                 <i class="bi bi-tools me-1 text-success"></i>{{ os.descricao_servico|truncatechars:38 }}
@@ -200,10 +200,10 @@
               </small>
             </div>
             <div class="mt-2 d-flex gap-1">
-              <a href="{% url 'cadastros:os_detail' os.pk %}" class="btn btn-xs btn-outline-secondary py-0 px-2 flex-fill text-center">
+              <a href="{% url 'operacoes_campo:os_detail' os.pk %}" class="btn btn-xs btn-outline-secondary py-0 px-2 flex-fill text-center">
                 <i class="bi bi-eye"></i>
               </a>
-              <form method="post" action="{% url 'cadastros:os_iniciar' os.pk %}" class="flex-fill">
+              <form method="post" action="{% url 'operacoes_campo:os_iniciar' os.pk %}" class="flex-fill">
                 {% csrf_token %}
                 <button type="submit" class="btn btn-xs btn-outline-info py-0 w-100">
                   <i class="bi bi-play-circle"></i> Iniciar
@@ -242,7 +242,7 @@
                 <i class="bi bi-exclamation-triangle-fill me-1"></i>Atrasada
               </span>
             </div>
-            <a href="{% url 'cadastros:os_detail' os.pk %}" class="text-decoration-none">
+            <a href="{% url 'operacoes_campo:os_detail' os.pk %}" class="text-decoration-none">
               <div class="fw-bold text-dark mb-1">{{ os.numero }}</div>
               <div class="text-muted small mb-1">
                 <i class="bi bi-tools me-1 text-success"></i>{{ os.descricao_servico|truncatechars:38 }}
@@ -265,10 +265,10 @@
               </small>
             </div>
             <div class="mt-2 d-flex gap-1">
-              <a href="{% url 'cadastros:os_detail' os.pk %}" class="btn btn-xs btn-outline-secondary py-0 px-2 flex-fill text-center">
+              <a href="{% url 'operacoes_campo:os_detail' os.pk %}" class="btn btn-xs btn-outline-secondary py-0 px-2 flex-fill text-center">
                 <i class="bi bi-eye"></i>
               </a>
-              <a href="{% url 'cadastros:os_concluir' os.pk %}" class="btn btn-xs btn-success py-0 px-2 flex-fill text-center">
+              <a href="{% url 'operacoes_campo:os_concluir' os.pk %}" class="btn btn-xs btn-success py-0 px-2 flex-fill text-center">
                 <i class="bi bi-flag-fill me-1"></i>Concluir
               </a>
             </div>
@@ -303,7 +303,7 @@
               <small class="text-muted">{{ os.data_fim|date:"d/m/Y" }}</small>
               {% endif %}
             </div>
-            <a href="{% url 'cadastros:os_detail' os.pk %}" class="text-decoration-none">
+            <a href="{% url 'operacoes_campo:os_detail' os.pk %}" class="text-decoration-none">
               <div class="fw-bold text-dark mb-1">{{ os.numero }}</div>
               <div class="text-muted small mb-1">
                 <i class="bi bi-tools me-1 text-success"></i>{{ os.descricao_servico|truncatechars:38 }}
@@ -314,7 +314,7 @@
               </div>
             </a>
             <div class="mt-2">
-              <a href="{% url 'cadastros:os_detail' os.pk %}" class="btn btn-xs btn-outline-success py-0 w-100">
+              <a href="{% url 'operacoes_campo:os_detail' os.pk %}" class="btn btn-xs btn-outline-success py-0 w-100">
                 <i class="bi bi-eye me-1"></i>Ver detalhes
               </a>
             </div>
@@ -353,7 +353,7 @@
                 <td>{{ os.talhao.nome }}</td>
                 <td>{{ os.safra.nome|default:"—" }}</td>
                 <td class="text-end">
-                  <a href="{% url 'cadastros:os_detail' os.pk %}" class="btn btn-xs btn-outline-secondary py-0 px-2">
+                  <a href="{% url 'operacoes_campo:os_detail' os.pk %}" class="btn btn-xs btn-outline-secondary py-0 px-2">
                     <i class="bi bi-eye"></i>
                   </a>
                 </td>
@@ -371,7 +371,7 @@
   <div class="text-center py-5 text-muted">
     <i class="bi bi-clipboard-x display-5 opacity-25 d-block mb-3"></i>
     <p class="mb-1">Nenhuma ordem de serviço encontrada.</p>
-    <a href="{% url 'cadastros:os_create' %}" class="btn btn-success mt-2">
+    <a href="{% url 'operacoes_campo:os_create' %}" class="btn btn-success mt-2">
       <i class="bi bi-plus-circle me-1"></i>Criar primeira OS
     </a>
   </div>

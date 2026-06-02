@@ -12,7 +12,7 @@
             </h1>
         </div>
         <div class="col-md-4 text-end">
-            <a href="{% url 'cadastros:motorista_create' %}" class="btn btn-primary">
+            <a href="{% url 'frota:motorista_create' %}" class="btn btn-primary">
                 <i class="bi bi-plus-circle"></i> Novo Motorista
             </a>
         </div>
@@ -47,7 +47,7 @@
                     <button type="submit" class="btn btn-outline-primary w-100">
                         <i class="bi bi-search"></i> Filtrar
                     </button>
-                    <a href="{% url 'cadastros:motorista_list' %}" class="btn btn-outline-secondary">
+                    <a href="{% url 'frota:motorista_list' %}" class="btn btn-outline-secondary">
                         <i class="bi bi-x"></i>
                     </a>
                 </div>
@@ -115,13 +115,13 @@
                         </td>
                         <td class="text-center">
                             <div class="btn-group btn-group-sm" role="group">
-                                <a href="{% url 'cadastros:motorista_detail' motorista.id %}" class="btn btn-outline-primary" title="Ver">
+                                <a href="{% url 'frota:motorista_detail' motorista.id %}" class="btn btn-outline-primary" title="Ver">
                                     <i class="bi bi-eye"></i>
                                 </a>
-                                <a href="{% url 'cadastros:motorista_update' motorista.id %}" class="btn btn-outline-warning" title="Editar">
+                                <a href="{% url 'frota:motorista_update' motorista.id %}" class="btn btn-outline-warning" title="Editar">
                                     <i class="bi bi-pencil"></i>
                                 </a>
-                                <a href="{% url 'cadastros:motorista_delete' motorista.id %}" class="btn btn-outline-danger" title="Deletar">
+                                <a href="{% url 'frota:motorista_delete' motorista.id %}" class="btn btn-outline-danger" title="Deletar">
                                     <i class="bi bi-trash"></i>
                                 </a>
                             </div>
@@ -179,7 +179,7 @@
     {% else %}
     <div class="alert alert-info" role="alert">
         <i class="bi bi-info-circle"></i> Nenhum motorista encontrado.
-        <a href="{% url 'cadastros:motorista_create' %}" class="alert-link">Criar novo motorista</a>
+        <a href="{% url 'frota:motorista_create' %}" class="alert-link">Criar novo motorista</a>
     </div>
     {% endif %}
 </div>

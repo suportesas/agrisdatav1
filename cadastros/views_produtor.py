@@ -34,7 +34,7 @@ def produtor_list(request):
     page_obj = paginator.get_page(request.GET.get('page'))
 
     from decimal import Decimal
-    from cadastros.models import EmprestimoProdutor
+    from emprestimos.models import EmprestimoProdutor
     total_entrada = Decimal('0')
     total_saida = Decimal('0')
     for emp in EmprestimoProdutor.objects.filter(empresa=request.user.empresa).select_related('produto'):
@@ -60,7 +60,7 @@ def produtor_list(request):
 def produtor_detail(request, pk):
     produtor = get_object_or_404(Produtor, pk=pk, empresa=request.user.empresa)
     from decimal import Decimal
-    from cadastros.models import EmprestimoProdutor
+    from emprestimos.models import EmprestimoProdutor
     total_entrada = Decimal('0')
     total_saida = Decimal('0')
     for emp in EmprestimoProdutor.objects.filter(produtor=produtor, empresa=request.user.empresa).select_related('produto'):

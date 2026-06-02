@@ -37,7 +37,7 @@ class Migration(migrations.Migration):
                 ('observacoes', models.TextField(blank=True, verbose_name='Observações')),
                 ('empresa', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='patrimonios', to='empresas.empresa', verbose_name='Empresa')),
                 ('responsavel', models.ForeignKey(blank=True, help_text='Quem é responsável pelo bem', null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='patrimonios_responsavel', to='cadastros.funcionario', verbose_name='Responsável')),
-                ('veiculo', models.OneToOneField(blank=True, help_text='Se for um veículo/implemento, vincule-o aqui para evitar duplicação', null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='patrimonio', to='cadastros.vehicle', verbose_name='Veículo Vinculado')),
+                ('veiculo', models.OneToOneField(blank=True, help_text='Se for um veículo/implemento, vincule-o aqui para evitar duplicação', null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='patrimonio', to='frota.vehicle', verbose_name='Veículo Vinculado')),
             ],
             options={
                 'verbose_name': 'Patrimônio',

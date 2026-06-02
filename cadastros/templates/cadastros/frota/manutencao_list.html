@@ -7,12 +7,12 @@
   <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
     <div>
       {% if alertas_count > 0 %}
-      <a href="{% url 'cadastros:alertas_manutencao_list' %}" class="btn btn-warning btn-sm me-2">
+      <a href="{% url 'frota:alertas_manutencao_list' %}" class="btn btn-warning btn-sm me-2">
         <i class="bi bi-exclamation-triangle"></i> {{ alertas_count }} Alertas Pendentes
       </a>
       {% endif %}
     </div>
-    <a href="{% url 'cadastros:manutencao_create' %}" class="btn btn-warning btn-sm"><i class="bi bi-plus"></i> Nova Manutenção</a>
+    <a href="{% url 'frota:manutencao_create' %}" class="btn btn-warning btn-sm"><i class="bi bi-plus"></i> Nova Manutenção</a>
   </div>
 
   <!-- Filtros -->
@@ -39,7 +39,7 @@
         </div>
         <div class="col-md-2 d-flex gap-2">
           <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-search"></i></button>
-          <a href="{% url 'cadastros:manutencao_list' %}" class="btn btn-outline-secondary btn-sm">Limpar</a>
+          <a href="{% url 'frota:manutencao_list' %}" class="btn btn-outline-secondary btn-sm">Limpar</a>
         </div>
       </form>
     </div>
@@ -56,7 +56,7 @@
           {% for m in manutencoes %}
           <tr>
             <td class="small">{{ m.data_abertura|date:"d/m/Y" }}</td>
-            <td><a href="{% url 'cadastros:manutencao_detail' m.pk %}">{{ m.vehicle }}</a></td>
+            <td><a href="{% url 'frota:manutencao_detail' m.pk %}">{{ m.vehicle }}</a></td>
             <td><span class="badge bg-info text-dark small">{{ m.get_tipo_display }}</span></td>
             <td class="small">
               {{ m.descricao|truncatechars:40 }}
@@ -74,8 +74,8 @@
             </td>
             <td class="text-end fw-bold">R$ {{ m.valor_total|floatformat:2 }}</td>
             <td class="d-flex gap-1">
-              <a href="{% url 'cadastros:manutencao_update' m.pk %}" class="btn btn-outline-secondary btn-sm py-0 px-1"><i class="bi bi-pencil"></i></a>
-              <form method="post" action="{% url 'cadastros:manutencao_delete' m.pk %}" class="d-inline"
+              <a href="{% url 'frota:manutencao_update' m.pk %}" class="btn btn-outline-secondary btn-sm py-0 px-1"><i class="bi bi-pencil"></i></a>
+              <form method="post" action="{% url 'frota:manutencao_delete' m.pk %}" class="d-inline"
                     onsubmit="return confirm('Excluir manutenção de {{ m.vehicle|escapejs }}? Esta ação não pode ser desfeita.')">
                 {% csrf_token %}
                 <button class="btn btn-outline-danger btn-sm py-0 px-1"><i class="bi bi-trash"></i></button>

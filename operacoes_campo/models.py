@@ -1,0 +1,823 @@
+"""
+Operações de Campo — OS, Colheita, Caderno de Campo, Pluviometria, Qualidade, Planejamento de Custo
+"""
+from django.db import models
+from django.core.validators import MinValueValidator, MaxValueValidator, FileExtensionValidator
+from django.core.exceptions import ValidationError
+from django.utils import timezone
+from decimal import Decimal
+
+
+# ============================================================================
+# CONFIGURAÇÃO DE CUSTO DE MÁQUINA
+# ============================================================================
+
+class CustoHoraMaquina(models.Model):
+    """Custo/hora de operação: depreciação + combustível + reserva de manutenção"""
+
+    empresa = models.ForeignKey('empresas.Empresa', on_delete=models.CASCADE, related_name='custos_hora_maquina', verbose_name='Empresa')
+    veiculo = models.ForeignKey('frota.Vehicle', on_delete=models.CASCADE, related_name='configuracoes_custo', verbose_name='Veículo/Máquina')
+    preco_combustivel = models.DecimalField('Preço do Combustível (R$/L)', max_digits=8, decimal_places=3, validators=[MinValueValidator(Decimal('0.001'))])
+    reserva_manutencao_hora = models.DecimalField('Reserva de Manutenção (R$/h)', max_digits=8, decimal_places=2, default=Decimal('5.00'), validators=[MinValueValidator(Decimal('0.00'))])
+    horas_anuais_trabalho = models.DecimalField('Horas Anuais de Trabalho', max_digits=8, decimal_places=2, default=Decimal('1000.00'), validators=[MinValueValidator(Decimal('1.00'))])
+    ativo = models.BooleanField('Configuração Ativa', default=True)
+    data_referencia = models.DateField('Data de Referência')
+    data_cadastro = models.DateTimeField('Data de Cadastro', auto_now_add=True)
+    data_atualizacao = models.DateTimeField('Última Atualização', auto_now=True)
+    cadastrado_por = models.ForeignKey('usuarios.Usuario', on_delete=models.SET_NULL, null=True, blank=True, related_name='custos_maquina_cadastrados', verbose_name='Cadastrado por')
+
+    class Meta:
+        db_table = 'cadastros_custohoramaquina'
+        verbose_name = 'Custo/Hora de Máquina'
+        verbose_name_plural = 'Custos/Hora de Máquinas'
+        ordering = ['-data_referencia']
+        indexes = [
+            models.Index(fields=['empresa', 'ativo']),
+            models.Index(fields=['veiculo', '-data_referencia']),
+        ]
+
+    def __str__(self):
+        return f"{self.veiculo} — R$ {self.custo_hora_calculado:.2f}/h ({self.data_referencia})"
+
+    @property
+    def custo_hora_calculado(self):
+        try:
+            patrimonio = self.veiculo.patrimonio
+            dep_anual = patrimonio.depreciacao_anual() if hasattr(patrimonio, 'depreciacao_anual') else (
+                patrimonio.valor_inicial / max(patrimonio.vida_util_anos, 1)
+            )
+        except Exception:
+            dep_anual = Decimal('0')
+        dep_hora = dep_anual / self.horas_anuais_trabalho if self.horas_anuais_trabalho else Decimal('0')
+        consumo = self.veiculo.consumo_medio or Decimal('0')
+        custo_comb = consumo * self.preco_combustivel
+        return dep_hora + custo_comb + self.reserva_manutencao_hora
+
+
+# ============================================================================
+# CLASSIFICAÇÃO DE SERVIÇOS AGRÍCOLAS
+# ============================================================================
+
+class TipoServicoOS(models.Model):
+    """Tipo macro de serviço. empresa=None = registro global."""
+
+    empresa = models.ForeignKey('empresas.Empresa', on_delete=models.CASCADE, null=True, blank=True, related_name='tipos_servico_os', verbose_name='Empresa')
+    nome = models.CharField('Nome', max_length=100)
+    descricao = models.CharField('Descrição', max_length=255, blank=True)
+    icone = models.CharField('Ícone Bootstrap', max_length=60, blank=True, default='bi-tools')
+    ordem = models.PositiveSmallIntegerField('Ordem', default=0)
+    ativo = models.BooleanField('Ativo', default=True)
+    tipo_legado = models.CharField('Tipo Legado', max_length=30, blank=True)
+
+    class Meta:
+        db_table = 'cadastros_tiposervicoos'
+        verbose_name = 'Tipo de Serviço (OS)'
+        verbose_name_plural = 'Tipos de Serviço (OS)'
+        ordering = ['ordem', 'nome']
+
+    def __str__(self):
+        return self.nome
+
+
+class SubtipoServicoOS(models.Model):
+    """Operação específica dentro de um tipo de serviço."""
+
+    tipo_servico = models.ForeignKey(TipoServicoOS, on_delete=models.CASCADE, related_name='subtipos', verbose_name='Tipo de Serviço')
+    empresa = models.ForeignKey('empresas.Empresa', on_delete=models.CASCADE, null=True, blank=True, related_name='subtipos_servico_os', verbose_name='Empresa')
+    nome = models.CharField('Nome', max_length=100)
+    descricao = models.CharField('Descrição', max_length=255, blank=True)
+    ordem = models.PositiveSmallIntegerField('Ordem', default=0)
+    ativo = models.BooleanField('Ativo', default=True)
+
+    class Meta:
+        db_table = 'cadastros_subtiposervicoos'
+        verbose_name = 'Operação de Serviço (OS)'
+        verbose_name_plural = 'Operações de Serviço (OS)'
+        ordering = ['tipo_servico__ordem', 'ordem', 'nome']
+
+    def __str__(self):
+        return f"{self.tipo_servico.nome} / {self.nome}"
+
+
+class ModalidadeExecucaoOS(models.Model):
+    """Como o serviço foi realizado: Tratorizada, Costal, Drone, Manual, Terceirizada."""
+
+    empresa = models.ForeignKey('empresas.Empresa', on_delete=models.CASCADE, null=True, blank=True, related_name='modalidades_execucao_os', verbose_name='Empresa')
+    nome = models.CharField('Nome', max_length=100)
+    descricao = models.CharField('Descrição', max_length=255, blank=True)
+    ordem = models.PositiveSmallIntegerField('Ordem', default=0)
+    ativo = models.BooleanField('Ativo', default=True)
+
+    class Meta:
+        db_table = 'cadastros_modalidadeexecucaoos'
+        verbose_name = 'Modalidade de Execução (OS)'
+        verbose_name_plural = 'Modalidades de Execução (OS)'
+        ordering = ['ordem', 'nome']
+
+    def __str__(self):
+        return self.nome
+
+
+# ============================================================================
+# ORDEM DE SERVIÇO
+# ============================================================================
+
+class OrdemServico(models.Model):
+    """OS para atividades agrícolas em talhões. RN-03: conclusão exige foto."""
+
+    TIPO_CHOICES = [
+        ('PREPARO_SOLO', 'Preparo de Solo'), ('PULV_MECANICA', 'Pulverização Mecânica'),
+        ('PULV_COSTAL', 'Pulverização Costal'), ('PLANTIO', 'Plantio'),
+        ('IRRIGACAO', 'Irrigação'), ('ADUBACAO', 'Adubação/Fertirrigação'),
+        ('COLHEITA', 'Colheita'), ('MANUTENCAO', 'Manutenção de Infraestrutura'), ('OUTRO', 'Outro'),
+    ]
+    STATUS_CHOICES = [
+        ('ABERTA', 'Aberta'), ('APROVADA', 'Aprovada'),
+        ('EM_ANDAMENTO', 'Em Andamento'), ('CONCLUIDA', 'Concluída'), ('CANCELADA', 'Cancelada'),
+    ]
+    UNIDADE_COBRANCA_CHOICES = [
+        ('POR_HA', 'Por Hectare (R$/ha)'), ('DIARIA', 'Diária'), ('FECHADO', 'Valor Fechado'),
+    ]
+
+    empresa = models.ForeignKey('empresas.Empresa', on_delete=models.CASCADE, related_name='ordens_servico', verbose_name='Empresa')
+    numero = models.CharField('Número', max_length=30, unique=True, blank=True, help_text='Auto-gerado: OS-YYYY-NNNNN')
+    tipo = models.CharField('Tipo de Serviço', max_length=30, choices=TIPO_CHOICES, blank=True)
+    tipo_servico = models.ForeignKey(TipoServicoOS, on_delete=models.SET_NULL, null=True, blank=True, related_name='ordens_servico', verbose_name='Tipo de Serviço')
+    subtipo_servico = models.ForeignKey(SubtipoServicoOS, on_delete=models.SET_NULL, null=True, blank=True, related_name='ordens_servico', verbose_name='Operação')
+    modalidade_execucao = models.ForeignKey(ModalidadeExecucaoOS, on_delete=models.SET_NULL, null=True, blank=True, related_name='ordens_servico', verbose_name='Modalidade de Execução')
+    status = models.CharField('Status', max_length=20, choices=STATUS_CHOICES, default='ABERTA')
+
+    talhao = models.ForeignKey('cadastros.Talhao', on_delete=models.PROTECT, related_name='ordens_servico', verbose_name='Talhão')
+    safra = models.ForeignKey('cadastros.Safra', on_delete=models.SET_NULL, null=True, blank=True, related_name='ordens_servico', verbose_name='Safra')
+    requisicao = models.ForeignKey('cadastros.Requisicao', on_delete=models.SET_NULL, null=True, blank=True, related_name='ordens_servico', verbose_name='Requisição de Insumos')
+
+    solicitante = models.ForeignKey('usuarios.Usuario', on_delete=models.SET_NULL, null=True, blank=True, related_name='os_solicitadas', verbose_name='Solicitante')
+    responsavel = models.ForeignKey('rh.Funcionario', on_delete=models.SET_NULL, null=True, blank=True, related_name='os_responsavel', verbose_name='Responsável pela Execução')
+    aprovador = models.ForeignKey('usuarios.Usuario', on_delete=models.SET_NULL, null=True, blank=True, related_name='os_aprovadas', verbose_name='Aprovador')
+
+    data_prevista = models.DateField('Data Prevista', null=True, blank=True)
+    data_inicio = models.DateTimeField('Data/Hora de Início', null=True, blank=True)
+    data_fim = models.DateTimeField('Data/Hora de Conclusão', null=True, blank=True)
+    data_aprovacao = models.DateTimeField('Data de Aprovação', null=True, blank=True)
+
+    area_executada_ha = models.DecimalField('Área Executada (ha)', max_digits=10, decimal_places=4, null=True, blank=True, validators=[MinValueValidator(Decimal('0'))])
+
+    fornecedor_servico = models.ForeignKey('cadastros.Fornecedor', on_delete=models.SET_NULL, null=True, blank=True, related_name='os_executadas', verbose_name='Fornecedor do Serviço')
+    valor_servico_externo = models.DecimalField('Valor do Serviço Externo (R$)', max_digits=12, decimal_places=2, null=True, blank=True, validators=[MinValueValidator(Decimal('0'))])
+    unidade_cobranca = models.CharField('Unidade de Cobrança', max_length=10, choices=UNIDADE_COBRANCA_CHOICES, null=True, blank=True)
+
+    foto_evidencia = models.ImageField('Foto de Evidência (RN-03)', upload_to='ordens_servico/%Y/%m/', null=True, blank=True, help_text='Obrigatória para concluir a OS (RN-03)')
+    observacoes = models.TextField('Observações', blank=True)
+
+    data_cadastro = models.DateTimeField('Data de Cadastro', auto_now_add=True)
+    data_atualizacao = models.DateTimeField('Última Atualização', auto_now=True)
+    cadastrado_por = models.ForeignKey('usuarios.Usuario', on_delete=models.SET_NULL, null=True, blank=True, related_name='os_cadastradas', verbose_name='Cadastrado por')
+
+    class Meta:
+        db_table = 'cadastros_ordemservico'
+        verbose_name = 'Ordem de Serviço'
+        verbose_name_plural = 'Ordens de Serviço'
+        ordering = ['-data_cadastro']
+        indexes = [
+            models.Index(fields=['empresa', 'status']),
+            models.Index(fields=['talhao', '-data_cadastro']),
+            models.Index(fields=['safra', 'tipo']),
+        ]
+
+    def __str__(self):
+        return f"{self.numero} — {self.descricao_servico} / {self.talhao.nome}"
+
+    @property
+    def descricao_servico(self):
+        parts = []
+        if self.tipo_servico_id:
+            parts.append(self.tipo_servico.nome)
+        else:
+            parts.append(self.get_tipo_display() or 'Sem tipo')
+        if self.subtipo_servico_id:
+            parts.append(self.subtipo_servico.nome)
+        if self.modalidade_execucao_id:
+            parts.append(self.modalidade_execucao.nome)
+        return ' / '.join(parts)
+
+    def save(self, *args, **kwargs):
+        if not self.numero:
+            ano = timezone.now().year
+            ultima = OrdemServico.objects.filter(numero__startswith=f'OS-{ano}-').order_by('numero').last()
+            seq = 1
+            if ultima:
+                try:
+                    seq = int(ultima.numero.split('-')[-1]) + 1
+                except (ValueError, IndexError):
+                    seq = OrdemServico.objects.filter(numero__startswith=f'OS-{ano}-').count() + 1
+            self.numero = f'OS-{ano}-{seq:05d}'
+        if self.tipo_servico_id:
+            legado = self.tipo_servico.tipo_legado or ''
+            if (legado == 'PULV_MECANICA' and self.modalidade_execucao_id
+                    and self.modalidade_execucao.nome == 'Costal'):
+                self.tipo = 'PULV_COSTAL'
+            elif legado:
+                self.tipo = legado
+        super().save(*args, **kwargs)
+
+    def clean(self):
+        if self.status == 'CONCLUIDA' and not self.foto_evidencia:
+            raise ValidationError({'foto_evidencia': 'Evidência fotográfica é obrigatória para concluir a OS (RN-03).'})
+        if self.fornecedor_servico and not self.valor_servico_externo:
+            raise ValidationError({'valor_servico_externo': 'Informe o valor do serviço externo.'})
+        if self.subtipo_servico_id and self.tipo_servico_id:
+            if self.subtipo_servico.tipo_servico_id != self.tipo_servico_id:
+                raise ValidationError({'subtipo_servico': 'A operação selecionada não pertence ao tipo de serviço escolhido.'})
+
+    @property
+    def custo_total(self):
+        try:
+            return self.custo_talhao.custo_total
+        except Exception:
+            return Decimal('0')
+
+    @property
+    def pode_aprovar(self):
+        return self.status == 'ABERTA'
+
+    @property
+    def pode_iniciar(self):
+        return self.status == 'APROVADA'
+
+    @property
+    def pode_concluir(self):
+        return self.status == 'EM_ANDAMENTO'
+
+    @property
+    def pode_cancelar(self):
+        return self.status in ('ABERTA', 'APROVADA')
+
+
+class OrdemServicoInsumo(models.Model):
+    """Insumos lançados diretamente na OS."""
+
+    empresa = models.ForeignKey('empresas.Empresa', on_delete=models.CASCADE, related_name='os_insumos', verbose_name='Empresa')
+    os = models.ForeignKey(OrdemServico, on_delete=models.CASCADE, related_name='insumos_os', verbose_name='Ordem de Serviço')
+    produto = models.ForeignKey('produtos.Produto', on_delete=models.PROTECT, related_name='insumos_os', verbose_name='Produto')
+    unidade_medida = models.ForeignKey('produtos.UnidadeMedida', on_delete=models.PROTECT, null=True, blank=True, related_name='insumos_os', verbose_name='Unidade')
+    quantidade_planejada = models.DecimalField('Quantidade Planejada', max_digits=15, decimal_places=3, null=True, blank=True, validators=[MinValueValidator(Decimal('0'))])
+    quantidade_aplicada = models.DecimalField('Quantidade Aplicada', max_digits=15, decimal_places=3, default=Decimal('0'), validators=[MinValueValidator(Decimal('0'))])
+    custo_unitario = models.DecimalField('Custo Unitário (R$)', max_digits=15, decimal_places=4, null=True, blank=True, validators=[MinValueValidator(Decimal('0'))])
+    observacoes = models.CharField('Observações', max_length=255, blank=True)
+    data_cadastro = models.DateTimeField('Data de Cadastro', auto_now_add=True)
+    data_atualizacao = models.DateTimeField('Última Atualização', auto_now=True)
+
+    class Meta:
+        db_table = 'cadastros_ordemservicoinsumo'
+        verbose_name = 'Insumo da OS'
+        verbose_name_plural = 'Insumos da OS'
+        ordering = ['-data_cadastro']
+        indexes = [
+            models.Index(fields=['os']),
+            models.Index(fields=['empresa', 'produto']),
+        ]
+
+    def __str__(self):
+        return f"{self.os.numero} - {self.produto}"
+
+    @property
+    def custo_total(self):
+        qtd = self.quantidade_aplicada or Decimal('0')
+        custo = self.custo_unitario or Decimal('0')
+        return (qtd * custo).quantize(Decimal('0.01'))
+
+    def clean(self):
+        if self.quantidade_aplicada is not None and self.quantidade_aplicada < 0:
+            raise ValidationError({'quantidade_aplicada': 'A quantidade aplicada não pode ser negativa.'})
+        if self.custo_unitario is not None and self.custo_unitario < 0:
+            raise ValidationError({'custo_unitario': 'O custo unitário não pode ser negativo.'})
+
+    def save(self, *args, **kwargs):
+        if not self.unidade_medida_id and getattr(self.produto, 'unidade_medida_id', None):
+            self.unidade_medida_id = self.produto.unidade_medida_id
+        super().save(*args, **kwargs)
+
+
+class OSFuncionario(models.Model):
+    """Funcionário alocado em OS. Calcula custo MO: (salário ÷ 220h) × horas."""
+
+    os = models.ForeignKey(OrdemServico, on_delete=models.CASCADE, related_name='funcionarios_os', verbose_name='Ordem de Serviço')
+    funcionario = models.ForeignKey('rh.Funcionario', on_delete=models.PROTECT, related_name='alocacoes_os', verbose_name='Funcionário')
+    data_execucao = models.DateField('Data de Execução')
+    hora_inicio = models.TimeField('Hora de Início')
+    hora_fim = models.TimeField('Hora de Término')
+    observacoes = models.CharField('Observações', max_length=200, blank=True)
+
+    class Meta:
+        db_table = 'cadastros_osfuncionario'
+        verbose_name = 'Funcionário na OS'
+        verbose_name_plural = 'Funcionários nas OS'
+        ordering = ['data_execucao', 'hora_inicio']
+        indexes = [models.Index(fields=['os', 'data_execucao'])]
+
+    def __str__(self):
+        return f"{self.funcionario.nome_completo} — {self.os.numero} ({self.data_execucao})"
+
+    @property
+    def horas_trabalhadas(self):
+        from datetime import datetime, date
+        inicio = datetime.combine(date.today(), self.hora_inicio)
+        fim = datetime.combine(date.today(), self.hora_fim)
+        delta = (fim - inicio).total_seconds()
+        if delta <= 0:
+            return Decimal('0')
+        return Decimal(str(round(delta / 3600, 4)))
+
+    @property
+    def custo_calculado(self):
+        try:
+            custo_hora = self.funcionario.salario / Decimal('220')
+            return (custo_hora * self.horas_trabalhadas).quantize(Decimal('0.01'))
+        except Exception:
+            return Decimal('0')
+
+    def clean(self):
+        if self.hora_fim and self.hora_inicio and self.hora_fim <= self.hora_inicio:
+            raise ValidationError({'hora_fim': 'Hora de término deve ser posterior à hora de início.'})
+
+
+class OSMaquina(models.Model):
+    """Máquina/Veículo utilizado em OS. Calcula custo via CustoHoraMaquina."""
+
+    os = models.ForeignKey(OrdemServico, on_delete=models.CASCADE, related_name='maquinas_os', verbose_name='Ordem de Serviço')
+    veiculo = models.ForeignKey('frota.Vehicle', on_delete=models.PROTECT, related_name='usos_os', verbose_name='Veículo/Máquina')
+    operador = models.ForeignKey('rh.Funcionario', on_delete=models.SET_NULL, null=True, blank=True, related_name='operacoes_maquina_os', verbose_name='Operador')
+    data_execucao = models.DateField('Data de Execução')
+    horimetro_inicial = models.DecimalField('Horímetro Inicial (h)', max_digits=10, decimal_places=2, validators=[MinValueValidator(Decimal('0'))])
+    horimetro_final = models.DecimalField('Horímetro Final (h)', max_digits=10, decimal_places=2, validators=[MinValueValidator(Decimal('0'))])
+    custo_hora_config = models.ForeignKey(CustoHoraMaquina, on_delete=models.SET_NULL, null=True, blank=True, related_name='usos_os', verbose_name='Configuração de Custo/Hora')
+    observacoes = models.CharField('Observações', max_length=200, blank=True)
+
+    class Meta:
+        db_table = 'cadastros_osmaquina'
+        verbose_name = 'Máquina na OS'
+        verbose_name_plural = 'Máquinas nas OS'
+        ordering = ['data_execucao', 'horimetro_inicial']
+        indexes = [models.Index(fields=['os', 'data_execucao'])]
+
+    def __str__(self):
+        return f"{self.veiculo} — {self.os.numero} ({self.data_execucao})"
+
+    @property
+    def horas_trabalhadas(self):
+        return max(self.horimetro_final - self.horimetro_inicial, Decimal('0'))
+
+    @property
+    def litros_consumidos(self):
+        consumo = self.veiculo.consumo_medio or Decimal('0')
+        return (consumo * self.horas_trabalhadas).quantize(Decimal('0.01'))
+
+    @property
+    def custo_calculado(self):
+        config = self.custo_hora_config
+        if not config:
+            config = CustoHoraMaquina.objects.filter(veiculo=self.veiculo, ativo=True).order_by('-data_referencia').first()
+        if config:
+            return (config.custo_hora_calculado * self.horas_trabalhadas).quantize(Decimal('0.01'))
+        return Decimal('0')
+
+    def clean(self):
+        if self.horimetro_final is not None and self.horimetro_inicial is not None:
+            if self.horimetro_final < self.horimetro_inicial:
+                raise ValidationError({'horimetro_final': 'Horímetro final não pode ser menor que o inicial.'})
+
+
+# ============================================================================
+# CUSTO POR TALHÃO
+# ============================================================================
+
+class CustoTalhao(models.Model):
+    """Consolidação de custos por OS/Talhão/Safra. Gerado ao concluir OS."""
+
+    empresa = models.ForeignKey('empresas.Empresa', on_delete=models.CASCADE, related_name='custos_talhao', verbose_name='Empresa')
+    talhao = models.ForeignKey('cadastros.Talhao', on_delete=models.PROTECT, related_name='custos', verbose_name='Talhão')
+    safra = models.ForeignKey('cadastros.Safra', on_delete=models.SET_NULL, null=True, blank=True, related_name='custos_talhao', verbose_name='Safra')
+    os = models.OneToOneField(OrdemServico, on_delete=models.CASCADE, related_name='custo_talhao', verbose_name='Ordem de Serviço')
+
+    custo_mao_obra = models.DecimalField('Custo Mão de Obra (R$)', max_digits=12, decimal_places=2, default=Decimal('0'))
+    custo_maquinario = models.DecimalField('Custo Maquinário (R$)', max_digits=12, decimal_places=2, default=Decimal('0'))
+    custo_insumos = models.DecimalField('Custo Insumos (R$)', max_digits=12, decimal_places=2, default=Decimal('0'))
+    custo_servico_externo = models.DecimalField('Custo Serviço Externo (R$)', max_digits=12, decimal_places=2, default=Decimal('0'))
+    area_executada_ha = models.DecimalField('Área Executada (ha)', max_digits=10, decimal_places=4, null=True, blank=True)
+
+    data_registro = models.DateTimeField('Data de Registro', auto_now_add=True)
+    data_atualizacao = models.DateTimeField('Última Atualização', auto_now=True)
+
+    class Meta:
+        db_table = 'cadastros_custotalhao'
+        verbose_name = 'Custo por Talhão'
+        verbose_name_plural = 'Custos por Talhão'
+        ordering = ['-data_registro']
+        indexes = [
+            models.Index(fields=['empresa', 'talhao']),
+            models.Index(fields=['safra', 'talhao']),
+        ]
+
+    def __str__(self):
+        return f"Custo {self.os.numero} — {self.talhao.nome} (R$ {self.custo_total:.2f})"
+
+    @property
+    def custo_total(self):
+        return self.custo_mao_obra + self.custo_maquinario + self.custo_insumos + self.custo_servico_externo
+
+    @property
+    def custo_por_hectare(self):
+        if self.area_executada_ha and self.area_executada_ha > 0:
+            return (self.custo_total / self.area_executada_ha).quantize(Decimal('0.01'))
+        return Decimal('0')
+
+    def recalcular(self):
+        self.custo_mao_obra = sum(f.custo_calculado for f in self.os.funcionarios_os.all()) or Decimal('0')
+        self.custo_maquinario = sum(m.custo_calculado for m in self.os.maquinas_os.all()) or Decimal('0')
+        insumos_os = self.os.insumos_os.all()
+        if insumos_os.exists():
+            self.custo_insumos = sum((i.custo_total for i in insumos_os), Decimal('0'))
+        elif self.os.requisicao:
+            from django.db.models import Sum as DjSum
+            total = self.os.requisicao.itens.aggregate(
+                t=DjSum(models.F('quantidade_atendida') * models.F('custo_estimado'))
+            )['t']
+            self.custo_insumos = total or Decimal('0')
+        else:
+            self.custo_insumos = Decimal('0')
+        self.custo_servico_externo = self.os.valor_servico_externo or Decimal('0')
+        self.area_executada_ha = self.os.area_executada_ha
+        self.save()
+
+
+# ============================================================================
+# MÓDULO DE COLHEITA
+# ============================================================================
+
+class EtapaColheita(models.Model):
+    """Rodada de colheita (1ª, 2ª, 3ª). Agrupa frota e pesagens."""
+
+    STATUS_CHOICES = [('ABERTA', 'Aberta'), ('CONCLUIDA', 'Concluída')]
+
+    os = models.ForeignKey(OrdemServico, on_delete=models.CASCADE, related_name='etapas_colheita', verbose_name='Ordem de Serviço', limit_choices_to={'tipo': 'COLHEITA'})
+    empresa = models.ForeignKey('empresas.Empresa', on_delete=models.CASCADE, related_name='etapas_colheita', verbose_name='Empresa')
+    talhao = models.ForeignKey('cadastros.Talhao', on_delete=models.PROTECT, related_name='etapas_colheita', verbose_name='Talhão')
+    safra = models.ForeignKey('cadastros.Safra', on_delete=models.SET_NULL, null=True, blank=True, related_name='etapas_colheita', verbose_name='Safra')
+    numero_etapa = models.PositiveSmallIntegerField('Nº da Etapa')
+    data_inicio = models.DateTimeField('Data/Hora de Início', null=True, blank=True)
+    data_fim = models.DateTimeField('Data/Hora de Encerramento', null=True, blank=True)
+    supervisor = models.ForeignKey('rh.Funcionario', on_delete=models.SET_NULL, null=True, blank=True, related_name='etapas_supervisionadas', verbose_name='Supervisor de Campo')
+    status = models.CharField('Status', max_length=10, choices=STATUS_CHOICES, default='ABERTA')
+    total_liquido_kg = models.DecimalField('Total Líquido (kg)', max_digits=14, decimal_places=2, default=Decimal('0'))
+    observacoes = models.TextField('Observações', blank=True)
+    data_cadastro = models.DateTimeField('Data de Cadastro', auto_now_add=True)
+
+    class Meta:
+        db_table = 'cadastros_etapacolheita'
+        verbose_name = 'Etapa de Colheita'
+        verbose_name_plural = 'Etapas de Colheita'
+        ordering = ['os', 'numero_etapa']
+        unique_together = [('os', 'numero_etapa')]
+        indexes = [
+            models.Index(fields=['empresa', 'status']),
+            models.Index(fields=['talhao', 'safra', 'numero_etapa']),
+        ]
+
+    def __str__(self):
+        return f"{self.os.numero} — {self.numero_etapa}ª Colheita / {self.talhao.nome}"
+
+    def recalcular_total(self):
+        from django.db.models import Sum as DjSum
+        total = ViagemColheita.objects.filter(carrocao__frota__etapa=self).aggregate(t=DjSum('peso_final_kg'))['t'] or Decimal('0')
+        self.total_liquido_kg = total
+        self.save(update_fields=['total_liquido_kg'])
+
+    @classmethod
+    def proximo_numero(cls, os_obj):
+        ultimo = cls.objects.filter(os=os_obj).order_by('-numero_etapa').first()
+        return (ultimo.numero_etapa + 1) if ultimo else 1
+
+
+class FrotaColheita(models.Model):
+    """Trator alocado em uma EtapaColheita. Pode rebocar N carroções."""
+
+    etapa = models.ForeignKey(EtapaColheita, on_delete=models.CASCADE, related_name='frotas', verbose_name='Etapa de Colheita')
+    trator = models.ForeignKey('frota.Vehicle', on_delete=models.PROTECT, related_name='frotas_colheita', verbose_name='Trator', limit_choices_to={'tipo__in': ['LEVE', 'MEDIO', 'PESADO']})
+    operador = models.ForeignKey('rh.Funcionario', on_delete=models.SET_NULL, null=True, blank=True, related_name='operacoes_colheita', verbose_name='Operador/Tratorista')
+    horimetro_inicial = models.DecimalField('Horímetro Inicial (h)', max_digits=10, decimal_places=2, null=True, blank=True, validators=[MinValueValidator(Decimal('0'))])
+    horimetro_final = models.DecimalField('Horímetro Final (h)', max_digits=10, decimal_places=2, null=True, blank=True, validators=[MinValueValidator(Decimal('0'))])
+    observacoes = models.CharField('Observações', max_length=200, blank=True)
+
+    class Meta:
+        db_table = 'cadastros_frotacolheita'
+        verbose_name = 'Trator na Colheita'
+        verbose_name_plural = 'Tratores na Colheita'
+        ordering = ['etapa', 'trator']
+
+    def __str__(self):
+        return f"{self.trator} — {self.etapa}"
+
+    def clean(self):
+        if (self.horimetro_final is not None and self.horimetro_inicial is not None
+                and self.horimetro_final < self.horimetro_inicial):
+            raise ValidationError({'horimetro_final': 'Horímetro final não pode ser menor que o inicial.'})
+
+
+class CarrocaoFrota(models.Model):
+    """Carroção rebocado por FrotaColheita."""
+
+    frota = models.ForeignKey(FrotaColheita, on_delete=models.CASCADE, related_name='carrocoes', verbose_name='Frota (Trator)')
+    veiculo = models.ForeignKey('frota.Vehicle', on_delete=models.PROTECT, related_name='usos_colheita', verbose_name='Carroção', limit_choices_to={'tipo': 'REBOQUE'})
+    numero_identificacao = models.CharField('Identificação', max_length=50)
+    capacidade_ton = models.DecimalField('Capacidade (ton)', max_digits=8, decimal_places=2, null=True, blank=True, validators=[MinValueValidator(Decimal('0'))])
+    tara_kg = models.IntegerField('Tara (kg)', null=True, blank=True, validators=[MinValueValidator(0)])
+
+    class Meta:
+        db_table = 'cadastros_carrocaofrota'
+        verbose_name = 'Carroção na Frota'
+        verbose_name_plural = 'Carroções na Frota'
+        ordering = ['frota', 'numero_identificacao']
+
+    def __str__(self):
+        return f"{self.numero_identificacao} — {self.frota}"
+
+    def clean(self):
+        if self.veiculo_id and self.frota_id:
+            etapa = self.frota.etapa
+            qs = CarrocaoFrota.objects.filter(frota__etapa=etapa, veiculo=self.veiculo)
+            if self.pk:
+                qs = qs.exclude(pk=self.pk)
+            if qs.exists():
+                raise ValidationError({'veiculo': f'O carroção "{self.veiculo}" já está alocado em outro trator desta etapa.'})
+
+
+class ViagemColheita(models.Model):
+    """Viagem/carga de carroção. Registra pesagem bruto/tara/líquido com desconto."""
+
+    carrocao = models.ForeignKey(CarrocaoFrota, on_delete=models.CASCADE, related_name='viagens', verbose_name='Carroção')
+    numero_viagem = models.PositiveSmallIntegerField('Nº da Viagem')
+    hora_saida_campo = models.DateTimeField('Saída do Campo', null=True, blank=True)
+    hora_chegada_balanca = models.DateTimeField('Chegada na Balança', null=True, blank=True)
+    peso_bruto_kg = models.DecimalField('Peso Bruto (kg)', max_digits=10, decimal_places=2, validators=[MinValueValidator(Decimal('0.01'))])
+    tara_usada_kg = models.DecimalField('Tara (kg)', max_digits=10, decimal_places=2, validators=[MinValueValidator(Decimal('0'))])
+    peso_liquido_kg = models.DecimalField('Peso Líquido (kg)', max_digits=10, decimal_places=2, default=Decimal('0'))
+    umidade_pct = models.DecimalField('Umidade (%)', max_digits=5, decimal_places=2, null=True, blank=True, validators=[MinValueValidator(Decimal('0'))])
+    impureza_pct = models.DecimalField('Impureza (%)', max_digits=5, decimal_places=2, null=True, blank=True, validators=[MinValueValidator(Decimal('0'))])
+    desconto_kg = models.DecimalField('Desconto (kg)', max_digits=10, decimal_places=2, default=Decimal('0'))
+    peso_final_kg = models.DecimalField('Peso Final (kg)', max_digits=10, decimal_places=2, default=Decimal('0'))
+    foto_romaneio = models.ImageField('Foto do Romaneio/Ticket', upload_to='colheita/romaneios/%Y/%m/', null=True, blank=True)
+    observacoes = models.CharField('Observações', max_length=200, blank=True)
+    data_registro = models.DateTimeField('Registrado em', auto_now_add=True)
+
+    class Meta:
+        db_table = 'cadastros_viagemcolheita'
+        verbose_name = 'Viagem de Colheita'
+        verbose_name_plural = 'Viagens de Colheita'
+        ordering = ['carrocao', 'numero_viagem']
+        unique_together = [('carrocao', 'numero_viagem')]
+        indexes = [models.Index(fields=['carrocao', 'numero_viagem'])]
+
+    def __str__(self):
+        return f"{self.carrocao.numero_identificacao} — Viagem {self.numero_viagem} ({self.peso_final_kg:.0f} kg)"
+
+    def save(self, *args, **kwargs):
+        self.peso_liquido_kg = max(self.peso_bruto_kg - self.tara_usada_kg, Decimal('0'))
+        self.peso_final_kg = max(self.peso_liquido_kg - self.desconto_kg, Decimal('0'))
+        super().save(*args, **kwargs)
+        self.carrocao.frota.etapa.recalcular_total()
+
+    def clean(self):
+        if (self.peso_bruto_kg is not None and self.tara_usada_kg is not None
+                and self.tara_usada_kg > self.peso_bruto_kg):
+            raise ValidationError({'tara_usada_kg': 'Tara não pode ser maior que o peso bruto.'})
+
+    @classmethod
+    def proximo_numero(cls, carrocao):
+        ultimo = cls.objects.filter(carrocao=carrocao).order_by('-numero_viagem').first()
+        return (ultimo.numero_viagem + 1) if ultimo else 1
+
+
+# ============================================================================
+# PLUVIOMETRIA (RF-107)
+# ============================================================================
+
+class RegistroPluviometria(models.Model):
+    TIPO_CHOICES = [('MANUAL', 'Manual'), ('AUTOMATICO', 'Automático')]
+
+    empresa = models.ForeignKey('empresas.Empresa', on_delete=models.CASCADE, related_name='registros_pluviometria')
+    fazenda = models.ForeignKey('cadastros.Fazenda', on_delete=models.CASCADE, related_name='registros_pluviometria')
+    data = models.DateField()
+    mm_chuva = models.DecimalField(max_digits=6, decimal_places=1, validators=[MinValueValidator(Decimal('0'))], verbose_name='Precipitação (mm)')
+    tipo_registro = models.CharField(max_length=20, choices=TIPO_CHOICES, default='MANUAL')
+    fonte = models.CharField(max_length=100, blank=True, help_text='Pluviômetro, estação meteorológica, etc.')
+    responsavel = models.ForeignKey('usuarios.Usuario', on_delete=models.SET_NULL, null=True, blank=True, related_name='registros_pluviometria')
+    observacoes = models.TextField(blank=True)
+    data_cadastro = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'cadastros_registropluviometria'
+        ordering = ['-data']
+        unique_together = ['fazenda', 'data']
+        verbose_name = 'Registro de Pluviometria'
+        verbose_name_plural = 'Registros de Pluviometria'
+
+    def __str__(self):
+        return f"{self.fazenda.nome} — {self.data.strftime('%d/%m/%Y')} — {self.mm_chuva} mm"
+
+
+# ============================================================================
+# QUALIDADE DE CAMPO (RF-108)
+# ============================================================================
+
+class InspecaoQualidadeCampo(models.Model):
+    TIPO_CHOICES = [
+        ('FENOLOGICA', 'Fenológica'), ('VISUAL', 'Visual'),
+        ('PRE_COLHEITA', 'Pré-colheita'), ('POS_COLHEITA', 'Pós-colheita'),
+    ]
+    COLORACAO_CHOICES = [
+        ('VERDE', 'Verde'), ('INICIO_MATURACAO', 'Início de Maturação'),
+        ('MADURO', 'Maduro'), ('PASSADO', 'Passado'),
+    ]
+    RESULTADO_CHOICES = [
+        ('APROVADO', 'Aprovado'), ('APROVADO_COM_RESSALVA', 'Aprovado c/ Ressalva'), ('REPROVADO', 'Reprovado'),
+    ]
+
+    empresa = models.ForeignKey('empresas.Empresa', on_delete=models.CASCADE, related_name='inspecoes_qualidade_campo')
+    talhao = models.ForeignKey('cadastros.Talhao', on_delete=models.PROTECT, related_name='inspecoes_qualidade')
+    safra = models.ForeignKey('cadastros.Safra', on_delete=models.SET_NULL, null=True, blank=True, related_name='inspecoes_qualidade')
+    os = models.ForeignKey(OrdemServico, on_delete=models.SET_NULL, null=True, blank=True, related_name='inspecoes_qualidade', verbose_name='Ordem de Serviço')
+    data_inspecao = models.DateField()
+    responsavel = models.ForeignKey('usuarios.Usuario', on_delete=models.SET_NULL, null=True, related_name='inspecoes_qualidade_campo')
+    tipo_inspecao = models.CharField(max_length=30, choices=TIPO_CHOICES)
+    estagio_cultura = models.CharField(max_length=50, blank=True)
+    brix = models.DecimalField(max_digits=5, decimal_places=1, null=True, blank=True, verbose_name='Brix (°Bx)')
+    peso_medio_fruto_g = models.DecimalField(max_digits=7, decimal_places=1, null=True, blank=True, verbose_name='Peso médio do fruto (g)')
+    percentual_defeitos = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, validators=[MinValueValidator(Decimal('0')), MaxValueValidator(Decimal('100'))], verbose_name='% Defeitos')
+    coloracao = models.CharField(max_length=30, choices=COLORACAO_CHOICES, blank=True)
+    resultado = models.CharField(max_length=30, choices=RESULTADO_CHOICES)
+    previsao_colheita_dias = models.IntegerField(null=True, blank=True, verbose_name='Previsão p/ colheita (dias)')
+    fotos = models.ImageField(upload_to='qualidade_campo/%Y/%m/', null=True, blank=True)
+    observacoes = models.TextField(blank=True)
+    data_cadastro = models.DateTimeField(auto_now_add=True)
+    cadastrado_por = models.ForeignKey('usuarios.Usuario', related_name='inspecoes_qualidade_criadas', null=True, on_delete=models.SET_NULL)
+
+    class Meta:
+        db_table = 'cadastros_inspecaoqualidadecampo'
+        ordering = ['-data_inspecao']
+        verbose_name = 'Inspeção de Qualidade de Campo'
+        verbose_name_plural = 'Inspeções de Qualidade de Campo'
+
+    def __str__(self):
+        return f"Inspeção {self.talhao.codigo} — {self.data_inspecao.strftime('%d/%m/%Y')} — {self.get_resultado_display()}"
+
+
+# ============================================================================
+# CADERNO DE CAMPO (RF-111)
+# ============================================================================
+
+class RegistroCadernoCampo(models.Model):
+    TIPO_ATIVIDADE_CHOICES = [
+        ('PREPARO_SOLO', 'Preparo de Solo'), ('PLANTIO', 'Plantio'), ('IRRIGACAO', 'Irrigação'),
+        ('ADUBACAO', 'Adubação'), ('APLICACAO_DEFENSIVO', 'Aplicação de Defensivo'),
+        ('COLHEITA', 'Colheita'), ('MANUTENCAO', 'Manutenção'), ('MONITORAMENTO', 'Monitoramento'), ('OUTRO', 'Outro'),
+    ]
+    CONDICAO_TEMPO_CHOICES = [
+        ('ENSOLARADO', 'Ensolarado'), ('NUBLADO', 'Nublado'), ('CHUVOSO', 'Chuvoso'),
+        ('VENTO_FORTE', 'Vento Forte'), ('PARCIALMENTE_NUBLADO', 'Parcialmente Nublado'),
+    ]
+
+    empresa = models.ForeignKey('empresas.Empresa', on_delete=models.CASCADE, related_name='caderno_campo')
+    talhao = models.ForeignKey('cadastros.Talhao', on_delete=models.PROTECT, related_name='caderno_campo')
+    safra = models.ForeignKey('cadastros.Safra', on_delete=models.SET_NULL, null=True, blank=True, related_name='caderno_campo')
+    os = models.ForeignKey(OrdemServico, on_delete=models.SET_NULL, null=True, blank=True, related_name='caderno_campo', verbose_name='Ordem de Serviço')
+    data_atividade = models.DateField()
+    tipo_atividade = models.CharField(max_length=30, choices=TIPO_ATIVIDADE_CHOICES)
+    atividade = models.CharField(max_length=200, help_text='Descrição resumida da atividade realizada')
+    temperatura = models.DecimalField(max_digits=4, decimal_places=1, null=True, blank=True, verbose_name='Temperatura (°C)')
+    umidade = models.IntegerField(null=True, blank=True, validators=[MinValueValidator(0), MaxValueValidator(100)], verbose_name='Umidade relativa (%)')
+    condicao_tempo = models.CharField(max_length=30, choices=CONDICAO_TEMPO_CHOICES, blank=True)
+    responsavel = models.ForeignKey('usuarios.Usuario', on_delete=models.SET_NULL, null=True, related_name='registros_caderno_campo')
+    observacoes = models.TextField(blank=True)
+    fotos = models.ImageField(upload_to='caderno_campo/%Y/%m/', null=True, blank=True)
+    data_cadastro = models.DateTimeField(auto_now_add=True)
+    cadastrado_por = models.ForeignKey('usuarios.Usuario', related_name='caderno_campo_criados', null=True, on_delete=models.SET_NULL)
+
+    class Meta:
+        db_table = 'cadastros_registrocadernocampo'
+        ordering = ['-data_atividade', '-data_cadastro']
+        verbose_name = 'Registro do Caderno de Campo'
+        verbose_name_plural = 'Registros do Caderno de Campo'
+
+    def __str__(self):
+        return f"{self.talhao.codigo} — {self.get_tipo_atividade_display()} — {self.data_atividade.strftime('%d/%m/%Y')}"
+
+
+class RegistroCadernoCampoInsumo(models.Model):
+    registro = models.ForeignKey(RegistroCadernoCampo, on_delete=models.CASCADE, related_name='insumos_utilizados')
+    produto = models.ForeignKey('produtos.Produto', on_delete=models.PROTECT)
+    quantidade = models.DecimalField(max_digits=12, decimal_places=3, validators=[MinValueValidator(Decimal('0.001'))])
+    unidade_medida = models.ForeignKey('produtos.UnidadeMedida', on_delete=models.PROTECT)
+    receituario_numero = models.CharField(max_length=50, blank=True, verbose_name='Nº Receituário Agronômico')
+    carencia_dias = models.IntegerField(null=True, blank=True, verbose_name='Carência (dias)')
+    observacoes = models.CharField(max_length=255, blank=True)
+
+    class Meta:
+        db_table = 'cadastros_registrocadernocampoinsumo'
+        verbose_name = 'Insumo do Caderno de Campo'
+        verbose_name_plural = 'Insumos do Caderno de Campo'
+
+    def __str__(self):
+        return f"{self.produto} — {self.quantidade} {self.unidade_medida}"
+
+
+class RegistroCadernoCampoFuncionario(models.Model):
+    registro = models.ForeignKey(RegistroCadernoCampo, on_delete=models.CASCADE, related_name='funcionarios_atividade')
+    funcionario = models.ForeignKey('rh.Funcionario', on_delete=models.PROTECT)
+    horas_trabalhadas = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, validators=[MinValueValidator(Decimal('0.01'))], verbose_name='Horas trabalhadas')
+
+    class Meta:
+        db_table = 'cadastros_registrocadernocampofuncionario'
+        verbose_name = 'Funcionário do Caderno de Campo'
+        verbose_name_plural = 'Funcionários do Caderno de Campo'
+        unique_together = ['registro', 'funcionario']
+
+    def __str__(self):
+        return f"{self.funcionario} — {self.horas_trabalhadas or '—'} h"
+
+
+# ============================================================================
+# PLANEJAMENTO DE CUSTO DE SAFRA
+# ============================================================================
+
+class PlanejamentoCustoSafra(models.Model):
+    CATEGORIA_CHOICES = [
+        ('MO', 'Mão de Obra'), ('MAQUINARIO', 'Maquinário'), ('INSUMO', 'Insumo'),
+        ('SERVICO_EXTERNO', 'Serviço Externo'), ('ESTUFA', 'Estufa / Transplantio'),
+    ]
+
+    empresa = models.ForeignKey('empresas.Empresa', on_delete=models.CASCADE, related_name='planejamentos_custo')
+    safra = models.ForeignKey('cadastros.Safra', on_delete=models.SET_NULL, null=True, blank=True, related_name='planejamentos_custo')
+    cultura = models.ForeignKey('cadastros.Cultura', on_delete=models.PROTECT, related_name='planejamentos_custo')
+    talhao = models.ForeignKey('cadastros.Talhao', on_delete=models.SET_NULL, null=True, blank=True, related_name='planejamentos_custo')
+    nome = models.CharField(max_length=120, help_text='Ex: Planejamento Tomate 2026')
+    area_ha = models.DecimalField(max_digits=10, decimal_places=4, verbose_name='Área (ha)')
+    observacoes = models.TextField(blank=True)
+    data_criacao = models.DateTimeField(auto_now_add=True)
+    criado_por = models.ForeignKey('usuarios.Usuario', null=True, on_delete=models.SET_NULL, related_name='planejamentos_custo_criados')
+
+    class Meta:
+        db_table = 'cadastros_planejamentocustosafra'
+        ordering = ['-data_criacao']
+        verbose_name = 'Planejamento de Custo'
+        verbose_name_plural = 'Planejamentos de Custo'
+
+    def __str__(self):
+        return self.nome
+
+    @property
+    def custo_total_planejado(self):
+        return sum((item.custo_total for item in self.itens.all()), Decimal('0'))
+
+    @property
+    def custo_planejado_por_ha(self):
+        if self.area_ha and self.area_ha > 0:
+            return (self.custo_total_planejado / self.area_ha).quantize(Decimal('0.01'))
+        return Decimal('0')
+
+
+class PlanejamentoCustoItem(models.Model):
+    CATEGORIA_CHOICES = [
+        ('MO', 'Mão de Obra'), ('MAQUINARIO', 'Maquinário'), ('INSUMO', 'Insumo'),
+        ('SERVICO_EXTERNO', 'Serviço Externo'), ('ESTUFA', 'Estufa / Transplantio'),
+    ]
+
+    planejamento = models.ForeignKey(PlanejamentoCustoSafra, on_delete=models.CASCADE, related_name='itens')
+    categoria = models.CharField(max_length=20, choices=CATEGORIA_CHOICES, verbose_name='Categoria')
+    produto = models.ForeignKey('produtos.Produto', on_delete=models.SET_NULL, null=True, blank=True, help_text='Preencher para insumos')
+    descricao = models.CharField(max_length=200)
+    dose_por_ha = models.DecimalField(max_digits=12, decimal_places=4, null=True, blank=True, verbose_name='Dose/ha')
+    unidade_medida = models.ForeignKey('produtos.UnidadeMedida', on_delete=models.SET_NULL, null=True, blank=True)
+    custo_unitario = models.DecimalField(max_digits=12, decimal_places=4, validators=[MinValueValidator(Decimal('0'))], verbose_name='Custo unitário (R$)')
+    area_ha = models.DecimalField(max_digits=10, decimal_places=4, verbose_name='Área (ha)')
+
+    class Meta:
+        db_table = 'cadastros_planejamentocustoitem'
+        verbose_name = 'Item de Planejamento de Custo'
+        verbose_name_plural = 'Itens de Planejamento de Custo'
+
+    def __str__(self):
+        return f"{self.descricao} ({self.get_categoria_display()})"
+
+    @property
+    def quantidade_total(self):
+        if self.dose_por_ha and self.area_ha:
+            return (self.dose_por_ha * self.area_ha).quantize(Decimal('0.001'))
+        return Decimal('0')
+
+    @property
+    def custo_total(self):
+        if self.dose_por_ha and self.area_ha:
+            return (self.dose_por_ha * self.area_ha * self.custo_unitario).quantize(Decimal('0.01'))
+        if self.area_ha:
+            return (self.area_ha * self.custo_unitario).quantize(Decimal('0.01'))
+        return Decimal('0')

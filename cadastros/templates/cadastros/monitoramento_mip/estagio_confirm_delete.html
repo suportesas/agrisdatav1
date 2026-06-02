@@ -29,10 +29,10 @@
             isso pode afetar os registros históricos.
           </div>
           
-          <form method="post" action="{% url 'cadastros:estagio_delete' estagio.pk %}">
+          <form method="post" action="{% url 'mip:estagio_delete' estagio.pk %}">
             {% csrf_token %}
             <div class="d-flex gap-2">
-              <a href="{% url 'cadastros:estagio_list' %}" class="btn btn-secondary">
+              <a href="{% url 'mip:estagio_list' %}" class="btn btn-secondary">
                 <i class="bi bi-x-circle"></i> Cancelar
               </a>
               <button type="submit" class="btn btn-danger ms-auto">

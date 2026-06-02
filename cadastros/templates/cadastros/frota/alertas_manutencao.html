@@ -24,12 +24,12 @@
             </td>
             <td>
               {% if alerta.status == 'PENDENTE' %}
-              <form method="post" action="{% url 'cadastros:alerta_resolver' alerta.pk %}" class="d-inline">
+              <form method="post" action="{% url 'frota:alerta_resolver' alerta.pk %}" class="d-inline">
                 {% csrf_token %}
                 <button class="btn btn-outline-success btn-sm py-0 px-1"><i class="bi bi-check"></i> Resolver</button>
               </form>
               {% endif %}
-              <a href="{% url 'cadastros:manutencao_detail' alerta.manutencao_origem.pk %}" class="btn btn-outline-secondary btn-sm py-0 px-1"><i class="bi bi-eye"></i></a>
+              <a href="{% url 'frota:manutencao_detail' alerta.manutencao_origem.pk %}" class="btn btn-outline-secondary btn-sm py-0 px-1"><i class="bi bi-eye"></i></a>
             </td>
           </tr>
           {% empty %}

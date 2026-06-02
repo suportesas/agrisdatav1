@@ -9,7 +9,7 @@
     <p class="text-muted">Deseja excluir o pedágio de <strong>R$ {{ obj.valor|floatformat:2 }}</strong> em {{ obj.data|date:"d/m/Y" }}?</p>
     <div class="d-flex gap-2 justify-content-center mt-4">
       <form method="post">{% csrf_token %}<button type="submit" class="btn btn-danger">Confirmar</button></form>
-      <a href="{% url 'cadastros:pedagio_list' %}" class="btn btn-outline-secondary">Cancelar</a>
+      <a href="{% url 'frota:pedagio_list' %}" class="btn btn-outline-secondary">Cancelar</a>
     </div>
   </div></div>
 </div></div></div>

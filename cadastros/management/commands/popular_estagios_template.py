@@ -7,7 +7,8 @@ Uso: py manage.py popular_estagios_template
 """
 from django.core.management.base import BaseCommand
 from django.db import transaction
-from cadastros.models import EstagioDesenvolvimento, Praga
+from mip.models import EstagioDesenvolvimento
+from cadastros.models import Praga
 
 
 class Command(BaseCommand):

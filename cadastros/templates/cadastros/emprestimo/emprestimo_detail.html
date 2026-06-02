@@ -11,13 +11,13 @@
     <div class="d-flex gap-2">
       {% if request.user.tipo == 'ADMIN' or request.user.tipo == 'GERENTE' %}
         {% if not emprestimo.possui_assinatura_liberador %}
-        <a href="{% url 'cadastros:emprestimo_assinar_liberacao' emprestimo.pk %}" class="btn btn-primary">
+        <a href="{% url 'emprestimos:emprestimo_assinar_liberacao' emprestimo.pk %}" class="btn btn-primary">
           <i class="bi bi-pen me-1"></i>Assinar Liberação
         </a>
         {% endif %}
       {% endif %}
       {% if request.user.tipo == 'ADMIN' or request.user.tipo == 'GERENTE' or request.user == emprestimo.liberado_por %}
-      <form method="post" action="{% url 'cadastros:emprestimo_reenviar_whatsapp' emprestimo.pk %}" class="d-inline">
+      <form method="post" action="{% url 'emprestimos:emprestimo_reenviar_whatsapp' emprestimo.pk %}" class="d-inline">
         {% csrf_token %}
         <button type="submit" class="btn btn-outline-success" data-bs-toggle="tooltip" data-bs-placement="top" title="Envia novamente o link do portal para o WhatsApp do produtor, se o telefone estiver cadastrado corretamente.">
           <i class="bi bi-whatsapp me-1"></i>Reenviar WhatsApp
@@ -34,10 +34,10 @@
           {% endif %}
         </span>
       {% endif %}
-      <a href="{% url 'cadastros:emprestimo_imprimir' emprestimo.pk %}" target="_blank" class="btn btn-outline-dark">
+      <a href="{% url 'emprestimos:emprestimo_imprimir' emprestimo.pk %}" target="_blank" class="btn btn-outline-dark">
         <i class="bi bi-printer me-1"></i>Imprimir
       </a>
-      <a href="{% url 'cadastros:emprestimo_extrato' %}" class="btn btn-outline-secondary">
+      <a href="{% url 'emprestimos:emprestimo_extrato' %}" class="btn btn-outline-secondary">
         <i class="bi bi-arrow-left me-1"></i>Voltar ao Extrato
       </a>
     </div>
@@ -162,7 +162,7 @@
     </div>
     <div class="card-body">
       {% if request.user.tipo == 'ADMIN' or request.user.tipo == 'GERENTE' or request.user == emprestimo.liberado_por %}
-      <form method="post" action="{% url 'cadastros:emprestimo_mensagem_create' emprestimo.pk %}" enctype="multipart/form-data" class="mb-4">
+      <form method="post" action="{% url 'emprestimos:emprestimo_mensagem_create' emprestimo.pk %}" enctype="multipart/form-data" class="mb-4">
         {% csrf_token %}
         <div class="mb-3">
           <label for="mensagem-interna" class="form-label">Nova mensagem</label>
@@ -193,7 +193,7 @@
           {% if mensagem.anexos.all %}
           <div class="d-flex flex-wrap gap-2">
             {% for anexo in mensagem.anexos.all %}
-            <a href="{% url 'cadastros:emprestimo_mensagem_anexo_download' anexo.pk %}" class="btn btn-sm btn-outline-secondary">
+            <a href="{% url 'emprestimos:emprestimo_mensagem_anexo_download' anexo.pk %}" class="btn btn-sm btn-outline-secondary">
               <i class="bi bi-paperclip me-1"></i>{{ anexo.nome_original|default:'Anexo' }}
             </a>
             {% endfor %}

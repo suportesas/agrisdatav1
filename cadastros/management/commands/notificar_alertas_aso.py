@@ -3,7 +3,7 @@ from django.core.mail import EmailMessage
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
-from cadastros.models import LogEnvioSolicitacaoASO, SolicitacaoASO
+from rh.models import LogEnvioSolicitacaoASO, SolicitacaoASO
 
 
 class Command(BaseCommand):

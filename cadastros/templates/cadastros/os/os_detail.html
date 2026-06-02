@@ -47,28 +47,28 @@
           <!-- Botões de ação -->
           <div class="d-flex gap-2 flex-wrap">
             {% if os.status == 'ABERTA' %}
-              <form method="post" action="{% url 'cadastros:os_aprovar' os.pk %}">{% csrf_token %}
+              <form method="post" action="{% url 'operacoes_campo:os_aprovar' os.pk %}">{% csrf_token %}
                 <button type="submit" class="btn btn-primary btn-sm">
                   <i class="bi bi-check2-circle me-1"></i>Aprovar
                 </button>
               </form>
             {% elif os.status == 'APROVADA' %}
-              <form method="post" action="{% url 'cadastros:os_iniciar' os.pk %}">{% csrf_token %}
+              <form method="post" action="{% url 'operacoes_campo:os_iniciar' os.pk %}">{% csrf_token %}
                 <button type="submit" class="btn btn-info text-white btn-sm">
                   <i class="bi bi-play-circle me-1"></i>Iniciar
                 </button>
               </form>
             {% elif os.status == 'EM_ANDAMENTO' %}
-              <a href="{% url 'cadastros:os_concluir' os.pk %}" class="btn btn-success btn-sm">
+              <a href="{% url 'operacoes_campo:os_concluir' os.pk %}" class="btn btn-success btn-sm">
                 <i class="bi bi-flag-fill me-1"></i>Concluir
               </a>
             {% endif %}
             {% if os.status not in 'CONCLUIDA,CANCELADA' %}
-              <a href="{% url 'cadastros:os_update' os.pk %}" class="btn btn-outline-secondary btn-sm">
+              <a href="{% url 'operacoes_campo:os_update' os.pk %}" class="btn btn-outline-secondary btn-sm">
                 <i class="bi bi-pencil me-1"></i>Editar
               </a>
             {% endif %}
-            <a href="{% url 'cadastros:os_list' %}" class="btn btn-outline-secondary btn-sm">
+            <a href="{% url 'operacoes_campo:os_list' %}" class="btn btn-outline-secondary btn-sm">
               <i class="bi bi-arrow-left"></i>
             </a>
           </div>
@@ -314,7 +314,7 @@
             <div class="card-header bg-transparent py-2 d-flex justify-content-between align-items-center">
               <h6 class="mb-0"><i class="bi bi-box-seam me-2 text-warning"></i>Insumos</h6>
               {% if os.status not in 'CONCLUIDA,CANCELADA' %}
-              <a href="{% url 'cadastros:os_insumo_add' pk=os.pk %}" class="btn btn-sm btn-outline-warning">
+              <a href="{% url 'operacoes_campo:os_insumo_add' pk=os.pk %}" class="btn btn-sm btn-outline-warning">
                 <i class="bi bi-plus-circle me-1"></i>Adicionar
               </a>
               {% endif %}
@@ -343,8 +343,8 @@
                       <td class="text-end fw-semibold text-warning">R$ {{ item.custo_total|floatformat:2 }}</td>
                       <td>
                         {% if os.status not in 'CONCLUIDA,CANCELADA' %}
-                        <a href="{% url 'cadastros:os_insumo_edit' pk=os.pk insumo_pk=item.pk %}" class="btn btn-xs btn-outline-secondary py-0 px-1" title="Editar"><i class="bi bi-pencil"></i></a>
-                        <a href="{% url 'cadastros:os_insumo_delete' pk=os.pk insumo_pk=item.pk %}" class="btn btn-xs btn-outline-danger py-0 px-1" title="Excluir"><i class="bi bi-trash"></i></a>
+                        <a href="{% url 'operacoes_campo:os_insumo_edit' pk=os.pk insumo_pk=item.pk %}" class="btn btn-xs btn-outline-secondary py-0 px-1" title="Editar"><i class="bi bi-pencil"></i></a>
+                        <a href="{% url 'operacoes_campo:os_insumo_delete' pk=os.pk insumo_pk=item.pk %}" class="btn btn-xs btn-outline-danger py-0 px-1" title="Excluir"><i class="bi bi-trash"></i></a>
                         {% endif %}
                       </td>
                     </tr>
@@ -363,7 +363,7 @@
                 Nenhum insumo lançado nesta OS.
                 {% if os.status not in 'CONCLUIDA,CANCELADA' %}
                 <div class="mt-2">
-                  <a href="{% url 'cadastros:os_insumo_add' pk=os.pk %}" class="btn btn-sm btn-outline-warning">
+                  <a href="{% url 'operacoes_campo:os_insumo_add' pk=os.pk %}" class="btn btn-sm btn-outline-warning">
                     <i class="bi bi-plus-circle me-1"></i>Adicionar Insumo
                   </a>
                 </div>
@@ -434,7 +434,7 @@
           <div class="alert alert-warning border-0 mb-3">
             <i class="bi bi-camera-fill me-2"></i>
             <strong>RN-03:</strong> Uma foto de evidência é obrigatória para concluir esta OS.
-            <a href="{% url 'cadastros:os_concluir' os.pk %}" class="btn btn-sm btn-success ms-2">
+            <a href="{% url 'operacoes_campo:os_concluir' os.pk %}" class="btn btn-sm btn-success ms-2">
               <i class="bi bi-flag-fill me-1"></i>Concluir e adicionar foto
             </a>
           </div>
@@ -616,7 +616,7 @@
         <div class="card-header bg-transparent d-flex justify-content-between align-items-center py-2">
           <h6 class="mb-0"><i class="bi bi-basket me-2 text-warning"></i>Etapas de Colheita</h6>
           {% if os.status == 'EM_ANDAMENTO' %}
-          <a href="{% url 'cadastros:colheita_nova_etapa' os_pk=os.pk %}" class="btn btn-sm btn-warning">
+          <a href="{% url 'operacoes_campo:colheita_nova_etapa' os_pk=os.pk %}" class="btn btn-sm btn-warning">
             <i class="bi bi-plus-circle me-1"></i>Nova Etapa
           </a>
           {% endif %}
@@ -638,7 +638,7 @@
                 <td>{{ etapa.data_inicio|date:"d/m H:i"|default:"—" }}</td>
                 <td class="text-end fw-bold">{{ etapa.total_liquido_kg|floatformat:0 }} kg</td>
                 <td>
-                  <a href="{% url 'cadastros:colheita_detalhe' os_pk=os.pk etapa_pk=etapa.pk %}" class="btn btn-xs btn-outline-warning py-0 px-2">
+                  <a href="{% url 'operacoes_campo:colheita_detalhe' os_pk=os.pk etapa_pk=etapa.pk %}" class="btn btn-xs btn-outline-warning py-0 px-2">
                     <i class="bi bi-arrow-right"></i>
                   </a>
                 </td>
@@ -658,7 +658,7 @@
             <i class="bi bi-basket display-6 opacity-25 d-block mb-2"></i>
             <p class="mb-2">Nenhuma etapa de colheita registrada.</p>
             {% if os.status == 'EM_ANDAMENTO' %}
-            <a href="{% url 'cadastros:colheita_nova_etapa' os_pk=os.pk %}" class="btn btn-warning">
+            <a href="{% url 'operacoes_campo:colheita_nova_etapa' os_pk=os.pk %}" class="btn btn-warning">
               <i class="bi bi-plus-circle me-1"></i>Iniciar 1ª Etapa
             </a>
             {% endif %}
@@ -674,7 +674,7 @@
   <!-- Ação de exclusão (discreto no rodapé) -->
   {% if os.status not in 'CONCLUIDA,CANCELADA' %}
   <div class="mt-3 text-end">
-    <a href="{% url 'cadastros:os_delete' os.pk %}" class="btn btn-outline-danger btn-sm">
+    <a href="{% url 'operacoes_campo:os_delete' os.pk %}" class="btn btn-outline-danger btn-sm">
       <i class="bi bi-trash me-1"></i>Excluir OS
     </a>
   </div>

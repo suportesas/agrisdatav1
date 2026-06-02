@@ -11,7 +11,7 @@
         <div class="card-body">
           <small class="text-muted d-block">Entradas de Empréstimos</small>
           <h4 class="mb-2 text-primary">R$ {{ emprestimo_total_entrada|floatformat:2 }}</h4>
-          <a class="small text-decoration-none" href="{% url 'cadastros:emprestimo_extrato' %}">Ver extrato</a>
+          <a class="small text-decoration-none" href="{% url 'emprestimos:emprestimo_extrato' %}">Ver extrato</a>
         </div>
       </div>
     </div>
@@ -20,7 +20,7 @@
         <div class="card-body">
           <small class="text-muted d-block">Saídas de Empréstimos</small>
           <h4 class="mb-2 text-warning">R$ {{ emprestimo_total_saida|floatformat:2 }}</h4>
-          <a class="small text-decoration-none" href="{% url 'cadastros:emprestimo_extrato' %}">Ver extrato</a>
+          <a class="small text-decoration-none" href="{% url 'emprestimos:emprestimo_extrato' %}">Ver extrato</a>
         </div>
       </div>
     </div>
@@ -29,7 +29,7 @@
         <div class="card-body">
           <small class="text-muted d-block">Saldo de Empréstimos</small>
           <h4 class="mb-2 {% if emprestimo_total_saldo < 0 %}text-danger{% else %}text-success{% endif %}">R$ {{ emprestimo_total_saldo|floatformat:2 }}</h4>
-          <a class="small text-decoration-none" href="{% url 'cadastros:emprestimo_extrato' %}">Ver extrato</a>
+          <a class="small text-decoration-none" href="{% url 'emprestimos:emprestimo_extrato' %}">Ver extrato</a>
         </div>
       </div>
     </div>

@@ -8,13 +8,13 @@
 
   <div class="row mb-3">
     <div class="col">
-      <a href="{% url 'cadastros:caderno_campo_list' %}" class="btn btn-outline-secondary btn-sm">
+      <a href="{% url 'operacoes_campo:caderno_campo_list' %}" class="btn btn-outline-secondary btn-sm">
         <i class="bi bi-arrow-left"></i> Voltar
       </a>
-      <a href="{% url 'cadastros:caderno_campo_update' obj.pk %}" class="btn btn-primary btn-sm ms-2">
+      <a href="{% url 'operacoes_campo:caderno_campo_update' obj.pk %}" class="btn btn-primary btn-sm ms-2">
         <i class="bi bi-pencil"></i> Editar
       </a>
-      <a href="{% url 'cadastros:caderno_campo_delete' obj.pk %}" class="btn btn-outline-danger btn-sm ms-2">
+      <a href="{% url 'operacoes_campo:caderno_campo_delete' obj.pk %}" class="btn btn-outline-danger btn-sm ms-2">
         <i class="bi bi-trash"></i> Excluir
       </a>
     </div>
@@ -113,7 +113,7 @@
         </div>
         <div id="formInsumo" class="collapse">
           <div class="card-body border-bottom bg-light">
-            <form method="post" action="{% url 'cadastros:caderno_campo_insumo_add' obj.pk %}" id="formInsumoEl">
+            <form method="post" action="{% url 'operacoes_campo:caderno_campo_insumo_add' obj.pk %}" id="formInsumoEl">
               {% csrf_token %}
               <div class="row g-2 align-items-end">
                 <div class="col-md-3">
@@ -182,7 +182,7 @@
         </div>
         <div id="formFunc" class="collapse">
           <div class="card-body border-bottom bg-light">
-            <form method="post" action="{% url 'cadastros:caderno_campo_funcionario_add' obj.pk %}">
+            <form method="post" action="{% url 'operacoes_campo:caderno_campo_funcionario_add' obj.pk %}">
               {% csrf_token %}
               <div class="row g-2 align-items-end">
                 <div class="col-md-5">
@@ -217,7 +217,7 @@
                 <td>{{ fc.funcionario }}</td>
                 <td class="text-center">{{ fc.horas_trabalhadas|default:"—" }}</td>
                 <td class="text-center">
-                  <form method="post" action="{% url 'cadastros:caderno_campo_funcionario_delete' obj.pk fc.pk %}" class="d-inline">
+                  <form method="post" action="{% url 'operacoes_campo:caderno_campo_funcionario_delete' obj.pk fc.pk %}" class="d-inline">
                     {% csrf_token %}
                     <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('Remover?')">
                       <i class="bi bi-trash"></i>

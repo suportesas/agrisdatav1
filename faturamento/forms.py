@@ -540,7 +540,8 @@ class ConhecimentoTransporteForm(FaturamentoBaseForm):
     def __init__(self, *args, empresa=None, **kwargs):
         super().__init__(*args, empresa=empresa, **kwargs)
         if empresa:
-            from cadastros.models import Cliente, Motorista, Transportadora, Vehicle
+            from cadastros.models import Cliente, Transportadora
+            from frota.models import Motorista, Vehicle
             self.fields['remetente'].queryset = Cliente.objects.filter(empresa=empresa, status='ATIVO').order_by('razao_social')
             self.fields['destinatario'].queryset = Cliente.objects.filter(empresa=empresa, status='ATIVO').order_by('razao_social')
             self.fields['tomador'].queryset = Cliente.objects.filter(empresa=empresa, status='ATIVO').order_by('razao_social')
@@ -609,7 +610,7 @@ class ManifestoDocumentoFiscalForm(FaturamentoBaseForm):
     def __init__(self, *args, empresa=None, **kwargs):
         super().__init__(*args, empresa=empresa, **kwargs)
         if empresa:
-            from cadastros.models import Motorista, Vehicle
+            from frota.models import Motorista, Vehicle
             self.fields['motorista'].queryset = Motorista.objects.filter(empresa=empresa, ativo=True).order_by('nome')
             self.fields['veiculo'].queryset = Vehicle.objects.filter(empresa=empresa).order_by('descricao')
 

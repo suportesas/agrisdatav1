@@ -2,6 +2,7 @@ import json
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
+from django.views.decorators.http import require_POST
 from .forms import EmpresaLogoForm
 from django.utils import timezone
 from django.db.models import Count, Q
@@ -10,8 +11,41 @@ from django.http import JsonResponse
 from django.template.loader import render_to_string
 from django.contrib.auth.models import Permission
 
-from .models import Empresa, Plano, Role, PermissionTemplate
+from .models import Empresa, Plano, Role, PermissionTemplate, RoleAudit
 from .forms import EmpresaForm, PlanoForm
+
+# Nomes amigáveis dos apps do ERP (usados na matriz de permissões)
+APP_LABELS_PT = {
+    'cadastros': 'Cadastros',
+    'rh': 'Recursos Humanos',
+    'operacoes_campo': 'Operações de Campo',
+    'estufas': 'Estufas',
+    'mip': 'MIP / Pragas',
+    'emprestimos': 'Empréstimos',
+    'frota': 'Frota',
+    'produtos': 'Produtos',
+    'estoque': 'Estoque',
+    'compras': 'Compras',
+    'financeiro': 'Financeiro',
+    'plano_contas': 'Plano de Contas',
+    'bancario': 'Bancário',
+    'adiantamentos': 'Adiantamentos',
+    'faturamento': 'Faturamento',
+    'vendas': 'Vendas',
+    'exportacao': 'Exportação',
+    'embalagem': 'Embalagem',
+    'patrimonio': 'Patrimônio',
+    'energia': 'Energia',
+    'empresas': 'Empresas',
+    'usuarios': 'Usuários',
+    'dashboard': 'Dashboard',
+    'metricas': 'Métricas',
+    'portal': 'Portal do Cliente',
+    'auth': 'Autenticação (sistema)',
+}
+
+# Apps de sistema a mostrar por último (menos relevantes para o ERP)
+SYSTEM_APPS = {'admin', 'contenttypes', 'sessions', 'authtoken', 'rest_framework'}
 
 
 def is_owner(user):
@@ -234,16 +268,14 @@ def role_list(request):
         messages.warning(request, "Nenhuma empresa vinculada à sua conta.")
         return redirect('dashboard:index')
 
-    roles = Role.objects.filter(empresa=request.user.empresa)
-    
+    roles = Role.objects.filter(empresa=request.user.empresa).annotate(
+        num_usuarios=Count('usuarios', distinct=True)
+    ).order_by('builtin', 'name')
+
     # Estatísticas
     total_roles = roles.count()
     builtin_roles = roles.filter(builtin=True).count()
     custom_roles = roles.filter(builtin=False).count()
-
-    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-        html = render_to_string('empresas/_roles_table.html', {'roles': roles}, request=request)
-        return JsonResponse({'html': html})
 
     context = {
         'roles': roles,
@@ -330,40 +362,35 @@ def role_permissions(request, role_id):
             role_perms = set(p.codename for p in role.get_permissions())
 
             grouped = {}
-            # Optional mapping to show friendly module names
-            APP_LABELS = {
-                'cadastros': 'Cadastros',
-                'empresas': 'Empresa',
-                'usuarios': 'Usuários',
-                'auth': 'Autenticação',
-                'produtos': 'Produtos',
-                'estoque': 'Estoque',
-                'compras': 'Compras',
-            }
-
             for p in perms:
                 app = p.content_type.app_label
+                if app in SYSTEM_APPS:
+                    continue  # Oculta apps de sistema irrelevantes
                 model = p.content_type.model
                 key = f"{app}:{model}"
+                app_nome = APP_LABELS_PT.get(app, app.replace('_', ' ').title())
                 if key not in grouped:
                     grouped[key] = {
                         'app_label': app,
+                        'app_nome': app_nome,
                         'model': model,
-                        'display': APP_LABELS.get(app, app.title()) + ' • ' + model.title(),
                         'perms': {'add': False, 'change': False, 'delete': False, 'view': False}
                     }
-                if p.codename.startswith('add_'):
-                    grouped[key]['perms']['add'] = p.codename in role_perms
-                elif p.codename.startswith('change_'):
-                    grouped[key]['perms']['change'] = p.codename in role_perms
-                elif p.codename.startswith('delete_'):
-                    grouped[key]['perms']['delete'] = p.codename in role_perms
-                elif p.codename.startswith('view_'):
-                    grouped[key]['perms']['view'] = p.codename in role_perms
+                action = p.codename.split('_')[0]
+                if action in ('add', 'change', 'delete', 'view'):
+                    grouped[key]['perms'][action] = p.codename in role_perms
 
-            # Convert grouped to a sorted list for deterministic output
+            # Ordena: apps do ERP primeiro (por APP_LABELS_PT order), system last
+            erp_order = list(APP_LABELS_PT.keys())
+            def sort_key(k):
+                app = grouped[k]['app_label']
+                try:
+                    return (0, erp_order.index(app), k)
+                except ValueError:
+                    return (1, 0, k)
+
             items = []
-            for k in sorted(grouped.keys()):
+            for k in sorted(grouped.keys(), key=sort_key):
                 item = grouped[k]
                 item['key'] = k
                 items.append(item)
@@ -390,18 +417,6 @@ def save_permission_template(request, role_id):
     if not request.user.is_superuser and role.empresa != request.user.empresa:
         return JsonResponse({'error': 'Permissão negada'}, status=403)
 
-    # Debugging aid: log CSRF presence for E2E diagnostics
-    try:
-        print('DEBUG save_permission_template: csrftoken cookie=', request.COOKIES.get('csrftoken'))
-        print('DEBUG save_permission_template: X-CSRFToken header=', request.headers.get('X-CSRFToken'))
-        # Also log body for debugging
-        try:
-            print('DEBUG save_permission_template: body=', request.body[:1000])
-        except Exception:
-            pass
-    except Exception:
-        pass
-
     try:
         payload = json.loads(request.body.decode('utf-8'))
         nome = payload.get('nome')
@@ -421,11 +436,6 @@ def save_permission_template(request, role_id):
         tpl.dados = dados
         tpl.criado_por = request.user
         tpl.save()
-
-    try:
-        print('DEBUG save_permission_template: created=', created, 'tpl_id=', tpl.id, 'tpl_nome=', tpl.nome)
-    except Exception:
-        pass
 
     return JsonResponse({'ok': True, 'template_id': tpl.id})
 
@@ -523,6 +533,43 @@ def permission_template_detail(request, pk):
         return JsonResponse({'error': 'Permissão negada'}, status=403)
 
     return JsonResponse({'id': tpl.id, 'nome': tpl.nome, 'dados': tpl.dados, 'criado_por': tpl.criado_por.username if tpl.criado_por else None, 'data_criacao': tpl.data_criacao.isoformat()})
+
+
+@login_required
+@require_POST
+def role_clone(request, role_id):
+    """Clona uma função copiando todas as suas permissões para um novo nome."""
+    role = get_object_or_404(Role, pk=role_id)
+    if not request.user.is_superuser and (
+        not request.user.empresa or role.empresa != request.user.empresa
+    ):
+        return JsonResponse({'error': 'Permissão negada'}, status=403)
+
+    try:
+        payload = json.loads(request.body.decode('utf-8'))
+        new_name = (payload.get('name') or '').strip()
+        new_desc = (payload.get('description') or '').strip()
+    except Exception:
+        return JsonResponse({'error': 'Payload inválido'}, status=400)
+
+    if not new_name:
+        return JsonResponse({'error': 'Informe o nome para a nova função.'}, status=400)
+
+    if Role.objects.filter(empresa=role.empresa, name=new_name).exists():
+        return JsonResponse({'error': f'Já existe uma função com o nome "{new_name}".'}, status=400)
+
+    new_role = Role.objects.create(
+        empresa=role.empresa,
+        name=new_name,
+        description=new_desc or f'Clonada de: {role.name}',
+        builtin=False,
+    )
+    codenames = list(role.get_permissions().values_list('codename', flat=True))
+    new_role.set_permissions(codenames, actor=request.user)
+
+    return JsonResponse({'ok': True, 'role_id': new_role.pk, 'role_name': new_role.name})
+
+
 # ==================== VIEWS DE PLANOS ====================
 
 @login_required

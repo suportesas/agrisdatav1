@@ -4,27 +4,15 @@ URLs do módulo Fazendas/Cadastros
 
 from django.urls import path
 from . import views
-from . import views_motorista
-from . import views_monitoramento_mip
 from . import views_requisicao
-from . import views_rh
-from . import views_os
-from . import views_colheita
 from . import views_produtor
-from . import views_emprestimo
-from . import views_pluviometria
-from . import views_qualidade_campo
-from . import views_caderno_campo
-from . import views_estufas
-from . import views_planejamento_custo
-from . import views_frota
+
+
 
 app_name = 'cadastros'
 
 urlpatterns = [
 
-        # AJAX: registrar exibição do alerta visual de mensagens não lidas do produtor
-        path('emprestimos/ajax/registrar-alerta-visual/', views_emprestimo.registrar_alerta_visual_exibido, name='registrar_alerta_visual_exibido'),
     # ==================== FAZENDAS ====================
     path('fazendas/', views.fazenda_list, name='fazenda_list'),
     path('fazendas/nova/', views.fazenda_create, name='fazenda_create'),
@@ -59,30 +47,6 @@ urlpatterns = [
     
     # ==================== ALERTAS ====================
     path('alertas/', views.dashboard_alertas, name='dashboard_alertas'),
-    
-    # ==================== FUNÇÕES ====================
-    path('funcoes/', views.funcao_list, name='funcao_list'),
-    path('funcoes/novo/', views.funcao_create, name='funcao_create'),
-    path('funcoes/criar-ajax/', views.funcao_create_ajax, name='funcao_create_ajax'),
-    path('funcoes/get-salario/', views.funcao_get_salario, name='funcao_get_salario'),
-    path('funcoes/<int:pk>/editar/', views.funcao_update, name='funcao_update'),
-    path('funcoes/<int:pk>/excluir/', views.funcao_delete, name='funcao_delete'),
-
-    # ==================== RISCOS AMBIENTAIS (CATÁLOGO) ====================
-    path('riscos-ambientais/', views.risco_ambiental_catalogo_list, name='risco_ambiental_catalogo_list'),
-    path('riscos-ambientais/novo/', views.risco_ambiental_catalogo_create, name='risco_ambiental_catalogo_create'),
-    path('riscos-ambientais/<int:pk>/editar/', views.risco_ambiental_catalogo_update, name='risco_ambiental_catalogo_update'),
-    path('riscos-ambientais/<int:pk>/excluir/', views.risco_ambiental_catalogo_delete, name='risco_ambiental_catalogo_delete'),
-    
-    # ==================== FUNCIONÁRIOS ====================
-    path('funcionarios/', views.funcionario_list, name='funcionario_list'),
-    path('funcionarios/novo/', views.funcionario_create, name='funcionario_create'),
-    path('funcionarios/<int:pk>/', views.funcionario_detail, name='funcionario_detail'),
-    path('funcionarios/<int:pk>/editar/', views.funcionario_update, name='funcionario_update'),
-    path('funcionarios/<int:pk>/excluir/', views.funcionario_delete, name='funcionario_delete'),
-
-        # Documentos Funcionário
-        path('funcionarios/<int:funcionario_pk>/documentos/novo/', views.funcionario_documento_create, name='funcionario_documento_create'),
     
 
     # ==================== CULTURAS ====================
@@ -186,19 +150,7 @@ urlpatterns = [
     path('api/transportadoras/', views.api_transportadoras, name='api_transportadoras'),
     path('api/transportadoras/<int:pk>/viagens/', views.api_transportadora_viagens, name='api_transportadora_viagens'),
 
-    # ==================== VEÍCULOS / FROTA ====================
-    path('veiculos/', views.vehicle_list, name='vehicle_list'),
-    path('veiculos/novo/', views.vehicle_create, name='vehicle_create'),
-    path('veiculos/<int:pk>/', views.vehicle_detail, name='vehicle_detail'),
-    path('veiculos/<int:pk>/editar/', views.vehicle_update, name='vehicle_update'),
-    path('veiculos/<int:pk>/excluir/', views.vehicle_delete, name='vehicle_delete'),
-    path('veiculos/<int:vehicle_pk>/placas/nova/', views.vehicle_plate_create, name='vehicle_plate_create'),
-    path('veiculos/<int:vehicle_pk>/placas/<int:plate_pk>/editar/', views.vehicle_plate_update, name='vehicle_plate_update'),
-    path('veiculos/<int:vehicle_pk>/placas/<int:plate_pk>/excluir/', views.vehicle_plate_delete, name='vehicle_plate_delete'),
-
-    # API: vehicles
-    path('api/veiculos/', views.api_vehicles, name='api_vehicles'),
-    path('veiculos/export/csv/', views.vehicle_export_csv, name='vehicle_export_csv'),
+    # Veículos/Frota agora em /frota/ (app frota)
 
     # ==================== REQUISICOES ====================
     path('requisicoes/', views_requisicao.requisicao_list, name='requisicao_list'),
@@ -217,19 +169,6 @@ urlpatterns = [
     path('api/requisicoes/safras-por-talhao/<int:talhao_id>/', views_requisicao.ajax_safras_por_talhao, name='ajax_safras_por_talhao'),
     path('api/requisicoes/talhao-por-codigo/', views_requisicao.ajax_talhao_por_codigo, name='ajax_talhao_por_codigo'),
     path('api/requisicoes/funcionarios-por-fazenda/<int:fazenda_id>/', views_requisicao.ajax_funcionarios_por_fazenda, name='ajax_funcionarios_por_fazenda'),
-
-    # ==================== EMPRESTIMOS PRODUTOR ====================
-    path('emprestimos/extrato/', views_emprestimo.emprestimo_extrato, name='emprestimo_extrato'),
-    path('emprestimos/<int:pk>/', views_emprestimo.emprestimo_detalhe, name='emprestimo_detalhe'),
-    path('emprestimos/<int:pk>/imprimir/', views_emprestimo.emprestimo_imprimir, name='emprestimo_imprimir'),
-    path('emprestimos/<int:pk>/assinar-liberacao/', views_emprestimo.emprestimo_assinar_liberacao, name='emprestimo_assinar_liberacao'),
-    path('emprestimos/<int:pk>/reenviar-whatsapp/', views_emprestimo.emprestimo_reenviar_whatsapp, name='emprestimo_reenviar_whatsapp'),
-    path('emprestimos/<int:pk>/mensagens/nova/', views_emprestimo.emprestimo_mensagem_create, name='emprestimo_mensagem_create'),
-    path('emprestimos/mensagens/anexos/<int:anexo_id>/download/', views_emprestimo.emprestimo_mensagem_anexo_download, name='emprestimo_mensagem_anexo_download'),
-    path('emprestimos/extrato/imprimir/', views_emprestimo.emprestimo_extrato_imprimir, name='emprestimo_extrato_imprimir'),
-    path('emprestimos/extrato/pdf/', views_emprestimo.emprestimo_exportar_pdf, name='emprestimo_exportar_pdf'),
-    path('emprestimos/extrato/excel/', views_emprestimo.emprestimo_exportar_excel, name='emprestimo_exportar_excel'),
-    path('emprestimos/devolucao/nova/', views_emprestimo.emprestimo_devolucao_create, name='emprestimo_devolucao_create'),
 
     # Fornecedor: endereços
     path('fornecedores/<int:fornecedor_pk>/enderecos/novo/', views.fornecedor_endereco_create, name='fornecedor_endereco_create'),
@@ -342,29 +281,8 @@ urlpatterns = [
     path('navios/<int:pk>/edit/', views.navio_update, name='navio_update'),
     path('navios/<int:pk>/delete/', views.navio_delete, name='navio_delete'),
 
-    # ==================== MOTORISTAS ====================
-    path('motoristas/', views_motorista.motorista_list, name='motorista_list'),
-    path('motoristas/criar/', views_motorista.motorista_create, name='motorista_create'),
-    path('motoristas/<int:pk>/', views_motorista.motorista_detail, name='motorista_detail'),
-    path('motoristas/<int:pk>/editar/', views_motorista.motorista_update, name='motorista_update'),
-    path('motoristas/<int:pk>/deletar/', views_motorista.motorista_delete, name='motorista_delete'),
-    path('motoristas/<int:pk>/portal-acesso/', views_motorista.motorista_set_pin, name='motorista_set_pin'),
+    # Motoristas agora em /frota/ (app frota)
 
-    # Historico Motorista x Placa
-    path('motoristas/vinculos/', views_motorista.motorista_vinculo_list, name='motorista_vinculo_list'),
-    path('motoristas/vinculos/novo/', views_motorista.motorista_vinculo_create, name='motorista_vinculo_create'),
-    path('motoristas/vinculos/<int:pk>/', views_motorista.motorista_vinculo_detail, name='motorista_vinculo_detail'),
-    path('motoristas/vinculos/<int:pk>/editar/', views_motorista.motorista_vinculo_update, name='motorista_vinculo_update'),
-    path('motoristas/vinculos/consulta/', views_motorista.motorista_vinculo_consulta, name='motorista_vinculo_consulta'),
-    path('motoristas/vinculos/consulta/pdf/', views_motorista.motorista_vinculo_consulta_pdf, name='motorista_vinculo_consulta_pdf'),
-    
-    # Documentos do Motorista
-    path('motoristas/<int:motorista_pk>/documentos/criar/', views_motorista.motorista_documento_create, name='motorista_documento_create'),
-    path('motoristas/<int:motorista_pk>/documentos/<int:documento_pk>/deletar/', views_motorista.motorista_documento_delete, name='motorista_documento_delete'),
-    
-    # API Motorista
-    path('api/buscar-cep-motorista/', views_motorista.buscar_cep_motorista, name='buscar_cep_motorista'),
-    
     # ==================== PRAZOS DE PAGAMENTO ====================
     path('prazos-pagamento/', views.prazo_pagamento_list, name='prazo_pagamento_list'),
     path('prazos-pagamento/novo/', views.prazo_pagamento_create, name='prazo_pagamento_create'),
@@ -372,260 +290,7 @@ urlpatterns = [
     path('prazos-pagamento/<int:pk>/editar/', views.prazo_pagamento_update, name='prazo_pagamento_update'),
     path('prazos-pagamento/<int:pk>/excluir/', views.prazo_pagamento_delete, name='prazo_pagamento_delete'),
     
-    # ==================== MONITORAMENTO MIP (Manejo Integrado de Pragas) ====================
-    # Estágios de Desenvolvimento
-    path('estagios/', views_monitoramento_mip.estagio_list, name='estagio_list'),
-    path('estagios/novo/', views_monitoramento_mip.estagio_create, name='estagio_create'),
-    path('estagios/<int:pk>/editar/', views_monitoramento_mip.estagio_update, name='estagio_update'),
-    path('estagios/<int:pk>/excluir/', views_monitoramento_mip.estagio_delete, name='estagio_delete'),
-    
-    # Monitoramentos MIP
-    path('monitoramento-mip/', views_monitoramento_mip.monitoramento_mip_list, name='monitoramento_mip_list'),
-    path('monitoramento-mip/novo/', views_monitoramento_mip.monitoramento_mip_create, name='monitoramento_mip_create'),
-    path('monitoramento-mip/<int:pk>/', views_monitoramento_mip.monitoramento_mip_detail, name='monitoramento_mip_detail'),
-    path('monitoramento-mip/<int:pk>/pdf/', views_monitoramento_mip.monitoramento_mip_pdf, name='monitoramento_mip_pdf'),
-    path('monitoramento-mip/<int:pk>/adicionar-praga/', views_monitoramento_mip.monitoramento_mip_add_praga, name='monitoramento_mip_add_praga'),
-    path('monitoramento-mip/praga/<int:pk>/', views_monitoramento_mip.monitoramento_mip_praga_detail, name='monitoramento_mip_praga_detail'),
-    path('monitoramento-mip/praga/<int:pk>/editar/', views_monitoramento_mip.monitoramento_mip_praga_edit, name='monitoramento_mip_praga_edit'),
-    path('monitoramento-mip/praga/<int:pk>/excluir/', views_monitoramento_mip.monitoramento_mip_praga_delete, name='monitoramento_mip_praga_delete'),
-    path('monitoramento-mip/praga/<int:pk>/adicionar-ponto/', views_monitoramento_mip.monitoramento_mip_add_ponto, name='monitoramento_mip_add_ponto'),
-    
-    # AJAX endpoints
-    path('ajax/estagios-praga/', views_monitoramento_mip.ajax_get_estagios_praga, name='ajax_get_estagios_praga'),
-    path('ajax/pragas-cultura/', views_monitoramento_mip.ajax_get_pragas_cultura, name='ajax_get_pragas_cultura'),
-    path('ajax/calcular-incidencia/', views_monitoramento_mip.ajax_calcular_incidencia, name='ajax_calcular_incidencia'),
-    
-    # Cadastro em Lote de Estágios
-    path('estagios/cadastro-lote/', views_monitoramento_mip.estagio_cadastro_em_lote, name='estagio_cadastro_em_lote'),
-    path('ajax/adicionar-estagio/', views_monitoramento_mip.ajax_adicionar_estagio, name='ajax_adicionar_estagio'),
-    path('ajax/carregar-estagios/', views_monitoramento_mip.ajax_carregar_estagios, name='ajax_carregar_estagios'),
-    path('ajax/deletar-estagio/<int:pk>/', views_monitoramento_mip.ajax_deletar_estagio, name='ajax_deletar_estagio'),
-    path('ajax/buscar-talhoes/', views_monitoramento_mip.ajax_buscar_talhoes, name='ajax_buscar_talhoes'),
-    path('ajax/talhao-info/<int:talhao_id>/', views_monitoramento_mip.ajax_talhao_info, name='ajax_talhao_info'),
 
-    # ==================== RH - RECURSOS HUMANOS ====================
-    # Dashboard
-    path('rh/', views_rh.rh_dashboard, name='rh_dashboard'),
-    
-    # Férias
-    path('rh/ferias/', views_rh.ferias_list, name='ferias_list'),
-    path('rh/ferias/relatorio/previsao-pdf/', views_rh.ferias_previsao_pdf, name='ferias_previsao_pdf'),
-    path('rh/ferias/novo/', views_rh.ferias_create, name='ferias_create'),
-    path('rh/ferias/<int:pk>/', views_rh.ferias_detail, name='ferias_detail'),
-    path('rh/ferias/<int:pk>/editar/', views_rh.ferias_update, name='ferias_update'),
-    path('rh/ferias/<int:pk>/excluir/', views_rh.ferias_delete, name='ferias_delete'),
-    
-    # Afastamentos
-    path('rh/afastamentos/', views_rh.afastamento_list, name='afastamento_list'),
-    path('rh/afastamentos/novo/', views_rh.afastamento_create, name='afastamento_create'),
-    path('rh/afastamentos/<int:pk>/', views_rh.afastamento_detail, name='afastamento_detail'),
-    path('rh/afastamentos/<int:pk>/editar/', views_rh.afastamento_update, name='afastamento_update'),
-    path('rh/afastamentos/<int:pk>/excluir/', views_rh.afastamento_delete, name='afastamento_delete'),
-
-    # Vínculos Contratuais
-    path('rh/vinculos/', views_rh.vinculo_list, name='vinculo_list'),
-    path('rh/vinculos/novo/', views_rh.vinculo_create, name='vinculo_create'),
-    path('rh/vinculos/<int:pk>/', views_rh.vinculo_detail, name='vinculo_detail'),
-    path('rh/vinculos/<int:pk>/editar/', views_rh.vinculo_update, name='vinculo_update'),
-
-    # Laudos de Risco
-    path('rh/laudos/', views_rh.laudo_list, name='laudo_list'),
-    path('rh/laudos/novo/', views_rh.laudo_create, name='laudo_create'),
-    path('rh/laudos/<int:pk>/', views_rh.laudo_detail, name='laudo_detail'),
-    path('rh/laudos/<int:pk>/editar/', views_rh.laudo_update, name='laudo_update'),
-
-    # Tipos de Exame ASO
-    path('rh/aso/tipos-exame/', views_rh.tipo_exame_aso_list, name='tipo_exame_aso_list'),
-    path('rh/aso/tipos-exame/novo/', views_rh.tipo_exame_aso_create, name='tipo_exame_aso_create'),
-    path('rh/aso/tipos-exame/<int:pk>/editar/', views_rh.tipo_exame_aso_update, name='tipo_exame_aso_update'),
-    path('rh/aso/tipos-exame/<int:pk>/toggle-ativo/', views_rh.tipo_exame_aso_toggle_ativo, name='tipo_exame_aso_toggle_ativo'),
-
-    # Solicitações de ASO
-    path('rh/aso/solicitacoes/', views_rh.aso_solicitacao_list, name='aso_solicitacao_list'),
-    path('rh/aso/solicitacoes/nova/', views_rh.aso_solicitacao_create, name='aso_solicitacao_create'),
-    path('rh/aso/funcionarios/<int:funcionario_id>/riscos/', views_rh.aso_funcionario_riscos, name='aso_funcionario_riscos'),
-    path('rh/aso/buscar-laboratorio/', views_rh.aso_buscar_laboratorio, name='aso_buscar_laboratorio'),
-    path('rh/aso/solicitacoes/<int:pk>/', views_rh.aso_solicitacao_detail, name='aso_solicitacao_detail'),
-    path('rh/aso/solicitacoes/<int:pk>/editar/', views_rh.aso_solicitacao_update, name='aso_solicitacao_update'),
-    path('rh/aso/solicitacoes/<int:pk>/assinar/', views_rh.aso_solicitacao_assinar, name='aso_solicitacao_assinar'),
-    path('rh/aso/solicitacoes/<int:pk>/pdf/', views_rh.aso_solicitacao_pdf, name='aso_solicitacao_pdf'),
-    path('rh/aso/solicitacoes/<int:pk>/enviar-email/', views_rh.aso_solicitacao_enviar_email, name='aso_solicitacao_enviar_email'),
-    path('rh/aso/solicitacoes/<int:pk>/enviar-whatsapp/', views_rh.aso_solicitacao_enviar_whatsapp, name='aso_solicitacao_enviar_whatsapp'),
-    
-    # Rescisões
-    path('rh/rescisoes/', views_rh.rescisao_list, name='rescisao_list'),
-    path('rh/rescisoes/novo/', views_rh.rescisao_create, name='rescisao_create'),
-    path('rh/rescisoes/vinculos-por-funcionario/', views_rh.vinculos_por_funcionario, name='vinculos_por_funcionario'),
-    path('rh/rescisoes/calcular/', views_rh.rescisao_calcular, name='rescisao_calcular'),
-    path('rh/rescisoes/<int:pk>/', views_rh.rescisao_detail, name='rescisao_detail'),
-    path('rh/rescisoes/<int:pk>/editar/', views_rh.rescisao_update, name='rescisao_update'),
-    path('rh/rescisoes/<int:pk>/excluir/', views_rh.rescisao_delete, name='rescisao_delete'),
-    
-    # Relatórios RH
-    path('rh/relatorio/', views_rh.relatorio_rh, name='relatorio_rh'),
-    path('rh/relatorio/pdf/', views_rh.relatorio_rh_pdf, name='relatorio_rh_pdf'),
-
-    # ==================== ORDENS DE SERVIÇO ====================
-    path('ordens-servico/', views_os.os_list, name='os_list'),
-    path('ordens-servico/nova/', views_os.os_create, name='os_create'),
-    path('ordens-servico/custos-talhao/', views_os.custo_talhao_list, name='custo_talhao_list'),
-    path('ordens-servico/<int:pk>/', views_os.os_detail, name='os_detail'),
-    path('ordens-servico/<int:pk>/editar/', views_os.os_update, name='os_update'),
-    path('ordens-servico/<int:pk>/excluir/', views_os.os_delete, name='os_delete'),
-    path('ordens-servico/<int:pk>/aprovar/', views_os.os_aprovar, name='os_aprovar'),
-    path('ordens-servico/<int:pk>/iniciar/', views_os.os_iniciar, name='os_iniciar'),
-    path('ordens-servico/<int:pk>/concluir/', views_os.os_concluir, name='os_concluir'),
-    path('ordens-servico/<int:pk>/insumos/novo/', views_os.os_insumo_add, name='os_insumo_add'),
-    path('ordens-servico/<int:pk>/insumos/<int:insumo_pk>/editar/', views_os.os_insumo_edit, name='os_insumo_edit'),
-    path('ordens-servico/<int:pk>/insumos/<int:insumo_pk>/excluir/', views_os.os_insumo_delete, name='os_insumo_delete'),
-
-    # Custo/Hora de Máquinas
-    path('custos-maquina/', views_os.custo_maquina_list, name='custo_maquina_list'),
-    path('custos-maquina/novo/', views_os.custo_maquina_create, name='custo_maquina_create'),
-    path('custos-maquina/<int:pk>/editar/', views_os.custo_maquina_update, name='custo_maquina_update'),
-
-    # AJAX – Classificação de OS
-    path('ordens-servico/ajax/opcoes-servico/', views_os.ajax_opcoes_servico, name='os_ajax_opcoes_servico'),
-    path('ordens-servico/ajax/opcoes-talhao/', views_os.ajax_opcoes_talhao, name='os_ajax_opcoes_talhao'),
-
-    # ==================== COLHEITA ====================
-    path('ordens-servico/<int:os_pk>/colheita/nova-etapa/', views_colheita.etapa_nova, name='colheita_nova_etapa'),
-    path('ordens-servico/<int:os_pk>/colheita/<int:etapa_pk>/', views_colheita.etapa_detalhe, name='colheita_detalhe'),
-    path('ordens-servico/<int:os_pk>/colheita/<int:etapa_pk>/concluir/', views_colheita.etapa_concluir, name='colheita_concluir'),
-
-    # Frotas (tratores)
-    path('ordens-servico/<int:os_pk>/colheita/<int:etapa_pk>/frota/adicionar/', views_colheita.frota_adicionar, name='colheita_frota_adicionar'),
-    path('ordens-servico/<int:os_pk>/colheita/<int:etapa_pk>/frota/<int:frota_pk>/horimetro/', views_colheita.frota_horimetro_final, name='colheita_frota_horimetro'),
-
-    # Carroções
-    path('ordens-servico/<int:os_pk>/colheita/<int:etapa_pk>/frota/<int:frota_pk>/carrocao/adicionar/', views_colheita.carrocao_adicionar, name='colheita_carrocao_adicionar'),
-    path('ordens-servico/<int:os_pk>/colheita/<int:etapa_pk>/carrocao/<int:carrocao_pk>/remover/', views_colheita.carrocao_remover, name='colheita_carrocao_remover'),
-
-    # Viagens / Pesagens
-    path('ordens-servico/<int:os_pk>/colheita/<int:etapa_pk>/carrocao/<int:carrocao_pk>/viagem/nova/', views_colheita.viagem_nova, name='colheita_viagem_nova'),
-    path('ordens-servico/<int:os_pk>/colheita/<int:etapa_pk>/viagem/<int:viagem_pk>/editar/', views_colheita.viagem_editar, name='colheita_viagem_editar'),
-    path('ordens-servico/<int:os_pk>/colheita/<int:etapa_pk>/viagem/<int:viagem_pk>/excluir/', views_colheita.viagem_excluir, name='colheita_viagem_excluir'),
-
-    # AJAX
-    path('ordens-servico/<int:os_pk>/colheita/<int:etapa_pk>/ajax/carrocoes/', views_colheita.ajax_carrocoes_disponiveis, name='colheita_ajax_carrocoes'),
-
-    # ==================== PLUVIOMETRIA (RF-107) ====================
-    path('pluviometria/', views_pluviometria.pluviometria_list, name='pluviometria_list'),
-    path('pluviometria/novo/', views_pluviometria.pluviometria_create, name='pluviometria_create'),
-    path('pluviometria/<int:pk>/editar/', views_pluviometria.pluviometria_update, name='pluviometria_update'),
-    path('pluviometria/<int:pk>/excluir/', views_pluviometria.pluviometria_delete, name='pluviometria_delete'),
-    path('pluviometria/dashboard/', views_pluviometria.pluviometria_dashboard, name='pluviometria_dashboard'),
-
-    # ==================== QUALIDADE DE CAMPO (RF-108) ====================
-    path('qualidade-campo/', views_qualidade_campo.qualidade_campo_list, name='qualidade_campo_list'),
-    path('qualidade-campo/nova/', views_qualidade_campo.qualidade_campo_create, name='qualidade_campo_create'),
-    path('qualidade-campo/<int:pk>/', views_qualidade_campo.qualidade_campo_detail, name='qualidade_campo_detail'),
-    path('qualidade-campo/<int:pk>/editar/', views_qualidade_campo.qualidade_campo_update, name='qualidade_campo_update'),
-    path('qualidade-campo/<int:pk>/excluir/', views_qualidade_campo.qualidade_campo_delete, name='qualidade_campo_delete'),
-    path('qualidade-campo/<int:pk>/pdf/', views_qualidade_campo.qualidade_campo_pdf, name='qualidade_campo_pdf'),
-
-    # ==================== CADERNO DE CAMPO (RF-111) ====================
-    path('caderno-campo/', views_caderno_campo.caderno_campo_list, name='caderno_campo_list'),
-    path('caderno-campo/novo/', views_caderno_campo.caderno_campo_create, name='caderno_campo_create'),
-    path('caderno-campo/pdf/', views_caderno_campo.caderno_campo_pdf, name='caderno_campo_pdf'),
-    path('caderno-campo/<int:pk>/', views_caderno_campo.caderno_campo_detail, name='caderno_campo_detail'),
-    path('caderno-campo/<int:pk>/editar/', views_caderno_campo.caderno_campo_update, name='caderno_campo_update'),
-    path('caderno-campo/<int:pk>/excluir/', views_caderno_campo.caderno_campo_delete, name='caderno_campo_delete'),
-    path('caderno-campo/<int:pk>/insumos/novo/', views_caderno_campo.caderno_campo_insumo_add, name='caderno_campo_insumo_add'),
-    path('caderno-campo/<int:pk>/insumos/<int:insumo_pk>/excluir/', views_caderno_campo.caderno_campo_insumo_delete, name='caderno_campo_insumo_delete'),
-    path('caderno-campo/<int:pk>/funcionarios/novo/', views_caderno_campo.caderno_campo_funcionario_add, name='caderno_campo_funcionario_add'),
-    path('caderno-campo/<int:pk>/funcionarios/<int:func_pk>/excluir/', views_caderno_campo.caderno_campo_funcionario_delete, name='caderno_campo_funcionario_delete'),
-
-    # ==================== ESTUFAS (RF-1200) ====================
-    path('estufas/', views_estufas.estufa_list, name='estufa_list'),
-    path('estufas/nova/', views_estufas.estufa_create, name='estufa_create'),
-    path('estufas/dashboard/', views_estufas.dashboard_estufas, name='dashboard_estufas'),
-    path('estufas/<int:pk>/', views_estufas.estufa_detail, name='estufa_detail'),
-    path('estufas/<int:pk>/editar/', views_estufas.estufa_update, name='estufa_update'),
-    path('estufas/<int:pk>/excluir/', views_estufas.estufa_delete, name='estufa_delete'),
-
-    # ==================== LOTES DE MUDAS (RF-1201) ====================
-    path('lotes-muda/', views_estufas.lote_muda_list, name='lote_muda_list'),
-    path('lotes-muda/novo/', views_estufas.lote_muda_create, name='lote_muda_create'),
-    path('lotes-muda/<int:pk>/', views_estufas.lote_muda_detail, name='lote_muda_detail'),
-    path('lotes-muda/<int:pk>/editar/', views_estufas.lote_muda_update, name='lote_muda_update'),
-    path('lotes-muda/<int:pk>/avancar-status/', views_estufas.lote_muda_avancar_status, name='lote_muda_avancar_status'),
-    path('lotes-muda/<int:pk>/perdas/nova/', views_estufas.perda_estufa_create, name='perda_estufa_create'),
-    path('lotes-muda/<int:lote_pk>/perdas/<int:pk>/excluir/', views_estufas.perda_estufa_delete, name='perda_estufa_delete'),
-    path('lotes-muda/<int:pk>/aplicacoes/nova/', views_estufas.aplicacao_estufa_create, name='aplicacao_estufa_create'),
-    path('lotes-muda/<int:lote_pk>/aplicacoes/<int:pk>/excluir/', views_estufas.aplicacao_estufa_delete, name='aplicacao_estufa_delete'),
-    path('lotes-muda/<int:pk>/monitoramentos/novo/', views_estufas.monitoramento_estufa_create, name='monitoramento_estufa_create'),
-    path('lotes-muda/<int:lote_pk>/monitoramentos/<int:pk>/excluir/', views_estufas.monitoramento_estufa_delete, name='monitoramento_estufa_delete'),
-
-    # ==================== TRANSPLANTIO (RF-1210) ====================
-    path('transplantios/', views_estufas.transplantio_list, name='transplantio_list'),
-    path('transplantios/novo/', views_estufas.transplantio_create, name='transplantio_create'),
-    path('transplantios/<int:pk>/', views_estufas.transplantio_detail, name='transplantio_detail'),
-
-    # ==================== REPLANTIO (RF-1230) ====================
-    path('replantios/', views_estufas.replantio_list, name='replantio_list'),
-    path('replantios/novo/', views_estufas.replantio_create, name='replantio_create'),
-    path('replantios/<int:pk>/', views_estufas.replantio_detail, name='replantio_detail'),
-
-    # ==================== PLANEJAMENTO DE CUSTO (FASE 3) ====================
-    path('planejamento-custo/', views_planejamento_custo.planejamento_custo_list, name='planejamento_custo_list'),
-    path('planejamento-custo/novo/', views_planejamento_custo.planejamento_custo_create, name='planejamento_custo_create'),
-    path('planejamento-custo/<int:pk>/', views_planejamento_custo.planejamento_custo_detail, name='planejamento_custo_detail'),
-    path('planejamento-custo/<int:pk>/excluir/', views_planejamento_custo.planejamento_custo_delete, name='planejamento_custo_delete'),
-    path('planejamento-custo/<int:pk>/itens/novo/', views_planejamento_custo.planejamento_custo_item_add, name='planejamento_custo_item_add'),
-    path('planejamento-custo/<int:pk>/itens/<int:item_pk>/excluir/', views_planejamento_custo.planejamento_custo_item_delete, name='planejamento_custo_item_delete'),
-    path('planejamento-custo/ajax/preco-produto/', views_planejamento_custo.ajax_preco_produto, name='ajax_preco_produto'),
-    path('planejamento-custo/ajax/safras/', views_planejamento_custo.ajax_safras_por_cultura, name='ajax_safras_planejamento_custo'),
-    path('planejamento-custo/ajax/talhoes/', views_planejamento_custo.ajax_talhoes_por_safra, name='ajax_talhoes_planejamento_custo'),
-
-    # ==================== MÓDULO FROTA ====================
-    path('frota/', views_frota.frota_dashboard, name='frota_dashboard'),
-
-    # Abastecimentos
-    path('frota/abastecimentos/', views_frota.abastecimento_list, name='abastecimento_list'),
-    path('frota/abastecimentos/novo/', views_frota.abastecimento_create, name='abastecimento_create'),
-    path('frota/abastecimentos/<int:pk>/', views_frota.abastecimento_detail, name='abastecimento_detail'),
-    path('frota/abastecimentos/<int:pk>/editar/', views_frota.abastecimento_update, name='abastecimento_update'),
-    path('frota/abastecimentos/<int:pk>/excluir/', views_frota.abastecimento_delete, name='abastecimento_delete'),
-    path('frota/abastecimentos/<int:pk>/conta-pagar/', views_frota.abastecimento_gerar_conta_pagar, name='abastecimento_gerar_conta_pagar'),
-    path('frota/abastecimentos/importar/', views_frota.abastecimento_importar, name='abastecimento_importar'),
-    path('frota/abastecimentos/modelo-csv/', views_frota.abastecimento_download_modelo, name='abastecimento_download_modelo'),
-    path('frota/api/veiculo-abastecimento-info/', views_frota.api_veiculo_info_abastecimento, name='api_veiculo_info_abastecimento'),
-
-    # Manutenções
-    path('frota/manutencoes/', views_frota.manutencao_list, name='manutencao_list'),
-    path('frota/manutencoes/nova/', views_frota.manutencao_create, name='manutencao_create'),
-    path('frota/manutencoes/<int:pk>/', views_frota.manutencao_detail, name='manutencao_detail'),
-    path('frota/manutencoes/<int:pk>/editar/', views_frota.manutencao_update, name='manutencao_update'),
-    path('frota/manutencoes/<int:pk>/excluir/', views_frota.manutencao_delete, name='manutencao_delete'),
-    path('frota/manutencoes/<int:pk>/itens/novo/', views_frota.manutencao_item_add, name='manutencao_item_add'),
-    path('frota/manutencoes/<int:pk>/itens/<int:item_pk>/excluir/', views_frota.manutencao_item_delete, name='manutencao_item_delete'),
-    path('frota/manutencoes/<int:pk>/documentos/novo/', views_frota.manutencao_documento_add, name='manutencao_documento_add'),
-    path('frota/manutencoes/<int:pk>/documentos/<int:doc_pk>/excluir/', views_frota.manutencao_documento_delete, name='manutencao_documento_delete'),
-    path('frota/manutencoes/<int:pk>/conta-pagar/', views_frota.manutencao_gerar_conta_pagar, name='manutencao_gerar_conta_pagar'),
-    path('frota/alertas/', views_frota.alertas_manutencao_list, name='alertas_manutencao_list'),
-    path('frota/alertas/<int:pk>/resolver/', views_frota.alerta_resolver, name='alerta_resolver'),
-    path('api/lote-produto-data/', views_frota.get_lote_produto_data, name='lote_produto_data'),
-    path('api/produto-busca/', views_frota.produto_busca, name='produto_busca'),
-
-    # Pedágios
-    path('frota/pedagios/', views_frota.pedagio_list, name='pedagio_list'),
-    path('frota/pedagios/novo/', views_frota.pedagio_create, name='pedagio_create'),
-    path('frota/pedagios/<int:pk>/editar/', views_frota.pedagio_update, name='pedagio_update'),
-    path('frota/pedagios/<int:pk>/excluir/', views_frota.pedagio_delete, name='pedagio_delete'),
-
-    # Viagens (frota)
-    path('frota/viagens/', views_frota.viagem_list, name='viagem_list'),
-    path('frota/viagens/nova/', views_frota.viagem_create, name='viagem_create'),
-    path('frota/viagens/<int:pk>/', views_frota.viagem_detail, name='viagem_frota_detail'),
-    path('frota/viagens/<int:pk>/editar/', views_frota.viagem_update, name='viagem_frota_update'),
-    path('frota/viagens/<int:pk>/excluir/', views_frota.viagem_delete, name='viagem_frota_delete'),
-
-    # Telemetria
-    path('frota/telemetria/', views_frota.telemetria_list, name='telemetria_list'),
-    path('frota/telemetria/nova/', views_frota.telemetria_create, name='telemetria_create'),
-    path('frota/telemetria/<int:pk>/excluir/', views_frota.telemetria_delete, name='telemetria_delete'),
-    path('frota/telemetria/mapa/<int:vehicle_pk>/', views_frota.telemetria_mapa, name='telemetria_mapa'),
-    path('frota/api/telemetria/', views_frota.api_telemetria_ingest, name='api_telemetria_ingest'),
+    # Módulo Frota agora em /frota/ (app frota)
 
 ]

@@ -15,11 +15,12 @@ from django.core.paginator import Paginator
 from decimal import Decimal
 from django.utils import timezone
 
-from .models import (
+from mip.models import (
     MonitoramentoMIP, PragaNoMonitoramento, PontoMonitoramento,
-    EstagioDesenvolvimento, Praga, Talhao, Safra
+    EstagioDesenvolvimento,
 )
-from .forms import (
+from .models import Praga, Talhao, Safra
+from mip.forms import (
     MonitoramentoMIPForm, PragaNoMonitoramentoForm,
     PontoMonitoramentoForm, EstagioDesenvolvimentoForm
 )

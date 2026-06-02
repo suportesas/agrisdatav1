@@ -63,7 +63,8 @@ import json
 from decimal import Decimal
 from .models import UnidadeMedida, Categoria, SubCategoria, Produto, ProdutoTributacao, NaturezaOperacao, ProdutoDefensivoCultura, ProdutoFornecedor
 from .forms import UnidadeMedidaForm, CategoriaForm, SubCategoriaForm, ProdutoForm, ProdutoTributacaoForm, NaturezaOperacaoForm, ProdutoDefensivoCulturaForm
-from cadastros.models import NCM, CFOP, Fornecedor, EmprestimoProdutor
+from cadastros.models import NCM, CFOP, Fornecedor
+from emprestimos.models import EmprestimoProdutor
 
 
 # ============== DASHBOARD ==============
@@ -564,7 +565,7 @@ def produto_delete(request, pk):
     # Verificar se tem dependências (apenas para avisar na tela)
     has_lotes = produto.lotes.exists()
     has_pedidos = produto.itens_pedido_compra.exists()
-    has_recebimentos = produto.itemrecebimento_set.exists()
+    has_recebimentos = produto.recebimentos_diretos.exists()
     
     return render(request, 'produtos/produto/produto_confirm_delete.html', {
         'object': produto,
@@ -707,7 +708,7 @@ def ajax_buscar_produtos(request):
     qs = Produto.objects.filter(
         categoria__empresa=empresa, ativo=True
     ).filter(
-        models.Q(nome__icontains=q) | models.Q(codigo__icontains=q)
+        Q(nome__icontains=q) | Q(codigo__icontains=q)
     ).select_related('ncm')[:15]
     results = [{'id': p.pk, 'text': f'{p.codigo} — {p.nome}'} for p in qs]
     return JsonResponse({'results': results})

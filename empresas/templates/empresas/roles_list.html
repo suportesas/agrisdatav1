@@ -1,448 +1,211 @@
 {% extends 'base.html' %}
 {% block extra_css %}
 <style>
-  /* Card de filtros */
-  .filter-card { 
-    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
-    border-radius: 16px; 
-    padding: 1.5rem; 
-    box-shadow: 0 4px 12px rgba(0,0,0,0.08); 
-    margin-bottom: 1.5rem; 
-    border: 1px solid rgba(0,0,0,0.05);
-  }
-  
-  /* Cards de Roles - Design moderno */
-  .role-card { 
-    background: white;
-    border-radius: 16px; 
-    padding: 1.5rem; 
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08); 
-    margin-bottom: 0.8rem; 
-    border: 2px solid transparent;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    position: relative;
-    overflow: hidden;
-  }
-  
-  /* Borda colorida sutil no topo */
-  .role-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 4px;
-    background: linear-gradient(90deg, #0d6efd, #0dcaf0);
-    opacity: 0;
-    transition: opacity 0.3s ease;
-  }
-  
-  .role-card:hover::before {
-    opacity: 1;
-  }
-  
-  .role-card:hover { 
-    transform: translateY(-4px); 
-    box-shadow: 0 8px 24px rgba(0,0,0,0.12);
-    border-color: rgba(13, 110, 253, 0.2);
-  }
-  
-  /* Estado selecionado */
-  .role-card.selected { 
-    background: linear-gradient(135deg, #e7f5ff 0%, #ffffff 100%);
-    border-color: #0d6efd;
-    box-shadow: 0 8px 32px rgba(13, 110, 253, 0.15);
-    transform: translateY(-2px);
-  }
-  
-  .role-card.selected::before {
-    opacity: 1;
-    height: 6px;
-  }
-  
-  .role-card.dimmed { 
-    opacity: 0.4; 
-    filter: grayscale(20%); 
-    transform: none; 
-  }
-  
-  /* Tipografia */
-  .role-card .role-name { 
-    color: #212529;
-    font-size: 1.1rem;
-    font-weight: 600;
-  }
-  
-  .role-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  
-  /* Badges modernos */
-  .badge {
-    font-weight: 500;
-    padding: 0.4rem 0.8rem;
-    font-size: 0.8rem;
-    border-radius: 8px;
-  }
-  
-  /* Botões de ação */
-  .role-card .btn-sm {
-    font-size: 0.85rem;
-    padding: 0.5rem 1rem;
-    font-weight: 500;
-    border-radius: 8px;
-  }
-  
-  .role-card .btn-primary {
-    background: linear-gradient(135deg, #0d6efd 0%, #0dcaf0 100%);
-    border: none;
-    color: white;
-  }
-  
-  .role-card .btn-primary:hover {
-    background: linear-gradient(135deg, #0b5ed7 0%, #0aa2c0 100%);
-    transform: scale(1.02);
-  }
-  
-  /* Empty state */
-  .empty-state { 
-    text-align: center; 
-    padding: 3rem 1rem;
-    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
-    border-radius: 16px;
-    border: 2px dashed #dee2e6;
-  }
-  
-  /* Header toolbar */
-  .roles-header-card {
-    background: linear-gradient(135deg, #0d6efd 0%, #0dcaf0 100%);
-    border-radius: 16px;
-    padding: 2rem;
-    color: white;
-    margin-bottom: 2rem;
-    box-shadow: 0 4px 16px rgba(13, 110, 253, 0.2);
-  }
-  
-  .roles-header-card h2 {
-    color: white;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  }
-  
-  .roles-header-card .text-muted {
-    color: rgba(255,255,255,0.9) !important;
-  }
-  
-  /* Inputs e selects */
-  .filter-card .form-control,
-  .filter-card .form-select {
-    border-radius: 10px;
-    border: 1px solid #dee2e6;
-    padding: 0.6rem 1rem;
-    transition: all 0.2s ease;
-  }
-  
-  .filter-card .form-control:focus,
-  .filter-card .form-select:focus {
-    border-color: #0d6efd;
-    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.15);
-  }
-  
-  .filter-card .form-label {
-    color: #495057;
-    font-weight: 600;
-    margin-bottom: 0.5rem;
-  }
-  
-  /* Botões do header */
-  .btn-create-role {
-    background: white;
-    color: #0d6efd;
-    border: 2px solid white;
-    font-weight: 600;
-    padding: 0.6rem 1.5rem;
-    border-radius: 10px;
-    transition: all 0.2s ease;
-  }
-  
-  .btn-create-role:hover {
-    background: rgba(255,255,255,0.9);
-    transform: scale(1.05);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-  }
-  
-  /* Toggle button */
-  #toggle-hide {
-    border-radius: 10px;
-    border: 2px solid rgba(255,255,255,0.8);
-    color: white;
-    background: rgba(255,255,255,0.1);
-    backdrop-filter: blur(10px);
-    font-weight: 500;
-  }
+/* =====================================================
+   ROLES — Split-panel layout
+   ===================================================== */
 
-  /* View toggle */
-  .view-toggle .btn {
-    border: 2px solid rgba(255,255,255,0.8);
-    color: white;
-    background: rgba(255,255,255,0.12);
-    font-weight: 600;
-    border-radius: 10px;
-    padding: 0.45rem 0.9rem;
-  }
+/* Panel esquerdo: lista de roles */
+.roles-panel {
+  position: sticky;
+  top: 1rem;
+  max-height: calc(100vh - 6rem);
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #c4b5fd #f5f3ff;
+}
+.roles-panel::-webkit-scrollbar { width: 5px; }
+.roles-panel::-webkit-scrollbar-track { background: #f5f3ff; border-radius: 4px; }
+.roles-panel::-webkit-scrollbar-thumb { background: #c4b5fd; border-radius: 4px; }
 
-  .view-toggle .btn.active {
-    background: white;
-    color: #0d6efd;
-    border-color: white;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-  }
+/* Card de role */
+.role-item {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  padding: .75rem 1rem;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background .15s, box-shadow .15s;
+  border: 2px solid transparent;
+  margin-bottom: .35rem;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(0,0,0,.06);
+}
+.role-item:hover {
+  background: #faf5ff;
+  border-color: #e9d5ff;
+}
+.role-item.active {
+  background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%);
+  border-color: #7c3aed;
+  box-shadow: 0 2px 12px rgba(124,58,237,.15);
+}
+.role-item .role-icon {
+  width: 36px; height: 36px;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1rem; flex-shrink: 0;
+}
+.role-item.builtin .role-icon  { background: #fef9c3; color: #a16207; }
+.role-item:not(.builtin) .role-icon { background: #f0fdf4; color: #166534; }
+.role-item .role-info { flex: 1; min-width: 0; }
+.role-item .role-name  { font-weight: 600; font-size: .9rem; color: #111; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.role-item .role-meta  { font-size: .75rem; color: #6b7280; }
+.role-item .role-badge { flex-shrink: 0; }
 
-  .view-toggle .btn:hover {
-    background: rgba(255,255,255,0.25);
-    border-color: white;
-  }
-  
-  #toggle-hide:hover {
-    background: rgba(255,255,255,0.2);
-    border-color: white;
-  }
-  
-  /* Responsivo */
-  .roles-header .input-group-sm { max-width: 280px; }
-  .roles-header .btn-sm { padding-top: .28rem; padding-bottom: .28rem; }
-  
-  @media (max-width: 767px){
-    .roles-header .input-group-sm{ max-width: 100%; }
-    .roles-header .d-inline-flex{ flex-wrap:wrap; gap:.4rem; }
-    .role-card { padding: 1rem; }
-    .filter-card { padding: 1rem; }
-  }
-  
-  /* Animação de entrada */
-  @keyframes fadeInUp {
-    from {
-      opacity: 0;
-      transform: translateY(20px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-  
-  .role-card {
-    animation: fadeInUp 0.4s ease-out;
+/* Painel de permissões */
+.perms-panel {
+  background: #fff;
+  border-radius: 14px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 2px 12px rgba(0,0,0,.06);
+  min-height: 400px;
+}
+.perms-panel-header {
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid #f0f0f0;
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .75rem;
+}
+.perms-panel-body {
+  padding: 1rem 1.5rem;
+}
 
-    /* ========================================= */
-    /* ESTILOS DA TABELA DE PERMISSÕES */
-    /* ========================================= */
-  
-    .permissions-table-wrapper {
-      background: white;
-      border-radius: 16px;
-      padding: 0;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-      margin-bottom: 2rem;
-      overflow: hidden;
-      border: 1px solid #e9ecef;
-    }
-  
-    .permissions-table {
-      width: 100%;
-      margin-bottom: 0;
-      border-collapse: separate;
-      border-spacing: 0;
-    }
-  
-    .permissions-table thead {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      position: sticky;
-      top: 0;
-      z-index: 100;
-    }
-  
-    .permissions-table thead th {
-      padding: 1.2rem 1rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      font-size: 0.75rem;
-      letter-spacing: 1px;
-      color: white;
-      border: none;
-      text-shadow: 0 1px 2px rgba(0,0,0,0.2);
-    }
-  
-    .permissions-table tbody tr {
-      border-bottom: 1px solid #f0f0f0;
-      transition: all 0.25s ease;
-    }
-  
-    .permissions-table tbody tr:hover:not(.module-group-header) {
-      background: linear-gradient(90deg, #f8f9ff 0%, #ffffff 100%);
-      transform: translateX(4px);
-      box-shadow: -4px 0 0 0 #667eea;
-    }
-  
-    .permissions-table tbody td {
-      padding: 1.1rem 1rem;
-      vertical-align: middle;
-      border: none;
-    }
-  
-    .permissions-table tbody td:first-child {
-      font-weight: 600;
-      color: #212529;
-      padding-left: 1.5rem;
-    }
-  
-    .permissions-table tbody td.text-center {
-      text-align: center;
-    }
-  
-    .permission-checkbox {
-      width: 26px;
-      height: 26px;
-      cursor: pointer;
-      accent-color: #1a73e8;
-      transition: all 0.25s ease;
-      border-radius: 6px;
-    }
-  
-    .permission-checkbox:hover {
-      transform: scale(1.3);
-      box-shadow: 0 0 0 4px rgba(26, 115, 232, 0.1);
-    }
-  
-    .permission-checkbox:checked {
-      accent-color: #10b981;
-      filter: drop-shadow(0 2px 4px rgba(16, 185, 129, 0.3));
-    }
-  
-    .permission-icon {
-      display: inline-block;
-      width: 36px;
-      height: 36px;
-      line-height: 36px;
-      border-radius: 10px;
-      text-align: center;
-      font-size: 1.1rem;
-      margin-right: 0.5rem;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-  
-    .icon-add { background: linear-gradient(135deg, #d4f4dd 0%, #a7f3d0 100%); color: #065f46; }
-    .icon-change { background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); color: #1e40af; }
-    .icon-delete { background: linear-gradient(135deg, #fecaca 0%, #fca5a5 100%); color: #991b1b; }
-    .icon-view { background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); color: #92400e; }
-  
-    .module-group-header {
-      background: linear-gradient(135deg, #e8f4fd 0%, #d4e9f7 100%);
-      color: #1a73e8;
-      font-weight: 800;
-      font-size: 1.1rem;
-      letter-spacing: 0.5px;
-      border-left: 6px solid #1a73e8;
-      border-top: none;
-      border-bottom: 2px solid #1a73e8;
-      box-shadow: inset 0 1px 3px rgba(26, 115, 232, 0.1);
-    }
-  
-    .module-group-header td {
-      padding: 1.3rem 1.5rem !important;
-      color: #1a73e8 !important;
-      font-weight: 800 !important;
-    }
-  
-    .module-group-header .module-icon-large {
-      font-size: 1.6rem;
-      margin-right: 0.75rem;
-      display: inline-block;
-      vertical-align: middle;
-      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
-    }
-  
-    .module-group-header .badge {
-      background: white !important;
-      color: #1a73e8 !important;
-      border: 2px solid #1a73e8;
-      font-weight: 700;
-      padding: 0.35rem 0.75rem;
-      font-size: 0.85rem;
-      border-radius: 20px;
-    }
-  
-    .permissions-table tbody tr:not(.module-group-header) td:first-child {
-      font-weight: 500;
-      color: #495057;
-      padding-left: 3.5rem;
-      position: relative;
-      font-size: 0.95rem;
-    }
-  
-    .permissions-table tbody tr:not(.module-group-header) td:first-child::before {
-      content: '•';
-      position: absolute;
-      left: 2.5rem;
-      color: #cbd5e1;
-      font-size: 1.5rem;
-      font-weight: bold;
-    }
-  
-    .permissions-table tbody tr:not(.module-group-header) {
-      background: white;
-    }
-  
-    .permissions-table tbody tr:not(.module-group-header):nth-child(even) {
-      background: #fafbfc;
-    }
-  
-    .permissions-table tbody tr:not(.module-group-header):hover {
-      background: linear-gradient(90deg, #eff6ff 0%, #ffffff 100%) !important;
-      box-shadow: -4px 0 0 0 #1a73e8 !important;
-    }
-  
-    .actions-bar {
-      background: white;
-      border-radius: 16px;
-      padding: 1.5rem;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-      margin-bottom: 2rem;
-      border: 1px solid rgba(0,0,0,0.05);
-    }
-  
-    .btn-save-perms {
-      background: linear-gradient(135deg, #198754 0%, #157347 100%);
-      border: none;
-      color: white;
-      font-weight: 600;
-      padding: 0.7rem 2rem;
-      border-radius: 10px;
-      transition: all 0.2s ease;
-    }
-  
-    .btn-save-perms:hover {
-      transform: scale(1.05);
-      box-shadow: 0 4px 12px rgba(25, 135, 84, 0.3);
-    }
-  
-    .table-scroll {
-      max-height: 70vh;
-      overflow-y: auto;
-      border-radius: 12px;
-    }
-  
-    .table-scroll::-webkit-scrollbar { width: 8px; }
-    .table-scroll::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
-    .table-scroll::-webkit-scrollbar-thumb { background: #888; border-radius: 10px; }
-    .table-scroll::-webkit-scrollbar-thumb:hover { background: #555; }
-  }
+/* Tabela de permissões */
+.perms-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+.perms-table th {
+  padding: .6rem 1rem;
+  font-size: .72rem;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: #6b7280;
+  font-weight: 700;
+  border-bottom: 2px solid #f3f4f6;
+  background: #fafafa;
+}
+.perms-table td {
+  padding: .55rem .75rem;
+  border-bottom: 1px solid #f9fafb;
+  vertical-align: middle;
+}
+.perms-table tbody tr:hover { background: #fafbff; }
+
+/* Cabeçalho de módulo */
+.perms-module-header td {
+  padding: .75rem 1rem !important;
+  background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 60%, #faf5ff 100%) !important;
+  font-weight: 700;
+  font-size: .85rem;
+  color: #5b21b6;
+  border-top: 2px solid #ede9fe !important;
+  border-bottom: 1px solid #ddd6fe !important;
+}
+.perms-module-header:first-child td { border-top: none !important; }
+
+/* Checkbox de permissão */
+.perm-cb {
+  width: 18px; height: 18px;
+  cursor: pointer;
+  accent-color: #7c3aed;
+}
+.perm-cb:hover { transform: scale(1.15); }
+
+/* Ícones de permissão */
+.perm-icon {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 22px; height: 22px; border-radius: 5px;
+  font-size: .75rem;
+}
+.perm-icon.add    { background:#dcfce7; color:#166534; }
+.perm-icon.change { background:#dbeafe; color:#1e40af; }
+.perm-icon.delete { background:#fee2e2; color:#991b1b; }
+.perm-icon.view   { background:#fef3c7; color:#92400e; }
+
+/* Barra de ações das permissões */
+.perms-toolbar {
+  display: flex; align-items: center; gap: .5rem; flex-wrap: wrap;
+}
+
+/* Badge de contagem */
+.module-count {
+  font-size: .75rem; padding: .2rem .6rem;
+  border-radius: 20px; font-weight: 600;
+  background: #ede9fe; color: #5b21b6;
+}
+.module-count.full { background: #d1fae5; color: #065f46; }
+.module-count.empty { background: #f3f4f6; color: #9ca3af; }
+
+/* Indicador de alterações */
+.unsaved-badge {
+  font-size: .78rem; padding: .25rem .75rem; border-radius: 20px;
+  background: #fef3c7; color: #92400e; font-weight: 600;
+  border: 1px solid #fcd34d;
+}
+.unsaved-badge.hidden { display: none; }
+
+/* Toast */
+.roles-toast {
+  position: fixed; bottom: 1.5rem; right: 1.5rem;
+  z-index: 9999; min-width: 280px;
+  border-radius: 12px;
+  padding: .75rem 1.25rem;
+  font-weight: 500;
+  box-shadow: 0 8px 24px rgba(0,0,0,.15);
+  animation: slideInUp .3s ease;
+  display: flex; align-items: center; gap: .5rem;
+}
+.roles-toast.success { background: #065f46; color: #fff; }
+.roles-toast.danger  { background: #991b1b; color: #fff; }
+.roles-toast.info    { background: #1e40af; color: #fff; }
+@keyframes slideInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Empty state */
+.empty-state { text-align: center; padding: 4rem 2rem; color: #9ca3af; }
+.empty-state i { font-size: 3.5rem; margin-bottom: 1rem; display: block; opacity: .4; }
+
+/* Scroll da tabela */
+.perms-scroll {
+  max-height: 65vh;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #c4b5fd #f5f3ff;
+}
+.perms-scroll::-webkit-scrollbar { width: 5px; }
+.perms-scroll::-webkit-scrollbar-track { background: #f5f3ff; border-radius: 4px; }
+.perms-scroll::-webkit-scrollbar-thumb { background: #c4b5fd; border-radius: 4px; }
+
+/* Botão salvar */
+.btn-save-perms {
+  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+  border: none; color: #fff; font-weight: 600;
+  padding: .6rem 2rem; border-radius: 10px;
+  transition: all .2s;
+}
+.btn-save-perms:hover { filter: brightness(1.1); transform: scale(1.02); color: #fff; }
+.btn-save-perms:disabled { opacity: .6; transform: none; }
+
+/* Nome do modelo em PT */
+.model-label { color: #374151; font-size: .88rem; font-weight: 500; }
+
+/* Mobile */
+@media (max-width: 991px) {
+  .roles-panel { position: static; max-height: 300px; }
+  .perms-scroll { max-height: 50vh; }
+}
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4" style="max-width: 1400px;">
+
+  <!-- Breadcrumb -->
   <nav aria-label="breadcrumb" class="mb-3">
     <ol class="breadcrumb">
       <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}"><i class="bi bi-house-door"></i> Dashboard</a></li>
@@ -450,380 +213,321 @@
     </ol>
   </nav>
 
-  <!-- Header moderno -->
-  <div class="roles-header-card mb-4">
-    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
-      <div>
-        <h2 class="fw-bold mb-2">
-          <i class="bi bi-shield-lock"></i> Funções e Cargos
-        </h2>
-        {% if request.user.empresa %}
-        <p class="mb-0" style="color: rgba(255,255,255,0.95);">
-          <i class="bi bi-building"></i> <strong>{{ request.user.empresa.nome }}</strong>
-        </p>
-        <p class="small mb-0" style="color: rgba(255,255,255,0.8);">
-          Gerencie papéis e permissões específicas da sua empresa
-        </p>
-        {% else %}
-        <p class="mb-0" style="color: rgba(255,255,255,0.9);">Gerencie papéis e permissões do sistema</p>
-        {% endif %}
-      </div>
-      <div class="d-flex gap-2 align-items-center">
-        <div class="btn-group view-toggle" role="group" aria-label="Modo de visualizacao">
-          <button type="button" class="btn btn-sm btn-light" id="roles-view-cards" aria-pressed="true">
-            <i class="bi bi-grid-3x3-gap"></i> Cards
-          </button>
-          <button type="button" class="btn btn-sm btn-light" id="roles-view-list" aria-pressed="false">
-            <i class="bi bi-list"></i> Lista
-          </button>
+  <!-- Cabeçalho -->
+  <div class="d-flex align-items-start justify-content-between flex-wrap gap-3 mb-4">
+    <div>
+      <h2 class="fw-bold mb-1" style="color:#7c3aed;">
+        <i class="bi bi-shield-lock me-2"></i>Funções e Permissões
+      </h2>
+      {% if request.user.empresa %}
+      <p class="text-muted mb-0 small">
+        <i class="bi bi-building me-1"></i><strong>{{ request.user.empresa.nome }}</strong>
+        — {{ total_roles }} função{{ total_roles|pluralize:",ões" }}
+        ({{ builtin_roles }} padrão, {{ custom_roles }} personalizada{{ custom_roles|pluralize }})
+      </p>
+      {% endif %}
+    </div>
+    {% if request.user.is_superuser or request.user.is_admin_empresa %}
+    <a href="{% url 'empresas:role_create' %}" class="btn btn-sm fw-semibold"
+       style="background:#7c3aed;color:#fff;border-radius:10px;padding:.5rem 1.2rem;">
+      <i class="bi bi-plus-circle me-1"></i> Nova Função
+    </a>
+    {% endif %}
+  </div>
+
+  <div class="row g-4">
+
+    <!-- ======================================================
+         COLUNA ESQUERDA: lista de roles
+         ====================================================== -->
+    <div class="col-lg-4">
+      <div class="roles-panel">
+
+        <!-- Busca -->
+        <div class="mb-3 position-relative">
+          <i class="bi bi-search position-absolute" style="left:.85rem;top:.65rem;color:#9ca3af;font-size:.9rem;"></i>
+          <input id="role-search" type="text" class="form-control ps-4"
+                 style="border-radius:10px;border:1px solid #e5e7eb;"
+                 placeholder="Buscar função..." autocomplete="off">
         </div>
-        <button id="toggle-hide" type="button" class="btn btn-sm" aria-pressed="false" title="Ocultar outras funções">
-          <i class="bi bi-eye-slash"></i> Ocultar outras
+
+        <!-- Lista de roles -->
+        <div id="roles-list">
+          {% for role in roles %}
+          <div class="role-item {% if role.builtin %}builtin{% endif %}"
+               data-role-id="{{ role.pk }}"
+               data-builtin="{{ role.builtin|lower }}"
+               data-name="{{ role.name|lower }}"
+               tabindex="0"
+               title="Clique para ver permissões">
+            <div class="role-icon">
+              {% if role.builtin %}
+              <i class="bi bi-star-fill"></i>
+              {% else %}
+              <i class="bi bi-person-badge"></i>
+              {% endif %}
+            </div>
+            <div class="role-info">
+              <div class="role-name">{{ role.name }}</div>
+              <div class="role-meta">
+                {% if role.builtin %}<span class="badge text-bg-warning me-1" style="font-size:.7rem;">Padrão</span>{% endif %}
+                {% if role.num_usuarios %}
+                  {{ role.num_usuarios }} usuário{{ role.num_usuarios|pluralize }}
+                {% else %}
+                  Sem usuários
+                {% endif %}
+              </div>
+            </div>
+            <div class="d-flex flex-column gap-1 align-items-end">
+              {% if request.user.is_superuser or request.user.is_admin_empresa %}
+              {% if not role.builtin or request.user.is_superuser %}
+              <a href="{% url 'empresas:role_update' role.pk %}"
+                 class="btn btn-link btn-sm p-0 text-muted" title="Editar"
+                 onclick="event.stopPropagation();">
+                <i class="bi bi-pencil" style="font-size:.85rem;"></i>
+              </a>
+              <button class="btn btn-link btn-sm p-0 text-muted btn-clone-role"
+                      data-role-id="{{ role.pk }}"
+                      data-role-name="{{ role.name }}"
+                      title="Clonar função"
+                      onclick="event.stopPropagation();">
+                <i class="bi bi-copy" style="font-size:.85rem;"></i>
+              </button>
+              {% endif %}
+              {% endif %}
+            </div>
+          </div>
+          {% empty %}
+          <div class="empty-state">
+            <i class="bi bi-shield-x"></i>
+            <p class="fw-semibold">Nenhuma função cadastrada</p>
+            <a href="{% url 'empresas:role_create' %}" class="btn btn-sm btn-primary">
+              <i class="bi bi-plus-circle"></i> Criar primeira função
+            </a>
+          </div>
+          {% endfor %}
+        </div>
+
+        <p id="no-results" class="text-muted small text-center mt-2 d-none">
+          Nenhuma função encontrada.
+        </p>
+      </div>
+    </div>
+
+    <!-- ======================================================
+         COLUNA DIREITA: painel de permissões
+         ====================================================== -->
+    <div class="col-lg-8">
+      <div class="perms-panel" id="perms-panel">
+
+        <!-- Estado inicial: nenhuma role selecionada -->
+        <div id="perms-empty" class="empty-state">
+          <i class="bi bi-arrow-left-circle"></i>
+          <p class="fw-semibold mb-1">Selecione uma função</p>
+          <p class="small">Clique em uma função à esquerda para ver e editar suas permissões.</p>
+        </div>
+
+        <!-- Conteúdo de permissões (carregado via JS) -->
+        <div id="perms-content" class="d-none">
+          <div class="perms-panel-header">
+            <div>
+              <h6 class="mb-0 fw-bold" id="perms-role-name" style="color:#7c3aed;">—</h6>
+              <small class="text-muted" id="perms-role-meta">Clique nos checkboxes para editar</small>
+            </div>
+            <div class="perms-toolbar">
+              <span class="unsaved-badge hidden" id="unsaved-badge">
+                <i class="bi bi-circle-fill me-1" style="font-size:.5rem;"></i>
+                <span id="unsaved-count">0</span> alteração(ões) não salva(s)
+              </span>
+              <button id="btn-select-all" class="btn btn-outline-secondary btn-sm" title="Marcar todas as permissões">
+                <i class="bi bi-check-all"></i>
+              </button>
+              <button id="btn-deselect-all" class="btn btn-outline-secondary btn-sm" title="Desmarcar todas as permissões">
+                <i class="bi bi-x-lg"></i>
+              </button>
+              <button id="btn-save-perms" class="btn-save-perms btn" disabled>
+                <i class="bi bi-floppy me-1"></i> Salvar
+              </button>
+            </div>
+          </div>
+
+          <!-- Loading skeleton -->
+          <div id="perms-loading" class="p-4 text-center d-none">
+            <div class="spinner-border" style="color:#7c3aed;" role="status">
+              <span class="visually-hidden">Carregando...</span>
+            </div>
+            <p class="text-muted mt-2 mb-0">Carregando permissões...</p>
+          </div>
+
+          <!-- Tabela -->
+          <div class="perms-scroll" id="perms-table-wrap">
+            <table class="perms-table" id="perms-table">
+              <thead>
+                <tr>
+                  <th style="width:40%">Recurso</th>
+                  <th class="text-center" style="width:15%">
+                    <span class="perm-icon add d-inline-flex me-1"><i class="bi bi-plus"></i></span> Criar
+                  </th>
+                  <th class="text-center" style="width:15%">
+                    <span class="perm-icon change d-inline-flex me-1"><i class="bi bi-pencil"></i></span> Editar
+                  </th>
+                  <th class="text-center" style="width:15%">
+                    <span class="perm-icon delete d-inline-flex me-1"><i class="bi bi-trash"></i></span> Excluir
+                  </th>
+                  <th class="text-center" style="width:15%">
+                    <span class="perm-icon view d-inline-flex me-1"><i class="bi bi-eye"></i></span> Ver
+                  </th>
+                </tr>
+              </thead>
+              <tbody id="perms-tbody">
+              </tbody>
+            </table>
+          </div>
+
+          <div class="p-3 border-top d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <small class="text-muted" id="perms-total-label">—</small>
+            <button id="btn-save-perms-bottom" class="btn-save-perms btn" disabled>
+              <i class="bi bi-floppy me-1"></i> Salvar Permissões
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /row -->
+</div><!-- /container -->
+
+<!-- Modal Clonar Role -->
+<div class="modal fade" id="cloneModal" tabindex="-1" aria-labelledby="cloneModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border-radius:16px;border:none;box-shadow:0 20px 60px rgba(0,0,0,.2);">
+      <div class="modal-header border-0 pb-0">
+        <h5 class="modal-title fw-bold" id="cloneModalLabel">
+          <i class="bi bi-copy me-2" style="color:#7c3aed;"></i>Clonar Função
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body pt-2">
+        <p class="text-muted small mb-3">
+          Cria uma nova função copiando todas as permissões de
+          <strong id="clone-source-name">—</strong>.
+        </p>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Nome da nova função <span class="text-danger">*</span></label>
+          <input type="text" id="clone-name" class="form-control" placeholder="Ex.: Gerente de Compras" maxlength="100">
+          <div id="clone-error" class="text-danger small mt-1 d-none"></div>
+        </div>
+        <div class="mb-2">
+          <label class="form-label fw-semibold text-muted">Descrição (opcional)</label>
+          <input type="text" id="clone-desc" class="form-control" placeholder="Descrição da nova função" maxlength="255">
+        </div>
+      </div>
+      <div class="modal-footer border-0 pt-0">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" id="clone-confirm" class="btn fw-semibold"
+                style="background:#7c3aed;color:#fff;border-radius:10px;">
+          <i class="bi bi-copy me-1"></i> Clonar
         </button>
-        {% if request.user.is_superuser or request.user.is_admin_empresa %}
-        <a href="{% url 'empresas:role_create' %}" class="btn btn-create-role">
-          <i class="bi bi-plus-circle-fill"></i> Nova Função
-        </a>
-        {% endif %}
-      </div>
-    </div>
-    
-    <!-- Estatísticas rápidas -->
-    <div class="row g-3 mt-3">
-      <div class="col-md-4">
-        <div class="d-flex align-items-center">
-          <div class="me-3" style="font-size: 2rem;">
-            <i class="bi bi-collection"></i>
-          </div>
-          <div>
-            <div style="font-size: 1.5rem; font-weight: 700;">{{ total_roles }}</div>
-            <div style="font-size: 0.9rem; opacity: 0.9;">Total de Funções</div>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-4">
-        <div class="d-flex align-items-center">
-          <div class="me-3" style="font-size: 2rem;">
-            <i class="bi bi-star-fill"></i>
-          </div>
-          <div>
-            <div style="font-size: 1.5rem; font-weight: 700;">{{ builtin_roles }}</div>
-            <div style="font-size: 0.9rem; opacity: 0.9;">Funções Padrão</div>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-4">
-        <div class="d-flex align-items-center">
-          <div class="me-3" style="font-size: 2rem;">
-            <i class="bi bi-pencil-square"></i>
-          </div>
-          <div>
-            <div style="font-size: 1.5rem; font-weight: 700;">{{ custom_roles }}</div>
-            <div style="font-size: 0.9rem; opacity: 0.9;">Personalizadas</div>
-          </div>
-        </div>
       </div>
     </div>
   </div>
-
-  <!-- Filtros -->
-  <div class="filter-card mb-3">
-    <form method="get" id="rolesFilterForm">
-      <div class="row g-3">
-
-        <div class="col-md-6">
-          <label class="form-label fw-semibold"><i class="bi bi-search"></i> Pesquisar</label>
-          <input id="role-search" type="text" name="q" class="form-control" placeholder="Nome da função (ex.: Proprietário, Almoxarife)" aria-label="Pesquisar função" />
-        </div>
-
-        <div class="col-md-2">
-          <label class="form-label fw-semibold">Mostrar</label>
-          <select id="role-filter" class="form-select" aria-label="Filtrar tipo de função">
-            <option value="all">Todas</option>
-            <option value="builtin">Padrão do sistema</option>
-            <option value="custom">Criadas</option>
-          </select>
-        </div>
-
-        <div class="col-md-3">
-          <label class="form-label fw-semibold">Template</label>
-          <div class="d-flex gap-2 align-items-center">
-            <select id="bulk-template-select" class="form-select" aria-label="Selecionar template para aplicar">
-              <option value="">-- Selecionar Template --</option>
-            </select>
-            <span id="bulk-template-loading" class="spinner-border spinner-border-sm ms-2 visually-hidden" role="status" aria-hidden="true"></span>
-            <button id="bulk-apply" type="button" class="btn btn-outline-success" aria-label="Aplicar template às funções selecionadas" disabled>Aplicar</button>
-          </div>
-          <div id="bulk-template-status" class="small text-muted mt-1" aria-live="polite"></div>
-        </div>
-
-        <div class="col-md-1 d-flex align-items-end">
-          <button type="button" id="reset-filters" class="btn btn-outline-secondary w-100" aria-label="Resetar filtros">Reset</button>
-        </div>
-
-      </div>
-    </form>
-  </div>
-
-  <div id="roles-area">
-    {% include 'empresas/_roles_table.html' %}
-  </div>
-
-  <hr>
-  <div id="permissions-area"></div>
-
 </div>
 
-<script>
-// Função para confirmar exclusão de role
-function confirmDelete(roleId, roleName) {
-  if (confirm(`Tem certeza que deseja excluir a função "${roleName}"?\n\nEsta ação não pode ser desfeita.`)) {
-    // TODO: Implementar a exclusão via AJAX
-    alert('Funcionalidade de exclusão será implementada em breve.');
-  }
-}
-
-function applyFilters(){
-  const q = document.getElementById('role-search').value.toLowerCase();
-  const filter = document.getElementById('role-filter').value;
-  let visibleCount = 0;
-  
-  document.querySelectorAll('.role-card').forEach(card=>{
-    const name = card.querySelector('.role-name').textContent.toLowerCase();
-    const builtin = card.dataset.builtin === 'true';
-    let show = name.includes(q);
-    if(filter === 'builtin' && !builtin) show = false;
-    if(filter === 'custom' && builtin) show = false;
-    
-    if(show) {
-      card.style.display = '';
-      visibleCount++;
-    } else {
-      card.style.display = 'none';
-    }
-  });
-
-  document.querySelectorAll('.role-row').forEach(row=>{
-    const name = (row.dataset.name || '').toLowerCase();
-    const builtin = row.dataset.builtin === 'true';
-    let show = name.includes(q);
-    if(filter === 'builtin' && !builtin) show = false;
-    if(filter === 'custom' && builtin) show = false;
-
-    if(show) {
-      row.style.display = '';
-      visibleCount++;
-    } else {
-      row.style.display = 'none';
-    }
-  });
-  
-  // Mostra mensagem se nenhum resultado
-  const emptyMsg = document.getElementById('no-results-msg');
-  if(emptyMsg) emptyMsg.remove();
-  
-  if(visibleCount === 0 && (q || filter !== 'all')) {
-    const rolesArea = document.getElementById('roles-area');
-    const msg = document.createElement('div');
-    msg.id = 'no-results-msg';
-    msg.className = 'alert alert-info';
-    msg.innerHTML = '<i class="bi bi-info-circle"></i> Nenhuma função encontrada com os filtros aplicados.';
-    rolesArea.appendChild(msg);
-  }
-}
-
-document.addEventListener('DOMContentLoaded', function(){
-  const viewKey = 'roles_view_mode';
-  const viewCardsBtn = document.getElementById('roles-view-cards');
-  const viewListBtn = document.getElementById('roles-view-list');
-  const cardsView = document.querySelector('.roles-view-cards');
-  const listView = document.querySelector('.roles-view-list');
-  const search = document.getElementById('role-search');
-  const filter = document.getElementById('role-filter');
-  const resetBtn = document.getElementById('reset-filters');
-  
-  // Focus / hide state persisted in localStorage
-  const hideKey = 'roles_hide_others';
-  const hideBtn = document.getElementById('toggle-hide');
-  let hideState = localStorage.getItem(hideKey) === '1';
-  
-  function updateHideBtn(){ 
-    if(hideBtn) {
-      if(hideState) {
-        hideBtn.innerHTML = '<i class="bi bi-eye"></i> Mostrar todas';
-      } else {
-        hideBtn.innerHTML = '<i class="bi bi-eye-slash"></i> Ocultar outras';
-      }
-      hideBtn.setAttribute('aria-pressed', hideState ? 'true' : 'false'); 
-    } 
-  }
-  
-  function applyHideState(){
-    const sel = document.querySelector('.role-card.selected');
-    document.querySelectorAll('.role-card').forEach(r=>{
-      if(!sel){ r.classList.remove('dimmed'); r.classList.remove('d-none'); return; }
-      if(r === sel){ r.classList.remove('dimmed'); r.classList.remove('d-none'); }
-      else {
-        if(hideState) r.classList.add('d-none');
-        else r.classList.add('dimmed');
-      }
-    });
-
-    const selRow = document.querySelector('.role-row.selected');
-    document.querySelectorAll('.role-row').forEach(r=>{
-      if(!selRow){ r.classList.remove('table-active'); r.classList.remove('d-none'); return; }
-      if(r === selRow){ r.classList.add('table-active'); r.classList.remove('d-none'); }
-      else {
-        if(hideState) r.classList.add('d-none');
-        else r.classList.remove('table-active');
-      }
-    });
-  }
-
-  function applyViewMode(mode){
-    if(!cardsView || !listView) return;
-    if(mode === 'list'){
-      cardsView.classList.add('d-none');
-      listView.classList.remove('d-none');
-      if(viewListBtn) viewListBtn.classList.add('active');
-      if(viewCardsBtn) viewCardsBtn.classList.remove('active');
-    } else {
-      listView.classList.add('d-none');
-      cardsView.classList.remove('d-none');
-      if(viewCardsBtn) viewCardsBtn.classList.add('active');
-      if(viewListBtn) viewListBtn.classList.remove('active');
-    }
-    localStorage.setItem(viewKey, mode);
-  }
-  
-  // Expose for external use
-  window.applyRolesHideState = applyHideState;
-
-  if(search) search.addEventListener('input', applyFilters);
-  if(filter) filter.addEventListener('change', applyFilters);
-  
-  if(resetBtn){
-    resetBtn.addEventListener('click', function(){
-      // Resetar campos de busca e filtro
-      document.getElementById('role-search').value = '';
-      document.getElementById('role-filter').value = 'all';
-      
-      // Resetar template selecionado
-      const bulkTemplate = document.getElementById('bulk-template-select');
-      if(bulkTemplate) bulkTemplate.value = '';
-      
-      // Desabilitar botão de aplicar
-      const bulkApplyBtn = document.getElementById('bulk-apply');
-      if(bulkApplyBtn) bulkApplyBtn.disabled = true;
-      
-      // Desmarcar todos os checkboxes de seleção
-      document.querySelectorAll('.role-select').forEach(cb => cb.checked = false);
-      
-      // Remover seleção visual de cards
-      document.querySelectorAll('.role-card').forEach(card => {
-        card.classList.remove('selected');
-        card.classList.remove('dimmed');
-        card.classList.remove('d-none');
-      });
-      
-      // Limpar status do template
-      const bulkStatus = document.getElementById('bulk-template-status');
-      if(bulkStatus) bulkStatus.textContent = '';
-      
-      // Limpar área de permissões
-      const permArea = document.getElementById('permissions-area');
-      if(permArea) permArea.innerHTML = '';
-      
-      // Resetar estado "ocultar outras"
-      hideState = false;
-      localStorage.setItem(hideKey, '0');
-      updateHideBtn();
-      
-      // Aplicar filtros
-      applyFilters();
-    });
-  }
-
-  if(viewCardsBtn){
-    viewCardsBtn.addEventListener('click', function(){ applyViewMode('cards'); });
-  }
-  if(viewListBtn){
-    viewListBtn.addEventListener('click', function(){ applyViewMode('list'); });
-  }
-  
-  // Toggle hide button
-  if(hideBtn){
-    hideBtn.addEventListener('click', function(){ 
-      hideState = !hideState; 
-      localStorage.setItem(hideKey, hideState ? '1' : '0'); 
-      updateHideBtn(); 
-      applyHideState(); 
-    });
-  }
-  
-  // Initialize hide state
-  updateHideBtn(); 
-  applyHideState();
-  applyViewMode(localStorage.getItem(viewKey) || 'cards');
-
-  // Use event delegation so handlers persist even if #roles-area is replaced
-  const rolesArea = document.getElementById('roles-area');
-  if(rolesArea){
-
-    rolesArea.addEventListener('click', function(e){
-      // Permission button (explicit)
-      const permBtn = e.target.closest('.btn-permissions');
-      if(permBtn){
-        e.preventDefault();
-        const rid = permBtn.dataset.roleId;
-        console.log('permissions button clicked', rid);
-        loadPermissions(rid);
-        // ensure visual selection when clicking the explicit permissions button
-        const card = document.querySelector('.role-card[data-role-id="'+rid+'"]');
-        if(card){ document.querySelectorAll('.role-card').forEach(r=>r.classList.remove('selected')); card.classList.add('selected'); applyHideState(); }
-        return;
-      }
-
-      const card = e.target.closest('.role-card');
-      if(!card) return;
-      console.log('role card clicked', card.dataset.roleId, e.target.tagName);
-      if(e.target.tagName.toLowerCase() === 'a' || e.target.closest('button')) return; // ignore clicks on other buttons
-      document.querySelectorAll('.role-card').forEach(r=>r.classList.remove('selected'));
-      card.classList.add('selected');
-      applyHideState();
-      loadPermissions(card.dataset.roleId);
-    });
-
-    rolesArea.addEventListener('click', function(e){
-      const row = e.target.closest('.role-row');
-      if(!row) return;
-      if(e.target.tagName.toLowerCase() === 'a' || e.target.closest('button')) return;
-
-      const alreadySelected = row.classList.contains('selected');
-      document.querySelectorAll('.role-row').forEach(r=>r.classList.remove('selected', 'table-active'));
-      if(alreadySelected){
-        document.querySelectorAll('.role-row').forEach(r=>r.classList.remove('d-none'));
-        return;
-      }
-
-      row.classList.add('selected', 'table-active');
-      document.querySelectorAll('.role-row').forEach(r=>{
-        if(r !== row) r.classList.add('d-none');
-      });
-      loadPermissions(row.dataset.roleId);
-    });
-
-    // Support keyboard selection (Enter / Space)
-    rolesArea.addEventListener('keydown', function(e){
-      if(e.key === 'Enter' || e.key === ' '){
-        const card = e.target.closest('.role-card');
-        if(card){ e.preventDefault(); card.click(); }
-      }
-    });
-  }
-});
-</script>
+{# URLs passados como data-attributes — evita {% url %} dentro de strings JS #}
+<div id="roles-url-config"
+     data-clone-url="{% url 'empresas:role_clone' role_id=0 %}"
+     data-perms-url="{% url 'empresas:role_permissions' role_id=0 %}"
+     class="d-none" aria-hidden="true"></div>
 
 {% include 'empresas/roles_js.html' %}
 
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+  // ── Busca de roles ──────────────────────────────────────────
+  const searchInput = document.getElementById('role-search');
+  const noResults   = document.getElementById('no-results');
+
+  searchInput.addEventListener('input', function () {
+    const q = this.value.toLowerCase().trim();
+    let visible = 0;
+    document.querySelectorAll('.role-item').forEach(item => {
+      const match = item.dataset.name.includes(q);
+      item.style.display = match ? '' : 'none';
+      if (match) visible++;
+    });
+    noResults.classList.toggle('d-none', !q || visible > 0);
+  });
+
+  // ── Seleção de role (clique no item) ───────────────────────
+  document.getElementById('roles-list').addEventListener('click', function (e) {
+    const item = e.target.closest('.role-item');
+    if (!item) return;
+    // Ignora cliques em botões de editar/clonar
+    if (e.target.closest('a, button')) return;
+
+    document.querySelectorAll('.role-item').forEach(i => i.classList.remove('active'));
+    item.classList.add('active');
+    loadPermissions(item.dataset.roleId);
+  });
+
+  // Teclado
+  document.getElementById('roles-list').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' || e.key === ' ') {
+      const item = e.target.closest('.role-item');
+      if (item) { e.preventDefault(); item.click(); }
+    }
+  });
+
+  // ── Clonar role ─────────────────────────────────────────────
+  let cloneRoleId = null;
+
+  document.getElementById('roles-list').addEventListener('click', function (e) {
+    const btn = e.target.closest('.btn-clone-role');
+    if (!btn) return;
+    cloneRoleId = btn.dataset.roleId;
+    document.getElementById('clone-source-name').textContent = btn.dataset.roleName;
+    document.getElementById('clone-name').value = btn.dataset.roleName + ' (cópia)';
+    document.getElementById('clone-desc').value = '';
+    document.getElementById('clone-error').classList.add('d-none');
+    new bootstrap.Modal(document.getElementById('cloneModal')).show();
+  });
+
+  document.getElementById('clone-confirm').addEventListener('click', async function () {
+    const name = document.getElementById('clone-name').value.trim();
+    const desc = document.getElementById('clone-desc').value.trim();
+    const errEl = document.getElementById('clone-error');
+    if (!name) { errEl.textContent = 'Informe o nome da nova função.'; errEl.classList.remove('d-none'); return; }
+
+    this.disabled = true;
+    this.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Clonando...';
+
+    try {
+      const baseCloneUrl = document.getElementById('roles-url-config').dataset.cloneUrl;
+      const url = baseCloneUrl.replace('/0/', '/' + cloneRoleId + '/');
+      const resp = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
+        body: JSON.stringify({ name, description: desc }),
+      });
+      const data = await resp.json();
+      if (data.ok) {
+        bootstrap.Modal.getInstance(document.getElementById('cloneModal')).hide();
+        showToast('Função "' + data.role_name + '" clonada com sucesso! Recarregue para ver.', 'success');
+        setTimeout(() => location.reload(), 1500);
+      } else {
+        errEl.textContent = data.error || 'Erro ao clonar.';
+        errEl.classList.remove('d-none');
+      }
+    } catch (err) {
+      errEl.textContent = 'Erro de conexão.';
+      errEl.classList.remove('d-none');
+    } finally {
+      this.disabled = false;
+      this.innerHTML = '<i class="bi bi-copy me-1"></i> Clonar';
+    }
+  });
+
+});
+</script>
 {% endblock %}

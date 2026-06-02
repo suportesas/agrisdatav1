@@ -10,7 +10,8 @@ from django.template.loader import get_template
 from django.utils import timezone
 from xhtml2pdf import pisa
 
-from cadastros.models import Cultura, Motorista, MotoristaVinculoPlaca, Transportadora
+from cadastros.models import Cultura, Transportadora
+from frota.models import Motorista, MotoristaVinculoPlaca
 from .forms import BookingContainerForm, BookingForm, ContainerTransferenciaForm, OrdemColetaForm, SolicitacaoBookingForm
 from .models import Booking, BookingContainer, BookingContainerHistory, OrdemColeta, SolicitacaoBooking
 

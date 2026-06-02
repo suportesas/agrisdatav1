@@ -6,20 +6,19 @@ from django.contrib import admin
 from .models import (
     Fazenda, EnderecoFazenda, ContatoFazenda,
     ContaBancariaFazenda, DocumentoFazenda, Cultura, Praga,
-    EstagioDesenvolvimento, MonitoramentoMIP, PragaNoMonitoramento, PontoMonitoramento
 )
-from .models import Area, Talhao, HistoricoTalhao, Safra, SafraPlan, SafraReal, FuncaoFuncionario
+from .models import Area, Talhao, HistoricoTalhao, Safra, SafraPlan, SafraReal
+# FuncaoFuncionario is registered in rh/admin.py
 from .models import Vendedor, ComissaoVendedor
 
 from .models import (
-    Fornecedor, FornecedorEndereco, FornecedorContato, FornecedorDadoBancario, 
-    Transportadora, Viagem, Porto, Moeda, NCM, EmpresaNCM, Vehicle, VehiclePlate, 
-    VehicleDocument, VehicleValueHistory, CFOP, EmpresaCFOP, MotoristaVinculoPlaca,
+    Fornecedor, FornecedorEndereco, FornecedorContato, FornecedorDadoBancario,
+    Transportadora, Viagem, Porto, Moeda, NCM, EmpresaNCM, CFOP, EmpresaCFOP,
     Armador, ArmadorEndereco, ArmadorContato, ArmadorDadoBancario,
     Navio, TipoNavio, Requisicao, RequisicaoItem,
-    CustoHoraMaquina, OrdemServico, OSFuncionario, OSMaquina, CustoTalhao,
-    TipoServicoOS, SubtipoServicoOS, ModalidadeExecucaoOS,
 )
+# Operacoes Campo models are registered in operacoes_campo/admin.py
+# frota models are registered in frota/admin.py
 
 class EnderecoFazendaInline(admin.TabularInline):
     """Inline para endereços"""
@@ -137,18 +136,6 @@ class DocumentoFazendaAdmin(admin.ModelAdmin):
         return '✅ Válido'
     esta_vencido.short_description = 'Status'
 
-
-@admin.register(FuncaoFuncionario)
-class FuncaoFuncionarioAdmin(admin.ModelAdmin):
-    """Admin para funções de funcionário"""
-    list_display = ['nome', 'empresa', 'ativa']
-    search_fields = ['nome']
-    fieldsets = (
-        ('Informações', {
-            'fields': ('empresa', 'nome', 'descricao', 'salario_base', 'ativa'),
-            'description': 'Dica: crie uma função chamada "Motorista" para facilitar atribuições de veículos. Ao cadastrar motoristas, lembre-se de preencher CNH e data de validade.'
-        }),
-    )
 
 
 @admin.register(Cultura)
@@ -527,55 +514,7 @@ class ViagemAdmin(admin.ModelAdmin):
     search_fields = ['transportadora__razao_social', 'origem', 'destino']
 
 
-# ==========================
-# Admin para Veículos
-# ==========================
-class VehiclePlateInline(admin.TabularInline):
-    model = VehiclePlate
-    extra = 0
-    fields = ['placa', 'vigencia_inicio', 'vigencia_fim', 'atual']
-
-class VehicleDocumentInline(admin.TabularInline):
-    model = VehicleDocument
-    extra = 0
-    fields = ['tipo', 'numero', 'data_emissao', 'data_validade', 'arquivo']
-
-
-@admin.register(Vehicle)
-class VehicleAdmin(admin.ModelAdmin):
-    list_display = ['__str__', 'empresa', 'transportadora', 'tipo', 'ativo', 'consumo_medio', 'consumo_unidade', 'tank_capacity', 'estimated_range_display', 'data_cadastro']
-    list_filter = ['tipo', 'ativo', 'empresa']
-    search_fields = ['marca', 'modelo', 'plates__placa']
-    inlines = [VehiclePlateInline, VehicleDocumentInline]
-    readonly_fields = ['data_cadastro', 'data_atualizacao']
-
-    def estimated_range_display(self, obj):
-        return f"{obj.estimated_range_km} km" if obj.estimated_range_km else '—'
-    estimated_range_display.short_description = 'Estimativa (km)'
-
-    def get_queryset(self, request):
-        qs = super().get_queryset(request)
-        if request.user.is_superuser:
-            return qs
-        if hasattr(request.user, 'empresa') and request.user.empresa:
-            return qs.filter(empresa=request.user.empresa)
-        return qs.none()
-
-
-@admin.register(VehiclePlate)
-class VehiclePlateAdmin(admin.ModelAdmin):
-    list_display = ['vehicle', 'placa', 'vigencia_inicio', 'vigencia_fim', 'atual']
-    search_fields = ['placa', 'vehicle__marca', 'vehicle__modelo']
-
-
-
-@admin.register(VehicleValueHistory)
-class VehicleValueHistoryAdmin(admin.ModelAdmin):
-    list_display = ['vehicle', 'tipo', 'percentual', 'previous_value', 'new_value', 'aplicado_por', 'data_aplicacao']
-    list_filter = ['tipo', 'aplicado_por']
-    search_fields = ['vehicle__marca', 'vehicle__modelo']
-    readonly_fields = ['previous_value', 'new_value', 'percentual', 'tipo', 'aplicado_por', 'data_aplicacao']
-    ordering = ['-data_aplicacao']
+# Vehicle/VehiclePlate/VehicleValueHistory admin registrations moved to frota/admin.py
 
 
 @admin.register(FornecedorEndereco)
@@ -754,240 +693,7 @@ class NavioAdmin(admin.ModelAdmin):
         return qs.none()
 
 
-# ======================== MONITORAMENTO MIP (Manejo Integrado de Pragas) =====================
-
-class PontoMonitoramentoInline(admin.TabularInline):
-    """Inline para pontos de monitoramento (samplings 1-20)"""
-    model = PontoMonitoramento
-    extra = 0
-    fields = [
-        'numero_ponto', 'praga_presente', 'quantidade', 'estagio', 
-        'severidade', 'latitude', 'longitude'
-    ]
-    readonly_fields = ['data_criacao']
-
-
-class PragaNoMonitoramentoInline(admin.TabularInline):
-    """Inline para pragas detectadas em um monitoramento"""
-    model = PragaNoMonitoramento
-    extra = 0
-    fields = [
-        'praga', 'quantidade_pontos_com_praga', 'incidencia_percentual',
-        'severidade', 'estagio_principal', 'ned_atingido', 'resultado_acao'
-    ]
-    readonly_fields = ['incidencia_percentual', 'ned_atingido', 'resultado_acao', 'data_criacao', 'data_atualizacao']
-
-
-@admin.register(EstagioDesenvolvimento)
-class EstagioDesenvolvimentoAdmin(admin.ModelAdmin):
-    """Admin para Estágios de Desenvolvimento de Pragas"""
-    list_display = [
-        'praga', 'tipo_estagio', 'ordem_ciclo', 'duracao_minima_dias',
-        'duracao_maxima_dias', 'eh_fase_critica', 'empresa', 'eh_template_icon', 'ativo'
-    ]
-    list_filter = ['tipo_estagio', 'eh_fase_critica', 'ativo', 'empresa', 'praga', 'eh_template']
-    search_fields = ['praga__nome', 'tipo_estagio', 'descricao']
-    readonly_fields = ['data_criacao', 'data_atualizacao', 'template_original']
-    
-    fieldsets = (
-        ('Identificação', {
-            'fields': ('empresa', 'praga', 'tipo_estagio', 'ordem_ciclo', 'ativo')
-        }),
-        ('Descrição', {
-            'fields': ('descricao',)
-        }),
-        ('Duração do Estágio', {
-            'fields': ('duracao_minima_dias', 'duracao_maxima_dias')
-        }),
-        ('Características', {
-            'fields': ('eh_fase_critica',)
-        }),
-        ('Templates', {
-            'fields': ('eh_template', 'template_original'),
-            'description': 'Marque "É Estágio Template?" para criar um template padrão que será copiado para novas empresas',
-            'classes': ('collapse',)
-        }),
-        ('Observações', {
-            'fields': ('observacoes',),
-            'classes': ('collapse',)
-        }),
-        ('Auditoria', {
-            'fields': ('data_criacao', 'data_atualizacao'),
-            'classes': ('collapse',)
-        }),
-    )
-    
-    def eh_template_icon(self, obj):
-        """Mostra ícone se é template"""
-        if obj.eh_template:
-            return '⭐ Template'
-        elif obj.template_original:
-            return '🔗 Cópia'
-        return '-'
-    eh_template_icon.short_description = 'Tipo'
-
-    def get_queryset(self, request):
-        """Filtra por empresa do usuário"""
-        qs = super().get_queryset(request)
-        if request.user.is_superuser:
-            return qs
-        if hasattr(request.user, 'empresa') and request.user.empresa:
-            return qs.filter(empresa=request.user.empresa)
-        return qs.none()
-
-
-@admin.register(MonitoramentoMIP)
-class MonitoramentoMIPAdmin(admin.ModelAdmin):
-    """Admin para Monitoramentos MIP (Manejo Integrado de Pragas)"""
-    list_display = [
-        'numero', 'talhao', 'data_monitoramento', 'responsavel',
-        'quantidade_pontos', 'status', 'empresa', 'data_criacao'
-    ]
-    list_filter = ['status', 'data_monitoramento', 'empresa', 'talhao', 'safra']
-    search_fields = ['numero', 'talhao__nome', 'responsavel__username']
-    readonly_fields = ['numero', 'data_criacao', 'data_atualizacao', 'criado_por']
-    date_hierarchy = 'data_monitoramento'
-    inlines = [PragaNoMonitoramentoInline]
-    
-    fieldsets = (
-        ('Identificação', {
-            'fields': ('numero', 'empresa', 'talhao', 'safra', 'cultura')
-        }),
-        ('Monitoramento', {
-            'fields': (
-                'data_monitoramento', 'responsavel', 'quantidade_pontos',
-                'condicoes_tempo'
-            )
-        }),
-        ('Condições Ambientais', {
-            'fields': (
-                'temperatura_media', 'umidade_media', 'velocidade_vento',
-                'chuva_ultimas_24h'
-            ),
-            'classes': ('collapse',)
-        }),
-        ('Status', {
-            'fields': ('status',)
-        }),
-        ('Observações', {
-            'fields': ('observacoes',),
-            'classes': ('collapse',)
-        }),
-        ('Auditoria', {
-            'fields': ('data_criacao', 'data_atualizacao', 'criado_por'),
-            'classes': ('collapse',)
-        }),
-    )
-
-    def get_queryset(self, request):
-        """Filtra por empresa do usuário"""
-        qs = super().get_queryset(request)
-        if request.user.is_superuser:
-            return qs
-        if hasattr(request.user, 'empresa') and request.user.empresa:
-            return qs.filter(empresa=request.user.empresa)
-        return qs.none()
-
-    def save_model(self, request, obj, form, change):
-        """Atribui empresa e usuário na criação"""
-        if not change:
-            obj.empresa = request.user.empresa
-            obj.criado_por = request.user
-        super().save_model(request, obj, form, change)
-
-
-@admin.register(PragaNoMonitoramento)
-class PragaNoMonitoramentoAdmin(admin.ModelAdmin):
-    """Admin para Pragas Detectadas em Monitoramentos"""
-    list_display = [
-        'monitoramento', 'praga', 'incidencia_percentual', 'severidade',
-        'ned_atingido', 'resultado_acao', 'estagio_principal'
-    ]
-    list_filter = ['ned_atingido', 'resultado_acao', 'severidade', 'monitoramento__data_monitoramento']
-    search_fields = ['monitoramento__numero', 'praga__nome']
-    readonly_fields = ['incidencia_percentual', 'ned_atingido', 'resultado_acao', 'data_criacao', 'data_atualizacao']
-    inlines = [PontoMonitoramentoInline]
-    
-    fieldsets = (
-        ('Identificação', {
-            'fields': ('monitoramento', 'praga', 'estagio_principal')
-        }),
-        ('Sampling', {
-            'fields': ('quantidade_pontos_com_praga',)
-        }),
-        ('Incidência', {
-            'fields': ('incidencia_percentual',)
-        }),
-        ('Análise NED', {
-            'fields': ('ned_atingido', 'resultado_acao')
-        }),
-        ('Severidade', {
-            'fields': ('severidade', 'detalhes_estagios'),
-            'classes': ('collapse',)
-        }),
-        ('Auditoria', {
-            'fields': ('data_criacao', 'data_atualizacao'),
-            'classes': ('collapse',)
-        }),
-    )
-
-    def get_queryset(self, request):
-        """Filtra por empresa do usuário"""
-        qs = super().get_queryset(request)
-        if request.user.is_superuser:
-            return qs
-        if hasattr(request.user, 'empresa') and request.user.empresa:
-            return qs.filter(monitoramento__empresa=request.user.empresa)
-        return qs.none()
-
-
-@admin.register(PontoMonitoramento)
-class PontoMonitoramentoAdmin(admin.ModelAdmin):
-    """Admin para Pontos de Amostragem (Sampling Points)"""
-    list_display = [
-        'numero_ponto', 'praga_monitoramento', 'praga_presente',
-        'quantidade', 'severidade', 'estagio', 'data_criacao'
-    ]
-    list_filter = ['praga_presente', 'severidade', 'numero_ponto']
-    search_fields = ['praga_monitoramento__monitoramento__numero', 'praga_monitoramento__praga__nome']
-    readonly_fields = ['data_criacao']
-    
-    fieldsets = (
-        ('Ponto de Amostragem', {
-            'fields': ('praga_monitoramento', 'numero_ponto', 'praga_presente')
-        }),
-        ('Dados da Praga', {
-            'fields': ('quantidade', 'estagio', 'severidade')
-        }),
-        ('Localização', {
-            'fields': ('latitude', 'longitude'),
-            'classes': ('collapse',)
-        }),
-        ('Foto/Evidência', {
-            'fields': ('foto',),
-            'classes': ('collapse',)
-        }),
-        ('Auditoria', {
-            'fields': ('data_criacao',),
-            'classes': ('collapse',)
-        }),
-    )
-
-    def get_queryset(self, request):
-        """Filtra por empresa do usuário"""
-        qs = super().get_queryset(request)
-        if request.user.is_superuser:
-            return qs
-        if hasattr(request.user, 'empresa') and request.user.empresa:
-            return qs.filter(praga_monitoramento__monitoramento__empresa=request.user.empresa)
-        return qs.none()
-
-
-@admin.register(MotoristaVinculoPlaca)
-class MotoristaVinculoPlacaAdmin(admin.ModelAdmin):
-    list_display = ['motorista', 'placa_principal', 'data_inicio', 'data_fim', 'ativo', 'empresa']
-    list_filter = ['empresa', 'ativo', 'data_inicio']
-    search_fields = ['motorista__nome', 'placa_principal__placa']
+# MotoristaVinculoPlaca admin moved to frota/admin.py
 
 
 class RequisicaoItemInline(admin.TabularInline):
@@ -1005,82 +711,5 @@ class RequisicaoAdmin(admin.ModelAdmin):
     inlines = [RequisicaoItemInline]
 
 
-class OSFuncionarioInline(admin.TabularInline):
-    model = OSFuncionario
-    extra = 0
-    fields = ['funcionario', 'data_execucao', 'hora_inicio', 'hora_fim', 'observacoes']
 
-
-class OSMaquinaInline(admin.TabularInline):
-    model = OSMaquina
-    extra = 0
-    fields = [
-        'veiculo', 'operador', 'data_execucao',
-        'horimetro_inicial', 'horimetro_final', 'custo_hora_config',
-    ]
-
-
-@admin.register(CustoHoraMaquina)
-class CustoHoraMaquinaAdmin(admin.ModelAdmin):
-    list_display = [
-        'veiculo', 'empresa', 'data_referencia', 'preco_combustivel',
-        'reserva_manutencao_hora', 'horas_anuais_trabalho', 'ativo',
-    ]
-    list_filter = ['empresa', 'ativo', 'data_referencia']
-    search_fields = ['veiculo__marca', 'veiculo__modelo', 'veiculo__descricao']
-    readonly_fields = ['data_cadastro', 'data_atualizacao']
-
-
-@admin.register(OrdemServico)
-class OrdemServicoAdmin(admin.ModelAdmin):
-    list_display = [
-        'numero', 'descricao_servico', 'status', 'talhao', 'safra', 'responsavel',
-        'empresa', 'data_prevista', 'data_cadastro',
-    ]
-    list_filter = ['empresa', 'status', 'tipo_servico', 'data_prevista']
-    search_fields = ['numero', 'talhao__nome', 'safra__nome', 'responsavel__nome_completo']
-    readonly_fields = ['numero', 'data_cadastro', 'data_atualizacao', 'data_aprovacao']
-    inlines = [OSFuncionarioInline, OSMaquinaInline]
-
-
-@admin.register(CustoTalhao)
-class CustoTalhaoAdmin(admin.ModelAdmin):
-    list_display = [
-        'os', 'talhao', 'safra', 'empresa',
-        'custo_mao_obra', 'custo_maquinario', 'custo_insumos', 'custo_servico_externo',
-    ]
-    list_filter = ['empresa', 'safra']
-    search_fields = ['os__numero', 'talhao__nome', 'safra__nome']
-    readonly_fields = ['data_registro', 'data_atualizacao']
-
-
-# ---------------------------------------------------------------------------
-# Admin: Classificação estruturada de OS
-# ---------------------------------------------------------------------------
-
-class SubtipoServicoOSInline(admin.TabularInline):
-    model = SubtipoServicoOS
-    extra = 1
-    fields = ['nome', 'descricao', 'empresa', 'ordem', 'ativo']
-
-
-@admin.register(TipoServicoOS)
-class TipoServicoOSAdmin(admin.ModelAdmin):
-    list_display = ['nome', 'empresa', 'tipo_legado', 'ordem', 'ativo']
-    list_filter = ['ativo', 'empresa']
-    search_fields = ['nome']
-    inlines = [SubtipoServicoOSInline]
-
-
-@admin.register(SubtipoServicoOS)
-class SubtipoServicoOSAdmin(admin.ModelAdmin):
-    list_display = ['nome', 'tipo_servico', 'empresa', 'ordem', 'ativo']
-    list_filter = ['tipo_servico', 'ativo', 'empresa']
-    search_fields = ['nome']
-
-
-@admin.register(ModalidadeExecucaoOS)
-class ModalidadeExecucaoOSAdmin(admin.ModelAdmin):
-    list_display = ['nome', 'empresa', 'ordem', 'ativo']
-    list_filter = ['ativo', 'empresa']
-    search_fields = ['nome']
+# Operacoes campo models are registered in operacoes_campo/admin.py

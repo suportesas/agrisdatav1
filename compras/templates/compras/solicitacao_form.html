@@ -450,21 +450,51 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Inicializa Select2 para campos de produto (excluindo empty-form)
+    const produtoAjaxUrl = '{% url "produtos:ajax_buscar_produtos" %}';
+
+    function initProdutoSelect2(element) {
+        if (!element || $(element).data('select2')) {
+            return;
+        }
+
+        console.log('Inicializando Select2 AJAX para produto:', element.name);
+        $(element).select2({
+            theme: 'bootstrap-5',
+            width: '100%',
+            placeholder: 'Buscar produto...',
+            allowClear: true,
+            minimumInputLength: 2,
+            ajax: {
+                url: produtoAjaxUrl,
+                dataType: 'json',
+                delay: 250,
+                data: function(params) {
+                    return { q: params.term };
+                },
+                processResults: function(data) {
+                    return { results: data.results || [] };
+                },
+                cache: true
+            },
+            language: {
+                inputTooShort: function() {
+                    return 'Digite ao menos 2 caracteres para buscar';
+                },
+                noResults: function() {
+                    return 'Nenhum produto encontrado';
+                }
+            },
+            escapeMarkup: function(markup) {
+                return markup;
+            }
+        }).on('select2:select', function() {
+            atualizarAoMudarProduto(this);
+        });
+    }
+
     function initSelect2() {
         $('[name$="produto"]:not([name*="__prefix__"])').each(function() {
-            if (!$(this).data('select2')) {
-                console.log('Inicializando Select2 para:', this.name);
-                $(this).select2({
-                    theme: 'bootstrap-5',
-                    width: '100%',
-                    language: {
-                        noResults: function() {
-                            return 'Nenhum produto encontrado';
-                        }
-                    }
-                });
-            }
+            initProdutoSelect2(this);
         });
     }
     
@@ -553,29 +583,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     preencherSelectUnidade(unidadeSelect);
                 }
 
-                // Inicializar Select2 para o novo campo de produto
+                // Inicializar Select2 AJAX para o novo campo de produto
                 const produtoSelect = newForm.querySelector('select[name$="produto"]');
-                if (produtoSelect && !$(produtoSelect).data('select2')) {
-                    console.log(`[Item ${formCount}] Inicializando Select2 para produto`);
-                    $(produtoSelect).select2({
-                        theme: 'bootstrap-5',
-                        width: '100%',
-                        language: {
-                            noResults: function() {
-                                return 'Nenhum produto encontrado';
-                            }
-                        }
-                    });
-                    
-                    // Adicionar event listener para quando produto é selecionado
-                    $(produtoSelect).on('select2:select', function(e) {
-                        console.log(`[Item ${formCount}] Select2 select event:`, e.params.data);
-                        atualizarAoMudarProduto(this);
-                    });
-                    
-                    console.log(`[Item ${formCount}] Select2 inicializado e listener adicionado`);
-                } else if (produtoSelect) {
-                    console.log(`[Item ${formCount}] Select2 já estava inicializado`);
+                if (produtoSelect) {
+                    initProdutoSelect2(produtoSelect);
+                    console.log(`[Item ${formCount}] Select2 AJAX inicializado para produto`);
                 }
 
                 // Adicionar event listener ao botão remover

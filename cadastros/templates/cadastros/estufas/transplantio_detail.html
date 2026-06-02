@@ -7,7 +7,7 @@
 <div class="container-fluid mt-4">
 
   <div class="mb-3">
-    <a href="{% url 'cadastros:transplantio_list' %}" class="btn btn-outline-secondary btn-sm">
+    <a href="{% url 'estufas:transplantio_list' %}" class="btn btn-outline-secondary btn-sm">
       <i class="bi bi-arrow-left"></i> Voltar
     </a>
   </div>
@@ -22,7 +22,7 @@
           <dl class="row">
             <dt class="col-5 text-muted">Lote</dt>
             <dd class="col-7">
-              <a href="{% url 'cadastros:lote_muda_detail' obj.lote_muda.pk %}" class="font-monospace">{{ obj.lote_muda.codigo_lote }}</a>
+              <a href="{% url 'estufas:lote_muda_detail' obj.lote_muda.pk %}" class="font-monospace">{{ obj.lote_muda.codigo_lote }}</a>
             </dd>
             <dt class="col-5 text-muted">Talhão</dt>
             <dd class="col-7">{{ obj.talhao.nome }}</dd>

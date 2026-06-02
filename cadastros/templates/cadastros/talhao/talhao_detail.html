@@ -43,7 +43,7 @@
             </div>
           </div>
           <div class="d-flex gap-2">
-            <a href="{% url 'cadastros:os_create' %}?talhao={{ talhao.pk }}" class="btn btn-success btn-sm">
+            <a href="{% url 'operacoes_campo:os_create' %}?talhao={{ talhao.pk }}" class="btn btn-success btn-sm">
               <i class="bi bi-plus-circle me-1"></i>Nova OS
             </a>
             <a href="{% url 'cadastros:talhao_update' talhao.pk %}" class="btn btn-outline-secondary btn-sm">
@@ -152,10 +152,10 @@
             <div class="card-header bg-transparent py-2 d-flex justify-content-between align-items-center">
               <h6 class="mb-0"><i class="bi bi-list-ul me-2 text-primary"></i>Timeline de Atividades</h6>
               <div class="d-flex gap-2">
-                <a href="{% url 'cadastros:os_create' %}?talhao={{ talhao.pk }}" class="btn btn-xs btn-outline-success">
+                <a href="{% url 'operacoes_campo:os_create' %}?talhao={{ talhao.pk }}" class="btn btn-xs btn-outline-success">
                   <i class="bi bi-plus-circle me-1"></i>Nova OS
                 </a>
-                <a href="{% url 'cadastros:caderno_campo_create' %}?talhao={{ talhao.pk }}" class="btn btn-xs btn-outline-secondary">
+                <a href="{% url 'operacoes_campo:caderno_campo_create' %}?talhao={{ talhao.pk }}" class="btn btn-xs btn-outline-secondary">
                   <i class="bi bi-journal-plus me-1"></i>Caderno
                 </a>
               </div>
@@ -224,7 +224,7 @@
               <div class="p-5 text-center text-muted">
                 <i class="bi bi-list-ul display-5 opacity-25 d-block mb-3"></i>
                 <p class="mb-2">Nenhuma atividade registrada neste talhão.</p>
-                <a href="{% url 'cadastros:os_create' %}?talhao={{ talhao.pk }}" class="btn btn-success btn-sm">
+                <a href="{% url 'operacoes_campo:os_create' %}?talhao={{ talhao.pk }}" class="btn btn-success btn-sm">
                   <i class="bi bi-plus-circle me-1"></i>Criar primeira OS
                 </a>
               </div>
@@ -396,7 +396,7 @@
       <div class="card border-0 shadow-sm">
         <div class="card-header bg-transparent py-2 d-flex justify-content-between align-items-center">
           <h6 class="mb-0"><i class="bi bi-currency-dollar me-2 text-success"></i>Custos por Safra</h6>
-          <a href="{% url 'cadastros:custo_talhao_list' %}?talhao={{ talhao.pk }}" class="btn btn-xs btn-outline-warning">
+          <a href="{% url 'operacoes_campo:custo_talhao_list' %}?talhao={{ talhao.pk }}" class="btn btn-xs btn-outline-warning">
             <i class="bi bi-bar-chart-line me-1"></i>Relatório Completo
           </a>
         </div>
@@ -459,7 +459,7 @@
       <div class="card border-0 shadow-sm">
         <div class="card-header bg-transparent py-2 d-flex justify-content-between align-items-center">
           <h6 class="mb-0"><i class="bi bi-journal-text me-2 text-success"></i>Caderno de Campo</h6>
-          <a href="{% url 'cadastros:caderno_campo_create' %}?talhao={{ talhao.pk }}" class="btn btn-xs btn-outline-success">
+          <a href="{% url 'operacoes_campo:caderno_campo_create' %}?talhao={{ talhao.pk }}" class="btn btn-xs btn-outline-success">
             <i class="bi bi-plus-circle me-1"></i>Novo Registro
           </a>
         </div>
@@ -482,7 +482,7 @@
                   {% empty %}<span class="text-muted small">—</span>{% endfor %}
                 </td>
                 <td>
-                  <a href="{% url 'cadastros:caderno_campo_detail' reg.pk %}" class="btn btn-xs btn-outline-secondary py-0 px-1"><i class="bi bi-eye"></i></a>
+                  <a href="{% url 'operacoes_campo:caderno_campo_detail' reg.pk %}" class="btn btn-xs btn-outline-secondary py-0 px-1"><i class="bi bi-eye"></i></a>
                 </td>
               </tr>
               {% endfor %}
@@ -492,7 +492,7 @@
           <div class="p-5 text-center text-muted">
             <i class="bi bi-journal-text display-5 opacity-25 d-block mb-2"></i>
             <p>Nenhum registro no caderno de campo.</p>
-            <a href="{% url 'cadastros:caderno_campo_create' %}?talhao={{ talhao.pk }}" class="btn btn-sm btn-outline-success">
+            <a href="{% url 'operacoes_campo:caderno_campo_create' %}?talhao={{ talhao.pk }}" class="btn btn-sm btn-outline-success">
               <i class="bi bi-plus-circle me-1"></i>Criar Registro
             </a>
           </div>

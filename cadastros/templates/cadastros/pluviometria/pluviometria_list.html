@@ -54,7 +54,7 @@
           <div class="d-flex justify-content-between align-items-center">
             <div>
               <h6 class="mb-1">Novo Registro</h6>
-              <a href="{% url 'cadastros:pluviometria_create' %}" class="btn btn-dark btn-sm">
+              <a href="{% url 'operacoes_campo:pluviometria_create' %}" class="btn btn-dark btn-sm">
                 <i class="bi bi-plus-circle"></i> Registrar
               </a>
             </div>
@@ -120,7 +120,7 @@
           </button>
         </div>
         <div class="col-md-1">
-          <a href="{% url 'cadastros:pluviometria_list' %}" class="btn btn-outline-secondary w-100">
+          <a href="{% url 'operacoes_campo:pluviometria_list' %}" class="btn btn-outline-secondary w-100">
             <i class="bi bi-x"></i>
           </a>
         </div>
@@ -162,10 +162,10 @@
             <td class="small">{{ r.responsavel.get_full_name|default:r.responsavel.username|default:"—" }}</td>
             <td class="text-center">
               <div class="btn-group btn-group-sm">
-                <a href="{% url 'cadastros:pluviometria_update' r.pk %}" class="btn btn-outline-primary" title="Editar">
+                <a href="{% url 'operacoes_campo:pluviometria_update' r.pk %}" class="btn btn-outline-primary" title="Editar">
                   <i class="bi bi-pencil"></i>
                 </a>
-                <a href="{% url 'cadastros:pluviometria_delete' r.pk %}" class="btn btn-outline-danger" title="Excluir">
+                <a href="{% url 'operacoes_campo:pluviometria_delete' r.pk %}" class="btn btn-outline-danger" title="Excluir">
                   <i class="bi bi-trash"></i>
                 </a>
               </div>
@@ -177,7 +177,7 @@
               <i class="bi bi-cloud-slash fs-3 d-block mb-2"></i>
               Nenhum registro de pluviometria encontrado.
               <br>
-              <a href="{% url 'cadastros:pluviometria_create' %}" class="btn btn-sm btn-primary mt-2">
+              <a href="{% url 'operacoes_campo:pluviometria_create' %}" class="btn btn-sm btn-primary mt-2">
                 <i class="bi bi-plus"></i> Registrar primeira chuva
               </a>
             </td>

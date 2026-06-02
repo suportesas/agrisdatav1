@@ -57,7 +57,7 @@
             </div>
             <div class="d-flex gap-2 mt-4">
               <button type="submit" class="btn btn-warning"><i class="bi bi-check-lg"></i> Salvar</button>
-              <a href="{% url 'cadastros:planejamento_custo_list' %}" class="btn btn-outline-secondary"><i class="bi bi-x"></i> Cancelar</a>
+              <a href="{% url 'operacoes_campo:planejamento_custo_list' %}" class="btn btn-outline-secondary"><i class="bi bi-x"></i> Cancelar</a>
             </div>
           </form>
           <script>
@@ -107,7 +107,7 @@
                   return;
                 }
                 try {
-                  const response = await fetch(`{% url 'cadastros:ajax_safras_planejamento_custo' %}?cultura_id=${encodeURIComponent(culturaId)}`);
+                  const response = await fetch(`{% url 'operacoes_campo:ajax_safras_planejamento_custo' %}?cultura_id=${encodeURIComponent(culturaId)}`);
                   const data = await response.json();
                   const selectedSafra = safraEl.value;
                   fillOptions(safraEl, data.safras || [], '-- Selecione uma safra --', selectedSafra);
@@ -128,7 +128,7 @@
                   return;
                 }
                 try {
-                  const response = await fetch(`{% url 'cadastros:ajax_talhoes_planejamento_custo' %}?safra_id=${encodeURIComponent(safraId)}`);
+                  const response = await fetch(`{% url 'operacoes_campo:ajax_talhoes_planejamento_custo' %}?safra_id=${encodeURIComponent(safraId)}`);
                   const data = await response.json();
                   const selectedTalhao = talhaoEl.value;
                   fillOptions(talhaoEl, data.talhoes || [], '-- Selecione um talhão --', selectedTalhao);

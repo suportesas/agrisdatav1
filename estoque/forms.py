@@ -93,7 +93,7 @@ class ArmazemForm(forms.ModelForm):
             
         # Filtrar funcionários pela empresa
         if self.empresa:
-            from cadastros.models import Funcionario
+            from rh.models import Funcionario
             self.fields['responsavel'].queryset = Funcionario.objects.filter(empresa=self.empresa)
 
     def save(self, commit=True):

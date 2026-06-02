@@ -551,12 +551,12 @@ class ConhecimentoTransporte(FaturamentoBaseModel):
         related_name='conhecimentos_transporte', verbose_name='Transportadora',
     )
     motorista       = models.ForeignKey(
-        'cadastros.Motorista', on_delete=models.SET_NULL,
+        'frota.Motorista', on_delete=models.SET_NULL,
         null=True, blank=True,
         related_name='conhecimentos_transporte', verbose_name='Motorista',
     )
     veiculo         = models.ForeignKey(
-        'cadastros.Vehicle', on_delete=models.SET_NULL,
+        'frota.Vehicle', on_delete=models.SET_NULL,
         null=True, blank=True,
         related_name='conhecimentos_transporte', verbose_name='Veículo',
     )
@@ -639,11 +639,11 @@ class ManifestoDocumentoFiscal(FaturamentoBaseModel):
 
     # Modal
     motorista       = models.ForeignKey(
-        'cadastros.Motorista', on_delete=models.PROTECT,
+        'frota.Motorista', on_delete=models.PROTECT,
         related_name='manifestos', verbose_name='Motorista',
     )
     veiculo         = models.ForeignKey(
-        'cadastros.Vehicle', on_delete=models.PROTECT,
+        'frota.Vehicle', on_delete=models.PROTECT,
         related_name='manifestos', verbose_name='Veículo (Tração)',
     )
 

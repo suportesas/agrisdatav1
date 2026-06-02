@@ -10,14 +10,14 @@
       <p class="text-muted mb-0">{{ solicitacao.funcionario.nome_completo }} - {{ solicitacao.get_tipo_aso_display }}</p>
     </div>
     <div class="d-flex gap-2 flex-wrap justify-content-end">
-      <a href="{% url 'cadastros:aso_solicitacao_list' %}" class="btn btn-outline-secondary">Voltar</a>
-      <a href="{% url 'cadastros:aso_solicitacao_update' solicitacao.pk %}" class="btn btn-warning">Editar</a>
-      <a href="{% url 'cadastros:aso_solicitacao_assinar' solicitacao.pk %}" class="btn btn-info text-white">Assinar</a>
-      <form method="post" action="{% url 'cadastros:aso_solicitacao_enviar_email' solicitacao.pk %}" class="d-inline">
+      <a href="{% url 'rh:aso_solicitacao_list' %}" class="btn btn-outline-secondary">Voltar</a>
+      <a href="{% url 'rh:aso_solicitacao_update' solicitacao.pk %}" class="btn btn-warning">Editar</a>
+      <a href="{% url 'rh:aso_solicitacao_assinar' solicitacao.pk %}" class="btn btn-info text-white">Assinar</a>
+      <form method="post" action="{% url 'rh:aso_solicitacao_enviar_email' solicitacao.pk %}" class="d-inline">
         {% csrf_token %}
         <button type="submit" class="btn btn-success">Enviar Email</button>
       </form>
-      <form method="post" action="{% url 'cadastros:aso_solicitacao_enviar_whatsapp' solicitacao.pk %}" class="d-inline">
+      <form method="post" action="{% url 'rh:aso_solicitacao_enviar_whatsapp' solicitacao.pk %}" class="d-inline">
         {% csrf_token %}
         <button type="submit" class="btn btn-success">Enviar WhatsApp</button>
       </form>

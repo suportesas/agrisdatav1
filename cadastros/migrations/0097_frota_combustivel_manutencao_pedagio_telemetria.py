@@ -42,7 +42,7 @@ class Migration(migrations.Migration):
                 ('empresa', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='manutencoes', to='empresas.empresa', verbose_name='Empresa')),
                 ('fornecedor_externo', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='manutencoes_veiculos', to='cadastros.fornecedor', verbose_name='Fornecedor Externo')),
                 ('local_oficina', models.ForeignKey(blank=True, help_text='Oficina própria — peças baixadas deste armazém', null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='manutencoes', to='estoque.armazem', verbose_name='Armazém / Oficina')),
-                ('vehicle', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='manutencoes', to='cadastros.vehicle', verbose_name='Veículo')),
+                ('vehicle', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='manutencoes', to='frota.vehicle', verbose_name='Veículo')),
             ],
             options={
                 'verbose_name': 'Manutenção de Veículo',
@@ -75,7 +75,7 @@ class Migration(migrations.Migration):
                 ('data_alerta', models.DateField(verbose_name='Data do Alerta')),
                 ('criado_em', models.DateTimeField(auto_now_add=True)),
                 ('empresa', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='alertas_manutencao', to='empresas.empresa')),
-                ('vehicle', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='alertas_manutencao', to='cadastros.vehicle')),
+                ('vehicle', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='alertas_manutencao', to='frota.vehicle')),
                 ('manutencao_origem', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='alertas', to='cadastros.manutencaoveiculo', verbose_name='Manutenção de Origem')),
             ],
             options={
@@ -96,8 +96,8 @@ class Migration(migrations.Migration):
                 ('conta_pagar', models.OneToOneField(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='pedagio', to='financeiro.contapagar', verbose_name='Conta a Pagar gerada')),
                 ('criado_por', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='pedagios_criados', to=settings.AUTH_USER_MODEL)),
                 ('empresa', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='pedagios', to='empresas.empresa', verbose_name='Empresa')),
-                ('motorista', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='pedagios', to='cadastros.motorista', verbose_name='Motorista')),
-                ('vehicle', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='pedagios', to='cadastros.vehicle', verbose_name='Veículo')),
+                ('motorista', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='pedagios', to='frota.motorista', verbose_name='Motorista')),
+                ('vehicle', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='pedagios', to='frota.vehicle', verbose_name='Veículo')),
                 ('viagem', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='pedagios', to='cadastros.viagem', verbose_name='Viagem')),
             ],
             options={
@@ -120,8 +120,8 @@ class Migration(migrations.Migration):
                 ('observacoes', models.TextField(blank=True)),
                 ('criado_em', models.DateTimeField(auto_now_add=True)),
                 ('empresa', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='telemetrias', to='empresas.empresa')),
-                ('motorista', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='telemetrias', to='cadastros.motorista')),
-                ('vehicle', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='telemetrias', to='cadastros.vehicle')),
+                ('motorista', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='telemetrias', to='frota.motorista')),
+                ('vehicle', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='telemetrias', to='frota.vehicle')),
                 ('viagem', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='telemetrias', to='cadastros.viagem')),
             ],
             options={
@@ -149,8 +149,8 @@ class Migration(migrations.Migration):
                 ('criado_por', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='abastecimentos_criados', to=settings.AUTH_USER_MODEL)),
                 ('empresa', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='abastecimentos', to='empresas.empresa', verbose_name='Empresa')),
                 ('fornecedor', models.ForeignKey(blank=True, help_text='Para gerar Conta a Pagar', null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='abastecimentos', to='cadastros.fornecedor', verbose_name='Fornecedor')),
-                ('motorista', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='abastecimentos', to='cadastros.motorista', verbose_name='Motorista')),
-                ('vehicle', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='abastecimentos', to='cadastros.vehicle', verbose_name='Veículo')),
+                ('motorista', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='abastecimentos', to='frota.motorista', verbose_name='Motorista')),
+                ('vehicle', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='abastecimentos', to='frota.vehicle', verbose_name='Veículo')),
             ],
             options={
                 'verbose_name': 'Abastecimento',

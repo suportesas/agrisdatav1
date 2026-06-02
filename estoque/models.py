@@ -108,7 +108,7 @@ class Armazem(models.Model):
     
     # Responsável
     responsavel = models.ForeignKey(
-        'cadastros.Funcionario',
+        'rh.Funcionario',
         on_delete=models.SET_NULL,
         null=True,
         blank=True,

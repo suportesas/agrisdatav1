@@ -111,7 +111,7 @@ urlpatterns = [
     path('compras/', include(('compras.urls', 'compras'))),
     path('portal/fornecedor/', include(('compras.portal_fornecedor_urls', 'portal_fornecedor'))),
     path('portal/produtor/', include(('cadastros.portal_produtor_urls', 'portal_produtor'))),
-    path('portal/motorista/', include(('cadastros.portal_motorista_urls', 'portal_motorista'))),
+    path('portal/motorista/', include(('frota.portal_motorista_urls', 'portal_motorista'))),
     path('portal/campo/', include(('cadastros.portal_campo_urls', 'portal_campo'))),
     path('financeiro/', include(('financeiro.urls', 'financeiro'))),
     path('plano-contas/', include(('plano_contas.urls', 'plano_contas'))),
@@ -123,7 +123,13 @@ urlpatterns = [
     path('vendas/', include(('vendas.urls', 'vendas'))),
     path('portal/cliente/', include(('portal.urls', 'portal_cliente'))),
     path('embalagem/', include(('embalagem.urls', 'embalagem'))),
-    
+    path('frota/', include(('frota.urls', 'frota'))),
+    path('mip/', include(('mip.urls', 'mip'))),
+    path('emprestimos/', include(('emprestimos.urls', 'emprestimos'))),
+    path('estufas/', include(('estufas.urls', 'estufas'))),
+    path('rh/', include(('rh.urls', 'rh'))),
+    path('campo/', include(('operacoes_campo.urls', 'operacoes_campo'))),
+
     # ============================================
     # API REST
     # ============================================

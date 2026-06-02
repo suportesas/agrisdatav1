@@ -25,7 +25,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='bookingcontainer',
             name='motorista',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='containers', to='cadastros.motorista', verbose_name='Motorista'),
+            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='containers', to='frota.motorista', verbose_name='Motorista'),
         ),
         migrations.AddField(
             model_name='bookingcontainer',

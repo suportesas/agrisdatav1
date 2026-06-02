@@ -9,7 +9,7 @@
   <nav aria-label="breadcrumb" class="mb-3">
     <ol class="breadcrumb">
       <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}"><i class="bi bi-house-door"></i> Início</a></li>
-      <li class="breadcrumb-item"><a href="{% url 'cadastros:funcao_list' %}">Funções</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'rh:funcao_list' %}">Funções</a></li>
       <li class="breadcrumb-item active">{{ action }} Função</li>
     </ol>
   </nav>
@@ -218,7 +218,7 @@
                   Selecione os riscos do catálogo por categoria para vincular à função.
                 </p>
                 <div class="mb-3">
-                  <a href="{% url 'cadastros:risco_ambiental_catalogo_list' %}" class="btn btn-sm btn-outline-secondary" target="_blank">
+                  <a href="{% url 'rh:risco_ambiental_catalogo_list' %}" class="btn btn-sm btn-outline-secondary" target="_blank">
                     <i class="bi bi-box-arrow-up-right"></i> Abrir catálogo de riscos
                   </a>
                 </div>
@@ -301,7 +301,7 @@
 
             <!-- Botões -->
             <div class="d-flex gap-2 justify-content-between align-items-center pt-3 border-top">
-              <a href="{% url 'cadastros:funcao_list' %}" class="btn btn-outline-secondary">
+              <a href="{% url 'rh:funcao_list' %}" class="btn btn-outline-secondary">
                 <i class="bi bi-arrow-left"></i> Voltar
               </a>
               <button type="submit" class="btn btn-primary btn-lg px-4">

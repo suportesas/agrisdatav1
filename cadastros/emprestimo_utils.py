@@ -6,7 +6,7 @@ from django.core.mail import send_mail
 from django.urls import reverse
 from django.utils import timezone
 
-from .models import EmprestimoInteracao, EmprestimoMensagem, EmprestimoMensagemAnexo
+from emprestimos.models import EmprestimoInteracao, EmprestimoMensagem, EmprestimoMensagemAnexo
 
 
 def usuario_pode_interagir_emprestimo(usuario, emprestimo):
@@ -69,7 +69,7 @@ def notificar_internos_mensagem_produtor(emprestimo, autor, texto_mensagem):
         )
         return False
 
-    link_interno = reverse('cadastros:emprestimo_detalhe', args=[emprestimo.pk])
+    link_interno = reverse('emprestimos:emprestimo_detalhe', args=[emprestimo.pk])
     remetente = autor.get_full_name() or autor.username
     texto_resumido = (texto_mensagem or '').strip()
     if len(texto_resumido) > 300:

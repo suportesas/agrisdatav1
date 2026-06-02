@@ -10,7 +10,8 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
-from .models import Funcionario, OrdemServico, OSFuncionario, OrdemServicoInsumo
+from rh.models import Funcionario
+from operacoes_campo.models import OrdemServico, OSFuncionario, OrdemServicoInsumo
 
 LOGIN_URL = 'portal_campo:login'
 HOME_URL  = 'portal_campo:home'

@@ -113,8 +113,8 @@
 
             <div class="d-flex gap-2 mt-4">
               <button type="submit" class="btn btn-info text-white"><i class="bi bi-check-lg"></i> Salvar</button>
-              <a href="{% url 'cadastros:abastecimento_list' %}" class="btn btn-outline-secondary"><i class="bi bi-x"></i> Cancelar</a>
-              <a href="{% url 'cadastros:abastecimento_importar' %}" class="btn btn-outline-primary ms-auto"><i class="bi bi-upload"></i> Importar CSV</a>
+              <a href="{% url 'frota:abastecimento_list' %}" class="btn btn-outline-secondary"><i class="bi bi-x"></i> Cancelar</a>
+              <a href="{% url 'frota:abastecimento_importar' %}" class="btn btn-outline-primary ms-auto"><i class="bi bi-upload"></i> Importar CSV</a>
             </div>
           </form>
         </div>
@@ -155,7 +155,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function loadVeiculoInfo(vehicleId) {
     if (!vehicleId) { painel.classList.add('d-none'); tankCapacity = 0; return; }
-    fetch(`{% url 'cadastros:api_veiculo_info_abastecimento' %}?vehicle_id=${vehicleId}`)
+    fetch(`{% url 'frota:api_veiculo_info_abastecimento' %}?vehicle_id=${vehicleId}`)
       .then(r => r.json())
       .then(d => {
         document.getElementById('info-placa').textContent     = d.placa || '—';

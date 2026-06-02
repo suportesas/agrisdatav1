@@ -20,7 +20,7 @@ class Migration(migrations.Migration):
                 ('foto', models.ImageField(upload_to='exportacao/ordens_coleta/fotos/%Y/%m/', verbose_name='Foto')),
                 ('observacao', models.CharField(blank=True, max_length=200, verbose_name='Observação')),
                 ('data_envio', models.DateTimeField(auto_now_add=True)),
-                ('enviada_por', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='fotos_coleta', to='cadastros.motorista', verbose_name='Enviada por')),
+                ('enviada_por', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='fotos_coleta', to='frota.motorista', verbose_name='Enviada por')),
                 ('ordem', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='fotos', to='exportacao.ordemcoleta', verbose_name='Ordem de Coleta')),
             ],
             options={

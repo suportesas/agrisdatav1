@@ -44,7 +44,7 @@
   <nav aria-label="breadcrumb" class="mb-4">
     <ol class="breadcrumb">
       <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
-      <li class="breadcrumb-item"><a href="{% url 'cadastros:funcionario_list' %}">Funcionários</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'rh:funcionario_list' %}">Funcionários</a></li>
       <li class="breadcrumb-item active">{{ action }}</li>
     </ol>
   </nav>
@@ -54,7 +54,7 @@
     <h2 class="fw-bold mb-0">
       <i class="bi bi-person-badge text-primary"></i> {{ action }} Funcionário
     </h2>
-    <a href="{% url 'cadastros:funcionario_list' %}" class="btn btn-outline-secondary">
+    <a href="{% url 'rh:funcionario_list' %}" class="btn btn-outline-secondary">
       <i class="bi bi-arrow-left"></i> Voltar
     </a>
   </div>
@@ -385,7 +385,7 @@
 
     <!-- Botões -->
     <div class="d-flex justify-content-between gap-3">
-      <a href="{% url 'cadastros:funcionario_list' %}" class="btn btn-outline-secondary btn-lg px-5">
+      <a href="{% url 'rh:funcionario_list' %}" class="btn btn-outline-secondary btn-lg px-5">
         <i class="bi bi-x-circle"></i> Cancelar
       </a>
       <button type="submit" class="btn btn-success btn-lg px-5">
@@ -459,7 +459,7 @@
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
-        <form id="formNovaFuncao" method="post" action="{% url 'cadastros:funcao_create' %}">
+        <form id="formNovaFuncao" method="post" action="{% url 'rh:funcao_create' %}">
           {% csrf_token %}
           <div id="funcao-errors" aria-live="polite"></div>
           <div class="mb-3">

@@ -66,7 +66,21 @@
       "Bash(python manage.py makemigrations faturamento)",
       "Bash(dir *.bat)",
       "Bash(dir venv *)",
-      "Bash(dir .venv)"
+      "Bash(dir .venv)",
+      "Bash(awk -F: '{print NR\": \"$0}')",
+      "PowerShell(cd C:\\\\erp_agricola_novo; C:\\\\erp_agricola_novo\\\\venv\\\\Scripts\\\\python.exe check_mip.py 2>&1 | Select-String -Pattern \"Tabelas|cadastros_|INFO\" | Where-Object { $_ -notmatch \"INFO\" })",
+      "Bash(xargs sed -i \"s/'cadastros:estagio/'mip:estagio/g; s/'cadastros:monitoramento_mip/'mip:monitoramento_mip/g; s/'cadastros:ajax_get_estagios/'mip:ajax_get_estagios/g; s/'cadastros:ajax_calcular/'mip:ajax_calcular/g; s/'cadastros:ajax_buscar_talhoes/'mip:ajax_buscar_talhoes/g; s/'cadastros:ajax_pragas/'mip:ajax_pragas/g; s/'cadastros:ajax_adicionar_estagio/'mip:ajax_adicionar_estagio/g; s/'cadastros:ajax_carregar/'mip:ajax_carregar/g; s/'cadastros:ajax_deletar_estagio/'mip:ajax_deletar_estagio/g; s/'cadastros:ajax_talhao/'mip:ajax_talhao/g; s/\\\\\"cadastros:ajax_adicionar_estagio\\\\\"/\\\\\"mip:ajax_adicionar_estagio\\\\\"/g; s/\\\\\"cadastros:ajax_deletar_estagio\\\\\"/\\\\\"mip:ajax_deletar_estagio\\\\\"/g\")",
+      "Bash(xargs sed -i \"s/to='cadastros\\\\.vehicle'/to='frota.vehicle'/g; s/to='cadastros\\\\.motorista'/to='frota.motorista'/g\")",
+      "Bash(python manage.py migrate emprestimos)",
+      "Bash(.venv/Scripts/python manage.py migrate emprestimos)",
+      "Bash(python3 -c \"import django; print\\(django.__version__\\)\")",
+      "PowerShell(Select-String -Path \"c:\\\\erp_agricola_novo\\\\cadastros\\\\models.py\" -Pattern \"^class Estufa\" | ForEach-Object { $_.LineNumber })",
+      "PowerShell(Select-String -Path \"c:\\\\erp_agricola_novo\\\\cadastros\\\\models.py\" -Pattern \"^class \\(LoteMuda|PerdaEstufa|AplicacaoEstufa|MonitoramentoEstufa|Transplantio|ReplantioTalhao\\)\" | ForEach-Object { \"$\\($_.LineNumber\\): $\\($_.Line\\)\" })",
+      "PowerShell(\\(Get-Content \"c:\\\\erp_agricola_novo\\\\cadastros\\\\admin.py\" | Measure-Object -Line\\).Lines)",
+      "PowerShell(cd c:\\\\erp_agricola_novo; .\\\\venv\\\\Scripts\\\\python.exe manage.py migrate estufas 2>&1 | Where-Object { $_ -notmatch 'INFO|NativeCommandError' })",
+      "PowerShell(cd c:\\\\erp_agricola_novo; .\\\\venv\\\\Scripts\\\\python.exe manage.py migrate cadastros 2>&1 | Where-Object { $_ -notmatch 'INFO|NativeCommandError' })",
+      "PowerShell(cd c:\\\\erp_agricola_novo; .\\\\venv\\\\Scripts\\\\python.exe manage.py check 2>&1 | Where-Object { $_ -notmatch 'INFO|NativeCommandError' })",
+      "PowerShell(Get-ChildItem -Recurse \"c:\\\\erp_agricola_novo\\\\cadastros\\\\templates\\\\cadastros\" -Directory | Where-Object { $_.Name -match 'rh|ferias|afastamento|rescisao|funcionario|vinculo|laudo|aso' } | Select-Object FullName)"
     ]
   }
 }

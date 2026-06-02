@@ -19,6 +19,7 @@ urlpatterns = [
     path('roles/<int:role_id>/permissions/', views.role_permissions, name='role_permissions'),
     path('roles/novo/', views.role_create, name='role_create'),
     path('roles/<int:role_id>/editar/', views.role_update, name='role_update'),
+    path('roles/<int:role_id>/clonar/', views.role_clone, name='role_clone'),
     path('roles/<int:role_id>/permissions/save-template/', views.save_permission_template, name='save_permission_template'),
     path('roles/<int:role_id>/permissions/apply-template/', views.apply_template_to_role, name='apply_template_to_role'),
     path('roles/templates/apply-bulk/', views.apply_template_bulk, name='apply_template_bulk'),

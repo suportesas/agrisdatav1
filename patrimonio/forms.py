@@ -6,7 +6,8 @@ from django import forms
 from django.core.exceptions import ValidationError
 from decimal import Decimal
 from .models import Patrimonio, PatrimonioMovimentacao, PatrimonioAuditoria, PatrimonioAuditoriaItem
-from cadastros.models import Vehicle, Fazenda
+from frota.models import Vehicle
+from cadastros.models import Fazenda
 
 
 class PatrimonioForm(forms.ModelForm):

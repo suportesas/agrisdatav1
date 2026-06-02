@@ -57,7 +57,7 @@ class Patrimonio(models.Model):
     
     # Vinculação com veículo (opcional)
     veiculo = models.OneToOneField(
-        'cadastros.Vehicle', on_delete=models.SET_NULL, null=True, blank=True,
+        'frota.Vehicle', on_delete=models.SET_NULL, null=True, blank=True,
         related_name='patrimonio', verbose_name='Veículo Vinculado',
         help_text='Se for um veículo/implemento, vincule-o aqui para evitar duplicação'
     )
@@ -89,7 +89,7 @@ class Patrimonio(models.Model):
     localizacao = models.CharField('Localização', max_length=150, blank=True,
         help_text='Onde o bem está armazenado/em uso (ex: Galpão A, Campo 1)')
     responsavel = models.ForeignKey(
-        'cadastros.Funcionario', on_delete=models.SET_NULL, null=True, blank=True,
+        'rh.Funcionario', on_delete=models.SET_NULL, null=True, blank=True,
         related_name='patrimonios_responsavel', verbose_name='Responsável',
         help_text='Quem é responsável pelo bem'
     )
@@ -188,11 +188,11 @@ class PatrimonioMovimentacao(models.Model):
     tipo = models.CharField('Tipo de Movimento', max_length=20, choices=TIPO_MOVIMENTO_CHOICES)
     data = models.DateTimeField('Data', auto_now_add=True)
     responsavel_anterior = models.ForeignKey(
-        'cadastros.Funcionario', on_delete=models.SET_NULL, null=True, blank=True,
+        'rh.Funcionario', on_delete=models.SET_NULL, null=True, blank=True,
         related_name='patrimonio_movimentos_anterior', verbose_name='Responsável Anterior'
     )
     responsavel_novo = models.ForeignKey(
-        'cadastros.Funcionario', on_delete=models.SET_NULL, null=True, blank=True,
+        'rh.Funcionario', on_delete=models.SET_NULL, null=True, blank=True,
         related_name='patrimonio_movimentos_novo', verbose_name='Responsável Novo'
     )
     localizacao_anterior = models.CharField('Localização Anterior', max_length=150, blank=True)

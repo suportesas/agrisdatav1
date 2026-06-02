@@ -12,7 +12,7 @@
           <p class="text-muted">Deseja excluir o abastecimento de <strong>{{ obj.litros|floatformat:1 }}L</strong> em <strong>{{ obj.vehicle }}</strong> ({{ obj.data|date:"d/m/Y" }})? Esta ação não pode ser desfeita.</p>
           <div class="d-flex gap-2 justify-content-center mt-4">
             <form method="post">{% csrf_token %}<button type="submit" class="btn btn-danger"><i class="bi bi-trash"></i> Confirmar</button></form>
-            <a href="{% url 'cadastros:abastecimento_detail' obj.pk %}" class="btn btn-outline-secondary">Cancelar</a>
+            <a href="{% url 'frota:abastecimento_detail' obj.pk %}" class="btn btn-outline-secondary">Cancelar</a>
           </div>
         </div>
       </div>

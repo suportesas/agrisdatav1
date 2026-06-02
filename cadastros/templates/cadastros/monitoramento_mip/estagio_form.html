@@ -19,7 +19,7 @@
       <!-- Breadcrumb -->
       <nav aria-label="breadcrumb" class="mb-4">
         <ol class="breadcrumb">
-          <li class="breadcrumb-item"><a href="{% url 'cadastros:estagio_list' %}">Estágios</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'mip:estagio_list' %}">Estágios</a></li>
           <li class="breadcrumb-item active">
             {% if form.instance.pk %}Editar{% else %}Novo{% endif %}
           </li>
@@ -210,7 +210,7 @@
 
             <!-- Botões -->
             <div class="d-flex gap-2 justify-content-end">
-              <a href="{% url 'cadastros:estagio_list' %}" class="btn btn-outline-secondary">
+              <a href="{% url 'mip:estagio_list' %}" class="btn btn-outline-secondary">
                 <i class="bi bi-x-circle"></i> Cancelar
               </a>
               <button type="submit" class="btn btn-{% if form.instance.pk %}info{% else %}success{% endif %}">

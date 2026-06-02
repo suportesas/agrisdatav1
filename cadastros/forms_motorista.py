@@ -7,7 +7,7 @@ from django import forms
 from django.core.exceptions import ValidationError
 from django.db.models import Q
 from datetime import date, datetime
-from .models import Motorista, MotoristadoDocumento, MotoristaVinculoPlaca, VehiclePlate
+from frota.models import Motorista, MotoristadoDocumento, MotoristaVinculoPlaca, VehiclePlate
 import re
 
 

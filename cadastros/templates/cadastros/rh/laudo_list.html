@@ -10,10 +10,10 @@
       <p class="text-muted mb-0">Controle de validade de laudos ocupacionais por funcao e vinculo</p>
     </div>
     <div class="d-flex gap-2">
-      <a href="{% url 'cadastros:rh_dashboard' %}" class="btn btn-outline-secondary">
+      <a href="{% url 'rh:rh_dashboard' %}" class="btn btn-outline-secondary">
         <i class="fas fa-arrow-left me-2"></i>Dashboard RH
       </a>
-      <a href="{% url 'cadastros:laudo_create' %}" class="btn btn-danger">
+      <a href="{% url 'rh:laudo_create' %}" class="btn btn-danger">
         <i class="fas fa-plus me-2"></i>Novo Laudo
       </a>
     </div>
@@ -105,8 +105,8 @@
               {% endif %}
             </td>
             <td class="text-end">
-              <a href="{% url 'cadastros:laudo_detail' laudo.pk %}" class="btn btn-sm btn-outline-primary">Ver</a>
-              <a href="{% url 'cadastros:laudo_update' laudo.pk %}" class="btn btn-sm btn-outline-warning">Editar</a>
+              <a href="{% url 'rh:laudo_detail' laudo.pk %}" class="btn btn-sm btn-outline-primary">Ver</a>
+              <a href="{% url 'rh:laudo_update' laudo.pk %}" class="btn btn-sm btn-outline-warning">Editar</a>
             </td>
           </tr>
           {% empty %}

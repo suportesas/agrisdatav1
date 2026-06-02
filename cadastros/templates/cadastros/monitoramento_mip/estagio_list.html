@@ -46,7 +46,7 @@
 
       <!-- Botão Novo Estágio -->
       <div class="mb-4">
-        <a href="{% url 'cadastros:estagio_create' %}" class="btn btn-success btn-lg">
+        <a href="{% url 'mip:estagio_create' %}" class="btn btn-success btn-lg">
           <i class="bi bi-plus-circle"></i> Novo Estágio
         </a>
       </div>
@@ -89,7 +89,7 @@
               </button>
             </div>
             <div class="col-md-2">
-              <a href="{% url 'cadastros:estagio_list' %}" class="btn btn-outline-secondary w-100">
+              <a href="{% url 'mip:estagio_list' %}" class="btn btn-outline-secondary w-100">
                 <i class="bi bi-arrow-clockwise"></i> Limpar
               </a>
             </div>
@@ -191,7 +191,7 @@
                                 </td>
                                 <td>
                                   <div class="btn-group btn-group-sm" role="group">
-                                    <a href="{% url 'cadastros:estagio_update' estagio.pk %}" 
+                                    <a href="{% url 'mip:estagio_update' estagio.pk %}" 
                                        class="btn btn-sm btn-outline-primary" title="Editar">
                                       <i class="bi bi-pencil"></i>
                                     </a>
@@ -219,7 +219,7 @@
                                         </div>
                                         <div class="modal-footer">
                                           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                                          <a href="{% url 'cadastros:estagio_delete' estagio.pk %}" class="btn btn-danger">Excluir</a>
+                                          <a href="{% url 'mip:estagio_delete' estagio.pk %}" class="btn btn-danger">Excluir</a>
                                         </div>
                                       </div>
                                     </div>
@@ -245,7 +245,7 @@
       {% else %}
         <div class="alert alert-info text-center" role="alert">
           <i class="bi bi-inbox"></i> Nenhum estágio registrado<br>
-          <a href="{% url 'cadastros:estagio_create' %}" class="alert-link">
+          <a href="{% url 'mip:estagio_create' %}" class="alert-link">
             Criar primeiro estágio →
           </a>
         </div>

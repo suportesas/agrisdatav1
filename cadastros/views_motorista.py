@@ -13,8 +13,8 @@ from django.db import models
 from django.db.models import Q
 from django.utils import timezone
 from django.template.loader import render_to_string
-from .models import Motorista, MotoristadoDocumento, MotoristaVinculoPlaca
-from .forms_motorista import MotoristadoForm, MotoristadoDocumentoForm, MotoristaVinculoPlacaForm, MotoristaVinculoConsultaForm
+from frota.models import Motorista, MotoristadoDocumento, MotoristaVinculoPlaca
+from frota.forms_motorista import MotoristadoForm, MotoristadoDocumentoForm, MotoristaVinculoPlacaForm, MotoristaVinculoConsultaForm
 import requests
 from django.core.cache import cache
 from io import BytesIO

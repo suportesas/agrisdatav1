@@ -43,7 +43,7 @@
             </h1>
         </div>
         <div class="col-md-4 text-end">
-            <a href="{% url 'cadastros:motorista_list' %}" class="btn btn-outline-secondary">
+            <a href="{% url 'frota:motorista_list' %}" class="btn btn-outline-secondary">
                 <i class="bi bi-arrow-left"></i> Voltar
             </a>
         </div>
@@ -52,7 +52,7 @@
     <!-- Breadcrumb -->
     <nav aria-label="breadcrumb" class="mb-4">
         <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="{% url 'cadastros:motorista_list' %}">Motoristas</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'frota:motorista_list' %}">Motoristas</a></li>
             <li class="breadcrumb-item active">{{ title }}</li>
         </ol>
     </nav>
@@ -292,7 +292,7 @@
                 <button type="submit" class="btn btn-success">
                     <i class="bi bi-check-circle"></i> Salvar
                 </button>
-                <a href="{% url 'cadastros:motorista_list' %}" class="btn btn-outline-secondary">
+                <a href="{% url 'frota:motorista_list' %}" class="btn btn-outline-secondary">
                     <i class="bi bi-x-circle"></i> Cancelar
                 </a>
             </div>

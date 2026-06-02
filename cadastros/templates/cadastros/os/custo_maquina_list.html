@@ -10,7 +10,7 @@
     <h4 class="fw-bold text-secondary mb-0">
       <i class="bi bi-gear text-success"></i> Custo/Hora de Máquinas
     </h4>
-    <a href="{% url 'cadastros:custo_maquina_create' %}" class="btn btn-success">
+    <a href="{% url 'operacoes_campo:custo_maquina_create' %}" class="btn btn-success">
       <i class="bi bi-plus-circle me-1"></i> Nova Configuração
     </a>
   </div>
@@ -48,7 +48,7 @@
                 {% endif %}
               </td>
               <td class="text-end">
-                <a href="{% url 'cadastros:custo_maquina_update' cfg.pk %}" class="btn btn-sm btn-outline-secondary">
+                <a href="{% url 'operacoes_campo:custo_maquina_update' cfg.pk %}" class="btn btn-sm btn-outline-secondary">
                   <i class="bi bi-pencil"></i>
                 </a>
               </td>
@@ -58,7 +58,7 @@
               <td colspan="8" class="text-center text-muted py-4">
                 <i class="bi bi-gear fs-2 d-block mb-2"></i>
                 Nenhuma configuração cadastrada.
-                <a href="{% url 'cadastros:custo_maquina_create' %}" class="d-block mt-2">Configurar primeira máquina</a>
+                <a href="{% url 'operacoes_campo:custo_maquina_create' %}" class="d-block mt-2">Configurar primeira máquina</a>
               </td>
             </tr>
             {% endfor %}

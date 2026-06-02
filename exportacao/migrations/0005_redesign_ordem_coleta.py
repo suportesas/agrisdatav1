@@ -30,7 +30,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='ordemcoleta',
             name='motorista',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='ordens_coleta', to='cadastros.motorista', verbose_name='Motorista'),
+            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='ordens_coleta', to='frota.motorista', verbose_name='Motorista'),
         ),
         migrations.AddField(
             model_name='ordemcoleta',

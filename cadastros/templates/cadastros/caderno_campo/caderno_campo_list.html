@@ -40,7 +40,7 @@
         <div class="card-body d-flex justify-content-between align-items-center">
           <div>
             <h6 class="opacity-75 mb-1">Exportar PDF</h6>
-            <a href="{% url 'cadastros:caderno_campo_pdf' %}{% if talhao_selecionado or safra_selecionada %}?{% if talhao_selecionado %}talhao={{ talhao_selecionado }}{% endif %}{% if safra_selecionada %}&safra={{ safra_selecionada }}{% endif %}{% endif %}"
+            <a href="{% url 'operacoes_campo:caderno_campo_pdf' %}{% if talhao_selecionado or safra_selecionada %}?{% if talhao_selecionado %}talhao={{ talhao_selecionado }}{% endif %}{% if safra_selecionada %}&safra={{ safra_selecionada }}{% endif %}{% endif %}"
                class="btn btn-light btn-sm" target="_blank">
               <i class="bi bi-file-pdf"></i> Gerar PDF
             </a>
@@ -55,7 +55,7 @@
           <div class="d-flex justify-content-between align-items-center">
             <div>
               <h6 class="mb-1">Novo Registro</h6>
-              <a href="{% url 'cadastros:caderno_campo_create' %}" class="btn btn-dark btn-sm">
+              <a href="{% url 'operacoes_campo:caderno_campo_create' %}" class="btn btn-dark btn-sm">
                 <i class="bi bi-plus-circle"></i> Registrar
               </a>
             </div>
@@ -109,7 +109,7 @@
           <button type="submit" class="btn btn-primary btn-sm w-100"><i class="bi bi-funnel"></i> Filtrar</button>
         </div>
         <div class="col-md-1">
-          <a href="{% url 'cadastros:caderno_campo_list' %}" class="btn btn-outline-secondary btn-sm w-100"><i class="bi bi-x"></i></a>
+          <a href="{% url 'operacoes_campo:caderno_campo_list' %}" class="btn btn-outline-secondary btn-sm w-100"><i class="bi bi-x"></i></a>
         </div>
       </form>
     </div>
@@ -153,13 +153,13 @@
             <td class="small">{{ reg.responsavel.get_full_name|default:reg.responsavel.username|default:"—" }}</td>
             <td class="text-center">
               <div class="btn-group btn-group-sm">
-                <a href="{% url 'cadastros:caderno_campo_detail' reg.pk %}" class="btn btn-outline-info" title="Ver">
+                <a href="{% url 'operacoes_campo:caderno_campo_detail' reg.pk %}" class="btn btn-outline-info" title="Ver">
                   <i class="bi bi-eye"></i>
                 </a>
-                <a href="{% url 'cadastros:caderno_campo_update' reg.pk %}" class="btn btn-outline-primary" title="Editar">
+                <a href="{% url 'operacoes_campo:caderno_campo_update' reg.pk %}" class="btn btn-outline-primary" title="Editar">
                   <i class="bi bi-pencil"></i>
                 </a>
-                <a href="{% url 'cadastros:caderno_campo_delete' reg.pk %}" class="btn btn-outline-danger" title="Excluir">
+                <a href="{% url 'operacoes_campo:caderno_campo_delete' reg.pk %}" class="btn btn-outline-danger" title="Excluir">
                   <i class="bi bi-trash"></i>
                 </a>
               </div>
@@ -171,7 +171,7 @@
               <i class="bi bi-journal-x fs-3 d-block mb-2"></i>
               Nenhum registro encontrado.
               <br>
-              <a href="{% url 'cadastros:caderno_campo_create' %}" class="btn btn-sm btn-success mt-2">
+              <a href="{% url 'operacoes_campo:caderno_campo_create' %}" class="btn btn-sm btn-success mt-2">
                 <i class="bi bi-plus"></i> Criar primeiro registro
               </a>
             </td>

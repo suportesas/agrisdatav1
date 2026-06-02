@@ -19,7 +19,7 @@
       <a href="?talhao={{ talhao_filter }}&safra={{ safra_filter }}&q={{ search|urlencode }}&export=pdf" class="btn btn-outline-danger btn-sm" target="_blank" rel="noopener">
         <i class="bi bi-file-earmark-pdf me-1"></i> PDF
       </a>
-      <a href="{% url 'cadastros:os_list' %}" class="btn btn-outline-secondary btn-sm">
+      <a href="{% url 'operacoes_campo:os_list' %}" class="btn btn-outline-secondary btn-sm">
         <i class="bi bi-arrow-left me-1"></i> Voltar para OS
       </a>
     </div>
@@ -369,7 +369,7 @@
             <tbody>
               {% for item in custos %}
               <tr>
-                <td><a href="{% url 'cadastros:os_detail' item.os.pk %}" class="fw-semibold text-decoration-none">{{ item.os.numero }}</a></td>
+                <td><a href="{% url 'operacoes_campo:os_detail' item.os.pk %}" class="fw-semibold text-decoration-none">{{ item.os.numero }}</a></td>
                 <td class="small text-muted">{% if item.os.tipo_servico %}{{ item.os.tipo_servico.nome }}{% else %}—{% endif %}</td>
                 <td><a href="{% url 'cadastros:talhao_detail' item.talhao.pk %}" class="text-decoration-none text-dark">{{ item.talhao.nome }}</a></td>
                 <td>{% if item.safra %}<span class="badge bg-light text-dark border">{{ item.safra.nome }}</span>{% else %}<span class="text-muted">-</span>{% endif %}</td>

@@ -33,8 +33,8 @@
       <!-- Breadcrumb -->
       <nav aria-label="breadcrumb" class="mb-4">
         <ol class="breadcrumb">
-          <li class="breadcrumb-item"><a href="{% url 'cadastros:monitoramento_mip_list' %}">Monitoramentos</a></li>
-          <li class="breadcrumb-item"><a href="{% url 'cadastros:monitoramento_mip_detail' praga_mon.monitoramento.pk %}">{{ praga_mon.monitoramento.numero }}</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'mip:monitoramento_mip_list' %}">Monitoramentos</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'mip:monitoramento_mip_detail' praga_mon.monitoramento.pk %}">{{ praga_mon.monitoramento.numero }}</a></li>
           <li class="breadcrumb-item active">{{ praga_mon.praga.nome_comum }}</li>
         </ol>
       </nav>
@@ -184,7 +184,7 @@
             <i class="bi bi-crosshair2"></i> Pontos de Amostragem ({{ pontos|length }}/{{ praga_mon.monitoramento.quantidade_pontos }})
           </h5>
           {% if pontos|length < praga_mon.monitoramento.quantidade_pontos %}
-            <a href="{% url 'cadastros:monitoramento_mip_add_ponto' praga_mon.pk %}" class="btn btn-light btn-sm">
+            <a href="{% url 'mip:monitoramento_mip_add_ponto' praga_mon.pk %}" class="btn btn-light btn-sm">
               <i class="bi bi-plus-circle"></i> Adicionar Ponto
             </a>
           {% endif %}
@@ -255,7 +255,7 @@
                         {% endif %}
                       </div>
                       <div class="card-footer bg-light">
-                        <a href="{% url 'cadastros:monitoramento_mip_add_ponto' praga_mon.pk %}?numero={{ ponto.numero_ponto }}" 
+                        <a href="{% url 'mip:monitoramento_mip_add_ponto' praga_mon.pk %}?numero={{ ponto.numero_ponto }}" 
                            class="btn btn-sm btn-outline-primary">
                           <i class="bi bi-pencil"></i> Editar
                         </a>
@@ -268,7 +268,7 @@
           {% else %}
             <div class="alert alert-info text-center" role="alert">
               <i class="bi bi-info-circle"></i> Nenhum ponto de amostragem registrado ainda.<br>
-              <a href="{% url 'cadastros:monitoramento_mip_add_ponto' praga_mon.pk %}" class="alert-link">
+              <a href="{% url 'mip:monitoramento_mip_add_ponto' praga_mon.pk %}" class="alert-link">
                 Começar a adicionar pontos →
               </a>
             </div>
@@ -308,12 +308,12 @@
 
       <!-- Botões de Ação -->
       <div class="d-flex gap-2 mb-4">
-        <a href="{% url 'cadastros:monitoramento_mip_detail' praga_mon.monitoramento.pk %}" 
+        <a href="{% url 'mip:monitoramento_mip_detail' praga_mon.monitoramento.pk %}" 
            class="btn btn-outline-secondary">
           <i class="bi bi-arrow-left"></i> Voltar ao Monitoramento
         </a>
         {% if pontos|length < praga_mon.monitoramento.quantidade_pontos %}
-          <a href="{% url 'cadastros:monitoramento_mip_add_ponto' praga_mon.pk %}" 
+          <a href="{% url 'mip:monitoramento_mip_add_ponto' praga_mon.pk %}" 
              class="btn btn-primary">
             <i class="bi bi-plus-circle"></i> Adicionar Próximo Ponto ({{ pontos|length|add:1 }}/{{ praga_mon.monitoramento.quantidade_pontos }})
           </a>

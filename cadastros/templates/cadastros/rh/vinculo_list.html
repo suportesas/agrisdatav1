@@ -10,10 +10,10 @@
       <p class="text-muted mb-0">Controle de contratações e recontratações por funcionário</p>
     </div>
     <div class="d-flex gap-2">
-      <a href="{% url 'cadastros:rh_dashboard' %}" class="btn btn-outline-secondary">
+      <a href="{% url 'rh:rh_dashboard' %}" class="btn btn-outline-secondary">
         <i class="fas fa-arrow-left me-2"></i>Dashboard RH
       </a>
-      <a href="{% url 'cadastros:vinculo_create' %}" class="btn btn-primary">
+      <a href="{% url 'rh:vinculo_create' %}" class="btn btn-primary">
         <i class="fas fa-plus me-2"></i>Novo Vínculo
       </a>
     </div>
@@ -85,8 +85,8 @@
               {% endif %}
             </td>
             <td class="text-end">
-              <a href="{% url 'cadastros:vinculo_detail' vinculo.pk %}" class="btn btn-sm btn-outline-primary">Ver</a>
-              <a href="{% url 'cadastros:vinculo_update' vinculo.pk %}" class="btn btn-sm btn-outline-warning">Editar</a>
+              <a href="{% url 'rh:vinculo_detail' vinculo.pk %}" class="btn btn-sm btn-outline-primary">Ver</a>
+              <a href="{% url 'rh:vinculo_update' vinculo.pk %}" class="btn btn-sm btn-outline-warning">Editar</a>
             </td>
           </tr>
           {% empty %}

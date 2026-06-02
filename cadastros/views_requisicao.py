@@ -10,8 +10,9 @@ from django.utils import timezone
 from django.core.paginator import Paginator
 from django.http import JsonResponse
 
-from .emprestimo_utils import enviar_whatsapp_emprestimo
-from .models import Requisicao, RequisicaoItem, Talhao, Safra, EmprestimoProdutor, EmprestimoMovimento
+from emprestimos.utils import enviar_whatsapp_emprestimo
+from emprestimos.models import EmprestimoProdutor, EmprestimoMovimento
+from .models import Requisicao, RequisicaoItem, Talhao, Safra
 from .forms import RequisicaoForm, RequisicaoItemForm
 from estoque.models import MovimentacaoEstoque
 from produtos.models import Produto
@@ -498,7 +499,7 @@ def ajax_safras_por_talhao(request, talhao_id):
 @login_required
 def ajax_funcionarios_por_fazenda(request, fazenda_id):
     """AJAX endpoint para filtrar funcionários por fazenda selecionada"""
-    from .models import Funcionario
+    from rh.models import Funcionario
     empresa = getattr(request.user, 'empresa', None)
     if not empresa:
         return JsonResponse({'funcionarios': []})

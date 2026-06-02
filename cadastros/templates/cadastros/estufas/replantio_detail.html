@@ -7,7 +7,7 @@
 <div class="container-fluid mt-4">
 
   <div class="mb-3">
-    <a href="{% url 'cadastros:replantio_list' %}" class="btn btn-outline-secondary btn-sm">
+    <a href="{% url 'estufas:replantio_list' %}" class="btn btn-outline-secondary btn-sm">
       <i class="bi bi-arrow-left"></i> Voltar
     </a>
   </div>
@@ -28,7 +28,7 @@
             <dt class="col-5 text-muted">Lote (Estufa)</dt>
             <dd class="col-7">
               {% if obj.lote_muda %}
-                <a href="{% url 'cadastros:lote_muda_detail' obj.lote_muda.pk %}">{{ obj.lote_muda.codigo_lote }}</a>
+                <a href="{% url 'estufas:lote_muda_detail' obj.lote_muda.pk %}">{{ obj.lote_muda.codigo_lote }}</a>
               {% else %}—{% endif %}
             </dd>
             <dt class="col-5 text-muted">Motivo</dt><dd class="col-7"><span class="badge bg-warning text-dark">{{ obj.get_motivo_perda_display }}</span></dd>

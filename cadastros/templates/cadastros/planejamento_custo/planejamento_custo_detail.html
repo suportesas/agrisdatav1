@@ -10,8 +10,8 @@
   <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
     <h5 class="fw-bold text-secondary mb-0"><i class="bi bi-clipboard-data text-warning"></i> {{ plan.nome }}</h5>
     <div class="d-flex gap-2">
-      <a href="{% url 'cadastros:planejamento_custo_list' %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i> Voltar</a>
-      <form method="post" action="{% url 'cadastros:planejamento_custo_delete' plan.pk %}" class="d-inline">
+      <a href="{% url 'operacoes_campo:planejamento_custo_list' %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i> Voltar</a>
+      <form method="post" action="{% url 'operacoes_campo:planejamento_custo_delete' plan.pk %}" class="d-inline">
         {% csrf_token %}
         <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('Excluir este planejamento?')"><i class="bi bi-trash"></i> Excluir</button>
       </form>
@@ -103,7 +103,7 @@
                 <td class="text-end small">R$ {{ item.custo_unitario|floatformat:4 }}</td>
                 <td class="text-end fw-bold">R$ {{ item.custo_total|floatformat:2 }}</td>
                 <td>
-                  <form method="post" action="{% url 'cadastros:planejamento_custo_item_delete' plan.pk item.pk %}" class="d-inline">
+                  <form method="post" action="{% url 'operacoes_campo:planejamento_custo_item_delete' plan.pk item.pk %}" class="d-inline">
                     {% csrf_token %}
                     <button type="submit" class="btn btn-outline-danger btn-sm py-0 px-1" onclick="return confirm('Remover?')"><i class="bi bi-trash"></i></button>
                   </form>
@@ -165,7 +165,7 @@
           <h6 class="fw-bold text-secondary mb-0"><i class="bi bi-plus-circle text-warning"></i> Adicionar Item</h6>
         </div>
         <div class="card-body">
-          <form method="post" action="{% url 'cadastros:planejamento_custo_item_add' plan.pk %}" novalidate>
+          <form method="post" action="{% url 'operacoes_campo:planejamento_custo_item_add' plan.pk %}" novalidate>
             {% csrf_token %}
             <div class="mb-2">
               <label class="form-label small fw-semibold">Categoria</label>
@@ -245,7 +245,7 @@ document.addEventListener('DOMContentLoaded', function () {
   produtoSel.addEventListener('change', function () {
     const pid = this.value;
     if (!pid) return;
-    fetch(`{% url 'cadastros:ajax_preco_produto' %}?produto_id=${pid}`)
+    fetch(`{% url 'operacoes_campo:ajax_preco_produto' %}?produto_id=${pid}`)
       .then(r => r.json())
       .then(data => {
         if (data.preco_custo && custoInput) custoInput.value = data.preco_custo;

@@ -12,7 +12,7 @@
       <div class="alert alert-warning">
         <i class="bi bi-exclamation-triangle"></i>
         Nenhum lote com status <strong>Pronto p/ Transplantio</strong>. Avance o status de um lote antes de registrar o transplantio.
-        <a href="{% url 'cadastros:lote_muda_list' %}?status=PRONTO" class="alert-link ms-2">Ver lotes</a>
+        <a href="{% url 'estufas:lote_muda_list' %}?status=PRONTO" class="alert-link ms-2">Ver lotes</a>
       </div>
       {% endif %}
 
@@ -79,7 +79,7 @@
             </div>
             <div class="d-flex gap-2 mt-3">
               <button type="submit" class="btn btn-success"><i class="bi bi-check-lg"></i> Registrar Transplantio</button>
-              <a href="{% url 'cadastros:transplantio_list' %}" class="btn btn-outline-secondary"><i class="bi bi-x"></i> Cancelar</a>
+              <a href="{% url 'estufas:transplantio_list' %}" class="btn btn-outline-secondary"><i class="bi bi-x"></i> Cancelar</a>
             </div>
           </form>
         </div>

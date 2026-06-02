@@ -6,7 +6,7 @@
 <div class="container-fluid mt-4">
   <div class="d-flex justify-content-between align-items-center mb-3">
     <h5 class="fw-bold text-secondary mb-0"><i class="bi bi-map text-success"></i> {{ vehicle }}</h5>
-    <a href="{% url 'cadastros:telemetria_list' %}?vehicle={{ vehicle.pk }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i> Lista</a>
+    <a href="{% url 'frota:telemetria_list' %}?vehicle={{ vehicle.pk }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i> Lista</a>
   </div>
 
   <div class="card border-0 shadow-sm rounded-4">

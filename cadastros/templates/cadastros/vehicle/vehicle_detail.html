@@ -7,7 +7,7 @@
   <nav aria-label="breadcrumb" class="mb-4">
     <ol class="breadcrumb">
       <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
-      <li class="breadcrumb-item"><a href="{% url 'cadastros:vehicle_list' %}">Veículos</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'frota:vehicle_list' %}">Veículos</a></li>
       <li class="breadcrumb-item active">{{ vehicle.marca }} {{ vehicle.modelo }}</li>
     </ol>
   </nav>
@@ -18,7 +18,7 @@
       <p class="text-muted mb-0">Tipo: {{ vehicle.get_tipo_display }} • Placa: {{ vehicle.get_current_plate|default:'—' }}</p>
     </div>
     <div class="d-flex gap-2">
-      <a href="{% url 'cadastros:vehicle_update' vehicle.pk %}" class="btn btn-outline-secondary">Editar</a>
+      <a href="{% url 'frota:vehicle_update' vehicle.pk %}" class="btn btn-outline-secondary">Editar</a>
       {% if not vehicle.patrimonio %}
       <a href="{% url 'patrimonio:patrimonio_from_veiculo' vehicle.pk %}" class="btn btn-success">
         <i class="bi bi-plus-circle"></i> Registrar como Patrimônio
@@ -28,7 +28,7 @@
         <i class="bi bi-link-45deg"></i> Ver Patrimônio
       </a>
       {% endif %}
-      <a href="{% url 'cadastros:vehicle_delete' vehicle.pk %}" class="btn btn-outline-danger">Excluir</a>
+      <a href="{% url 'frota:vehicle_delete' vehicle.pk %}" class="btn btn-outline-danger">Excluir</a>
     </div>
   </div>
 
@@ -57,7 +57,7 @@
               </div>
               <div class="d-flex gap-2">
                 <button type="button" class="btn btn-sm btn-outline-secondary btn-plate-edit" data-plate-id="{{ p.pk }}" data-placa="{{ p.placa }}" data-vigencia-inicio="{{ p.vigencia_inicio }}" data-vigencia-fim="{{ p.vigencia_fim }}" data-atual="{{ p.atual|yesno:'1,0' }}">Editar</button>
-                <a href="{% url 'cadastros:vehicle_plate_delete' vehicle.pk p.pk %}" class="btn btn-sm btn-outline-danger">Excluir</a>
+                <a href="{% url 'frota:vehicle_plate_delete' vehicle.pk p.pk %}" class="btn btn-sm btn-outline-danger">Excluir</a>
               </div>
             </li>
           {% empty %}
@@ -67,7 +67,7 @@
 
         <div class="mt-3">
           <h6 class="mb-2">Adicionar Placa</h6>
-          <form method="post" action="{% url 'cadastros:vehicle_plate_create' vehicle.pk %}">
+          <form method="post" action="{% url 'frota:vehicle_plate_create' vehicle.pk %}">
             {% csrf_token %}
             {{ plate_form.placa.label_tag }}
             {{ plate_form.placa }}
@@ -125,7 +125,7 @@
       <h5 class="mb-0 fw-bold"><i class="bi bi-fuel-pump text-info"></i> Abastecimentos
         {% if total_abastecimentos %}<span class="badge bg-light text-secondary border ms-1">{{ total_abastecimentos }} total</span>{% endif %}
       </h5>
-      <a href="{% url 'cadastros:abastecimento_create' %}?vehicle={{ vehicle.pk }}" class="btn btn-info btn-sm">
+      <a href="{% url 'frota:abastecimento_create' %}?vehicle={{ vehicle.pk }}" class="btn btn-info btn-sm">
         <i class="bi bi-plus"></i> Novo
       </a>
     </div>
@@ -141,8 +141,8 @@
         </div>
         <div class="col-md-4 d-flex gap-2">
           <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-search"></i> Filtrar</button>
-          <a href="{% url 'cadastros:vehicle_detail' vehicle.pk %}" class="btn btn-outline-secondary btn-sm">Limpar</a>
-          <a href="{% url 'cadastros:abastecimento_list' %}?vehicle={{ vehicle.pk }}" class="btn btn-outline-info btn-sm ms-auto" title="Ver todos">
+          <a href="{% url 'frota:vehicle_detail' vehicle.pk %}" class="btn btn-outline-secondary btn-sm">Limpar</a>
+          <a href="{% url 'frota:abastecimento_list' %}?vehicle={{ vehicle.pk }}" class="btn btn-outline-info btn-sm ms-auto" title="Ver todos">
             <i class="bi bi-box-arrow-up-right"></i>
           </a>
         </div>
@@ -176,7 +176,7 @@
             </td>
             <td class="small text-muted">{{ ab.local_abastecimento|truncatechars:18|default:"—" }}</td>
             <td>
-              <a href="{% url 'cadastros:abastecimento_detail' ab.pk %}" class="btn btn-outline-secondary btn-sm py-0 px-1"><i class="bi bi-eye"></i></a>
+              <a href="{% url 'frota:abastecimento_detail' ab.pk %}" class="btn btn-outline-secondary btn-sm py-0 px-1"><i class="bi bi-eye"></i></a>
             </td>
           </tr>
           {% empty %}
@@ -187,7 +187,7 @@
     </div>
     {% if abastecimentos|length == 30 %}
     <div class="card-footer bg-white text-center py-2">
-      <a href="{% url 'cadastros:abastecimento_list' %}?vehicle={{ vehicle.pk }}" class="text-info small">
+      <a href="{% url 'frota:abastecimento_list' %}?vehicle={{ vehicle.pk }}" class="text-info small">
         <i class="bi bi-arrow-right-circle"></i> Ver todos os abastecimentos
       </a>
     </div>
@@ -279,7 +279,7 @@
         e.preventDefault();
         modalError.classList.add('d-none');
         const platePk = modalPlatePk.value;
-        const url = new URL(window.location.origin + `{% url 'cadastros:vehicle_plate_update' vehicle.pk 0 %}`);
+        const url = new URL(window.location.origin + `{% url 'frota:vehicle_plate_update' vehicle.pk 0 %}`);
         // replace last segment with platePk
         url.pathname = url.pathname.replace('/0/', `/${platePk}/`);
         const data = new FormData();

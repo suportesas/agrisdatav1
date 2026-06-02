@@ -143,7 +143,7 @@ def copiar_estagios_template_para_nova_empresa(sender, instance, created, **kwar
         return  # Só executa na criação, não em atualizações
     
     # Import aqui para evitar circular imports
-    from cadastros.models import EstagioDesenvolvimento
+    from mip.models import EstagioDesenvolvimento
     
     # Buscar todos os estágios template (sem empresa específica)
     estagios_template = EstagioDesenvolvimento.objects.filter(

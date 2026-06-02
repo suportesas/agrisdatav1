@@ -30,7 +30,7 @@
           <h1 class="h3 mb-1"><i class="fas fa-signature me-2 text-primary"></i>Assinatura da Liberação</h1>
           <p class="text-muted mb-0">Requisição {% if emprestimo.requisicao %}#{{ emprestimo.requisicao.numero }}{% else %}Empréstimo #{{ emprestimo.pk }}{% endif %} - {{ emprestimo.produtor.razao_social }}</p>
         </div>
-        <a href="{% url 'cadastros:emprestimo_detalhe' emprestimo.pk %}" class="btn btn-outline-secondary">Voltar</a>
+        <a href="{% url 'emprestimos:emprestimo_detalhe' emprestimo.pk %}" class="btn btn-outline-secondary">Voltar</a>
       </div>
 
       <div class="card mb-3">
@@ -120,7 +120,7 @@
             </div>
 
             <div class="d-flex justify-content-end gap-2">
-              <a href="{% url 'cadastros:emprestimo_detalhe' emprestimo.pk %}" class="btn btn-outline-secondary">Cancelar</a>
+              <a href="{% url 'emprestimos:emprestimo_detalhe' emprestimo.pk %}" class="btn btn-outline-secondary">Cancelar</a>
               <button type="submit" class="btn btn-primary">Salvar Assinatura</button>
             </div>
           </form>

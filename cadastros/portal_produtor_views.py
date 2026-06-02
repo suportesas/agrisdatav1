@@ -18,12 +18,13 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
-from .emprestimo_utils import (
+from emprestimos.utils import (
     criar_mensagem_emprestimo,
     marcar_mensagens_emprestimo_como_lidas,
     registrar_interacao_emprestimo,
 )
-from .models import EmprestimoMensagemAnexo, EmprestimoMovimento, EmprestimoProdutor, Produtor
+from emprestimos.models import EmprestimoMensagemAnexo, EmprestimoMovimento, EmprestimoProdutor
+from .models import Produtor
 
 
 # ---------------------------------------------------------------------------

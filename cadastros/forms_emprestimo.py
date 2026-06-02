@@ -1,7 +1,8 @@
 from django import forms
 from django.utils import timezone
 
-from .models import EmprestimoProdutor, Produtor
+from emprestimos.models import EmprestimoProdutor
+from .models import Produtor
 from produtos.models import Produto
 
 

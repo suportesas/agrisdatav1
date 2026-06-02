@@ -14,7 +14,7 @@
       <button type="button" class="btn btn-info me-2" data-bs-toggle="modal" data-bs-target="#ajudaModal">
         <i class="bi bi-question-circle"></i> Ajuda
       </button>
-      <a href="{% url 'cadastros:motorista_vinculo_list' %}" class="btn btn-outline-secondary">
+      <a href="{% url 'frota:motorista_vinculo_list' %}" class="btn btn-outline-secondary">
         <i class="bi bi-arrow-left"></i> Voltar para Lista
       </a>
     </div>
@@ -110,7 +110,7 @@
           <button type="submit" class="btn btn-primary btn-lg">
             <i class="bi bi-search"></i> Consultar
           </button>
-          <a href="{% url 'cadastros:motorista_vinculo_consulta' %}" class="btn btn-outline-secondary">
+          <a href="{% url 'frota:motorista_vinculo_consulta' %}" class="btn btn-outline-secondary">
             <i class="bi bi-x-circle"></i> Limpar
           </a>
         </div>
@@ -127,7 +127,7 @@
         <span class="badge bg-white text-dark ms-2">{{ total_resultados }}</span>
       </h5>
       {% if resultados %}
-      <a href="{% url 'cadastros:motorista_vinculo_consulta_pdf' %}?{{ request.GET.urlencode }}&tipo_consulta={{ tipo_consulta }}&{% if tipo_consulta == 'placa_data' %}placa={{ parametros.placa.id }}&data_referencia={{ parametros.data_referencia|date:'Y-m-d' }}{% else %}motorista={{ parametros.motorista.id }}&data_inicio={{ parametros.data_inicio|date:'Y-m-d' }}{% if parametros.data_fim %}&data_fim={{ parametros.data_fim|date:'Y-m-d' }}{% endif %}{% endif %}" 
+      <a href="{% url 'frota:motorista_vinculo_consulta_pdf' %}?{{ request.GET.urlencode }}&tipo_consulta={{ tipo_consulta }}&{% if tipo_consulta == 'placa_data' %}placa={{ parametros.placa.id }}&data_referencia={{ parametros.data_referencia|date:'Y-m-d' }}{% else %}motorista={{ parametros.motorista.id }}&data_inicio={{ parametros.data_inicio|date:'Y-m-d' }}{% if parametros.data_fim %}&data_fim={{ parametros.data_fim|date:'Y-m-d' }}{% endif %}{% endif %}" 
          class="btn btn-light btn-sm" target="_blank">
         <i class="bi bi-file-pdf"></i> Exportar PDF
       </a>
@@ -197,7 +197,7 @@
                   {% endif %}
                 </td>
                 <td class="text-center">
-                  <a href="{% url 'cadastros:motorista_vinculo_detail' vinculo.id %}" class="btn btn-sm btn-outline-primary" title="Ver Detalhes">
+                  <a href="{% url 'frota:motorista_vinculo_detail' vinculo.id %}" class="btn btn-sm btn-outline-primary" title="Ver Detalhes">
                     <i class="bi bi-eye"></i>
                   </a>
                 </td>

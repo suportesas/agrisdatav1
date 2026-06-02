@@ -13,7 +13,7 @@
       <div class="mb-2">{{ form.atual }} <label for="id_atual" class="form-check-label">Marca como placa atual</label></div>
       <div class="mt-3 d-flex gap-2">
         <button class="btn btn-primary">Salvar</button>
-        <a href="{% url 'cadastros:vehicle_detail' vehicle.pk %}" class="btn btn-outline-secondary">Cancelar</a>
+        <a href="{% url 'frota:vehicle_detail' vehicle.pk %}" class="btn btn-outline-secondary">Cancelar</a>
       </div>
     </form>
   </div>

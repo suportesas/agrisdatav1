@@ -202,7 +202,7 @@
 
             <!-- Botões -->
             <div class="d-flex gap-2 justify-content-end">
-              <a href="{% url 'cadastros:monitoramento_mip_detail' monitoramento.pk %}" class="btn btn-outline-secondary">
+              <a href="{% url 'mip:monitoramento_mip_detail' monitoramento.pk %}" class="btn btn-outline-secondary">
                 <i class="bi bi-x-circle"></i> Cancelar
               </a>
               <button type="submit" class="btn {% if editing %}btn-warning{% else %}btn-success{% endif %}">
@@ -242,7 +242,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     estagioLoading.classList.remove('d-none');
 
-    fetch(`{% url 'cadastros:ajax_get_estagios_praga' %}?praga_id=${pragaId}`)
+    fetch(`{% url 'mip:ajax_get_estagios_praga' %}?praga_id=${pragaId}`)
       .then(response => response.json())
       .then(data => {
         estagioLoading.classList.add('d-none');

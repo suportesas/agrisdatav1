@@ -529,7 +529,7 @@
         <div class="section-header">
           <i class="bi bi-bar-chart-steps text-warning"></i>
           Comparativo de Talhões
-          <a href="{% url 'cadastros:custo_talhao_list' %}?safra={{ safra.pk }}" class="ms-auto btn btn-sm btn-outline-warning">
+          <a href="{% url 'operacoes_campo:custo_talhao_list' %}?safra={{ safra.pk }}" class="ms-auto btn btn-sm btn-outline-warning">
             <i class="bi bi-bar-chart-line"></i> Relatório completo
           </a>
         </div>
@@ -594,7 +594,7 @@
         <div class="section-header">
           <i class="bi bi-clipboard-data text-success"></i>
           Planejamentos de Custo
-          <a href="{% url 'cadastros:planejamento_custo_create' %}?safra_id={{ safra.pk }}" class="ms-auto btn btn-sm btn-outline-success">
+          <a href="{% url 'operacoes_campo:planejamento_custo_create' %}?safra_id={{ safra.pk }}" class="ms-auto btn btn-sm btn-outline-success">
             <i class="bi bi-plus-lg"></i> Novo Planejamento
           </a>
         </div>
@@ -636,7 +636,7 @@
                     {% else %}<span class="text-muted">—</span>{% endif %}
                   </td>
                   <td>
-                    <a href="{% url 'cadastros:planejamento_custo_detail' item.plan.pk %}" class="btn btn-sm btn-outline-warning py-0 px-2">
+                    <a href="{% url 'operacoes_campo:planejamento_custo_detail' item.plan.pk %}" class="btn btn-sm btn-outline-warning py-0 px-2">
                       <i class="bi bi-eye"></i> Ver
                     </a>
                   </td>
@@ -653,7 +653,7 @@
             <i class="bi bi-clipboard-data"></i>
             <p class="mb-0">Nenhum planejamento de custo cadastrado</p>
             <small class="text-muted">
-              <a href="{% url 'cadastros:planejamento_custo_create' %}?safra_id={{ safra.pk }}">Criar o primeiro planejamento</a>
+              <a href="{% url 'operacoes_campo:planejamento_custo_create' %}?safra_id={{ safra.pk }}">Criar o primeiro planejamento</a>
             </small>
           </div>
           {% endif %}
@@ -747,7 +747,7 @@
               <i class="bi bi-graph-up"></i> Definir Metas de Produção
             </button>
             {% endif %}
-            <a href="{% url 'cadastros:planejamento_custo_create' %}?safra_id={{ safra.pk }}" class="btn btn-outline-success">
+            <a href="{% url 'operacoes_campo:planejamento_custo_create' %}?safra_id={{ safra.pk }}" class="btn btn-outline-success">
               <i class="bi bi-clipboard-plus"></i> Novo Planejamento de Custo
             </a>
 

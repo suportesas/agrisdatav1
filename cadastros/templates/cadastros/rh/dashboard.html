@@ -121,19 +121,19 @@ document.addEventListener('DOMContentLoaded', function() {
       <p class="text-muted mb-0">Visão geral de Recursos Humanos</p>
     </div>
     <div class="d-flex gap-2">
-      <a href="{% url 'cadastros:vinculo_create' %}" class="btn btn-success">
+      <a href="{% url 'rh:vinculo_create' %}" class="btn btn-success">
         <i class="fas fa-id-card me-2"></i>Nova Contratação
       </a>
-      <a href="{% url 'cadastros:ferias_create' %}" class="btn btn-primary">
+      <a href="{% url 'rh:ferias_create' %}" class="btn btn-primary">
         <i class="fas fa-umbrella-beach me-2"></i>Cadastrar Férias
       </a>
-      <a href="{% url 'cadastros:afastamento_create' %}" class="btn btn-warning">
+      <a href="{% url 'rh:afastamento_create' %}" class="btn btn-warning">
         <i class="fas fa-medkit me-2"></i>Registrar Afastamento
       </a>
-      <a href="{% url 'cadastros:rescisao_create' %}" class="btn btn-danger">
+      <a href="{% url 'rh:rescisao_create' %}" class="btn btn-danger">
         <i class="fas fa-user-minus me-2"></i>Registrar Rescisão
       </a>
-      <a href="{% url 'cadastros:relatorio_rh' %}" class="btn btn-info">
+      <a href="{% url 'rh:relatorio_rh' %}" class="btn btn-info">
         <i class="fas fa-file-alt me-2"></i>Relatório RH
       </a>
     </div>
@@ -146,7 +146,7 @@ document.addEventListener('DOMContentLoaded', function() {
       <i class="fas fa-exclamation-triangle me-2"></i>
       <div>
         <strong>Atenção!</strong> Existem <strong>{{ proximas_ferias|length }}</strong> férias agendadas para os próximos 30 dias.
-        <a href="{% url 'cadastros:ferias_list' %}?status=AGENDADA" class="alert-link">Visualizar</a>
+        <a href="{% url 'rh:ferias_list' %}?status=AGENDADA" class="alert-link">Visualizar</a>
       </div>
     </div>
     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
@@ -159,7 +159,7 @@ document.addEventListener('DOMContentLoaded', function() {
       <i class="fas fa-medkit me-2"></i>
       <div>
         <strong>Aviso!</strong> Existem <strong>{{ afastamentos_lista|length }}</strong> afastamentos ativos no momento.
-        <a href="{% url 'cadastros:afastamento_list' %}?status=ATIVO" class="alert-link">Visualizar</a>
+        <a href="{% url 'rh:afastamento_list' %}?status=ATIVO" class="alert-link">Visualizar</a>
       </div>
     </div>
     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
@@ -172,7 +172,7 @@ document.addEventListener('DOMContentLoaded', function() {
       <i class="fas fa-id-card me-2"></i>
       <div>
         <strong>Ação necessária!</strong> Existem <strong>{{ vinculos_vencidos_abertos|length }}</strong> vínculos com data prevista já vencida e ainda abertos.
-        <a href="{% url 'cadastros:vinculo_list' %}?status=ATIVO" class="alert-link">Abrir vínculos</a>
+        <a href="{% url 'rh:vinculo_list' %}?status=ATIVO" class="alert-link">Abrir vínculos</a>
       </div>
     </div>
     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
@@ -185,7 +185,7 @@ document.addEventListener('DOMContentLoaded', function() {
       <i class="fas fa-hourglass-half me-2"></i>
       <div>
         <strong>Aviso!</strong> Existem <strong>{{ vinculos_a_vencer|length }}</strong> vínculos para vencer nos próximos 15 dias.
-        <a href="{% url 'cadastros:vinculo_list' %}" class="alert-link">Visualizar</a>
+        <a href="{% url 'rh:vinculo_list' %}" class="alert-link">Visualizar</a>
       </div>
     </div>
     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
@@ -198,7 +198,7 @@ document.addEventListener('DOMContentLoaded', function() {
       <i class="fas fa-user-clock me-2"></i>
       <div>
         <strong>Aviso!</strong> Existem <strong>{{ total_experiencias_vencendo }}</strong> experiências vencendo nos próximos 30 dias.
-        <a href="{% url 'cadastros:vinculo_list' %}" class="alert-link">Visualizar vínculos</a>
+        <a href="{% url 'rh:vinculo_list' %}" class="alert-link">Visualizar vínculos</a>
       </div>
     </div>
     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
@@ -211,7 +211,7 @@ document.addEventListener('DOMContentLoaded', function() {
       <i class="fas fa-hourglass-end me-2"></i>
       <div>
         <strong>Atenção!</strong> Existem <strong>{{ total_contratos_temporarios_vencendo }}</strong> contratos temporários/safra vencendo em 15 dias.
-        <a href="{% url 'cadastros:vinculo_list' %}" class="alert-link">Abrir vínculos</a>
+        <a href="{% url 'rh:vinculo_list' %}" class="alert-link">Abrir vínculos</a>
       </div>
     </div>
     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
@@ -224,7 +224,7 @@ document.addEventListener('DOMContentLoaded', function() {
       <i class="fas fa-file-shield me-2"></i>
       <div>
         <strong>Ação preventiva!</strong> Existem <strong>{{ total_laudos_vencendo }}</strong> laudos de insalubridade/periculosidade vencendo.
-        <a href="{% url 'cadastros:laudo_list' %}" class="alert-link">Abrir laudos</a>
+        <a href="{% url 'rh:laudo_list' %}" class="alert-link">Abrir laudos</a>
       </div>
     </div>
     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
@@ -263,7 +263,7 @@ document.addEventListener('DOMContentLoaded', function() {
               <i class="fas fa-calendar-check fa-2x text-primary"></i>
             </div>
           </div>
-          <a href="{% url 'cadastros:ferias_list' %}?status=AGENDADA" class="btn btn-sm btn-link p-0 mt-2">
+          <a href="{% url 'rh:ferias_list' %}?status=AGENDADA" class="btn btn-sm btn-link p-0 mt-2">
             Ver todas <i class="fas fa-arrow-right ms-1"></i>
           </a>
         </div>
@@ -283,7 +283,7 @@ document.addEventListener('DOMContentLoaded', function() {
               <i class="fas fa-umbrella-beach fa-2x text-warning"></i>
             </div>
           </div>
-          <a href="{% url 'cadastros:ferias_list' %}?status=EM_GOZO" class="btn btn-sm btn-link p-0 mt-2">
+          <a href="{% url 'rh:ferias_list' %}?status=EM_GOZO" class="btn btn-sm btn-link p-0 mt-2">
             Ver todas <i class="fas fa-arrow-right ms-1"></i>
           </a>
         </div>
@@ -303,7 +303,7 @@ document.addEventListener('DOMContentLoaded', function() {
               <i class="fas fa-medkit fa-2x text-danger"></i>
             </div>
           </div>
-          <a href="{% url 'cadastros:afastamento_list' %}?status=ATIVO" class="btn btn-sm btn-link p-0 mt-2">
+          <a href="{% url 'rh:afastamento_list' %}?status=ATIVO" class="btn btn-sm btn-link p-0 mt-2">
             Ver todos <i class="fas fa-arrow-right ms-1"></i>
           </a>
         </div>
@@ -323,7 +323,7 @@ document.addEventListener('DOMContentLoaded', function() {
               <i class="fas fa-id-card fa-2x text-success"></i>
             </div>
           </div>
-          <a href="{% url 'cadastros:vinculo_list' %}?status=ATIVO" class="btn btn-sm btn-link p-0 mt-2">
+          <a href="{% url 'rh:vinculo_list' %}?status=ATIVO" class="btn btn-sm btn-link p-0 mt-2">
             Ver vínculos <i class="fas fa-arrow-right ms-1"></i>
           </a>
         </div>
@@ -347,11 +347,11 @@ document.addEventListener('DOMContentLoaded', function() {
             {% if experiencias_status.urgent > 0 %}{% if experiencias_status.overdue > 0 %} • {% endif %}{{ experiencias_status.urgent }} em até 7 dias{% endif %}
             {% if experiencias_status.warning > 0 %}{% if experiencias_status.overdue > 0 or experiencias_status.urgent > 0 %} • {% endif %}{{ experiencias_status.warning }} até 30 dias{% endif %}
           </div>
-          <a href="{% url 'cadastros:vinculo_list' %}" class="btn btn-sm btn-link p-0 mt-2">
+          <a href="{% url 'rh:vinculo_list' %}" class="btn btn-sm btn-link p-0 mt-2">
             Ver experiências <i class="fas fa-arrow-right ms-1"></i>
           </a>
           <div class="mt-2">
-            <a href="{% url 'cadastros:vinculo_list' %}" class="btn btn-sm btn-outline-warning">Regularizar agora</a>
+            <a href="{% url 'rh:vinculo_list' %}" class="btn btn-sm btn-outline-warning">Regularizar agora</a>
           </div>
         </div>
       </div>
@@ -374,11 +374,11 @@ document.addEventListener('DOMContentLoaded', function() {
             {% if temporarios_status.urgent > 0 %}{% if temporarios_status.overdue > 0 %} • {% endif %}{{ temporarios_status.urgent }} em até 7 dias{% endif %}
             {% if temporarios_status.warning > 0 %}{% if temporarios_status.overdue > 0 or temporarios_status.urgent > 0 %} • {% endif %}{{ temporarios_status.warning }} até 15 dias{% endif %}
           </div>
-          <a href="{% url 'cadastros:vinculo_list' %}" class="btn btn-sm btn-link p-0 mt-2">
+          <a href="{% url 'rh:vinculo_list' %}" class="btn btn-sm btn-link p-0 mt-2">
             Ver contratos <i class="fas fa-arrow-right ms-1"></i>
           </a>
           <div class="mt-2">
-            <a href="{% url 'cadastros:vinculo_list' %}" class="btn btn-sm btn-outline-danger">Tratar contratos</a>
+            <a href="{% url 'rh:vinculo_list' %}" class="btn btn-sm btn-outline-danger">Tratar contratos</a>
           </div>
         </div>
       </div>
@@ -402,7 +402,7 @@ document.addEventListener('DOMContentLoaded', function() {
             {% if laudos_status.warning > 0 %}{% if laudos_status.overdue > 0 or laudos_status.urgent > 0 %} • {% endif %}{{ laudos_status.warning }} até 30 dias{% endif %}
           </div>
           <div class="mt-2">
-            <a href="{% url 'cadastros:laudo_list' %}" class="btn btn-sm btn-outline-danger">Revisar laudos</a>
+            <a href="{% url 'rh:laudo_list' %}" class="btn btn-sm btn-outline-danger">Revisar laudos</a>
           </div>
         </div>
       </div>
@@ -423,7 +423,7 @@ document.addEventListener('DOMContentLoaded', function() {
           {% if proximas_ferias %}
           <div class="list-group list-group-flush">
             {% for ferias in proximas_ferias %}
-            <a href="{% url 'cadastros:ferias_detail' ferias.pk %}" class="list-group-item list-group-item-action">
+            <a href="{% url 'rh:ferias_detail' ferias.pk %}" class="list-group-item list-group-item-action">
               <div class="d-flex justify-content-between align-items-center">
                 <div>
                   <h6 class="mb-1">{{ ferias.funcionario.nome_completo }}</h6>
@@ -446,7 +446,7 @@ document.addEventListener('DOMContentLoaded', function() {
           {% endif %}
         </div>
         <div class="card-footer text-center">
-          <a href="{% url 'cadastros:ferias_list' %}" class="btn btn-sm btn-outline-primary">
+          <a href="{% url 'rh:ferias_list' %}" class="btn btn-sm btn-outline-primary">
             Ver todas as férias <i class="fas fa-arrow-right ms-1"></i>
           </a>
         </div>
@@ -466,7 +466,7 @@ document.addEventListener('DOMContentLoaded', function() {
           {% if afastamentos_lista %}
           <div class="list-group list-group-flush">
             {% for afastamento in afastamentos_lista %}
-            <a href="{% url 'cadastros:afastamento_detail' afastamento.pk %}" class="list-group-item list-group-item-action">
+            <a href="{% url 'rh:afastamento_detail' afastamento.pk %}" class="list-group-item list-group-item-action">
               <div class="d-flex justify-content-between align-items-center">
                 <div>
                   <h6 class="mb-1">{{ afastamento.funcionario.nome_completo }}</h6>
@@ -493,7 +493,7 @@ document.addEventListener('DOMContentLoaded', function() {
           {% endif %}
         </div>
         <div class="card-footer text-center">
-          <a href="{% url 'cadastros:afastamento_list' %}" class="btn btn-sm btn-outline-danger">
+          <a href="{% url 'rh:afastamento_list' %}" class="btn btn-sm btn-outline-danger">
             Ver todos os afastamentos <i class="fas fa-arrow-right ms-1"></i>
           </a>
         </div>
@@ -512,7 +512,7 @@ document.addEventListener('DOMContentLoaded', function() {
           {% if experiencias_vencendo %}
           <div class="list-group list-group-flush">
             {% for vinculo in experiencias_vencendo %}
-            <a href="{% url 'cadastros:vinculo_detail' vinculo.pk %}" class="list-group-item list-group-item-action">
+            <a href="{% url 'rh:vinculo_detail' vinculo.pk %}" class="list-group-item list-group-item-action">
               <div class="d-flex justify-content-between align-items-center">
                 <div>
                   <h6 class="mb-1">{{ vinculo.funcionario.nome_completo }}</h6>
@@ -535,7 +535,7 @@ document.addEventListener('DOMContentLoaded', function() {
           {% endif %}
         </div>
         <div class="card-footer text-center">
-          <a href="{% url 'cadastros:vinculo_list' %}" class="btn btn-sm btn-outline-info">
+          <a href="{% url 'rh:vinculo_list' %}" class="btn btn-sm btn-outline-info">
             Ver todas as experiências <i class="fas fa-arrow-right ms-1"></i>
           </a>
         </div>
@@ -554,7 +554,7 @@ document.addEventListener('DOMContentLoaded', function() {
           {% if contratos_temporarios_vencendo %}
           <div class="list-group list-group-flush">
             {% for vinculo in contratos_temporarios_vencendo %}
-            <a href="{% url 'cadastros:vinculo_detail' vinculo.pk %}" class="list-group-item list-group-item-action">
+            <a href="{% url 'rh:vinculo_detail' vinculo.pk %}" class="list-group-item list-group-item-action">
               <div class="d-flex justify-content-between align-items-center">
                 <div>
                   <h6 class="mb-1">{{ vinculo.funcionario.nome_completo }}</h6>
@@ -577,7 +577,7 @@ document.addEventListener('DOMContentLoaded', function() {
           {% endif %}
         </div>
         <div class="card-footer text-center">
-          <a href="{% url 'cadastros:vinculo_list' %}" class="btn btn-sm btn-outline-warning">
+          <a href="{% url 'rh:vinculo_list' %}" class="btn btn-sm btn-outline-warning">
             Ver contratos temporários <i class="fas fa-arrow-right ms-1"></i>
           </a>
         </div>
@@ -596,7 +596,7 @@ document.addEventListener('DOMContentLoaded', function() {
           {% if laudos_vencendo %}
           <div class="list-group list-group-flush">
             {% for laudo in laudos_vencendo %}
-            <a href="{% url 'cadastros:laudo_detail' laudo.pk %}" class="list-group-item list-group-item-action">
+            <a href="{% url 'rh:laudo_detail' laudo.pk %}" class="list-group-item list-group-item-action">
               <div class="d-flex justify-content-between align-items-center">
                 <div>
                   <h6 class="mb-1">{{ laudo.funcao.nome }} - {{ laudo.get_tipo_laudo_display }}</h6>
@@ -620,7 +620,7 @@ document.addEventListener('DOMContentLoaded', function() {
           {% endif %}
         </div>
         <div class="card-footer text-center">
-          <a href="{% url 'cadastros:laudo_list' %}" class="btn btn-sm btn-outline-danger">
+          <a href="{% url 'rh:laudo_list' %}" class="btn btn-sm btn-outline-danger">
             Ver laudos <i class="fas fa-arrow-right ms-1"></i>
           </a>
         </div>
@@ -677,18 +677,18 @@ document.addEventListener('DOMContentLoaded', function() {
               <div class="border-end">
                 <h3 class="text-warning mb-1">{{ rescisoes_em_processo }}</h3>
                 <p class="text-muted mb-0">Em Processo</p>
-                <a href="{% url 'cadastros:rescisao_list' %}?status=EM_PROCESSO" class="btn btn-sm btn-link">Ver</a>
+                <a href="{% url 'rh:rescisao_list' %}?status=EM_PROCESSO" class="btn btn-sm btn-link">Ver</a>
               </div>
             </div>
             <div class="col-6">
               <h3 class="text-danger mb-1">{{ rescisoes_mes }}</h3>
               <p class="text-muted mb-0">Este Mês</p>
-              <a href="{% url 'cadastros:rescisao_list' %}" class="btn btn-sm btn-link">Ver</a>
+              <a href="{% url 'rh:rescisao_list' %}" class="btn btn-sm btn-link">Ver</a>
             </div>
           </div>
         </div>
         <div class="card-footer text-center">
-          <a href="{% url 'cadastros:rescisao_list' %}" class="btn btn-sm btn-outline-secondary">
+          <a href="{% url 'rh:rescisao_list' %}" class="btn btn-sm btn-outline-secondary">
             Ver todas as rescisões <i class="fas fa-arrow-right ms-1"></i>
           </a>
         </div>

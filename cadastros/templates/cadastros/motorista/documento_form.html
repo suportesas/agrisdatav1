@@ -34,7 +34,7 @@
             <p class="text-muted">Motorista: <strong>{{ motorista.nome }}</strong></p>
         </div>
         <div class="col-md-4 text-end">
-            <a href="{% url 'cadastros:motorista_detail' motorista.id %}" class="btn btn-outline-secondary">
+            <a href="{% url 'frota:motorista_detail' motorista.id %}" class="btn btn-outline-secondary">
                 <i class="bi bi-arrow-left"></i> Voltar
             </a>
         </div>
@@ -91,7 +91,7 @@
                 <button type="submit" class="btn btn-success">
                     <i class="bi bi-check-circle"></i> Salvar Documento
                 </button>
-                <a href="{% url 'cadastros:motorista_detail' motorista.id %}" class="btn btn-outline-secondary">
+                <a href="{% url 'frota:motorista_detail' motorista.id %}" class="btn btn-outline-secondary">
                     <i class="bi bi-x-circle"></i> Cancelar
                 </a>
             </div>

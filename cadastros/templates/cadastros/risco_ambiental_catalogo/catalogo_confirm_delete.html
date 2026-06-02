@@ -16,7 +16,7 @@
 
           <form method="post" class="d-flex justify-content-between border-top pt-3 mt-3">
             {% csrf_token %}
-            <a href="{% url 'cadastros:risco_ambiental_catalogo_list' %}" class="btn btn-outline-secondary">Cancelar</a>
+            <a href="{% url 'rh:risco_ambiental_catalogo_list' %}" class="btn btn-outline-secondary">Cancelar</a>
             <button type="submit" class="btn btn-danger">Excluir</button>
           </form>
         </div>

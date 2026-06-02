@@ -190,29 +190,29 @@
           <li class="has-submenu">
             <a href="#"><i class="bi bi-clipboard-check"></i> Ordens de Serviço <i class="bi bi-chevron-right ms-auto"></i></a>
             <ul class="nested-submenu">
-              <li><a href="{% url 'cadastros:os_list' %}"><i class="bi bi-list-ul"></i> Lista de OS</a></li>
-              <li><a href="{% url 'cadastros:os_create' %}"><i class="bi bi-plus-square"></i> Nova OS</a></li>
+              <li><a href="{% url 'operacoes_campo:os_list' %}"><i class="bi bi-list-ul"></i> Lista de OS</a></li>
+              <li><a href="{% url 'operacoes_campo:os_create' %}"><i class="bi bi-plus-square"></i> Nova OS</a></li>
             </ul>
           </li>
-          <li><a href="{% url 'cadastros:custo_talhao_list' %}"><i class="bi bi-graph-up"></i> Custo por Talhão/Safra</a></li>
-          <li><a href="{% url 'cadastros:planejamento_custo_list' %}"><i class="bi bi-clipboard-data text-warning"></i> Planejamento de Custo</a></li>
-          <li><a href="{% url 'cadastros:custo_maquina_list' %}"><i class="bi bi-gear"></i> Custo/Hora Máquinas</a></li>
+          <li><a href="{% url 'operacoes_campo:custo_talhao_list' %}"><i class="bi bi-graph-up"></i> Custo por Talhão/Safra</a></li>
+          <li><a href="{% url 'operacoes_campo:planejamento_custo_list' %}"><i class="bi bi-clipboard-data text-warning"></i> Planejamento de Custo</a></li>
+          <li><a href="{% url 'operacoes_campo:custo_maquina_list' %}"><i class="bi bi-gear"></i> Custo/Hora Máquinas</a></li>
           
           <!-- Pragas e Doenças (Submenu) -->
           <li class="has-submenu">
             <a href="#"><i class="bi bi-bug"></i> Pragas e Doenças <i class="bi bi-chevron-right ms-auto"></i></a>
             <ul class="nested-submenu">
               <li><a href="{% url 'cadastros:praga_list' %}"><i class="bi bi-bug"></i> Pragas</a></li>
-              <li><a href="{% url 'cadastros:estagio_list' %}"><i class="bi bi-diagram-3"></i> Estágios</a></li>
-              <li><a href="{% url 'cadastros:estagio_cadastro_em_lote' %}"><i class="bi bi-plus-square"></i> Cadastro em Lote</a></li>
+              <li><a href="{% url 'mip:estagio_list' %}"><i class="bi bi-diagram-3"></i> Estágios</a></li>
+              <li><a href="{% url 'mip:estagio_cadastro_em_lote' %}"><i class="bi bi-plus-square"></i> Cadastro em Lote</a></li>
             </ul>
           </li>
-          
+
           <li class="submenu-divider"></li>
-          <li><a href="{% url 'cadastros:monitoramento_mip_list' %}"><i class="bi bi-crosshair2"></i> Monitoramento MIP</a></li>
-          <li><a href="{% url 'cadastros:pluviometria_list' %}"><i class="bi bi-cloud-rain-heavy"></i> Pluviometria</a></li>
-          <li><a href="{% url 'cadastros:qualidade_campo_list' %}"><i class="bi bi-patch-check"></i> Qualidade de Campo</a></li>
-          <li><a href="{% url 'cadastros:caderno_campo_list' %}"><i class="bi bi-journal-text"></i> Caderno de Campo</a></li>
+          <li><a href="{% url 'mip:monitoramento_mip_list' %}"><i class="bi bi-crosshair2"></i> Monitoramento MIP</a></li>
+          <li><a href="{% url 'operacoes_campo:pluviometria_list' %}"><i class="bi bi-cloud-rain-heavy"></i> Pluviometria</a></li>
+          <li><a href="{% url 'operacoes_campo:qualidade_campo_list' %}"><i class="bi bi-patch-check"></i> Qualidade de Campo</a></li>
+          <li><a href="{% url 'operacoes_campo:caderno_campo_list' %}"><i class="bi bi-journal-text"></i> Caderno de Campo</a></li>
           <li class="submenu-divider"></li>
           <li><a href="{% url 'portal_campo:login' %}" target="_blank"><i class="bi bi-person-badge-fill"></i> Portal do Campo</a></li>
         </ul>
@@ -226,11 +226,11 @@
           <i class="bi bi-chevron-down submenu-arrow"></i>
         </a>
         <ul class="nav-submenu">
-          <li><a href="{% url 'cadastros:estufa_list' %}"><i class="bi bi-house-door"></i> Estufas</a></li>
-          <li><a href="{% url 'cadastros:lote_muda_list' %}"><i class="bi bi-grid-3x3-gap"></i> Lotes de Mudas</a></li>
-          <li><a href="{% url 'cadastros:transplantio_list' %}"><i class="bi bi-arrow-right-square"></i> Transplantios</a></li>
-          <li><a href="{% url 'cadastros:replantio_list' %}"><i class="bi bi-arrow-repeat"></i> Replantios</a></li>
-          <li><a href="{% url 'cadastros:dashboard_estufas' %}"><i class="bi bi-bar-chart-line"></i> Dashboard</a></li>
+          <li><a href="{% url 'estufas:estufa_list' %}"><i class="bi bi-house-door"></i> Estufas</a></li>
+          <li><a href="{% url 'estufas:lote_muda_list' %}"><i class="bi bi-grid-3x3-gap"></i> Lotes de Mudas</a></li>
+          <li><a href="{% url 'estufas:transplantio_list' %}"><i class="bi bi-arrow-right-square"></i> Transplantios</a></li>
+          <li><a href="{% url 'estufas:replantio_list' %}"><i class="bi bi-arrow-repeat"></i> Replantios</a></li>
+          <li><a href="{% url 'estufas:dashboard_estufas' %}"><i class="bi bi-bar-chart-line"></i> Dashboard</a></li>
         </ul>
       </li>
 
@@ -272,24 +272,24 @@
           <i class="bi bi-chevron-down submenu-arrow"></i>
         </a>
         <ul class="nav-submenu">
-          <li><a href="{% url 'cadastros:frota_dashboard' %}"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
-          <li><a href="{% url 'cadastros:vehicle_list' %}"><i class="bi bi-car-front"></i> Veículos</a></li>
-          <li><a href="{% url 'cadastros:abastecimento_list' %}"><i class="bi bi-fuel-pump"></i> Combustível</a></li>
-          <li><a href="{% url 'cadastros:manutencao_list' %}"><i class="bi bi-wrench"></i> Manutenções</a></li>
-          <li><a href="{% url 'cadastros:pedagio_list' %}"><i class="bi bi-signpost"></i> Pedágios</a></li>
-          <li><a href="{% url 'cadastros:viagem_list' %}"><i class="bi bi-map"></i> Viagens</a></li>
-          <li><a href="{% url 'cadastros:telemetria_list' %}"><i class="bi bi-geo-alt"></i> Telemetria</a></li>
-          <li><a href="{% url 'cadastros:alertas_manutencao_list' %}"><i class="bi bi-exclamation-triangle text-warning"></i> Alertas</a></li>
-          <li><a href="{% url 'cadastros:abastecimento_importar' %}"><i class="bi bi-upload"></i> Importar CSV</a></li>
+          <li><a href="{% url 'frota:frota_dashboard' %}"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
+          <li><a href="{% url 'frota:vehicle_list' %}"><i class="bi bi-car-front"></i> Veículos</a></li>
+          <li><a href="{% url 'frota:abastecimento_list' %}"><i class="bi bi-fuel-pump"></i> Combustível</a></li>
+          <li><a href="{% url 'frota:manutencao_list' %}"><i class="bi bi-wrench"></i> Manutenções</a></li>
+          <li><a href="{% url 'frota:pedagio_list' %}"><i class="bi bi-signpost"></i> Pedágios</a></li>
+          <li><a href="{% url 'frota:viagem_list' %}"><i class="bi bi-map"></i> Viagens</a></li>
+          <li><a href="{% url 'frota:telemetria_list' %}"><i class="bi bi-geo-alt"></i> Telemetria</a></li>
+          <li><a href="{% url 'frota:alertas_manutencao_list' %}"><i class="bi bi-exclamation-triangle text-warning"></i> Alertas</a></li>
+          <li><a href="{% url 'frota:abastecimento_importar' %}"><i class="bi bi-upload"></i> Importar CSV</a></li>
           <li><a href="{% url 'portal_motorista:login' %}" target="_blank"><i class="bi bi-person-badge"></i> Portal do Motorista</a></li>
           <li class="submenu-divider"></li>
           <!-- Motorista x Frota (Submenu) -->
           <li class="has-submenu">
             <a href="#"><i class="bi bi-link-45deg"></i> Motorista x Frota <i class="bi bi-chevron-right ms-auto"></i></a>
             <ul class="nested-submenu">
-              <li><a href="{% url 'cadastros:motorista_list' %}"><i class="bi bi-person-badge"></i> Motoristas</a></li>
-              <li><a href="{% url 'cadastros:motorista_vinculo_list' %}"><i class="bi bi-list-ul"></i> Lista de Vínculos</a></li>
-              <li><a href="{% url 'cadastros:motorista_vinculo_consulta' %}"><i class="bi bi-search"></i> Consulta Histórico</a></li>
+              <li><a href="{% url 'frota:motorista_list' %}"><i class="bi bi-person-badge"></i> Motoristas</a></li>
+              <li><a href="{% url 'frota:motorista_vinculo_list' %}"><i class="bi bi-list-ul"></i> Lista de Vínculos</a></li>
+              <li><a href="{% url 'frota:motorista_vinculo_consulta' %}"><i class="bi bi-search"></i> Consulta Histórico</a></li>
             </ul>
           </li>
         </ul>
@@ -303,38 +303,38 @@
           <i class="bi bi-chevron-down submenu-arrow"></i>
         </a>
         <ul class="nav-submenu">
-          <li><a href="{% url 'cadastros:rh_dashboard' %}"><i class="bi bi-speedometer2"></i> Dashboard RH</a></li>
+          <li><a href="{% url 'rh:rh_dashboard' %}"><i class="bi bi-speedometer2"></i> Dashboard RH</a></li>
           <li class="submenu-divider"></li>
           
           <!-- Funcionários (Submenu dentro de RH) -->
           <li class="has-submenu">
             <a href="#"><i class="bi bi-person-badge"></i> Funcionários <i class="bi bi-chevron-right ms-auto"></i></a>
             <ul class="nested-submenu">
-              <li><a href="{% url 'cadastros:funcionario_list' %}"><i class="bi bi-list-ul"></i> Listar Funcionários</a></li>
-              <li><a href="{% url 'cadastros:funcao_list' %}"><i class="bi bi-person-workspace"></i> Funções/Cargos</a></li>
+              <li><a href="{% url 'rh:funcionario_list' %}"><i class="bi bi-list-ul"></i> Listar Funcionários</a></li>
+              <li><a href="{% url 'rh:funcao_list' %}"><i class="bi bi-person-workspace"></i> Funções/Cargos</a></li>
             </ul>
           </li>
           
-          <li><a href="{% url 'cadastros:ferias_list' %}"><i class="bi bi-umbrella-beach"></i> Férias</a></li>
-          <li><a href="{% url 'cadastros:afastamento_list' %}"><i class="bi bi-medkit"></i> Afastamentos</a></li>
-          <li><a href="{% url 'cadastros:risco_ambiental_catalogo_list' %}"><i class="bi bi-shield-exclamation"></i> Riscos Ambientais</a></li>
-          <li><a href="{% url 'cadastros:vinculo_list' %}"><i class="bi bi-link-45deg"></i> Vínculos Contratuais</a></li>
-          <li><a href="{% url 'cadastros:laudo_list' %}"><i class="bi bi-file-earmark-check"></i> Laudos de Risco</a></li>
-          <li><a href="{% url 'cadastros:rescisao_list' %}"><i class="bi bi-person-dash"></i> Rescisões</a></li>
+          <li><a href="{% url 'rh:ferias_list' %}"><i class="bi bi-umbrella-beach"></i> Férias</a></li>
+          <li><a href="{% url 'rh:afastamento_list' %}"><i class="bi bi-medkit"></i> Afastamentos</a></li>
+          <li><a href="{% url 'rh:risco_ambiental_catalogo_list' %}"><i class="bi bi-shield-exclamation"></i> Riscos Ambientais</a></li>
+          <li><a href="{% url 'rh:vinculo_list' %}"><i class="bi bi-link-45deg"></i> Vínculos Contratuais</a></li>
+          <li><a href="{% url 'rh:laudo_list' %}"><i class="bi bi-file-earmark-check"></i> Laudos de Risco</a></li>
+          <li><a href="{% url 'rh:rescisao_list' %}"><i class="bi bi-person-dash"></i> Rescisões</a></li>
           <li class="submenu-divider"></li>
           
           <!-- ASO - Atestado Saúde Ocupacional (Submenu dentro de RH) -->
           <li class="has-submenu">
             <a href="#"><i class="bi bi-heart-pulse"></i> ASO <i class="bi bi-chevron-right ms-auto"></i></a>
             <ul class="nested-submenu">
-              <li><a href="{% url 'cadastros:aso_solicitacao_list' %}"><i class="bi bi-list-ul"></i> Solicitações</a></li>
-              <li><a href="{% url 'cadastros:aso_solicitacao_create' %}"><i class="bi bi-plus-circle"></i> Nova Solicitação</a></li>
-              <li><a href="{% url 'cadastros:tipo_exame_aso_list' %}"><i class="bi bi-gear"></i> Tipos de Exame</a></li>
+              <li><a href="{% url 'rh:aso_solicitacao_list' %}"><i class="bi bi-list-ul"></i> Solicitações</a></li>
+              <li><a href="{% url 'rh:aso_solicitacao_create' %}"><i class="bi bi-plus-circle"></i> Nova Solicitação</a></li>
+              <li><a href="{% url 'rh:tipo_exame_aso_list' %}"><i class="bi bi-gear"></i> Tipos de Exame</a></li>
             </ul>
           </li>
           
           <li class="submenu-divider"></li>
-          <li><a href="{% url 'cadastros:relatorio_rh' %}"><i class="bi bi-file-earmark-text"></i> Relatório RH</a></li>
+          <li><a href="{% url 'rh:relatorio_rh' %}"><i class="bi bi-file-earmark-text"></i> Relatório RH</a></li>
         </ul>
       </li>
 
@@ -408,7 +408,7 @@
           <li><a href="{% url 'cadastros:requisicao_list' %}"><i class="bi bi-clipboard-check"></i> Requisições</a></li>
           <li><a href="{% url 'cadastros:requisicao_create' %}"><i class="bi bi-plus-circle"></i> Nova Requisição</a></li>
           <li>
-            <a href="{% if notificacoes_emprestimo.total_nao_lidas > 0 %}{% url 'cadastros:emprestimo_extrato' %}?apenas_mensagens_nao_lidas=on{% else %}{% url 'cadastros:emprestimo_extrato' %}{% endif %}">
+            <a href="{% if notificacoes_emprestimo.total_nao_lidas > 0 %}{% url 'emprestimos:emprestimo_extrato' %}?apenas_mensagens_nao_lidas=on{% else %}{% url 'emprestimos:emprestimo_extrato' %}{% endif %}">
               <i class="bi bi-journal-text"></i> Extrato de Empréstimos
               {% if notificacoes_emprestimo.total_nao_lidas > 0 %}
               <span class="badge bg-danger ms-2">{{ notificacoes_emprestimo.total_nao_lidas }}</span>
@@ -701,7 +701,7 @@
               <li><a href="{% url 'estoque:relatorio_produto' %}"><i class="bi bi-file-earmark-bar-graph"></i> Relatório por Produto</a></li>
               <li><a href="{% url 'estoque:relatorio_alertas_estoque' %}"><i class="bi bi-exclamation-triangle text-danger"></i> Alertas (Excel/PDF)</a></li>
               <li>
-                <a href="{% if notificacoes_emprestimo.total_nao_lidas > 0 %}{% url 'cadastros:emprestimo_extrato' %}?apenas_mensagens_nao_lidas=on{% else %}{% url 'cadastros:emprestimo_extrato' %}{% endif %}">
+                <a href="{% if notificacoes_emprestimo.total_nao_lidas > 0 %}{% url 'emprestimos:emprestimo_extrato' %}?apenas_mensagens_nao_lidas=on{% else %}{% url 'emprestimos:emprestimo_extrato' %}{% endif %}">
                   <i class="bi bi-journal-text"></i> Extrato de Empréstimos
                   {% if notificacoes_emprestimo.total_nao_lidas > 0 %}
                   <span class="badge bg-danger ms-2">{{ notificacoes_emprestimo.total_nao_lidas }}</span>

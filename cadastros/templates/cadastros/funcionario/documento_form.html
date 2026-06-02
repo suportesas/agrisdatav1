@@ -8,8 +8,8 @@
 <div class="container py-4">
   <nav aria-label="breadcrumb" class="mb-4">
     <ol class="breadcrumb">
-      <li class="breadcrumb-item"><a href="{% url 'cadastros:funcionario_list' %}">Funcionários</a></li>
-      <li class="breadcrumb-item"><a href="{% url 'cadastros:funcionario_detail' funcionario.pk %}">{{ funcionario.nome_completo }}</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'rh:funcionario_list' %}">Funcionários</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'rh:funcionario_detail' funcionario.pk %}">{{ funcionario.nome_completo }}</a></li>
       <li class="breadcrumb-item active">Anexar Documento</li>
     </ol>
   </nav>
@@ -65,7 +65,7 @@
           </div>
         </div>
         <div class="d-flex justify-content-between gap-3 mt-4">
-          <a href="{% url 'cadastros:funcionario_detail' funcionario.pk %}" class="btn btn-outline-secondary">
+          <a href="{% url 'rh:funcionario_detail' funcionario.pk %}" class="btn btn-outline-secondary">
             <i class="bi bi-arrow-left"></i> Cancelar
           </a>
           <button type="submit" class="btn btn-success">

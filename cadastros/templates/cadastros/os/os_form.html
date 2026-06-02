@@ -214,7 +214,7 @@
 
         <!-- Botões -->
         <div class="d-flex gap-2 justify-content-end">
-          <a href="{% url 'cadastros:os_list' %}" class="btn btn-secondary">
+          <a href="{% url 'operacoes_campo:os_list' %}" class="btn btn-secondary">
             <i class="bi bi-x-circle me-1"></i>Cancelar
           </a>
           <button type="submit" class="btn btn-success px-4">
@@ -286,7 +286,7 @@ document.querySelectorAll('.remove-form').forEach(btn => {
 });
 
 // Carregamento dinâmico de subtipos e modalidades
-const AJAX_URL = "{% url 'cadastros:os_ajax_opcoes_servico' %}";
+const AJAX_URL = "{% url 'operacoes_campo:os_ajax_opcoes_servico' %}";
 const tipoSelect = document.getElementById('id_tipo_servico');
 const subtipoSelect = document.getElementById('id_subtipo_servico');
 const modalidadeSelect = document.getElementById('id_modalidade_execucao');
@@ -334,7 +334,7 @@ if (tipoSelect) {
 }
 
 // ============== AUTO-PREENCHIMENTO DE SAFRA PELO TALHÃO ==============
-const AJAX_TALHAO_URL = "{% url 'cadastros:os_ajax_opcoes_talhao' %}";
+const AJAX_TALHAO_URL = "{% url 'operacoes_campo:os_ajax_opcoes_talhao' %}";
 const talhaoSelect = document.getElementById('id_talhao');
 const safraSelect = document.getElementById('id_safra');
 const culturaInput = document.getElementById('id_cultura_display');

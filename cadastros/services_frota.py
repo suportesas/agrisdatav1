@@ -5,7 +5,7 @@ from decimal import Decimal
 
 def calcular_margem_viagem(viagem):
     """Retorna dict com breakdown de custos e margem da viagem."""
-    from .models import AbastecimentoVeiculo, PedagioVeiculo, ManutencaoVeiculo
+    from frota.models import AbastecimentoVeiculo, PedagioVeiculo, ManutencaoVeiculo
 
     frete = viagem.valor_frete or Decimal('0')
 
@@ -51,7 +51,7 @@ def calcular_margem_viagem(viagem):
 
 def gerar_alertas_manutencao(empresa):
     """Verifica manutenções com proxima_data/proximo_km próximos e cria AlertaManutencao."""
-    from .models import ManutencaoVeiculo, AlertaManutencao
+    from frota.models import ManutencaoVeiculo, AlertaManutencao
 
     hoje = date.today()
     limite_data = hoje + timedelta(days=7)

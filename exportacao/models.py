@@ -292,7 +292,7 @@ class BookingContainer(ExportacaoBaseModel):
         null=True, blank=True, verbose_name='Transportadora', related_name='containers',
     )
     motorista = models.ForeignKey(
-        'cadastros.Motorista', on_delete=models.SET_NULL,
+        'frota.Motorista', on_delete=models.SET_NULL,
         null=True, blank=True, verbose_name='Motorista', related_name='containers',
     )
     placa_principal = models.CharField('Placa Principal', max_length=15, blank=True)
@@ -387,7 +387,7 @@ class OrdemColeta(ExportacaoBaseModel):
         verbose_name='Transportadora',
     )
     motorista = models.ForeignKey(
-        'cadastros.Motorista',
+        'frota.Motorista',
         on_delete=models.SET_NULL,
         blank=True,
         null=True,
@@ -439,7 +439,7 @@ class FotoOrdemColeta(models.Model):
     foto = models.ImageField('Foto', upload_to='exportacao/ordens_coleta/fotos/%Y/%m/')
     observacao = models.CharField('Observação', max_length=200, blank=True)
     enviada_por = models.ForeignKey(
-        'cadastros.Motorista', on_delete=models.SET_NULL,
+        'frota.Motorista', on_delete=models.SET_NULL,
         null=True, blank=True, related_name='fotos_coleta',
         verbose_name='Enviada por',
     )

@@ -19,7 +19,7 @@ class Migration(migrations.Migration):
                 ('data_cadastro', models.DateTimeField(auto_now_add=True, verbose_name='Data de Cadastro')),
                 ('data_atualizacao', models.DateTimeField(auto_now=True, verbose_name='Ultima Atualizacao')),
                 ('empresa', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='vinculos_motorista_placa', to='empresas.empresa', verbose_name='Empresa')),
-                ('motorista', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='vinculos_placas', to='cadastros.motorista', verbose_name='Motorista')),
+                ('motorista', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='vinculos_placas', to='frota.motorista', verbose_name='Motorista')),
                 ('placa_principal', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='vinculos_principal', to='cadastros.vehicleplate', verbose_name='Placa Principal')),
                 ('reboques', models.ManyToManyField(blank=True, related_name='vinculos_reboque', to='cadastros.vehicleplate', verbose_name='Placas de Reboque')),
             ],

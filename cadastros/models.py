@@ -1336,7 +1336,7 @@ class EmpresaNCM(models.Model):
 class CFOP(models.Model):
     """CFOP - Código Fiscal de Operações e Prestações"""
     codigo = models.CharField('Código CFOP', max_length=4, unique=True, help_text='Código CFOP (p. ex. 5102)')
-    nome = models.CharField('Descrição', max_length=255)
+    nome = models.CharField('Descrição', max_length=400)
     descricao = models.TextField('Observações', blank=True)
     natureza_operacao = models.ForeignKey('produtos.NaturezaOperacao', on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Natureza da Operação', help_text='Natureza da Operação vinculada a este CFOP')
     ativo = models.BooleanField('Ativo', default=True)
@@ -1357,7 +1357,7 @@ class EmpresaCFOP(models.Model):
     """CFOP específico de cada empresa. Cópia da tabela mestre para customização por empresa."""
     empresa = models.ForeignKey('empresas.Empresa', on_delete=models.CASCADE, related_name='cfops')
     codigo = models.CharField('Código CFOP', max_length=4, help_text='Código CFOP (p. ex. 5102)')
-    nome = models.CharField('Descrição', max_length=255)
+    nome = models.CharField('Descrição', max_length=400)
     descricao = models.TextField('Observações', blank=True)
     ativo = models.BooleanField('Ativo', default=True)
     template = models.ForeignKey(CFOP, on_delete=models.SET_NULL, null=True, blank=True, help_text='Referência ao template global (opcional)')

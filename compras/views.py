@@ -2423,10 +2423,6 @@ def recebimento_list(request):
     ).order_by('-data_recebimento')
     
     # Filtros
-    status = request.GET.get('status')
-    if status:
-        recebimentos = recebimentos.filter(status=status)
-    
     nota_fiscal = request.GET.get('nota_fiscal')
     if nota_fiscal:
         recebimentos = recebimentos.filter(nota_fiscal__icontains=nota_fiscal)
@@ -2469,7 +2465,6 @@ def recebimento_list(request):
         'tab_data': tab_data,
         'tabs': tabs,
         'active_tab': request.GET.get('tab', 'pendente'),
-        'status_choices': RecebimentoCompra.STATUS_CHOICES,
         'total_pendente': total_pendente,
         'total_conferido': total_conferido,
         'total_divergente': total_divergente,

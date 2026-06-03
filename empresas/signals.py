@@ -110,6 +110,23 @@ def seed_cfops_on_create(sender, instance, created, **kwargs):
 
 
 @receiver(post_save, sender=Empresa)
+def seed_naturezas_operacao_on_create(sender, instance, created, **kwargs):
+    """Cria naturezas de operação padrão quando uma Empresa é criada."""
+    if kwargs.get('raw'):
+        return
+    if not created:
+        return
+    if getattr(instance, 'is_interna_saas', False):
+        return
+
+    try:
+        from produtos.natureza_operacao_seed import seed_naturezas_for_empresa
+        seed_naturezas_for_empresa(instance)
+    except Exception:
+        logger.exception('Falha ao seedar naturezas de operação para empresa %s', instance.pk)
+
+
+@receiver(post_save, sender=Empresa)
 def seed_pragas_on_create(sender, instance, created, **kwargs):
     """Cria pragas pre-definidas quando uma Empresa e criada."""
     if kwargs.get('raw'):

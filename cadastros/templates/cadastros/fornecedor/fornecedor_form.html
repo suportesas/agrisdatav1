@@ -5,320 +5,28 @@
 
 {% block extra_css %}
 <style>
-  .fornecedor-form-page {
-    --surface: rgba(255, 255, 255, 0.96);
-    --surface-soft: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(245,248,251,0.98));
-    --stroke: rgba(24, 59, 86, 0.12);
-    --shadow-soft: 0 18px 42px rgba(20, 48, 77, 0.08);
-    --shadow-hover: 0 26px 56px rgba(20, 48, 77, 0.14);
-    --title: #17324d;
-    --muted: #5f6f7d;
-    --brand: #1f6f78;
-    --brand-strong: #164e63;
-    --highlight: #f4a11a;
-  }
-
-  .fornecedor-form-page {
-    position: relative;
-  }
-
-  .fornecedor-form-page::before {
-    content: "";
-    position: absolute;
-    inset: 0 0 auto 0;
-    height: 300px;
-    background:
-      radial-gradient(circle at top left, rgba(31, 111, 120, 0.16), transparent 38%),
-      radial-gradient(circle at top right, rgba(244, 161, 26, 0.16), transparent 34%),
-      linear-gradient(180deg, rgba(237, 246, 248, 0.9), rgba(255,255,255,0));
-    pointer-events: none;
-    z-index: 0;
-  }
-
-  .fornecedor-form-page > * {
-    position: relative;
-    z-index: 1;
-  }
-
-  .form-hero {
-    background:
-      linear-gradient(135deg, rgba(12, 34, 56, 0.96), rgba(31, 111, 120, 0.92)),
-      linear-gradient(135deg, #164e63, #1f6f78);
-    color: #fff;
-    border-radius: 28px;
-    padding: 1.8rem 2rem;
-    box-shadow: 0 26px 60px rgba(21, 47, 73, 0.18);
-    overflow: hidden;
-    margin-bottom: 1.75rem;
-  }
-
-  .form-hero::after {
-    content: "";
-    position: absolute;
-    top: -60px;
-    right: -40px;
-    width: 220px;
-    height: 220px;
-    border-radius: 50%;
-    background: radial-gradient(circle, rgba(255,255,255,0.16), rgba(255,255,255,0));
-  }
-
-  .form-hero-title {
-    display: flex;
-    align-items: center;
-    gap: 0.9rem;
-    font-size: clamp(1.7rem, 2vw, 2.25rem);
-    margin-bottom: 0.5rem;
-  }
-
-  .form-hero-icon {
-    width: 58px;
-    height: 58px;
-    border-radius: 18px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(255,255,255,0.12);
-    border: 1px solid rgba(255,255,255,0.16);
-    font-size: 1.4rem;
-  }
-
-  .form-hero-subtitle {
-    color: rgba(255,255,255,0.78);
-    margin-bottom: 1rem;
-    max-width: 760px;
-  }
-
-  .hero-hints {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.7rem;
-  }
-
-  .hero-hint {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.45rem;
-    padding: 0.65rem 0.9rem;
-    border-radius: 999px;
-    background: rgba(255,255,255,0.1);
-    border: 1px solid rgba(255,255,255,0.12);
-    font-size: 0.9rem;
-    font-weight: 600;
-  }
-
-  .hero-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.75rem;
-    justify-content: flex-end;
-  }
-
-  .hero-actions .btn {
-    border-radius: 14px;
-    padding: 0.8rem 1rem;
-    font-weight: 600;
-    box-shadow: 0 10px 28px rgba(0,0,0,0.12);
-  }
-
-  .hero-actions .btn-outline-info,
-  .hero-actions .btn-outline-secondary {
-    background: rgba(255,255,255,0.08);
-    color: #fff;
-    border-color: rgba(255,255,255,0.24);
-  }
-
-  .hero-actions .btn-outline-info:hover,
-  .hero-actions .btn-outline-secondary:hover {
-    background: rgba(255,255,255,0.14);
-    color: #fff;
-    border-color: rgba(255,255,255,0.32);
-  }
-
   .section-header {
-    background: linear-gradient(135deg, #17324d 0%, #1f6f78 100%);
+    background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);
     color: white;
-    padding: 1rem 1.25rem;
-    border-radius: 22px 22px 0 0;
+    padding: 15px 20px;
+    border-radius: 10px 10px 0 0;
     margin-bottom: 0;
-    position: relative;
-    overflow: hidden;
   }
-
-  .section-header::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(90deg, rgba(255,255,255,0.12), transparent 55%);
-    pointer-events: none;
-  }
-
-  .section-header h5 {
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-    position: relative;
-    z-index: 1;
-  }
-
   .form-section {
-    background: var(--surface-soft);
-    border-radius: 22px;
+    background: white;
+    border-radius: 10px;
     overflow: hidden;
-    box-shadow: var(--shadow-soft);
-    border: 1px solid var(--stroke);
-    margin-bottom: 1.5rem;
-    transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+    margin-bottom: 1rem;
   }
-
-  .form-section:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-hover);
-    border-color: rgba(31, 111, 120, 0.18);
-  }
-
-  .cnpj-search-btn {
-    transition: all 0.22s ease;
-    font-weight: 600;
-  }
-
-  .cnpj-search-btn:hover {
-    transform: translateY(-1px);
-  }
-
-  .form-section-body {
-    padding: 1.45rem;
-  }
-
-  .help-list li {
-    margin-bottom: 0.5rem;
-  }
-
-  .form-label {
-    color: var(--title);
-    margin-bottom: 0.55rem;
-  }
-
-  .form-control,
-  .form-select,
-  .input-group-text {
-    border-radius: 14px;
-    border-color: rgba(24, 59, 86, 0.12);
-  }
-
-  .form-control,
-  .form-select {
-    min-height: 46px;
-    box-shadow: inset 0 1px 2px rgba(0,0,0,0.02);
-    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
-  }
-
-  textarea.form-control {
-    min-height: 120px;
-  }
-
-  .form-control:focus,
-  .form-select:focus {
-    border-color: rgba(31, 111, 120, 0.42);
-    box-shadow: 0 0 0 0.25rem rgba(31, 111, 120, 0.14);
-  }
-
-  .input-group > .form-control,
-  .input-group > .form-select {
-    border-top-left-radius: 14px;
-    border-bottom-left-radius: 14px;
-  }
-
-  .input-group-text {
-    background: rgba(23, 50, 77, 0.04);
-    color: var(--title);
-    font-weight: 700;
-  }
-
-  .form-check.form-switch {
-    padding: 0.9rem 1rem 0.9rem 2.8rem;
-    border-radius: 16px;
-    background: rgba(23, 50, 77, 0.04);
-    border: 1px solid rgba(23, 50, 77, 0.06);
-  }
-
-  .form-check-input {
-    width: 2.7rem;
-    height: 1.4rem;
-    margin-top: 0.1rem;
-  }
-
-  .alert-light.border {
-    border-radius: 16px;
-    background: linear-gradient(180deg, rgba(255,255,255,0.8), rgba(244,248,251,0.95));
-    border-color: rgba(23, 50, 77, 0.08) !important;
-  }
-
-  .sticky-action-bar {
-    position: sticky;
-    bottom: 1rem;
-    z-index: 5;
-    display: flex;
-    justify-content: space-between;
-    gap: 1rem;
-    padding: 1rem;
-    margin-top: 2rem;
-    border-radius: 22px;
-    background: rgba(255,255,255,0.86);
-    border: 1px solid rgba(24, 59, 86, 0.1);
-    box-shadow: 0 18px 45px rgba(24, 59, 86, 0.14);
-    backdrop-filter: blur(14px);
-  }
-
-  .sticky-action-bar .btn {
-    border-radius: 14px;
-    padding: 0.9rem 1.35rem;
-    font-weight: 700;
-  }
-
-  .section-note {
-    color: var(--muted);
-    font-size: 0.9rem;
-    margin-top: 0.35rem;
-  }
-
-  @media (max-width: 991.98px) {
-    .form-hero {
-      padding: 1.5rem;
-    }
-
-    .hero-actions {
-      justify-content: flex-start;
-      margin-top: 1rem;
-    }
-  }
-
-  @media (max-width: 767.98px) {
-    .form-hero {
-      border-radius: 22px;
-    }
-
-    .form-hero-title {
-      align-items: flex-start;
-    }
-
-    .sticky-action-bar {
-      flex-direction: column-reverse;
-      bottom: 0.5rem;
-      padding: 0.85rem;
-    }
-
-    .sticky-action-bar .btn {
-      width: 100%;
-    }
-  }
+  .form-section-body { padding: 1.25rem; }
+  .cnpj-search-btn { transition: all 0.3s ease; }
+  .cnpj-search-btn:hover { transform: scale(1.05); }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container py-4 fornecedor-form-page">
-  
-  <!-- Breadcrumb -->
+<div class="container py-4">
   <nav aria-label="breadcrumb" class="mb-4">
     <ol class="breadcrumb">
       <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
@@ -327,33 +35,153 @@
     </ol>
   </nav>
 
-  <!-- Header -->
-  <div class="form-hero">
-    <div class="row g-4 align-items-center">
-      <div class="col-lg-8">
-        <h2 class="fw-bold form-hero-title">
-          <span class="form-hero-icon"><i class="bi bi-{% if fornecedor %}pencil-square{% else %}plus-circle{% endif %}"></i></span>
-          <span>{{ action }} Fornecedor</span>
-        </h2>
-        {% if fornecedor %}
-          <p class="form-hero-subtitle">Edite os dados de <strong>{{ fornecedor.razao_social }}</strong> com uma visão mais clara das seções críticas de cadastro, fiscais e comerciais.</p>
-        {% else %}
-          <p class="form-hero-subtitle">Cadastre um novo fornecedor com foco em dados fiscais consistentes, condições comerciais claras e contato pronto para operação.</p>
-        {% endif %}
-        <div class="hero-hints">
-          <span class="hero-hint"><i class="bi bi-shield-check"></i> Dados fiscais consistentes</span>
-          <span class="hero-hint"><i class="bi bi-cash-coin"></i> Crédito e prazo bem definidos</span>
-          <span class="hero-hint"><i class="bi bi-person-badge"></i> Portal pronto para acesso</span>
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="fw-bold mb-1">
+        <i class="bi bi-{% if fornecedor %}pencil-square{% else %}plus-circle{% endif %} text-primary"></i>
+        {{ action }} Fornecedor
+      </h2>
+      {% if fornecedor %}
+        <p class="text-muted mb-0">Editando: <strong>{{ fornecedor.razao_social|default:fornecedor.nome }}</strong></p>
+      {% else %}
+        <p class="text-muted mb-0">Preencha os dados do fornecedor</p>
+      {% endif %}
+    </div>
+    <div class="d-flex gap-2">
+      <button type="button" class="btn btn-outline-info" data-bs-toggle="modal" data-bs-target="#ajudaFornecedorModal">
+        <i class="bi bi-question-circle"></i> Ajuda
+      </button>
+      <a href="{% url 'cadastros:fornecedor_list' %}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Voltar
+      </a>
+    </div>
+  </div>
+
+  <!-- Modal de Ajuda -->
+  <div class="modal fade" id="ajudaFornecedorModal" tabindex="-1" aria-labelledby="ajudaFornecedorModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header" style="background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%); color: white;">
+          <h5 class="modal-title" id="ajudaFornecedorModalLabel">
+            <i class="bi bi-question-circle-fill"></i> Guia de Cadastro de Fornecedor
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
         </div>
-      </div>
-      <div class="col-lg-4">
-        <div class="hero-actions">
-          <button type="button" class="btn btn-outline-info" data-bs-toggle="modal" data-bs-target="#fornecedorHelpModal">
-            <i class="bi bi-question-circle"></i> Ajuda
+        <div class="modal-body p-4">
+          <p class="text-muted mb-4">Este formulário registra todos os dados de um fornecedor no sistema.</p>
+          <div class="accordion" id="ajudaAccordion">
+
+            <div class="accordion-item border-0 mb-2 shadow-sm">
+              <h2 class="accordion-header">
+                <button class="accordion-button fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#ajudaDadosBasicos">
+                  <i class="bi bi-person-fill text-primary me-2"></i> Dados Básicos
+                </button>
+              </h2>
+              <div id="ajudaDadosBasicos" class="accordion-collapse collapse show" data-bs-parent="#ajudaAccordion">
+                <div class="accordion-body">
+                  <table class="table table-sm table-bordered mb-0">
+                    <thead class="table-light"><tr><th>Campo</th><th>Obrigatório</th><th>Descrição</th></tr></thead>
+                    <tbody>
+                      <tr><td><strong>Tipo de Pessoa</strong></td><td class="text-center"><span class="badge bg-danger">Sim</span></td><td>PJ (CNPJ) ou PF (CPF).</td></tr>
+                      <tr><td><strong>CNPJ/CPF</strong></td><td class="text-center"><span class="badge bg-danger">Sim</span></td><td>Documento fiscal. Use <em>Buscar</em> para preencher automaticamente via Receita Federal.</td></tr>
+                      <tr><td><strong>Razão Social / Nome</strong></td><td class="text-center"><span class="badge bg-danger">Sim</span></td><td>Nome oficial do fornecedor.</td></tr>
+                      <tr><td><strong>Nome Fantasia</strong></td><td class="text-center"><span class="badge bg-secondary">Não</span></td><td>Nome comercial do fornecedor, se diferente da razão social.</td></tr>
+                      <tr><td><strong>Fornecedor Internacional</strong></td><td class="text-center"><span class="badge bg-secondary">Não</span></td><td>Habilita campos de país, moeda e incoterm para fornecedores no exterior.</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <div class="accordion-item border-0 mb-2 shadow-sm">
+              <h2 class="accordion-header">
+                <button class="accordion-button collapsed fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#ajudaDocumentacao">
+                  <i class="bi bi-file-earmark-text text-warning me-2"></i> Documentação Fiscal
+                </button>
+              </h2>
+              <div id="ajudaDocumentacao" class="accordion-collapse collapse" data-bs-parent="#ajudaAccordion">
+                <div class="accordion-body">
+                  <table class="table table-sm table-bordered mb-0">
+                    <thead class="table-light"><tr><th>Campo</th><th>Descrição</th></tr></thead>
+                    <tbody>
+                      <tr><td><strong>Inscrição Estadual</strong></td><td>Registro estadual para contribuintes de ICMS.</td></tr>
+                      <tr><td><strong>Inscrição Municipal</strong></td><td>Cadastro municipal — necessário para serviços e NFS-e.</td></tr>
+                      <tr><td><strong>Código EORI</strong></td><td>Registro aduaneiro para operações com a União Europeia.</td></tr>
+                      <tr><td><strong>Regime Tributário</strong></td><td>Simples Nacional, Lucro Presumido, Lucro Real etc. Impacta o cálculo de impostos.</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <div class="accordion-item border-0 mb-2 shadow-sm">
+              <h2 class="accordion-header">
+                <button class="accordion-button collapsed fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#ajudaComercial">
+                  <i class="bi bi-cash-stack text-danger me-2"></i> Condições Comerciais
+                </button>
+              </h2>
+              <div id="ajudaComercial" class="accordion-collapse collapse" data-bs-parent="#ajudaAccordion">
+                <div class="accordion-body">
+                  <table class="table table-sm table-bordered mb-0">
+                    <thead class="table-light"><tr><th>Campo</th><th>Descrição</th></tr></thead>
+                    <tbody>
+                      <tr><td><strong>Limite de Crédito</strong></td><td>Valor aprovado para compras a prazo com este fornecedor.</td></tr>
+                      <tr><td><strong>Prazo de Pagamento Padrão</strong></td><td>Dias para pagamento após a compra (ex: 30).</td></tr>
+                      <tr><td><strong>Prazo de Entrega Médio</strong></td><td>Dias médios para entrega após o pedido (ex: 7).</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <div class="accordion-item border-0 mb-2 shadow-sm">
+              <h2 class="accordion-header">
+                <button class="accordion-button collapsed fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#ajudaInternacional">
+                  <i class="bi bi-globe text-success me-2"></i> Dados Internacionais
+                </button>
+              </h2>
+              <div id="ajudaInternacional" class="accordion-collapse collapse" data-bs-parent="#ajudaAccordion">
+                <div class="accordion-body">
+                  <p class="text-muted small">Campos visíveis apenas com <strong>Fornecedor Internacional</strong> ativado.</p>
+                  <table class="table table-sm table-bordered mb-0">
+                    <thead class="table-light"><tr><th>Campo</th><th>Descrição</th></tr></thead>
+                    <tbody>
+                      <tr><td><strong>País de Origem</strong></td><td>País sede do fornecedor.</td></tr>
+                      <tr><td><strong>Moeda Padrão</strong></td><td>Moeda utilizada nas negociações (ex: USD, EUR).</td></tr>
+                      <tr><td><strong>Incoterm Preferencial</strong></td><td>Termo de entrega padrão (ex: FOB, CIF).</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <div class="accordion-item border-0 mb-2 shadow-sm">
+              <h2 class="accordion-header">
+                <button class="accordion-button collapsed fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#ajudaFluxo">
+                  <i class="bi bi-signpost-split text-secondary me-2"></i> Fluxo Recomendado
+                </button>
+              </h2>
+              <div id="ajudaFluxo" class="accordion-collapse collapse" data-bs-parent="#ajudaAccordion">
+                <div class="accordion-body">
+                  <ol class="mb-0">
+                    <li class="mb-2">Selecione o <strong>Tipo de Pessoa</strong> e informe o <strong>CNPJ/CPF</strong>. Para CNPJ, clique em <strong>Buscar</strong> para preenchimento automático.</li>
+                    <li class="mb-2">Confira <strong>Razão Social</strong> e <strong>Nome Fantasia</strong>.</li>
+                    <li class="mb-2">Preencha a <strong>Documentação Fiscal</strong> (IE, regime tributário).</li>
+                    <li class="mb-2">Defina as <strong>Condições Comerciais</strong>: limite de crédito, prazo de pagamento e prazo de entrega.</li>
+                    <li class="mb-2">Se fornecedor internacional, ative a opção e preencha país, moeda e incoterm.</li>
+                    <li class="mb-2">Informe <strong>Contato</strong>: telefone, celular e e-mail.</li>
+                    <li>Clique em <strong>Salvar Fornecedor</strong>.</li>
+                  </ol>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+            <i class="bi bi-x-circle"></i> Fechar
           </button>
-          <a href="{% url 'cadastros:fornecedor_list' %}" class="btn btn-outline-secondary">
-            <i class="bi bi-arrow-left"></i> Voltar
-          </a>
         </div>
       </div>
     </div>
@@ -365,12 +193,11 @@
     <!-- Seção 1: Dados Básicos -->
     <div class="form-section">
       <div class="section-header">
-        <h5 class="mb-0"><i class="bi bi-info-circle"></i> Dados Básicos</h5>
+        <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>Dados Básicos</h5>
       </div>
       <div class="form-section-body">
         <div class="row g-3">
-          
-          <!-- Tipo de Pessoa -->
+
           <div class="col-md-3">
             <label class="form-label fw-semibold">Tipo de Pessoa *</label>
             {{ form.tipo_pessoa }}
@@ -379,17 +206,7 @@
             {% endif %}
           </div>
 
-          <!-- Fornecedor Internacional (checkbox) -->
           <div class="col-md-3">
-            <label class="form-label fw-semibold d-block">Fornecedor Internacional</label>
-            <div class="form-check form-switch mt-2">
-              {{ form.is_exportador }}
-              <label class="form-check-label" for="{{ form.is_exportador.id_for_label }}">Internacional</label>
-            </div>
-          </div>
-
-          <!-- CNPJ/CPF com busca -->
-          <div class="col-md-6">
             <label class="form-label fw-semibold">CNPJ/CPF *</label>
             <div class="input-group">
               {{ form.cnpj_cpf }}
@@ -400,18 +217,9 @@
             {% if form.cnpj_cpf.errors %}
               <div class="text-danger small">{{ form.cnpj_cpf.errors|striptags }}</div>
             {% endif %}
-            <small class="section-note d-block">Busca automática via CNPJ para preenchimento inicial de fornecedores pessoa jurídica.</small>
           </div>
 
-          <!-- Código Fiscal Internacional -->
-          <div class="col-md-4" id="codigoFiscalDiv" style="display: none;">
-            <label class="form-label fw-semibold">Código Fiscal Internacional</label>
-            {{ form.codigo_fiscal_internacional }}
-            <small class="text-muted">Para fornecedores internacionais</small>
-          </div>
-
-          <!-- Razão Social -->
-          <div class="col-md-8">
+          <div class="col-md-4">
             <label class="form-label fw-semibold">Razão Social / Nome Completo *</label>
             {{ form.nome }}
             {% if form.nome.errors %}
@@ -419,20 +227,30 @@
             {% endif %}
           </div>
 
-          <!-- Nome Fantasia -->
-          <div class="col-md-4">
+          <div class="col-md-2">
             <label class="form-label fw-semibold">Nome Fantasia</label>
             {{ form.nome_fantasia }}
           </div>
 
-          <!-- Ativo -->
+          <div class="col-md-3" id="codigoFiscalDiv" style="display:none;">
+            <label class="form-label fw-semibold">Código Fiscal Internacional</label>
+            {{ form.codigo_fiscal_internacional }}
+            <small class="text-muted">Para fornecedores internacionais</small>
+          </div>
+
           <div class="col-md-3">
-            <label class="form-label fw-semibold d-block">Ativo</label>
+            <label class="form-label fw-semibold d-block">Fornecedor Internacional</label>
+            <div class="form-check form-switch mt-2">
+              {{ form.is_exportador }}
+              <label class="form-check-label" for="{{ form.is_exportador.id_for_label }}">Internacional</label>
+            </div>
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label fw-semibold d-block">Situação</label>
             <div class="form-check form-switch mt-2">
               {{ form.ativa }}
-              <label class="form-check-label" for="{{ form.ativa.id_for_label }}">
-                Fornecedor Ativo
-              </label>
+              <label class="form-check-label" for="{{ form.ativa.id_for_label }}">Fornecedor Ativo</label>
             </div>
           </div>
 
@@ -440,31 +258,31 @@
       </div>
     </div>
 
-    <!-- Seção 2: Documentação -->
+    <!-- Seção 2: Documentação Fiscal -->
     <div class="form-section">
       <div class="section-header">
-        <h5 class="mb-0"><i class="bi bi-file-earmark-text"></i> Documentação</h5>
+        <h5 class="mb-0"><i class="bi bi-file-earmark-text me-2"></i>Documentação Fiscal</h5>
       </div>
       <div class="form-section-body">
         <div class="row g-3">
-          
-          <div class="col-md-4">
+
+          <div class="col-md-3">
             <label class="form-label fw-semibold">Inscrição Estadual</label>
             {{ form.inscricao_estadual }}
           </div>
 
-          <div class="col-md-4">
+          <div class="col-md-3">
             <label class="form-label fw-semibold">Inscrição Municipal</label>
             {{ form.inscricao_municipal }}
           </div>
 
-          <div class="col-md-4">
+          <div class="col-md-3">
             <label class="form-label fw-semibold">Código EORI</label>
             {{ form.eori }}
             <small class="text-muted d-block">Para exportação/importação</small>
           </div>
 
-          <div class="col-md-12">
+          <div class="col-md-3">
             <label class="form-label fw-semibold">Regime Tributário *</label>
             {{ form.regime_tributario }}
             {% if form.regime_tributario.errors %}
@@ -479,10 +297,11 @@
     <!-- Seção 3: Classificação -->
     <div class="form-section">
       <div class="section-header">
-        <h5 class="mb-0"><i class="bi bi-tags"></i> Classificação</h5>
+        <h5 class="mb-0"><i class="bi bi-tags me-2"></i>Classificação</h5>
       </div>
       <div class="form-section-body">
         <div class="row g-3">
+
           <div class="col-md-4">
             <label class="form-label fw-semibold">Classificação de Risco</label>
             {{ form.classificacao_risco }}
@@ -505,43 +324,44 @@
     <!-- Seção 4: Condições Comerciais -->
     <div class="form-section">
       <div class="section-header">
-        <h5 class="mb-0"><i class="bi bi-cash-coin"></i> Condições Comerciais</h5>
+        <h5 class="mb-0"><i class="bi bi-cash-coin me-2"></i>Condições Comerciais</h5>
       </div>
       <div class="form-section-body">
         <div class="row g-3">
+
           <div class="col-md-4">
             <label class="form-label fw-semibold">Limite de Crédito Aprovado</label>
             <div class="input-group">
               <span class="input-group-text">R$</span>
               {{ form.limite_credito }}
             </div>
-            <small class="section-note d-block">Valor aprovado para compras a prazo</small>
+            <small class="text-muted d-block">Valor aprovado para compras a prazo</small>
           </div>
 
           <div class="col-md-4">
             <label class="form-label fw-semibold">Prazo de Pagamento Padrão (dias) *</label>
             {{ form.prazo_pagamento_padrao }}
-            <small class="section-note d-block">Ex: 30 dias</small>
+            <small class="text-muted d-block">Ex: 30 dias</small>
           </div>
 
           <div class="col-md-4">
             <label class="form-label fw-semibold">Prazo de Entrega Médio (dias) *</label>
             {{ form.prazo_entrega_medio }}
-            <small class="section-note d-block">Ex: 7 dias</small>
+            <small class="text-muted d-block">Ex: 7 dias</small>
           </div>
 
         </div>
       </div>
     </div>
 
-    <!-- Seção 5: Dados Internacionais (se aplicável) -->
-    <div class="form-section" id="dadosInternacionaisDiv" style="display: none;">
+    <!-- Seção 5: Dados Internacionais -->
+    <div class="form-section" id="dadosInternacionaisDiv" style="display:none;">
       <div class="section-header">
-        <h5 class="mb-0"><i class="bi bi-globe"></i> Dados Internacionais</h5>
+        <h5 class="mb-0"><i class="bi bi-globe me-2"></i>Dados Internacionais</h5>
       </div>
       <div class="form-section-body">
         <div class="row g-3">
-          
+
           <div class="col-md-4">
             <label class="form-label fw-semibold">País de Origem</label>
             {{ form.pais_origem }}
@@ -550,13 +370,13 @@
           <div class="col-md-4">
             <label class="form-label fw-semibold">Moeda Padrão</label>
             {{ form.moeda_padrao }}
-            <small class="section-note d-block">Ex: USD, EUR</small>
+            <small class="text-muted d-block">Ex: USD, EUR</small>
           </div>
 
           <div class="col-md-4">
             <label class="form-label fw-semibold">Incoterm Preferencial</label>
             {{ form.incoterm_preferencial }}
-            <small class="section-note d-block">Ex: FOB, CIF</small>
+            <small class="text-muted d-block">Ex: FOB, CIF</small>
           </div>
 
           <div class="col-md-12">
@@ -575,20 +395,17 @@
     <!-- Seção 6: Contato -->
     <div class="form-section">
       <div class="section-header">
-        <h5 class="mb-0"><i class="bi bi-telephone"></i> Informações de Contato</h5>
+        <h5 class="mb-0"><i class="bi bi-telephone me-2"></i>Informações de Contato</h5>
       </div>
       <div class="form-section-body">
         <div class="row g-3">
-          
-          <div class="col-md-4">
+
+          <div class="col-md-3">
             <label class="form-label fw-semibold">Telefone</label>
             {{ form.telefone }}
-            {% if form.telefone.help_text %}
-              <small class="form-text text-muted">{{ form.telefone.help_text }}</small>
-            {% endif %}
           </div>
 
-          <div class="col-md-4">
+          <div class="col-md-3">
             <label class="form-label fw-semibold">{{ form.celular.label }}</label>
             {{ form.celular }}
             {% if form.celular.help_text %}
@@ -601,51 +418,24 @@
             {% endif %}
           </div>
 
-          <div class="col-md-4">
+          <div class="col-md-3">
             <label class="form-label fw-semibold">E-mail</label>
             {{ form.email }}
-            {% if form.email.help_text %}
-              <small class="form-text text-muted">{{ form.email.help_text }}</small>
-            {% endif %}
           </div>
 
-        </div>
-        
-        <div class="row g-3 mt-2">
-          <div class="col-md-12">
+          <div class="col-md-3">
             <label class="form-label fw-semibold">Website</label>
             {{ form.website }}
-            {% if form.website.help_text %}
-              <small class="form-text text-muted">{{ form.website.help_text }}</small>
-            {% endif %}
           </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Seção 7: Observações -->
-    <div class="form-section">
-      <div class="section-header">
-        <h5 class="mb-0"><i class="bi bi-chat-text"></i> Observações</h5>
-      </div>
-      <div class="form-section-body">
-        <div class="row g-3">
-          
-          <div class="col-md-12">
-            <label class="form-label fw-semibold">Observações Gerais</label>
-            {{ form.observacoes }}
-          </div>
-
-
 
         </div>
       </div>
     </div>
 
-    <!-- Seção 8: Portal do Fornecedor -->
+    <!-- Seção 7: Portal do Fornecedor -->
     <div class="form-section">
       <div class="section-header">
-        <h5 class="mb-0"><i class="bi bi-person-badge"></i> Portal do Fornecedor</h5>
+        <h5 class="mb-0"><i class="bi bi-person-badge me-2"></i>Portal do Fornecedor</h5>
       </div>
       <div class="form-section-body">
         <div class="row g-3">
@@ -658,9 +448,6 @@
                 Liberar acesso ao portal
               </label>
             </div>
-            {% if form.portal_enabled.errors %}
-              <div class="text-danger small">{{ form.portal_enabled.errors|striptags }}</div>
-            {% endif %}
           </div>
 
           <div class="col-md-8">
@@ -677,7 +464,7 @@
           <div class="col-12">
             <div class="alert alert-light border mb-0 py-2">
               <small class="text-muted">
-                O usuário selecionado deve pertencer à mesma empresa do fornecedor. Quando o portal estiver habilitado, esse usuário será redirecionado automaticamente para o portal do fornecedor após o login.
+                O usuário deve pertencer à mesma empresa. Quando o portal estiver habilitado, será redirecionado automaticamente após o login.
               </small>
             </div>
           </div>
@@ -686,8 +473,23 @@
       </div>
     </div>
 
+    <!-- Seção 8: Observações -->
+    <div class="form-section">
+      <div class="section-header">
+        <h5 class="mb-0"><i class="bi bi-chat-text me-2"></i>Observações</h5>
+      </div>
+      <div class="form-section-body">
+        <div class="row g-3">
+          <div class="col-md-12">
+            <label class="form-label fw-semibold">Observações Gerais</label>
+            {{ form.observacoes }}
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Botões de Ação -->
-    <div class="sticky-action-bar">
+    <div class="d-flex justify-content-between gap-3 mt-4">
       <a href="{% url 'cadastros:fornecedor_list' %}" class="btn btn-outline-secondary btn-lg px-5">
         <i class="bi bi-x-circle"></i> Cancelar
       </a>
@@ -697,41 +499,6 @@
     </div>
 
   </form>
-
-</div>
-
-<!-- Modal de Ajuda do Cadastro -->
-<div class="modal fade" id="fornecedorHelpModal" tabindex="-1" aria-labelledby="fornecedorHelpModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-lg modal-dialog-scrollable">
-    <div class="modal-content">
-      <div class="modal-header bg-light">
-        <h5 class="modal-title" id="fornecedorHelpModalLabel">
-          <i class="bi bi-info-circle text-info"></i> Como preencher o cadastro de fornecedor
-        </h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
-      </div>
-      <div class="modal-body">
-        <p class="mb-3">Siga estes passos para um cadastro completo e sem erros:</p>
-        <ol class="help-list ps-3">
-          <li><strong>Dados basicos:</strong> escolha o tipo de pessoa e informe CNPJ/CPF valido. Para CNPJ, use o botao <strong>Buscar</strong> para preencher automaticamente.</li>
-          <li><strong>Razao social e nome fantasia:</strong> use o nome oficial no campo principal e, se houver, o nome comercial no fantasia.</li>
-          <li><strong>Documentacao:</strong> preencha inscricoes e selecione corretamente o regime tributario para evitar problemas fiscais.</li>
-          <li><strong>Condicoes comerciais:</strong> informe limite de credito, prazo de pagamento e prazo medio de entrega conforme negociacao.</li>
-          <li><strong>Contato:</strong> valide telefone, celular e e-mail para facilitar cotacoes e recebimentos.</li>
-          <li><strong>Fornecedor internacional:</strong> ative a opcao quando aplicavel para liberar campos de pais, moeda e incoterm.</li>
-          <li><strong>Finalizacao:</strong> revise os campos obrigatorios (*) e clique em <strong>Salvar Fornecedor</strong>.</li>
-        </ol>
-
-        <div class="alert alert-warning mb-0 mt-3" role="alert">
-          <i class="bi bi-exclamation-triangle"></i>
-          Dica: mantenha CNPJ/CPF e dados fiscais atualizados para evitar bloqueios em compras e financeiro.
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
-      </div>
-    </div>
-  </div>
 </div>
 
 <!-- Modal de Loading para busca CNPJ -->
@@ -751,179 +518,127 @@
 {% block extra_js %}
 {{ block.super }}
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-  
-  // Elementos do formulário
+document.addEventListener('DOMContentLoaded', function () {
+
   const isExportadorCheckbox = document.getElementById('{{ form.is_exportador.id_for_label }}');
-  const tipoFornecedorSelect = document.getElementById('{{ form.tipo_pessoa.id_for_label }}');
-  const statusSelect = document.getElementById('id_status');
   const btnBuscarCNPJ = document.getElementById('buscarCNPJ');
   const inputCNPJ = document.getElementById('{{ form.cnpj_cpf.id_for_label }}');
   const loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'));
-  
-  // Mostra/oculta campos internacionais
+
   function toggleCamposInternacionais() {
     const isInternacional = isExportadorCheckbox && isExportadorCheckbox.checked;
     document.getElementById('dadosInternacionaisDiv').style.display = isInternacional ? 'block' : 'none';
     document.getElementById('codigoFiscalDiv').style.display = isInternacional ? 'block' : 'none';
   }
-  
-  // Busca automática de CNPJ
-  if (btnBuscarCNPJ) {
-    btnBuscarCNPJ.addEventListener('click', function() {
+
+  if (isExportadorCheckbox) {
+    isExportadorCheckbox.addEventListener('change', toggleCamposInternacionais);
+    toggleCamposInternacionais();
+  }
+
+  if (btnBuscarCNPJ && inputCNPJ) {
+    btnBuscarCNPJ.addEventListener('click', function () {
       const cnpj = inputCNPJ.value.replace(/\D/g, '');
-      
       if (cnpj.length !== 14) {
         alert('Por favor, digite um CNPJ válido (14 dígitos)');
         return;
       }
-
       loadingModal.show();
-
-      const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-
       fetch('{% url "cadastros:buscar_cnpj" %}', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
-          'X-CSRFToken': csrfToken
+          'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
         },
         body: `cnpj=${cnpj}`
       })
-      .then(response => response.json())
+      .then(r => r.json())
       .then(data => {
         loadingModal.hide();
-        
         if (data.sucesso) {
           const d = data.dados;
-          document.getElementById('{{ form.nome.id_for_label }}').value = d.nome || '';
-          document.getElementById('{{ form.nome_fantasia.id_for_label }}').value = d.nome_fantasia || '';
-          document.getElementById('{{ form.telefone.id_for_label }}').value = d.telefone || '';
-          document.getElementById('{{ form.celular.id_for_label }}').value = d.telefone || '';
-          document.getElementById('{{ form.email.id_for_label }}').value = d.email || '';
-
+          const nomeEl = document.getElementById('{{ form.nome.id_for_label }}');
+          const fantasiaEl = document.getElementById('{{ form.nome_fantasia.id_for_label }}');
+          const telEl = document.getElementById('{{ form.telefone.id_for_label }}');
+          const celEl = document.getElementById('{{ form.celular.id_for_label }}');
+          const emailEl = document.getElementById('{{ form.email.id_for_label }}');
+          if (nomeEl) nomeEl.value = d.nome || '';
+          if (fantasiaEl) fantasiaEl.value = d.nome_fantasia || '';
+          if (telEl) telEl.value = d.telefone || '';
+          if (celEl) celEl.value = d.telefone || '';
+          if (emailEl) emailEl.value = d.email || '';
           if (isExportadorCheckbox) {
-            isExportadorCheckbox.checked = d.pais && d.pais.toLowerCase() !== 'brasil';
+            isExportadorCheckbox.checked = !!(d.pais && d.pais.toLowerCase() !== 'brasil');
             toggleCamposInternacionais();
           }
-          
           alert('✅ Dados preenchidos com sucesso!');
         } else {
           alert('❌ ' + (data.erro || 'Erro ao buscar CNPJ'));
         }
       })
-      .catch(error => {
-        loadingModal.hide();
-        console.error('Erro:', error);
-        alert('❌ Erro ao buscar dados. Verifique sua conexão.');
-      });
+      .catch(() => { loadingModal.hide(); alert('❌ Erro ao buscar dados. Verifique sua conexão.'); });
     });
   }
 
-  const creditInput = document.getElementById('id_limite_credito');
-
-  function onlyDigits(value) {
-    return String(value || '').replace(/\D/g, '');
-  }
-
-  function formatCurrency(value) {
-    const digits = onlyDigits(value);
-    if (!digits) {
-      return '';
-    }
-
-    const amount = Number(digits) / 100;
-    return amount.toLocaleString('pt-BR', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    });
-  }
-
-  function normalizeCurrency(value) {
-    const raw = String(value || '').trim();
-    if (!raw) {
-      return '';
-    }
-
-    if (/^\d+(\.\d+)?$/.test(raw)) {
-      return raw;
-    }
-
-    return raw.replace(/\./g, '').replace(',', '.');
-  }
-
-  if (creditInput) {
-    creditInput.value = formatCurrency(creditInput.value);
-
-    creditInput.addEventListener('input', function(event) {
-      const cursorAtEnd = event.target.selectionStart === event.target.value.length;
-      event.target.value = formatCurrency(event.target.value);
-      if (cursorAtEnd) {
-        event.target.setSelectionRange(event.target.value.length, event.target.value.length);
-      }
-    });
-
-    creditInput.addEventListener('blur', function(event) {
-      event.target.value = formatCurrency(event.target.value);
-    });
-
-    if (creditInput.form) {
-      creditInput.form.addEventListener('submit', function() {
-        creditInput.value = normalizeCurrency(creditInput.value);
-      });
-    }
-  }
-
-  // Máscara de CNPJ/CPF
-    if (inputCNPJ) {
-    inputCNPJ.addEventListener('input', function(e) {
-      let value = e.target.value.replace(/\D/g, '');
-      
-      if (value.length <= 11) {
-        // Máscara CPF: 000.000.000-00
-        value = value.replace(/(\d{3})(\d)/, '$1.$2');
-        value = value.replace(/(\d{3})(\d)/, '$1.$2');
-        value = value.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+  // Máscara CNPJ/CPF
+  if (inputCNPJ) {
+    inputCNPJ.addEventListener('input', function (e) {
+      let v = e.target.value.replace(/\D/g, '');
+      if (v.length <= 11) {
+        v = v.replace(/(\d{3})(\d)/, '$1.$2')
+             .replace(/(\d{3})(\d)/, '$1.$2')
+             .replace(/(\d{3})(\d{1,2})$/, '$1-$2');
       } else {
-        // Máscara CNPJ: 00.000.000/0000-00
-        value = value.replace(/^(\d{2})(\d)/, '$1.$2');
-        value = value.replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3');
-        value = value.replace(/\.(\d{3})(\d)/, '.$1/$2');
-        value = value.replace(/(\d{4})(\d)/, '$1-$2');
+        v = v.replace(/^(\d{2})(\d)/, '$1.$2')
+             .replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3')
+             .replace(/\.(\d{3})(\d)/, '.$1/$2')
+             .replace(/(\d{4})(\d)/, '$1-$2');
       }
-      
-      e.target.value = value;
+      e.target.value = v;
     });
   }
 
-  // Event listeners
-  if (tipoFornecedorSelect) {
-    tipoFornecedorSelect.addEventListener('change', toggleCamposInternacionais);
-    toggleCamposInternacionais(); // Executa no load
-  }
-  
-  if (statusSelect) {
-    statusSelect.addEventListener('change', toggleMotivoBloqueio);
-    toggleMotivoBloqueio(); // Executa no load
+  // Formatação de limite de crédito
+  const creditInput = document.getElementById('id_limite_credito');
+  if (creditInput) {
+    function onlyDigits(v) { return String(v || '').replace(/\D/g, ''); }
+    function formatCurrency(v) {
+      const d = onlyDigits(v);
+      if (!d) return '';
+      return (Number(d) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+    function normalizeCurrency(v) {
+      const r = String(v || '').trim();
+      if (!r) return '';
+      if (/^\d+(\.\d+)?$/.test(r)) return r;
+      return r.replace(/\./g, '').replace(',', '.');
+    }
+    creditInput.value = formatCurrency(creditInput.value);
+    creditInput.addEventListener('input', function (e) {
+      const atEnd = e.target.selectionStart === e.target.value.length;
+      e.target.value = formatCurrency(e.target.value);
+      if (atEnd) e.target.setSelectionRange(e.target.value.length, e.target.value.length);
+    });
+    creditInput.addEventListener('blur', function (e) { e.target.value = formatCurrency(e.target.value); });
+    if (creditInput.form) {
+      creditInput.form.addEventListener('submit', function () { creditInput.value = normalizeCurrency(creditInput.value); });
+    }
   }
 
-  // Adiciona classes Bootstrap aos campos
-  document.querySelectorAll('input:not([type="checkbox"]), select, textarea').forEach(el => {
+  // Bootstrap classes em campos do Django
+  document.querySelectorAll('input:not([type="checkbox"]):not([type="radio"]), select, textarea').forEach(el => {
     if (!el.classList.contains('form-control') && !el.classList.contains('form-select')) {
       el.classList.add(el.tagName === 'SELECT' ? 'form-select' : 'form-control');
     }
   });
-
 });
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.16/jquery.mask.min.js"></script>
 <script>
-$(document).ready(function(){
-    var celularInput = $("#{{ form.celular.id_for_label }}");
-    if (celularInput.length) {
-        celularInput.mask('(00) 00000-0000');
-    }
+$(document).ready(function () {
+  var celularInput = $("#{{ form.celular.id_for_label }}");
+  if (celularInput.length) celularInput.mask('(00) 00000-0000');
 });
 </script>
 {% endblock %}

@@ -145,15 +145,7 @@
     <div class="card mb-4">
         <div class="card-body">
             <form method="get" class="row g-3">
-                <div class="col-md-3">
-                    <label class="form-label">Status</label>
-                    <select name="status" class="form-select">
-                        <option value="">Todos</option>
-                        {% for value, label in status_choices %}
-                        <option value="{{ value }}" {% if request.GET.status == value %}selected{% endif %}>{{ label }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
+                <input type="hidden" name="tab" value="{{ active_tab }}">
                 <div class="col-md-3">
                     <label class="form-label">Fornecedor</label>
                     <select name="fornecedor" class="form-select">
@@ -173,126 +165,12 @@
                         <button type="submit" class="btn btn-primary">
                             <i class="bi bi-search me-2"></i>Filtrar
                         </button>
-                        <a href="{% url 'compras:recebimento_list' %}" class="btn btn-secondary">
+                        <a href="{% url 'compras:recebimento_list' %}?tab={{ active_tab }}" class="btn btn-secondary">
                             <i class="bi bi-x-circle me-2"></i>Limpar
                         </a>
                     </div>
                 </div>
             </form>
-        </div>
-    </div>
-
-    <!-- Lista de Recebimentos -->
-    <div class="card">
-        <div class="card-body">
-            {% if recebimentos %}
-            <div class="table-responsive">
-                <table class="table table-hover">
-                    <thead>
-                        <tr>
-                            <th>Número</th>
-                            <th>Pedido</th>
-                            <th class="text-center">Parcial</th>
-                            <th>Fornecedor</th>
-                            <th>NF-e</th>
-                            <th>Data Recebimento</th>
-                            <th>Valor NF</th>
-                            <th>Status</th>
-                            <th>Recebido por</th>
-                            <th class="text-end">Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for recebimento in recebimentos %}
-                        <tr>
-                            <td>
-                                <a href="{% url 'compras:recebimento_detail' recebimento.pk %}">
-                                    <strong>{{ recebimento.numero }}</strong>
-                                </a>
-                            </td>
-                            <td>
-                                {% if recebimento.pedido %}
-                                    <a href="{% url 'compras:pedido_detail' recebimento.pedido.pk %}">
-                                        {{ recebimento.pedido.numero }}
-                                    </a>
-                                {% else %}
-                                    <span class="text-muted">—</span>
-                                {% endif %}
-                            </td>
-                            <td class="text-center">
-                                {% if recebimento.pedido and recebimento.pedido.status == 'PARCIALMENTE_RECEBIDO' %}
-                                    <span title="Pedido parcialmente recebido">🟡</span>
-                                {% elif recebimento.pedido and recebimento.pedido.status == 'RECEBIDO' %}
-                                    <span title="Pedido recebido totalmente">✅</span>
-                                {% else %}
-                                    <span class="text-muted" title="Sem recebimento parcial">—</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                {% if recebimento.pedido %}
-                                    {{ recebimento.pedido.fornecedor.nome }}
-                                {% else %}
-                                    {{ recebimento.fornecedor.nome }}
-                                {% endif %}
-                            </td>
-                            <td>{{ recebimento.nota_fiscal }}</td>
-                            <td>{{ recebimento.data_recebimento|date:"d/m/Y" }}</td>
-                            <td>R$ {{ recebimento.valor_total_nf|floatformat:2 }}</td>
-                            <td>
-                                {% if recebimento.status == 'PENDENTE' %}
-                                    <span class="badge bg-warning">{{ recebimento.get_status_display }}</span>
-                                {% elif recebimento.status == 'CONFERIDO' %}
-                                    <span class="badge bg-success">{{ recebimento.get_status_display }}</span>
-                                {% elif recebimento.status == 'DIVERGENTE' %}
-                                    <span class="badge bg-danger">{{ recebimento.get_status_display }}</span>
-                                {% else %}
-                                    <span class="badge bg-secondary">{{ recebimento.get_status_display }}</span>
-                                {% endif %}
-                            </td>
-                            <td>{{ recebimento.recebido_por.get_full_name }}</td>
-                            <td class="text-end">
-                                <a href="{% url 'compras:recebimento_detail' recebimento.pk %}" 
-                                   class="btn btn-sm btn-info" title="Ver detalhes">
-                                    <i class="bi bi-eye"></i>
-                                </a>
-                                {% if recebimento.status == 'PENDENTE' %}
-                                <a href="{% url 'compras:recebimento_conferir' recebimento.pk %}" 
-                                   class="btn btn-sm btn-success" title="Conferir">
-                                    <i class="bi bi-check-circle"></i>
-                                </a>
-                                {% endif %}
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            <!-- Paginação -->
-            <nav aria-label="Navegação de páginas">
-                <ul class="pagination justify-content-center">
-                    {% if page_obj.has_previous %}
-                        <li class="page-item">
-                            <a class="page-link" href="?{% if request.GET.status %}status={{ request.GET.status }}&{% endif %}{% if request.GET.nota_fiscal %}nota_fiscal={{ request.GET.nota_fiscal }}&{% endif %}page={{ page_obj.previous_page_number }}">Anterior</a>
-                        </li>
-                    {% else %}
-                        <li class="page-item disabled"><span class="page-link">Anterior</span></li>
-                    {% endif %}
-                    <li class="page-item disabled"><span class="page-link">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span></li>
-                    {% if page_obj.has_next %}
-                        <li class="page-item">
-                            <a class="page-link" href="?{% if request.GET.status %}status={{ request.GET.status }}&{% endif %}{% if request.GET.nota_fiscal %}nota_fiscal={{ request.GET.nota_fiscal }}&{% endif %}page={{ page_obj.next_page_number }}">Próxima</a>
-                        </li>
-                    {% else %}
-                        <li class="page-item disabled"><span class="page-link">Próxima</span></li>
-                    {% endif %}
-                </ul>
-            </nav>
-            {% else %}
-            <div class="alert alert-info">
-                <i class="bi bi-info-circle me-2"></i>
-                Nenhum recebimento encontrado.
-            </div>
-            {% endif %}
         </div>
     </div>
 </div>

@@ -23,23 +23,60 @@ document.addEventListener('DOMContentLoaded', function() {
     sidebar.classList.add('collapsed');
   }
 
+  // Posiciona o flyout do submenu verticalmente quando a sidebar está recolhida
+  function positionFlyout(item) {
+    if (!sidebar.classList.contains('collapsed')) return;
+    const navLink = item.querySelector('.nav-link');
+    const submenu = item.querySelector('.nav-submenu');
+    if (!navLink || !submenu) return;
+
+    const rect = navLink.getBoundingClientRect();
+    const viewportH = window.innerHeight;
+    const submenuH = Math.min(submenu.scrollHeight || 300, viewportH * 0.8);
+
+    let top = rect.top;
+    // Impede que o flyout ultrapasse a borda inferior da tela
+    if (top + submenuH > viewportH - 8) {
+      top = viewportH - submenuH - 8;
+    }
+    if (top < 8) top = 8;
+
+    submenu.style.top = top + 'px';
+    submenu.style.maxHeight = (viewportH * 0.8) + 'px';
+  }
+
   // Toggle Submenu
   navItems.forEach(item => {
     const navLink = item.querySelector('.nav-link');
-    
+
     navLink.addEventListener('click', function(e) {
       e.preventDefault();
-      
+
+      const isOpen = item.classList.contains('open');
+
       // Close other submenus
       navItems.forEach(otherItem => {
         if (otherItem !== item) {
           otherItem.classList.remove('open');
         }
       });
-      
+
       // Toggle current submenu
-      item.classList.toggle('open');
+      item.classList.toggle('open', !isOpen);
+
+      // Posiciona o flyout se a sidebar estiver recolhida
+      if (!isOpen) {
+        positionFlyout(item);
+      }
     });
+  });
+
+  // Fecha flyouts ao clicar fora da sidebar quando recolhida
+  document.addEventListener('click', function(e) {
+    if (!sidebar.classList.contains('collapsed')) return;
+    if (!sidebar.contains(e.target)) {
+      navItems.forEach(item => item.classList.remove('open'));
+    }
   });
 
   // Toggle Nested Submenu (submenu dentro de submenu) - usando delegação de eventos

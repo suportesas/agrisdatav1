@@ -661,7 +661,7 @@ def ncm_autocomplete(request):
         qs = NCM.objects.filter(ativo=True)
     if q:
         qs = qs.filter(Q(codigo__icontains=q) | Q(nome__icontains=q))
-    items = [{'id': n.pk, 'codigo': n.codigo, 'nome': n.nome} for n in qs.order_by('codigo')[:20]]
+    items = [{'id': n.pk, 'codigo': n.codigo, 'nome': n.nome, 'cest': n.cest or ''} for n in qs.order_by('codigo')[:20]]
     return JsonResponse({'items': items})
 
 

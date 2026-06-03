@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django.conf import settings
 from django.db import models
 from django.utils import timezone
@@ -271,29 +273,46 @@ class ItemNotaFiscal(models.Model):
         return f'{self.numero_item} - {self.descricao}'
 
     def save(self, *args, **kwargs):
+        _0   = Decimal('0')
+        _100 = Decimal('100')
+
+        def d(val):
+            """Garante Decimal — evita Decimal * float."""
+            if val is None:
+                return _0
+            if isinstance(val, Decimal):
+                return val
+            return Decimal(str(val))
+
         self.valor_total = (self.quantidade * self.valor_unitario) - self.valor_desconto
+
         # ICMS com redução de BC
-        reducao = self.icms_reducao_base or 0
-        self.icms_base_calculo = self.valor_total * (1 - reducao / 100)
-        self.valor_icms = self.icms_base_calculo * (self.aliquota_icms or 0) / 100
+        reducao = d(self.icms_reducao_base)
+        self.icms_base_calculo = self.valor_total * (_100 - reducao) / _100
+        self.valor_icms = self.icms_base_calculo * d(self.aliquota_icms) / _100
+
         # ICMS ST
-        if self.icms_st_aliquota and self.icms_st_aliquota > 0:
-            mva = self.icms_st_mva or 0
-            red_st = self.icms_st_reducao_base or 0
-            bc_st = self.valor_total * (1 + mva / 100) * (1 - red_st / 100)
+        if self.icms_st_aliquota and self.icms_st_aliquota > _0:
+            mva    = d(self.icms_st_mva)
+            red_st = d(self.icms_st_reducao_base)
+            bc_st  = self.valor_total * (_100 + mva) / _100 * (_100 - red_st) / _100
             self.icms_st_base_calculo = bc_st
-            self.valor_icms_st = max(bc_st * self.icms_st_aliquota / 100 - self.valor_icms, 0)
+            self.valor_icms_st = max(bc_st * d(self.icms_st_aliquota) / _100 - self.valor_icms, _0)
         else:
-            self.icms_st_base_calculo = 0
-            self.valor_icms_st = 0
+            self.icms_st_base_calculo = _0
+            self.valor_icms_st = _0
+
         # IPI
-        self.valor_ipi = self.valor_total * (self.aliquota_ipi or 0) / 100
+        self.valor_ipi = self.valor_total * d(self.aliquota_ipi) / _100
+
         # PIS
         self.pis_base_calculo = self.valor_total
-        self.valor_pis = self.pis_base_calculo * (self.aliquota_pis or 0) / 100
+        self.valor_pis = self.pis_base_calculo * d(self.aliquota_pis) / _100
+
         # COFINS
         self.cofins_base_calculo = self.valor_total
-        self.valor_cofins = self.cofins_base_calculo * (self.aliquota_cofins or 0) / 100
+        self.valor_cofins = self.cofins_base_calculo * d(self.aliquota_cofins) / _100
+
         super().save(*args, **kwargs)
 
 

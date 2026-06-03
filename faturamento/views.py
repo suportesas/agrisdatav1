@@ -980,9 +980,10 @@ def ajax_produto_detail(request, pk):
         return JsonResponse({'erro': 'Produto não encontrado'}, status=404)
 
     tributacoes = []
-    for t in produto.tributacoes.select_related('cfop').all():
+    for t in produto.tributacoes.select_related('cfop').filter(ativo=True):
         tributacoes.append({
             'cfop': t.cfop.codigo,
+            'padrao': bool(t.padrao),
             'cst_icms': t.icms_situacao_tributaria,
             'icms_modalidade_base': t.icms_modalidade_base or '3',
             'icms_reducao_base': float(t.icms_reducao_base or 0),

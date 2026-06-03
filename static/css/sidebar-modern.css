@@ -422,6 +422,56 @@
 }
 .sidebar-overlay.active { opacity: 1; }
 
+/* ── FLYOUT SUBMENUS (sidebar recolhida) ── */
+.sidebar-modern.collapsed .nav-item.has-submenu {
+  position: static;
+}
+
+.sidebar-modern.collapsed .nav-item.has-submenu .nav-submenu {
+  position: fixed;
+  left: var(--sidebar-collapsed-width);
+  width: 230px;
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  margin: 0;
+  padding: 0;
+  z-index: 1060;
+  border-radius: 10px;
+  box-shadow: 4px 6px 24px rgba(0,0,0,.13);
+  border: 1px solid var(--sb-border);
+  transition: opacity .22s ease, max-height 0s .25s;
+}
+
+.sidebar-modern.collapsed .nav-item.has-submenu.open .nav-submenu {
+  max-height: 80vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  opacity: 1;
+  padding: 4px 0;
+  transition: opacity .22s ease;
+}
+
+/* Rótulo tooltip ao lado do ícone quando recolhido */
+.sidebar-modern.collapsed .nav-item:not(.has-submenu) .nav-link::after {
+  content: attr(data-tooltip);
+  position: fixed;
+  left: calc(var(--sidebar-collapsed-width) + 8px);
+  background: var(--sb-text-dark);
+  color: #fff;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: .78rem;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .18s;
+  z-index: 1070;
+}
+.sidebar-modern.collapsed .nav-item:not(.has-submenu) .nav-link:hover::after {
+  opacity: 1;
+}
+
 /* ── RESPONSIVE ── */
 @media (max-width: 768px) {
   .sidebar-modern { transform: translateX(-100%); }

@@ -54,14 +54,14 @@ def categoria_seed(request):
     criados, ignorados = seed_categorias_for_empresa(empresa)
     messages.success(request, f'Categorias padrão populadas! Criadas: {criados}, já existentes: {ignorados}')
     return redirect('produtos:categoria_list')
-from django.db.models import Q, Count, Sum
+from django.db.models import Q, Count, Sum, F
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.core.paginator import Paginator
 from django.urls import reverse
 import json
 from decimal import Decimal
-from .models import UnidadeMedida, Categoria, SubCategoria, Produto, ProdutoTributacao, NaturezaOperacao, ProdutoDefensivoCultura, ProdutoFornecedor
+from .models import UnidadeMedida, Categoria, SubCategoria, Produto, ProdutoTributacao, NaturezaOperacao, ProdutoDefensivoCultura, ProdutoFornecedor, TipoProduto
 from .forms import UnidadeMedidaForm, CategoriaForm, SubCategoriaForm, ProdutoForm, ProdutoTributacaoForm, NaturezaOperacaoForm, ProdutoDefensivoCulturaForm
 from cadastros.models import NCM, CFOP, Fornecedor
 from emprestimos.models import EmprestimoProdutor
@@ -380,10 +380,25 @@ def subcategoria_delete(request, pk):
 def produto_list(request):
     query = request.GET.get('q', '')
     categoria_filter = request.GET.get('categoria', '')
-    status_filter = request.GET.get('status', '')
-    
-    produtos = Produto.objects.select_related('categoria', 'unidade_medida', 'ncm').filter(categoria__empresa=request.user.empresa)
-    
+    tipo_filter = request.GET.get('tipo', '')
+    status_filter = request.GET.get('status', 'ativo')
+    sort_by = request.GET.get('sort', 'nome')
+
+    empresa = request.user.empresa
+    qs_base = Produto.objects.select_related(
+        'categoria', 'unidade_medida', 'ncm', 'tipo_produto'
+    ).filter(categoria__empresa=empresa)
+
+    # KPIs (calculados antes dos filtros)
+    total_cadastros = qs_base.count()
+    total_ativos = qs_base.filter(ativo=True).count()
+    total_inativos = qs_base.filter(ativo=False).count()
+    total_estoque_baixo = qs_base.filter(
+        ativo=True, controla_estoque=True, estoque_atual__lte=F('estoque_minimo')
+    ).exclude(estoque_minimo=0).count()
+
+    produtos = qs_base
+
     if query:
         produtos = produtos.filter(
             Q(codigo__icontains=query) |
@@ -391,26 +406,33 @@ def produto_list(request):
             Q(codigo_barras__icontains=query) |
             Q(categoria__nome__icontains=query)
         )
-    
     if categoria_filter:
         produtos = produtos.filter(categoria_id=categoria_filter)
-    
+    if tipo_filter:
+        produtos = produtos.filter(tipo_produto_id=tipo_filter)
     if status_filter == 'ativo':
         produtos = produtos.filter(ativo=True)
     elif status_filter == 'inativo':
         produtos = produtos.filter(ativo=False)
-    
-    categorias = Categoria.objects.filter(empresa=request.user.empresa).order_by('nome')
-    
-    # Paginação
+
+    sort_map = {
+        'nome': 'nome', '-nome': '-nome',
+        'codigo': 'codigo', '-codigo': '-codigo',
+        'preco': 'preco_venda', '-preco': '-preco_venda',
+        'estoque': 'estoque_atual', '-estoque': '-estoque_atual',
+    }
+    produtos = produtos.order_by(sort_map.get(sort_by, 'nome'))
+
+    categorias = Categoria.objects.filter(empresa=empresa).order_by('nome')
+    tipos_produto = TipoProduto.objects.filter(empresa=empresa).order_by('nome')
+
     try:
         per_page = int(request.GET.get('per_page', 25))
     except (TypeError, ValueError):
         per_page = 25
     if per_page not in (10, 25, 50, 100):
         per_page = 25
-    
-    produtos = produtos.order_by('nome')
+
     paginator = Paginator(produtos, per_page)
     page_obj = paginator.get_page(request.GET.get('page'))
 
@@ -420,47 +442,43 @@ def produto_list(request):
     total_saida = Decimal('0')
 
     if produto_ids:
-        agregados = (
+        for row in (
             EmprestimoProdutor.objects
-            .filter(
-                produto_id__in=produto_ids,
-                empresa=request.user.empresa,
-            )
+            .filter(produto_id__in=produto_ids, empresa=empresa)
             .values('produto_id')
-            .annotate(
-                entrada=Sum('quantidade_emprestada'),
-                saida=Sum('quantidade_devolvida'),
-            )
-        )
-
-        for row in agregados:
+            .annotate(entrada=Sum('quantidade_emprestada'), saida=Sum('quantidade_devolvida'))
+        ):
             entrada = row['entrada'] or Decimal('0')
             saida = row['saida'] or Decimal('0')
             metricas_por_produto[row['produto_id']] = {
-                'entrada': entrada,
-                'saida': saida,
-                'saldo': entrada - saida,
+                'entrada': entrada, 'saida': saida, 'saldo': entrada - saida,
             }
             total_entrada += entrada
             total_saida += saida
 
     for produto in page_obj.object_list:
         dados = metricas_por_produto.get(produto.id, {
-            'entrada': Decimal('0'),
-            'saida': Decimal('0'),
-            'saldo': Decimal('0'),
+            'entrada': Decimal('0'), 'saida': Decimal('0'), 'saldo': Decimal('0'),
         })
         produto.emprestimo_entrada = dados['entrada']
         produto.emprestimo_saida = dados['saida']
         produto.emprestimo_saldo = dados['saldo']
-    
+
     return render(request, 'produtos/produto/produto_list.html', {
         'page_obj': page_obj,
         'categorias': categorias,
+        'tipos_produto': tipos_produto,
         'query': query,
         'categoria_filter': categoria_filter,
+        'tipo_filter': tipo_filter,
         'status_filter': status_filter,
+        'sort_by': sort_by,
         'per_page': per_page,
+        'per_page_options': [10, 25, 50, 100],
+        'total_cadastros': total_cadastros,
+        'total_ativos': total_ativos,
+        'total_inativos': total_inativos,
+        'total_estoque_baixo': total_estoque_baixo,
         'emprestimo_total_entrada': total_entrada,
         'emprestimo_total_saida': total_saida,
         'emprestimo_total_saldo': total_entrada - total_saida,
@@ -1015,19 +1033,28 @@ def cfop_buscar_ajax(request):
             if not empresa_cfop:
                 return JsonResponse({'success': False, 'error': 'CFOP não permitido para esta empresa.'}, status=404)
             cfop = empresa_cfop.template
-            natureza = cfop.natureza_operacao if cfop else None
-            natureza_dict = None
-            if natureza:
-                natureza_dict = {
-                    'id': natureza.id,
-                    'descricao': natureza.descricao
-                }
-            else:
-                # Se não houver Natureza vinculada, usar observação do CFOP
-                natureza_dict = {
-                    'id': None,
-                    'descricao': cfop.descricao if cfop else empresa_cfop.descricao or ''
-                }
+            natureza_global = cfop.natureza_operacao if cfop else None
+            natureza_dict = {'id': None, 'descricao': ''}
+
+            if natureza_global:
+                # Tentar encontrar NaturezaOperacao desta empresa pelo mesmo código
+                from produtos.models import NaturezaOperacao
+                natureza_empresa = NaturezaOperacao.objects.filter(
+                    empresa=empresa, codigo=natureza_global.codigo, ativo=True
+                ).first()
+                if not natureza_empresa:
+                    # Busca por descrição similar como fallback
+                    natureza_empresa = NaturezaOperacao.objects.filter(
+                        empresa=empresa, ativo=True
+                    ).filter(descricao__icontains=natureza_global.descricao[:30]).first()
+
+                if natureza_empresa:
+                    natureza_dict = {'id': natureza_empresa.id, 'descricao': natureza_empresa.descricao}
+                else:
+                    # Natureza da empresa não encontrada — retorna só descrição para exibição
+                    natureza_dict = {'id': None, 'descricao': natureza_global.descricao}
+            elif cfop:
+                natureza_dict = {'id': None, 'descricao': cfop.nome}
             return JsonResponse({
                 'success': True,
                 'id': cfop.id if cfop else empresa_cfop.id,

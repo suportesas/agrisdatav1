@@ -523,25 +523,47 @@
   }
 
   // ── Seletor de tributação (múltiplas regras) ──────────────────────
-  function injectTributacaoSelector(fiscalRow, tributacoes, onSelect) {
+  function injectTributacaoSelector(fiscalRow, tributacoes, onSelect, selectedIdx) {
     fiscalRow.querySelector('.trib-selector-wrap')?.remove();
     if (!tributacoes || tributacoes.length <= 1) return;
 
-    const wrap = document.createElement('div');
+    const idx   = selectedIdx ?? 0;
+    const wrap  = document.createElement('div');
     wrap.className = 'trib-selector-wrap col-12 mb-2 px-1';
-    const hasst = t => t.icms_st_aliquota > 0 ? ' 🔶ST' : '';
+    const hasst = t => parseFloat(t.icms_st_aliquota) > 0 ? ' 🔶ST' : '';
+
+    const cfopHeader = document.getElementById('id_cfop')?.value?.trim();
+    const matched    = tributacoes[idx]?.cfop === cfopHeader;
+    const labelHtml  = cfopHeader
+      ? (matched
+          ? `<i class="bi bi-check-circle-fill text-success me-1"></i>Regra fiscal para CFOP <strong>${cfopHeader}</strong> aplicada automaticamente`
+          : `<i class="bi bi-exclamation-triangle-fill text-warning me-1"></i>CFOP <strong>${cfopHeader}</strong> sem regra cadastrada — selecione manualmente`)
+      : `<i class="bi bi-collection me-1"></i>Selecione a regra fiscal do produto`;
+
     wrap.innerHTML = `
-      <label class="fiscal-label text-primary"><i class="bi bi-collection me-1"></i>Selecione a regra fiscal do produto</label>
+      <div class="alert alert-light border py-1 px-2 mb-1 small d-flex align-items-center gap-2" style="font-size:.8rem;">
+        ${labelHtml}
+      </div>
       <select class="form-select form-select-sm trib-select">
-        ${tributacoes.map((t,i) =>
-          `<option value="${i}">CFOP ${t.cfop} · CST-${t.cst_icms} · ICMS ${t.aliquota_icms}%${hasst(t)} · PIS ${t.cst_pis} · COFINS ${t.cst_cofins}</option>`
+        ${tributacoes.map((t, i) =>
+          `<option value="${i}"${i === idx ? ' selected' : ''}>CFOP ${t.cfop} · CST-${t.cst_icms} · ICMS ${parseFloat(t.aliquota_icms)}%${hasst(t)} · PIS ${t.cst_pis} · COFINS ${t.cst_cofins}</option>`
         ).join('')}
       </select>`;
-    wrap.querySelector('.trib-select').addEventListener('change', function() {
+    wrap.querySelector('.trib-select').addEventListener('change', function () {
       onSelect(tributacoes[parseInt(this.value)]);
     });
     const inner = fiscalRow.querySelector('td > div');
     if (inner) inner.prepend(wrap);
+  }
+
+  // ── Retorna a tributação que melhor casa com o CFOP do cabeçalho ──
+  function escolherTributacao(tributacoes) {
+    if (!tributacoes || tributacoes.length === 0) return { trib: null, idx: -1 };
+    const cfopHeader = document.getElementById('id_cfop')?.value?.trim() || '';
+    let idx = cfopHeader ? tributacoes.findIndex(t => t.cfop === cfopHeader) : -1;
+    if (idx < 0) idx = tributacoes.findIndex(t => t.padrao);   // fallback: tributação padrão
+    if (idx < 0) idx = 0;                                        // fallback: primeira
+    return { trib: tributacoes[idx], idx };
   }
 
   // ── Remover item ──────────────────────────────────────────────────
@@ -676,6 +698,9 @@
           rowFiscal?.querySelector('.trib-no-data-warn')?.remove();
           rowFiscal?.querySelector('.trib-selector-wrap')?.remove();
 
+          // Guardar tributações no row para re-aplicar quando CFOP do cabeçalho mudar
+          mainRow._tributacoes = tributacoes;
+
           if (tributacoes.length === 0) {
             if (rowFiscal) {
               rowFiscal.style.display = '';
@@ -688,9 +713,10 @@
               }
             }
           } else {
-            applyTributacao(mainRow, rowFiscal, tributacoes[0]);
+            const { trib, idx } = escolherTributacao(tributacoes);
+            applyTributacao(mainRow, rowFiscal, trib);
             if (rowFiscal) {
-              injectTributacaoSelector(rowFiscal, tributacoes, t => applyTributacao(mainRow, rowFiscal, t));
+              injectTributacaoSelector(rowFiscal, tributacoes, t => applyTributacao(mainRow, rowFiscal, t), idx);
             }
           }
 
@@ -721,6 +747,24 @@
     document.getElementById(id)?.addEventListener('input', recalcularTotais);
   });
   recalcularTotais();
+
+  // ── Quando o CFOP do cabeçalho muda, re-aplicar regra fiscal em todos os itens ──
+  document.getElementById('id_cfop')?.addEventListener('change', function () {
+    body.querySelectorAll('.item-row').forEach(mainRow => {
+      if (mainRow.style.display === 'none') return;
+      const tributacoes = mainRow._tributacoes;
+      if (!tributacoes || tributacoes.length === 0) return;
+      const fiscalRow = mainRow.nextElementSibling?.classList.contains('item-fiscal-row')
+        ? mainRow.nextElementSibling : null;
+      const { trib, idx } = escolherTributacao(tributacoes);
+      applyTributacao(mainRow, fiscalRow, trib);
+      if (fiscalRow) {
+        injectTributacaoSelector(fiscalRow, tributacoes, t => applyTributacao(mainRow, fiscalRow, t), idx);
+      }
+      updateFiscalBadge(mainRow, fiscalRow);
+    });
+    recalcularTotais();
+  });
 
   // ── Adicionar novo item ───────────────────────────────────────────
   document.getElementById('add-item').addEventListener('click', function () {

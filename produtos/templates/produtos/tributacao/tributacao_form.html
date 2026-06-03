@@ -145,9 +145,10 @@
             {% endif %}
           </div>
           <div class="col-md-4 mb-3">
-            <label for="id_natureza_operacao_text" class="form-label">Natureza da Operação</label>
-            <input type="text" name="natureza_operacao_text" id="id_natureza_operacao" class="form-control" placeholder="Natureza da Operação" autocomplete="off" readonly>
-                            value="{{ natureza_descricao }}"
+            <label class="form-label">Natureza da Operação</label>
+            <input type="text" id="id_natureza_operacao_display" class="form-control"
+                   placeholder="Preenchido ao buscar o CFOP" readonly
+                   value="{{ natureza_descricao }}">
             <small class="form-text text-muted">Preenchido automaticamente pela busca do CFOP</small>
             <!-- Select oculto para envio do ID -->
             <div style="display: none;">
@@ -421,14 +422,14 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-  // Garantir que o select oculto de Natureza da Operação mantenha o valor salvo ao carregar
   const naturezaSelect = document.querySelector('select[name="natureza_operacao"]');
-  const naturezaInput = document.getElementById('id_natureza_operacao');
-  if (naturezaSelect && naturezaSelect.value) {
-    // Buscar a descrição da opção selecionada e preencher o input texto
-    const selectedOption = naturezaSelect.options[naturezaSelect.selectedIndex];
-    if (selectedOption && naturezaInput) {
-      naturezaInput.value = selectedOption.text;
+  const naturezaInput  = document.getElementById('id_natureza_operacao_display');
+
+  // Ao carregar (modo edição): mostrar descrição da natureza já salva
+  if (naturezaSelect && naturezaSelect.value && naturezaSelect.value !== '') {
+    const selected = naturezaSelect.options[naturezaSelect.selectedIndex];
+    if (selected && selected.value && naturezaInput && !naturezaInput.value) {
+      naturezaInput.value = selected.text;
     }
   }
     const tributacaoForm = document.getElementById('tributacaoForm');
@@ -543,13 +544,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 cfopDescricao.classList.remove('d-none');
                 logDebug(`CFOP encontrado: ${data.codigo} - ${data.nome}`);
 
-                // Preencher Natureza da Operação (input texto e select oculto)
-                // Só sobrescreve ao buscar CFOP
-                if (naturezaInput && data.natureza_operacao && data.natureza_operacao.descricao) {
-                  naturezaInput.value = data.natureza_operacao.descricao;
+                // Preencher Natureza da Operação
+                const no = data.natureza_operacao;
+                if (naturezaInput && no && no.descricao) {
+                  naturezaInput.value = no.descricao;
                 }
-                if (naturezaSelect && data.natureza_operacao && data.natureza_operacao.id) {
-                  naturezaSelect.value = data.natureza_operacao.id;
+                if (naturezaSelect && no && no.id) {
+                  // Verificar se o ID existe entre as opções do select filtrado por empresa
+                  const optExists = Array.from(naturezaSelect.options).some(o => o.value == no.id);
+                  if (optExists) {
+                    naturezaSelect.value = no.id;
+                  } else {
+                    // Adicionar a opção dinamicamente para que o formulário possa ser salvo
+                    const opt = new Option(no.descricao, no.id, true, true);
+                    naturezaSelect.add(opt);
+                  }
                 }
 
                 // Preencher Descrição

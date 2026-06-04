@@ -175,6 +175,23 @@ class NotaFiscal(FaturamentoBaseModel):
     motivo_cancelamento = models.CharField('Motivo do Cancelamento', max_length=255, blank=True)
     data_cancelamento = models.DateTimeField('Data/Hora do Cancelamento', null=True, blank=True)
 
+    # ── Endereço de Entrega (grupo G da NF-e — local diferente do destinatário) ──
+    entrega_ativo = models.BooleanField(
+        'Usar endereço de entrega diferente',
+        default=False,
+        help_text='Marque quando a mercadoria for entregue em endereço diferente do destinatário (ex: porto, obra, filial).',
+    )
+    entrega_cnpj_cpf = models.CharField('CNPJ/CPF do Local de Entrega', max_length=14, blank=True,
+        help_text='Somente dígitos. CNPJ (14) ou CPF (11) do local de entrega.')
+    entrega_logradouro = models.CharField('Logradouro', max_length=60, blank=True)
+    entrega_numero = models.CharField('Número', max_length=10, blank=True)
+    entrega_complemento = models.CharField('Complemento', max_length=60, blank=True)
+    entrega_bairro = models.CharField('Bairro', max_length=60, blank=True)
+    entrega_codigo_municipio = models.CharField('Código IBGE do Município', max_length=7, blank=True,
+        help_text='7 dígitos — código IBGE do município de entrega.')
+    entrega_nome_municipio = models.CharField('Município', max_length=60, blank=True)
+    entrega_uf = models.CharField('UF', max_length=2, blank=True)
+
     class Meta:
         verbose_name = 'Nota Fiscal'
         verbose_name_plural = 'Notas Fiscais'

@@ -183,6 +183,24 @@ class IntegranNotasClient:
             },
         }
 
+        # Local de Entrega — grupo G da NF-e (endereço diferente do destinatário)
+        if getattr(nf, 'entrega_ativo', False):
+            doc_entrega = _digits(nf.entrega_cnpj_cpf or '')
+            entrega_block: dict = {
+                'logradouro':       nf.entrega_logradouro or '',
+                'numero':           nf.entrega_numero or 'S/N',
+                'complemento':      nf.entrega_complemento or '',
+                'bairro':           nf.entrega_bairro or '',
+                'codigo_municipio': nf.entrega_codigo_municipio or '',
+                'nome_municipio':   nf.entrega_nome_municipio or '',
+                'uf':               nf.entrega_uf or '',
+            }
+            if len(doc_entrega) == 14:
+                entrega_block['cnpj'] = doc_entrega
+            elif len(doc_entrega) == 11:
+                entrega_block['cpf'] = doc_entrega
+            payload['local_entrega'] = entrega_block
+
         # Cobrança (duplicatas)
         duplicatas = list(nf.duplicatas.all()) if hasattr(nf, 'duplicatas') else []
         if duplicatas:

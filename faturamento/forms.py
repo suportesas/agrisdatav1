@@ -154,7 +154,18 @@ class NotaFiscalForm(FaturamentoBaseForm):
             'valor_desconto',
             'informacoes_complementares',
             'informacoes_fisco',
+            # Endereço de entrega
+            'entrega_ativo',
+            'entrega_cnpj_cpf',
+            'entrega_logradouro',
+            'entrega_numero',
+            'entrega_complemento',
+            'entrega_bairro',
+            'entrega_codigo_municipio',
+            'entrega_nome_municipio',
+            'entrega_uf',
         ]
+        _fc = {'class': 'form-control form-control-sm'}
         widgets = {
             'cliente': forms.Select(attrs={'class': 'form-select'}),
             'natureza_operacao': forms.TextInput(attrs={'class': 'form-control'}),
@@ -171,6 +182,16 @@ class NotaFiscalForm(FaturamentoBaseForm):
             'informacoes_complementares': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
             'informacoes_fisco': forms.Textarea(attrs={'class': 'form-control', 'rows': 2,
                                                        'placeholder': 'Informações para o Fisco (infAdFisco)'}),
+            # Endereço de entrega
+            'entrega_ativo': forms.CheckboxInput(attrs={'class': 'form-check-input', 'id': 'id_entrega_ativo'}),
+            'entrega_cnpj_cpf': forms.TextInput(attrs={**_fc, 'placeholder': 'Somente dígitos (CNPJ 14 / CPF 11)', 'maxlength': '14'}),
+            'entrega_logradouro': forms.TextInput(attrs={**_fc, 'placeholder': 'Rua, Av., Rodovia...'}),
+            'entrega_numero': forms.TextInput(attrs={**_fc, 'placeholder': 'S/N'}),
+            'entrega_complemento': forms.TextInput(attrs={**_fc, 'placeholder': 'Apto, Sala, Bloco...'}),
+            'entrega_bairro': forms.TextInput(attrs={**_fc, 'placeholder': 'Bairro'}),
+            'entrega_codigo_municipio': forms.TextInput(attrs={**_fc, 'placeholder': '7 dígitos IBGE', 'maxlength': '7'}),
+            'entrega_nome_municipio': forms.TextInput(attrs={**_fc, 'placeholder': 'Município'}),
+            'entrega_uf': forms.TextInput(attrs={**_fc, 'placeholder': 'UF', 'maxlength': '2', 'style': 'text-transform:uppercase;'}),
         }
 
     def __init__(self, *args, empresa=None, **kwargs):
@@ -181,6 +202,11 @@ class NotaFiscalForm(FaturamentoBaseForm):
             self.fields['transportadora'].queryset = Fornecedor.objects.filter(empresa=empresa, ativa=True).order_by('nome')
             self.fields['transportadora'].required = False
             self.fields['informacoes_fisco'].required = False
+        # Campos de entrega são sempre opcionais
+        for f in ('entrega_cnpj_cpf', 'entrega_logradouro', 'entrega_numero',
+                  'entrega_complemento', 'entrega_bairro',
+                  'entrega_codigo_municipio', 'entrega_nome_municipio', 'entrega_uf'):
+            self.fields[f].required = False
 
 
 _sm = {'class': 'form-control form-control-sm'}

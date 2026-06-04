@@ -94,6 +94,65 @@
                 <label class="form-label">Transportadora</label>
                 {{ form.transportadora }}
               </div>
+
+              <!-- ── Endereço de Entrega ── -->
+              <div class="col-12">
+                <div class="border rounded p-2 mt-1" id="entrega-section">
+                  <div class="form-check mb-0">
+                    {{ form.entrega_ativo }}
+                    <label class="form-check-label fw-semibold" for="id_entrega_ativo">
+                      <i class="bi bi-geo-alt-fill text-primary me-1"></i>
+                      Endereço de Entrega diferente do Destinatário
+                      <small class="text-muted fw-normal ms-1">(Grupo G da NF-e — porto, obra, filial, drawback…)</small>
+                    </label>
+                  </div>
+
+                  <div id="entrega-fields" style="display:none;" class="mt-3">
+                    <div class="alert alert-info py-1 px-2 mb-2 small">
+                      <i class="bi bi-info-circle me-1"></i>
+                      Preencha quando a mercadoria for entregue em endereço <strong>diferente</strong> do cadastrado no destinatário.
+                      Obrigatório informar o CNPJ/CPF do local de entrega.
+                    </div>
+                    <div class="row g-2">
+                      <div class="col-md-4">
+                        <label class="form-label mb-1 small fw-semibold">CNPJ/CPF do Local <span class="text-danger">*</span></label>
+                        {{ form.entrega_cnpj_cpf }}
+                        <div class="form-text">Ex: porto, armazém, filial</div>
+                      </div>
+                      <div class="col-md-5">
+                        <label class="form-label mb-1 small fw-semibold">Logradouro <span class="text-danger">*</span></label>
+                        {{ form.entrega_logradouro }}
+                      </div>
+                      <div class="col-md-3">
+                        <label class="form-label mb-1 small fw-semibold">Número <span class="text-danger">*</span></label>
+                        {{ form.entrega_numero }}
+                      </div>
+                      <div class="col-md-4">
+                        <label class="form-label mb-1 small fw-semibold">Complemento</label>
+                        {{ form.entrega_complemento }}
+                      </div>
+                      <div class="col-md-4">
+                        <label class="form-label mb-1 small fw-semibold">Bairro <span class="text-danger">*</span></label>
+                        {{ form.entrega_bairro }}
+                      </div>
+                      <div class="col-md-3">
+                        <label class="form-label mb-1 small fw-semibold">Cód. IBGE <span class="text-danger">*</span></label>
+                        {{ form.entrega_codigo_municipio }}
+                      </div>
+                      <div class="col-md-7">
+                        <label class="form-label mb-1 small fw-semibold">Município <span class="text-danger">*</span></label>
+                        {{ form.entrega_nome_municipio }}
+                      </div>
+                      <div class="col-md-2">
+                        <label class="form-label mb-1 small fw-semibold">UF <span class="text-danger">*</span></label>
+                        {{ form.entrega_uf }}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <!-- ── / Endereço de Entrega ── -->
+
             </div>
           </div>
         </div>
@@ -1071,6 +1130,22 @@
     nfForm.submit();
   });
 
+})();
+</script>
+
+<script>
+// ── Endereço de Entrega — toggle show/hide ────────────────────────────────
+(function () {
+  const chk    = document.getElementById('id_entrega_ativo');
+  const fields = document.getElementById('entrega-fields');
+  if (!chk || !fields) return;
+
+  function toggle() {
+    fields.style.display = chk.checked ? '' : 'none';
+  }
+
+  chk.addEventListener('change', toggle);
+  toggle(); // estado inicial (edição de NF já salva)
 })();
 </script>
 

@@ -175,6 +175,20 @@ class NotaFiscal(FaturamentoBaseModel):
     motivo_cancelamento = models.CharField('Motivo do Cancelamento', max_length=255, blank=True)
     data_cancelamento = models.DateTimeField('Data/Hora do Cancelamento', null=True, blank=True)
 
+    # ── Exportação (grupo ZA da NF-e — <exporta>) ──────────────────────────────
+    embarque_uf = models.CharField(
+        'UF do Embarque', max_length=2, blank=True,
+        help_text='UF de saída do país (ex: CE, SP). Obrigatório para NF-e de exportação (CFOP 7xxx).',
+    )
+    embarque_local = models.CharField(
+        'Local do Embarque', max_length=60, blank=True,
+        help_text='Descrição do local de embarque/exportação (ex: Porto Mucuripe).',
+    )
+    embarque_local_despacho = models.CharField(
+        'Local do Despacho', max_length=60, blank=True,
+        help_text='Local de despacho aduaneiro, quando diferente do embarque (ex: Recinto Alfandegado).',
+    )
+
     # ── Endereço de Entrega (grupo G da NF-e — local diferente do destinatário) ──
     entrega_ativo = models.BooleanField(
         'Usar endereço de entrega diferente',

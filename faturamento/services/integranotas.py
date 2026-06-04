@@ -183,6 +183,20 @@ class IntegranNotasClient:
             },
         }
 
+        # Exportação — grupo ZA da NF-e (<exporta>) — obrigatório para CFOP 7xxx
+        uf_embarque    = getattr(nf, 'embarque_uf', '').strip().upper()
+        local_embarque = getattr(nf, 'embarque_local', '').strip()
+        local_despacho = getattr(nf, 'embarque_local_despacho', '').strip()
+        if uf_embarque or local_embarque:
+            exporta: dict = {}
+            if uf_embarque:
+                exporta['uf_saida_pais'] = uf_embarque
+            if local_embarque:
+                exporta['local_embarque'] = local_embarque
+            if local_despacho:
+                exporta['local_despacho'] = local_despacho
+            payload['exportacao'] = exporta
+
         # Local de Entrega — grupo G da NF-e (endereço diferente do destinatário)
         if getattr(nf, 'entrega_ativo', False):
             doc_entrega = _digits(nf.entrega_cnpj_cpf or '')

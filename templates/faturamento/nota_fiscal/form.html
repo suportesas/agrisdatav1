@@ -95,6 +95,35 @@
                 {{ form.transportadora }}
               </div>
 
+              <!-- ── Exportação — UF/Local de Embarque ── -->
+              <div class="col-12">
+                <div class="border rounded p-2 mt-1 border-warning-subtle bg-warning-subtle bg-opacity-10">
+                  <div class="row g-2 align-items-end">
+                    <div class="col-12 mb-1">
+                      <span class="fw-semibold small">
+                        <i class="bi bi-ship text-warning me-1"></i>
+                        Exportação — Embarque
+                        <small class="text-muted fw-normal ms-1">(Grupo ZA da NF-e — preencha para CFOP 7xxx)</small>
+                      </span>
+                    </div>
+                    <div class="col-md-2">
+                      <label class="form-label mb-1 small fw-semibold">UF do Embarque</label>
+                      {{ form.embarque_uf }}
+                      <div class="form-text">Ex: CE, SP</div>
+                    </div>
+                    <div class="col-md-5">
+                      <label class="form-label mb-1 small fw-semibold">Local do Embarque</label>
+                      {{ form.embarque_local }}
+                    </div>
+                    <div class="col-md-5">
+                      <label class="form-label mb-1 small fw-semibold">Local do Despacho <small class="text-muted">(opcional)</small></label>
+                      {{ form.embarque_local_despacho }}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <!-- ── / Exportação ── -->
+
               <!-- ── Endereço de Entrega ── -->
               <div class="col-12">
                 <div class="border rounded p-2 mt-1" id="entrega-section">

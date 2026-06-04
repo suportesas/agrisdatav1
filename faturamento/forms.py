@@ -154,6 +154,10 @@ class NotaFiscalForm(FaturamentoBaseForm):
             'valor_desconto',
             'informacoes_complementares',
             'informacoes_fisco',
+            # Exportação
+            'embarque_uf',
+            'embarque_local',
+            'embarque_local_despacho',
             # Endereço de entrega
             'entrega_ativo',
             'entrega_cnpj_cpf',
@@ -182,6 +186,11 @@ class NotaFiscalForm(FaturamentoBaseForm):
             'informacoes_complementares': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
             'informacoes_fisco': forms.Textarea(attrs={'class': 'form-control', 'rows': 2,
                                                        'placeholder': 'Informações para o Fisco (infAdFisco)'}),
+            # Exportação
+            'embarque_uf': forms.TextInput(attrs={**_fc, 'placeholder': 'CE', 'maxlength': '2',
+                                                   'style': 'text-transform:uppercase;'}),
+            'embarque_local': forms.TextInput(attrs={**_fc, 'placeholder': 'Ex: Porto Mucuripe'}),
+            'embarque_local_despacho': forms.TextInput(attrs={**_fc, 'placeholder': 'Ex: Recinto Alfandegado (opcional)'}),
             # Endereço de entrega
             'entrega_ativo': forms.CheckboxInput(attrs={'class': 'form-check-input', 'id': 'id_entrega_ativo'}),
             'entrega_cnpj_cpf': forms.TextInput(attrs={**_fc, 'placeholder': 'Somente dígitos (CNPJ 14 / CPF 11)', 'maxlength': '14'}),
@@ -202,8 +211,9 @@ class NotaFiscalForm(FaturamentoBaseForm):
             self.fields['transportadora'].queryset = Fornecedor.objects.filter(empresa=empresa, ativa=True).order_by('nome')
             self.fields['transportadora'].required = False
             self.fields['informacoes_fisco'].required = False
-        # Campos de entrega são sempre opcionais
-        for f in ('entrega_cnpj_cpf', 'entrega_logradouro', 'entrega_numero',
+        # Campos de exportação e entrega são sempre opcionais
+        for f in ('embarque_uf', 'embarque_local', 'embarque_local_despacho',
+                  'entrega_cnpj_cpf', 'entrega_logradouro', 'entrega_numero',
                   'entrega_complemento', 'entrega_bairro',
                   'entrega_codigo_municipio', 'entrega_nome_municipio', 'entrega_uf'):
             self.fields[f].required = False

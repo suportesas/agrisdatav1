@@ -99,6 +99,79 @@ class IntegranNotasClient:
 
     # ─── Public methods ───────────────────────────────────────────────
 
+    def test_connection(self) -> dict:
+        """Testa a conexão e valida o token contra IntegraNotas.
+        Retorna dict: {sucesso, codigo_http, mensagem, tempo_ms, ambiente_api}
+        """
+        import time
+        endpoints = ['/nfe/status-sefaz', '/status', '/nfe']
+        inicio = time.monotonic()
+        last_code = None
+        last_body = ''
+        for endpoint in endpoints:
+            try:
+                resp = requests.get(
+                    f'{self.base_url}{endpoint}',
+                    headers=self._headers(),
+                    timeout=10,
+                )
+                last_code = resp.status_code
+                try:
+                    last_body = resp.json()
+                except Exception:
+                    last_body = resp.text[:200]
+                tempo_ms = int((time.monotonic() - inicio) * 1000)
+                if resp.status_code in (401, 403):
+                    return {
+                        'sucesso': False,
+                        'codigo_http': resp.status_code,
+                        'mensagem': f'Token rejeitado pela API (HTTP {resp.status_code}). '
+                                    'Verifique se o token corresponde ao ambiente selecionado.',
+                        'tempo_ms': tempo_ms,
+                        'detalhe': last_body,
+                        'ambiente_api': self.base_url,
+                    }
+                # 200, 404, 405, etc. → auth OK
+                return {
+                    'sucesso': True,
+                    'codigo_http': resp.status_code,
+                    'mensagem': f'Token aceito pela API IntegraNotas (HTTP {resp.status_code}).',
+                    'tempo_ms': tempo_ms,
+                    'detalhe': last_body,
+                    'ambiente_api': self.base_url,
+                }
+            except requests.exceptions.ConnectionError:
+                tempo_ms = int((time.monotonic() - inicio) * 1000)
+                return {
+                    'sucesso': False,
+                    'codigo_http': None,
+                    'mensagem': f'Sem conexão com {self.base_url}. Verifique a internet ou firewall.',
+                    'tempo_ms': tempo_ms,
+                    'detalhe': '',
+                    'ambiente_api': self.base_url,
+                }
+            except requests.exceptions.Timeout:
+                tempo_ms = int((time.monotonic() - inicio) * 1000)
+                return {
+                    'sucesso': False,
+                    'codigo_http': None,
+                    'mensagem': 'Timeout — IntegraNotas não respondeu em 10s.',
+                    'tempo_ms': tempo_ms,
+                    'detalhe': '',
+                    'ambiente_api': self.base_url,
+                }
+            except Exception as exc:
+                continue
+        tempo_ms = int((time.monotonic() - inicio) * 1000)
+        return {
+            'sucesso': False,
+            'codigo_http': last_code,
+            'mensagem': 'Não foi possível verificar a conexão.',
+            'tempo_ms': tempo_ms,
+            'detalhe': str(last_body),
+            'ambiente_api': self.base_url,
+        }
+
     def emitir_nfe(self, nf) -> dict:
         """Submit NF-e to IntegraNota. Returns API response dict."""
         payload = self._build_payload(nf)

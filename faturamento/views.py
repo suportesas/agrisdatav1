@@ -1405,6 +1405,35 @@ def cotacoes_bcb_buscar_hoje(request):
 # ───────────────────────── Documentação IntegraNotas ──────────────────────
 
 @login_required
+@require_POST
+def integranotas_test_token(request):
+    """AJAX: testa um token IntegraNotas sem salvar. Aceita token e ambiente via POST."""
+    from .services.integranotas import IntegranNotasClient
+
+    empresa = _get_empresa(request)
+
+    token_input  = request.POST.get('token', '').strip()
+    ambiente_input = request.POST.get('ambiente', '2').strip()
+
+    # Se não passou token no POST, usa o já salvo
+    if not token_input:
+        config = ConfiguracaoFiscal.objects.filter(empresa=empresa).first()
+        if not config:
+            return JsonResponse({'sucesso': False, 'mensagem': 'Configuração fiscal não encontrada.'})
+        token_input = config.get_token()
+        if not token_input:
+            return JsonResponse({'sucesso': False, 'mensagem': 'Nenhum token configurado. Cole o token no campo acima para testar.'})
+        ambiente_input = config.ambiente_nfe
+
+    token_prefix = token_input[:16] + '...' if len(token_input) > 16 else token_input
+    client = IntegranNotasClient(token=token_input, ambiente=ambiente_input)
+    result = client.test_connection()
+    result['token_prefix'] = token_prefix
+    result['ambiente_label'] = 'Produção' if ambiente_input == '1' else 'Homologação'
+    return JsonResponse(result)
+
+
+@login_required
 def docs_integranotas(request):
     import os
     from django.conf import settings

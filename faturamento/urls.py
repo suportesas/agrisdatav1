@@ -43,6 +43,9 @@ urlpatterns = [
     # Webhook IntegraNota
     path('webhook/integranotas/', views.integranotas_webhook, name='integranotas_webhook'),
 
+    # Teste de token IntegraNotas (AJAX)
+    path('configuracao/testar-token/', views.integranotas_test_token, name='integranotas_test_token'),
+
     # CT-e
     path('cte/', views.cte_list, name='cte_list'),
     path('cte/novo/', views.cte_create, name='cte_create'),

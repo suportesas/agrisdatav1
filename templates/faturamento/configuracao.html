@@ -81,6 +81,59 @@
               </div>
             </div>
 
+            <!-- ── Teste de Token IntegraNotas ── -->
+            <div class="card border-0 bg-light mt-3 mb-1">
+              <div class="card-body py-3">
+                <h6 class="fw-semibold mb-2">
+                  <i class="bi bi-plug-fill text-primary me-2"></i>Testar Conexão com IntegraNotas
+                </h6>
+                <p class="text-muted small mb-3">
+                  Cole um token abaixo para testar <strong>antes de salvar</strong>.
+                  Se deixar em branco, testa o token já configurado.
+                </p>
+                <div class="row g-2 align-items-end">
+                  <div class="col-md-5">
+                    <label class="form-label small mb-1">Token para teste <span class="text-muted">(opcional)</span></label>
+                    <input type="password" id="testTokenInput" class="form-control form-control-sm"
+                           placeholder="Cole o token aqui para testar antes de salvar…">
+                    <div class="form-check mt-1">
+                      <input type="checkbox" class="form-check-input" id="showTestToken"
+                             onchange="document.getElementById('testTokenInput').type=this.checked?'text':'password'">
+                      <label class="form-check-label small" for="showTestToken">Mostrar token</label>
+                    </div>
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label small mb-1">Ambiente</label>
+                    <select id="testAmbienteSelect" class="form-select form-select-sm">
+                      <option value="2" selected>Homologação (testes)</option>
+                      <option value="1">Produção</option>
+                    </select>
+                  </div>
+                  <div class="col-md-4">
+                    <button type="button" id="btnTestarToken" class="btn btn-primary btn-sm w-100">
+                      <i class="bi bi-plug me-1"></i>Testar Conexão
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Resultado do teste -->
+                <div id="testResult" class="mt-3 d-none">
+                  <div id="testResultCard" class="alert mb-0 py-2 px-3">
+                    <div class="d-flex align-items-start gap-2">
+                      <span id="testResultIcon" class="fs-5"></span>
+                      <div class="flex-1">
+                        <strong id="testResultTitle"></strong>
+                        <div id="testResultMsg" class="small mt-1"></div>
+                        <div id="testResultDetails" class="mt-2 small font-monospace text-muted d-none"></div>
+                      </div>
+                      <span id="testResultTempo" class="badge bg-secondary ms-auto text-nowrap"></span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- ── / Teste de Token ── -->
+
             <!-- Dados Fiscais da Empresa (Emitente NF-e) -->
             <hr class="my-4">
             <h6 class="fw-semibold mb-3"><i class="bi bi-building me-2"></i>Dados do Emitente (Empresa)</h6>
@@ -247,6 +300,81 @@ document.getElementById('btn-buscar-cep-empresa')?.addEventListener('click', fun
       set('codigo_municipio', d.ibge);
     })
     .catch(() => alert('Erro ao consultar ViaCEP.'));
+});
+
+// ── Teste de Token IntegraNotas ───────────────────────────────────────────
+document.getElementById('btnTestarToken')?.addEventListener('click', function () {
+  const btn      = this;
+  const token    = document.getElementById('testTokenInput').value.trim();
+  const ambiente = document.getElementById('testAmbienteSelect').value;
+  const result   = document.getElementById('testResult');
+  const card     = document.getElementById('testResultCard');
+  const icon     = document.getElementById('testResultIcon');
+  const title    = document.getElementById('testResultTitle');
+  const msg      = document.getElementById('testResultMsg');
+  const details  = document.getElementById('testResultDetails');
+  const tempo    = document.getElementById('testResultTempo');
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Testando…';
+  result.classList.add('d-none');
+
+  const fd = new FormData();
+  fd.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+  if (token) fd.append('token', token);
+  fd.append('ambiente', ambiente);
+
+  fetch('{% url "faturamento:integranotas_test_token" %}', { method: 'POST', body: fd })
+    .then(r => r.json())
+    .then(data => {
+      result.classList.remove('d-none');
+      const ok = data.sucesso;
+
+      card.className = `alert mb-0 py-2 px-3 alert-${ok ? 'success' : 'danger'}`;
+      icon.textContent = ok ? '✅' : '❌';
+      title.textContent = ok
+        ? `Token aceito — ${data.ambiente_label}`
+        : `Token rejeitado — ${data.ambiente_label}`;
+
+      const linhas = [
+        `<b>URL:</b> ${data.ambiente_api || '—'}`,
+        `<b>HTTP:</b> ${data.codigo_http ?? 'sem resposta'}`,
+        `<b>Token (prefixo):</b> ${data.token_prefix || '(salvo)'}`,
+      ];
+      if (!ok) linhas.push(`<b>Detalhe:</b> ${data.mensagem}`);
+      msg.innerHTML = linhas.join(' &nbsp;·&nbsp; ');
+
+      tempo.textContent = data.tempo_ms != null ? `${data.tempo_ms} ms` : '';
+
+      // Detalhe JSON da resposta
+      if (data.detalhe) {
+        details.textContent = typeof data.detalhe === 'object'
+          ? JSON.stringify(data.detalhe, null, 2)
+          : data.detalhe;
+        details.classList.remove('d-none');
+      } else {
+        details.classList.add('d-none');
+      }
+
+      // Se token OK e não estava salvo, sugere salvar
+      if (ok && token) {
+        msg.innerHTML += '<br><small class="text-success mt-1 d-block">' +
+          '<i class="bi bi-arrow-down-circle me-1"></i>' +
+          'Token válido! Cole-o no campo "Token IntegraNota" acima e clique em Salvar.</small>';
+      }
+    })
+    .catch(err => {
+      result.classList.remove('d-none');
+      card.className = 'alert mb-0 py-2 px-3 alert-warning';
+      icon.textContent = '⚠️';
+      title.textContent = 'Erro na requisição';
+      msg.textContent = String(err);
+      tempo.textContent = '';
+    })
+    .finally(() => {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="bi bi-plug me-1"></i>Testar Conexão';
+    });
 });
 </script>
 {% endblock %}

@@ -14,9 +14,15 @@
                     <p class="text-muted">{{ conta.fornecedor.nome }} | {{ conta.data_emissao|date:'d/m/Y' }}</p>
                 </div>
                 <div>
-                    <span class="badge bg-{% if conta.status == 'PAGA' %}success{% elif conta.status == 'ABERTA' %}warning{% elif conta.status == 'APROVADA' %}info{% else %}secondary{% endif %} fs-6">
+                    {% if conta.status == 'PAGA' or parcelas_pagas == total_parcelas and total_parcelas > 0 %}
+                    <span class="badge bg-success fs-6">Pago</span>
+                    {% elif parcelas_pagas > 0 %}
+                    <span class="badge bg-warning text-dark fs-6">Pendente {{ parcelas_pagas }}/{{ total_parcelas }}</span>
+                    {% else %}
+                    <span class="badge bg-{% if conta.status == 'APROVADA' %}info{% elif conta.status == 'CANCELADA' %}danger{% else %}warning text-dark{% endif %} fs-6">
                         {{ conta.get_status_display }}
                     </span>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -49,11 +55,26 @@
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card">
+            <div class="card {% if saldo_devedor > 0 %}border-warning{% endif %}">
                 <div class="card-body">
                     <div class="text-muted small">Pago</div>
                     <div class="fs-5 fw-bold text-primary">R$ {{ total_pago|floatformat:2 }}</div>
-                    <div class="small text-muted">Saldo: R$ {{ saldo_devedor|floatformat:2 }}</div>
+                    <div class="small {% if saldo_devedor > 0 %}text-warning fw-semibold{% else %}text-muted{% endif %}">
+                        Saldo: R$ {{ saldo_devedor|floatformat:2 }}
+                    </div>
+                    {% if saldo_devedor > 0 and saldo_devedor <= 50 %}
+                    <form method="post" action="{% url 'financeiro:conta_quitar_saldo' conta.pk %}" class="mt-2"
+                          onsubmit="return confirm('Quitar saldo residual de R$ {{ saldo_devedor|floatformat:2 }}?\n\nUm ajuste de desconto será registrado automaticamente.')">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-warning w-100">
+                            <i class="bi bi-check2-circle"></i> Quitar R$ {{ saldo_devedor|floatformat:2 }}
+                        </button>
+                    </form>
+                    {% elif saldo_devedor > 50 %}
+                    <div class="small text-danger mt-1">
+                        <i class="bi bi-exclamation-triangle"></i> Registre pagamento ou ajuste manual
+                    </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -78,6 +99,13 @@
                         <i class="bi bi-arrow-repeat"></i> Ajustes ({{ ajustes.count }})
                     </button>
                 </li>
+                {% if logs_auditoria %}
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="historico-tab" data-bs-toggle="tab" data-bs-target="#historico" type="button">
+                        <i class="bi bi-shield-check text-warning"></i> Histórico ({{ logs_auditoria.count }})
+                    </button>
+                </li>
+                {% endif %}
             </ul>
 
             <div class="tab-content mt-3">
@@ -111,11 +139,22 @@
                                             {{ parcela.get_status_display }}
                                         </span>
                                     </td>
-                                    <td>
+                                    <td class="d-flex gap-1 align-items-center">
                                         {% if parcela.status == 'ABERTA' or parcela.status == 'VENCIDA' %}
                                         <a href="{% url 'financeiro:parcela_pagar' parcela.id %}" class="btn btn-sm btn-primary">
                                             Pagar
                                         </a>
+                                        {% endif %}
+                                        {% if recebimento_ref %}
+                                            {% if recebimento_ref.pedido %}
+                                            <a href="{% url 'compras:pedido_pdf' recebimento_ref.pedido.pk %}" target="_blank" class="btn btn-sm btn-outline-info" title="Ver Pedido de Compra (PDF)">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            {% else %}
+                                            <a href="{% url 'compras:recebimento_detail' recebimento_ref.pk %}" target="_blank" class="btn btn-sm btn-outline-info" title="Ver Recebimento">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            {% endif %}
                                         {% endif %}
                                     </td>
                                 </tr>
@@ -142,7 +181,9 @@
                                     <th>Forma</th>
                                     <th>Valor</th>
                                     <th>Status</th>
+                                    <th>DANFE</th>
                                     <th>Comprovante</th>
+                                    <th>Ação</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -157,6 +198,17 @@
                                         </span>
                                     </td>
                                     <td>
+                                        {% if recebimento_ref and recebimento_ref.arquivo_nfe %}
+                                        <a href="{{ recebimento_ref.arquivo_nfe.url }}" target="_blank" class="btn btn-sm btn-outline-secondary" title="NF-{{ recebimento_ref.nota_fiscal }}">
+                                            <i class="bi bi-file-earmark-text"></i> NF-{{ recebimento_ref.nota_fiscal }}
+                                        </a>
+                                        {% elif recebimento_ref and recebimento_ref.nota_fiscal %}
+                                        <span class="text-muted small">NF-{{ recebimento_ref.nota_fiscal }}</span>
+                                        {% else %}
+                                        <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
                                         {% if pagamento.comprovante %}
                                         <a href="{{ pagamento.comprovante.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
                                             <i class="bi bi-file-pdf"></i>
@@ -165,10 +217,21 @@
                                         <span class="text-muted">-</span>
                                         {% endif %}
                                     </td>
+                                    <td>
+                                        <button type="button"
+                                                class="btn btn-sm btn-outline-warning"
+                                                title="Editar / Retornar ao Pendente"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#modalEditarPagamento"
+                                                data-pagamento-id="{{ pagamento.pk }}"
+                                                data-pagamento-info="{{ pagamento.data_pagamento|date:'d/m/Y' }} — R$ {{ pagamento.valor_pago|floatformat:2 }} ({{ pagamento.get_forma_pagamento_display }})">
+                                            <i class="bi bi-pencil-square"></i>
+                                        </button>
+                                    </td>
                                 </tr>
                                 {% empty %}
                                 <tr>
-                                    <td colspan="5" class="text-center text-muted">Nenhum pagamento registrado</td>
+                                    <td colspan="7" class="text-center text-muted">Nenhum pagamento registrado</td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
@@ -185,34 +248,105 @@
                                     <th>Tipo</th>
                                     <th>Motivo</th>
                                     <th>Valor</th>
-                                    <th>Status</th>
+                                    <th>Efeito no saldo</th>
+                                    <th>Data</th>
+                                    <th>Aprovado por</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for ajuste in ajustes %}
                                 <tr>
-                                    <td>{{ ajuste.get_tipo_display }}</td>
-                                    <td>{{ ajuste.motivo }}</td>
-                                    <td class="{% if ajuste.valor_ajuste > 0 %}text-danger{% else %}text-success{% endif %}">
-                                        {% if ajuste.valor_ajuste > 0 %}+{% endif %}R$ {{ ajuste.valor_ajuste|floatformat:2 }}
+                                    <td>
+                                        <span class="badge bg-{% if ajuste.valor_ajuste < 0 %}success{% else %}danger{% endif %} bg-opacity-75">
+                                            {{ ajuste.get_tipo_display }}
+                                        </span>
                                     </td>
                                     <td>
+                                        {{ ajuste.motivo }}
+                                        {% if ajuste.observacao %}
+                                        <div class="small text-muted">{{ ajuste.observacao }}</div>
+                                        {% endif %}
+                                    </td>
+                                    <td class="fw-bold {% if ajuste.valor_ajuste > 0 %}text-danger{% else %}text-success{% endif %}">
+                                        {% if ajuste.valor_ajuste > 0 %}+{% endif %}R$ {{ ajuste.valor_ajuste|floatformat:2 }}
+                                    </td>
+                                    <td class="small">
+                                        {% if ajuste.valor_ajuste < 0 %}
+                                        <span class="text-success"><i class="bi bi-arrow-down-circle"></i> Reduz o que é devido</span>
+                                        {% else %}
+                                        <span class="text-danger"><i class="bi bi-arrow-up-circle"></i> Aumenta o que é devido</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="small text-muted">{{ ajuste.data_criacao|date:'d/m/Y H:i' }}</td>
+                                    <td class="small">
                                         {% if ajuste.aprovado %}
                                         <span class="badge bg-success">Aprovado</span>
+                                        {% if ajuste.aprovado_por %}
+                                        <div class="text-muted">{{ ajuste.aprovado_por.get_full_name|default:ajuste.aprovado_por.username }}</div>
+                                        {% endif %}
                                         {% else %}
-                                        <span class="badge bg-warning">Pendente</span>
+                                        <span class="badge bg-warning">Pendente aprovação</span>
                                         {% endif %}
                                     </td>
                                 </tr>
                                 {% empty %}
                                 <tr>
-                                    <td colspan="4" class="text-center text-muted">Nenhum ajuste registrado</td>
+                                    <td colspan="6" class="text-center text-muted py-3">
+                                        <i class="bi bi-inbox"></i> Nenhum ajuste registrado
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% if conta.status != 'CANCELADA' %}
+                    <button type="button" class="btn btn-sm btn-outline-primary mt-3"
+                            data-bs-toggle="modal" data-bs-target="#modalNovoAjuste">
+                        <i class="bi bi-plus-circle"></i> Novo Ajuste
+                    </button>
+                    {% endif %}
+                </div>
+
+                <!-- Histórico de Auditoria -->
+                {% if logs_auditoria %}
+                <div class="tab-pane fade" id="historico" role="tabpanel">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Data/Hora</th>
+                                    <th>Usuário</th>
+                                    <th>Ação</th>
+                                    <th>Status Anterior</th>
+                                    <th>Status Novo</th>
+                                    <th>Pagamento</th>
+                                    <th>Observação</th>
+                                    <th>IP</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for log in logs_auditoria %}
+                                <tr>
+                                    <td class="small text-muted">{{ log.data_hora|date:'d/m/Y H:i' }}</td>
+                                    <td><strong>{{ log.usuario.get_full_name|default:log.usuario.username }}</strong></td>
+                                    <td><span class="badge bg-warning text-dark">{{ log.get_acao_display }}</span></td>
+                                    <td><span class="badge bg-secondary">{{ log.status_anterior }}</span></td>
+                                    <td><span class="badge bg-info text-dark">{{ log.status_novo }}</span></td>
+                                    <td class="small">
+                                        {{ log.dados_anteriores.data_pagamento|default:"-" }}
+                                        — R$ {{ log.dados_anteriores.valor_pago|default:"-" }}
+                                        ({{ log.dados_anteriores.forma_pagamento|default:"-" }})
+                                    </td>
+                                    <td class="small">{{ log.observacao|default:"—" }}</td>
+                                    <td class="small text-muted">{{ log.ip|default:"—" }}</td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
                         </table>
                     </div>
                 </div>
+                {% endif %}
+
             </div>
         </div>
     </div>
@@ -248,4 +382,228 @@
         </a>
     </div>
 </div>
+
+<!-- Modal: Novo Ajuste -->
+<div class="modal fade" id="modalNovoAjuste" tabindex="-1" aria-labelledby="modalNovoAjusteLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalNovoAjusteLabel">
+                    <i class="bi bi-arrow-repeat"></i> Novo Ajuste
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'financeiro:ajuste_criar' conta.pk %}">
+                {% csrf_token %}
+                <div class="modal-body">
+
+                    <!-- Resumo atual -->
+                    <div class="row g-2 mb-3 p-3 bg-light rounded">
+                        <div class="col-4 text-center">
+                            <div class="small text-muted">Valor Ajustado Atual</div>
+                            <div class="fw-bold">R$ {{ conta.valor_ajustado|floatformat:2 }}</div>
+                        </div>
+                        <div class="col-4 text-center">
+                            <div class="small text-muted">Total Pago</div>
+                            <div class="fw-bold text-primary">R$ {{ total_pago|floatformat:2 }}</div>
+                        </div>
+                        <div class="col-4 text-center">
+                            <div class="small text-muted">Saldo Devedor</div>
+                            <div class="fw-bold {% if saldo_devedor > 0 %}text-warning{% elif saldo_devedor < 0 %}text-danger{% else %}text-success{% endif %}">
+                                R$ {{ saldo_devedor|floatformat:2 }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Tipo de Ajuste <span class="text-danger">*</span></label>
+                            <select name="tipo" id="ajusteTipo" class="form-select" required>
+                                <option value="">Selecione...</option>
+                                <optgroup label="Descontos (reduzem o saldo)">
+                                    <option value="DESCONTO_DIVERGENCIA">Desconto por Divergência</option>
+                                    <option value="DESCONTO_NEGOCIADO">Desconto Negociado</option>
+                                </optgroup>
+                                <optgroup label="Acréscimos (aumentam o saldo)">
+                                    <option value="ACRESCIMO_JUROS">Acréscimo de Juros</option>
+                                    <option value="ACRESCIMO_MULTA">Acréscimo de Multa</option>
+                                </optgroup>
+                                <optgroup label="Outros">
+                                    <option value="RENEGOCIACAO">Renegociação</option>
+                                    <option value="OUTRO">Outro</option>
+                                </optgroup>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Valor (R$) <span class="text-danger">*</span></label>
+                            <input type="number" name="valor" class="form-control" step="0.01" min="0.01" required placeholder="0,00">
+                        </div>
+
+                        <!-- Operação (só para tipos genéricos) -->
+                        <div class="col-12" id="operacaoField" style="display:none">
+                            <label class="form-label fw-semibold">Este ajuste irá:</label>
+                            <div class="d-flex gap-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="operacao" value="desconto" id="opDesconto" checked>
+                                    <label class="form-check-label text-success" for="opDesconto">
+                                        <i class="bi bi-arrow-down-circle"></i> Reduzir o saldo (desconto)
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="operacao" value="acrescimo" id="opAcrescimo">
+                                    <label class="form-check-label text-danger" for="opAcrescimo">
+                                        <i class="bi bi-arrow-up-circle"></i> Aumentar o saldo (acréscimo)
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Motivo <span class="text-danger">*</span></label>
+                            <input type="text" name="motivo" class="form-control" required
+                                   placeholder="Ex: Divergência de R$ 0,01 entre NF e pedido">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Observação</label>
+                            <textarea name="observacao" class="form-control" rows="2"
+                                      placeholder="Detalhes adicionais (opcional)"></textarea>
+                        </div>
+                        <div class="col-12">
+                            <hr class="my-1">
+                            <label class="form-label fw-semibold">
+                                <i class="bi bi-shield-lock"></i> Sua senha para autorizar <span class="text-danger">*</span>
+                            </label>
+                            <input type="password" name="senha" class="form-control" required
+                                   autocomplete="current-password" placeholder="Digite sua senha">
+                        </div>
+                    </div>
+
+                    <!-- Preview do efeito -->
+                    <div class="alert alert-info mt-3 mb-0 small" id="ajustePreview" style="display:none">
+                        <i class="bi bi-info-circle"></i> <span id="ajustePreviewTexto"></span>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle"></i> Aplicar Ajuste
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    const tipoSelect = document.getElementById('ajusteTipo');
+    const operacaoField = document.getElementById('operacaoField');
+    const valorInput = document.querySelector('#modalNovoAjuste input[name="valor"]');
+    const preview = document.getElementById('ajustePreview');
+    const previewTexto = document.getElementById('ajustePreviewTexto');
+    const valorAjustadoAtual = {{ conta.valor_ajustado|floatformat:2 }};
+
+    const DESCONTOS = ['DESCONTO_DIVERGENCIA', 'DESCONTO_NEGOCIADO'];
+    const ACRESCIMOS = ['ACRESCIMO_JUROS', 'ACRESCIMO_MULTA'];
+    const GENERICOS = ['RENEGOCIACAO', 'OUTRO'];
+
+    function atualizarUI() {
+        const tipo = tipoSelect.value;
+        const valor = parseFloat(valorInput.value) || 0;
+        const opDesconto = document.getElementById('opDesconto');
+
+        operacaoField.style.display = GENERICOS.includes(tipo) ? 'block' : 'none';
+
+        if (!tipo || valor <= 0) { preview.style.display = 'none'; return; }
+
+        let eDesconto;
+        if (DESCONTOS.includes(tipo)) eDesconto = true;
+        else if (ACRESCIMOS.includes(tipo)) eDesconto = false;
+        else eDesconto = opDesconto && opDesconto.checked;
+
+        const novoValor = eDesconto
+            ? Math.max(0, valorAjustadoAtual - valor)
+            : valorAjustadoAtual + valor;
+
+        const fmt = v => 'R$ ' + v.toFixed(2).replace('.', ',');
+        previewTexto.textContent = eDesconto
+            ? `Valor ajustado: ${fmt(valorAjustadoAtual)} → ${fmt(novoValor)} (redução de ${fmt(valor)})`
+            : `Valor ajustado: ${fmt(valorAjustadoAtual)} → ${fmt(novoValor)} (acréscimo de ${fmt(valor)})`;
+        preview.style.display = 'block';
+    }
+
+    tipoSelect.addEventListener('change', atualizarUI);
+    valorInput.addEventListener('input', atualizarUI);
+    document.querySelectorAll('input[name="operacao"]').forEach(r => r.addEventListener('change', atualizarUI));
+
+    // Limpa o formulário ao fechar/reabrir o modal
+    document.getElementById('modalNovoAjuste').addEventListener('hidden.bs.modal', function () {
+        tipoSelect.value = '';
+        valorInput.value = '';
+        document.querySelector('#modalNovoAjuste input[name="senha"]').value = '';
+        document.querySelector('#modalNovoAjuste textarea[name="observacao"]').value = '';
+        document.querySelector('#modalNovoAjuste input[name="motivo"]').value = '';
+        preview.style.display = 'none';
+        operacaoField.style.display = 'none';
+    });
+})();
+</script>
+
+<!-- Modal: Editar Pagamento / Retornar ao Pendente -->
+<div class="modal fade" id="modalEditarPagamento" tabindex="-1" aria-labelledby="modalEditarPagamentoLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning bg-opacity-10">
+                <h5 class="modal-title" id="modalEditarPagamentoLabel">
+                    <i class="bi bi-shield-lock"></i> Autorização Necessária
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" id="formEditarPagamento" action="">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="alert alert-warning d-flex align-items-start gap-2 mb-3">
+                        <i class="bi bi-exclamation-triangle-fill mt-1"></i>
+                        <div>
+                            <strong>Operação sensível.</strong> Esta ação irá retornar o pagamento ao status
+                            <strong>Pendente</strong> e a parcela ao status <strong>Aberta</strong>.
+                            Toda alteração é registrada no histórico de auditoria.
+                        </div>
+                    </div>
+
+                    <p class="text-muted small mb-3" id="pagamentoInfoTexto"></p>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Sua senha <span class="text-danger">*</span></label>
+                        <input type="password" name="senha" class="form-control" required autocomplete="current-password" placeholder="Digite sua senha para confirmar">
+                    </div>
+                    <div class="mb-1">
+                        <label class="form-label fw-semibold">Motivo / Observação</label>
+                        <textarea name="observacao" class="form-control" rows="2" placeholder="Descreva o motivo da alteração (opcional, mas recomendado)"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-warning">
+                        <i class="bi bi-arrow-counterclockwise"></i> Confirmar Retorno ao Pendente
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('modalEditarPagamento').addEventListener('show.bs.modal', function (event) {
+    const btn = event.relatedTarget;
+    const pagamentoId = btn.getAttribute('data-pagamento-id');
+    const pagamentoInfo = btn.getAttribute('data-pagamento-info');
+    document.getElementById('formEditarPagamento').action = '/financeiro/pagamentos/' + pagamentoId + '/retornar-pendente/';
+    document.getElementById('pagamentoInfoTexto').textContent = 'Pagamento: ' + pagamentoInfo;
+    // Limpa campos ao reabrir
+    document.querySelector('#formEditarPagamento input[name="senha"]').value = '';
+    document.querySelector('#formEditarPagamento textarea[name="observacao"]').value = '';
+});
+</script>
+
 {% endblock %}

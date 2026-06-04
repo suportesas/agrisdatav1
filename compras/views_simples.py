@@ -407,10 +407,16 @@ def faturar_recebimento(request, recebimento_pk):
         empresa=request.user.empresa
     )
     
-    # Garante que o recebimento está conferido
-    if recebimento.status not in ['CONFERIDO', 'PENDENTE']:
+    # Garante que o recebimento está em estado válido para faturamento
+    if recebimento.status not in ['CONFERIDO', 'PENDENTE', 'FINALIZADO']:
         messages.error(request, f'Recebimento {recebimento.numero} não está pronto para faturar.')
         return redirect('compras:recebimento_detail', pk=recebimento.pk)
+
+    # Se já está FINALIZADO, só permite se ainda não tem ContaPagar (recuperação de falha anterior)
+    if recebimento.status == 'FINALIZADO':
+        if ContaPagar.objects.filter(recebimento=recebimento).exists():
+            messages.error(request, f'Recebimento {recebimento.numero} já foi faturado.')
+            return redirect('compras:recebimento_detail', pk=recebimento.pk)
     
     if request.method == 'GET':
         # Pré-preencher com dados já salvos se existir
@@ -446,101 +452,94 @@ def faturar_recebimento(request, recebimento_pk):
         juros = Decimal(request.POST.get('juros', '0'))
         multa = Decimal(request.POST.get('multa', '0'))
         desconto = Decimal(request.POST.get('desconto', '0'))
-        
+
         if not all([numero_nf, data_emissao, valor_nf]):
             messages.error(request, 'Preencha todos os campos obrigatórios.')
             return redirect('compras:faturar_recebimento', recebimento_pk=recebimento.pk)
-        
+
         if valor_nf <= 0:
             messages.error(request, 'O valor da NF deve ser maior que zero.')
             return redirect('compras:faturar_recebimento', recebimento_pk=recebimento.pk)
-        
+
         if num_parcelas < 1 or num_parcelas > 12:
             messages.error(request, 'Número de parcelas deve estar entre 1 e 12.')
             return redirect('compras:faturar_recebimento', recebimento_pk=recebimento.pk)
-        
-        # Atualizar dados da NF no recebimento
-        recebimento.nota_fiscal = numero_nf
-        recebimento.juros_nf = juros
-        recebimento.multa_nf = multa
-        recebimento.desconto_nf = desconto
-        # Se os campos não existirem no modelo RecebimentoCompra, remova estas linhas e use apenas nos cálculos da ContaPagar
-        recebimento.serie_nota = serie_nf
-        recebimento.valor_total_nf = valor_nf
-        recebimento.status = 'FINALIZADO'
-        recebimento.save()
-        
-        # Determinar fornecedor
+
+        # Determinar fornecedor antes de iniciar a transação
         fornecedor = recebimento.pedido.fornecedor if recebimento.pedido else recebimento.fornecedor
         if not fornecedor:
             messages.error(request, 'Recebimento não possui fornecedor vinculado.')
             return redirect('compras:faturar_recebimento', recebimento_pk=recebimento.pk)
-        
+
         # Aplicar desconto, juros e multa ao valor da NF
         valor_com_desconto = valor_nf - desconto if desconto > 0 else valor_nf
         valor_com_juros = valor_com_desconto * (1 + (juros / 100)) if juros > 0 else valor_com_desconto
         valor_final = valor_com_juros * (1 + (multa / 100)) if multa > 0 else valor_com_juros
 
-        # Criar ContaPagar
-        conta = ContaPagar.objects.create(
-            empresa=request.user.empresa,
-            fornecedor=fornecedor,
-            numero=f"NF-{numero_nf}",
-            valor_total=valor_final,
-            desconto_negociado=desconto,
-            juros_aplicado=juros,
-            multa_aplicada=multa,
-            data_emissao=data_emissao,
-            requer_aprovacao=True,
-            observacoes=f"Gerada automaticamente do recebimento {recebimento.numero}\nNF: {numero_nf} - Série: {serie_nf}"
-        )
+        from django.db import transaction
+        with transaction.atomic():
+            # Atualizar dados da NF no recebimento
+            recebimento.nota_fiscal = numero_nf
+            recebimento.serie_nota = serie_nf
+            recebimento.valor_total_nf = valor_nf
+            recebimento.status = 'FINALIZADO'
+            recebimento.save()
 
-        # Calcular valor por parcela com precisão
-        valor_parcela = valor_final / num_parcelas
-        valor_acumulado = Decimal('0')
-
-        # Criar parcelas profissionais com forma de pagamento
-        for parcela_num in range(1, num_parcelas + 1):
-            # Se é a última parcela, ajusta para não haver centavos perdidos
-            if parcela_num == num_parcelas:
-                valor_calc = valor_final - valor_acumulado
-            else:
-                valor_calc = valor_parcela
-
-            valor_acumulado += valor_calc
-
-            # Calcular dias até vencimento (primeira parcela no dia do recebimento)
-            dias_ate_vencimento = 30 * (parcela_num - 1)  # 0 dias, 30 dias, 60 dias, etc
-
-            data_vencimento = recebimento.data_recebimento + timedelta(
-                days=dias_ate_vencimento
+            # Criar ContaPagar
+            conta = ContaPagar.objects.create(
+                recebimento=recebimento,
+                empresa=request.user.empresa,
+                fornecedor=fornecedor,
+                numero=f"NF-{numero_nf}",
+                valor_total=valor_final,
+                valor_ajustado=valor_final,
+                desconto_negociado=desconto,
+                data_emissao=data_emissao,
+                requer_aprovacao=True,
+                observacoes=f"Gerada automaticamente do recebimento {recebimento.numero}\nNF: {numero_nf} - Série: {serie_nf}"
             )
 
-            # Pegar forma de pagamento do POST (pode vir por parcela ou geral)
-            forma_id = request.POST.get(f'forma_pagamento_{parcela_num}') or request.POST.get('forma_pagamento_padrao')
-            forma_pagamento = None
-            if forma_id:
-                try:
-                    forma_pagamento = FormaPagemento.objects.get(pk=forma_id)
-                except FormaPagemento.DoesNotExist:
-                    pass
-            
-            ParcelaContaPagar.objects.create(
-                conta_pagar=conta,
-                numero_parcela=parcela_num,
-                forma_pagamento=forma_pagamento,
-                valor_parcela=valor_calc,
-                data_vencimento=data_vencimento,
-                status='ABERTA'
-            )
-        
+            # Calcular valor por parcela com precisão
+            valor_parcela = valor_final / num_parcelas
+            valor_acumulado = Decimal('0')
+
+            # Criar parcelas com forma de pagamento
+            for parcela_num in range(1, num_parcelas + 1):
+                if parcela_num == num_parcelas:
+                    valor_calc = valor_final - valor_acumulado
+                else:
+                    valor_calc = valor_parcela
+
+                valor_acumulado += valor_calc
+
+                dias_ate_vencimento = 30 * (parcela_num - 1)
+                data_vencimento = recebimento.data_recebimento + timedelta(days=dias_ate_vencimento)
+
+                forma_id = request.POST.get(f'forma_pagamento_{parcela_num}') or request.POST.get('forma_pagamento_padrao')
+                forma_pagamento = None
+                if forma_id:
+                    try:
+                        forma_pagamento = FormaPagemento.objects.get(pk=forma_id)
+                    except FormaPagemento.DoesNotExist:
+                        pass
+
+                ParcelaContaPagar.objects.create(
+                    conta_pagar=conta,
+                    numero_parcela=parcela_num,
+                    forma_pagamento=forma_pagamento,
+                    valor_parcela=valor_calc,
+                    valor_total_parcela=valor_calc,
+                    data_vencimento=data_vencimento,
+                    status='ABERTA'
+                )
+
         messages.success(
             request,
             f'✅ Conta a Pagar criada com sucesso!\n'
             f'NF: {numero_nf} | Fornecedor: {fornecedor.nome}\n'
             f'Valor: R$ {valor_nf:,.2f} em {num_parcelas}x'
         )
-        
+
         return redirect('financeiro:conta_pagar_detail', pk=conta.id)
         
     except Exception as e:

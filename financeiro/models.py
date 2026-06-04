@@ -616,7 +616,46 @@ class PagamentoContaPagar(models.Model):
 
 
 # ============================================
-# 5. AJUSTE DA CONTA A PAGAR
+# 5. LOG DE ALTERAÇÃO DE PAGAMENTO (AUDITORIA)
+# ============================================
+
+class LogAlteracaoPagamento(models.Model):
+    ACAO_CHOICES = [
+        ('RETORNO_PENDENTE', 'Retorno ao Pendente'),
+        ('EDICAO', 'Edição de Dados'),
+    ]
+
+    pagamento = models.ForeignKey(
+        PagamentoContaPagar,
+        on_delete=models.CASCADE,
+        related_name='logs',
+        verbose_name='Pagamento'
+    )
+    usuario = models.ForeignKey(
+        'usuarios.Usuario',
+        on_delete=models.PROTECT,
+        related_name='logs_pagamento',
+        verbose_name='Usuário'
+    )
+    acao = models.CharField('Ação', max_length=30, choices=ACAO_CHOICES)
+    status_anterior = models.CharField('Status Anterior', max_length=20)
+    status_novo = models.CharField('Status Novo', max_length=20)
+    dados_anteriores = models.JSONField('Dados Anteriores', default=dict)
+    observacao = models.TextField('Observação', blank=True)
+    ip = models.GenericIPAddressField('IP', null=True, blank=True)
+    data_hora = models.DateTimeField('Data/Hora', auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Log de Alteração de Pagamento'
+        verbose_name_plural = 'Logs de Alterações de Pagamentos'
+        ordering = ['-data_hora']
+
+    def __str__(self):
+        return f"[{self.data_hora:%d/%m/%Y %H:%M}] {self.usuario} — {self.get_acao_display()}"
+
+
+# ============================================
+# 6. AJUSTE DA CONTA A PAGAR
 # ============================================
 
 class AjusteContaPagar(models.Model):

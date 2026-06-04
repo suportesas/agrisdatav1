@@ -23,6 +23,9 @@ urlpatterns = [
     
     # PAGAMENTOS
     path('parcelas/<int:parcela_pk>/pagar/', views.parcela_pagar, name='parcela_pagar'),
+    path('pagamentos/<int:pk>/retornar-pendente/', views.pagamento_retornar_pendente, name='pagamento_retornar_pendente'),
+    path('contas/<int:pk>/quitar-saldo/', views.conta_quitar_saldo, name='conta_quitar_saldo'),
+    path('contas/<int:pk>/ajuste/', views.ajuste_criar, name='ajuste_criar'),
     
     # RELATÓRIOS
     path('relatorios/contas-a-vencer/', views.relatorio_contas_vencer, name='relatorio_contas_vencer'),

@@ -215,26 +215,234 @@ def conta_pagar_list(request):
 def conta_pagar_detail(request, pk):
     """Detalhe de uma conta a pagar com parcelas, pagamentos e ajustes"""
     empresa = request.user.empresa
-    conta = get_object_or_404(ContaPagar, pk=pk, empresa=empresa)
-    
+    conta = get_object_or_404(
+        ContaPagar.objects.select_related('recebimento__pedido', 'fornecedor'),
+        pk=pk, empresa=empresa
+    )
+
     parcelas = conta.parcelas.all().order_by('numero_parcela')
-    pagamentos = conta.pagamentos.all().order_by('-data_pagamento')
+    pagamentos = conta.pagamentos.select_related('parcela', 'pago_por').order_by('-data_pagamento')
     ajustes = conta.ajustes.all().order_by('-data_criacao')
-    
-    # Calcular totais
+
+    # Logs de auditoria
+    from .models import LogAlteracaoPagamento
+    logs_auditoria = LogAlteracaoPagamento.objects.filter(
+        pagamento__conta_pagar=conta
+    ).select_related('usuario', 'pagamento').order_by('-data_hora')
+
+    # Totais — apenas pagamentos compensados
     total_pago = pagamentos.filter(status='COMPENSADO').aggregate(Sum('valor_pago'))['valor_pago__sum'] or Decimal('0.00')
     saldo_devedor = conta.valor_ajustado - total_pago
-    
+
+    # Progresso de pagamento para exibição
+    total_parcelas = parcelas.count()
+    parcelas_pagas = parcelas.filter(status='PAGA').count()
+
+    # Fallback: se o FK recebimento não estiver setado, tenta encontrar pelo número da NF
+    recebimento_ref = conta.recebimento
+    if recebimento_ref is None and conta.numero.startswith('NF-'):
+        from compras.models import RecebimentoCompra
+        nf_num = conta.numero[3:]
+        recebimento_ref = RecebimentoCompra.objects.filter(
+            nota_fiscal=nf_num, empresa=empresa
+        ).first()
+
     context = {
         'conta': conta,
         'parcelas': parcelas,
         'pagamentos': pagamentos,
         'ajustes': ajustes,
+        'logs_auditoria': logs_auditoria,
         'total_pago': total_pago,
         'saldo_devedor': saldo_devedor,
+        'total_parcelas': total_parcelas,
+        'parcelas_pagas': parcelas_pagas,
+        'recebimento_ref': recebimento_ref,
     }
-    
+
     return render(request, 'financeiro/conta_pagar_detail.html', context)
+
+
+@login_required
+def pagamento_retornar_pendente(request, pk):
+    """Reverte um pagamento para PENDENTE com confirmação de senha e registro de auditoria."""
+    from .models import LogAlteracaoPagamento, PagamentoContaPagar
+    from django.contrib.auth.hashers import check_password
+
+    pagamento = get_object_or_404(
+        PagamentoContaPagar,
+        pk=pk,
+        conta_pagar__empresa=request.user.empresa
+    )
+
+    if request.method != 'POST':
+        return redirect('financeiro:conta_pagar_detail', pk=pagamento.conta_pagar.pk)
+
+    senha = request.POST.get('senha', '')
+    observacao = request.POST.get('observacao', '').strip()
+
+    if not request.user.check_password(senha):
+        messages.error(request, 'Senha incorreta. Operação não autorizada.')
+        return redirect('financeiro:conta_pagar_detail', pk=pagamento.conta_pagar.pk)
+
+    status_anterior = pagamento.status
+
+    LogAlteracaoPagamento.objects.create(
+        pagamento=pagamento,
+        usuario=request.user,
+        acao='RETORNO_PENDENTE',
+        status_anterior=status_anterior,
+        status_novo='PENDENTE',
+        dados_anteriores={
+            'status': status_anterior,
+            'valor_pago': str(pagamento.valor_pago),
+            'data_pagamento': str(pagamento.data_pagamento),
+            'forma_pagamento': pagamento.forma_pagamento,
+            'numero_documento': pagamento.numero_documento,
+        },
+        observacao=observacao,
+        ip=request.META.get('REMOTE_ADDR'),
+    )
+
+    pagamento.status = 'CANCELADO'
+    pagamento.save(update_fields=['status'])
+
+    # Retorna a parcela para ABERTA se ela estava PAGA
+    parcela = pagamento.parcela
+    if parcela.status == 'PAGA':
+        parcela.status = 'ABERTA'
+        parcela.save(update_fields=['status'])
+
+    # Se a conta estava PAGA, volta para APROVADA
+    conta = pagamento.conta_pagar
+    if conta.status == 'PAGA':
+        conta.status = 'APROVADA'
+        conta.save(update_fields=['status'])
+
+    messages.success(request, f'Pagamento retornado ao status Pendente. Alteração registrada no histórico.')
+    return redirect('financeiro:conta_pagar_detail', pk=pagamento.conta_pagar.pk)
+
+
+@login_required
+def ajuste_criar(request, pk):
+    """Cria um ajuste (desconto ou acréscimo) na conta a pagar e atualiza valor_ajustado."""
+    conta = get_object_or_404(ContaPagar, pk=pk, empresa=request.user.empresa)
+
+    if request.method != 'POST':
+        return redirect('financeiro:conta_pagar_detail', pk=pk)
+
+    senha = request.POST.get('senha', '')
+    if not request.user.check_password(senha):
+        messages.error(request, 'Senha incorreta. Ajuste não aplicado.')
+        return redirect('financeiro:conta_pagar_detail', pk=pk)
+
+    tipo = request.POST.get('tipo', '')
+    motivo = request.POST.get('motivo', '').strip()
+    observacao = request.POST.get('observacao', '').strip()
+
+    try:
+        valor_input = Decimal(request.POST.get('valor', '0').replace(',', '.'))
+    except Exception:
+        messages.error(request, 'Valor inválido.')
+        return redirect('financeiro:conta_pagar_detail', pk=pk)
+
+    if valor_input <= 0:
+        messages.error(request, 'O valor do ajuste deve ser maior que zero.')
+        return redirect('financeiro:conta_pagar_detail', pk=pk)
+
+    if not motivo:
+        messages.error(request, 'O motivo é obrigatório.')
+        return redirect('financeiro:conta_pagar_detail', pk=pk)
+
+    TIPOS_VALIDOS = [t[0] for t in AjusteContaPagar.TIPO_AJUSTE_CHOICES]
+    if tipo not in TIPOS_VALIDOS:
+        messages.error(request, 'Tipo de ajuste inválido.')
+        return redirect('financeiro:conta_pagar_detail', pk=pk)
+
+    # Descontos reduzem o valor ajustado; acréscimos aumentam
+    TIPOS_DESCONTO = {'DESCONTO_DIVERGENCIA', 'DESCONTO_NEGOCIADO'}
+    operacao = request.POST.get('operacao', 'desconto')
+    if tipo in TIPOS_DESCONTO:
+        valor_ajuste = -valor_input
+    elif tipo in {'ACRESCIMO_JUROS', 'ACRESCIMO_MULTA'}:
+        valor_ajuste = valor_input
+    else:
+        valor_ajuste = -valor_input if operacao == 'desconto' else valor_input
+
+    with transaction.atomic():
+        AjusteContaPagar.objects.create(
+            conta_pagar=conta,
+            tipo=tipo,
+            valor_ajuste=valor_ajuste,
+            motivo=motivo,
+            aprovado=True,
+            aprovado_por=request.user,
+            observacao=observacao,
+        )
+        conta.valor_ajustado = max(Decimal('0.00'), conta.valor_ajustado + valor_ajuste)
+        conta.save(update_fields=['valor_ajustado'])
+
+    sinal = 'Desconto' if valor_ajuste < 0 else 'Acréscimo'
+    messages.success(request, f'{sinal} de R$ {valor_input:,.2f} aplicado com sucesso.')
+    return redirect('financeiro:conta_pagar_detail', pk=pk)
+
+
+@login_required
+def conta_quitar_saldo(request, pk):
+    """
+    Quita o saldo residual de uma conta a pagar criando um ajuste de desconto.
+    Só permitido quando 0 < saldo <= R$ 50,00.
+    """
+    conta = get_object_or_404(ContaPagar, pk=pk, empresa=request.user.empresa)
+
+    if request.method != 'POST':
+        return redirect('financeiro:conta_pagar_detail', pk=pk)
+
+    TOLERANCIA = Decimal('50.00')
+
+    total_pago = conta.pagamentos.filter(status='COMPENSADO').aggregate(
+        Sum('valor_pago')
+    )['valor_pago__sum'] or Decimal('0.00')
+    saldo = conta.valor_ajustado - total_pago
+
+    if saldo <= 0:
+        messages.error(request, 'Não há saldo devedor para quitar.')
+        return redirect('financeiro:conta_pagar_detail', pk=pk)
+
+    if saldo > TOLERANCIA:
+        messages.error(
+            request,
+            f'Saldo de R$ {saldo:,.2f} excede o limite de R$ {TOLERANCIA:,.2f} para quitação automática. '
+            f'Registre um pagamento ou ajuste manual.'
+        )
+        return redirect('financeiro:conta_pagar_detail', pk=pk)
+
+    with transaction.atomic():
+        AjusteContaPagar.objects.create(
+            conta_pagar=conta,
+            tipo='DESCONTO_DIVERGENCIA',
+            valor_ajuste=-saldo,
+            motivo=f'Quitação de saldo residual — R$ {saldo:,.2f}',
+            aprovado=True,
+            aprovado_por=request.user,
+            observacao=(
+                f'Baixa automática do saldo residual de R$ {saldo:,.2f}. '
+                f'Operador: {request.user.get_full_name() or request.user.username}'
+            )
+        )
+
+        conta.valor_ajustado = total_pago
+        conta.status = 'PAGA'
+        conta.save(update_fields=['valor_ajustado', 'status'])
+
+        # Fecha parcelas ainda abertas (caso haja)
+        conta.parcelas.filter(status__in=['ABERTA', 'VENCIDA']).update(status='PAGA')
+
+    messages.success(
+        request,
+        f'Conta quitada! Desconto de R$ {saldo:,.2f} registrado como ajuste por divergência.'
+    )
+    return redirect('financeiro:conta_pagar_detail', pk=pk)
 
 
 @login_required
@@ -309,9 +517,10 @@ def conta_pagar_aprovar(request, pk):
     
     context = {
         'conta': conta,
+        'parcelas': conta.parcelas.all().order_by('numero_parcela'),
         'title': f'Aprovar Conta {conta.numero}'
     }
-    
+
     return render(request, 'financeiro/conta_pagar_confirm.html', context)
 
 
@@ -503,20 +712,29 @@ def parcela_pagar(request, parcela_pk):
     if request.method == 'POST':
         form = PagamentoContaPageForm(request.POST, request.FILES)
         if form.is_valid():
+            # Cancelar pagamentos PENDENTE anteriores desta parcela para evitar duplicidade
+            parcela.pagamentos.filter(status='PENDENTE').update(status='CANCELADO')
+
             pagamento = form.save(commit=False)
             pagamento.parcela = parcela
             pagamento.conta_pagar = parcela.conta_pagar
             pagamento.pago_por = request.user
-            pagamento.status = 'PENDENTE'
+            pagamento.status = 'COMPENSADO'
             pagamento.save()
-            
+
             # Atualizar status da parcela
             parcela.status = 'PAGA'
             parcela.data_pagamento = pagamento.data_pagamento
             parcela.save()
-            
+
+            # Atualizar status da ContaPagar se todas as parcelas estiverem pagas
+            conta = parcela.conta_pagar
+            if not conta.parcelas.exclude(status='PAGA').exists():
+                conta.status = 'PAGA'
+                conta.save(update_fields=['status'])
+
             messages.success(request, 'Pagamento registrado com sucesso!')
-            return redirect('financeiro:conta_pagar_detail', pk=parcela.conta_pagar.pk)
+            return redirect('financeiro:conta_pagar_detail', pk=conta.pk)
     else:
         # Pré-preencher valor sugerido (valor total com juros/multa)
         form = PagamentoContaPageForm(initial={

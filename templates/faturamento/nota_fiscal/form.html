@@ -378,31 +378,37 @@
 
                         <!-- PIS / COFINS -->
                         <div class="col-md-7 mb-2 ps-md-1">
-                          <div class="fiscal-section piscofins d-flex flex-wrap gap-2 align-items-end h-100">
-                            <span class="fiscal-section-title w-100 text-success"><i class="bi bi-bank me-1"></i>PIS / COFINS</span>
-                            <div>
-                              <label class="fiscal-label">CST PIS</label>
-                              {{ item_form.cst_pis }}
+                          <div class="fiscal-section piscofins h-100">
+                            <span class="fiscal-section-title w-100 text-success d-block mb-1"><i class="bi bi-bank me-1"></i>PIS / COFINS</span>
+                            <!-- linha PIS -->
+                            <div class="d-flex flex-wrap gap-2 align-items-end mb-1">
+                              <div>
+                                <label class="fiscal-label">CST PIS</label>
+                                {{ item_form.cst_pis }}
+                              </div>
+                              <div class="nat-receita-wrap" style="display:none;">
+                                <label class="fiscal-label">Nat. Receita PIS</label>
+                                {{ item_form.natureza_receita_pis }}
+                              </div>
+                              <div>
+                                <label class="fiscal-label">Alíq. PIS (%)</label>
+                                {{ item_form.aliquota_pis }}
+                              </div>
                             </div>
-                            <div>
-                              <label class="fiscal-label">Alíq. PIS (%)</label>
-                              {{ item_form.aliquota_pis }}
-                            </div>
-                            <div class="nat-receita-wrap" style="display:none;">
-                              <label class="fiscal-label">Nat. Receita PIS</label>
-                              {{ item_form.natureza_receita_pis }}
-                            </div>
-                            <div>
-                              <label class="fiscal-label">CST COFINS</label>
-                              {{ item_form.cst_cofins }}
-                            </div>
-                            <div>
-                              <label class="fiscal-label">Alíq. COFINS (%)</label>
-                              {{ item_form.aliquota_cofins }}
-                            </div>
-                            <div class="nat-receita-wrap" style="display:none;">
-                              <label class="fiscal-label">Nat. Receita COFINS</label>
-                              {{ item_form.natureza_receita_cofins }}
+                            <!-- linha COFINS -->
+                            <div class="d-flex flex-wrap gap-2 align-items-end">
+                              <div>
+                                <label class="fiscal-label">CST COFINS</label>
+                                {{ item_form.cst_cofins }}
+                              </div>
+                              <div class="nat-receita-wrap" style="display:none;">
+                                <label class="fiscal-label">Nat. Receita COFINS</label>
+                                {{ item_form.natureza_receita_cofins }}
+                              </div>
+                              <div>
+                                <label class="fiscal-label">Alíq. COFINS (%)</label>
+                                {{ item_form.aliquota_cofins }}
+                              </div>
                             </div>
                           </div>
                         </div>

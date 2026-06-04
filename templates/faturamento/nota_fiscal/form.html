@@ -2,6 +2,17 @@
 {% block title %}{{ title }}{% endblock %}
 {% block page_title %}{{ title }}{% endblock %}
 
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet">
+<style>
+  #items-table .select2-container { width: 100% !important; min-width: 180px; }
+  #items-table .select2-selection--single { height: calc(1.5em + .5rem + 2px) !important; font-size: .8rem; }
+  #items-table .select2-selection__rendered { line-height: calc(1.5em + .5rem + 2px) !important; }
+  #items-table .select2-selection__arrow { height: calc(1.5em + .5rem + 2px) !important; }
+</style>
+{% endblock %}
+
 {% block content %}
 <style>
   #items-table td, #items-table th { vertical-align: middle; padding: 5px 7px; }
@@ -38,8 +49,8 @@
     <div class="row g-3">
 
       <!-- ── Dados Principais ─────────────────────────────────────── -->
-      <div class="col-md-8">
-        <div class="card border-0 shadow-sm">
+      <div class="col-md-8 d-flex flex-column">
+        <div class="card border-0 shadow-sm h-100">
           <div class="card-header fw-semibold">Dados da Nota Fiscal</div>
           <div class="card-body">
             {% if form.non_field_errors %}
@@ -89,8 +100,8 @@
       </div>
 
       <!-- ── Totais ────────────────────────────────────────────────── -->
-      <div class="col-md-4">
-        <div class="card border-0 shadow-sm">
+      <div class="col-md-4 d-flex flex-column">
+        <div class="card border-0 shadow-sm h-100">
           <div class="card-header fw-semibold">Valores</div>
           <div class="card-body">
             <div class="mb-2">
@@ -130,15 +141,6 @@
           </div>
         </div>
 
-        <div class="card border-0 shadow-sm mt-3">
-          <div class="card-header fw-semibold">Informações Complementares</div>
-          <div class="card-body">
-            <label class="form-label mb-1 small text-muted">Inf. Complementares (infCpl)</label>
-            {{ form.informacoes_complementares }}
-            <label class="form-label mt-2 mb-1 small text-muted">Inf. para o Fisco (infAdFisco)</label>
-            {{ form.informacoes_fisco }}
-          </div>
-        </div>
       </div>
 
       <!-- ── Itens ──────────────────────────────────────────────────── -->
@@ -158,8 +160,8 @@
                     <th style="width:40px" class="text-center">#</th>
                     <th style="width:185px">Produto</th>
                     <th>Descrição</th>
-                    <th style="width:48px">UN</th>
-                    <th style="width:88px">Qtd.</th>
+                    <th style="width:75px">UN</th>
+                    <th style="width:110px">Qtd.</th>
                     <th style="width:108px">Vl. Unit.</th>
                     <th style="width:95px">Desconto</th>
                     <th style="width:110px" class="text-end">Total Item</th>
@@ -169,10 +171,11 @@
                 <tbody id="items-body">
                   {% for item_form in formset %}
                   <tr class="item-row">
-                    <td class="text-center text-muted small fw-semibold">
+                    <td class="text-center">
                       {{ item_form.id }}
-                      {{ item_form.DELETE }}
+                      <div class="d-none">{{ item_form.DELETE }}</div>
                       {{ item_form.numero_item }}
+                      <span class="item-seq fw-semibold text-primary" style="font-size:.85rem">{{ forloop.counter }}</span>
                     </td>
                     <td>{{ item_form.produto }}</td>
                     <td>{{ item_form.descricao }}</td>
@@ -335,6 +338,12 @@
               <i class="bi bi-plus-lg"></i>
             </button>
           </div>
+          {% if pag_formset.non_form_errors or pag_formset.errors %}
+          <div class="alert alert-danger small m-2 mb-0 py-2">
+            {{ pag_formset.non_form_errors }}
+            {% for err in pag_formset.errors %}{% if err %}{{ err }}{% endif %}{% endfor %}
+          </div>
+          {% endif %}
           <div class="card-body p-0">
             <table class="table table-sm mb-0" id="pag-table">
               <thead class="table-light">
@@ -349,7 +358,7 @@
                 <tr class="pag-row">
                   {{ pf.id }}
                   <td>
-                    {{ pf.DELETE }}
+                    <div class="d-none">{{ pf.DELETE }}</div>
                     {{ pf.meio_pagamento }}
                   </td>
                   <td>{{ pf.valor }}</td>
@@ -378,6 +387,12 @@
               <i class="bi bi-plus-lg"></i>
             </button>
           </div>
+          {% if dup_formset.non_form_errors or dup_formset.errors %}
+          <div class="alert alert-danger small m-2 mb-0 py-2">
+            {{ dup_formset.non_form_errors }}
+            {% for err in dup_formset.errors %}{% if err %}{{ err }}{% endif %}{% endfor %}
+          </div>
+          {% endif %}
           <div class="card-body p-0">
             <table class="table table-sm mb-0" id="dup-table">
               <thead class="table-light">
@@ -393,7 +408,7 @@
                 <tr class="dup-row">
                   {{ df.id }}
                   <td>
-                    {{ df.DELETE }}
+                    <div class="d-none">{{ df.DELETE }}</div>
                     {{ df.numero }}
                   </td>
                   <td>{{ df.vencimento }}</td>
@@ -410,6 +425,27 @@
           </div>
           <div class="card-footer text-muted small">
             <i class="bi bi-info-circle me-1"></i>Duplicatas são enviadas à SEFAZ no bloco de cobrança da NF-e.
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Informações Complementares ──────────────────────────────── -->
+      <div class="col-12">
+        <div class="card border-0 shadow-sm">
+          <div class="card-header fw-semibold">
+            <i class="bi bi-chat-left-text me-2 text-secondary"></i>Informações Complementares
+          </div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label small text-muted mb-1">Inf. Complementares (infCpl)</label>
+                {{ form.informacoes_complementares }}
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small text-muted mb-1">Inf. para o Fisco (infAdFisco)</label>
+                {{ form.informacoes_fisco }}
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -458,6 +494,21 @@
   const pagBody     = document.getElementById('pag-body');
   const dupBody     = document.getElementById('dup-body');
   const fmt = v => 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  let _nfTotal = 0;
+
+  function rowValSum(tbody, rowClass) {
+    let sum = 0;
+    [...tbody.querySelectorAll(rowClass)]
+      .filter(r => r.style.display !== 'none')
+      .forEach(r => { sum += parseFloat(r.querySelector('input[name$="-valor"]')?.value) || 0; });
+    return sum;
+  }
+
+  function markAutoRow(row) {
+    row.dataset.auto = '1';
+    row.querySelector('input[name$="-valor"]')?.addEventListener('input', () => delete row.dataset.auto, { once: true });
+  }
 
   // ── Toggle fiscal panel ───────────────────────────────────────────
   function attachToggleFiscal(mainRow) {
@@ -589,7 +640,10 @@
     body.querySelectorAll('.item-row').forEach(row => {
       if (row.style.display !== 'none') {
         const el = row.querySelector('input[name$="-numero_item"]');
-        if (el) el.value = n++;
+        if (el) el.value = n;
+        const seq = row.querySelector('.item-seq');
+        if (seq) seq.textContent = n;
+        n++;
       }
     });
   }
@@ -651,6 +705,15 @@
     document.getElementById('resumo-seguro').textContent         = fmt(seguro);
     document.getElementById('resumo-desconto-nf').textContent    = fmt(descNF);
     document.getElementById('resumo-total').textContent          = fmt(total);
+
+    _nfTotal = total;
+    [[pagBody, '.pag-row'], [dupBody, '.dup-row']].forEach(([tbody, cls]) => {
+      const vis = [...tbody.querySelectorAll(cls)].filter(r => r.style.display !== 'none');
+      if (vis.length === 1 && vis[0].dataset.auto) {
+        const inp = vis[0].querySelector('input[name$="-valor"]');
+        if (inp) inp.value = total.toFixed(2);
+      }
+    });
   }
 
   function attachCalcListeners(row) {
@@ -670,6 +733,13 @@
     const prodSel   = mainRow.querySelector('select[name$="-produto"]');
     if (!prodSel) return;
 
+    // Inicializa Select2 se já carregado (extra_js), caso contrário aguarda
+    if (typeof window.initSelect2Produto === 'function') {
+      window.initSelect2Produto(prodSel);
+    } else {
+      document.addEventListener('select2:ready', () => window.initSelect2Produto(prodSel), { once: true });
+    }
+
     prodSel.addEventListener('change', function () {
       const pk = this.value;
       if (!pk) { updateFiscalBadge(mainRow, rowFiscal); return; }
@@ -680,11 +750,11 @@
           if (data.erro) return;
 
           const desc = mainRow.querySelector('input[name$="-descricao"]');
-          if (desc && !desc.value) desc.value = data.nome || '';
+          if (desc) desc.value = data.nome || '';
           const un = mainRow.querySelector('input[name$="-unidade"]');
           if (un) un.value = data.unidade || '';
           const vu = mainRow.querySelector('input[name$="-valor_unitario"]');
-          if (vu && (!vu.value || vu.value === '0')) vu.value = data.preco_venda || '';
+          if (vu) vu.value = data.preco_venda || '';
 
           const setF = (sel, val) => {
             const el = (rowFiscal && rowFiscal.querySelector(sel)) || mainRow.querySelector(sel);
@@ -742,6 +812,20 @@
     const fr = row.nextElementSibling;
     updateFiscalBadge(row, fr?.classList.contains('item-fiscal-row') ? fr : null);
   });
+
+  // Ocultar linhas extras vazias quando já existem itens salvos
+  const temItensSalvos = [...body.querySelectorAll('.item-row')].some(
+    r => r.querySelector('select[name$="-produto"]')?.value
+  );
+  if (temItensSalvos) {
+    body.querySelectorAll('.item-row').forEach(row => {
+      if (!row.querySelector('select[name$="-produto"]')?.value) {
+        row.style.display = 'none';
+        const fiscal = row.nextElementSibling;
+        if (fiscal?.classList.contains('item-fiscal-row')) fiscal.style.display = 'none';
+      }
+    });
+  }
 
   ['id_valor_frete','id_valor_seguro','id_valor_desconto'].forEach(id => {
     document.getElementById(id)?.addEventListener('input', recalcularTotais);
@@ -816,11 +900,16 @@
   }
 
   pagBody.querySelectorAll('.pag-row').forEach(attachRemovePag);
+  pagBody.querySelectorAll('.pag-row').forEach(row => {
+    const inp = row.querySelector('input[name$="-valor"]');
+    if (inp && (!inp.value || parseFloat(inp.value) === 0)) markAutoRow(row);
+  });
 
   document.getElementById('add-pagamento').addEventListener('click', function() {
     const rows = [...pagBody.querySelectorAll('.pag-row')];
     const idx  = parseInt(TOTAL_PAG.value);
     const tmpl = rows.at(-1) || pagBody.querySelector('tr');
+    const saldo = Math.max(0, _nfTotal - rowValSum(pagBody, '.pag-row')).toFixed(2);
 
     if (!tmpl) {
       // Sem template — cria linha mínima
@@ -838,23 +927,25 @@
             <option value="99">Outros</option>
           </select>
         </td>
-        <td><input type="number" name="pagamentos-${idx}-valor" class="form-control form-control-sm" step="0.01" value="0"></td>
+        <td><input type="number" name="pagamentos-${idx}-valor" class="form-control form-control-sm" step="0.01" value="${saldo}"></td>
         <td class="text-center">
           <button type="button" class="btn btn-outline-danger btn-sm remove-pag" style="padding:1px 6px"><i class="bi bi-trash"></i></button>
         </td>`;
       pagBody.appendChild(tr);
       attachRemovePag(tr);
+      markAutoRow(tr);
     } else {
       const newRow = tmpl.cloneNode(true);
       newRow.querySelectorAll('input,select').forEach(el => {
         el.name = el.name.replace(/-\d+-/, `-${idx}-`);
         if (el.id) el.id = el.id.replace(/-\d+-/, `-${idx}-`);
         if (el.type === 'checkbox') el.checked = false;
-        else el.value = el.name.endsWith('-valor') ? '' : el.value;
+        else el.value = el.name.endsWith('-valor') ? saldo : el.value;
       });
       newRow.style.display = '';
       pagBody.appendChild(newRow);
       attachRemovePag(newRow);
+      markAutoRow(newRow);
     }
     TOTAL_PAG.value = idx + 1;
   });
@@ -869,11 +960,20 @@
   }
 
   dupBody.querySelectorAll('.dup-row').forEach(attachRemoveDup);
+  dupBody.querySelectorAll('.dup-row').forEach(row => {
+    const inp = row.querySelector('input[name$="-valor"]');
+    if (inp && (!inp.value || parseFloat(inp.value) === 0)) markAutoRow(row);
+  });
 
   document.getElementById('add-duplicata').addEventListener('click', function() {
     const rows = [...dupBody.querySelectorAll('.dup-row')];
     const idx  = parseInt(TOTAL_DUP.value);
     const tmpl = rows.at(-1);
+    const saldo = Math.max(0, _nfTotal - rowValSum(dupBody, '.dup-row')).toFixed(2);
+    const visCount = rows.filter(r => r.style.display !== 'none').length;
+    const nextNum = String(visCount + 1).padStart(3, '0');
+    const d = new Date(); d.setDate(d.getDate() + 30);
+    const defaultVenc = d.toISOString().slice(0, 10);
 
     if (!tmpl) {
       const tr = document.createElement('tr');
@@ -881,26 +981,31 @@
       tr.innerHTML = `
         <td>
           <input type="hidden" name="duplicatas-${idx}-DELETE">
-          <input type="text" name="duplicatas-${idx}-numero" class="form-control form-control-sm" placeholder="001">
+          <input type="text" name="duplicatas-${idx}-numero" class="form-control form-control-sm" value="${nextNum}">
         </td>
-        <td><input type="date" name="duplicatas-${idx}-vencimento" class="form-control form-control-sm"></td>
-        <td><input type="number" name="duplicatas-${idx}-valor" class="form-control form-control-sm" step="0.01"></td>
+        <td><input type="date" name="duplicatas-${idx}-vencimento" class="form-control form-control-sm" value="${defaultVenc}"></td>
+        <td><input type="number" name="duplicatas-${idx}-valor" class="form-control form-control-sm" step="0.01" value="${saldo}"></td>
         <td class="text-center">
           <button type="button" class="btn btn-outline-danger btn-sm remove-dup" style="padding:1px 6px"><i class="bi bi-trash"></i></button>
         </td>`;
       dupBody.appendChild(tr);
       attachRemoveDup(tr);
+      markAutoRow(tr);
     } else {
       const newRow = tmpl.cloneNode(true);
       newRow.querySelectorAll('input').forEach(el => {
         el.name = el.name.replace(/-\d+-/, `-${idx}-`);
         if (el.id) el.id = el.id.replace(/-\d+-/, `-${idx}-`);
-        if (el.type !== 'checkbox') el.value = '';
-        else el.checked = false;
+        if (el.type === 'checkbox') el.checked = false;
+        else if (el.name.endsWith('-valor')) el.value = saldo;
+        else if (el.name.endsWith('-numero')) el.value = nextNum;
+        else if (el.name.endsWith('-vencimento')) el.value = defaultVenc;
+        else el.value = '';
       });
       newRow.style.display = '';
       dupBody.appendChild(newRow);
       attachRemoveDup(newRow);
+      markAutoRow(newRow);
     }
     TOTAL_DUP.value = idx + 1;
   });
@@ -967,5 +1072,38 @@
   });
 
 })();
+</script>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+(function ($) {
+  window.initSelect2Produto = function (sel) {
+    if (!sel || sel.dataset.s2init) return;
+    sel.dataset.s2init = '1';
+    $(sel).select2({
+      theme: 'bootstrap-5',
+      width: '100%',
+      placeholder: 'Buscar produto...',
+      allowClear: true,
+      minimumInputLength: 2,
+      language: {
+        inputTooShort: () => 'Digite ao menos 2 caracteres para buscar',
+        noResults:     () => 'Nenhum produto encontrado',
+      },
+    }).on('select2:select select2:clear', function () {
+      this.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+  };
+
+  $('[name$="-produto"]').each(function () {
+    window.initSelect2Produto(this);
+  });
+
+  document.dispatchEvent(new Event('select2:ready'));
+})(jQuery);
 </script>
 {% endblock %}

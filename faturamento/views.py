@@ -4,6 +4,7 @@ from django.core.paginator import Paginator
 from django.db.models import Count, Q, Sum
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
@@ -135,7 +136,8 @@ def nota_fiscal_create(request):
 
     if request.method == 'POST':
         form = NotaFiscalForm(request.POST, empresa=empresa)
-        formset = ItemNotaFiscalFormSet(request.POST, prefix='itens')
+        formset = ItemNotaFiscalFormSet(request.POST, prefix='itens',
+                                        form_kwargs={'empresa': empresa})
         pag_formset = PagamentoNFFormSet(request.POST, prefix='pagamentos')
         dup_formset = DuplicataNFFormSet(request.POST, prefix='duplicatas')
         if form.is_valid() and formset.is_valid() and pag_formset.is_valid() and dup_formset.is_valid():
@@ -169,7 +171,8 @@ def nota_fiscal_create(request):
             initial['cfop'] = config.cfop_venda_interna
             initial['informacoes_complementares'] = config.observacoes_padrao_nfe
         form = NotaFiscalForm(empresa=empresa, initial=initial)
-        formset = ItemNotaFiscalFormSet(prefix='itens')
+        formset = ItemNotaFiscalFormSet(prefix='itens',
+                                        form_kwargs={'empresa': empresa})
         pag_formset = PagamentoNFFormSet(prefix='pagamentos')
         dup_formset = DuplicataNFFormSet(prefix='duplicatas')
 
@@ -200,7 +203,8 @@ def nota_fiscal_update(request, pk):
 
     if request.method == 'POST':
         form = NotaFiscalForm(request.POST, instance=nf, empresa=empresa)
-        formset = ItemNotaFiscalFormSet(request.POST, instance=nf, prefix='itens')
+        formset = ItemNotaFiscalFormSet(request.POST, instance=nf, prefix='itens',
+                                        form_kwargs={'empresa': empresa})
         pag_formset = PagamentoNFFormSet(request.POST, instance=nf, prefix='pagamentos')
         dup_formset = DuplicataNFFormSet(request.POST, instance=nf, prefix='duplicatas')
         if form.is_valid() and formset.is_valid() and pag_formset.is_valid() and dup_formset.is_valid():
@@ -218,7 +222,8 @@ def nota_fiscal_update(request, pk):
             return redirect('faturamento:nota_fiscal_detail', pk=pk)
     else:
         form = NotaFiscalForm(instance=nf, empresa=empresa)
-        formset = ItemNotaFiscalFormSet(instance=nf, prefix='itens')
+        formset = ItemNotaFiscalFormSet(instance=nf, prefix='itens',
+                                        form_kwargs={'empresa': empresa})
         pag_formset = PagamentoNFFormSet(instance=nf, prefix='pagamentos')
         dup_formset = DuplicataNFFormSet(instance=nf, prefix='duplicatas')
 
@@ -229,6 +234,143 @@ def nota_fiscal_update(request, pk):
         'dup_formset': dup_formset,
         'nf': nf,
         'title': f'Editar NF {nf.numero}/{nf.serie}',
+    })
+
+
+@login_required
+@require_POST
+def nota_fiscal_emitir_ajax(request, pk):
+    """AJAX: valida, emite e retorna progresso passo a passo em JSON."""
+    import re as _re
+    from .services.integranotas import IntegranNotasClient, IntegranNotasError
+
+    empresa = _get_empresa(request)
+    nf = get_object_or_404(NotaFiscal, pk=pk, empresa=empresa)
+    steps = []
+
+    def ok(label, msg=None):
+        steps.append({'status': 'ok', 'label': label, 'message': msg or ''})
+
+    def erro(label, msg, fix_url=None, fix_label=None, errors=None):
+        steps.append({'status': 'error', 'label': label, 'message': msg,
+                      'fix_url': fix_url, 'fix_label': fix_label, 'errors': errors or []})
+        return JsonResponse({'steps': steps, 'success': False})
+
+    # ── 1. Status ────────────────────────────────────────────────────
+    if nf.status != 'RASCUNHO':
+        return erro('Status da NF-e',
+                    f'NF-e já está como "{nf.status}" e não pode ser emitida.')
+
+    # ── 2. Configuração / Token ───────────────────────────────────────
+    config = ConfiguracaoFiscal.objects.filter(empresa=empresa).first()
+    cfg_url = reverse('faturamento:configuracao')
+    if not config or not config.has_token:
+        return erro('Token IntegraNOtas', 'Token não configurado.',
+                    fix_url=cfg_url, fix_label='Configurar token')
+    ambiente = 'Produção' if config.ambiente_nfe == '1' else 'Homologação'
+    ok('Token IntegraNOtas', f'Ambiente: {ambiente}')
+
+    # ── 3. Dados do emitente ──────────────────────────────────────────
+    cnpj_digits = _re.sub(r'\D', '', empresa.cnpj or '')
+    emitente_erros = []
+    if len(cnpj_digits) != 14:
+        emitente_erros.append('CNPJ inválido ou não informado')
+    if not (empresa.nome or '').strip():
+        emitente_erros.append('Razão Social não informada')
+    if emitente_erros:
+        return erro('Dados do emitente', ' | '.join(emitente_erros),
+                    fix_url=cfg_url, fix_label='Corrigir dados do emitente')
+    ok('Dados do emitente', f'{empresa.nome}  ·  CNPJ {empresa.cnpj}')
+
+    # ── 4. Itens e dados fiscais ──────────────────────────────────────
+    itens = list(nf.itens.all())
+    if not itens:
+        edit_url = reverse('faturamento:nota_fiscal_update', args=[pk])
+        return erro('Itens da NF-e', 'Nenhum item cadastrado.',
+                    fix_url=edit_url, fix_label='Adicionar itens')
+
+    item_erros = []
+    for item in itens:
+        faltam = []
+        if not item.ncm:      faltam.append('NCM')
+        if not item.cfop:     faltam.append('CFOP')
+        if not item.cst_icms: faltam.append('CST ICMS')
+        if faltam:
+            item_erros.append(f'Item {item.numero_item} — {(item.descricao or "")[:35]}: faltam {", ".join(faltam)}')
+
+    edit_url = reverse('faturamento:nota_fiscal_update', args=[pk])
+    if item_erros:
+        return erro('Dados fiscais dos itens',
+                    f'{len(item_erros)} item(ns) com dados incompletos.',
+                    fix_url=edit_url, fix_label='Corrigir itens', errors=item_erros)
+    ok('Dados fiscais dos itens',
+       f'{len(itens)} item{"ns" if len(itens) > 1 else ""} — NCM, CFOP e CST OK')
+
+    # ── 5. Transmissão ────────────────────────────────────────────────
+    import requests as _requests
+    try:
+        client = IntegranNotasClient(config.get_token(), config.ambiente_nfe)
+        data = client.emitir_nfe(nf)
+    except IntegranNotasError as exc:
+        erros_api = [str(e) for e in (exc.erros or [])]
+        return erro('Transmissão à SEFAZ', str(exc), errors=erros_api)
+    except _requests.exceptions.HTTPError as exc:
+        status_code = exc.response.status_code if exc.response is not None else '?'
+        try:
+            api_msg = exc.response.json().get('mensagem') or exc.response.json().get('message') or ''
+        except Exception:
+            api_msg = (exc.response.text[:200] if exc.response is not None else '') or str(exc)
+        if status_code in (401, 403):
+            return erro('Transmissão à SEFAZ',
+                        f'Token rejeitado pelo IntegraNOtas (erro {status_code}). '
+                        f'Verifique se o token está correto e se o ambiente está configurado como '
+                        f'{"Produção" if config.ambiente_nfe == "1" else "Homologação"}.',
+                        fix_url=reverse('faturamento:configuracao'),
+                        fix_label='Atualizar token / ambiente')
+        return erro('Transmissão à SEFAZ',
+                    f'Erro HTTP {status_code} ao comunicar com IntegraNOtas: {api_msg}')
+    except Exception as exc:
+        return erro('Transmissão à SEFAZ', f'Falha de comunicação: {exc}')
+
+    ok('Transmissão à SEFAZ', 'Dados enviados ao IntegraNOtas')
+
+    # ── 6. Resultado ──────────────────────────────────────────────────
+    chave     = data.get('chave', '')
+    protocolo = data.get('protocolo', '')
+    xml_b64   = data.get('xml', '')
+    pdf_b64   = data.get('pdf', '')
+    codigo    = data.get('codigo')
+
+    if codigo == 5023:
+        nf.chave_acesso      = chave
+        nf.status            = 'EMITIDA'
+        nf.data_hora_emissao = timezone.now()
+        nf.atualizado_por    = request.user
+        nf.save(update_fields=['chave_acesso', 'status', 'data_hora_emissao', 'atualizado_por'])
+        steps.append({'status': 'pending', 'label': 'Aguardando autorização da SEFAZ',
+                      'message': 'NF em fila de processamento (código 5023). '
+                                 'Use "Verificar na SEFAZ" para atualizar o protocolo.',
+                      'chave': chave})
+        return JsonResponse({'steps': steps, 'success': True, 'pending': True, 'chave': chave})
+
+    # código 100 — autorizada imediatamente
+    nf.chave_acesso          = chave
+    nf.protocolo_autorizacao = protocolo
+    nf.xml_autorizacao       = xml_b64
+    nf.pdf_danfe             = pdf_b64
+    nf.status                = 'EMITIDA'
+    nf.data_hora_emissao     = timezone.now()
+    nf.atualizado_por        = request.user
+    nf.save(update_fields=['chave_acesso', 'protocolo_autorizacao', 'xml_autorizacao',
+                           'pdf_danfe', 'status', 'data_hora_emissao', 'atualizado_por'])
+    steps.append({'status': 'authorized', 'label': 'NF-e Autorizada pela SEFAZ ✓',
+                  'protocolo': protocolo, 'chave': chave})
+    return JsonResponse({
+        'steps': steps, 'success': True, 'authorized': True,
+        'chave': chave, 'protocolo': protocolo,
+        'has_danfe': bool(pdf_b64),
+        'danfe_url': reverse('faturamento:nota_fiscal_danfe', args=[pk]),
+        'detail_url': reverse('faturamento:nota_fiscal_detail', args=[pk]),
     })
 
 
@@ -371,6 +513,77 @@ def nota_fiscal_cancelar(request, pk):
         form = NotaFiscalCancelarForm()
 
     return render(request, 'faturamento/nota_fiscal/cancelar_form.html', {'form': form, 'nf': nf})
+
+
+@login_required
+@require_POST
+def nota_fiscal_consultar(request, pk):
+    """Consulta manual do status da NF-e na SEFAZ via IntegraNota.
+    Útil quando o webhook não foi recebido e a NF está EMITIDA sem protocolo."""
+    from .services.integranotas import IntegranNotasClient, IntegranNotasError
+
+    empresa = _get_empresa(request)
+    nf = get_object_or_404(NotaFiscal, pk=pk, empresa=empresa)
+
+    if not nf.chave_acesso:
+        messages.error(request, 'NF-e não possui chave de acesso — emita antes de consultar.')
+        return redirect('faturamento:nota_fiscal_detail', pk=pk)
+
+    config = ConfiguracaoFiscal.objects.filter(empresa=empresa).first()
+    if not config or not config.has_token:
+        messages.error(request, 'Configure o token IntegraNota em Faturamento → Configuração Fiscal.')
+        return redirect('faturamento:nota_fiscal_detail', pk=pk)
+
+    try:
+        client = IntegranNotasClient(config.get_token(), config.ambiente_nfe)
+        data = client.consultar_nfe(nf.chave_acesso)
+        codigo = data.get('codigo')
+
+        if codigo == 100:
+            # Autorizada — atualiza protocolo, XML e DANFE
+            fields = []
+            if data.get('protocolo') and not nf.protocolo_autorizacao:
+                nf.protocolo_autorizacao = data['protocolo']
+                fields.append('protocolo_autorizacao')
+            if data.get('xml'):
+                nf.xml_autorizacao = data['xml']
+                fields.append('xml_autorizacao')
+            if data.get('pdf'):
+                nf.pdf_danfe = data['pdf']
+                fields.append('pdf_danfe')
+            if nf.status != 'EMITIDA':
+                nf.status = 'EMITIDA'
+                fields.append('status')
+            if not nf.data_hora_emissao:
+                nf.data_hora_emissao = timezone.now()
+                fields.append('data_hora_emissao')
+            if fields:
+                nf.save(update_fields=fields)
+            messages.success(request,
+                f'NF-e autorizada pela SEFAZ. Protocolo: {nf.protocolo_autorizacao}')
+
+        elif codigo == 101:
+            # Cancelada na SEFAZ
+            nf.status = 'CANCELADA'
+            nf.data_cancelamento = timezone.now()
+            nf.save(update_fields=['status', 'data_cancelamento'])
+            messages.warning(request, 'SEFAZ informou que esta NF-e está CANCELADA.')
+
+        elif codigo == 5023:
+            messages.info(request,
+                'NF-e ainda em processamento na SEFAZ (código 5023). Tente novamente em alguns instantes.')
+
+        else:
+            mensagem = data.get('mensagem') or data.get('message') or f'Código {codigo}'
+            messages.warning(request, f'Resposta da SEFAZ: {mensagem}')
+
+    except IntegranNotasError as exc:
+        erros = '; '.join(str(e) for e in exc.erros) if exc.erros else ''
+        messages.error(request, f'Erro IntegraNota [{exc.codigo}]: {exc} {erros}'.strip())
+    except Exception as exc:
+        messages.error(request, f'Falha na comunicação com IntegraNota: {exc}')
+
+    return redirect('faturamento:nota_fiscal_detail', pk=pk)
 
 
 @csrf_exempt

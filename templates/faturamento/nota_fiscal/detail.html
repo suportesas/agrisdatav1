@@ -28,10 +28,17 @@
       <a href="{% url 'faturamento:nota_fiscal_update' nf.pk %}" class="btn btn-outline-secondary">
         <i class="bi bi-pencil me-1"></i>Editar
       </a>
-      <form method="post" action="{% url 'faturamento:nota_fiscal_emitir' nf.pk %}" class="d-inline">
+      <button type="button" class="btn btn-success" id="btn-emitir-nfe"
+              data-ajax-url="{% url 'faturamento:nota_fiscal_emitir_ajax' nf.pk %}"
+              data-csrf="{{ csrf_token }}">
+        <i class="bi bi-send me-1"></i>Emitir NF-e
+      </button>
+      {% endif %}
+      {% if nf.status == 'EMITIDA' and nf.chave_acesso and not nf.protocolo_autorizacao %}
+      <form method="post" action="{% url 'faturamento:nota_fiscal_consultar' nf.pk %}" class="d-inline">
         {% csrf_token %}
-        <button type="submit" class="btn btn-success" onclick="return confirm('Transmitir esta NF-e ao IntegraNota/SEFAZ?')">
-          <i class="bi bi-send me-1"></i>Emitir NF-e
+        <button type="submit" class="btn btn-outline-warning" title="Consulta o status atual na SEFAZ e atualiza protocolo/DANFE se já autorizada">
+          <i class="bi bi-arrow-clockwise me-1"></i>Verificar na SEFAZ
         </button>
       </form>
       {% endif %}
@@ -56,8 +63,23 @@
   {% if nf.chave_acesso %}
   <div class="alert alert-light border py-2 px-3 mb-3 d-flex align-items-center gap-4 flex-wrap">
     <div><small class="text-muted d-block">Chave de Acesso</small><code class="small">{{ nf.chave_acesso }}</code></div>
-    {% if nf.protocolo_autorizacao %}<div><small class="text-muted d-block">Protocolo SEFAZ</small><code class="small">{{ nf.protocolo_autorizacao }}</code></div>{% endif %}
-    {% if nf.data_hora_emissao %}<div><small class="text-muted d-block">Emissão SEFAZ</small><span class="small">{{ nf.data_hora_emissao|date:"d/m/Y H:i" }}</span></div>{% endif %}
+    {% if nf.protocolo_autorizacao %}
+    <div><small class="text-muted d-block">Protocolo SEFAZ</small><code class="small">{{ nf.protocolo_autorizacao }}</code></div>
+    {% endif %}
+    {% if nf.data_hora_emissao %}
+    <div><small class="text-muted d-block">Emissão SEFAZ</small><span class="small">{{ nf.data_hora_emissao|date:"d/m/Y H:i" }}</span></div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% if nf.status == 'EMITIDA' and nf.chave_acesso and not nf.protocolo_autorizacao %}
+  <div class="alert alert-warning d-flex align-items-center gap-2 py-2 px-3 mb-3">
+    <i class="bi bi-hourglass-split fs-5"></i>
+    <div>
+      <strong>Aguardando autorização da SEFAZ.</strong>
+      A NF-e foi enviada mas o protocolo ainda não foi recebido.
+      Use o botão <strong>"Verificar na SEFAZ"</strong> para consultar o status atual.
+    </div>
   </div>
   {% endif %}
 
@@ -186,4 +208,195 @@
   </div>
 
 </div>
+
+<!-- ── Modal de Emissão NF-e ──────────────────────────────────────────── -->
+<div class="modal fade" id="modalEmissaoNFe" tabindex="-1"
+     data-bs-backdrop="static" data-bs-keyboard="false" aria-labelledby="modalEmissaoLabel">
+  <div class="modal-dialog modal-dialog-centered" style="max-width:520px">
+    <div class="modal-content border-0 shadow-lg">
+
+      <div class="modal-header border-0 pb-0">
+        <h5 class="modal-title fw-semibold" id="modalEmissaoLabel">
+          <i class="bi bi-send me-2 text-success"></i>Emissão de NF-e
+        </h5>
+      </div>
+
+      <div class="modal-body px-4 py-3">
+        <!-- Spinner inicial -->
+        <div id="emissao-loading" class="text-center py-3">
+          <div class="spinner-border text-success mb-3" style="width:2.5rem;height:2.5rem"></div>
+          <div class="text-muted small">Validando dados e conectando à SEFAZ...</div>
+        </div>
+
+        <!-- Lista de passos -->
+        <ul id="emissao-steps" class="list-unstyled mb-0" style="display:none"></ul>
+
+        <!-- Resultado final -->
+        <div id="emissao-resultado" style="display:none" class="text-center py-3">
+          <div id="emissao-icone" class="mb-3"></div>
+          <div id="emissao-msg" class="fw-semibold fs-5 mb-1"></div>
+          <div id="emissao-sub" class="text-muted small font-monospace"></div>
+        </div>
+      </div>
+
+      <div class="modal-footer border-0 pt-0" id="emissao-footer">
+        <div class="text-muted small w-100 text-center">
+          <i class="bi bi-hourglass-split me-1"></i>Aguarde, não feche esta janela...
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<style>
+  .emissao-step { display:flex; align-items:flex-start; gap:12px; padding:8px 0; border-bottom:1px solid #f0f0f0; }
+  .emissao-step:last-child { border-bottom:none; }
+  .emissao-step .step-icon { width:22px; flex-shrink:0; margin-top:1px; }
+  .emissao-step .step-body { flex:1; }
+  .emissao-step .step-label { font-size:.875rem; font-weight:600; }
+  .emissao-step .step-msg   { font-size:.78rem; color:#6c757d; margin-top:2px; }
+  .emissao-step .step-errors { font-size:.78rem; color:#dc3545; margin-top:4px; padding-left:0; list-style:none; }
+  .emissao-step .step-errors li::before { content:"• "; }
+  .emissao-step .step-fix { font-size:.78rem; margin-top:4px; }
+  @keyframes stepIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:none} }
+  .emissao-step { animation: stepIn .25s ease; }
+</style>
+
+<script>
+(function () {
+  const btnEmitir = document.getElementById('btn-emitir-nfe');
+  if (!btnEmitir) return;
+
+  const ajaxUrl = btnEmitir.dataset.ajaxUrl;
+  const csrf    = btnEmitir.dataset.csrf;
+
+  const loadingEl   = document.getElementById('emissao-loading');
+  const stepsEl     = document.getElementById('emissao-steps');
+  const resultadoEl = document.getElementById('emissao-resultado');
+  const iconeEl     = document.getElementById('emissao-icone');
+  const msgEl       = document.getElementById('emissao-msg');
+  const subEl       = document.getElementById('emissao-sub');
+  const footerEl    = document.getElementById('emissao-footer');
+
+  let modal = null;
+  function getModal() {
+    if (!modal) modal = new bootstrap.Modal(document.getElementById('modalEmissaoNFe'));
+    return modal;
+  }
+
+  function resetModal() {
+    loadingEl.style.display   = '';
+    stepsEl.style.display     = 'none';
+    stepsEl.innerHTML         = '';
+    resultadoEl.style.display = 'none';
+    footerEl.innerHTML        = '<div class="text-muted small w-100 text-center"><i class="bi bi-hourglass-split me-1"></i>Aguarde, não feche esta janela...</div>';
+  }
+
+  function iconHtml(status) {
+    const icons = {
+      ok:         '<i class="bi bi-check-circle-fill text-success"></i>',
+      error:      '<i class="bi bi-x-circle-fill text-danger"></i>',
+      warning:    '<i class="bi bi-exclamation-triangle-fill text-warning"></i>',
+      pending:    '<i class="bi bi-hourglass-split text-warning"></i>',
+      authorized: '<i class="bi bi-check-circle-fill text-success"></i>',
+    };
+    return icons[status] || '';
+  }
+
+  function renderStep(s) {
+    const li = document.createElement('li');
+    li.className = 'emissao-step';
+
+    let errorsHtml = '';
+    if (s.errors && s.errors.length) {
+      errorsHtml = '<ul class="step-errors">' +
+        s.errors.map(e => `<li>${e}</li>`).join('') + '</ul>';
+    }
+    let fixHtml = '';
+    if (s.fix_url) {
+      fixHtml = `<div class="step-fix"><a href="${s.fix_url}" class="btn btn-sm btn-outline-danger py-0 px-2">
+        <i class="bi bi-arrow-right-circle me-1"></i>${s.fix_label || 'Corrigir'}</a></div>`;
+    }
+
+    li.innerHTML = `
+      <div class="step-icon">${iconHtml(s.status)}</div>
+      <div class="step-body">
+        <div class="step-label">${s.label}</div>
+        ${s.message ? `<div class="step-msg">${s.message}</div>` : ''}
+        ${errorsHtml}
+        ${fixHtml}
+      </div>`;
+    return li;
+  }
+
+  function animateSteps(steps, onDone) {
+    stepsEl.style.display = '';
+    let i = 0;
+    function next() {
+      if (i >= steps.length) { onDone(); return; }
+      stepsEl.appendChild(renderStep(steps[i]));
+      i++;
+      setTimeout(next, 350);
+    }
+    next();
+  }
+
+  function showResultado(data) {
+    resultadoEl.style.display = '';
+
+    if (data.authorized) {
+      iconeEl.innerHTML = '<i class="bi bi-patch-check-fill text-success" style="font-size:4rem"></i>';
+      msgEl.textContent = 'NF-e Autorizada pela SEFAZ!';
+      msgEl.className = 'fw-semibold fs-5 mb-1 text-success';
+      subEl.innerHTML = `Protocolo: <strong>${data.protocolo}</strong>`;
+
+      let btns = '<button class="btn btn-outline-secondary btn-sm" onclick="location.reload()">Fechar</button> ';
+      if (data.has_danfe)
+        btns += `<a href="${data.danfe_url}" class="btn btn-danger btn-sm" target="_blank"><i class="bi bi-file-pdf me-1"></i>Ver DANFE</a>`;
+      footerEl.innerHTML = btns;
+
+    } else if (data.pending) {
+      iconeEl.innerHTML = '<i class="bi bi-hourglass-split text-warning" style="font-size:3.5rem"></i>';
+      msgEl.textContent = 'Aguardando autorização da SEFAZ';
+      msgEl.className = 'fw-semibold fs-5 mb-1 text-warning';
+      subEl.innerHTML = `Chave: <code style="font-size:.7rem">${data.chave}</code>`;
+      footerEl.innerHTML = '<button class="btn btn-outline-secondary btn-sm" onclick="location.reload()">Fechar e atualizar</button>';
+
+    } else {
+      iconeEl.innerHTML = '<i class="bi bi-x-octagon-fill text-danger" style="font-size:3.5rem"></i>';
+      msgEl.textContent = 'Não foi possível emitir a NF-e';
+      msgEl.className = 'fw-semibold fs-5 mb-1 text-danger';
+      subEl.textContent = 'Corrija os erros indicados acima e tente novamente.';
+      footerEl.innerHTML = '<button class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Fechar</button>';
+    }
+  }
+
+  btnEmitir.addEventListener('click', function () {
+    resetModal();
+    getModal().show();
+
+    fetch(ajaxUrl, {
+      method: 'POST',
+      headers: { 'X-CSRFToken': csrf, 'Accept': 'application/json' },
+    })
+    .then(r => r.json())
+    .then(data => {
+      loadingEl.style.display = 'none';
+      animateSteps(data.steps, () => showResultado(data));
+    })
+    .catch(err => {
+      loadingEl.style.display = 'none';
+      stepsEl.style.display = '';
+      const li = document.createElement('li');
+      li.className = 'emissao-step';
+      li.innerHTML = `<div class="step-icon">${iconHtml('error')}</div>
+        <div class="step-body"><div class="step-label text-danger">Falha de comunicação</div>
+        <div class="step-msg">${err}</div></div>`;
+      stepsEl.appendChild(li);
+      showResultado({ success: false });
+    });
+  });
+})();
+</script>
 {% endblock %}

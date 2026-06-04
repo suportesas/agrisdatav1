@@ -221,6 +221,16 @@ CST_IPI_CHOICES = [
 
 
 class ItemNotaFiscalForm(forms.ModelForm):
+    def __init__(self, *args, empresa=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        from produtos.models import Produto
+        if empresa:
+            self.fields['produto'].queryset = Produto.objects.filter(
+                categoria__empresa=empresa, ativo=True
+            ).select_related('unidade_venda').order_by('codigo', 'nome')
+        else:
+            self.fields['produto'].queryset = Produto.objects.none()
+
     class Meta:
         model = ItemNotaFiscal
         fields = [
@@ -237,7 +247,7 @@ class ItemNotaFiscalForm(forms.ModelForm):
             'cst_pis', 'aliquota_pis', 'cst_cofins', 'aliquota_cofins',
         ]
         widgets = {
-            'numero_item': forms.NumberInput(attrs={**_sm, 'style': 'width:60px'}),
+            'numero_item': forms.HiddenInput(),
             'descricao': forms.TextInput(attrs=_sm),
             'produto': forms.Select(attrs=_sm_sel),
             'ncm': forms.TextInput(attrs={**_sm, 'maxlength': '8', 'placeholder': '00000000'}),
@@ -274,7 +284,7 @@ ItemNotaFiscalFormSet = inlineformset_factory(
     NotaFiscal,
     ItemNotaFiscal,
     form=ItemNotaFiscalForm,
-    extra=1,
+    extra=0,
     can_delete=True,
     min_num=1,
     validate_min=True,
@@ -294,7 +304,7 @@ class PagamentoNFForm(forms.ModelForm):
 PagamentoNFFormSet = inlineformset_factory(
     NotaFiscal, PagamentoNF,
     form=PagamentoNFForm,
-    extra=1, can_delete=True, min_num=0,
+    extra=0, can_delete=True, min_num=0,
 )
 
 
@@ -312,7 +322,7 @@ class DuplicataNFForm(forms.ModelForm):
 DuplicataNFFormSet = inlineformset_factory(
     NotaFiscal, DuplicataNF,
     form=DuplicataNFForm,
-    extra=1, can_delete=True, min_num=0,
+    extra=0, can_delete=True, min_num=0,
 )
 
 

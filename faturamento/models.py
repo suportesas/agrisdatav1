@@ -89,7 +89,8 @@ class ConfiguracaoFiscal(models.Model):
 
     @property
     def has_token(self) -> bool:
-        return bool(self.token_integranotas)
+        """True apenas se o token decriptografado for não-vazio."""
+        return bool(self.get_token())
 
     class Meta:
         verbose_name = 'Configuração Fiscal'

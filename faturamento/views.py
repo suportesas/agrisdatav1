@@ -264,11 +264,20 @@ def nota_fiscal_emitir_ajax(request, pk):
     # ── 2. Configuração / Token ───────────────────────────────────────
     config = ConfiguracaoFiscal.objects.filter(empresa=empresa).first()
     cfg_url = reverse('faturamento:configuracao')
-    if not config or not config.has_token:
-        return erro('Token IntegraNOtas', 'Token não configurado.',
+    if not config:
+        return erro('Token IntegraNOtas', 'Configuração fiscal não encontrada.',
+                    fix_url=cfg_url, fix_label='Configurar')
+    raw_token = config.get_token()
+    if not raw_token:
+        return erro('Token IntegraNOtas',
+                    'Token não configurado ou não foi possível decriptografar. '
+                    'Verifique se FIELD_ENCRYPTION_KEY está correta no servidor.',
                     fix_url=cfg_url, fix_label='Configurar token')
-    ambiente = 'Produção' if config.ambiente_nfe == '1' else 'Homologação'
-    ok('Token IntegraNOtas', f'Ambiente: {ambiente}')
+    ambiente_label = 'Produção' if config.ambiente_nfe == '1' else 'Homologação'
+    api_url = IntegranNotasClient.PROD_URL if config.ambiente_nfe == '1' else IntegranNotasClient.HOM_URL
+    token_prefix = raw_token[:12] + '...' if len(raw_token) > 12 else '(token curto)'
+    ok('Token IntegraNOtas',
+       f'Ambiente: {ambiente_label} · URL: {api_url} · Token: {token_prefix}')
 
     # ── 3. Dados do emitente ──────────────────────────────────────────
     cnpj_digits = _re.sub(r'\D', '', empresa.cnpj or '')
@@ -309,7 +318,7 @@ def nota_fiscal_emitir_ajax(request, pk):
     # ── 5. Transmissão ────────────────────────────────────────────────
     import requests as _requests
     try:
-        client = IntegranNotasClient(config.get_token(), config.ambiente_nfe)
+        client = IntegranNotasClient(raw_token, config.ambiente_nfe)
         data = client.emitir_nfe(nf)
     except IntegranNotasError as exc:
         erros_api = [str(e) for e in (exc.erros or [])]
@@ -321,12 +330,18 @@ def nota_fiscal_emitir_ajax(request, pk):
         except Exception:
             api_msg = (exc.response.text[:200] if exc.response is not None else '') or str(exc)
         if status_code in (401, 403):
+            dicas = [
+                f'Token usado (prefixo): {token_prefix}',
+                f'URL chamada: {api_url}/nfe',
+                f'Ambiente configurado: {ambiente_label}',
+                'Verifique se o token no painel IntegraNotas é para Homologação ou Produção.',
+                'Tokens de Produção NÃO funcionam na URL de Homologação e vice-versa.',
+            ]
             return erro('Transmissão à SEFAZ',
-                        f'Token rejeitado pelo IntegraNOtas (erro {status_code}). '
-                        f'Verifique se o token está correto e se o ambiente está configurado como '
-                        f'{"Produção" if config.ambiente_nfe == "1" else "Homologação"}.',
+                        f'Token rejeitado pelo IntegraNOtas (erro {status_code}).',
                         fix_url=reverse('faturamento:configuracao'),
-                        fix_label='Atualizar token / ambiente')
+                        fix_label='Atualizar token / ambiente',
+                        errors=dicas)
         return erro('Transmissão à SEFAZ',
                     f'Erro HTTP {status_code} ao comunicar com IntegraNOtas: {api_msg}')
     except Exception as exc:

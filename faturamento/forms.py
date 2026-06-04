@@ -280,7 +280,8 @@ class ItemNotaFiscalForm(forms.ModelForm):
             # IPI
             'cst_ipi', 'aliquota_ipi', 'ipi_codigo_enquadramento',
             # PIS / COFINS
-            'cst_pis', 'aliquota_pis', 'cst_cofins', 'aliquota_cofins',
+            'cst_pis', 'aliquota_pis', 'natureza_receita_pis',
+            'cst_cofins', 'aliquota_cofins', 'natureza_receita_cofins',
         ]
         widgets = {
             'numero_item': forms.HiddenInput(),
@@ -311,8 +312,14 @@ class ItemNotaFiscalForm(forms.ModelForm):
             # PIS / COFINS
             'cst_pis': forms.TextInput(attrs={**_sm, 'placeholder': '07', 'style': 'width:55px'}),
             'aliquota_pis': forms.NumberInput(attrs=_sm_num),
+            'natureza_receita_pis': forms.TextInput(attrs={**_sm, 'placeholder': 'ex: 116',
+                                                           'maxlength': '3', 'style': 'width:70px',
+                                                           'title': 'Natureza da Receita PIS (3 dígitos)'}),
             'cst_cofins': forms.TextInput(attrs={**_sm, 'placeholder': '07', 'style': 'width:55px'}),
             'aliquota_cofins': forms.NumberInput(attrs=_sm_num),
+            'natureza_receita_cofins': forms.TextInput(attrs={**_sm, 'placeholder': 'ex: 116',
+                                                              'maxlength': '3', 'style': 'width:70px',
+                                                              'title': 'Natureza da Receita COFINS (3 dígitos)'}),
         }
 
 

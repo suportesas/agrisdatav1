@@ -286,10 +286,14 @@ class ItemNotaFiscal(models.Model):
     aliquota_pis = models.DecimalField('Alíq. PIS (%)', max_digits=5, decimal_places=2, default=0)
     valor_pis = models.DecimalField('Valor PIS', max_digits=14, decimal_places=2, default=0)
     pis_base_calculo = models.DecimalField('Base de Cálculo PIS', max_digits=14, decimal_places=2, default=0)
+    natureza_receita_pis = models.CharField('Natureza da Receita PIS', max_length=3, blank=True,
+        help_text='Código 3 dígitos — obrigatório para CST 04-09, 49, 99.')
     # COFINS
     aliquota_cofins = models.DecimalField('Alíq. COFINS (%)', max_digits=5, decimal_places=2, default=0)
     valor_cofins = models.DecimalField('Valor COFINS', max_digits=14, decimal_places=2, default=0)
     cofins_base_calculo = models.DecimalField('Base de Cálculo COFINS', max_digits=14, decimal_places=2, default=0)
+    natureza_receita_cofins = models.CharField('Natureza da Receita COFINS', max_length=3, blank=True,
+        help_text='Código 3 dígitos — obrigatório para CST 04-09, 49, 99.')
     origem_mercadoria = models.CharField('Origem da Mercadoria', max_length=1, default='0', help_text='0=Nacional, 1-8=Estrangeira')
     cest = models.CharField('CEST', max_length=7, blank=True, help_text='Código Especificador da Substituição Tributária')
     ean = models.CharField('EAN/Código de Barras', max_length=14, blank=True, help_text='Deixe em branco para usar SEM GTIN')

@@ -346,9 +346,9 @@ class ProdutoTributacaoForm(forms.ModelForm):
             # IPI
             'ipi_situacao_tributaria', 'ipi_aliquota', 'ipi_codigo_enquadramento',
             # PIS
-            'pis_situacao_tributaria', 'pis_aliquota', 'pis_base_calculo',
+            'pis_situacao_tributaria', 'pis_aliquota', 'pis_base_calculo', 'natureza_receita_pis',
             # COFINS
-            'cofins_situacao_tributaria', 'cofins_aliquota', 'cofins_base_calculo',
+            'cofins_situacao_tributaria', 'cofins_aliquota', 'cofins_base_calculo', 'natureza_receita_cofins',
             # Outros
             'beneficio_fiscal', 'padrao', 'ativo', 'observacoes',
         ]
@@ -375,14 +375,23 @@ class ProdutoTributacaoForm(forms.ModelForm):
             'ipi_codigo_enquadramento': forms.TextInput(attrs={'class': 'form-control', 'value': '999'}),
             
             # PIS
-            'pis_situacao_tributaria': forms.Select(attrs={'class': 'form-select'}),
+            'pis_situacao_tributaria': forms.Select(attrs={'class': 'form-select', 'id': 'id_pis_situacao_tributaria'}),
             'pis_aliquota': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': '%'}),
             'pis_base_calculo': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': '%'}),
-            
+            'natureza_receita_pis': forms.TextInput(attrs={
+                'class': 'form-control', 'maxlength': '3',
+                'placeholder': 'Ex: 116', 'list': 'natureza-receita-list',
+                'autocomplete': 'off',
+            }),
             # COFINS
-            'cofins_situacao_tributaria': forms.Select(attrs={'class': 'form-select'}),
+            'cofins_situacao_tributaria': forms.Select(attrs={'class': 'form-select', 'id': 'id_cofins_situacao_tributaria'}),
             'cofins_aliquota': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': '%'}),
             'cofins_base_calculo': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': '%'}),
+            'natureza_receita_cofins': forms.TextInput(attrs={
+                'class': 'form-control', 'maxlength': '3',
+                'placeholder': 'Ex: 116', 'list': 'natureza-receita-list',
+                'autocomplete': 'off',
+            }),
             
             # Outros
             'beneficio_fiscal': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Código'}),

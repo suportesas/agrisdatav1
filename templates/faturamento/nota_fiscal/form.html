@@ -388,6 +388,10 @@
                               <label class="fiscal-label">Alíq. PIS (%)</label>
                               {{ item_form.aliquota_pis }}
                             </div>
+                            <div class="nat-receita-wrap" style="display:none;">
+                              <label class="fiscal-label">Nat. Receita PIS</label>
+                              {{ item_form.natureza_receita_pis }}
+                            </div>
                             <div>
                               <label class="fiscal-label">CST COFINS</label>
                               {{ item_form.cst_cofins }}
@@ -395,6 +399,10 @@
                             <div>
                               <label class="fiscal-label">Alíq. COFINS (%)</label>
                               {{ item_form.aliquota_cofins }}
+                            </div>
+                            <div class="nat-receita-wrap" style="display:none;">
+                              <label class="fiscal-label">Nat. Receita COFINS</label>
+                              {{ item_form.natureza_receita_cofins }}
                             </div>
                           </div>
                         </div>
@@ -656,8 +664,17 @@
     setF('input[name$="-ipi_codigo_enquadramento"]',   t.ipi_codigo_enquadramento);
     setF('input[name$="-cst_pis"]',                    t.cst_pis);
     setF('input[name$="-aliquota_pis"]',               t.aliquota_pis);
+    setF('input[name$="-natureza_receita_pis"]',       t.natureza_receita_pis);
     setF('input[name$="-cst_cofins"]',                 t.cst_cofins);
     setF('input[name$="-aliquota_cofins"]',            t.aliquota_cofins);
+    setF('input[name$="-natureza_receita_cofins"]',    t.natureza_receita_cofins);
+    // Show/hide Natureza da Receita por CST
+    const CST_NAT = new Set(['04','05','06','07','08','09','49','99']);
+    const fiscalSrc = fiscalRow || mainRow;
+    fiscalSrc.querySelectorAll('.nat-receita-wrap').forEach((wrap, i) => {
+      const cst = i === 0 ? (t.cst_pis || '') : (t.cst_cofins || '');
+      wrap.style.display = CST_NAT.has(cst) ? '' : 'none';
+    });
     updateFiscalBadge(mainRow, fiscalRow);
   }
 

@@ -314,11 +314,52 @@
       </div>
     </div>
 
+    <!-- datalist compartilhado para Natureza da Receita -->
+    <datalist id="natureza-receita-list">
+      <option value="001">001 - Receita de Exportação</option>
+      <option value="002">002 - Receita de Serviços Prestados a Pessoa Jurídica do Exterior</option>
+      <option value="003">003 - Receita de Frete Internacional</option>
+      <option value="004">004 - Receita de Seguros em Exportações</option>
+      <option value="005">005 - Receita de Juros sobre o Capital Próprio</option>
+      <option value="006">006 - Receita de Dividendos</option>
+      <option value="007">007 - Receita de Arrendamento Mercantil</option>
+      <option value="008">008 - Receita de Venda de Participações Societárias</option>
+      <option value="009">009 - Receita de Vendas a Órgãos Públicos</option>
+      <option value="010">010 - Receita de Pesquisa e Lavra de Petróleo/Gás</option>
+      <option value="013">013 - Receita de Livros, Jornais e Periódicos</option>
+      <option value="014">014 - Receita de Energia Elétrica</option>
+      <option value="015">015 - Receita de Combustíveis e Lubrificantes</option>
+      <option value="016">016 - Receita de Produtos Farmacêuticos</option>
+      <option value="017">017 - Receita de Higiene, Cosméticos e Perfumaria</option>
+      <option value="018">018 - Receita de Máquinas, Tratores e Veículos</option>
+      <option value="019">019 - Receita de Pneumáticos</option>
+      <option value="020">020 - Receita de Auto-peças</option>
+      <option value="021">021 - Receita de Embarcações</option>
+      <option value="022">022 - Receita de Aeronaves</option>
+      <option value="024">024 - Receita de Bebidas Frias</option>
+      <option value="026">026 - Receita de Álcool Hidratado</option>
+      <option value="032">032 - Receita de Insumos para Produtos Agropecuários</option>
+      <option value="033">033 - Receita de Bens de Capital</option>
+      <option value="034">034 - Receita de Beneficiamento de Produtos Agrícolas</option>
+      <option value="101">101 - Receita de Produtos a Alíquota Zero</option>
+      <option value="102">102 - Receita Financeira</option>
+      <option value="106">106 - Receita de Venda de Animais</option>
+      <option value="107">107 - Receita de Venda de Produtos Agrícolas</option>
+      <option value="108">108 - Receita de Produtos Aquícolas</option>
+      <option value="109">109 - Receita de Insumos para Agropecuária</option>
+      <option value="113">113 - Receita de Transporte Rodoviário de Cargas</option>
+      <option value="115">115 - Bebidas frias</option>
+      <option value="116">116 - Produtos hortícolas e frutas</option>
+      <option value="117">117 - Querosene de Aviação</option>
+      <option value="999">999 - Outras Receitas</option>
+    </datalist>
+
     <div class="card mb-3">
       <div class="card-header"><strong>PIS / COFINS</strong></div>
       <div class="card-body">
-        <div class="row">
-          <div class="col-md-4 mb-3">
+        <!-- PIS -->
+        <div class="row align-items-end">
+          <div class="col-md-3 mb-3">
             <label for="id_pis_situacao_tributaria" class="form-label required-label">{{ form.pis_situacao_tributaria.label }}</label>
             {{ form.pis_situacao_tributaria }}
             {% if form.pis_situacao_tributaria.errors %}
@@ -327,7 +368,7 @@
               <small class="form-text text-muted">CST do PIS</small>
             {% endif %}
           </div>
-          <div class="col-md-4 mb-3">
+          <div class="col-md-3 mb-3">
             <label for="id_pis_aliquota" class="form-label">{{ form.pis_aliquota.label }}</label>
             {{ form.pis_aliquota }}
             {% if form.pis_aliquota.errors %}
@@ -336,7 +377,7 @@
               <small class="form-text text-muted">Percentual (0-100)</small>
             {% endif %}
           </div>
-          <div class="col-md-4 mb-3">
+          <div class="col-md-3 mb-3">
             <label for="id_pis_base_calculo" class="form-label">{{ form.pis_base_calculo.label }}</label>
             {{ form.pis_base_calculo }}
             {% if form.pis_base_calculo.errors %}
@@ -345,9 +386,21 @@
               <small class="form-text text-muted">Percentual (0-100)</small>
             {% endif %}
           </div>
+          <div class="col-md-3 mb-3" id="wrap-natureza-pis" style="display:none;">
+            <label for="id_natureza_receita_pis" class="form-label">
+              {{ form.natureza_receita_pis.label }}
+              <i class="bi bi-info-circle text-muted" title="Obrigatório para CST 04-09, 49, 99. Digite o código ou busque na lista."></i>
+            </label>
+            {{ form.natureza_receita_pis }}
+            <small class="form-text text-muted">Código 3 dígitos (ex: 116)</small>
+          </div>
         </div>
-        <div class="row">
-          <div class="col-md-4 mb-3">
+
+        <hr class="my-2">
+
+        <!-- COFINS -->
+        <div class="row align-items-end">
+          <div class="col-md-3 mb-3">
             <label for="id_cofins_situacao_tributaria" class="form-label required-label">{{ form.cofins_situacao_tributaria.label }}</label>
             {{ form.cofins_situacao_tributaria }}
             {% if form.cofins_situacao_tributaria.errors %}
@@ -356,7 +409,7 @@
               <small class="form-text text-muted">CST do COFINS</small>
             {% endif %}
           </div>
-          <div class="col-md-4 mb-3">
+          <div class="col-md-3 mb-3">
             <label for="id_cofins_aliquota" class="form-label">{{ form.cofins_aliquota.label }}</label>
             {{ form.cofins_aliquota }}
             {% if form.cofins_aliquota.errors %}
@@ -365,7 +418,7 @@
               <small class="form-text text-muted">Percentual (0-100)</small>
             {% endif %}
           </div>
-          <div class="col-md-4 mb-3">
+          <div class="col-md-3 mb-3">
             <label for="id_cofins_base_calculo" class="form-label">{{ form.cofins_base_calculo.label }}</label>
             {{ form.cofins_base_calculo }}
             {% if form.cofins_base_calculo.errors %}
@@ -373,6 +426,14 @@
             {% else %}
               <small class="form-text text-muted">Percentual (0-100)</small>
             {% endif %}
+          </div>
+          <div class="col-md-3 mb-3" id="wrap-natureza-cofins" style="display:none;">
+            <label for="id_natureza_receita_cofins" class="form-label">
+              {{ form.natureza_receita_cofins.label }}
+              <i class="bi bi-info-circle text-muted" title="Obrigatório para CST 04-09, 49, 99. Digite o código ou busque na lista."></i>
+            </label>
+            {{ form.natureza_receita_cofins }}
+            <small class="form-text text-muted">Código 3 dígitos (ex: 116)</small>
           </div>
         </div>
       </div>
@@ -834,6 +895,32 @@ document.addEventListener('DOMContentLoaded', function() {
 
   btnCopiar.addEventListener('click', buscarProdutos);
   inputCopiar.addEventListener('keypress', e => { if (e.key === 'Enter') { e.preventDefault(); buscarProdutos(); } });
+})();
+</script>
+
+<script>
+// ── Natureza da Receita PIS/COFINS — show/hide por CST ───────────────────────
+(function () {
+  // CSTs que exigem Natureza da Receita (não tributável com alíquota fixa)
+  const CST_COM_NATUREZA = new Set(['04','05','06','07','08','09','49','99']);
+
+  const pisSel     = document.getElementById('id_pis_situacao_tributaria');
+  const cofinsSel  = document.getElementById('id_cofins_situacao_tributaria');
+  const wrapPis    = document.getElementById('wrap-natureza-pis');
+  const wrapCofins = document.getElementById('wrap-natureza-cofins');
+
+  function toggleNatureza(sel, wrap) {
+    if (!sel || !wrap) return;
+    const cst = sel.value || '';
+    wrap.style.display = CST_COM_NATUREZA.has(cst) ? '' : 'none';
+  }
+
+  if (pisSel)    pisSel.addEventListener('change',    () => toggleNatureza(pisSel, wrapPis));
+  if (cofinsSel) cofinsSel.addEventListener('change', () => toggleNatureza(cofinsSel, wrapCofins));
+
+  // Estado inicial (ao editar uma tributação já salva)
+  toggleNatureza(pisSel,    wrapPis);
+  toggleNatureza(cofinsSel, wrapCofins);
 })();
 </script>
 {% endblock %}

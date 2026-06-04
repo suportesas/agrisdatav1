@@ -370,6 +370,9 @@ class IntegranNotasClient:
         # PIS
         cst_pis = item.cst_pis or '07'
         pis_block: dict = {'situacao_tributaria': cst_pis}
+        nat_pis = (getattr(item, 'natureza_receita_pis', '') or '').strip()
+        if nat_pis:
+            pis_block['natureza_receita'] = nat_pis
         if item.aliquota_pis and float(item.aliquota_pis) > 0:
             pis_block.update({
                 'base_calculo': str(item.pis_base_calculo),
@@ -383,6 +386,9 @@ class IntegranNotasClient:
         # COFINS
         cst_cofins = item.cst_cofins or '07'
         cofins_block: dict = {'situacao_tributaria': cst_cofins}
+        nat_cofins = (getattr(item, 'natureza_receita_cofins', '') or '').strip()
+        if nat_cofins:
+            cofins_block['natureza_receita'] = nat_cofins
         if item.aliquota_cofins and float(item.aliquota_cofins) > 0:
             cofins_block.update({
                 'base_calculo': str(item.cofins_base_calculo),

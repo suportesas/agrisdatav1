@@ -1209,8 +1209,10 @@ def ajax_produto_detail(request, pk):
             'ipi_codigo_enquadramento': t.ipi_codigo_enquadramento or '999',
             'cst_pis': t.pis_situacao_tributaria,
             'aliquota_pis': float(t.pis_aliquota),
+            'natureza_receita_pis': t.natureza_receita_pis or '',
             'cst_cofins': t.cofins_situacao_tributaria,
             'aliquota_cofins': float(t.cofins_aliquota),
+            'natureza_receita_cofins': t.natureza_receita_cofins or '',
         })
 
     return JsonResponse({

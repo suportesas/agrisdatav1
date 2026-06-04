@@ -763,11 +763,19 @@ class ProdutoTributacao(models.Model):
     pis_situacao_tributaria = models.CharField(max_length=2, choices=CST_PIS_COFINS_CHOICES, verbose_name='CST PIS')
     pis_aliquota = models.DecimalField(max_digits=5, decimal_places=2, default=0, verbose_name='Alíquota PIS (%)')
     pis_base_calculo = models.DecimalField(max_digits=5, decimal_places=2, default=100, verbose_name='Base de Cálculo PIS (%)')
-    
+    natureza_receita_pis = models.CharField(
+        max_length=3, blank=True, verbose_name='Natureza da Receita PIS',
+        help_text='Código 3 dígitos — obrigatório para CST 04-09, 49, 99 (ex: 116).',
+    )
+
     # Tributação COFINS
     cofins_situacao_tributaria = models.CharField(max_length=2, choices=CST_PIS_COFINS_CHOICES, verbose_name='CST COFINS')
     cofins_aliquota = models.DecimalField(max_digits=5, decimal_places=2, default=0, verbose_name='Alíquota COFINS (%)')
     cofins_base_calculo = models.DecimalField(max_digits=5, decimal_places=2, default=100, verbose_name='Base de Cálculo COFINS (%)')
+    natureza_receita_cofins = models.CharField(
+        max_length=3, blank=True, verbose_name='Natureza da Receita COFINS',
+        help_text='Código 3 dígitos — obrigatório para CST 04-09, 49, 99 (ex: 116).',
+    )
     
     # Benefícios Fiscais
     beneficio_fiscal = models.CharField(max_length=10, blank=True, verbose_name='Código Benefício Fiscal')

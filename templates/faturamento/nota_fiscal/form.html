@@ -96,7 +96,7 @@
               </div>
 
               <!-- ── Exportação — UF/Local de Embarque ── -->
-              <div class="col-12">
+              <div class="col-12" id="exportacao-section" style="display:none;">
                 <div class="border rounded p-2 mt-1 border-warning-subtle bg-warning-subtle bg-opacity-10">
                   <div class="row g-2 align-items-end">
                     <div class="col-12 mb-1">
@@ -1169,12 +1169,25 @@
   const fields = document.getElementById('entrega-fields');
   if (!chk || !fields) return;
 
-  function toggle() {
-    fields.style.display = chk.checked ? '' : 'none';
+  function toggle() { fields.style.display = chk.checked ? '' : 'none'; }
+  chk.addEventListener('change', toggle);
+  toggle();
+})();
+
+// ── Exportação — só visível quando CFOP começa com 7 ─────────────────────
+(function () {
+  const cfopInput     = document.getElementById('id_cfop');
+  const exportSection = document.getElementById('exportacao-section');
+  if (!cfopInput || !exportSection) return;
+
+  function toggleExportacao() {
+    const cfop = cfopInput.value.trim();
+    exportSection.style.display = cfop.startsWith('7') ? '' : 'none';
   }
 
-  chk.addEventListener('change', toggle);
-  toggle(); // estado inicial (edição de NF já salva)
+  cfopInput.addEventListener('input',  toggleExportacao);
+  cfopInput.addEventListener('change', toggleExportacao);
+  toggleExportacao(); // estado inicial (edição de NF já salva)
 })();
 </script>
 

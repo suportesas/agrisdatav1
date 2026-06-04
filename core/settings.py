@@ -541,7 +541,7 @@ else:
 # ============================================
 import warnings as _warnings
 
-FIELD_ENCRYPTION_KEY = os.getenv('FIELD_ENCRYPTION_KEY', '')
+FIELD_ENCRYPTION_KEY = os.getenv('FIELD_ENCRYPTION_KEY', '').strip()
 
 if not FIELD_ENCRYPTION_KEY:
     _warnings.warn(

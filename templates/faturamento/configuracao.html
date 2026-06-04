@@ -71,15 +71,24 @@
                 <small class="text-muted">Use <strong>Homologação</strong> para testes antes de ir para produção.</small>
               </div>
               <div class="col-md-8">
-                <label class="form-label">Token IntegraNota</label>
-                {{ form.token_integranotas }}
-                {% if config.has_token %}
-                  <small class="text-success"><i class="bi bi-check-circle"></i> Token configurado. Deixe em branco para manter o atual.</small>
-                {% else %}
-                  <small class="text-muted">Token Bearer obtido no painel IntegraNota → Configurações → API.</small>
-                {% endif %}
-              </div>
-            </div>
+  <label class="form-label">Token IntegraNota</label>
+  <div class="input-group">
+    {{ form.token_integranotas }}
+    <button type="button" class="btn btn-outline-secondary" id="btnToggleToken" title="Mostrar/ocultar token">
+      <i class="bi bi-eye"></i>
+    </button>
+  </div>
+  <div class="form-check mt-1">
+    <input type="checkbox" class="form-check-input" id="cbShowToken"
+           onchange="document.getElementById('id_token_integranotas').type = this.checked ? 'text' : 'password'">
+    <label class="form-check-label small" for="cbShowToken">Mostrar token</label>
+  </div>
+  {% if config.has_token %}
+    <small class="text-success d-block mt-2"><i class="bi bi-check-circle"></i> Token configurado. Deixe em branco para manter o atual.</small>
+  {% else %}
+    <small class="text-muted d-block mt-2">Token Bearer obtido no painel IntegraNota → Configurações → API.</small>
+  {% endif %}
+</div>
 
             <!-- ── Teste de Token IntegraNotas ── -->
             <div class="card border-0 bg-light mt-3 mb-1">
@@ -313,24 +322,31 @@ document.getElementById('btn-buscar-cep-empresa')?.addEventListener('click', fun
   }
 
   function showResult(ok, tituloTxt, msgHtml, tempoMs, detalhe) {
-    var wrap  = document.getElementById('testResult');
-    var card  = document.getElementById('testResultCard');
-    var icon  = document.getElementById('testResultIcon');
-    var title = document.getElementById('testResultTitle');
-    var msg   = document.getElementById('testResultMsg');
-    var det   = document.getElementById('testResultDetails');
-    var tempo = document.getElementById('testResultTempo');
-    if (!wrap) { alert(tituloTxt + '\n' + msgHtml.replace(/<[^>]+>/g,'')); return; }
-    wrap.classList.remove('d-none');
-    card.className  = 'alert mb-0 py-2 px-3 alert-' + (ok ? 'success' : 'danger');
-    icon.textContent  = ok ? '✅' : '❌';
-    title.textContent = tituloTxt;
-    msg.innerHTML     = msgHtml;
-    tempo.textContent = tempoMs != null ? tempoMs + ' ms' : '';
+    var wrap = document.getElementById('testResult');
+    if (!wrap) { alert(tituloTxt + '\n' + msgHtml.replace(/<[^>]+>/g, '')); return; }
+
+    var cor   = ok ? 'success' : 'danger';
+    var icone = ok ? '✅' : '❌';
+    var badge = tempoMs != null ? '<span class="badge bg-secondary ms-2">' + tempoMs + ' ms</span>' : '';
+    var detHtml = '';
     if (detalhe) {
-      det.textContent = (typeof detalhe === 'object') ? JSON.stringify(detalhe, null, 2) : String(detalhe);
-      det.classList.remove('d-none');
-    } else { det.classList.add('d-none'); }
+      var detTxt = (typeof detalhe === 'object') ? JSON.stringify(detalhe, null, 2) : String(detalhe);
+      detHtml = '<pre class="mt-2 mb-0 small bg-light p-2 rounded" style="max-height:120px;overflow:auto;">' + detTxt + '</pre>';
+    }
+
+    wrap.innerHTML =
+      '<div class="alert alert-' + cor + ' py-2 px-3 mb-0">' +
+        '<div class="d-flex align-items-start gap-2">' +
+          '<span class="fs-5">' + icone + '</span>' +
+          '<div class="flex-1">' +
+            '<strong>' + tituloTxt + '</strong>' + badge +
+            '<div class="small mt-1">' + msgHtml + '</div>' +
+            detHtml +
+          '</div>' +
+        '</div>' +
+      '</div>';
+
+    wrap.classList.remove('d-none');
   }
 
   btn.addEventListener('click', function () {
@@ -389,5 +405,26 @@ document.getElementById('btn-buscar-cep-empresa')?.addEventListener('click', fun
     });
   });
 })();
+
+
+// ── Toggle Token Visibility ───────────────────────────────────────────
+(function () {
+  var btn = document.getElementById('btnToggleToken');
+  var inputToken = document.getElementById('id_token_integranotas');
+  
+  if (!btn || !inputToken) { return; }
+  
+  btn.addEventListener('click', function (e) {
+    e.preventDefault();
+    var isPassword = inputToken.type === 'password';
+    inputToken.type = isPassword ? 'text' : 'password';
+    
+    var icon = btn.querySelector('i');
+    icon.className = isPassword ? 'bi bi-eye-slash' : 'bi bi-eye';
+    btn.classList.toggle('active');
+  });
+})();
+
+
 </script>
 {% endblock %}

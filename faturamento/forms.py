@@ -90,7 +90,13 @@ class ConfiguracaoFiscalForm(forms.ModelForm):
             render_value=False,
         ),
         help_text='Deixe em branco para não alterar o token existente.',
+
+        
     )
+    def clean_token_integranotas(self):
+        token = self.cleaned_data.get('token_integranotas', '')
+        return token.strip()
+    
 
     class Meta:
         model = ConfiguracaoFiscal

@@ -26,7 +26,12 @@ def _get_fernet():
     if not key:
         return None
     from cryptography.fernet import Fernet
-    _fernet_instance = Fernet(key.encode() if isinstance(key, str) else key)
+    key_bytes = key.encode() if isinstance(key, str) else key
+    try:
+        _fernet_instance = Fernet(key_bytes)
+    except (TypeError, ValueError) as exc:
+        logger.error("FIELD_ENCRYPTION_KEY inválido: %s", exc)
+        _fernet_instance = None
     return _fernet_instance
 
 

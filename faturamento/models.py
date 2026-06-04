@@ -298,6 +298,44 @@ class ItemNotaFiscal(models.Model):
     cest = models.CharField('CEST', max_length=7, blank=True, help_text='Código Especificador da Substituição Tributária')
     ean = models.CharField('EAN/Código de Barras', max_length=14, blank=True, help_text='Deixe em branco para usar SEM GTIN')
 
+    # ── DI — Declaração de Importação (Grupo I da NF-e) ──────────────────────
+    # Obrigatório quando origem_mercadoria for 1, 2, 6 ou 7 (produto estrangeiro)
+    VIA_TRANSPORTE_CHOICES = [
+        ('1',  '1 - Marítima'), ('2',  '2 - Fluvial'), ('3',  '3 - Lacustre'),
+        ('4',  '4 - Aérea'),    ('5',  '5 - Postal'),   ('6',  '6 - Ferroviária'),
+        ('7',  '7 - Rodoviária'),('8',  '8 - Conduto/Rede'),('9',  '9 - Meios Próprios'),
+        ('10', '10 - Entrada/Saída Ficta'),('11', '11 - Courier'),
+        ('12', '12 - Em mãos'), ('13', '13 - Por reboque'),
+    ]
+    TIPO_INTERMEDIARIO_CHOICES = [
+        ('1', '1 - Importação por conta própria'),
+        ('2', '2 - Importação por conta e ordem'),
+        ('3', '3 - Importação por encomenda'),
+    ]
+
+    di_numero           = models.CharField('Nº da DI', max_length=12, blank=True,
+                              help_text='Número da Declaração de Importação (ex: 24/1234567-8)')
+    di_data_registro    = models.DateField('Data Registro DI', null=True, blank=True)
+    di_local_desembaraco = models.CharField('Local do Desembaraço', max_length=60, blank=True,
+                               help_text='Nome do porto/aeroporto/local de desembaraço aduaneiro')
+    di_uf_desembaraco   = models.CharField('UF Desembaraço', max_length=2, blank=True)
+    di_data_desembaraco = models.DateField('Data Desembaraço', null=True, blank=True)
+    di_via_transporte   = models.CharField('Via de Transporte', max_length=2, blank=True,
+                              choices=VIA_TRANSPORTE_CHOICES)
+    di_valor_afrmm      = models.DecimalField('Valor AFRMM (R$)', max_digits=14, decimal_places=2,
+                              default=0, help_text='Adicional ao Frete — apenas via Marítima')
+    di_tipo_intermediario = models.CharField('Tipo Intermediário', max_length=1, blank=True,
+                               choices=TIPO_INTERMEDIARIO_CHOICES)
+    di_cnpj_adquirente  = models.CharField('CNPJ Adquirente/Encomendante', max_length=14, blank=True,
+                              help_text='Obrigatório quando tipo intermediário = 2 ou 3')
+    di_codigo_exportador = models.CharField('Código do Exportador', max_length=60, blank=True)
+    # Adição da DI (adi) — suporte a 1 adição inline (caso mais comum)
+    di_numero_adicao    = models.CharField('Nº Adição', max_length=3, blank=True)
+    di_codigo_fabricante = models.CharField('Código do Fabricante', max_length=60, blank=True)
+    di_desconto_adicao  = models.DecimalField('Desconto da Adição (R$)', max_digits=14, decimal_places=2, default=0)
+    di_numero_drawback  = models.CharField('Nº Ato Concessório Drawback', max_length=20, blank=True,
+                              help_text='Suspensão ou Isenção — deixe em branco se não se aplica')
+
     class Meta:
         verbose_name = 'Item da Nota Fiscal'
         verbose_name_plural = 'Itens da Nota Fiscal'

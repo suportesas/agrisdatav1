@@ -296,7 +296,7 @@ class IntegranNotasClient:
         if item.produto_id:
             produto_codigo = item.produto.codigo or ''
 
-        return {
+        item_dict = {
             'numero_item': str(item.numero_item),
             'codigo_produto': produto_codigo or 'SEM CODIGO',
             'ean': item.ean or 'SEM GTIN',
@@ -312,6 +312,58 @@ class IntegranNotasClient:
             'origem_mercadoria': item.origem_mercadoria or '0',
             'imposto': self._build_impostos(item),
         }
+
+        # DI — Declaração de Importação (origens 1, 2, 6, 7)
+        di = self._build_di(item)
+        if di:
+            item_dict['declaracao_importacao'] = [di]
+
+        return item_dict
+
+    def _build_di(self, item) -> dict | None:
+        """Constrói o bloco DI para item importado. Retorna None se não aplicável."""
+        if item.origem_mercadoria not in ('1', '2', '6', '7'):
+            return None
+        numero = (getattr(item, 'di_numero', '') or '').strip()
+        if not numero:
+            return None  # DI não informada
+
+        di: dict = {
+            'numero':            numero,
+            'data_registro':     item.di_data_registro.strftime('%Y-%m-%d') if item.di_data_registro else '',
+            'local_desembaraco': (item.di_local_desembaraco or '').strip(),
+            'uf_desembaraco':    (item.di_uf_desembaraco or '').strip().upper(),
+            'data_desembaraco':  item.di_data_desembaraco.strftime('%Y-%m-%d') if item.di_data_desembaraco else '',
+            'via_transporte':    (item.di_via_transporte or '').strip(),
+            'tipo_intermediario': (item.di_tipo_intermediario or '1').strip(),
+            'codigo_exportador': (item.di_codigo_exportador or '').strip(),
+        }
+
+        # AFRMM só para via marítima (via = 1)
+        if item.di_via_transporte == '1':
+            di['valor_afrmm'] = str(item.di_valor_afrmm or '0.00')
+
+        # CNPJ adquirente quando tipo 2 ou 3
+        cnpj_adq = _digits(item.di_cnpj_adquirente or '')
+        if item.di_tipo_intermediario in ('2', '3') and cnpj_adq:
+            di['cnpj_adquirente'] = cnpj_adq
+
+        # Adição da DI
+        num_adicao = (item.di_numero_adicao or '1').strip() or '1'
+        adicao: dict = {
+            'numero_adicao':    num_adicao,
+            'sequencia_item':   '1',
+            'codigo_fabricante': (item.di_codigo_fabricante or '').strip(),
+        }
+        desconto_adi = float(item.di_desconto_adicao or 0)
+        if desconto_adi > 0:
+            adicao['valor_desconto'] = str(item.di_desconto_adicao)
+        drawback = (item.di_numero_drawback or '').strip()
+        if drawback:
+            adicao['numero_drawback'] = drawback
+
+        di['adicoes'] = [adicao]
+        return di
 
     def _build_impostos(self, item) -> dict:
         impostos: dict = {}

@@ -282,6 +282,12 @@ class ItemNotaFiscalForm(forms.ModelForm):
             # PIS / COFINS
             'cst_pis', 'aliquota_pis', 'natureza_receita_pis',
             'cst_cofins', 'aliquota_cofins', 'natureza_receita_cofins',
+            # DI - Declaração de Importação
+            'di_numero', 'di_data_registro', 'di_local_desembaraco',
+            'di_uf_desembaraco', 'di_data_desembaraco', 'di_via_transporte',
+            'di_valor_afrmm', 'di_tipo_intermediario', 'di_cnpj_adquirente',
+            'di_codigo_exportador', 'di_numero_adicao', 'di_codigo_fabricante',
+            'di_desconto_adicao', 'di_numero_drawback',
         ]
         widgets = {
             'numero_item': forms.HiddenInput(),
@@ -320,6 +326,24 @@ class ItemNotaFiscalForm(forms.ModelForm):
             'natureza_receita_cofins': forms.TextInput(attrs={**_sm, 'placeholder': 'ex: 116',
                                                               'maxlength': '3', 'style': 'width:70px',
                                                               'title': 'Natureza da Receita COFINS (3 dígitos)'}),
+            # DI - Declaração de Importação
+            'di_numero':             forms.TextInput(attrs={**_sm, 'placeholder': '24/1234567-8', 'maxlength': '12'}),
+            'di_data_registro':      forms.DateInput(attrs={**_sm, 'type': 'date'}, format='%Y-%m-%d'),
+            'di_local_desembaraco':  forms.TextInput(attrs={**_sm, 'placeholder': 'Ex: Porto de Fortaleza'}),
+            'di_uf_desembaraco':     forms.TextInput(attrs={**_sm, 'maxlength': '2', 'placeholder': 'CE',
+                                                            'style': 'width:55px; text-transform:uppercase;'}),
+            'di_data_desembaraco':   forms.DateInput(attrs={**_sm, 'type': 'date'}, format='%Y-%m-%d'),
+            'di_via_transporte':     forms.Select(attrs=_sm_sel),
+            'di_valor_afrmm':        forms.NumberInput(attrs=_sm_num),
+            'di_tipo_intermediario': forms.Select(attrs=_sm_sel),
+            'di_cnpj_adquirente':    forms.TextInput(attrs={**_sm, 'maxlength': '14', 'placeholder': 'Somente dígitos'}),
+            'di_codigo_exportador':  forms.TextInput(attrs={**_sm, 'placeholder': 'Código do exportador'}),
+            'di_numero_adicao':      forms.TextInput(attrs={**_sm, 'maxlength': '3', 'placeholder': '1',
+                                                            'style': 'width:60px;'}),
+            'di_codigo_fabricante':  forms.TextInput(attrs={**_sm, 'placeholder': 'Código do fabricante'}),
+            'di_desconto_adicao':    forms.NumberInput(attrs=_sm_num),
+            'di_numero_drawback':    forms.TextInput(attrs={**_sm, 'maxlength': '20',
+                                                            'placeholder': 'Nº ato concessório drawback'}),
         }
 
 

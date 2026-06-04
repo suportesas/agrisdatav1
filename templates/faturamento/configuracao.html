@@ -303,78 +303,91 @@ document.getElementById('btn-buscar-cep-empresa')?.addEventListener('click', fun
 });
 
 // ── Teste de Token IntegraNotas ───────────────────────────────────────────
-document.getElementById('btnTestarToken')?.addEventListener('click', function () {
-  const btn      = this;
-  const token    = document.getElementById('testTokenInput').value.trim();
-  const ambiente = document.getElementById('testAmbienteSelect').value;
-  const result   = document.getElementById('testResult');
-  const card     = document.getElementById('testResultCard');
-  const icon     = document.getElementById('testResultIcon');
-  const title    = document.getElementById('testResultTitle');
-  const msg      = document.getElementById('testResultMsg');
-  const details  = document.getElementById('testResultDetails');
-  const tempo    = document.getElementById('testResultTempo');
+(function () {
+  var btn = document.getElementById('btnTestarToken');
+  if (!btn) { console.warn('btnTestarToken não encontrado'); return; }
 
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Testando…';
-  result.classList.add('d-none');
+  function getCsrf() {
+    var match = document.cookie.match(/csrftoken=([^;]+)/);
+    return match ? match[1] : '{{ csrf_token }}';
+  }
 
-  const fd = new FormData();
-  fd.append('csrfmiddlewaretoken', '{{ csrf_token }}');
-  if (token) fd.append('token', token);
-  fd.append('ambiente', ambiente);
+  function showResult(ok, tituloTxt, msgHtml, tempoMs, detalhe) {
+    var wrap  = document.getElementById('testResult');
+    var card  = document.getElementById('testResultCard');
+    var icon  = document.getElementById('testResultIcon');
+    var title = document.getElementById('testResultTitle');
+    var msg   = document.getElementById('testResultMsg');
+    var det   = document.getElementById('testResultDetails');
+    var tempo = document.getElementById('testResultTempo');
+    if (!wrap) { alert(tituloTxt + '\n' + msgHtml.replace(/<[^>]+>/g,'')); return; }
+    wrap.classList.remove('d-none');
+    card.className  = 'alert mb-0 py-2 px-3 alert-' + (ok ? 'success' : 'danger');
+    icon.textContent  = ok ? '✅' : '❌';
+    title.textContent = tituloTxt;
+    msg.innerHTML     = msgHtml;
+    tempo.textContent = tempoMs != null ? tempoMs + ' ms' : '';
+    if (detalhe) {
+      det.textContent = (typeof detalhe === 'object') ? JSON.stringify(detalhe, null, 2) : String(detalhe);
+      det.classList.remove('d-none');
+    } else { det.classList.add('d-none'); }
+  }
 
-  fetch('{% url "faturamento:integranotas_test_token" %}', { method: 'POST', body: fd })
-    .then(r => r.json())
-    .then(data => {
-      result.classList.remove('d-none');
-      const ok = data.sucesso;
+  btn.addEventListener('click', function () {
+    var token    = (document.getElementById('testTokenInput') || {}).value || '';
+    token = token.trim();
+    var ambiente = (document.getElementById('testAmbienteSelect') || {}).value || '2';
 
-      card.className = `alert mb-0 py-2 px-3 alert-${ok ? 'success' : 'danger'}`;
-      icon.textContent = ok ? '✅' : '❌';
-      title.textContent = ok
-        ? `Token aceito — ${data.ambiente_label}`
-        : `Token rejeitado — ${data.ambiente_label}`;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Testando…';
+    var wrap = document.getElementById('testResult');
+    if (wrap) wrap.classList.add('d-none');
 
-      const linhas = [
-        `<b>URL:</b> ${data.ambiente_api || '—'}`,
-        `<b>HTTP:</b> ${data.codigo_http ?? 'sem resposta'}`,
-        `<b>Token (prefixo):</b> ${data.token_prefix || '(salvo)'}`,
-      ];
-      if (!ok) linhas.push(`<b>Detalhe:</b> ${data.mensagem}`);
-      msg.innerHTML = linhas.join(' &nbsp;·&nbsp; ');
+    var fd = new FormData();
+    if (token) fd.append('token', token);
+    fd.append('ambiente', ambiente);
 
-      tempo.textContent = data.tempo_ms != null ? `${data.tempo_ms} ms` : '';
+    console.log('[TestarToken] Enviando para {% url "faturamento:integranotas_test_token" %}', {token: token ? token.slice(0,12)+'...' : '(salvo)', ambiente: ambiente});
 
-      // Detalhe JSON da resposta
-      if (data.detalhe) {
-        details.textContent = typeof data.detalhe === 'object'
-          ? JSON.stringify(data.detalhe, null, 2)
-          : data.detalhe;
-        details.classList.remove('d-none');
-      } else {
-        details.classList.add('d-none');
+    fetch('{% url "faturamento:integranotas_test_token" %}', {
+      method: 'POST',
+      headers: { 'X-CSRFToken': getCsrf() },
+      body: fd,
+    })
+    .then(function(r) {
+      console.log('[TestarToken] HTTP', r.status, r.statusText);
+      if (!r.ok) {
+        return r.text().then(function(txt) {
+          throw new Error('HTTP ' + r.status + ' — ' + txt.slice(0, 200));
+        });
       }
-
-      // Se token OK e não estava salvo, sugere salvar
+      return r.json();
+    })
+    .then(function(data) {
+      console.log('[TestarToken] Resultado:', data);
+      var ok = data.sucesso === true;
+      var ambLabel = data.ambiente_label || (ambiente === '1' ? 'Produção' : 'Homologação');
+      var titulo   = ok ? ('✅ Token aceito — ' + ambLabel) : ('❌ Token rejeitado — ' + ambLabel);
+      var linhas   = [];
+      if (data.ambiente_api) linhas.push('<b>URL:</b> ' + data.ambiente_api);
+      if (data.codigo_http)  linhas.push('<b>HTTP:</b> ' + data.codigo_http);
+      if (data.token_prefix) linhas.push('<b>Token:</b> ' + data.token_prefix);
+      if (!ok && data.mensagem) linhas.push('<b>Erro:</b> ' + data.mensagem);
+      var msgHtml = linhas.join(' &nbsp;·&nbsp; ');
       if (ok && token) {
-        msg.innerHTML += '<br><small class="text-success mt-1 d-block">' +
-          '<i class="bi bi-arrow-down-circle me-1"></i>' +
-          'Token válido! Cole-o no campo "Token IntegraNota" acima e clique em Salvar.</small>';
+        msgHtml += '<br><small class="text-success mt-1 d-block"><i class="bi bi-arrow-down-circle me-1"></i>Token válido! Cole no campo "Token IntegraNota" acima e salve.</small>';
       }
+      showResult(ok, titulo, msgHtml, data.tempo_ms, data.detalhe);
     })
-    .catch(err => {
-      result.classList.remove('d-none');
-      card.className = 'alert mb-0 py-2 px-3 alert-warning';
-      icon.textContent = '⚠️';
-      title.textContent = 'Erro na requisição';
-      msg.textContent = String(err);
-      tempo.textContent = '';
+    .catch(function(err) {
+      console.error('[TestarToken] Erro:', err);
+      showResult(false, '⚠️ Erro na comunicação', String(err), null, null);
     })
-    .finally(() => {
+    .finally(function() {
       btn.disabled = false;
       btn.innerHTML = '<i class="bi bi-plug me-1"></i>Testar Conexão';
     });
-});
+  });
+})();
 </script>
 {% endblock %}

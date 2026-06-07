@@ -154,6 +154,18 @@ class NotaFiscal(FaturamentoBaseModel):
         related_name='notas_fiscais_transporte',
         verbose_name='Transportadora',
     )
+    quantidade_volumes = models.PositiveIntegerField(
+        'Quantidade de Volumes', blank=True, null=True,
+        help_text='Quantidade de volumes transportados (grupo de volumes da NF-e)',
+    )
+    especie_volumes = models.CharField(
+        'Espécie', max_length=60, blank=True,
+        help_text='Espécie dos volumes transportados (sacos, caixas, pallets etc.)',
+    )
+    marca_volumes = models.CharField('Marca', max_length=100, blank=True)
+    numeracao_volumes = models.CharField('Numeração', max_length=100, blank=True)
+    peso_bruto_kg = models.DecimalField('Peso Bruto (kg)', max_digits=14, decimal_places=3, blank=True, null=True)
+    peso_liquido_kg = models.DecimalField('Peso Líquido (kg)', max_digits=14, decimal_places=3, blank=True, null=True)
     valor_produtos = models.DecimalField('Valor dos Produtos', max_digits=14, decimal_places=2, default=0)
     valor_frete = models.DecimalField('Valor do Frete', max_digits=14, decimal_places=2, default=0)
     valor_seguro = models.DecimalField('Valor do Seguro', max_digits=14, decimal_places=2, default=0)
@@ -175,6 +187,11 @@ class NotaFiscal(FaturamentoBaseModel):
     data_hora_emissao = models.DateTimeField('Data/Hora de Emissão SEFAZ', null=True, blank=True)
     motivo_cancelamento = models.CharField('Motivo do Cancelamento', max_length=255, blank=True)
     data_cancelamento = models.DateTimeField('Data/Hora do Cancelamento', null=True, blank=True)
+
+    # ── Manifestação do Destinatário (MD-e) ─────────────────────────────────────
+    manifestacao_tipo = models.CharField('Tipo de Manifestação', max_length=40, blank=True)
+    manifestacao_protocolo = models.CharField('Protocolo da Manifestação', max_length=50, blank=True)
+    manifestacao_data = models.DateTimeField('Data/Hora da Manifestação', null=True, blank=True)
 
     # ── Exportação (grupo ZA da NF-e — <exporta>) ──────────────────────────────
     embarque_uf = models.CharField(
@@ -434,6 +451,67 @@ class DuplicataNF(models.Model):
         return f'Dup {self.numero} — {self.vencimento} — R$ {self.valor}'
 
 
+class CartaCorrecaoNFe(models.Model):
+    nota_fiscal = models.ForeignKey(
+        NotaFiscal,
+        on_delete=models.CASCADE,
+        related_name='cartas_correcao',
+        verbose_name='Nota Fiscal',
+    )
+    sequencia = models.PositiveIntegerField('Sequência', default=1)
+    correcao = models.TextField('Texto da Correção')
+    protocolo = models.CharField('Protocolo SEFAZ', max_length=50, blank=True)
+    xml_retorno = models.TextField('XML de Retorno (base64)', blank=True)
+    criado_em = models.DateTimeField('Criado em', auto_now_add=True)
+    criado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='cartas_correcao_nfe',
+    )
+
+    class Meta:
+        verbose_name = 'Carta de Correção NF-e'
+        verbose_name_plural = 'Cartas de Correção NF-e'
+        ordering = ['sequencia']
+        unique_together = [('nota_fiscal', 'sequencia')]
+
+    def __str__(self):
+        return f'CC-e {self.sequencia} — NF {self.nota_fiscal}'
+
+
+class InutilizacaoNFe(models.Model):
+    empresa = models.ForeignKey(
+        'empresas.Empresa',
+        on_delete=models.CASCADE,
+        related_name='inutilizacoes_nfe',
+        verbose_name='Empresa',
+    )
+    serie = models.IntegerField('Série', default=1)
+    numero_ini = models.PositiveIntegerField('Número Inicial')
+    numero_fim = models.PositiveIntegerField('Número Final')
+    ano = models.IntegerField('Ano')
+    justificativa = models.CharField('Justificativa', max_length=255)
+    protocolo = models.CharField('Protocolo SEFAZ', max_length=50, blank=True)
+    criado_em = models.DateTimeField('Criado em', auto_now_add=True)
+    criado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='inutilizacoes_nfe',
+    )
+
+    class Meta:
+        verbose_name = 'Inutilização NF-e'
+        verbose_name_plural = 'Inutilizações NF-e'
+        ordering = ['-criado_em']
+
+    def __str__(self):
+        return f'Inut. {self.serie}/{self.numero_ini}-{self.numero_fim} ({self.ano})'
+
+
 class InvoiceExportacao(FaturamentoBaseModel):
     STATUS = [
         ('RASCUNHO', 'Rascunho'),
@@ -679,6 +757,11 @@ class ConhecimentoTransporte(FaturamentoBaseModel):
     data_cancelamento   = models.DateTimeField('Data do Cancelamento', null=True, blank=True)
     data_hora_emissao   = models.DateTimeField('Data/Hora SEFAZ', null=True, blank=True)
 
+    # Manifesta Desacordo
+    desacordo_descricao = models.CharField('Descrição do Desacordo', max_length=255, blank=True)
+    desacordo_protocolo = models.CharField('Protocolo do Desacordo', max_length=50, blank=True)
+    desacordo_data      = models.DateTimeField('Data/Hora do Desacordo', null=True, blank=True)
+
     class Meta:
         verbose_name = 'Conhecimento de Transporte (CT-e)'
         verbose_name_plural = 'Conhecimentos de Transporte (CT-e)'
@@ -700,6 +783,35 @@ class DocumentoVinculadoCTe(models.Model):
 
     def __str__(self):
         return self.chave_nfe
+
+
+class CartaCorrecaoCTe(models.Model):
+    cte = models.ForeignKey(
+        ConhecimentoTransporte,
+        on_delete=models.CASCADE,
+        related_name='cartas_correcao',
+        verbose_name='CT-e',
+    )
+    sequencia   = models.PositiveIntegerField('Sequência', default=1)
+    correcao    = models.TextField('Texto da Correção')
+    protocolo   = models.CharField('Protocolo SEFAZ', max_length=50, blank=True)
+    xml_retorno = models.TextField('XML de Retorno (base64)', blank=True)
+    criado_em   = models.DateTimeField('Criado em', auto_now_add=True)
+    criado_por  = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='cartas_correcao_cte',
+    )
+
+    class Meta:
+        verbose_name = 'Carta de Correção CT-e'
+        verbose_name_plural = 'Cartas de Correção CT-e'
+        ordering = ['sequencia']
+        unique_together = [('cte', 'sequencia')]
+
+    def __str__(self):
+        return f'CC-e CT-e {self.sequencia} — {self.cte}'
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -804,6 +916,23 @@ class PercursoMDFe(models.Model):
 
     def __str__(self):
         return self.uf
+
+
+class CondutorAdicionalMDFe(models.Model):
+    """Condutor incluído no MDF-e após emissão via API IntegraNota."""
+    mdfe            = models.ForeignKey(ManifestoDocumentoFiscal, on_delete=models.CASCADE, related_name='condutores_adicionais')
+    cpf             = models.CharField('CPF', max_length=14)
+    nome            = models.CharField('Nome', max_length=100)
+    protocolo       = models.CharField('Protocolo SEFAZ', max_length=50, blank=True)
+    adicionado_em   = models.DateTimeField(auto_now_add=True)
+    adicionado_por  = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
+
+    class Meta:
+        verbose_name = 'Condutor Adicional MDF-e'
+        ordering = ['adicionado_em']
+
+    def __str__(self):
+        return f'{self.nome} — {self.cpf}'
 
 
 class ItemPackingList(models.Model):

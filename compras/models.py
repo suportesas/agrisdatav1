@@ -1283,17 +1283,33 @@ class RecebimentoCompra(models.Model):
         null=True
     )
     
+    # Manifestação do Destinatário (MD-e)
+    MANIFESTACAO_TIPO_CHOICES = [
+        ('ciencia_operacao', 'Ciência da Operação'),
+        ('confirmacao_operacao', 'Confirmação da Operação'),
+        ('desconhecimento_operacao', 'Desconhecimento da Operação'),
+        ('operacao_nao_realizada', 'Operação Não Realizada'),
+    ]
+    manifestacao_tipo = models.CharField(
+        'Tipo de Manifestação',
+        max_length=40,
+        blank=True,
+        choices=MANIFESTACAO_TIPO_CHOICES,
+    )
+    manifestacao_protocolo = models.CharField('Protocolo da Manifestação', max_length=50, blank=True)
+    manifestacao_data = models.DateTimeField('Data/Hora da Manifestação', null=True, blank=True)
+
     # Auditoria
     data_cadastro = models.DateTimeField(
         'Data de Cadastro',
         auto_now_add=True
     )
-    
+
     data_atualizacao = models.DateTimeField(
         'Última Atualização',
         auto_now=True
     )
-    
+
     class Meta:
         verbose_name = 'Recebimento de Compra'
         verbose_name_plural = 'Recebimentos de Compras'

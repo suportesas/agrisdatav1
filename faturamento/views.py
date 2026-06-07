@@ -12,6 +12,7 @@ from django.views.decorators.http import require_POST
 from .forms import (
     CancelarCTeForm,
     CancelarMDFeForm,
+    CartaCorrecaoNFeForm,
     CertificadoDigitalForm,
     ConfiguracaoFiscalForm,
     ConhecimentoTransporteForm,
@@ -20,6 +21,7 @@ from .forms import (
     DuplicataNFFormSet,
     EncerrarMDFeForm,
     InvoiceExportacaoForm,
+    InutilizacaoNFeForm,
     ItemInvoiceFormSet,
     ItemNotaFiscalFormSet,
     ItemPackingListFormSet,
@@ -31,10 +33,14 @@ from .forms import (
     PercursoMDFeFormSet,
 )
 from .models import (
+    CartaCorrecaoCTe,
+    CartaCorrecaoNFe,
+    CondutorAdicionalMDFe,
     ConfiguracaoFiscal,
     ConhecimentoTransporte,
     DocumentoVinculadoCTe,
     DocumentoVinculadoMDFe,
+    InutilizacaoNFe,
     InvoiceExportacao,
     ItemPackingList,
     ManifestoDocumentoFiscal,
@@ -678,6 +684,128 @@ def nota_fiscal_xml(request, pk):
 
 
 @login_required
+def nota_fiscal_carta_correcao(request, pk):
+    from .services.integranotas import IntegranNotasClient, IntegranNotasError
+
+    empresa = _get_empresa(request)
+    nf = get_object_or_404(NotaFiscal, pk=pk, empresa=empresa)
+
+    if nf.status != 'EMITIDA' or not nf.chave_acesso:
+        messages.error(request, 'Carta de Correção só pode ser enviada para NF-e autorizada.')
+        return redirect('faturamento:nota_fiscal_detail', pk=pk)
+
+    cartas_anteriores = nf.cartas_correcao.all()
+    proxima_sequencia = (cartas_anteriores.count() + 1) if cartas_anteriores.exists() else 1
+
+    if request.method == 'POST':
+        form = CartaCorrecaoNFeForm(request.POST)
+        if form.is_valid():
+            config = ConfiguracaoFiscal.objects.filter(empresa=empresa).first()
+            if not config or not config.has_token:
+                messages.error(request, 'Configure o token IntegraNota para enviar CC-e.')
+                return render(request, 'faturamento/nota_fiscal/carta_correcao_form.html',
+                              {'form': form, 'nf': nf, 'cartas': cartas_anteriores, 'proxima_sequencia': proxima_sequencia})
+            try:
+                client = IntegranNotasClient(config.get_token(), config.ambiente_nfe)
+                resultado = client.carta_correcao_nfe(
+                    nf.chave_acesso,
+                    form.cleaned_data['correcao'],
+                    proxima_sequencia,
+                )
+            except IntegranNotasError as exc:
+                messages.error(request, f'Erro ao enviar CC-e [{exc.codigo}]: {exc}')
+                return render(request, 'faturamento/nota_fiscal/carta_correcao_form.html',
+                              {'form': form, 'nf': nf, 'cartas': cartas_anteriores, 'proxima_sequencia': proxima_sequencia})
+            except Exception as exc:
+                messages.error(request, f'Falha na comunicação com IntegraNota: {exc}')
+                return render(request, 'faturamento/nota_fiscal/carta_correcao_form.html',
+                              {'form': form, 'nf': nf, 'cartas': cartas_anteriores, 'proxima_sequencia': proxima_sequencia})
+
+            CartaCorrecaoNFe.objects.create(
+                nota_fiscal=nf,
+                sequencia=proxima_sequencia,
+                correcao=form.cleaned_data['correcao'],
+                protocolo=resultado.get('protocolo', '') or resultado.get('numero_protocolo', ''),
+                xml_retorno=resultado.get('xml', ''),
+                criado_por=request.user,
+            )
+            messages.success(request, f'Carta de Correção nº {proxima_sequencia} enviada com sucesso.')
+            return redirect('faturamento:nota_fiscal_detail', pk=pk)
+    else:
+        form = CartaCorrecaoNFeForm()
+
+    return render(request, 'faturamento/nota_fiscal/carta_correcao_form.html', {
+        'form': form,
+        'nf': nf,
+        'cartas': cartas_anteriores,
+        'proxima_sequencia': proxima_sequencia,
+    })
+
+
+@login_required
+def nota_fiscal_inutilizar(request):
+    from .services.integranotas import IntegranNotasClient, IntegranNotasError
+    from datetime import date
+
+    empresa = _get_empresa(request)
+    config = ConfiguracaoFiscal.objects.filter(empresa=empresa).first()
+
+    if request.method == 'POST':
+        form = InutilizacaoNFeForm(request.POST)
+        if form.is_valid():
+            if not config or not config.has_token:
+                messages.error(request, 'Configure o token IntegraNota para inutilizar numeração.')
+                return render(request, 'faturamento/nota_fiscal/inutilizacao_form.html', {'form': form})
+            cnpj_emitente = ''
+            if config.certificado_cnpj:
+                cnpj_emitente = config.certificado_cnpj.replace('.', '').replace('/', '').replace('-', '')
+            if not cnpj_emitente:
+                messages.error(request, 'CNPJ da empresa não encontrado na configuração fiscal.')
+                return render(request, 'faturamento/nota_fiscal/inutilizacao_form.html', {'form': form})
+            try:
+                client = IntegranNotasClient(config.get_token(), config.ambiente_nfe)
+                resultado = client.inutilizar_nfe(
+                    cnpj=cnpj_emitente,
+                    serie=form.cleaned_data['serie'],
+                    numero_ini=form.cleaned_data['numero_ini'],
+                    numero_fim=form.cleaned_data['numero_fim'],
+                    justificativa=form.cleaned_data['justificativa'],
+                    ano=form.cleaned_data['ano'],
+                )
+            except IntegranNotasError as exc:
+                messages.error(request, f'Erro ao inutilizar [{exc.codigo}]: {exc}')
+                return render(request, 'faturamento/nota_fiscal/inutilizacao_form.html', {'form': form})
+            except Exception as exc:
+                messages.error(request, f'Falha na comunicação com IntegraNota: {exc}')
+                return render(request, 'faturamento/nota_fiscal/inutilizacao_form.html', {'form': form})
+
+            InutilizacaoNFe.objects.create(
+                empresa=empresa,
+                serie=form.cleaned_data['serie'],
+                numero_ini=form.cleaned_data['numero_ini'],
+                numero_fim=form.cleaned_data['numero_fim'],
+                ano=form.cleaned_data['ano'],
+                justificativa=form.cleaned_data['justificativa'],
+                protocolo=resultado.get('protocolo', '') or resultado.get('numero_protocolo', ''),
+                criado_por=request.user,
+            )
+            messages.success(
+                request,
+                f'Numeração {form.cleaned_data["numero_ini"]}–{form.cleaned_data["numero_fim"]} '
+                f'da série {form.cleaned_data["serie"]} inutilizada com sucesso.'
+            )
+            return redirect('faturamento:nota_fiscal_list')
+    else:
+        form = InutilizacaoNFeForm(initial={'ano': date.today().year})
+
+    historico = InutilizacaoNFe.objects.filter(empresa=empresa).order_by('-criado_em')[:20]
+    return render(request, 'faturamento/nota_fiscal/inutilizacao_form.html', {
+        'form': form,
+        'historico': historico,
+    })
+
+
+@login_required
 def nota_fiscal_pdf(request, pk):
     empresa = _get_empresa(request)
     nf = get_object_or_404(NotaFiscal, pk=pk, empresa=empresa)
@@ -1264,6 +1392,71 @@ def ajax_produto_detail(request, pk):
 
 
 @login_required
+def ajax_nfe_para_mdfe(request):
+    empresa = _get_empresa(request)
+    q = request.GET.get('q', '').strip()
+    notas = NotaFiscal.objects.filter(empresa=empresa, status='EMITIDA').select_related('cliente')
+    if q:
+        notas = notas.filter(Q(cliente__razao_social__icontains=q) | Q(numero__icontains=q))
+    notas = notas.order_by('-data_emissao')[:50]
+    results = [{
+        'id': n.pk,
+        'numero': n.numero,
+        'serie': n.serie,
+        'cliente_nome': n.cliente.razao_social,
+        'valor_total': str(n.valor_total),
+        'chave_acesso': n.chave_acesso or '',
+        'municipio': (n.entrega_nome_municipio if n.entrega_ativo else '') or '',
+        'data_emissao': n.data_emissao.strftime('%d/%m/%Y'),
+    } for n in notas]
+    return JsonResponse({'results': results})
+
+
+@login_required
+def ajax_cte_para_mdfe(request):
+    empresa = _get_empresa(request)
+    q = request.GET.get('q', '').strip()
+    ctes = ConhecimentoTransporte.objects.filter(empresa=empresa, status='EMITIDO').select_related('destinatario')
+    if q:
+        ctes = ctes.filter(Q(destinatario__razao_social__icontains=q) | Q(numero__icontains=q))
+    ctes = ctes.order_by('-data_emissao')[:50]
+    results = [{
+        'id': c.pk,
+        'numero': c.numero,
+        'serie': c.serie,
+        'destinatario_nome': c.destinatario.razao_social,
+        'valor_carga': str(c.valor_carga),
+        'peso_bruto_kg': str(c.peso_bruto_kg),
+        'chave_acesso': c.chave_acesso or '',
+        'municipio': c.municipio_fim,
+        'uf_fim': c.uf_fim,
+        'data_emissao': c.data_emissao.strftime('%d/%m/%Y'),
+    } for c in ctes]
+    return JsonResponse({'results': results})
+
+
+@login_required
+def ajax_nfe_para_cte(request):
+    empresa = _get_empresa(request)
+    q = request.GET.get('q', '').strip()
+    notas = NotaFiscal.objects.filter(empresa=empresa, status='EMITIDA').select_related('cliente')
+    if q:
+        notas = notas.filter(Q(cliente__razao_social__icontains=q) | Q(numero__icontains=q))
+    notas = notas.order_by('-data_emissao')[:50]
+    results = [{
+        'id': n.pk,
+        'numero': n.numero,
+        'serie': n.serie,
+        'cliente_id': n.cliente_id,
+        'cliente_nome': n.cliente.razao_social,
+        'valor_total': str(n.valor_total),
+        'chave_acesso': n.chave_acesso or '',
+        'data_emissao': n.data_emissao.strftime('%d/%m/%Y'),
+    } for n in notas]
+    return JsonResponse({'results': results})
+
+
+@login_required
 def ajax_booking_preview(request, pk):
     empresa = _get_empresa(request)
     from exportacao.models import Booking
@@ -1646,6 +1839,160 @@ def cte_dacte(request, pk):
     return redirect('faturamento:cte_detail', pk=pk)
 
 
+@login_required
+@require_POST
+def cte_consultar(request, pk):
+    """Consulta status do CT-e na SEFAZ e atualiza protocolo/DACTE se autorizado."""
+    from .services.integranotas import IntegranNotasClient, IntegranNotasError
+    empresa = _get_empresa(request)
+    ct = get_object_or_404(ConhecimentoTransporte, pk=pk, empresa=empresa)
+    if not ct.chave_acesso:
+        messages.error(request, 'CT-e sem chave de acesso — não é possível consultar.')
+        return redirect('faturamento:cte_detail', pk=pk)
+    try:
+        config = empresa.configuracao_fiscal
+        client = IntegranNotasClient(token=config.get_token(), ambiente=config.ambiente_nfe)
+        resp = client.consultar_cte(ct.chave_acesso)
+        if resp.get('sucesso') or resp.get('codigo') == 100:
+            fields = []
+            if resp.get('protocolo') and not ct.protocolo:
+                ct.protocolo = resp['protocolo']
+                fields.append('protocolo')
+            if resp.get('xml') and not ct.xml_autorizacao:
+                ct.xml_autorizacao = resp['xml']
+                fields.append('xml_autorizacao')
+            if resp.get('pdf') and not ct.pdf_dacte:
+                ct.pdf_dacte = resp['pdf']
+                fields.append('pdf_dacte')
+            if fields:
+                ct.save(update_fields=fields)
+            messages.success(request, f'CT-e autorizado. Protocolo: {ct.protocolo}')
+        else:
+            messages.warning(request, f'SEFAZ: {resp.get("mensagem", "Aguardando autorização.")}')
+    except IntegranNotasError as exc:
+        messages.error(request, f'Erro [{exc.codigo}]: {exc}')
+    except Exception as exc:
+        messages.error(request, f'Falha na comunicação: {exc}')
+    return redirect('faturamento:cte_detail', pk=pk)
+
+
+@login_required
+def cte_carta_correcao(request, pk):
+    from .services.integranotas import IntegranNotasClient, IntegranNotasError
+    empresa = _get_empresa(request)
+    ct = get_object_or_404(ConhecimentoTransporte, pk=pk, empresa=empresa)
+    if ct.status != 'EMITIDO' or not ct.chave_acesso:
+        messages.error(request, 'CC-e só pode ser enviada para CT-e autorizado.')
+        return redirect('faturamento:cte_detail', pk=pk)
+
+    cartas = ct.cartas_correcao.all()
+    proxima_sequencia = cartas.count() + 1
+
+    if request.method == 'POST':
+        correcao = request.POST.get('correcao', '').strip()
+        if len(correcao) < 15:
+            messages.error(request, 'O texto da correção deve ter pelo menos 15 caracteres.')
+            return render(request, 'faturamento/cte/carta_correcao_form.html',
+                          {'ct': ct, 'cartas': cartas, 'proxima_sequencia': proxima_sequencia, 'correcao': correcao})
+        try:
+            config = empresa.configuracao_fiscal
+            client = IntegranNotasClient(token=config.get_token(), ambiente=config.ambiente_nfe)
+            resultado = client.carta_correcao_cte(ct.chave_acesso, correcao, proxima_sequencia)
+        except IntegranNotasError as exc:
+            messages.error(request, f'Erro [{exc.codigo}]: {exc}')
+            return render(request, 'faturamento/cte/carta_correcao_form.html',
+                          {'ct': ct, 'cartas': cartas, 'proxima_sequencia': proxima_sequencia, 'correcao': correcao})
+        except Exception as exc:
+            messages.error(request, f'Falha na comunicação: {exc}')
+            return render(request, 'faturamento/cte/carta_correcao_form.html',
+                          {'ct': ct, 'cartas': cartas, 'proxima_sequencia': proxima_sequencia, 'correcao': correcao})
+
+        CartaCorrecaoCTe.objects.create(
+            cte=ct,
+            sequencia=proxima_sequencia,
+            correcao=correcao,
+            protocolo=resultado.get('protocolo', '') or resultado.get('numero_protocolo', ''),
+            xml_retorno=resultado.get('xml', ''),
+            criado_por=request.user,
+        )
+        messages.success(request, f'Carta de Correção nº {proxima_sequencia} enviada com sucesso.')
+        return redirect('faturamento:cte_detail', pk=pk)
+
+    return render(request, 'faturamento/cte/carta_correcao_form.html', {
+        'ct': ct, 'cartas': cartas, 'proxima_sequencia': proxima_sequencia,
+    })
+
+
+@login_required
+def cte_manifestar_desacordo(request, pk):
+    from .services.integranotas import IntegranNotasClient, IntegranNotasError
+    empresa = _get_empresa(request)
+    ct = get_object_or_404(ConhecimentoTransporte, pk=pk, empresa=empresa)
+    if ct.status != 'EMITIDO' or not ct.chave_acesso:
+        messages.error(request, 'Desacordo só pode ser registrado para CT-e autorizado.')
+        return redirect('faturamento:cte_detail', pk=pk)
+    if ct.desacordo_protocolo:
+        messages.info(request, 'Este CT-e já possui desacordo registrado.')
+        return redirect('faturamento:cte_detail', pk=pk)
+
+    if request.method == 'POST':
+        descricao = request.POST.get('descricao', '').strip()
+        if len(descricao) < 15:
+            messages.error(request, 'A descrição do desacordo deve ter pelo menos 15 caracteres.')
+            return render(request, 'faturamento/cte/manifestar_desacordo_form.html',
+                          {'ct': ct, 'descricao': descricao})
+        try:
+            config = empresa.configuracao_fiscal
+            client = IntegranNotasClient(token=config.get_token(), ambiente=config.ambiente_nfe)
+            resultado = client.manifesta_desacordo_cte(ct.chave_acesso, descricao)
+        except IntegranNotasError as exc:
+            messages.error(request, f'Erro [{exc.codigo}]: {exc}')
+            return render(request, 'faturamento/cte/manifestar_desacordo_form.html',
+                          {'ct': ct, 'descricao': descricao})
+        except Exception as exc:
+            messages.error(request, f'Falha na comunicação: {exc}')
+            return render(request, 'faturamento/cte/manifestar_desacordo_form.html',
+                          {'ct': ct, 'descricao': descricao})
+
+        ct.desacordo_descricao = descricao
+        ct.desacordo_protocolo = resultado.get('protocolo', '') or resultado.get('numero_protocolo', '')
+        ct.desacordo_data = timezone.now()
+        ct.save(update_fields=['desacordo_descricao', 'desacordo_protocolo', 'desacordo_data'])
+        messages.success(request, 'Manifesta Desacordo registrado com sucesso na SEFAZ.')
+        return redirect('faturamento:cte_detail', pk=pk)
+
+    return render(request, 'faturamento/cte/manifestar_desacordo_form.html', {'ct': ct})
+
+
+@login_required
+def cte_preview(request, pk):
+    """Abre o PDF preview do CT-e diretamente no browser."""
+    from .services.integranotas import IntegranNotasClient, IntegranNotasError
+    import base64
+    empresa = _get_empresa(request)
+    ct = get_object_or_404(ConhecimentoTransporte, pk=pk, empresa=empresa)
+    if not ct.chave_acesso:
+        messages.error(request, 'CT-e ainda não foi emitido — sem chave para gerar preview.')
+        return redirect('faturamento:cte_detail', pk=pk)
+    try:
+        config = empresa.configuracao_fiscal
+        client = IntegranNotasClient(token=config.get_token(), ambiente=config.ambiente_nfe)
+        data = client.preview_cte(ct.chave_acesso)
+        pdf_b64 = data.get('pdf', '')
+        if not pdf_b64:
+            messages.error(request, 'IntegraNota não retornou PDF de preview.')
+            return redirect('faturamento:cte_detail', pk=pk)
+        pdf_bytes = base64.b64decode(pdf_b64)
+        r = HttpResponse(pdf_bytes, content_type='application/pdf')
+        r['Content-Disposition'] = f'inline; filename="preview_CTE_{ct.numero}_{ct.serie}.pdf"'
+        return r
+    except IntegranNotasError as exc:
+        messages.error(request, f'Erro [{exc.codigo}]: {exc}')
+    except Exception as exc:
+        messages.error(request, f'Falha na comunicação: {exc}')
+    return redirect('faturamento:cte_detail', pk=pk)
+
+
 # ═══════════════════════════════════════════════════════════════════
 #  MDF-e — Views
 # ═══════════════════════════════════════════════════════════════════
@@ -1855,4 +2202,120 @@ def mdfe_damdfe(request, pk):
     except Exception as e:
         messages.error(request, f'Erro ao obter DAMDFE: {e}')
     return redirect('faturamento:mdfe_detail', pk=pk)
+
+
+@login_required
+@require_POST
+def mdfe_consultar(request, pk):
+    empresa = _get_empresa(request)
+    mdfe = get_object_or_404(ManifestoDocumentoFiscal, pk=pk, empresa=empresa)
+    if not mdfe.chave_acesso:
+        messages.error(request, 'MDF-e sem chave de acesso.')
+        return redirect('faturamento:mdfe_detail', pk=pk)
+    try:
+        config = empresa.configuracao_fiscal
+        from .services.integranotas import IntegranNotasClient
+        client = IntegranNotasClient(token=config.get_token(), ambiente=config.ambiente_nfe)
+        data = client.consultar_mdfe(mdfe.chave_acesso)
+        if data.get('protocolo'):
+            mdfe.protocolo = data['protocolo']
+        if data.get('xml'):
+            mdfe.xml_autorizacao = data['xml']
+        if data.get('pdf'):
+            mdfe.pdf_damdfe = data['pdf']
+        mdfe.save()
+        messages.success(request, f'MDF-e atualizado — protocolo: {mdfe.protocolo or "pendente"}')
+    except Exception as e:
+        messages.error(request, f'Erro ao consultar SEFAZ: {e}')
+    return redirect('faturamento:mdfe_detail', pk=pk)
+
+
+@login_required
+def mdfe_preview(request, pk):
+    empresa = _get_empresa(request)
+    mdfe = get_object_or_404(ManifestoDocumentoFiscal, pk=pk, empresa=empresa)
+    if not mdfe.chave_acesso:
+        messages.error(request, 'MDF-e sem chave de acesso — emita na SEFAZ primeiro.')
+        return redirect('faturamento:mdfe_detail', pk=pk)
+    try:
+        config = empresa.configuracao_fiscal
+        from .services.integranotas import IntegranNotasClient
+        client = IntegranNotasClient(token=config.get_token(), ambiente=config.ambiente_nfe)
+        data = client.preview_mdfe(mdfe.chave_acesso)
+        if data.get('pdf'):
+            import base64
+            pdf_bytes = base64.b64decode(data['pdf'])
+            r = HttpResponse(pdf_bytes, content_type='application/pdf')
+            r['Content-Disposition'] = f'inline; filename="preview_DAMDFE_{mdfe.numero}.pdf"'
+            return r
+        messages.error(request, 'Preview não retornou PDF.')
+    except Exception as e:
+        messages.error(request, f'Erro ao gerar preview: {e}')
+    return redirect('faturamento:mdfe_detail', pk=pk)
+
+
+@login_required
+def mdfe_inclui_condutor(request, pk):
+    empresa = _get_empresa(request)
+    mdfe = get_object_or_404(ManifestoDocumentoFiscal, pk=pk, empresa=empresa)
+    if mdfe.status != 'EMITIDO':
+        messages.error(request, 'Apenas MDF-e emitido pode ter condutor incluído.')
+        return redirect('faturamento:mdfe_detail', pk=pk)
+    if request.method == 'POST':
+        cpf = request.POST.get('cpf', '').strip()
+        nome = request.POST.get('nome', '').strip()
+        if not cpf or not nome:
+            messages.error(request, 'CPF e nome são obrigatórios.')
+        else:
+            try:
+                config = empresa.configuracao_fiscal
+                from .services.integranotas import IntegranNotasClient, IntegranNotasError
+                client = IntegranNotasClient(token=config.get_token(), ambiente=config.ambiente_nfe)
+                cpf_digits = ''.join(c for c in cpf if c.isdigit())
+                data = client.inclui_condutor_mdfe(mdfe.chave_acesso, cpf_digits, nome)
+                protocolo = data.get('protocolo', '')
+                CondutorAdicionalMDFe.objects.create(
+                    mdfe=mdfe, cpf=cpf, nome=nome,
+                    protocolo=protocolo, adicionado_por=request.user,
+                )
+                messages.success(request, f'Condutor {nome} incluído no MDF-e. Protocolo: {protocolo or "—"}')
+                return redirect('faturamento:mdfe_detail', pk=pk)
+            except Exception as e:
+                messages.error(request, f'Erro ao incluir condutor: {e}')
+    condutores = mdfe.condutores_adicionais.all()
+    return render(request, 'faturamento/mdfe/inclui_condutor_form.html', {
+        'mdfe': mdfe, 'condutores': condutores,
+    })
+
+
+@login_required
+def mdfe_inclui_nfe(request, pk):
+    empresa = _get_empresa(request)
+    mdfe = get_object_or_404(ManifestoDocumentoFiscal, pk=pk, empresa=empresa)
+    if mdfe.status != 'EMITIDO':
+        messages.error(request, 'Apenas MDF-e emitido pode ter NF-e incluída.')
+        return redirect('faturamento:mdfe_detail', pk=pk)
+    if request.method == 'POST':
+        chave_nfe = request.POST.get('chave_nfe', '').strip()
+        municipio = request.POST.get('municipio_descarregamento', '').strip()
+        tipo = request.POST.get('tipo', 'nfe')
+        if not chave_nfe or not municipio:
+            messages.error(request, 'Chave e município de descarregamento são obrigatórios.')
+        elif len(chave_nfe) != 44:
+            messages.error(request, 'Chave de acesso deve ter exatamente 44 dígitos.')
+        else:
+            try:
+                config = empresa.configuracao_fiscal
+                from .services.integranotas import IntegranNotasClient, IntegranNotasError
+                client = IntegranNotasClient(token=config.get_token(), ambiente=config.ambiente_nfe)
+                client.inclui_nfe_mdfe(mdfe.chave_acesso, chave_nfe, municipio)
+                DocumentoVinculadoMDFe.objects.create(
+                    mdfe=mdfe, tipo=tipo, chave=chave_nfe,
+                    municipio_descarregamento=municipio,
+                )
+                messages.success(request, f'Documento {chave_nfe[:10]}… incluído no MDF-e.')
+                return redirect('faturamento:mdfe_detail', pk=pk)
+            except Exception as e:
+                messages.error(request, f'Erro ao incluir NF-e: {e}')
+    return render(request, 'faturamento/mdfe/inclui_nfe_form.html', {'mdfe': mdfe})
 

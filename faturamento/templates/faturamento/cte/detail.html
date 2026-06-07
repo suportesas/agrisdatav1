@@ -26,10 +26,31 @@
           </button>
         </form>
       {% endif %}
+      {% if ct.chave_acesso %}
+        <a href="{% url 'faturamento:cte_preview' ct.pk %}" class="btn btn-outline-secondary btn-sm" target="_blank" title="Preview DACTE">
+          <i class="bi bi-eye me-1"></i> Preview
+        </a>
+      {% endif %}
       {% if ct.status == 'EMITIDO' %}
         <a href="{% url 'faturamento:cte_dacte' ct.pk %}" class="btn btn-primary btn-sm" target="_blank">
           <i class="bi bi-file-earmark-pdf me-1"></i> DACTE
         </a>
+        {% if ct.chave_acesso and not ct.protocolo %}
+        <form method="post" action="{% url 'faturamento:cte_consultar' ct.pk %}" class="d-inline">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-outline-warning btn-sm" title="Consultar status na SEFAZ">
+            <i class="bi bi-arrow-clockwise me-1"></i> Verificar SEFAZ
+          </button>
+        </form>
+        {% endif %}
+        <a href="{% url 'faturamento:cte_carta_correcao' ct.pk %}" class="btn btn-outline-info btn-sm" title="Carta de Correção">
+          <i class="bi bi-pencil-square me-1"></i> CC-e
+        </a>
+        {% if not ct.desacordo_protocolo %}
+        <a href="{% url 'faturamento:cte_manifestar_desacordo' ct.pk %}" class="btn btn-outline-secondary btn-sm" title="Manifestar Desacordo">
+          <i class="bi bi-hand-thumbs-down me-1"></i> Desacordo
+        </a>
+        {% endif %}
         <a href="{% url 'faturamento:cte_cancelar' ct.pk %}" class="btn btn-outline-danger btn-sm">
           <i class="bi bi-x-circle me-1"></i> Cancelar
         </a>
@@ -49,6 +70,39 @@
   {% if ct.status == 'CANCELADO' and ct.motivo_cancelamento %}
   <div class="alert alert-danger py-2 small">
     <strong>Cancelado em {{ ct.data_cancelamento|date:"d/m/Y H:i" }}:</strong> {{ ct.motivo_cancelamento }}
+  </div>
+  {% endif %}
+
+  {% if ct.desacordo_protocolo %}
+  <div class="border rounded bg-light py-2 px-3 mb-3 small">
+    <div class="d-flex align-items-center gap-2 mb-1">
+      <i class="bi bi-hand-thumbs-down text-secondary"></i>
+      <strong>Manifesta Desacordo registrado em {{ ct.desacordo_data|date:"d/m/Y H:i" }}</strong>
+    </div>
+    <div class="d-flex gap-4 flex-wrap">
+      <div><span class="text-muted">Protocolo:</span> <code>{{ ct.desacordo_protocolo }}</code></div>
+      <div><span class="text-muted">Motivo:</span> {{ ct.desacordo_descricao }}</div>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if ct.cartas_correcao.exists %}
+  <div class="border rounded bg-light py-2 px-3 mb-3 small">
+    <div class="d-flex align-items-center gap-2 mb-2">
+      <i class="bi bi-pencil-square text-info"></i>
+      <strong>Cartas de Correção (CC-e)</strong>
+      <span class="badge bg-info text-dark">{{ ct.cartas_correcao.count }}</span>
+    </div>
+    {% for cc in ct.cartas_correcao.all %}
+    <div class="{% if not forloop.last %}border-bottom pb-2 mb-2{% endif %}">
+      <div class="d-flex gap-3 flex-wrap">
+        <div><span class="text-muted">Seq.:</span> <code>{{ cc.sequencia }}</code></div>
+        <div><span class="text-muted">Data:</span> {{ cc.criado_em|date:"d/m/Y H:i" }}</div>
+        {% if cc.protocolo %}<div><span class="text-muted">Protocolo:</span> <code>{{ cc.protocolo }}</code></div>{% endif %}
+      </div>
+      <div class="text-muted mt-1">{{ cc.correcao }}</div>
+    </div>
+    {% endfor %}
   </div>
   {% endif %}
 

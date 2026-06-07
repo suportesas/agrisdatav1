@@ -1,0 +1,109 @@
+{% extends 'base.html' %}
+{% block title %}Carta de Correção — NF {{ nf.numero }}/{{ nf.serie }}{% endblock %}
+{% block page_title %}CC-e — Carta de Correção{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4" style="max-width:800px">
+
+  <div class="d-flex align-items-center mb-4">
+    <a href="{% url 'faturamento:nota_fiscal_detail' nf.pk %}" class="btn btn-outline-secondary me-3">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    <div>
+      <h4 class="mb-0 fw-bold"><i class="bi bi-pencil-square text-info me-2"></i>Carta de Correção (CC-e)</h4>
+      <small class="text-muted">
+        NF {{ nf.numero|stringformat:"09d" }}/{{ nf.serie|stringformat:"03d" }} — {{ nf.cliente.razao_social }}
+      </small>
+    </div>
+  </div>
+
+  <div class="alert alert-info py-2 px-3 mb-4">
+    <i class="bi bi-info-circle me-1"></i>
+    <strong>O que pode ser corrigido?</strong> Erros em dados acessórios do emitente/destinatário, datas, dados do transporte, informações complementares. <strong>Não é permitido</strong> corrigir valor, alíquota, quantidade, natureza da operação, base de cálculo ou CFOP.
+  </div>
+
+  {% if messages %}
+  {% for msg in messages %}
+  <div class="alert alert-{{ msg.tags }} alert-dismissible fade show py-2 mb-3" role="alert">
+    {{ msg }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  {% endfor %}
+  {% endif %}
+
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-header fw-semibold">
+      Enviar CC-e nº {{ proxima_sequencia }}
+    </div>
+    <div class="card-body">
+      <form method="post">
+        {% csrf_token %}
+        <div class="mb-3">
+          <label class="form-label fw-semibold" for="id_correcao_text">
+            Texto da Correção
+            <span class="text-danger">*</span>
+          </label>
+          {{ form.correcao }}
+          {% if form.correcao.errors %}
+          <div class="invalid-feedback d-block">{{ form.correcao.errors.0 }}</div>
+          {% endif %}
+          <div class="d-flex justify-content-between mt-1">
+            <small class="text-muted">Mínimo 15, máximo 1000 caracteres.</small>
+            <small class="text-muted" id="char-count">0 / 1000</small>
+          </div>
+        </div>
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn btn-info text-white">
+            <i class="bi bi-send me-1"></i>Enviar Carta de Correção
+          </button>
+          <a href="{% url 'faturamento:nota_fiscal_detail' nf.pk %}" class="btn btn-outline-secondary">Cancelar</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  {% if cartas %}
+  <div class="card border-0 shadow-sm">
+    <div class="card-header fw-semibold">Histórico de Cartas de Correção</div>
+    <div class="card-body p-0">
+      <table class="table table-sm mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Seq.</th>
+            <th>Data</th>
+            <th>Protocolo</th>
+            <th>Texto</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for cc in cartas %}
+          <tr>
+            <td><span class="badge bg-secondary">{{ cc.sequencia }}</span></td>
+            <td>{{ cc.criado_em|date:"d/m/Y H:i" }}</td>
+            <td><code class="small">{{ cc.protocolo|default:"—" }}</code></td>
+            <td class="text-muted small">{{ cc.correcao|truncatechars:120 }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+
+<script>
+(function () {
+  const ta = document.getElementById('id_correcao_text');
+  const counter = document.getElementById('char-count');
+  if (!ta || !counter) return;
+  function upd() {
+    const n = ta.value.length;
+    counter.textContent = n + ' / 1000';
+    counter.className = n < 15 ? 'text-danger small' : (n > 900 ? 'text-warning small' : 'text-muted small');
+  }
+  ta.addEventListener('input', upd);
+  upd();
+})();
+</script>
+{% endblock %}

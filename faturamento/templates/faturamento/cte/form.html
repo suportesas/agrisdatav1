@@ -13,6 +13,14 @@
   <div class="alert alert-danger"><strong>Verifique os campos:</strong> {{ form.errors }} {{ docs_formset.errors }}</div>
   {% endif %}
 
+  {% if action == 'Novo' %}
+  <div class="mb-3 text-end">
+    <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalImportarNFe">
+      <i class="bi bi-download me-1"></i> Importar de NF-e
+    </button>
+  </div>
+  {% endif %}
+
   <form method="post">
     {% csrf_token %}
     <div class="row g-3">
@@ -134,7 +142,7 @@
             {{ docs_formset.management_form }}
             <table class="table table-sm" id="docs-table">
               <thead class="table-light"><tr><th>Chave NF-e (44 dígitos)</th><th>Descrição</th><th></th></tr></thead>
-              <tbody>
+              <tbody id="docs-tbody">
                 {% for df in docs_formset %}
                 <tr>
                   <td>{{ df.chave_nfe }}{{ df.id }}</td>
@@ -144,6 +152,19 @@
                 {% endfor %}
               </tbody>
             </table>
+            <!-- Linha template oculta para clonagem via JS -->
+            <table style="display:none"><tbody id="docs-empty-row">
+              <tr id="docs-template-row">
+                <td><input type="text" name="docs-__prefix__-chave_nfe" maxlength="44" class="form-control form-control-sm" id="id_docs-__prefix__-chave_nfe"></td>
+                <td><input type="text" name="docs-__prefix__-descricao" maxlength="200" class="form-control form-control-sm" id="id_docs-__prefix__-descricao"></td>
+                <td><input type="checkbox" name="docs-__prefix__-DELETE" id="id_docs-__prefix__-DELETE" class="form-check-input">
+                    <input type="hidden" name="docs-__prefix__-id" id="id_docs-__prefix__-id"></td>
+              </tr>
+            </tbody></table>
+            <button type="button" id="btn-add-chave" class="btn btn-outline-secondary btn-sm mt-2"
+                    onclick="adicionarLinhaFormset('', '')">
+              <i class="bi bi-plus-circle me-1"></i> Adicionar Chave NF-e
+            </button>
           </div>
         </div>
       </div>
@@ -156,4 +177,197 @@
     </div>
   </form>
 </div>
+
+<!-- Modal: Importar de NF-e -->
+<div class="modal fade" id="modalImportarNFe" tabindex="-1" aria-labelledby="modalImportarNFeLbl" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalImportarNFeLbl"><i class="bi bi-download me-2 text-primary"></i>Importar dados de NF-e</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="input-group mb-3">
+          <span class="input-group-text"><i class="bi bi-search"></i></span>
+          <input type="text" id="nfe-search" class="form-control" placeholder="Buscar por cliente ou número da NF-e…">
+        </div>
+        <div id="nfe-alert-divergente" class="alert alert-warning py-2 small d-none">
+          <i class="bi bi-exclamation-triangle me-1"></i>
+          As NF-e selecionadas têm <strong>clientes diferentes</strong>. O destinatário será preenchido com o cliente da primeira NF-e selecionada.
+        </div>
+        <div id="nfe-loading" class="text-center text-muted py-3 d-none"><div class="spinner-border spinner-border-sm me-2"></div>Buscando…</div>
+        <div class="table-responsive">
+          <table class="table table-sm table-hover mb-0">
+            <thead class="table-light">
+              <tr>
+                <th style="width:36px"><input type="checkbox" id="nfe-check-all" class="form-check-input" title="Selecionar todos"></th>
+                <th>NF-e</th>
+                <th>Cliente</th>
+                <th>Emissão</th>
+                <th class="text-end">Valor Total</th>
+              </tr>
+            </thead>
+            <tbody id="nfe-tbody">
+              <tr id="nfe-empty"><td colspan="5" class="text-center text-muted py-3">Digite para buscar NF-e emitidas.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <span id="nfe-selected-count" class="text-muted me-auto small">0 NF-e selecionadas</span>
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary" id="btn-importar-nfe" disabled>
+          <i class="bi bi-check-lg me-1"></i>Importar Selecionadas
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function adicionarLinhaFormset(chave, descricao) {
+  var totalInput = document.getElementById('id_docs-TOTAL_FORM_COUNT');
+  if (!totalInput) return;
+  var idx = parseInt(totalInput.value, 10);
+  if (isNaN(idx)) return;
+  var template = document.getElementById('docs-template-row');
+  if (!template) return;
+  var novaLinha = template.cloneNode(true);
+  novaLinha.removeAttribute('id');
+  novaLinha.querySelectorAll('input').forEach(function (el) {
+    if (el.name) el.name = el.name.replace('__prefix__', idx);
+    if (el.id)   el.id   = el.id.replace('__prefix__', idx);
+  });
+  var chaveInput = novaLinha.querySelector('[name="docs-' + idx + '-chave_nfe"]');
+  var descInput  = novaLinha.querySelector('[name="docs-' + idx + '-descricao"]');
+  if (chaveInput) chaveInput.value = chave || '';
+  if (descInput)  descInput.value  = descricao || '';
+  var tbody = document.getElementById('docs-tbody');
+  if (tbody) tbody.appendChild(novaLinha);
+  totalInput.value = idx + 1;
+}
+
+(function () {
+  'use strict';
+
+  var AJAX_URL = "{% url 'faturamento:ajax_nfe_para_cte' %}";
+  var nfeBusca = [];
+  var debounceTimer = null;
+
+  document.addEventListener('DOMContentLoaded', function () {
+    var nfeSearch = document.getElementById('nfe-search');
+    var modal = document.getElementById('modalImportarNFe');
+    var checkAll = document.getElementById('nfe-check-all');
+    var btnImportar = document.getElementById('btn-importar-nfe');
+
+    if (nfeSearch) {
+      nfeSearch.addEventListener('input', function () {
+        clearTimeout(debounceTimer);
+        var q = nfeSearch.value.trim();
+        debounceTimer = setTimeout(function () { buscarNFe(q); }, 350);
+      });
+    }
+    if (modal) {
+      modal.addEventListener('shown.bs.modal', function () {
+        if (nfeSearch) nfeSearch.focus();
+        if (nfeBusca.length === 0) buscarNFe('');
+      });
+    }
+    if (checkAll) {
+      checkAll.addEventListener('change', function () {
+        document.querySelectorAll('.nfe-check').forEach(function (cb) { cb.checked = checkAll.checked; });
+        atualizarContador();
+      });
+    }
+    if (btnImportar) {
+      btnImportar.addEventListener('click', importarSelecionadas);
+    }
+  });
+
+  function buscarNFe(q) {
+    var loading = document.getElementById('nfe-loading');
+    if (loading) loading.classList.remove('d-none');
+    fetch(AJAX_URL + '?q=' + encodeURIComponent(q))
+      .then(function (r) { return r.json(); })
+      .then(function (data) { nfeBusca = data.results; renderizarTabela(nfeBusca); })
+      .finally(function () { if (loading) loading.classList.add('d-none'); });
+  }
+
+  function renderizarTabela(notas) {
+    var tbody = document.getElementById('nfe-tbody');
+    if (!notas.length) {
+      tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-3">Nenhuma NF-e emitida encontrada.</td></tr>';
+      atualizarContador();
+      return;
+    }
+    tbody.innerHTML = notas.map(function (n) {
+      return '<tr>' +
+        '<td><input type="checkbox" class="form-check-input nfe-check"' +
+        ' data-cliente-id="' + n.cliente_id + '"' +
+        ' data-cliente-nome="' + escHtml(n.cliente_nome) + '"' +
+        ' data-valor-total="' + n.valor_total + '"' +
+        ' data-chave="' + escHtml(n.chave_acesso) + '"' +
+        ' data-numero="' + n.numero + '"' +
+        ' data-serie="' + n.serie + '"></td>' +
+        '<td><strong>' + String(n.numero).padStart(9, '0') + '/' + n.serie + '</strong></td>' +
+        '<td>' + escHtml(n.cliente_nome) + '</td>' +
+        '<td class="text-muted">' + n.data_emissao + '</td>' +
+        '<td class="text-end">R$ ' + parseFloat(n.valor_total).toLocaleString('pt-BR', {minimumFractionDigits: 2}) + '</td>' +
+        '</tr>';
+    }).join('');
+    tbody.querySelectorAll('.nfe-check').forEach(function (cb) { cb.addEventListener('change', atualizarContador); });
+    atualizarContador();
+  }
+
+  function atualizarContador() {
+    var selecionados = document.querySelectorAll('.nfe-check:checked');
+    var n = selecionados.length;
+    var countEl = document.getElementById('nfe-selected-count');
+    if (countEl) countEl.textContent = n + ' NF-e selecionada' + (n !== 1 ? 's' : '');
+    var btnImp = document.getElementById('btn-importar-nfe');
+    if (btnImp) btnImp.disabled = n === 0;
+    var ids = new Set(Array.from(selecionados).map(function (cb) { return cb.dataset.clienteId; }));
+    var alertEl = document.getElementById('nfe-alert-divergente');
+    if (alertEl) alertEl.classList.toggle('d-none', ids.size <= 1);
+  }
+
+  function importarSelecionadas() {
+    var checks = Array.from(document.querySelectorAll('.nfe-check:checked'));
+    if (!checks.length) return;
+
+    var clienteId = checks[0].dataset.clienteId;
+    var clienteNome = checks[0].dataset.clienteNome;
+    var sel = document.getElementById('id_destinatario');
+    if (sel) {
+      if (window.jQuery && window.jQuery(sel).data('select2')) {
+        var opt = new Option(clienteNome, clienteId, true, true);
+        window.jQuery(sel).append(opt).trigger('change');
+      } else {
+        sel.value = clienteId;
+      }
+    }
+
+    var soma = checks.reduce(function (acc, cb) { return acc + parseFloat(cb.dataset.valorTotal || 0); }, 0);
+    var vcInput = document.getElementById('id_valor_carga');
+    if (vcInput) vcInput.value = soma.toFixed(2);
+
+    checks.forEach(function (cb) {
+      adicionarLinhaFormset(
+        cb.dataset.chave,
+        'NF-e ' + String(cb.dataset.numero).padStart(9, '0') + '/' + cb.dataset.serie
+      );
+    });
+
+    var modalEl = document.getElementById('modalImportarNFe');
+    if (modalEl && window.bootstrap) {
+      var bsModal = bootstrap.Modal.getInstance(modalEl);
+      if (bsModal) bsModal.hide();
+    }
+  }
+
+  function escHtml(s) {
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+})();
+</script>
 {% endblock %}

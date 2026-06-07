@@ -3,12 +3,14 @@ from django.core.validators import MinLengthValidator
 from django.forms import inlineformset_factory
 
 from .models import (
+    CartaCorrecaoNFe,
     ConfiguracaoFiscal,
     ConhecimentoTransporte,
     DocumentoVinculadoCTe,
     DocumentoVinculadoMDFe,
     DuplicataNF,
     InvoiceExportacao,
+    InutilizacaoNFe,
     ItemInvoice,
     ItemNotaFiscal,
     ItemPackingList,
@@ -74,6 +76,98 @@ class NotaFiscalCancelarForm(forms.Form):
                                      'placeholder': 'Informe o motivo do cancelamento (mínimo 15 caracteres)'}),
         validators=[MinLengthValidator(15)],
     )
+
+
+class CartaCorrecaoNFeForm(forms.Form):
+    correcao = forms.CharField(
+        label='Texto da Correção',
+        min_length=15,
+        max_length=1000,
+        widget=forms.Textarea(attrs={
+            'class': 'form-control',
+            'rows': 5,
+            'placeholder': 'Descreva a correção a ser feita (mínimo 15 caracteres)',
+            'id': 'id_correcao_text',
+        }),
+        validators=[MinLengthValidator(15)],
+    )
+
+
+class InutilizacaoNFeForm(forms.Form):
+    serie = forms.IntegerField(
+        label='Série',
+        initial=1,
+        widget=forms.NumberInput(attrs={'class': 'form-control'}),
+    )
+    numero_ini = forms.IntegerField(
+        label='Número Inicial',
+        min_value=1,
+        widget=forms.NumberInput(attrs={'class': 'form-control'}),
+    )
+    numero_fim = forms.IntegerField(
+        label='Número Final',
+        min_value=1,
+        widget=forms.NumberInput(attrs={'class': 'form-control'}),
+    )
+    ano = forms.IntegerField(
+        label='Ano',
+        widget=forms.NumberInput(attrs={'class': 'form-control'}),
+    )
+    justificativa = forms.CharField(
+        label='Justificativa',
+        min_length=15,
+        max_length=255,
+        widget=forms.Textarea(attrs={
+            'class': 'form-control',
+            'rows': 3,
+            'placeholder': 'Motivo da inutilização (mínimo 15 caracteres)',
+        }),
+        validators=[MinLengthValidator(15)],
+    )
+
+    def clean(self):
+        cleaned = super().clean()
+        ini = cleaned.get('numero_ini')
+        fim = cleaned.get('numero_fim')
+        if ini and fim and fim < ini:
+            self.add_error('numero_fim', 'Número final deve ser ≥ número inicial.')
+        return cleaned
+
+
+MANIFESTACAO_TIPO_CHOICES = [
+    ('', '-- Selecione --'),
+    ('ciencia_operacao', 'Ciência da Operação'),
+    ('confirmacao_operacao', 'Confirmação da Operação'),
+    ('desconhecimento_operacao', 'Desconhecimento da Operação'),
+    ('operacao_nao_realizada', 'Operação Não Realizada'),
+]
+
+
+class ManifestacaoNFeForm(forms.Form):
+    tipo = forms.ChoiceField(
+        label='Tipo de Manifestação',
+        choices=MANIFESTACAO_TIPO_CHOICES,
+        widget=forms.Select(attrs={'class': 'form-select', 'id': 'id_tipo_manifestacao'}),
+    )
+    justificativa = forms.CharField(
+        label='Justificativa',
+        required=False,
+        max_length=255,
+        widget=forms.Textarea(attrs={
+            'class': 'form-control',
+            'rows': 3,
+            'placeholder': 'Obrigatório apenas para "Operação Não Realizada"',
+            'id': 'id_justificativa_manifestacao',
+        }),
+    )
+
+    def clean(self):
+        cleaned = super().clean()
+        tipo = cleaned.get('tipo')
+        justif = cleaned.get('justificativa', '').strip()
+        if tipo == 'operacao_nao_realizada' and not justif:
+            self.add_error('justificativa', 'Justificativa obrigatória para "Operação Não Realizada".')
+        return cleaned
 
 
 class ConfiguracaoFiscalForm(forms.ModelForm):
@@ -155,6 +249,12 @@ class NotaFiscalForm(FaturamentoBaseForm):
             'presenca_comprador',
             'modalidade_frete',
             'transportadora',
+            'quantidade_volumes',
+            'especie_volumes',
+            'marca_volumes',
+            'numeracao_volumes',
+            'peso_bruto_kg',
+            'peso_liquido_kg',
             'valor_frete',
             'valor_seguro',
             'valor_desconto',
@@ -186,6 +286,12 @@ class NotaFiscalForm(FaturamentoBaseForm):
             'presenca_comprador': forms.Select(attrs={'class': 'form-select'}),
             'modalidade_frete': forms.Select(attrs={'class': 'form-select'}),
             'transportadora': forms.Select(attrs={'class': 'form-select'}),
+            'quantidade_volumes': forms.NumberInput(attrs={'class': 'form-control', 'step': '1', 'min': '0'}),
+            'especie_volumes': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: SACOS'}),
+            'marca_volumes': forms.TextInput(attrs={'class': 'form-control'}),
+            'numeracao_volumes': forms.TextInput(attrs={'class': 'form-control'}),
+            'peso_bruto_kg': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.001'}),
+            'peso_liquido_kg': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.001'}),
             'valor_frete': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'valor_seguro': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'valor_desconto': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
@@ -730,7 +836,7 @@ class DocumentoVinculadoMDFeForm(forms.ModelForm):
 DocumentoVinculadoMDFeFormSet = inlineformset_factory(
     ManifestoDocumentoFiscal, DocumentoVinculadoMDFe,
     form=DocumentoVinculadoMDFeForm,
-    extra=1, can_delete=True, min_num=1, validate_min=True,
+    extra=0, can_delete=True, min_num=1, validate_min=True,
 )
 
 

@@ -132,6 +132,42 @@
 </div>
 {% endif %}
 
+{% if nf.quantidade_volumes or nf.especie_volumes or nf.marca_volumes or nf.numeracao_volumes or nf.peso_bruto_kg or nf.peso_liquido_kg %}
+<div class="section">
+  <div class="section-title">VOLUMES TRANSPORTADOS</div>
+  <div class="section-body">
+    <div class="row">
+      <div class="col">
+        <div class="label">Quantidade</div>
+        <div class="value">{{ nf.quantidade_volumes|default:"—" }}</div>
+      </div>
+      <div class="col">
+        <div class="label">Espécie</div>
+        <div class="value">{{ nf.especie_volumes|default:"—" }}</div>
+      </div>
+      <div class="col">
+        <div class="label">Marca</div>
+        <div class="value">{{ nf.marca_volumes|default:"—" }}</div>
+      </div>
+      <div class="col">
+        <div class="label">Numeração</div>
+        <div class="value">{{ nf.numeracao_volumes|default:"—" }}</div>
+      </div>
+    </div>
+    <div class="row" style="margin-top:8px;">
+      <div class="col">
+        <div class="label">Peso Bruto (kg)</div>
+        <div class="value">{{ nf.peso_bruto_kg|floatformat:3|default:"—" }}</div>
+      </div>
+      <div class="col">
+        <div class="label">Peso Líquido (kg)</div>
+        <div class="value">{{ nf.peso_liquido_kg|floatformat:3|default:"—" }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
 <!-- Totais -->
 <div class="section">
   <div class="section-title">TOTAIS DA NF-e</div>

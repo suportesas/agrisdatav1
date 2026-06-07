@@ -26,9 +26,28 @@
           </button>
         </form>
       {% endif %}
+      {% if mdfe.chave_acesso %}
+        <a href="{% url 'faturamento:mdfe_preview' mdfe.pk %}" class="btn btn-outline-secondary btn-sm" target="_blank" title="Preview DAMDFE">
+          <i class="bi bi-eye me-1"></i> Preview
+        </a>
+      {% endif %}
       {% if mdfe.status == 'EMITIDO' %}
         <a href="{% url 'faturamento:mdfe_damdfe' mdfe.pk %}" class="btn btn-primary btn-sm" target="_blank">
           <i class="bi bi-file-earmark-pdf me-1"></i> DAMDFE
+        </a>
+        {% if mdfe.chave_acesso and not mdfe.protocolo %}
+        <form method="post" action="{% url 'faturamento:mdfe_consultar' mdfe.pk %}" class="d-inline">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-outline-warning btn-sm" title="Consultar status na SEFAZ">
+            <i class="bi bi-arrow-clockwise me-1"></i> Verificar SEFAZ
+          </button>
+        </form>
+        {% endif %}
+        <a href="{% url 'faturamento:mdfe_inclui_condutor' mdfe.pk %}" class="btn btn-outline-info btn-sm" title="Incluir Condutor">
+          <i class="bi bi-person-plus me-1"></i> Condutor
+        </a>
+        <a href="{% url 'faturamento:mdfe_inclui_nfe' mdfe.pk %}" class="btn btn-outline-secondary btn-sm" title="Incluir NF-e/CT-e">
+          <i class="bi bi-file-earmark-plus me-1"></i> Inclui Doc.
         </a>
         <a href="{% url 'faturamento:mdfe_encerrar' mdfe.pk %}" class="btn btn-warning btn-sm">
           <i class="bi bi-check2-circle me-1"></i> Encerrar
@@ -101,7 +120,7 @@
     <!-- Documentos Vinculados -->
     <div class="col-12">
       <div class="card">
-        <div class="card-header bg-info text-white py-2">NF-e / CT-e Vinculados</div>
+        <div class="card-header bg-info text-white py-2">NF-e / CT-e Vinculados ({{ mdfe.documentos_vinculados.count }})</div>
         <div class="card-body p-0">
           <table class="table table-sm mb-0">
             <thead class="table-light"><tr><th>#</th><th>Tipo</th><th>Chave</th><th>Município de Entrega</th></tr></thead>
@@ -121,6 +140,28 @@
         </div>
       </div>
     </div>
+
+    {% if mdfe.condutores_adicionais.exists %}
+    <div class="col-12">
+      <div class="border rounded bg-light py-2 px-3 small">
+        <div class="d-flex align-items-center gap-2 mb-2">
+          <i class="bi bi-person-plus text-info"></i>
+          <strong>Condutores incluídos pós-emissão</strong>
+          <span class="badge bg-info text-dark">{{ mdfe.condutores_adicionais.count }}</span>
+        </div>
+        {% for c in mdfe.condutores_adicionais.all %}
+        <div class="{% if not forloop.last %}border-bottom pb-2 mb-2{% endif %}">
+          <div class="d-flex gap-4 flex-wrap">
+            <div><span class="text-muted">Nome:</span> {{ c.nome }}</div>
+            <div><span class="text-muted">CPF:</span> {{ c.cpf }}</div>
+            <div><span class="text-muted">Data:</span> {{ c.adicionado_em|date:"d/m/Y H:i" }}</div>
+            {% if c.protocolo %}<div><span class="text-muted">Protocolo:</span> <code>{{ c.protocolo }}</code></div>{% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
   </div>
 </div>
 {% endblock %}

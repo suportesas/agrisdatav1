@@ -2410,6 +2410,83 @@ def salvar_vinculo_xml_ajax(request):
 
 
 @login_required
+def mde_list(request):
+    """Lista de NF-e recebidas com gestão de Manifestação do Destinatário (MD-e)."""
+    from .models import RecebimentoCompra
+    from cadastros.models import Fornecedor
+    from django.db.models import Q
+
+    empresa = request.user.empresa
+    qs = RecebimentoCompra.objects.filter(
+        empresa=empresa,
+        chave_nfe__gt='',
+    ).select_related('fornecedor', 'pedido').order_by('-data_emissao_nf')
+
+    # Filtros
+    q = request.GET.get('q', '').strip()
+    fornecedor_id = request.GET.get('fornecedor', '')
+    mde_status = request.GET.get('mde', '')
+    data_ini = request.GET.get('data_ini', '')
+    data_fim = request.GET.get('data_fim', '')
+
+    if q:
+        qs = qs.filter(
+            Q(nota_fiscal__icontains=q) |
+            Q(chave_nfe__icontains=q) |
+            Q(fornecedor__nome__icontains=q) |
+            Q(fornecedor__nome_fantasia__icontains=q)
+        )
+    if fornecedor_id:
+        qs = qs.filter(fornecedor_id=fornecedor_id)
+    if mde_status == 'pendente':
+        qs = qs.filter(manifestacao_tipo='')
+    elif mde_status and mde_status != 'pendente':
+        qs = qs.filter(manifestacao_tipo=mde_status)
+    if data_ini:
+        qs = qs.filter(data_emissao_nf__gte=data_ini)
+    if data_fim:
+        qs = qs.filter(data_emissao_nf__lte=data_fim)
+
+    total = qs.count()
+    total_pendente = qs.filter(manifestacao_tipo='').count()
+    total_ciencia = qs.filter(manifestacao_tipo='ciencia_operacao').count()
+    total_confirmado = qs.filter(manifestacao_tipo='confirmacao_operacao').count()
+    total_outros = qs.filter(
+        manifestacao_tipo__in=['desconhecimento_operacao', 'operacao_nao_realizada']
+    ).count()
+
+    from django.core.paginator import Paginator
+    paginator = Paginator(qs, 30)
+    page_obj = paginator.get_page(request.GET.get('page'))
+
+    fornecedores = Fornecedor.objects.filter(empresa=empresa, ativa=True).order_by('nome')
+
+    MDE_STATUS_CHOICES = [
+        ('pendente', 'Pendente (sem manifestação)'),
+        ('ciencia_operacao', 'Ciência da Operação'),
+        ('confirmacao_operacao', 'Confirmação da Operação'),
+        ('desconhecimento_operacao', 'Desconhecimento da Operação'),
+        ('operacao_nao_realizada', 'Operação Não Realizada'),
+    ]
+
+    return render(request, 'compras/mde_list.html', {
+        'page_obj': page_obj,
+        'q': q,
+        'fornecedor_id': fornecedor_id,
+        'mde_status': mde_status,
+        'data_ini': data_ini,
+        'data_fim': data_fim,
+        'total': total,
+        'total_pendente': total_pendente,
+        'total_ciencia': total_ciencia,
+        'total_confirmado': total_confirmado,
+        'total_outros': total_outros,
+        'fornecedores': fornecedores,
+        'mde_status_choices': MDE_STATUS_CHOICES,
+    })
+
+
+@login_required
 def recebimento_list(request):
     """Lista todos os recebimentos"""
     from .models import RecebimentoCompra
@@ -2493,6 +2570,76 @@ def recebimento_detail(request, pk):
     }
     
     return render(request, 'compras/recebimento_detail.html', context)
+
+
+@login_required
+def recebimento_manifestar(request, pk):
+    """Registra Manifestação do Destinatário (MD-e) para NF-e recebida de fornecedor."""
+    from .models import RecebimentoCompra
+    from faturamento.services.integranotas import IntegranNotasClient, IntegranNotasError
+    from faturamento.models import ConfiguracaoFiscal
+    from django.utils import timezone
+
+    recebimento = get_object_or_404(RecebimentoCompra, pk=pk, empresa=request.user.empresa)
+
+    if not recebimento.chave_nfe:
+        messages.error(request, 'Este recebimento não possui chave de acesso NF-e para manifestar.')
+        return redirect('compras:recebimento_detail', pk=pk)
+
+    if recebimento.manifestacao_tipo:
+        messages.info(request, f'Manifestação já registrada: {recebimento.get_manifestacao_tipo_display()}.')
+        return redirect('compras:recebimento_detail', pk=pk)
+
+    TIPOS = [
+        ('ciencia_operacao', 'Ciência da Operação'),
+        ('confirmacao_operacao', 'Confirmação da Operação'),
+        ('desconhecimento_operacao', 'Desconhecimento da Operação'),
+        ('operacao_nao_realizada', 'Operação Não Realizada'),
+    ]
+
+    if request.method == 'POST':
+        tipo = request.POST.get('tipo', '').strip()
+        justificativa = request.POST.get('justificativa', '').strip()
+        tipos_validos = [t[0] for t in TIPOS]
+
+        if tipo not in tipos_validos:
+            messages.error(request, 'Tipo de manifestação inválido.')
+            return render(request, 'compras/recebimento_manifestar.html',
+                          {'recebimento': recebimento, 'tipos': TIPOS})
+
+        if tipo == 'operacao_nao_realizada' and not justificativa:
+            messages.error(request, 'Justificativa obrigatória para "Operação Não Realizada".')
+            return render(request, 'compras/recebimento_manifestar.html',
+                          {'recebimento': recebimento, 'tipos': TIPOS})
+
+        config = ConfiguracaoFiscal.objects.filter(empresa=request.user.empresa).first()
+        if not config or not config.has_token:
+            messages.error(request, 'Configure o token IntegraNota em Configuração Fiscal para registrar manifestação.')
+            return redirect('compras:recebimento_detail', pk=pk)
+
+        try:
+            client = IntegranNotasClient(config.get_token(), config.ambiente_nfe)
+            resultado = client.manifestar_nfe(recebimento.chave_nfe, tipo, justificativa)
+        except IntegranNotasError as exc:
+            messages.error(request, f'Erro ao registrar manifestação [{exc.codigo}]: {exc}')
+            return render(request, 'compras/recebimento_manifestar.html',
+                          {'recebimento': recebimento, 'tipos': TIPOS})
+        except Exception as exc:
+            messages.error(request, f'Falha na comunicação com IntegraNota: {exc}')
+            return render(request, 'compras/recebimento_manifestar.html',
+                          {'recebimento': recebimento, 'tipos': TIPOS})
+
+        recebimento.manifestacao_tipo = tipo
+        recebimento.manifestacao_protocolo = resultado.get('protocolo', '') or resultado.get('numero_protocolo', '')
+        recebimento.manifestacao_data = timezone.now()
+        recebimento.save(update_fields=['manifestacao_tipo', 'manifestacao_protocolo', 'manifestacao_data'])
+        messages.success(request, f'Manifestação "{dict(TIPOS)[tipo]}" registrada com sucesso na SEFAZ.')
+        return redirect('compras:recebimento_detail', pk=pk)
+
+    return render(request, 'compras/recebimento_manifestar.html', {
+        'recebimento': recebimento,
+        'tipos': TIPOS,
+    })
 
 
 @login_required

@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+{% block title %}Manifestação NF-e — {{ recebimento.numero }}{% endblock %}
+{% block page_title %}Manifestação do Destinatário{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4" style="max-width:640px">
+
+  <div class="d-flex align-items-center mb-4">
+    <a href="{% url 'compras:recebimento_detail' recebimento.pk %}" class="btn btn-outline-secondary me-3">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    <div>
+      <h4 class="mb-0 fw-bold"><i class="bi bi-chat-square-check text-secondary me-2"></i>Manifestação do Destinatário (MD-e)</h4>
+      <small class="text-muted">
+        Recebimento {{ recebimento.numero }}
+        {% if recebimento.fornecedor %} — {{ recebimento.fornecedor.nome }}{% endif %}
+        &nbsp;·&nbsp; NF {{ recebimento.nota_fiscal }}/{{ recebimento.serie_nota }}
+      </small>
+    </div>
+  </div>
+
+  <div class="alert alert-info py-2 px-3 mb-4">
+    <i class="bi bi-info-circle me-1"></i>
+    Registra na SEFAZ a posição da sua empresa como destinatária desta NF-e emitida pelo fornecedor.
+    A manifestação é enviada uma única vez por nota.
+  </div>
+
+  <div class="card border-0 shadow-sm mb-3">
+    <div class="card-header fw-semibold">Dados da NF-e</div>
+    <div class="card-body py-2">
+      <dl class="row mb-0 small">
+        <dt class="col-sm-4">Chave de Acesso</dt>
+        <dd class="col-sm-8"><code style="font-size:.78rem;word-break:break-all">{{ recebimento.chave_nfe }}</code></dd>
+        <dt class="col-sm-4">Nº / Série</dt>
+        <dd class="col-sm-8">{{ recebimento.nota_fiscal }} / {{ recebimento.serie_nota }}</dd>
+        {% if recebimento.fornecedor %}
+        <dt class="col-sm-4">Fornecedor</dt>
+        <dd class="col-sm-8">{{ recebimento.fornecedor.nome }}</dd>
+        {% endif %}
+        <dt class="col-sm-4">Data Emissão</dt>
+        <dd class="col-sm-8">{{ recebimento.data_emissao_nf|date:"d/m/Y" }}</dd>
+        <dt class="col-sm-4">Valor Total</dt>
+        <dd class="col-sm-8">R$ {{ recebimento.valor_total_nf|floatformat:2 }}</dd>
+      </dl>
+    </div>
+  </div>
+
+  {% if messages %}
+  {% for msg in messages %}
+  <div class="alert alert-{{ msg.tags }} alert-dismissible fade show py-2 mb-3" role="alert">
+    {{ msg }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  {% endfor %}
+  {% endif %}
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-header fw-semibold">Registrar Manifestação</div>
+    <div class="card-body">
+      <form method="post">
+        {% csrf_token %}
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Tipo de Manifestação <span class="text-danger">*</span></label>
+          <select name="tipo" class="form-select" id="id_tipo" required>
+            <option value="">-- Selecione --</option>
+            {% for valor, label in tipos %}
+            <option value="{{ valor }}">{{ label }}</option>
+            {% endfor %}
+          </select>
+          <div class="mt-2 small text-muted">
+            <strong>Ciência da Operação:</strong> ciente da NF-e antes de receber a mercadoria.<br>
+            <strong>Confirmação:</strong> confirma a operação e o recebimento da mercadoria.<br>
+            <strong>Desconhecimento:</strong> não reconhece a NF-e emitida contra sua empresa.<br>
+            <strong>Operação Não Realizada:</strong> reconhece a NF-e mas a mercadoria não foi entregue.
+          </div>
+        </div>
+
+        <div class="mb-3" id="campo-justificativa" style="display:none">
+          <label class="form-label fw-semibold">Justificativa <span class="text-danger">*</span></label>
+          <textarea name="justificativa" class="form-control" rows="3"
+                    placeholder="Descreva o motivo pelo qual a operação não foi realizada"></textarea>
+        </div>
+
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn btn-secondary">
+            <i class="bi bi-chat-square-check me-1"></i>Registrar na SEFAZ
+          </button>
+          <a href="{% url 'compras:recebimento_detail' recebimento.pk %}" class="btn btn-outline-secondary">Cancelar</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function () {
+  const sel = document.getElementById('id_tipo');
+  const campo = document.getElementById('campo-justificativa');
+  if (!sel || !campo) return;
+  sel.addEventListener('change', function () {
+    campo.style.display = this.value === 'operacao_nao_realizada' ? '' : 'none';
+  });
+})();
+</script>
+{% endblock %}

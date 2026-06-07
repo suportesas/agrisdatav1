@@ -19,6 +19,8 @@ urlpatterns = [
     path('notas-fiscais/<int:pk>/pdf/', views.nota_fiscal_pdf, name='nota_fiscal_pdf'),
     path('notas-fiscais/<int:pk>/danfe/', views.nota_fiscal_danfe, name='nota_fiscal_danfe'),
     path('notas-fiscais/<int:pk>/xml/', views.nota_fiscal_xml, name='nota_fiscal_xml'),
+    path('notas-fiscais/<int:pk>/carta-correcao/', views.nota_fiscal_carta_correcao, name='nota_fiscal_carta_correcao'),
+    path('notas-fiscais/inutilizar/', views.nota_fiscal_inutilizar, name='nota_fiscal_inutilizar'),
 
     # Invoice de Exportação
     path('invoices/', views.invoice_list, name='invoice_list'),
@@ -55,6 +57,10 @@ urlpatterns = [
     path('cte/<int:pk>/emitir/', views.cte_emitir, name='cte_emitir'),
     path('cte/<int:pk>/cancelar/', views.cte_cancelar, name='cte_cancelar'),
     path('cte/<int:pk>/dacte/', views.cte_dacte, name='cte_dacte'),
+    path('cte/<int:pk>/consultar/', views.cte_consultar, name='cte_consultar'),
+    path('cte/<int:pk>/carta-correcao/', views.cte_carta_correcao, name='cte_carta_correcao'),
+    path('cte/<int:pk>/desacordo/', views.cte_manifestar_desacordo, name='cte_manifestar_desacordo'),
+    path('cte/<int:pk>/preview/', views.cte_preview, name='cte_preview'),
 
     # MDF-e
     path('mdfe/', views.mdfe_list, name='mdfe_list'),
@@ -65,6 +71,10 @@ urlpatterns = [
     path('mdfe/<int:pk>/encerrar/', views.mdfe_encerrar, name='mdfe_encerrar'),
     path('mdfe/<int:pk>/cancelar/', views.mdfe_cancelar, name='mdfe_cancelar'),
     path('mdfe/<int:pk>/damdfe/', views.mdfe_damdfe, name='mdfe_damdfe'),
+    path('mdfe/<int:pk>/consultar/', views.mdfe_consultar, name='mdfe_consultar'),
+    path('mdfe/<int:pk>/preview/', views.mdfe_preview, name='mdfe_preview'),
+    path('mdfe/<int:pk>/inclui-condutor/', views.mdfe_inclui_condutor, name='mdfe_inclui_condutor'),
+    path('mdfe/<int:pk>/inclui-nfe/', views.mdfe_inclui_nfe, name='mdfe_inclui_nfe'),
 
     # Documentação IntegraNotas
     path('docs/integranotas/', views.docs_integranotas, name='docs_integranotas'),
@@ -77,4 +87,7 @@ urlpatterns = [
     path('ajax/produto/<int:pk>/', views.ajax_produto_detail, name='ajax_produto_detail'),
     path('ajax/booking/<int:pk>/', views.ajax_booking_preview, name='ajax_booking_preview'),
     path('ajax/cotacao-bcb/', views.ajax_cotacao_bcb, name='ajax_cotacao_bcb'),
+    path('ajax/nfe-para-cte/', views.ajax_nfe_para_cte, name='ajax_nfe_para_cte'),
+    path('ajax/nfe-para-mdfe/', views.ajax_nfe_para_mdfe, name='ajax_nfe_para_mdfe'),
+    path('ajax/cte-para-mdfe/', views.ajax_cte_para_mdfe, name='ajax_cte_para_mdfe'),
 ]

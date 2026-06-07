@@ -6,9 +6,14 @@
 <div class="container-fluid py-4">
   <div class="d-flex justify-content-between align-items-center mb-3">
     <h2><i class="bi bi-file-earmark-text me-2"></i>Notas Fiscais</h2>
-    <a href="{% url 'faturamento:nota_fiscal_create' %}" class="btn btn-primary">
-      <i class="bi bi-plus-circle me-1"></i>Nova NF-e
-    </a>
+    <div class="d-flex gap-2">
+      <a href="{% url 'faturamento:nota_fiscal_inutilizar' %}" class="btn btn-outline-secondary" title="Inutilizar intervalo de numeração">
+        <i class="bi bi-slash-circle me-1"></i>Inutilizar Numeração
+      </a>
+      <a href="{% url 'faturamento:nota_fiscal_create' %}" class="btn btn-primary">
+        <i class="bi bi-plus-circle me-1"></i>Nova NF-e
+      </a>
+    </div>
   </div>
 
   <!-- Filtros -->
@@ -50,6 +55,7 @@
           <th>Cliente</th>
           <th>Emissão</th>
           <th>CFOP</th>
+          <th>Volumes</th>
           <th class="text-end">Valor Total</th>
           <th>Status</th>
           <th>Ações</th>
@@ -62,6 +68,14 @@
           <td>{{ nf.cliente.razao_social }}</td>
           <td>{{ nf.data_emissao|date:"d/m/Y" }}</td>
           <td>{{ nf.cfop }}</td>
+          <td>
+            {% if nf.quantidade_volumes %}Qtd: {{ nf.quantidade_volumes }}{% endif %}
+            {% if nf.especie_volumes %}{% if nf.quantidade_volumes %}<br>{% endif %}Espécie: {{ nf.especie_volumes }}{% endif %}
+            {% if nf.marca_volumes %}{% if nf.quantidade_volumes or nf.especie_volumes %}<br>{% endif %}Marca: {{ nf.marca_volumes }}{% endif %}
+            {% if nf.peso_bruto_kg %}{% if nf.quantidade_volumes or nf.especie_volumes or nf.marca_volumes %}<br>{% endif %}Bruto: {{ nf.peso_bruto_kg|floatformat:3 }} kg{% endif %}
+            {% if nf.peso_liquido_kg %}{% if nf.quantidade_volumes or nf.especie_volumes or nf.marca_volumes or nf.peso_bruto_kg %}<br>{% endif %}Líq: {{ nf.peso_liquido_kg|floatformat:3 }} kg{% endif %}
+            {% if not nf.quantidade_volumes and not nf.especie_volumes and not nf.marca_volumes and not nf.peso_bruto_kg and not nf.peso_liquido_kg %}—{% endif %}
+          </td>
           <td class="text-end">R$ {{ nf.valor_total|floatformat:2 }}</td>
           <td>
             {% if nf.status == 'RASCUNHO' %}<span class="badge bg-secondary">Rascunho</span>

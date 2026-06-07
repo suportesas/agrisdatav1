@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+{% block title %}Manifestação — NF {{ nf.numero }}/{{ nf.serie }}{% endblock %}
+{% block page_title %}Manifestação do Destinatário{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4" style="max-width:640px">
+
+  <div class="d-flex align-items-center mb-4">
+    <a href="{% url 'faturamento:nota_fiscal_detail' nf.pk %}" class="btn btn-outline-secondary me-3">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    <div>
+      <h4 class="mb-0 fw-bold"><i class="bi bi-chat-square-check text-secondary me-2"></i>Manifestação do Destinatário</h4>
+      <small class="text-muted">
+        NF {{ nf.numero|stringformat:"09d" }}/{{ nf.serie|stringformat:"03d" }} — {{ nf.cliente.razao_social }}
+      </small>
+    </div>
+  </div>
+
+  <div class="alert alert-info py-2 px-3 mb-4">
+    <i class="bi bi-info-circle me-1"></i>
+    Registra na SEFAZ a posição do destinatário sobre esta NF-e. Normalmente utilizado para confirmar o recebimento da mercadoria ou registrar desconhecimento da operação.
+  </div>
+
+  {% if messages %}
+  {% for msg in messages %}
+  <div class="alert alert-{{ msg.tags }} alert-dismissible fade show py-2 mb-3" role="alert">
+    {{ msg }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  {% endfor %}
+  {% endif %}
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-header fw-semibold">Registrar Manifestação</div>
+    <div class="card-body">
+      <form method="post">
+        {% csrf_token %}
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Tipo de Manifestação <span class="text-danger">*</span></label>
+          {{ form.tipo }}
+          {% if form.tipo.errors %}<div class="invalid-feedback d-block">{{ form.tipo.errors.0 }}</div>{% endif %}
+          <small class="text-muted d-block mt-1">
+            <strong>Ciência da Operação:</strong> ciente da operação antes do recebimento.<br>
+            <strong>Confirmação:</strong> confirma a operação e o recebimento da mercadoria.<br>
+            <strong>Desconhecimento:</strong> não reconhece a operação informada.<br>
+            <strong>Operação Não Realizada:</strong> reconhece a operação mas a mercadoria não foi entregue.
+          </small>
+        </div>
+        <div class="mb-3" id="campo-justificativa" style="display:none">
+          <label class="form-label fw-semibold">Justificativa <span class="text-danger">*</span></label>
+          {{ form.justificativa }}
+          {% if form.justificativa.errors %}<div class="invalid-feedback d-block">{{ form.justificativa.errors.0 }}</div>{% endif %}
+        </div>
+        {% if form.non_field_errors %}
+        <div class="alert alert-danger py-2 px-3 mb-3">{{ form.non_field_errors.0 }}</div>
+        {% endif %}
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn btn-secondary">
+            <i class="bi bi-chat-square-check me-1"></i>Registrar Manifestação
+          </button>
+          <a href="{% url 'faturamento:nota_fiscal_detail' nf.pk %}" class="btn btn-outline-secondary">Cancelar</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function () {
+  const sel = document.getElementById('id_tipo_manifestacao');
+  const campo = document.getElementById('campo-justificativa');
+  if (!sel || !campo) return;
+  function toggle() {
+    campo.style.display = sel.value === 'operacao_nao_realizada' ? '' : 'none';
+  }
+  sel.addEventListener('change', toggle);
+  toggle();
+})();
+</script>
+{% endblock %}

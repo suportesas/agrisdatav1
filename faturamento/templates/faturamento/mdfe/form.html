@@ -57,7 +57,7 @@
                 {{ form.uf_fim }}
               </div>
             </div>
-            <!-- Percursos (estados intermediários) -->
+            <!-- Percursos intermediários -->
             <h6 class="mt-3 mb-2">Estados Percorridos (intermediários, opcional)</h6>
             {{ perc_formset.management_form }}
             <table class="table table-sm">
@@ -98,15 +98,22 @@
       <!-- Documentos Vinculados -->
       <div class="col-12">
         <div class="card">
-          <div class="card-header bg-info text-white py-2"><i class="bi bi-file-earmark-text me-1"></i> NF-e / CT-e Vinculados</div>
+          <div class="card-header bg-info text-white py-2 d-flex align-items-center justify-content-between">
+            <span><i class="bi bi-file-earmark-text me-1"></i> NF-e / CT-e Vinculados</span>
+            {% if action == 'Novo' %}
+            <button type="button" class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#modalImportarDocs">
+              <i class="bi bi-download me-1"></i> Importar NF-e / CT-e
+            </button>
+            {% endif %}
+          </div>
           <div class="card-body">
             {{ docs_formset.management_form }}
-            <table class="table table-sm">
-              <thead class="table-light"><tr><th>Tipo</th><th>Chave (44 dígitos)</th><th>Município de Entrega</th><th></th></tr></thead>
-              <tbody>
+            <table class="table table-sm" id="docs-table">
+              <thead class="table-light"><tr><th style="width:90px">Tipo</th><th>Chave (44 dígitos)</th><th>Município de Entrega</th><th></th></tr></thead>
+              <tbody id="docs-tbody">
                 {% for df in docs_formset %}
                 <tr>
-                  <td style="width:90px">{{ df.tipo }}</td>
+                  <td>{{ df.tipo }}</td>
                   <td>{{ df.chave }}</td>
                   <td>{{ df.municipio_descarregamento }}</td>
                   <td>{{ df.DELETE }}{{ df.id }}</td>
@@ -114,6 +121,26 @@
                 {% endfor %}
               </tbody>
             </table>
+            <!-- Linha template oculta para clonagem JS -->
+            <table style="display:none"><tbody>
+              <tr id="docs-template-row">
+                <td style="width:90px">
+                  <select name="docs-__prefix__-tipo" class="form-select form-select-sm" id="id_docs-__prefix__-tipo">
+                    <option value="nfe">NF-e</option>
+                    <option value="cte">CT-e</option>
+                  </select>
+                </td>
+                <td><input type="text" name="docs-__prefix__-chave" maxlength="44" class="form-control form-control-sm" placeholder="Chave (44 dígitos)" id="id_docs-__prefix__-chave"></td>
+                <td><input type="text" name="docs-__prefix__-municipio_descarregamento" maxlength="100" class="form-control form-control-sm" placeholder="Cidade de entrega" id="id_docs-__prefix__-municipio_descarregamento"></td>
+                <td>
+                  <input type="checkbox" name="docs-__prefix__-DELETE" id="id_docs-__prefix__-DELETE" class="form-check-input">
+                  <input type="hidden" name="docs-__prefix__-id" id="id_docs-__prefix__-id">
+                </td>
+              </tr>
+            </tbody></table>
+            <button type="button" id="btn-add-doc" class="btn btn-outline-secondary btn-sm mt-2">
+              <i class="bi bi-plus-circle me-1"></i> Adicionar Documento
+            </button>
           </div>
         </div>
       </div>
@@ -145,4 +172,273 @@
     </div>
   </form>
 </div>
+
+<!-- Modal: Importar NF-e / CT-e -->
+<div class="modal fade" id="modalImportarDocs" tabindex="-1" aria-labelledby="modalImportarDocsLbl" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalImportarDocsLbl"><i class="bi bi-download me-2 text-primary"></i>Importar NF-e / CT-e</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <!-- Abas -->
+        <ul class="nav nav-tabs mb-3" id="tabDocs" role="tablist">
+          <li class="nav-item">
+            <button class="nav-link active" id="tab-nfe-btn" data-bs-toggle="tab" data-bs-target="#tab-nfe" type="button">
+              <i class="bi bi-file-earmark-text me-1"></i>NF-e
+            </button>
+          </li>
+          <li class="nav-item">
+            <button class="nav-link" id="tab-cte-btn" data-bs-toggle="tab" data-bs-target="#tab-cte" type="button">
+              <i class="bi bi-truck me-1"></i>CT-e
+            </button>
+          </li>
+        </ul>
+        <div class="tab-content">
+
+          <!-- Aba NF-e -->
+          <div class="tab-pane fade show active" id="tab-nfe">
+            <div class="input-group mb-2">
+              <span class="input-group-text"><i class="bi bi-search"></i></span>
+              <input type="text" id="nfe-search" class="form-control form-control-sm" placeholder="Buscar por cliente ou número da NF-e…">
+            </div>
+            <div id="nfe-loading" class="text-center text-muted py-2 d-none"><div class="spinner-border spinner-border-sm me-1"></div>Buscando…</div>
+            <div class="table-responsive">
+              <table class="table table-sm table-hover mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th style="width:36px"><input type="checkbox" id="nfe-check-all" class="form-check-input" title="Sel. todos"></th>
+                    <th>NF-e</th><th>Cliente</th><th>Emissão</th><th class="text-end">Valor Total</th><th>Município Entrega</th>
+                  </tr>
+                </thead>
+                <tbody id="nfe-tbody">
+                  <tr><td colspan="6" class="text-center text-muted py-3">Digite para buscar NF-e emitidas.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Aba CT-e -->
+          <div class="tab-pane fade" id="tab-cte">
+            <div class="input-group mb-2">
+              <span class="input-group-text"><i class="bi bi-search"></i></span>
+              <input type="text" id="cte-search" class="form-control form-control-sm" placeholder="Buscar por destinatário ou número do CT-e…">
+            </div>
+            <div id="cte-loading" class="text-center text-muted py-2 d-none"><div class="spinner-border spinner-border-sm me-1"></div>Buscando…</div>
+            <div class="table-responsive">
+              <table class="table table-sm table-hover mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th style="width:36px"><input type="checkbox" id="cte-check-all" class="form-check-input" title="Sel. todos"></th>
+                    <th>CT-e</th><th>Destinatário</th><th>Emissão</th><th class="text-end">Valor Carga</th><th class="text-end">Peso (kg)</th><th>Município Destino</th>
+                  </tr>
+                </thead>
+                <tbody id="cte-tbody">
+                  <tr><td colspan="7" class="text-center text-muted py-3">Digite para buscar CT-e emitidos.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+      </div>
+      <div class="modal-footer">
+        <span id="docs-selected-count" class="text-muted me-auto small">0 documentos selecionados</span>
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary" id="btn-importar-docs" disabled>
+          <i class="bi bi-check-lg me-1"></i>Importar Selecionados
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  const URL_NFE = "{% url 'faturamento:ajax_nfe_para_mdfe' %}";
+  const URL_CTE = "{% url 'faturamento:ajax_cte_para_mdfe' %}";
+  let debNFe = null, debCTe = null;
+
+  // ── Linha inicial vazia para novo MDF-e ──────────────────────────
+  document.addEventListener('DOMContentLoaded', function () {
+    if (document.getElementById('docs-tbody').children.length === 0) {
+      adicionarLinhaFormset('nfe', '', '');
+    }
+  });
+
+  // ── Botão adicionar documento manual ────────────────────────────
+  document.getElementById('btn-add-doc').addEventListener('click', function () {
+    adicionarLinhaFormset('nfe', '', '');
+  });
+
+  // ── Carregar NF-e ao abrir aba ──────────────────────────────────
+  document.getElementById('modalImportarDocs').addEventListener('shown.bs.modal', function () {
+    document.getElementById('nfe-search').focus();
+    buscarNFe('');
+  });
+  document.getElementById('tab-cte-btn').addEventListener('shown.bs.tab', function () {
+    buscarCTe('');
+  });
+
+  // ── Busca NF-e ──────────────────────────────────────────────────
+  document.getElementById('nfe-search').addEventListener('input', function () {
+    clearTimeout(debNFe);
+    debNFe = setTimeout(() => buscarNFe(this.value.trim()), 350);
+  });
+
+  function buscarNFe(q) {
+    const loading = document.getElementById('nfe-loading');
+    loading.classList.remove('d-none');
+    fetch(URL_NFE + '?q=' + encodeURIComponent(q))
+      .then(r => r.json())
+      .then(data => renderNFe(data.results))
+      .finally(() => loading.classList.add('d-none'));
+  }
+
+  function renderNFe(notas) {
+    const tbody = document.getElementById('nfe-tbody');
+    if (!notas.length) {
+      tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-3">Nenhuma NF-e emitida encontrada.</td></tr>';
+      atualizarContador(); return;
+    }
+    tbody.innerHTML = notas.map(n => `
+      <tr>
+        <td><input type="checkbox" class="form-check-input doc-check"
+          data-tipo="nfe" data-chave="${escH(n.chave_acesso)}"
+          data-municipio="${escH(n.municipio)}" data-valor="${n.valor_total}" data-peso="0"></td>
+        <td><strong>${String(n.numero).padStart(9,'0')}/${n.serie}</strong></td>
+        <td>${escH(n.cliente_nome)}</td>
+        <td class="text-muted">${n.data_emissao}</td>
+        <td class="text-end">R$ ${fmt(n.valor_total)}</td>
+        <td class="text-muted small">${escH(n.municipio) || '<span class="text-warning">—</span>'}</td>
+      </tr>`).join('');
+    tbody.querySelectorAll('.doc-check').forEach(cb => cb.addEventListener('change', atualizarContador));
+    atualizarContador();
+  }
+
+  document.getElementById('nfe-check-all').addEventListener('change', function () {
+    document.querySelectorAll('#nfe-tbody .doc-check').forEach(cb => { cb.checked = this.checked; });
+    atualizarContador();
+  });
+
+  // ── Busca CT-e ──────────────────────────────────────────────────
+  document.getElementById('cte-search').addEventListener('input', function () {
+    clearTimeout(debCTe);
+    debCTe = setTimeout(() => buscarCTe(this.value.trim()), 350);
+  });
+
+  function buscarCTe(q) {
+    const loading = document.getElementById('cte-loading');
+    loading.classList.remove('d-none');
+    fetch(URL_CTE + '?q=' + encodeURIComponent(q))
+      .then(r => r.json())
+      .then(data => renderCTe(data.results))
+      .finally(() => loading.classList.add('d-none'));
+  }
+
+  function renderCTe(ctes) {
+    const tbody = document.getElementById('cte-tbody');
+    if (!ctes.length) {
+      tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-3">Nenhum CT-e emitido encontrado.</td></tr>';
+      atualizarContador(); return;
+    }
+    tbody.innerHTML = ctes.map(c => `
+      <tr>
+        <td><input type="checkbox" class="form-check-input doc-check"
+          data-tipo="cte" data-chave="${escH(c.chave_acesso)}"
+          data-municipio="${escH(c.municipio)}" data-valor="${c.valor_carga}" data-peso="${c.peso_bruto_kg}"></td>
+        <td><strong>${String(c.numero).padStart(9,'0')}/${c.serie}</strong></td>
+        <td>${escH(c.destinatario_nome)}</td>
+        <td class="text-muted">${c.data_emissao}</td>
+        <td class="text-end">R$ ${fmt(c.valor_carga)}</td>
+        <td class="text-end">${parseFloat(c.peso_bruto_kg).toLocaleString('pt-BR',{minimumFractionDigits:3})}</td>
+        <td class="text-muted small">${escH(c.municipio)}</td>
+      </tr>`).join('');
+    tbody.querySelectorAll('.doc-check').forEach(cb => cb.addEventListener('change', atualizarContador));
+    atualizarContador();
+  }
+
+  document.getElementById('cte-check-all').addEventListener('change', function () {
+    document.querySelectorAll('#cte-tbody .doc-check').forEach(cb => { cb.checked = this.checked; });
+    atualizarContador();
+  });
+
+  // ── Contador geral ───────────────────────────────────────────────
+  function atualizarContador() {
+    const n = document.querySelectorAll('.doc-check:checked').length;
+    document.getElementById('docs-selected-count').textContent = n + ' documento' + (n !== 1 ? 's' : '') + ' selecionado' + (n !== 1 ? 's' : '');
+    document.getElementById('btn-importar-docs').disabled = n === 0;
+  }
+
+  // ── Importar ─────────────────────────────────────────────────────
+  document.getElementById('btn-importar-docs').addEventListener('click', importarSelecionados);
+
+  function importarSelecionados() {
+    const checks = [...document.querySelectorAll('.doc-check:checked')];
+    if (!checks.length) return;
+
+    // Soma valores e pesos
+    let somaValor = 0, somaPeso = 0;
+    checks.forEach(cb => {
+      somaValor += parseFloat(cb.dataset.valor || 0);
+      somaPeso  += parseFloat(cb.dataset.peso  || 0);
+    });
+
+    // Preencher valor_carga
+    const vcInput = document.getElementById('id_valor_carga');
+    if (vcInput) vcInput.value = somaValor.toFixed(2);
+
+    // Preencher peso_bruto_kg apenas se CT-e trouxe peso (somaPeso > 0)
+    if (somaPeso > 0) {
+      const pkInput = document.getElementById('id_peso_bruto_kg');
+      if (pkInput) pkInput.value = somaPeso.toFixed(3);
+    }
+
+    // Adicionar linhas no formset
+    checks.forEach(cb => {
+      adicionarLinhaFormset(cb.dataset.tipo, cb.dataset.chave, cb.dataset.municipio);
+    });
+
+    bootstrap.Modal.getInstance(document.getElementById('modalImportarDocs')).hide();
+  }
+
+  // ── Adicionar linha no formset ────────────────────────────────────
+  function adicionarLinhaFormset(tipo, chave, municipio) {
+    const totalInput = document.getElementById('id_docs-TOTAL_FORM_COUNT');
+    if (!totalInput) return;
+    const idx = parseInt(totalInput.value, 10);
+
+    const template = document.getElementById('docs-template-row');
+    const novaLinha = template.cloneNode(true);
+    novaLinha.removeAttribute('id');
+
+    novaLinha.querySelectorAll('input, select').forEach(el => {
+      if (el.name) el.name = el.name.replace('__prefix__', idx);
+      if (el.id)   el.id   = el.id.replace('__prefix__', idx);
+    });
+
+    // Preencher valores
+    const tipoSel  = novaLinha.querySelector('[name="docs-' + idx + '-tipo"]');
+    const chaveInp = novaLinha.querySelector('[name="docs-' + idx + '-chave"]');
+    const munInp   = novaLinha.querySelector('[name="docs-' + idx + '-municipio_descarregamento"]');
+    if (tipoSel)  tipoSel.value  = tipo;
+    if (chaveInp) chaveInp.value = chave;
+    if (munInp)   munInp.value   = municipio;
+
+    document.getElementById('docs-tbody').appendChild(novaLinha);
+    totalInput.value = idx + 1;
+  }
+
+  // ── Utilidades ────────────────────────────────────────────────────
+  function escH(s) {
+    return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  function fmt(v) {
+    return parseFloat(v).toLocaleString('pt-BR', {minimumFractionDigits:2});
+  }
+})();
+</script>
 {% endblock %}

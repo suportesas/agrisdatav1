@@ -57,6 +57,11 @@
         </button>
       </form>
       {% endif %}
+      {% if nf.status == 'EMITIDA' and nf.chave_acesso %}
+      <a href="{% url 'faturamento:nota_fiscal_carta_correcao' nf.pk %}" class="btn btn-outline-info" title="Carta de Correção (CC-e)">
+        <i class="bi bi-pencil-square me-1"></i>CC-e
+      </a>
+      {% endif %}
       {% if nf.status != 'CANCELADA' %}
       <a href="{% url 'faturamento:nota_fiscal_cancelar' nf.pk %}" class="btn btn-outline-danger">
         <i class="bi bi-x-circle me-1"></i>Cancelar
@@ -115,6 +120,26 @@
   </div>
   {% endif %}
 
+  {% if nf.cartas_correcao.exists %}
+  <div class="border rounded bg-light py-2 px-3 mb-3">
+    <div class="d-flex align-items-center gap-2 mb-2">
+      <i class="bi bi-pencil-square text-info"></i>
+      <small class="text-muted fw-semibold">Cartas de Correção (CC-e)</small>
+      <span class="badge bg-info text-dark">{{ nf.cartas_correcao.count }}</span>
+    </div>
+    {% for cc in nf.cartas_correcao.all %}
+    <div class="mb-2 {% if not forloop.last %}border-bottom pb-2{% endif %}">
+      <div class="d-flex gap-3 flex-wrap">
+        <div><small class="text-muted d-block">Seq.</small><code class="small">{{ cc.sequencia }}</code></div>
+        <div><small class="text-muted d-block">Data</small><span class="small">{{ cc.criado_em|date:"d/m/Y H:i" }}</span></div>
+        {% if cc.protocolo %}<div><small class="text-muted d-block">Protocolo</small><code class="small">{{ cc.protocolo }}</code></div>{% endif %}
+      </div>
+      <div class="mt-1 small text-muted">{{ cc.correcao }}</div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
   <div class="row g-3">
     <!-- Dados Principais -->
     <div class="col-md-6">
@@ -143,6 +168,17 @@
             {% if nf.transportadora %}
             <dt class="col-sm-5">Transportadora</dt>
             <dd class="col-sm-7">{{ nf.transportadora.razao_social }}</dd>
+            {% endif %}
+            {% if nf.quantidade_volumes or nf.especie_volumes or nf.marca_volumes or nf.numeracao_volumes or nf.peso_bruto_kg or nf.peso_liquido_kg %}
+            <dt class="col-sm-5">Volumes Transportados</dt>
+            <dd class="col-sm-7">
+              {% if nf.quantidade_volumes %}<strong>Qtd:</strong> {{ nf.quantidade_volumes }}{% endif %}
+              {% if nf.especie_volumes %}<br><strong>Espécie:</strong> {{ nf.especie_volumes }}{% endif %}
+              {% if nf.marca_volumes %}<br><strong>Marca:</strong> {{ nf.marca_volumes }}{% endif %}
+              {% if nf.numeracao_volumes %}<br><strong>Numeração:</strong> {{ nf.numeracao_volumes }}{% endif %}
+              {% if nf.peso_bruto_kg %}<br><strong>Bruto:</strong> {{ nf.peso_bruto_kg|floatformat:3 }} kg{% endif %}
+              {% if nf.peso_liquido_kg %}<br><strong>Líquido:</strong> {{ nf.peso_liquido_kg|floatformat:3 }} kg{% endif %}
+            </dd>
             {% endif %}
           </dl>
         </div>

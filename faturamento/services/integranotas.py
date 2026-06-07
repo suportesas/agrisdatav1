@@ -222,6 +222,71 @@ class IntegranNotasClient:
             )
         return data
 
+    def carta_correcao_nfe(self, chave: str, correcao: str, sequencia: int = 1) -> dict:
+        """Envia Carta de Correção (CC-e) para NF-e autorizada."""
+        resp = requests.post(
+            f'{self.base_url}/nfe/{chave}/carta-correcao',
+            json={'correcao': correcao, 'sequencia': sequencia},
+            headers=self._headers(),
+            timeout=self.TIMEOUT,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        if not data.get('sucesso'):
+            raise IntegranNotasError(
+                data.get('mensagem', 'Erro ao enviar carta de correção'),
+                codigo=data.get('codigo'),
+                erros=data.get('erros', []),
+            )
+        return data
+
+    def inutilizar_nfe(self, cnpj: str, serie: int, numero_ini: int, numero_fim: int,
+                       justificativa: str, ano: int) -> dict:
+        """Inutiliza intervalo de numeração de NF-e."""
+        resp = requests.post(
+            f'{self.base_url}/nfe/inutiliza',
+            json={
+                'cnpj': cnpj,
+                'serie': serie,
+                'numero_ini': numero_ini,
+                'numero_fim': numero_fim,
+                'justificativa': justificativa,
+                'ano': ano,
+            },
+            headers=self._headers(),
+            timeout=self.TIMEOUT,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        if not data.get('sucesso'):
+            raise IntegranNotasError(
+                data.get('mensagem', 'Erro ao inutilizar numeração'),
+                codigo=data.get('codigo'),
+                erros=data.get('erros', []),
+            )
+        return data
+
+    def manifestar_nfe(self, chave: str, tipo: str, justificativa: str = '') -> dict:
+        """Registra Manifestação do Destinatário (MD-e) na SEFAZ."""
+        payload: dict = {'chave': chave, 'tipo': tipo}
+        if justificativa:
+            payload['justificativa'] = justificativa
+        resp = requests.post(
+            f'{self.base_url}/nfe/manifesta',
+            json=payload,
+            headers=self._headers(),
+            timeout=self.TIMEOUT,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        if not data.get('sucesso'):
+            raise IntegranNotasError(
+                data.get('mensagem', 'Erro ao registrar manifestação'),
+                codigo=data.get('codigo'),
+                erros=data.get('erros', []),
+            )
+        return data
+
     # ─── Private helpers ──────────────────────────────────────────────
 
     def _atribuir_numero(self, nf) -> None:
@@ -695,6 +760,53 @@ class IntegranNotasClient:
         resp.raise_for_status()
         return resp.json()
 
+    def carta_correcao_cte(self, chave: str, correcao: str, sequencia: int = 1) -> dict:
+        """Envia Carta de Correção (CC-e) para CT-e autorizado."""
+        resp = requests.post(
+            f'{self.base_url}/cte/{chave}/carta-correcao',
+            json={'correcao': correcao, 'sequencia': sequencia},
+            headers=self._headers(),
+            timeout=self.TIMEOUT,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        if not data.get('sucesso'):
+            raise IntegranNotasError(
+                data.get('mensagem', 'Erro ao enviar carta de correção'),
+                codigo=data.get('codigo'),
+                erros=data.get('erros', []),
+            )
+        return data
+
+    def manifesta_desacordo_cte(self, chave: str, descricao: str) -> dict:
+        """Registra Manifestação de Desacordo no CT-e (código 7 = desacordo)."""
+        resp = requests.post(
+            f'{self.base_url}/cte/manifesta',
+            json={'chave': chave, 'codigo': '7', 'descricao': descricao},
+            headers=self._headers(),
+            timeout=self.TIMEOUT,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        if not data.get('sucesso'):
+            raise IntegranNotasError(
+                data.get('mensagem', 'Erro ao registrar desacordo'),
+                codigo=data.get('codigo'),
+                erros=data.get('erros', []),
+            )
+        return data
+
+    def preview_cte(self, chave: str) -> dict:
+        """Retorna o PDF preview do CT-e (antes ou depois da emissão)."""
+        resp = requests.post(
+            f'{self.base_url}/cte/preview',
+            json={'chave': chave},
+            headers=self._headers(),
+            timeout=self.TIMEOUT,
+        )
+        resp.raise_for_status()
+        return resp.json()
+
     def _build_cte_payload(self, ct) -> dict:
         empresa = ct.empresa
         try:
@@ -838,6 +950,50 @@ class IntegranNotasClient:
         resp = requests.get(f'{self.base_url}/mdfe/abertos', headers=self._headers(), timeout=self.TIMEOUT)
         resp.raise_for_status()
         return resp.json()
+
+    def preview_mdfe(self, chave: str) -> dict:
+        resp = requests.post(
+            f'{self.base_url}/mdfe/preview',
+            json={'chave': chave},
+            headers=self._headers(),
+            timeout=self.TIMEOUT,
+        )
+        resp.raise_for_status()
+        return resp.json()
+
+    def inclui_condutor_mdfe(self, chave: str, cpf: str, nome: str) -> dict:
+        resp = requests.post(
+            f'{self.base_url}/mdfe/inclui-condutor',
+            json={'chave': chave, 'cpf': cpf, 'nome': nome},
+            headers=self._headers(),
+            timeout=self.TIMEOUT,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        if not data.get('sucesso') and data.get('codigo') not in (100,):
+            raise IntegranNotasError(
+                data.get('mensagem', 'Erro ao incluir condutor no MDF-e'),
+                codigo=data.get('codigo'),
+                erros=data.get('erros', []),
+            )
+        return data
+
+    def inclui_nfe_mdfe(self, chave: str, chave_nfe: str, municipio_descarregamento: str) -> dict:
+        resp = requests.post(
+            f'{self.base_url}/mdfe/inclui-nfe',
+            json={'chave': chave, 'chave_nfe': chave_nfe, 'municipio_descarregamento': municipio_descarregamento},
+            headers=self._headers(),
+            timeout=self.TIMEOUT,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        if not data.get('sucesso') and data.get('codigo') not in (100,):
+            raise IntegranNotasError(
+                data.get('mensagem', 'Erro ao incluir NF-e no MDF-e'),
+                codigo=data.get('codigo'),
+                erros=data.get('erros', []),
+            )
+        return data
 
     def _build_mdfe_payload(self, mdfe) -> dict:
         empresa = mdfe.empresa

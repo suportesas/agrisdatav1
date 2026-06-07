@@ -11,14 +11,29 @@
         <i class="bi bi-arrow-left"></i>
       </a>
       <div>
-        <h3 class="mb-0">NF {{ nf.numero|default:"S/N" }}/{{ nf.serie }}</h3>
-        <small class="text-muted">Emitida em {{ nf.data_emissao|date:"d/m/Y" }}</small>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+          <span class="badge bg-primary px-2 py-1" style="font-size:.7rem;letter-spacing:.05em">NF-e</span>
+          <h3 class="mb-0 fw-bold">
+            Nº <span class="font-monospace">{% if nf.numero %}{{ nf.numero|stringformat:"09d" }}{% else %}S/N{% endif %}</span>
+            <span class="text-muted fw-normal fs-5 ms-1">· Série {{ nf.serie|stringformat:"03d" }}</span>
+          </h3>
+        </div>
+        <div class="text-muted small mt-1 d-flex gap-3 flex-wrap">
+          <span><i class="bi bi-person me-1"></i>{{ nf.cliente.razao_social }}</span>
+          <span><i class="bi bi-calendar3 me-1"></i>{{ nf.data_emissao|date:"d/m/Y" }}</span>
+          <span><i class="bi bi-upc me-1"></i>CFOP {{ nf.cfop }}</span>
+        </div>
       </div>
     </div>
     <div class="d-flex gap-2">
       <a href="{% url 'faturamento:nota_fiscal_pdf' nf.pk %}" class="btn btn-outline-secondary" target="_blank">
         <i class="bi bi-file-earmark-text me-1"></i>PDF Interno
       </a>
+      {% if nf.xml_autorizacao %}
+      <a href="{% url 'faturamento:nota_fiscal_xml' nf.pk %}" class="btn btn-outline-success" title="Baixar XML autorizado pela SEFAZ">
+        <i class="bi bi-file-earmark-code me-1"></i>XML
+      </a>
+      {% endif %}
       {% if nf.pdf_danfe %}
       <a href="{% url 'faturamento:nota_fiscal_danfe' nf.pk %}" class="btn btn-outline-danger" target="_blank">
         <i class="bi bi-file-pdf me-1"></i>DANFE
@@ -55,19 +70,30 @@
     {% if nf.status == 'RASCUNHO' %}<span class="badge bg-secondary fs-6">Rascunho</span>
     {% elif nf.status == 'EMITIDA' %}<span class="badge bg-success fs-6">Emitida</span>
     {% else %}<span class="badge bg-danger fs-6">Cancelada</span>{% endif %}
-    {% if nf.chave_acesso %}
-    <span class="badge bg-light text-dark border fs-6 ms-2 font-monospace" title="{{ nf.chave_acesso }}">Chave: {{ nf.chave_acesso|truncatechars:12 }}…</span>
-    {% endif %}
   </div>
 
   {% if nf.chave_acesso %}
-  <div class="alert alert-light border py-2 px-3 mb-3 d-flex align-items-center gap-4 flex-wrap">
-    <div><small class="text-muted d-block">Chave de Acesso</small><code class="small">{{ nf.chave_acesso }}</code></div>
-    {% if nf.protocolo_autorizacao %}
-    <div><small class="text-muted d-block">Protocolo SEFAZ</small><code class="small">{{ nf.protocolo_autorizacao }}</code></div>
-    {% endif %}
-    {% if nf.data_hora_emissao %}
-    <div><small class="text-muted d-block">Emissão SEFAZ</small><span class="small">{{ nf.data_hora_emissao|date:"d/m/Y H:i" }}</span></div>
+  <div class="border rounded bg-light py-2 px-3 mb-3">
+    <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+      <small class="text-muted fw-semibold">Chave de Acesso</small>
+      <button type="button"
+              class="btn btn-sm btn-outline-secondary py-0 px-2"
+              style="font-size:.7rem"
+              title="Copiar chave"
+              onclick="navigator.clipboard.writeText('{{ nf.chave_acesso }}').then(()=>{this.textContent='✓ Copiado';setTimeout(()=>{this.innerHTML='<i class=\'bi bi-clipboard\'></i> Copiar'},1500)})">
+        <i class="bi bi-clipboard"></i> Copiar
+      </button>
+    </div>
+    <code class="d-block" style="font-size:.85rem; letter-spacing:.06em; word-break:break-all;">{{ nf.chave_acesso }}</code>
+    {% if nf.protocolo_autorizacao or nf.data_hora_emissao %}
+    <div class="d-flex gap-4 flex-wrap mt-2">
+      {% if nf.protocolo_autorizacao %}
+      <div><small class="text-muted d-block">Protocolo SEFAZ</small><code class="small">{{ nf.protocolo_autorizacao }}</code></div>
+      {% endif %}
+      {% if nf.data_hora_emissao %}
+      <div><small class="text-muted d-block">Emissão SEFAZ</small><span class="small">{{ nf.data_hora_emissao|date:"d/m/Y H:i" }}</span></div>
+      {% endif %}
+    </div>
     {% endif %}
   </div>
   {% endif %}

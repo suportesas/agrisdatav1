@@ -424,6 +424,12 @@ def nota_fiscal_emitir(request, pk):
             'Preencha em Faturamento → Configuração Fiscal → Dados do Emitente.')
         return redirect('faturamento:nota_fiscal_detail', pk=pk)
 
+    # Atribui número sequencial se a NF ainda não tiver um
+    if not nf.numero:
+        ultimo = NotaFiscal.objects.filter(empresa=empresa).exclude(numero__isnull=True).order_by('-numero').first()
+        nf.numero = (ultimo.numero + 1) if ultimo else (config.numero_nfe_inicial or 1)
+        NotaFiscal.objects.filter(pk=nf.pk).update(numero=nf.numero)
+
     try:
         client = IntegranNotasClient(config.get_token(), config.ambiente_nfe)
         data = client.emitir_nfe(nf)
@@ -652,6 +658,22 @@ def nota_fiscal_danfe(request, pk):
     pdf_bytes = base64.b64decode(nf.pdf_danfe)
     response = HttpResponse(pdf_bytes, content_type='application/pdf')
     response['Content-Disposition'] = f'inline; filename="DANFE_{nf.numero}_{nf.serie}.pdf"'
+    return response
+
+
+@login_required
+def nota_fiscal_xml(request, pk):
+    """Download do XML autorizado da NF-e (base64 → arquivo .xml)."""
+    import base64
+    empresa = _get_empresa(request)
+    nf = get_object_or_404(NotaFiscal, pk=pk, empresa=empresa)
+    if not nf.xml_autorizacao:
+        messages.error(request, 'XML não disponível — a NF-e ainda não foi autorizada pela SEFAZ.')
+        return redirect('faturamento:nota_fiscal_detail', pk=pk)
+    xml_bytes = base64.b64decode(nf.xml_autorizacao)
+    chave = nf.chave_acesso or f'NF{nf.numero}_{nf.serie}'
+    response = HttpResponse(xml_bytes, content_type='application/xml; charset=utf-8')
+    response['Content-Disposition'] = f'attachment; filename="{chave}-nfe.xml"'
     return response
 
 

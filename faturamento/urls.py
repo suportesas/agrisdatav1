@@ -18,6 +18,7 @@ urlpatterns = [
     path('notas-fiscais/<int:pk>/consultar/', views.nota_fiscal_consultar, name='nota_fiscal_consultar'),
     path('notas-fiscais/<int:pk>/pdf/', views.nota_fiscal_pdf, name='nota_fiscal_pdf'),
     path('notas-fiscais/<int:pk>/danfe/', views.nota_fiscal_danfe, name='nota_fiscal_danfe'),
+    path('notas-fiscais/<int:pk>/xml/', views.nota_fiscal_xml, name='nota_fiscal_xml'),
 
     # Invoice de Exportação
     path('invoices/', views.invoice_list, name='invoice_list'),

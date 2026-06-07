@@ -4441,6 +4441,19 @@ def relatorio_fornecedor_ranking(request):
 
 # ==================== ENDEREÇOS DO CLIENTE ====================
 
+def _aplicar_campos_exterior(endereco, cliente):
+    """Preenche automaticamente campos NF-e para endereços de clientes exterior."""
+    pais = (getattr(endereco, 'pais', '') or getattr(cliente, 'pais', '') or 'Brasil').strip()
+    is_exterior = (
+        getattr(cliente, 'tipo_cliente', '') == 'IMPORTADOR'
+        or pais.lower() not in ('brasil', '')
+    )
+    if is_exterior:
+        endereco.uf = 'EX'
+        if not endereco.codigo_municipio:
+            endereco.codigo_municipio = '9999999'
+
+
 @login_required
 def cliente_endereco_create(request, cliente_pk):
     cliente = get_object_or_404(Cliente, pk=cliente_pk, empresa=request.user.empresa)
@@ -4482,12 +4495,7 @@ def cliente_endereco_create(request, cliente_pk):
         if form.is_valid():
             endereco = form.save(commit=False)
             endereco.cliente = cliente
-            # Server-side safeguard: force UF = 'EX' if cliente is IMPORTADOR
-            try:
-                if getattr(cliente, 'tipo_cliente', '') == 'IMPORTADOR':
-                    endereco.uf = 'EX'
-            except Exception:
-                pass
+            _aplicar_campos_exterior(endereco, cliente)
             endereco.save()
             messages.success(request, '✅ Endereço adicionado!')
             return redirect('cadastros:cliente_detail', pk=cliente.pk)
@@ -4535,11 +4543,7 @@ def cliente_endereco_update(request, cliente_pk, endereco_pk):
         form = EnderecoClienteForm(post_data, instance=endereco)
         if form.is_valid():
             endereco = form.save(commit=False)
-            try:
-                if getattr(cliente, 'tipo_cliente', '') == 'IMPORTADOR':
-                    endereco.uf = 'EX'
-            except Exception:
-                pass
+            _aplicar_campos_exterior(endereco, cliente)
             endereco.save()
             messages.success(request, '✅ Endereço atualizado!')
             return redirect('cadastros:cliente_detail', pk=cliente.pk)

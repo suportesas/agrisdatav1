@@ -174,6 +174,8 @@ class IntegranNotasClient:
 
     def emitir_nfe(self, nf) -> dict:
         """Submit NF-e to IntegraNota. Returns API response dict."""
+        if not nf.numero:
+            self._atribuir_numero(nf)
         payload = self._build_payload(nf)
         logger.info('IntegraNota: emitindo NF %s/%s', nf.numero, nf.serie)
         resp = requests.post(
@@ -222,9 +224,38 @@ class IntegranNotasClient:
 
     # ─── Private helpers ──────────────────────────────────────────────
 
+    def _atribuir_numero(self, nf) -> None:
+        """Atribui o próximo número sequencial à NF quando ela ainda não tem um."""
+        from faturamento.models import NotaFiscal as _NF
+        ultimo = (
+            _NF.objects.filter(empresa=nf.empresa)
+            .exclude(numero__isnull=True)
+            .order_by('-numero')
+            .values_list('numero', flat=True)
+            .first()
+        )
+        try:
+            inicial = int(nf.empresa.configuracao_fiscal.numero_nfe_inicial or 1)
+        except Exception:
+            inicial = 1
+        nf.numero = (ultimo + 1) if ultimo else inicial
+        _NF.objects.filter(pk=nf.pk).update(numero=nf.numero)
+        logger.info('IntegraNota: número atribuído automaticamente → NF %s', nf.numero)
+
+    def _format_datetime(self, dt) -> str:
+        """Formata data/datetime no padrão exigido pela IntegraNotas: 2020-05-16T12:33:20-03:00"""
+        from datetime import datetime
+        if hasattr(dt, 'hour'):
+            # já é datetime
+            return dt.strftime('%Y-%m-%dT%H:%M:%S') + '-03:00'
+        else:
+            # é date — usa hora atual
+            now = datetime.now()
+            return f"{dt.strftime('%Y-%m-%d')}T{now.strftime('%H:%M:%S')}-03:00"
+
     def _headers(self):
         return {
-            'Authorization': f'Bearer {self.token}',
+            'authorization': self.token,
             'Content-Type': 'application/json',
         }
 
@@ -235,20 +266,25 @@ class IntegranNotasClient:
         except Exception:
             config = None
 
+        # tipo_operacao: 0=entrada (CFOP 1xxx/2xxx), 1=saída
+        cfop_str = str(nf.cfop or '5102')
+        tipo_operacao = '0' if cfop_str.startswith(('1', '2')) else '1'
+
         payload: dict = {
             'natureza_operacao': nf.natureza_operacao,
             'serie': str(nf.serie),
             'numero': str(nf.numero),
-            'data_emissao': nf.data_emissao.strftime('%Y-%m-%dT%H:%M:%S') if hasattr(nf.data_emissao, 'strftime') else str(nf.data_emissao),
-            'tipo_documento': '1',
-            'finalidade': getattr(nf, 'finalidade_nfe', '1') or '1',
+            'data_emissao': self._format_datetime(nf.data_emissao),
+            'tipo_operacao': tipo_operacao,
+            'finalidade_emissao': getattr(nf, 'finalidade_nfe', '1') or '1',
+            'consumidor_final': '0',
             'presenca_comprador': nf.presenca_comprador or '9',
             'tipo_emissao': str(nf.tipo_emissao or 1),
             'emitente': self._build_emitente(empresa, config),
             'destinatario': self._build_destinatario(nf.cliente),
-            'produtos': [self._build_item(item) for item in nf.itens.all()],
+            'itens': [self._build_item(item) for item in nf.itens.all()],
             'totais': self._build_totais(nf),
-            'transporte': self._build_transporte(nf),
+            'frete': self._build_frete(nf),
             'pagamento': self._build_pagamento(nf),
             'informacoes_adicionais': {
                 'informacoes_complementares': nf.informacoes_complementares or '',
@@ -263,7 +299,7 @@ class IntegranNotasClient:
         if uf_embarque or local_embarque:
             exporta: dict = {}
             if uf_embarque:
-                exporta['uf_saida_pais'] = uf_embarque
+                exporta['uf_local_embarque'] = uf_embarque
             if local_embarque:
                 exporta['local_embarque'] = local_embarque
             if local_despacho:
@@ -300,7 +336,7 @@ class IntegranNotasClient:
                 'duplicatas': [
                     {
                         'numero': d.numero or str(i + 1).zfill(3),
-                        'vencimento': d.vencimento.strftime('%Y-%m-%d'),
+                        'data_vencimento': d.vencimento.strftime('%Y-%m-%d'),
                         'valor': str(d.valor),
                     }
                     for i, d in enumerate(duplicatas)
@@ -333,33 +369,75 @@ class IntegranNotasClient:
 
     def _build_destinatario(self, cliente) -> dict:
         doc = _digits(cliente.cnpj_cpf or '')
-        dest: dict = {
-            'nome': cliente.razao_social,
-            'indicador_inscricao_estadual': cliente.indicador_ie or '9',
-            'inscricao_estadual': cliente.inscricao_estadual or '',
-        }
-        if len(doc) == 14:
-            dest['cnpj'] = doc
-        elif len(doc) == 11:
-            dest['cpf'] = doc
+        pais_cli = (getattr(cliente, 'pais', '') or 'Brasil').strip()
+        tipo_cliente = getattr(cliente, 'tipo_cliente', '') or ''
+        is_exterior_cliente = (
+            tipo_cliente == 'IMPORTADOR'
+            or pais_cli.lower() not in ('brasil', '')
+        )
+
+        dest: dict = {'nome': cliente.razao_social}
+
+        if is_exterior_cliente:
+            # Exterior: usa id_estrangeiro (VAT, EORI ou qualquer ID fiscal do país)
+            dest['indicador_inscricao_estadual'] = '9'
+            id_ext = (
+                getattr(cliente, 'vat', '') or
+                getattr(cliente, 'eori', '') or
+                doc or
+                ''
+            ).strip()
+            if id_ext:
+                dest['id_estrangeiro'] = id_ext
         else:
-            dest['cnpj'] = doc  # will fail validation, but keeps structure
+            dest['indicador_inscricao_estadual'] = cliente.indicador_ie or '9'
+            dest['inscricao_estadual'] = cliente.inscricao_estadual or ''
+            if len(doc) == 14:
+                dest['cnpj'] = doc
+            elif len(doc) == 11:
+                dest['cpf'] = doc
+            else:
+                raise IntegranNotasError(
+                    f'Destinatário "{cliente.razao_social}" sem CNPJ/CPF válido (14 ou 11 dígitos). '
+                    'Corrija o documento no cadastro do cliente.',
+                    codigo=None,
+                )
 
         # Address from default EnderecoCliente
         endereco_obj = cliente.enderecos.filter(padrao=True).first()
         if endereco_obj:
-            is_exterior = (cliente.pais or '').strip().lower() not in ('brasil', '')
+            pais_end = (endereco_obj.pais or pais_cli or 'Brasil').strip()
+            is_exterior = is_exterior_cliente or pais_end.lower() not in ('brasil', '')
+
+            if is_exterior:
+                # Endereço exterior: municipio = 9999999, UF = EX, sem IBGE obrigatório
+                codigo_mun = '9999999'
+                uf_dest = 'EX'
+                codigo_pais = '9999'
+                nome_pais = pais_end
+            else:
+                codigo_mun = (endereco_obj.codigo_municipio or '').strip()
+                if not codigo_mun:
+                    raise IntegranNotasError(
+                        f'Destinatário "{cliente.razao_social}" sem Código IBGE do município. '
+                        'Preencha o campo Código IBGE no endereço padrão do cliente antes de emitir.',
+                        codigo=None,
+                    )
+                uf_dest = endereco_obj.uf or ''
+                codigo_pais = '1058'
+                nome_pais = 'Brasil'
+
             dest['endereco'] = {
                 'logradouro': endereco_obj.logradouro or '',
                 'numero': endereco_obj.numero or 'S/N',
                 'complemento': endereco_obj.complemento or '',
                 'bairro': endereco_obj.bairro or '',
-                'codigo_municipio': endereco_obj.codigo_municipio or '',
+                'codigo_municipio': codigo_mun,
                 'nome_municipio': endereco_obj.cidade or '',
-                'uf': 'EX' if is_exterior else (endereco_obj.uf or ''),
+                'uf': uf_dest,
                 'cep': _digits(endereco_obj.cep or ''),
-                'codigo_pais': '1058' if not is_exterior else '9999',
-                'nome_pais': 'Brasil' if not is_exterior else (cliente.pais or ''),
+                'codigo_pais': codigo_pais,
+                'nome_pais': nome_pais,
                 'telefone': _digits(cliente.contato_principal_telefone or ''),
             }
         return dest
@@ -374,7 +452,7 @@ class IntegranNotasClient:
             'codigo_produto': produto_codigo or 'SEM CODIGO',
             'ean': item.ean or 'SEM GTIN',
             'descricao': item.descricao,
-            'ncm': item.ncm or '',
+            'codigo_ncm': item.ncm or '',
             'cest': item.cest or '',
             'cfop': item.cfop or '',
             'unidade_comercial': item.unidade or 'UN',
@@ -382,7 +460,8 @@ class IntegranNotasClient:
             'valor_unitario_comercial': str(item.valor_unitario),
             'valor_bruto': str(item.valor_total),
             'valor_desconto': str(item.valor_desconto),
-            'origem_mercadoria': item.origem_mercadoria or '0',
+            'inclui_no_total': '1',
+            'origem': item.origem_mercadoria or '0',
             'imposto': self._build_impostos(item),
         }
 
@@ -480,7 +559,7 @@ class IntegranNotasClient:
         if item.aliquota_ipi and float(item.aliquota_ipi) > 0:
             impostos['ipi'] = {
                 'situacao_tributaria': cst_ipi,
-                'codigo_enquadramento': item.ipi_codigo_enquadramento or '999',
+                'codigo_enquadramento_legal': item.ipi_codigo_enquadramento or '999',
                 'base_calculo': str(item.valor_total),
                 'aliquota': str(item.aliquota_ipi),
                 'valor': str(item.valor_ipi),
@@ -488,7 +567,7 @@ class IntegranNotasClient:
         else:
             impostos['ipi'] = {
                 'situacao_tributaria': cst_ipi or '99',
-                'codigo_enquadramento': item.ipi_codigo_enquadramento or '999',
+                'codigo_enquadramento_legal': item.ipi_codigo_enquadramento or '999',
                 'valor': '0.00',
             }
 
@@ -543,16 +622,16 @@ class IntegranNotasClient:
             'valor_nota': str(nf.valor_total),
         }
 
-    def _build_transporte(self, nf) -> dict:
+    def _build_frete(self, nf) -> dict:
         mod = MODALIDADE_FRETE_MAP.get(nf.modalidade_frete, '9')
-        transporte: dict = {'modalidade_frete': mod}
+        frete: dict = {'modalidade_frete': mod}
         if nf.transportadora_id:
             t = nf.transportadora
-            transporte['transportadora'] = {
+            frete['transportadora'] = {
                 'cnpj': _digits(getattr(t, 'cnpj', '') or ''),
                 'nome': getattr(t, 'nome', '') or '',
             }
-        return transporte
+        return frete
 
     def _build_pagamento(self, nf) -> dict:
         pagamentos = list(nf.pagamentos.all())

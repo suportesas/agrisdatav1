@@ -135,8 +135,21 @@
             {% endif %}
           </div>
 
+          <!-- Código IBGE -->
+          <div class="col-md-3" id="campo-ibge">
+            <label class="form-label fw-semibold">
+              Código IBGE
+              <span class="badge bg-warning text-dark ms-1" title="Obrigatório para emissão de NF-e">NF-e</span>
+            </label>
+            {{ form.codigo_municipio }}
+            {% if form.codigo_municipio.errors %}
+              <div class="text-danger small">{{ form.codigo_municipio.errors|striptags }}</div>
+            {% endif %}
+            <small class="text-muted">7 dígitos — preenchido automaticamente pelo CEP</small>
+          </div>
+
           <!-- País -->
-          <div class="col-md-4">
+          <div class="col-md-3">
             <label class="form-label fw-semibold">País</label>
             {{ form.pais }}
           </div>
@@ -193,15 +206,29 @@
 document.addEventListener('DOMContentLoaded', function(){
   const tipo = document.getElementById('id_tipo');
   const notifyGroup = document.getElementById('notify-receiver-group');
+  const paisInput = document.getElementById('id_pais');
+  const campoIbge = document.getElementById('campo-ibge');
 
   function toggleNotify(){
     if (!tipo || !notifyGroup) return;
     notifyGroup.style.display = (tipo.value === 'NOTIFY') ? '' : 'none';
   }
 
+  function toggleIbge(){
+    if (!paisInput || !campoIbge) return;
+    const pais = paisInput.value.trim().toLowerCase();
+    const isExterior = pais !== '' && pais !== 'brasil';
+    campoIbge.style.display = isExterior ? 'none' : '';
+  }
+
   if (tipo) {
     tipo.addEventListener('change', toggleNotify);
     toggleNotify();
+  }
+
+  if (paisInput) {
+    paisInput.addEventListener('input', toggleIbge);
+    toggleIbge();
   }
 });
 </script>

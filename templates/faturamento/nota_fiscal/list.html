@@ -77,9 +77,19 @@
               <i class="bi bi-pencil"></i>
             </a>
             {% endif %}
-            <a href="{% url 'faturamento:nota_fiscal_pdf' nf.pk %}" class="btn btn-sm btn-outline-danger" title="PDF" target="_blank">
+            <a href="{% url 'faturamento:nota_fiscal_pdf' nf.pk %}" class="btn btn-sm btn-outline-danger" title="PDF Interno" target="_blank">
               <i class="bi bi-file-pdf"></i>
             </a>
+            {% if nf.xml_autorizacao %}
+            <a href="{% url 'faturamento:nota_fiscal_xml' nf.pk %}" class="btn btn-sm btn-outline-success" title="Baixar XML autorizado">
+              <i class="bi bi-file-earmark-code"></i>
+            </a>
+            {% endif %}
+            {% if nf.pdf_danfe %}
+            <a href="{% url 'faturamento:nota_fiscal_danfe' nf.pk %}" class="btn btn-sm btn-outline-warning" title="DANFE" target="_blank">
+              <i class="bi bi-file-earmark-text"></i>
+            </a>
+            {% endif %}
           </td>
         </tr>
         {% empty %}

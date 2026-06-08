@@ -209,6 +209,20 @@
           </div>
         </div>
         <div class="row">
+          <div class="col-md-3 mb-3">
+            {{ form.peso_liquido_unitario.label_tag }}
+            {{ form.peso_liquido_unitario }}
+            <small class="form-text text-muted">{{ form.peso_liquido_unitario.help_text }}</small>
+            {% if form.peso_liquido_unitario.errors %}<div class="text-danger">{{ form.peso_liquido_unitario.errors }}</div>{% endif %}
+          </div>
+          <div class="col-md-3 mb-3">
+            {{ form.peso_bruto_unitario.label_tag }}
+            {{ form.peso_bruto_unitario }}
+            <small class="form-text text-muted">{{ form.peso_bruto_unitario.help_text }}</small>
+            {% if form.peso_bruto_unitario.errors %}<div class="text-danger">{{ form.peso_bruto_unitario.errors }}</div>{% endif %}
+          </div>
+        </div>
+        <div class="row">
           <div class="col-md-6 mb-3">
             {{ form.imagem.label_tag }}
             {{ form.imagem }}

@@ -43,6 +43,12 @@
       <a href="{% url 'faturamento:nota_fiscal_update' nf.pk %}" class="btn btn-outline-secondary">
         <i class="bi bi-pencil me-1"></i>Editar
       </a>
+      {% if nf.numero %}
+      <button type="button" class="btn btn-outline-warning" data-bs-toggle="modal" data-bs-target="#modalRecuperarNFe"
+              title="Use quando esta NF-e já foi enviada à SEFAZ mas a resposta se perdeu">
+        <i class="bi bi-arrow-repeat me-1"></i>Recuperar NF
+      </button>
+      {% endif %}
       <button type="button" class="btn btn-success" id="btn-emitir-nfe"
               data-ajax-url="{% url 'faturamento:nota_fiscal_emitir_ajax' nf.pk %}"
               data-csrf="{{ csrf_token }}">
@@ -270,6 +276,54 @@
   </div>
 
 </div>
+
+<!-- ── Modal Recuperar NF-e ───────────────────────────────────────────── -->
+{% if nf.status == 'RASCUNHO' and nf.numero %}
+<div class="modal fade" id="modalRecuperarNFe" tabindex="-1" aria-labelledby="modalRecuperarLabel">
+  <div class="modal-dialog modal-dialog-centered" style="max-width:540px">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header border-0 pb-0">
+        <h5 class="modal-title fw-semibold" id="modalRecuperarLabel">
+          <i class="bi bi-arrow-repeat me-2 text-warning"></i>Recuperar NF-e da SEFAZ
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body px-4">
+        <div class="alert alert-warning py-2 mb-3 small">
+          <strong>Quando usar:</strong> quando a NF-e já foi enviada ao IntegraNota/SEFAZ em uma tentativa anterior
+          mas a resposta se perdeu (timeout, queda de rede). A SEFAZ já tem a NF com uma chave diferente.<br>
+          <strong>O que fazer:</strong> acesse o <a href="https://app.integranotas.com.br" target="_blank">painel IntegraNotas</a>,
+          localize a NF nº <strong>{{ nf.numero }}/{{ nf.serie }}</strong>, copie a chave de acesso de 44 dígitos e cole abaixo.
+        </div>
+        <form method="post" action="{% url 'faturamento:nota_fiscal_recuperar' nf.pk %}">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Chave de Acesso (44 dígitos)</label>
+            <input type="text" name="chave_acesso" class="form-control font-monospace"
+                   maxlength="44" minlength="44" pattern="\d{44}"
+                   placeholder="00000000000000000000000000000000000000000000"
+                   required autocomplete="off">
+            <div class="form-text">Somente números, sem espaços ou hifens.</div>
+          </div>
+          <div class="d-flex justify-content-between align-items-center">
+            <a href="{% url 'faturamento:nota_fiscal_inutilizar' %}?serie={{ nf.serie }}&numero={{ nf.numero }}"
+               class="btn btn-sm btn-outline-danger" target="_blank"
+               title="Se esta NF nunca foi autorizada, inutilize o número e emita com o próximo">
+              <i class="bi bi-slash-circle me-1"></i>Inutilizar nº {{ nf.numero }}
+            </a>
+            <div class="d-flex gap-2">
+              <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+              <button type="submit" class="btn btn-warning btn-sm fw-semibold">
+                <i class="bi bi-search me-1"></i>Consultar e Recuperar
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
 
 <!-- ── Modal de Emissão NF-e ──────────────────────────────────────────── -->
 <div class="modal fade" id="modalEmissaoNFe" tabindex="-1"

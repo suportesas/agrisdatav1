@@ -276,6 +276,9 @@
                     <th style="width:110px">Qtd.</th>
                     <th style="width:108px">Vl. Unit.</th>
                     <th style="width:95px">Desconto</th>
+                    <th class="th-tributavel text-center" style="display:none;width:90px" title="Quantidade em unidade tributável (KG) — exportação CFOP 7xxx">Qtd. Trib.</th>
+                    <th class="th-tributavel" style="display:none;width:55px" title="Unidade tributável">Un. Trib.</th>
+                    <th class="th-tributavel text-end" style="display:none;width:100px" title="Valor unitário tributável (por KG)">Vl.Unit.Trib.</th>
                     <th style="width:110px" class="text-end">Total Item</th>
                     <th style="width:72px" class="text-center"><i class="bi bi-gear text-muted"></i></th>
                   </tr>
@@ -295,6 +298,9 @@
                     <td>{{ item_form.quantidade }}</td>
                     <td>{{ item_form.valor_unitario }}</td>
                     <td>{{ item_form.valor_desconto }}</td>
+                    <td class="col-tributavel text-center" style="display:none">{{ item_form.quantidade_tributavel }}</td>
+                    <td class="col-tributavel" style="display:none">{{ item_form.unidade_tributavel }}</td>
+                    <td class="col-tributavel text-end" style="display:none">{{ item_form.valor_unitario_tributavel }}</td>
                     <td class="text-end">
                       <span class="item-total fw-semibold text-success">—</span>
                     </td>
@@ -713,6 +719,26 @@
     row.querySelector('input[name$="-valor"]')?.addEventListener('input', () => delete row.dataset.auto, { once: true });
   }
 
+  // ── Unidade Tributável (exportação CFOP 7xxx) ─────────────────────
+  function atualizarTributavel(mainRow) {
+    const fator = mainRow._pesoLiq || 0;
+    if (!fator) return;
+    const qtd = parseFloat(mainRow.querySelector('input[name$="-quantidade"]')?.value) || 0;
+    const vu  = parseFloat(mainRow.querySelector('input[name$="-valor_unitario"]')?.value) || 0;
+    const qtEl = mainRow.querySelector('input[name$="-quantidade_tributavel"]');
+    const vuEl = mainRow.querySelector('input[name$="-valor_unitario_tributavel"]');
+    if (qtEl) qtEl.value = (qtd * fator).toFixed(4);
+    if (vuEl) vuEl.value = (fator > 0 ? vu / fator : 0).toFixed(4);
+  }
+
+  function toggleColTributavel() {
+    const temExport = [...body.querySelectorAll('input[name$="-cfop"]')]
+      .some(el => el.closest('.item-row')?.style.display !== 'none' && (el.value || '').startsWith('7'));
+    document.querySelectorAll('.col-tributavel,.th-tributavel').forEach(el => {
+      el.style.display = temExport ? '' : 'none';
+    });
+  }
+
   // ── Toggle fiscal panel ───────────────────────────────────────────
   function attachToggleFiscal(mainRow) {
     const btn = mainRow.querySelector('.btn-toggle-fiscal');
@@ -904,6 +930,24 @@
       }
     });
 
+    let totalQtd = 0, totalPesoLiq = 0, totalPesoBruto = 0;
+    body.querySelectorAll('.item-row').forEach(row => {
+      if (row.style.display !== 'none') {
+        const qtd = parseFloat(row.querySelector('input[name$="-quantidade"]')?.value) || 0;
+        totalQtd      += qtd;
+        totalPesoLiq   += qtd * (row._pesoLiq   || 0);
+        totalPesoBruto += qtd * (row._pesoBruto || 0);
+      }
+    });
+    const qtdVolEl = document.getElementById('id_quantidade_volumes');
+    if (qtdVolEl) qtdVolEl.value = totalQtd > 0 ? totalQtd : '';
+    const plEl = document.getElementById('id_peso_liquido_kg');
+    const pbEl = document.getElementById('id_peso_bruto_kg');
+    if (plEl && totalPesoLiq   > 0) plEl.value = totalPesoLiq.toFixed(3);
+    if (pbEl && totalPesoBruto > 0) pbEl.value = totalPesoBruto.toFixed(3);
+
+    toggleColTributavel();
+
     const frete  = parseFloat(document.getElementById('id_valor_frete')?.value)   || 0;
     const seguro = parseFloat(document.getElementById('id_valor_seguro')?.value)   || 0;
     const descNF = parseFloat(document.getElementById('id_valor_desconto')?.value) || 0;
@@ -936,6 +980,11 @@
       const el = row.querySelector(sel) || row.nextElementSibling?.querySelector(sel);
       if (el) el.addEventListener('input', recalcularTotais);
     });
+    // Recalcula tributável ao mudar quantidade ou valor unitário
+    ['input[name$="-quantidade"]','input[name$="-valor_unitario"]'].forEach(sel => {
+      const el = row.querySelector(sel);
+      if (el) el.addEventListener('input', () => atualizarTributavel(row));
+    });
   }
 
   // ── AJAX: produto selecionado ─────────────────────────────────────
@@ -967,6 +1016,11 @@
           if (un) un.value = data.unidade || '';
           const vu = mainRow.querySelector('input[name$="-valor_unitario"]');
           if (vu) vu.value = data.preco_venda || '';
+
+          mainRow._pesoLiq   = parseFloat(data.peso_liquido_unitario) || 0;
+          mainRow._pesoBruto = parseFloat(data.peso_bruto_unitario)   || 0;
+          recalcularTotais();
+          atualizarTributavel(mainRow);
 
           const setF = (sel, val) => {
             const el = (rowFiscal && rowFiscal.querySelector(sel)) || mainRow.querySelector(sel);
@@ -1013,6 +1067,9 @@
       const el = (rowFiscal && rowFiscal.querySelector(sel)) || mainRow.querySelector(sel);
       if (el) el.addEventListener('input', () => updateFiscalBadge(mainRow, rowFiscal));
     });
+    // Mostra/oculta colunas tributáveis ao mudar o CFOP do item
+    const cfopEl = (rowFiscal && rowFiscal.querySelector('[name$="-cfop"]')) || mainRow.querySelector('[name$="-cfop"]');
+    if (cfopEl) cfopEl.addEventListener('input', toggleColTributavel);
   }
 
   // ── Inicializar linhas existentes ─────────────────────────────────
@@ -1093,6 +1150,15 @@
     body.appendChild(newMain);
     if (newFiscal) body.appendChild(newFiscal);
     TOTAL_ITENS.value = idx + 1;
+
+    // Limpa estado Select2 copiado do clone: remove container fantasma,
+    // mostra o <select> oculto e apaga o flag para que initSelect2Produto funcione.
+    const clonedSel = newMain.querySelector('select[name$="-produto"]');
+    if (clonedSel) {
+      clonedSel.parentElement.querySelectorAll('.select2-container').forEach(el => el.remove());
+      clonedSel.style.display = '';
+      delete clonedSel.dataset.s2init;
+    }
 
     attachToggleFiscal(newMain);
     attachRemove(newMain);

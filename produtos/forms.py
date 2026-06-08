@@ -154,8 +154,9 @@ class ProdutoForm(forms.ModelForm):
             'codigo', 'codigo_barras', 'nome', 'nome_resumido', 'descricao',
             # Classificação
             'categoria', 'subcategoria',
-            # Unidades
+            # Unidades e Pesos
             'unidade_medida', 'unidade_compra', 'unidade_venda', 'fator_conversao',
+            'peso_liquido_unitario', 'peso_bruto_unitario',
             # Fiscal
             'ncm', 'cest', 'tipo_item',
             # Financeiro
@@ -203,7 +204,9 @@ class ProdutoForm(forms.ModelForm):
             'unidade_compra': forms.Select(attrs={'class': 'form-select'}),
             'unidade_venda': forms.Select(attrs={'class': 'form-select'}),
             'fator_conversao': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.0001'}),
-            
+            'peso_liquido_unitario': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.001'}),
+            'peso_bruto_unitario':   forms.NumberInput(attrs={'class': 'form-control', 'step': '0.001'}),
+
             # Fiscal
             'ncm': forms.Select(attrs={'class': 'form-select'}),
             'cest': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '0000000', 'maxlength': '7'}),

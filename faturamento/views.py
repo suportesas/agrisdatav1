@@ -613,6 +613,78 @@ def nota_fiscal_consultar(request, pk):
     return redirect('faturamento:nota_fiscal_detail', pk=pk)
 
 
+@login_required
+@require_POST
+def nota_fiscal_recuperar(request, pk):
+    """Recupera NF-e cujo número já existe na SEFAZ com chave diferente.
+    Útil quando a NF foi transmitida mas a resposta se perdeu (timeout, falha de rede).
+    O usuário informa a chave correta (obtida no painel IntegraNotas) e o sistema a consulta."""
+    from .services.integranotas import IntegranNotasClient, IntegranNotasError
+
+    empresa = _get_empresa(request)
+    nf = get_object_or_404(NotaFiscal, pk=pk, empresa=empresa)
+
+    chave = (request.POST.get('chave_acesso') or '').strip().replace(' ', '')
+
+    if len(chave) != 44 or not chave.isdigit():
+        messages.error(request, 'Chave de acesso inválida — deve ter exatamente 44 dígitos numéricos.')
+        return redirect('faturamento:nota_fiscal_detail', pk=pk)
+
+    config = ConfiguracaoFiscal.objects.filter(empresa=empresa).first()
+    if not config or not config.has_token:
+        messages.error(request, 'Configure o token IntegraNota em Faturamento → Configuração Fiscal.')
+        return redirect('faturamento:nota_fiscal_detail', pk=pk)
+
+    try:
+        client = IntegranNotasClient(config.get_token(), config.ambiente_nfe)
+        data = client.consultar_nfe(chave)
+        codigo = data.get('codigo')
+
+        if codigo == 100:
+            fields = ['chave_acesso', 'status']
+            nf.chave_acesso = chave
+            nf.status = 'EMITIDA'
+            if data.get('protocolo'):
+                nf.protocolo_autorizacao = data['protocolo']
+                fields.append('protocolo_autorizacao')
+            if data.get('xml'):
+                nf.xml_autorizacao = data['xml']
+                fields.append('xml_autorizacao')
+            if data.get('pdf'):
+                nf.pdf_danfe = data['pdf']
+                fields.append('pdf_danfe')
+            if not nf.data_hora_emissao:
+                nf.data_hora_emissao = timezone.now()
+                fields.append('data_hora_emissao')
+            nf.save(update_fields=fields)
+            messages.success(request,
+                f'NF-e recuperada com sucesso! Protocolo SEFAZ: {nf.protocolo_autorizacao}')
+
+        elif codigo == 5023:
+            nf.chave_acesso = chave
+            nf.status = 'EMITIDA'
+            if not nf.data_hora_emissao:
+                nf.data_hora_emissao = timezone.now()
+            nf.save(update_fields=['chave_acesso', 'status', 'data_hora_emissao'])
+            messages.info(request,
+                'NF-e em fila na SEFAZ (código 5023). Chave registrada. '
+                'Use "Verificar na SEFAZ" para atualizar o protocolo.')
+
+        else:
+            mensagem = data.get('mensagem') or f'Código {codigo}'
+            messages.warning(request,
+                f'Resposta da SEFAZ: {mensagem}. '
+                'Verifique a chave informada ou consulte o painel IntegraNotas.')
+
+    except IntegranNotasError as exc:
+        erros = '; '.join(str(e) for e in exc.erros) if exc.erros else ''
+        messages.error(request, f'Erro ao consultar [{exc.codigo}]: {exc} {erros}'.strip())
+    except Exception as exc:
+        messages.error(request, f'Falha na comunicação: {exc}')
+
+    return redirect('faturamento:nota_fiscal_detail', pk=pk)
+
+
 @csrf_exempt
 def integranotas_webhook(request):
     """Receives async status notifications from IntegraNota."""
@@ -796,7 +868,12 @@ def nota_fiscal_inutilizar(request):
             )
             return redirect('faturamento:nota_fiscal_list')
     else:
-        form = InutilizacaoNFeForm(initial={'ano': date.today().year})
+        initial = {'ano': date.today().year}
+        if request.GET.get('numero'):
+            initial['numero_ini'] = initial['numero_fim'] = request.GET['numero']
+        if request.GET.get('serie'):
+            initial['serie'] = request.GET['serie']
+        form = InutilizacaoNFeForm(initial=initial)
 
     historico = InutilizacaoNFe.objects.filter(empresa=empresa).order_by('-criado_em')[:20]
     return render(request, 'faturamento/nota_fiscal/inutilizacao_form.html', {
@@ -1387,6 +1464,8 @@ def ajax_produto_detail(request, pk):
         'origem_mercadoria': produto.origem_mercadoria or '0',
         'unidade': produto.unidade_venda.sigla if produto.unidade_venda_id else '',
         'preco_venda': float(produto.preco_venda),
+        'peso_liquido_unitario': float(produto.peso_liquido_unitario or 0),
+        'peso_bruto_unitario':   float(produto.peso_bruto_unitario or 0),
         'tributacoes': tributacoes,
     })
 

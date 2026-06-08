@@ -5,7 +5,6 @@ Configurações corrigidas e otimizadas
 
 import os
 import sys
-import socket
 from pathlib import Path
 from datetime import timedelta
 from dotenv import load_dotenv
@@ -133,58 +132,32 @@ TEMPLATES = [
 WSGI_APPLICATION = 'core.wsgi.application'
 
 
-# Database
-# By default use SQLite for local development. To use PostgreSQL, set environment variables:
-# PG_NAME, PG_USER, PG_PASSWORD, PG_HOST, PG_PORT
-def _host_resolves(hostname: str) -> bool:
-    """Retorna True quando o hostname pode ser resolvido por DNS."""
-    if not hostname:
-        return False
-    try:
-        socket.getaddrinfo(hostname, None)
-        return True
-    except OSError:
-        return False
-
-
+# Database — sempre PostgreSQL/Supabase. Requer PG_NAME no .env.
 PG_NAME = os.getenv('PG_NAME')
 PG_HOST = os.getenv('PG_HOST', 'localhost')
-DB_FALLBACK_SQLITE = get_bool_env('DB_FALLBACK_SQLITE', DEBUG)
-DB_FORCE_SQLITE = get_bool_env('DB_FORCE_SQLITE', False)
 
-use_postgres = bool(PG_NAME) and not DB_FORCE_SQLITE
-if use_postgres and DB_FALLBACK_SQLITE and not _host_resolves(PG_HOST):
-    # Em ambiente de desenvolvimento, evita quebrar o app inteiro se o DNS do banco externo falhar.
-    use_postgres = False
+if not PG_NAME:
+    raise ImproperlyConfigured(
+        "PG_NAME não definido no .env. Configure as variáveis PG_* para conectar ao Supabase."
+    )
 
-if use_postgres:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql_psycopg2',
-            'NAME': PG_NAME,
-            'USER': os.getenv('PG_USER', ''),
-            'PASSWORD': os.getenv('PG_PASSWORD', ''),
-            'HOST': PG_HOST,
-            'PORT': os.getenv('PG_PORT', '5432'),
-            # Configurações críticas para Supabase
-            'CONN_MAX_AGE': 600,  # Reutilizar conexão por 10 minutos
-            'OPTIONS': {
-                'connect_timeout': 10,  # Timeout de conexão 10s
-                'options': '-c statement_timeout=30000'  # Timeout SQL 30s
-            },
-            'ATOMIC_REQUESTS': False,  # Evitar locks desnecessários
-            # Evita erro "InvalidCursorName" em conexões pool/proxy
-            # (ex.: Supabase/PgBouncer) durante renderização de querysets em forms.
-            'DISABLE_SERVER_SIDE_CURSORS': True,
-        }
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': PG_NAME,
+        'USER': os.getenv('PG_USER', ''),
+        'PASSWORD': os.getenv('PG_PASSWORD', ''),
+        'HOST': PG_HOST,
+        'PORT': os.getenv('PG_PORT', '5432'),
+        'CONN_MAX_AGE': 600,
+        'OPTIONS': {
+            'connect_timeout': 10,
+            'options': '-c statement_timeout=30000'
+        },
+        'ATOMIC_REQUESTS': False,
+        'DISABLE_SERVER_SIDE_CURSORS': True,
     }
-else:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
-        }
-    }
+}
 
 
 # Password validation

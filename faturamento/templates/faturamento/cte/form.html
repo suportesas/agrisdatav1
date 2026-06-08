@@ -91,12 +91,22 @@
                 {{ form.municipio_inicio }}
               </div>
               <div class="col-md-2">
+                <label class="form-label">Cód. IBGE Início</label>
+                {{ form.codigo_municipio_inicio }}
+                <small class="text-muted">{{ form.codigo_municipio_inicio.help_text }}</small>
+              </div>
+              <div class="col-md-2">
                 <label class="form-label">UF de Fim <span class="text-danger">*</span></label>
                 {{ form.uf_fim }}
               </div>
               <div class="col-md-4">
                 <label class="form-label">Município de Fim <span class="text-danger">*</span></label>
                 {{ form.municipio_fim }}
+              </div>
+              <div class="col-md-2">
+                <label class="form-label">Cód. IBGE Fim</label>
+                {{ form.codigo_municipio_fim }}
+                <small class="text-muted">{{ form.codigo_municipio_fim.help_text }}</small>
               </div>
             </div>
           </div>

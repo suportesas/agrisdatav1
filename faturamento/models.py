@@ -331,6 +331,13 @@ class ItemNotaFiscal(models.Model):
         ('3', '3 - Importação por encomenda'),
     ]
 
+    # ── Unidade Tributável (exportação — CFOP 7xxx) ──────────────────────────
+    # Mapeia para qTrib / uTrib / vUnTrib no XML da NF-e.
+    # Quando CFOP 7xxx: unidade comercial = CX, unidade tributável = KG.
+    quantidade_tributavel     = models.DecimalField('Qtd. Tributável', max_digits=14, decimal_places=4, default=0)
+    unidade_tributavel        = models.CharField('Unid. Tributável', max_length=20, blank=True, default='KG')
+    valor_unitario_tributavel = models.DecimalField('Vl. Unit. Tributável', max_digits=14, decimal_places=4, default=0)
+
     di_numero           = models.CharField('Nº da DI', max_length=12, blank=True,
                               help_text='Número da Declaração de Importação (ex: 24/1234567-8)')
     di_data_registro    = models.DateField('Data Registro DI', null=True, blank=True)
@@ -733,10 +740,14 @@ class ConhecimentoTransporte(FaturamentoBaseModel):
     )
 
     # Percurso
-    uf_inicio       = models.CharField('UF de Início', max_length=2)
-    municipio_inicio = models.CharField('Município de Início', max_length=100)
-    uf_fim          = models.CharField('UF de Fim', max_length=2)
-    municipio_fim   = models.CharField('Município de Fim', max_length=100)
+    uf_inicio             = models.CharField('UF de Início', max_length=2)
+    municipio_inicio      = models.CharField('Município de Início', max_length=100)
+    codigo_municipio_inicio = models.CharField('Cód. IBGE Início', max_length=7, blank=True,
+        help_text='7 dígitos IBGE do município de início do transporte')
+    uf_fim                = models.CharField('UF de Fim', max_length=2)
+    municipio_fim         = models.CharField('Município de Fim', max_length=100)
+    codigo_municipio_fim  = models.CharField('Cód. IBGE Fim', max_length=7, blank=True,
+        help_text='7 dígitos IBGE do município de fim do transporte')
 
     # Valores
     valor_servico   = models.DecimalField('Valor do Serviço (Frete)', max_digits=14, decimal_places=2, default=0)

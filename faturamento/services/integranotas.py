@@ -530,6 +530,13 @@ class IntegranNotasClient:
             'imposto': self._build_impostos(item),
         }
 
+        # Unidade Tributável — exportação (CFOP 7xxx): qTrib / uTrib / vUnTrib
+        qtrib = float(getattr(item, 'quantidade_tributavel', 0) or 0)
+        if qtrib > 0:
+            item_dict['unidade_tributavel']        = getattr(item, 'unidade_tributavel', '') or 'KG'
+            item_dict['quantidade_tributavel']     = str(item.quantidade_tributavel)
+            item_dict['valor_unitario_tributavel'] = str(item.valor_unitario_tributavel or 0)
+
         # DI — Declaração de Importação (origens 1, 2, 6, 7)
         di = self._build_di(item)
         if di:
@@ -814,38 +821,103 @@ class IntegranNotasClient:
         except Exception:
             config = None
 
+        # data_emissao com offset -03:00 (padrão IntegraNotas)
+        if hasattr(ct.data_emissao, 'strftime'):
+            data_emissao_str = ct.data_emissao.strftime('%Y-%m-%dT00:00:00') + '-03:00'
+        else:
+            data_emissao_str = str(ct.data_emissao) + 'T00:00:00-03:00'
+
+        # tipo_servico: modelo usa texto, API espera numérico
+        tipo_servico_map = {
+            'NORMAL': '0', 'SUBCONTRATADO': '1', 'REDESPACHO': '2', 'INTERMEDIARIO': '3',
+        }
+        tipo_servico = tipo_servico_map.get(ct.tipo_servico, '0')
+
+        # tomador.tipo: determina papel do tomador no CT-e
+        if ct.tomador_id == ct.remetente_id:
+            tomador_tipo = '0'   # Remetente
+        elif ct.tomador_id == ct.destinatario_id:
+            tomador_tipo = '3'   # Destinatário
+        else:
+            tomador_tipo = '4'   # Outros
+
+        # códigos IBGE dos municípios de início/fim (campos do CT-e ou fallback do endereço)
+        rem_end  = ct.remetente.enderecos.filter(padrao=True).first()
+        dest_end = ct.destinatario.enderecos.filter(padrao=True).first()
+
+        cod_mun_ini = getattr(ct, 'codigo_municipio_inicio', '') or (rem_end.codigo_municipio if rem_end else '') or ''
+        nom_mun_ini = ct.municipio_inicio or (rem_end.cidade if rem_end else '') or ''
+        cod_mun_fim = getattr(ct, 'codigo_municipio_fim', '') or (dest_end.codigo_municipio if dest_end else '') or ''
+        nom_mun_fim = ct.municipio_fim or (dest_end.cidade if dest_end else '') or ''
+
+        # município de envio = sede da empresa emitente
+        cod_mun_env = getattr(empresa, 'codigo_municipio', '') or ''
+        nom_mun_env = getattr(empresa, 'cidade', '')            or ''
+        uf_env      = getattr(empresa, 'uf', '')                or ''
+
         docs = [{'chave': d.chave_nfe} for d in ct.documentos_vinculados.all()]
+
+        # tomador: tipo 4 (Outros) exige dados completos; tipos 0-3 reusam a parte já enviada
+        tomador_dict = {
+            'tipo': tomador_tipo,
+            'indicador_inscricao_estadual': self._ie_indicador_cte(ct.tomador),
+            **self._build_parte_cte(ct.tomador),
+        }
 
         payload: dict = {
             'serie': str(ct.serie),
             'numero': str(ct.numero),
-            'data_emissao': ct.data_emissao.strftime('%Y-%m-%dT%H:%M:%S') if hasattr(ct.data_emissao, 'strftime') else str(ct.data_emissao),
+            'data_emissao': data_emissao_str,
             'cfop': ct.cfop,
             'natureza_operacao': ct.natureza_operacao,
-            'tipo_servico': ct.tipo_servico,
+            'tipo_operacao': '0',          # 0=Normal
+            'tipo_servico': tipo_servico,
+            'retirar_mercadoria': '1',     # 1=Não retira
+            'codigo_municipio_envio': cod_mun_env,
+            'nome_municipio_envio':   nom_mun_env,
+            'uf_envio':               uf_env,
+            'codigo_municipio_inicio': cod_mun_ini,
+            'nome_municipio_inicio':   nom_mun_ini,
+            'uf_inicio':               ct.uf_inicio,
+            'codigo_municipio_fim': cod_mun_fim,
+            'nome_municipio_fim':   nom_mun_fim,
+            'uf_fim':               ct.uf_fim,
             'emitente': self._build_emitente(empresa, config),
-            'remetente': self._build_parte_cte(ct.remetente),
+            'remetente':    self._build_parte_cte(ct.remetente),
             'destinatario': self._build_parte_cte(ct.destinatario),
-            'tomador': {'indicador': '3', **self._build_parte_cte(ct.tomador)},
+            'tomador': tomador_dict,
             'valores': {
-                'valor_total_servico': str(ct.valor_servico),
-                'valor_carga': str(ct.valor_carga),
+                'valor_total':  str(ct.valor_servico),
+                'valor_receber': str(ct.valor_servico),
+                'valor_carga':  str(ct.valor_carga),
+            },
+            'imposto': {
+                'icms': {
+                    'situacao_tributaria': '90',
+                    'base_calculo': '0',
+                    'aliquota': '0',
+                    'valor': '0',
+                }
             },
             'modal_rodoviario': self._build_modal_rodoviario_cte(ct),
-            'percurso': {
-                'uf_inicio': ct.uf_inicio,
-                'municipio_inicio': ct.municipio_inicio,
-                'uf_fim': ct.uf_fim,
-                'municipio_fim': ct.municipio_fim,
-            },
             'documentos_originarios': docs,
             'informacoes_adicionais': {'informacoes_contribuinte': ct.observacoes or ''},
         }
         return payload
 
+    def _ie_indicador_cte(self, cliente) -> str:
+        """Retorna indicador_inscricao_estadual para partes do CT-e (1/2/9)."""
+        ind = getattr(cliente, 'indicador_ie', None)
+        if ind:
+            return str(ind)
+        if getattr(cliente, 'inscricao_estadual', '') or getattr(cliente, 'ie', ''):
+            return '1'
+        return '9'
+
     def _build_parte_cte(self, cliente) -> dict:
         doc = _digits(cliente.cnpj_cpf or '')
-        parte: dict = {'nome': cliente.razao_social}
+        nome = (cliente.razao_social or '')[:60]
+        parte: dict = {'nome': nome, 'razao_social': nome}
         if len(doc) == 14:
             parte['cnpj'] = doc
         else:
@@ -853,28 +925,35 @@ class IntegranNotasClient:
         endereco = cliente.enderecos.filter(padrao=True).first()
         if endereco:
             parte['endereco'] = {
-                'logradouro': endereco.logradouro or '',
-                'numero': endereco.numero or 'S/N',
-                'bairro': endereco.bairro or '',
-                'municipio': endereco.cidade or '',
-                'uf': endereco.uf or '',
-                'cep': _digits(endereco.cep or ''),
-                'pais': '1058',
+                'logradouro':      endereco.logradouro or '',
+                'numero':          endereco.numero or 'S/N',
+                'bairro':          endereco.bairro or '',
+                'codigo_municipio': endereco.codigo_municipio or '',
+                'nome_municipio':  endereco.cidade or '',
+                'uf':              endereco.uf or '',
+                'cep':             _digits(endereco.cep or ''),
+                'pais':            '1058',
             }
         return parte
 
     def _build_modal_rodoviario_cte(self, ct) -> dict:
+        rntrc_raw = _digits(getattr(ct.transportadora, 'rntc', '') or '')
+        if len(rntrc_raw) > 8:
+            # RNTRC deve ter exatamente 8 dígitos; trunca pela direita (remove dígito extra à esquerda)
+            rntrc_raw = rntrc_raw[-8:]
+        elif len(rntrc_raw) < 8:
+            rntrc_raw = rntrc_raw.zfill(8)
         modal: dict = {
-            'rntc': getattr(ct.transportadora, 'rntc', '') or '',
+            'rntrc': rntrc_raw,
         }
         if ct.veiculo:
             plates = ct.veiculo.plates.order_by('-id').first()
-            placa = plates.plate if plates else ''
+            placa = plates.placa if plates else ''
             modal['veiculo'] = {'placa': placa, 'uf': ct.uf_inicio}
         if ct.motorista:
             modal['condutor'] = {
                 'nome': ct.motorista.nome,
-                'cpf': _digits(getattr(ct.motorista, 'cpf', '') or ''),
+                'cpf':  _digits(getattr(ct.motorista, 'cpf', '') or ''),
             }
         return modal
 
@@ -1018,7 +1097,7 @@ class IntegranNotasClient:
         percursos = [{'uf': p.uf} for p in mdfe.percursos.order_by('ordem')]
 
         plates = mdfe.veiculo.plates.order_by('-id').first()
-        placa = plates.plate if plates else ''
+        placa = plates.placa if plates else ''
 
         payload: dict = {
             'tipo_operacao': '1',

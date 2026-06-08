@@ -385,6 +385,8 @@ class ItemNotaFiscalForm(forms.ModelForm):
             'numero_item', 'descricao', 'produto',
             'ncm', 'cest', 'ean', 'origem_mercadoria',
             'cfop', 'unidade', 'quantidade', 'valor_unitario', 'valor_desconto',
+            # Unidade Tributável (exportação CFOP 7xxx)
+            'quantidade_tributavel', 'unidade_tributavel', 'valor_unitario_tributavel',
             # ICMS
             'cst_icms', 'icms_modalidade_base', 'icms_reducao_base', 'aliquota_icms',
             # ICMS ST
@@ -414,6 +416,10 @@ class ItemNotaFiscalForm(forms.ModelForm):
             'quantidade': forms.NumberInput(attrs=_sm_num4),
             'valor_unitario': forms.NumberInput(attrs=_sm_num4),
             'valor_desconto': forms.NumberInput(attrs=_sm_num),
+            # Unidade Tributável (exportação)
+            'quantidade_tributavel':     forms.NumberInput(attrs=_sm_num4),
+            'unidade_tributavel':        forms.TextInput(attrs={**_sm, 'placeholder': 'KG', 'style': 'width:55px'}),
+            'valor_unitario_tributavel': forms.NumberInput(attrs=_sm_num4),
             # ICMS
             'cst_icms': forms.TextInput(attrs={**_sm, 'placeholder': '000', 'style': 'width:60px'}),
             'icms_modalidade_base': forms.Select(attrs=_sm_sel, choices=MODALIDADE_BC_ICMS_CHOICES),
@@ -700,7 +706,8 @@ class ConhecimentoTransporteForm(FaturamentoBaseForm):
             'remetente', 'destinatario', 'tomador', 'transportadora',
             'motorista', 'veiculo',
             'data_emissao', 'cfop', 'natureza_operacao', 'tipo_servico',
-            'uf_inicio', 'municipio_inicio', 'uf_fim', 'municipio_fim',
+            'uf_inicio', 'municipio_inicio', 'codigo_municipio_inicio',
+            'uf_fim', 'municipio_fim', 'codigo_municipio_fim',
             'modalidade_frete', 'valor_servico', 'valor_carga', 'peso_bruto_kg',
             'observacoes',
         ]
@@ -715,10 +722,12 @@ class ConhecimentoTransporteForm(FaturamentoBaseForm):
             'cfop':              forms.TextInput(attrs={'class': 'form-control', 'placeholder': '6351'}),
             'natureza_operacao': forms.TextInput(attrs={'class': 'form-control'}),
             'tipo_servico':      forms.Select(attrs={'class': 'form-select'}),
-            'uf_inicio':         forms.TextInput(attrs={'class': 'form-control', 'maxlength': '2', 'placeholder': 'SP'}),
-            'municipio_inicio':  forms.TextInput(attrs={'class': 'form-control'}),
-            'uf_fim':            forms.TextInput(attrs={'class': 'form-control', 'maxlength': '2', 'placeholder': 'MG'}),
-            'municipio_fim':     forms.TextInput(attrs={'class': 'form-control'}),
+            'uf_inicio':                 forms.TextInput(attrs={'class': 'form-control', 'maxlength': '2', 'placeholder': 'RN'}),
+            'municipio_inicio':          forms.TextInput(attrs={'class': 'form-control'}),
+            'codigo_municipio_inicio':   forms.TextInput(attrs={'class': 'form-control', 'maxlength': '7', 'placeholder': '7 dígitos'}),
+            'uf_fim':                    forms.TextInput(attrs={'class': 'form-control', 'maxlength': '2', 'placeholder': 'SP'}),
+            'municipio_fim':             forms.TextInput(attrs={'class': 'form-control'}),
+            'codigo_municipio_fim':      forms.TextInput(attrs={'class': 'form-control', 'maxlength': '7', 'placeholder': '7 dígitos'}),
             'modalidade_frete':  forms.Select(attrs={'class': 'form-select'}),
             'valor_servico':     forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'valor_carga':       forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),

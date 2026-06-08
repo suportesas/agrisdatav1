@@ -905,6 +905,40 @@ def cfop_delete(request, pk):
     return render(request, 'cadastros/cfop/cfop_confirm_delete.html', {'cfop': cf})
 
 
+@login_required
+def cfop_autocomplete(request):
+    q = request.GET.get('q', '').strip()
+    # Prefer company-scoped CFOPs when user has empresa
+    if request.user.is_authenticated and getattr(request.user, 'empresa', None):
+        from .models import EmpresaCFOP
+        qs = EmpresaCFOP.objects.filter(empresa=request.user.empresa, ativo=True)
+    else:
+        qs = CFOP.objects.filter(ativo=True)
+    if q:
+        qs = qs.filter(Q(codigo__icontains=q) | Q(nome__icontains=q))
+    items = []
+    for c in qs.order_by('codigo')[:20]:
+        # 1. Try explicit natureza_operacao FK (CFOP global or via template)
+        nat = None
+        if hasattr(c, 'template') and getattr(c, 'template'):
+            nat = getattr(c.template, 'natureza_operacao', None)
+        else:
+            nat = getattr(c, 'natureza_operacao', None)
+        if nat:
+            natureza_text = nat.descricao if hasattr(nat, 'descricao') else str(nat)
+        else:
+            # 2. Fallback: use the CFOP nome as natureza (uppercased, max 60 chars)
+            natureza_text = (c.nome or '').upper()[:60]
+        items.append({
+            'id': c.pk,
+            'codigo': c.codigo,
+            'nome': c.nome,
+            'descricao': c.descricao or '',
+            'natureza': natureza_text,
+        })
+    return JsonResponse({'items': items})
+
+
 # ==================== FAZENDAS ====================
 
 @login_required

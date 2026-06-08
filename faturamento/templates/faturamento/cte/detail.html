@@ -4,60 +4,144 @@
 <div class="container-fluid mt-3 px-3 px-xl-4">
 
   <!-- Cabeçalho -->
-  <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
-    <div>
-      <h1 class="mb-0">CT-e {{ ct.numero|default:"S/N" }}/{{ ct.serie }}</h1>
-      <small class="text-muted">Emissão: {{ ct.data_emissao|date:"d/m/Y" }}
-        {% if ct.status == 'EMITIDO' %}<span class="badge bg-success ms-2">Emitido</span>
-        {% elif ct.status == 'CANCELADO' %}<span class="badge bg-danger ms-2">Cancelado</span>
-        {% else %}<span class="badge bg-warning text-dark ms-2">Rascunho</span>{% endif %}
-      </small>
-    </div>
-    <div class="d-flex gap-2 flex-wrap">
-      {% if ct.status == 'RASCUNHO' %}
-        <a href="{% url 'faturamento:cte_update' ct.pk %}" class="btn btn-outline-secondary btn-sm">
-          <i class="bi bi-pencil me-1"></i> Editar
-        </a>
-        <form method="post" action="{% url 'faturamento:cte_emitir' ct.pk %}" class="d-inline"
-              onsubmit="return confirm('Confirma a emissão do CT-e na SEFAZ?')">
-          {% csrf_token %}
-          <button type="submit" class="btn btn-success btn-sm">
-            <i class="bi bi-send me-1"></i> Emitir na SEFAZ
-          </button>
-        </form>
-      {% endif %}
-      {% if ct.chave_acesso %}
-        <a href="{% url 'faturamento:cte_preview' ct.pk %}" class="btn btn-outline-secondary btn-sm" target="_blank" title="Preview DACTE">
-          <i class="bi bi-eye me-1"></i> Preview
-        </a>
-      {% endif %}
-      {% if ct.status == 'EMITIDO' %}
-        <a href="{% url 'faturamento:cte_dacte' ct.pk %}" class="btn btn-primary btn-sm" target="_blank">
-          <i class="bi bi-file-earmark-pdf me-1"></i> DACTE
-        </a>
-        {% if ct.chave_acesso and not ct.protocolo %}
-        <form method="post" action="{% url 'faturamento:cte_consultar' ct.pk %}" class="d-inline">
-          {% csrf_token %}
-          <button type="submit" class="btn btn-outline-warning btn-sm" title="Consultar status na SEFAZ">
-            <i class="bi bi-arrow-clockwise me-1"></i> Verificar SEFAZ
-          </button>
-        </form>
-        {% endif %}
-        <a href="{% url 'faturamento:cte_carta_correcao' ct.pk %}" class="btn btn-outline-info btn-sm" title="Carta de Correção">
-          <i class="bi bi-pencil-square me-1"></i> CC-e
-        </a>
-        {% if not ct.desacordo_protocolo %}
-        <a href="{% url 'faturamento:cte_manifestar_desacordo' ct.pk %}" class="btn btn-outline-secondary btn-sm" title="Manifestar Desacordo">
-          <i class="bi bi-hand-thumbs-down me-1"></i> Desacordo
-        </a>
-        {% endif %}
-        <a href="{% url 'faturamento:cte_cancelar' ct.pk %}" class="btn btn-outline-danger btn-sm">
-          <i class="bi bi-x-circle me-1"></i> Cancelar
-        </a>
-      {% endif %}
+  <div class="mb-3">
+    <div class="d-flex align-items-start justify-content-between flex-wrap gap-2 mb-2">
+      <div>
+        <h1 class="mb-0 fs-4">CT-e {{ ct.numero|default:"S/N" }}/{{ ct.serie }}</h1>
+        <small class="text-muted">
+          Modal Rodoviário — Emissão: {{ ct.data_emissao|date:"d/m/Y" }}
+          {% if ct.data_hora_emissao %} {{ ct.data_hora_emissao|date:"H:i" }}{% endif %}
+          &nbsp;
+          {% if ct.status == 'EMITIDO' %}<span class="badge bg-success">Autorizado</span>
+          {% elif ct.status == 'CANCELADO' %}<span class="badge bg-danger">Cancelado</span>
+          {% else %}<span class="badge bg-warning text-dark">Rascunho</span>{% endif %}
+        </small>
+      </div>
       <a href="{% url 'faturamento:cte_list' %}" class="btn btn-outline-secondary btn-sm">
         <i class="bi bi-arrow-left me-1"></i> Voltar
       </a>
+    </div>
+
+    <!-- Linha 1: ações principais -->
+    <div class="d-flex flex-wrap gap-2 mb-2">
+
+      {% if ct.status == 'EMITIDO' %}
+      {# — Cancelar — #}
+      <a href="{% url 'faturamento:cte_cancelar' ct.pk %}"
+         class="btn btn-sm btn-danger">
+        <i class="bi bi-x-circle me-1"></i> Cancelar
+      </a>
+      {% endif %}
+
+      {# — Clonar — sempre disponível #}
+      <form method="post" action="{% url 'faturamento:cte_clone' ct.pk %}" class="d-inline"
+            onsubmit="return confirm('Clonar este CT-e como novo rascunho?')">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-sm btn-outline-secondary">
+          <i class="bi bi-files me-1"></i> Clonar
+        </button>
+      </form>
+
+      {% if ct.status == 'RASCUNHO' %}
+      {# — Editar — #}
+      <a href="{% url 'faturamento:cte_update' ct.pk %}" class="btn btn-sm btn-outline-primary">
+        <i class="bi bi-pencil me-1"></i> Editar
+      </a>
+      {# — Emitir — #}
+      <form method="post" action="{% url 'faturamento:cte_emitir' ct.pk %}" class="d-inline"
+            onsubmit="return confirm('Confirma a emissão do CT-e na SEFAZ?')">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-sm btn-success">
+          <i class="bi bi-send me-1"></i> Emitir na SEFAZ
+        </button>
+      </form>
+      {% endif %}
+
+      {% if ct.status == 'EMITIDO' or ct.chave_acesso %}
+      {# — DACTE — #}
+      <a href="{% url 'faturamento:cte_dacte' ct.pk %}" class="btn btn-sm btn-outline-primary" target="_blank">
+        <i class="bi bi-printer me-1"></i> Dacte
+      </a>
+
+      {# — XML — #}
+      {% if ct.xml_autorizacao %}
+      <a href="{% url 'faturamento:cte_xml' ct.pk %}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-filetype-xml me-1"></i> XML
+      </a>
+      {% endif %}
+      {% endif %}
+
+      {% if ct.status == 'CANCELADO' and ct.xml_cancelamento %}
+      {# — XML Cancelamento — #}
+      <a href="{% url 'faturamento:cte_xml_cancelamento' ct.pk %}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-filetype-xml me-1"></i> XML Cancelamento
+      </a>
+      {% endif %}
+
+      {% if ct.chave_acesso %}
+      {# — Consultar SEFAZ — #}
+      <form method="post" action="{% url 'faturamento:cte_consultar' ct.pk %}" class="d-inline">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-sm btn-outline-info">
+          <i class="bi bi-arrow-repeat me-1"></i> Consultar Situação SEFAZ
+        </button>
+      </form>
+      {% endif %}
+
+      {% if ct.status == 'EMITIDO' %}
+      {# — Correção (CC-e) — #}
+      <a href="{% url 'faturamento:cte_carta_correcao' ct.pk %}" class="btn btn-sm btn-outline-warning">
+        <i class="bi bi-pencil-square me-1"></i> Correção
+      </a>
+
+      {# — Reenviar Email — modal para digitar email extra #}
+      <button type="button" class="btn btn-sm btn-outline-secondary"
+              data-bs-toggle="modal" data-bs-target="#modalReenviarEmail">
+        <i class="bi bi-envelope me-1"></i> Reenviar email
+      </button>
+
+      {# — Preview — #}
+      <a href="{% url 'faturamento:cte_preview' ct.pk %}" class="btn btn-sm btn-outline-secondary" target="_blank">
+        <i class="bi bi-eye me-1"></i> Preview
+      </a>
+
+      {# — Desacordo — #}
+      {% if not ct.desacordo_protocolo %}
+      <a href="{% url 'faturamento:cte_manifestar_desacordo' ct.pk %}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-hand-thumbs-down me-1"></i> Desacordo
+      </a>
+      {% endif %}
+      {% endif %}
+
+    </div>
+  </div>
+
+  <!-- Modal: Reenviar Email -->
+  <div class="modal fade" id="modalReenviarEmail" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-sm">
+      <div class="modal-content">
+        <div class="modal-header py-2">
+          <h6 class="modal-title"><i class="bi bi-envelope me-1"></i> Reenviar DACTE por e-mail</h6>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <form method="post" action="{% url 'faturamento:cte_reenviar_email' ct.pk %}">
+          {% csrf_token %}
+          <div class="modal-body">
+            <p class="small text-muted mb-2">
+              Será enviado para os e-mails cadastrados nos participantes do CT-e.
+              Adicione um e-mail extra abaixo (opcional).
+            </p>
+            <input type="email" name="email_extra" class="form-control form-control-sm"
+                   placeholder="email@extra.com (opcional)">
+          </div>
+          <div class="modal-footer py-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-sm btn-primary">
+              <i class="bi bi-send me-1"></i> Enviar
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   </div>
 
@@ -132,7 +216,18 @@
             <tr><th class="w-35">Percurso</th><td><strong>{{ ct.municipio_inicio }}/{{ ct.uf_inicio }}</strong> → <strong>{{ ct.municipio_fim }}/{{ ct.uf_fim }}</strong></td></tr>
             <tr><th>CFOP</th><td>{{ ct.cfop }}</td></tr>
             <tr><th>Natureza</th><td>{{ ct.natureza_operacao }}</td></tr>
-            <tr><th>Tipo</th><td>{{ ct.get_tipo_servico_display }}</td></tr>
+            <tr>
+              <th>Tipo</th>
+              <td>
+                {{ ct.get_tipo_servico_display }}
+                {% if ct.globalizado %}
+                  <span class="badge ms-1" style="background:#7c3aed;">Globalizado</span>
+                  {% if ct.referencia_despacho %}
+                    <span class="text-muted small ms-1">Despacho: <code>{{ ct.referencia_despacho }}</code></span>
+                  {% endif %}
+                {% endif %}
+              </td>
+            </tr>
             <tr><th>Modalidade</th><td>{{ ct.get_modalidade_frete_display }}</td></tr>
             <tr><th>Valor Frete</th><td><strong>R$ {{ ct.valor_servico|floatformat:2 }}</strong></td></tr>
             <tr><th>Valor Carga</th><td>R$ {{ ct.valor_carga|floatformat:2 }}</td></tr>

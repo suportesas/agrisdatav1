@@ -38,6 +38,7 @@ def api_transportadoras(request):
             'cidade': t.cidade,
             'uf': t.uf,
             'frete_padrao': str(t.frete_padrao) if t.frete_padrao is not None else None,
+            'rntc': t.rntc or '',
             'total_viagens': t.viagens.count(),
         })
 

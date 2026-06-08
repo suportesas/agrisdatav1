@@ -707,6 +707,14 @@ class ConhecimentoTransporte(FaturamentoBaseModel):
     cfop            = models.CharField('CFOP', max_length=4, default='6351', help_text='6351=Prestação de serviço de transporte')
     natureza_operacao = models.CharField('Natureza da Operação', max_length=60, default='PRESTAÇÃO DE SERVIÇO DE TRANSPORTE')
     tipo_servico    = models.CharField('Tipo de Serviço', max_length=20, choices=TIPO_SERVICO, default='NORMAL')
+    globalizado     = models.BooleanField(
+        'CT-e Globalizado', default=False,
+        help_text='Cobre múltiplas NF-e de uma mesma coleta ou entrega dentro do mesmo Estado',
+    )
+    referencia_despacho = models.CharField(
+        'Referência ao Despacho', max_length=20, blank=True,
+        help_text='Número do manifesto/despacho que agrupa as NF-e (obrigatório no modo globalizado)',
+    )
 
     # Partes envolvidas
     remetente       = models.ForeignKey(
@@ -742,18 +750,76 @@ class ConhecimentoTransporte(FaturamentoBaseModel):
     # Percurso
     uf_inicio             = models.CharField('UF de Início', max_length=2)
     municipio_inicio      = models.CharField('Município de Início', max_length=100)
-    codigo_municipio_inicio = models.CharField('Cód. IBGE Início', max_length=7, blank=True,
+    codigo_municipio_inicio = models.CharField('Cód. IBGE Início', max_length=7, blank=True, default='',
         help_text='7 dígitos IBGE do município de início do transporte')
     uf_fim                = models.CharField('UF de Fim', max_length=2)
     municipio_fim         = models.CharField('Município de Fim', max_length=100)
-    codigo_municipio_fim  = models.CharField('Cód. IBGE Fim', max_length=7, blank=True,
+    codigo_municipio_fim  = models.CharField('Cód. IBGE Fim', max_length=7, blank=True, default='',
         help_text='7 dígitos IBGE do município de fim do transporte')
 
     # Valores
-    valor_servico   = models.DecimalField('Valor do Serviço (Frete)', max_digits=14, decimal_places=2, default=0)
-    valor_carga     = models.DecimalField('Valor da Carga', max_digits=14, decimal_places=2, default=0)
-    peso_bruto_kg   = models.DecimalField('Peso Bruto (kg)', max_digits=12, decimal_places=3, default=0)
-    modalidade_frete = models.CharField('Modalidade de Frete', max_length=3, choices=MODALIDADE_FRETE, default='CIF')
+    valor_servico              = models.DecimalField('Valor Total da Prestação', max_digits=14, decimal_places=2, default=0)
+    valor_receber              = models.DecimalField('Valor a Receber', max_digits=14, decimal_places=2, default=0)
+    valor_aproximado_tributos  = models.DecimalField('Valor Aproximado dos Tributos', max_digits=14, decimal_places=2, default=0)
+    produto_predominante       = models.CharField('Produto Predominante', max_length=60, blank=True)
+    valor_carga                = models.DecimalField('Valor da Carga', max_digits=14, decimal_places=2, default=0)
+    peso_bruto_kg              = models.DecimalField('Peso Bruto (kg)', max_digits=12, decimal_places=3, default=0)
+    modalidade_frete           = models.CharField('Modalidade de Frete', max_length=3, choices=MODALIDADE_FRETE, default='CIF')
+
+    # ICMS
+    CST_ICMS = [
+        ('00', '00 - Tributação normal ICMS'),
+        ('20', '20 - Com redução de BC'),
+        ('40', '40 - Isenta'),
+        ('41', '41 - Não tributada'),
+        ('51', '51 - Diferimento'),
+        ('60', '60 - ICMS cobrado por ST'),
+        ('90', '90 - Outros'),
+    ]
+    cst_icms           = models.CharField('CST/COSN ICMS', max_length=3, choices=CST_ICMS, default='00')
+    base_calculo_icms  = models.DecimalField('Base de Cálculo ICMS', max_digits=14, decimal_places=2, default=0)
+    reducao_base_icms  = models.DecimalField('% Redução BC ICMS', max_digits=5, decimal_places=2, default=0)
+    aliquota_icms      = models.DecimalField('Alíquota ICMS (%)', max_digits=5, decimal_places=2, default=0)
+    valor_icms         = models.DecimalField('Valor ICMS', max_digits=14, decimal_places=2, default=0)
+
+    # Modal Rodoviário
+    rntrc_override = models.CharField(
+        'RNTRC (override)',
+        max_length=20, blank=True,
+        help_text='Preencha apenas para sobrescrever o RNTRC da transportadora neste CT-e',
+    )
+
+    # Reforma Tributária (IBS/CBS — NT 2024)
+    REFORMA_CST = [
+        ('',   '--- Não informado ---'),
+        ('01', '01 - Tributada integralmente'),
+        ('02', '02 - Isenta'),
+        ('03', '03 - Não tributada'),
+        ('04', '04 - Imune'),
+        ('05', '05 - Suspensa'),
+        ('06', '06 - Diferimento parcial'),
+        ('07', '07 - Diferimento integral'),
+    ]
+    REFORMA_CLASSIFICACAO = [
+        ('',  '--- Não informado ---'),
+        ('01', '01 - Serviço de transporte'),
+        ('02', '02 - Serviço sujeito a alíquota zero'),
+        ('03', '03 - Serviço isento'),
+        ('04', '04 - Serviço imune'),
+        ('05', '05 - Serviço não sujeito à tributação'),
+    ]
+    reforma_cst             = models.CharField('CST Situação Tributária (Reforma)', max_length=2, choices=REFORMA_CST, blank=True, default='')
+    reforma_classificacao   = models.CharField('Classificação Tributária (Reforma)', max_length=2, choices=REFORMA_CLASSIFICACAO, blank=True, default='')
+
+    # Partilha do ICMS (operações interestaduais)
+    partilha_bc_icms              = models.DecimalField('BC Partilha ICMS', max_digits=14, decimal_places=2, default=0)
+    partilha_aliq_interna_uf_fim  = models.DecimalField('Alíquota Interna UF de Fim (%)', max_digits=5, decimal_places=2, default=0)
+    partilha_aliq_interestadual   = models.DecimalField('Alíquota Interestadual (%)', max_digits=5, decimal_places=2, default=0)
+    partilha_percentual_uf_fim    = models.DecimalField('% Partilha UF de Fim', max_digits=5, decimal_places=2, default=0)
+    partilha_valor_icms_uf_inicio = models.DecimalField('Valor ICMS Partilha UF de Início', max_digits=14, decimal_places=2, default=0)
+    partilha_valor_icms_uf_fim    = models.DecimalField('Valor ICMS Partilha UF de Fim', max_digits=14, decimal_places=2, default=0)
+    partilha_percentual_fcp_uf_fim = models.DecimalField('% FCP UF de Fim', max_digits=5, decimal_places=2, default=0)
+    partilha_valor_fcp_uf_fim     = models.DecimalField('Valor FCP UF de Fim', max_digits=14, decimal_places=2, default=0)
 
     # Informações adicionais
     observacoes     = models.TextField('Observações', blank=True)
@@ -761,12 +827,18 @@ class ConhecimentoTransporte(FaturamentoBaseModel):
     # SEFAZ
     chave_acesso    = models.CharField('Chave de Acesso', max_length=44, blank=True)
     protocolo       = models.CharField('Protocolo de Autorização', max_length=60, blank=True)
-    xml_autorizacao = models.TextField('XML Autorizado (base64)', blank=True)
-    pdf_dacte       = models.TextField('DACTE PDF (base64)', blank=True)
-    status          = models.CharField('Status', max_length=20, choices=STATUS, default='RASCUNHO')
+    xml_autorizacao  = models.TextField('XML Autorizado (base64)', blank=True)
+    xml_cancelamento = models.TextField('XML Cancelamento (base64)', blank=True)
+    pdf_dacte        = models.TextField('DACTE PDF (base64)', blank=True)
+    status           = models.CharField('Status', max_length=20, choices=STATUS, default='RASCUNHO')
     motivo_cancelamento = models.CharField('Motivo do Cancelamento', max_length=255, blank=True)
     data_cancelamento   = models.DateTimeField('Data do Cancelamento', null=True, blank=True)
     data_hora_emissao   = models.DateTimeField('Data/Hora SEFAZ', null=True, blank=True)
+
+    # Fatura (cobrança — <cobr><fat>)
+    fatura_numero          = models.CharField('Número da Fatura', max_length=60, blank=True)
+    fatura_valor_original  = models.DecimalField('Valor Original da Fatura', max_digits=14, decimal_places=2, default=0)
+    fatura_valor_desconto  = models.DecimalField('Valor do Desconto', max_digits=14, decimal_places=2, default=0)
 
     # Manifesta Desacordo
     desacordo_descricao = models.CharField('Descrição do Desacordo', max_length=255, blank=True)
@@ -781,6 +853,23 @@ class ConhecimentoTransporte(FaturamentoBaseModel):
 
     def __str__(self):
         return f'CT-e {self.numero or "S/N"}/{self.serie} — {self.remetente} → {self.destinatario}'
+
+
+class ComponenteValorCTe(models.Model):
+    """Componentes do valor da prestação de serviço do CT-e (<vPrest><Comp>)."""
+    cte   = models.ForeignKey(ConhecimentoTransporte, on_delete=models.CASCADE, related_name='componentes_valor')
+    nome  = models.CharField('Nome do Componente', max_length=60,
+                              help_text='Ex: FRETE PESO, FRETE VALOR, SEC/CAT, ADEME, AGENDAMENTO')
+    valor = models.DecimalField('Valor (R$)', max_digits=14, decimal_places=2, default=0)
+    ordem = models.PositiveSmallIntegerField('Ordem', default=0)
+
+    class Meta:
+        verbose_name = 'Componente de Valor do CT-e'
+        verbose_name_plural = 'Componentes de Valor do CT-e'
+        ordering = ['ordem', 'id']
+
+    def __str__(self):
+        return f'{self.nome}: {self.valor}'
 
 
 class DocumentoVinculadoCTe(models.Model):

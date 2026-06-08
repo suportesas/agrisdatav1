@@ -221,9 +221,9 @@
           <h6 class="fw-semibold mb-3"><i class="bi bi-shield-lock me-2"></i>Certificado Digital A1</h6>
 
           {% if config.certificado_validade %}
-          <div class="alert {% if cert_expirado %}alert-danger{% elif cert_expira_breve %}alert-warning{% else %}alert-success{% endif %} d-flex align-items-start mb-3">
-            <i class="bi bi-{% if cert_expirado %}x-circle-fill{% elif cert_expira_breve %}exclamation-triangle-fill{% else %}patch-check-fill{% endif %} me-2 mt-1 flex-shrink-0"></i>
-            <div>
+          <div class="alert {% if cert_expirado %}alert-danger{% elif cert_expira_breve %}alert-warning{% else %}alert-success{% endif %} d-flex align-items-start gap-3 mb-3">
+            <i class="bi bi-{% if cert_expirado %}x-circle-fill{% elif cert_expira_breve %}exclamation-triangle-fill{% else %}patch-check-fill{% endif %} me-1 mt-1 flex-shrink-0"></i>
+            <div class="flex-grow-1">
               <strong>{{ config.certificado_arquivo_nome }}</strong><br>
               <span class="small">
                 CNPJ: <strong>{{ config.certificado_cnpj }}</strong>
@@ -232,6 +232,13 @@
                 {% if cert_expira_breve %}<span class="fw-bold ms-1">— vence em breve</span>{% endif %}
               </span>
             </div>
+            <form method="post" action="{% url 'faturamento:certificado_delete' %}"
+                  onsubmit="return confirm('Confirma a remoção do certificado digital? Sem certificado a emissão de NF-e será bloqueada.')">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-sm btn-outline-danger" title="Remover certificado">
+                <i class="bi bi-trash me-1"></i>Excluir
+              </button>
+            </form>
           </div>
           {% else %}
           <div class="alert alert-secondary d-flex align-items-center mb-3">

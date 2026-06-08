@@ -15,6 +15,7 @@ from .forms import (
     CartaCorrecaoNFeForm,
     CertificadoDigitalForm,
     ConfiguracaoFiscalForm,
+    ComponenteValorCTeFormSet,
     ConhecimentoTransporteForm,
     DocumentoVinculadoCTeFormSet,
     DocumentoVinculadoMDFeFormSet,
@@ -1423,6 +1424,27 @@ def certificado_upload(request):
     return redirect('faturamento:configuracao')
 
 
+@login_required
+@require_POST
+def certificado_delete(request):
+    """Remove o certificado digital da configuração fiscal da empresa."""
+    empresa = _get_empresa(request)
+    if not empresa:
+        return redirect('dashboard:index')
+    try:
+        config = empresa.configuracao_fiscal
+        config.certificado_pfx = b''
+        config.senha_certificado = ''
+        config.certificado_validade = None
+        config.certificado_cnpj = ''
+        config.certificado_arquivo_nome = ''
+        config.save()
+        messages.success(request, 'Certificado digital removido com sucesso.')
+    except Exception:
+        messages.info(request, 'Nenhum certificado configurado para remover.')
+    return redirect('faturamento:configuracao')
+
+
 # ─────────────────────────── AJAX ───────────────────────────
 
 @login_required
@@ -1518,20 +1540,40 @@ def ajax_cte_para_mdfe(request):
 def ajax_nfe_para_cte(request):
     empresa = _get_empresa(request)
     q = request.GET.get('q', '').strip()
-    notas = NotaFiscal.objects.filter(empresa=empresa, status='EMITIDA').select_related('cliente')
+    notas = (
+        NotaFiscal.objects
+        .filter(empresa=empresa, status='EMITIDA')
+        .select_related('cliente', 'transportadora')
+    )
     if q:
         notas = notas.filter(Q(cliente__razao_social__icontains=q) | Q(numero__icontains=q))
     notas = notas.order_by('-data_emissao')[:50]
-    results = [{
-        'id': n.pk,
-        'numero': n.numero,
-        'serie': n.serie,
-        'cliente_id': n.cliente_id,
-        'cliente_nome': n.cliente.razao_social,
-        'valor_total': str(n.valor_total),
-        'chave_acesso': n.chave_acesso or '',
-        'data_emissao': n.data_emissao.strftime('%d/%m/%Y'),
-    } for n in notas]
+
+    results = []
+    for n in notas:
+        endereco = n.cliente.enderecos.filter(padrao=True).first()
+        results.append({
+            'id':                 n.pk,
+            'numero':             n.numero,
+            'serie':              n.serie,
+            'cliente_id':         n.cliente_id,
+            'cliente_nome':       n.cliente.razao_social,
+            'valor_total':        str(n.valor_total),
+            'chave_acesso':       n.chave_acesso or '',
+            'data_emissao':       n.data_emissao.strftime('%d/%m/%Y'),
+            # campos extras para auto-preenchimento do CT-e
+            # transportadora_id não é mapeado (NF-e usa Fornecedor, CT-e usa Transportadora)
+            'transportadora_id':   '',
+            'transportadora_nome': n.transportadora.nome if n.transportadora else '',
+            'modalidade_frete':    n.modalidade_frete or '',
+            'peso_bruto_kg':       str(n.peso_bruto_kg or '0'),
+            'natureza_operacao':   n.natureza_operacao or '',
+            'valor_frete':         str(n.valor_frete or '0'),
+            'cliente_uf':          endereco.uf if endereco else '',
+            'cliente_municipio':   endereco.cidade if endereco else '',
+            'empresa_uf':          empresa.uf or '',
+            'empresa_municipio':   empresa.cidade or '',
+        })
     return JsonResponse({'results': results})
 
 
@@ -1775,17 +1817,30 @@ def cte_create(request):
     if request.method == 'POST':
         form = ConhecimentoTransporteForm(request.POST, empresa=empresa)
         docs_formset = DocumentoVinculadoCTeFormSet(request.POST, prefix='docs')
-        if form.is_valid() and docs_formset.is_valid():
-            ct = form.save(user=request.user)
-            docs_formset.instance = ct
-            docs_formset.save()
-            messages.success(request, 'CT-e criado com sucesso.')
-            return redirect('faturamento:cte_detail', pk=ct.pk)
+        comp_formset = ComponenteValorCTeFormSet(request.POST, prefix='comp')
+        if form.is_valid() and docs_formset.is_valid() and comp_formset.is_valid():
+            docs_validos = [
+                f for f in docs_formset
+                if f.cleaned_data
+                and f.cleaned_data.get('chave_nfe')
+                and not f.cleaned_data.get('DELETE', False)
+            ]
+            if not docs_validos:
+                messages.error(request, 'Adicione pelo menos uma Chave NF-e antes de salvar.')
+            else:
+                ct = form.save(user=request.user)
+                docs_formset.instance = ct
+                docs_formset.save()
+                comp_formset.instance = ct
+                comp_formset.save()
+                messages.success(request, 'CT-e criado com sucesso.')
+                return redirect('faturamento:cte_detail', pk=ct.pk)
     else:
         form = ConhecimentoTransporteForm(empresa=empresa)
         docs_formset = DocumentoVinculadoCTeFormSet(prefix='docs')
+        comp_formset = ComponenteValorCTeFormSet(prefix='comp')
     return render(request, 'faturamento/cte/form.html', {
-        'form': form, 'docs_formset': docs_formset, 'action': 'Novo',
+        'form': form, 'docs_formset': docs_formset, 'comp_formset': comp_formset, 'action': 'Novo',
     })
 
 
@@ -1799,16 +1854,28 @@ def cte_update(request, pk):
     if request.method == 'POST':
         form = ConhecimentoTransporteForm(request.POST, instance=ct, empresa=empresa)
         docs_formset = DocumentoVinculadoCTeFormSet(request.POST, instance=ct, prefix='docs')
-        if form.is_valid() and docs_formset.is_valid():
-            form.save(user=request.user)
-            docs_formset.save()
-            messages.success(request, 'CT-e atualizado.')
-            return redirect('faturamento:cte_detail', pk=pk)
+        comp_formset = ComponenteValorCTeFormSet(request.POST, instance=ct, prefix='comp')
+        if form.is_valid() and docs_formset.is_valid() and comp_formset.is_valid():
+            docs_validos = [
+                f for f in docs_formset
+                if f.cleaned_data
+                and f.cleaned_data.get('chave_nfe')
+                and not f.cleaned_data.get('DELETE', False)
+            ]
+            if not docs_validos:
+                messages.error(request, 'Adicione pelo menos uma Chave NF-e antes de salvar.')
+            else:
+                form.save(user=request.user)
+                docs_formset.save()
+                comp_formset.save()
+                messages.success(request, 'CT-e atualizado.')
+                return redirect('faturamento:cte_detail', pk=pk)
     else:
         form = ConhecimentoTransporteForm(instance=ct, empresa=empresa)
         docs_formset = DocumentoVinculadoCTeFormSet(instance=ct, prefix='docs')
+        comp_formset = ComponenteValorCTeFormSet(instance=ct, prefix='comp')
     return render(request, 'faturamento/cte/form.html', {
-        'form': form, 'docs_formset': docs_formset, 'action': 'Editar', 'object': ct,
+        'form': form, 'docs_formset': docs_formset, 'comp_formset': comp_formset, 'action': 'Editar', 'object': ct,
     })
 
 
@@ -1876,10 +1943,12 @@ def cte_cancelar(request, pk):
                 config = empresa.configuracao_fiscal
                 from .services.integranotas import IntegranNotasClient, IntegranNotasError
                 client = IntegranNotasClient(token=config.get_token(), ambiente=config.ambiente_nfe)
-                client.cancelar_cte(ct.chave_acesso, form.cleaned_data['justificativa'])
+                resp_cancel = client.cancelar_cte(ct.chave_acesso, form.cleaned_data['justificativa'])
                 ct.status = 'CANCELADO'
                 ct.motivo_cancelamento = form.cleaned_data['justificativa']
                 ct.data_cancelamento = timezone.now()
+                if resp_cancel.get('xml'):
+                    ct.xml_cancelamento = resp_cancel['xml']
                 ct.save()
                 messages.success(request, 'CT-e cancelado com sucesso.')
                 return redirect('faturamento:cte_detail', pk=pk)
@@ -2069,6 +2138,120 @@ def cte_preview(request, pk):
         messages.error(request, f'Erro [{exc.codigo}]: {exc}')
     except Exception as exc:
         messages.error(request, f'Falha na comunicação: {exc}')
+    return redirect('faturamento:cte_detail', pk=pk)
+
+
+@login_required
+def cte_clone(request, pk):
+    """Clona um CT-e como novo rascunho (sem número, sem chave)."""
+    empresa = _get_empresa(request)
+    ct = get_object_or_404(ConhecimentoTransporte, pk=pk, empresa=empresa)
+    docs = list(ct.documentos_vinculados.all())
+    comps = list(ct.componentes_valor.all())
+
+    ct.pk = None
+    ct.numero = None
+    ct.chave_acesso = ''
+    ct.protocolo = ''
+    ct.xml_autorizacao = ''
+    ct.xml_cancelamento = ''
+    ct.pdf_dacte = ''
+    ct.status = 'RASCUNHO'
+    ct.motivo_cancelamento = ''
+    ct.data_cancelamento = None
+    ct.data_hora_emissao = None
+    ct.desacordo_descricao = ''
+    ct.desacordo_protocolo = ''
+    ct.desacordo_data = None
+    ct.save()
+
+    for d in docs:
+        d.pk = None
+        d.cte = ct
+        d.save()
+    for c in comps:
+        c.pk = None
+        c.cte = ct
+        c.save()
+
+    messages.success(request, f'CT-e clonado como rascunho #{ct.pk}. Revise os dados antes de emitir.')
+    return redirect('faturamento:cte_update', pk=ct.pk)
+
+
+@login_required
+def cte_xml(request, pk):
+    """Download do XML autorizado do CT-e."""
+    import base64
+    empresa = _get_empresa(request)
+    ct = get_object_or_404(ConhecimentoTransporte, pk=pk, empresa=empresa)
+    if not ct.xml_autorizacao:
+        messages.error(request, 'XML de autorização não disponível para este CT-e.')
+        return redirect('faturamento:cte_detail', pk=pk)
+    xml_bytes = base64.b64decode(ct.xml_autorizacao)
+    resp = HttpResponse(xml_bytes, content_type='application/xml')
+    resp['Content-Disposition'] = f'attachment; filename="CTE_{ct.numero}_{ct.serie}.xml"'
+    return resp
+
+
+@login_required
+def cte_xml_cancelamento(request, pk):
+    """Download do XML de cancelamento do CT-e."""
+    import base64
+    empresa = _get_empresa(request)
+    ct = get_object_or_404(ConhecimentoTransporte, pk=pk, empresa=empresa)
+    if not ct.xml_cancelamento:
+        messages.error(request, 'XML de cancelamento não disponível para este CT-e.')
+        return redirect('faturamento:cte_detail', pk=pk)
+    xml_bytes = base64.b64decode(ct.xml_cancelamento)
+    resp = HttpResponse(xml_bytes, content_type='application/xml')
+    resp['Content-Disposition'] = f'attachment; filename="CANCEL_CTE_{ct.numero}_{ct.serie}.xml"'
+    return resp
+
+
+@login_required
+@require_POST
+def cte_reenviar_email(request, pk):
+    """Reenvia o DACTE por e-mail para o destinatário e remetente do CT-e."""
+    import base64
+    from django.core.mail import EmailMessage
+    empresa = _get_empresa(request)
+    ct = get_object_or_404(ConhecimentoTransporte, pk=pk, empresa=empresa)
+    if ct.status != 'EMITIDO' or not ct.pdf_dacte:
+        messages.error(request, 'DACTE não disponível. Emita o CT-e antes de reenviar.')
+        return redirect('faturamento:cte_detail', pk=pk)
+
+    destinatarios = []
+    for parte in [ct.remetente, ct.destinatario, ct.tomador]:
+        email = getattr(parte, 'email', '') or ''
+        if email and email not in destinatarios:
+            destinatarios.append(email)
+
+    email_extra = request.POST.get('email_extra', '').strip()
+    if email_extra and email_extra not in destinatarios:
+        destinatarios.append(email_extra)
+
+    if not destinatarios:
+        messages.error(request, 'Nenhum e-mail cadastrado para remetente, destinatário ou tomador.')
+        return redirect('faturamento:cte_detail', pk=pk)
+
+    try:
+        pdf_bytes = base64.b64decode(ct.pdf_dacte)
+        msg = EmailMessage(
+            subject=f'DACTE CT-e {ct.numero}/{ct.serie} — {empresa.nome}',
+            body=(
+                f'Segue em anexo o DACTE do CT-e {ct.numero}/{ct.serie}.\n\n'
+                f'Chave: {ct.chave_acesso}\n'
+                f'Protocolo: {ct.protocolo}\n\n'
+                f'{empresa.nome}'
+            ),
+            from_email=None,
+            to=destinatarios,
+        )
+        msg.attach(f'DACTE_{ct.numero}_{ct.serie}.pdf', pdf_bytes, 'application/pdf')
+        msg.send()
+        messages.success(request, f'DACTE reenviado para: {", ".join(destinatarios)}')
+    except Exception as exc:
+        messages.error(request, f'Falha ao enviar e-mail: {exc}')
     return redirect('faturamento:cte_detail', pk=pk)
 
 

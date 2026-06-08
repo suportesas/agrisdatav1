@@ -4,6 +4,7 @@ from django.forms import inlineformset_factory
 
 from .models import (
     CartaCorrecaoNFe,
+    ComponenteValorCTe,
     ConfiguracaoFiscal,
     ConhecimentoTransporte,
     DocumentoVinculadoCTe,
@@ -706,11 +707,31 @@ class ConhecimentoTransporteForm(FaturamentoBaseForm):
             'remetente', 'destinatario', 'tomador', 'transportadora',
             'motorista', 'veiculo',
             'data_emissao', 'cfop', 'natureza_operacao', 'tipo_servico',
+            'globalizado', 'referencia_despacho',
             'uf_inicio', 'municipio_inicio', 'codigo_municipio_inicio',
             'uf_fim', 'municipio_fim', 'codigo_municipio_fim',
-            'modalidade_frete', 'valor_servico', 'valor_carga', 'peso_bruto_kg',
+            'modalidade_frete', 'valor_servico', 'valor_receber',
+            'valor_aproximado_tributos', 'produto_predominante',
+            'valor_carga', 'peso_bruto_kg',
+            # ICMS
+            'cst_icms', 'base_calculo_icms', 'reducao_base_icms',
+            'aliquota_icms', 'valor_icms',
+            # Partilha ICMS
+            'partilha_bc_icms', 'partilha_aliq_interna_uf_fim',
+            'partilha_aliq_interestadual', 'partilha_percentual_uf_fim',
+            'partilha_valor_icms_uf_inicio', 'partilha_valor_icms_uf_fim',
+            'partilha_percentual_fcp_uf_fim', 'partilha_valor_fcp_uf_fim',
+            # Modal rodoviário
+            'rntrc_override',
+            # Reforma tributária
+            'reforma_cst', 'reforma_classificacao',
+            # Fatura
+            'fatura_numero', 'fatura_valor_original', 'fatura_valor_desconto',
             'observacoes',
         ]
+        _dec2 = {'class': 'form-control', 'step': '0.01', 'min': '0'}
+        _dec4 = {'class': 'form-control', 'step': '0.0001', 'min': '0'}
+        _pct  = {'class': 'form-control', 'step': '0.01', 'min': '0', 'max': '100'}
         widgets = {
             'remetente':         forms.Select(attrs={'class': 'form-select'}),
             'destinatario':      forms.Select(attrs={'class': 'form-select'}),
@@ -722,16 +743,49 @@ class ConhecimentoTransporteForm(FaturamentoBaseForm):
             'cfop':              forms.TextInput(attrs={'class': 'form-control', 'placeholder': '6351'}),
             'natureza_operacao': forms.TextInput(attrs={'class': 'form-control'}),
             'tipo_servico':      forms.Select(attrs={'class': 'form-select'}),
-            'uf_inicio':                 forms.TextInput(attrs={'class': 'form-control', 'maxlength': '2', 'placeholder': 'RN'}),
+            'globalizado':       forms.CheckboxInput(attrs={'class': 'form-check-input', 'id': 'id_globalizado'}),
+            'referencia_despacho': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Número do manifesto/despacho',
+                'id': 'id_referencia_despacho',
+            }),
+            'uf_inicio':                 forms.TextInput(attrs={'class': 'form-control', 'maxlength': '2', 'placeholder': 'SP'}),
             'municipio_inicio':          forms.TextInput(attrs={'class': 'form-control'}),
-            'codigo_municipio_inicio':   forms.TextInput(attrs={'class': 'form-control', 'maxlength': '7', 'placeholder': '7 dígitos'}),
-            'uf_fim':                    forms.TextInput(attrs={'class': 'form-control', 'maxlength': '2', 'placeholder': 'SP'}),
+            'codigo_municipio_inicio':   forms.TextInput(attrs={'class': 'form-control', 'maxlength': '7', 'placeholder': '2408003'}),
+            'uf_fim':                    forms.TextInput(attrs={'class': 'form-control', 'maxlength': '2', 'placeholder': 'MG'}),
             'municipio_fim':             forms.TextInput(attrs={'class': 'form-control'}),
-            'codigo_municipio_fim':      forms.TextInput(attrs={'class': 'form-control', 'maxlength': '7', 'placeholder': '7 dígitos'}),
+            'codigo_municipio_fim':      forms.TextInput(attrs={'class': 'form-control', 'maxlength': '7', 'placeholder': '3550308'}),
             'modalidade_frete':  forms.Select(attrs={'class': 'form-select'}),
-            'valor_servico':     forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
-            'valor_carga':       forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
-            'peso_bruto_kg':     forms.NumberInput(attrs={'class': 'form-control', 'step': '0.001'}),
+            'valor_servico':          forms.NumberInput(attrs=_dec2),
+            'valor_receber':          forms.NumberInput(attrs=_dec2),
+            'valor_aproximado_tributos': forms.NumberInput(attrs=_dec2),
+            'produto_predominante':   forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: SOJA, MILHO'}),
+            'valor_carga':            forms.NumberInput(attrs=_dec2),
+            'peso_bruto_kg':          forms.NumberInput(attrs={'class': 'form-control', 'step': '0.001', 'min': '0'}),
+            # ICMS
+            'cst_icms':          forms.Select(attrs={'class': 'form-select'}),
+            'base_calculo_icms': forms.NumberInput(attrs=_dec2),
+            'reducao_base_icms': forms.NumberInput(attrs=_pct),
+            'aliquota_icms':     forms.NumberInput(attrs=_pct),
+            'valor_icms':        forms.NumberInput(attrs=_dec2),
+            # Partilha ICMS
+            'partilha_bc_icms':              forms.NumberInput(attrs=_dec2),
+            'partilha_aliq_interna_uf_fim':  forms.NumberInput(attrs=_pct),
+            'partilha_aliq_interestadual':   forms.NumberInput(attrs=_pct),
+            'partilha_percentual_uf_fim':    forms.NumberInput(attrs=_pct),
+            'partilha_valor_icms_uf_inicio': forms.NumberInput(attrs=_dec2),
+            'partilha_valor_icms_uf_fim':    forms.NumberInput(attrs=_dec2),
+            'partilha_percentual_fcp_uf_fim': forms.NumberInput(attrs=_pct),
+            'partilha_valor_fcp_uf_fim':     forms.NumberInput(attrs=_dec2),
+            # Modal rodoviário
+            'rntrc_override': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Auto (da transportadora)'}),
+            # Reforma tributária
+            'reforma_cst':           forms.Select(attrs={'class': 'form-select'}),
+            'reforma_classificacao': forms.Select(attrs={'class': 'form-select'}),
+            # Fatura
+            'fatura_numero':         forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: 001'}),
+            'fatura_valor_original': forms.NumberInput(attrs=_dec2),
+            'fatura_valor_desconto': forms.NumberInput(attrs=_dec2),
             'observacoes':       forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
 
@@ -773,7 +827,30 @@ class DocumentoVinculadoCTeForm(forms.ModelForm):
 DocumentoVinculadoCTeFormSet = inlineformset_factory(
     ConhecimentoTransporte, DocumentoVinculadoCTe,
     form=DocumentoVinculadoCTeForm,
-    extra=1, can_delete=True, min_num=1, validate_min=True,
+    extra=0, can_delete=True, min_num=0, validate_min=False,
+)
+
+
+class ComponenteValorCTeForm(forms.ModelForm):
+    class Meta:
+        model = ComponenteValorCTe
+        fields = ['nome', 'valor']
+        widgets = {
+            'nome':  forms.TextInput(attrs={
+                'class': 'form-control form-control-sm',
+                'placeholder': 'Ex: FRETE PESO, FRETE VALOR, SEC/CAT, ADEME…',
+            }),
+            'valor': forms.NumberInput(attrs={
+                'class': 'form-control form-control-sm text-end',
+                'step': '0.01', 'min': '0',
+            }),
+        }
+
+
+ComponenteValorCTeFormSet = inlineformset_factory(
+    ConhecimentoTransporte, ComponenteValorCTe,
+    form=ComponenteValorCTeForm,
+    extra=1, can_delete=True, min_num=0, validate_min=False,
 )
 
 

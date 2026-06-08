@@ -807,69 +807,262 @@ class IntegranNotasClient:
         resp.raise_for_status()
         return resp.json()
 
+    # Mapeamento tipo_servico (string model → código IntegraNotas)
+    _TIPO_SERVICO_MAP = {
+        'NORMAL': '0', 'SUBCONTRATADO': '1', 'REDESPACHO': '2',
+        'INTERMEDIARIO': '3', 'VINCULADO_MULTIMODAL': '4',
+    }
+
     def _build_cte_payload(self, ct) -> dict:
+        from datetime import datetime as _dt
         empresa = ct.empresa
         try:
             config = empresa.configuracao_fiscal
         except Exception:
             config = None
 
+        # data_emissao: obrigatório no formato 2020-05-16T12:33:20-03:00
+        dt = ct.data_emissao
+        if hasattr(dt, 'hour'):
+            data_emissao_str = dt.strftime('%Y-%m-%dT%H:%M:%S') + '-03:00'
+        else:
+            now = _dt.now()
+            data_emissao_str = f"{dt.strftime('%Y-%m-%d')}T{now.strftime('%H:%M:%S')}-03:00"
+
+        tipo_servico = self._TIPO_SERVICO_MAP.get(ct.tipo_servico or 'NORMAL', '0')
+
         docs = [{'chave': d.chave_nfe} for d in ct.documentos_vinculados.all()]
+
+        # Campos de percurso — validação antecipada dos códigos IBGE
+        cod_ini = (ct.codigo_municipio_inicio or '').strip()
+        cod_fim = (ct.codigo_municipio_fim or '').strip()
+        if not cod_ini:
+            raise IntegranNotasError(
+                'Código IBGE do município de início (Percurso) não preenchido. '
+                'Preencha o campo "Cód. IBGE Início" no CT-e antes de emitir.',
+                codigo=None,
+            )
+        if not cod_fim:
+            raise IntegranNotasError(
+                'Código IBGE do município de fim (Percurso) não preenchido. '
+                'Preencha o campo "Cód. IBGE Fim" no CT-e antes de emitir.',
+                codigo=None,
+            )
 
         payload: dict = {
             'serie': str(ct.serie),
             'numero': str(ct.numero),
-            'data_emissao': ct.data_emissao.strftime('%Y-%m-%dT%H:%M:%S') if hasattr(ct.data_emissao, 'strftime') else str(ct.data_emissao),
+            'data_emissao': data_emissao_str,
+            'tipo_operacao': '0',                     # CT-e Normal
             'cfop': ct.cfop,
             'natureza_operacao': ct.natureza_operacao,
-            'tipo_servico': ct.tipo_servico,
+            'tipo_servico': tipo_servico,
+            # Município de envio (emissão) = mesma origem da prestação
+            'codigo_municipio_envio': cod_ini,
+            'nome_municipio_envio': ct.municipio_inicio or '',
+            'uf_envio': ct.uf_inicio or '',
+            # Início da prestação
+            'codigo_municipio_inicio': cod_ini,
+            'nome_municipio_inicio': ct.municipio_inicio or '',
+            'uf_inicio': ct.uf_inicio or '',
+            # Fim da prestação
+            'codigo_municipio_fim': cod_fim,
+            'nome_municipio_fim': ct.municipio_fim or '',
+            'uf_fim': ct.uf_fim or '',
+            # Retirada / programação entrega
+            'retirar_mercadoria': '1',                # 1 = Não retira
+            'tipo_programacao_entrega': '0',
+            'sem_hora_tipo_hora_programada': '0',
             'emitente': self._build_emitente(empresa, config),
             'remetente': self._build_parte_cte(ct.remetente),
             'destinatario': self._build_parte_cte(ct.destinatario),
-            'tomador': {'indicador': '3', **self._build_parte_cte(ct.tomador)},
-            'valores': {
-                'valor_total_servico': str(ct.valor_servico),
-                'valor_carga': str(ct.valor_carga),
-            },
+            'tomador': self._build_tomador_cte(ct),
+            'valores': self._build_valores_cte(ct),
+            'imposto': self._build_imposto_cte(ct),
             'modal_rodoviario': self._build_modal_rodoviario_cte(ct),
-            'percurso': {
-                'uf_inicio': ct.uf_inicio,
-                'municipio_inicio': ct.municipio_inicio,
-                'uf_fim': ct.uf_fim,
-                'municipio_fim': ct.municipio_fim,
-            },
-            'documentos_originarios': docs,
-            'informacoes_adicionais': {'informacoes_contribuinte': ct.observacoes or ''},
+            'nfes': docs,
+            'informacoes_adicionais': {'informacoes_contribuinte': self._build_obs_cte(ct)},
         }
+
+        # Fatura (cobrança) — só inclui se número ou valor original informado
+        fat_num = (getattr(ct, 'fatura_numero', '') or '').strip()
+        fat_orig = float(getattr(ct, 'fatura_valor_original', 0) or 0)
+        if fat_num or fat_orig > 0:
+            payload['cobranca'] = {
+                'fatura': {
+                    'numero': fat_num or str(ct.numero or ''),
+                    'valor_original': str(ct.fatura_valor_original),
+                    'valor_desconto': str(ct.fatura_valor_desconto),
+                    'valor_liquido': str(
+                        (ct.fatura_valor_original or 0) - (ct.fatura_valor_desconto or 0)
+                    ),
+                }
+            }
+
         return payload
+
+    def _build_obs_cte(self, ct) -> str:
+        partes = []
+        if getattr(ct, 'globalizado', False):
+            ref = (getattr(ct, 'referencia_despacho', '') or '').strip()
+            partes.append('CT-e GLOBALIZADO')
+            if ref:
+                partes.append(f'DESPACHO: {ref}')
+        obs = (ct.observacoes or '').strip()
+        if obs:
+            partes.append(obs)
+        return ' | '.join(partes)
+
+    def _build_valores_cte(self, ct) -> dict:
+        valores: dict = {
+            'valor_total': str(ct.valor_servico),
+            'valor_receber': str(ct.valor_receber or ct.valor_servico),
+            'valor_total_carga': str(ct.valor_carga),
+        }
+        produto = (getattr(ct, 'produto_predominante', '') or '').strip()
+        if produto:
+            valores['produto_predominante'] = produto
+        tributos = float(getattr(ct, 'valor_aproximado_tributos', 0) or 0)
+        if tributos > 0:
+            valores['valor_aproximado_tributos'] = str(ct.valor_aproximado_tributos)
+        # quantidades — obrigatório quando tipo_operacao='0' ou '3'
+        peso = float(ct.peso_bruto_kg or 0)
+        valores['quantidades'] = [
+            {
+                'codigo_unidade_medida': '01',   # 01 = KG
+                'tipo_medida': 'PESO BRUTO',
+                'quantidade': f'{peso:.3f}',
+            }
+        ]
+
+        # Componentes do valor da prestação (Prestações)
+        comps = list(ct.componentes_valor.all())
+        if comps:
+            valores['componentes_valor'] = [
+                {'nome': c.nome, 'valor': str(c.valor)} for c in comps
+            ]
+        return valores
+
+    def _build_imposto_cte(self, ct) -> dict:
+        cst = getattr(ct, 'cst_icms', '40') or '40'
+        bc  = float(getattr(ct, 'base_calculo_icms', 0) or 0)
+        alq = float(getattr(ct, 'aliquota_icms', 0) or 0)
+        val = float(getattr(ct, 'valor_icms', 0) or 0)
+        red = float(getattr(ct, 'reducao_base_icms', 0) or 0)
+
+        icms: dict = {'situacao_tributaria': cst}
+        if bc > 0:
+            icms['valor_base_calculo'] = str(ct.base_calculo_icms)
+        if alq > 0:
+            icms['aliquota'] = str(ct.aliquota_icms)
+        if val > 0:
+            icms['valor'] = str(ct.valor_icms)
+        if red > 0:
+            icms['aliquota_reducao_base_calculo'] = str(ct.reducao_base_icms)
+
+        # Partilha ICMS (interestadual) — só inclui se houver valor preenchido
+        pb = float(getattr(ct, 'partilha_bc_icms', 0) or 0)
+        if pb > 0:
+            icms['partilha'] = {
+                'valor_base_calculo': str(ct.partilha_bc_icms),
+                'aliquota_interna_uf_fim': str(ct.partilha_aliq_interna_uf_fim),
+                'aliquota_interestadual': str(ct.partilha_aliq_interestadual),
+                'percentual_uf_fim': str(ct.partilha_percentual_uf_fim),
+                'valor_icms_uf_inicio': str(ct.partilha_valor_icms_uf_inicio),
+                'valor_icms_uf_fim': str(ct.partilha_valor_icms_uf_fim),
+                'percentual_fcp_uf_fim': str(ct.partilha_percentual_fcp_uf_fim),
+                'valor_fcp_uf_fim': str(ct.partilha_valor_fcp_uf_fim),
+            }
+
+        return {'icms': icms}
 
     def _build_parte_cte(self, cliente) -> dict:
         doc = _digits(cliente.cnpj_cpf or '')
-        parte: dict = {'nome': cliente.razao_social}
+        parte: dict = {'razao_social': cliente.razao_social, 'nome': cliente.razao_social}
         if len(doc) == 14:
             parte['cnpj'] = doc
-        else:
+        elif len(doc) == 11:
             parte['cpf'] = doc
-        endereco = cliente.enderecos.filter(padrao=True).first()
-        if endereco:
-            parte['endereco'] = {
-                'logradouro': endereco.logradouro or '',
-                'numero': endereco.numero or 'S/N',
-                'bairro': endereco.bairro or '',
-                'municipio': endereco.cidade or '',
-                'uf': endereco.uf or '',
-                'cep': _digits(endereco.cep or ''),
-                'pais': '1058',
-            }
+        ie = (getattr(cliente, 'inscricao_estadual', '') or '').strip()
+        if ie:
+            parte['inscricao_estadual'] = ie
+        parte['indicador_inscricao_estadual'] = getattr(cliente, 'indicador_ie', None) or '9'
+        endereco = (
+            cliente.enderecos.filter(padrao=True).first()
+            or cliente.enderecos.first()
+        )
+        if not endereco:
+            raise IntegranNotasError(
+                f'"{cliente.razao_social}" não possui endereço cadastrado. '
+                'Cadastre um endereço antes de emitir o CT-e.',
+                codigo=None,
+            )
+        parte['endereco'] = {
+            'logradouro': endereco.logradouro or '',
+            'numero': endereco.numero or 'S/N',
+            'bairro': endereco.bairro or '',
+            'codigo_municipio': (getattr(endereco, 'codigo_municipio', '') or '9999999'),
+            'nome_municipio': endereco.cidade or '',
+            'uf': endereco.uf or '',
+            'cep': _digits(endereco.cep or ''),
+        }
         return parte
 
-    def _build_modal_rodoviario_cte(self, ct) -> dict:
-        modal: dict = {
-            'rntc': getattr(ct.transportadora, 'rntc', '') or '',
+    def _build_tomador_cte(self, ct) -> dict:
+        """Monta o bloco tomador com tipo derivado do relacionamento."""
+        tomador = ct.tomador
+        # Determina o tipo do tomador comparando com as outras partes
+        if tomador.pk == ct.remetente.pk:
+            tipo = '0'   # Remetente
+        elif tomador.pk == ct.destinatario.pk:
+            tipo = '3'   # Destinatário
+        else:
+            tipo = '4'   # Outros — precisa de dados completos
+
+        ie_ind = getattr(tomador, 'indicador_ie', None) or '9'
+        result: dict = {
+            'tipo': tipo,
+            'indicador_inscricao_estadual': ie_ind,
         }
+
+        # tipo '4' (Outros) exige dados completos do tomador
+        if tipo == '4':
+            doc = _digits(tomador.cnpj_cpf or '')
+            result['razao_social'] = tomador.razao_social
+            result['nome'] = tomador.razao_social
+            if len(doc) == 14:
+                result['cnpj'] = doc
+            elif len(doc) == 11:
+                result['cpf'] = doc
+            ie = (getattr(tomador, 'inscricao_estadual', '') or '').strip()
+            if ie:
+                result['inscricao_estadual'] = ie
+            endereco = (
+                tomador.enderecos.filter(padrao=True).first()
+                or tomador.enderecos.first()
+            )
+            if endereco:
+                result['endereco'] = {
+                    'logradouro': endereco.logradouro or '',
+                    'numero': endereco.numero or 'S/N',
+                    'bairro': endereco.bairro or '',
+                    'codigo_municipio': (getattr(endereco, 'codigo_municipio', '') or '9999999'),
+                    'nome_municipio': endereco.cidade or '',
+                    'uf': endereco.uf or '',
+                    'cep': _digits(endereco.cep or ''),
+                }
+        return result
+
+    def _build_modal_rodoviario_cte(self, ct) -> dict:
+        rntrc = (getattr(ct, 'rntrc_override', '') or '').strip()
+        if not rntrc:
+            rntrc = getattr(ct.transportadora, 'rntc', '') or ''
+        modal: dict = {'rntrc': rntrc}
         if ct.veiculo:
-            plates = ct.veiculo.plates.order_by('-id').first()
-            placa = plates.plate if plates else ''
+            placa = ct.veiculo.get_current_plate() or ''
+            if not placa:
+                first = ct.veiculo.plates.order_by('-vigencia_inicio').first()
+                placa = first.placa if first else ''
             modal['veiculo'] = {'placa': placa, 'uf': ct.uf_inicio}
         if ct.motorista:
             modal['condutor'] = {
@@ -1018,7 +1211,7 @@ class IntegranNotasClient:
         percursos = [{'uf': p.uf} for p in mdfe.percursos.order_by('ordem')]
 
         plates = mdfe.veiculo.plates.order_by('-id').first()
-        placa = plates.plate if plates else ''
+        placa = plates.placa if plates else ''
 
         payload: dict = {
             'tipo_operacao': '1',

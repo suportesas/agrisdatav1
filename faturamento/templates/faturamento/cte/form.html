@@ -59,9 +59,10 @@
                 <label class="form-label">Data de Emissão <span class="text-danger">*</span></label>
                 {{ form.data_emissao }}
               </div>
-              <div class="col-md-2">
+              <div class="col-md-2" style="position:relative;">
                 <label class="form-label">CFOP</label>
                 {{ form.cfop }}
+                <div id="cfop-dropdown" style="display:none;position:absolute;z-index:1055;width:340px;background:#fff;border:1px solid #c4b5fd;border-radius:8px;box-shadow:0 4px 16px rgba(124,58,237,.12);max-height:260px;overflow-y:auto;margin-top:2px;"></div>
               </div>
               <div class="col-md-4">
                 <label class="form-label">Natureza da Operação</label>
@@ -71,6 +72,33 @@
                 <label class="form-label">Tipo de Serviço</label>
                 {{ form.tipo_servico }}
               </div>
+
+              <!-- CT-e Globalizado -->
+              <div class="col-12">
+                <div class="rounded py-2 px-3 d-flex align-items-start gap-3" style="background:#fefce8;border:1px solid #fde68a;border-left:4px solid #7c3aed;">
+                  <i class="bi bi-info-circle-fill mt-1" style="color:#f59e0b;flex-shrink:0;"></i>
+                  <div class="small">
+                    Você pode incluir várias notas fiscais originadas de uma mesma coleta ou destinadas a uma única entrega
+                    — dentro do mesmo Estado — em um único documento.
+                    <div class="form-check mt-2 mb-0">
+                      {{ form.globalizado }}
+                      <label class="form-check-label fw-semibold" for="id_globalizado">
+                        Marque aqui para utilizar o CT-e Globalizado
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Referência ao Despacho — aparece somente quando CT-e Globalizado está marcado -->
+              <div class="col-md-4 d-none" id="bloco-referencia-despacho">
+                <label class="form-label fw-semibold">
+                  Referência ao Despacho <span class="text-danger">*</span>
+                </label>
+                {{ form.referencia_despacho }}
+                <div class="form-text">Número do manifesto/despacho que agrupa as NF-e.</div>
+              </div>
+
             </div>
           </div>
         </div>
@@ -91,6 +119,17 @@
                 {{ form.municipio_inicio }}
               </div>
               <div class="col-md-2">
+                <label class="form-label">
+                  Cód. IBGE Início <span class="text-danger">*</span>
+                  <a href="https://servicodados.ibge.gov.br/api/docs/localidades" target="_blank"
+                     class="ms-1 text-muted" style="font-size:.75rem;" title="Consultar códigos IBGE">
+                    <i class="bi bi-question-circle"></i>
+                  </a>
+                </label>
+                {{ form.codigo_municipio_inicio }}
+                <div class="form-text">7 dígitos — ex: 2408003 (Mossoró)</div>
+              </div>
+              <div class="col-md-2">
                 <label class="form-label">UF de Fim <span class="text-danger">*</span></label>
                 {{ form.uf_fim }}
               </div>
@@ -98,21 +137,28 @@
                 <label class="form-label">Município de Fim <span class="text-danger">*</span></label>
                 {{ form.municipio_fim }}
               </div>
+              <div class="col-md-2">
+                <label class="form-label">
+                  Cód. IBGE Fim <span class="text-danger">*</span>
+                  <a href="https://servicodados.ibge.gov.br/api/docs/localidades" target="_blank"
+                     class="ms-1 text-muted" style="font-size:.75rem;" title="Consultar códigos IBGE">
+                    <i class="bi bi-question-circle"></i>
+                  </a>
+                </label>
+                {{ form.codigo_municipio_fim }}
+                <div class="form-text">7 dígitos — ex: 3550308 (São Paulo)</div>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Valores -->
+      <!-- Valores e Carga -->
       <div class="col-12">
         <div class="card">
-          <div class="card-header bg-success text-white py-2"><i class="bi bi-currency-dollar me-1"></i> Valores e Carga</div>
+          <div class="card-header bg-success text-white py-2"><i class="bi bi-boxes me-1"></i> Carga e Transporte</div>
           <div class="card-body">
             <div class="row g-3">
-              <div class="col-md-3">
-                <label class="form-label">Valor do Frete (R$) <span class="text-danger">*</span></label>
-                {{ form.valor_servico }}
-              </div>
               <div class="col-md-3">
                 <label class="form-label">Valor da Carga (R$)</label>
                 {{ form.valor_carga }}
@@ -125,8 +171,228 @@
                 <label class="form-label">Modalidade de Frete</label>
                 {{ form.modalidade_frete }}
               </div>
+              <div class="col-md-3">
+                <label class="form-label">Produto Predominante</label>
+                {{ form.produto_predominante }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Rodoviário -->
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header bg-dark text-white py-2"><i class="bi bi-truck me-1"></i> Rodoviário</div>
+          <div class="card-body">
+            <div class="row g-3 align-items-end">
+              <div class="col-md-3">
+                <label class="form-label">Placa do Veículo</label>
+                <input type="text" id="placa-display" class="form-control bg-light" readonly
+                       placeholder="Preenchido ao selecionar o veículo" title="Placa atual do veículo selecionado">
+                <div class="form-text">Lida do cadastro do veículo selecionado.</div>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">RNTRC da Transportadora</label>
+                <input type="text" id="rntrc-display" class="form-control bg-light" readonly
+                       placeholder="Preenchido automaticamente" title="RNTRC registrado na transportadora">
+                <div class="form-text">Lido do cadastro da transportadora selecionada.</div>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">RNTRC — override <span class="badge bg-secondary ms-1" style="font-size:.7rem;">opcional</span></label>
+                {{ form.rntrc_override }}
+                <div class="form-text">Preencha só se quiser sobrescrever o RNTRC neste CT-e.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Reforma Tributária -->
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header py-2 text-white" style="background:#0891b2;"><i class="bi bi-bank me-1"></i> Reforma Tributária (IBS/CBS)</div>
+          <div class="card-body">
+            <p class="text-muted small mb-3">Campos da Reforma Tributária brasileira (NT 2024) — preencha quando exigido pela SEFAZ do seu estado.</p>
+            <div class="row g-3">
+              <div class="col-md-4">
+                <label class="form-label">CST — Situação Tributária</label>
+                {{ form.reforma_cst }}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Classificação Tributária</label>
+                {{ form.reforma_classificacao }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cobranças -->
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header py-2 text-white" style="background:#7c3aed;"><i class="bi bi-receipt me-1"></i> Cobranças — Serviços e Impostos</div>
+          <div class="card-body">
+
+            <p class="text-muted small mb-3">Serviços</p>
+            <div class="row g-3 mb-3">
+              <div class="col-md-3">
+                <label class="form-label">Valor Total da Prestação <span class="text-danger">*</span></label>
+                {{ form.valor_servico }}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">Valor a Receber</label>
+                {{ form.valor_receber }}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">Valor Aproximado dos Tributos</label>
+                {{ form.valor_aproximado_tributos }}
+              </div>
+            </div>
+
+            <hr class="my-2">
+            <p class="text-muted small mb-3">ICMS</p>
+            <div class="row g-3 mb-3">
+              <div class="col-md-3">
+                <label class="form-label">CST/COSN ICMS</label>
+                {{ form.cst_icms }}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">Base de Cálculo ICMS</label>
+                {{ form.base_calculo_icms }}
+              </div>
+              <div class="col-md-2">
+                <label class="form-label">% Redução BC</label>
+                {{ form.reducao_base_icms }}
+              </div>
+              <div class="col-md-2">
+                <label class="form-label">Alíquota ICMS (%)</label>
+                {{ form.aliquota_icms }}
+              </div>
+              <div class="col-md-2 position-relative">
+                <label class="form-label d-flex align-items-center gap-2">
+                  Valor ICMS
+                  <span class="form-check mb-0">
+                    <input type="checkbox" class="form-check-input" id="icms-auto" checked>
+                    <label class="form-check-label small text-muted" for="icms-auto">Auto</label>
+                  </span>
+                </label>
+                {{ form.valor_icms }}
+              </div>
+            </div>
+
+            <hr class="my-2">
+            <p class="text-muted small mb-2">Partilha do ICMS <span class="badge bg-secondary ms-1" style="font-size:.7rem;">Interestadual</span></p>
+            <div class="row g-3">
+              <div class="col-md-3">
+                <label class="form-label">Base de Cálculo Partilha</label>
+                {{ form.partilha_bc_icms }}
+              </div>
+              <div class="col-md-2">
+                <label class="form-label">Alíq. Interna UF de Fim (%)</label>
+                {{ form.partilha_aliq_interna_uf_fim }}
+              </div>
+              <div class="col-md-2">
+                <label class="form-label">Alíquota Interestadual (%)</label>
+                {{ form.partilha_aliq_interestadual }}
+              </div>
+              <div class="col-md-2">
+                <label class="form-label">% Partilha UF de Fim</label>
+                {{ form.partilha_percentual_uf_fim }}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">Valor ICMS Partilha UF Início</label>
+                {{ form.partilha_valor_icms_uf_inicio }}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">Valor ICMS Partilha UF Fim</label>
+                {{ form.partilha_valor_icms_uf_fim }}
+              </div>
+              <div class="col-md-2">
+                <label class="form-label">% FCP UF de Fim</label>
+                {{ form.partilha_percentual_fcp_uf_fim }}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">Valor FCP UF de Fim</label>
+                {{ form.partilha_valor_fcp_uf_fim }}
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- Faturas -->
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header py-2 text-white" style="background:#4f46e5;"><i class="bi bi-receipt-cutoff me-1"></i> Faturas</div>
+          <div class="card-body">
+
+            <p class="text-muted small mb-3">Fatura</p>
+            <div class="row g-3 mb-4">
+              <div class="col-md-3">
+                <label class="form-label">Número</label>
+                {{ form.fatura_numero }}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">Valor Origem (R$)</label>
+                {{ form.fatura_valor_original }}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">Valor Desconto (R$)</label>
+                {{ form.fatura_valor_desconto }}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">Valor Final (R$)</label>
+                <input type="text" id="fatura-valor-final" class="form-control bg-light" readonly placeholder="Calculado automaticamente">
+              </div>
+            </div>
+
+            <hr class="my-3">
+            <p class="text-muted small mb-2">Prestações <span class="badge bg-secondary ms-1" style="font-size:.7rem;">componentes do valor do frete</span></p>
+            {{ comp_formset.management_form }}
+            <table class="table table-sm" id="comp-table">
+              <thead class="table-light">
+                <tr>
+                  <th>Nome</th>
+                  <th style="width:160px;">Valor (R$)</th>
+                  <th style="width:40px;"></th>
+                </tr>
+              </thead>
+              <tbody id="comp-tbody">
+                {% for cf in comp_formset %}
+                <tr>
+                  <td>{{ cf.nome }}{{ cf.id }}</td>
+                  <td>{{ cf.valor }}</td>
+                  <td>{{ cf.DELETE }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+            <table style="display:none"><tbody id="comp-empty-row">
+              <tr id="comp-template-row">
+                <td><input type="text" name="comp-__prefix__-nome" maxlength="60" class="form-control form-control-sm" placeholder="Ex: FRETE PESO, FRETE VALOR, SEC/CAT, ADEME…" id="id_comp-__prefix__-nome"></td>
+                <td><input type="number" name="comp-__prefix__-valor" step="0.01" min="0" class="form-control form-control-sm text-end" id="id_comp-__prefix__-valor" value="0"></td>
+                <td><input type="checkbox" name="comp-__prefix__-DELETE" id="id_comp-__prefix__-DELETE" class="form-check-input">
+                    <input type="hidden" name="comp-__prefix__-id" id="id_comp-__prefix__-id"></td>
+              </tr>
+            </tbody></table>
+            <button type="button" class="btn btn-outline-secondary btn-sm mt-2" onclick="adicionarLinhaPrestacao()">
+              <i class="bi bi-plus-circle me-1"></i> Adicionar Prestação
+            </button>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- Informações Adicionais -->
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header bg-light py-2"><i class="bi bi-chat-left-text me-1"></i> Informações Adicionais</div>
+          <div class="card-body">
+            <div class="row g-3">
               <div class="col-12">
-                <label class="form-label">Observações</label>
+                <label class="form-label">Observações Gerais</label>
                 {{ form.observacoes }}
               </div>
             </div>
@@ -141,13 +407,26 @@
           <div class="card-body">
             {{ docs_formset.management_form }}
             <table class="table table-sm" id="docs-table">
-              <thead class="table-light"><tr><th>Chave NF-e (44 dígitos)</th><th>Descrição</th><th></th></tr></thead>
+              <thead class="table-light">
+                <tr>
+                  <th>Chave NF-e (44 dígitos)</th>
+                  <th>Descrição</th>
+                  <th style="width:80px;"></th>
+                </tr>
+              </thead>
               <tbody id="docs-tbody">
                 {% for df in docs_formset %}
                 <tr>
                   <td>{{ df.chave_nfe }}{{ df.id }}</td>
                   <td>{{ df.descricao }}</td>
-                  <td>{{ df.DELETE }}</td>
+                  <td>
+                    {# Checkbox DELETE oculto — Django formset precisa dele #}
+                    <div style="display:none;">{{ df.DELETE }}</div>
+                    <button type="button" class="btn btn-outline-danger btn-sm"
+                            onclick="removerLinhaDoc(this)" title="Excluir">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </td>
                 </tr>
                 {% endfor %}
               </tbody>
@@ -155,10 +434,16 @@
             <!-- Linha template oculta para clonagem via JS -->
             <table style="display:none"><tbody id="docs-empty-row">
               <tr id="docs-template-row">
-                <td><input type="text" name="docs-__prefix__-chave_nfe" maxlength="44" class="form-control form-control-sm" id="id_docs-__prefix__-chave_nfe"></td>
-                <td><input type="text" name="docs-__prefix__-descricao" maxlength="200" class="form-control form-control-sm" id="id_docs-__prefix__-descricao"></td>
-                <td><input type="checkbox" name="docs-__prefix__-DELETE" id="id_docs-__prefix__-DELETE" class="form-check-input">
-                    <input type="hidden" name="docs-__prefix__-id" id="id_docs-__prefix__-id"></td>
+                <td><input type="text" name="docs-__prefix__-chave_nfe" maxlength="44" class="form-control form-control-sm" placeholder="Chave NF-e (44 dígitos)" id="id_docs-__prefix__-chave_nfe"></td>
+                <td><input type="text" name="docs-__prefix__-descricao" maxlength="200" class="form-control form-control-sm" placeholder="Descrição / Produto (opcional)" id="id_docs-__prefix__-descricao"></td>
+                <td>
+                  <input type="checkbox" name="docs-__prefix__-DELETE" id="id_docs-__prefix__-DELETE" class="form-check-input" style="display:none;">
+                  <input type="hidden" name="docs-__prefix__-id" id="id_docs-__prefix__-id">
+                  <button type="button" class="btn btn-outline-danger btn-sm"
+                          onclick="removerLinhaDoc(this)" title="Excluir">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </td>
               </tr>
             </tbody></table>
             <button type="button" id="btn-add-chave" class="btn btn-outline-secondary btn-sm mt-2"
@@ -225,8 +510,39 @@
 </div>
 
 <script>
+function removerLinhaDoc(btn) {
+  var tr = btn.closest('tr');
+  if (!tr) return;
+  // Verifica se a linha tem id salvo (registro existente) ou é nova
+  var idInput = tr.querySelector('input[name$="-id"]');
+  var isExistente = idInput && idInput.value;
+  if (isExistente) {
+    // Marca o checkbox DELETE para que o Django exclua ao salvar
+    var chkDelete = tr.querySelector('input[type="checkbox"][name$="-DELETE"]');
+    if (chkDelete) chkDelete.checked = true;
+    // Oculta visualmente a linha
+    tr.style.opacity = '0.35';
+    tr.style.pointerEvents = 'none';
+    btn.innerHTML = '<i class="bi bi-arrow-counterclockwise"></i>';
+    btn.title = 'Desfazer';
+    btn.style.pointerEvents = 'auto';
+    btn.onclick = function() {
+      var chk = tr.querySelector('input[type="checkbox"][name$="-DELETE"]');
+      if (chk) chk.checked = false;
+      tr.style.opacity = '';
+      tr.style.pointerEvents = '';
+      btn.innerHTML = '<i class="bi bi-trash"></i>';
+      btn.title = 'Excluir';
+      btn.onclick = function(){ removerLinhaDoc(btn); };
+    };
+  } else {
+    // Linha nova (não salva) — remove direto do DOM
+    tr.remove();
+  }
+}
+
 function adicionarLinhaFormset(chave, descricao) {
-  var totalInput = document.getElementById('id_docs-TOTAL_FORM_COUNT');
+  var totalInput = document.getElementById('id_docs-TOTAL_FORMS');
   if (!totalInput) return;
   var idx = parseInt(totalInput.value, 10);
   if (isNaN(idx)) return;
@@ -303,12 +619,23 @@ function adicionarLinhaFormset(chave, descricao) {
     tbody.innerHTML = notas.map(function (n) {
       return '<tr>' +
         '<td><input type="checkbox" class="form-check-input nfe-check"' +
-        ' data-cliente-id="' + n.cliente_id + '"' +
-        ' data-cliente-nome="' + escHtml(n.cliente_nome) + '"' +
-        ' data-valor-total="' + n.valor_total + '"' +
-        ' data-chave="' + escHtml(n.chave_acesso) + '"' +
-        ' data-numero="' + n.numero + '"' +
-        ' data-serie="' + n.serie + '"></td>' +
+        ' data-cliente-id="'         + n.cliente_id + '"' +
+        ' data-cliente-nome="'       + escHtml(n.cliente_nome) + '"' +
+        ' data-valor-total="'        + n.valor_total + '"' +
+        ' data-chave="'              + escHtml(n.chave_acesso) + '"' +
+        ' data-numero="'             + n.numero + '"' +
+        ' data-serie="'              + n.serie + '"' +
+        ' data-transportadora-id="'  + (n.transportadora_id || '') + '"' +
+        ' data-transportadora-nome="'+ escHtml(n.transportadora_nome || '') + '"' +
+        ' data-modalidade-frete="'   + escHtml(n.modalidade_frete || '') + '"' +
+        ' data-peso-bruto="'         + (n.peso_bruto_kg || '0') + '"' +
+        ' data-natureza="'           + escHtml(n.natureza_operacao || '') + '"' +
+        ' data-valor-frete="'        + (n.valor_frete || '0') + '"' +
+        ' data-cliente-uf="'         + escHtml(n.cliente_uf || '') + '"' +
+        ' data-cliente-municipio="'  + escHtml(n.cliente_municipio || '') + '"' +
+        ' data-empresa-uf="'         + escHtml(n.empresa_uf || '') + '"' +
+        ' data-empresa-municipio="'  + escHtml(n.empresa_municipio || '') + '"' +
+        '></td>' +
         '<td><strong>' + String(n.numero).padStart(9, '0') + '/' + n.serie + '</strong></td>' +
         '<td>' + escHtml(n.cliente_nome) + '</td>' +
         '<td class="text-muted">' + n.data_emissao + '</td>' +
@@ -331,26 +658,70 @@ function adicionarLinhaFormset(chave, descricao) {
     if (alertEl) alertEl.classList.toggle('d-none', ids.size <= 1);
   }
 
+  function setIfEmpty(id, val) {
+    var el = document.getElementById(id);
+    if (el && !el.value && val) el.value = val;
+  }
+
   function importarSelecionadas() {
     var checks = Array.from(document.querySelectorAll('.nfe-check:checked'));
     if (!checks.length) return;
 
-    var clienteId = checks[0].dataset.clienteId;
-    var clienteNome = checks[0].dataset.clienteNome;
+    var primeira = checks[0].dataset;
+
+    // 1. Destinatário (cliente da 1ª NF-e)
     var sel = document.getElementById('id_destinatario');
     if (sel) {
       if (window.jQuery && window.jQuery(sel).data('select2')) {
-        var opt = new Option(clienteNome, clienteId, true, true);
+        var opt = new Option(primeira.clienteNome, primeira.clienteId, true, true);
         window.jQuery(sel).append(opt).trigger('change');
       } else {
-        sel.value = clienteId;
+        sel.value = primeira.clienteId;
       }
     }
 
-    var soma = checks.reduce(function (acc, cb) { return acc + parseFloat(cb.dataset.valorTotal || 0); }, 0);
+    // 2. Valor da Carga = soma de todos os valor_total
+    var somaValor = checks.reduce(function (acc, cb) { return acc + parseFloat(cb.dataset.valorTotal || 0); }, 0);
     var vcInput = document.getElementById('id_valor_carga');
-    if (vcInput) vcInput.value = soma.toFixed(2);
+    if (vcInput) vcInput.value = somaValor.toFixed(2);
 
+    // 3. Transportadora (da 1ª NF-e que tiver)
+    var transpId = '';
+    for (var i = 0; i < checks.length; i++) {
+      if (checks[i].dataset.transportadoraId) { transpId = checks[i].dataset.transportadoraId; break; }
+    }
+    if (transpId) {
+      var selTransp = document.getElementById('id_transportadora');
+      if (selTransp) {
+        selTransp.value = transpId;
+        selTransp.dispatchEvent(new Event('change')); // aciona o auto-fill do RNTRC
+      }
+    }
+
+    // 4. Modalidade de Frete (da 1ª NF-e)
+    if (primeira.modalidadeFrete) {
+      var selModal = document.getElementById('id_modalidade_frete');
+      if (selModal && !selModal.value) selModal.value = primeira.modalidadeFrete;
+    }
+
+    // 5. Peso Bruto = soma de todas as NF-e
+    var somaPeso = checks.reduce(function (acc, cb) { return acc + parseFloat(cb.dataset.pesoBruto || 0); }, 0);
+    setIfEmpty('id_peso_bruto_kg', somaPeso.toFixed(3));
+
+    // 6. Valor do Serviço = soma dos valor_frete das NF-e
+    var somaFrete = checks.reduce(function (acc, cb) { return acc + parseFloat(cb.dataset.valorFrete || 0); }, 0);
+    if (somaFrete > 0) setIfEmpty('id_valor_servico', somaFrete.toFixed(2));
+
+    // 7. Natureza da Operação (da 1ª NF-e)
+    if (primeira.natureza) setIfEmpty('id_natureza_operacao', primeira.natureza);
+
+    // 8. Percurso: início = empresa emitente, fim = endereço do cliente
+    setIfEmpty('id_uf_inicio',        primeira.empresaUf);
+    setIfEmpty('id_municipio_inicio', primeira.empresaMunicipio);
+    setIfEmpty('id_uf_fim',           primeira.clienteUf);
+    setIfEmpty('id_municipio_fim',    primeira.clienteMunicipio);
+
+    // 9. Adicionar chaves NF-e na tabela
     checks.forEach(function (cb) {
       adicionarLinhaFormset(
         cb.dataset.chave,
@@ -358,6 +729,7 @@ function adicionarLinhaFormset(chave, descricao) {
       );
     });
 
+    // Fechar modal
     var modalEl = document.getElementById('modalImportarNFe');
     if (modalEl && window.bootstrap) {
       var bsModal = bootstrap.Modal.getInstance(modalEl);
@@ -368,6 +740,244 @@ function adicionarLinhaFormset(chave, descricao) {
   function escHtml(s) {
     return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
+})();
+</script>
+<script>
+// CT-e Globalizado: mostrar/esconder campo referencia_despacho
+(function(){
+  'use strict';
+  var chk   = document.getElementById('id_globalizado');
+  var bloco = document.getElementById('bloco-referencia-despacho');
+  var input = document.getElementById('id_referencia_despacho');
+
+  function sync(){
+    if (!bloco) return;
+    var on = chk && chk.checked;
+    if (on) {
+      bloco.classList.remove('d-none');
+    } else {
+      bloco.classList.add('d-none');
+      if (input) input.value = '';
+    }
+  }
+
+  if (chk) chk.addEventListener('change', sync);
+  // Roda no DOMContentLoaded para garantir que o DOM está pronto
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', sync);
+  } else {
+    sync();
+  }
+})();
+
+// Fatura: Valor Final = Valor Origem - Valor Desconto
+(function(){
+  'use strict';
+  var vOrig = document.getElementById('id_fatura_valor_original');
+  var vDesc = document.getElementById('id_fatura_valor_desconto');
+  var vFinal = document.getElementById('fatura-valor-final');
+
+  function calcFatura(){
+    if (!vFinal) return;
+    var orig = parseFloat((vOrig && vOrig.value) || 0);
+    var desc = parseFloat((vDesc && vDesc.value) || 0);
+    vFinal.value = (orig - desc).toFixed(2);
+  }
+
+  if (vOrig)  vOrig.addEventListener('input', calcFatura);
+  if (vDesc)  vDesc.addEventListener('input', calcFatura);
+  calcFatura();
+})();
+
+// Prestações: clonar linhas do formset
+function adicionarLinhaPrestacao() {
+  var totalInput = document.getElementById('id_comp-TOTAL_FORMS');
+  if (!totalInput) return;
+  var idx = parseInt(totalInput.value, 10);
+  if (isNaN(idx)) return;
+  var template = document.getElementById('comp-template-row');
+  if (!template) return;
+  var novaLinha = template.cloneNode(true);
+  novaLinha.removeAttribute('id');
+  novaLinha.querySelectorAll('input').forEach(function(el){
+    if (el.name) el.name = el.name.replace('__prefix__', idx);
+    if (el.id)   el.id   = el.id.replace('__prefix__', idx);
+  });
+  document.getElementById('comp-tbody').appendChild(novaLinha);
+  totalInput.value = idx + 1;
+}
+
+// Auto-fill Placa from selected vehicle
+(function(){
+  'use strict';
+  var veiculoSel = document.getElementById('id_veiculo');
+  var placaDisp  = document.getElementById('placa-display');
+  var VEI_URL    = "{% url 'frota:api_vehicles' %}";
+
+  function loadPlaca(pk){
+    if (!pk || !placaDisp) return;
+    fetch(VEI_URL + '?per=500')
+      .then(function(r){ return r.json(); })
+      .then(function(data){
+        var item = (data.items || []).find(function(v){ return String(v.id) === String(pk); });
+        placaDisp.value = (item && item.placa_atual) ? item.placa_atual : '';
+      }).catch(function(){});
+  }
+
+  if (veiculoSel){
+    veiculoSel.addEventListener('change', function(){ loadPlaca(this.value); });
+    if (veiculoSel.value) loadPlaca(veiculoSel.value);
+  }
+})();
+
+// Auto-fill RNTRC from selected transportadora
+(function(){
+  'use strict';
+  var transpSel  = document.getElementById('id_transportadora');
+  var rntrcDisp  = document.getElementById('rntrc-display');
+  var API_URL    = "{% url 'cadastros:api_transportadoras' %}";
+
+  function loadRntrc(pk){
+    if (!pk || !rntrcDisp) return;
+    fetch(API_URL + '?per=200')
+      .then(function(r){ return r.json(); })
+      .then(function(data){
+        var item = (data.items || []).find(function(t){ return String(t.id) === String(pk); });
+        rntrcDisp.value = (item && item.rntc) ? item.rntc : '';
+      }).catch(function(){});
+  }
+
+  if (transpSel){
+    transpSel.addEventListener('change', function(){ loadRntrc(this.value); });
+    if (transpSel.value) loadRntrc(transpSel.value);
+  }
+})();
+</script>
+<script>
+(function(){
+  'use strict';
+  var chkAuto = document.getElementById('icms-auto');
+  var bcInput = document.getElementById('id_base_calculo_icms');
+  var alqInput = document.getElementById('id_aliquota_icms');
+  var valInput = document.getElementById('id_valor_icms');
+
+  function calcIcms(){
+    if (!chkAuto || !chkAuto.checked) return;
+    var bc  = parseFloat((bcInput && bcInput.value) || 0);
+    var alq = parseFloat((alqInput && alqInput.value) || 0);
+    if (valInput) valInput.value = (bc * alq / 100).toFixed(2);
+  }
+
+  function syncReadonly(){
+    if (valInput) valInput.readOnly = chkAuto && chkAuto.checked;
+  }
+
+  if (chkAuto){
+    chkAuto.addEventListener('change', function(){ syncReadonly(); calcIcms(); });
+  }
+  if (bcInput)  bcInput.addEventListener('input', calcIcms);
+  if (alqInput) alqInput.addEventListener('input', calcIcms);
+
+  syncReadonly();
+  calcIcms();
+})();
+</script>
+<script>
+(function (){
+  'use strict';
+  var cfopInput  = document.getElementById('id_cfop');
+  var dropdown   = document.getElementById('cfop-dropdown');
+  var natInput   = document.getElementById('id_natureza_operacao');
+  var timer      = null;
+  var AUTOCOMPLETE_URL = "{% url 'cadastros:cfop_autocomplete' %}";
+  var activeIdx  = -1;
+  var lastItems  = [];
+
+  if (!cfopInput) return;
+  cfopInput.setAttribute('autocomplete', 'off');
+
+  function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+  function closeDropdown(){
+    dropdown.style.display = 'none';
+    dropdown.innerHTML = '';
+    activeIdx = -1;
+    lastItems = [];
+  }
+
+  function selectItem(item){
+    cfopInput.value = item.codigo;
+    if (natInput) natInput.value = item.natureza || '';
+    closeDropdown();
+  }
+
+  function renderDropdown(items){
+    lastItems = items;
+    activeIdx = -1;
+    if (!items.length){
+      dropdown.innerHTML = '<div style="padding:10px 14px;color:#6b7280;font-size:.85rem;">CFOP não encontrado</div>';
+      dropdown.style.display = 'block';
+      return;
+    }
+    dropdown.innerHTML = items.map(function(item, idx){
+      var label = '<strong>' + esc(item.codigo) + '</strong> — ' + esc(item.nome || item.descricao || '');
+      var sub   = item.natureza ? '<br><span style="color:#7c3aed;font-size:.78rem;">Nat. Op.: ' + esc(item.natureza) + '</span>' : '';
+      return '<div class="cfop-opt" data-idx="' + idx + '" style="padding:8px 14px;cursor:pointer;border-bottom:1px solid #f3f4f6;font-size:.875rem;">' + label + sub + '</div>';
+    }).join('');
+    dropdown.style.display = 'block';
+
+    dropdown.querySelectorAll('.cfop-opt').forEach(function(el){
+      el.addEventListener('mousedown', function(e){
+        e.preventDefault();
+        selectItem(lastItems[parseInt(el.dataset.idx)]);
+      });
+      el.addEventListener('mouseenter', function(){
+        setActive(parseInt(el.dataset.idx));
+      });
+    });
+  }
+
+  function setActive(idx){
+    var opts = dropdown.querySelectorAll('.cfop-opt');
+    opts.forEach(function(el){ el.style.background = ''; el.style.color = ''; });
+    if (idx >= 0 && idx < opts.length){
+      opts[idx].style.background = '#7c3aed';
+      opts[idx].style.color = '#fff';
+      opts[idx].scrollIntoView({block:'nearest'});
+    }
+    activeIdx = idx;
+  }
+
+  cfopInput.addEventListener('input', function(){
+    clearTimeout(timer);
+    var q = cfopInput.value.trim();
+    if (!q){ closeDropdown(); return; }
+    timer = setTimeout(function(){
+      fetch(AUTOCOMPLETE_URL + '?q=' + encodeURIComponent(q))
+        .then(function(r){ return r.json(); })
+        .then(function(data){ renderDropdown(data.items || []); })
+        .catch(function(){ closeDropdown(); });
+    }, 250);
+  });
+
+  cfopInput.addEventListener('keydown', function(e){
+    if (dropdown.style.display === 'none') return;
+    if (e.key === 'ArrowDown'){
+      e.preventDefault();
+      setActive(Math.min(activeIdx + 1, lastItems.length - 1));
+    } else if (e.key === 'ArrowUp'){
+      e.preventDefault();
+      setActive(Math.max(activeIdx - 1, 0));
+    } else if (e.key === 'Enter'){
+      if (activeIdx >= 0){ e.preventDefault(); selectItem(lastItems[activeIdx]); }
+    } else if (e.key === 'Escape'){
+      closeDropdown();
+    }
+  });
+
+  document.addEventListener('click', function(e){
+    if (!cfopInput.contains(e.target) && !dropdown.contains(e.target)) closeDropdown();
+  });
 })();
 </script>
 {% endblock %}

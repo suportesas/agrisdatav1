@@ -219,6 +219,7 @@ urlpatterns = [
     path('cfop/importar/', views.cfop_import, name='cfop_import'),
     path('cfop/<int:pk>/editar/', views.cfop_update, name='cfop_update'),
     path('cfop/<int:pk>/excluir/', views.cfop_delete, name='cfop_delete'),
+    path('api/cfop/autocomplete/', views.cfop_autocomplete, name='cfop_autocomplete'),
 
     # Cliente: endereços
     path('clientes/<int:cliente_pk>/enderecos/novo/', views.cliente_endereco_create, name='cliente_endereco_create'),

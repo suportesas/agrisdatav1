@@ -42,6 +42,7 @@ urlpatterns = [
     # Configuração
     path('configuracao/', views.configuracao_fiscal, name='configuracao'),
     path('configuracao/certificado/', views.certificado_upload, name='certificado_upload'),
+    path('configuracao/certificado/excluir/', views.certificado_delete, name='certificado_delete'),
 
     # Webhook IntegraNota
     path('webhook/integranotas/', views.integranotas_webhook, name='integranotas_webhook'),
@@ -61,6 +62,10 @@ urlpatterns = [
     path('cte/<int:pk>/carta-correcao/', views.cte_carta_correcao, name='cte_carta_correcao'),
     path('cte/<int:pk>/desacordo/', views.cte_manifestar_desacordo, name='cte_manifestar_desacordo'),
     path('cte/<int:pk>/preview/', views.cte_preview, name='cte_preview'),
+    path('cte/<int:pk>/clonar/', views.cte_clone, name='cte_clone'),
+    path('cte/<int:pk>/xml/', views.cte_xml, name='cte_xml'),
+    path('cte/<int:pk>/xml-cancelamento/', views.cte_xml_cancelamento, name='cte_xml_cancelamento'),
+    path('cte/<int:pk>/reenviar-email/', views.cte_reenviar_email, name='cte_reenviar_email'),
 
     # MDF-e
     path('mdfe/', views.mdfe_list, name='mdfe_list'),

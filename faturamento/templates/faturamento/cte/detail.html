@@ -64,7 +64,7 @@
       </a>
 
       {# — XML — #}
-      {% if ct.xml_autorizacao %}
+      {% if ct.chave_acesso %}
       <a href="{% url 'faturamento:cte_xml' ct.pk %}" class="btn btn-sm btn-outline-secondary">
         <i class="bi bi-filetype-xml me-1"></i> XML
       </a>
@@ -146,9 +146,12 @@
   </div>
 
   {% if ct.chave_acesso %}
-  <div class="alert alert-success py-2 small">
-    <strong>Chave de Acesso:</strong> <code>{{ ct.chave_acesso }}</code>
-    {% if ct.protocolo %} &nbsp;|&nbsp; <strong>Protocolo:</strong> {{ ct.protocolo }}{% endif %}
+  <div class="border border-success rounded py-2 px-3 bg-success bg-opacity-10 small d-flex align-items-center gap-2 mb-3">
+    <i class="bi bi-patch-check-fill text-success fs-5"></i>
+    <div>
+      <strong>Chave de Acesso:</strong> <code class="user-select-all">{{ ct.chave_acesso }}</code>
+      {% if ct.protocolo %} &nbsp;|&nbsp; <strong>Protocolo:</strong> <code>{{ ct.protocolo }}</code>{% endif %}
+    </div>
   </div>
   {% endif %}
   {% if ct.status == 'CANCELADO' and ct.motivo_cancelamento %}

@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load static %}
 {% block page_title %}{{ action }} CT-e{% endblock %}
 {% block content %}
 <div class="container-fluid mt-3 px-3 px-xl-4">
@@ -1042,5 +1043,15 @@ function adicionarLinhaPrestacao() {
     if (!cfopInput.contains(e.target) && !dropdown.contains(e.target)) closeDropdown();
   });
 })();
+</script>
+
+<datalist id="dl-mun-inicio"></datalist>
+<datalist id="dl-mun-fim"></datalist>
+<script src="{% static 'js/ibge_municipios.js' %}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  setupIBGEAutocomplete('id_uf_inicio', 'id_municipio_inicio', 'id_codigo_municipio_inicio', 'dl-mun-inicio');
+  setupIBGEAutocomplete('id_uf_fim',    'id_municipio_fim',    'id_codigo_municipio_fim',    'dl-mun-fim');
+});
 </script>
 {% endblock %}

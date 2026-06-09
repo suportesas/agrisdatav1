@@ -60,8 +60,42 @@ from .models import (
 )
 
 
+from .fiscal_storage import upload_xml as _fs_xml, upload_pdf as _fs_pdf
+
+
 def _get_empresa(request):
     return request.user.empresa
+
+
+def _upload_fiscal_docs(obj, empresa_id, tipo, numero, serie, xml_b64=None, pdf_b64=None, cancel=False):
+    """Faz upload de XML/PDF para Supabase Storage e atualiza os campos do objeto.
+
+    Limpa o campo base64 somente se o upload foi bem-sucedido (URL retornada).
+    Retorna lista de campos adicionados para incluir em update_fields.
+    """
+    extra_fields = []
+    if xml_b64:
+        prefix = 'CANCEL_' if cancel else 'XML_'
+        fname = f'{prefix}{tipo.upper()}_{numero}_{serie}.xml'
+        url = _fs_xml(xml_b64, empresa_id, tipo, fname)
+        if url:
+            if cancel:
+                obj.xml_cancelamento_url = url
+                obj.xml_cancelamento = ''
+                extra_fields += ['xml_cancelamento_url', 'xml_cancelamento']
+            else:
+                obj.xml_autorizacao_url = url
+                obj.xml_autorizacao = ''
+                extra_fields += ['xml_autorizacao_url', 'xml_autorizacao']
+    if pdf_b64:
+        pdf_field = 'pdf_danfe' if tipo == 'nfe' else ('pdf_dacte' if tipo == 'cte' else 'pdf_damdfe')
+        fname = f'PDF_{tipo.upper()}_{numero}_{serie}.pdf'
+        url = _fs_pdf(pdf_b64, empresa_id, tipo, fname)
+        if url:
+            setattr(obj, f'{pdf_field}_url', url)
+            setattr(obj, pdf_field, '')
+            extra_fields += [f'{pdf_field}_url', pdf_field]
+    return extra_fields
 
 
 # ─────────────────────────── Dashboard ───────────────────────────
@@ -392,8 +426,10 @@ def nota_fiscal_emitir_ajax(request, pk):
     nf.status                = 'EMITIDA'
     nf.data_hora_emissao     = timezone.now()
     nf.atualizado_por        = request.user
-    nf.save(update_fields=['chave_acesso', 'protocolo_autorizacao', 'xml_autorizacao',
-                           'pdf_danfe', 'status', 'data_hora_emissao', 'atualizado_por'])
+    _base_fields = ['chave_acesso', 'protocolo_autorizacao', 'xml_autorizacao',
+                    'pdf_danfe', 'status', 'data_hora_emissao', 'atualizado_por']
+    _extra = _upload_fiscal_docs(nf, nf.empresa_id, 'nfe', nf.numero, nf.serie, xml_b64, pdf_b64)
+    nf.save(update_fields=list(dict.fromkeys(_base_fields + _extra)))
     steps.append({'status': 'authorized', 'label': 'NF-e Autorizada pela SEFAZ ✓',
                   'protocolo': protocolo, 'chave': chave})
     return JsonResponse({
@@ -473,10 +509,10 @@ def nota_fiscal_emitir(request, pk):
             nf.status = 'EMITIDA'
             nf.data_hora_emissao = timezone.now()
             nf.atualizado_por = request.user
-            nf.save(update_fields=[
-                'chave_acesso', 'protocolo_autorizacao', 'xml_autorizacao',
-                'pdf_danfe', 'status', 'data_hora_emissao', 'atualizado_por',
-            ])
+            _base = ['chave_acesso', 'protocolo_autorizacao', 'xml_autorizacao',
+                     'pdf_danfe', 'status', 'data_hora_emissao', 'atualizado_por']
+            _extra = _upload_fiscal_docs(nf, nf.empresa_id, 'nfe', nf.numero, nf.serie, xml_b64, pdf_b64)
+            nf.save(update_fields=list(dict.fromkeys(_base + _extra)))
             messages.success(request, f'NF {nf.numero}/{nf.serie} autorizada! Chave: {chave}')
 
     except IntegranNotasError as exc:
@@ -595,7 +631,9 @@ def nota_fiscal_consultar(request, pk):
                 nf.data_hora_emissao = timezone.now()
                 fields.append('data_hora_emissao')
             if fields:
-                nf.save(update_fields=fields)
+                _extra = _upload_fiscal_docs(nf, nf.empresa_id, 'nfe', nf.numero, nf.serie,
+                                             data.get('xml'), data.get('pdf'))
+                nf.save(update_fields=list(dict.fromkeys(fields + _extra)))
             messages.success(request,
                 f'NF-e autorizada pela SEFAZ. Protocolo: {nf.protocolo_autorizacao}')
 
@@ -666,7 +704,9 @@ def nota_fiscal_recuperar(request, pk):
             if not nf.data_hora_emissao:
                 nf.data_hora_emissao = timezone.now()
                 fields.append('data_hora_emissao')
-            nf.save(update_fields=fields)
+            _extra = _upload_fiscal_docs(nf, nf.empresa_id, 'nfe', nf.numero, nf.serie,
+                                         data.get('xml'), data.get('pdf'))
+            nf.save(update_fields=list(dict.fromkeys(fields + _extra)))
             messages.success(request,
                 f'NF-e recuperada com sucesso! Protocolo SEFAZ: {nf.protocolo_autorizacao}')
 
@@ -724,7 +764,10 @@ def integranotas_webhook(request):
         if not nf.data_hora_emissao:
             nf.data_hora_emissao = timezone.now()
         nf.status = 'EMITIDA'
-        nf.save(update_fields=['protocolo_autorizacao', 'xml_autorizacao', 'pdf_danfe', 'data_hora_emissao', 'status'])
+        _base = ['protocolo_autorizacao', 'xml_autorizacao', 'pdf_danfe', 'data_hora_emissao', 'status']
+        _extra = _upload_fiscal_docs(nf, nf.empresa_id, 'nfe', nf.numero, nf.serie,
+                                     payload.get('xml'), payload.get('pdf'))
+        nf.save(update_fields=list(dict.fromkeys(_base + _extra)))
     elif codigo == 101:
         nf.status = 'CANCELADA'
         if not nf.data_cancelamento:
@@ -736,10 +779,13 @@ def integranotas_webhook(request):
 
 @login_required
 def nota_fiscal_danfe(request, pk):
-    """Download the DANFE PDF returned by IntegraNota (base64 stored in pdf_danfe)."""
+    """Download do DANFE PDF da NF-e (Supabase URL ou base64)."""
     import base64
+    from django.shortcuts import redirect as _redirect
     empresa = _get_empresa(request)
     nf = get_object_or_404(NotaFiscal, pk=pk, empresa=empresa)
+    if nf.pdf_danfe_url:
+        return _redirect(nf.pdf_danfe_url)
     if not nf.pdf_danfe:
         messages.error(request, 'DANFE não disponível — a NF-e ainda não foi autorizada pela SEFAZ.')
         return redirect('faturamento:nota_fiscal_detail', pk=pk)
@@ -751,10 +797,13 @@ def nota_fiscal_danfe(request, pk):
 
 @login_required
 def nota_fiscal_xml(request, pk):
-    """Download do XML autorizado da NF-e (base64 → arquivo .xml)."""
+    """Download do XML autorizado da NF-e (Supabase URL ou base64)."""
     import base64
+    from django.shortcuts import redirect as _redirect
     empresa = _get_empresa(request)
     nf = get_object_or_404(NotaFiscal, pk=pk, empresa=empresa)
+    if nf.xml_autorizacao_url:
+        return _redirect(nf.xml_autorizacao_url)
     if not nf.xml_autorizacao:
         messages.error(request, 'XML não disponível — a NF-e ainda não foi autorizada pela SEFAZ.')
         return redirect('faturamento:nota_fiscal_detail', pk=pk)
@@ -1510,15 +1559,16 @@ def ajax_nfe_para_mdfe(request):
         notas = notas.filter(Q(cliente__razao_social__icontains=q) | Q(numero__icontains=q))
     notas = notas.order_by('-data_emissao')[:50]
     results = [{
-        'id':           n.pk,
-        'numero':       n.numero,
-        'serie':        n.serie,
-        'cliente_nome': n.cliente.razao_social,
-        'valor_total':  str(n.valor_total),
-        'peso_bruto_kg': str(n.peso_bruto_kg or '0'),
-        'chave_acesso': n.chave_acesso or '',
-        'municipio':    (n.entrega_nome_municipio if n.entrega_ativo else '') or '',
-        'data_emissao': n.data_emissao.strftime('%d/%m/%Y'),
+        'id':               n.pk,
+        'numero':           n.numero,
+        'serie':            n.serie,
+        'cliente_nome':     n.cliente.razao_social,
+        'valor_total':      str(n.valor_total),
+        'peso_bruto_kg':    str(n.peso_bruto_kg or '0'),
+        'chave_acesso':     n.chave_acesso or '',
+        'municipio':        (n.entrega_nome_municipio if n.entrega_ativo else '') or '',
+        'codigo_municipio': (n.entrega_codigo_municipio if n.entrega_ativo else '') or '',
+        'data_emissao':     n.data_emissao.strftime('%d/%m/%Y'),
     } for n in notas]
     return JsonResponse({'results': results})
 
@@ -1532,16 +1582,17 @@ def ajax_cte_para_mdfe(request):
         ctes = ctes.filter(Q(destinatario__razao_social__icontains=q) | Q(numero__icontains=q))
     ctes = ctes.order_by('-data_emissao')[:50]
     results = [{
-        'id': c.pk,
-        'numero': c.numero,
-        'serie': c.serie,
+        'id':               c.pk,
+        'numero':           c.numero,
+        'serie':            c.serie,
         'destinatario_nome': c.destinatario.razao_social,
-        'valor_carga': str(c.valor_carga),
-        'peso_bruto_kg': str(c.peso_bruto_kg),
-        'chave_acesso': c.chave_acesso or '',
-        'municipio': c.municipio_fim,
-        'uf_fim': c.uf_fim,
-        'data_emissao': c.data_emissao.strftime('%d/%m/%Y'),
+        'valor_carga':      str(c.valor_carga),
+        'peso_bruto_kg':    str(c.peso_bruto_kg),
+        'chave_acesso':     c.chave_acesso or '',
+        'municipio':        c.municipio_fim,
+        'codigo_municipio': c.codigo_municipio_fim or '',
+        'uf_fim':           c.uf_fim,
+        'data_emissao':     c.data_emissao.strftime('%d/%m/%Y'),
     } for c in ctes]
     return JsonResponse({'results': results})
 
@@ -1969,6 +2020,8 @@ def cte_emitir(request, pk):
             ct.xml_autorizacao = resp.get('xml', '')
             ct.pdf_dacte = resp.get('pdf', '')
             ct.data_hora_emissao = timezone.now()
+            _upload_fiscal_docs(ct, ct.empresa_id, 'cte', ct.numero, ct.serie,
+                                resp.get('xml'), resp.get('pdf'))
             ct.save()
             messages.success(request, f'CT-e {ct.numero} emitido! Chave: {ct.chave_acesso}')
         else:
@@ -2001,6 +2054,8 @@ def cte_cancelar(request, pk):
                 ct.data_cancelamento = timezone.now()
                 if resp_cancel.get('xml'):
                     ct.xml_cancelamento = resp_cancel['xml']
+                    _upload_fiscal_docs(ct, ct.empresa_id, 'cte', ct.numero, ct.serie,
+                                        xml_b64=resp_cancel['xml'], cancel=True)
                 ct.save()
                 messages.success(request, 'CT-e cancelado com sucesso.')
                 return redirect('faturamento:cte_detail', pk=pk)
@@ -2014,8 +2069,11 @@ def cte_cancelar(request, pk):
 @login_required
 def cte_dacte(request, pk):
     import base64
+    from django.shortcuts import redirect as _redirect
     empresa = _get_empresa(request)
     ct = get_object_or_404(ConhecimentoTransporte, pk=pk, empresa=empresa)
+    if ct.pdf_dacte_url:
+        return _redirect(ct.pdf_dacte_url)
     if ct.pdf_dacte:
         pdf_bytes = base64.b64decode(ct.pdf_dacte)
         r = HttpResponse(pdf_bytes, content_type='application/pdf')
@@ -2032,8 +2090,11 @@ def cte_dacte(request, pk):
         pdf_b64 = data.get('pdf', '')
         if pdf_b64:
             ct.pdf_dacte = pdf_b64
-            ct.save(update_fields=['pdf_dacte'])
-            pdf_bytes = base64.b64decode(pdf_b64)
+            _extra = _upload_fiscal_docs(ct, ct.empresa_id, 'cte', ct.numero, ct.serie, pdf_b64=pdf_b64)
+            ct.save(update_fields=list(dict.fromkeys(['pdf_dacte'] + _extra)))
+            if ct.pdf_dacte_url:
+                return _redirect(ct.pdf_dacte_url)
+            pdf_bytes = base64.b64decode(ct.pdf_dacte or pdf_b64)
             r = HttpResponse(pdf_bytes, content_type='application/pdf')
             r['Content-Disposition'] = f'inline; filename="DACTE_{ct.numero}_{ct.serie}.pdf"'
             return r
@@ -2069,7 +2130,9 @@ def cte_consultar(request, pk):
                 ct.pdf_dacte = resp['pdf']
                 fields.append('pdf_dacte')
             if fields:
-                ct.save(update_fields=fields)
+                _extra = _upload_fiscal_docs(ct, ct.empresa_id, 'cte', ct.numero, ct.serie,
+                                             resp.get('xml'), resp.get('pdf'))
+                ct.save(update_fields=list(dict.fromkeys(fields + _extra)))
             messages.success(request, f'CT-e autorizado. Protocolo: {ct.protocolo}')
         else:
             messages.warning(request, f'SEFAZ: {resp.get("mensagem", "Aguardando autorização.")}')
@@ -2236,10 +2299,32 @@ def cte_clone(request, pk):
 
 @login_required
 def cte_xml(request, pk):
-    """Download do XML autorizado do CT-e."""
+    """Download do XML autorizado do CT-e (Supabase URL ou base64)."""
     import base64
+    from django.shortcuts import redirect as _redirect
+    from .services.integranotas import IntegranNotasClient, IntegranNotasError
     empresa = _get_empresa(request)
     ct = get_object_or_404(ConhecimentoTransporte, pk=pk, empresa=empresa)
+    if ct.xml_autorizacao_url:
+        return _redirect(ct.xml_autorizacao_url)
+    if not ct.xml_autorizacao and ct.chave_acesso:
+        try:
+            config = empresa.configuracao_fiscal
+            client = IntegranNotasClient(token=config.get_token(), ambiente=config.ambiente_nfe)
+            resp_api = client.consultar_cte(ct.chave_acesso)
+            if resp_api.get('xml'):
+                ct.xml_autorizacao = resp_api['xml']
+                fields = ['xml_autorizacao']
+                if resp_api.get('protocolo') and not ct.protocolo:
+                    ct.protocolo = resp_api['protocolo']
+                    fields.append('protocolo')
+                _extra = _upload_fiscal_docs(ct, ct.empresa_id, 'cte', ct.numero, ct.serie,
+                                             xml_b64=resp_api['xml'])
+                ct.save(update_fields=list(dict.fromkeys(fields + _extra)))
+                if ct.xml_autorizacao_url:
+                    return _redirect(ct.xml_autorizacao_url)
+        except Exception:
+            pass
     if not ct.xml_autorizacao:
         messages.error(request, 'XML de autorização não disponível para este CT-e.')
         return redirect('faturamento:cte_detail', pk=pk)
@@ -2251,10 +2336,13 @@ def cte_xml(request, pk):
 
 @login_required
 def cte_xml_cancelamento(request, pk):
-    """Download do XML de cancelamento do CT-e."""
+    """Download do XML de cancelamento do CT-e (Supabase URL ou base64)."""
     import base64
+    from django.shortcuts import redirect as _redirect
     empresa = _get_empresa(request)
     ct = get_object_or_404(ConhecimentoTransporte, pk=pk, empresa=empresa)
+    if ct.xml_cancelamento_url:
+        return _redirect(ct.xml_cancelamento_url)
     if not ct.xml_cancelamento:
         messages.error(request, 'XML de cancelamento não disponível para este CT-e.')
         return redirect('faturamento:cte_detail', pk=pk)
@@ -2267,14 +2355,35 @@ def cte_xml_cancelamento(request, pk):
 @login_required
 @require_POST
 def cte_reenviar_email(request, pk):
-    """Reenvia o DACTE por e-mail para o destinatário e remetente do CT-e."""
+    """Reenvia o DACTE e XML por e-mail para o destinatário e remetente do CT-e."""
     import base64
     from django.core.mail import EmailMessage
+    from .services.integranotas import IntegranNotasClient, IntegranNotasError
     empresa = _get_empresa(request)
     ct = get_object_or_404(ConhecimentoTransporte, pk=pk, empresa=empresa)
-    if ct.status != 'EMITIDO' or not ct.pdf_dacte:
-        messages.error(request, 'DACTE não disponível. Emita o CT-e antes de reenviar.')
+    if ct.status != 'EMITIDO' or (not ct.pdf_dacte and not ct.pdf_dacte_url
+                                   and not ct.xml_autorizacao and not ct.xml_autorizacao_url
+                                   and not ct.chave_acesso):
+        messages.error(request, 'CT-e não autorizado ou documentos não disponíveis.')
         return redirect('faturamento:cte_detail', pk=pk)
+
+    # Busca lazy do XML se ainda não estiver salvo (nem em Storage nem em base64)
+    if not ct.xml_autorizacao and not ct.xml_autorizacao_url and ct.chave_acesso:
+        try:
+            config = empresa.configuracao_fiscal
+            client = IntegranNotasClient(token=config.get_token(), ambiente=config.ambiente_nfe)
+            resp_api = client.consultar_cte(ct.chave_acesso)
+            if resp_api.get('xml'):
+                ct.xml_autorizacao = resp_api['xml']
+                fields = ['xml_autorizacao']
+                if resp_api.get('protocolo') and not ct.protocolo:
+                    ct.protocolo = resp_api['protocolo']
+                    fields.append('protocolo')
+                _extra = _upload_fiscal_docs(ct, ct.empresa_id, 'cte', ct.numero, ct.serie,
+                                             xml_b64=resp_api['xml'])
+                ct.save(update_fields=list(dict.fromkeys(fields + _extra)))
+        except Exception:
+            pass
 
     destinatarios = []
     for parte in [ct.remetente, ct.destinatario, ct.tomador]:
@@ -2291,11 +2400,10 @@ def cte_reenviar_email(request, pk):
         return redirect('faturamento:cte_detail', pk=pk)
 
     try:
-        pdf_bytes = base64.b64decode(ct.pdf_dacte)
         msg = EmailMessage(
-            subject=f'DACTE CT-e {ct.numero}/{ct.serie} — {empresa.nome}',
+            subject=f'CT-e {ct.numero}/{ct.serie} — DACTE e XML — {empresa.nome}',
             body=(
-                f'Segue em anexo o DACTE do CT-e {ct.numero}/{ct.serie}.\n\n'
+                f'Segue em anexo o DACTE e o XML do CT-e {ct.numero}/{ct.serie}.\n\n'
                 f'Chave: {ct.chave_acesso}\n'
                 f'Protocolo: {ct.protocolo}\n\n'
                 f'{empresa.nome}'
@@ -2303,9 +2411,28 @@ def cte_reenviar_email(request, pk):
             from_email=None,
             to=destinatarios,
         )
-        msg.attach(f'DACTE_{ct.numero}_{ct.serie}.pdf', pdf_bytes, 'application/pdf')
+        if ct.pdf_dacte_url:
+            import urllib.request as _ur
+            try:
+                pdf_bytes = _ur.urlopen(ct.pdf_dacte_url).read()
+                msg.attach(f'DACTE_{ct.numero}_{ct.serie}.pdf', pdf_bytes, 'application/pdf')
+            except Exception:
+                pass
+        elif ct.pdf_dacte:
+            pdf_bytes = base64.b64decode(ct.pdf_dacte)
+            msg.attach(f'DACTE_{ct.numero}_{ct.serie}.pdf', pdf_bytes, 'application/pdf')
+        if ct.xml_autorizacao_url:
+            import urllib.request as _ur
+            try:
+                xml_bytes = _ur.urlopen(ct.xml_autorizacao_url).read()
+                msg.attach(f'CTE_{ct.numero}_{ct.serie}.xml', xml_bytes, 'application/xml')
+            except Exception:
+                pass
+        elif ct.xml_autorizacao:
+            xml_bytes = base64.b64decode(ct.xml_autorizacao)
+            msg.attach(f'CTE_{ct.numero}_{ct.serie}.xml', xml_bytes, 'application/xml')
         msg.send()
-        messages.success(request, f'DACTE reenviado para: {", ".join(destinatarios)}')
+        messages.success(request, f'CT-e enviado para: {", ".join(destinatarios)}')
     except Exception as exc:
         messages.error(request, f'Falha ao enviar e-mail: {exc}')
     return redirect('faturamento:cte_detail', pk=pk)
@@ -2463,10 +2590,14 @@ def mdfe_emitir(request, pk):
             mdfe.xml_autorizacao = resp.get('xml', '')
             mdfe.pdf_damdfe = resp.get('pdf', '')
             mdfe.data_hora_emissao = timezone.now()
+            _upload_fiscal_docs(mdfe, mdfe.empresa_id, 'mdfe', mdfe.numero, mdfe.serie,
+                                resp.get('xml'), resp.get('pdf'))
             mdfe.save()
             messages.success(request, f'MDF-e {mdfe.numero} emitido! Chave: {mdfe.chave_acesso}')
         else:
             messages.error(request, f'SEFAZ: {resp.get("mensagem", "Erro desconhecido")}')
+    except ValueError as e:
+        messages.error(request, str(e))
     except IntegranNotasError as e:
         erros = '; '.join(str(x) for x in e.erros) if e.erros else str(e)
         messages.error(request, f'Erro IntegraNotas [{e.codigo}]: {erros}')
@@ -2533,10 +2664,13 @@ def mdfe_cancelar(request, pk):
 
 @login_required
 def mdfe_damdfe(request, pk):
+    import base64
+    from django.shortcuts import redirect as _redirect
     empresa = _get_empresa(request)
     mdfe = get_object_or_404(ManifestoDocumentoFiscal, pk=pk, empresa=empresa)
+    if mdfe.pdf_damdfe_url:
+        return _redirect(mdfe.pdf_damdfe_url)
     if mdfe.pdf_damdfe:
-        import base64
         pdf_bytes = base64.b64decode(mdfe.pdf_damdfe)
         r = HttpResponse(pdf_bytes, content_type='application/pdf')
         r['Content-Disposition'] = f'inline; filename="DAMDFE_{mdfe.numero}_{mdfe.serie}.pdf"'
@@ -2548,9 +2682,12 @@ def mdfe_damdfe(request, pk):
         data = client.damdfe(mdfe.chave_acesso)
         if data.get('pdf'):
             mdfe.pdf_damdfe = data['pdf']
-            mdfe.save(update_fields=['pdf_damdfe'])
-            import base64
-            pdf_bytes = base64.b64decode(data['pdf'])
+            _extra = _upload_fiscal_docs(mdfe, mdfe.empresa_id, 'mdfe', mdfe.numero, mdfe.serie,
+                                         pdf_b64=data['pdf'])
+            mdfe.save(update_fields=list(dict.fromkeys(['pdf_damdfe'] + _extra)))
+            if mdfe.pdf_damdfe_url:
+                return _redirect(mdfe.pdf_damdfe_url)
+            pdf_bytes = base64.b64decode(mdfe.pdf_damdfe or data['pdf'])
             r = HttpResponse(pdf_bytes, content_type='application/pdf')
             r['Content-Disposition'] = f'inline; filename="DAMDFE_{mdfe.numero}_{mdfe.serie}.pdf"'
             return r

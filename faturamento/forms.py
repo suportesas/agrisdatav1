@@ -872,10 +872,11 @@ class ManifestoDocumentoFiscalForm(FaturamentoBaseForm):
         fields = [
             'motorista', 'veiculo',
             'data_emissao',
-            'uf_inicio', 'municipio_carregamento', 'uf_fim',
+            'uf_inicio', 'municipio_carregamento', 'codigo_municipio_carregamento', 'uf_fim',
             'tipo_transporte', 'valor_carga', 'peso_bruto_kg',
             # Modal Rodoviário — Veículo de Tração extras
-            'rntrc_veiculo', 'cod_ag_porto',
+            'rntrc_veiculo', 'cod_ag_porto', 'tipo_carroceria', 'tipo_rodado',
+            'placa_tracao', 'uf_tracao', 'tara_tracao_kg',
             # Proprietário/Possuidor
             'proprietario_diferente',
             'prop_tipo', 'prop_cpf_cnpj', 'prop_nome',
@@ -888,13 +889,19 @@ class ManifestoDocumentoFiscalForm(FaturamentoBaseForm):
             'veiculo':                   forms.Select(attrs={'class': 'form-select', 'id': 'id_veiculo'}),
             'data_emissao':              forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'),
             'uf_inicio':                 forms.TextInput(attrs={'class': 'form-control', 'maxlength': '2', 'placeholder': 'SP'}),
-            'municipio_carregamento':    forms.TextInput(attrs={'class': 'form-control'}),
-            'uf_fim':                    forms.TextInput(attrs={'class': 'form-control', 'maxlength': '2', 'placeholder': 'MG'}),
+            'municipio_carregamento':         forms.TextInput(attrs={'class': 'form-control'}),
+            'codigo_municipio_carregamento':  forms.TextInput(attrs={'class': 'form-control', 'maxlength': '7', 'placeholder': '7 dígitos IBGE'}),
+            'uf_fim':                         forms.TextInput(attrs={'class': 'form-control', 'maxlength': '2', 'placeholder': 'MG'}),
             'tipo_transporte':           forms.Select(attrs={'class': 'form-select'}),
             'valor_carga':               forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'peso_bruto_kg':             forms.NumberInput(attrs={'class': 'form-control', 'step': '0.001'}),
             'rntrc_veiculo':             forms.TextInput(attrs={'class': 'form-control', 'maxlength': '8', 'placeholder': '00000000'}),
             'cod_ag_porto':              forms.TextInput(attrs={'class': 'form-control', 'maxlength': '8'}),
+            'tipo_carroceria':           forms.Select(attrs={'class': 'form-select'}),
+            'tipo_rodado':               forms.Select(attrs={'class': 'form-select'}),
+            'placa_tracao':              forms.TextInput(attrs={'class': 'form-control', 'maxlength': '7', 'placeholder': 'ABC1D23', 'style': 'text-transform:uppercase;'}),
+            'uf_tracao':                 forms.TextInput(attrs={'class': 'form-control', 'maxlength': '2', 'placeholder': 'UF', 'style': 'text-transform:uppercase;'}),
+            'tara_tracao_kg':            forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'kg'}),
             'proprietario_diferente':    forms.CheckboxInput(attrs={'class': 'form-check-input', 'id': 'id_proprietario_diferente'}),
             'prop_tipo':                 forms.Select(attrs={'class': 'form-select'}),
             'prop_cpf_cnpj':             forms.TextInput(attrs={'class': 'form-control', 'maxlength': '14'}),
@@ -908,11 +915,24 @@ class ManifestoDocumentoFiscalForm(FaturamentoBaseForm):
         }
 
     def __init__(self, *args, empresa=None, **kwargs):
+        instance = kwargs.get('instance')
         super().__init__(*args, empresa=empresa, **kwargs)
         if empresa:
             from frota.models import Motorista, Vehicle
             self.fields['motorista'].queryset = Motorista.objects.filter(empresa=empresa, ativo=True).order_by('nome')
             self.fields['veiculo'].queryset = Vehicle.objects.filter(empresa=empresa).order_by('descricao')
+        if instance and instance.veiculo:
+            if not instance.tipo_carroceria:
+                self.initial.setdefault('tipo_carroceria', instance.veiculo.tipo_carroceria)
+            if not instance.tipo_rodado:
+                self.initial.setdefault('tipo_rodado', instance.veiculo.tipo_rodado)
+            if not instance.placa_tracao:
+                plates = instance.veiculo.plates.order_by('-id').first()
+                self.initial.setdefault('placa_tracao', plates.placa if plates else '')
+            if not instance.uf_tracao:
+                self.initial.setdefault('uf_tracao', instance.veiculo.uf_licenciamento or '')
+            if instance.tara_tracao_kg is None:
+                self.initial.setdefault('tara_tracao_kg', instance.veiculo.tara_kg)
 
 
 class EncerrarMDFeForm(forms.Form):
@@ -936,11 +956,12 @@ class CancelarMDFeForm(forms.Form):
 class DocumentoVinculadoMDFeForm(forms.ModelForm):
     class Meta:
         model = DocumentoVinculadoMDFe
-        fields = ['tipo', 'chave', 'municipio_descarregamento']
+        fields = ['tipo', 'chave', 'municipio_descarregamento', 'codigo_municipio_descarregamento']
         widgets = {
-            'tipo':                     forms.Select(attrs={'class': 'form-select form-select-sm'}),
-            'chave':                    forms.TextInput(attrs={'class': 'form-control form-control-sm', 'maxlength': '44', 'placeholder': 'Chave (44 dígitos)'}),
-            'municipio_descarregamento': forms.TextInput(attrs={'class': 'form-control form-control-sm', 'placeholder': 'Cidade de entrega'}),
+            'tipo':                              forms.Select(attrs={'class': 'form-select form-select-sm'}),
+            'chave':                             forms.TextInput(attrs={'class': 'form-control form-control-sm', 'maxlength': '44', 'placeholder': 'Chave (44 dígitos)'}),
+            'municipio_descarregamento':         forms.TextInput(attrs={'class': 'form-control form-control-sm', 'placeholder': 'Cidade de entrega'}),
+            'codigo_municipio_descarregamento':  forms.TextInput(attrs={'class': 'form-control form-control-sm', 'maxlength': '7', 'placeholder': 'Cód. IBGE (7 dígitos)'}),
         }
 
 
@@ -984,7 +1005,7 @@ class CondutorMDFeForm(forms.ModelForm):
 CondutorMDFeFormSet = inlineformset_factory(
     ManifestoDocumentoFiscal, CondutorMDFe,
     form=CondutorMDFeForm,
-    extra=1, can_delete=True, min_num=0,
+    extra=0, can_delete=True, min_num=0,
 )
 
 
@@ -1139,10 +1160,23 @@ SeguroMDFeFormSet = inlineformset_factory(
 class ProdutoPredominanteMDFeForm(forms.ModelForm):
     class Meta:
         model = ProdutoPredominanteMDFe
-        fields = ['c_prod', 'x_prod', 'tipo_medida', 'q_carga']
+        fields = ['c_prod', 'x_prod', 'tipo_carga', 'tipo_medida', 'q_carga']
         widgets = {
             'c_prod':       forms.TextInput(attrs={'class': 'form-control', 'maxlength': '20', 'placeholder': 'NCM ou código interno'}),
             'x_prod':       forms.TextInput(attrs={'class': 'form-control', 'maxlength': '120', 'placeholder': 'Descrição do produto'}),
+            'tipo_carga':   forms.Select(attrs={'class': 'form-select'}),
             'tipo_medida':  forms.Select(attrs={'class': 'form-select'}),
             'q_carga':      forms.NumberInput(attrs={'class': 'form-control', 'step': '0.0001'}),
         }
+
+    def clean(self):
+        cd = super().clean()
+        if not cd.get('x_prod'):
+            raise forms.ValidationError(
+                'Descrição do Produto (x_prod) é obrigatória.'
+            )
+        if not cd.get('tipo_carga'):
+            raise forms.ValidationError(
+                'Tipo de Carga é obrigatório.'
+            )
+        return cd

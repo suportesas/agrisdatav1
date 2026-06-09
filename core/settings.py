@@ -249,6 +249,7 @@ SUPABASE_STORAGE_BUCKETS = {
     'safra-imagens': 'Imagens de safra',
     'cultura-imagens': 'Imagens de culturas',
     'uploads-gerais': 'Uploads diversos',
+    'documentos-fiscais': 'XMLs e PDFs de documentos fiscais (NF-e, CT-e, MDF-e)',
 }
 
 SUPABASE_STORAGE_PUBLIC_BUCKETS = {
@@ -256,6 +257,7 @@ SUPABASE_STORAGE_PUBLIC_BUCKETS = {
     'produtos-imagens',
     'funcionarios-fotos',
     'uploads-gerais',
+    'documentos-fiscais',
 }
 
 SUPABASE_STORAGE_SIGNED_URL_TTL = int(os.getenv('SUPABASE_STORAGE_SIGNED_URL_TTL', '3600'))

@@ -5,6 +5,7 @@ from django.db import models
 from django.utils import timezone
 
 from faturamento.encryption import decrypt_field, encrypt_field
+from frota.models import TIPO_CARROCERIA_CHOICES, TIPO_RODADO_CHOICES
 
 
 class FaturamentoBaseModel(models.Model):
@@ -181,7 +182,9 @@ class NotaFiscal(FaturamentoBaseModel):
     chave_acesso = models.CharField('Chave de Acesso', max_length=44, blank=True)
     protocolo_autorizacao = models.CharField('Protocolo de Autorização', max_length=60, blank=True)
     xml_autorizacao = models.TextField('XML Autorizado (base64)', blank=True)
+    xml_autorizacao_url = models.URLField('URL XML Autorizado (Storage)', blank=True)
     pdf_danfe = models.TextField('DANFE PDF (base64)', blank=True)
+    pdf_danfe_url = models.URLField('URL DANFE PDF (Storage)', blank=True)
     presenca_comprador = models.CharField('Presença do Comprador', max_length=1, choices=PRESENCA_COMPRADOR, default='9')
     tipo_emissao = models.IntegerField('Tipo de Emissão', default=1, help_text='1=Normal')
     data_hora_emissao = models.DateTimeField('Data/Hora de Emissão SEFAZ', null=True, blank=True)
@@ -827,10 +830,13 @@ class ConhecimentoTransporte(FaturamentoBaseModel):
     # SEFAZ
     chave_acesso    = models.CharField('Chave de Acesso', max_length=44, blank=True)
     protocolo       = models.CharField('Protocolo de Autorização', max_length=60, blank=True)
-    xml_autorizacao  = models.TextField('XML Autorizado (base64)', blank=True)
-    xml_cancelamento = models.TextField('XML Cancelamento (base64)', blank=True)
-    pdf_dacte        = models.TextField('DACTE PDF (base64)', blank=True)
-    status           = models.CharField('Status', max_length=20, choices=STATUS, default='RASCUNHO')
+    xml_autorizacao      = models.TextField('XML Autorizado (base64)', blank=True)
+    xml_autorizacao_url  = models.URLField('URL XML Autorizado (Storage)', blank=True)
+    xml_cancelamento     = models.TextField('XML Cancelamento (base64)', blank=True)
+    xml_cancelamento_url = models.URLField('URL XML Cancelamento (Storage)', blank=True)
+    pdf_dacte            = models.TextField('DACTE PDF (base64)', blank=True)
+    pdf_dacte_url        = models.URLField('URL DACTE PDF (Storage)', blank=True)
+    status               = models.CharField('Status', max_length=20, choices=STATUS, default='RASCUNHO')
     motivo_cancelamento = models.CharField('Motivo do Cancelamento', max_length=255, blank=True)
     data_cancelamento   = models.DateTimeField('Data do Cancelamento', null=True, blank=True)
     data_hora_emissao   = models.DateTimeField('Data/Hora SEFAZ', null=True, blank=True)
@@ -964,8 +970,9 @@ class ManifestoDocumentoFiscal(FaturamentoBaseModel):
     )
 
     # Percurso
-    uf_inicio       = models.CharField('UF de Início', max_length=2, help_text='Ex: SP')
-    municipio_carregamento = models.CharField('Município de Carregamento', max_length=100)
+    uf_inicio                   = models.CharField('UF de Início', max_length=2, help_text='Ex: SP')
+    municipio_carregamento      = models.CharField('Município de Carregamento', max_length=100)
+    codigo_municipio_carregamento = models.CharField('Código IBGE Município de Carregamento', max_length=7, blank=True, help_text='7 dígitos IBGE')
     uf_fim          = models.CharField('UF de Destino Final', max_length=2, help_text='Ex: MG')
 
     # Carga
@@ -976,6 +983,12 @@ class ManifestoDocumentoFiscal(FaturamentoBaseModel):
     # Modal Rodoviário — infANTT / Veículo de Tração extras
     rntrc_veiculo   = models.CharField('RNTRC', max_length=8, blank=True, help_text='Reg. Nac. de Transportadores Rodoviários de Carga')
     cod_ag_porto    = models.CharField('Código de Agendamento de Porto', max_length=8, blank=True)
+    tipo_carroceria = models.CharField('Tipo de Carroceria', max_length=2, blank=True, choices=TIPO_CARROCERIA_CHOICES)
+    tipo_rodado     = models.CharField('Tipo de Rodado',     max_length=2, blank=True, choices=TIPO_RODADO_CHOICES)
+    # Dados do veículo de tração editáveis no MDF-e (sobrescrevem o cadastro do veículo)
+    placa_tracao    = models.CharField('Placa (tração)', max_length=7, blank=True, default='')
+    uf_tracao       = models.CharField('UF (tração)',    max_length=2, blank=True, default='')
+    tara_tracao_kg  = models.IntegerField('Tara (kg) tração', null=True, blank=True)
 
     # Proprietário/Possuidor do Veículo (quando diferente do emitente)
     proprietario_diferente      = models.BooleanField('Proprietário/Possuidor diferente do emitente', default=False)
@@ -994,9 +1007,11 @@ class ManifestoDocumentoFiscal(FaturamentoBaseModel):
     # SEFAZ
     chave_acesso    = models.CharField('Chave de Acesso', max_length=44, blank=True)
     protocolo       = models.CharField('Protocolo de Autorização', max_length=60, blank=True)
-    xml_autorizacao = models.TextField('XML Autorizado (base64)', blank=True)
-    pdf_damdfe      = models.TextField('DAMDFE PDF (base64)', blank=True)
-    status          = models.CharField('Status', max_length=20, choices=STATUS, default='RASCUNHO')
+    xml_autorizacao     = models.TextField('XML Autorizado (base64)', blank=True)
+    xml_autorizacao_url = models.URLField('URL XML Autorizado (Storage)', blank=True)
+    pdf_damdfe          = models.TextField('DAMDFE PDF (base64)', blank=True)
+    pdf_damdfe_url      = models.URLField('URL DAMDFE PDF (Storage)', blank=True)
+    status              = models.CharField('Status', max_length=20, choices=STATUS, default='RASCUNHO')
     motivo_cancelamento     = models.CharField('Motivo do Cancelamento', max_length=255, blank=True)
     data_cancelamento       = models.DateTimeField('Data do Cancelamento', null=True, blank=True)
     data_hora_emissao       = models.DateTimeField('Data/Hora SEFAZ', null=True, blank=True)
@@ -1020,7 +1035,8 @@ class DocumentoVinculadoMDFe(models.Model):
     mdfe            = models.ForeignKey(ManifestoDocumentoFiscal, on_delete=models.CASCADE, related_name='documentos_vinculados')
     tipo            = models.CharField('Tipo de Documento', max_length=3, choices=TIPO, default='nfe')
     chave           = models.CharField('Chave de Acesso (44 dígitos)', max_length=44)
-    municipio_descarregamento = models.CharField('Município de Descarregamento', max_length=100)
+    municipio_descarregamento        = models.CharField('Município de Descarregamento', max_length=100)
+    codigo_municipio_descarregamento = models.CharField('Código IBGE', max_length=7, blank=True, help_text='7 dígitos IBGE')
 
     class Meta:
         verbose_name = 'Documento Vinculado ao MDF-e'
@@ -1214,6 +1230,20 @@ class SeguroMDFe(models.Model):
 
 class ProdutoPredominanteMDFe(models.Model):
     """Produto predominante da carga (prodPred) — 0 ou 1 por MDF-e."""
+    TIPO_CARGA = [
+        ('01', '01 - Granel sólido'),
+        ('02', '02 - Granel líquido'),
+        ('03', '03 - Frigorificada'),
+        ('04', '04 - Conteinerizada'),
+        ('05', '05 - Carga Geral'),
+        ('06', '06 - Neogranel'),
+        ('07', '07 - Perigosa (granel sólido)'),
+        ('08', '08 - Perigosa (granel líquido)'),
+        ('09', '09 - Perigosa (carga frigorificada)'),
+        ('10', '10 - Perigosa (conteinerizada)'),
+        ('11', '11 - Perigosa (carga geral)'),
+        ('12', '12 - Granel pressurizada'),
+    ]
     TIPO_MEDIDA = [
         ('01', '01 - M3'),
         ('02', '02 - KG'),
@@ -1225,6 +1255,7 @@ class ProdutoPredominanteMDFe(models.Model):
     mdfe        = models.OneToOneField(ManifestoDocumentoFiscal, on_delete=models.CASCADE, related_name='produto_predominante')
     c_prod      = models.CharField('Código do Produto (NCM ou interno)', max_length=20, blank=True)
     x_prod      = models.CharField('Descrição do Produto', max_length=120, blank=True)
+    tipo_carga  = models.CharField('Tipo de Carga', max_length=2, blank=True, choices=TIPO_CARGA)
     tipo_medida = models.CharField('Tipo de Medida', max_length=2, blank=True, choices=TIPO_MEDIDA)
     q_carga     = models.DecimalField('Quantidade', max_digits=11, decimal_places=4, null=True, blank=True)
 

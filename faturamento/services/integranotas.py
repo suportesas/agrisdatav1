@@ -1202,23 +1202,41 @@ class IntegranNotasClient:
         except Exception:
             config = None
 
-        # Agrupar documentos por município de descarregamento
+        # Agrupar documentos por município de descarregamento (código + nome)
         municipios: dict = {}
+        docs_sem_ibge = []
         for doc in mdfe.documentos_vinculados.all():
-            mun = doc.municipio_descarregamento
-            if mun not in municipios:
-                municipios[mun] = []
-            municipios[mun].append({'chave': doc.chave, 'tipo': doc.tipo})
+            codigo = doc.codigo_municipio_descarregamento or ''
+            if not codigo:
+                docs_sem_ibge.append(doc.chave[:10] + '…' if doc.chave else '(sem chave)')
+            key = (codigo, doc.municipio_descarregamento)
+            if key not in municipios:
+                municipios[key] = []
+            municipios[key].append({'chave': doc.chave, 'tipo': doc.tipo})
 
-        municipios_list = [
-            {'municipio': mun, 'documentos': docs}
-            for mun, docs in municipios.items()
-        ]
+        if docs_sem_ibge:
+            raise ValueError(
+                f"Código IBGE de descarregamento ausente nos documentos: {', '.join(docs_sem_ibge)}. "
+                "Edite o MDF-e e preencha a coluna 'Cód. IBGE' na aba Documentos."
+            )
+
+        municipios_list = []
+        for (codigo, nome), docs in municipios.items():
+            entry: dict = {'codigo_municipio': codigo, 'nome_municipio': nome}
+            nfes  = [{'chave': d['chave']} for d in docs if d['tipo'] == 'nfe']
+            ctes  = [{'chave': d['chave']} for d in docs if d['tipo'] == 'cte']
+            mdfes = [{'chave': d['chave']} for d in docs if d['tipo'] == 'mdfe']
+            if nfes:  entry['nfes']  = nfes
+            if ctes:  entry['ctes']  = ctes
+            if mdfes: entry['mdfes'] = mdfes
+            municipios_list.append(entry)
 
         percursos = [{'uf': p.uf} for p in mdfe.percursos.order_by('ordem')]
 
         plates = mdfe.veiculo.plates.order_by('-id').first()
-        placa = plates.placa if plates else ''
+        placa = mdfe.placa_tracao or (plates.placa if plates else '')
+        uf_tracao = mdfe.uf_tracao or mdfe.veiculo.uf_licenciamento or mdfe.uf_inicio
+        tara_tracao = mdfe.tara_tracao_kg if mdfe.tara_tracao_kg is not None else mdfe.veiculo.tara_kg
 
         # ── Condutores (motorista principal + CondutorMDFe pré-emissão) ────────
         condutores_list = [{
@@ -1231,17 +1249,19 @@ class IntegranNotasClient:
         # ── Veículo de tração ────────────────────────────────────────────────────
         veiculo_payload: dict = {
             'placa': placa,
-            'uf': mdfe.veiculo.uf_licenciamento or mdfe.uf_inicio,
+            'uf': uf_tracao,
             'condutores': condutores_list,
         }
-        if mdfe.veiculo.tara_kg:
-            veiculo_payload['tara'] = mdfe.veiculo.tara_kg
+        if tara_tracao:
+            veiculo_payload['tara'] = tara_tracao
         if mdfe.veiculo.renavam:
             veiculo_payload['renavam'] = mdfe.veiculo.renavam
-        if mdfe.veiculo.tipo_rodado:
-            veiculo_payload['tipo_rodado'] = mdfe.veiculo.tipo_rodado
-        if mdfe.veiculo.tipo_carroceria:
-            veiculo_payload['tipo_carroceria'] = mdfe.veiculo.tipo_carroceria
+        tipo_rodado = mdfe.tipo_rodado or mdfe.veiculo.tipo_rodado
+        if tipo_rodado:
+            veiculo_payload['tipo_rodado'] = tipo_rodado
+        tipo_carroceria = mdfe.tipo_carroceria or mdfe.veiculo.tipo_carroceria
+        if tipo_carroceria:
+            veiculo_payload['tipo_carroceria'] = tipo_carroceria
 
         # Proprietário/possuidor diferente do emitente
         if mdfe.proprietario_diferente and mdfe.prop_cpf_cnpj:
@@ -1262,7 +1282,7 @@ class IntegranNotasClient:
 
         # ── Modal rodoviário ─────────────────────────────────────────────────────
         modal: dict = {
-            'veiculo_tracao': veiculo_payload,
+            'veiculo': veiculo_payload,
         }
 
         # RNTRC (infANTT)
@@ -1296,7 +1316,13 @@ class IntegranNotasClient:
         # Contratantes
         contratantes = []
         for ct in mdfe.contratantes.all():
-            cd: dict = {'cpf_cnpj': _digits(ct.cpf_cnpj)}
+            digits = _digits(ct.cpf_cnpj)
+            if len(digits) == 11:
+                cd: dict = {'cpf': digits}
+            elif len(digits) == 14:
+                cd = {'cnpj': digits}
+            else:
+                cd = {'cpf': digits}  # melhor esforço
             if ct.ie:
                 cd['ie'] = ct.ie
             if ct.n_contrato:
@@ -1307,10 +1333,23 @@ class IntegranNotasClient:
         if contratantes:
             modal['contratante'] = contratantes
 
+        if not ciots and not contratantes:
+            raise ValueError(
+                "É obrigatório informar ao menos um CIOT ou Contratante no modal rodoviário. "
+                "Preencha a sub-aba 'CIOT' ou 'Contratantes' antes de emitir."
+            )
+
         # Pagamentos do frete
         pags = []
         for pf in mdfe.pagamentos_frete.all():
-            pd: dict = {'cpf_cnpj': _digits(pf.cpf_cnpj), 'responsavel': pf.responsavel}
+            pf_digits = _digits(pf.cpf_cnpj)
+            pd: dict = {'responsavel': pf.responsavel}
+            if len(pf_digits) == 11:
+                pd['cpf'] = pf_digits
+            elif len(pf_digits) == 14:
+                pd['cnpj'] = pf_digits
+            else:
+                pd['cpf'] = pf_digits
             if pf.x_nome:
                 pd['x_nome'] = pf.x_nome
             if pf.ind_pag:
@@ -1362,41 +1401,55 @@ class IntegranNotasClient:
                 sd['n_averbacao'] = sg.n_averbacao
             seguros.append(sd)
 
-        # ── Produto Predominante ─────────────────────────────────────────────────
-        prod_pred = None
+        # ── Produto Predominante — na raiz do payload (prodPred no XML MDF-e) ──
         try:
             pp = mdfe.produto_predominante
-            prod_pred = {'c_prod': pp.c_prod, 'x_prod': pp.x_prod}
+            if not pp.x_prod:
+                raise ValueError("descricao (x_prod) vazio")
+            if not pp.tipo_carga:
+                raise ValueError("tipo_carga vazio")
+            prod_pred: dict = {}
+            if pp.c_prod:
+                prod_pred['c_prod'] = pp.c_prod
+            prod_pred['descricao'] = pp.x_prod  # API usa 'descricao', não 'x_prod'
+            prod_pred['tipo_carga'] = pp.tipo_carga
             if pp.tipo_medida:
                 prod_pred['tipo_medida'] = pp.tipo_medida
             if pp.q_carga is not None:
                 prod_pred['q_carga'] = str(pp.q_carga)
+        except ValueError:
+            raise
         except Exception:
-            pass
+            raise ValueError(
+                "Produto Predominante é obrigatório (tipo_operacao=1). "
+                "Preencha a aba 'Produto Predominante' do MDF-e antes de emitir."
+            )
 
         payload: dict = {
             'tipo_operacao': '1',
             'serie': str(mdfe.serie),
             'numero': str(mdfe.numero),
-            'data_emissao': mdfe.data_emissao.strftime('%Y-%m-%dT%H:%M:%S') if hasattr(mdfe.data_emissao, 'strftime') else str(mdfe.data_emissao),
+            'data_emissao': mdfe.data_emissao.strftime('%Y-%m-%dT00:00:00-03:00') if hasattr(mdfe.data_emissao, 'strftime') else str(mdfe.data_emissao),
             'emitente': self._build_emitente(empresa, config),
             'uf_inicio': mdfe.uf_inicio,
             'uf_fim': mdfe.uf_fim,
-            'municipios_carregamento': [{'municipio': mdfe.municipio_carregamento}],
+            'municipios_carregamento': [{
+                'codigo_municipio': mdfe.codigo_municipio_carregamento or '',
+                'nome_municipio': mdfe.municipio_carregamento,
+            }],
             'percursos': percursos,
             'municipios_descarregamento': municipios_list,
             'valores': {
-                'valor_carga': str(mdfe.valor_carga),
-                'unidade_medida': '01',
+                'valor_total_carga': str(mdfe.valor_carga),
+                'codigo_unidade_medida_peso_bruto': '01',
                 'peso_bruto': str(mdfe.peso_bruto_kg),
             },
             'modal_rodoviario': modal,
+            'produto': prod_pred,
             'tipo_transporte': mdfe.tipo_transporte,
             'informacoes_adicionais_fisco': mdfe.informacoes_fisco or '',
             'informacoes_adicionais_contribuinte': mdfe.informacoes_contribuinte or '',
         }
         if seguros:
             payload['seguro'] = seguros
-        if prod_pred:
-            payload['prod_pred'] = prod_pred
         return payload

@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}{{ action }} Endereço | ERP Agrícola{% endblock %}
 
@@ -202,8 +203,12 @@
 {% endblock %}
 
 {% block extra_js %}
+<datalist id="dl-mun-end"></datalist>
+<script src="{% static 'js/ibge_municipios.js' %}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function(){
+  // Autocomplete IBGE: UF → Cidade → Código IBGE (complementa busca por CEP)
+  setupIBGEAutocomplete('id_uf', 'id_cidade', 'id_codigo_municipio', 'dl-mun-end');
   const tipo = document.getElementById('id_tipo');
   const notifyGroup = document.getElementById('notify-receiver-group');
   const paisInput = document.getElementById('id_pais');

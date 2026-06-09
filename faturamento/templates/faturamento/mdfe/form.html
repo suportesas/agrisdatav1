@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load static %}
 {% block page_title %}{{ action }} MDF-e{% endblock %}
 {% block content %}
 <div class="container-fluid mt-3 px-3 px-xl-4">
@@ -47,7 +48,7 @@
       </li>
       <li class="nav-item">
         <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-produto" type="button">
-          <i class="bi bi-box me-1"></i>Produto Predominante
+          <i class="bi bi-box me-1"></i>Produto Predominante <span class="badge bg-danger ms-1">Obrig.</span>
         </button>
       </li>
     </ul>
@@ -81,6 +82,10 @@
             </div>
           </div>
 
+          <!-- Datalists para autocomplete de municípios (preenchidos via API IBGE) -->
+          <datalist id="dl-mun-carg"></datalist>
+          <datalist id="dl-mun-desc"></datalist>
+
           <!-- Percurso -->
           <div class="col-12">
             <div class="card">
@@ -91,9 +96,13 @@
                     <label class="form-label">UF de Início <span class="text-danger">*</span></label>
                     {{ form.uf_inicio }}
                   </div>
-                  <div class="col-md-5">
+                  <div class="col-md-4">
                     <label class="form-label">Município de Carregamento <span class="text-danger">*</span></label>
                     {{ form.municipio_carregamento }}
+                  </div>
+                  <div class="col-md-2">
+                    <label class="form-label">Cód. IBGE <span class="text-danger">*</span></label>
+                    {{ form.codigo_municipio_carregamento }}
                   </div>
                   <div class="col-md-2">
                     <label class="form-label">UF de Destino <span class="text-danger">*</span></label>
@@ -103,17 +112,60 @@
                 <h6 class="mb-2">Estados Percorridos (intermediários)</h6>
                 {{ perc_formset.management_form }}
                 <table class="table table-sm mb-2">
-                  <thead class="table-light"><tr><th>UF</th><th style="width:80px">Ordem</th><th style="width:40px"></th></tr></thead>
+                  <thead class="table-light">
+                    <tr><th>UF</th><th style="width:90px">Ordem</th><th style="width:60px"></th></tr>
+                  </thead>
                   <tbody id="perc-tbody">
                     {% for pf in perc_formset %}
                     <tr>
                       <td>{{ pf.uf }}</td>
                       <td>{{ pf.ordem }}</td>
-                      <td>{{ pf.DELETE }}{{ pf.id }}</td>
+                      <td>
+                        <span style="display:none">{{ pf.DELETE }}{{ pf.id }}</span>
+                        <button type="button" class="btn btn-outline-danger btn-sm" title="Excluir" onclick="percExcluir(this)">
+                          <i class="bi bi-trash"></i>
+                        </button>
+                      </td>
                     </tr>
                     {% endfor %}
                   </tbody>
                 </table>
+                <table style="display:none"><tbody>
+                  <tr id="perc-template-row">
+                    <td><input type="text" name="perc-__prefix__-uf" maxlength="2" class="form-control form-control-sm" placeholder="Ex: CE" id="id_perc-__prefix__-uf" oninput="this.value=this.value.toUpperCase()"></td>
+                    <td><input type="number" name="perc-__prefix__-ordem" min="1" value="1" class="form-control form-control-sm" id="id_perc-__prefix__-ordem" style="width:70px"></td>
+                    <td>
+                      <button type="button" class="btn btn-outline-danger btn-sm" onclick="percExcluir(this)"><i class="bi bi-trash"></i></button>
+                      <input type="checkbox" name="perc-__prefix__-DELETE" id="id_perc-__prefix__-DELETE" class="form-check-input" style="display:none">
+                      <input type="hidden" name="perc-__prefix__-id" id="id_perc-__prefix__-id">
+                    </td>
+                  </tr>
+                </tbody></table>
+                <script>
+                function _percAdd() {
+                  var t = document.getElementById('id_perc-TOTAL_FORMS');
+                  var b = document.getElementById('perc-tbody');
+                  var tmpl = document.getElementById('perc-template-row');
+                  if (!t || !b || !tmpl) {
+                    console.error('MDF percurso btn: elem faltando', {totalForm:!!t, tbody:!!b, template:!!tmpl});
+                    return;
+                  }
+                  var idx = parseInt(t.value, 10);
+                  var row = tmpl.cloneNode(true);
+                  row.removeAttribute('id');
+                  row.querySelectorAll('input, select').forEach(function(el) {
+                    if (el.name) el.name = el.name.replace('__prefix__', idx);
+                    if (el.id)   el.id   = el.id.replace('__prefix__', idx);
+                  });
+                  var o = row.querySelector('[name="perc-' + idx + '-ordem"]');
+                  if (o) o.value = idx + 1;
+                  b.appendChild(row);
+                  t.value = idx + 1;
+                }
+                </script>
+                <button type="button" id="btn-add-perc" class="btn btn-outline-secondary btn-sm mb-2" onclick="_percAdd()">
+                  <i class="bi bi-plus-circle me-1"></i> Adicionar Estado
+                </button>
               </div>
             </div>
           </div>
@@ -166,6 +218,10 @@
 
       <!-- ═══ ABA MODAL RODOVIÁRIO ════════════════════════════════════════════ -->
       <div class="tab-pane fade" id="tab-modal">
+        <div class="alert alert-warning py-1 small mb-2">
+          <i class="bi bi-exclamation-triangle me-1"></i>
+          Preencha ao menos uma sub-aba: <strong>CIOT</strong> ou <strong>Contratantes</strong>.
+        </div>
         <ul class="nav nav-tabs mb-0" id="modalSubTabs" role="tablist">
           <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#sub-tracao" type="button">Veículo de Tração</button></li>
           <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#sub-reboque" type="button">Reboque</button></li>
@@ -189,32 +245,24 @@
               </div>
               <div class="col-md-3">
                 <label class="form-label">Tipo de Carroceria</label>
-                <select name="veiculo_tipo_carroceria_display" id="id_veiculo_tipo_carroceria_display" class="form-select" disabled>
-                  <option>{{ object.veiculo.get_tipo_carroceria_display|default:"—" }}</option>
-                </select>
-                <small class="text-muted">Do cadastro do veículo</small>
+                {{ form.tipo_carroceria }}
               </div>
               <div class="col-md-3">
                 <label class="form-label">Tipo de Rodado</label>
-                <select name="veiculo_tipo_rodado_display" id="id_veiculo_tipo_rodado_display" class="form-select" disabled>
-                  <option>{{ object.veiculo.get_tipo_rodado_display|default:"—" }}</option>
-                </select>
-                <small class="text-muted">Do cadastro do veículo</small>
+                {{ form.tipo_rodado }}
               </div>
               <div class="col-md-3">
                 <label class="form-label">Placa do Veículo de Tração</label>
-                <input type="text" class="form-control" value="{{ object.veiculo.get_current_plate|default:"" }}" disabled>
-                <small class="text-muted">Do cadastro do veículo</small>
+                {{ form.placa_tracao }}
+                <small class="text-muted">{% if object and object.veiculo %}<a href="{% url 'frota:vehicle_update' object.veiculo.pk %}" target="_blank">Ver cadastro</a>{% endif %}</small>
               </div>
               <div class="col-md-2">
                 <label class="form-label">UF</label>
-                <input type="text" class="form-control" value="{{ object.veiculo.uf_licenciamento|default:"" }}" disabled>
-                <small class="text-muted">Do cadastro do veículo</small>
+                {{ form.uf_tracao }}
               </div>
               <div class="col-md-2">
                 <label class="form-label">Tara (kg)</label>
-                <input type="text" class="form-control" value="{{ object.veiculo.tara_kg|default:"" }}" disabled>
-                <small class="text-muted">Do cadastro do veículo</small>
+                {{ form.tara_tracao_kg }}
               </div>
             </div>
 
@@ -282,7 +330,8 @@
                 <td><input type="text" name="cond-__prefix__-cpf" maxlength="14" class="form-control form-control-sm" placeholder="000.000.000-00" id="id_cond-__prefix__-cpf"></td>
                 <td><input type="number" name="cond-__prefix__-ordem" class="form-control form-control-sm" value="1" id="id_cond-__prefix__-ordem"></td>
                 <td>
-                  <input type="checkbox" name="cond-__prefix__-DELETE" id="id_cond-__prefix__-DELETE" class="form-check-input">
+                  <button type="button" class="btn btn-outline-danger btn-sm" onclick="var r=this.closest('tr');r.querySelector('input[type=checkbox]').checked=true;r.style.display='none'"><i class="bi bi-trash"></i></button>
+                  <input type="checkbox" name="cond-__prefix__-DELETE" id="id_cond-__prefix__-DELETE" class="form-check-input" style="display:none">
                   <input type="hidden" name="cond-__prefix__-id" id="id_cond-__prefix__-id">
                 </td>
               </tr>
@@ -330,7 +379,8 @@
                 <td><input type="number" name="reb-__prefix__-tara_kg" class="form-control form-control-sm" id="id_reb-__prefix__-tara_kg"></td>
                 <td><input type="text" name="reb-__prefix__-renavam" maxlength="9" class="form-control form-control-sm" id="id_reb-__prefix__-renavam"></td>
                 <td>
-                  <input type="checkbox" name="reb-__prefix__-DELETE" id="id_reb-__prefix__-DELETE" class="form-check-input">
+                  <button type="button" class="btn btn-outline-danger btn-sm" onclick="var r=this.closest('tr');r.querySelector('input[type=checkbox]').checked=true;r.style.display='none'"><i class="bi bi-trash"></i></button>
+                  <input type="checkbox" name="reb-__prefix__-DELETE" id="id_reb-__prefix__-DELETE" class="form-check-input" style="display:none">
                   <input type="hidden" name="reb-__prefix__-id" id="id_reb-__prefix__-id">
                 </td>
               </tr>
@@ -360,7 +410,8 @@
                 <td><input type="text" name="ciot-__prefix__-ciot" maxlength="20" class="form-control form-control-sm" placeholder="20 dígitos" id="id_ciot-__prefix__-ciot"></td>
                 <td><input type="text" name="ciot-__prefix__-cpf_cnpj" maxlength="14" class="form-control form-control-sm" placeholder="CPF ou CNPJ" id="id_ciot-__prefix__-cpf_cnpj"></td>
                 <td>
-                  <input type="checkbox" name="ciot-__prefix__-DELETE" id="id_ciot-__prefix__-DELETE" class="form-check-input">
+                  <button type="button" class="btn btn-outline-danger btn-sm" onclick="var r=this.closest('tr');r.querySelector('input[type=checkbox]').checked=true;r.style.display='none'"><i class="bi bi-trash"></i></button>
+                  <input type="checkbox" name="ciot-__prefix__-DELETE" id="id_ciot-__prefix__-DELETE" class="form-check-input" style="display:none">
                   <input type="hidden" name="ciot-__prefix__-id" id="id_ciot-__prefix__-id">
                 </td>
               </tr>
@@ -392,7 +443,8 @@
                 <td><input type="text" name="cont-__prefix__-n_contrato" maxlength="20" class="form-control form-control-sm" id="id_cont-__prefix__-n_contrato"></td>
                 <td><input type="number" name="cont-__prefix__-v_contrato" step="0.01" class="form-control form-control-sm" id="id_cont-__prefix__-v_contrato"></td>
                 <td>
-                  <input type="checkbox" name="cont-__prefix__-DELETE" id="id_cont-__prefix__-DELETE" class="form-check-input">
+                  <button type="button" class="btn btn-outline-danger btn-sm" onclick="var r=this.closest('tr');r.querySelector('input[type=checkbox]').checked=true;r.style.display='none'"><i class="bi bi-trash"></i></button>
+                  <input type="checkbox" name="cont-__prefix__-DELETE" id="id_cont-__prefix__-DELETE" class="form-check-input" style="display:none">
                   <input type="hidden" name="cont-__prefix__-id" id="id_cont-__prefix__-id">
                 </td>
               </tr>
@@ -431,7 +483,8 @@
                   </select>
                 </td>
                 <td>
-                  <input type="checkbox" name="vale-__prefix__-DELETE" id="id_vale-__prefix__-DELETE" class="form-check-input">
+                  <button type="button" class="btn btn-outline-danger btn-sm" onclick="var r=this.closest('tr');r.querySelector('input[type=checkbox]').checked=true;r.style.display='none'"><i class="bi bi-trash"></i></button>
+                  <input type="checkbox" name="vale-__prefix__-DELETE" id="id_vale-__prefix__-DELETE" class="form-check-input" style="display:none">
                   <input type="hidden" name="vale-__prefix__-id" id="id_vale-__prefix__-id">
                 </td>
               </tr>
@@ -478,7 +531,8 @@
                 </td>
                 <td><input type="number" name="pagfrete-__prefix__-vr_total" step="0.01" class="form-control form-control-sm" id="id_pagfrete-__prefix__-vr_total"></td>
                 <td>
-                  <input type="checkbox" name="pagfrete-__prefix__-DELETE" id="id_pagfrete-__prefix__-DELETE" class="form-check-input">
+                  <button type="button" class="btn btn-outline-danger btn-sm" onclick="var r=this.closest('tr');r.querySelector('input[type=checkbox]').checked=true;r.style.display='none'"><i class="bi bi-trash"></i></button>
+                  <input type="checkbox" name="pagfrete-__prefix__-DELETE" id="id_pagfrete-__prefix__-DELETE" class="form-check-input" style="display:none">
                   <input type="hidden" name="pagfrete-__prefix__-id" id="id_pagfrete-__prefix__-id">
                 </td>
               </tr>
@@ -502,14 +556,18 @@
         </div>
         {{ docs_formset.management_form }}
         <table class="table table-sm" id="docs-table">
-          <thead class="table-light"><tr><th style="width:90px">Tipo</th><th>Chave (44 dígitos)</th><th>Município de Entrega</th><th></th></tr></thead>
+          <thead class="table-light"><tr><th style="width:90px">Tipo</th><th>Chave (44 dígitos)</th><th>Município de Entrega</th><th style="width:120px">Cód. IBGE</th><th></th></tr></thead>
           <tbody id="docs-tbody">
             {% for df in docs_formset %}
             <tr>
               <td>{{ df.tipo }}</td>
               <td>{{ df.chave }}</td>
               <td>{{ df.municipio_descarregamento }}</td>
-              <td>{{ df.DELETE }}{{ df.id }}</td>
+              <td>{{ df.codigo_municipio_descarregamento }}</td>
+              <td>
+                <button type="button" class="btn btn-outline-danger btn-sm" onclick="var r=this.closest('tr');r.querySelector('input[type=checkbox]').checked=true;r.style.display='none'"><i class="bi bi-trash"></i></button>
+                <span style="display:none">{{ df.DELETE }}{{ df.id }}</span>
+              </td>
             </tr>
             {% endfor %}
           </tbody>
@@ -524,8 +582,10 @@
             </td>
             <td><input type="text" name="docs-__prefix__-chave" maxlength="44" class="form-control form-control-sm" placeholder="Chave (44 dígitos)" id="id_docs-__prefix__-chave"></td>
             <td><input type="text" name="docs-__prefix__-municipio_descarregamento" maxlength="100" class="form-control form-control-sm" placeholder="Cidade de entrega" id="id_docs-__prefix__-municipio_descarregamento"></td>
+            <td><input type="text" name="docs-__prefix__-codigo_municipio_descarregamento" maxlength="7" class="form-control form-control-sm" placeholder="Cód. IBGE" id="id_docs-__prefix__-codigo_municipio_descarregamento"></td>
             <td>
-              <input type="checkbox" name="docs-__prefix__-DELETE" id="id_docs-__prefix__-DELETE" class="form-check-input">
+              <button type="button" class="btn btn-outline-danger btn-sm" onclick="var r=this.closest('tr');r.querySelector('input[type=checkbox]').checked=true;r.style.display='none'"><i class="bi bi-trash"></i></button>
+              <input type="checkbox" name="docs-__prefix__-DELETE" id="id_docs-__prefix__-DELETE" class="form-check-input" style="display:none">
               <input type="hidden" name="docs-__prefix__-id" id="id_docs-__prefix__-id">
             </td>
           </tr>
@@ -576,15 +636,19 @@
 
       <!-- ═══ ABA PRODUTO PREDOMINANTE ════════════════════════════════════════ -->
       <div class="tab-pane fade" id="tab-produto">
-        <p class="text-muted small mb-3">Produto predominante da carga (prodPred) — opcional, máximo 1 por MDF-e.</p>
+        <p class="small mb-3"><span class="text-danger fw-semibold">Obrigatório</span> — produto predominante da carga (prodPred). Descrição e Tipo de Carga são obrigatórios.</p>
         <div class="row g-3">
           <div class="col-md-3">
             <label class="form-label">Código do Produto (NCM)</label>
             {{ prod_pred_form.c_prod }}
           </div>
           <div class="col-md-5">
-            <label class="form-label">Descrição do Produto</label>
+            <label class="form-label">Descrição do Produto <span class="text-danger">*</span></label>
             {{ prod_pred_form.x_prod }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Tipo de Carga <span class="text-danger">*</span></label>
+            {{ prod_pred_form.tipo_carga }}
           </div>
           <div class="col-md-2">
             <label class="form-label">Tipo de Medida</label>
@@ -739,8 +803,8 @@
     });
   }
 
-  // ── Adicionar linhas de formsets simples ─────────────────────────
-  function criarAdicionadorFormset(btnId, tbodyId, templateId, prefixCountId) {
+  // ── Adicionar linhas de formsets simples (exposto globalmente para o DOMContentLoaded externo)
+  window.criarAdicionadorFormset = function criarAdicionadorFormset(btnId, tbodyId, templateId, prefixCountId, afterClone) {
     const btn = document.getElementById(btnId);
     if (!btn) return;
     btn.addEventListener('click', function () {
@@ -748,25 +812,29 @@
       if (!totalInput) return;
       const idx = parseInt(totalInput.value, 10);
       const template = document.getElementById(templateId);
+      if (!template) { console.warn('MDF-e: template row não encontrado:', templateId); return; }
       const novaLinha = template.cloneNode(true);
       novaLinha.removeAttribute('id');
       novaLinha.querySelectorAll('input, select').forEach(el => {
         if (el.name) el.name = el.name.replace('__prefix__', idx);
         if (el.id)   el.id   = el.id.replace('__prefix__', idx);
       });
+      if (afterClone) afterClone(novaLinha, idx);
       document.getElementById(tbodyId).appendChild(novaLinha);
       totalInput.value = idx + 1;
     });
-  }
+  };
 
-  criarAdicionadorFormset('btn-add-condutor', 'cond-tbody',     'cond-template-row',     'id_cond-TOTAL_FORM_COUNT');
-  criarAdicionadorFormset('btn-add-reboque',  'reb-tbody',      'reb-template-row',      'id_reb-TOTAL_FORM_COUNT');
-  criarAdicionadorFormset('btn-add-ciot',     'ciot-tbody',     'ciot-template-row',     'id_ciot-TOTAL_FORM_COUNT');
-  criarAdicionadorFormset('btn-add-contratante','cont-tbody',   'cont-template-row',     'id_cont-TOTAL_FORM_COUNT');
-  criarAdicionadorFormset('btn-add-vale',     'vale-tbody',     'vale-template-row',     'id_vale-TOTAL_FORM_COUNT');
-  criarAdicionadorFormset('btn-add-pagfrete', 'pagfrete-tbody', 'pagfrete-template-row', 'id_pagfrete-TOTAL_FORM_COUNT');
-  criarAdicionadorFormset('btn-add-seguro',   'seg-tbody',      'seg-template-row',      'id_seg-TOTAL_FORM_COUNT');
-  criarAdicionadorFormset('btn-add-doc',      'docs-tbody',     'docs-template-row',     'id_docs-TOTAL_FORM_COUNT');
+  // ── Botões de formset — configurados aqui, logo após a definição ─────────
+  // btn-add-perc usa onclick="_percAdd()" inline — ver script antes do botão
+  criarAdicionadorFormset('btn-add-condutor',    'cond-tbody',     'cond-template-row',     'id_cond-TOTAL_FORMS');
+  criarAdicionadorFormset('btn-add-reboque',     'reb-tbody',      'reb-template-row',      'id_reb-TOTAL_FORMS');
+  criarAdicionadorFormset('btn-add-ciot',        'ciot-tbody',     'ciot-template-row',     'id_ciot-TOTAL_FORMS');
+  criarAdicionadorFormset('btn-add-contratante', 'cont-tbody',     'cont-template-row',     'id_cont-TOTAL_FORMS');
+  criarAdicionadorFormset('btn-add-vale',        'vale-tbody',     'vale-template-row',     'id_vale-TOTAL_FORMS');
+  criarAdicionadorFormset('btn-add-pagfrete',    'pagfrete-tbody', 'pagfrete-template-row', 'id_pagfrete-TOTAL_FORMS');
+  criarAdicionadorFormset('btn-add-seguro',      'seg-tbody',      'seg-template-row',      'id_seg-TOTAL_FORMS');
+  criarAdicionadorFormset('btn-add-doc',         'docs-tbody',     'docs-template-row',     'id_docs-TOTAL_FORMS');
 
   // ── Modal Importar Docs ──────────────────────────────────────────
   const modalImport = document.getElementById('modalImportarDocs');
@@ -788,12 +856,14 @@
     });
   }
 
-  document.getElementById('nfe-search').addEventListener('input', function () {
+  const nfeSearch = document.getElementById('nfe-search');
+  if (nfeSearch) nfeSearch.addEventListener('input', function () {
     clearTimeout(debNFe);
     debNFe = setTimeout(() => buscarNFe(this.value.trim()), 350);
   });
 
-  document.getElementById('cte-search').addEventListener('input', function () {
+  const cteSearch = document.getElementById('cte-search');
+  if (cteSearch) cteSearch.addEventListener('input', function () {
     clearTimeout(debCTe);
     debCTe = setTimeout(() => buscarCTe(this.value.trim()), 350);
   });
@@ -822,6 +892,7 @@
         <td><input type="checkbox" class="form-check-input doc-check" ${checked}
           data-key="${escH(key)}" data-tipo="nfe"
           data-chave="${escH(n.chave_acesso)}" data-municipio="${escH(n.municipio)}"
+          data-codigomunicipio="${escH(n.codigo_municipio || '')}"
           data-valor="${n.valor_total}" data-peso="${n.peso_bruto_kg || 0}"
           data-numero="${n.numero}" data-serie="${escH(n.serie)}"></td>
         <td><strong>${String(n.numero).padStart(9,'0')}/${n.serie}</strong></td>
@@ -835,7 +906,8 @@
     tbody.querySelectorAll('.doc-check').forEach(cb => cb.addEventListener('change', onCheckChange));
   }
 
-  document.getElementById('nfe-check-all').addEventListener('change', function () {
+  const nfeCheckAll = document.getElementById('nfe-check-all');
+  if (nfeCheckAll) nfeCheckAll.addEventListener('change', function () {
     document.querySelectorAll('#nfe-tbody .doc-check').forEach(cb => {
       cb.checked = this.checked;
       syncMap(cb);
@@ -870,6 +942,7 @@
         <td><input type="checkbox" class="form-check-input doc-check" ${checked}
           data-key="${escH(key)}" data-tipo="cte"
           data-chave="${escH(c.chave_acesso)}" data-municipio="${escH(c.municipio)}"
+          data-codigomunicipio="${escH(c.codigo_municipio || '')}"
           data-valor="${c.valor_carga}" data-peso="${c.peso_bruto_kg || 0}"
           data-numero="${c.numero}" data-serie="${escH(c.serie)}"></td>
         <td><strong>${String(c.numero).padStart(9,'0')}/${c.serie}</strong></td>
@@ -883,7 +956,8 @@
     tbody.querySelectorAll('.doc-check').forEach(cb => cb.addEventListener('change', onCheckChange));
   }
 
-  document.getElementById('cte-check-all').addEventListener('change', function () {
+  const cteCheckAll = document.getElementById('cte-check-all');
+  if (cteCheckAll) cteCheckAll.addEventListener('change', function () {
     document.querySelectorAll('#cte-tbody .doc-check').forEach(cb => {
       cb.checked = this.checked;
       syncMap(cb);
@@ -902,13 +976,14 @@
     if (!key) return;
     if (cb.checked) {
       selectedDocs.set(key, {
-        tipo:      cb.dataset.tipo,
-        chave:     cb.dataset.chave,
-        municipio: cb.dataset.municipio,
-        valor:     parseFloat(cb.dataset.valor || 0),
-        peso:      parseFloat(cb.dataset.peso  || 0),
-        numero:    cb.dataset.numero,
-        serie:     cb.dataset.serie,
+        tipo:             cb.dataset.tipo,
+        chave:            cb.dataset.chave,
+        municipio:        cb.dataset.municipio,
+        codigoMunicipio:  cb.dataset.codigomunicipio || '',
+        valor:            parseFloat(cb.dataset.valor || 0),
+        peso:             parseFloat(cb.dataset.peso  || 0),
+        numero:           cb.dataset.numero,
+        serie:            cb.dataset.serie,
       });
     } else {
       selectedDocs.delete(key);
@@ -951,7 +1026,8 @@
   }
 
   // ── Importar ────────────────────────────────────────────────────
-  document.getElementById('btn-importar-docs').addEventListener('click', importarSelecionados);
+  const btnImportar = document.getElementById('btn-importar-docs');
+  if (btnImportar) btnImportar.addEventListener('click', importarSelecionados);
 
   function importarSelecionados() {
     if (!selectedDocs.size) return;
@@ -971,7 +1047,7 @@
     }
 
     selectedDocs.forEach(item => {
-      adicionarLinhaFormset(item.tipo, item.chave, item.municipio);
+      adicionarLinhaFormset(item.tipo, item.chave, item.municipio, item.codigoMunicipio);
     });
 
     // Navegar para aba de documentos
@@ -981,8 +1057,8 @@
     bootstrap.Modal.getInstance(document.getElementById('modalImportarDocs')).hide();
   }
 
-  function adicionarLinhaFormset(tipo, chave, municipio) {
-    const totalInput = document.getElementById('id_docs-TOTAL_FORM_COUNT');
+  function adicionarLinhaFormset(tipo, chave, municipio, codigoMunicipio) {
+    const totalInput = document.getElementById('id_docs-TOTAL_FORMS');
     if (!totalInput) return;
     const idx = parseInt(totalInput.value, 10);
     const template = document.getElementById('docs-template-row');
@@ -992,12 +1068,14 @@
       if (el.name) el.name = el.name.replace('__prefix__', idx);
       if (el.id)   el.id   = el.id.replace('__prefix__', idx);
     });
-    const tipoSel  = novaLinha.querySelector('[name="docs-' + idx + '-tipo"]');
-    const chaveInp = novaLinha.querySelector('[name="docs-' + idx + '-chave"]');
-    const munInp   = novaLinha.querySelector('[name="docs-' + idx + '-municipio_descarregamento"]');
-    if (tipoSel)  tipoSel.value  = tipo;
-    if (chaveInp) chaveInp.value = chave;
-    if (munInp)   munInp.value   = municipio;
+    const tipoSel    = novaLinha.querySelector('[name="docs-' + idx + '-tipo"]');
+    const chaveInp   = novaLinha.querySelector('[name="docs-' + idx + '-chave"]');
+    const munInp     = novaLinha.querySelector('[name="docs-' + idx + '-municipio_descarregamento"]');
+    const codigoInp  = novaLinha.querySelector('[name="docs-' + idx + '-codigo_municipio_descarregamento"]');
+    if (tipoSel)   tipoSel.value   = tipo;
+    if (chaveInp)  chaveInp.value  = chave;
+    if (munInp)    munInp.value    = municipio;
+    if (codigoInp) codigoInp.value = codigoMunicipio || '';
     document.getElementById('docs-tbody').appendChild(novaLinha);
     totalInput.value = idx + 1;
   }
@@ -1008,6 +1086,107 @@
   function fmt(v) {
     return parseFloat(v).toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
   }
+
 })();
+</script>
+
+<script>
+function percAdicionar() {
+  var totalInput = document.getElementById('id_perc-TOTAL_FORMS');
+  var tbody = document.getElementById('perc-tbody');
+  if (!totalInput || !tbody) return;
+  var idx = parseInt(totalInput.value, 10);
+  var tr = document.createElement('tr');
+  tr.innerHTML =
+    '<td><input type="text" name="perc-' + idx + '-uf" maxlength="2"' +
+    ' class="form-control form-control-sm" placeholder="Ex: CE"' +
+    ' id="id_perc-' + idx + '-uf" oninput="this.value=this.value.toUpperCase()"></td>' +
+    '<td><input type="number" name="perc-' + idx + '-ordem" min="1" value="' + (idx + 1) + '"' +
+    ' class="form-control form-control-sm" id="id_perc-' + idx + '-ordem" style="width:70px"></td>' +
+    '<td><span style="display:none"><input type="checkbox" name="perc-' + idx + '-DELETE"' +
+    ' id="id_perc-' + idx + '-DELETE" class="form-check-input">' +
+    '<input type="hidden" name="perc-' + idx + '-id" id="id_perc-' + idx + '-id"></span>' +
+    '<button type="button" class="btn btn-outline-danger btn-sm" title="Excluir" onclick="percExcluir(this)">' +
+    '<i class="bi bi-trash"></i></button></td>';
+  tbody.appendChild(tr);
+  totalInput.value = idx + 1;
+}
+
+function percExcluir(btn) {
+  var row = btn.closest('tr');
+  var chk = row.querySelector('input[type="checkbox"][name$="-DELETE"]');
+  if (chk) chk.checked = true;
+  row.style.display = 'none';
+}
+</script>
+
+<script src="{% static 'js/ibge_municipios.js' %}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  // ── Município de Carregamento ───────────────────────────────────────────
+  setupIBGEAutocomplete('id_uf_inicio', 'id_municipio_carregamento', 'id_codigo_municipio_carregamento', 'dl-mun-carg');
+
+  // Municípios de Descarregamento (tabela de docs vinculados — usa uf_fim como base)
+  var ufFimEl = document.getElementById('id_uf_fim');
+
+  function attachDescRow(row) {
+    var munInp = row.querySelector('input[name$="-municipio_descarregamento"]');
+    var codInp = row.querySelector('input[name$="-codigo_municipio_descarregamento"]');
+    if (!munInp || !codInp) return;
+    munInp.setAttribute('list', 'dl-mun-desc');
+    munInp.setAttribute('autocomplete', 'off');
+    munInp.addEventListener('change', function () {
+      var muns = window._ibgeMunCache[(ufFimEl ? ufFimEl.value : '').trim().toUpperCase()] || [];
+      var nome = munInp.value.trim().toLowerCase();
+      var found = muns.find(function (m) { return m.nome.toLowerCase() === nome; });
+      if (found) codInp.value = found.id;
+    });
+  }
+
+  function reloadDescDatalist(muns) {
+    var dl = document.getElementById('dl-mun-desc');
+    if (!dl) return;
+    dl.innerHTML = muns.map(function (m) {
+      return '<option value="' + m.nome + '" data-codigo="' + m.id + '">';
+    }).join('');
+    document.querySelectorAll('input[name$="-municipio_descarregamento"]').forEach(function (inp) {
+      var row = inp.closest('tr');
+      if (!row) return;
+      var cod = row.querySelector('input[name$="-codigo_municipio_descarregamento"]');
+      if (cod && inp.value && !cod.value) {
+        var found = muns.find(function (m) { return m.nome.toLowerCase() === inp.value.trim().toLowerCase(); });
+        if (found) cod.value = found.id;
+      }
+    });
+  }
+
+  if (ufFimEl) {
+    ufFimEl.addEventListener('change', function () {
+      setupIBGEAutocomplete('id_uf_fim', 'id_uf_fim', 'id_uf_fim', 'dl-mun-desc'); // trigger cache load
+      var uf = ufFimEl.value.trim().toUpperCase();
+      if (window._ibgeMunCache[uf]) { reloadDescDatalist(window._ibgeMunCache[uf]); return; }
+      fetch('https://servicodados.ibge.gov.br/api/v1/localidades/estados/' + uf + '/municipios')
+        .then(function (r) { return r.ok ? r.json() : []; })
+        .then(function (data) {
+          var muns = (data || []).map(function (m) { return { id: String(m.id), nome: m.nome }; });
+          window._ibgeMunCache[uf] = muns;
+          reloadDescDatalist(muns);
+        }).catch(function () {});
+    });
+    if ((ufFimEl.value || '').trim().length === 2) ufFimEl.dispatchEvent(new Event('change'));
+  }
+
+  var tbody = document.getElementById('docs-tbody');
+  if (tbody) {
+    tbody.querySelectorAll('tr').forEach(attachDescRow);
+    new MutationObserver(function (mutations) {
+      mutations.forEach(function (m) {
+        m.addedNodes.forEach(function (node) {
+          if (node.nodeType === 1 && node.tagName === 'TR') attachDescRow(node);
+        });
+      });
+    }).observe(tbody, { childList: true });
+  }
+});
 </script>
 {% endblock %}

@@ -937,6 +937,17 @@ class ManifestoDocumentoFiscal(FaturamentoBaseModel):
         ('4', 'Granel Sólido'),
         ('5', 'Carga Fracionada'),
     ]
+    PROP_TIPO_CHOICES = [
+        ('TAC',       'TAC — Transportador Autônomo de Cargas'),
+        ('TAC-Agr',   'TAC Agregado'),
+        ('EMP',       'Empresa'),
+    ]
+    PROP_TRANSP_CHOICES = [
+        ('ETC',     'ETC — Empresa de Transporte de Cargas'),
+        ('CTC',     'CTC — Cooperativa de Transporte de Cargas'),
+        ('TAC-Ind', 'TAC Independente'),
+        ('TAC-Agr', 'TAC Agregado'),
+    ]
 
     numero          = models.PositiveIntegerField('Número MDF-e', null=True, blank=True)
     serie           = models.CharField('Série', max_length=3, default='1')
@@ -961,6 +972,20 @@ class ManifestoDocumentoFiscal(FaturamentoBaseModel):
     tipo_transporte = models.CharField('Tipo de Transporte', max_length=1, choices=TIPO_TRANSPORTE, default='1')
     valor_carga     = models.DecimalField('Valor Total da Carga', max_digits=14, decimal_places=2, default=0)
     peso_bruto_kg   = models.DecimalField('Peso Bruto (kg)', max_digits=12, decimal_places=3, default=0)
+
+    # Modal Rodoviário — infANTT / Veículo de Tração extras
+    rntrc_veiculo   = models.CharField('RNTRC', max_length=8, blank=True, help_text='Reg. Nac. de Transportadores Rodoviários de Carga')
+    cod_ag_porto    = models.CharField('Código de Agendamento de Porto', max_length=8, blank=True)
+
+    # Proprietário/Possuidor do Veículo (quando diferente do emitente)
+    proprietario_diferente      = models.BooleanField('Proprietário/Possuidor diferente do emitente', default=False)
+    prop_tipo                   = models.CharField('Tipo de Proprietário/Possuidor', max_length=10, blank=True, choices=PROP_TIPO_CHOICES)
+    prop_cpf_cnpj               = models.CharField('CPF/CNPJ do Proprietário', max_length=14, blank=True)
+    prop_nome                   = models.CharField('Nome do Proprietário', max_length=60, blank=True)
+    prop_ie                     = models.CharField('Inscrição Estadual do Proprietário', max_length=14, blank=True)
+    prop_uf                     = models.CharField('UF do Proprietário', max_length=2, blank=True)
+    prop_rntrc                  = models.CharField('RNTRC do Proprietário', max_length=8, blank=True)
+    prop_tipo_transportador     = models.CharField('Tipo de Transportador', max_length=10, blank=True, choices=PROP_TRANSP_CHOICES)
 
     # Informações adicionais
     informacoes_fisco       = models.TextField('Informações para o Fisco', blank=True)
@@ -1033,6 +1058,181 @@ class CondutorAdicionalMDFe(models.Model):
 
     def __str__(self):
         return f'{self.nome} — {self.cpf}'
+
+
+class CondutorMDFe(models.Model):
+    """Condutores incluídos no MDF-e antes da emissão (veicTracao.condutor)."""
+    mdfe    = models.ForeignKey(ManifestoDocumentoFiscal, on_delete=models.CASCADE, related_name='condutores')
+    cpf     = models.CharField('CPF', max_length=14)
+    nome    = models.CharField('Nome', max_length=60)
+    ordem   = models.PositiveSmallIntegerField('Ordem', default=1)
+
+    class Meta:
+        verbose_name = 'Condutor MDF-e'
+        ordering = ['ordem']
+
+    def __str__(self):
+        return f'{self.nome} ({self.cpf})'
+
+
+class ReboqueMDFe(models.Model):
+    """Veículos de reboque (veicReboque) vinculados ao MDF-e."""
+    PROP_TIPO_CHOICES = ManifestoDocumentoFiscal.PROP_TIPO_CHOICES
+    PROP_TRANSP_CHOICES = ManifestoDocumentoFiscal.PROP_TRANSP_CHOICES
+    TIPO_CARROCERIA_CHOICES = [
+        ('00', '00 - Não Aplicável'), ('01', '01 - Aberta'), ('02', '02 - Fechada/Baú'),
+        ('03', '03 - Graneleira'), ('04', '04 - Porta Container'), ('05', '05 - Sider'),
+    ]
+
+    mdfe                = models.ForeignKey(ManifestoDocumentoFiscal, on_delete=models.CASCADE, related_name='reboques')
+    placa               = models.CharField('Placa', max_length=7)
+    uf                  = models.CharField('UF', max_length=2)
+    rntrc               = models.CharField('RNTRC', max_length=8, blank=True)
+    tipo_carroceria     = models.CharField('Tipo de Carroceria', max_length=2, blank=True, choices=TIPO_CARROCERIA_CHOICES)
+    tara_kg             = models.IntegerField('Tara (kg)', null=True, blank=True)
+    renavam             = models.CharField('RENAVAM', max_length=9, blank=True)
+    capacidade_kg       = models.IntegerField('Capacidade (kg)', null=True, blank=True)
+    capacidade_m3       = models.IntegerField('Capacidade (m³)', null=True, blank=True)
+    # Proprietário (quando diferente do emitente)
+    prop_tipo           = models.CharField('Tipo de Proprietário', max_length=10, blank=True, choices=PROP_TIPO_CHOICES)
+    prop_cpf_cnpj       = models.CharField('CPF/CNPJ do Proprietário', max_length=14, blank=True)
+    prop_nome           = models.CharField('Nome do Proprietário', max_length=60, blank=True)
+    prop_ie             = models.CharField('IE do Proprietário', max_length=14, blank=True)
+    prop_uf             = models.CharField('UF do Proprietário', max_length=2, blank=True)
+    prop_rntrc          = models.CharField('RNTRC do Proprietário', max_length=8, blank=True)
+    prop_tipo_transportador = models.CharField('Tipo de Transportador', max_length=10, blank=True, choices=PROP_TRANSP_CHOICES)
+
+    class Meta:
+        verbose_name = 'Reboque MDF-e'
+        ordering = ['id']
+
+    def __str__(self):
+        return f'Reboque {self.placa}/{self.uf}'
+
+
+class CiotMDFe(models.Model):
+    """CIOT — Código Identificador da Operação de Transporte (infCIOT)."""
+    mdfe        = models.ForeignKey(ManifestoDocumentoFiscal, on_delete=models.CASCADE, related_name='ciots')
+    ciot        = models.CharField('Código CIOT', max_length=20)
+    cpf_cnpj    = models.CharField('CPF/CNPJ Responsável', max_length=14)
+
+    class Meta:
+        verbose_name = 'CIOT MDF-e'
+
+    def __str__(self):
+        return f'CIOT {self.ciot}'
+
+
+class ContratanteMDFe(models.Model):
+    """Contratante do serviço de transporte (infContratante)."""
+    mdfe        = models.ForeignKey(ManifestoDocumentoFiscal, on_delete=models.CASCADE, related_name='contratantes')
+    cpf_cnpj    = models.CharField('CPF/CNPJ', max_length=14)
+    ie          = models.CharField('Inscrição Estadual', max_length=14, blank=True)
+    n_contrato  = models.CharField('Número do Contrato', max_length=20, blank=True)
+    v_contrato  = models.DecimalField('Valor do Contrato (R$)', max_digits=15, decimal_places=2, null=True, blank=True)
+
+    class Meta:
+        verbose_name = 'Contratante MDF-e'
+
+    def __str__(self):
+        return f'Contratante {self.cpf_cnpj}'
+
+
+class ValePedagioMDFe(models.Model):
+    """Vale Pedágio (valePed) vinculado ao MDF-e."""
+    TP_VALE = [
+        ('01', '01 - Tarjeta'),
+        ('02', '02 - Vale Pedágio Eletrônico'),
+        ('03', '03 - Vale Pedágio Pré-pago'),
+    ]
+    mdfe            = models.ForeignKey(ManifestoDocumentoFiscal, on_delete=models.CASCADE, related_name='vales_pedagio')
+    cnpj_fornecedor = models.CharField('CNPJ do Fornecedor', max_length=14)
+    n_compra        = models.CharField('Número da Compra', max_length=20)
+    valor           = models.DecimalField('Valor do Vale (R$)', max_digits=15, decimal_places=2)
+    tp_vale         = models.CharField('Tipo de Vale Pedágio', max_length=2, blank=True, choices=TP_VALE)
+
+    class Meta:
+        verbose_name = 'Vale Pedágio MDF-e'
+
+    def __str__(self):
+        return f'Vale Pedágio {self.n_compra} — R$ {self.valor}'
+
+
+class PagamentoFreteMDFe(models.Model):
+    """Informações de pagamento do frete (infPag)."""
+    RESPONSAVEL = [
+        ('1', '1 - Emitente do MDF-e'),
+        ('2', '2 - Expedidor'),
+        ('3', '3 - Recebedor'),
+        ('4', '4 - Tomador do Serviço'),
+        ('5', '5 - Outros'),
+    ]
+    TP_COMP = [
+        ('01', '01 - Vale Pedágio'),
+        ('02', '02 - Alimentação'),
+        ('03', '03 - Combustível'),
+        ('04', '04 - Ajudante'),
+        ('05', '05 - Comissão'),
+        ('06', '06 - Outros'),
+    ]
+    mdfe            = models.ForeignKey(ManifestoDocumentoFiscal, on_delete=models.CASCADE, related_name='pagamentos_frete')
+    x_nome          = models.CharField('Nome', max_length=60, blank=True)
+    cpf_cnpj        = models.CharField('CPF/CNPJ', max_length=14)
+    responsavel     = models.CharField('Responsável', max_length=1, choices=RESPONSAVEL, default='1')
+    ind_pag         = models.CharField('Indicador (0=À Vista/1=A Prazo)', max_length=1, blank=True)
+    vr_total        = models.DecimalField('Valor Total (R$)', max_digits=15, decimal_places=2, null=True, blank=True)
+    tp_antecip      = models.CharField('Tipo de Antecipação', max_length=1, blank=True)
+    # Componentes de pagamento (armazenados como JSON ou serializado)
+    componentes_json = models.TextField('Componentes (JSON)', blank=True,
+                                        help_text='Lista de componentes: [{"tp_comp":"01","v_comp":100.00}, ...]')
+
+    class Meta:
+        verbose_name = 'Pagamento de Frete MDF-e'
+
+    def __str__(self):
+        return f'Pagamento {self.get_responsavel_display()} — {self.cpf_cnpj}'
+
+
+class SeguroMDFe(models.Model):
+    """Informações de seguro da carga (seg)."""
+    RESPONSAVEL = [
+        ('1', '1 - Emitente do MDF-e'),
+        ('2', '2 - Contratante do Seguro'),
+    ]
+    mdfe        = models.ForeignKey(ManifestoDocumentoFiscal, on_delete=models.CASCADE, related_name='seguros')
+    responsavel = models.CharField('Responsável pelo Seguro', max_length=1, choices=RESPONSAVEL, default='1')
+    seguradora  = models.CharField('Nome da Seguradora', max_length=30, blank=True)
+    n_apolice   = models.CharField('Número da Apólice', max_length=20)
+    n_averbacao = models.CharField('Número de Averbação', max_length=40, blank=True)
+
+    class Meta:
+        verbose_name = 'Seguro MDF-e'
+
+    def __str__(self):
+        return f'Seguro {self.n_apolice} — {self.seguradora}'
+
+
+class ProdutoPredominanteMDFe(models.Model):
+    """Produto predominante da carga (prodPred) — 0 ou 1 por MDF-e."""
+    TIPO_MEDIDA = [
+        ('01', '01 - M3'),
+        ('02', '02 - KG'),
+        ('03', '03 - Tonelada'),
+        ('04', '04 - Unidade'),
+        ('05', '05 - Litros'),
+        ('06', '06 - Mmbtu'),
+    ]
+    mdfe        = models.OneToOneField(ManifestoDocumentoFiscal, on_delete=models.CASCADE, related_name='produto_predominante')
+    c_prod      = models.CharField('Código do Produto (NCM ou interno)', max_length=20, blank=True)
+    x_prod      = models.CharField('Descrição do Produto', max_length=120, blank=True)
+    tipo_medida = models.CharField('Tipo de Medida', max_length=2, blank=True, choices=TIPO_MEDIDA)
+    q_carga     = models.DecimalField('Quantidade', max_digits=11, decimal_places=4, null=True, blank=True)
+
+    class Meta:
+        verbose_name = 'Produto Predominante MDF-e'
+
+    def __str__(self):
+        return f'{self.x_prod} ({self.c_prod})'
 
 
 class ItemPackingList(models.Model):

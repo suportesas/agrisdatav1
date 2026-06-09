@@ -4,31 +4,71 @@
 <div class="container-fluid mt-3 px-3 px-xl-4">
   <div class="d-flex align-items-center justify-content-between mb-3">
     <h1 class="mb-0">{{ action }} CT-e</h1>
-    <a href="{% url 'faturamento:cte_list' %}" class="btn btn-outline-secondary btn-sm">
-      <i class="bi bi-arrow-left me-1"></i> Voltar
-    </a>
+    <div class="d-flex gap-2">
+      <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalImportarNFe">
+        <i class="bi bi-download me-1"></i> Importar de NF-e
+      </button>
+      <a href="{% url 'faturamento:cte_list' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i> Voltar
+      </a>
+    </div>
   </div>
 
   {% if form.errors or docs_formset.errors %}
   <div class="alert alert-danger"><strong>Verifique os campos:</strong> {{ form.errors }} {{ docs_formset.errors }}</div>
   {% endif %}
 
-  {% if action == 'Novo' %}
-  <div class="mb-3 text-end">
-    <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalImportarNFe">
-      <i class="bi bi-download me-1"></i> Importar de NF-e
-    </button>
-  </div>
-  {% endif %}
-
   <form method="post">
     {% csrf_token %}
-    <div class="row g-3">
 
-      <!-- Dados Gerais -->
-      <div class="col-12">
-        <div class="card">
-          <div class="card-header bg-primary text-white py-2"><i class="bi bi-truck me-1"></i> Dados Gerais</div>
+    <!-- Abas principais -->
+    <ul class="nav nav-tabs mb-0" id="cteTabs" role="tablist" style="border-bottom:2px solid var(--bs-border-color)">
+      <li class="nav-item">
+        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-geral" type="button">
+          <i class="bi bi-person-lines-fill me-1"></i>Geral
+        </button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-percurso" type="button">
+          <i class="bi bi-map me-1"></i>Percurso
+        </button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-carga" type="button">
+          <i class="bi bi-boxes me-1"></i>Carga e Modal
+        </button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-tributos" type="button">
+          <i class="bi bi-bank me-1"></i>Tributação
+        </button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-cobrancas" type="button">
+          <i class="bi bi-receipt me-1"></i>Valores e Cobranças
+        </button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-documentos" type="button">
+          <i class="bi bi-file-earmark-text me-1"></i>Documentos (NF-e)
+        </button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-obs" type="button">
+          <i class="bi bi-chat-left-text me-1"></i>Informações Adicionais
+        </button>
+      </li>
+    </ul>
+
+    <div class="tab-content border border-top-0 rounded-bottom p-3 bg-white" style="border-color:var(--bs-border-color)!important">
+
+
+      <!-- ═══ ABA GERAL ═══════════════════════════════════════════════════════ -->
+      <div class="tab-pane fade show active" id="tab-geral">
+
+        <!-- Partes envolvidas -->
+        <div class="card mb-3">
+          <div class="card-header py-2"><i class="bi bi-people me-1"></i> Partes Envolvidas</div>
           <div class="card-body">
             <div class="row g-3">
               <div class="col-md-4">
@@ -55,6 +95,15 @@
                 <label class="form-label">Veículo</label>
                 {{ form.veiculo }}
               </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Documento -->
+        <div class="card mb-3">
+          <div class="card-header py-2"><i class="bi bi-file-earmark me-1"></i> Dados do Documento</div>
+          <div class="card-body">
+            <div class="row g-3">
               <div class="col-md-3">
                 <label class="form-label">Data de Emissão <span class="text-danger">*</span></label>
                 {{ form.data_emissao }}
@@ -72,42 +121,39 @@
                 <label class="form-label">Tipo de Serviço</label>
                 {{ form.tipo_servico }}
               </div>
+            </div>
 
-              <!-- CT-e Globalizado -->
-              <div class="col-12">
-                <div class="rounded py-2 px-3 d-flex align-items-start gap-3" style="background:#fefce8;border:1px solid #fde68a;border-left:4px solid #7c3aed;">
-                  <i class="bi bi-info-circle-fill mt-1" style="color:#f59e0b;flex-shrink:0;"></i>
-                  <div class="small">
-                    Você pode incluir várias notas fiscais originadas de uma mesma coleta ou destinadas a uma única entrega
-                    — dentro do mesmo Estado — em um único documento.
-                    <div class="form-check mt-2 mb-0">
-                      {{ form.globalizado }}
-                      <label class="form-check-label fw-semibold" for="id_globalizado">
-                        Marque aqui para utilizar o CT-e Globalizado
-                      </label>
-                    </div>
-                  </div>
+            <!-- CT-e Globalizado -->
+            <div class="rounded py-2 px-3 d-flex align-items-start gap-3 mt-3" style="background:#fefce8;border:1px solid #fde68a;border-left:4px solid #7c3aed;">
+              <i class="bi bi-info-circle-fill mt-1" style="color:#f59e0b;flex-shrink:0;"></i>
+              <div class="small">
+                Você pode incluir várias notas fiscais originadas de uma mesma coleta ou destinadas a uma única entrega
+                — dentro do mesmo Estado — em um único documento.
+                <div class="form-check mt-2 mb-0">
+                  {{ form.globalizado }}
+                  <label class="form-check-label fw-semibold" for="id_globalizado">
+                    Marque aqui para utilizar o CT-e Globalizado
+                  </label>
                 </div>
               </div>
-
-              <!-- Referência ao Despacho — aparece somente quando CT-e Globalizado está marcado -->
-              <div class="col-md-4 d-none" id="bloco-referencia-despacho">
-                <label class="form-label fw-semibold">
-                  Referência ao Despacho <span class="text-danger">*</span>
-                </label>
-                {{ form.referencia_despacho }}
-                <div class="form-text">Número do manifesto/despacho que agrupa as NF-e.</div>
-              </div>
-
+            </div>
+            <div class="col-md-4 d-none mt-3" id="bloco-referencia-despacho">
+              <label class="form-label fw-semibold">
+                Referência ao Despacho <span class="text-danger">*</span>
+              </label>
+              {{ form.referencia_despacho }}
+              <div class="form-text">Número do manifesto/despacho que agrupa as NF-e.</div>
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- Percurso -->
-      <div class="col-12">
+      </div><!-- /tab-geral -->
+
+
+      <!-- ═══ ABA PERCURSO ════════════════════════════════════════════════════ -->
+      <div class="tab-pane fade" id="tab-percurso">
         <div class="card">
-          <div class="card-header bg-secondary text-white py-2"><i class="bi bi-map me-1"></i> Percurso</div>
+          <div class="card-header py-2"><i class="bi bi-map me-1"></i> Percurso (Origem → Destino)</div>
           <div class="card-body">
             <div class="row g-3">
               <div class="col-md-2">
@@ -129,6 +175,7 @@
                 {{ form.codigo_municipio_inicio }}
                 <div class="form-text">7 dígitos — ex: 2408003 (Mossoró)</div>
               </div>
+              <div class="col-md-1"></div>
               <div class="col-md-2">
                 <label class="form-label">UF de Fim <span class="text-danger">*</span></label>
                 {{ form.uf_fim }}
@@ -151,12 +198,15 @@
             </div>
           </div>
         </div>
-      </div>
+      </div><!-- /tab-percurso -->
 
-      <!-- Valores e Carga -->
-      <div class="col-12">
-        <div class="card">
-          <div class="card-header bg-success text-white py-2"><i class="bi bi-boxes me-1"></i> Carga e Transporte</div>
+
+      <!-- ═══ ABA CARGA E MODAL ═══════════════════════════════════════════════ -->
+      <div class="tab-pane fade" id="tab-carga">
+
+        <!-- Carga -->
+        <div class="card mb-3">
+          <div class="card-header py-2"><i class="bi bi-boxes me-1"></i> Carga e Transporte</div>
           <div class="card-body">
             <div class="row g-3">
               <div class="col-md-3">
@@ -178,12 +228,10 @@
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- Rodoviário -->
-      <div class="col-12">
+        <!-- Modal Rodoviário -->
         <div class="card">
-          <div class="card-header bg-dark text-white py-2"><i class="bi bi-truck me-1"></i> Rodoviário</div>
+          <div class="card-header py-2"><i class="bi bi-truck me-1"></i> Modal Rodoviário</div>
           <div class="card-body">
             <div class="row g-3 align-items-end">
               <div class="col-md-3">
@@ -206,53 +254,34 @@
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- Reforma Tributária -->
-      <div class="col-12">
-        <div class="card">
-          <div class="card-header py-2 text-white" style="background:#0891b2;"><i class="bi bi-bank me-1"></i> Reforma Tributária (IBS/CBS)</div>
-          <div class="card-body">
-            <p class="text-muted small mb-3">Campos da Reforma Tributária brasileira (NT 2024) — preencha quando exigido pela SEFAZ do seu estado.</p>
+      </div><!-- /tab-carga -->
+
+
+      <!-- ═══ ABA TRIBUTAÇÃO ══════════════════════════════════════════════════ -->
+      <div class="tab-pane fade" id="tab-tributos">
+        <ul class="nav nav-tabs mb-0" id="tributoSubTabs" role="tablist">
+          <li class="nav-item">
+            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#sub-icms" type="button">
+              <i class="bi bi-percent me-1"></i>ICMS
+            </button>
+          </li>
+          <li class="nav-item">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#sub-partilha" type="button">
+              Partilha ICMS <span class="badge bg-secondary ms-1" style="font-size:.7rem;">Interestadual</span>
+            </button>
+          </li>
+          <li class="nav-item">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#sub-reforma" type="button">
+              <i class="bi bi-bank me-1"></i>Reforma Tributária
+            </button>
+          </li>
+        </ul>
+        <div class="tab-content border border-top-0 rounded-bottom p-3" style="border-color:var(--bs-border-color)!important">
+
+          <!-- Sub: ICMS -->
+          <div class="tab-pane fade show active" id="sub-icms">
             <div class="row g-3">
-              <div class="col-md-4">
-                <label class="form-label">CST — Situação Tributária</label>
-                {{ form.reforma_cst }}
-              </div>
-              <div class="col-md-4">
-                <label class="form-label">Classificação Tributária</label>
-                {{ form.reforma_classificacao }}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Cobranças -->
-      <div class="col-12">
-        <div class="card">
-          <div class="card-header py-2 text-white" style="background:#7c3aed;"><i class="bi bi-receipt me-1"></i> Cobranças — Serviços e Impostos</div>
-          <div class="card-body">
-
-            <p class="text-muted small mb-3">Serviços</p>
-            <div class="row g-3 mb-3">
-              <div class="col-md-3">
-                <label class="form-label">Valor Total da Prestação <span class="text-danger">*</span></label>
-                {{ form.valor_servico }}
-              </div>
-              <div class="col-md-3">
-                <label class="form-label">Valor a Receber</label>
-                {{ form.valor_receber }}
-              </div>
-              <div class="col-md-3">
-                <label class="form-label">Valor Aproximado dos Tributos</label>
-                {{ form.valor_aproximado_tributos }}
-              </div>
-            </div>
-
-            <hr class="my-2">
-            <p class="text-muted small mb-3">ICMS</p>
-            <div class="row g-3 mb-3">
               <div class="col-md-3">
                 <label class="form-label">CST/COSN ICMS</label>
                 {{ form.cst_icms }}
@@ -280,9 +309,10 @@
                 {{ form.valor_icms }}
               </div>
             </div>
+          </div>
 
-            <hr class="my-2">
-            <p class="text-muted small mb-2">Partilha do ICMS <span class="badge bg-secondary ms-1" style="font-size:.7rem;">Interestadual</span></p>
+          <!-- Sub: Partilha ICMS -->
+          <div class="tab-pane fade" id="sub-partilha">
             <div class="row g-3">
               <div class="col-md-3">
                 <label class="form-label">Base de Cálculo Partilha</label>
@@ -317,19 +347,56 @@
                 {{ form.partilha_valor_fcp_uf_fim }}
               </div>
             </div>
+          </div>
 
+          <!-- Sub: Reforma Tributária -->
+          <div class="tab-pane fade" id="sub-reforma">
+            <p class="text-muted small mb-3">Campos da Reforma Tributária brasileira (NT 2024) — preencha quando exigido pela SEFAZ do seu estado.</p>
+            <div class="row g-3">
+              <div class="col-md-4">
+                <label class="form-label">CST — Situação Tributária</label>
+                {{ form.reforma_cst }}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Classificação Tributária</label>
+                {{ form.reforma_classificacao }}
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div><!-- /tab-tributos -->
+
+
+      <!-- ═══ ABA VALORES E COBRANÇAS ════════════════════════════════════════ -->
+      <div class="tab-pane fade" id="tab-cobrancas">
+
+        <!-- Serviços -->
+        <div class="card mb-3">
+          <div class="card-header py-2"><i class="bi bi-currency-dollar me-1"></i> Serviços</div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-md-3">
+                <label class="form-label">Valor Total da Prestação <span class="text-danger">*</span></label>
+                {{ form.valor_servico }}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">Valor a Receber</label>
+                {{ form.valor_receber }}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">Valor Aproximado dos Tributos</label>
+                {{ form.valor_aproximado_tributos }}
+              </div>
+            </div>
           </div>
         </div>
-      </div>
 
-      <!-- Faturas -->
-      <div class="col-12">
-        <div class="card">
-          <div class="card-header py-2 text-white" style="background:#4f46e5;"><i class="bi bi-receipt-cutoff me-1"></i> Faturas</div>
+        <!-- Fatura -->
+        <div class="card mb-3">
+          <div class="card-header py-2"><i class="bi bi-receipt-cutoff me-1"></i> Fatura</div>
           <div class="card-body">
-
-            <p class="text-muted small mb-3">Fatura</p>
-            <div class="row g-3 mb-4">
+            <div class="row g-3">
               <div class="col-md-3">
                 <label class="form-label">Número</label>
                 {{ form.fatura_numero }}
@@ -347,9 +414,15 @@
                 <input type="text" id="fatura-valor-final" class="form-control bg-light" readonly placeholder="Calculado automaticamente">
               </div>
             </div>
+          </div>
+        </div>
 
-            <hr class="my-3">
-            <p class="text-muted small mb-2">Prestações <span class="badge bg-secondary ms-1" style="font-size:.7rem;">componentes do valor do frete</span></p>
+        <!-- Prestações (componentes do frete) -->
+        <div class="card">
+          <div class="card-header py-2">
+            Prestações <span class="badge bg-secondary ms-1" style="font-size:.7rem;">componentes do valor do frete</span>
+          </div>
+          <div class="card-body">
             {{ comp_formset.management_form }}
             <table class="table table-sm" id="comp-table">
               <thead class="table-light">
@@ -380,15 +453,70 @@
             <button type="button" class="btn btn-outline-secondary btn-sm mt-2" onclick="adicionarLinhaPrestacao()">
               <i class="bi bi-plus-circle me-1"></i> Adicionar Prestação
             </button>
-
           </div>
         </div>
-      </div>
 
-      <!-- Informações Adicionais -->
-      <div class="col-12">
+      </div><!-- /tab-cobrancas -->
+
+
+      <!-- ═══ ABA DOCUMENTOS (NF-e / CT-e) ════════════════════════════════════ -->
+      <div class="tab-pane fade" id="tab-documentos">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <h6 class="mb-0">Documentos Transportados (NF-e / CT-e)</h6>
+          <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalImportarDocs">
+            <i class="bi bi-download me-1"></i> Importar NF-e / CT-e
+          </button>
+        </div>
+        {{ docs_formset.management_form }}
+        <table class="table table-sm" id="docs-table">
+          <thead class="table-light">
+            <tr>
+              <th>Chave NF-e (44 dígitos)</th>
+              <th>Descrição</th>
+              <th style="width:80px;"></th>
+            </tr>
+          </thead>
+          <tbody id="docs-tbody">
+            {% for df in docs_formset %}
+            <tr>
+              <td>{{ df.chave_nfe }}{{ df.id }}</td>
+              <td>{{ df.descricao }}</td>
+              <td>
+                <div style="display:none;">{{ df.DELETE }}</div>
+                <button type="button" class="btn btn-outline-danger btn-sm"
+                        onclick="removerLinhaDoc(this)" title="Excluir">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        <table style="display:none"><tbody id="docs-empty-row">
+          <tr id="docs-template-row">
+            <td><input type="text" name="docs-__prefix__-chave_nfe" maxlength="44" class="form-control form-control-sm" placeholder="Chave NF-e (44 dígitos)" id="id_docs-__prefix__-chave_nfe"></td>
+            <td><input type="text" name="docs-__prefix__-descricao" maxlength="200" class="form-control form-control-sm" placeholder="Descrição / Produto (opcional)" id="id_docs-__prefix__-descricao"></td>
+            <td>
+              <input type="checkbox" name="docs-__prefix__-DELETE" id="id_docs-__prefix__-DELETE" class="form-check-input" style="display:none;">
+              <input type="hidden" name="docs-__prefix__-id" id="id_docs-__prefix__-id">
+              <button type="button" class="btn btn-outline-danger btn-sm"
+                      onclick="removerLinhaDoc(this)" title="Excluir">
+                <i class="bi bi-trash"></i>
+              </button>
+            </td>
+          </tr>
+        </tbody></table>
+        <button type="button" id="btn-add-chave" class="btn btn-outline-secondary btn-sm mt-2"
+                onclick="adicionarLinhaFormset('', '')">
+          <i class="bi bi-plus-circle me-1"></i> Adicionar Chave NF-e
+        </button>
+      </div><!-- /tab-documentos -->
+
+
+      <!-- ═══ ABA INFORMAÇÕES ADICIONAIS ═════════════════════════════════════ -->
+      <div class="tab-pane fade" id="tab-obs">
         <div class="card">
-          <div class="card-header bg-light py-2"><i class="bi bi-chat-left-text me-1"></i> Informações Adicionais</div>
+          <div class="card-header py-2"><i class="bi bi-chat-left-text me-1"></i> Informações Adicionais</div>
           <div class="card-body">
             <div class="row g-3">
               <div class="col-12">
@@ -398,63 +526,9 @@
             </div>
           </div>
         </div>
-      </div>
+      </div><!-- /tab-obs -->
 
-      <!-- Documentos Vinculados (NF-e) -->
-      <div class="col-12">
-        <div class="card">
-          <div class="card-header bg-info text-white py-2"><i class="bi bi-file-earmark-text me-1"></i> NF-e Transportadas</div>
-          <div class="card-body">
-            {{ docs_formset.management_form }}
-            <table class="table table-sm" id="docs-table">
-              <thead class="table-light">
-                <tr>
-                  <th>Chave NF-e (44 dígitos)</th>
-                  <th>Descrição</th>
-                  <th style="width:80px;"></th>
-                </tr>
-              </thead>
-              <tbody id="docs-tbody">
-                {% for df in docs_formset %}
-                <tr>
-                  <td>{{ df.chave_nfe }}{{ df.id }}</td>
-                  <td>{{ df.descricao }}</td>
-                  <td>
-                    {# Checkbox DELETE oculto — Django formset precisa dele #}
-                    <div style="display:none;">{{ df.DELETE }}</div>
-                    <button type="button" class="btn btn-outline-danger btn-sm"
-                            onclick="removerLinhaDoc(this)" title="Excluir">
-                      <i class="bi bi-trash"></i>
-                    </button>
-                  </td>
-                </tr>
-                {% endfor %}
-              </tbody>
-            </table>
-            <!-- Linha template oculta para clonagem via JS -->
-            <table style="display:none"><tbody id="docs-empty-row">
-              <tr id="docs-template-row">
-                <td><input type="text" name="docs-__prefix__-chave_nfe" maxlength="44" class="form-control form-control-sm" placeholder="Chave NF-e (44 dígitos)" id="id_docs-__prefix__-chave_nfe"></td>
-                <td><input type="text" name="docs-__prefix__-descricao" maxlength="200" class="form-control form-control-sm" placeholder="Descrição / Produto (opcional)" id="id_docs-__prefix__-descricao"></td>
-                <td>
-                  <input type="checkbox" name="docs-__prefix__-DELETE" id="id_docs-__prefix__-DELETE" class="form-check-input" style="display:none;">
-                  <input type="hidden" name="docs-__prefix__-id" id="id_docs-__prefix__-id">
-                  <button type="button" class="btn btn-outline-danger btn-sm"
-                          onclick="removerLinhaDoc(this)" title="Excluir">
-                    <i class="bi bi-trash"></i>
-                  </button>
-                </td>
-              </tr>
-            </tbody></table>
-            <button type="button" id="btn-add-chave" class="btn btn-outline-secondary btn-sm mt-2"
-                    onclick="adicionarLinhaFormset('', '')">
-              <i class="bi bi-plus-circle me-1"></i> Adicionar Chave NF-e
-            </button>
-          </div>
-        </div>
-      </div>
-
-    </div><!-- /row -->
+    </div><!-- /tab-content principal -->
 
     <div class="mt-3 d-flex gap-2">
       <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i> Salvar CT-e</button>
@@ -513,14 +587,11 @@
 function removerLinhaDoc(btn) {
   var tr = btn.closest('tr');
   if (!tr) return;
-  // Verifica se a linha tem id salvo (registro existente) ou é nova
   var idInput = tr.querySelector('input[name$="-id"]');
   var isExistente = idInput && idInput.value;
   if (isExistente) {
-    // Marca o checkbox DELETE para que o Django exclua ao salvar
     var chkDelete = tr.querySelector('input[type="checkbox"][name$="-DELETE"]');
     if (chkDelete) chkDelete.checked = true;
-    // Oculta visualmente a linha
     tr.style.opacity = '0.35';
     tr.style.pointerEvents = 'none';
     btn.innerHTML = '<i class="bi bi-arrow-counterclockwise"></i>';
@@ -536,7 +607,6 @@ function removerLinhaDoc(btn) {
       btn.onclick = function(){ removerLinhaDoc(btn); };
     };
   } else {
-    // Linha nova (não salva) — remove direto do DOM
     tr.remove();
   }
 }
@@ -669,7 +739,6 @@ function adicionarLinhaFormset(chave, descricao) {
 
     var primeira = checks[0].dataset;
 
-    // 1. Destinatário (cliente da 1ª NF-e)
     var sel = document.getElementById('id_destinatario');
     if (sel) {
       if (window.jQuery && window.jQuery(sel).data('select2')) {
@@ -680,12 +749,10 @@ function adicionarLinhaFormset(chave, descricao) {
       }
     }
 
-    // 2. Valor da Carga = soma de todos os valor_total
     var somaValor = checks.reduce(function (acc, cb) { return acc + parseFloat(cb.dataset.valorTotal || 0); }, 0);
     var vcInput = document.getElementById('id_valor_carga');
     if (vcInput) vcInput.value = somaValor.toFixed(2);
 
-    // 3. Transportadora (da 1ª NF-e que tiver)
     var transpId = '';
     for (var i = 0; i < checks.length; i++) {
       if (checks[i].dataset.transportadoraId) { transpId = checks[i].dataset.transportadoraId; break; }
@@ -694,34 +761,28 @@ function adicionarLinhaFormset(chave, descricao) {
       var selTransp = document.getElementById('id_transportadora');
       if (selTransp) {
         selTransp.value = transpId;
-        selTransp.dispatchEvent(new Event('change')); // aciona o auto-fill do RNTRC
+        selTransp.dispatchEvent(new Event('change'));
       }
     }
 
-    // 4. Modalidade de Frete (da 1ª NF-e)
     if (primeira.modalidadeFrete) {
       var selModal = document.getElementById('id_modalidade_frete');
       if (selModal && !selModal.value) selModal.value = primeira.modalidadeFrete;
     }
 
-    // 5. Peso Bruto = soma de todas as NF-e
     var somaPeso = checks.reduce(function (acc, cb) { return acc + parseFloat(cb.dataset.pesoBruto || 0); }, 0);
     setIfEmpty('id_peso_bruto_kg', somaPeso.toFixed(3));
 
-    // 6. Valor do Serviço = soma dos valor_frete das NF-e
     var somaFrete = checks.reduce(function (acc, cb) { return acc + parseFloat(cb.dataset.valorFrete || 0); }, 0);
     if (somaFrete > 0) setIfEmpty('id_valor_servico', somaFrete.toFixed(2));
 
-    // 7. Natureza da Operação (da 1ª NF-e)
     if (primeira.natureza) setIfEmpty('id_natureza_operacao', primeira.natureza);
 
-    // 8. Percurso: início = empresa emitente, fim = endereço do cliente
     setIfEmpty('id_uf_inicio',        primeira.empresaUf);
     setIfEmpty('id_municipio_inicio', primeira.empresaMunicipio);
     setIfEmpty('id_uf_fim',           primeira.clienteUf);
     setIfEmpty('id_municipio_fim',    primeira.clienteMunicipio);
 
-    // 9. Adicionar chaves NF-e na tabela
     checks.forEach(function (cb) {
       adicionarLinhaFormset(
         cb.dataset.chave,
@@ -729,7 +790,10 @@ function adicionarLinhaFormset(chave, descricao) {
       );
     });
 
-    // Fechar modal
+    // Redirecionar para aba Documentos após importar
+    var tabDocBtn = document.querySelector('[data-bs-target="#tab-documentos"]');
+    if (tabDocBtn) tabDocBtn.click();
+
     var modalEl = document.getElementById('modalImportarNFe');
     if (modalEl && window.bootstrap) {
       var bsModal = bootstrap.Modal.getInstance(modalEl);
@@ -762,7 +826,6 @@ function adicionarLinhaFormset(chave, descricao) {
   }
 
   if (chk) chk.addEventListener('change', sync);
-  // Roda no DOMContentLoaded para garantir que o DOM está pronto
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', sync);
   } else {

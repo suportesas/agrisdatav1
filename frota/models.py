@@ -19,6 +19,24 @@ VEHICLE_TYPES = [
     ('IMPLEMENTO', 'Implemento'),
 ]
 
+TIPO_RODADO_CHOICES = [
+    ('01', '01 - Truck'),
+    ('02', '02 - Toco'),
+    ('03', '03 - Cavalo Mecânico'),
+    ('04', '04 - VAN'),
+    ('05', '05 - Quadro'),
+    ('06', '06 - Outros'),
+]
+
+TIPO_CARROCERIA_CHOICES = [
+    ('00', '00 - Não Aplicável'),
+    ('01', '01 - Aberta'),
+    ('02', '02 - Fechada/Baú'),
+    ('03', '03 - Graneleira'),
+    ('04', '04 - Porta Container'),
+    ('05', '05 - Sider'),
+]
+
 
 # ==========================
 # VEÍCULOS
@@ -64,6 +82,10 @@ class Vehicle(models.Model):
     ]
 
     renavam = models.CharField('RENAVAM', max_length=30, blank=True)
+    rntrc = models.CharField('RNTRC', max_length=8, blank=True, help_text='Registro Nacional de Transportadores Rodoviários de Cargas')
+    tipo_rodado = models.CharField('Tipo de Rodado', max_length=2, blank=True, choices=TIPO_RODADO_CHOICES)
+    tipo_carroceria = models.CharField('Tipo de Carroceria', max_length=2, blank=True, choices=TIPO_CARROCERIA_CHOICES)
+    uf_licenciamento = models.CharField('UF de Licenciamento', max_length=2, blank=True, help_text='UF onde o veículo está registrado/licenciado')
     chassis = models.CharField('Chassi', max_length=50, blank=True)
     numero_motor = models.CharField('Número do Motor', max_length=50, blank=True)
     tipo_combustivel = models.CharField('Tipo de Combustível', max_length=20, choices=FUEL_CHOICES, blank=True)

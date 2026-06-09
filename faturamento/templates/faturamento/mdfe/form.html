@@ -4,167 +4,600 @@
 <div class="container-fluid mt-3 px-3 px-xl-4">
   <div class="d-flex align-items-center justify-content-between mb-3">
     <h1 class="mb-0">{{ action }} MDF-e</h1>
-    <a href="{% url 'faturamento:mdfe_list' %}" class="btn btn-outline-secondary btn-sm">
-      <i class="bi bi-arrow-left me-1"></i> Voltar
-    </a>
+    <div class="d-flex gap-2">
+      <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalImportarDocs">
+        <i class="bi bi-download me-1"></i> Importar NF-e / CT-e
+      </button>
+      <a href="{% url 'faturamento:mdfe_list' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i> Voltar
+      </a>
+    </div>
   </div>
 
-  {% if form.errors %}<div class="alert alert-danger"><strong>Verifique os campos:</strong> {{ form.errors }}</div>{% endif %}
+  {% if form.errors %}
+  <div class="alert alert-danger">
+    <strong>Verifique os campos:</strong> {{ form.errors }}
+  </div>
+  {% endif %}
 
-  <form method="post">
+  <form method="post" id="mdfe-form">
     {% csrf_token %}
-    <div class="row g-3">
 
-      <!-- Modal Rodoviário -->
-      <div class="col-12">
-        <div class="card">
-          <div class="card-header bg-primary text-white py-2"><i class="bi bi-truck me-1"></i> Modal Rodoviário</div>
-          <div class="card-body">
-            <div class="row g-3">
-              <div class="col-md-4">
-                <label class="form-label">Motorista <span class="text-danger">*</span></label>
-                {{ form.motorista }}
-              </div>
-              <div class="col-md-4">
-                <label class="form-label">Veículo (Tração) <span class="text-danger">*</span></label>
-                {{ form.veiculo }}
-              </div>
-              <div class="col-md-4">
-                <label class="form-label">Data de Emissão <span class="text-danger">*</span></label>
-                {{ form.data_emissao }}
+    <!-- Abas principais -->
+    <ul class="nav nav-tabs mb-0" id="mainTabs" role="tablist" style="border-bottom:2px solid var(--bs-border-color)">
+      <li class="nav-item">
+        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-geral" type="button">
+          <i class="bi bi-info-circle me-1"></i>Geral
+        </button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-modal" type="button">
+          <i class="bi bi-truck me-1"></i>Informações do Modal Rodoviário
+        </button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-documentos" type="button">
+          <i class="bi bi-file-earmark-text me-1"></i>Informações de Documentos
+        </button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-seguro" type="button">
+          <i class="bi bi-shield-check me-1"></i>Informações de Seguro
+        </button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-produto" type="button">
+          <i class="bi bi-box me-1"></i>Produto Predominante
+        </button>
+      </li>
+    </ul>
+
+    <div class="tab-content border border-top-0 rounded-bottom p-3 bg-white" style="border-color:var(--bs-border-color)!important">
+
+      <!-- ═══ ABA GERAL ═══════════════════════════════════════════════════════ -->
+      <div class="tab-pane fade show active" id="tab-geral">
+        <div class="row g-3">
+
+          <!-- Dados básicos -->
+          <div class="col-12">
+            <div class="card">
+              <div class="card-header py-2"><i class="bi bi-calendar me-1"></i> Dados Gerais</div>
+              <div class="card-body">
+                <div class="row g-3">
+                  <div class="col-md-4">
+                    <label class="form-label">Motorista Principal <span class="text-danger">*</span></label>
+                    {{ form.motorista }}
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label">Veículo (Tração) <span class="text-danger">*</span></label>
+                    {{ form.veiculo }}
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label">Data de Emissão <span class="text-danger">*</span></label>
+                    {{ form.data_emissao }}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </div>
 
-      <!-- Percurso -->
-      <div class="col-12">
-        <div class="card">
-          <div class="card-header bg-secondary text-white py-2"><i class="bi bi-map me-1"></i> Percurso</div>
-          <div class="card-body">
-            <div class="row g-3">
+          <!-- Percurso -->
+          <div class="col-12">
+            <div class="card">
+              <div class="card-header py-2"><i class="bi bi-map me-1"></i> Percurso</div>
+              <div class="card-body">
+                <div class="row g-3 mb-3">
+                  <div class="col-md-2">
+                    <label class="form-label">UF de Início <span class="text-danger">*</span></label>
+                    {{ form.uf_inicio }}
+                  </div>
+                  <div class="col-md-5">
+                    <label class="form-label">Município de Carregamento <span class="text-danger">*</span></label>
+                    {{ form.municipio_carregamento }}
+                  </div>
+                  <div class="col-md-2">
+                    <label class="form-label">UF de Destino <span class="text-danger">*</span></label>
+                    {{ form.uf_fim }}
+                  </div>
+                </div>
+                <h6 class="mb-2">Estados Percorridos (intermediários)</h6>
+                {{ perc_formset.management_form }}
+                <table class="table table-sm mb-2">
+                  <thead class="table-light"><tr><th>UF</th><th style="width:80px">Ordem</th><th style="width:40px"></th></tr></thead>
+                  <tbody id="perc-tbody">
+                    {% for pf in perc_formset %}
+                    <tr>
+                      <td>{{ pf.uf }}</td>
+                      <td>{{ pf.ordem }}</td>
+                      <td>{{ pf.DELETE }}{{ pf.id }}</td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Carga -->
+          <div class="col-12">
+            <div class="card">
+              <div class="card-header py-2"><i class="bi bi-box-seam me-1"></i> Carga</div>
+              <div class="card-body">
+                <div class="row g-3">
+                  <div class="col-md-3">
+                    <label class="form-label">Tipo de Transporte</label>
+                    {{ form.tipo_transporte }}
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label">Valor da Carga (R$) <span class="text-danger">*</span></label>
+                    {{ form.valor_carga }}
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label">Peso Bruto (kg) <span class="text-danger">*</span></label>
+                    {{ form.peso_bruto_kg }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Informações Adicionais -->
+          <div class="col-12">
+            <div class="card">
+              <div class="card-header py-2">Informações Adicionais</div>
+              <div class="card-body">
+                <div class="row g-3">
+                  <div class="col-md-6">
+                    <label class="form-label">Para o Fisco</label>
+                    {{ form.informacoes_fisco }}
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label">Para o Contribuinte</label>
+                    {{ form.informacoes_contribuinte }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div><!-- /tab-geral -->
+
+
+      <!-- ═══ ABA MODAL RODOVIÁRIO ════════════════════════════════════════════ -->
+      <div class="tab-pane fade" id="tab-modal">
+        <ul class="nav nav-tabs mb-0" id="modalSubTabs" role="tablist">
+          <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#sub-tracao" type="button">Veículo de Tração</button></li>
+          <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#sub-reboque" type="button">Reboque</button></li>
+          <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#sub-ciot" type="button">CIOT</button></li>
+          <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#sub-contratantes" type="button">Contratantes</button></li>
+          <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#sub-pedagio" type="button">Vales Pedágio</button></li>
+          <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#sub-pagfrete" type="button">Pagamento do Frete</button></li>
+        </ul>
+        <div class="tab-content border border-top-0 rounded-bottom p-3" style="border-color:var(--bs-border-color)!important">
+
+          <!-- Sub: Veículo de Tração -->
+          <div class="tab-pane fade show active" id="sub-tracao">
+            <div class="row g-3 mb-3">
+              <div class="col-md-3">
+                <label class="form-label">RNTRC (Reg. Nac. de Transportadores Rodoviários de Carga)</label>
+                {{ form.rntrc_veiculo }}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">Código de Agendamento de Porto</label>
+                {{ form.cod_ag_porto }}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">Tipo de Carroceria</label>
+                <select name="veiculo_tipo_carroceria_display" id="id_veiculo_tipo_carroceria_display" class="form-select" disabled>
+                  <option>{{ object.veiculo.get_tipo_carroceria_display|default:"—" }}</option>
+                </select>
+                <small class="text-muted">Do cadastro do veículo</small>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">Tipo de Rodado</label>
+                <select name="veiculo_tipo_rodado_display" id="id_veiculo_tipo_rodado_display" class="form-select" disabled>
+                  <option>{{ object.veiculo.get_tipo_rodado_display|default:"—" }}</option>
+                </select>
+                <small class="text-muted">Do cadastro do veículo</small>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">Placa do Veículo de Tração</label>
+                <input type="text" class="form-control" value="{{ object.veiculo.get_current_plate|default:"" }}" disabled>
+                <small class="text-muted">Do cadastro do veículo</small>
+              </div>
               <div class="col-md-2">
-                <label class="form-label">UF de Início <span class="text-danger">*</span></label>
-                {{ form.uf_inicio }}
-              </div>
-              <div class="col-md-4">
-                <label class="form-label">Município de Carregamento <span class="text-danger">*</span></label>
-                {{ form.municipio_carregamento }}
+                <label class="form-label">UF</label>
+                <input type="text" class="form-control" value="{{ object.veiculo.uf_licenciamento|default:"" }}" disabled>
+                <small class="text-muted">Do cadastro do veículo</small>
               </div>
               <div class="col-md-2">
-                <label class="form-label">UF de Destino <span class="text-danger">*</span></label>
-                {{ form.uf_fim }}
+                <label class="form-label">Tara (kg)</label>
+                <input type="text" class="form-control" value="{{ object.veiculo.tara_kg|default:"" }}" disabled>
+                <small class="text-muted">Do cadastro do veículo</small>
               </div>
             </div>
-            <!-- Percursos intermediários -->
-            <h6 class="mt-3 mb-2">Estados Percorridos (intermediários, opcional)</h6>
-            {{ perc_formset.management_form }}
-            <table class="table table-sm">
-              <thead class="table-light"><tr><th>UF</th><th>Ordem</th><th></th></tr></thead>
-              <tbody>
-                {% for pf in perc_formset %}
-                <tr><td>{{ pf.uf }}</td><td>{{ pf.ordem }}</td><td>{{ pf.DELETE }}{{ pf.id }}</td></tr>
-                {% endfor %}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
 
-      <!-- Carga -->
-      <div class="col-12">
-        <div class="card">
-          <div class="card-header bg-success text-white py-2"><i class="bi bi-box-seam me-1"></i> Carga</div>
-          <div class="card-body">
-            <div class="row g-3">
-              <div class="col-md-3">
-                <label class="form-label">Tipo de Transporte</label>
-                {{ form.tipo_transporte }}
-              </div>
-              <div class="col-md-3">
-                <label class="form-label">Valor da Carga (R$) <span class="text-danger">*</span></label>
-                {{ form.valor_carga }}
-              </div>
-              <div class="col-md-3">
-                <label class="form-label">Peso Bruto (kg) <span class="text-danger">*</span></label>
-                {{ form.peso_bruto_kg }}
+            <!-- Proprietário/Possuidor -->
+            <div class="form-check mb-3">
+              {{ form.proprietario_diferente }}
+              <label class="form-check-label" for="id_proprietario_diferente">
+                Proprietário ou Possuidor do Veículo (O proprietário ou possuidor não é o emitente indicado no aplicativo)
+              </label>
+            </div>
+            <div id="secao-proprietario" class="border rounded p-3 mb-3" style="display:{% if form.instance.proprietario_diferente %}block{% else %}none{% endif %}">
+              <h6 class="mb-3">Dados do Proprietário/Possuidor</h6>
+              <div class="row g-3">
+                <div class="col-md-3">
+                  <label class="form-label">RNTRC</label>
+                  {{ form.prop_rntrc }}
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label">Tipo de Proprietário/Possuidor</label>
+                  {{ form.prop_tipo }}
+                </div>
+                <div class="col-md-2">
+                  <label class="form-label">UF</label>
+                  {{ form.prop_uf }}
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">CPF/CNPJ</label>
+                  {{ form.prop_cpf_cnpj }}
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label">Tipo de Transportador</label>
+                  {{ form.prop_tipo_transportador }}
+                </div>
+                <div class="col-md-5">
+                  <label class="form-label">Nome</label>
+                  {{ form.prop_nome }}
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Inscrição Estadual</label>
+                  {{ form.prop_ie }}
+                </div>
               </div>
             </div>
-          </div>
-        </div>
-      </div>
 
-      <!-- Documentos Vinculados -->
-      <div class="col-12">
-        <div class="card">
-          <div class="card-header bg-info text-white py-2 d-flex align-items-center justify-content-between">
-            <span><i class="bi bi-file-earmark-text me-1"></i> NF-e / CT-e Vinculados</span>
-            {% if action == 'Novo' %}
-            <button type="button" class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#modalImportarDocs">
-              <i class="bi bi-download me-1"></i> Importar NF-e / CT-e
-            </button>
-            {% endif %}
-          </div>
-          <div class="card-body">
-            {{ docs_formset.management_form }}
-            <table class="table table-sm" id="docs-table">
-              <thead class="table-light"><tr><th style="width:90px">Tipo</th><th>Chave (44 dígitos)</th><th>Município de Entrega</th><th></th></tr></thead>
-              <tbody id="docs-tbody">
-                {% for df in docs_formset %}
+            <!-- Condutores -->
+            <h6 class="mb-2">Condutores</h6>
+            {{ condutor_formset.management_form }}
+            <table class="table table-sm" id="cond-table">
+              <thead class="table-light"><tr><th>Nome do Condutor</th><th>CPF do Condutor</th><th style="width:60px">Ordem</th><th style="width:40px"></th></tr></thead>
+              <tbody id="cond-tbody">
+                {% for cf in condutor_formset %}
                 <tr>
-                  <td>{{ df.tipo }}</td>
-                  <td>{{ df.chave }}</td>
-                  <td>{{ df.municipio_descarregamento }}</td>
-                  <td>{{ df.DELETE }}{{ df.id }}</td>
+                  <td>{{ cf.nome }}</td>
+                  <td>{{ cf.cpf }}</td>
+                  <td>{{ cf.ordem }}</td>
+                  <td>{{ cf.DELETE }}{{ cf.id }}</td>
                 </tr>
                 {% endfor %}
               </tbody>
             </table>
-            <!-- Linha template oculta para clonagem JS -->
+            <!-- Template oculto para clonagem -->
             <table style="display:none"><tbody>
-              <tr id="docs-template-row">
-                <td style="width:90px">
-                  <select name="docs-__prefix__-tipo" class="form-select form-select-sm" id="id_docs-__prefix__-tipo">
-                    <option value="nfe">NF-e</option>
-                    <option value="cte">CT-e</option>
-                  </select>
-                </td>
-                <td><input type="text" name="docs-__prefix__-chave" maxlength="44" class="form-control form-control-sm" placeholder="Chave (44 dígitos)" id="id_docs-__prefix__-chave"></td>
-                <td><input type="text" name="docs-__prefix__-municipio_descarregamento" maxlength="100" class="form-control form-control-sm" placeholder="Cidade de entrega" id="id_docs-__prefix__-municipio_descarregamento"></td>
+              <tr id="cond-template-row">
+                <td><input type="text" name="cond-__prefix__-nome" maxlength="60" class="form-control form-control-sm" placeholder="Nome completo" id="id_cond-__prefix__-nome"></td>
+                <td><input type="text" name="cond-__prefix__-cpf" maxlength="14" class="form-control form-control-sm" placeholder="000.000.000-00" id="id_cond-__prefix__-cpf"></td>
+                <td><input type="number" name="cond-__prefix__-ordem" class="form-control form-control-sm" value="1" id="id_cond-__prefix__-ordem"></td>
                 <td>
-                  <input type="checkbox" name="docs-__prefix__-DELETE" id="id_docs-__prefix__-DELETE" class="form-check-input">
-                  <input type="hidden" name="docs-__prefix__-id" id="id_docs-__prefix__-id">
+                  <input type="checkbox" name="cond-__prefix__-DELETE" id="id_cond-__prefix__-DELETE" class="form-check-input">
+                  <input type="hidden" name="cond-__prefix__-id" id="id_cond-__prefix__-id">
                 </td>
               </tr>
             </tbody></table>
-            <button type="button" id="btn-add-doc" class="btn btn-outline-secondary btn-sm mt-2">
-              <i class="bi bi-plus-circle me-1"></i> Adicionar Documento
+            <button type="button" id="btn-add-condutor" class="btn btn-outline-secondary btn-sm mt-1">
+              <i class="bi bi-plus-circle me-1"></i> Adicionar Condutor
             </button>
           </div>
-        </div>
-      </div>
 
-      <!-- Informações Adicionais -->
-      <div class="col-12">
-        <div class="card">
-          <div class="card-header py-2">Informações Adicionais</div>
-          <div class="card-body">
-            <div class="row g-3">
-              <div class="col-md-6">
-                <label class="form-label">Para o Fisco</label>
-                {{ form.informacoes_fisco }}
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">Para o Contribuinte</label>
-                {{ form.informacoes_contribuinte }}
-              </div>
-            </div>
+          <!-- Sub: Reboque -->
+          <div class="tab-pane fade" id="sub-reboque">
+            {{ reboque_formset.management_form }}
+            <table class="table table-sm" id="reb-table">
+              <thead class="table-light">
+                <tr>
+                  <th>Placa</th><th>UF</th><th>RNTRC</th><th>Tipo Carroceria</th><th>Tara (kg)</th><th>RENAVAM</th><th></th>
+                </tr>
+              </thead>
+              <tbody id="reb-tbody">
+                {% for rf in reboque_formset %}
+                <tr>
+                  <td>{{ rf.placa }}</td><td>{{ rf.uf }}</td><td>{{ rf.rntrc }}</td>
+                  <td>{{ rf.tipo_carroceria }}</td><td>{{ rf.tara_kg }}</td><td>{{ rf.renavam }}</td>
+                  <td>{{ rf.DELETE }}{{ rf.id }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+            <table style="display:none"><tbody>
+              <tr id="reb-template-row">
+                <td><input type="text" name="reb-__prefix__-placa" maxlength="7" class="form-control form-control-sm" id="id_reb-__prefix__-placa"></td>
+                <td><input type="text" name="reb-__prefix__-uf" maxlength="2" class="form-control form-control-sm" id="id_reb-__prefix__-uf"></td>
+                <td><input type="text" name="reb-__prefix__-rntrc" maxlength="8" class="form-control form-control-sm" id="id_reb-__prefix__-rntrc"></td>
+                <td>
+                  <select name="reb-__prefix__-tipo_carroceria" class="form-select form-select-sm" id="id_reb-__prefix__-tipo_carroceria">
+                    <option value="">—</option>
+                    <option value="00">00 - Não Aplicável</option>
+                    <option value="01">01 - Aberta</option>
+                    <option value="02">02 - Fechada/Baú</option>
+                    <option value="03">03 - Graneleira</option>
+                    <option value="04">04 - Porta Container</option>
+                    <option value="05">05 - Sider</option>
+                  </select>
+                </td>
+                <td><input type="number" name="reb-__prefix__-tara_kg" class="form-control form-control-sm" id="id_reb-__prefix__-tara_kg"></td>
+                <td><input type="text" name="reb-__prefix__-renavam" maxlength="9" class="form-control form-control-sm" id="id_reb-__prefix__-renavam"></td>
+                <td>
+                  <input type="checkbox" name="reb-__prefix__-DELETE" id="id_reb-__prefix__-DELETE" class="form-check-input">
+                  <input type="hidden" name="reb-__prefix__-id" id="id_reb-__prefix__-id">
+                </td>
+              </tr>
+            </tbody></table>
+            <button type="button" id="btn-add-reboque" class="btn btn-outline-secondary btn-sm mt-1">
+              <i class="bi bi-plus-circle me-1"></i> Adicionar Reboque
+            </button>
+          </div>
+
+          <!-- Sub: CIOT -->
+          <div class="tab-pane fade" id="sub-ciot">
+            <p class="text-muted small">CIOT — Código Identificador da Operação de Transporte (infANTT)</p>
+            {{ ciot_formset.management_form }}
+            <table class="table table-sm" id="ciot-table">
+              <thead class="table-light"><tr><th>Código CIOT (20 dígitos)</th><th>CPF/CNPJ Responsável</th><th></th></tr></thead>
+              <tbody id="ciot-tbody">
+                {% for cf in ciot_formset %}
+                <tr>
+                  <td>{{ cf.ciot }}</td><td>{{ cf.cpf_cnpj }}</td>
+                  <td>{{ cf.DELETE }}{{ cf.id }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+            <table style="display:none"><tbody>
+              <tr id="ciot-template-row">
+                <td><input type="text" name="ciot-__prefix__-ciot" maxlength="20" class="form-control form-control-sm" placeholder="20 dígitos" id="id_ciot-__prefix__-ciot"></td>
+                <td><input type="text" name="ciot-__prefix__-cpf_cnpj" maxlength="14" class="form-control form-control-sm" placeholder="CPF ou CNPJ" id="id_ciot-__prefix__-cpf_cnpj"></td>
+                <td>
+                  <input type="checkbox" name="ciot-__prefix__-DELETE" id="id_ciot-__prefix__-DELETE" class="form-check-input">
+                  <input type="hidden" name="ciot-__prefix__-id" id="id_ciot-__prefix__-id">
+                </td>
+              </tr>
+            </tbody></table>
+            <button type="button" id="btn-add-ciot" class="btn btn-outline-secondary btn-sm mt-1">
+              <i class="bi bi-plus-circle me-1"></i> Adicionar CIOT
+            </button>
+          </div>
+
+          <!-- Sub: Contratantes -->
+          <div class="tab-pane fade" id="sub-contratantes">
+            {{ contratante_formset.management_form }}
+            <table class="table table-sm" id="cont-table">
+              <thead class="table-light"><tr><th>CPF/CNPJ</th><th>IE</th><th>Nº Contrato</th><th>Valor Contrato (R$)</th><th></th></tr></thead>
+              <tbody id="cont-tbody">
+                {% for cf in contratante_formset %}
+                <tr>
+                  <td>{{ cf.cpf_cnpj }}</td><td>{{ cf.ie }}</td>
+                  <td>{{ cf.n_contrato }}</td><td>{{ cf.v_contrato }}</td>
+                  <td>{{ cf.DELETE }}{{ cf.id }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+            <table style="display:none"><tbody>
+              <tr id="cont-template-row">
+                <td><input type="text" name="cont-__prefix__-cpf_cnpj" maxlength="14" class="form-control form-control-sm" placeholder="CPF ou CNPJ" id="id_cont-__prefix__-cpf_cnpj"></td>
+                <td><input type="text" name="cont-__prefix__-ie" maxlength="14" class="form-control form-control-sm" id="id_cont-__prefix__-ie"></td>
+                <td><input type="text" name="cont-__prefix__-n_contrato" maxlength="20" class="form-control form-control-sm" id="id_cont-__prefix__-n_contrato"></td>
+                <td><input type="number" name="cont-__prefix__-v_contrato" step="0.01" class="form-control form-control-sm" id="id_cont-__prefix__-v_contrato"></td>
+                <td>
+                  <input type="checkbox" name="cont-__prefix__-DELETE" id="id_cont-__prefix__-DELETE" class="form-check-input">
+                  <input type="hidden" name="cont-__prefix__-id" id="id_cont-__prefix__-id">
+                </td>
+              </tr>
+            </tbody></table>
+            <button type="button" id="btn-add-contratante" class="btn btn-outline-secondary btn-sm mt-1">
+              <i class="bi bi-plus-circle me-1"></i> Adicionar Contratante
+            </button>
+          </div>
+
+          <!-- Sub: Vales Pedágio -->
+          <div class="tab-pane fade" id="sub-pedagio">
+            {{ vale_formset.management_form }}
+            <table class="table table-sm" id="vale-table">
+              <thead class="table-light"><tr><th>CNPJ Fornecedor</th><th>Nº Compra</th><th>Valor (R$)</th><th>Tipo</th><th></th></tr></thead>
+              <tbody id="vale-tbody">
+                {% for vf in vale_formset %}
+                <tr>
+                  <td>{{ vf.cnpj_fornecedor }}</td><td>{{ vf.n_compra }}</td>
+                  <td>{{ vf.valor }}</td><td>{{ vf.tp_vale }}</td>
+                  <td>{{ vf.DELETE }}{{ vf.id }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+            <table style="display:none"><tbody>
+              <tr id="vale-template-row">
+                <td><input type="text" name="vale-__prefix__-cnpj_fornecedor" maxlength="14" class="form-control form-control-sm" id="id_vale-__prefix__-cnpj_fornecedor"></td>
+                <td><input type="text" name="vale-__prefix__-n_compra" maxlength="20" class="form-control form-control-sm" id="id_vale-__prefix__-n_compra"></td>
+                <td><input type="number" name="vale-__prefix__-valor" step="0.01" class="form-control form-control-sm" id="id_vale-__prefix__-valor"></td>
+                <td>
+                  <select name="vale-__prefix__-tp_vale" class="form-select form-select-sm" id="id_vale-__prefix__-tp_vale">
+                    <option value="">—</option>
+                    <option value="01">01 - Tarjeta</option>
+                    <option value="02">02 - Eletrônico</option>
+                    <option value="03">03 - Pré-pago</option>
+                  </select>
+                </td>
+                <td>
+                  <input type="checkbox" name="vale-__prefix__-DELETE" id="id_vale-__prefix__-DELETE" class="form-check-input">
+                  <input type="hidden" name="vale-__prefix__-id" id="id_vale-__prefix__-id">
+                </td>
+              </tr>
+            </tbody></table>
+            <button type="button" id="btn-add-vale" class="btn btn-outline-secondary btn-sm mt-1">
+              <i class="bi bi-plus-circle me-1"></i> Adicionar Vale Pedágio
+            </button>
+          </div>
+
+          <!-- Sub: Pagamento do Frete -->
+          <div class="tab-pane fade" id="sub-pagfrete">
+            {{ pagfrete_formset.management_form }}
+            <table class="table table-sm" id="pagfrete-table">
+              <thead class="table-light"><tr><th>Responsável</th><th>Nome</th><th>CPF/CNPJ</th><th>Ind. Pag.</th><th>Valor Total (R$)</th><th></th></tr></thead>
+              <tbody id="pagfrete-tbody">
+                {% for pf in pagfrete_formset %}
+                <tr>
+                  <td>{{ pf.responsavel }}</td><td>{{ pf.x_nome }}</td>
+                  <td>{{ pf.cpf_cnpj }}</td><td>{{ pf.ind_pag }}</td><td>{{ pf.vr_total }}</td>
+                  <td>{{ pf.DELETE }}{{ pf.id }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+            <table style="display:none"><tbody>
+              <tr id="pagfrete-template-row">
+                <td>
+                  <select name="pagfrete-__prefix__-responsavel" class="form-select form-select-sm" id="id_pagfrete-__prefix__-responsavel">
+                    <option value="1">1 - Emitente</option>
+                    <option value="2">2 - Expedidor</option>
+                    <option value="3">3 - Recebedor</option>
+                    <option value="4">4 - Tomador</option>
+                    <option value="5">5 - Outros</option>
+                  </select>
+                </td>
+                <td><input type="text" name="pagfrete-__prefix__-x_nome" maxlength="60" class="form-control form-control-sm" id="id_pagfrete-__prefix__-x_nome"></td>
+                <td><input type="text" name="pagfrete-__prefix__-cpf_cnpj" maxlength="14" class="form-control form-control-sm" id="id_pagfrete-__prefix__-cpf_cnpj"></td>
+                <td>
+                  <select name="pagfrete-__prefix__-ind_pag" class="form-select form-select-sm" id="id_pagfrete-__prefix__-ind_pag">
+                    <option value="">—</option>
+                    <option value="0">0 - À Vista</option>
+                    <option value="1">1 - A Prazo</option>
+                  </select>
+                </td>
+                <td><input type="number" name="pagfrete-__prefix__-vr_total" step="0.01" class="form-control form-control-sm" id="id_pagfrete-__prefix__-vr_total"></td>
+                <td>
+                  <input type="checkbox" name="pagfrete-__prefix__-DELETE" id="id_pagfrete-__prefix__-DELETE" class="form-check-input">
+                  <input type="hidden" name="pagfrete-__prefix__-id" id="id_pagfrete-__prefix__-id">
+                </td>
+              </tr>
+            </tbody></table>
+            <button type="button" id="btn-add-pagfrete" class="btn btn-outline-secondary btn-sm mt-1">
+              <i class="bi bi-plus-circle me-1"></i> Adicionar Pagamento
+            </button>
+          </div>
+
+        </div>
+      </div><!-- /tab-modal -->
+
+
+      <!-- ═══ ABA DOCUMENTOS ══════════════════════════════════════════════════ -->
+      <div class="tab-pane fade" id="tab-documentos">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <h6 class="mb-0">NF-e / CT-e Vinculados</h6>
+          <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalImportarDocs">
+            <i class="bi bi-download me-1"></i> Importar NF-e / CT-e
+          </button>
+        </div>
+        {{ docs_formset.management_form }}
+        <table class="table table-sm" id="docs-table">
+          <thead class="table-light"><tr><th style="width:90px">Tipo</th><th>Chave (44 dígitos)</th><th>Município de Entrega</th><th></th></tr></thead>
+          <tbody id="docs-tbody">
+            {% for df in docs_formset %}
+            <tr>
+              <td>{{ df.tipo }}</td>
+              <td>{{ df.chave }}</td>
+              <td>{{ df.municipio_descarregamento }}</td>
+              <td>{{ df.DELETE }}{{ df.id }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        <table style="display:none"><tbody>
+          <tr id="docs-template-row">
+            <td style="width:90px">
+              <select name="docs-__prefix__-tipo" class="form-select form-select-sm" id="id_docs-__prefix__-tipo">
+                <option value="nfe">NF-e</option>
+                <option value="cte">CT-e</option>
+              </select>
+            </td>
+            <td><input type="text" name="docs-__prefix__-chave" maxlength="44" class="form-control form-control-sm" placeholder="Chave (44 dígitos)" id="id_docs-__prefix__-chave"></td>
+            <td><input type="text" name="docs-__prefix__-municipio_descarregamento" maxlength="100" class="form-control form-control-sm" placeholder="Cidade de entrega" id="id_docs-__prefix__-municipio_descarregamento"></td>
+            <td>
+              <input type="checkbox" name="docs-__prefix__-DELETE" id="id_docs-__prefix__-DELETE" class="form-check-input">
+              <input type="hidden" name="docs-__prefix__-id" id="id_docs-__prefix__-id">
+            </td>
+          </tr>
+        </tbody></table>
+        <button type="button" id="btn-add-doc" class="btn btn-outline-secondary btn-sm mt-2">
+          <i class="bi bi-plus-circle me-1"></i> Adicionar Documento
+        </button>
+      </div><!-- /tab-documentos -->
+
+
+      <!-- ═══ ABA SEGURO ══════════════════════════════════════════════════════ -->
+      <div class="tab-pane fade" id="tab-seguro">
+        {{ seguro_formset.management_form }}
+        <table class="table table-sm" id="seg-table">
+          <thead class="table-light"><tr><th>Responsável</th><th>Seguradora</th><th>Nº Apólice</th><th>Nº Averbação</th><th></th></tr></thead>
+          <tbody id="seg-tbody">
+            {% for sf in seguro_formset %}
+            <tr>
+              <td>{{ sf.responsavel }}</td><td>{{ sf.seguradora }}</td>
+              <td>{{ sf.n_apolice }}</td><td>{{ sf.n_averbacao }}</td>
+              <td>{{ sf.DELETE }}{{ sf.id }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        <table style="display:none"><tbody>
+          <tr id="seg-template-row">
+            <td>
+              <select name="seg-__prefix__-responsavel" class="form-select form-select-sm" id="id_seg-__prefix__-responsavel">
+                <option value="1">1 - Emitente do MDF-e</option>
+                <option value="2">2 - Contratante do Seguro</option>
+              </select>
+            </td>
+            <td><input type="text" name="seg-__prefix__-seguradora" maxlength="30" class="form-control form-control-sm" id="id_seg-__prefix__-seguradora"></td>
+            <td><input type="text" name="seg-__prefix__-n_apolice" maxlength="20" class="form-control form-control-sm" id="id_seg-__prefix__-n_apolice"></td>
+            <td><input type="text" name="seg-__prefix__-n_averbacao" maxlength="40" class="form-control form-control-sm" id="id_seg-__prefix__-n_averbacao"></td>
+            <td>
+              <input type="checkbox" name="seg-__prefix__-DELETE" id="id_seg-__prefix__-DELETE" class="form-check-input">
+              <input type="hidden" name="seg-__prefix__-id" id="id_seg-__prefix__-id">
+            </td>
+          </tr>
+        </tbody></table>
+        <button type="button" id="btn-add-seguro" class="btn btn-outline-secondary btn-sm mt-2">
+          <i class="bi bi-plus-circle me-1"></i> Adicionar Seguro
+        </button>
+      </div><!-- /tab-seguro -->
+
+
+      <!-- ═══ ABA PRODUTO PREDOMINANTE ════════════════════════════════════════ -->
+      <div class="tab-pane fade" id="tab-produto">
+        <p class="text-muted small mb-3">Produto predominante da carga (prodPred) — opcional, máximo 1 por MDF-e.</p>
+        <div class="row g-3">
+          <div class="col-md-3">
+            <label class="form-label">Código do Produto (NCM)</label>
+            {{ prod_pred_form.c_prod }}
+          </div>
+          <div class="col-md-5">
+            <label class="form-label">Descrição do Produto</label>
+            {{ prod_pred_form.x_prod }}
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">Tipo de Medida</label>
+            {{ prod_pred_form.tipo_medida }}
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">Quantidade</label>
+            {{ prod_pred_form.q_carga }}
           </div>
         </div>
-      </div>
+      </div><!-- /tab-produto -->
 
-    </div>
+    </div><!-- /tab-content principal -->
 
     <div class="mt-3 d-flex gap-2">
       <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i> Salvar MDF-e</button>
@@ -178,60 +611,69 @@
   <div class="modal-dialog modal-xl modal-dialog-scrollable">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title" id="modalImportarDocsLbl"><i class="bi bi-download me-2 text-primary"></i>Importar NF-e / CT-e</h5>
+        <h5 class="modal-title" id="modalImportarDocsLbl">
+          <i class="bi bi-download me-2 text-primary"></i>Importar NF-e / CT-e
+        </h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
-      <div class="modal-body">
-        <!-- Abas -->
+      <div class="modal-body pb-1">
         <ul class="nav nav-tabs mb-3" id="tabDocs" role="tablist">
           <li class="nav-item">
             <button class="nav-link active" id="tab-nfe-btn" data-bs-toggle="tab" data-bs-target="#tab-nfe" type="button">
               <i class="bi bi-file-earmark-text me-1"></i>NF-e
+              <span id="badge-nfe" class="badge rounded-pill ms-1" style="background:#7c3aed;display:none;">0</span>
             </button>
           </li>
           <li class="nav-item">
             <button class="nav-link" id="tab-cte-btn" data-bs-toggle="tab" data-bs-target="#tab-cte" type="button">
               <i class="bi bi-truck me-1"></i>CT-e
+              <span id="badge-cte" class="badge rounded-pill ms-1" style="background:#7c3aed;display:none;">0</span>
             </button>
           </li>
         </ul>
         <div class="tab-content">
-
-          <!-- Aba NF-e -->
+          <!-- NF-e -->
           <div class="tab-pane fade show active" id="tab-nfe">
             <div class="input-group mb-2">
               <span class="input-group-text"><i class="bi bi-search"></i></span>
               <input type="text" id="nfe-search" class="form-control form-control-sm" placeholder="Buscar por cliente ou número da NF-e…">
             </div>
-            <div id="nfe-loading" class="text-center text-muted py-2 d-none"><div class="spinner-border spinner-border-sm me-1"></div>Buscando…</div>
+            <div id="nfe-loading" class="text-center text-muted py-2 d-none">
+              <div class="spinner-border spinner-border-sm me-1"></div>Buscando…
+            </div>
             <div class="table-responsive">
               <table class="table table-sm table-hover mb-0">
                 <thead class="table-light">
                   <tr>
                     <th style="width:36px"><input type="checkbox" id="nfe-check-all" class="form-check-input" title="Sel. todos"></th>
-                    <th>NF-e</th><th>Cliente</th><th>Emissão</th><th class="text-end">Valor Total</th><th>Município Entrega</th>
+                    <th>NF-e</th><th>Cliente / Destinatário</th><th>Emissão</th>
+                    <th class="text-end">Valor Total</th><th class="text-end">Peso (kg)</th>
+                    <th>Município de Entrega</th>
                   </tr>
                 </thead>
                 <tbody id="nfe-tbody">
-                  <tr><td colspan="6" class="text-center text-muted py-3">Digite para buscar NF-e emitidas.</td></tr>
+                  <tr><td colspan="7" class="text-center text-muted py-3">Digite para buscar NF-e emitidas.</td></tr>
                 </tbody>
               </table>
             </div>
           </div>
-
-          <!-- Aba CT-e -->
+          <!-- CT-e -->
           <div class="tab-pane fade" id="tab-cte">
             <div class="input-group mb-2">
               <span class="input-group-text"><i class="bi bi-search"></i></span>
               <input type="text" id="cte-search" class="form-control form-control-sm" placeholder="Buscar por destinatário ou número do CT-e…">
             </div>
-            <div id="cte-loading" class="text-center text-muted py-2 d-none"><div class="spinner-border spinner-border-sm me-1"></div>Buscando…</div>
+            <div id="cte-loading" class="text-center text-muted py-2 d-none">
+              <div class="spinner-border spinner-border-sm me-1"></div>Buscando…
+            </div>
             <div class="table-responsive">
               <table class="table table-sm table-hover mb-0">
                 <thead class="table-light">
                   <tr>
                     <th style="width:36px"><input type="checkbox" id="cte-check-all" class="form-check-input" title="Sel. todos"></th>
-                    <th>CT-e</th><th>Destinatário</th><th>Emissão</th><th class="text-end">Valor Carga</th><th class="text-end">Peso (kg)</th><th>Município Destino</th>
+                    <th>CT-e</th><th>Destinatário</th><th>Emissão</th>
+                    <th class="text-end">Valor Carga</th><th class="text-end">Peso (kg)</th>
+                    <th>Município Destino</th>
                   </tr>
                 </thead>
                 <tbody id="cte-tbody">
@@ -240,14 +682,36 @@
               </table>
             </div>
           </div>
-
         </div>
       </div>
+
+      <!-- Painel de somatório -->
+      <div id="painel-somatorio" class="border-top border-bottom py-2 px-3" style="background:#f8f7ff;display:none;">
+        <div class="d-flex flex-wrap gap-4 align-items-center small">
+          <div>
+            <span class="text-muted me-1">Selecionados:</span>
+            <strong id="sum-nfe-count">0 NF-e</strong>
+            <span class="text-muted mx-1">+</span>
+            <strong id="sum-cte-count">0 CT-e</strong>
+          </div>
+          <div class="vr d-none d-sm-block"></div>
+          <div>
+            <span class="text-muted me-1"><i class="bi bi-currency-dollar"></i> Valor Total:</span>
+            <strong class="text-success" id="sum-valor">R$ 0,00</strong>
+          </div>
+          <div class="vr d-none d-sm-block"></div>
+          <div>
+            <span class="text-muted me-1"><i class="bi bi-box-seam"></i> Peso Total:</span>
+            <strong class="text-primary" id="sum-peso">0,000 kg</strong>
+          </div>
+        </div>
+      </div>
+
       <div class="modal-footer">
-        <span id="docs-selected-count" class="text-muted me-auto small">0 documentos selecionados</span>
         <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
         <button type="button" class="btn btn-primary" id="btn-importar-docs" disabled>
           <i class="bi bi-check-lg me-1"></i>Importar Selecionados
+          <span class="badge bg-white text-primary ms-1" id="btn-count-badge" style="display:none;">0</span>
         </button>
       </div>
     </div>
@@ -262,33 +726,79 @@
   const URL_CTE = "{% url 'faturamento:ajax_cte_para_mdfe' %}";
   let debNFe = null, debCTe = null;
 
-  // ── Linha inicial vazia para novo MDF-e ──────────────────────────
-  document.addEventListener('DOMContentLoaded', function () {
-    if (document.getElementById('docs-tbody').children.length === 0) {
-      adicionarLinhaFormset('nfe', '', '');
-    }
-  });
+  // Mapa persistente de itens selecionados: key = "nfe:chave" | "cte:chave"
+  // value = { tipo, chave, municipio, valor, peso, numero, serie }
+  const selectedDocs = new Map();
 
-  // ── Botão adicionar documento manual ────────────────────────────
-  document.getElementById('btn-add-doc').addEventListener('click', function () {
-    adicionarLinhaFormset('nfe', '', '');
-  });
+  // ── Proprietário toggle ──────────────────────────────────────────
+  const cbProp = document.getElementById('id_proprietario_diferente');
+  const secProp = document.getElementById('secao-proprietario');
+  if (cbProp) {
+    cbProp.addEventListener('change', function () {
+      secProp.style.display = this.checked ? 'block' : 'none';
+    });
+  }
 
-  // ── Carregar NF-e ao abrir aba ──────────────────────────────────
-  document.getElementById('modalImportarDocs').addEventListener('shown.bs.modal', function () {
-    document.getElementById('nfe-search').focus();
-    buscarNFe('');
-  });
-  document.getElementById('tab-cte-btn').addEventListener('shown.bs.tab', function () {
-    buscarCTe('');
-  });
+  // ── Adicionar linhas de formsets simples ─────────────────────────
+  function criarAdicionadorFormset(btnId, tbodyId, templateId, prefixCountId) {
+    const btn = document.getElementById(btnId);
+    if (!btn) return;
+    btn.addEventListener('click', function () {
+      const totalInput = document.getElementById(prefixCountId);
+      if (!totalInput) return;
+      const idx = parseInt(totalInput.value, 10);
+      const template = document.getElementById(templateId);
+      const novaLinha = template.cloneNode(true);
+      novaLinha.removeAttribute('id');
+      novaLinha.querySelectorAll('input, select').forEach(el => {
+        if (el.name) el.name = el.name.replace('__prefix__', idx);
+        if (el.id)   el.id   = el.id.replace('__prefix__', idx);
+      });
+      document.getElementById(tbodyId).appendChild(novaLinha);
+      totalInput.value = idx + 1;
+    });
+  }
 
-  // ── Busca NF-e ──────────────────────────────────────────────────
+  criarAdicionadorFormset('btn-add-condutor', 'cond-tbody',     'cond-template-row',     'id_cond-TOTAL_FORM_COUNT');
+  criarAdicionadorFormset('btn-add-reboque',  'reb-tbody',      'reb-template-row',      'id_reb-TOTAL_FORM_COUNT');
+  criarAdicionadorFormset('btn-add-ciot',     'ciot-tbody',     'ciot-template-row',     'id_ciot-TOTAL_FORM_COUNT');
+  criarAdicionadorFormset('btn-add-contratante','cont-tbody',   'cont-template-row',     'id_cont-TOTAL_FORM_COUNT');
+  criarAdicionadorFormset('btn-add-vale',     'vale-tbody',     'vale-template-row',     'id_vale-TOTAL_FORM_COUNT');
+  criarAdicionadorFormset('btn-add-pagfrete', 'pagfrete-tbody', 'pagfrete-template-row', 'id_pagfrete-TOTAL_FORM_COUNT');
+  criarAdicionadorFormset('btn-add-seguro',   'seg-tbody',      'seg-template-row',      'id_seg-TOTAL_FORM_COUNT');
+  criarAdicionadorFormset('btn-add-doc',      'docs-tbody',     'docs-template-row',     'id_docs-TOTAL_FORM_COUNT');
+
+  // ── Modal Importar Docs ──────────────────────────────────────────
+  const modalImport = document.getElementById('modalImportarDocs');
+  if (modalImport) {
+    modalImport.addEventListener('shown.bs.modal', function () {
+      document.getElementById('nfe-search').focus();
+      buscarNFe('');
+    });
+    modalImport.addEventListener('hidden.bs.modal', function () {
+      selectedDocs.clear();
+      atualizarResumo();
+    });
+  }
+
+  const tabCteBtn = document.getElementById('tab-cte-btn');
+  if (tabCteBtn) {
+    tabCteBtn.addEventListener('shown.bs.tab', function () {
+      if (!document.getElementById('cte-search').dataset.loaded) buscarCTe('');
+    });
+  }
+
   document.getElementById('nfe-search').addEventListener('input', function () {
     clearTimeout(debNFe);
     debNFe = setTimeout(() => buscarNFe(this.value.trim()), 350);
   });
 
+  document.getElementById('cte-search').addEventListener('input', function () {
+    clearTimeout(debCTe);
+    debCTe = setTimeout(() => buscarCTe(this.value.trim()), 350);
+  });
+
+  // ── Busca NF-e ──────────────────────────────────────────────────
   function buscarNFe(q) {
     const loading = document.getElementById('nfe-loading');
     loading.classList.remove('d-none');
@@ -301,41 +811,48 @@
   function renderNFe(notas) {
     const tbody = document.getElementById('nfe-tbody');
     if (!notas.length) {
-      tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-3">Nenhuma NF-e emitida encontrada.</td></tr>';
-      atualizarContador(); return;
+      tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-3">Nenhuma NF-e emitida encontrada.</td></tr>';
+      return;
     }
-    tbody.innerHTML = notas.map(n => `
-      <tr>
-        <td><input type="checkbox" class="form-check-input doc-check"
-          data-tipo="nfe" data-chave="${escH(n.chave_acesso)}"
-          data-municipio="${escH(n.municipio)}" data-valor="${n.valor_total}" data-peso="0"></td>
+    tbody.innerHTML = notas.map(n => {
+      const key = 'nfe:' + n.chave_acesso;
+      const checked = selectedDocs.has(key) ? 'checked' : '';
+      const pesoFmt = parseFloat(n.peso_bruto_kg || 0).toLocaleString('pt-BR', {minimumFractionDigits: 3});
+      return `<tr>
+        <td><input type="checkbox" class="form-check-input doc-check" ${checked}
+          data-key="${escH(key)}" data-tipo="nfe"
+          data-chave="${escH(n.chave_acesso)}" data-municipio="${escH(n.municipio)}"
+          data-valor="${n.valor_total}" data-peso="${n.peso_bruto_kg || 0}"
+          data-numero="${n.numero}" data-serie="${escH(n.serie)}"></td>
         <td><strong>${String(n.numero).padStart(9,'0')}/${n.serie}</strong></td>
         <td>${escH(n.cliente_nome)}</td>
-        <td class="text-muted">${n.data_emissao}</td>
+        <td class="text-muted small">${n.data_emissao}</td>
         <td class="text-end">R$ ${fmt(n.valor_total)}</td>
+        <td class="text-end text-muted small">${pesoFmt}</td>
         <td class="text-muted small">${escH(n.municipio) || '<span class="text-warning">—</span>'}</td>
-      </tr>`).join('');
-    tbody.querySelectorAll('.doc-check').forEach(cb => cb.addEventListener('change', atualizarContador));
-    atualizarContador();
+      </tr>`;
+    }).join('');
+    tbody.querySelectorAll('.doc-check').forEach(cb => cb.addEventListener('change', onCheckChange));
   }
 
   document.getElementById('nfe-check-all').addEventListener('change', function () {
-    document.querySelectorAll('#nfe-tbody .doc-check').forEach(cb => { cb.checked = this.checked; });
-    atualizarContador();
+    document.querySelectorAll('#nfe-tbody .doc-check').forEach(cb => {
+      cb.checked = this.checked;
+      syncMap(cb);
+    });
+    atualizarResumo();
   });
 
   // ── Busca CT-e ──────────────────────────────────────────────────
-  document.getElementById('cte-search').addEventListener('input', function () {
-    clearTimeout(debCTe);
-    debCTe = setTimeout(() => buscarCTe(this.value.trim()), 350);
-  });
-
   function buscarCTe(q) {
     const loading = document.getElementById('cte-loading');
     loading.classList.remove('d-none');
     fetch(URL_CTE + '?q=' + encodeURIComponent(q))
       .then(r => r.json())
-      .then(data => renderCTe(data.results))
+      .then(data => {
+        renderCTe(data.results);
+        document.getElementById('cte-search').dataset.loaded = '1';
+      })
       .finally(() => loading.classList.add('d-none'));
   }
 
@@ -343,101 +860,153 @@
     const tbody = document.getElementById('cte-tbody');
     if (!ctes.length) {
       tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-3">Nenhum CT-e emitido encontrado.</td></tr>';
-      atualizarContador(); return;
+      return;
     }
-    tbody.innerHTML = ctes.map(c => `
-      <tr>
-        <td><input type="checkbox" class="form-check-input doc-check"
-          data-tipo="cte" data-chave="${escH(c.chave_acesso)}"
-          data-municipio="${escH(c.municipio)}" data-valor="${c.valor_carga}" data-peso="${c.peso_bruto_kg}"></td>
+    tbody.innerHTML = ctes.map(c => {
+      const key = 'cte:' + c.chave_acesso;
+      const checked = selectedDocs.has(key) ? 'checked' : '';
+      const pesoFmt = parseFloat(c.peso_bruto_kg || 0).toLocaleString('pt-BR', {minimumFractionDigits: 3});
+      return `<tr>
+        <td><input type="checkbox" class="form-check-input doc-check" ${checked}
+          data-key="${escH(key)}" data-tipo="cte"
+          data-chave="${escH(c.chave_acesso)}" data-municipio="${escH(c.municipio)}"
+          data-valor="${c.valor_carga}" data-peso="${c.peso_bruto_kg || 0}"
+          data-numero="${c.numero}" data-serie="${escH(c.serie)}"></td>
         <td><strong>${String(c.numero).padStart(9,'0')}/${c.serie}</strong></td>
         <td>${escH(c.destinatario_nome)}</td>
-        <td class="text-muted">${c.data_emissao}</td>
+        <td class="text-muted small">${c.data_emissao}</td>
         <td class="text-end">R$ ${fmt(c.valor_carga)}</td>
-        <td class="text-end">${parseFloat(c.peso_bruto_kg).toLocaleString('pt-BR',{minimumFractionDigits:3})}</td>
+        <td class="text-end text-muted small">${pesoFmt}</td>
         <td class="text-muted small">${escH(c.municipio)}</td>
-      </tr>`).join('');
-    tbody.querySelectorAll('.doc-check').forEach(cb => cb.addEventListener('change', atualizarContador));
-    atualizarContador();
+      </tr>`;
+    }).join('');
+    tbody.querySelectorAll('.doc-check').forEach(cb => cb.addEventListener('change', onCheckChange));
   }
 
   document.getElementById('cte-check-all').addEventListener('change', function () {
-    document.querySelectorAll('#cte-tbody .doc-check').forEach(cb => { cb.checked = this.checked; });
-    atualizarContador();
+    document.querySelectorAll('#cte-tbody .doc-check').forEach(cb => {
+      cb.checked = this.checked;
+      syncMap(cb);
+    });
+    atualizarResumo();
   });
 
-  // ── Contador geral ───────────────────────────────────────────────
-  function atualizarContador() {
-    const n = document.querySelectorAll('.doc-check:checked').length;
-    document.getElementById('docs-selected-count').textContent = n + ' documento' + (n !== 1 ? 's' : '') + ' selecionado' + (n !== 1 ? 's' : '');
-    document.getElementById('btn-importar-docs').disabled = n === 0;
+  // ── Seleção persistente ─────────────────────────────────────────
+  function onCheckChange(e) {
+    syncMap(e.target);
+    atualizarResumo();
   }
 
-  // ── Importar ─────────────────────────────────────────────────────
+  function syncMap(cb) {
+    const key = cb.dataset.key;
+    if (!key) return;
+    if (cb.checked) {
+      selectedDocs.set(key, {
+        tipo:      cb.dataset.tipo,
+        chave:     cb.dataset.chave,
+        municipio: cb.dataset.municipio,
+        valor:     parseFloat(cb.dataset.valor || 0),
+        peso:      parseFloat(cb.dataset.peso  || 0),
+        numero:    cb.dataset.numero,
+        serie:     cb.dataset.serie,
+      });
+    } else {
+      selectedDocs.delete(key);
+    }
+  }
+
+  // ── Painel de somatório ─────────────────────────────────────────
+  function atualizarResumo() {
+    let nNfe = 0, nCte = 0, somaValor = 0, somaPeso = 0;
+    selectedDocs.forEach(item => {
+      if (item.tipo === 'nfe') nNfe++; else nCte++;
+      somaValor += item.valor;
+      somaPeso  += item.peso;
+    });
+    const total = nNfe + nCte;
+
+    // badges nas abas
+    const bNfe = document.getElementById('badge-nfe');
+    const bCte = document.getElementById('badge-cte');
+    if (bNfe) { bNfe.textContent = nNfe; bNfe.style.display = nNfe > 0 ? '' : 'none'; }
+    if (bCte) { bCte.textContent = nCte; bCte.style.display = nCte > 0 ? '' : 'none'; }
+
+    // painel de somatório
+    const painel = document.getElementById('painel-somatorio');
+    if (painel) painel.style.display = total > 0 ? '' : 'none';
+    const elNfe   = document.getElementById('sum-nfe-count');
+    const elCte   = document.getElementById('sum-cte-count');
+    const elValor = document.getElementById('sum-valor');
+    const elPeso  = document.getElementById('sum-peso');
+    if (elNfe)   elNfe.textContent   = nNfe + ' NF-e';
+    if (elCte)   elCte.textContent   = nCte + ' CT-e';
+    if (elValor) elValor.textContent = 'R$ ' + somaValor.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    if (elPeso)  elPeso.textContent  = somaPeso.toLocaleString('pt-BR', {minimumFractionDigits: 3, maximumFractionDigits: 3}) + ' kg';
+
+    // botão de importar
+    const btn   = document.getElementById('btn-importar-docs');
+    const badge = document.getElementById('btn-count-badge');
+    if (btn)   btn.disabled = total === 0;
+    if (badge) { badge.textContent = total; badge.style.display = total > 0 ? '' : 'none'; }
+  }
+
+  // ── Importar ────────────────────────────────────────────────────
   document.getElementById('btn-importar-docs').addEventListener('click', importarSelecionados);
 
   function importarSelecionados() {
-    const checks = [...document.querySelectorAll('.doc-check:checked')];
-    if (!checks.length) return;
+    if (!selectedDocs.size) return;
 
-    // Soma valores e pesos
     let somaValor = 0, somaPeso = 0;
-    checks.forEach(cb => {
-      somaValor += parseFloat(cb.dataset.valor || 0);
-      somaPeso  += parseFloat(cb.dataset.peso  || 0);
+    selectedDocs.forEach(item => {
+      somaValor += item.valor;
+      somaPeso  += item.peso;
     });
 
-    // Preencher valor_carga
     const vcInput = document.getElementById('id_valor_carga');
     if (vcInput) vcInput.value = somaValor.toFixed(2);
 
-    // Preencher peso_bruto_kg apenas se CT-e trouxe peso (somaPeso > 0)
     if (somaPeso > 0) {
       const pkInput = document.getElementById('id_peso_bruto_kg');
       if (pkInput) pkInput.value = somaPeso.toFixed(3);
     }
 
-    // Adicionar linhas no formset
-    checks.forEach(cb => {
-      adicionarLinhaFormset(cb.dataset.tipo, cb.dataset.chave, cb.dataset.municipio);
+    selectedDocs.forEach(item => {
+      adicionarLinhaFormset(item.tipo, item.chave, item.municipio);
     });
+
+    // Navegar para aba de documentos
+    const tabDocBtn = document.querySelector('[data-bs-target="#tab-documentos"]');
+    if (tabDocBtn) tabDocBtn.click();
 
     bootstrap.Modal.getInstance(document.getElementById('modalImportarDocs')).hide();
   }
 
-  // ── Adicionar linha no formset ────────────────────────────────────
   function adicionarLinhaFormset(tipo, chave, municipio) {
     const totalInput = document.getElementById('id_docs-TOTAL_FORM_COUNT');
     if (!totalInput) return;
     const idx = parseInt(totalInput.value, 10);
-
     const template = document.getElementById('docs-template-row');
     const novaLinha = template.cloneNode(true);
     novaLinha.removeAttribute('id');
-
     novaLinha.querySelectorAll('input, select').forEach(el => {
       if (el.name) el.name = el.name.replace('__prefix__', idx);
       if (el.id)   el.id   = el.id.replace('__prefix__', idx);
     });
-
-    // Preencher valores
     const tipoSel  = novaLinha.querySelector('[name="docs-' + idx + '-tipo"]');
     const chaveInp = novaLinha.querySelector('[name="docs-' + idx + '-chave"]');
     const munInp   = novaLinha.querySelector('[name="docs-' + idx + '-municipio_descarregamento"]');
     if (tipoSel)  tipoSel.value  = tipo;
     if (chaveInp) chaveInp.value = chave;
     if (munInp)   munInp.value   = municipio;
-
     document.getElementById('docs-tbody').appendChild(novaLinha);
     totalInput.value = idx + 1;
   }
 
-  // ── Utilidades ────────────────────────────────────────────────────
   function escH(s) {
     return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
   function fmt(v) {
-    return parseFloat(v).toLocaleString('pt-BR', {minimumFractionDigits:2});
+    return parseFloat(v).toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
   }
 })();
 </script>

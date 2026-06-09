@@ -14,8 +14,11 @@ from .forms import (
     CancelarMDFeForm,
     CartaCorrecaoNFeForm,
     CertificadoDigitalForm,
+    CiotMDFeFormSet,
     ConfiguracaoFiscalForm,
     ComponenteValorCTeFormSet,
+    CondutorMDFeFormSet,
+    ContratanteMDFeFormSet,
     ConhecimentoTransporteForm,
     DocumentoVinculadoCTeFormSet,
     DocumentoVinculadoMDFeFormSet,
@@ -30,8 +33,13 @@ from .forms import (
     NotaFiscalCancelarForm,
     NotaFiscalForm,
     PackingListForm,
+    PagamentoFreteMDFeFormSet,
     PagamentoNFFormSet,
     PercursoMDFeFormSet,
+    ProdutoPredominanteMDFeForm,
+    ReboqueMDFeFormSet,
+    SeguroMDFeFormSet,
+    ValePedagioMDFeFormSet,
 )
 from .models import (
     CartaCorrecaoCTe,
@@ -48,6 +56,7 @@ from .models import (
     NotaFiscal,
     PackingList,
     PercursoMDFe,
+    ProdutoPredominanteMDFe,
 )
 
 
@@ -1501,13 +1510,14 @@ def ajax_nfe_para_mdfe(request):
         notas = notas.filter(Q(cliente__razao_social__icontains=q) | Q(numero__icontains=q))
     notas = notas.order_by('-data_emissao')[:50]
     results = [{
-        'id': n.pk,
-        'numero': n.numero,
-        'serie': n.serie,
+        'id':           n.pk,
+        'numero':       n.numero,
+        'serie':        n.serie,
         'cliente_nome': n.cliente.razao_social,
-        'valor_total': str(n.valor_total),
+        'valor_total':  str(n.valor_total),
+        'peso_bruto_kg': str(n.peso_bruto_kg or '0'),
         'chave_acesso': n.chave_acesso or '',
-        'municipio': (n.entrega_nome_municipio if n.entrega_ativo else '') or '',
+        'municipio':    (n.entrega_nome_municipio if n.entrega_ativo else '') or '',
         'data_emissao': n.data_emissao.strftime('%d/%m/%Y'),
     } for n in notas]
     return JsonResponse({'results': results})
@@ -1539,41 +1549,83 @@ def ajax_cte_para_mdfe(request):
 @login_required
 def ajax_nfe_para_cte(request):
     empresa = _get_empresa(request)
-    q = request.GET.get('q', '').strip()
-    notas = (
-        NotaFiscal.objects
-        .filter(empresa=empresa, status='EMITIDA')
-        .select_related('cliente', 'transportadora')
-    )
-    if q:
-        notas = notas.filter(Q(cliente__razao_social__icontains=q) | Q(numero__icontains=q))
-    notas = notas.order_by('-data_emissao')[:50]
+    q    = request.GET.get('q', '').strip()
+    tipo = request.GET.get('tipo', 'nfe')   # 'nfe' | 'cte'
 
     results = []
-    for n in notas:
-        endereco = n.cliente.enderecos.filter(padrao=True).first()
-        results.append({
-            'id':                 n.pk,
-            'numero':             n.numero,
-            'serie':              n.serie,
-            'cliente_id':         n.cliente_id,
-            'cliente_nome':       n.cliente.razao_social,
-            'valor_total':        str(n.valor_total),
-            'chave_acesso':       n.chave_acesso or '',
-            'data_emissao':       n.data_emissao.strftime('%d/%m/%Y'),
-            # campos extras para auto-preenchimento do CT-e
-            # transportadora_id não é mapeado (NF-e usa Fornecedor, CT-e usa Transportadora)
-            'transportadora_id':   '',
-            'transportadora_nome': n.transportadora.nome if n.transportadora else '',
-            'modalidade_frete':    n.modalidade_frete or '',
-            'peso_bruto_kg':       str(n.peso_bruto_kg or '0'),
-            'natureza_operacao':   n.natureza_operacao or '',
-            'valor_frete':         str(n.valor_frete or '0'),
-            'cliente_uf':          endereco.uf if endereco else '',
-            'cliente_municipio':   endereco.cidade if endereco else '',
-            'empresa_uf':          empresa.uf or '',
-            'empresa_municipio':   empresa.cidade or '',
-        })
+
+    if tipo == 'cte':
+        ctes = (
+            ConhecimentoTransporte.objects
+            .filter(empresa=empresa, status='EMITIDO')
+            .select_related('remetente', 'destinatario', 'transportadora')
+        )
+        if q:
+            ctes = ctes.filter(
+                Q(remetente__razao_social__icontains=q) |
+                Q(destinatario__razao_social__icontains=q) |
+                Q(numero__icontains=q)
+            )
+        ctes = ctes.order_by('-data_emissao')[:50]
+        for c in ctes:
+            results.append({
+                'id':                  c.pk,
+                'tipo_doc':            'cte',
+                'numero':              c.numero or 0,
+                'serie':               c.serie,
+                'cliente_id':          c.remetente_id,
+                'cliente_nome':        c.remetente.razao_social,
+                'destinatario_id':     c.destinatario_id,
+                'destinatario_nome':   c.destinatario.razao_social,
+                'valor_total':         str(c.valor_servico),
+                'chave_acesso':        c.chave_acesso or '',
+                'data_emissao':        c.data_emissao.strftime('%d/%m/%Y'),
+                'transportadora_id':   c.transportadora_id,
+                'transportadora_nome': c.transportadora.nome,
+                'modalidade_frete':    c.modalidade_frete or '',
+                'peso_bruto_kg':       str(c.peso_bruto_kg or '0'),
+                'natureza_operacao':   c.natureza_operacao or '',
+                'valor_frete':         str(c.valor_servico),
+                'produto_predominante': c.produto_predominante or '',
+                'cliente_uf':          c.uf_fim,
+                'cliente_municipio':   c.municipio_fim,
+                'empresa_uf':          c.uf_inicio,
+                'empresa_municipio':   c.municipio_inicio,
+            })
+    else:
+        notas = (
+            NotaFiscal.objects
+            .filter(empresa=empresa, status='EMITIDA')
+            .select_related('cliente', 'transportadora')
+        )
+        if q:
+            notas = notas.filter(Q(cliente__razao_social__icontains=q) | Q(numero__icontains=q))
+        notas = notas.order_by('-data_emissao')[:50]
+        for n in notas:
+            endereco = n.cliente.enderecos.filter(padrao=True).first()
+            results.append({
+                'id':                  n.pk,
+                'tipo_doc':            'nfe',
+                'numero':              n.numero,
+                'serie':               n.serie,
+                'cliente_id':          n.cliente_id,
+                'cliente_nome':        n.cliente.razao_social,
+                'valor_total':         str(n.valor_total),
+                'chave_acesso':        n.chave_acesso or '',
+                'data_emissao':        n.data_emissao.strftime('%d/%m/%Y'),
+                'transportadora_id':   '',
+                'transportadora_nome': n.transportadora.nome if n.transportadora else '',
+                'modalidade_frete':    n.modalidade_frete or '',
+                'peso_bruto_kg':       str(n.peso_bruto_kg or '0'),
+                'natureza_operacao':   n.natureza_operacao or '',
+                'valor_frete':         str(n.valor_frete or '0'),
+                'produto_predominante': '',
+                'cliente_uf':          endereco.uf if endereco else '',
+                'cliente_municipio':   endereco.cidade if endereco else '',
+                'empresa_uf':          empresa.uf or '',
+                'empresa_municipio':   empresa.cidade or '',
+            })
+
     return JsonResponse({'results': results})
 
 
@@ -1961,27 +2013,31 @@ def cte_cancelar(request, pk):
 
 @login_required
 def cte_dacte(request, pk):
+    import base64
     empresa = _get_empresa(request)
     ct = get_object_or_404(ConhecimentoTransporte, pk=pk, empresa=empresa)
     if ct.pdf_dacte:
-        import base64
         pdf_bytes = base64.b64decode(ct.pdf_dacte)
         r = HttpResponse(pdf_bytes, content_type='application/pdf')
         r['Content-Disposition'] = f'inline; filename="DACTE_{ct.numero}_{ct.serie}.pdf"'
         return r
+    if not ct.chave_acesso:
+        messages.error(request, 'DACTE não disponível — CT-e não possui chave de acesso.')
+        return redirect('faturamento:cte_detail', pk=pk)
     try:
         config = empresa.configuracao_fiscal
         from .services.integranotas import IntegranNotasClient
         client = IntegranNotasClient(token=config.get_token(), ambiente=config.ambiente_nfe)
-        data = client.dacte(ct.chave_acesso)
-        if data.get('pdf'):
-            ct.pdf_dacte = data['pdf']
+        data = client.consultar_cte(ct.chave_acesso)
+        pdf_b64 = data.get('pdf', '')
+        if pdf_b64:
+            ct.pdf_dacte = pdf_b64
             ct.save(update_fields=['pdf_dacte'])
-            import base64
-            pdf_bytes = base64.b64decode(data['pdf'])
+            pdf_bytes = base64.b64decode(pdf_b64)
             r = HttpResponse(pdf_bytes, content_type='application/pdf')
             r['Content-Disposition'] = f'inline; filename="DACTE_{ct.numero}_{ct.serie}.pdf"'
             return r
+        messages.error(request, 'DACTE não disponível na IntegraNotas. O CT-e pode estar em processamento — tente novamente em instantes.')
     except Exception as e:
         messages.error(request, f'Erro ao obter DACTE: {e}')
     return redirect('faturamento:cte_detail', pk=pk)
@@ -2279,6 +2335,52 @@ def mdfe_list(request):
     })
 
 
+def _mdfe_formsets(request, instance=None):
+    """Cria todos os formsets do MDF-e a partir de POST ou instância existente."""
+    data = request.POST if request.method == 'POST' else None
+    kw = {'instance': instance} if instance else {}
+    # OneToOne: tenta buscar instância existente sem levantar exceção
+    prod_instance = None
+    if instance:
+        try:
+            prod_instance = instance.produto_predominante
+        except ProdutoPredominanteMDFe.DoesNotExist:
+            pass
+    return {
+        'docs_formset':        DocumentoVinculadoMDFeFormSet(data, prefix='docs', **kw),
+        'perc_formset':        PercursoMDFeFormSet(data, prefix='perc', **kw),
+        'condutor_formset':    CondutorMDFeFormSet(data, prefix='cond', **kw),
+        'reboque_formset':     ReboqueMDFeFormSet(data, prefix='reb', **kw),
+        'ciot_formset':        CiotMDFeFormSet(data, prefix='ciot', **kw),
+        'contratante_formset': ContratanteMDFeFormSet(data, prefix='cont', **kw),
+        'vale_formset':        ValePedagioMDFeFormSet(data, prefix='vale', **kw),
+        'pagfrete_formset':    PagamentoFreteMDFeFormSet(data, prefix='pagfrete', **kw),
+        'seguro_formset':      SeguroMDFeFormSet(data, prefix='seg', **kw),
+        'prod_pred_form':      ProdutoPredominanteMDFeForm(data, instance=prod_instance),
+    }
+
+
+def _mdfe_all_valid(formsets_ctx):
+    return all(
+        f.is_valid() if hasattr(f, 'management_form') else f.is_valid()
+        for f in formsets_ctx.values()
+    )
+
+
+def _mdfe_save_formsets(formsets_ctx, mdfe):
+    for key, f in formsets_ctx.items():
+        if key == 'prod_pred_form':
+            if f.is_valid():
+                c = f.cleaned_data
+                if c.get('c_prod') or c.get('x_prod'):
+                    prod = f.save(commit=False)
+                    prod.mdfe = mdfe
+                    prod.save()
+        else:
+            f.instance = mdfe
+            f.save()
+
+
 @login_required
 def mdfe_create(request):
     empresa = _get_empresa(request)
@@ -2286,23 +2388,18 @@ def mdfe_create(request):
         return redirect('dashboard:index')
     if request.method == 'POST':
         form = ManifestoDocumentoFiscalForm(request.POST, empresa=empresa)
-        docs_formset = DocumentoVinculadoMDFeFormSet(request.POST, prefix='docs')
-        perc_formset = PercursoMDFeFormSet(request.POST, prefix='perc')
-        if form.is_valid() and docs_formset.is_valid() and perc_formset.is_valid():
+        fs = _mdfe_formsets(request)
+        if form.is_valid() and _mdfe_all_valid(fs):
             mdfe = form.save(user=request.user)
-            docs_formset.instance = mdfe
-            docs_formset.save()
-            perc_formset.instance = mdfe
-            perc_formset.save()
+            _mdfe_save_formsets(fs, mdfe)
             messages.success(request, 'MDF-e criado com sucesso.')
             return redirect('faturamento:mdfe_detail', pk=mdfe.pk)
     else:
         form = ManifestoDocumentoFiscalForm(empresa=empresa)
-        docs_formset = DocumentoVinculadoMDFeFormSet(prefix='docs')
-        perc_formset = PercursoMDFeFormSet(prefix='perc')
-    return render(request, 'faturamento/mdfe/form.html', {
-        'form': form, 'docs_formset': docs_formset, 'perc_formset': perc_formset, 'action': 'Novo',
-    })
+        fs = _mdfe_formsets(request)
+    ctx = {'form': form, 'action': 'Novo'}
+    ctx.update(fs)
+    return render(request, 'faturamento/mdfe/form.html', ctx)
 
 
 @login_required
@@ -2314,22 +2411,18 @@ def mdfe_update(request, pk):
         return redirect('faturamento:mdfe_detail', pk=pk)
     if request.method == 'POST':
         form = ManifestoDocumentoFiscalForm(request.POST, instance=mdfe, empresa=empresa)
-        docs_formset = DocumentoVinculadoMDFeFormSet(request.POST, instance=mdfe, prefix='docs')
-        perc_formset = PercursoMDFeFormSet(request.POST, instance=mdfe, prefix='perc')
-        if form.is_valid() and docs_formset.is_valid() and perc_formset.is_valid():
+        fs = _mdfe_formsets(request, instance=mdfe)
+        if form.is_valid() and _mdfe_all_valid(fs):
             form.save(user=request.user)
-            docs_formset.save()
-            perc_formset.save()
+            _mdfe_save_formsets(fs, mdfe)
             messages.success(request, 'MDF-e atualizado.')
             return redirect('faturamento:mdfe_detail', pk=pk)
     else:
         form = ManifestoDocumentoFiscalForm(instance=mdfe, empresa=empresa)
-        docs_formset = DocumentoVinculadoMDFeFormSet(instance=mdfe, prefix='docs')
-        perc_formset = PercursoMDFeFormSet(instance=mdfe, prefix='perc')
-    return render(request, 'faturamento/mdfe/form.html', {
-        'form': form, 'docs_formset': docs_formset, 'perc_formset': perc_formset,
-        'action': 'Editar', 'object': mdfe,
-    })
+        fs = _mdfe_formsets(request, instance=mdfe)
+    ctx = {'form': form, 'action': 'Editar', 'object': mdfe}
+    ctx.update(fs)
+    return render(request, 'faturamento/mdfe/form.html', ctx)
 
 
 @login_required

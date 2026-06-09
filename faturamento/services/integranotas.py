@@ -1220,6 +1220,160 @@ class IntegranNotasClient:
         plates = mdfe.veiculo.plates.order_by('-id').first()
         placa = plates.placa if plates else ''
 
+        # ── Condutores (motorista principal + CondutorMDFe pré-emissão) ────────
+        condutores_list = [{
+            'nome': mdfe.motorista.nome,
+            'cpf': _digits(getattr(mdfe.motorista, 'cpf', '') or ''),
+        }]
+        for c in mdfe.condutores.order_by('ordem'):
+            condutores_list.append({'nome': c.nome, 'cpf': _digits(c.cpf)})
+
+        # ── Veículo de tração ────────────────────────────────────────────────────
+        veiculo_payload: dict = {
+            'placa': placa,
+            'uf': mdfe.veiculo.uf_licenciamento or mdfe.uf_inicio,
+            'condutores': condutores_list,
+        }
+        if mdfe.veiculo.tara_kg:
+            veiculo_payload['tara'] = mdfe.veiculo.tara_kg
+        if mdfe.veiculo.renavam:
+            veiculo_payload['renavam'] = mdfe.veiculo.renavam
+        if mdfe.veiculo.tipo_rodado:
+            veiculo_payload['tipo_rodado'] = mdfe.veiculo.tipo_rodado
+        if mdfe.veiculo.tipo_carroceria:
+            veiculo_payload['tipo_carroceria'] = mdfe.veiculo.tipo_carroceria
+
+        # Proprietário/possuidor diferente do emitente
+        if mdfe.proprietario_diferente and mdfe.prop_cpf_cnpj:
+            prop: dict = {'cpf_cnpj': _digits(mdfe.prop_cpf_cnpj)}
+            if mdfe.prop_rntrc:
+                prop['rntrc'] = mdfe.prop_rntrc
+            if mdfe.prop_nome:
+                prop['nome'] = mdfe.prop_nome
+            if mdfe.prop_ie:
+                prop['ie'] = mdfe.prop_ie
+            if mdfe.prop_uf:
+                prop['uf'] = mdfe.prop_uf
+            if mdfe.prop_tipo:
+                prop['tipo'] = mdfe.prop_tipo
+            if mdfe.prop_tipo_transportador:
+                prop['tipo_transportador'] = mdfe.prop_tipo_transportador
+            veiculo_payload['prop'] = prop
+
+        # ── Modal rodoviário ─────────────────────────────────────────────────────
+        modal: dict = {
+            'veiculo_tracao': veiculo_payload,
+        }
+
+        # RNTRC (infANTT)
+        rntrc = mdfe.rntrc_veiculo or getattr(mdfe.veiculo, 'rntrc', '') or ''
+        if not rntrc:
+            # fallback: transportadora do veículo
+            transp = getattr(mdfe.veiculo, 'transportadora', None)
+            if transp:
+                rntrc = getattr(transp, 'rntc', '') or ''
+        if rntrc:
+            modal['rntrc'] = rntrc
+
+        if mdfe.cod_ag_porto:
+            modal['cod_ag_porto'] = mdfe.cod_ag_porto
+
+        # CIOTs
+        ciots = [{'ciot': c.ciot, 'cpf_cnpj': _digits(c.cpf_cnpj)} for c in mdfe.ciots.all()]
+        if ciots:
+            modal['ciot'] = ciots
+
+        # Vales Pedágio
+        vales = []
+        for v in mdfe.vales_pedagio.all():
+            vd: dict = {'cnpj_fornecedor': _digits(v.cnpj_fornecedor), 'n_compra': v.n_compra, 'valor': str(v.valor)}
+            if v.tp_vale:
+                vd['tp_vale'] = v.tp_vale
+            vales.append(vd)
+        if vales:
+            modal['vale_pedagio'] = vales
+
+        # Contratantes
+        contratantes = []
+        for ct in mdfe.contratantes.all():
+            cd: dict = {'cpf_cnpj': _digits(ct.cpf_cnpj)}
+            if ct.ie:
+                cd['ie'] = ct.ie
+            if ct.n_contrato:
+                cd['n_contrato'] = ct.n_contrato
+            if ct.v_contrato is not None:
+                cd['v_contrato'] = str(ct.v_contrato)
+            contratantes.append(cd)
+        if contratantes:
+            modal['contratante'] = contratantes
+
+        # Pagamentos do frete
+        pags = []
+        for pf in mdfe.pagamentos_frete.all():
+            pd: dict = {'cpf_cnpj': _digits(pf.cpf_cnpj), 'responsavel': pf.responsavel}
+            if pf.x_nome:
+                pd['x_nome'] = pf.x_nome
+            if pf.ind_pag:
+                pd['ind_pag'] = pf.ind_pag
+            if pf.vr_total is not None:
+                pd['vr_total'] = str(pf.vr_total)
+            if pf.tp_antecip:
+                pd['tp_antecip'] = pf.tp_antecip
+            pags.append(pd)
+        if pags:
+            modal['inf_pag'] = pags
+
+        # Reboques
+        reboques = []
+        for rb in mdfe.reboques.all():
+            rd: dict = {'placa': rb.placa, 'uf': rb.uf}
+            if rb.rntrc:
+                rd['rntrc'] = rb.rntrc
+            if rb.tipo_carroceria:
+                rd['tipo_carroceria'] = rb.tipo_carroceria
+            if rb.tara_kg:
+                rd['tara'] = rb.tara_kg
+            if rb.renavam:
+                rd['renavam'] = rb.renavam
+            if rb.capacidade_kg:
+                rd['capacidade_kg'] = rb.capacidade_kg
+            if rb.capacidade_m3:
+                rd['capacidade_m3'] = rb.capacidade_m3
+            if rb.prop_cpf_cnpj:
+                rd['prop'] = {
+                    'cpf_cnpj': _digits(rb.prop_cpf_cnpj),
+                    'nome': rb.prop_nome,
+                    'tipo': rb.prop_tipo,
+                    'uf': rb.prop_uf,
+                    'rntrc': rb.prop_rntrc,
+                    'tipo_transportador': rb.prop_tipo_transportador,
+                }
+            reboques.append(rd)
+        if reboques:
+            modal['reboque'] = reboques
+
+        # ── Seguros ──────────────────────────────────────────────────────────────
+        seguros = []
+        for sg in mdfe.seguros.all():
+            sd: dict = {'n_apolice': sg.n_apolice, 'responsavel': sg.responsavel}
+            if sg.seguradora:
+                sd['seguradora'] = sg.seguradora
+            if sg.n_averbacao:
+                sd['n_averbacao'] = sg.n_averbacao
+            seguros.append(sd)
+
+        # ── Produto Predominante ─────────────────────────────────────────────────
+        prod_pred = None
+        try:
+            pp = mdfe.produto_predominante
+            prod_pred = {'c_prod': pp.c_prod, 'x_prod': pp.x_prod}
+            if pp.tipo_medida:
+                prod_pred['tipo_medida'] = pp.tipo_medida
+            if pp.q_carga is not None:
+                prod_pred['q_carga'] = str(pp.q_carga)
+        except Exception:
+            pass
+
         payload: dict = {
             'tipo_operacao': '1',
             'serie': str(mdfe.serie),
@@ -1236,15 +1390,13 @@ class IntegranNotasClient:
                 'unidade_medida': '01',
                 'peso_bruto': str(mdfe.peso_bruto_kg),
             },
-            'modal_rodoviario': {
-                'veiculo': {'placa': placa, 'uf': mdfe.uf_inicio},
-                'condutor': {
-                    'nome': mdfe.motorista.nome,
-                    'cpf': _digits(getattr(mdfe.motorista, 'cpf', '') or ''),
-                },
-            },
+            'modal_rodoviario': modal,
             'tipo_transporte': mdfe.tipo_transporte,
             'informacoes_adicionais_fisco': mdfe.informacoes_fisco or '',
             'informacoes_adicionais_contribuinte': mdfe.informacoes_contribuinte or '',
         }
+        if seguros:
+            payload['seguro'] = seguros
+        if prod_pred:
+            payload['prod_pred'] = prod_pred
         return payload

@@ -4,7 +4,10 @@ from django.forms import inlineformset_factory
 
 from .models import (
     CartaCorrecaoNFe,
+    CiotMDFe,
     ComponenteValorCTe,
+    CondutorMDFe,
+    ContratanteMDFe,
     ConfiguracaoFiscal,
     ConhecimentoTransporte,
     DocumentoVinculadoCTe,
@@ -18,8 +21,13 @@ from .models import (
     ManifestoDocumentoFiscal,
     NotaFiscal,
     PackingList,
+    PagamentoFreteMDFe,
     PagamentoNF,
     PercursoMDFe,
+    ProdutoPredominanteMDFe,
+    ReboqueMDFe,
+    SeguroMDFe,
+    ValePedagioMDFe,
 )
 
 
@@ -866,11 +874,18 @@ class ManifestoDocumentoFiscalForm(FaturamentoBaseForm):
             'data_emissao',
             'uf_inicio', 'municipio_carregamento', 'uf_fim',
             'tipo_transporte', 'valor_carga', 'peso_bruto_kg',
+            # Modal Rodoviário — Veículo de Tração extras
+            'rntrc_veiculo', 'cod_ag_porto',
+            # Proprietário/Possuidor
+            'proprietario_diferente',
+            'prop_tipo', 'prop_cpf_cnpj', 'prop_nome',
+            'prop_ie', 'prop_uf', 'prop_rntrc', 'prop_tipo_transportador',
+            # Informações adicionais
             'informacoes_fisco', 'informacoes_contribuinte',
         ]
         widgets = {
             'motorista':                 forms.Select(attrs={'class': 'form-select'}),
-            'veiculo':                   forms.Select(attrs={'class': 'form-select'}),
+            'veiculo':                   forms.Select(attrs={'class': 'form-select', 'id': 'id_veiculo'}),
             'data_emissao':              forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'),
             'uf_inicio':                 forms.TextInput(attrs={'class': 'form-control', 'maxlength': '2', 'placeholder': 'SP'}),
             'municipio_carregamento':    forms.TextInput(attrs={'class': 'form-control'}),
@@ -878,6 +893,16 @@ class ManifestoDocumentoFiscalForm(FaturamentoBaseForm):
             'tipo_transporte':           forms.Select(attrs={'class': 'form-select'}),
             'valor_carga':               forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'peso_bruto_kg':             forms.NumberInput(attrs={'class': 'form-control', 'step': '0.001'}),
+            'rntrc_veiculo':             forms.TextInput(attrs={'class': 'form-control', 'maxlength': '8', 'placeholder': '00000000'}),
+            'cod_ag_porto':              forms.TextInput(attrs={'class': 'form-control', 'maxlength': '8'}),
+            'proprietario_diferente':    forms.CheckboxInput(attrs={'class': 'form-check-input', 'id': 'id_proprietario_diferente'}),
+            'prop_tipo':                 forms.Select(attrs={'class': 'form-select'}),
+            'prop_cpf_cnpj':             forms.TextInput(attrs={'class': 'form-control', 'maxlength': '14'}),
+            'prop_nome':                 forms.TextInput(attrs={'class': 'form-control', 'maxlength': '60'}),
+            'prop_ie':                   forms.TextInput(attrs={'class': 'form-control', 'maxlength': '14'}),
+            'prop_uf':                   forms.TextInput(attrs={'class': 'form-control', 'maxlength': '2'}),
+            'prop_rntrc':                forms.TextInput(attrs={'class': 'form-control', 'maxlength': '8'}),
+            'prop_tipo_transportador':   forms.Select(attrs={'class': 'form-select'}),
             'informacoes_fisco':         forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
             'informacoes_contribuinte':  forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
         }
@@ -941,3 +966,183 @@ PercursoMDFeFormSet = inlineformset_factory(
     form=PercursoMDFeForm,
     extra=1, can_delete=True, min_num=0,
 )
+
+
+# ── Condutor MDF-e (pré-emissão) ────────────────────────────────────────────
+
+class CondutorMDFeForm(forms.ModelForm):
+    class Meta:
+        model = CondutorMDFe
+        fields = ['nome', 'cpf', 'ordem']
+        widgets = {
+            'nome':  forms.TextInput(attrs={'class': 'form-control form-control-sm', 'maxlength': '60', 'placeholder': 'Nome completo'}),
+            'cpf':   forms.TextInput(attrs={'class': 'form-control form-control-sm', 'maxlength': '14', 'placeholder': '000.000.000-00'}),
+            'ordem': forms.NumberInput(attrs={'class': 'form-control form-control-sm', 'style': 'width:70px'}),
+        }
+
+
+CondutorMDFeFormSet = inlineformset_factory(
+    ManifestoDocumentoFiscal, CondutorMDFe,
+    form=CondutorMDFeForm,
+    extra=1, can_delete=True, min_num=0,
+)
+
+
+# ── Reboque ──────────────────────────────────────────────────────────────────
+
+class ReboqueMDFeForm(forms.ModelForm):
+    class Meta:
+        model = ReboqueMDFe
+        fields = [
+            'placa', 'uf', 'rntrc', 'tipo_carroceria', 'tara_kg', 'renavam',
+            'capacidade_kg', 'capacidade_m3',
+            'prop_tipo', 'prop_cpf_cnpj', 'prop_nome', 'prop_ie',
+            'prop_uf', 'prop_rntrc', 'prop_tipo_transportador',
+        ]
+        widgets = {
+            'placa':          forms.TextInput(attrs={'class': 'form-control form-control-sm', 'maxlength': '7', 'placeholder': 'ABC1234'}),
+            'uf':             forms.TextInput(attrs={'class': 'form-control form-control-sm', 'maxlength': '2'}),
+            'rntrc':          forms.TextInput(attrs={'class': 'form-control form-control-sm', 'maxlength': '8'}),
+            'tipo_carroceria': forms.Select(attrs={'class': 'form-select form-select-sm'}),
+            'tara_kg':        forms.NumberInput(attrs={'class': 'form-control form-control-sm'}),
+            'renavam':        forms.TextInput(attrs={'class': 'form-control form-control-sm', 'maxlength': '9'}),
+            'capacidade_kg':  forms.NumberInput(attrs={'class': 'form-control form-control-sm'}),
+            'capacidade_m3':  forms.NumberInput(attrs={'class': 'form-control form-control-sm'}),
+            'prop_tipo':      forms.Select(attrs={'class': 'form-select form-select-sm'}),
+            'prop_cpf_cnpj':  forms.TextInput(attrs={'class': 'form-control form-control-sm', 'maxlength': '14'}),
+            'prop_nome':      forms.TextInput(attrs={'class': 'form-control form-control-sm', 'maxlength': '60'}),
+            'prop_ie':        forms.TextInput(attrs={'class': 'form-control form-control-sm', 'maxlength': '14'}),
+            'prop_uf':        forms.TextInput(attrs={'class': 'form-control form-control-sm', 'maxlength': '2'}),
+            'prop_rntrc':     forms.TextInput(attrs={'class': 'form-control form-control-sm', 'maxlength': '8'}),
+            'prop_tipo_transportador': forms.Select(attrs={'class': 'form-select form-select-sm'}),
+        }
+
+
+ReboqueMDFeFormSet = inlineformset_factory(
+    ManifestoDocumentoFiscal, ReboqueMDFe,
+    form=ReboqueMDFeForm,
+    extra=0, can_delete=True, min_num=0,
+)
+
+
+# ── CIOT ─────────────────────────────────────────────────────────────────────
+
+class CiotMDFeForm(forms.ModelForm):
+    class Meta:
+        model = CiotMDFe
+        fields = ['ciot', 'cpf_cnpj']
+        widgets = {
+            'ciot':     forms.TextInput(attrs={'class': 'form-control form-control-sm', 'maxlength': '20', 'placeholder': '20 dígitos'}),
+            'cpf_cnpj': forms.TextInput(attrs={'class': 'form-control form-control-sm', 'maxlength': '14', 'placeholder': 'CPF ou CNPJ'}),
+        }
+
+
+CiotMDFeFormSet = inlineformset_factory(
+    ManifestoDocumentoFiscal, CiotMDFe,
+    form=CiotMDFeForm,
+    extra=0, can_delete=True, min_num=0,
+)
+
+
+# ── Contratantes ─────────────────────────────────────────────────────────────
+
+class ContratanteMDFeForm(forms.ModelForm):
+    class Meta:
+        model = ContratanteMDFe
+        fields = ['cpf_cnpj', 'ie', 'n_contrato', 'v_contrato']
+        widgets = {
+            'cpf_cnpj':   forms.TextInput(attrs={'class': 'form-control form-control-sm', 'maxlength': '14', 'placeholder': 'CPF ou CNPJ'}),
+            'ie':         forms.TextInput(attrs={'class': 'form-control form-control-sm', 'maxlength': '14'}),
+            'n_contrato': forms.TextInput(attrs={'class': 'form-control form-control-sm', 'maxlength': '20'}),
+            'v_contrato': forms.NumberInput(attrs={'class': 'form-control form-control-sm', 'step': '0.01'}),
+        }
+
+
+ContratanteMDFeFormSet = inlineformset_factory(
+    ManifestoDocumentoFiscal, ContratanteMDFe,
+    form=ContratanteMDFeForm,
+    extra=0, can_delete=True, min_num=0,
+)
+
+
+# ── Vales Pedágio ─────────────────────────────────────────────────────────────
+
+class ValePedagioMDFeForm(forms.ModelForm):
+    class Meta:
+        model = ValePedagioMDFe
+        fields = ['cnpj_fornecedor', 'n_compra', 'valor', 'tp_vale']
+        widgets = {
+            'cnpj_fornecedor': forms.TextInput(attrs={'class': 'form-control form-control-sm', 'maxlength': '14', 'placeholder': 'CNPJ do fornecedor'}),
+            'n_compra':        forms.TextInput(attrs={'class': 'form-control form-control-sm', 'maxlength': '20', 'placeholder': 'Número da compra'}),
+            'valor':           forms.NumberInput(attrs={'class': 'form-control form-control-sm', 'step': '0.01'}),
+            'tp_vale':         forms.Select(attrs={'class': 'form-select form-select-sm'}),
+        }
+
+
+ValePedagioMDFeFormSet = inlineformset_factory(
+    ManifestoDocumentoFiscal, ValePedagioMDFe,
+    form=ValePedagioMDFeForm,
+    extra=0, can_delete=True, min_num=0,
+)
+
+
+# ── Pagamento do Frete ────────────────────────────────────────────────────────
+
+class PagamentoFreteMDFeForm(forms.ModelForm):
+    class Meta:
+        model = PagamentoFreteMDFe
+        fields = ['responsavel', 'x_nome', 'cpf_cnpj', 'ind_pag', 'vr_total', 'tp_antecip', 'componentes_json']
+        widgets = {
+            'responsavel':      forms.Select(attrs={'class': 'form-select form-select-sm'}),
+            'x_nome':           forms.TextInput(attrs={'class': 'form-control form-control-sm', 'maxlength': '60'}),
+            'cpf_cnpj':         forms.TextInput(attrs={'class': 'form-control form-control-sm', 'maxlength': '14', 'placeholder': 'CPF ou CNPJ'}),
+            'ind_pag':          forms.Select(attrs={'class': 'form-select form-select-sm'},
+                                             choices=[('', '---------'), ('0', '0 - À Vista'), ('1', '1 - A Prazo')]),
+            'vr_total':         forms.NumberInput(attrs={'class': 'form-control form-control-sm', 'step': '0.01'}),
+            'tp_antecip':       forms.Select(attrs={'class': 'form-select form-select-sm'},
+                                             choices=[('', '---------'), ('1', '1 - Antecipado'), ('2', '2 - Não Antecipado')]),
+            'componentes_json': forms.Textarea(attrs={'class': 'form-control form-control-sm', 'rows': 2,
+                                                      'placeholder': '[{"tp_comp":"01","v_comp":100.00}]'}),
+        }
+
+
+PagamentoFreteMDFeFormSet = inlineformset_factory(
+    ManifestoDocumentoFiscal, PagamentoFreteMDFe,
+    form=PagamentoFreteMDFeForm,
+    extra=0, can_delete=True, min_num=0,
+)
+
+
+# ── Seguro ────────────────────────────────────────────────────────────────────
+
+class SeguroMDFeForm(forms.ModelForm):
+    class Meta:
+        model = SeguroMDFe
+        fields = ['responsavel', 'seguradora', 'n_apolice', 'n_averbacao']
+        widgets = {
+            'responsavel':  forms.Select(attrs={'class': 'form-select form-select-sm'}),
+            'seguradora':   forms.TextInput(attrs={'class': 'form-control form-control-sm', 'maxlength': '30'}),
+            'n_apolice':    forms.TextInput(attrs={'class': 'form-control form-control-sm', 'maxlength': '20'}),
+            'n_averbacao':  forms.TextInput(attrs={'class': 'form-control form-control-sm', 'maxlength': '40'}),
+        }
+
+
+SeguroMDFeFormSet = inlineformset_factory(
+    ManifestoDocumentoFiscal, SeguroMDFe,
+    form=SeguroMDFeForm,
+    extra=0, can_delete=True, min_num=0,
+)
+
+
+# ── Produto Predominante ──────────────────────────────────────────────────────
+
+class ProdutoPredominanteMDFeForm(forms.ModelForm):
+    class Meta:
+        model = ProdutoPredominanteMDFe
+        fields = ['c_prod', 'x_prod', 'tipo_medida', 'q_carga']
+        widgets = {
+            'c_prod':       forms.TextInput(attrs={'class': 'form-control', 'maxlength': '20', 'placeholder': 'NCM ou código interno'}),
+            'x_prod':       forms.TextInput(attrs={'class': 'form-control', 'maxlength': '120', 'placeholder': 'Descrição do produto'}),
+            'tipo_medida':  forms.Select(attrs={'class': 'form-select'}),
+            'q_carga':      forms.NumberInput(attrs={'class': 'form-control', 'step': '0.0001'}),
+        }

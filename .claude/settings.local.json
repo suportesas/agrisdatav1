@@ -82,7 +82,19 @@
       "PowerShell(cd c:\\\\erp_agricola_novo; .\\\\venv\\\\Scripts\\\\python.exe manage.py check 2>&1 | Where-Object { $_ -notmatch 'INFO|NativeCommandError' })",
       "PowerShell(Get-ChildItem -Recurse \"c:\\\\erp_agricola_novo\\\\cadastros\\\\templates\\\\cadastros\" -Directory | Where-Object { $_.Name -match 'rh|ferias|afastamento|rescisao|funcionario|vinculo|laudo|aso' } | Select-Object FullName)",
       "Bash(python -c \"import django; print\\(django.VERSION\\)\")",
-      "PowerShell(cd c:\\\\erp_agricola_novo; $env:DJANGO_SETTINGS_MODULE = \"core.settings\"; python manage.py shell -c \"from faturamento.forms import PercursoMDFeFormSet; from faturamento.models import ManifestoDocumentoFiscal; mdfe = ManifestoDocumentoFiscal.objects.first\\(\\); fs = PercursoMDFeFormSet\\(instance=mdfe, prefix='perc'\\); print\\(fs.management_form.as_p\\(\\)\\)\")"
+      "PowerShell(cd c:\\\\erp_agricola_novo; $env:DJANGO_SETTINGS_MODULE = \"core.settings\"; python manage.py shell -c \"from faturamento.forms import PercursoMDFeFormSet; from faturamento.models import ManifestoDocumentoFiscal; mdfe = ManifestoDocumentoFiscal.objects.first\\(\\); fs = PercursoMDFeFormSet\\(instance=mdfe, prefix='perc'\\); print\\(fs.management_form.as_p\\(\\)\\)\")",
+      "WebFetch(domain:docs.integranotas.com.br)",
+      "WebFetch(domain:flexdocs.net)",
+      "WebFetch(domain:www.flexdocs.com.br)",
+      "WebFetch(domain:www.econeteditora.com.br)",
+      "WebFetch(domain:webmania.com.br)",
+      "WebFetch(domain:atendimento.tecnospeed.com.br)",
+      "WebFetch(domain:docs.plugnotas.com.br)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:maxiprod.com.br)",
+      "WebFetch(domain:documentacao.nstecnologia.com.br)",
+      "WebFetch(domain:webmaniabr.com)",
+      "WebFetch(domain:acbr.sourceforge.io)"
     ]
   }
 }

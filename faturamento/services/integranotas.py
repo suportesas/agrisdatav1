@@ -85,7 +85,12 @@ class IntegranNotasError(Exception):
     def __init__(self, message, codigo=None, erros=None):
         super().__init__(message)
         self.codigo = codigo
-        self.erros = erros or []
+        if isinstance(erros, list):
+            self.erros = erros
+        elif erros:
+            self.erros = [erros]
+        else:
+            self.erros = []
 
 
 class IntegranNotasClient:
@@ -1417,6 +1422,23 @@ class IntegranNotasClient:
                 prod_pred['tipo_medida'] = pp.tipo_medida
             if pp.q_carga is not None:
                 prod_pred['q_carga'] = str(pp.q_carga)
+            # infLotacao: obrigatório quando há apenas 1 município de descarregamento
+            # e o modal é rodoviário (tipo_operacao=1)
+            if len(municipios_list) == 1:
+                cod_ibge_carga = mdfe.codigo_municipio_carregamento or ''
+                nom_carga = mdfe.municipio_carregamento or ''
+                mun_desc = municipios_list[0]
+                if not cod_ibge_carga:
+                    raise ValueError(
+                        "Código IBGE do município de carregamento é obrigatório quando há apenas "
+                        "1 município de descarregamento (lotação). "
+                        "Preencha o campo 'Município de Carregamento' do MDF-e."
+                    )
+                prod_pred['lotacao'] = {
+                    'municipio_carregamento': cod_ibge_carga,
+                    'municipio_descarregamento': mun_desc['codigo_municipio'],
+                }
+                logger.debug('MDF-e lotacao payload: %s', prod_pred['lotacao'])
         except ValueError:
             raise
         except Exception:
@@ -1447,9 +1469,12 @@ class IntegranNotasClient:
             'modal_rodoviario': modal,
             'produto': prod_pred,
             'tipo_transporte': mdfe.tipo_transporte,
-            'informacoes_adicionais_fisco': mdfe.informacoes_fisco or '',
-            'informacoes_adicionais_contribuinte': mdfe.informacoes_contribuinte or '',
         }
+        # Campos opcionais: só incluir quando preenchidos (schema SEFAZ exige minLength=1)
+        if mdfe.informacoes_fisco:
+            payload['informacoes_adicionais_fisco'] = mdfe.informacoes_fisco
+        if mdfe.informacoes_contribuinte:
+            payload['informacoes_adicionais_contribuinte'] = mdfe.informacoes_contribuinte
         if seguros:
             payload['seguro'] = seguros
         return payload

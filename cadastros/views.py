@@ -59,7 +59,7 @@ from .models import (
 )
 from rh.models import CategoriaRiscoAmbiental, RiscoAmbientalCatalogo
 
-from .forms import VendedorForm, VendedorFiltroForm, ComissaoVendedorForm, FornecedorForm, FornecedorContatoForm, FornecedorDadoBancarioForm, TransportadoraForm
+from .forms import VendedorForm, VendedorFiltroForm, ComissaoVendedorForm, FornecedorForm, FornecedorContatoForm, FornecedorDadoBancarioForm, FornecedorEnderecoForm, TransportadoraForm
 
 from .forms import (
     FazendaForm, EnderecoFazendaForm, ContatoFazendaForm,

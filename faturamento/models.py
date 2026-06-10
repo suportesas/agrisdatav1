@@ -1037,6 +1037,7 @@ class DocumentoVinculadoMDFe(models.Model):
     chave           = models.CharField('Chave de Acesso (44 dígitos)', max_length=44)
     municipio_descarregamento        = models.CharField('Município de Descarregamento', max_length=100)
     codigo_municipio_descarregamento = models.CharField('Código IBGE', max_length=7, blank=True, help_text='7 dígitos IBGE')
+    cep_descarregamento              = models.CharField('CEP de Entrega', max_length=8, blank=True, help_text='8 dígitos sem hífen')
 
     class Meta:
         verbose_name = 'Documento Vinculado ao MDF-e'

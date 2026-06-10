@@ -1097,6 +1097,10 @@ class IntegranNotasClient:
         )
         resp.raise_for_status()
         data = resp.json()
+        # 5008 = MDF-e já registrado na IntegraNotas (tentativa anterior); consulta o existente
+        if data.get('codigo') == 5008 and data.get('chave'):
+            import time; time.sleep(2)
+            data = self.consultar_mdfe(data['chave'])
         if not data.get('sucesso') and data.get('codigo') not in (100, 2, 5023):
             raise IntegranNotasError(
                 data.get('mensagem', 'Erro desconhecido na emissão do MDF-e'),
@@ -1209,25 +1213,46 @@ class IntegranNotasClient:
 
         # Agrupar documentos por município de descarregamento (código + nome)
         municipios: dict = {}
+        ceps_por_municipio: dict = {}
         docs_sem_ibge = []
+        docs_sem_municipio = []
         for doc in mdfe.documentos_vinculados.all():
             codigo = doc.codigo_municipio_descarregamento or ''
+            nome   = doc.municipio_descarregamento or ''
+            cep    = (doc.cep_descarregamento or '').replace('-', '').replace('.', '')
+            chave_id = doc.chave[:10] + '…' if doc.chave else '(sem chave)'
             if not codigo:
-                docs_sem_ibge.append(doc.chave[:10] + '…' if doc.chave else '(sem chave)')
-            key = (codigo, doc.municipio_descarregamento)
+                docs_sem_ibge.append(chave_id)
+            if not nome:
+                docs_sem_municipio.append(chave_id)
+            key = (codigo, nome)
             if key not in municipios:
                 municipios[key] = []
+                ceps_por_municipio[key] = cep
             municipios[key].append({'chave': doc.chave, 'tipo': doc.tipo})
 
         if docs_sem_ibge:
             raise ValueError(
                 f"Código IBGE de descarregamento ausente nos documentos: {', '.join(docs_sem_ibge)}. "
-                "Edite o MDF-e e preencha a coluna 'Cód. IBGE' na aba Documentos."
+                "Edite o MDF-e e preencha o 'Cód. IBGE' na seção 'Municípios de Entrega' (aba Geral)."
+            )
+        if docs_sem_municipio:
+            raise ValueError(
+                f"Município de Entrega ausente nos documentos: {', '.join(docs_sem_municipio)}. "
+                "Edite o MDF-e e preencha o 'Município de Entrega' na seção 'Municípios de Entrega' (aba Geral)."
+            )
+        if not mdfe.municipio_carregamento:
+            raise ValueError(
+                "Município de Carregamento é obrigatório. "
+                "Preencha o campo 'Município de Carregamento' no card Percurso (aba Geral)."
             )
 
         municipios_list = []
         for (codigo, nome), docs in municipios.items():
             entry: dict = {'codigo_municipio': codigo, 'nome_municipio': nome}
+            cep_desc = ceps_por_municipio.get((codigo, nome), '')
+            if cep_desc:
+                entry['cep'] = cep_desc
             nfes  = [{'chave': d['chave']} for d in docs if d['tipo'] == 'nfe']
             ctes  = [{'chave': d['chave']} for d in docs if d['tipo'] == 'cte']
             mdfes = [{'chave': d['chave']} for d in docs if d['tipo'] == 'mdfe']
@@ -1434,9 +1459,17 @@ class IntegranNotasClient:
                         "1 município de descarregamento (lotação). "
                         "Preencha o campo 'Município de Carregamento' do MDF-e."
                     )
+                cep_carga = (empresa.cep or '').replace('-', '').replace('.', '')
+                cep_desc  = mun_desc.get('cep', '')
+                mun_carg_obj: dict = {'codigo_municipio': cod_ibge_carga, 'nome_municipio': nom_carga}
+                if cep_carga:
+                    mun_carg_obj['cep'] = cep_carga
+                mun_desc_obj: dict = {'codigo_municipio': mun_desc['codigo_municipio'], 'nome_municipio': mun_desc['nome_municipio']}
+                if cep_desc:
+                    mun_desc_obj['cep'] = cep_desc
                 prod_pred['lotacao'] = {
-                    'municipio_carregamento': cod_ibge_carga,
-                    'municipio_descarregamento': mun_desc['codigo_municipio'],
+                    'municipio_carregamento': mun_carg_obj,
+                    'municipio_descarregamento': mun_desc_obj,
                 }
                 logger.debug('MDF-e lotacao payload: %s', prod_pred['lotacao'])
         except ValueError:
@@ -1457,9 +1490,8 @@ class IntegranNotasClient:
             'uf_fim': mdfe.uf_fim,
             'municipios_carregamento': [{
                 'codigo_municipio': mdfe.codigo_municipio_carregamento or '',
-                'nome_municipio': mdfe.municipio_carregamento,
+                'nome_municipio': mdfe.municipio_carregamento or '',
             }],
-            'percursos': percursos,
             'municipios_descarregamento': municipios_list,
             'valores': {
                 'valor_total_carga': str(mdfe.valor_carga),
@@ -1468,13 +1500,17 @@ class IntegranNotasClient:
             },
             'modal_rodoviario': modal,
             'produto': prod_pred,
-            'tipo_transporte': mdfe.tipo_transporte,
         }
         # Campos opcionais: só incluir quando preenchidos (schema SEFAZ exige minLength=1)
+        if percursos:
+            payload['percursos'] = percursos
+        if mdfe.tipo_transporte:
+            payload['tipo_transporte'] = mdfe.tipo_transporte
         if mdfe.informacoes_fisco:
             payload['informacoes_adicionais_fisco'] = mdfe.informacoes_fisco
         if mdfe.informacoes_contribuinte:
             payload['informacoes_adicionais_contribuinte'] = mdfe.informacoes_contribuinte
         if seguros:
             payload['seguro'] = seguros
+        logger.debug('MDF-e payload: %s', payload)
         return payload

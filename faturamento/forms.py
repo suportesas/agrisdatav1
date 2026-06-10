@@ -956,12 +956,13 @@ class CancelarMDFeForm(forms.Form):
 class DocumentoVinculadoMDFeForm(forms.ModelForm):
     class Meta:
         model = DocumentoVinculadoMDFe
-        fields = ['tipo', 'chave', 'municipio_descarregamento', 'codigo_municipio_descarregamento']
+        fields = ['tipo', 'chave', 'municipio_descarregamento', 'codigo_municipio_descarregamento', 'cep_descarregamento']
         widgets = {
             'tipo':                              forms.Select(attrs={'class': 'form-select form-select-sm'}),
             'chave':                             forms.TextInput(attrs={'class': 'form-control form-control-sm', 'maxlength': '44', 'placeholder': 'Chave (44 dígitos)'}),
             'municipio_descarregamento':         forms.TextInput(attrs={'class': 'form-control form-control-sm', 'placeholder': 'Cidade de entrega'}),
             'codigo_municipio_descarregamento':  forms.TextInput(attrs={'class': 'form-control form-control-sm', 'maxlength': '7', 'placeholder': 'Cód. IBGE (7 dígitos)'}),
+            'cep_descarregamento':               forms.TextInput(attrs={'class': 'form-control form-control-sm', 'maxlength': '8', 'placeholder': 'CEP (8 dígitos)'}),
         }
 
 

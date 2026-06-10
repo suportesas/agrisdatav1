@@ -166,6 +166,43 @@
                 <button type="button" id="btn-add-perc" class="btn btn-outline-secondary btn-sm mb-2" onclick="_percAdd()">
                   <i class="bi bi-plus-circle me-1"></i> Adicionar Estado
                 </button>
+
+                <h6 class="mb-2 mt-3">Municípios de Entrega (por Documento)</h6>
+                <table class="table table-sm mb-2" id="docs-mun-table">
+                  <thead class="table-light">
+                    <tr>
+                      <th style="width:70px">Tipo</th>
+                      <th style="width:180px">Chave (fim)</th>
+                      <th>Município de Entrega</th>
+                      <th style="width:120px">Cód. IBGE</th>
+                      <th style="width:100px">CEP</th>
+                    </tr>
+                  </thead>
+                  <tbody id="docs-mun-tbody">
+                    {% for df in docs_formset %}
+                    <tr>
+                      <td class="text-muted small">{{ df.instance.tipo|upper }}</td>
+                      <td class="text-muted small font-monospace">…{{ df.instance.chave|slice:"-8:" }}</td>
+                      <td>{{ df.municipio_descarregamento }}</td>
+                      <td>{{ df.codigo_municipio_descarregamento }}</td>
+                      <td>{{ df.cep_descarregamento }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr id="docs-mun-empty-row">
+                      <td colspan="4" class="text-center text-muted small py-2">Nenhum documento vinculado ainda.</td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+                <table style="display:none"><tbody>
+                  <tr id="docs-mun-template-row">
+                    <td class="text-muted small" data-mun-tipo>—</td>
+                    <td class="text-muted small font-monospace" data-mun-chave>—</td>
+                    <td><input type="text" name="docs-__prefix__-municipio_descarregamento" maxlength="100" class="form-control form-control-sm" placeholder="Cidade de entrega" id="id_docs-__prefix__-municipio_descarregamento"></td>
+                    <td><input type="text" name="docs-__prefix__-codigo_municipio_descarregamento" maxlength="7" class="form-control form-control-sm" placeholder="Cód. IBGE" id="id_docs-__prefix__-codigo_municipio_descarregamento"></td>
+                    <td><input type="text" name="docs-__prefix__-cep_descarregamento" maxlength="8" class="form-control form-control-sm" placeholder="CEP" id="id_docs-__prefix__-cep_descarregamento"></td>
+                  </tr>
+                </tbody></table>
               </div>
             </div>
           </div>
@@ -556,14 +593,12 @@
         </div>
         {{ docs_formset.management_form }}
         <table class="table table-sm" id="docs-table">
-          <thead class="table-light"><tr><th style="width:90px">Tipo</th><th>Chave (44 dígitos)</th><th>Município de Entrega</th><th style="width:120px">Cód. IBGE</th><th></th></tr></thead>
+          <thead class="table-light"><tr><th style="width:90px">Tipo</th><th>Chave (44 dígitos)</th><th></th></tr></thead>
           <tbody id="docs-tbody">
             {% for df in docs_formset %}
             <tr>
               <td>{{ df.tipo }}</td>
               <td>{{ df.chave }}</td>
-              <td>{{ df.municipio_descarregamento }}</td>
-              <td>{{ df.codigo_municipio_descarregamento }}</td>
               <td>
                 <button type="button" class="btn btn-outline-danger btn-sm" onclick="var r=this.closest('tr');r.querySelector('input[type=checkbox]').checked=true;r.style.display='none'"><i class="bi bi-trash"></i></button>
                 <span style="display:none">{{ df.DELETE }}{{ df.id }}</span>
@@ -581,8 +616,6 @@
               </select>
             </td>
             <td><input type="text" name="docs-__prefix__-chave" maxlength="44" class="form-control form-control-sm" placeholder="Chave (44 dígitos)" id="id_docs-__prefix__-chave"></td>
-            <td><input type="text" name="docs-__prefix__-municipio_descarregamento" maxlength="100" class="form-control form-control-sm" placeholder="Cidade de entrega" id="id_docs-__prefix__-municipio_descarregamento"></td>
-            <td><input type="text" name="docs-__prefix__-codigo_municipio_descarregamento" maxlength="7" class="form-control form-control-sm" placeholder="Cód. IBGE" id="id_docs-__prefix__-codigo_municipio_descarregamento"></td>
             <td>
               <button type="button" class="btn btn-outline-danger btn-sm" onclick="var r=this.closest('tr');r.querySelector('input[type=checkbox]').checked=true;r.style.display='none'"><i class="bi bi-trash"></i></button>
               <input type="checkbox" name="docs-__prefix__-DELETE" id="id_docs-__prefix__-DELETE" class="form-check-input" style="display:none">
@@ -834,7 +867,48 @@
   criarAdicionadorFormset('btn-add-vale',        'vale-tbody',     'vale-template-row',     'id_vale-TOTAL_FORMS');
   criarAdicionadorFormset('btn-add-pagfrete',    'pagfrete-tbody', 'pagfrete-template-row', 'id_pagfrete-TOTAL_FORMS');
   criarAdicionadorFormset('btn-add-seguro',      'seg-tbody',      'seg-template-row',      'id_seg-TOTAL_FORMS');
-  criarAdicionadorFormset('btn-add-doc',         'docs-tbody',     'docs-template-row',     'id_docs-TOTAL_FORMS');
+
+  // ── Adicionar documento (split: tipo/chave em docs-tbody, municipio/codigo em docs-mun-tbody)
+  function adicionarDoc(tipo, chave, municipio, codigoMunicipio) {
+    const totalInput = document.getElementById('id_docs-TOTAL_FORMS');
+    if (!totalInput) return;
+    const idx = parseInt(totalInput.value, 10);
+
+    const tplDocs = document.getElementById('docs-template-row');
+    const linhaDoc = tplDocs.cloneNode(true);
+    linhaDoc.removeAttribute('id');
+    linhaDoc.querySelectorAll('input, select').forEach(el => {
+      if (el.name) el.name = el.name.replace('__prefix__', idx);
+      if (el.id)   el.id   = el.id.replace('__prefix__', idx);
+    });
+    if (tipo)  { const s = linhaDoc.querySelector('[name="docs-' + idx + '-tipo"]');  if (s) s.value = tipo; }
+    if (chave) { const i = linhaDoc.querySelector('[name="docs-' + idx + '-chave"]'); if (i) i.value = chave; }
+    document.getElementById('docs-tbody').appendChild(linhaDoc);
+
+    const tplMun = document.getElementById('docs-mun-template-row');
+    const linhaMun = tplMun.cloneNode(true);
+    linhaMun.removeAttribute('id');
+    linhaMun.querySelectorAll('input').forEach(el => {
+      if (el.name) el.name = el.name.replace('__prefix__', idx);
+      if (el.id)   el.id   = el.id.replace('__prefix__', idx);
+    });
+    const tipoCell  = linhaMun.querySelector('[data-mun-tipo]');
+    const chaveCell = linhaMun.querySelector('[data-mun-chave]');
+    if (tipoCell)  tipoCell.textContent  = tipo  ? tipo.toUpperCase()  : '—';
+    if (chaveCell) chaveCell.textContent = chave ? '…' + chave.slice(-8) : '—';
+    const munInp = linhaMun.querySelector('[name="docs-' + idx + '-municipio_descarregamento"]');
+    const codInp = linhaMun.querySelector('[name="docs-' + idx + '-codigo_municipio_descarregamento"]');
+    if (munInp) munInp.value = municipio       || '';
+    if (codInp) codInp.value = codigoMunicipio || '';
+    const emptyRow = document.getElementById('docs-mun-empty-row');
+    if (emptyRow) emptyRow.remove();
+    document.getElementById('docs-mun-tbody').appendChild(linhaMun);
+
+    totalInput.value = idx + 1;
+  }
+
+  const btnAddDoc = document.getElementById('btn-add-doc');
+  if (btnAddDoc) btnAddDoc.addEventListener('click', () => adicionarDoc('nfe', '', '', ''));
 
   // ── Modal Importar Docs ──────────────────────────────────────────
   const modalImport = document.getElementById('modalImportarDocs');
@@ -1047,7 +1121,7 @@
     }
 
     selectedDocs.forEach(item => {
-      adicionarLinhaFormset(item.tipo, item.chave, item.municipio, item.codigoMunicipio);
+      adicionarDoc(item.tipo, item.chave, item.municipio, item.codigoMunicipio);
     });
 
     // Navegar para aba de documentos
@@ -1055,29 +1129,6 @@
     if (tabDocBtn) tabDocBtn.click();
 
     bootstrap.Modal.getInstance(document.getElementById('modalImportarDocs')).hide();
-  }
-
-  function adicionarLinhaFormset(tipo, chave, municipio, codigoMunicipio) {
-    const totalInput = document.getElementById('id_docs-TOTAL_FORMS');
-    if (!totalInput) return;
-    const idx = parseInt(totalInput.value, 10);
-    const template = document.getElementById('docs-template-row');
-    const novaLinha = template.cloneNode(true);
-    novaLinha.removeAttribute('id');
-    novaLinha.querySelectorAll('input, select').forEach(el => {
-      if (el.name) el.name = el.name.replace('__prefix__', idx);
-      if (el.id)   el.id   = el.id.replace('__prefix__', idx);
-    });
-    const tipoSel    = novaLinha.querySelector('[name="docs-' + idx + '-tipo"]');
-    const chaveInp   = novaLinha.querySelector('[name="docs-' + idx + '-chave"]');
-    const munInp     = novaLinha.querySelector('[name="docs-' + idx + '-municipio_descarregamento"]');
-    const codigoInp  = novaLinha.querySelector('[name="docs-' + idx + '-codigo_municipio_descarregamento"]');
-    if (tipoSel)   tipoSel.value   = tipo;
-    if (chaveInp)  chaveInp.value  = chave;
-    if (munInp)    munInp.value    = municipio;
-    if (codigoInp) codigoInp.value = codigoMunicipio || '';
-    document.getElementById('docs-tbody').appendChild(novaLinha);
-    totalInput.value = idx + 1;
   }
 
   function escH(s) {

@@ -97,7 +97,9 @@
       "WebFetch(domain:acbr.sourceforge.io)",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://127.0.0.1:8000/faturamento/mdfe/1/)",
       "Bash(python -c \"import playwright; print\\('ok'\\)\")",
-      "Bash(python -m playwright --version)"
+      "Bash(python -m playwright --version)",
+      "Bash(python -c \"from faturamento import views, urls; print\\('OK'\\)\")",
+      "Bash(findstr -i \"error\\\\|warning\\\\|mdfe_clonar\\\\|clonar\")"
     ]
   }
 }

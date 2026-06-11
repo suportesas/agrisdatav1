@@ -1132,21 +1132,37 @@ class IntegranNotasClient:
         return data
 
     def encerrar_mdfe(self, chave: str, municipio: str, data_enc) -> dict:
-        from datetime import datetime
-        data_str = data_enc.strftime('%Y-%m-%dT%H:%M:%S') if hasattr(data_enc, 'strftime') else str(data_enc)
+        data_str = data_enc.strftime('%Y-%m-%dT%H:%M:%S') + '-03:00' if hasattr(data_enc, 'strftime') else str(data_enc)
+        payload = {'chave': chave, 'municipio_encerramento': municipio, 'data_encerramento': data_str}
+        logger.info('IntegraNotas: encerrando MDF-e chave=%s payload=%s', chave, payload)
         resp = requests.post(
             f'{self.base_url}/mdfe/encerra',
-            json={'chave': chave, 'municipio_encerramento': municipio, 'data_encerramento': data_str},
+            json=payload,
             headers=self._headers(),
             timeout=self.TIMEOUT,
         )
+        logger.info('IntegraNotas: encerrar_mdfe HTTP %s body=%s', resp.status_code, resp.text[:500])
+        if resp.status_code in (401, 403):
+            try:
+                body = resp.json()
+                msg = body.get('mensagem') or body.get('message') or resp.text[:200]
+            except Exception:
+                msg = resp.text[:200]
+            raise IntegranNotasError(
+                f'Token rejeitado pelo IntegraNotas (HTTP {resp.status_code}): {msg}. '
+                'Verifique se o token configurado corresponde ao ambiente de homologação.',
+                codigo=resp.status_code,
+            )
         resp.raise_for_status()
         data = resp.json()
         if not data.get('sucesso') and data.get('codigo') != 103:
+            erros = data.get('erros') or []
+            detail = '; '.join(str(e) for e in erros) if erros else ''
+            msg = data.get('mensagem', 'Erro ao encerrar MDF-e')
             raise IntegranNotasError(
-                data.get('mensagem', 'Erro ao encerrar MDF-e'),
+                f'{msg}{(" — " + detail) if detail else ""}',
                 codigo=data.get('codigo'),
-                erros=data.get('erros', []),
+                erros=erros,
             )
         return data
 

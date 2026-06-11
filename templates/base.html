@@ -79,6 +79,8 @@
         document.addEventListener('DOMContentLoaded', function(){
           try {
             document.querySelectorAll('.alert').forEach(function(a){
+              // Only auto-dismiss alerts that have a dismiss button (Django flash messages)
+              if (!a.classList.contains('alert-dismissible')) return;
               // Skip auto-dismiss for danger/error alerts so users can read validation messages
               if (a.classList.contains('alert-danger') || a.classList.contains('alert-error')) return;
               // Skip auto-dismiss for alerts inside modals (help documentation)

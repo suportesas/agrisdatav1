@@ -81,6 +81,7 @@ urlpatterns = [
     path('mdfe/<int:pk>/preview/', views.mdfe_preview, name='mdfe_preview'),
     path('mdfe/<int:pk>/inclui-condutor/', views.mdfe_inclui_condutor, name='mdfe_inclui_condutor'),
     path('mdfe/<int:pk>/inclui-nfe/', views.mdfe_inclui_nfe, name='mdfe_inclui_nfe'),
+    path('mdfe/<int:pk>/clonar/', views.mdfe_clonar, name='mdfe_clonar'),
 
     # Documentação IntegraNotas
     path('docs/integranotas/', views.docs_integranotas, name='docs_integranotas'),

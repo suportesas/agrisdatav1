@@ -2627,8 +2627,13 @@ def mdfe_encerrar(request, pk):
                 mdfe.save()
                 messages.success(request, 'MDF-e encerrado com sucesso.')
                 return redirect('faturamento:mdfe_detail', pk=pk)
+            except IntegranNotasError as e:
+                detail = ('; '.join(str(x) for x in e.erros)) if e.erros else ''
+                messages.error(request, f'Erro ao encerrar [{e.codigo}]: {e}' + (f' — {detail}' if detail else ''))
             except Exception as e:
-                messages.error(request, f'Erro ao encerrar: {e}')
+                import logging as _log
+                _log.getLogger(__name__).exception('Erro inesperado ao encerrar MDF-e pk=%s', pk)
+                messages.error(request, f'Erro inesperado ao encerrar: {e}')
     else:
         form = EncerrarMDFeForm()
     return render(request, 'faturamento/mdfe/encerrar.html', {'form': form, 'mdfe': mdfe})
@@ -2810,4 +2815,92 @@ def mdfe_inclui_nfe(request, pk):
             except Exception as e:
                 messages.error(request, f'Erro ao incluir NF-e: {e}')
     return render(request, 'faturamento/mdfe/inclui_nfe_form.html', {'mdfe': mdfe})
+
+
+@login_required
+def mdfe_clonar(request, pk):
+    empresa = _get_empresa(request)
+    original = get_object_or_404(ManifestoDocumentoFiscal, pk=pk, empresa=empresa)
+    if request.method != 'POST':
+        return redirect('faturamento:mdfe_detail', pk=pk)
+
+    from django.utils import timezone as _tz
+
+    # Duplica o registro principal zerando campos SEFAZ e resetando para Rascunho
+    novo = ManifestoDocumentoFiscal.objects.get(pk=original.pk)
+    novo.pk = None
+    novo.numero = None
+    novo.status = 'RASCUNHO'
+    novo.data_emissao = _tz.now().date()
+    novo.chave_acesso = ''
+    novo.protocolo = ''
+    novo.xml_autorizacao = ''
+    novo.xml_autorizacao_url = ''
+    novo.pdf_damdfe = ''
+    novo.pdf_damdfe_url = ''
+    novo.motivo_cancelamento = ''
+    novo.data_cancelamento = None
+    novo.data_hora_emissao = None
+    novo.data_encerramento = None
+    novo.municipio_encerramento = ''
+    novo.criado_por = request.user
+    novo.atualizado_por = request.user
+    novo.save()
+
+    # Clona todos os relacionamentos relevantes
+    for obj in original.percursos.all():
+        obj.pk = None
+        obj.mdfe = novo
+        obj.save()
+
+    for obj in original.documentos_vinculados.all():
+        obj.pk = None
+        obj.mdfe = novo
+        obj.save()
+
+    for obj in original.condutores.all():
+        obj.pk = None
+        obj.mdfe = novo
+        obj.save()
+
+    for obj in original.reboques.all():
+        obj.pk = None
+        obj.mdfe = novo
+        obj.save()
+
+    for obj in original.ciots.all():
+        obj.pk = None
+        obj.mdfe = novo
+        obj.save()
+
+    for obj in original.contratantes.all():
+        obj.pk = None
+        obj.mdfe = novo
+        obj.save()
+
+    for obj in original.vales_pedagio.all():
+        obj.pk = None
+        obj.mdfe = novo
+        obj.save()
+
+    for obj in original.pagamentos_frete.all():
+        obj.pk = None
+        obj.mdfe = novo
+        obj.save()
+
+    for obj in original.seguros.all():
+        obj.pk = None
+        obj.mdfe = novo
+        obj.save()
+
+    try:
+        pp = original.produto_predominante
+        pp.pk = None
+        pp.mdfe = novo
+        pp.save()
+    except Exception:
+        pass
+
+    messages.success(request, f'MDF-e clonado com sucesso. Edite os dados antes de emitir.')
+    return redirect('faturamento:mdfe_update', pk=novo.pk)
 

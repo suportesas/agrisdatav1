@@ -48,10 +48,18 @@
         </a>
         <ul class="nav-submenu">
           <li><a href="{% url 'dashboard:index' %}"><i class="bi bi-speedometer2"></i> Geral</a></li>
+          {% if user.is_admin_empresa or perms.estoque.view_movimentacaoestoque %}
           <li><a href="{% url 'estoque:dashboard' %}"><i class="bi bi-box-seam"></i> Estoque</a></li>
+          {% endif %}
+          {% if user.is_admin_empresa or perms.compras.view_pedidocompra %}
           <li><a href="{% url 'compras:dashboard_compras' %}"><i class="bi bi-cart-check"></i> Compras</a></li>
+          {% endif %}
+          {% if user.is_admin_empresa or perms.financeiro.view_contapagar %}
           <li><a href="{% url 'financeiro:dashboard' %}"><i class="bi bi-cash-coin"></i> Financeiro</a></li>
+          {% endif %}
+          {% if user.is_admin_empresa or perms.estoque.view_movimentacaoestoque %}
           <li><a href="{% url 'estoque:relatorio_rastreamento_dashboard' %}"><i class="bi bi-activity"></i> Rastreamento</a></li>
+          {% endif %}
           <li><a href="{% url 'produtos:dashboard' %}"><i class="bi bi-speedometer2"></i> Dashboard de Produtos</a></li>
         </ul>
       </li>
@@ -160,11 +168,14 @@
       {% if not user.is_superuser and user.empresa %}
 
       <!-- ── PRODUÇÃO AGRÍCOLA ── -->
+      {% if user.is_admin_empresa or perms.operacoes_campo.view_ordemservico or perms.estufas.view_estufa or perms.mip.view_monitoramentomip %}
       <li class="nav-section">
         <span>PRODUÇÃO AGRÍCOLA</span>
       </li>
+      {% endif %}
 
       <!-- Agro -->
+      {% if user.is_admin_empresa or perms.operacoes_campo.view_ordemservico or perms.mip.view_monitoramentomip %}
       <li class="nav-item has-submenu">
         <a href="#" class="nav-link">
           <i class="bi bi-brightness-high"></i>
@@ -217,8 +228,10 @@
           <li><a href="{% url 'portal_campo:login' %}" target="_blank"><i class="bi bi-person-badge-fill"></i> Portal do Campo</a></li>
         </ul>
       </li>
+      {% endif %}
 
       <!-- Estufas e Mudas -->
+      {% if user.is_admin_empresa or perms.estufas.view_estufa %}
       <li class="nav-item has-submenu">
         <a href="#" class="nav-link">
           <i class="bi bi-flower1"></i>
@@ -233,6 +246,7 @@
           <li><a href="{% url 'estufas:dashboard_estufas' %}"><i class="bi bi-bar-chart-line"></i> Dashboard</a></li>
         </ul>
       </li>
+      {% endif %}
 
       <li class="nav-divider"></li>
       <!-- ── PESSOAS & PARCEIROS ── -->
@@ -265,6 +279,7 @@
       </li>
 
       <!-- Frota (Menu Principal) -->
+      {% if user.is_admin_empresa or perms.frota.view_vehicle %}
       <li class="nav-item has-submenu">
         <a href="#" class="nav-link">
           <i class="bi bi-truck-front-fill"></i>
@@ -294,8 +309,10 @@
           </li>
         </ul>
       </li>
+      {% endif %}
 
       <!-- RH - Recursos Humanos (Menu Principal) -->
+      {% if user.is_admin_empresa or perms.rh.view_funcionario %}
       <li class="nav-item has-submenu">
         <a href="#" class="nav-link">
           <i class="bi bi-people-fill"></i>
@@ -337,8 +354,10 @@
           <li><a href="{% url 'rh:relatorio_rh' %}"><i class="bi bi-file-earmark-text"></i> Relatório RH</a></li>
         </ul>
       </li>
+      {% endif %}
 
       <!-- Patrimônio / Ativos -->
+      {% if user.is_admin_empresa or perms.patrimonio.view_patrimonio %}
       <li class="nav-item has-submenu">
         <a href="#" class="nav-link">
           <i class="bi bi-house-fill"></i>
@@ -353,6 +372,7 @@
           <li><a href="{% url 'patrimonio:patrimonio_relatorio' %}"><i class="bi bi-file-earmark-bar-graph"></i> Relatório</a></li>
         </ul>
       </li>
+      {% endif %}
 
       <li class="nav-divider"></li>
       <!-- ── SUPRIMENTOS & ESTOQUE ── -->
@@ -380,6 +400,7 @@
       </li>
 
       <!-- Estoque -->
+      {% if user.is_admin_empresa or perms.estoque.view_movimentacaoestoque %}
       <li class="nav-item has-submenu">
         <a href="#" class="nav-link">
           <i class="bi bi-archive-fill"></i>
@@ -432,8 +453,10 @@
           <li><a href="{% url 'estoque:transferencia_create' %}"><i class="bi bi-arrow-left-right text-info"></i> Transferência</a></li>
         </ul>
       </li>
+      {% endif %}
 
       <!-- Compras -->
+      {% if user.is_admin_empresa or perms.compras.view_pedidocompra %}
       <li class="nav-item has-submenu">
         <a href="#" class="nav-link">
           <i class="bi bi-cart-check-fill"></i>
@@ -459,6 +482,7 @@
           <li><a href="{% url 'compras:mde_list' %}"><i class="bi bi-chat-square-check text-secondary"></i> Manifestação MD-e</a></li>
         </ul>
       </li>
+      {% endif %}
 
       <li class="nav-divider"></li>
       <!-- ── FINANCEIRO & FISCAL ── -->
@@ -484,6 +508,7 @@
       </li>
 
       <!-- Financeiro -->
+      {% if user.is_admin_empresa or perms.financeiro.view_contapagar %}
       <li class="nav-item has-submenu">
         <a href="#" class="nav-link">
           <i class="bi bi-cash-stack"></i>
@@ -549,14 +574,18 @@
           </li>
         </ul>
       </li>
+      {% endif %}
 
       <li class="nav-divider"></li>
       <!-- ── COMERCIAL & EXPORTAÇÃO ── -->
+      {% if user.is_admin_empresa or perms.exportacao.view_booking or perms.embalagem.view_ordemembalagem or perms.vendas.view_pedidovenda or perms.faturamento.view_notafiscal %}
       <li class="nav-section">
         <span>COMERCIAL &amp; EXPORTAÇÃO</span>
       </li>
+      {% endif %}
 
       <!-- Exportação -->
+      {% if user.is_admin_empresa or perms.exportacao.view_booking %}
       <li class="nav-item has-submenu">
         <a href="#" class="nav-link">
           <i class="bi bi-box-seam"></i>
@@ -578,8 +607,10 @@
           <li><a href="{% url 'exportacao:ordem_coleta_list' %}"><i class="bi bi-truck"></i> Ordens de Coleta</a></li>
         </ul>
       </li>
+      {% endif %}
 
       <!-- Embalagem -->
+      {% if user.is_admin_empresa or perms.embalagem.view_ordemembalagem %}
       <li class="nav-item has-submenu">
         <a href="#" class="nav-link">
           <i class="bi bi-box2-heart-fill"></i>
@@ -600,8 +631,10 @@
           <li><a href="{% url 'embalagem:tipo_embalagem_list' %}"><i class="bi bi-gear"></i> Tipos de Embalagem</a></li>
         </ul>
       </li>
+      {% endif %}
 
       <!-- Vendas -->
+      {% if user.is_admin_empresa or perms.vendas.view_pedidovenda %}
       <li class="nav-item has-submenu">
         <a href="#" class="nav-link">
           <i class="bi bi-cart-check"></i>
@@ -616,8 +649,10 @@
           <li><a href="{% url 'financeiro:conta_receber_create' %}"><i class="bi bi-plus-circle"></i> Nova CR</a></li>
         </ul>
       </li>
+      {% endif %}
 
       <!-- Faturamento -->
+      {% if user.is_admin_empresa or perms.faturamento.view_notafiscal %}
       <li class="nav-item has-submenu">
         <a href="#" class="nav-link">
           <i class="bi bi-receipt"></i>
@@ -649,9 +684,11 @@
           <li><a href="{% url 'faturamento:docs_integranotas' %}" target="_blank"><i class="bi bi-file-earmark-code text-info"></i> Docs API IntegraNotas</a></li>
         </ul>
       </li>
+      {% endif %}
 
       <li class="nav-divider"></li>
       <!-- ── INFRAESTRUTURA ── -->
+      {% if user.is_admin_empresa or perms.energia.view_usina %}
       <li class="nav-section">
         <span>INFRAESTRUTURA</span>
       </li>
@@ -680,6 +717,7 @@
           <li><a href="{% url 'energia:ocorrencia_create' %}"><i class="bi bi-plus-circle"></i> Nova Ocorrência</a></li>
         </ul>
       </li>
+      {% endif %}
 
       <li class="nav-divider"></li>
       <!-- ── RELATÓRIOS ── -->
@@ -695,6 +733,7 @@
           <i class="bi bi-chevron-down submenu-arrow"></i>
         </a>
         <ul class="nav-submenu">
+          {% if user.is_admin_empresa or perms.estoque.view_movimentacaoestoque %}
           <li class="has-submenu">
             <a href="#"><i class="bi bi-archive"></i> Estoque <i class="bi bi-chevron-right ms-auto"></i></a>
             <ul class="nested-submenu">
@@ -722,6 +761,8 @@
               <li><a href="{% url 'estoque:relatorio_alertas_estoque' %}"><i class="bi bi-exclamation-triangle text-danger"></i> Alertas (Excel/PDF)</a></li>
             </ul>
           </li>
+          {% endif %}
+          {% if user.is_admin_empresa or perms.compras.view_pedidocompra %}
           <li class="has-submenu">
             <a href="#"><i class="bi bi-cart-check"></i> Compras <i class="bi bi-chevron-right ms-auto"></i></a>
             <ul class="nested-submenu">
@@ -731,6 +772,7 @@
               <li><a href="{% url 'compras:relatorio_pedidos_pendentes' %}"><i class="bi bi-file-earmark-excel"></i> Pedidos Pendentes</a></li>
             </ul>
           </li>
+          {% endif %}
           <li class="has-submenu">
             <a href="#"><i class="bi bi-people"></i> Clientes <i class="bi bi-chevron-right ms-auto"></i></a>
             <ul class="nested-submenu">
@@ -744,12 +786,14 @@
               <li><a href="{% url 'cadastros:relatorio_fornecedor_ranking' %}"><i class="bi bi-bar-chart-line"></i> Ranking de Compras</a></li>
             </ul>
           </li>
+          {% if user.is_admin_empresa or perms.patrimonio.view_patrimonio %}
           <li class="has-submenu">
             <a href="#"><i class="bi bi-tools"></i> Patrimônio <i class="bi bi-chevron-right ms-auto"></i></a>
             <ul class="nested-submenu">
               <li><a href="{% url 'patrimonio:patrimonio_relatorio' %}"><i class="bi bi-file-earmark-bar-graph"></i> Relatório de Patrimônios</a></li>
             </ul>
           </li>
+          {% endif %}
         </ul>
       </li>
       {% endif %}
@@ -759,6 +803,10 @@
 
   <!-- Footer -->
   <div class="sidebar-footer">
+    <a href="{% url 'usuarios:meu_perfil' %}" class="btn-logout" style="color:var(--text-muted,#6b7280);margin-bottom:4px">
+      <i class="bi bi-person-circle"></i>
+      <span>Meu Perfil</span>
+    </a>
     <a href="{% url 'logout' %}" class="btn-logout">
       <i class="bi bi-box-arrow-left"></i>
       <span>Sair</span>

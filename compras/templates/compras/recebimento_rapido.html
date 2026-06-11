@@ -44,13 +44,13 @@
     <div class="row mb-4">
         <div class="col-md-8">
             <h1>
-                <i class="fas fa-inbox"></i> Recebimento Rápido
+                <i class="bi bi-inbox"></i> Recebimento Rápido
             </h1>
             <p class="text-muted">Registre o recebimento de produtos e atualize o estoque</p>
         </div>
         <div class="col-md-4 text-end">
             <a href="{% url 'compras:recebimento_list' %}" class="btn btn-outline-secondary">
-                <i class="fas fa-list"></i> Recebimentos
+                <i class="bi bi-list-ul"></i> Recebimentos
             </a>
         </div>
     </div>
@@ -72,7 +72,7 @@
         <!-- Seção: Seleção de Pedido -->
         <div class="card mb-4">
             <div class="card-header bg-primary text-white">
-                <h5 class="mb-0"><i class="fas fa-file-invoice"></i> Pedido de Compra</h5>
+                <h5 class="mb-0"><i class="bi bi-file-earmark-text"></i> Pedido de Compra</h5>
             </div>
             <div class="card-body">
                 <div class="row">
@@ -120,7 +120,7 @@
         <!-- Seção: Itens -->
         <div class="card mb-4">
             <div class="card-header bg-success text-white">
-                <h5 class="mb-0"><i class="fas fa-boxes"></i> Itens Recebidos</h5>
+                <h5 class="mb-0"><i class="bi bi-boxes"></i> Itens Recebidos</h5>
             </div>
             <div class="card-body">
                 <div id="itensContainer">
@@ -132,7 +132,7 @@
         <!-- Seção: Armazenamento -->
         <div class="card mb-4">
             <div class="card-header bg-info text-white">
-                <h5 class="mb-0"><i class="fas fa-warehouse"></i> Armazenamento</h5>
+                <h5 class="mb-0"><i class="bi bi-building"></i> Armazenamento</h5>
             </div>
             <div class="card-body">
                 <div class="row">
@@ -162,7 +162,7 @@
         <!-- Seção: Observações -->
         <div class="card mb-4">
             <div class="card-header bg-secondary text-white">
-                <h5 class="mb-0"><i class="fas fa-sticky-note"></i> Observações</h5>
+                <h5 class="mb-0"><i class="bi bi-sticky"></i> Observações</h5>
             </div>
             <div class="card-body">
                 <textarea name="observacoes" class="form-control" rows="3" placeholder="Adicione observações sobre o recebimento..."></textarea>
@@ -172,10 +172,10 @@
         <!-- Botões de Ação -->
         <div class="d-flex gap-2 justify-content-between mt-4">
             <a href="{% url 'compras:recebimento_list' %}" class="btn btn-secondary">
-                <i class="fas fa-arrow-left"></i> Cancelar
+                <i class="bi bi-arrow-left"></i> Cancelar
             </a>
             <button type="submit" class="btn btn-primary btn-lg" onclick="return validarFormulario()">
-                <i class="fas fa-check"></i> Confirmar Recebimento
+                <i class="bi bi-check-circle"></i> Confirmar Recebimento
             </button>
         </div>
     </form>
@@ -202,17 +202,12 @@ const pedidosData = {
     {% endfor %}
 };
 
-const locaisData = {
+// Array plano de locais; carregarLocais() filtra por armazemId
+const todosLocais = [
     {% for local in locais %}
-    {{ local.armazem.id }}: [
-        {% for l in locais %}
-            {% if l.armazem.id == local.armazem.id %}
-            { id: {{ l.id }}, nome: "{{ l.nome }}" }{{ forloop.last|yesno:",," }}
-            {% endif %}
-        {% endfor %}
-    ]{{ forloop.last|yesno:",," }}
+    { id: {{ local.id }}, armazemId: {{ local.armazem.id }}, nome: "{{ local.descricao|default:local.codigo }}" }{% if not forloop.last %},{% endif %}
     {% endfor %}
-};
+];
 
 function carregarItens() {
     const pedidoSelect = document.getElementById('pedido');
@@ -275,18 +270,20 @@ function carregarItens() {
 }
 
 function carregarLocais() {
-    const armazemId = document.getElementById('armazem').value;
+    const armazemId = parseInt(document.getElementById('armazem').value);
     const localSelect = document.getElementById('local');
-    
+
     localSelect.innerHTML = '<option value="">-- Selecione um local --</option>';
-    
-    if (armazemId && locaisData[armazemId]) {
-        locaisData[armazemId].forEach(local => {
-            const option = document.createElement('option');
-            option.value = local.id;
-            option.textContent = local.nome;
-            localSelect.appendChild(option);
-        });
+
+    if (armazemId) {
+        todosLocais
+            .filter(l => l.armazemId === armazemId)
+            .forEach(l => {
+                const opt = document.createElement('option');
+                opt.value = l.id;
+                opt.textContent = l.nome;
+                localSelect.appendChild(opt);
+            });
     }
 }
 
@@ -321,10 +318,19 @@ function validarFormulario() {
     return true;
 }
 
-// Definir data atual por padrão
 document.addEventListener('DOMContentLoaded', function() {
+    // Data de hoje por padrão
     const today = new Date().toISOString().split('T')[0];
     document.getElementById('data_recebimento').value = today;
+
+    // Pré-selecionar pedido quando vindo pela URL /recebimento-rapido/<pk>/
+    {% if pedido %}
+    const pedidoSelect = document.getElementById('pedido');
+    if (pedidoSelect) {
+        pedidoSelect.value = '{{ pedido.pk }}';
+        carregarItens();
+    }
+    {% endif %}
 });
 </script>
 

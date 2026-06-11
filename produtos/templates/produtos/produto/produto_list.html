@@ -318,9 +318,9 @@ tbody tr:hover td { background: #faf5ff; }
                 <i class="bi bi-pencil"></i>
               </a>
               <a href="{% url 'produtos:produto_clone' produto.pk %}"
-                 class="btn btn-sm btn-outline-info flex-fill" title="Clonar"
-                 onclick="return confirm('Clonar este produto?')">
-                <i class="bi bi-files"></i>
+                 class="btn btn-sm btn-outline-info flex-fill" title="Clonar produto"
+                 onclick="return confirm('Clonar o produto &quot;{{ produto.nome }}&quot;?\n\nUma cópia será criada e aberta para edição.')">
+                <i class="bi bi-copy me-1"></i>Clonar
               </a>
               <a href="{% url 'produtos:produto_delete' produto.pk %}"
                  class="btn btn-sm btn-outline-danger" title="Excluir"

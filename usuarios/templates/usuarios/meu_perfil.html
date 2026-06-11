@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+{% block title %}Meu Perfil{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-3">
+
+  <div class="d-flex align-items-center gap-3 mb-4">
+    <div class="rounded-circle bg-primary d-flex align-items-center justify-content-center text-white fw-bold fs-3"
+         style="width:56px;height:56px;background:var(--primary,#7c3aed)!important">
+      {{ user.first_name|first|upper }}{{ user.last_name|first|upper }}
+    </div>
+    <div>
+      <h4 class="mb-0">{{ user.get_full_name|default:user.username }}</h4>
+      <small class="text-muted">{{ user.get_tipo_display }} — {{ user.empresa.nome|default:"—" }}</small>
+    </div>
+    <a href="{% url 'usuarios:alterar_senha' %}" class="btn btn-outline-primary btn-sm ms-auto">
+      <i class="bi bi-key"></i> Alterar Senha
+    </a>
+  </div>
+
+  {% if messages %}
+    {% for msg in messages %}
+    <div class="alert alert-{{ msg.tags|default:'info' }} alert-dismissible fade show" role="alert">
+      {{ msg }}
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+  {% endif %}
+
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+
+    <div class="row g-4">
+
+      <!-- Dados Pessoais -->
+      <div class="col-12 col-lg-6">
+        <div class="card h-100" style="border-radius:var(--radius-card,14px);box-shadow:var(--shadow-card)">
+          <div class="card-header bg-transparent border-bottom fw-semibold">
+            <i class="bi bi-person-fill text-primary me-2"></i>Dados Pessoais
+          </div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-6">
+                <label class="form-label fw-medium">Nome</label>
+                {{ form_usuario.first_name }}
+                {% if form_usuario.first_name.errors %}
+                <div class="text-danger small">{{ form_usuario.first_name.errors.0 }}</div>
+                {% endif %}
+              </div>
+              <div class="col-6">
+                <label class="form-label fw-medium">Sobrenome</label>
+                {{ form_usuario.last_name }}
+                {% if form_usuario.last_name.errors %}
+                <div class="text-danger small">{{ form_usuario.last_name.errors.0 }}</div>
+                {% endif %}
+              </div>
+              <div class="col-12">
+                <label class="form-label fw-medium">E-mail</label>
+                {{ form_usuario.email }}
+                {% if form_usuario.email.errors %}
+                <div class="text-danger small">{{ form_usuario.email.errors.0 }}</div>
+                {% endif %}
+              </div>
+              <div class="col-6">
+                <label class="form-label fw-medium">Telefone</label>
+                {{ form_usuario.telefone }}
+              </div>
+              <div class="col-6">
+                <label class="form-label fw-medium">Data de Nascimento</label>
+                {{ form_usuario.data_nascimento }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cargo e Endereço -->
+      <div class="col-12 col-lg-6">
+        <div class="card h-100" style="border-radius:var(--radius-card,14px);box-shadow:var(--shadow-card)">
+          <div class="card-header bg-transparent border-bottom fw-semibold">
+            <i class="bi bi-building text-primary me-2"></i>Cargo &amp; Localização
+          </div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-6">
+                <label class="form-label fw-medium">Cargo</label>
+                {{ form_perfil.cargo }}
+              </div>
+              <div class="col-6">
+                <label class="form-label fw-medium">Departamento</label>
+                {{ form_perfil.departamento }}
+              </div>
+              <div class="col-12">
+                <label class="form-label fw-medium">Endereço</label>
+                {{ form_perfil.endereco }}
+              </div>
+              <div class="col-5">
+                <label class="form-label fw-medium">Cidade</label>
+                {{ form_perfil.cidade }}
+              </div>
+              <div class="col-3">
+                <label class="form-label fw-medium">UF</label>
+                {{ form_perfil.estado }}
+              </div>
+              <div class="col-4">
+                <label class="form-label fw-medium">CEP</label>
+                {{ form_perfil.cep }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Notificações por E-mail -->
+      <div class="col-12">
+        <div class="card" style="border-radius:var(--radius-card,14px);box-shadow:var(--shadow-card)">
+          <div class="card-header bg-transparent border-bottom fw-semibold">
+            <i class="bi bi-bell text-primary me-2"></i>Notificações por E-mail
+          </div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-auto">
+                <div class="form-check form-switch">
+                  {{ form_perfil.receber_email_vendas }}
+                  <label class="form-check-label">Vendas</label>
+                </div>
+              </div>
+              <div class="col-auto">
+                <div class="form-check form-switch">
+                  {{ form_perfil.receber_email_estoque }}
+                  <label class="form-check-label">Estoque</label>
+                </div>
+              </div>
+              <div class="col-auto">
+                <div class="form-check form-switch">
+                  {{ form_perfil.receber_email_financeiro }}
+                  <label class="form-check-label">Financeiro</label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="mt-4 d-flex gap-2">
+      <button type="submit" class="btn btn-primary px-4">
+        <i class="bi bi-check-lg me-1"></i> Salvar Alterações
+      </button>
+      <a href="{% url 'dashboard:index' %}" class="btn btn-outline-secondary px-4">Cancelar</a>
+    </div>
+
+  </form>
+</div>
+{% endblock %}

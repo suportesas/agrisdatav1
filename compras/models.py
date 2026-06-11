@@ -1084,7 +1084,14 @@ class ItemPedidoCompra(models.Model):
         max_digits=15,
         decimal_places=2
     )
-    
+
+    valor_desconto = models.DecimalField(
+        'Desconto',
+        max_digits=15,
+        decimal_places=2,
+        default=0
+    )
+
     # Detalhes
     especificacao = models.TextField(
         'Especificação',
@@ -1117,8 +1124,9 @@ class ItemPedidoCompra(models.Model):
         return f"{self.produto.nome} - {self.quantidade_pedida} {self.unidade_medida.sigla}"
     
     def save(self, *args, **kwargs):
-        # Calcula preço total
-        self.preco_total = self.preco_unitario * self.quantidade_pedida
+        bruto = self.preco_unitario * self.quantidade_pedida
+        desconto = self.valor_desconto or Decimal('0')
+        self.preco_total = max(Decimal('0'), bruto - desconto)
         super().save(*args, **kwargs)
     
     @property

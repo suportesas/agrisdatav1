@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% load static %}
+{% load static l10n %}
 
 {% block title %}Compra Rápida - Sistema de Compras{% endblock %}
 
@@ -41,13 +41,13 @@
     <div class="row mb-4">
         <div class="col-md-8">
             <h1>
-                <i class="fas fa-shopping-cart"></i> Compra Rápida
+                <i class="bi bi-cart3"></i> Compra Rápida
             </h1>
             <p class="text-muted">Crie um pedido de compra com múltiplos produtos em uma única tela</p>
         </div>
         <div class="col-md-4 text-end">
             <a href="{% url 'compras:pedido_list' %}" class="btn btn-outline-secondary">
-                <i class="fas fa-list"></i> Pedidos
+                <i class="bi bi-list-ul"></i> Pedidos
             </a>
         </div>
     </div>
@@ -67,7 +67,7 @@
     {% if pedidos_recentes %}
     <div class="card mb-4">
         <div class="card-header bg-info text-white">
-            <h5 class="mb-0"><i class="fas fa-list"></i> Pedidos Recentes</h5>
+            <h5 class="mb-0"><i class="bi bi-list-ul"></i> Pedidos Recentes</h5>
         </div>
         <div class="card-body">
             <div class="table-responsive">
@@ -103,10 +103,10 @@
                             <td>
                                 <div class="btn-group btn-group-sm" role="group">
                                     <a href="{% url 'compras:pedido_edit' pedido.pk %}" class="btn btn-outline-primary" title="Editar">
-                                        <i class="fas fa-edit"></i> Editar
+                                        <i class="bi bi-pencil"></i> Editar
                                     </a>
                                     <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#modalExcluir{{ pedido.pk }}" title="Excluir">
-                                        <i class="fas fa-trash"></i> Excluir
+                                        <i class="bi bi-trash"></i> Excluir
                                     </button>
                                 </div>
                             </td>
@@ -131,7 +131,7 @@
                                             <input type="hidden" name="action" value="delete">
                                             <input type="hidden" name="pedido_id" value="{{ pedido.pk }}">
                                             <button type="submit" class="btn btn-danger">
-                                                <i class="fas fa-trash"></i> Excluir
+                                                <i class="bi bi-trash"></i> Excluir
                                             </button>
                                         </form>
                                     </div>
@@ -152,7 +152,7 @@
         <!-- Seção: Informações Principais -->
         <div class="card mb-4">
             <div class="card-header bg-primary text-white">
-                <h5 class="mb-0"><i class="fas fa-info-circle"></i> Informações da Compra</h5>
+                <h5 class="mb-0"><i class="bi bi-info-circle"></i> Informações da Compra</h5>
             </div>
             <div class="card-body">
                 <div class="row">
@@ -190,17 +190,18 @@
         <!-- Seção: Produtos -->
         <div class="card mb-4">
             <div class="card-header bg-success text-white">
-                <h5 class="mb-0"><i class="fas fa-cube"></i> Produtos</h5>
+                <h5 class="mb-0"><i class="bi bi-box-seam"></i> Produtos</h5>
             </div>
             <div class="card-body">
                 <table class="table table-bordered cart-table" id="produtosTable">
                     <thead class="table-light">
                         <tr>
-                            <th style="width: 35%;">Produto</th>
-                            <th style="width: 15%;">Quantidade</th>
-                            <th style="width: 15%;">Preço Unit.</th>
-                            <th style="width: 20%;">Subtotal</th>
-                            <th style="width: 15%;">Ação</th>
+                            <th style="width: 32%;">Produto</th>
+                            <th style="width: 13%;">Quantidade</th>
+                            <th style="width: 13%;">Preço Unit.</th>
+                            <th style="width: 13%;">Desconto (R$)</th>
+                            <th style="width: 16%;">Subtotal</th>
+                            <th style="width: 13%;">Ação</th>
                         </tr>
                     </thead>
                     <tbody id="produtosBody">
@@ -209,7 +210,7 @@
                                 <select name="produto_id[]" class="form-select produto-select" onchange="atualizarPreco(this)">
                                     <option value="">-- Selecione um produto --</option>
                                     {% for produto in produtos %}
-                                    <option value="{{ produto.id }}" data-preco="{{ produto.preco_custo|default:0 }}">
+                                    <option value="{{ produto.id }}" data-preco="{{ produto.preco_custo|default:0|unlocalize }}">
                                         {{ produto.nome }} ({{ produto.unidade_medida }})
                                     </option>
                                     {% endfor %}
@@ -222,18 +223,21 @@
                                 <input type="number" name="preco[]" class="form-control preco-input" min="0" step="0.01" placeholder="0,00" onchange="calcularSubtotal(this)">
                             </td>
                             <td>
+                                <input type="number" name="desconto[]" class="form-control desconto-input" min="0" step="0.01" placeholder="0,00" value="0" onchange="calcularSubtotal(this)">
+                            </td>
+                            <td>
                                 <input type="text" class="form-control subtotal-input" readonly placeholder="0,00">
                             </td>
                             <td class="text-center">
-                                <span class="btn-remove-row" onclick="removerProduto(this)">
-                                    <i class="fas fa-trash"></i>
-                                </span>
+                                <button type="button" class="btn btn-sm btn-outline-danger" onclick="removerProduto(this)">
+                                    <i class="bi bi-trash"></i>
+                                </button>
                             </td>
                         </tr>
                     </tbody>
                 </table>
                 <button type="button" class="btn btn-outline-primary" onclick="adicionarProduto()">
-                    <i class="fas fa-plus"></i> Adicionar Produto
+                    <i class="bi bi-plus-circle"></i> Adicionar Produto
                 </button>
             </div>
         </div>
@@ -249,10 +253,10 @@
         <!-- Botões de Ação -->
         <div class="d-flex gap-2 justify-content-between mt-4">
             <a href="{% url 'compras:pedido_list' %}" class="btn btn-secondary">
-                <i class="fas fa-arrow-left"></i> Cancelar
+                <i class="bi bi-arrow-left"></i> Cancelar
             </a>
             <button type="submit" class="btn btn-primary btn-lg" onclick="return validarFormulario()">
-                <i class="fas fa-check"></i> Criar Pedido de Compra
+                <i class="bi bi-check-circle"></i> Criar Pedido de Compra
             </button>
         </div>
     </form>
@@ -262,14 +266,15 @@
 function adicionarProduto() {
     const tableBody = document.getElementById('produtosBody');
     const row = document.querySelector('.produto-row').cloneNode(true);
-    
+
     // Limpar valores da nova linha
     row.querySelector('.produto-select').value = '';
     row.querySelector('.quantidade-input').value = '';
     row.querySelector('.preco-input').value = '';
+    row.querySelector('.desconto-input').value = '0';
     row.querySelector('.subtotal-input').value = '';
     row.querySelector('.subtotal-input').dataset.valor = '0';
-    
+
     tableBody.appendChild(row);
 }
 
@@ -293,9 +298,10 @@ function atualizarPreco(select) {
 function calcularSubtotal(input) {
     const row = input.closest('tr');
     const quantidade = parseFloat(row.querySelector('.quantidade-input').value) || 0;
-    const preco = parseFloat(row.querySelector('.preco-input').value) || 0;
-    const subtotal = quantidade * preco;
-    
+    const preco     = parseFloat(row.querySelector('.preco-input').value)     || 0;
+    const desconto  = parseFloat(row.querySelector('.desconto-input').value)  || 0;
+    const subtotal  = Math.max(0, (quantidade * preco) - desconto);
+
     row.querySelector('.subtotal-input').dataset.valor = subtotal.toFixed(2);
     row.querySelector('.subtotal-input').value = formatarMoeda(subtotal);
     calcularTotal();

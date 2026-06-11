@@ -137,217 +137,167 @@
 
         <!-- Itens -->
         <div class="card mb-4">
-            <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">
-                    <i class="bi bi-box-seam me-2"></i>
-                    Itens da Nota Fiscal
-                </h5>
-                <button type="button" class="btn btn-light btn-sm" onclick="adicionarItem()">
-                    <i class="bi bi-plus-circle me-1"></i>
-                    Adicionar Item
-                </button>
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="bi bi-box-seam me-2"></i>Itens da Nota Fiscal</h5>
             </div>
-            <div class="card-body">
-                <div id="itensContainer">
-                    {% if xml_data.produtos %}
-                        {% for item in xml_data.produtos %}
-                            <div class="item-entrada border p-3 mb-3 rounded{% if item.pendente %} border-warning bg-warning bg-opacity-10{% endif %}"
-                                 data-index="{{ forloop.counter0 }}"
-                                 data-pendente="{{ item.pendente|yesno:'true,false' }}"
-                                 data-nome-xml="{{ item.nome|default:'' }}"
-                                 data-codigo-fornecedor="{{ item.codigo_fornecedor|default:'' }}">
+            <div class="card-body p-0">
 
-                                {% if item.pendente %}
-                                <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <span class="badge bg-warning text-dark fs-6">
-                                        <i class="bi bi-exclamation-triangle me-1"></i>
-                                        Não encontrado no cadastro — "{{ item.nome }}"
-                                    </span>
-                                    <button type="button" class="btn btn-warning btn-sm vincular-btn"
-                                            onclick="abrirModalVincular(this)">
-                                        <i class="bi bi-link-45deg me-1"></i>
-                                        Vincular Produto
-                                    </button>
-                                </div>
-                                {% endif %}
-
-                                <div class="row">
-                                    <div class="col-md-4">
-                                        <div class="mb-3">
-                                            <label class="form-label">Produto *</label>
-                                            <select name="produto_{{ forloop.counter0 }}" class="form-select" required>
-                                                <option value="">Selecione...</option>
-                                                {% for produto in produtos %}
-                                                <option value="{{ produto.pk }}" {% if item.produto_id == produto.pk or item.nome and produto.nome == item.nome %}selected{% endif %}>{{ produto.nome }}</option>
-                                                {% endfor %}
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-2">
-                                        <div class="mb-3">
-                                            <label class="form-label">Unidade *</label>
-                                            <select name="unidade_medida_{{ forloop.counter0 }}" class="form-select" required>
-                                                {% for unidade in unidades %}
-                                                <option value="{{ unidade.pk }}" {% if item.unidade_medida_id == unidade.pk or item.unidade and unidade.sigla == item.unidade %}selected{% endif %}>{{ unidade.sigla }}</option>
-                                                {% endfor %}
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-2">
-                                        <div class="mb-3">
-                                            <label class="form-label">Quantidade *</label>
-                                            <input type="number" name="quantidade_{{ forloop.counter0 }}" class="form-control" step="0.001" required value="{{ item.quantidade|default:'' }}">
-                                        </div>
-                                    </div>
-                                    <div class="col-md-2">
-                                        <div class="mb-3">
-                                            <label class="form-label">Preço Unit. *</label>
-                                            <input type="number" name="preco_unitario_{{ forloop.counter0 }}" class="form-control" step="0.01" required value="{{ item.preco_unitario|default:'' }}">
-                                        </div>
-                                    </div>
-                                    <div class="col-md-2">
-                                        <div class="mb-3">
-                                            <label class="form-label">&nbsp;</label>
-                                            <button type="button" class="btn btn-danger w-100" onclick="removerItem(this)" style="display: block;">
-                                                <i class="bi bi-trash"></i>
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="row">
-                                    <div class="col-md-3">
-                                        <div class="mb-3">
-                                            <label class="form-label">Local Estoque *</label>
-                                            <select name="local_estoque_{{ forloop.counter0 }}" class="form-select" required>
-                                                <option value="">Selecione...</option>
-                                                {% for local in locais_estoque %}
-                                                <option value="{{ local.pk }}">{{ local.armazem.nome }} - {{ local.descricao|default:local.codigo }}</option>
-                                                {% endfor %}
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <div class="mb-3">
-                                            <label class="form-label">Lote</label>
-                                            <input type="text" name="lote_{{ forloop.counter0 }}" class="form-control" value="">
-                                        </div>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <div class="mb-3">
-                                            <label class="form-label">Data Fabricação</label>
-                                            <input type="date" name="data_fabricacao_{{ forloop.counter0 }}" class="form-control" value="">
-                                        </div>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <div class="mb-3">
-                                            <label class="form-label">Data Validade</label>
-                                            <input type="date" name="data_validade_{{ forloop.counter0 }}" class="form-control" value="">
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="row">
-                                    <div class="col-md-12">
-                                        <div class="mb-3">
-                                            <label class="form-label">Observações</label>
-                                            <textarea name="observacoes_{{ forloop.counter0 }}" class="form-control" rows="1"></textarea>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        {% endfor %}
-                    {% else %}
-                        <!-- Item 0 - Template inicial -->
-                        <div class="item-entrada border p-3 mb-3 rounded" data-index="0">
-                            <div class="row">
-                                <div class="col-md-4">
-                                    <div class="mb-3">
-                                        <label class="form-label">Produto *</label>
-                                        <select name="produto_0" class="form-select" required>
-                                            <option value="">Selecione...</option>
-                                            {% for produto in produtos %}
-                                            <option value="{{ produto.pk }}" data-unidade="{{ produto.unidade_medida.pk }}">
-                                                {{ produto.nome }}
-                                            </option>
-                                            {% endfor %}
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="col-md-2">
-                                    <div class="mb-3">
-                                        <label class="form-label">Unidade *</label>
-                                        <select name="unidade_medida_0" class="form-select" required>
-                                            {% for unidade in unidades %}
-                                            <option value="{{ unidade.pk }}">{{ unidade.sigla }}</option>
-                                            {% endfor %}
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="col-md-2">
-                                    <div class="mb-3">
-                                        <label class="form-label">Quantidade *</label>
-                                        <input type="number" name="quantidade_0" class="form-control" step="0.001" required>
-                                    </div>
-                                </div>
-                                <div class="col-md-2">
-                                    <div class="mb-3">
-                                        <label class="form-label">Preço Unit. *</label>
-                                        <input type="number" name="preco_unitario_0" class="form-control" step="0.01" required>
-                                    </div>
-                                </div>
-                                <div class="col-md-2">
-                                    <div class="mb-3">
-                                        <label class="form-label">&nbsp;</label>
-                                        <button type="button" class="btn btn-danger w-100" onclick="removerItem(this)" style="display: none;">
+                <!-- Tabela resumo de itens confirmados -->
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0" id="tabelaItens">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width:36px">#</th>
+                                <th>Produto</th>
+                                <th class="text-center" style="width:80px">Qtd</th>
+                                <th class="text-center" style="width:60px">Un.</th>
+                                <th class="text-end" style="width:110px">Preço Unit.</th>
+                                <th class="text-end" style="width:100px">Desconto</th>
+                                <th class="text-end" style="width:110px">Total</th>
+                                <th style="width:80px"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="itensTableBody">
+                            {% if xml_data.produtos %}
+                                {% for item in xml_data.produtos %}
+                                <tr data-index="{{ forloop.counter0 }}"
+                                    class="{% if item.pendente %}table-warning{% endif %}">
+                                    <td class="text-muted small">{{ forloop.counter }}</td>
+                                    <td>
+                                        {% if item.pendente %}
+                                        <span class="badge bg-warning text-dark me-1">
+                                            <i class="bi bi-exclamation-triangle"></i> Pendente
+                                        </span>
+                                        {% endif %}
+                                        <span class="item-nome">{{ item.nome }}</span>
+                                    </td>
+                                    <td class="text-center item-qtd">{{ item.quantidade|default:'' }}</td>
+                                    <td class="text-center item-un">{{ item.unidade|default:'' }}</td>
+                                    <td class="text-end item-preco">{{ item.preco_unitario|default:'' }}</td>
+                                    <td class="text-end item-desc">0,00</td>
+                                    <td class="text-end item-total fw-semibold">—</td>
+                                    <td class="text-center">
+                                        <button type="button" class="btn btn-sm btn-outline-danger"
+                                                onclick="removerItemTabela(this)" title="Remover">
                                             <i class="bi bi-trash"></i>
                                         </button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="row">
-                                <div class="col-md-3">
-                                    <div class="mb-3">
-                                        <label class="form-label">Local Estoque *</label>
-                                        <select name="local_estoque_0" class="form-select" required>
-                                            <option value="">Selecione...</option>
-                                            {% for local in locais_estoque %}
-                                            <option value="{{ local.pk }}">{{ local.armazem.nome }} - {{ local.descricao|default:local.codigo }}</option>
-                                            {% endfor %}
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="col-md-3">
-                                    <div class="mb-3">
-                                        <label class="form-label">Lote</label>
-                                        <input type="text" name="lote_0" class="form-control">
-                                    </div>
-                                </div>
-                                <div class="col-md-3">
-                                    <div class="mb-3">
-                                        <label class="form-label">Data Fabricação</label>
-                                        <input type="date" name="data_fabricacao_0" class="form-control">
-                                    </div>
-                                </div>
-                                <div class="col-md-3">
-                                    <div class="mb-3">
-                                        <label class="form-label">Data Validade</label>
-                                        <input type="date" name="data_validade_0" class="form-control">
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="row">
-                                <div class="col-md-12">
-                                    <div class="mb-3">
-                                        <label class="form-label">Observações</label>
-                                        <textarea name="observacoes_0" class="form-control" rows="1"></textarea>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <input type="hidden" name="itens_count" id="itensCount" value="1">
-                    {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% endif %}
+                        </tbody>
+                        <tfoot id="itensTableFoot" class="{% if not xml_data.produtos %}d-none{% endif %}">
+                            <tr class="table-light fw-semibold">
+                                <td colspan="6" class="text-end">Subtotal Itens:</td>
+                                <td class="text-end" id="subtotalItens">R$ 0,00</td>
+                                <td></td>
+                            </tr>
+                        </tfoot>
+                    </table>
                 </div>
+
+                <!-- Mensagem quando não há itens -->
+                <div id="semItensMsg" class="text-center text-muted py-4 {% if xml_data.produtos %}d-none{% endif %}">
+                    <i class="bi bi-inbox fs-2 d-block mb-2"></i>
+                    Nenhum item adicionado. Preencha o formulário abaixo e clique em <strong>Confirmar Item</strong>.
+                </div>
+
+                <!-- Formulário de entrada de item -->
+                <div class="border-top p-3 bg-light" id="itemFormPanel">
+                    <div class="d-flex align-items-center mb-3">
+                        <i class="bi bi-plus-circle text-success me-2"></i>
+                        <strong id="itemFormTitle">Adicionar Item</strong>
+                    </div>
+                    <div class="row g-2">
+                        <div class="col-md-4">
+                            <label class="form-label small mb-1">Produto <span class="text-danger">*</span></label>
+                            <select id="inp_produto" class="form-select form-select-sm">
+                                <option value="">Selecione...</option>
+                                {% for produto in produtos %}
+                                <option value="{{ produto.pk }}"
+                                        data-unidade-id="{{ produto.unidade_medida.pk }}"
+                                        data-unidade-sigla="{{ produto.unidade_medida.sigla }}">
+                                    {{ produto.nome }}{% if produto.codigo %} — {{ produto.codigo }}{% endif %}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small mb-1">Unidade <span class="text-danger">*</span></label>
+                            <select id="inp_unidade" class="form-select form-select-sm">
+                                {% for unidade in unidades %}
+                                <option value="{{ unidade.pk }}">{{ unidade.sigla }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small mb-1">Quantidade <span class="text-danger">*</span></label>
+                            <input type="number" id="inp_quantidade" class="form-control form-control-sm" step="0.001" min="0.001" placeholder="0">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small mb-1">Preço Unit. <span class="text-danger">*</span></label>
+                            <input type="number" id="inp_preco" class="form-control form-control-sm" step="0.01" min="0" placeholder="0,00">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small mb-1">Desconto (R$)</label>
+                            <input type="number" id="inp_desconto" class="form-control form-control-sm" step="0.01" min="0" value="0" placeholder="0,00">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small mb-1">Local Estoque <span class="text-danger">*</span></label>
+                            <select id="inp_local" class="form-select form-select-sm">
+                                <option value="">Selecione...</option>
+                                {% for local in locais_estoque %}
+                                <option value="{{ local.pk }}">{{ local.armazem.nome }} - {{ local.descricao|default:local.codigo }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small mb-1">Lote</label>
+                            <input type="text" id="inp_lote" class="form-control form-control-sm" placeholder="Opcional">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small mb-1">Data Fabricação</label>
+                            <input type="date" id="inp_data_fab" class="form-control form-control-sm">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small mb-1">Data Validade</label>
+                            <input type="date" id="inp_data_val" class="form-control form-control-sm">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small mb-1">Observações</label>
+                            <input type="text" id="inp_obs" class="form-control form-control-sm" placeholder="Opcional">
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2 mt-3">
+                        <button type="button" class="btn btn-success btn-sm" onclick="confirmarItem()">
+                            <i class="bi bi-check-circle me-1"></i>Confirmar Item
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="limparFormItem()" id="btnCancelarEdicao" style="display:none">
+                            <i class="bi bi-x-circle me-1"></i>Cancelar Edição
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Campos hidden submetidos ao servidor -->
+                <div id="hiddenItens" style="display:none"></div>
+                <input type="hidden" name="itens_count" id="itensCount"
+                       value="{% if xml_data.produtos %}{{ xml_data.produtos|length }}{% else %}0{% endif %}">
+
+                {% if xml_data.produtos %}
+                <!-- Hidden inputs pré-populados pelo XML -->
+                {% for item in xml_data.produtos %}
+                <input type="hidden" name="produto_{{ forloop.counter0 }}"        value="{{ item.produto_id|default:'' }}">
+                <input type="hidden" name="unidade_medida_{{ forloop.counter0 }}" value="{{ item.unidade_medida_id|default:'' }}">
+                <input type="hidden" name="quantidade_{{ forloop.counter0 }}"     value="{{ item.quantidade|default:'' }}">
+                <input type="hidden" name="preco_unitario_{{ forloop.counter0 }}" value="{{ item.preco_unitario|default:'' }}">
+                <input type="hidden" name="valor_desconto_{{ forloop.counter0 }}" value="0">
+                <input type="hidden" name="local_estoque_{{ forloop.counter0 }}"  value="">
+                <input type="hidden" name="lote_{{ forloop.counter0 }}"           value="">
+                <input type="hidden" name="data_fabricacao_{{ forloop.counter0 }}" value="">
+                <input type="hidden" name="data_validade_{{ forloop.counter0 }}"  value="">
+                <input type="hidden" name="observacoes_{{ forloop.counter0 }}"    value="">
+                {% endfor %}
+                {% endif %}
             </div>
         </div>
 
@@ -539,98 +489,227 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-function adicionarItem() {
-    const container = document.getElementById('itensContainer');
-    const primeiroItem = container.querySelector('.item-entrada');
-    const novoItem = primeiroItem.cloneNode(true);
-    
-    // Atualiza índice
-    novoItem.setAttribute('data-index', itemIndex);
-    
-    // Atualiza nomes dos campos
-    novoItem.querySelectorAll('input, select, textarea').forEach(field => {
-        const name = field.getAttribute('name');
-        if (name) {
-            field.setAttribute('name', name.replace(/_\d+$/, `_${itemIndex}`));
-            field.value = '';
-        }
-    });
-    
-    // Mostra botão de remover
-    const btnRemover = novoItem.querySelector('button[onclick^="removerItem"]');
-    if (btnRemover) {
-        btnRemover.style.display = 'block';
-    }
-    
-    container.appendChild(novoItem);
-    
-    itemIndex++;
-    document.getElementById('itensCount').value = itemIndex;
+// ─── Novo sistema de itens: formulário único + tabela resumo ────────────────
+
+let _nextItemIndex = parseInt(document.getElementById('itensCount').value, 10);
+let _editingIndex  = null;   // índice do item sendo editado (null = novo item)
+
+function _fmtMoeda(v) {
+    return 'R$ ' + parseFloat(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+function _fmtNum(v) {
+    return parseFloat(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 4 });
 }
 
-function removerItem(button) {
-    const item = button.closest('.item-entrada');
-    if (document.querySelectorAll('.item-entrada').length > 1) {
-        item.remove();
-    } else {
-        alert('É necessário pelo menos um item!');
+function confirmarItem() {
+    const produto  = document.getElementById('inp_produto');
+    const unidade  = document.getElementById('inp_unidade');
+    const qtd      = document.getElementById('inp_quantidade');
+    const preco    = document.getElementById('inp_preco');
+    const desc     = document.getElementById('inp_desconto');
+    const local    = document.getElementById('inp_local');
+    const lote     = document.getElementById('inp_lote');
+    const dataFab  = document.getElementById('inp_data_fab');
+    const dataVal  = document.getElementById('inp_data_val');
+    const obs      = document.getElementById('inp_obs');
+
+    // Validação
+    let erros = [];
+    if (!produto.value)  erros.push('Produto');
+    if (!qtd.value || parseFloat(qtd.value) <= 0) erros.push('Quantidade');
+    if (!preco.value || parseFloat(preco.value) < 0) erros.push('Preço Unitário');
+    if (!local.value)    erros.push('Local de Estoque');
+    if (erros.length) {
+        alert('Preencha os campos obrigatórios:\n• ' + erros.join('\n• '));
+        return;
     }
+
+    const idx = (_editingIndex !== null) ? _editingIndex : _nextItemIndex;
+    const nomeProduto    = produto.options[produto.selectedIndex].text;
+    const siglaUnidade   = unidade.options[unidade.selectedIndex].text;
+    const qtdVal         = parseFloat(qtd.value);
+    const precoVal       = parseFloat(preco.value);
+    const descVal        = parseFloat(desc.value || 0);
+    const totalLinha     = (qtdVal * precoVal) - descVal;
+
+    // Atualiza ou cria hidden inputs
+    _setHidden(`produto_${idx}`,          produto.value);
+    _setHidden(`unidade_medida_${idx}`,   unidade.value);
+    _setHidden(`quantidade_${idx}`,       qtd.value);
+    _setHidden(`preco_unitario_${idx}`,   preco.value);
+    _setHidden(`valor_desconto_${idx}`,   desc.value || '0');
+    _setHidden(`local_estoque_${idx}`,    local.value);
+    _setHidden(`lote_${idx}`,             lote.value);
+    _setHidden(`data_fabricacao_${idx}`,  dataFab.value);
+    _setHidden(`data_validade_${idx}`,    dataVal.value);
+    _setHidden(`observacoes_${idx}`,      obs.value);
+
+    // Atualiza tabela
+    const tbody = document.getElementById('itensTableBody');
+    let tr = tbody.querySelector(`tr[data-index="${idx}"]`);
+    if (!tr) {
+        tr = tbody.insertRow();
+        tr.setAttribute('data-index', idx);
+    }
+    const rowNum = tbody.querySelectorAll('tr').length;
+    tr.innerHTML = `
+        <td class="text-muted small">${rowNum}</td>
+        <td>${nomeProduto}</td>
+        <td class="text-center item-qtd">${_fmtNum(qtdVal)}</td>
+        <td class="text-center item-un">${siglaUnidade}</td>
+        <td class="text-end item-preco">${_fmtMoeda(precoVal)}</td>
+        <td class="text-end item-desc">${descVal > 0 ? _fmtMoeda(descVal) : '—'}</td>
+        <td class="text-end item-total fw-semibold">${_fmtMoeda(totalLinha)}</td>
+        <td class="text-center">
+          <div class="btn-group btn-group-sm">
+            <button type="button" class="btn btn-outline-warning" onclick="editarItemTabela(this)" title="Editar"><i class="bi bi-pencil"></i></button>
+            <button type="button" class="btn btn-outline-danger"  onclick="removerItemTabela(this)"  title="Remover"><i class="bi bi-trash"></i></button>
+          </div>
+        </td>`;
+
+    // Incrementa contador se for novo item
+    if (_editingIndex === null) {
+        _nextItemIndex++;
+        document.getElementById('itensCount').value = _nextItemIndex;
+    }
+    _editingIndex = null;
+
+    limparFormItem();
+    _atualizarUI();
 }
+
+function editarItemTabela(btn) {
+    const tr  = btn.closest('tr');
+    const idx = parseInt(tr.getAttribute('data-index'), 10);
+    _editingIndex = idx;
+
+    // Carrega valores dos hidden inputs de volta ao form
+    document.getElementById('inp_produto').value    = _getHidden(`produto_${idx}`);
+    document.getElementById('inp_unidade').value    = _getHidden(`unidade_medida_${idx}`);
+    document.getElementById('inp_quantidade').value = _getHidden(`quantidade_${idx}`);
+    document.getElementById('inp_preco').value      = _getHidden(`preco_unitario_${idx}`);
+    document.getElementById('inp_desconto').value   = _getHidden(`valor_desconto_${idx}`);
+    document.getElementById('inp_local').value      = _getHidden(`local_estoque_${idx}`);
+    document.getElementById('inp_lote').value       = _getHidden(`lote_${idx}`);
+    document.getElementById('inp_data_fab').value   = _getHidden(`data_fabricacao_${idx}`);
+    document.getElementById('inp_data_val').value   = _getHidden(`data_validade_${idx}`);
+    document.getElementById('inp_obs').value        = _getHidden(`observacoes_${idx}`);
+
+    document.getElementById('itemFormTitle').textContent = 'Editar Item';
+    document.getElementById('btnCancelarEdicao').style.display = '';
+    document.getElementById('itemFormPanel').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function removerItemTabela(btn) {
+    const tr  = btn.closest('tr');
+    const idx = parseInt(tr.getAttribute('data-index'), 10);
+    if (!confirm('Remover este item?')) return;
+
+    // Remove hidden inputs
+    ['produto', 'unidade_medida', 'quantidade', 'preco_unitario',
+     'valor_desconto', 'local_estoque', 'lote', 'data_fabricacao',
+     'data_validade', 'observacoes'].forEach(f => {
+        const el = document.querySelector(`input[name="${f}_${idx}"]`);
+        if (el) el.remove();
+    });
+
+    tr.remove();
+    _renumerarLinhas();
+    _atualizarUI();
+}
+
+function limparFormItem() {
+    ['inp_produto','inp_unidade','inp_quantidade','inp_preco',
+     'inp_desconto','inp_local','inp_lote','inp_data_fab','inp_data_val','inp_obs']
+    .forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            if (el.tagName === 'SELECT') el.selectedIndex = 0;
+            else el.value = id === 'inp_desconto' ? '0' : '';
+        }
+    });
+    _editingIndex = null;
+    document.getElementById('itemFormTitle').textContent = 'Adicionar Item';
+    document.getElementById('btnCancelarEdicao').style.display = 'none';
+}
+
+function _setHidden(name, value) {
+    let el = document.querySelector(`input[name="${name}"]`);
+    if (!el) {
+        el = document.createElement('input');
+        el.type = 'hidden';
+        el.name = name;
+        document.getElementById('hiddenItens').appendChild(el);
+    }
+    el.value = value;
+}
+function _getHidden(name) {
+    const el = document.querySelector(`input[name="${name}"]`);
+    return el ? el.value : '';
+}
+function _renumerarLinhas() {
+    document.querySelectorAll('#itensTableBody tr').forEach((tr, i) => {
+        const numCell = tr.cells[0];
+        if (numCell) numCell.textContent = i + 1;
+    });
+}
+function _atualizarUI() {
+    const tbody  = document.getElementById('itensTableBody');
+    const temItens = tbody.querySelectorAll('tr').length > 0;
+    document.getElementById('semItensMsg').classList.toggle('d-none', temItens);
+    document.getElementById('itensTableFoot').classList.toggle('d-none', !temItens);
+
+    // Recalcula subtotal
+    let subtotal = 0;
+    tbody.querySelectorAll('tr').forEach(tr => {
+        const idx = parseInt(tr.getAttribute('data-index'), 10);
+        const qtd   = parseFloat(_getHidden(`quantidade_${idx}`) || 0);
+        const preco = parseFloat(_getHidden(`preco_unitario_${idx}`) || 0);
+        const desc  = parseFloat(_getHidden(`valor_desconto_${idx}`) || 0);
+        subtotal += (qtd * preco) - desc;
+    });
+    const subtotalEl = document.getElementById('subtotalItens');
+    if (subtotalEl) subtotalEl.textContent = _fmtMoeda(subtotal);
+
+    calcularValorTotalNF();
+}
+
+// Preenche unidade automaticamente ao selecionar produto
+document.addEventListener('DOMContentLoaded', function () {
+    const selProduto = document.getElementById('inp_produto');
+    const selUnidade = document.getElementById('inp_unidade');
+    if (selProduto && selUnidade) {
+        selProduto.addEventListener('change', function () {
+            const opt = this.options[this.selectedIndex];
+            const unidadeId = opt.getAttribute('data-unidade-id');
+            if (unidadeId) selUnidade.value = unidadeId;
+        });
+    }
+    _atualizarUI();
+});
 
 // Cálculo automático do Valor Total NF
-
 function calcularValorTotalNF() {
-    let total = 0;
-    document.querySelectorAll('.item-entrada').forEach(function(item) {
-        // Busca campos de quantidade e preço unitário
-        const qtdInput = item.querySelector('input[name^="quantidade_"]');
-        const precoInput = item.querySelector('input[name^="preco_unitario_"]');
-        if (qtdInput && precoInput) {
-            const qtd = parseFloat(qtdInput.value.replace(',', '.')) || 0;
-            const preco = parseFloat(precoInput.value.replace(',', '.')) || 0;
-            total += qtd * preco;
-        }
+    let subtotalItens = 0;
+    document.querySelectorAll('#itensTableBody tr').forEach(tr => {
+        const idx   = parseInt(tr.getAttribute('data-index'), 10);
+        const qtd   = parseFloat(_getHidden(`quantidade_${idx}`) || 0);
+        const preco = parseFloat(_getHidden(`preco_unitario_${idx}`) || 0);
+        const desc  = parseFloat(_getHidden(`valor_desconto_${idx}`) || 0);
+        subtotalItens += (qtd * preco) - desc;
     });
-    // Soma frete e subtrai desconto do cabeçalho
-    const campoFrete = document.querySelector('input[name="valor_frete"]');
-    const campoDesconto = document.querySelector('input[name="valor_desconto"]');
-    const frete = campoFrete ? parseFloat(campoFrete.value.replace(',', '.')) || 0 : 0;
-    const desconto = campoDesconto ? parseFloat(campoDesconto.value.replace(',', '.')) || 0 : 0;
-    total = total + frete - desconto;
+    const frete   = parseFloat(document.querySelector('input[name="valor_frete"]')?.value || 0);
+    const descCab = parseFloat(document.querySelector('input[name="valor_desconto"]')?.value || 0);
+    const total   = subtotalItens + frete - descCab;
     const campoTotal = document.querySelector('input[name="valor_total_nf"]');
-    if (campoTotal) {
-        campoTotal.value = total.toFixed(2);
-    }
+    if (campoTotal) campoTotal.value = total.toFixed(2);
 }
 
-
 document.addEventListener('input', function(e) {
-    if (
-        e.target && (
-            e.target.name.startsWith('quantidade_') ||
-            e.target.name.startsWith('preco_unitario_') ||
-            e.target.name === 'valor_frete' ||
-            e.target.name === 'valor_desconto'
-        )
-    ) {
+    if (e.target && (e.target.name === 'valor_frete' || e.target.name === 'valor_desconto')) {
         calcularValorTotalNF();
     }
 });
-
-// Recalcula ao adicionar/remover item
-const oldAdicionarItem = window.adicionarItem;
-window.adicionarItem = function() {
-    oldAdicionarItem();
-    calcularValorTotalNF();
-};
-const oldRemoverItem = window.removerItem;
-window.removerItem = function(btn) {
-    oldRemoverItem(btn);
-    calcularValorTotalNF();
-};
-
-// Inicializa cálculo ao carregar
-document.addEventListener('DOMContentLoaded', calcularValorTotalNF);
 
 // ─── Vinculação Manual de Produto ───────────────────────────────────────────
 

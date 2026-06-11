@@ -70,11 +70,12 @@ def compra_rapida(request):
                 produtos_ids = request.POST.getlist('produto_id[]')
                 quantidades = request.POST.getlist('quantidade[]')
                 precos = request.POST.getlist('preco[]')
-                
+                descontos = request.POST.getlist('desconto[]')
+
                 if not produtos_ids:
                     messages.error(request, 'Adicione pelo menos um produto')
                     return redirect('compras:compra_rapida')
-                
+
                 # Criar pedido (número é gerado automaticamente no model)
                 pedido = PedidoCompra.objects.create(
                     empresa=request.user.empresa,
@@ -86,25 +87,27 @@ def compra_rapida(request):
                     status='PENDENTE_RECEBIMENTO',
                     observacoes=request.POST.get('observacoes', '')
                 )
-                
+
                 # Adicionar itens
                 valor_total = Decimal('0')
-                for prod_id, qtd, preco in zip(produtos_ids, quantidades, precos):
+                for i, (prod_id, qtd, preco) in enumerate(zip(produtos_ids, quantidades, precos)):
                     if not prod_id or not qtd or not preco:
                         continue
-                    
+
+                    desconto_str = descontos[i] if i < len(descontos) else '0'
                     produto = Produto.objects.get(pk=prod_id)
                     quantidade = Decimal(qtd)
                     preco_unit = Decimal(preco)
-                    preco_tot = quantidade * preco_unit
-                    
+                    desconto   = max(Decimal('0'), Decimal(desconto_str or '0'))
+                    preco_tot  = max(Decimal('0'), quantidade * preco_unit - desconto)
+
                     ItemPedidoCompra.objects.create(
                         pedido=pedido,
                         produto=produto,
                         quantidade_pedida=quantidade,
                         unidade_medida=produto.unidade_medida,
                         preco_unitario=preco_unit,
-                        preco_total=preco_tot,
+                        valor_desconto=desconto,
                         proposta_fornecedor=None  # Sem proposta no modo simples
                     )
                     valor_total += preco_tot
@@ -185,10 +188,11 @@ def pedido_edit(request, pk):
                 
                 # Coletar itens
                 produtos_ids = request.POST.getlist('produto_id[]')
-                quantidades = request.POST.getlist('quantidade[]')
-                precos = request.POST.getlist('preco[]')
-                item_ids = request.POST.getlist('item_id[]')
-                
+                quantidades  = request.POST.getlist('quantidade[]')
+                precos       = request.POST.getlist('preco[]')
+                descontos    = request.POST.getlist('desconto[]')
+                item_ids     = request.POST.getlist('item_id[]')
+
                 # Deletar itens removidos
                 items_novos_ids = [iid for iid in item_ids if iid]
                 ItemPedidoCompra.objects.filter(
@@ -196,7 +200,7 @@ def pedido_edit(request, pk):
                 ).exclude(
                     id__in=items_novos_ids
                 ).delete()
-                
+
                 # Atualizar ou criar itens
                 valor_total = Decimal('0')
                 for idx, (prod_id, qtd, preco, item_id) in enumerate(
@@ -204,32 +208,31 @@ def pedido_edit(request, pk):
                 ):
                     if not prod_id or not qtd or not preco:
                         continue
-                    
-                    produto = get_object_or_404(Produto, pk=prod_id, ativo=True)
+
+                    desconto_str = descontos[idx] if idx < len(descontos) else '0'
+                    produto    = get_object_or_404(Produto, pk=prod_id, ativo=True)
                     quantidade = Decimal(qtd)
                     preco_unit = Decimal(preco)
-                    preco_tot = quantidade * preco_unit
-                    
+                    desconto   = max(Decimal('0'), Decimal(desconto_str or '0'))
+
                     if item_id:
-                        # Atualizar item existente
                         item = ItemPedidoCompra.objects.get(pk=item_id, pedido=pedido)
                         item.quantidade_pedida = quantidade
-                        item.preco_unitario = preco_unit
-                        item.preco_total = preco_tot
+                        item.preco_unitario    = preco_unit
+                        item.valor_desconto    = desconto
                         item.save()
                     else:
-                        # Criar novo item
                         ItemPedidoCompra.objects.create(
                             pedido=pedido,
                             produto=produto,
                             quantidade_pedida=quantidade,
                             unidade_medida=produto.unidade_medida,
                             preco_unitario=preco_unit,
-                            preco_total=preco_tot,
+                            valor_desconto=desconto,
                             proposta_fornecedor=None
                         )
-                    
-                    valor_total += preco_tot
+
+                    valor_total += max(Decimal('0'), quantidade * preco_unit - desconto)
                 
                 pedido.calcular_total()
                 
@@ -266,6 +269,13 @@ def recebimento_rapido(request, pedido_pk=None):
     armazens = Armazem.objects.filter(empresa=request.user.empresa, ativo=True)
     fornecedores = Fornecedor.objects.filter(empresa=request.user.empresa, ativa=True)
     produtos = Produto.objects.filter(ativo=True)
+    locais = LocalEstocagem.objects.filter(
+        armazem__empresa=request.user.empresa, ativo=True
+    ).select_related('armazem').order_by('armazem__nome', 'codigo')
+    pedidos = PedidoCompra.objects.filter(
+        empresa=request.user.empresa,
+        status__in=['PENDENTE_RECEBIMENTO', 'ADICIONANDO_ITENS'],
+    ).select_related('fornecedor').prefetch_related('itens').order_by('-data_pedido')
     
     if request.method == 'POST':
         try:
@@ -354,7 +364,9 @@ def recebimento_rapido(request, pedido_pk=None):
     
     context = {
         'pedido': pedido,
+        'pedidos': pedidos,
         'armazens': armazens,
+        'locais': locais,
         'fornecedores': fornecedores,
         'produtos': produtos,
         'config': config,
@@ -461,20 +473,24 @@ def faturar_recebimento(request, recebimento_pk):
             messages.error(request, 'O valor da NF deve ser maior que zero.')
             return redirect('compras:faturar_recebimento', recebimento_pk=recebimento.pk)
 
-        if num_parcelas < 1 or num_parcelas > 12:
-            messages.error(request, 'Número de parcelas deve estar entre 1 e 12.')
-            return redirect('compras:faturar_recebimento', recebimento_pk=recebimento.pk)
-
         # Determinar fornecedor antes de iniciar a transação
         fornecedor = recebimento.pedido.fornecedor if recebimento.pedido else recebimento.fornecedor
         if not fornecedor:
             messages.error(request, 'Recebimento não possui fornecedor vinculado.')
             return redirect('compras:faturar_recebimento', recebimento_pk=recebimento.pk)
 
-        # Aplicar desconto, juros e multa ao valor da NF
-        valor_com_desconto = valor_nf - desconto if desconto > 0 else valor_nf
-        valor_com_juros = valor_com_desconto * (1 + (juros / 100)) if juros > 0 else valor_com_desconto
-        valor_final = valor_com_juros * (1 + (multa / 100)) if multa > 0 else valor_com_juros
+        # Ler arrays de parcelas enviados pelo frontend
+        from datetime import datetime as dt
+        vencimentos      = request.POST.getlist('vencimentos[]')
+        valores_parcelas = request.POST.getlist('valores_parcelas[]')
+        formas_pgto      = request.POST.getlist('formas_pagamento[]')
+
+        if not vencimentos:
+            messages.error(request, 'Adicione pelo menos uma parcela.')
+            return redirect('compras:faturar_recebimento', recebimento_pk=recebimento.pk)
+
+        # valor_final = soma das parcelas definidas pelo usuário
+        valor_final = sum(Decimal(v or '0') for v in valores_parcelas)
 
         from django.db import transaction
         with transaction.atomic():
@@ -499,33 +515,20 @@ def faturar_recebimento(request, recebimento_pk):
                 observacoes=f"Gerada automaticamente do recebimento {recebimento.numero}\nNF: {numero_nf} - Série: {serie_nf}"
             )
 
-            # Calcular valor por parcela com precisão
-            valor_parcela = valor_final / num_parcelas
-            valor_acumulado = Decimal('0')
-
-            # Criar parcelas com forma de pagamento
-            for parcela_num in range(1, num_parcelas + 1):
-                if parcela_num == num_parcelas:
-                    valor_calc = valor_final - valor_acumulado
-                else:
-                    valor_calc = valor_parcela
-
-                valor_acumulado += valor_calc
-
-                dias_ate_vencimento = 30 * (parcela_num - 1)
-                data_vencimento = recebimento.data_recebimento + timedelta(days=dias_ate_vencimento)
-
-                forma_id = request.POST.get(f'forma_pagamento_{parcela_num}') or request.POST.get('forma_pagamento_padrao')
+            # Criar parcelas com datas e valores definidos pelo usuário
+            for i, (venc_str, valor_str, forma_id) in enumerate(
+                    zip(vencimentos, valores_parcelas, formas_pgto), start=1):
+                valor_calc = Decimal(valor_str or '0')
+                data_vencimento = dt.strptime(venc_str, '%Y-%m-%d').date()
                 forma_pagamento = None
                 if forma_id:
                     try:
                         forma_pagamento = FormaPagemento.objects.get(pk=forma_id)
                     except FormaPagemento.DoesNotExist:
                         pass
-
                 ParcelaContaPagar.objects.create(
                     conta_pagar=conta,
-                    numero_parcela=parcela_num,
+                    numero_parcela=i,
                     forma_pagamento=forma_pagamento,
                     valor_parcela=valor_calc,
                     valor_total_parcela=valor_calc,
@@ -537,7 +540,7 @@ def faturar_recebimento(request, recebimento_pk):
             request,
             f'✅ Conta a Pagar criada com sucesso!\n'
             f'NF: {numero_nf} | Fornecedor: {fornecedor.nome}\n'
-            f'Valor: R$ {valor_nf:,.2f} em {num_parcelas}x'
+            f'Valor: R$ {valor_final:,.2f} em {len(vencimentos)}x'
         )
 
         return redirect('financeiro:conta_pagar_detail', pk=conta.id)

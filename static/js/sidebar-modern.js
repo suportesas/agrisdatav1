@@ -82,20 +82,27 @@ document.addEventListener('DOMContentLoaded', function() {
   // Toggle Nested Submenu (submenu dentro de submenu) - usando delegação de eventos
   document.addEventListener('click', function(e) {
     const nestedSubmenuLink = e.target.closest('.nav-submenu li.has-submenu > a');
-    
+
     if (nestedSubmenuLink) {
       e.preventDefault();
       e.stopPropagation();
-      
+
       const nestedItem = nestedSubmenuLink.closest('li.has-submenu');
-      console.log('Nested submenu clicked:', nestedSubmenuLink.textContent.trim());
-      console.log('Current open state:', nestedItem.classList.contains('open'));
-      
       nestedItem.classList.toggle('open');
-      
-      console.log('New open state:', nestedItem.classList.contains('open'));
     }
   });
+
+  // Fecha flyout ao clicar em qualquer link real dentro do submenu (modo recolhido)
+  // Usa fase de captura (true) para rodar antes do stopPropagation do nested handler
+  document.addEventListener('click', function(e) {
+    if (!sidebar.classList.contains('collapsed')) return;
+    const link = e.target.closest('.nav-submenu a');
+    if (!link) return;
+    // Apenas links reais (com href diferente de "#") fecham o flyout
+    const href = link.getAttribute('href');
+    if (!href || href === '#') return;
+    navItems.forEach(item => item.classList.remove('open'));
+  }, true);
 
   // Submenu Search Functionality
   const searchInputs = document.querySelectorAll('.submenu-search input');
@@ -148,10 +155,10 @@ document.addEventListener('DOMContentLoaded', function() {
     if (link.getAttribute('href') === currentPath) {
       link.classList.add('active');
       
-      // Open parent submenu if exists
+      // Open parent submenu if exists (só expande se sidebar NÃO está recolhida)
       const parentItem = link.closest('.nav-item.has-submenu');
       if (parentItem) {
-        if (!parentItem.hasAttribute('data-start-collapsed')) {
+        if (!parentItem.hasAttribute('data-start-collapsed') && !sidebar.classList.contains('collapsed')) {
           parentItem.classList.add('open');
         }
       }
@@ -163,6 +170,11 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     }
   });
+
+  // Garante que nenhum flyout fica aberto ao carregar a página em modo recolhido
+  if (sidebar.classList.contains('collapsed')) {
+    navItems.forEach(item => item.classList.remove('open'));
+  }
 
   // Keyboard Navigation
   document.addEventListener('keydown', function(e) {

@@ -264,6 +264,7 @@
                             <th class="text-end">Qtd Pedida</th>
                             <th class="text-end">Qtd Recebida</th>
                             <th class="text-end">Preço Unit.</th>
+                            <th class="text-end">Desconto</th>
                             <th class="text-end">Total</th>
                         </tr>
                     </thead>
@@ -290,29 +291,36 @@
                                 {% endif %}
                             </td>
                             <td class="text-end">R$ {{ item.preco_unitario|floatformat:2 }}</td>
+                            <td class="text-end">
+                                {% if item.valor_desconto > 0 %}
+                                <span class="text-success">- R$ {{ item.valor_desconto|floatformat:2 }}</span>
+                                {% else %}
+                                <span class="text-muted">—</span>
+                                {% endif %}
+                            </td>
                             <td class="text-end"><strong>R$ {{ item.preco_total|floatformat:2 }}</strong></td>
                         </tr>
                         {% endfor %}
                     </tbody>
                     <tfoot class="table-light">
                         <tr>
-                            <th colspan="6" class="text-end">Subtotal:</th>
+                            <th colspan="7" class="text-end">Subtotal:</th>
                             <th class="text-end">R$ {{ pedido.valor_total|floatformat:2 }}</th>
                         </tr>
                         {% if pedido.valor_desconto > 0 %}
                         <tr>
-                            <th colspan="6" class="text-end">Desconto:</th>
+                            <th colspan="7" class="text-end">Desconto:</th>
                             <th class="text-end text-success">- R$ {{ pedido.valor_desconto|floatformat:2 }}</th>
                         </tr>
                         {% endif %}
                         {% if pedido.valor_frete > 0 %}
                         <tr>
-                            <th colspan="6" class="text-end">Frete:</th>
+                            <th colspan="7" class="text-end">Frete:</th>
                             <th class="text-end">+ R$ {{ pedido.valor_frete|floatformat:2 }}</th>
                         </tr>
                         {% endif %}
                         <tr class="table-primary">
-                            <th colspan="6" class="text-end">TOTAL:</th>
+                            <th colspan="7" class="text-end">TOTAL:</th>
                             <th class="text-end">R$ {{ pedido.valor_final|floatformat:2 }}</th>
                         </tr>
                     </tfoot>

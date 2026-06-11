@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load l10n %}
 
 {% block title %}Editar Pedido {{ pedido.numero }}{% endblock %}
 
@@ -7,13 +8,13 @@
     <div class="row mb-4">
         <div class="col">
             <h1>
-                <i class="fas fa-edit"></i> Editar Pedido
+                <i class="bi bi-pencil-square"></i> Editar Pedido
             </h1>
             <p class="text-muted">Pedido: <strong>{{ pedido.numero }}</strong></p>
         </div>
         <div class="col-auto">
             <a href="{% url 'compras:pedido_detail' pedido.pk %}" class="btn btn-secondary">
-                <i class="fas fa-arrow-left"></i> Voltar
+                <i class="bi bi-arrow-left"></i> Voltar
             </a>
         </div>
     </div>
@@ -33,7 +34,7 @@
         <!-- Seção: Informações Principais -->
         <div class="card mb-4">
             <div class="card-header bg-primary text-white">
-                <h5 class="mb-0"><i class="fas fa-info-circle"></i> Informações do Pedido</h5>
+                <h5 class="mb-0"><i class="bi bi-info-circle"></i> Informações do Pedido</h5>
             </div>
             <div class="card-body">
                 <div class="row">
@@ -72,17 +73,19 @@
         <!-- Seção: Produtos -->
         <div class="card mb-4">
             <div class="card-header bg-success text-white">
-                <h5 class="mb-0"><i class="fas fa-cube"></i> Itens do Pedido</h5>
+                <h5 class="mb-0"><i class="bi bi-box-seam"></i> Itens do Pedido</h5>
             </div>
             <div class="card-body">
                 <table class="table table-bordered cart-table" id="produtosTable">
                     <thead class="table-light">
                         <tr>
-                            <th style="width: 35%;">Produto</th>
-                            <th style="width: 15%;">Quantidade</th>
-                            <th style="width: 15%;">Preço Unit.</th>
-                            <th style="width: 20%;">Subtotal</th>
-                            <th style="width: 15%;">Ação</th>
+                            <th style="width: 28%;">Produto</th>
+                            <th style="width: 10%;">Un.</th>
+                            <th style="width: 12%;">Quantidade</th>
+                            <th style="width: 12%;">Preço Unit.</th>
+                            <th style="width: 12%;">Desconto (R$)</th>
+                            <th style="width: 16%;">Subtotal</th>
+                            <th style="width: 10%;">Ação</th>
                         </tr>
                     </thead>
                     <tbody id="produtosBody">
@@ -90,71 +93,95 @@
                         <tr class="produto-row">
                             <input type="hidden" name="item_id[]" value="{{ item.id }}">
                             <td>
-                                <select name="produto_id[]" class="form-select produto-select" onchange="atualizarPreco(this)">
-                                    <option value="">-- Selecione um produto --</option>
+                                <select name="produto_id[]" class="form-select form-select-sm produto-select" onchange="atualizarPreco(this)">
+                                    <option value="">-- Selecione --</option>
                                     {% for produto in produtos %}
-                                    <option value="{{ produto.id }}" 
-                                            data-preco="{{ produto.preco_custo|default:0 }}"
+                                    <option value="{{ produto.id }}"
+                                            data-preco="{{ produto.preco_custo|default:0|unlocalize }}"
+                                            data-unidade="{{ produto.unidade_medida.sigla|default:'' }}"
                                             {% if produto.id == item.produto.id %}selected{% endif %}>
-                                        {{ produto.nome }} ({{ produto.unidade_medida }})
+                                        {{ produto.nome }}{% if produto.codigo %} — {{ produto.codigo }}{% endif %}
                                     </option>
                                     {% endfor %}
                                 </select>
                             </td>
                             <td>
-                                <input type="number" name="quantidade[]" class="form-control quantidade-input" 
-                                       min="0.01" step="0.01" value="{{ item.quantidade_pedida }}" 
+                                <input type="text" class="form-control form-control-sm unidade-input" readonly
+                                       value="{{ item.unidade_medida.sigla }}">
+                            </td>
+                            <td>
+                                <input type="number" name="quantidade[]" class="form-control form-control-sm quantidade-input"
+                                       min="0.001" step="0.001" value="{{ item.quantidade_pedida|unlocalize }}"
                                        onchange="calcularSubtotal(this)">
                             </td>
                             <td>
-                                <input type="number" name="preco[]" class="form-control preco-input" 
-                                       min="0" step="0.01" value="{{ item.preco_unitario }}" 
+                                <input type="number" name="preco[]" class="form-control form-control-sm preco-input"
+                                       min="0" step="0.01" value="{{ item.preco_unitario|unlocalize }}"
                                        onchange="calcularSubtotal(this)">
                             </td>
                             <td>
-                                <input type="text" class="form-control subtotal-input" readonly 
-                                       data-valor="{{ item.preco_total }}"
+                                <input type="number" name="desconto[]" class="form-control form-control-sm desconto-input"
+                                       min="0" step="0.01" value="{{ item.valor_desconto|unlocalize }}"
+                                       onchange="calcularSubtotal(this)">
+                            </td>
+                            <td>
+                                <input type="text" class="form-control form-control-sm subtotal-input" readonly
+                                       data-valor="{{ item.preco_total|unlocalize }}"
                                        value="R$ {{ item.preco_total|floatformat:2 }}">
                             </td>
                             <td class="text-center">
-                                <span class="btn-remove-row" onclick="removerProduto(this)">
-                                    <i class="fas fa-trash"></i>
-                                </span>
+                                <button type="button" class="btn btn-sm btn-outline-danger" onclick="removerProduto(this)">
+                                    <i class="bi bi-trash"></i>
+                                </button>
                             </td>
                         </tr>
                         {% empty %}
                         <tr class="produto-row">
                             <input type="hidden" name="item_id[]" value="">
                             <td>
-                                <select name="produto_id[]" class="form-select produto-select" onchange="atualizarPreco(this)">
-                                    <option value="">-- Selecione um produto --</option>
+                                <select name="produto_id[]" class="form-select form-select-sm produto-select" onchange="atualizarPreco(this)">
+                                    <option value="">-- Selecione --</option>
                                     {% for produto in produtos %}
-                                    <option value="{{ produto.id }}" data-preco="{{ produto.preco_custo|default:0 }}">
-                                        {{ produto.nome }} ({{ produto.unidade_medida }})
+                                    <option value="{{ produto.id }}"
+                                            data-preco="{{ produto.preco_custo|default:0|unlocalize }}"
+                                            data-unidade="{{ produto.unidade_medida.sigla|default:'' }}">
+                                        {{ produto.nome }}{% if produto.codigo %} — {{ produto.codigo }}{% endif %}
                                     </option>
                                     {% endfor %}
                                 </select>
                             </td>
                             <td>
-                                <input type="number" name="quantidade[]" class="form-control quantidade-input" min="0.01" step="0.01" placeholder="0" onchange="calcularSubtotal(this)">
+                                <input type="text" class="form-control form-control-sm unidade-input" readonly placeholder="Un.">
                             </td>
                             <td>
-                                <input type="number" name="preco[]" class="form-control preco-input" min="0" step="0.01" placeholder="0,00" onchange="calcularSubtotal(this)">
+                                <input type="number" name="quantidade[]" class="form-control form-control-sm quantidade-input"
+                                       min="0.001" step="0.001" placeholder="0"
+                                       onchange="calcularSubtotal(this)">
                             </td>
                             <td>
-                                <input type="text" class="form-control subtotal-input" readonly placeholder="0,00">
+                                <input type="number" name="preco[]" class="form-control form-control-sm preco-input"
+                                       min="0" step="0.01" placeholder="0,00"
+                                       onchange="calcularSubtotal(this)">
+                            </td>
+                            <td>
+                                <input type="number" name="desconto[]" class="form-control form-control-sm desconto-input"
+                                       min="0" step="0.01" value="0"
+                                       onchange="calcularSubtotal(this)">
+                            </td>
+                            <td>
+                                <input type="text" class="form-control form-control-sm subtotal-input" readonly placeholder="R$ 0,00">
                             </td>
                             <td class="text-center">
-                                <span class="btn-remove-row" onclick="removerProduto(this)">
-                                    <i class="fas fa-trash"></i>
-                                </span>
+                                <button type="button" class="btn btn-sm btn-outline-danger" onclick="removerProduto(this)">
+                                    <i class="bi bi-trash"></i>
+                                </button>
                             </td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
                 <button type="button" class="btn btn-outline-primary" onclick="adicionarProduto()">
-                    <i class="fas fa-plus"></i> Adicionar Produto
+                    <i class="bi bi-plus-circle"></i> Adicionar Produto
                 </button>
             </div>
         </div>
@@ -170,10 +197,10 @@
         <!-- Botões de Ação -->
         <div class="d-flex gap-2 justify-content-between mt-4">
             <a href="{% url 'compras:pedido_detail' pedido.pk %}" class="btn btn-secondary">
-                <i class="fas fa-times"></i> Cancelar
+                <i class="bi bi-x-circle"></i> Cancelar
             </a>
             <button type="submit" class="btn btn-primary btn-lg" onclick="return validarFormulario()">
-                <i class="fas fa-save"></i> Salvar Alterações
+                <i class="bi bi-floppy"></i> Salvar Alterações
             </button>
         </div>
     </form>
@@ -214,15 +241,16 @@
 function adicionarProduto() {
     const tableBody = document.getElementById('produtosBody');
     const row = document.querySelector('.produto-row').cloneNode(true);
-    
-    // Limpar valores da nova linha
+
     row.querySelector('input[name="item_id[]"]').value = '';
     row.querySelector('.produto-select').value = '';
+    row.querySelector('.unidade-input').value = '';
     row.querySelector('.quantidade-input').value = '';
     row.querySelector('.preco-input').value = '';
+    row.querySelector('.desconto-input').value = '0';
     row.querySelector('.subtotal-input').value = '';
     row.querySelector('.subtotal-input').dataset.valor = '0';
-    
+
     tableBody.appendChild(row);
 }
 
@@ -237,18 +265,21 @@ function removerProduto(btn) {
 }
 
 function atualizarPreco(select) {
-    const preco = select.options[select.selectedIndex].dataset.preco || 0;
+    const opt = select.options[select.selectedIndex];
     const row = select.closest('tr');
-    row.querySelector('.preco-input').value = parseFloat(preco).toFixed(2);
+    const preco = parseFloat(opt.dataset.preco || 0);
+    row.querySelector('.preco-input').value = preco.toFixed(2);
+    row.querySelector('.unidade-input').value = opt.dataset.unidade || '';
     calcularSubtotal(row.querySelector('.quantidade-input'));
 }
 
 function calcularSubtotal(input) {
     const row = input.closest('tr');
     const quantidade = parseFloat(row.querySelector('.quantidade-input').value) || 0;
-    const preco = parseFloat(row.querySelector('.preco-input').value) || 0;
-    const subtotal = quantidade * preco;
-    
+    const preco     = parseFloat(row.querySelector('.preco-input').value)     || 0;
+    const desconto  = parseFloat(row.querySelector('.desconto-input').value)  || 0;
+    const subtotal  = Math.max(0, (quantidade * preco) - desconto);
+
     row.querySelector('.subtotal-input').dataset.valor = subtotal.toFixed(2);
     row.querySelector('.subtotal-input').value = formatarMoeda(subtotal);
     calcularTotal();
@@ -257,10 +288,8 @@ function calcularSubtotal(input) {
 function calcularTotal() {
     let total = 0;
     document.querySelectorAll('.produto-row').forEach(row => {
-        const subtotal = parseFloat(row.querySelector('.subtotal-input').dataset.valor || '0') || 0;
-        total += subtotal;
+        total += parseFloat(row.querySelector('.subtotal-input').dataset.valor || '0') || 0;
     });
-    
     document.getElementById('totalCompra').textContent = formatarMoeda(total);
 }
 
@@ -272,36 +301,24 @@ function formatarMoeda(valor) {
 }
 
 function validarFormulario() {
-    const fornecedor = document.getElementById('fornecedor').value;
-    if (!fornecedor) {
+    if (!document.getElementById('fornecedor').value) {
         alert('Por favor, selecione um fornecedor.');
         return false;
     }
-    
-    const rows = document.querySelectorAll('.produto-row');
     let temProduto = false;
-    
-    rows.forEach(row => {
-        const produto = row.querySelector('.produto-select').value;
-        const quantidade = row.querySelector('.quantidade-input').value;
-        
-        if (produto && quantidade) {
+    document.querySelectorAll('.produto-row').forEach(row => {
+        if (row.querySelector('.produto-select').value && row.querySelector('.quantidade-input').value) {
             temProduto = true;
         }
     });
-    
     if (!temProduto) {
         alert('Por favor, adicione pelo menos um produto com quantidade.');
         return false;
     }
-    
     return true;
 }
 
-// Calcular total ao carregar a página
-document.addEventListener('DOMContentLoaded', function() {
-    calcularTotal();
-});
+document.addEventListener('DOMContentLoaded', calcularTotal);
 </script>
 
 {% endblock %}

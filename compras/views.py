@@ -1973,67 +1973,88 @@ def historico_completo(request, solicitacao_pk):
 @login_required
 def recebimento_create(request, pedido_id):
     """Cria novo recebimento para um pedido"""
-    from .models import RecebimentoCompra, PedidoCompra
-    from .forms_recebimento import RecebimentoCompraForm, ItemRecebimentoFormSet
-    
-    pedido = get_object_or_404(
-        PedidoCompra,
-        pk=pedido_id,
-        empresa=request.user.empresa
-    )
-    
-    # Verifica se o pedido pode ser recebido
+    from decimal import Decimal
+    from .models import RecebimentoCompra, PedidoCompra, ItemPedidoCompra, ItemRecebimento
+    from .forms_recebimento import RecebimentoCompraForm
+    from estoque.models import LocalEstocagem
+
+    empresa = request.user.empresa
+    pedido = get_object_or_404(PedidoCompra, pk=pedido_id, empresa=empresa)
+
     if pedido.status not in ['ENVIADO', 'PARCIALMENTE_RECEBIDO']:
         messages.error(request, 'Este pedido não pode receber mercadorias no status atual.')
         return redirect('compras:pedido_detail', pk=pedido.pk)
-    
-    # Verifica se há itens pendentes
-    itens_pendentes = [item for item in pedido.itens.all() if item.quantidade_pendente > 0]
+
+    itens_pendentes = [item for item in pedido.itens.select_related('produto', 'unidade_medida').all()
+                       if item.quantidade_pendente > 0]
     if not itens_pendentes:
         messages.error(request, 'Todos os itens deste pedido já foram recebidos.')
         return redirect('compras:pedido_detail', pk=pedido.pk)
-    
+
+    locais = LocalEstocagem.objects.filter(
+        armazem__empresa=empresa, ativo=True
+    ).select_related('armazem').order_by('armazem__nome', 'descricao')
+
     if request.method == 'POST':
-        # Always set pedido in form data to avoid validation error
         post_data = request.POST.copy()
         post_data['pedido'] = pedido.pk
         form = RecebimentoCompraForm(post_data, request.FILES)
-        formset = ItemRecebimentoFormSet(post_data, empresa=request.user.empresa)
-        
-        if form.is_valid() and formset.is_valid():
+
+        item_ids = request.POST.getlist('item_pedido_ids[]')
+        quantidades = request.POST.getlist('quantidades_recebidas[]')
+        locais_ids = request.POST.getlist('locais_ids[]')
+        precos = request.POST.getlist('precos[]')
+        descontos = request.POST.getlist('descontos[]')
+        datas_fab = request.POST.getlist('datas_fabricacao[]')
+        datas_val = request.POST.getlist('datas_validade[]')
+        obs_itens = request.POST.getlist('obs_itens[]')
+
+        if not item_ids:
+            messages.error(request, 'Confirme pelo menos um item antes de registrar o recebimento.')
+        elif form.is_valid():
             try:
-                # Calcular valor total da NF com base nos itens
-                total_nf = 0
-                for item_form in formset:
-                    if not item_form.cleaned_data.get('DELETE', False):
-                        qtd = item_form.cleaned_data.get('quantidade_recebida') or 0
-                        preco = item_form.cleaned_data.get('preco_unitario') or 0
-                        desconto = item_form.cleaned_data.get('valor_desconto') or 0
-                        total_nf += (qtd * preco) - desconto if (qtd and preco) else 0
+                total_nf = Decimal('0')
+                for i in range(len(item_ids)):
+                    qty = Decimal(quantidades[i] or '0')
+                    preco = Decimal(precos[i]) if precos[i] else Decimal('0')
+                    desc = Decimal(descontos[i] or '0')
+                    total_nf += max(Decimal('0'), qty * preco - desc)
+
                 recebimento = form.save(commit=False)
-                recebimento.empresa = request.user.empresa
+                recebimento.empresa = empresa
                 recebimento.pedido = pedido
                 recebimento.recebido_por = request.user
                 recebimento.status = 'PENDENTE'
                 recebimento.valor_total_nf = total_nf
                 recebimento.save()
-                # Salva os itens
-                formset.instance = recebimento
-                itens = formset.save(commit=False)
-                for item in itens:
-                    item.save()  # chama o save do modelo, que atualiza estoque e quantidade recebida
-                # Exclui itens marcados para exclusão
-                for obj in formset.deleted_objects:
-                    obj.delete()
-                # Recarrega o pedido do banco para garantir atualização
+
+                for i, item_id in enumerate(item_ids):
+                    item_pedido = get_object_or_404(ItemPedidoCompra, pk=item_id, pedido=pedido)
+                    local = get_object_or_404(LocalEstocagem, pk=locais_ids[i], armazem__empresa=empresa)
+                    qty = Decimal(quantidades[i] or '0')
+                    preco_val = Decimal(precos[i]) if precos[i] else None
+                    desc_val = Decimal(descontos[i] or '0')
+
+                    item_rec = ItemRecebimento(
+                        recebimento=recebimento,
+                        item_pedido=item_pedido,
+                        produto=item_pedido.produto,
+                        unidade_medida=item_pedido.unidade_medida,
+                        quantidade_recebida=qty,
+                        local_estoque=local,
+                        preco_unitario=preco_val,
+                        valor_desconto=desc_val,
+                        observacoes=obs_itens[i] if i < len(obs_itens) else '',
+                    )
+                    if i < len(datas_fab) and datas_fab[i]:
+                        item_rec.data_fabricacao = datas_fab[i]
+                    if i < len(datas_val) and datas_val[i]:
+                        item_rec.data_validade = datas_val[i]
+                    item_rec.save()
+
                 pedido.refresh_from_db()
-                # Atualiza lista de itens pendentes após recebimento
                 itens_pendentes_atual = [item for item in pedido.itens.all() if item.quantidade_pendente > 0]
-                messages.success(
-                    request,
-                    f'Recebimento {recebimento.numero} criado com sucesso! Entrada registrada no estoque.'
-                )
-                # Redireciona para a própria página se ainda houver itens pendentes, senão para lista de pedidos
+                messages.success(request, f'Recebimento {recebimento.numero} criado com sucesso! Entrada registrada no estoque.')
                 if itens_pendentes_atual:
                     messages.info(request, 'Ainda há itens pendentes para receber neste pedido.')
                     return redirect('compras:recebimento_create', pedido_id=pedido.pk)
@@ -2044,32 +2065,16 @@ def recebimento_create(request, pedido_id):
                 logging.exception('Erro ao criar recebimento')
                 messages.error(request, f'Erro ao criar recebimento: {str(e)}')
         else:
-            # Exibe erros do formset
-            if not form.is_valid():
-                messages.error(request, f'Erros no formulário principal: {form.errors}')
-            if not formset.is_valid():
-                messages.error(request, f'Erros nos itens: {formset.errors}')
+            messages.error(request, f'Erros no formulário: {form.errors}')
     else:
-        # Passa o pedido como initial para o form
-        form = RecebimentoCompraForm(initial={'pedido': pedido.pk})
-        # Inicializar o formset com os itens pendentes do pedido
-        initial = [
-            {
-                'item_pedido': item.pk,
-                'quantidade_recebida': item.quantidade_pendente,
-                'preco_unitario': item.preco_unitario
-            }
-            for item in itens_pendentes
-        ]
-        formset = ItemRecebimentoFormSet(initial=initial, empresa=request.user.empresa)
-    
+        form = RecebimentoCompraForm()
+
     context = {
         'form': form,
-        'formset': formset,
         'pedido': pedido,
         'itens_pendentes': itens_pendentes,
+        'locais': locais,
     }
-    
     return render(request, 'compras/recebimento_form.html', context)
 
 

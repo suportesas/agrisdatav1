@@ -46,7 +46,7 @@
       </div>
       <div class="navbar-right">
         <div class="navbar-divider"></div>
-        <div class="navbar-user">
+        <a href="{% url 'usuarios:meu_perfil' %}" class="navbar-user text-decoration-none" title="Meu Perfil" style="cursor:pointer">
           <div class="navbar-user-avatar">
             {{ request.user.username|slice:":2"|upper }}
           </div>
@@ -54,7 +54,7 @@
             <span class="navbar-username">{{ request.user.get_full_name|default:request.user.username }}</span>
             <span class="navbar-userrole">{% if user.is_superuser %}SaaS Owner{% elif user.is_staff %}Administrador{% else %}Usuário{% endif %}</span>
           </div>
-        </div>
+        </a>
         <a href="{% url 'logout' %}" class="btn-logout-nav" title="Sair do sistema">
           <i class="bi bi-box-arrow-right"></i>
           <span>Sair</span>
@@ -490,6 +490,6 @@
   </script>
   
   <!-- Sidebar Moderno JS -->
-  <script src="{% static 'js/sidebar-modern.js' %}"></script>
+  <script src="{% static 'js/sidebar-modern.js' %}?v=2"></script>
 </body>
 </html>

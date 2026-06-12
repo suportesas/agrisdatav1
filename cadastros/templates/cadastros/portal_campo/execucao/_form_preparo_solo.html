@@ -1,0 +1,15 @@
+<!-- Campos específicos: Preparo de Solo -->
+<div class="row g-2 mb-3">
+  <div class="col-6">
+    <label class="form-label fw-semibold"><i class="bi bi-layers me-1"></i>Profundidade (cm)</label>
+    <input type="number" name="profundidade_cm" class="form-control form-control-lg"
+           value="{{ registro.profundidade_cm|default:'' }}" step="0.5" min="0"
+           placeholder="Ex: 30">
+  </div>
+  <div class="col-6">
+    <label class="form-label fw-semibold">Implemento Utilizado</label>
+    <input type="text" name="implemento_utilizado" class="form-control form-control-lg"
+           value="{{ registro.implemento_utilizado|default:'' }}"
+           placeholder="Ex: Grade, Subsolador...">
+  </div>
+</div>

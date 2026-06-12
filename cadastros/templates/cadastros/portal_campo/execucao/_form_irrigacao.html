@@ -1,0 +1,20 @@
+<!-- Campos específicos: Irrigação / Fertirrigação -->
+<div class="row g-2 mb-3">
+  <div class="col-6">
+    <label class="form-label fw-semibold"><i class="bi bi-clock me-1"></i>Horas de Bomba</label>
+    <input type="number" name="horas_bomba" class="form-control form-control-lg"
+           value="{{ registro.horas_bomba|default:'' }}" step="0.25" min="0"
+           placeholder="Ex: 4.5">
+  </div>
+  <div class="col-6">
+    <label class="form-label fw-semibold"><i class="bi bi-moisture me-1"></i>Volume (m³)</label>
+    <input type="number" name="volume_agua_m3" class="form-control form-control-lg"
+           value="{{ registro.volume_agua_m3|default:'' }}" step="0.1" min="0">
+  </div>
+</div>
+<div class="mb-3">
+  <label class="form-label fw-semibold"><i class="bi bi-geo-alt me-1"></i>Setor Irrigado</label>
+  <input type="text" name="setor_irrigado" class="form-control"
+         value="{{ registro.setor_irrigado|default:'' }}"
+         placeholder="Ex: Setor A, Bloco 3...">
+</div>

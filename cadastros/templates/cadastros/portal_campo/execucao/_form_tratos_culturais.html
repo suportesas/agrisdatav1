@@ -1,0 +1,25 @@
+<!-- Campos específicos: Tratos Culturais -->
+<div class="mb-3">
+  <label class="form-label fw-semibold"><i class="bi bi-scissors me-1"></i>Tipo de Trato</label>
+  <select name="tipo_trato" class="form-select form-select-lg" id="tipoTratoSelect">
+    <option value="">-- Selecione --</option>
+    <option value="CAPINA" {% if registro.tipo_trato == 'CAPINA' %}selected{% endif %}>Capina</option>
+    <option value="VIRAR_FRUTO" {% if registro.tipo_trato == 'VIRAR_FRUTO' %}selected{% endif %}>Virar Fruto</option>
+    <option value="PODA" {% if registro.tipo_trato == 'PODA' %}selected{% endif %}>Poda</option>
+    <option value="AMARRIO" {% if registro.tipo_trato == 'AMARRIO' %}selected{% endif %}>Amarrio</option>
+    <option value="RALEIO" {% if registro.tipo_trato == 'RALEIO' %}selected{% endif %}>Raleio</option>
+    <option value="COBERTURA_MORTA" {% if registro.tipo_trato == 'COBERTURA_MORTA' %}selected{% endif %}>Cobertura Morta</option>
+    <option value="OUTRO" {% if registro.tipo_trato == 'OUTRO' %}selected{% endif %}>Outro</option>
+  </select>
+</div>
+<div class="mb-3" id="tratoOutroDiv" {% if registro.tipo_trato != 'OUTRO' %}style="display:none"{% endif %}>
+  <label class="form-label fw-semibold">Especificar Trato</label>
+  <input type="text" name="tipo_trato_outro" class="form-control"
+         value="{{ registro.tipo_trato_outro|default:'' }}"
+         placeholder="Descreva o trato cultural...">
+</div>
+<script>
+document.getElementById('tipoTratoSelect').addEventListener('change', function() {
+  document.getElementById('tratoOutroDiv').style.display = (this.value === 'OUTRO') ? '' : 'none';
+});
+</script>

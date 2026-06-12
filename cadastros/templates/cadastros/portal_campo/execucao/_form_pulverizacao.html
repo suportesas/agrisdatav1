@@ -1,0 +1,41 @@
+<!-- Campos específicos: Pulverização Mecânica / Costal -->
+<div class="mb-3">
+  <label class="form-label fw-semibold"><i class="bi bi-droplet-fill text-primary me-1"></i>Volume de Calda (L)</label>
+  <input type="number" name="volume_calda_litros" class="form-control form-control-lg"
+         value="{{ registro.volume_calda_litros|default:'' }}" step="0.01" min="0"
+         placeholder="Ex: 200">
+</div>
+<div class="row g-2">
+  <div class="col-6">
+    <label class="form-label fw-semibold">Vazão dos Bicos (L/min)</label>
+    <input type="number" name="vazao_bicos_lmin" class="form-control"
+           value="{{ registro.vazao_bicos_lmin|default:'' }}" step="0.001" min="0">
+  </div>
+  <div class="col-6">
+    <label class="form-label fw-semibold">Velocidade (km/h)</label>
+    <input type="number" name="velocidade_kmh" class="form-control"
+           value="{{ registro.velocidade_kmh|default:'' }}" step="0.1" min="0">
+  </div>
+</div>
+<div class="mb-3 mt-2">
+  <label class="form-label fw-semibold"><i class="bi bi-wind me-1"></i>Condição do Vento</label>
+  <select name="condicao_vento" class="form-select">
+    <option value="">-- Selecione --</option>
+    <option value="CALMO" {% if registro.condicao_vento == 'CALMO' %}selected{% endif %}>Calmo (&lt; 5 km/h)</option>
+    <option value="LEVE" {% if registro.condicao_vento == 'LEVE' %}selected{% endif %}>Leve (5–15 km/h)</option>
+    <option value="MODERADO" {% if registro.condicao_vento == 'MODERADO' %}selected{% endif %}>Moderado (15–30 km/h)</option>
+    <option value="FORTE" {% if registro.condicao_vento == 'FORTE' %}selected{% endif %}>Forte (&gt; 30 km/h)</option>
+  </select>
+</div>
+<div class="row g-2">
+  <div class="col-6">
+    <label class="form-label fw-semibold"><i class="bi bi-thermometer me-1"></i>Temperatura (°C)</label>
+    <input type="number" name="temperatura_c" class="form-control"
+           value="{{ registro.temperatura_c|default:'' }}" step="0.1">
+  </div>
+  <div class="col-6">
+    <label class="form-label fw-semibold">Umidade (%)</label>
+    <input type="number" name="umidade_relativa_pct" class="form-control"
+           value="{{ registro.umidade_relativa_pct|default:'' }}" step="0.1" min="0" max="100">
+  </div>
+</div>

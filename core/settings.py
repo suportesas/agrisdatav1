@@ -529,6 +529,14 @@ if not FIELD_ENCRYPTION_KEY:
 
 
 # ============================================
+# VAPID KEYS — Push Notifications (Portal Campo PWA)
+# ============================================
+VAPID_PRIVATE_KEY = os.getenv('VAPID_PRIVATE_KEY', '').replace('\\n', '\n').strip()
+VAPID_PUBLIC_KEY = os.getenv('VAPID_PUBLIC_KEY', '').strip()
+VAPID_EMAIL = os.getenv('VAPID_EMAIL', 'mailto:admin@erp-agricola.com.br').strip()
+
+
+# ============================================
 # LOGGING
 # ============================================
 LOGGING = {

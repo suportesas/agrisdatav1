@@ -2,7 +2,9 @@ from django.urls import path
 from . import (
     views_os, views_colheita, views_caderno_campo,
     views_pluviometria, views_qualidade_campo, views_planejamento_custo,
+    views_portal_config,
 )
+
 
 app_name = 'operacoes_campo'
 
@@ -29,6 +31,13 @@ urlpatterns = [
     # AJAX – Classificação de OS
     path('ordens-servico/ajax/opcoes-servico/', views_os.ajax_opcoes_servico, name='os_ajax_opcoes_servico'),
     path('ordens-servico/ajax/opcoes-talhao/', views_os.ajax_opcoes_talhao, name='os_ajax_opcoes_talhao'),
+
+    # Delegação
+    path('delegacao/', views_os.os_painel_delegacao, name='os_painel_delegacao'),
+
+    # Configurações do Portal do Campo
+    path('portal-campo/config/', views_portal_config.portal_campo_config_view, name='portal_campo_config'),
+    path('ordens-servico/<int:pk>/atribuir/', views_os.os_atribuir_responsavel, name='os_atribuir_responsavel'),
 
     # ==================== COLHEITA ====================
     path('ordens-servico/<int:os_pk>/colheita/nova-etapa/', views_colheita.etapa_nova, name='colheita_nova_etapa'),

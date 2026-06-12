@@ -12,6 +12,25 @@
       <form method="post" enctype="multipart/form-data" novalidate>
         {% csrf_token %}
 
+        {% if form.non_field_errors %}
+        <div class="alert alert-danger rounded-3 mb-4">
+          <i class="bi bi-exclamation-triangle-fill me-2"></i>
+          {% for error in form.non_field_errors %}<div>{{ error }}</div>{% endfor %}
+        </div>
+        {% endif %}
+        {% if func_formset.non_form_errors %}
+        <div class="alert alert-danger rounded-3 mb-4">
+          <i class="bi bi-exclamation-triangle-fill me-2"></i><strong>Mão de Obra:</strong>
+          {% for error in func_formset.non_form_errors %}<div>{{ error }}</div>{% endfor %}
+        </div>
+        {% endif %}
+        {% if maq_formset.non_form_errors %}
+        <div class="alert alert-danger rounded-3 mb-4">
+          <i class="bi bi-exclamation-triangle-fill me-2"></i><strong>Maquinário:</strong>
+          {% for error in maq_formset.non_form_errors %}<div>{{ error }}</div>{% endfor %}
+        </div>
+        {% endif %}
+
         <!-- Identificação -->
         <div class="card border-0 shadow-sm mb-4">
           <div class="card-header text-white py-3"
@@ -116,18 +135,22 @@
                 <div class="col-md-3">
                   <label class="form-label small">Funcionário</label>
                   {{ f.funcionario }}
+                  {% if f.funcionario.errors %}<div class="text-danger small mt-1">{{ f.funcionario.errors }}</div>{% endif %}
                 </div>
                 <div class="col-md-2">
                   <label class="form-label small">Data</label>
                   {{ f.data_execucao }}
+                  {% if f.data_execucao.errors %}<div class="text-danger small mt-1">{{ f.data_execucao.errors }}</div>{% endif %}
                 </div>
                 <div class="col-md-2">
                   <label class="form-label small">Início</label>
                   {{ f.hora_inicio }}
+                  {% if f.hora_inicio.errors %}<div class="text-danger small mt-1">{{ f.hora_inicio.errors }}</div>{% endif %}
                 </div>
                 <div class="col-md-2">
                   <label class="form-label small">Término</label>
                   {{ f.hora_fim }}
+                  {% if f.hora_fim.errors %}<div class="text-danger small mt-1">{{ f.hora_fim.errors }}</div>{% endif %}
                 </div>
                 <div class="col-md-2">
                   <label class="form-label small">Observações</label>
@@ -164,6 +187,7 @@
                 <div class="col-md-3">
                   <label class="form-label small">Veículo/Máquina</label>
                   {{ m.veiculo }}
+                  {% if m.veiculo.errors %}<div class="text-danger small mt-1">{{ m.veiculo.errors }}</div>{% endif %}
                 </div>
                 <div class="col-md-2">
                   <label class="form-label small">Operador</label>
@@ -172,14 +196,17 @@
                 <div class="col-md-2">
                   <label class="form-label small">Data</label>
                   {{ m.data_execucao }}
+                  {% if m.data_execucao.errors %}<div class="text-danger small mt-1">{{ m.data_execucao.errors }}</div>{% endif %}
                 </div>
                 <div class="col-md-1">
                   <label class="form-label small">Horímetro Ini.</label>
                   {{ m.horimetro_inicial }}
+                  {% if m.horimetro_inicial.errors %}<div class="text-danger small mt-1">{{ m.horimetro_inicial.errors }}</div>{% endif %}
                 </div>
                 <div class="col-md-1">
                   <label class="form-label small">Horímetro Fim</label>
                   {{ m.horimetro_final }}
+                  {% if m.horimetro_final.errors %}<div class="text-danger small mt-1">{{ m.horimetro_final.errors }}</div>{% endif %}
                 </div>
                 <div class="col-md-2">
                   <label class="form-label small">Config. Custo/h</label>
@@ -360,11 +387,17 @@ function carregarSafrasTalhao(talhaoId, preservarSafra) {
         culturaInput.placeholder = data.cultura ? '' : 'Sem cultura plantada';
       }
 
+      // Auto-preenche área do talhão se campo estiver vazio
+      const areaInput = document.getElementById('id_area_executada_ha');
+      if (areaInput && !areaInput.value && data.area_hac) {
+        areaInput.value = data.area_hac;
+      }
+
       // Filtra safras do talhão
       if (safraSelect) {
         const valorAtual = preservarSafra || safraSelect.value || '';
         safraSelect.innerHTML = '<option value="">---------</option>';
-        
+
         if (data.safras.length > 0) {
           data.safras.forEach(s => {
             const opt = document.createElement('option');
@@ -373,7 +406,7 @@ function carregarSafrasTalhao(talhaoId, preservarSafra) {
             if (String(s.id) === String(valorAtual)) opt.selected = true;
             safraSelect.appendChild(opt);
           });
-          
+
           // Auto-seleciona se houver apenas 1 safra
           if (data.safras.length === 1 && !valorAtual) {
             safraSelect.value = data.safras[0].id;

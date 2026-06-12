@@ -1,0 +1,197 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Painel de Delegação | ERP Agrícola{% endblock %}
+{% block page_title %}Painel de Delegação{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-3">
+
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <div>
+      <h4 class="fw-bold mb-0"><i class="bi bi-diagram-3 text-primary me-2"></i>Painel de Delegação</h4>
+      <small class="text-muted">Atribua Ordens de Serviço para operadores de campo</small>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{% url 'operacoes_campo:os_list' %}" class="btn btn-outline-secondary btn-sm rounded-pill">
+        <i class="bi bi-list-ul me-1"></i>Lista de OS
+      </a>
+      <a href="{% url 'operacoes_campo:os_create' %}" class="btn btn-success btn-sm rounded-pill">
+        <i class="bi bi-plus-circle me-1"></i>Nova OS
+      </a>
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <form method="get" class="row g-2 mb-4 align-items-end">
+    <div class="col-auto">
+      <label class="form-label small fw-semibold mb-1">Operador</label>
+      <select name="funcionario" class="form-select form-select-sm" style="min-width:180px;">
+        <option value="">Todos</option>
+        {% for f in funcionarios %}
+        <option value="{{ f.pk }}" {% if funcionario_filter == f.pk|stringformat:'s' %}selected{% endif %}>
+          {{ f.nome_completo }}
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-auto">
+      <label class="form-label small fw-semibold mb-1">Safra</label>
+      <select name="safra" class="form-select form-select-sm" style="min-width:150px;">
+        <option value="">Todas</option>
+        {% for s in safras %}
+        <option value="{{ s.pk }}" {% if safra_filter == s.pk|stringformat:'s' %}selected{% endif %}>{{ s }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-auto">
+      <button type="submit" class="btn btn-outline-primary btn-sm rounded-pill">
+        <i class="bi bi-funnel me-1"></i>Filtrar
+      </button>
+      {% if funcionario_filter or safra_filter %}
+      <a href="{% url 'operacoes_campo:os_painel_delegacao' %}" class="btn btn-outline-secondary btn-sm rounded-pill ms-1">
+        <i class="bi bi-x me-1"></i>Limpar
+      </a>
+      {% endif %}
+    </div>
+  </form>
+
+  <!-- Kanban -->
+  <div class="row g-3" style="overflow-x:auto;">
+
+    <!-- Coluna: Não Atribuídas -->
+    <div class="col-12 col-md-6 col-xl-3">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header bg-secondary text-white fw-semibold rounded-top-3 py-2">
+          <i class="bi bi-hourglass me-1"></i>Sem Operador
+          <span class="badge bg-white text-secondary ms-2">{{ grupos.nao_atribuidas|length }}</span>
+        </div>
+        <div class="card-body p-2" style="max-height:70vh;overflow-y:auto;">
+          {% for os in grupos.nao_atribuidas %}
+          {% include 'cadastros/os/_delegacao_card.html' with os=os cor='secondary' %}
+          {% empty %}
+          <div class="text-center text-muted py-4 small">Nenhuma OS sem atribuição</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Coluna: Aguardando -->
+    <div class="col-12 col-md-6 col-xl-3">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header fw-semibold rounded-top-3 py-2" style="background:#0d6efd;color:#fff;">
+          <i class="bi bi-person-check me-1"></i>Atribuída / Aprovada
+          <span class="badge bg-white ms-2" style="color:#0d6efd;">{{ grupos.aguardando|length }}</span>
+        </div>
+        <div class="card-body p-2" style="max-height:70vh;overflow-y:auto;">
+          {% for os in grupos.aguardando %}
+          {% include 'cadastros/os/_delegacao_card.html' with os=os cor='primary' %}
+          {% empty %}
+          <div class="text-center text-muted py-4 small">Nenhuma aguardando</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Coluna: Em Andamento -->
+    <div class="col-12 col-md-6 col-xl-3">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header fw-semibold rounded-top-3 py-2" style="background:#fd7e14;color:#fff;">
+          <i class="bi bi-play-circle me-1"></i>Em Andamento
+          <span class="badge bg-white ms-2" style="color:#fd7e14;">{{ grupos.em_andamento|length }}</span>
+        </div>
+        <div class="card-body p-2" style="max-height:70vh;overflow-y:auto;">
+          {% for os in grupos.em_andamento %}
+          {% include 'cadastros/os/_delegacao_card.html' with os=os cor='warning' %}
+          {% empty %}
+          <div class="text-center text-muted py-4 small">Nenhuma em andamento</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Coluna: Concluídas -->
+    <div class="col-12 col-md-6 col-xl-3">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header bg-success text-white fw-semibold rounded-top-3 py-2">
+          <i class="bi bi-check-circle me-1"></i>Concluídas
+          <span class="badge bg-white text-success ms-2">{{ grupos.concluidas|length }}</span>
+        </div>
+        <div class="card-body p-2" style="max-height:70vh;overflow-y:auto;">
+          {% for os in grupos.concluidas %}
+          {% include 'cadastros/os/_delegacao_card.html' with os=os cor='success' %}
+          {% empty %}
+          <div class="text-center text-muted py-4 small">Nenhuma concluída</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Modal: Atribuir Operador -->
+<div class="modal fade" id="modalAtribuir" tabindex="-1">
+  <div class="modal-dialog modal-sm modal-dialog-centered">
+    <div class="modal-content rounded-4">
+      <div class="modal-header border-0 pb-0">
+        <h6 class="modal-title fw-bold"><i class="bi bi-person-plus me-1"></i>Atribuir Operador</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body pt-2">
+        <div class="small text-muted mb-2" id="modalOsInfo"></div>
+        <select id="modalFuncionario" class="form-select mb-3">
+          <option value="">-- Sem operador --</option>
+          {% for f in funcionarios %}
+          <option value="{{ f.pk }}">{{ f.nome_completo }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="modal-footer border-0 pt-0">
+        <button class="btn btn-secondary btn-sm rounded-pill" data-bs-dismiss="modal">Cancelar</button>
+        <button class="btn btn-primary btn-sm rounded-pill" id="modalConfirmar">Confirmar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentOsPk = null;
+
+function abrirAtribuicao(osPk, osNumero, funcAtualId) {
+  currentOsPk = osPk;
+  document.getElementById('modalOsInfo').textContent = osNumero;
+  const sel = document.getElementById('modalFuncionario');
+  if (funcAtualId) sel.value = String(funcAtualId);
+  else sel.value = '';
+  new bootstrap.Modal(document.getElementById('modalAtribuir')).show();
+}
+
+document.getElementById('modalConfirmar').addEventListener('click', function() {
+  if (!currentOsPk) return;
+  const funcId = document.getElementById('modalFuncionario').value;
+  const csrfToken = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '';
+
+  fetch(`/campo/ordens-servico/${currentOsPk}/atribuir/`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'X-CSRFToken': csrfToken,
+    },
+    body: `funcionario_id=${funcId}`,
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.ok) {
+      location.reload();
+    } else {
+      alert('Erro ao atribuir: ' + (data.error || 'desconhecido'));
+    }
+  });
+});
+</script>
+{% endblock %}

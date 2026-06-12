@@ -99,6 +99,11 @@
             <a href="{% url 'rh:funcionario_update' funcionario.pk %}" class="btn btn-light">
               <i class="bi bi-pencil"></i> Editar
             </a>
+            <a href="{% url 'rh:funcionario_set_pin' funcionario.pk %}" class="btn btn-light"
+               title="Configurar acesso ao Portal do Campo">
+              <i class="bi bi-phone"></i> Portal Campo
+              {% if funcionario.portal_ativo %}<span class="badge bg-success ms-1">Ativo</span>{% endif %}
+            </a>
             <a href="{% url 'rh:funcionario_delete' funcionario.pk %}" class="btn btn-outline-light text-white">
               <i class="bi bi-trash"></i> Excluir
             </a>

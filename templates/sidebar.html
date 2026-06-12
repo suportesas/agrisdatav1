@@ -203,6 +203,10 @@
             <ul class="nested-submenu">
               <li><a href="{% url 'operacoes_campo:os_list' %}"><i class="bi bi-list-ul"></i> Lista de OS</a></li>
               <li><a href="{% url 'operacoes_campo:os_create' %}"><i class="bi bi-plus-square"></i> Nova OS</a></li>
+              <li><a href="{% url 'operacoes_campo:os_painel_delegacao' %}"><i class="bi bi-diagram-3 text-primary"></i> Painel de Delegação</a></li>
+              {% if user.is_admin_empresa %}
+              <li><a href="{% url 'operacoes_campo:portal_campo_config' %}"><i class="bi bi-gear text-secondary"></i> Config. Portal do Campo</a></li>
+              {% endif %}
             </ul>
           </li>
           <li><a href="{% url 'operacoes_campo:custo_talhao_list' %}"><i class="bi bi-graph-up"></i> Custo por Talhão/Safra</a></li>

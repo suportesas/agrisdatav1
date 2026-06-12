@@ -1,0 +1,27 @@
+{
+  "name": "Campo — ERP Agrícola",
+  "short_name": "Campo",
+  "description": "Portal operacional de campo para execução de Ordens de Serviço",
+  "start_url": "/portal/campo/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#1a6e3c",
+  "theme_color": "#1a6e3c",
+  "lang": "pt-BR",
+  "icons": [
+    {
+      "src": "/static/img/logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/static/img/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["productivity", "utilities"],
+  "screenshots": []
+}

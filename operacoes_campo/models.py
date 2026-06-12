@@ -348,8 +348,8 @@ class OSMaquina(models.Model):
     veiculo = models.ForeignKey('frota.Vehicle', on_delete=models.PROTECT, related_name='usos_os', verbose_name='Veículo/Máquina')
     operador = models.ForeignKey('rh.Funcionario', on_delete=models.SET_NULL, null=True, blank=True, related_name='operacoes_maquina_os', verbose_name='Operador')
     data_execucao = models.DateField('Data de Execução')
-    horimetro_inicial = models.DecimalField('Horímetro Inicial (h)', max_digits=10, decimal_places=2, validators=[MinValueValidator(Decimal('0'))])
-    horimetro_final = models.DecimalField('Horímetro Final (h)', max_digits=10, decimal_places=2, validators=[MinValueValidator(Decimal('0'))])
+    horimetro_inicial = models.DecimalField('Horímetro Inicial (h)', max_digits=10, decimal_places=2, null=True, blank=True, validators=[MinValueValidator(Decimal('0'))])
+    horimetro_final = models.DecimalField('Horímetro Final (h)', max_digits=10, decimal_places=2, null=True, blank=True, validators=[MinValueValidator(Decimal('0'))])
     custo_hora_config = models.ForeignKey(CustoHoraMaquina, on_delete=models.SET_NULL, null=True, blank=True, related_name='usos_os', verbose_name='Configuração de Custo/Hora')
     observacoes = models.CharField('Observações', max_length=200, blank=True)
 
@@ -365,6 +365,8 @@ class OSMaquina(models.Model):
 
     @property
     def horas_trabalhadas(self):
+        if self.horimetro_final is None or self.horimetro_inicial is None:
+            return Decimal('0')
         return max(self.horimetro_final - self.horimetro_inicial, Decimal('0'))
 
     @property
@@ -821,3 +823,156 @@ class PlanejamentoCustoItem(models.Model):
         if self.area_ha:
             return (self.area_ha * self.custo_unitario).quantize(Decimal('0.01'))
         return Decimal('0')
+
+
+# ============================================================================
+# REGISTRO DE EXECUÇÃO (dados específicos por tipo de serviço)
+# ============================================================================
+
+class OSRegistroExecucao(models.Model):
+    """Dados de campo registrados pelo operador ao executar/concluir a OS."""
+
+    VENTO_CHOICES = [
+        ('CALMO', 'Calmo (< 5 km/h)'),
+        ('LEVE', 'Leve (5–15 km/h)'),
+        ('MODERADO', 'Moderado (15–30 km/h)'),
+        ('FORTE', 'Forte (> 30 km/h)'),
+    ]
+    TRATO_CHOICES = [
+        ('CAPINA', 'Capina'),
+        ('VIRAR_FRUTO', 'Virar Fruto'),
+        ('PODA', 'Poda'),
+        ('AMARRIO', 'Amarrio'),
+        ('RALEIO', 'Raleio'),
+        ('COBERTURA_MORTA', 'Cobertura Morta'),
+        ('OUTRO', 'Outro'),
+    ]
+
+    ordem_servico = models.OneToOneField(
+        OrdemServico, on_delete=models.CASCADE,
+        related_name='registro_execucao', verbose_name='Ordem de Serviço',
+    )
+    empresa = models.ForeignKey(
+        'empresas.Empresa', on_delete=models.CASCADE,
+        related_name='registros_execucao_os', verbose_name='Empresa',
+    )
+    registrado_por = models.ForeignKey(
+        'rh.Funcionario', on_delete=models.SET_NULL, null=True,
+        related_name='registros_execucao', verbose_name='Registrado por',
+    )
+    registrado_em = models.DateTimeField('Data/Hora do Registro', auto_now_add=True)
+
+    # Campos comuns
+    area_executada_ha = models.DecimalField(
+        'Área Executada (ha)', max_digits=10, decimal_places=4,
+        null=True, blank=True, validators=[MinValueValidator(Decimal('0'))],
+    )
+    observacoes = models.TextField('Observações', blank=True)
+
+    # Pulverização (PULV_MECANICA, PULV_COSTAL)
+    volume_calda_litros = models.DecimalField('Volume de Calda (L)', max_digits=10, decimal_places=2, null=True, blank=True)
+    vazao_bicos_lmin = models.DecimalField('Vazão dos Bicos (L/min)', max_digits=8, decimal_places=3, null=True, blank=True)
+    velocidade_kmh = models.DecimalField('Velocidade de Aplicação (km/h)', max_digits=6, decimal_places=2, null=True, blank=True)
+    condicao_vento = models.CharField('Condição do Vento', max_length=10, choices=VENTO_CHOICES, blank=True)
+    temperatura_c = models.DecimalField('Temperatura (°C)', max_digits=5, decimal_places=1, null=True, blank=True)
+    umidade_relativa_pct = models.DecimalField('Umidade Relativa (%)', max_digits=5, decimal_places=1, null=True, blank=True)
+
+    # Irrigação / Fertirrigação (IRRIGACAO, ADUBACAO)
+    horas_bomba = models.DecimalField('Horas de Bomba', max_digits=7, decimal_places=2, null=True, blank=True)
+    volume_agua_m3 = models.DecimalField('Volume de Água (m³)', max_digits=10, decimal_places=2, null=True, blank=True)
+    setor_irrigado = models.CharField('Setor Irrigado', max_length=100, blank=True)
+
+    # Preparo de Solo (PREPARO_SOLO)
+    profundidade_cm = models.DecimalField('Profundidade (cm)', max_digits=6, decimal_places=1, null=True, blank=True)
+    implemento_utilizado = models.CharField('Implemento Utilizado', max_length=100, blank=True)
+
+    # Plantio (PLANTIO) — campo aberto e estufa/viveiro
+    quantidade_mudas = models.IntegerField('Quantidade de Mudas', null=True, blank=True, validators=[MinValueValidator(0)])
+    espacamento_m = models.DecimalField('Espaçamento (m)', max_digits=6, decimal_places=2, null=True, blank=True)
+    plantio_em_estufa = models.BooleanField('Plantio em Estufa/Viveiro', default=False)
+
+    # Tratos Culturais (MANUTENCAO / tratos)
+    tipo_trato = models.CharField('Tipo de Trato', max_length=20, choices=TRATO_CHOICES, blank=True)
+    tipo_trato_outro = models.CharField('Trato (outro)', max_length=100, blank=True)
+
+    # Fallback JSON para campos não mapeados
+    dados_extras = models.JSONField('Dados Extras', default=dict, blank=True)
+
+    class Meta:
+        db_table = 'campo_os_registro_execucao'
+        verbose_name = 'Registro de Execução da OS'
+        verbose_name_plural = 'Registros de Execução de OS'
+
+    def __str__(self):
+        return f"Execução — {self.ordem_servico.numero}"
+
+
+# ============================================================================
+# PUSH SUBSCRIPTIONS (Portal Campo PWA)
+# ============================================================================
+
+class PushSubscriptionCampo(models.Model):
+    """Subscription Web Push de funcionário de campo para notificações PWA."""
+
+    funcionario = models.ForeignKey(
+        'rh.Funcionario', on_delete=models.CASCADE,
+        related_name='push_subscriptions', verbose_name='Funcionário',
+    )
+    empresa = models.ForeignKey(
+        'empresas.Empresa', on_delete=models.CASCADE,
+        related_name='push_subscriptions_campo', verbose_name='Empresa',
+    )
+    endpoint = models.TextField('Endpoint')
+    p256dh = models.TextField('Chave Pública (p256dh)')
+    auth = models.TextField('Token de Autenticação (auth)')
+    ativo = models.BooleanField('Ativo', default=True)
+    criado_em = models.DateTimeField('Criado em', auto_now_add=True)
+
+    class Meta:
+        db_table = 'campo_push_subscription'
+        verbose_name = 'Push Subscription do Campo'
+        verbose_name_plural = 'Push Subscriptions do Campo'
+        indexes = [
+            models.Index(fields=['funcionario', 'ativo']),
+        ]
+
+    def __str__(self):
+        return f"Push — {self.funcionario}"
+
+
+# ============================================================================
+# CONFIGURAÇÕES DO PORTAL DO CAMPO
+# ============================================================================
+
+class PortalCampoConfig(models.Model):
+    """Configurações do Portal do Campo por empresa."""
+
+    HORARIO_TRABALHADORES_AUTO = 'AUTO'
+    HORARIO_TRABALHADORES_OMITIR = 'OMITIR'
+    HORARIO_TRABALHADORES_CHOICES = [
+        (HORARIO_TRABALHADORES_AUTO,   'Auto-preencher com horário do operador (editável)'),
+        (HORARIO_TRABALHADORES_OMITIR, 'Usar horário do operador automaticamente (sem perguntar)'),
+    ]
+
+    empresa = models.OneToOneField(
+        'empresas.Empresa',
+        on_delete=models.CASCADE,
+        related_name='portal_campo_config',
+        verbose_name='Empresa',
+    )
+    horario_trabalhadores = models.CharField(
+        'Horário dos trabalhadores adicionais',
+        max_length=10,
+        choices=HORARIO_TRABALHADORES_CHOICES,
+        default=HORARIO_TRABALHADORES_AUTO,
+        help_text='Define como o horário é preenchido ao adicionar outros trabalhadores na execução de uma OS.',
+    )
+    data_atualizacao = models.DateTimeField('Última atualização', auto_now=True)
+
+    class Meta:
+        db_table = 'campo_portal_config'
+        verbose_name = 'Configuração do Portal do Campo'
+        verbose_name_plural = 'Configurações do Portal do Campo'
+
+    def __str__(self):
+        return f"Config Portal — {self.empresa}"

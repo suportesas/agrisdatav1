@@ -161,12 +161,27 @@ class OSFuncionarioForm(forms.ModelForm):
             from rh.models import Funcionario
             self.fields['funcionario'].queryset = Funcionario.objects.filter(empresa=empresa, ativo=True).order_by('nome_completo')
             self.fields['funcionario'].label_from_instance = lambda obj: f"{obj.nome_completo} — {obj.funcao}"
-        self.fields['observacoes'].required = False
+        # Torna todos opcionais para que o formulário extra vazio (empty_permitted) não falhe quando
+        # has_changed() retorna True por causa de None vs "" no widget Select.
+        for f in self.fields.values():
+            f.required = False
 
     def clean(self):
         cleaned = super().clean()
+        funcionario = cleaned.get('funcionario')
+        data_execucao = cleaned.get('data_execucao')
         hora_inicio = cleaned.get('hora_inicio')
         hora_fim = cleaned.get('hora_fim')
+        # Só valida campos obrigatórios se o usuário preencheu alguma coisa
+        if any([funcionario, data_execucao, hora_inicio, hora_fim]):
+            if not funcionario:
+                self.add_error('funcionario', 'Informe o funcionário.')
+            if not data_execucao:
+                self.add_error('data_execucao', 'Informe a data de execução.')
+            if not hora_inicio:
+                self.add_error('hora_inicio', 'Informe a hora de início.')
+            if not hora_fim:
+                self.add_error('hora_fim', 'Informe a hora de término.')
         if hora_inicio and hora_fim and hora_fim <= hora_inicio:
             self.add_error('hora_fim', 'Hora de término deve ser posterior à hora de início.')
         return cleaned
@@ -202,9 +217,27 @@ class OSMaquinaForm(forms.ModelForm):
             self.fields['operador'].queryset = Funcionario.objects.filter(empresa=empresa, ativo=True).order_by('nome_completo')
             self.fields['custo_hora_config'].queryset = CustoHoraMaquina.objects.filter(empresa=empresa, ativo=True).order_by('-data_referencia')
             self.fields['custo_hora_config'].label_from_instance = lambda obj: f"{obj.veiculo} — R$ {obj.custo_hora_calculado:.2f}/h ({obj.data_referencia})"
-        self.fields['operador'].required = False
-        self.fields['custo_hora_config'].required = False
-        self.fields['observacoes'].required = False
+        # Torna todos opcionais — validação condicional no clean()
+        for f in self.fields.values():
+            f.required = False
+
+    def clean(self):
+        cleaned = super().clean()
+        veiculo = cleaned.get('veiculo')
+        data_execucao = cleaned.get('data_execucao')
+        horimetro_inicial = cleaned.get('horimetro_inicial')
+        horimetro_final = cleaned.get('horimetro_final')
+        # Requer apenas veículo e data quando o usuário iniciou o preenchimento da linha
+        if any([veiculo, data_execucao]):
+            if not veiculo:
+                self.add_error('veiculo', 'Informe o veículo/máquina.')
+            if not data_execucao:
+                self.add_error('data_execucao', 'Informe a data de execução.')
+        # Horímetros são opcionais na criação; se ambos preenchidos, valida consistência
+        if horimetro_inicial is not None and horimetro_final is not None:
+            if horimetro_final < horimetro_inicial:
+                self.add_error('horimetro_final', 'Horímetro final deve ser maior que o inicial.')
+        return cleaned
 
 
 OSMaquinaFormSet = forms.inlineformset_factory(

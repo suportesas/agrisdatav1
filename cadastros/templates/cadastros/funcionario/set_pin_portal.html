@@ -1,0 +1,196 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Portal do Campo — {{ funcionario.nome_completo }}{% endblock %}
+{% block page_title %}Portal do Campo{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width: 600px;">
+
+  <div class="mb-3">
+    <a href="{% url 'rh:funcionario_detail' funcionario.pk %}" class="btn btn-outline-secondary btn-sm rounded-pill">
+      <i class="bi bi-arrow-left me-1"></i>Voltar para {{ funcionario.nome_completo }}
+    </a>
+  </div>
+
+  <!-- Header -->
+  <div class="card border-0 shadow-sm rounded-4 mb-4">
+    <div class="card-body p-4">
+      <div class="d-flex align-items-center gap-3">
+        <div class="rounded-circle d-flex align-items-center justify-content-center"
+             style="width:56px;height:56px;background:#e8f5ee;">
+          <i class="bi bi-phone fs-4" style="color:#1a6e3c;"></i>
+        </div>
+        <div>
+          <h5 class="fw-bold mb-0">{{ funcionario.nome_completo }}</h5>
+          <div class="text-muted small">{{ funcionario.funcao }}</div>
+        </div>
+        <div class="ms-auto">
+          {% if funcionario.portal_ativo %}
+          <span class="badge rounded-pill bg-success fs-6 px-3 py-2">
+            <i class="bi bi-check-circle me-1"></i>Portal Ativo
+          </span>
+          {% else %}
+          <span class="badge rounded-pill bg-secondary fs-6 px-3 py-2">
+            <i class="bi bi-dash-circle me-1"></i>Portal Inativo
+          </span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Instruções de uso -->
+  <div class="alert alert-info rounded-4 mb-4" style="border-left: 4px solid #0dcaf0;">
+    <div class="fw-semibold mb-1"><i class="bi bi-info-circle me-1"></i>Como funciona o Portal do Campo?</div>
+    <ol class="mb-1 ps-3 small">
+      <li>Configure o CPF e o PIN abaixo</li>
+      <li>No celular do operador, acesse <strong>{{ request.scheme }}://{{ request.get_host }}/portal/campo/</strong></li>
+      <li>O navegador vai oferecer para <strong>Instalar</strong> o app (ícone aparece na tela inicial)</li>
+      <li>Faça login com o <strong>CPF</strong> e o <strong>PIN</strong> definidos aqui</li>
+    </ol>
+    <div class="small text-muted mt-1">
+      CPF do funcionário cadastrado: <strong>{{ funcionario.cpf|default:"(não informado)" }}</strong>
+    </div>
+  </div>
+
+  <!-- Formulário -->
+  <div class="card border-0 shadow-sm rounded-4">
+    <div class="card-body p-4">
+      <h6 class="fw-bold mb-4" style="color:#1a6e3c;">
+        <i class="bi bi-key me-1"></i>Configurar Acesso
+      </h6>
+
+      <form method="post">
+        {% csrf_token %}
+
+        <!-- Ativar/desativar portal -->
+        <div class="mb-4">
+          <div class="form-check form-switch" style="transform: scale(1.2); transform-origin: left;">
+            <input class="form-check-input" type="checkbox" id="portalAtivo"
+                   name="portal_ativo" value="1"
+                   {% if funcionario.portal_ativo %}checked{% endif %}>
+            <label class="form-check-label fw-semibold ms-2" for="portalAtivo">
+              Habilitar acesso ao Portal do Campo
+            </label>
+          </div>
+          <div class="text-muted small mt-1 ms-5">
+            Quando desativado, o operador não consegue fazer login mesmo que tenha o PIN correto.
+          </div>
+        </div>
+
+        <hr class="my-3">
+
+        <!-- PIN -->
+        <div class="mb-3">
+          <label class="form-label fw-semibold">
+            <i class="bi bi-lock me-1"></i>Novo PIN
+            <span class="text-muted fw-normal">(deixe em branco para manter o atual)</span>
+          </label>
+          <div class="input-group">
+            <input type="password" id="pinInput" name="pin" class="form-control form-control-lg"
+                   placeholder="Mínimo 4 dígitos" maxlength="20" autocomplete="new-password"
+                   inputmode="numeric" pattern="[0-9]*">
+            <button class="btn btn-outline-secondary" type="button" id="togglePin" title="Mostrar/ocultar">
+              <i class="bi bi-eye" id="togglePinIcon"></i>
+            </button>
+          </div>
+          <div class="form-text">Recomendado: 4 a 6 dígitos numéricos. O operador vai digitar isso na tela de login.</div>
+        </div>
+
+        <div class="mb-4">
+          <label class="form-label fw-semibold">
+            <i class="bi bi-lock-fill me-1"></i>Confirmar PIN
+          </label>
+          <input type="password" id="pin2Input" name="pin2" class="form-control form-control-lg"
+                 placeholder="Repita o PIN" maxlength="20" autocomplete="new-password"
+                 inputmode="numeric" pattern="[0-9]*">
+        </div>
+
+        <!-- Preview do PIN (só para mostrar ao operador) -->
+        <div class="alert alert-warning rounded-3 py-2 mb-4" id="pinPreview" style="display:none;">
+          <i class="bi bi-eye me-1"></i>
+          PIN digitado: <strong id="pinPreviewValue"></strong>
+          <div class="small text-muted mt-1">Anote ou mostre ao operador antes de salvar.</div>
+        </div>
+
+        {% if funcionario.pin_portal %}
+        <div class="alert alert-success rounded-3 py-2 mb-3">
+          <i class="bi bi-check-circle me-1"></i>
+          Este funcionário já possui um PIN configurado.
+          Preencha os campos acima para <strong>trocar o PIN</strong>.
+        </div>
+        {% endif %}
+
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn btn-success rounded-pill px-4 fw-semibold">
+            <i class="bi bi-floppy me-1"></i>Salvar Configuração
+          </button>
+          <a href="{% url 'rh:funcionario_detail' funcionario.pk %}"
+             class="btn btn-outline-secondary rounded-pill px-4">Cancelar</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Card QR Code / Link direto -->
+  <div class="card border-0 shadow-sm rounded-4 mt-4">
+    <div class="card-body p-4">
+      <h6 class="fw-bold mb-3" style="color:#1a6e3c;">
+        <i class="bi bi-qr-code me-1"></i>Link do Portal para o Operador
+      </h6>
+      <div class="input-group mb-2">
+        <input type="text" class="form-control font-monospace" id="portalLink" readonly
+               value="{{ request.scheme }}://{{ request.get_host }}/portal/campo/">
+        <button class="btn btn-outline-primary" type="button" onclick="copiarLink()" title="Copiar link">
+          <i class="bi bi-clipboard"></i>
+        </button>
+      </div>
+      <div class="text-muted small">
+        Cole este link no WhatsApp para o operador. No Chrome do celular, vai aparecer a opção de instalar o app.
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+/* Mostrar/ocultar PIN */
+document.getElementById('togglePin').addEventListener('click', function () {
+  const input = document.getElementById('pinInput');
+  const icon = document.getElementById('togglePinIcon');
+  if (input.type === 'password') {
+    input.type = 'text';
+    icon.className = 'bi bi-eye-slash';
+  } else {
+    input.type = 'password';
+    icon.className = 'bi bi-eye';
+  }
+});
+
+/* Preview do PIN enquanto digita */
+document.getElementById('pinInput').addEventListener('input', function () {
+  const val = this.value;
+  const preview = document.getElementById('pinPreview');
+  const previewVal = document.getElementById('pinPreviewValue');
+  if (val.length >= 4) {
+    preview.style.display = '';
+    previewVal.textContent = val;
+  } else {
+    preview.style.display = 'none';
+  }
+});
+
+/* Copiar link */
+function copiarLink() {
+  const input = document.getElementById('portalLink');
+  navigator.clipboard.writeText(input.value).then(() => {
+    const btn = input.nextElementSibling;
+    btn.innerHTML = '<i class="bi bi-check2"></i>';
+    setTimeout(() => btn.innerHTML = '<i class="bi bi-clipboard"></i>', 2000);
+  });
+}
+</script>
+{% endblock %}

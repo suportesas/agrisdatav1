@@ -4,6 +4,8 @@ RF-105: Ordens de serviço — plantio, irrigação, aplicação, colheita
 RF-115: Controle de custos por talhão e safra
 """
 
+import json
+
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -11,12 +13,13 @@ from django.utils import timezone
 from django.db.models import Q, Sum, Count
 from django.db import transaction
 from django.http import JsonResponse, HttpResponse
+from django.views.decorators.http import require_POST
 from decimal import Decimal
 
 from .models import (
     OrdemServico, OrdemServicoInsumo, CustoTalhao, CustoHoraMaquina,
     TipoServicoOS, SubtipoServicoOS, ModalidadeExecucaoOS,
-    EtapaColheita,
+    EtapaColheita, PushSubscriptionCampo,
 )
 from cadastros.models import Talhao, Safra
 from .forms import (
@@ -1272,21 +1275,146 @@ def ajax_opcoes_talhao(request):
         return JsonResponse({'safras': [], 'cultura': None})
 
     # Retorna apenas safras PLANEJADA ou EM_ANDAMENTO vinculadas a este talhão
+    # Inclui cultura_id para derivar a cultura sem query adicional
     safras = list(
         talhao.safras.filter(
             fazenda__empresa=empresa,
             status__in=['PLANEJADA', 'EM_ANDAMENTO']
-        ).order_by('-ano', 'nome').values('id', 'nome', 'ano', 'cultura__nome')
+        ).order_by('-ano', 'nome').values('id', 'nome', 'ano', 'cultura_id', 'cultura__nome')
     )
-    
+
     # Monta nome da safra no mesmo padrão do modelo Safra.__str__()
     for s in safras:
         if not s['nome']:
             s['nome'] = f"Safra {s['ano']} - {s['cultura__nome']}"
 
-    # Retorna a cultura atual do talhão (se houver)
+    # Cultura: campo direto no talhão OU derivada da primeira safra ativa
     cultura = None
-    if talhao.cultura_atual:
+    if talhao.cultura_atual_id:
         cultura = {'id': talhao.cultura_atual_id, 'nome': talhao.cultura_atual.nome}
+    elif safras and safras[0].get('cultura__nome'):
+        cultura = {'id': safras[0]['cultura_id'], 'nome': safras[0]['cultura__nome']}
 
-    return JsonResponse({'safras': safras, 'cultura': cultura})
+    return JsonResponse({
+        'safras': safras,
+        'cultura': cultura,
+        'area_hac': str(talhao.area_hac),
+    })
+
+
+# ============================================================================
+# PAINEL DE DELEGAÇÃO
+# ============================================================================
+
+@login_required
+def os_painel_delegacao(request):
+    """Kanban de delegação: atribui OS a funcionários com portal ativo."""
+    from rh.models import Funcionario
+
+    empresa = request.user.empresa
+    qs = OrdemServico.objects.filter(
+        empresa=empresa
+    ).exclude(status='CANCELADA').select_related(
+        'talhao', 'safra', 'responsavel', 'tipo_servico'
+    ).order_by('data_prevista', '-data_cadastro')
+
+    # Filtros opcionais
+    funcionario_filter = request.GET.get('funcionario')
+    safra_filter = request.GET.get('safra')
+    if funcionario_filter:
+        qs = qs.filter(responsavel_id=funcionario_filter)
+    if safra_filter:
+        qs = qs.filter(safra_id=safra_filter)
+
+    funcionarios = Funcionario.objects.filter(
+        empresa=empresa, ativo=True, portal_ativo=True
+    ).order_by('nome_completo')
+    safras = Safra.objects.filter(fazenda__empresa=empresa).order_by('-ano', 'nome')
+
+    grupos = {
+        'nao_atribuidas': [o for o in qs if not o.responsavel_id and o.status == 'ABERTA'],
+        'aguardando':     [o for o in qs if o.responsavel_id and o.status in ('ABERTA', 'APROVADA')],
+        'em_andamento':   [o for o in qs if o.status == 'EM_ANDAMENTO'],
+        'concluidas':     [o for o in qs if o.status == 'CONCLUIDA'],
+    }
+
+    return render(request, 'cadastros/os/os_delegacao.html', {
+        'grupos': grupos,
+        'funcionarios': funcionarios,
+        'safras': safras,
+        'funcionario_filter': funcionario_filter or '',
+        'safra_filter': safra_filter or '',
+    })
+
+
+@login_required
+@require_POST
+def os_atribuir_responsavel(request, pk):
+    """AJAX: atribui responsável a uma OS e dispara push notification se configurado."""
+    from rh.models import Funcionario
+    from operacoes_campo.models import PushSubscriptionCampo
+
+    empresa = request.user.empresa
+    os_obj = get_object_or_404(OrdemServico, pk=pk, empresa=empresa)
+
+    funcionario_id = request.POST.get('funcionario_id')
+    antigo_responsavel = os_obj.responsavel
+
+    if funcionario_id:
+        try:
+            func = Funcionario.objects.get(pk=funcionario_id, empresa=empresa, ativo=True)
+            os_obj.responsavel = func
+            if os_obj.status == 'ABERTA':
+                os_obj.status = 'APROVADA'
+                os_obj.data_aprovacao = timezone.now()
+                os_obj.aprovador = request.user
+                os_obj.save(update_fields=['responsavel', 'status', 'data_aprovacao', 'aprovador'])
+            else:
+                os_obj.save(update_fields=['responsavel'])
+
+            # Disparar push notification para o novo responsável
+            _enviar_push_os(func, os_obj)
+
+            return JsonResponse({'ok': True, 'responsavel': func.nome_completo, 'status': os_obj.status})
+        except Funcionario.DoesNotExist:
+            return JsonResponse({'ok': False, 'error': 'Funcionário não encontrado'}, status=404)
+    else:
+        os_obj.responsavel = None
+        os_obj.save(update_fields=['responsavel'])
+        return JsonResponse({'ok': True, 'responsavel': None, 'status': os_obj.status})
+
+
+def _enviar_push_os(funcionario, os_obj):
+    """Envia push notification Web Push para o funcionário delegado."""
+    from django.conf import settings
+    try:
+        from pywebpush import webpush, WebPushException
+    except ImportError:
+        return
+
+    private_key = getattr(settings, 'VAPID_PRIVATE_KEY', '')
+    vapid_email = getattr(settings, 'VAPID_EMAIL', '')
+    if not private_key:
+        return
+
+    subs = PushSubscriptionCampo.objects.filter(funcionario=funcionario, ativo=True)
+    payload = json.dumps({
+        'title': f'Nova OS: {os_obj.numero}',
+        'body': f'{os_obj.descricao_servico} — {os_obj.talhao.nome}',
+        'url': f'/portal/campo/os/{os_obj.pk}/',
+    })
+
+    for sub in subs:
+        try:
+            webpush(
+                subscription_info={
+                    'endpoint': sub.endpoint,
+                    'keys': {'p256dh': sub.p256dh, 'auth': sub.auth},
+                },
+                data=payload,
+                vapid_private_key=private_key,
+                vapid_claims={'sub': vapid_email},
+            )
+        except Exception:
+            sub.ativo = False
+            sub.save(update_fields=['ativo'])

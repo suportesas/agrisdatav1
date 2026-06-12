@@ -4,150 +4,180 @@
 {% block content %}
 {% load i18n %}
 
-<!-- Saudação -->
-<div class="d-flex align-items-center justify-content-between mb-3">
+<!-- Greeting -->
+<div class="d-flex justify-content-between align-items-start mb-4">
   <div>
-    <div class="fw-bold" style="font-size:1.1rem;">
-      Olá, {{ func.nome_completo|truncatechars:20 }} 👋
-    </div>
-    <div class="text-muted small">{{ hoje|date:"l, d \d\e F" }}</div>
+    <div class="fw-bold" style="font-size:1.2rem;">Olá, {{ func.nome_completo|truncatechars:18 }} 👋</div>
+    <div class="text-muted small">{{ hoje|date:"l, d \d\e F \d\e Y" }}</div>
   </div>
-  <div class="text-end">
+  <div class="d-flex flex-column gap-1 align-items-end">
+    {% if para_fazer %}
+    <span class="badge rounded-pill fw-normal" style="background:#0d6efd;font-size:.75rem;">
+      {{ para_fazer|length }} para fazer
+    </span>
+    {% endif %}
     {% if em_andamento %}
-    <span class="badge bg-warning text-dark rounded-pill">{{ em_andamento|length }} em andamento</span>
+    <span class="badge rounded-pill fw-normal" style="background:#fd7e14;font-size:.75rem;">
+      {{ em_andamento|length }} em andamento
+    </span>
     {% endif %}
   </div>
 </div>
 
-<!-- Para fazer hoje -->
-{% if para_hoje %}
-<div class="section-label"><i class="bi bi-calendar-check me-1"></i>Para fazer hoje</div>
-{% for os in para_hoje %}
-<a href="{% url 'portal_campo:os_detail' os.pk %}" class="text-decoration-none">
-  <div class="os-card-portal card">
-    <div class="card-body p-3" style="border-left: 4px solid #0d6efd;">
-      <div class="d-flex justify-content-between align-items-start">
-        <div>
-          <div class="fw-bold text-dark small">{{ os.numero }}</div>
-          <div class="text-muted" style="font-size:.85rem;">
-            <i class="bi bi-tools me-1"></i>{{ os.descricao_servico|truncatechars:40 }}
-          </div>
-          <div class="text-muted" style="font-size:.8rem;">
-            <i class="bi bi-geo-alt me-1"></i>{{ os.talhao.nome }}
-            {% if os.safra %} · {{ os.safra.nome }}{% endif %}
-          </div>
+<!-- ──────── PARA FAZER ──────── -->
+{% if para_fazer %}
+<div class="section-label mb-2">
+  <i class="bi bi-list-check me-1"></i>Para fazer
+  <span class="badge bg-primary rounded-pill ms-2" style="font-size:.7rem;">{{ para_fazer|length }}</span>
+</div>
+
+{% for os in para_fazer %}
+<div class="os-card-portal card mb-2">
+  <div class="card-body p-0" style="border-left:4px solid #0d6efd;border-radius:inherit;">
+    <div class="p-3">
+      <div class="d-flex gap-3 align-items-start">
+        <!-- Ícone do tipo de serviço -->
+        <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+             style="width:42px;height:42px;background:#e7f0ff;">
+          <i class="bi {{ os.tipo_servico.icone|default:'bi-clipboard-check' }} text-primary" style="font-size:1.2rem;"></i>
         </div>
-        <span class="badge bg-primary rounded-pill">Aprovada</span>
-      </div>
-      <div class="mt-2 d-flex gap-2">
-        <a href="{% url 'portal_campo:os_iniciar' os.pk %}"
-           class="btn btn-sm btn-success rounded-pill flex-fill"
-           onclick="event.stopPropagation();">
-          <i class="bi bi-play-fill me-1"></i>Iniciar
-        </a>
-        <a href="{% url 'portal_campo:os_detail' os.pk %}"
-           class="btn btn-sm btn-outline-secondary rounded-pill flex-fill"
-           onclick="event.stopPropagation();">
-          <i class="bi bi-eye me-1"></i>Ver
-        </a>
+        <!-- Info principal -->
+        <div class="flex-grow-1 min-width-0">
+          <div class="d-flex justify-content-between align-items-start">
+            <div class="fw-semibold text-dark lh-sm" style="font-size:.9rem;">
+              {{ os.descricao_servico|truncatechars:36 }}
+            </div>
+            <!-- Badge de data contextual -->
+            {% if not os.data_prevista %}
+              <span class="badge bg-secondary rounded-pill ms-2 flex-shrink-0" style="font-size:.68rem;">Sem data</span>
+            {% elif os.data_prevista == hoje %}
+              <span class="badge bg-success rounded-pill ms-2 flex-shrink-0" style="font-size:.68rem;">Hoje</span>
+            {% elif os.data_prevista < hoje %}
+              <span class="badge bg-danger rounded-pill ms-2 flex-shrink-0" style="font-size:.68rem;">{{ os.data_prevista|date:"d/m" }} ⚠</span>
+            {% else %}
+              <span class="badge bg-info text-dark rounded-pill ms-2 flex-shrink-0" style="font-size:.68rem;">{{ os.data_prevista|date:"d/m" }}</span>
+            {% endif %}
+          </div>
+          <div class="text-muted mt-1" style="font-size:.78rem;">
+            <i class="bi bi-geo-alt me-1"></i><span class="fw-medium">{{ os.talhao.nome }}</span>
+            {% if os.safra %}<span class="mx-1">·</span>{{ os.safra.nome }}{% endif %}
+          </div>
+          <div class="text-muted" style="font-size:.72rem;">{{ os.numero }}</div>
+        </div>
       </div>
     </div>
+    <!-- Botões -->
+    <div class="px-3 pb-3 d-grid" style="grid-template-columns:1fr auto;gap:.5rem;">
+      <form method="post" action="{% url 'portal_campo:os_iniciar' os.pk %}" class="m-0">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-primary btn-sm rounded-pill w-100 fw-semibold">
+          <i class="bi bi-play-fill me-1"></i>Iniciar OS
+        </button>
+      </form>
+      <a href="{% url 'portal_campo:os_detail' os.pk %}"
+         class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+        <i class="bi bi-eye"></i>
+      </a>
+    </div>
   </div>
-</a>
+</div>
 {% endfor %}
 {% endif %}
 
-<!-- Em andamento -->
+<!-- ──────── EM ANDAMENTO ──────── -->
 {% if em_andamento %}
-<div class="section-label mt-3" id="em-andamento"><i class="bi bi-play-circle me-1"></i>Em andamento</div>
+<div class="section-label mt-3 mb-2" id="em-andamento">
+  <i class="bi bi-play-circle-fill me-1" style="color:#fd7e14;"></i>Em andamento
+  <span class="badge rounded-pill ms-2" style="background:#fd7e14;font-size:.7rem;">{{ em_andamento|length }}</span>
+</div>
+
 {% for os in em_andamento %}
-<a href="{% url 'portal_campo:os_detail' os.pk %}" class="text-decoration-none">
-  <div class="os-card-portal card">
-    <div class="card-body p-3" style="border-left: 4px solid #fd7e14;">
-      <div class="d-flex justify-content-between align-items-start">
-        <div>
-          <div class="fw-bold text-dark small">{{ os.numero }}</div>
-          <div class="text-muted" style="font-size:.85rem;">
-            <i class="bi bi-tools me-1"></i>{{ os.descricao_servico|truncatechars:40 }}
-          </div>
-          <div class="text-muted" style="font-size:.8rem;">
-            <i class="bi bi-geo-alt me-1"></i>{{ os.talhao.nome }}
-            {% if os.data_inicio %}<span class="ms-1">· iniciada {{ os.data_inicio|date:"d/m H:i" }}</span>{% endif %}
-          </div>
+<div class="os-card-portal card mb-2">
+  <div class="card-body p-0" style="border-left:4px solid #fd7e14;border-radius:inherit;">
+    <div class="p-3">
+      <div class="d-flex gap-3 align-items-start">
+        <!-- Ícone -->
+        <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+             style="width:42px;height:42px;background:#fff3e0;">
+          <i class="bi {{ os.tipo_servico.icone|default:'bi-clipboard-check' }}" style="font-size:1.2rem;color:#fd7e14;"></i>
         </div>
-        <span class="badge rounded-pill" style="background:#fd7e14;">Em andamento</span>
-      </div>
-      <div class="mt-2 d-flex gap-2">
-        <a href="{% url 'portal_campo:os_executar' os.pk %}"
-           class="btn btn-sm btn-warning rounded-pill flex-fill"
-           onclick="event.stopPropagation();">
-          <i class="bi bi-pencil-fill me-1"></i>Registrar
-        </a>
-        <a href="{% url 'portal_campo:os_concluir' os.pk %}"
-           class="btn btn-sm btn-success rounded-pill flex-fill"
-           onclick="event.stopPropagation();">
-          <i class="bi bi-flag-fill me-1"></i>Concluir
-        </a>
+        <!-- Info -->
+        <div class="flex-grow-1 min-width-0">
+          <div class="fw-semibold text-dark lh-sm" style="font-size:.9rem;">
+            {{ os.descricao_servico|truncatechars:36 }}
+          </div>
+          <div class="text-muted mt-1" style="font-size:.78rem;">
+            <i class="bi bi-geo-alt me-1"></i><span class="fw-medium">{{ os.talhao.nome }}</span>
+            {% if os.safra %}<span class="mx-1">·</span>{{ os.safra.nome }}{% endif %}
+          </div>
+          {% if os.data_inicio %}
+          <div class="text-muted" style="font-size:.72rem;">
+            <i class="bi bi-clock me-1"></i>iniciada {{ os.data_inicio|date:"d/m H:i" }}
+          </div>
+          {% endif %}
+          <div class="text-muted" style="font-size:.72rem;">{{ os.numero }}</div>
+        </div>
       </div>
     </div>
+    <!-- Botões -->
+    <div class="px-3 pb-3 d-grid" style="grid-template-columns:1fr 1fr auto;gap:.5rem;">
+      <a href="{% url 'portal_campo:os_executar' os.pk %}"
+         class="btn btn-warning btn-sm rounded-pill fw-semibold">
+        <i class="bi bi-pencil-fill me-1"></i>Registrar
+      </a>
+      <a href="{% url 'portal_campo:os_concluir' os.pk %}"
+         class="btn btn-success btn-sm rounded-pill fw-semibold">
+        <i class="bi bi-flag-fill me-1"></i>Concluir
+      </a>
+      <a href="{% url 'portal_campo:os_detail' os.pk %}"
+         class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+        <i class="bi bi-eye"></i>
+      </a>
+    </div>
   </div>
-</a>
+</div>
 {% endfor %}
 {% endif %}
 
-{% if not para_hoje and not em_andamento %}
+<!-- Empty state -->
+{% if not para_fazer and not em_andamento %}
 <div class="text-center py-5">
-  <i class="bi bi-sun fs-1 text-warning d-block mb-3"></i>
-  <div class="fw-semibold text-muted">Nenhuma OS para hoje</div>
-  <div class="text-muted small mt-1">Verifique com seu gestor se há atividades pendentes.</div>
+  <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-3"
+       style="width:64px;height:64px;background:#e8f5ee;">
+    <i class="bi bi-sun text-success" style="font-size:1.8rem;"></i>
+  </div>
+  <div class="fw-semibold text-dark mb-1">Tudo em dia por aqui!</div>
+  <div class="text-muted small">Nenhuma OS atribuída a você no momento.</div>
 </div>
 {% endif %}
 
-<!-- Concluídas recentes -->
+<!-- ──────── CONCLUÍDAS RECENTES ──────── -->
 {% if concluidas_recentes %}
-<div class="section-label mt-3" id="concluidas"><i class="bi bi-check-circle me-1"></i>Concluídas (últimos 7 dias)</div>
+<div class="section-label mt-3 mb-2" id="concluidas">
+  <i class="bi bi-check-circle-fill me-1 text-success"></i>Concluídas (últimos 7 dias)
+</div>
 {% for os in concluidas_recentes %}
-<div class="os-card-portal card opacity-75">
-  <div class="card-body p-3" style="border-left: 4px solid #198754;">
-    <div class="d-flex justify-content-between align-items-center">
-      <div>
-        <div class="fw-bold text-dark small">{{ os.numero }}</div>
-        <div class="text-muted" style="font-size:.8rem;">
-          {{ os.descricao_servico|truncatechars:40 }} · {{ os.talhao.nome }}
-        </div>
-        {% if os.data_fim %}
-        <div class="text-muted" style="font-size:.75rem;">
-          <i class="bi bi-check2 me-1 text-success"></i>{{ os.data_fim|date:"d/m H:i" }}
-        </div>
-        {% endif %}
+<div class="card mb-2 border-0 shadow-sm opacity-75">
+  <div class="card-body p-3" style="border-left:4px solid #198754;border-radius:inherit;">
+    <div class="d-flex gap-3 align-items-center">
+      <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+           style="width:36px;height:36px;background:#e8f5ee;">
+        <i class="bi {{ os.tipo_servico.icone|default:'bi-clipboard-check' }} text-success" style="font-size:1rem;"></i>
       </div>
-      <span class="badge bg-success rounded-pill">Concluída</span>
+      <div class="flex-grow-1 min-width-0">
+        <div class="fw-semibold text-dark small">{{ os.descricao_servico|truncatechars:36 }}</div>
+        <div class="text-muted" style="font-size:.76rem;">
+          {{ os.talhao.nome }} · {{ os.numero }}
+          {% if os.data_fim %}
+          <span class="ms-1">· <i class="bi bi-check2 text-success"></i> {{ os.data_fim|date:"d/m H:i" }}</span>
+          {% endif %}
+        </div>
+      </div>
+      <span class="badge bg-success rounded-pill flex-shrink-0">Concluída</span>
     </div>
   </div>
 </div>
 {% endfor %}
 {% endif %}
 
-{% endblock %}
-
-{% block extra_js %}
-<script>
-/* Iniciar OS via POST sem formulário dedicado */
-document.querySelectorAll('a[href*="/iniciar/"]').forEach(el => {
-  el.addEventListener('click', function(e) {
-    e.preventDefault();
-    const url = this.href;
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = url;
-    const csrf = document.createElement('input');
-    csrf.type = 'hidden';
-    csrf.name = 'csrfmiddlewaretoken';
-    csrf.value = '{{ csrf_token }}';
-    form.appendChild(csrf);
-    document.body.appendChild(form);
-    form.submit();
-  });
-});
-</script>
 {% endblock %}

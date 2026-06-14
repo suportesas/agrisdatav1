@@ -38,7 +38,7 @@ class Migration(migrations.Migration):
                         options={
                             'verbose_name': 'Categoria de Risco Ambiental',
                             'verbose_name_plural': 'Categorias de Risco Ambiental',
-                            'db_table': 'cadastros_categoriariscoanbiental',
+                            'db_table': 'cadastros_categoriariscoambiental',
                             'ordering': ['nome'],
                         },
                     ),

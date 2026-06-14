@@ -303,9 +303,9 @@ class OSFuncionario(models.Model):
 
     os = models.ForeignKey(OrdemServico, on_delete=models.CASCADE, related_name='funcionarios_os', verbose_name='Ordem de Serviço')
     funcionario = models.ForeignKey('rh.Funcionario', on_delete=models.PROTECT, related_name='alocacoes_os', verbose_name='Funcionário')
-    data_execucao = models.DateField('Data de Execução')
-    hora_inicio = models.TimeField('Hora de Início')
-    hora_fim = models.TimeField('Hora de Término')
+    data_execucao = models.DateField('Data de Execução', null=True, blank=True)
+    hora_inicio = models.TimeField('Hora de Início', null=True, blank=True)
+    hora_fim = models.TimeField('Hora de Término', null=True, blank=True)
     observacoes = models.CharField('Observações', max_length=200, blank=True)
 
     class Meta:
@@ -320,6 +320,8 @@ class OSFuncionario(models.Model):
 
     @property
     def horas_trabalhadas(self):
+        if not self.hora_inicio or not self.hora_fim:
+            return Decimal('0')
         from datetime import datetime, date
         inicio = datetime.combine(date.today(), self.hora_inicio)
         fim = datetime.combine(date.today(), self.hora_fim)
@@ -341,13 +343,52 @@ class OSFuncionario(models.Model):
             raise ValidationError({'hora_fim': 'Hora de término deve ser posterior à hora de início.'})
 
 
+class OSIntervalo(models.Model):
+    """Intervalo contínuo de trabalho do operador em uma OS. Substitui o registro manual de horário."""
+
+    os = models.ForeignKey(OrdemServico, on_delete=models.CASCADE, related_name='intervalos', verbose_name='Ordem de Serviço')
+    funcionario = models.ForeignKey('rh.Funcionario', on_delete=models.PROTECT, related_name='intervalos_os', verbose_name='Funcionário')
+    inicio = models.DateTimeField('Início')
+    fim = models.DateTimeField('Fim', null=True, blank=True)
+
+    class Meta:
+        db_table = 'campo_os_intervalo'
+        verbose_name = 'Intervalo de Trabalho'
+        verbose_name_plural = 'Intervalos de Trabalho'
+        ordering = ['inicio']
+
+    def __str__(self):
+        fim_str = self.fim.strftime('%d/%m %H:%M') if self.fim else 'em andamento'
+        return f"{self.funcionario.nome_completo} — {self.inicio.strftime('%d/%m %H:%M')} → {fim_str}"
+
+    @property
+    def duracao_horas(self):
+        if not self.fim:
+            return None
+        delta = (self.fim - self.inicio).total_seconds()
+        if delta <= 0:
+            return Decimal('0')
+        return Decimal(str(round(delta / 3600, 4)))
+
+    @property
+    def custo_calculado(self):
+        horas = self.duracao_horas
+        if not horas:
+            return Decimal('0')
+        try:
+            custo_hora = self.funcionario.salario / Decimal('220')
+            return (custo_hora * horas).quantize(Decimal('0.01'))
+        except Exception:
+            return Decimal('0')
+
+
 class OSMaquina(models.Model):
     """Máquina/Veículo utilizado em OS. Calcula custo via CustoHoraMaquina."""
 
     os = models.ForeignKey(OrdemServico, on_delete=models.CASCADE, related_name='maquinas_os', verbose_name='Ordem de Serviço')
     veiculo = models.ForeignKey('frota.Vehicle', on_delete=models.PROTECT, related_name='usos_os', verbose_name='Veículo/Máquina')
     operador = models.ForeignKey('rh.Funcionario', on_delete=models.SET_NULL, null=True, blank=True, related_name='operacoes_maquina_os', verbose_name='Operador')
-    data_execucao = models.DateField('Data de Execução')
+    data_execucao = models.DateField('Data de Execução', null=True, blank=True)
     horimetro_inicial = models.DecimalField('Horímetro Inicial (h)', max_digits=10, decimal_places=2, null=True, blank=True, validators=[MinValueValidator(Decimal('0'))])
     horimetro_final = models.DecimalField('Horímetro Final (h)', max_digits=10, decimal_places=2, null=True, blank=True, validators=[MinValueValidator(Decimal('0'))])
     custo_hora_config = models.ForeignKey(CustoHoraMaquina, on_delete=models.SET_NULL, null=True, blank=True, related_name='usos_os', verbose_name='Configuração de Custo/Hora')
@@ -361,7 +402,7 @@ class OSMaquina(models.Model):
         indexes = [models.Index(fields=['os', 'data_execucao'])]
 
     def __str__(self):
-        return f"{self.veiculo} — {self.os.numero} ({self.data_execucao})"
+        return f"{self.veiculo} — {self.os.numero} ({self.data_execucao or 'sem data'})"
 
     @property
     def horas_trabalhadas(self):
@@ -434,7 +475,9 @@ class CustoTalhao(models.Model):
         return Decimal('0')
 
     def recalcular(self):
-        self.custo_mao_obra = sum(f.custo_calculado for f in self.os.funcionarios_os.all()) or Decimal('0')
+        custo_intervalos = sum(i.custo_calculado for i in self.os.intervalos.filter(fim__isnull=False)) or Decimal('0')
+        custo_outros = sum(f.custo_calculado for f in self.os.funcionarios_os.all()) or Decimal('0')
+        self.custo_mao_obra = custo_intervalos + custo_outros
         self.custo_maquinario = sum(m.custo_calculado for m in self.os.maquinas_os.all()) or Decimal('0')
         insumos_os = self.os.insumos_os.all()
         if insumos_os.exists():

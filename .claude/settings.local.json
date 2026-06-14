@@ -99,7 +99,21 @@
       "Bash(python -c \"import playwright; print\\('ok'\\)\")",
       "Bash(python -m playwright --version)",
       "Bash(python -c \"from faturamento import views, urls; print\\('OK'\\)\")",
-      "Bash(findstr -i \"error\\\\|warning\\\\|mdfe_clonar\\\\|clonar\")"
+      "Bash(findstr -i \"error\\\\|warning\\\\|mdfe_clonar\\\\|clonar\")",
+      "Bash(python manage.py showmigrations cadastros)",
+      "Bash(python manage.py showmigrations rh)",
+      "Bash(python manage.py dbshell -- -c \"SELECT table_name FROM information_schema.tables WHERE table_name LIKE 'cadastros_categoria%' OR table_name LIKE 'rh_%';\")",
+      "Bash(python manage.py shell -c \"from django.db import connection; cursor = connection.cursor\\(\\); cursor.execute\\(\\\\\"SELECT table_name FROM information_schema.tables WHERE table_name LIKE 'cadastros_categoria%' OR table_name LIKE 'rh_%' ORDER BY table_name;\\\\\"\\); print\\(cursor.fetchall\\(\\)\\)\")",
+      "Bash(python manage.py shell -c \"from django.db import connection; cursor = connection.cursor\\(\\); cursor.execute\\(\\\\\"SELECT table_schema, table_name FROM information_schema.tables WHERE table_name = 'cadastros_categoriariscoanbiental';\\\\\"\\); print\\(cursor.fetchall\\(\\)\\)\")",
+      "Bash(python manage.py shell -c \"from django.db import connection; print\\(connection.vendor, connection.settings_dict.get\\('NAME', ''\\)[:50]\\)\")",
+      "Bash(python manage.py migrate operacoes_campo 0005_os_intervalo)",
+      "Bash(python manage.py migrate operacoes_campo 0006_osfuncionario_horas_nullable)",
+      "Bash(python manage.py showmigrations operacoes_campo)",
+      "Bash(python manage.py makemigrations operacoes_campo --name osmaquina_data_execucao_nullable)",
+      "Bash(python manage.py migrate operacoes_campo)",
+      "Bash(python manage.py --version)",
+      "Bash(python -c \"import django; print\\(django.__version__\\)\")",
+      "Bash(pip show *)"
     ]
   }
 }

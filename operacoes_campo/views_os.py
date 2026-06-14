@@ -1302,6 +1302,32 @@ def ajax_opcoes_talhao(request):
     })
 
 
+@login_required
+def ajax_produto_info(request):
+    """GET ?produto_id=X — retorna unidade_medida e preco_custo para auto-fill no insumo da OS."""
+    produto_id = request.GET.get('produto_id')
+    empresa = request.user.empresa
+    if not produto_id:
+        return JsonResponse({'error': 'produto_id required'}, status=400)
+    try:
+        from produtos.models import Produto
+        produto = (
+            Produto.objects
+            .select_related('unidade_medida')
+            .filter(pk=produto_id, lotes__armazem__empresa=empresa)
+            .first()
+        )
+        if not produto:
+            return JsonResponse({'error': 'not found'}, status=404)
+        return JsonResponse({
+            'unidade_medida_id': produto.unidade_medida_id,
+            'unidade_medida_sigla': produto.unidade_medida.sigla if produto.unidade_medida else '',
+            'preco_custo': str(produto.preco_custo or '0'),
+        })
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=400)
+
+
 # ============================================================================
 # PAINEL DE DELEGAÇÃO
 # ============================================================================

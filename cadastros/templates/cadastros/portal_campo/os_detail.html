@@ -73,16 +73,36 @@
       <i class="bi bi-play-fill me-2"></i>Iniciar OS
     </button>
   </form>
-  <a href="{% url 'portal_campo:os_executar' os.pk %}"
-     class="btn btn-outline-warning rounded-pill py-2 fw-semibold">
-    <i class="bi bi-pencil me-2"></i>Registrar horas / evidência
-  </a>
 </div>
 {% elif status == 'EM_ANDAMENTO' %}
 <div class="d-grid gap-2 mb-3">
+  {% if intervalo_aberto %}
+  <!-- OS em andamento — pode pausar ou concluir -->
+  <div class="alert alert-success py-2 px-3 mb-0 rounded-3 small d-flex align-items-center gap-2">
+    <span class="spinner-grow spinner-grow-sm text-success flex-shrink-0" role="status"></span>
+    <span>Em andamento desde <strong>{{ intervalo_aberto.inicio|date:"d/m" }} {{ intervalo_aberto.inicio|time:"H:i" }}</strong></span>
+  </div>
+  <form method="post" action="{% url 'portal_campo:os_pausar' os.pk %}">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-warning w-100 rounded-pill py-2 fw-bold">
+      <i class="bi bi-pause-fill me-2"></i>Pausar
+    </button>
+  </form>
+  {% else %}
+  <!-- OS pausada — pode retomar -->
+  <div class="alert alert-secondary py-2 px-3 mb-0 rounded-3 small">
+    <i class="bi bi-pause-circle me-1"></i>OS pausada — retome quando estiver pronto.
+  </div>
+  <form method="post" action="{% url 'portal_campo:os_retomar' os.pk %}">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-success w-100 rounded-pill py-2 fw-bold">
+      <i class="bi bi-play-fill me-2"></i>Retomar
+    </button>
+  </form>
+  {% endif %}
   <a href="{% url 'portal_campo:os_executar' os.pk %}"
-     class="btn btn-warning rounded-pill py-2 fw-bold">
-    <i class="bi bi-pencil-fill me-2"></i>Registrar execução
+     class="btn btn-outline-primary rounded-pill py-2 fw-semibold">
+    <i class="bi bi-pencil me-2"></i>Registrar dados / insumos / foto
   </a>
   <a href="{% url 'portal_campo:os_concluir' os.pk %}"
      class="btn btn-outline-success rounded-pill py-2 fw-semibold">
@@ -107,7 +127,41 @@
 </div>
 {% endif %}
 
-<!-- Execução registrada — Mão de obra -->
+<!-- Histórico de intervalos (tempo automático) -->
+{% if intervalos %}
+<div class="section-label"><i class="bi bi-clock-history me-1"></i>Tempo registrado</div>
+<div class="card mb-3 border-0 shadow-sm">
+  <div class="table-responsive">
+    <table class="table table-sm table-borderless mb-0" style="font-size:.82rem;">
+      <thead class="table-light">
+        <tr>
+          <th class="ps-3">Início</th>
+          <th>Término</th>
+          <th class="text-end pe-3">Duração</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for iv in intervalos %}
+        <tr>
+          <td class="ps-3 fw-medium">{{ iv.inicio|date:"d/m" }} {{ iv.inicio|time:"H:i" }}</td>
+          <td>
+            {% if iv.fim %}{{ iv.fim|date:"d/m" }} {{ iv.fim|time:"H:i" }}
+            {% else %}<span class="badge bg-success rounded-pill small">em andamento</span>{% endif %}
+          </td>
+          <td class="text-end pe-3">
+            {% if iv.duracao_horas %}
+              <span class="badge bg-primary">{{ iv.duracao_horas|floatformat:1 }}h</span>
+            {% else %}<span class="text-muted">–</span>{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<!-- Execução registrada — Mão de obra (outros trabalhadores) -->
 {% if alocacoes %}
 <div class="section-label"><i class="bi bi-people me-1"></i>Mão de obra registrada</div>
 <div class="card mb-3 border-0 shadow-sm">

@@ -832,7 +832,7 @@ def relatorio_fluxo_caixa(request):
         proximo_mes = (ano, mes + 1)
     
     primeiro_dia = timezone.datetime(ano, mes, 1).date()
-    ultimo_dia = timezone.datetime(*proximo_mes) - timedelta(days=1)
+    ultimo_dia = (timezone.datetime(proximo_mes[0], proximo_mes[1], 1) - timedelta(days=1)).date()
     
     # Parcelas vencendo no mês
     parcelas_vencer = ParcelaContaPagar.objects.filter(

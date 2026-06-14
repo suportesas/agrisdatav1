@@ -1,173 +1,479 @@
-# 🌾 ERP Agrícola - Sistema Multi-empresa
-
+# ERP Agrícola — Sistema Multi-empresa
 
 Sistema de gestão agrícola com arquitetura **multi-tenant** (multiempresa), desenvolvido em **Python/Django** para produtores rurais, cooperativas e empresas do agronegócio.
 
 [![Python](https://img.shields.io/badge/Python-3.9+-blue.svg)](https://www.python.org/)
-[![Django](https://img.shields.io/badge/Django-4.2+-green.svg)](https://www.djangoproject.com/)
-[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Django](https://img.shields.io/badge/Django-4.2.29-green.svg)](https://www.djangoproject.com/)
 
-## 📋 Funcionalidades Principais
+---
 
-### 🚀 Instalação
-1. Clone o repositório
-2. Crie ambiente virtual: `python -m venv venv`
-3. Ative: `venv\Scripts\activate` (Windows)
-4. Instale: `pip install -r requirements.txt`
-5. Migre: `python manage.py migrate`
-6. Rode: `python manage.py runserver`
+## Sumário
 
-### 🏢 **Multi-tenant Completo**
-- ✅ Isolamento total de dados por empresa
-- ✅ Sistema de planos: Pequeno, Médio e Grande Produtor
-- ✅ Controle automático de limites (fazendas, usuários, talhões, produtos)
-- ✅ Bloqueio automático por expiração ou inadimplência
+1. [Visão Geral](#visão-geral)
+2. [Tecnologias](#tecnologias)
+3. [Módulos do Sistema](#módulos-do-sistema)
+4. [Configuração Local (Desenvolvimento)](#configuração-local-desenvolvimento)
+5. [Variáveis de Ambiente](#variáveis-de-ambiente)
+6. [Deploy em VPS/Ubuntu (Nginx + Gunicorn)](#deploy-em-vpsubuntu-nginx--gunicorn)
+7. [Deploy com Docker Compose](#deploy-com-docker-compose)
+8. [Deploy Contínuo com GitHub](#deploy-contínuo-com-github)
+9. [Pós-Deploy — Dados Iniciais](#pós-deploy--dados-iniciais)
+10. [Comandos de Manutenção](#comandos-de-manutenção)
+10. [Checklist de Segurança para Produção](#checklist-de-segurança-para-produção)
 
-### 👥 **Gestão de Usuários**
-- ✅ Múltiplos tipos: Admin, Gerente, Funcionário, Produtor, Vendedor, Financeiro
-- ✅ Perfis personalizados com foto
-- ✅ Auditoria completa de acessos (IP, navegador, horário)
-- ✅ Detecção de logins suspeitos
+---
 
-### 🌾 **Cadastros Agrícolas**
-- ✅ Fazendas com dados completos (CNPJ/CPF, localização GPS)
-- ✅ Múltiplos endereços por fazenda
-- ✅ Gerenciamento de contatos
-- ✅ Upload de documentos (CCIR, certificados, licenças)
-- ✅ Contas bancárias com suporte a PIX
+## Visão Geral
 
-### 💰 **Planos de Assinatura**
-- 🌱 **Pequeno Produtor**: Ideal para começar (2 fazendas, 3 usuários)
-- 🌾 **Médio Produtor**: Recursos avançados (5 fazendas, 10 usuários)
-- 🚜 **Grande Produtor**: Recursos ilimitados + API + App Mobile
+O sistema isola dados por empresa: cada `Fazenda`, `OS`, `NF-e`, `Funcionário`, etc. está sempre vinculado à empresa do usuário autenticado. Superusuários têm visão global.
 
-## 🚀 Tecnologias e Arquitetura
+**Tipos de usuário:** `ADMIN`, `GERENTE`, `FUNC`, `PROD`, `VENDEDOR`, `FINANCEIRO`
 
-### **Backend**
-- **Python 3.9+** - Linguagem principal
-- **Django 4.2+** - Framework web
-- **Django REST Framework** - API REST (opcional)
-- **PostgreSQL** - Banco de dados (produção)
-- **SQLite** - Banco de dados (desenvolvimento)
+---
 
-### **Frontend**
-- **Bootstrap 5** - Framework CSS
-- **HTML5 / CSS3** - Estrutura e estilo
-- **JavaScript** - Interatividade
-- **Bootstrap Icons** - Iconografia
+## Tecnologias
 
-### **Segurança e Infraestrutura**
-- **Django Auth** - Sistema de autenticação customizado
-- **Middleware** - Bloqueio automático de empresas
-- **Signals** - Automações e notificações
-- **Mixins** - Reutilização de código
+| Camada | Tecnologia |
+|--------|-----------|
+| Backend | Python 3.9+, Django 4.2.29 |
+| API | Django REST Framework 3.16 + SimpleJWT |
+| Banco (produção) | PostgreSQL 14+ |
+| Banco (desenvolvimento) | SQLite (automático quando PG não configurado) |
+| Storage de arquivos | Supabase Storage (fallback: `MEDIA_ROOT` local) |
+| Servidor WSGI | Gunicorn 25.3 |
+| Proxy reverso | Nginx |
+| Frontend | Bootstrap 5.3.2 + Bootstrap Icons 1.11.1 |
+| Criptografia de campos | Fernet (`cryptography`) |
 
-## 📦 Estrutura do Projeto
+---
 
-```
-erp_agricola/
-│
-├── empresas/          # App de gestão de empresas e planos
-├── usuarios/          # App de autenticação e usuários
-├── cadastros/         # App de cadastro de fazendas
-├── dashboard/         # Dashboard principal
-├── static/            # Arquivos estáticos
-├── media/             # Uploads de usuários
-└── erp_agricola/      # Configurações do projeto
-```
+## Módulos do Sistema
 
-## 🔧 Instalação Rápida
+| App | Prefixo URL | Descrição |
+|-----|------------|-----------|
+| `cadastros` | `/cadastros/` | Clientes, fornecedores, produtores, transportadoras, CFOP, NCM |
+| `financeiro` | `/financeiro/` | Contas a pagar/receber, parcelas, fluxo de caixa |
+| `plano_contas` | `/plano-contas/` | Plano de contas contábeis hierárquico |
+| `bancario` | `/bancario/` | Contas bancárias, extrato, conciliação OFX/CNAB |
+| `faturamento` | `/faturamento/` | NF-e, CT-e, MDF-e, Invoice de exportação |
+| `compras` | `/compras/` | Pedidos, cotações, recebimentos, importação XML NF-e |
+| `estoque` | `/estoque/` | Movimentações, requisições, inventário |
+| `vendas` | `/vendas/` | Pedidos de venda |
+| `operacoes_campo` | `/campo/` | Ordens de Serviço, portal do campo (PWA), horímetros |
+| `frota` | `/frota/` | Veículos e máquinas |
+| `rh` | `/rh/` | Funcionários, salários |
+| `exportacao` | `/exportacao/` | Bookings, armadores, ordens de coleta |
+| `embalagem` | `/embalagem/` | Ordens de embalagem, pallets, romaneios |
 
-### 1️⃣ **Clone o Repositório**
+---
+
+## Configuração Local (Desenvolvimento)
+
+### Pré-requisitos
+
+- Python 3.9 ou superior
+- Git
+- PostgreSQL (opcional — SQLite é usado automaticamente sem ele)
+
+### Passo a passo
+
 ```bash
+# 1. Clone o repositório
 git clone https://github.com/EMSSousa/erp_agricola_novo.git
 cd erp_agricola
-```
 
-### 2️⃣ **Crie o Ambiente Virtual**
-
-**Windows:**
-```bash
+# 2. Crie e ative o ambiente virtual
 python -m venv venv
+
+# Windows
 venv\Scripts\activate
-```
 
-**Linux/Mac:**
-```bash
-python3 -m venv venv
+# Linux / macOS
 source venv/bin/activate
+
+# 3. Instale as dependências
+pip install -r requirements.txt
+
+# 4. Configure o .env
+cp .env.example .env
+# Edite o .env com seus dados (SECRET_KEY obrigatória)
+
+# 5. Aplique as migrações
+python manage.py migrate
+
+# 6. Crie o superusuário
+python manage.py createsuperuser
+
+# 7. Popule dados iniciais (opcional, mas recomendado)
+python manage.py seed_roles
+python manage.py seed_plano_contas
+python manage.py import_cfop
+python manage.py import_ncm
+python manage.py seed_pragas
+
+# 8. Inicie o servidor
+python manage.py runserver
 ```
 
-### 3️⃣ **Instale as Dependências**
-```bash
-pip install -r requirements.txt
+Acesse: `http://127.0.0.1:8000` | Admin: `http://127.0.0.1:8000/admin`
+
+---
+
+## Variáveis de Ambiente
+
+Crie o arquivo `.env` na raiz do projeto. Todos os valores abaixo são reconhecidos por `erp_agricola/settings.py`.
+
+```env
+# ─────────────────────────────────────────
+# OBRIGATÓRIO
+# ─────────────────────────────────────────
+
+# Gere com: python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
+SECRET_KEY=sua-chave-secreta-longa-e-aleatoria
+
+# False em produção, True apenas em desenvolvimento
+DEBUG=False
+
+# Domínio(s) do servidor separados por vírgula
+ALLOWED_HOSTS=erp.suaempresa.com.br,www.erp.suaempresa.com.br
+
+# Origens confiáveis para CSRF (necessário quando há proxy reverso ou HTTPS)
+CSRF_TRUSTED_ORIGINS=https://erp.suaempresa.com.br
+
+# ─────────────────────────────────────────
+# BANCO DE DADOS (PostgreSQL)
+# ─────────────────────────────────────────
+# Quando PG_NAME não está definido, o Django usa SQLite automaticamente
+
+PG_NAME=erp_agricola
+PG_USER=erp_user
+PG_PASSWORD=senha_segura_aqui
+PG_HOST=localhost        # ou IP/hostname do servidor PostgreSQL
+PG_PORT=5432
+
+# ─────────────────────────────────────────
+# SUPABASE (Storage de arquivos + Auth)
+# ─────────────────────────────────────────
+# Obtenha em: https://supabase.com/dashboard → Project Settings → API
+
+SUPABASE_URL=https://xxxxxxxxxxxx.supabase.co
+SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+# ─────────────────────────────────────────
+# CRIPTOGRAFIA DE CAMPOS SENSÍVEIS
+# ─────────────────────────────────────────
+# Necessário para tokens de API (IntegraNotas, etc.)
+# Gere com: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+FIELD_ENCRYPTION_KEY=chave-fernet-gerada-aqui
+
+# ─────────────────────────────────────────
+# E-MAIL (SMTP)
+# ─────────────────────────────────────────
+EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=587
+EMAIL_USE_TLS=True
+EMAIL_HOST_USER=seu.email@gmail.com
+EMAIL_HOST_PASSWORD=senha-de-app-16-chars
+DEFAULT_FROM_EMAIL=ERP Agrícola <seu.email@gmail.com>
+
+# ─────────────────────────────────────────
+# SEGURANÇA HTTPS (ativar em produção)
+# ─────────────────────────────────────────
+SECURE_SSL_REDIRECT=True
+SESSION_COOKIE_SECURE=True
+CSRF_COOKIE_SECURE=True
+SECURE_HSTS_SECONDS=31536000
+SECURE_HSTS_INCLUDE_SUBDOMAINS=True
+SECURE_HSTS_PRELOAD=True
+
+# ─────────────────────────────────────────
+# FEATURE FLAGS
+# ─────────────────────────────────────────
+FF_COMPRAS_XML_IMPORT=False
+FF_ESTOQUE_QUARENTENA_BLOQUEIO=False
+FF_ESTOQUE_DEVOLUCOES_FLUXO=False
+FF_RASTREABILIDADE_FULL_CHAIN=False
+FF_FINANCEIRO_RENEGOCIACAO=False
+FF_RECEITUARIO_AGRONOMICO_V1=False
+FF_ARMADOR_INTEGRACOES_EXTERNAS=False
+
+# ─────────────────────────────────────────
+# LOCALIZAÇÃO
+# ─────────────────────────────────────────
+TIME_ZONE=America/Sao_Paulo
+LANGUAGE_CODE=pt-br
 ```
 
 ---
 
-## ☁️ Deploy na Oracle Cloud (OCI)
+## Deploy em VPS/Ubuntu (Nginx + Gunicorn)
 
-### Pré-requisitos
-- Conta na Oracle Cloud (OCI)
-- Instância Compute (Ubuntu recomendado)
-- Banco de dados PostgreSQL (pode ser Autonomous Database ou Compute)
-- Domínio configurado (opcional)
+> Testado em Ubuntu 22.04 LTS. Adapte o caminho `/var/www/erp_agricola` conforme necessário.
 
-### Passos de Deploy
+### 1. Prepare o servidor
 
 ```bash
-# 1. Atualize o sistema
 sudo apt update && sudo apt upgrade -y
-
-# 2. Instale dependências
-sudo apt install python3-pip python3-venv nginx git -y
-
-# 3. Clone o repositório
-git clone https://github.com/EMSSousa/erp_agricola_novo.git
-cd erp_agricola
-
-# 4. Crie e ative o ambiente virtual
-python3 -m venv venv
-source venv/bin/activate
-
-# 5. Instale as dependências
-pip install -r requirements.txt
-
-# 6. Configure variáveis de ambiente
-cp .env.example .env
-nano .env  # Edite com dados de produção
-
-# 7. Migre o banco de dados
-python manage.py migrate
-
-# 8. Colete arquivos estáticos
-python manage.py collectstatic --noinput
-
-# 9. Crie superusuário
-python manage.py createsuperuser
-
-# 10. Execute com Gunicorn (produção)
-pip install gunicorn
-gunicorn erp_agricola.wsgi:application --bind 0.0.0.0:8000
+sudo apt install -y python3 python3-pip python3-venv git nginx postgresql postgresql-contrib
 ```
 
-### Configuração do Nginx (Opcional, recomendado para produção)
+### 2. Configure o PostgreSQL
+
+```bash
+sudo -u postgres psql
+
+-- No prompt do psql:
+CREATE DATABASE erp_agricola;
+CREATE USER erp_user WITH PASSWORD 'senha_segura_aqui';
+ALTER ROLE erp_user SET client_encoding TO 'utf8';
+ALTER ROLE erp_user SET default_transaction_isolation TO 'read committed';
+ALTER ROLE erp_user SET timezone TO 'America/Sao_Paulo';
+GRANT ALL PRIVILEGES ON DATABASE erp_agricola TO erp_user;
+\q
+```
+
+### 3. Clone e configure o projeto
+
+```bash
+cd /var/www
+sudo git clone https://github.com/EMSSousa/erp_agricola_novo.git erp_agricola
+sudo chown -R $USER:$USER /var/www/erp_agricola
+cd /var/www/erp_agricola
+
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+
+# Configure o .env de produção
+cp .env.example .env
+nano .env    # preencha todos os campos obrigatórios
+```
+
+### 4. Inicialize o banco e arquivos estáticos
+
+```bash
+source venv/bin/activate
+
+python manage.py migrate
+python manage.py createsuperuser
+python manage.py collectstatic --noinput
+
+# Dados iniciais obrigatórios
+python manage.py seed_roles
+python manage.py seed_plano_contas
+python manage.py import_cfop
+python manage.py import_ncm
+```
+
+### 5. Configure o Gunicorn como serviço systemd
+
+Crie o arquivo `/etc/systemd/system/erp_agricola.service`:
+
+```ini
+[Unit]
+Description=ERP Agrícola - Gunicorn
+After=network.target
+
+[Service]
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/erp_agricola
+EnvironmentFile=/var/www/erp_agricola/.env
+ExecStart=/var/www/erp_agricola/venv/bin/gunicorn \
+    erp_agricola.wsgi:application \
+    --workers 3 \
+    --bind unix:/run/erp_agricola.sock \
+    --timeout 120 \
+    --access-logfile /var/log/erp_agricola/access.log \
+    --error-logfile /var/log/erp_agricola/error.log
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+```
+
+```bash
+# Crie a pasta de logs e ajuste permissões
+sudo mkdir -p /var/log/erp_agricola
+sudo chown -R www-data:www-data /var/log/erp_agricola
+sudo chown -R www-data:www-data /var/www/erp_agricola
+
+# Ative e inicie o serviço
+sudo systemctl daemon-reload
+sudo systemctl enable erp_agricola
+sudo systemctl start erp_agricola
+sudo systemctl status erp_agricola
+```
+
+### 6. Configure o Nginx
+
+Crie `/etc/nginx/sites-available/erp_agricola`:
 
 ```nginx
 server {
     listen 80;
-    server_name seu-dominio.com;
+    server_name erp.suaempresa.com.br www.erp.suaempresa.com.br;
+
+    # Redireciona HTTP → HTTPS (descomente após configurar o certificado SSL)
+    # return 301 https://$host$request_uri;
+
+    client_max_body_size 50M;
 
     location = /favicon.ico { access_log off; log_not_found off; }
+
     location /static/ {
-        root /caminho/para/erp_agricola;
+        alias /var/www/erp_agricola/staticfiles/;
+        expires 30d;
+        add_header Cache-Control "public, immutable";
     }
+
     location /media/ {
-        root /caminho/para/erp_agricola;
+        alias /var/www/erp_agricola/media/;
+        expires 7d;
     }
 
     location / {
-        proxy_pass http://127.0.0.1:8000;
+        proxy_pass http://unix:/run/erp_agricola.sock;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 120;
+        proxy_connect_timeout 120;
+    }
+
+    access_log /var/log/nginx/erp_agricola_access.log;
+    error_log  /var/log/nginx/erp_agricola_error.log;
+}
+```
+
+```bash
+sudo ln -s /etc/nginx/sites-available/erp_agricola /etc/nginx/sites-enabled/
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+### 7. Configure HTTPS com Let's Encrypt
+
+```bash
+sudo apt install -y certbot python3-certbot-nginx
+sudo certbot --nginx -d erp.suaempresa.com.br -d www.erp.suaempresa.com.br
+
+# Renovação automática (já configurada pelo certbot, mas verifique):
+sudo systemctl status certbot.timer
+```
+
+Após o certificado, ative as variáveis de segurança HTTPS no `.env` e reinicie:
+
+```bash
+sudo systemctl restart erp_agricola
+```
+
+### Comandos úteis do serviço
+
+```bash
+sudo systemctl restart erp_agricola       # reiniciar após alterações
+sudo systemctl stop erp_agricola          # parar
+sudo journalctl -u erp_agricola -n 50     # ver últimas 50 linhas de log
+tail -f /var/log/erp_agricola/error.log   # monitorar erros em tempo real
+```
+
+---
+
+## Deploy com Docker Compose
+
+O projeto já inclui `Dockerfile` e `docker-compose.yml`. O banco de dados **não roda em container** — usa PostgreSQL externo (Supabase ou servidor próprio).
+
+### Pré-requisitos
+
+- Docker Engine 24+
+- Docker Compose v2+
+
+### 1. Configure o .env.docker
+
+```bash
+cp .env.example .env.docker
+nano .env.docker   # preencha com dados de produção
+```
+
+Exemplo mínimo para `.env.docker`:
+
+```env
+SECRET_KEY=chave-secreta-muito-longa-e-aleatoria
+DEBUG=False
+ALLOWED_HOSTS=erp.suaempresa.com.br
+CSRF_TRUSTED_ORIGINS=https://erp.suaempresa.com.br
+
+PG_NAME=erp_agricola
+PG_USER=erp_user
+PG_PASSWORD=senha_segura
+PG_HOST=db.xxxxxxxxxxxx.supabase.co
+PG_PORT=5432
+
+SUPABASE_URL=https://xxxxxxxxxxxx.supabase.co
+SUPABASE_ANON_KEY=eyJ...
+SUPABASE_SERVICE_ROLE_KEY=eyJ...
+
+FIELD_ENCRYPTION_KEY=chave-fernet-aqui
+```
+
+### 2. Build e subida dos containers
+
+```bash
+# Build
+docker compose build
+
+# Subir em background
+docker compose up -d
+
+# Ver logs
+docker compose logs -f app
+```
+
+### 3. Inicializar banco e dados
+
+```bash
+# Migrações
+docker compose exec app python manage.py migrate
+
+# Superusuário
+docker compose exec app python manage.py createsuperuser
+
+# Estáticos
+docker compose exec app python manage.py collectstatic --noinput
+
+# Dados iniciais
+docker compose exec app python manage.py seed_roles
+docker compose exec app python manage.py seed_plano_contas
+docker compose exec app python manage.py import_cfop
+docker compose exec app python manage.py import_ncm
+```
+
+### 4. Nginx como proxy (para produção)
+
+Descomente o bloco `nginx` no `docker-compose.yml` e crie `nginx.conf` na raiz:
+
+```nginx
+server {
+    listen 80;
+    server_name erp.suaempresa.com.br;
+
+    client_max_body_size 50M;
+
+    location /static/ {
+        alias /static/;
+        expires 30d;
+    }
+
+    location /media/ {
+        alias /media/;
+    }
+
+    location / {
+        proxy_pass http://app:8000;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -176,468 +482,486 @@ server {
 }
 ```
 
-### Segurança e Checklist de Produção
+### Atualização da aplicação (deploy contínuo)
 
-- DEBUG=False no .env
-- ALLOWED_HOSTS configurado
-- Banco PostgreSQL configurado
-- HTTPS ativo (use Let’s Encrypt)
-- Variáveis sensíveis no .env
-- Backups automáticos configurados
-
-### Referências Úteis
-
-- [Documentação oficial OCI](https://docs.oracle.com/en-us/iaas/Content/home.htm)
-- [Deploy Django na OCI](https://docs.oracle.com/en-us/iaas/Content/Compute/Tasks/django-app.htm)
+```bash
+git pull origin main
+docker compose build app
+docker compose up -d app
+docker compose exec app python manage.py migrate
+docker compose exec app python manage.py collectstatic --noinput
+```
 
 ---
 
-> 💡 **Dica:** Se não tiver o `requirements.txt`, gere com:
-> ```bash
-> pip freeze > requirements.txt
-> ```
+## Pós-Deploy — Dados Iniciais
 
-### 4️⃣ **Configure as Variáveis de Ambiente**
-```bash
-# Copie o template
-cp .env.example .env
-
-# Edite com seus dados
-# Windows: notepad .env
-# Linux/Mac: nano .env
-```
-
-**Gere uma SECRET_KEY:**
-```python
-python manage.py shell
->>> from django.core.management.utils import get_random_secret_key
->>> print(get_random_secret_key())
-```
-
-### 5️⃣ **Execute as Migrações**
-```bash
-python manage.py makemigrations
-python manage.py migrate
-```
-
-### 6️⃣ **Crie o Superusuário**
-```bash
-python manage.py createsuperuser
-```
-
-### 7️⃣ **Inicialize os Planos Padrão**
-
-Acesse no navegador após rodar o servidor:
-```
-http://127.0.0.1:8000/empresas/planos/inicializar/
-```
-
-Ou pelo shell do Django:
-```bash
-python manage.py shell
-```
-```python
-from empresas.models import Plano
-
-# Pequeno Produtor
-Plano.objects.get_or_create(
-    codigo='PEQUENO',
-    defaults={
-        'nome': 'Pequeno Produtor',
-        'icone': '🌱',
-        'valor_mensal': 99.00,
-        'limite_fazendas': 2,
-        'limite_usuarios': 3,
-        'limite_talhoes': 10,
-        'limite_produtos': 50,
-        'ordem': 1
-    }
-)
-
-# Médio Produtor
-Plano.objects.get_or_create(
-    codigo='MEDIO',
-    defaults={
-        'nome': 'Médio Produtor',
-        'icone': '🌾',
-        'valor_mensal': 249.00,
-        'limite_fazendas': 5,
-        'limite_usuarios': 10,
-        'limite_talhoes': 30,
-        'limite_produtos': 200,
-        'acesso_relatorios_avancados': True,
-        'acesso_app_mobile': True,
-        'ordem': 2
-    }
-)
-
-# Grande Produtor
-Plano.objects.get_or_create(
-    codigo='GRANDE',
-    defaults={
-        'nome': 'Grande Produtor',
-        'icone': '🚜',
-        'valor_mensal': 499.00,
-        'limite_fazendas': 999,
-        'limite_usuarios': 999,
-        'limite_talhoes': 999,
-        'limite_produtos': 999,
-        'acesso_relatorios_avancados': True,
-        'acesso_api': True,
-        'acesso_app_mobile': True,
-        'ordem': 3
-    }
-)
-```
-
-### 8️⃣ **Rode o Servidor**
-```bash
-python manage.py runserver
-```
-
-✅ **Acesse:** http://127.0.0.1:8000
-
-🔐 **Admin Django:** http://127.0.0.1:8000/admin
-
-## 👤 Primeiro Acesso
-
-Após criar o superusuário, acesse:
-- **Admin Django:** http://127.0.0.1:8000/admin
-- **Sistema:** http://127.0.0.1:8000
-
-## 📱 Funcionalidades Principais
-
-### 🏢 Gestão de Empresas
-- Cadastro de empresas com CNPJ
-- Vinculação de planos de assinatura
-- Controle de limites (fazendas, usuários, talhões)
-- Bloqueio/ativação de empresas
-- Controle de vencimento
-
-### 👥 Gestão de Usuários
-- Múltiplos tipos: Admin, Gerente, Funcionário, Produtor, Vendedor
-- Perfis personalizados
-- Foto de perfil
-- Auditoria de logins (IP, navegador, data/hora)
-- Alteração de senha
-
-### 🌾 Cadastro de Fazendas
-- Dados completos da fazenda
-- Múltiplos endereços
-- Contatos
-- Documentos (CCIR, certificados, etc.)
-- Contas bancárias (incluindo PIX)
-
-### 💰 Planos de Assinatura
-- **Pequeno Produtor:** Ideal para iniciantes
-- **Médio Produtor:** Recursos avançados
-- **Grande Produtor:** Ilimitado
-
-## 🔐 Segurança Implementada
-
-### ✅ **Recursos de Segurança Ativos**
-
-| Recurso | Status | Descrição |
-|---------|--------|-----------|
-| 🔒 Multi-tenant | ✅ Ativo | Isolamento completo de dados por empresa |
-| 🔑 Autenticação customizada | ✅ Ativo | Sistema próprio com validações |
-| 📝 Auditoria de logins | ✅ Ativo | Registro de IP, navegador e horário |
-| 🚫 Bloqueio automático | ✅ Ativo | Por expiração ou bloqueio manual |
-| 🛡️ CSRF Protection | ✅ Ativo | Proteção contra ataques CSRF |
-| 🔐 Senhas criptografadas | ✅ Ativo | Hash bcrypt automático |
-| 📊 Validação de limites | ✅ Ativo | Controle por plano contratado |
-| 🎯 Permissões por tipo | ✅ Ativo | Admin, Gerente, Funcionário, etc. |
-
-### ⚠️ **Para Produção - Checklist**
-
-```python
-# settings.py - Configurações obrigatórias para produção
-
-# 1. Debug DESATIVADO
-DEBUG = False
-
-# 2. Hosts permitidos
-ALLOWED_HOSTS = ['seu-dominio.com', 'www.seu-dominio.com']
-
-# 3. Banco PostgreSQL
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'erp_agricola',
-        'USER': 'postgres',
-        'PASSWORD': os.getenv('DB_PASSWORD'),
-        'HOST': 'localhost',
-        'PORT': '5432',
-    }
-}
-
-# 4. Segurança HTTPS
-SECURE_SSL_REDIRECT = True
-SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SECURE = True
-SECURE_HSTS_SECONDS = 31536000
-SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-SECURE_HSTS_PRELOAD = True
-
-# 5. Proteções adicionais
-SECURE_BROWSER_XSS_FILTER = True
-SECURE_CONTENT_TYPE_NOSNIFF = True
-X_FRAME_OPTIONS = 'DENY'
-```
-
-### 🔒 **Boas Práticas**
-
-1. **NUNCA** commite arquivos com senhas ou tokens
-2. Use `.env` para variáveis sensíveis
-3. Mantenha `SECRET_KEY` sempre secreta
-4. Ative HTTPS em produção
-5. Configure backups automáticos
-6. Monitore logins suspeitos
-7. Atualize dependências regularmente
-
-## 📊 Arquitetura Multi-Tenant
-
-Cada empresa é isolada no sistema:
-- Usuários só veem dados da própria empresa
-- Superusuário tem visão global
-- Limites baseados no plano contratado
-
-## 🧪 Testes e Qualidade
-
-### **Executar Testes**
-```bash
-# Todos os testes
-python manage.py test
-
-# App específico
-python manage.py test usuarios
-python manage.py test empresas
-
-# Com verbosidade
-python manage.py test --verbosity=2
-
-# Manter banco de testes
-python manage.py test --keepdb
-```
-
-### **Coverage (Cobertura de Testes)**
-```bash
-# Instalar coverage
-pip install coverage
-
-# Executar com coverage
-coverage run --source='.' manage.py test
-
-# Ver relatório no terminal
-coverage report
-
-# Gerar relatório HTML
-coverage html
-# Abre em: htmlcov/index.html
-```
-
-### **Linting e Formatação**
-```bash
-# Instalar ferramentas
-pip install flake8 black isort
-
-# Verificar PEP8
-flake8 .
-
-# Formatar código
-black .
-
-# Organizar imports
-isort .
-```
-
-## 🛠️ Comandos Úteis Django
+Execute estes comandos uma única vez após o primeiro deploy (ou quando necessário):
 
 ```bash
-# ========== MIGRATIONS ==========
-python manage.py makemigrations              # Criar migrations
-python manage.py migrate                     # Aplicar migrations
-python manage.py showmigrations              # Ver status
-python manage.py sqlmigrate app_name 0001    # Ver SQL
+# Perfis de acesso (roles)
+python manage.py seed_roles
 
-# ========== SHELL ==========
-python manage.py shell                       # Shell interativo
-python manage.py shell_plus                  # Shell com models carregados
+# Plano de contas contábil (101 contas padrão)
+python manage.py seed_plano_contas --empresa-id 1
 
-# ========== ADMIN ==========
-python manage.py createsuperuser             # Criar admin
-python manage.py changepassword username     # Mudar senha
+# Tabela CFOP (Códigos Fiscais de Operação)
+python manage.py import_cfop
 
-# ========== DADOS ==========
-python manage.py loaddata arquivo.json       # Importar dados
-python manage.py dumpdata > backup.json      # Exportar dados
-python manage.py flush                       # Limpar banco (CUIDADO!)
+# Tabela NCM
+python manage.py import_ncm
 
-# ========== ESTÁTICOS ==========
-python manage.py collectstatic               # Coletar arquivos estáticos
-python manage.py collectstatic --noinput     # Sem confirmação
+# Pragas e defensivos agrícolas
+python manage.py seed_pragas
 
-# ========== SERVIDOR ==========
-python manage.py runserver                   # Servidor dev
-python manage.py runserver 0.0.0.0:8000     # Acessível na rede
+# Categorias agrícolas
+python manage.py popula_categorias_agricolas
 
-# ========== CHECAGENS ==========
-python manage.py check                       # Verificar projeto
-python manage.py check --deploy              # Check para produção
-python manage.py validate                    # Validar models
+# Sincronizar superusuário global entre empresas
+python manage.py sincronizar_superuser_global
+
+# Atualizar planos de assinatura
+python manage.py atualizar_planos
 ```
 
-## 📝 Variáveis de Ambiente (.env)
+---
 
-```env
-SECRET_KEY=sua-chave-secreta-aqui
-DEBUG=True
-ALLOWED_HOSTS=localhost,127.0.0.1
+## Comandos de Manutenção
 
-# Database (para produção)
-DB_NAME=erp_agricola
-DB_USER=postgres
-DB_PASSWORD=senha
-DB_HOST=localhost
-DB_PORT=5432
+```bash
+# ─── Estoque ───────────────────────────────────────────
+python manage.py recalcular_estoque     # Recalcula saldo de todos os produtos
+python manage.py auditar_estoque        # Detecta inconsistências
+
+# ─── Migrations ────────────────────────────────────────
+python manage.py showmigrations                     # Status de todas as migrations
+python manage.py makemigrations <app>               # Criar migration para um app
+python manage.py migrate                            # Aplicar pendentes
+python manage.py sqlmigrate <app> <migration>       # Ver SQL gerado
+
+# ─── Banco de dados ────────────────────────────────────
+python manage.py dumpdata --indent 2 > backup.json         # Export completo
+python manage.py dumpdata empresas --indent 2 > emp.json   # Export por app
+python manage.py loaddata backup.json                      # Import
+
+# ─── Diagnóstico ───────────────────────────────────────
+python manage.py check                 # Verificações gerais
+python manage.py check --deploy        # Checklist específico para produção
+
+# ─── Chave de criptografia ─────────────────────────────
+python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+
+# ─── SECRET_KEY ────────────────────────────────────────
+python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
+
+# ─── Estáticos ─────────────────────────────────────────
+python manage.py collectstatic --noinput
 ```
 
-## 🤝 Como Contribuir
+---
 
-1. Faça um fork do projeto
-2. Crie uma branch: `git checkout -b feature/nova-funcionalidade`
-3. Commit suas mudanças: `git commit -m 'Adiciona nova funcionalidade'`
-4. Push para a branch: `git push origin feature/nova-funcionalidade`
-5. Abra um Pull Request
+## Deploy Contínuo com GitHub
 
-## 📄 Licença
+Esta seção cobre duas abordagens: **deploy manual via `git pull`** (simples, recomendado para começar) e **deploy automático via GitHub Actions** (CI/CD, recomendado para produção).
 
-Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
+---
 
-## 👨‍💻 Autor
+### Abordagem 1 — Deploy Manual com `git pull` (VPS)
 
-Desenvolvido com ❤️ e apoio da IA
+Configure o servidor para puxar atualizações direto do GitHub sem precisar de senha.
 
-## 📞 Suporte
+#### 1.1 — Gere uma SSH key no servidor
 
-- Email: seu-email@exemplo.com
+```bash
+# Execute no servidor (como o usuário que roda a aplicação)
+ssh-keygen -t ed25519 -C "deploy@erp_agricola" -f ~/.ssh/github_deploy
+cat ~/.ssh/github_deploy.pub   # copie esta chave
+```
+
+#### 1.2 — Adicione a chave como Deploy Key no GitHub
+
+1. Acesse o repositório no GitHub
+2. **Settings → Deploy keys → Add deploy key**
+3. Cole a chave pública (`github_deploy.pub`)
+4. Marque **Allow write access** como **desmarcado** (leitura é suficiente)
+5. Clique em **Add key**
+
+#### 1.3 — Configure o SSH no servidor
+
+```bash
+# Crie ou edite ~/.ssh/config no servidor
+nano ~/.ssh/config
+```
+
+```
+Host github.com
+    HostName github.com
+    User git
+    IdentityFile ~/.ssh/github_deploy
+    IdentitiesOnly yes
+```
+
+```bash
+# Teste a conexão
+ssh -T git@github.com
+# Esperado: "Hi EMSSousa/erp_agricola_novo! You've successfully authenticated..."
+```
+
+#### 1.4 — Clone usando SSH (se ainda não clonou)
+
+```bash
+cd /var/www
+git clone git@github.com:EMSSousa/erp_agricola_novo.git erp_agricola
+```
+
+#### 1.5 — Script de deploy (`deploy.sh`)
+
+Crie `/var/www/erp_agricola/deploy.sh`:
+
+```bash
+#!/bin/bash
+set -e
+
+PROJECT_DIR="/var/www/erp_agricola"
+VENV="$PROJECT_DIR/venv/bin/python"
+MANAGE="$VENV $PROJECT_DIR/manage.py"
+
+echo "==> Puxando atualizações do GitHub..."
+cd "$PROJECT_DIR"
+git pull origin main
+
+echo "==> Instalando dependências..."
+"$PROJECT_DIR/venv/bin/pip" install -r requirements.txt --quiet
+
+echo "==> Aplicando migrações..."
+$MANAGE migrate --noinput
+
+echo "==> Coletando arquivos estáticos..."
+$MANAGE collectstatic --noinput
+
+echo "==> Reiniciando o serviço..."
+sudo systemctl restart erp_agricola
+
+echo "==> Deploy concluído com sucesso!"
+```
+
+```bash
+chmod +x /var/www/erp_agricola/deploy.sh
+
+# Permita reiniciar o serviço sem senha (adicione ao sudoers)
+sudo visudo
+# Adicione a linha abaixo (substitua 'ubuntu' pelo seu usuário):
+# ubuntu ALL=(ALL) NOPASSWD: /bin/systemctl restart erp_agricola
+```
+
+Para fazer deploy, basta rodar no servidor:
+
+```bash
+/var/www/erp_agricola/deploy.sh
+```
+
+---
+
+### Abordagem 2 — Deploy Automático com GitHub Actions (CI/CD)
+
+A cada `git push` na branch `main`, o GitHub Actions se conecta ao servidor via SSH e executa o deploy automaticamente.
+
+#### 2.1 — Configure os Secrets no GitHub
+
+Acesse **Settings → Secrets and variables → Actions** e adicione:
+
+| Secret | Valor |
+|--------|-------|
+| `SSH_HOST` | IP ou hostname do servidor (ex: `192.168.1.10`) |
+| `SSH_USER` | Usuário SSH (ex: `ubuntu`) |
+| `SSH_PRIVATE_KEY` | Conteúdo da chave privada SSH para acesso ao servidor |
+| `SSH_PORT` | Porta SSH (normalmente `22`) |
+
+Para gerar o par de chaves para o GitHub Actions acessar o servidor:
+
+```bash
+# Na sua máquina local
+ssh-keygen -t ed25519 -C "github-actions-deploy" -f ~/.ssh/github_actions_deploy
+
+# Copie a chave PÚBLICA para o servidor
+ssh-copy-id -i ~/.ssh/github_actions_deploy.pub usuario@ip-do-servidor
+
+# Copie o conteúdo da chave PRIVADA para o Secret SSH_PRIVATE_KEY
+cat ~/.ssh/github_actions_deploy
+```
+
+#### 2.2 — Crie o workflow
+
+Crie o arquivo `.github/workflows/deploy.yml` no repositório:
+
+```yaml
+name: Deploy para Produção
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: Deploy via SSH
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Deploy no servidor
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          script: |
+            set -e
+            cd /var/www/erp_agricola
+
+            echo "Puxando alterações..."
+            git pull origin main
+
+            echo "Instalando dependências..."
+            venv/bin/pip install -r requirements.txt --quiet
+
+            echo "Aplicando migrações..."
+            venv/bin/python manage.py migrate --noinput
+
+            echo "Coletando estáticos..."
+            venv/bin/python manage.py collectstatic --noinput
+
+            echo "Reiniciando serviço..."
+            sudo systemctl restart erp_agricola
+
+            echo "Deploy finalizado!"
+```
+
+#### 2.3 — (Opcional) Adicionar testes antes do deploy
+
+```yaml
+name: Deploy para Produção
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  test:
+    name: Testes
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: erp_test
+          POSTGRES_USER: erp_user
+          POSTGRES_PASSWORD: test_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Instalar dependências
+        run: pip install -r requirements.txt
+
+      - name: Rodar testes
+        env:
+          DEBUG: "True"
+          SECRET_KEY: "chave-temporaria-para-ci"
+          PG_NAME: erp_test
+          PG_USER: erp_user
+          PG_PASSWORD: test_password
+          PG_HOST: localhost
+          PG_PORT: 5432
+        run: python manage.py test --verbosity=2
+
+  deploy:
+    name: Deploy via SSH
+    runs-on: ubuntu-latest
+    needs: test          # só executa se os testes passarem
+
+    steps:
+      - name: Deploy no servidor
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          script: |
+            cd /var/www/erp_agricola
+            git pull origin main
+            venv/bin/pip install -r requirements.txt --quiet
+            venv/bin/python manage.py migrate --noinput
+            venv/bin/python manage.py collectstatic --noinput
+            sudo systemctl restart erp_agricola
+```
+
+#### 2.4 — Fluxo completo após configurado
+
+```
+Desenvolvedor faz git push origin main
+         ↓
+GitHub Actions inicia o workflow
+         ↓
+[Opcional] Roda testes automáticos
+         ↓
+Se passou: conecta ao servidor via SSH
+         ↓
+git pull → pip install → migrate → collectstatic → restart
+         ↓
+Sistema atualizado em produção ✓
+```
+
+---
+
+### Abordagem 3 — Deploy com Docker Compose + GitHub Actions
+
+Se estiver usando Docker, o workflow envia a imagem atualizada e reinicia o Compose:
+
+```yaml
+name: Deploy Docker
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy via SSH (Docker Compose)
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          script: |
+            cd /var/www/erp_agricola
+            git pull origin main
+            docker compose build app
+            docker compose up -d app
+            docker compose exec -T app python manage.py migrate --noinput
+            docker compose exec -T app python manage.py collectstatic --noinput
+```
+
+---
+
+### Boas práticas para todos os fluxos
+
+- **Nunca commite o `.env`** — adicione ao `.gitignore` e gerencie no servidor ou via GitHub Secrets
+- **Branch `main` = produção** — use branches de feature e faça PR antes de mergear
+- **Faça backup do banco antes de cada deploy** que envolva migrações estruturais
+- **Teste as migrações em staging** antes de aplicar em produção
+
+---
+
+## Checklist de Segurança para Produção
+
+Antes de colocar o sistema em produção, confirme cada item:
+
+### Configurações obrigatórias no `.env`
+
+- [ ] `DEBUG=False`
+- [ ] `SECRET_KEY` com no mínimo 50 caracteres aleatórios
+- [ ] `ALLOWED_HOSTS` com apenas os domínios reais do sistema
+- [ ] `CSRF_TRUSTED_ORIGINS` com o domínio HTTPS completo
+- [ ] `FIELD_ENCRYPTION_KEY` gerada e guardada em local seguro
+- [ ] Banco PostgreSQL configurado (não SQLite)
+- [ ] `SECURE_SSL_REDIRECT=True` (após configurar HTTPS)
+- [ ] `SESSION_COOKIE_SECURE=True`
+- [ ] `CSRF_COOKIE_SECURE=True`
+- [ ] `SECURE_HSTS_SECONDS=31536000`
+
+### Servidor
+
+- [ ] Certificado SSL/TLS ativo (Let's Encrypt ou similar)
+- [ ] Nginx configurado com `client_max_body_size 50M`
+- [ ] Gunicorn rodando com `--workers` proporcional aos vCPUs (2 × vCPU + 1)
+- [ ] Firewall: somente portas 80 e 443 abertas ao público; porta 8000 bloqueada externamente
+- [ ] Arquivo `.env` com permissão `600` (`chmod 600 .env`)
+- [ ] `.env` no `.gitignore` — nunca commitado
+
+### Banco de dados
+
+- [ ] Usuário do banco com privilégios mínimos (apenas o banco da aplicação)
+- [ ] Backup automático configurado (cron ou serviço gerenciado)
+- [ ] Acesso ao banco bloqueado externamente (apenas localhost ou VPN)
+
+### Aplicação
+
+- [ ] `python manage.py check --deploy` sem erros críticos
+- [ ] `collectstatic` executado após cada deploy
+- [ ] `migrate` executado após cada deploy
+- [ ] Logs de erro monitorados
+
+### Supabase (se usado)
+
+- [ ] `SUPABASE_SERVICE_ROLE_KEY` nunca exposta no frontend
+- [ ] Buckets de storage com políticas de acesso corretas (não públicos por padrão)
+- [ ] RLS ativado nas tabelas se acessadas diretamente pelo cliente
+
+---
+
+## Estrutura de Pastas
+
+```
+erp_agricola/
+├── erp_agricola/        # Configurações do projeto (settings, urls, wsgi)
+├── core/                # Middleware, feature flags, utilitários globais
+├── templates/           # Templates base (base.html, sidebar.html)
+├── static/              # CSS, JS, imagens do projeto
+├── staticfiles/         # Destino do collectstatic (não versionar)
+├── media/               # Uploads locais (fallback do Supabase)
+│
+├── empresas/            # Gestão de empresas e planos de assinatura
+├── usuarios/            # Autenticação e perfis de usuário
+├── cadastros/           # Fazendas, clientes, fornecedores, CFOP, NCM
+├── financeiro/          # Contas a pagar/receber, fluxo de caixa
+├── plano_contas/        # Plano de contas contábil hierárquico
+├── bancario/            # Contas bancárias, conciliação OFX/CNAB
+├── faturamento/         # NF-e, CT-e, MDF-e, Invoice exportação
+├── compras/             # Pedidos, cotações, XML NF-e
+├── estoque/             # Movimentações, inventário
+├── vendas/              # Pedidos de venda
+├── produtos/            # Cadastro de produtos, NCM, tributação
+├── operacoes_campo/     # Ordens de Serviço, portal do campo PWA
+├── frota/               # Veículos e máquinas
+├── rh/                  # Funcionários, cargos
+├── exportacao/          # Bookings, armadores, ordens de coleta
+├── embalagem/           # Ordens de embalagem, pallets
+│
+├── Dockerfile
+├── docker-compose.yml
+├── requirements.txt
+├── .env.example         # Template de variáveis de ambiente
+└── manage.py
+```
+
+---
+
+## Suporte
+
 - Issues: https://github.com/EMSSousa/erp_agricola_novo/issues
-
-## 🗺️ Roadmap
-
-- [ ] Módulo de vendas
-- [ ] Módulo financeiro
-- [ ] Controle de estoque
-- [ ] Relatórios avançados
-- [ ] API REST
-- [ ] App Mobile
-- [ ] Integração com ViaCEP
-- [ ] Notificações por email
-- [ ] Dashboard com gráficos
-
-## 📸 Screenshots
-
-*Em breve...*
-
----
-
-## 🚢 Deploy com Docker Compose (Supabase)
-
-### Pré-requisitos
-- Conta no Supabase (PostgreSQL gerenciado)
-- Variáveis de ambiente do Supabase (host, user, password, db)
-- Docker e Docker Compose instalados
-
-### Passos de Deploy
-
-```bash
-# 1. Configure o arquivo .env.docker com as credenciais do Supabase
-cp .env.docker .env.docker # Edite conforme necessário
-
-# 2. Build e start dos containers
-sudo docker-compose up --build
-
-# 3. Acesse o sistema em http://localhost:8000
-
-# 4. Migre o banco e crie superusuário (em outro terminal):
-sudo docker-compose exec app python manage.py migrate
-sudo docker-compose exec app python manage.py createsuperuser
-
-# 5. Colete arquivos estáticos (produção):
-sudo docker-compose exec app python manage.py collectstatic --noinput
-```
-
-### Observações
-- O banco de dados NÃO roda em container, mas sim no Supabase.
-- Edite `.env.docker` com as credenciais do Supabase.
-- Volumes locais garantem persistência dos arquivos estáticos/media.
-- Para produção, configure um proxy reverso (ex: Nginx).
-
-### Exemplo de .env.docker
-```env
-SECRET_KEY=sua-chave-secreta-aqui
-DEBUG=False
-ALLOWED_HOSTS=*
-DB_NAME=postgres
-DB_USER=postgres
-DB_PASSWORD=sua-senha-do-supabase
-DB_HOST=seu-host.supabase.co
-DB_PORT=6543
-```
-
----
-
-## 📦 Plano de Deploy Docker Compose com Supabase
-
-O objetivo é criar um ambiente de deploy para o ERP Agrícola usando Docker Compose, com o banco de dados hospedado no Supabase (PostgreSQL gerenciado na nuvem). O Compose orquestra apenas o backend Django e, opcionalmente, o Nginx para produção. O acesso ao banco é feito via variáveis de ambiente apontando para o Supabase.
-
-### Etapas
-
-**Fase 1: Infraestrutura Docker**
-1. Criar um `Dockerfile` para o backend Django.
-   - Baseado em Python 3.9+.
-   - Instala dependências do `requirements.txt`.
-   - Copia o projeto para o container.
-   - Expõe a porta 8000.
-2. Criar um arquivo `docker-compose.yml` com serviços:
-   - app (Django)
-   - nginx (opcional, para produção)
-   - Sem serviço de banco local.
-3. Adicionar um `.env.docker` de exemplo para variáveis de ambiente, incluindo as credenciais do Supabase.
-
-**Fase 2: Configuração do Django**
-4. Ajustar configurações do Django para aceitar variáveis de ambiente do Docker e apontar para o Supabase.
-   - Usar variáveis como `DB_HOST`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_PORT` vindas do `.env.docker`.
-   - Garantir que `ALLOWED_HOSTS` e `DEBUG` também possam ser configurados por ambiente.
-5. Garantir que arquivos estáticos e de mídia sejam servidos corretamente (volumes para `/static` e `/media`).
-
-**Fase 3: Documentação e Testes**
-6. Instruções no README para build, up, down e comandos úteis:
-   - Como rodar migrações, criar superusuário, coletar estáticos.
-   - Como acessar o sistema e o admin.
-   - Como customizar variáveis de ambiente.
-7. (Opcional) Incluir Nginx no Compose para produção, com configuração de proxy reverso para o Django.
-
-### Arquivos relevantes
-- `Dockerfile` — build do backend Django
-- `docker-compose.yml` — orquestração dos serviços
-- `.env.docker` — variáveis de ambiente para Docker (incluindo Supabase)
-- `README.md` — instruções de uso Docker Compose
-- `erp_agricola/settings.py` — garantir leitura de variáveis de ambiente do Supabase
-
-### Verificação
-1. Executar `docker-compose up` e acessar o sistema via navegador.
-2. Verificar conexão e persistência dos dados no Supabase.
-3. Testar comandos de migração e criação de superusuário via Docker Compose.
-4. Validar coleta de estáticos e acesso via Nginx (se incluído).
-
-### Decisões
-- O banco de dados será o Supabase (PostgreSQL gerenciado).
-- O Compose não terá serviço de banco local.
-- O arquivo `.env.docker` será usado para separar variáveis do ambiente local.
-- Nginx é opcional, recomendado para produção.
-
-### Considerações Finais
-1. Nginx será incluído no Compose? (opcional, recomendado para produção)
-2. Alguma customização de porta ou volume?
-3. O build será multi-stage para produção ou simples para dev?
+- Email: ems1844200806@gmail.com

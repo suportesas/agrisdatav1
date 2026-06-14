@@ -163,7 +163,7 @@ class CategoriaRiscoAmbiental(models.Model):
     data_atualizacao = models.DateTimeField('Última Atualização', auto_now=True)
 
     class Meta:
-        db_table = 'cadastros_categoriariscoanbiental'
+        db_table = 'cadastros_categoriariscoambiental'
         verbose_name = 'Categoria de Risco Ambiental'
         verbose_name_plural = 'Categorias de Risco Ambiental'
         ordering = ['nome']

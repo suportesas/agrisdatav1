@@ -46,213 +46,181 @@
      data-insumo-del-base="/portal/campo/os/{{ os.pk }}/insumo/"
      data-csrf="{{ csrf_token }}"></div>
 
-<!-- ══════════════════════════════════════════
-     SEÇÕES AJAX (fora do form principal)
-     ══════════════════════════════════════════ -->
-
-<!-- Outros Trabalhadores -->
-<div class="step-card">
-  <div class="step-header">
-    <div class="step-icon" style="background:#ede9fe;color:#7c3aed;"><i class="bi bi-people-fill"></i></div>
-    <div class="step-title">Outros trabalhadores <span class="text-muted fw-normal" style="font-size:.75rem;">(opcional)</span></div>
-  </div>
-  <div class="step-body">
-    <!-- Lista dos já cadastrados -->
-    <div id="workers-list" class="ajax-list">
-      {% for f in funcionarios_registrados %}
-      <div class="ajax-item d-flex justify-content-between align-items-center py-2 border-bottom" data-id="{{ f.pk }}">
-        <div>
-          <div class="fw-semibold small">{{ f.funcionario.nome_completo }}</div>
-          <div class="text-muted" style="font-size:.78rem;">{{ f.data_execucao|date:"d/m" }} · {{ f.hora_inicio|time:"H:i" }}–{{ f.hora_fim|time:"H:i" }}</div>
-        </div>
-        <button type="button" class="btn btn-sm btn-outline-danger rounded-circle p-0 ajax-del-worker"
-                data-id="{{ f.pk }}" style="width:30px;height:30px;"><i class="bi bi-trash"></i></button>
-      </div>
-      {% empty %}
-      <div class="empty-list" id="workers-empty">Nenhum trabalhador adicionado ainda.</div>
-      {% endfor %}
-    </div>
-    <!-- Mini-form adicionar -->
-    <div class="add-divider">Adicionar</div>
-    <select id="add-worker-func" class="form-select form-select-sm mb-2">
-      <option value="">— Selecione o funcionário —</option>
-      {% for f in funcionarios_empresa %}
-      <option value="{{ f.pk }}">{{ f.nome_completo }}{% if f.funcao %} — {{ f.funcao }}{% endif %}</option>
-      {% endfor %}
-    </select>
-
-    {% if portal_config.horario_trabalhadores == 'OMITIR' %}
-    <!-- Modo OMITIR: horário copiado automaticamente do operador -->
-    <div class="alert alert-info py-2 px-3 small rounded-3 mb-2">
-      <i class="bi bi-info-circle me-1"></i>
-      O horário será copiado automaticamente do seu registro de horas.
-    </div>
-    {% else %}
-    <!-- Modo AUTO: campos pré-preenchidos com horário do operador -->
-    <div class="row g-2 mb-2">
-      <div class="col-4">
-        <label class="form-label small text-muted mb-1">Data</label>
-        <input type="date" id="add-worker-date" class="form-control form-control-sm" value="{{ hoje }}">
-      </div>
-      <div class="col-4">
-        <label class="form-label small text-muted mb-1">Início</label>
-        <input type="time" id="add-worker-ini" class="form-control form-control-sm">
-      </div>
-      <div class="col-4">
-        <label class="form-label small text-muted mb-1">Término</label>
-        <input type="time" id="add-worker-fim" class="form-control form-control-sm">
-      </div>
-    </div>
-    {% endif %}
-
-    <button type="button" id="btn-add-worker" class="btn btn-outline-secondary btn-sm rounded-pill w-100 py-2">
-      <i class="bi bi-person-plus me-1"></i>Adicionar trabalhador
-    </button>
-    <div id="worker-erro" class="text-danger small mt-1 d-none"></div>
-  </div>
-</div>
-
-<!-- Máquina / Implemento -->
-<div class="step-card">
-  <div class="step-header">
-    <div class="step-icon" style="background:#fff3e0;color:#e6a817;"><i class="bi bi-truck"></i></div>
-    <div class="step-title">Máquina / Implemento <span class="text-muted fw-normal" style="font-size:.75rem;">(opcional)</span></div>
-  </div>
-  <div class="step-body">
-    <div id="maquinas-list" class="ajax-list">
-      {% for m in maquinas_registradas %}
-      <div class="ajax-item d-flex justify-content-between align-items-center py-2 border-bottom" data-id="{{ m.pk }}">
-        <div>
-          <div class="fw-semibold small">{{ m.veiculo }}</div>
-          <div class="text-muted" style="font-size:.78rem;">
-            {{ m.data_execucao|date:"d/m" }}
-            {% if m.horimetro_inicial is not None %} · H {{ m.horimetro_inicial }}→{{ m.horimetro_final|default:"?" }}{% endif %}
-            {% if m.horas_trabalhadas %} · {{ m.horas_trabalhadas|floatformat:1 }}h{% endif %}
-          </div>
-        </div>
-        <button type="button" class="btn btn-sm btn-outline-danger rounded-circle p-0 ajax-del-maquina"
-                data-id="{{ m.pk }}" style="width:30px;height:30px;"><i class="bi bi-trash"></i></button>
-      </div>
-      {% empty %}
-      <div class="empty-list" id="maquinas-empty">Nenhuma máquina adicionada ainda.</div>
-      {% endfor %}
-    </div>
-    {% if veiculos %}
-    <div class="add-divider">Adicionar</div>
-    <select id="add-maq-veiculo" class="form-select form-select-sm mb-2">
-      <option value="">— Selecione o veículo / implemento —</option>
-      {% for v in veiculos %}
-      <option value="{{ v.pk }}">{{ v }}</option>
-      {% endfor %}
-    </select>
-    <div class="row g-2 mb-2">
-      <div class="col-4">
-        <label class="form-label small text-muted mb-1">Data</label>
-        <input type="date" id="add-maq-date" class="form-control form-control-sm" value="{{ hoje }}">
-      </div>
-      <div class="col-4">
-        <label class="form-label small text-muted mb-1">H.Ini (h)</label>
-        <input type="number" id="add-maq-hini" class="form-control form-control-sm" step="0.01" min="0" placeholder="Opcional">
-      </div>
-      <div class="col-4">
-        <label class="form-label small text-muted mb-1">H.Fim (h)</label>
-        <input type="number" id="add-maq-hfim" class="form-control form-control-sm" step="0.01" min="0" placeholder="Opcional">
-      </div>
-    </div>
-    <button type="button" id="btn-add-maquina" class="btn btn-outline-secondary btn-sm rounded-pill w-100 py-2">
-      <i class="bi bi-plus-lg me-1"></i>Adicionar máquina
-    </button>
-    <div id="maquina-erro" class="text-danger small mt-1 d-none"></div>
-    {% else %}
-    <div class="text-muted small text-center py-2"><i class="bi bi-info-circle me-1"></i>Nenhum veículo cadastrado.</div>
-    {% endif %}
-  </div>
-</div>
-
-<!-- Insumos Utilizados -->
-<div class="step-card">
-  <div class="step-header">
-    <div class="step-icon" style="background:#dcfce7;color:#16a34a;"><i class="bi bi-droplet-fill"></i></div>
-    <div class="step-title">Insumos utilizados <span class="text-muted fw-normal" style="font-size:.75rem;">(opcional)</span></div>
-  </div>
-  <div class="step-body">
-    {% if insumos_os %}
-    <div class="mb-2 small text-muted fw-semibold">Já registrados / previstos:</div>
-    {% endif %}
-    <div id="insumos-list" class="ajax-list">
-      {% for ins in insumos_os %}
-      <div class="ajax-item d-flex justify-content-between align-items-center py-2 border-bottom" data-id="{{ ins.pk }}">
-        <div>
-          <div class="fw-semibold small">{{ ins.produto.nome|truncatechars:30 }}</div>
-          <div class="text-muted" style="font-size:.78rem;">
-            {% if ins.quantidade_planejada %}Plan: {{ ins.quantidade_planejada }} · {% endif %}
-            Aplic: {{ ins.quantidade_aplicada }} {{ ins.unidade_medida }}
-          </div>
-        </div>
-        <button type="button" class="btn btn-sm btn-outline-danger rounded-circle p-0 ajax-del-insumo"
-                data-id="{{ ins.pk }}" style="width:30px;height:30px;"><i class="bi bi-trash"></i></button>
-      </div>
-      {% empty %}
-      <div class="empty-list" id="insumos-empty">Nenhum insumo adicionado ainda.</div>
-      {% endfor %}
-    </div>
-    <div class="add-divider">Adicionar insumo</div>
-    <div class="mb-2 small text-muted" style="font-size:.76rem;"><i class="bi bi-info-circle me-1"></i>Sujeito a aprovação do emissor para baixa no estoque.</div>
-    <select id="add-ins-produto" class="form-select form-select-sm mb-2" onchange="atualizarUnIns(this)">
-      <option value="" data-un="">— Selecione o produto —</option>
-      {% for p in produtos_insumo %}
-      <option value="{{ p.pk }}" data-un="{{ p.unidade_medida.sigla|default:'' }}">{{ p.nome }}</option>
-      {% endfor %}
-    </select>
-    <div class="row g-2 mb-2">
-      <div class="col-7">
-        <label class="form-label small text-muted mb-1">Quantidade utilizada</label>
-        <input type="number" id="add-ins-qtd" class="form-control form-control-sm" step="0.001" min="0" placeholder="Ex: 10.5">
-      </div>
-      <div class="col-5">
-        <label class="form-label small text-muted mb-1">Unidade</label>
-        <input type="text" id="add-ins-un" class="form-control form-control-sm" readonly style="background:#f8f9fa;" placeholder="–">
-      </div>
-    </div>
-    <button type="button" id="btn-add-insumo" class="btn btn-outline-secondary btn-sm rounded-pill w-100 py-2">
-      <i class="bi bi-plus-lg me-1"></i>Adicionar insumo
-    </button>
-    <div id="insumo-erro" class="text-danger small mt-1 d-none"></div>
-  </div>
-</div>
-
-<!-- ══════════════════════════════════════════
-     FORM PRINCIPAL (horas + área + foto)
-     ══════════════════════════════════════════ -->
 <form method="post" enctype="multipart/form-data">
   {% csrf_token %}
 
-  <!-- Passo 1: Horário do operador -->
+  <!-- ══════════════════════════════════════════
+       SEÇÕES AJAX
+       ══════════════════════════════════════════ -->
+
+  <!-- Outros Trabalhadores -->
   <div class="step-card">
     <div class="step-header">
-      <div class="step-icon" style="background:#e8f5ee;color:#1a6e3c;font-weight:700;">1</div>
-      <div class="step-title"><i class="bi bi-clock me-1 text-success"></i>Meu horário de trabalho</div>
+      <div class="step-icon" style="background:#ede9fe;color:#7c3aed;"><i class="bi bi-people-fill"></i></div>
+      <div class="step-title">Outros trabalhadores <span class="text-muted fw-normal" style="font-size:.75rem;">(opcional)</span></div>
     </div>
     <div class="step-body">
-      <div class="d-flex align-items-center gap-2 mb-3 px-2 py-2 rounded-3" style="background:#f0fdf4;">
-        <i class="bi bi-person-circle text-success fs-5"></i>
-        <span class="fw-semibold small">{{ func.nome_completo }}</span>
-      </div>
-      <div class="mb-3">
-        <label class="form-label fw-semibold small">Data</label>
-        <input type="date" name="data_execucao" id="data_execucao" class="form-control" value="{{ hoje }}" required>
-      </div>
-      <div class="row g-3">
-        <div class="col-6">
-          <label class="form-label fw-semibold small">Início <span class="text-danger">*</span></label>
-          <input type="time" name="hora_inicio" id="hora_inicio" class="form-control text-center fw-bold" style="font-size:1.2rem;" required>
+      <!-- Lista dos já cadastrados -->
+      <div id="workers-list" class="ajax-list">
+        {% for f in funcionarios_registrados %}
+        <div class="ajax-item d-flex justify-content-between align-items-center py-2 border-bottom" data-id="{{ f.pk }}">
+          <div>
+            <div class="fw-semibold small">{{ f.funcionario.nome_completo }}</div>
+            <div class="text-muted" style="font-size:.78rem;">{{ f.data_execucao|date:"d/m" }} · {{ f.hora_inicio|time:"H:i" }}–{{ f.hora_fim|time:"H:i" }}</div>
+          </div>
+          <button type="button" class="btn btn-sm btn-outline-danger rounded-circle p-0 ajax-del-worker"
+                  data-id="{{ f.pk }}" style="width:30px;height:30px;"><i class="bi bi-trash"></i></button>
         </div>
-        <div class="col-6">
-          <label class="form-label fw-semibold small">Término <span class="text-danger">*</span></label>
-          <input type="time" name="hora_fim" id="hora_fim" class="form-control text-center fw-bold" style="font-size:1.2rem;" required>
+        {% empty %}
+        <div class="empty-list" id="workers-empty">Nenhum trabalhador adicionado ainda.</div>
+        {% endfor %}
+      </div>
+      <!-- Mini-form adicionar -->
+      <div class="add-divider">Adicionar</div>
+      <select id="add-worker-func" class="form-select form-select-sm mb-2">
+        <option value="">— Selecione o funcionário —</option>
+        {% for f in funcionarios_empresa %}
+        <option value="{{ f.pk }}">{{ f.nome_completo }}{% if f.funcao %} — {{ f.funcao }}{% endif %}</option>
+        {% endfor %}
+      </select>
+
+      {% if portal_config.horario_trabalhadores == 'OMITIR' %}
+      <!-- Modo OMITIR: horário copiado automaticamente do operador -->
+      <div class="alert alert-info py-2 px-3 small rounded-3 mb-2">
+        <i class="bi bi-info-circle me-1"></i>
+        O horário será copiado automaticamente do seu registro de horas.
+      </div>
+      {% else %}
+      <!-- Modo AUTO: campos pré-preenchidos com horário do operador -->
+      <div class="row g-2 mb-2">
+        <div class="col-4">
+          <label class="form-label small text-muted mb-1">Data</label>
+          <input type="date" id="add-worker-date" class="form-control form-control-sm" value="{{ hoje }}">
+        </div>
+        <div class="col-4">
+          <label class="form-label small text-muted mb-1">Início</label>
+          <input type="time" id="add-worker-ini" class="form-control form-control-sm">
+        </div>
+        <div class="col-4">
+          <label class="form-label small text-muted mb-1">Término</label>
+          <input type="time" id="add-worker-fim" class="form-control form-control-sm">
         </div>
       </div>
-      <div id="duracao-display" class="text-center mt-2 text-success fw-semibold small"></div>
+      {% endif %}
+
+      <button type="button" id="btn-add-worker" class="btn btn-outline-secondary btn-sm rounded-pill w-100 py-2">
+        <i class="bi bi-person-plus me-1"></i>Adicionar trabalhador
+      </button>
+      <div id="worker-erro" class="text-danger small mt-1 d-none"></div>
+    </div>
+  </div>
+
+  <!-- Máquina / Implemento -->
+  <div class="step-card">
+    <div class="step-header">
+      <div class="step-icon" style="background:#fff3e0;color:#e6a817;"><i class="bi bi-truck"></i></div>
+      <div class="step-title">Máquina / Implemento <span class="text-muted fw-normal" style="font-size:.75rem;">(opcional)</span></div>
+    </div>
+    <div class="step-body">
+      <div id="maquinas-list" class="ajax-list">
+        {% for m in maquinas_registradas %}
+        <div class="ajax-item d-flex justify-content-between align-items-center py-2 border-bottom" data-id="{{ m.pk }}">
+          <div>
+            <div class="fw-semibold small">{{ m.veiculo }}</div>
+            <div class="text-muted" style="font-size:.78rem;">
+              {{ m.data_execucao|date:"d/m" }}
+              {% if m.horimetro_inicial is not None %} · H {{ m.horimetro_inicial }}→{{ m.horimetro_final|default:"?" }}{% endif %}
+              {% if m.horas_trabalhadas %} · {{ m.horas_trabalhadas|floatformat:1 }}h{% endif %}
+            </div>
+          </div>
+          <button type="button" class="btn btn-sm btn-outline-danger rounded-circle p-0 ajax-del-maquina"
+                  data-id="{{ m.pk }}" style="width:30px;height:30px;"><i class="bi bi-trash"></i></button>
+        </div>
+        {% empty %}
+        <div class="empty-list" id="maquinas-empty">Nenhuma máquina adicionada ainda.</div>
+        {% endfor %}
+      </div>
+      {% if veiculos %}
+      <div class="add-divider">Adicionar</div>
+      <select id="add-maq-veiculo" class="form-select form-select-sm mb-2">
+        <option value="">— Selecione o veículo / implemento —</option>
+        {% for v in veiculos %}
+        <option value="{{ v.pk }}">{{ v }}</option>
+        {% endfor %}
+      </select>
+      <div class="row g-2 mb-2">
+        <div class="col-4">
+          <label class="form-label small text-muted mb-1">Data</label>
+          <input type="date" id="add-maq-date" class="form-control form-control-sm" value="{{ hoje }}">
+        </div>
+        <div class="col-4">
+          <label class="form-label small text-muted mb-1">H.Ini (h)</label>
+          <input type="number" id="add-maq-hini" class="form-control form-control-sm" step="0.01" min="0" placeholder="Opcional">
+        </div>
+        <div class="col-4">
+          <label class="form-label small text-muted mb-1">H.Fim (h)</label>
+          <input type="number" id="add-maq-hfim" class="form-control form-control-sm" step="0.01" min="0" placeholder="Opcional">
+        </div>
+      </div>
+      <button type="button" id="btn-add-maquina" class="btn btn-outline-secondary btn-sm rounded-pill w-100 py-2">
+        <i class="bi bi-plus-lg me-1"></i>Adicionar máquina
+      </button>
+      <div id="maquina-erro" class="text-danger small mt-1 d-none"></div>
+      {% else %}
+      <div class="text-muted small text-center py-2"><i class="bi bi-info-circle me-1"></i>Nenhum veículo cadastrado.</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Insumos Utilizados -->
+  <div class="step-card">
+    <div class="step-header">
+      <div class="step-icon" style="background:#dcfce7;color:#16a34a;"><i class="bi bi-droplet-fill"></i></div>
+      <div class="step-title">Insumos utilizados <span class="text-muted fw-normal" style="font-size:.75rem;">(opcional)</span></div>
+    </div>
+    <div class="step-body">
+      {% if insumos_os %}
+      <div class="mb-2 small text-muted fw-semibold">Já registrados / previstos:</div>
+      {% endif %}
+      <div id="insumos-list" class="ajax-list">
+        {% for ins in insumos_os %}
+        <div class="ajax-item d-flex justify-content-between align-items-center py-2 border-bottom" data-id="{{ ins.pk }}">
+          <div>
+            <div class="fw-semibold small">{{ ins.produto.nome|truncatechars:30 }}</div>
+            <div class="text-muted" style="font-size:.78rem;">
+              {% if ins.quantidade_planejada %}Plan: {{ ins.quantidade_planejada }} · {% endif %}
+              Aplic: {{ ins.quantidade_aplicada }} {{ ins.unidade_medida }}
+            </div>
+          </div>
+          <button type="button" class="btn btn-sm btn-outline-danger rounded-circle p-0 ajax-del-insumo"
+                  data-id="{{ ins.pk }}" style="width:30px;height:30px;"><i class="bi bi-trash"></i></button>
+        </div>
+        {% empty %}
+        <div class="empty-list" id="insumos-empty">Nenhum insumo adicionado ainda.</div>
+        {% endfor %}
+      </div>
+      <div class="add-divider">Adicionar insumo</div>
+      <div class="mb-2 small text-muted" style="font-size:.76rem;"><i class="bi bi-info-circle me-1"></i>Sujeito a aprovação do emissor para baixa no estoque.</div>
+      <select id="add-ins-produto" class="form-select form-select-sm mb-2" onchange="atualizarUnIns(this)">
+        <option value="" data-un="">— Selecione o produto —</option>
+        {% for p in produtos_insumo %}
+        <option value="{{ p.pk }}" data-un="{{ p.unidade_medida.sigla|default:'' }}">{{ p.nome }}</option>
+        {% endfor %}
+      </select>
+      <div class="row g-2 mb-2">
+        <div class="col-7">
+          <label class="form-label small text-muted mb-1">Quantidade utilizada</label>
+          <input type="number" id="add-ins-qtd" class="form-control form-control-sm" step="0.001" min="0" placeholder="Ex: 10.5">
+        </div>
+        <div class="col-5">
+          <label class="form-label small text-muted mb-1">Unidade</label>
+          <input type="text" id="add-ins-un" class="form-control form-control-sm" readonly style="background:#f8f9fa;" placeholder="–">
+        </div>
+      </div>
+      <button type="button" id="btn-add-insumo" class="btn btn-outline-secondary btn-sm rounded-pill w-100 py-2">
+        <i class="bi bi-plus-lg me-1"></i>Adicionar insumo
+      </button>
+      <div id="insumo-erro" class="text-danger small mt-1 d-none"></div>
     </div>
   </div>
 
@@ -334,7 +302,7 @@
 
   <div class="mb-2">
     <button type="submit" class="btn-salvar">
-      <i class="bi bi-check-lg me-2"></i>Salvar registro de horas
+      <i class="bi bi-check-lg me-2"></i>Salvar dados da operação
     </button>
   </div>
   <div class="text-center mb-5">
@@ -348,24 +316,6 @@
 <script>
 const U = document.getElementById('ajax-urls').dataset;
 const CSRF = U.csrf;
-
-// ── Duração em tempo real ───────────────────────────────
-const iniEl = document.getElementById('hora_inicio');
-const fimEl = document.getElementById('hora_fim');
-if (iniEl && !iniEl.value) {
-  const n = new Date();
-  iniEl.value = String(n.getHours()).padStart(2,'0') + ':' + String(n.getMinutes()).padStart(2,'0');
-}
-function calcDur() {
-  const [ih,im] = (iniEl.value||'').split(':').map(Number);
-  const [fh,fm] = (fimEl.value||'').split(':').map(Number);
-  if (isNaN(ih)||isNaN(fh)) return;
-  const m = (fh*60+fm)-(ih*60+im);
-  const el = document.getElementById('duracao-display');
-  el.textContent = m > 0 ? `⏱ ${Math.floor(m/60)}h${m%60>0?String(m%60).padStart(2,'0')+'min':''} de trabalho` : '';
-}
-iniEl.addEventListener('change', calcDur);
-fimEl.addEventListener('change', calcDur);
 
 // ── Preview foto ────────────────────────────────────────
 function previewFoto(inp) {
@@ -435,18 +385,6 @@ document.getElementById('btn-add-worker').addEventListener('click', async () => 
     }
   } else showErr('worker-erro', d.error || 'Erro ao adicionar.');
 });
-
-// ── Auto-preencher campos de horário do trabalhador ao digitar no operador ──
-if (HORARIO_MODO === 'AUTO') {
-  function syncWorkerTime() {
-    const iniEl = document.getElementById('add-worker-ini');
-    const fimEl = document.getElementById('add-worker-fim');
-    if (iniEl && !iniEl.value) iniEl.value = document.getElementById('hora_inicio').value || '';
-    if (fimEl && !fimEl.value) fimEl.value = document.getElementById('hora_fim').value || '';
-  }
-  document.getElementById('hora_inicio').addEventListener('change', syncWorkerTime);
-  document.getElementById('hora_fim').addEventListener('change', syncWorkerTime);
-}
 
 // ── Máquinas ─────────────────────────────────────────────
 const addMaqBtn = document.getElementById('btn-add-maquina');

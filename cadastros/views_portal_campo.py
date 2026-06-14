@@ -18,7 +18,7 @@ from django.views.decorators.http import require_POST
 from rh.models import Funcionario
 from operacoes_campo.models import (
     OrdemServico, OSFuncionario, OSMaquina, OrdemServicoInsumo,
-    OSRegistroExecucao, PushSubscriptionCampo, PortalCampoConfig,
+    OSRegistroExecucao, OSIntervalo, PushSubscriptionCampo, PortalCampoConfig,
 )
 from frota.models import Vehicle
 from produtos.models import Produto
@@ -189,6 +189,9 @@ def campo_os_detail(request, pk):
     except OSRegistroExecucao.DoesNotExist:
         registro = None
 
+    intervalos = os_obj.intervalos.select_related('funcionario').order_by('inicio')
+    intervalo_aberto = intervalos.filter(fim__isnull=True).first()
+
     ctx = _base_ctx(request)
     ctx.update({
         'func': func,
@@ -197,6 +200,8 @@ def campo_os_detail(request, pk):
         'maquinas_detail': maquinas_detail,
         'insumos': insumos,
         'registro': registro,
+        'intervalos': intervalos,
+        'intervalo_aberto': intervalo_aberto,
     })
     return render(request, 'cadastros/portal_campo/os_detail.html', ctx)
 
@@ -216,9 +221,11 @@ def campo_os_iniciar(request, pk):
     os_obj = get_object_or_404(OrdemServico, pk=pk, empresa=func.empresa)
 
     if os_obj.status == 'APROVADA':
+        agora = timezone.now()
         os_obj.status = 'EM_ANDAMENTO'
-        os_obj.data_inicio = timezone.now()
+        os_obj.data_inicio = agora
         os_obj.save(update_fields=['status', 'data_inicio'])
+        OSIntervalo.objects.create(os=os_obj, funcionario=func, inicio=agora)
         messages.success(request, f'OS {os_obj.numero} iniciada.')
     else:
         messages.warning(request, 'Não é possível iniciar esta OS no status atual.')
@@ -227,7 +234,65 @@ def campo_os_iniciar(request, pk):
 
 
 # ──────────────────────────────────────────────────────────────────────────────
-# REGISTRAR EXECUÇÃO (horas + dados por tipo de serviço)
+# PAUSAR OS
+# ──────────────────────────────────────────────────────────────────────────────
+
+@campo_login_required
+@require_POST
+def campo_os_pausar(request, pk):
+    func = _get_funcionario(request)
+    if not func:
+        request.session.flush()
+        return redirect(LOGIN_URL)
+
+    os_obj = get_object_or_404(OrdemServico, pk=pk, empresa=func.empresa)
+
+    if os_obj.status != 'EM_ANDAMENTO':
+        messages.warning(request, 'Não é possível pausar esta OS.')
+        return redirect('portal_campo:os_detail', pk=pk)
+
+    intervalo = os_obj.intervalos.filter(fim__isnull=True, funcionario=func).first()
+    if not intervalo:
+        messages.warning(request, 'Nenhum intervalo aberto encontrado.')
+        return redirect('portal_campo:os_detail', pk=pk)
+
+    intervalo.fim = timezone.now()
+    intervalo.save(update_fields=['fim'])
+
+    messages.info(request, 'OS pausada. Retome quando quiser continuar.')
+    return redirect('portal_campo:os_detail', pk=pk)
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# RETOMAR OS
+# ──────────────────────────────────────────────────────────────────────────────
+
+@campo_login_required
+@require_POST
+def campo_os_retomar(request, pk):
+    func = _get_funcionario(request)
+    if not func:
+        request.session.flush()
+        return redirect(LOGIN_URL)
+
+    os_obj = get_object_or_404(OrdemServico, pk=pk, empresa=func.empresa)
+
+    if os_obj.status != 'EM_ANDAMENTO':
+        messages.warning(request, 'Não é possível retomar esta OS.')
+        return redirect('portal_campo:os_detail', pk=pk)
+
+    if os_obj.intervalos.filter(fim__isnull=True, funcionario=func).exists():
+        messages.warning(request, 'Esta OS já está em andamento.')
+        return redirect('portal_campo:os_detail', pk=pk)
+
+    OSIntervalo.objects.create(os=os_obj, funcionario=func, inicio=timezone.now())
+
+    messages.success(request, 'OS retomada. Bom trabalho!')
+    return redirect('portal_campo:os_detail', pk=pk)
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# REGISTRAR EXECUÇÃO (dados por tipo de serviço, insumos, máquinas, foto)
 # ──────────────────────────────────────────────────────────────────────────────
 
 @campo_login_required
@@ -249,36 +314,22 @@ def campo_os_executar(request, pk):
         registro = None
 
     if request.method == 'POST':
-        data_exec = request.POST.get('data_execucao') or str(date.today())
-        hora_ini = request.POST.get('hora_inicio', '').strip()
-        hora_fim = request.POST.get('hora_fim', '').strip()
         obs = request.POST.get('observacoes', '').strip()
 
-        if hora_ini and hora_fim:
-            OSFuncionario.objects.create(
-                os=os_obj,
-                funcionario=func,
-                data_execucao=data_exec,
-                hora_inicio=hora_ini,
-                hora_fim=hora_fim,
-                observacoes=obs,
-            )
-            if os_obj.status == 'APROVADA':
-                os_obj.status = 'EM_ANDAMENTO'
-                os_obj.data_inicio = timezone.now()
-                os_obj.save(update_fields=['status', 'data_inicio'])
+        foto = request.FILES.get('foto_evidencia')
+        if foto:
+            os_obj.foto_evidencia = foto
+            os_obj.save(update_fields=['foto_evidencia'])
 
-            foto = request.FILES.get('foto_evidencia')
-            if foto:
-                os_obj.foto_evidencia = foto
-                os_obj.save(update_fields=['foto_evidencia'])
+        area = request.POST.get('area_executada_ha', '').strip()
+        if area:
+            os_obj.area_executada_ha = area
+            os_obj.save(update_fields=['area_executada_ha'])
 
-            _salvar_registro_execucao(request, os_obj, func, obs)
+        _salvar_registro_execucao(request, os_obj, func, obs)
 
-            messages.success(request, 'Horas e dados da operação registrados.')
-            return redirect('portal_campo:os_detail', pk=pk)
-        else:
-            messages.error(request, 'Informe horário de início e fim.')
+        messages.success(request, 'Dados da operação salvos.')
+        return redirect('portal_campo:os_detail', pk=pk)
 
     veiculos = Vehicle.objects.filter(empresa=func.empresa, ativo=True).order_by('marca', 'modelo', 'descricao')
     funcionarios_empresa = Funcionario.objects.filter(empresa=func.empresa, ativo=True).order_by('nome_completo')
@@ -558,10 +609,17 @@ def campo_os_concluir(request, pk):
 
         from django.db import transaction
         with transaction.atomic():
+            agora = timezone.now()
+            # Fecha qualquer intervalo ainda aberto do operador
+            intervalo_aberto = os_obj.intervalos.filter(fim__isnull=True).first()
+            if intervalo_aberto:
+                intervalo_aberto.fim = agora
+                intervalo_aberto.save(update_fields=['fim'])
+
             if foto:
                 os_obj.foto_evidencia = foto
             os_obj.status = 'CONCLUIDA'
-            os_obj.data_fim = timezone.now()
+            os_obj.data_fim = agora
             os_obj.save(update_fields=['status', 'data_fim', 'foto_evidencia'])
 
             try:

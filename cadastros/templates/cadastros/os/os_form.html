@@ -9,7 +9,7 @@
   <div class="row justify-content-center">
     <div class="col-xl-10">
 
-      <form method="post" enctype="multipart/form-data" novalidate>
+      <form method="post" enctype="multipart/form-data" novalidate id="os-form">
         {% csrf_token %}
 
         {% if form.non_field_errors %}
@@ -92,10 +92,10 @@
           </div>
         </div>
 
-        <!-- Serviço Externo (Terceirizado) -->
+        <!-- Serviço Externo -->
         <div class="card border-0 shadow-sm mb-4">
           <div class="card-header bg-light py-3">
-            <h5 class="mb-0 text-secondary"><i class="bi bi-building me-2"></i>Serviço Terceirizado (Opcional)</h5>
+            <h5 class="mb-0 text-secondary"><i class="bi bi-building me-2"></i>Serviço Terceirizado <small class="text-muted fw-normal">(Opcional)</small></h5>
           </div>
           <div class="card-body">
             <div class="row g-3">
@@ -115,115 +115,116 @@
           </div>
         </div>
 
-        <!-- Mão de Obra -->
+        <!-- ══════════════════════════════════
+             MÃO DE OBRA
+             ══════════════════════════════════ -->
         <div class="card border-0 shadow-sm mb-4">
           <div class="card-header bg-light py-3 d-flex justify-content-between align-items-center">
-            <h5 class="mb-0 text-secondary"><i class="bi bi-people me-2"></i>Mão de Obra (Funcionários)</h5>
-            <button type="button" class="btn btn-sm btn-outline-success" id="add-func">
-              <i class="bi bi-plus-circle me-1"></i>Adicionar Funcionário
+            <h5 class="mb-0 text-secondary"><i class="bi bi-people me-2"></i>Mão de Obra <span id="func-badge" class="badge bg-secondary ms-2 d-none">0</span></h5>
+            <button type="button" class="btn btn-sm btn-success rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#modalFunc">
+              <i class="bi bi-plus-lg me-1"></i>Adicionar Funcionário
             </button>
           </div>
           <div class="card-body">
+            <div class="alert alert-info py-2 px-3 small rounded-3 mb-3">
+              <i class="bi bi-info-circle me-1"></i>
+              Horários são registrados automaticamente pelo portal ao <strong>Iniciar</strong>, <strong>Pausar</strong> e <strong>Concluir</strong> a OS.
+            </div>
+
+            <!-- Formset management + dados existentes (submetidos com o form) -->
             {{ func_formset.management_form }}
-            <div id="func-formset-container">
-              {% for f in func_formset %}
-              <div class="func-form row g-2 align-items-end border-bottom pb-3 mb-3">
-                {{ f.id }}
-                {% if func_formset.can_delete %}
-                  <div class="d-none">{{ f.DELETE }}</div>
-                {% endif %}
-                <div class="col-md-3">
-                  <label class="form-label small">Funcionário</label>
-                  {{ f.funcionario }}
-                  {% if f.funcionario.errors %}<div class="text-danger small mt-1">{{ f.funcionario.errors }}</div>{% endif %}
-                </div>
-                <div class="col-md-2">
-                  <label class="form-label small">Data</label>
-                  {{ f.data_execucao }}
-                  {% if f.data_execucao.errors %}<div class="text-danger small mt-1">{{ f.data_execucao.errors }}</div>{% endif %}
-                </div>
-                <div class="col-md-2">
-                  <label class="form-label small">Início</label>
-                  {{ f.hora_inicio }}
-                  {% if f.hora_inicio.errors %}<div class="text-danger small mt-1">{{ f.hora_inicio.errors }}</div>{% endif %}
-                </div>
-                <div class="col-md-2">
-                  <label class="form-label small">Término</label>
-                  {{ f.hora_fim }}
-                  {% if f.hora_fim.errors %}<div class="text-danger small mt-1">{{ f.hora_fim.errors }}</div>{% endif %}
-                </div>
-                <div class="col-md-2">
-                  <label class="form-label small">Observações</label>
-                  {{ f.observacoes }}
-                </div>
-                <div class="col-md-1 d-flex align-items-end">
-                  <button type="button" class="btn btn-sm btn-outline-danger remove-form" title="Remover">
-                    <i class="bi bi-trash"></i>
-                  </button>
-                </div>
-              </div>
-              {% endfor %}
+            <div id="func-existing-data" style="display:none">
+              {% for f in func_formset %}{{ f.id }}{% if func_formset.can_delete %}<span class="func-del-wrap" data-idx="{{ forloop.counter0 }}">{{ f.DELETE }}</span>{% endif %}{{ f.funcionario }}{{ f.data_execucao }}{{ f.hora_inicio }}{{ f.hora_fim }}{{ f.observacoes }}{% endfor %}
             </div>
+            <!-- Novos itens adicionados via modal (hidden inputs) -->
+            <div id="func-new-inputs"></div>
+
+            <!-- Lista de itens -->
+            <p id="func-empty-msg" class="text-center text-muted small py-3 mb-0{% if func_formset.initial_forms %} d-none{% endif %}">
+              <i class="bi bi-person-plus me-1"></i>Nenhum funcionário adicionado ainda.
+            </p>
+            <table id="func-table" class="table table-sm table-hover align-middle mb-0{% if not func_formset.initial_forms %} d-none{% endif %}">
+              <thead class="table-light">
+                <tr>
+                  <th>Funcionário</th>
+                  <th>Data</th>
+                  <th>Início</th>
+                  <th>Término</th>
+                  <th>Observações</th>
+                  <th style="width:40px"></th>
+                </tr>
+              </thead>
+              <tbody id="func-tbody">
+                {% for f in func_formset %}
+                {% if f.instance.pk %}
+                <tr data-idx="{{ forloop.counter0 }}" data-existing="1">
+                  <td class="fw-medium">{{ f.instance.funcionario.nome_completo }}</td>
+                  <td class="text-muted small">{{ f.instance.data_execucao|date:"d/m/Y"|default:"—" }}</td>
+                  <td class="text-muted small">{{ f.instance.hora_inicio|time:"H:i"|default:"—" }}</td>
+                  <td class="text-muted small">{{ f.instance.hora_fim|time:"H:i"|default:"—" }}</td>
+                  <td class="text-muted small">{{ f.instance.observacoes|default:"—" }}</td>
+                  <td><button type="button" class="btn btn-sm btn-outline-danger rounded-circle p-0 func-remove-existing" data-idx="{{ forloop.counter0 }}" style="width:28px;height:28px;"><i class="bi bi-trash" style="font-size:.75rem;"></i></button></td>
+                </tr>
+                {% endif %}
+                {% endfor %}
+              </tbody>
+            </table>
           </div>
         </div>
 
-        <!-- Maquinário -->
+        <!-- ══════════════════════════════════
+             MAQUINÁRIO
+             ══════════════════════════════════ -->
         <div class="card border-0 shadow-sm mb-4">
           <div class="card-header bg-light py-3 d-flex justify-content-between align-items-center">
-            <h5 class="mb-0 text-secondary"><i class="bi bi-truck me-2"></i>Maquinário Utilizado</h5>
-            <button type="button" class="btn btn-sm btn-outline-success" id="add-maq">
-              <i class="bi bi-plus-circle me-1"></i>Adicionar Máquina
+            <h5 class="mb-0 text-secondary"><i class="bi bi-truck me-2"></i>Maquinário Utilizado <span id="maq-badge" class="badge bg-secondary ms-2 d-none">0</span></h5>
+            <button type="button" class="btn btn-sm btn-success rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#modalMaq">
+              <i class="bi bi-plus-lg me-1"></i>Adicionar Máquina
             </button>
           </div>
           <div class="card-body">
+            <!-- Formset management + dados existentes -->
             {{ maq_formset.management_form }}
-            <div id="maq-formset-container">
-              {% for m in maq_formset %}
-              <div class="maq-form row g-2 align-items-end border-bottom pb-3 mb-3">
-                {{ m.id }}
-                {% if maq_formset.can_delete %}
-                  <div class="d-none">{{ m.DELETE }}</div>
-                {% endif %}
-                <div class="col-md-3">
-                  <label class="form-label small">Veículo/Máquina</label>
-                  {{ m.veiculo }}
-                  {% if m.veiculo.errors %}<div class="text-danger small mt-1">{{ m.veiculo.errors }}</div>{% endif %}
-                </div>
-                <div class="col-md-2">
-                  <label class="form-label small">Operador</label>
-                  {{ m.operador }}
-                </div>
-                <div class="col-md-2">
-                  <label class="form-label small">Data</label>
-                  {{ m.data_execucao }}
-                  {% if m.data_execucao.errors %}<div class="text-danger small mt-1">{{ m.data_execucao.errors }}</div>{% endif %}
-                </div>
-                <div class="col-md-1">
-                  <label class="form-label small">Horímetro Ini.</label>
-                  {{ m.horimetro_inicial }}
-                  {% if m.horimetro_inicial.errors %}<div class="text-danger small mt-1">{{ m.horimetro_inicial.errors }}</div>{% endif %}
-                </div>
-                <div class="col-md-1">
-                  <label class="form-label small">Horímetro Fim</label>
-                  {{ m.horimetro_final }}
-                  {% if m.horimetro_final.errors %}<div class="text-danger small mt-1">{{ m.horimetro_final.errors }}</div>{% endif %}
-                </div>
-                <div class="col-md-2">
-                  <label class="form-label small">Config. Custo/h</label>
-                  {{ m.custo_hora_config }}
-                </div>
-                <div class="col-md-1 d-flex align-items-end">
-                  <button type="button" class="btn btn-sm btn-outline-danger remove-form" title="Remover">
-                    <i class="bi bi-trash"></i>
-                  </button>
-                </div>
-              </div>
-              {% endfor %}
+            <div id="maq-existing-data" style="display:none">
+              {% for m in maq_formset %}{{ m.id }}{% if maq_formset.can_delete %}<span class="maq-del-wrap" data-idx="{{ forloop.counter0 }}">{{ m.DELETE }}</span>{% endif %}{{ m.veiculo }}{{ m.operador }}{{ m.data_execucao }}{{ m.horimetro_inicial }}{{ m.horimetro_final }}{{ m.custo_hora_config }}{{ m.observacoes }}{% endfor %}
             </div>
+            <!-- Novos itens -->
+            <div id="maq-new-inputs"></div>
+
+            <!-- Lista de itens -->
+            <p id="maq-empty-msg" class="text-center text-muted small py-3 mb-0{% if maq_formset.initial_forms %} d-none{% endif %}">
+              <i class="bi bi-truck me-1"></i>Nenhuma máquina adicionada ainda.
+            </p>
+            <table id="maq-table" class="table table-sm table-hover align-middle mb-0{% if not maq_formset.initial_forms %} d-none{% endif %}">
+              <thead class="table-light">
+                <tr>
+                  <th>Veículo/Máquina</th>
+                  <th>Operador</th>
+                  <th>Data</th>
+                  <th>H.Ini</th>
+                  <th>H.Fim</th>
+                  <th style="width:40px"></th>
+                </tr>
+              </thead>
+              <tbody id="maq-tbody">
+                {% for m in maq_formset %}
+                {% if m.instance.pk %}
+                <tr data-idx="{{ forloop.counter0 }}" data-existing="1">
+                  <td class="fw-medium">{{ m.instance.veiculo }}</td>
+                  <td class="text-muted small">{{ m.instance.operador|default:"—" }}</td>
+                  <td class="text-muted small">{{ m.instance.data_execucao|date:"d/m/Y"|default:"—" }}</td>
+                  <td class="text-muted small">{{ m.instance.horimetro_inicial|default:"—" }}</td>
+                  <td class="text-muted small">{{ m.instance.horimetro_final|default:"—" }}</td>
+                  <td><button type="button" class="btn btn-sm btn-outline-danger rounded-circle p-0 maq-remove-existing" data-idx="{{ forloop.counter0 }}" style="width:28px;height:28px;"><i class="bi bi-trash" style="font-size:.75rem;"></i></button></td>
+                </tr>
+                {% endif %}
+                {% endfor %}
+              </tbody>
+            </table>
           </div>
         </div>
 
-        <!-- Evidência Fotográfica (RN-03) -->
+        <!-- Evidência Fotográfica -->
         <div class="card border-0 shadow-sm mb-4">
           <div class="card-header bg-light py-3">
             <h5 class="mb-0 text-secondary">
@@ -233,9 +234,7 @@
           </div>
           <div class="card-body">
             {{ form.foto_evidencia }}
-            {% if form.foto_evidencia.errors %}
-              <div class="text-danger small mt-1">{{ form.foto_evidencia.errors }}</div>
-            {% endif %}
+            {% if form.foto_evidencia.errors %}<div class="text-danger small mt-1">{{ form.foto_evidencia.errors }}</div>{% endif %}
           </div>
         </div>
 
@@ -254,65 +253,331 @@
   </div>
 </div>
 
+<!-- ══════════════════════════════════
+     MODAL — Adicionar Funcionário
+     ══════════════════════════════════ -->
+<div class="modal fade" id="modalFunc" tabindex="-1" aria-labelledby="modalFuncLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header border-0 pb-0">
+        <h5 class="modal-title fw-bold" id="modalFuncLabel"><i class="bi bi-person-plus me-2 text-success"></i>Adicionar Funcionário</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body pt-3">
+        <div id="modal-func-error" class="alert alert-danger py-2 small d-none"></div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Funcionário <span class="text-danger">*</span></label>
+          <select id="modal-func-funcionario" class="form-select">
+            <option value="">— Selecione —</option>
+          </select>
+        </div>
+        <div class="row g-2 mb-3">
+          <div class="col-4">
+            <label class="form-label small text-muted">Data <span class="fw-normal">(opcional)</span></label>
+            <input type="date" id="modal-func-data" class="form-control form-control-sm">
+          </div>
+          <div class="col-4">
+            <label class="form-label small text-muted">Início <span class="fw-normal">(opcional)</span></label>
+            <input type="time" id="modal-func-ini" class="form-control form-control-sm">
+          </div>
+          <div class="col-4">
+            <label class="form-label small text-muted">Término <span class="fw-normal">(opcional)</span></label>
+            <input type="time" id="modal-func-fim" class="form-control form-control-sm">
+          </div>
+        </div>
+        <div class="mb-2">
+          <label class="form-label small text-muted">Observações <span class="fw-normal">(opcional)</span></label>
+          <input type="text" id="modal-func-obs" class="form-control form-control-sm" placeholder="Observação sobre a alocação...">
+        </div>
+      </div>
+      <div class="modal-footer border-0 pt-0">
+        <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-success rounded-pill px-4" id="btn-func-add">
+          <i class="bi bi-check-lg me-1"></i>Adicionar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     MODAL — Adicionar Máquina
+     ══════════════════════════════════ -->
+<div class="modal fade" id="modalMaq" tabindex="-1" aria-labelledby="modalMaqLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header border-0 pb-0">
+        <h5 class="modal-title fw-bold" id="modalMaqLabel"><i class="bi bi-truck me-2 text-warning"></i>Adicionar Máquina / Veículo</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body pt-3">
+        <div id="modal-maq-error" class="alert alert-danger py-2 small d-none"></div>
+        <div class="row g-3 mb-3">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Veículo / Máquina <span class="text-danger">*</span></label>
+            <select id="modal-maq-veiculo" class="form-select">
+              <option value="">— Selecione —</option>
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Operador <span class="text-muted fw-normal small">(opcional)</span></label>
+            <select id="modal-maq-operador" class="form-select">
+              <option value="">— Selecione —</option>
+            </select>
+          </div>
+        </div>
+        <div class="row g-3 mb-3">
+          <div class="col-md-4">
+            <label class="form-label small text-muted">Data <span class="fw-normal">(opcional)</span></label>
+            <input type="date" id="modal-maq-data" class="form-control form-control-sm">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label small text-muted">Horímetro Ini. <span class="fw-normal">(opcional)</span></label>
+            <input type="number" id="modal-maq-hini" class="form-control form-control-sm" step="0.01" min="0" placeholder="h">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label small text-muted">Horímetro Fim <span class="fw-normal">(opcional)</span></label>
+            <input type="number" id="modal-maq-hfim" class="form-control form-control-sm" step="0.01" min="0" placeholder="h">
+          </div>
+        </div>
+        <div class="mb-2">
+          <label class="form-label small text-muted">Config. Custo/h <span class="fw-normal">(opcional)</span></label>
+          <select id="modal-maq-config" class="form-select form-select-sm">
+            <option value="">— Selecione —</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer border-0 pt-0">
+        <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-success rounded-pill px-4" id="btn-maq-add">
+          <i class="bi bi-check-lg me-1"></i>Adicionar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
-// Adicionar linha de funcionário
-document.getElementById('add-func').addEventListener('click', function () {
-  const container = document.getElementById('func-formset-container');
-  const totalForms = document.getElementById('id_func-TOTAL_FORMS');
-  const count = parseInt(totalForms.value);
-  const lastForm = container.querySelector('.func-form:last-child');
-  if (!lastForm) return;
-  const newForm = lastForm.cloneNode(true);
-  newForm.querySelectorAll('input, select, textarea').forEach(el => {
-    el.name = el.name.replace(/-\d+-/, `-${count}-`);
-    el.id = el.id.replace(/-\d+-/, `-${count}-`);
-    if (el.type !== 'checkbox') el.value = '';
-    if (el.tagName === 'SELECT') el.selectedIndex = 0;
+// ── Copia opções de um select (por seletor CSS) para um select de modal ──────
+function copyOptionsFromSelector(srcSelector, targetId) {
+  const src = document.querySelector(srcSelector);
+  const tgt = document.getElementById(targetId);
+  if (!src || !tgt) return;
+  const blank = tgt.options[0];
+  tgt.innerHTML = '';
+  tgt.appendChild(blank.cloneNode(true));
+  Array.from(src.options).forEach(opt => {
+    if (opt.value) tgt.appendChild(opt.cloneNode(true));
   });
-  container.appendChild(newForm);
-  totalForms.value = count + 1;
-  attachRemove(newForm);
-});
-
-// Adicionar linha de máquina
-document.getElementById('add-maq').addEventListener('click', function () {
-  const container = document.getElementById('maq-formset-container');
-  const totalForms = document.getElementById('id_maq-TOTAL_FORMS');
-  const count = parseInt(totalForms.value);
-  const lastForm = container.querySelector('.maq-form:last-child');
-  if (!lastForm) return;
-  const newForm = lastForm.cloneNode(true);
-  newForm.querySelectorAll('input, select, textarea').forEach(el => {
-    el.name = el.name.replace(/-\d+-/, `-${count}-`);
-    el.id = el.id.replace(/-\d+-/, `-${count}-`);
-    if (el.type !== 'checkbox') el.value = '';
-    if (el.tagName === 'SELECT') el.selectedIndex = 0;
-  });
-  container.appendChild(newForm);
-  totalForms.value = count + 1;
-  attachRemove(newForm);
-});
-
-// Remover linha
-function attachRemove(row) {
-  const btn = row.querySelector('.remove-form');
-  if (btn) {
-    btn.addEventListener('click', function () {
-      const deleteInput = row.querySelector('input[type="checkbox"][name$="-DELETE"]');
-      if (deleteInput) {
-        deleteInput.checked = true;
-        row.style.display = 'none';
-      } else {
-        row.remove();
-      }
-    });
-  }
 }
-document.querySelectorAll('.remove-form').forEach(btn => {
-  attachRemove(btn.closest('.func-form, .maq-form'));
+
+document.addEventListener('DOMContentLoaded', function () {
+  // Copia opções dos forms reais do formset (enriquecidos por empresa no servidor)
+  copyOptionsFromSelector('#func-existing-data select[name$="-funcionario"]', 'modal-func-funcionario');
+  copyOptionsFromSelector('#maq-existing-data select[name$="-veiculo"]', 'modal-maq-veiculo');
+  copyOptionsFromSelector('#maq-existing-data select[name$="-operador"]', 'modal-maq-operador');
+  copyOptionsFromSelector('#maq-existing-data select[name$="-custo_hora_config"]', 'modal-maq-config');
+  updateBadge('func');
+  updateBadge('maq');
 });
 
-// Carregamento dinâmico de subtipos e modalidades
+// ── Contadores nos badges ────────────────────────────────────────────────────
+function updateBadge(prefix) {
+  const tbody = document.getElementById(`${prefix}-tbody`);
+  const badge = document.getElementById(`${prefix}-badge`);
+  if (!tbody || !badge) return;
+  const count = tbody.querySelectorAll('tr:not([style*="display: none"])').length;
+  badge.textContent = count;
+  badge.classList.toggle('d-none', count === 0);
+}
+
+function showList(prefix) {
+  document.getElementById(`${prefix}-empty-msg`).classList.add('d-none');
+  document.getElementById(`${prefix}-table`).classList.remove('d-none');
+}
+
+function checkEmpty(prefix) {
+  const tbody = document.getElementById(`${prefix}-tbody`);
+  const visible = tbody.querySelectorAll('tr:not([style*="display: none"])').length;
+  if (visible === 0) {
+    document.getElementById(`${prefix}-table`).classList.add('d-none');
+    document.getElementById(`${prefix}-empty-msg`).classList.remove('d-none');
+  }
+  updateBadge(prefix);
+}
+
+// ── Adicionar Funcionário ────────────────────────────────────────────────────
+document.getElementById('btn-func-add').addEventListener('click', function () {
+  const sel = document.getElementById('modal-func-funcionario');
+  const errEl = document.getElementById('modal-func-error');
+  if (!sel.value) {
+    errEl.textContent = 'Selecione o funcionário.';
+    errEl.classList.remove('d-none');
+    return;
+  }
+  errEl.classList.add('d-none');
+
+  const funcId   = sel.value;
+  const funcNome = sel.options[sel.selectedIndex].text;
+  const data     = document.getElementById('modal-func-data').value;
+  const ini      = document.getElementById('modal-func-ini').value;
+  const fim      = document.getElementById('modal-func-fim').value;
+  const obs      = document.getElementById('modal-func-obs').value;
+
+  // Índice do novo item no formset
+  const totalForms = document.getElementById('id_func-TOTAL_FORMS');
+  const idx = parseInt(totalForms.value);
+
+  // Cria hidden inputs
+  const wrap = document.getElementById('func-new-inputs');
+  const div = document.createElement('div');
+  div.id = `func-new-${idx}`;
+  div.innerHTML = `
+    <input type="hidden" name="func-${idx}-funcionario" value="${funcId}">
+    <input type="hidden" name="func-${idx}-data_execucao" value="${data}">
+    <input type="hidden" name="func-${idx}-hora_inicio" value="${ini}">
+    <input type="hidden" name="func-${idx}-hora_fim" value="${fim}">
+    <input type="hidden" name="func-${idx}-observacoes" value="${obs}">
+  `;
+  wrap.appendChild(div);
+  totalForms.value = idx + 1;
+
+  // Adiciona linha na tabela
+  showList('func');
+  const tr = document.createElement('tr');
+  tr.dataset.idx = idx;
+  tr.innerHTML = `
+    <td class="fw-medium">${funcNome}</td>
+    <td class="text-muted small">${data ? formatDate(data) : '—'}</td>
+    <td class="text-muted small">${ini || '—'}</td>
+    <td class="text-muted small">${fim || '—'}</td>
+    <td class="text-muted small">${obs || '—'}</td>
+    <td><button type="button" class="btn btn-sm btn-outline-danger rounded-circle p-0 func-remove-new" data-idx="${idx}" style="width:28px;height:28px;"><i class="bi bi-trash" style="font-size:.75rem;"></i></button></td>
+  `;
+  document.getElementById('func-tbody').appendChild(tr);
+  tr.querySelector('.func-remove-new').addEventListener('click', function () {
+    document.getElementById(`func-new-${this.dataset.idx}`)?.remove();
+    this.closest('tr').remove();
+    checkEmpty('func');
+  });
+  updateBadge('func');
+
+  // Reset modal
+  sel.value = '';
+  document.getElementById('modal-func-data').value = '';
+  document.getElementById('modal-func-ini').value = '';
+  document.getElementById('modal-func-fim').value = '';
+  document.getElementById('modal-func-obs').value = '';
+  bootstrap.Modal.getInstance(document.getElementById('modalFunc')).hide();
+});
+
+// ── Remover existente (funcionário) ─────────────────────────────────────────
+document.querySelectorAll('.func-remove-existing').forEach(btn => {
+  btn.addEventListener('click', function () {
+    const idx = this.dataset.idx;
+    // Marca DELETE do formset existente
+    const delCheck = document.querySelector(`#func-existing-data .func-del-wrap[data-idx="${idx}"] input[type="checkbox"]`);
+    if (delCheck) delCheck.checked = true;
+    this.closest('tr').style.display = 'none';
+    checkEmpty('func');
+  });
+});
+
+// ── Adicionar Máquina ────────────────────────────────────────────────────────
+document.getElementById('btn-maq-add').addEventListener('click', function () {
+  const sel = document.getElementById('modal-maq-veiculo');
+  const errEl = document.getElementById('modal-maq-error');
+  if (!sel.value) {
+    errEl.textContent = 'Selecione o veículo/máquina.';
+    errEl.classList.remove('d-none');
+    return;
+  }
+  errEl.classList.add('d-none');
+
+  const veicId   = sel.value;
+  const veicNome = sel.options[sel.selectedIndex].text;
+  const opSel    = document.getElementById('modal-maq-operador');
+  const opId     = opSel.value;
+  const opNome   = opId ? opSel.options[opSel.selectedIndex].text : '—';
+  const data     = document.getElementById('modal-maq-data').value;
+  const hini     = document.getElementById('modal-maq-hini').value;
+  const hfim     = document.getElementById('modal-maq-hfim').value;
+  const cfgSel   = document.getElementById('modal-maq-config');
+  const cfgId    = cfgSel.value;
+
+  const totalForms = document.getElementById('id_maq-TOTAL_FORMS');
+  const idx = parseInt(totalForms.value);
+
+  const wrap = document.getElementById('maq-new-inputs');
+  const div = document.createElement('div');
+  div.id = `maq-new-${idx}`;
+  div.innerHTML = `
+    <input type="hidden" name="maq-${idx}-veiculo" value="${veicId}">
+    <input type="hidden" name="maq-${idx}-operador" value="${opId}">
+    <input type="hidden" name="maq-${idx}-data_execucao" value="${data}">
+    <input type="hidden" name="maq-${idx}-horimetro_inicial" value="${hini}">
+    <input type="hidden" name="maq-${idx}-horimetro_final" value="${hfim}">
+    <input type="hidden" name="maq-${idx}-custo_hora_config" value="${cfgId}">
+  `;
+  wrap.appendChild(div);
+  totalForms.value = idx + 1;
+
+  showList('maq');
+  const tr = document.createElement('tr');
+  tr.dataset.idx = idx;
+  tr.innerHTML = `
+    <td class="fw-medium">${veicNome}</td>
+    <td class="text-muted small">${opNome}</td>
+    <td class="text-muted small">${data ? formatDate(data) : '—'}</td>
+    <td class="text-muted small">${hini || '—'}</td>
+    <td class="text-muted small">${hfim || '—'}</td>
+    <td><button type="button" class="btn btn-sm btn-outline-danger rounded-circle p-0 maq-remove-new" data-idx="${idx}" style="width:28px;height:28px;"><i class="bi bi-trash" style="font-size:.75rem;"></i></button></td>
+  `;
+  document.getElementById('maq-tbody').appendChild(tr);
+  tr.querySelector('.maq-remove-new').addEventListener('click', function () {
+    document.getElementById(`maq-new-${this.dataset.idx}`)?.remove();
+    this.closest('tr').remove();
+    checkEmpty('maq');
+  });
+  updateBadge('maq');
+
+  // Reset
+  sel.value = '';
+  opSel.value = '';
+  document.getElementById('modal-maq-data').value = '';
+  document.getElementById('modal-maq-hini').value = '';
+  document.getElementById('modal-maq-hfim').value = '';
+  cfgSel.value = '';
+  bootstrap.Modal.getInstance(document.getElementById('modalMaq')).hide();
+});
+
+// ── Remover existente (máquina) ──────────────────────────────────────────────
+document.querySelectorAll('.maq-remove-existing').forEach(btn => {
+  btn.addEventListener('click', function () {
+    const idx = this.dataset.idx;
+    const delCheck = document.querySelector(`#maq-existing-data .maq-del-wrap[data-idx="${idx}"] input[type="checkbox"]`);
+    if (delCheck) delCheck.checked = true;
+    this.closest('tr').style.display = 'none';
+    checkEmpty('maq');
+  });
+});
+
+// ── Reset modal ao abrir (limpa erros) ───────────────────────────────────────
+document.getElementById('modalFunc').addEventListener('show.bs.modal', function () {
+  document.getElementById('modal-func-error').classList.add('d-none');
+});
+document.getElementById('modalMaq').addEventListener('show.bs.modal', function () {
+  document.getElementById('modal-maq-error').classList.add('d-none');
+});
+
+// ── Formatação de data dd/mm/aaaa ────────────────────────────────────────────
+function formatDate(iso) {
+  if (!iso) return '—';
+  const [y, m, d] = iso.split('-');
+  return `${d}/${m}/${y}`;
+}
+
+// ── Carregamento dinâmico de subtipos e modalidades ──────────────────────────
 const AJAX_URL = "{% url 'operacoes_campo:os_ajax_opcoes_servico' %}";
 const tipoSelect = document.getElementById('id_tipo_servico');
 const subtipoSelect = document.getElementById('id_subtipo_servico');
@@ -334,7 +599,7 @@ function populateSelect(sel, items, selectedId) {
 
 function loadOpcoes(tipoId, keepSubtipo, keepModalidade) {
   if (!tipoId) {
-    if (subtipoSelect) { subtipoSelect.innerHTML = '<option value="">---------</option>'; }
+    if (subtipoSelect) subtipoSelect.innerHTML = '<option value="">---------</option>';
     if (subtipoHint) subtipoHint.textContent = 'Selecione o Tipo de Serviço primeiro';
     return;
   }
@@ -349,18 +614,13 @@ function loadOpcoes(tipoId, keepSubtipo, keepModalidade) {
 }
 
 if (tipoSelect) {
-  tipoSelect.addEventListener('change', function () {
-    loadOpcoes(this.value, '', '');
-  });
-  // Carga inicial (edição): preserva valores já selecionados
+  tipoSelect.addEventListener('change', function () { loadOpcoes(this.value, '', ''); });
   const initSubtipo = subtipoSelect ? subtipoSelect.value : '';
   const initModalidade = modalidadeSelect ? modalidadeSelect.value : '';
-  if (tipoSelect.value) {
-    loadOpcoes(tipoSelect.value, initSubtipo, initModalidade);
-  }
+  if (tipoSelect.value) loadOpcoes(tipoSelect.value, initSubtipo, initModalidade);
 }
 
-// ============== AUTO-PREENCHIMENTO DE SAFRA PELO TALHÃO ==============
+// ── Auto-preenchimento de safra pelo talhão ──────────────────────────────────
 const AJAX_TALHAO_URL = "{% url 'operacoes_campo:os_ajax_opcoes_talhao' %}";
 const talhaoSelect = document.getElementById('id_talhao');
 const safraSelect = document.getElementById('id_safra');
@@ -368,49 +628,30 @@ const culturaInput = document.getElementById('id_cultura_display');
 
 function carregarSafrasTalhao(talhaoId, preservarSafra) {
   if (!talhaoId) {
-    if (safraSelect) {
-      safraSelect.innerHTML = '<option value="">---------</option>';
-    }
-    if (culturaInput) {
-      culturaInput.value = '';
-      culturaInput.placeholder = 'Selecione um Talhão';
-    }
+    if (safraSelect) safraSelect.innerHTML = '<option value="">---------</option>';
+    if (culturaInput) { culturaInput.value = ''; culturaInput.placeholder = 'Selecione um Talhão'; }
     return;
   }
-
   fetch(AJAX_TALHAO_URL + '?talhao_id=' + talhaoId)
     .then(r => r.json())
     .then(data => {
-      // Atualiza campo cultura
       if (culturaInput) {
         culturaInput.value = data.cultura ? data.cultura.nome : '';
         culturaInput.placeholder = data.cultura ? '' : 'Sem cultura plantada';
       }
-
-      // Auto-preenche área do talhão se campo estiver vazio
       const areaInput = document.getElementById('id_area_executada_ha');
-      if (areaInput && !areaInput.value && data.area_hac) {
-        areaInput.value = data.area_hac;
-      }
-
-      // Filtra safras do talhão
+      if (areaInput && !areaInput.value && data.area_hac) areaInput.value = data.area_hac;
       if (safraSelect) {
         const valorAtual = preservarSafra || safraSelect.value || '';
         safraSelect.innerHTML = '<option value="">---------</option>';
-
         if (data.safras.length > 0) {
           data.safras.forEach(s => {
             const opt = document.createElement('option');
-            opt.value = s.id;
-            opt.textContent = s.nome;
+            opt.value = s.id; opt.textContent = s.nome;
             if (String(s.id) === String(valorAtual)) opt.selected = true;
             safraSelect.appendChild(opt);
           });
-
-          // Auto-seleciona se houver apenas 1 safra
-          if (data.safras.length === 1 && !valorAtual) {
-            safraSelect.value = data.safras[0].id;
-          }
+          if (data.safras.length === 1 && !valorAtual) safraSelect.value = data.safras[0].id;
         }
       }
     })
@@ -418,15 +659,9 @@ function carregarSafrasTalhao(talhaoId, preservarSafra) {
 }
 
 if (talhaoSelect) {
-  talhaoSelect.addEventListener('change', function() {
-    carregarSafrasTalhao(this.value, '');
-  });
-
-  // Na edição: carrega safras iniciais se talhão já está selecionado
+  talhaoSelect.addEventListener('change', function () { carregarSafrasTalhao(this.value, ''); });
   const safraAtual = safraSelect ? safraSelect.value : '';
-  if (talhaoSelect.value) {
-    carregarSafrasTalhao(talhaoSelect.value, safraAtual);
-  }
+  if (talhaoSelect.value) carregarSafrasTalhao(talhaoSelect.value, safraAtual);
 }
 </script>
 {% endblock %}

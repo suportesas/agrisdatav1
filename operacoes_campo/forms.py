@@ -172,16 +172,12 @@ class OSFuncionarioForm(forms.ModelForm):
         data_execucao = cleaned.get('data_execucao')
         hora_inicio = cleaned.get('hora_inicio')
         hora_fim = cleaned.get('hora_fim')
-        # Só valida campos obrigatórios se o usuário preencheu alguma coisa
+        # Só exige funcionário se qualquer campo da linha foi preenchido
+        # Horários são opcionais: serão capturados automaticamente pelo portal (Iniciar/Pausar/Retomar)
         if any([funcionario, data_execucao, hora_inicio, hora_fim]):
             if not funcionario:
                 self.add_error('funcionario', 'Informe o funcionário.')
-            if not data_execucao:
-                self.add_error('data_execucao', 'Informe a data de execução.')
-            if not hora_inicio:
-                self.add_error('hora_inicio', 'Informe a hora de início.')
-            if not hora_fim:
-                self.add_error('hora_fim', 'Informe a hora de término.')
+        # Valida consistência de horário apenas quando ambos estão presentes
         if hora_inicio and hora_fim and hora_fim <= hora_inicio:
             self.add_error('hora_fim', 'Hora de término deve ser posterior à hora de início.')
         return cleaned
@@ -227,12 +223,10 @@ class OSMaquinaForm(forms.ModelForm):
         data_execucao = cleaned.get('data_execucao')
         horimetro_inicial = cleaned.get('horimetro_inicial')
         horimetro_final = cleaned.get('horimetro_final')
-        # Requer apenas veículo e data quando o usuário iniciou o preenchimento da linha
-        if any([veiculo, data_execucao]):
+        # Requer apenas veículo; data e horímetros são opcionais (podem vir do portal)
+        if any([veiculo, data_execucao, horimetro_inicial, horimetro_final]):
             if not veiculo:
                 self.add_error('veiculo', 'Informe o veículo/máquina.')
-            if not data_execucao:
-                self.add_error('data_execucao', 'Informe a data de execução.')
         # Horímetros são opcionais na criação; se ambos preenchidos, valida consistência
         if horimetro_inicial is not None and horimetro_final is not None:
             if horimetro_final < horimetro_inicial:

@@ -82,7 +82,36 @@
           </div>
         </div>
 
-        <!-- Mais seções futuras podem ser adicionadas aqui -->
+        <!-- Seção: Encargos Trabalhistas -->
+        <div class="card border-0 shadow-sm mb-4" style="border-radius:1rem;">
+          <div class="card-body p-4">
+            <h6 class="fw-bold mb-1">
+              <i class="bi bi-cash-coin me-2" style="color:#7c3aed;"></i>
+              Encargos Trabalhistas
+            </h6>
+            <p class="text-muted small mb-3">
+              Fator multiplicador aplicado ao custo/hora da mão de obra para incluir encargos (INSS, FGTS, férias, 13º etc.).
+            </p>
+            <div class="row g-3 align-items-start">
+              <div class="col-sm-5">
+                <label class="form-label fw-semibold small">Fator de Encargos</label>
+                {{ form.fator_encargos }}
+                {% if form.fator_encargos.errors %}<div class="text-danger small mt-1">{{ form.fator_encargos.errors }}</div>{% endif %}
+              </div>
+              <div class="col-sm-7">
+                <div class="p-3 rounded-3 bg-light mt-sm-4">
+                  <div class="small text-muted fw-semibold mb-2">Referência:</div>
+                  <ul class="list-unstyled small text-muted mb-0">
+                    <li><code>1.0</code> — Somente salário base</li>
+                    <li><code>1.30</code> — +30% (encargos simplificados)</li>
+                    <li><code>1.70</code> — +70% (CLT completo: INSS+FGTS+férias+13º)</li>
+                    <li><code>2.00</code> — +100% (estimativa conservadora)</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
 
         <!-- Botões -->
         <div class="d-flex gap-2 justify-content-end">

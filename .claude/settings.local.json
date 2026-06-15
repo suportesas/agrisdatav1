@@ -113,7 +113,36 @@
       "Bash(python manage.py migrate operacoes_campo)",
       "Bash(python manage.py --version)",
       "Bash(python -c \"import django; print\\(django.__version__\\)\")",
-      "Bash(pip show *)"
+      "Bash(pip show *)",
+      "Bash(grep -E \"\\\\.\\(html|py\\)$\")",
+      "Bash(python -c \"from operacoes_campo.views_os import os_pausar_admin, os_retomar_admin; print\\('OK'\\)\")",
+      "Bash(python manage.py runserver)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://127.0.0.1:8000/)",
+      "Bash(python manage.py runserver --noreload)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://127.0.0.1:8000/portal/campo/login/)",
+      "Bash(python manage.py runserver --noreload > /tmp/django.log 2>&1 & *)",
+      "Bash(curl -s -c cookies.txt http://127.0.0.1:8000/portal/campo/login/)",
+      "Bash(curl -s -b /tmp/cookies2.txt http://127.0.0.1:8000/portal/campo/)",
+      "Bash(grep -o '\"[^\"]*\"$')",
+      "Bash(curl -s -c /tmp/admin_cookies.txt http://127.0.0.1:8000/accounts/login/)",
+      "Bash(curl -s -I http://127.0.0.1:8000/accounts/login/)",
+      "Bash(curl -s -c /tmp/admin_cookies.txt http://127.0.0.1:8000/login/)",
+      "Bash(curl -s -b /tmp/admin_cookies.txt http://127.0.0.1:8000/campo/ordens-servico/7/)",
+      "Bash(curl -s -c /tmp/admin2_cookies.txt http://127.0.0.1:8000/login/)",
+      "Read(//c/Users/edson/AppData/Local/Temp/**)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://127.0.0.1:8000/login/)",
+      "Bash(curl -s -c /tmp/test_cookies.txt http://127.0.0.1:8000/login/)",
+      "Bash(curl -s -b /tmp/test_cookies.txt http://127.0.0.1:8000/campo/ordens-servico/nova/ -o /tmp/os_nova.html -w '%{http_code}')",
+      "Bash(grep -o 'ordens-servico/[0-9]*/\\\\|OS-[0-9-]*' /tmp/os_create_resp.html)",
+      "Bash(python c:/erp_agricola/manage.py shell -c ' *)",
+      "Bash(curl -s -b /tmp/test_cookies.txt http://127.0.0.1:8000/campo/ordens-servico/8/ -o /tmp/os_detail_andamento.html -w '%{http_code}')",
+      "Bash(curl -s -b /tmp/test_cookies.txt http://127.0.0.1:8000/campo/ordens-servico/8/editar/ -o /tmp/os_edit.html -w '%{http_code}')",
+      "Bash(curl -s -b /tmp/test_cookies.txt http://127.0.0.1:8000/campo/ordens-servico/8/ -o /tmp/os_concluida_detail.html -w '%{http_code}')",
+      "Bash(grep -E \"custo|R\\\\$|total|mao.obra|maquinario|283|224|59\" /tmp/os_concluida_detail.html)",
+      "Bash(curl -s -c /tmp/portal_cookies.txt http://127.0.0.1:8000/portal/campo/login/)"
+    ],
+    "additionalDirectories": [
+      "\\tmp"
     ]
   }
 }

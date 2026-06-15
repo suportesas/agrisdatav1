@@ -6,9 +6,11 @@
 {% block content %}
 <div class="container-fluid mt-4">
   <div class="d-flex justify-content-between align-items-center mb-3">
-    <h5 class="fw-bold text-secondary mb-0"><i class="bi bi-clipboard-data text-warning"></i> Planejamento de Custo</h5>
+    <h5 class="fw-bold text-secondary mb-0">
+      <i class="bi bi-clipboard-data text-warning me-2"></i>Planejamento de Custo
+    </h5>
     <a href="{% url 'operacoes_campo:planejamento_custo_create' %}" class="btn btn-warning btn-sm">
-      <i class="bi bi-plus"></i> Novo Planejamento
+      <i class="bi bi-plus me-1"></i>Novo Planejamento
     </a>
   </div>
 
@@ -23,38 +25,58 @@
             <th>Talhão</th>
             <th class="text-end">Área (ha)</th>
             <th class="text-end">Custo Planejado</th>
-            <th class="text-end">R$/ha Planejado</th>
+            <th class="text-end">R$/ha</th>
+            <th class="text-end">Receita Esp.</th>
+            <th class="text-end">Margem</th>
+            <th class="text-center text-muted small">Itens</th>
             <th>Criado em</th>
             <th></th>
           </tr>
         </thead>
         <tbody>
           {% for p in plans %}
+          {% with total=p.custo_total_planejado receita=p.receita_esperada margem=p.margem_bruta %}
           <tr>
             <td class="fw-semibold">
               <a href="{% url 'operacoes_campo:planejamento_custo_detail' p.pk %}" class="text-decoration-none">{{ p.nome }}</a>
             </td>
-            <td>{{ p.cultura.nome }}</td>
+            <td class="small">{{ p.cultura.nome }}</td>
             <td class="small text-muted">{{ p.safra.nome|default:"—" }}</td>
             <td class="small text-muted">{{ p.talhao.nome|default:"—" }}</td>
-            <td class="text-end">{{ p.area_ha|floatformat:2 }}</td>
-            <td class="text-end fw-bold">R$ {{ p.custo_total_planejado|floatformat:2 }}</td>
-            <td class="text-end">R$ {{ p.custo_planejado_por_ha|floatformat:2 }}</td>
+            <td class="text-end small">{{ p.area_ha|floatformat:2 }}</td>
+            <td class="text-end fw-bold text-warning">R$ {{ total|floatformat:2 }}</td>
+            <td class="text-end small text-muted">R$ {{ p.custo_planejado_por_ha|floatformat:2 }}</td>
+            <td class="text-end small {% if receita %}text-success{% else %}text-muted{% endif %}">
+              {% if receita %}R$ {{ receita|floatformat:2 }}{% else %}—{% endif %}
+            </td>
+            <td class="text-end small {% if margem and margem > 0 %}text-success{% elif margem %}text-danger{% else %}text-muted{% endif %}">
+              {% if margem %}
+                {% if margem > 0 %}+{% endif %}R$ {{ margem|floatformat:2 }}
+                {% if p.margem_pct %}
+                  <span class="d-block" style="font-size:.7rem;">({{ p.margem_pct|floatformat:1 }}%)</span>
+                {% endif %}
+              {% else %}—{% endif %}
+            </td>
+            <td class="text-center small text-muted">{{ p.itens.count }}</td>
             <td class="small text-muted">{{ p.data_criacao|date:"d/m/Y" }}</td>
-            <td>
-              <a href="{% url 'operacoes_campo:planejamento_custo_detail' p.pk %}" class="btn btn-outline-secondary btn-sm py-0 px-1"><i class="bi bi-eye"></i></a>
+            <td class="text-nowrap">
+              <a href="{% url 'operacoes_campo:planejamento_custo_detail' p.pk %}" class="btn btn-outline-secondary btn-sm py-0 px-1" title="Ver"><i class="bi bi-eye"></i></a>
+              <a href="{% url 'operacoes_campo:planejamento_custo_edit' p.pk %}" class="btn btn-outline-warning btn-sm py-0 px-1" title="Editar"><i class="bi bi-pencil"></i></a>
               <form method="post" action="{% url 'operacoes_campo:planejamento_custo_delete' p.pk %}" class="d-inline">
                 {% csrf_token %}
-                <button type="submit" class="btn btn-outline-danger btn-sm py-0 px-1" onclick="return confirm('Excluir?')"><i class="bi bi-trash"></i></button>
+                <button type="submit" class="btn btn-outline-danger btn-sm py-0 px-1" onclick="return confirm('Excluir?')" title="Excluir"><i class="bi bi-trash"></i></button>
               </form>
             </td>
           </tr>
+          {% endwith %}
           {% empty %}
           <tr>
-            <td colspan="9" class="text-center text-muted py-4">
+            <td colspan="12" class="text-center text-muted py-5">
               <i class="bi bi-clipboard-data fs-2 d-block mb-2 opacity-50"></i>
-              Nenhum planejamento criado.
-              <a href="{% url 'operacoes_campo:planejamento_custo_create' %}" class="d-block mt-2">Criar o primeiro planejamento</a>
+              Nenhum planejamento criado ainda.
+              <a href="{% url 'operacoes_campo:planejamento_custo_create' %}" class="d-block mt-2 text-warning fw-semibold">
+                <i class="bi bi-plus-circle me-1"></i>Criar o primeiro planejamento
+              </a>
             </td>
           </tr>
           {% endfor %}

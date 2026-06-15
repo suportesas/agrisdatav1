@@ -67,16 +67,10 @@
       </div>
     </div>
     <!-- Botões -->
-    <div class="px-3 pb-3 d-grid" style="grid-template-columns:1fr auto;gap:.5rem;">
-      <form method="post" action="{% url 'portal_campo:os_iniciar' os.pk %}" class="m-0">
-        {% csrf_token %}
-        <button type="submit" class="btn btn-primary btn-sm rounded-pill w-100 fw-semibold">
-          <i class="bi bi-play-fill me-1"></i>Iniciar OS
-        </button>
-      </form>
+    <div class="px-3 pb-3">
       <a href="{% url 'portal_campo:os_detail' os.pk %}"
-         class="btn btn-outline-secondary btn-sm rounded-pill px-3">
-        <i class="bi bi-eye"></i>
+         class="btn btn-primary btn-sm rounded-pill w-100 fw-semibold">
+        <i class="bi bi-people-fill me-1"></i>Ver / Preparar OS
       </a>
     </div>
   </div>

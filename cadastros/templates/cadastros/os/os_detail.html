@@ -59,6 +59,19 @@
                 </button>
               </form>
             {% elif os.status == 'EM_ANDAMENTO' %}
+              {% if tem_intervalo_aberto %}
+                <form method="post" action="{% url 'operacoes_campo:os_pausar_admin' os.pk %}">{% csrf_token %}
+                  <button type="submit" class="btn btn-warning btn-sm">
+                    <i class="bi bi-pause-fill me-1"></i>Pausar
+                  </button>
+                </form>
+              {% else %}
+                <form method="post" action="{% url 'operacoes_campo:os_retomar_admin' os.pk %}">{% csrf_token %}
+                  <button type="submit" class="btn btn-info text-white btn-sm">
+                    <i class="bi bi-play-fill me-1"></i>Retomar
+                  </button>
+                </form>
+              {% endif %}
               <a href="{% url 'operacoes_campo:os_concluir' os.pk %}" class="btn btn-success btn-sm">
                 <i class="bi bi-flag-fill me-1"></i>Concluir
               </a>
@@ -67,6 +80,13 @@
               <a href="{% url 'operacoes_campo:os_update' os.pk %}" class="btn btn-outline-secondary btn-sm">
                 <i class="bi bi-pencil me-1"></i>Editar
               </a>
+            {% endif %}
+            {% if os.status == 'CONCLUIDA' %}
+              <form method="post" action="{% url 'operacoes_campo:os_recalcular_custos' os.pk %}">{% csrf_token %}
+                <button type="submit" class="btn btn-outline-warning btn-sm" title="Recalcula hora_fim de trabalhadores sem saída registrada e atualiza os custos">
+                  <i class="bi bi-arrow-clockwise me-1"></i>Recalcular Custos
+                </button>
+              </form>
             {% endif %}
             <a href="{% url 'operacoes_campo:os_list' %}" class="btn btn-outline-secondary btn-sm">
               <i class="bi bi-arrow-left"></i>
@@ -144,9 +164,35 @@
           <span class="badge bg-danger fs-6"><i class="bi bi-x-circle me-1"></i>OS Cancelada</span>
         </div>
         {% endif %}
+        {% if os.status == 'EM_ANDAMENTO' %}
+        <div class="mt-2">
+          {% if tem_intervalo_aberto %}
+          <span class="d-inline-flex align-items-center gap-2 badge bg-success-subtle text-success border border-success-subtle px-3 py-2">
+            <span class="spinner-grow spinner-grow-sm" role="status"></span>
+            Trabalho em andamento
+          </span>
+          {% else %}
+          <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-3 py-2">
+            <i class="bi bi-pause-circle me-1"></i>OS pausada — nenhum intervalo aberto
+          </span>
+          {% endif %}
+        </div>
+        {% endif %}
       </div>
     </div>
   </div>
+
+  <!-- Alertas de maquinário pendente -->
+  {% if maquinas_sem_horimetro_final %}
+  <div class="alert alert-warning border-0 d-flex align-items-center gap-2 mb-3">
+    <i class="bi bi-speedometer2 fs-5 flex-shrink-0"></i>
+    <div>
+      <strong>Horímetro final pendente:</strong>
+      {% for m in maquinas_sem_horimetro_final %}{{ m.veiculo }}{% if not forloop.last %}, {% endif %}{% endfor %}.
+      Preencha antes de concluir a OS.
+    </div>
+  </div>
+  {% endif %}
 
   <!-- KPI Cards rápidos -->
   <div class="row g-2 mb-3">
@@ -240,9 +286,21 @@
                       <td>
                         <div class="fw-semibold">{{ f.funcionario.nome_completo }}</div>
                       </td>
-                      <td>{{ f.data_execucao|date:"d/m/Y" }}</td>
-                      <td>{{ f.hora_inicio|time:"H:i" }}</td>
-                      <td>{{ f.hora_fim|time:"H:i" }}</td>
+                      <td>
+                        {% if f.data_execucao %}
+                          {{ f.data_execucao|date:"d/m/Y" }}
+                        {% elif os.data_inicio %}
+                          <span class="text-muted">{{ os.data_inicio|date:"d/m/Y" }}</span>
+                        {% else %}—{% endif %}
+                      </td>
+                      <td>
+                        {% if f.hora_inicio %}
+                          {{ f.hora_inicio|time:"H:i" }}
+                        {% elif os.data_inicio %}
+                          <span class="text-muted">{{ os.data_inicio|time:"H:i" }}</span>
+                        {% else %}—{% endif %}
+                      </td>
+                      <td>{{ f.hora_fim|time:"H:i"|default:"—" }}</td>
                       <td class="text-end">{{ f.horas_trabalhadas|floatformat:2 }}h</td>
                       <td class="text-end fw-semibold text-primary">R$ {{ f.custo_calculado|floatformat:2 }}</td>
                     </tr>
@@ -276,7 +334,7 @@
                 <table class="table table-sm align-middle mb-0">
                   <thead class="table-light">
                     <tr>
-                      <th>Veículo</th><th>Operador</th><th>Data</th>
+                      <th>Veículo</th><th>Operador</th><th>Data</th><th>Início</th>
                       <th class="text-end">Horas</th><th class="text-end">Litros</th><th class="text-end">Custo</th>
                     </tr>
                   </thead>
@@ -285,14 +343,25 @@
                     <tr>
                       <td class="fw-semibold">{{ m.veiculo }}</td>
                       <td>{{ m.operador.nome_completo|default:"—" }}</td>
-                      <td>{{ m.data_execucao|date:"d/m/Y" }}</td>
+                      <td>
+                        {% if m.data_execucao %}
+                          {{ m.data_execucao|date:"d/m/Y" }}
+                        {% elif os.data_inicio %}
+                          <span class="text-muted">{{ os.data_inicio|date:"d/m/Y" }}</span>
+                        {% else %}—{% endif %}
+                      </td>
+                      <td>
+                        {% if os.data_inicio %}
+                          <span class="text-muted">{{ os.data_inicio|time:"H:i" }}</span>
+                        {% else %}—{% endif %}
+                      </td>
                       <td class="text-end">{{ m.horas_trabalhadas|floatformat:2 }}h</td>
                       <td class="text-end">{{ m.litros_consumidos|floatformat:1 }}L</td>
                       <td class="text-end fw-semibold text-info">R$ {{ m.custo_calculado|floatformat:2 }}</td>
                     </tr>
                     {% endfor %}
                     <tr class="table-light">
-                      <td colspan="5" class="text-end fw-bold text-muted small">Total Maq.:</td>
+                      <td colspan="6" class="text-end fw-bold text-muted small">Total Maq.:</td>
                       <td class="text-end fw-bold text-info">R$ {{ custo_maq|floatformat:2 }}</td>
                     </tr>
                   </tbody>
@@ -548,6 +617,80 @@
           </div>
         </div>
       </div>
+
+      {% if os.tem_custo_estimado %}
+      <div class="card border-0 shadow-sm mt-3">
+        <div class="card-header bg-transparent py-2">
+          <h6 class="mb-0"><i class="bi bi-bar-chart me-2 text-warning"></i>Planejado × Realizado</h6>
+        </div>
+        <div class="card-body p-0">
+          <table class="table table-sm align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Categoria</th>
+                <th class="text-end">Orçado</th>
+                <th class="text-end">Realizado</th>
+                <th class="text-end">Variação</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% with est_mo=os.custo_estimado_mao_obra|default:0 est_maq=os.custo_estimado_maquinario|default:0 est_ins=os.custo_estimado_insumos|default:0 %}
+              <tr>
+                <td><span class="badge bg-primary me-1">&nbsp;</span>Mão de Obra</td>
+                <td class="text-end text-muted">R$ {{ est_mo|floatformat:2 }}</td>
+                <td class="text-end fw-semibold">R$ {{ custo_mo|floatformat:2 }}</td>
+                <td class="text-end small {% if custo_mo > est_mo %}text-danger{% else %}text-success{% endif %}">
+                  {% if est_mo %}
+                    {% with diff=custo_mo|floatformat:2 %}
+                      {% widthratio custo_mo est_mo 100 as pct %}
+                      {% if custo_mo > est_mo %}<i class="bi bi-arrow-up-short"></i>{% else %}<i class="bi bi-arrow-down-short"></i>{% endif %}
+                      {{ pct }}%
+                    {% endwith %}
+                  {% else %}—{% endif %}
+                </td>
+              </tr>
+              <tr>
+                <td><span class="badge bg-info me-1">&nbsp;</span>Maquinário</td>
+                <td class="text-end text-muted">R$ {{ est_maq|floatformat:2 }}</td>
+                <td class="text-end fw-semibold">R$ {{ custo_maq|floatformat:2 }}</td>
+                <td class="text-end small {% if custo_maq > est_maq %}text-danger{% else %}text-success{% endif %}">
+                  {% if est_maq %}
+                    {% widthratio custo_maq est_maq 100 as pct %}
+                    {% if custo_maq > est_maq %}<i class="bi bi-arrow-up-short"></i>{% else %}<i class="bi bi-arrow-down-short"></i>{% endif %}
+                    {{ pct }}%
+                  {% else %}—{% endif %}
+                </td>
+              </tr>
+              <tr>
+                <td><span class="badge bg-warning me-1">&nbsp;</span>Insumos</td>
+                <td class="text-end text-muted">R$ {{ est_ins|floatformat:2 }}</td>
+                <td class="text-end fw-semibold">R$ {{ custo_ins|floatformat:2 }}</td>
+                <td class="text-end small {% if custo_ins > est_ins %}text-danger{% else %}text-success{% endif %}">
+                  {% if est_ins %}
+                    {% widthratio custo_ins est_ins 100 as pct %}
+                    {% if custo_ins > est_ins %}<i class="bi bi-arrow-up-short"></i>{% else %}<i class="bi bi-arrow-down-short"></i>{% endif %}
+                    {{ pct }}%
+                  {% else %}—{% endif %}
+                </td>
+              </tr>
+              <tr class="border-top fw-bold">
+                <td>Total</td>
+                <td class="text-end text-muted">R$ {{ os.custo_estimado_total|floatformat:2 }}</td>
+                <td class="text-end text-success">R$ {{ custo_total|floatformat:2 }}</td>
+                <td class="text-end small {% if custo_total > os.custo_estimado_total %}text-danger{% else %}text-success{% endif %}">
+                  {% if os.custo_estimado_total %}
+                    {% widthratio custo_total os.custo_estimado_total 100 as pct %}
+                    {% if custo_total > os.custo_estimado_total %}<i class="bi bi-arrow-up-short"></i>{% else %}<i class="bi bi-arrow-down-short"></i>{% endif %}
+                    {{ pct }}%
+                  {% else %}—{% endif %}
+                </td>
+              </tr>
+              {% endwith %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      {% endif %}
     </div><!-- /tab-custos -->
 
     <!-- ABA: HISTÓRICO -->
@@ -607,6 +750,53 @@
           </div><!-- /os-timeline -->
         </div>
       </div>
+
+      {% if intervalos %}
+      <div class="card border-0 shadow-sm mt-3">
+        <div class="card-header bg-transparent py-2">
+          <h6 class="mb-0"><i class="bi bi-stopwatch me-2 text-info"></i>Intervalos de Trabalho</h6>
+        </div>
+        <div class="card-body p-0">
+          <table class="table table-sm align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Funcionário</th><th>Início</th><th>Fim</th><th class="text-end">Duração</th><th class="text-center">GPS</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for iv in intervalos %}
+              <tr>
+                <td>{{ iv.funcionario.nome_completo }}</td>
+                <td>{{ iv.inicio|date:"d/m/Y H:i" }}</td>
+                <td>
+                  {% if iv.fim %}
+                    {{ iv.fim|date:"d/m/Y H:i" }}
+                  {% else %}
+                    <span class="badge bg-success-subtle text-success">
+                      <span class="spinner-grow spinner-grow-sm me-1" role="status"></span>em andamento
+                    </span>
+                  {% endif %}
+                </td>
+                <td class="text-end text-muted small">
+                  {% if iv.duracao_horas %}{{ iv.duracao_horas|floatformat:2 }}h{% else %}—{% endif %}
+                </td>
+                <td class="text-center">
+                  {% if iv.tem_gps %}
+                  <a href="https://maps.google.com/?q={{ iv.latitude }},{{ iv.longitude }}"
+                     target="_blank" class="text-success" title="{{ iv.latitude }}, {{ iv.longitude }}">
+                    <i class="bi bi-geo-alt-fill"></i>
+                  </a>
+                  {% else %}
+                  <span class="text-muted" title="Sem localização"><i class="bi bi-geo-alt" style="opacity:.4;"></i></span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      {% endif %}
     </div><!-- /tab-historico -->
 
     <!-- ABA: COLHEITA (condicional) -->

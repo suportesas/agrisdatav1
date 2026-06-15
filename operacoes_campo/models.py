@@ -169,6 +169,11 @@ class OrdemServico(models.Model):
     foto_evidencia = models.ImageField('Foto de Evidência (RN-03)', upload_to='ordens_servico/%Y/%m/', null=True, blank=True, help_text='Obrigatória para concluir a OS (RN-03)')
     observacoes = models.TextField('Observações', blank=True)
 
+    # Custo estimado (orçado) — permite comparativo planejado vs. realizado
+    custo_estimado_mao_obra = models.DecimalField('Custo Est. Mão de Obra (R$)', max_digits=12, decimal_places=2, null=True, blank=True)
+    custo_estimado_maquinario = models.DecimalField('Custo Est. Maquinário (R$)', max_digits=12, decimal_places=2, null=True, blank=True)
+    custo_estimado_insumos = models.DecimalField('Custo Est. Insumos (R$)', max_digits=12, decimal_places=2, null=True, blank=True)
+
     data_cadastro = models.DateTimeField('Data de Cadastro', auto_now_add=True)
     data_atualizacao = models.DateTimeField('Última Atualização', auto_now=True)
     cadastrado_por = models.ForeignKey('usuarios.Usuario', on_delete=models.SET_NULL, null=True, blank=True, related_name='os_cadastradas', verbose_name='Cadastrado por')
@@ -237,6 +242,22 @@ class OrdemServico(models.Model):
             return Decimal('0')
 
     @property
+    def custo_estimado_total(self):
+        return (
+            (self.custo_estimado_mao_obra or Decimal('0'))
+            + (self.custo_estimado_maquinario or Decimal('0'))
+            + (self.custo_estimado_insumos or Decimal('0'))
+        )
+
+    @property
+    def tem_custo_estimado(self):
+        return any([
+            self.custo_estimado_mao_obra,
+            self.custo_estimado_maquinario,
+            self.custo_estimado_insumos,
+        ])
+
+    @property
     def pode_aprovar(self):
         return self.status == 'ABERTA'
 
@@ -298,8 +319,16 @@ class OrdemServicoInsumo(models.Model):
         super().save(*args, **kwargs)
 
 
+def _fator_encargos_empresa(empresa):
+    """Retorna o fator de encargos configurado para a empresa (default 1.0)."""
+    try:
+        return empresa.portal_campo_config.fator_encargos
+    except Exception:
+        return Decimal('1.0')
+
+
 class OSFuncionario(models.Model):
-    """Funcionário alocado em OS. Calcula custo MO: (salário ÷ 220h) × horas."""
+    """Funcionário alocado em OS. Calcula custo MO: (salário ÷ 220h) × horas × fator_encargos."""
 
     os = models.ForeignKey(OrdemServico, on_delete=models.CASCADE, related_name='funcionarios_os', verbose_name='Ordem de Serviço')
     funcionario = models.ForeignKey('rh.Funcionario', on_delete=models.PROTECT, related_name='alocacoes_os', verbose_name='Funcionário')
@@ -334,7 +363,8 @@ class OSFuncionario(models.Model):
     def custo_calculado(self):
         try:
             custo_hora = self.funcionario.salario / Decimal('220')
-            return (custo_hora * self.horas_trabalhadas).quantize(Decimal('0.01'))
+            fator = _fator_encargos_empresa(self.os.empresa)
+            return (custo_hora * fator * self.horas_trabalhadas).quantize(Decimal('0.01'))
         except Exception:
             return Decimal('0')
 
@@ -350,6 +380,8 @@ class OSIntervalo(models.Model):
     funcionario = models.ForeignKey('rh.Funcionario', on_delete=models.PROTECT, related_name='intervalos_os', verbose_name='Funcionário')
     inicio = models.DateTimeField('Início')
     fim = models.DateTimeField('Fim', null=True, blank=True)
+    latitude = models.DecimalField('Latitude', max_digits=10, decimal_places=7, null=True, blank=True)
+    longitude = models.DecimalField('Longitude', max_digits=10, decimal_places=7, null=True, blank=True)
 
     class Meta:
         db_table = 'campo_os_intervalo'
@@ -377,9 +409,14 @@ class OSIntervalo(models.Model):
             return Decimal('0')
         try:
             custo_hora = self.funcionario.salario / Decimal('220')
-            return (custo_hora * horas).quantize(Decimal('0.01'))
+            fator = _fator_encargos_empresa(self.os.empresa)
+            return (custo_hora * fator * horas).quantize(Decimal('0.01'))
         except Exception:
             return Decimal('0')
+
+    @property
+    def tem_gps(self):
+        return self.latitude is not None and self.longitude is not None
 
 
 class OSMaquina(models.Model):
@@ -475,8 +512,16 @@ class CustoTalhao(models.Model):
         return Decimal('0')
 
     def recalcular(self):
-        custo_intervalos = sum(i.custo_calculado for i in self.os.intervalos.filter(fim__isnull=False)) or Decimal('0')
-        custo_outros = sum(f.custo_calculado for f in self.os.funcionarios_os.all()) or Decimal('0')
+        # Intervalos de trabalho (rastreamento em tempo real via portal)
+        intervalos_fechados = self.os.intervalos.filter(fim__isnull=False)
+        custo_intervalos = sum(i.custo_calculado for i in intervalos_fechados) or Decimal('0')
+        # Trabalhadores com intervalo têm custo pelo rastreamento portal;
+        # só conta OSFuncionario para quem NÃO tem intervalo (alocação manual)
+        workers_com_intervalo = set(intervalos_fechados.values_list('funcionario_id', flat=True))
+        custo_outros = sum(
+            f.custo_calculado for f in self.os.funcionarios_os.all()
+            if f.funcionario_id not in workers_com_intervalo
+        ) or Decimal('0')
         self.custo_mao_obra = custo_intervalos + custo_outros
         self.custo_maquinario = sum(m.custo_calculado for m in self.os.maquinas_os.all()) or Decimal('0')
         insumos_os = self.os.insumos_os.all()
@@ -810,6 +855,27 @@ class PlanejamentoCustoSafra(models.Model):
     data_criacao = models.DateTimeField(auto_now_add=True)
     criado_por = models.ForeignKey('usuarios.Usuario', null=True, on_delete=models.SET_NULL, related_name='planejamentos_custo_criados')
 
+    # Receita esperada (para cálculo de margem e break-even)
+    produtividade_esperada_ha = models.DecimalField(
+        'Produtividade Esperada (por ha)', max_digits=12, decimal_places=4,
+        null=True, blank=True,
+        help_text='Ex: 60 sc/ha para soja, 80 t/ha para cana.',
+    )
+    preco_venda_unitario = models.DecimalField(
+        'Preço de Venda Unitário (R$)', max_digits=12, decimal_places=4,
+        null=True, blank=True,
+        help_text='Preço esperado por unidade produzida.',
+    )
+    unidade_producao = models.CharField(
+        'Unidade de Produção', max_length=20, default='sc', blank=True,
+        help_text='Ex: sc, kg, t, cx, dz.',
+    )
+    kg_por_unidade = models.DecimalField(
+        'kg por Unidade de Produção', max_digits=10, decimal_places=4,
+        default=Decimal('60'), blank=True,
+        help_text='Fator de conversão kg→unidade. Ex: 60 para soja (saca de 60kg).',
+    )
+
     class Meta:
         db_table = 'cadastros_planejamentocustosafra'
         ordering = ['-data_criacao']
@@ -829,14 +895,60 @@ class PlanejamentoCustoSafra(models.Model):
             return (self.custo_total_planejado / self.area_ha).quantize(Decimal('0.01'))
         return Decimal('0')
 
+    @property
+    def receita_esperada(self):
+        if self.produtividade_esperada_ha and self.preco_venda_unitario and self.area_ha:
+            return (self.produtividade_esperada_ha * self.preco_venda_unitario * self.area_ha).quantize(Decimal('0.01'))
+        return None
+
+    @property
+    def margem_bruta(self):
+        receita = self.receita_esperada
+        if receita is None:
+            return None
+        return (receita - self.custo_total_planejado).quantize(Decimal('0.01'))
+
+    @property
+    def margem_pct(self):
+        receita = self.receita_esperada
+        if not receita or receita == 0:
+            return None
+        margem = self.margem_bruta
+        if margem is None:
+            return None
+        return (margem / receita * Decimal('100')).quantize(Decimal('0.1'))
+
+    @property
+    def ponto_equilibrio_ha(self):
+        """Área mínima para cobrir o custo total ao preço de venda informado."""
+        if self.produtividade_esperada_ha and self.preco_venda_unitario:
+            receita_ha = self.produtividade_esperada_ha * self.preco_venda_unitario
+            custo_ha = self.custo_planejado_por_ha
+            if receita_ha and receita_ha > 0 and custo_ha:
+                return (self.custo_total_planejado / receita_ha).quantize(Decimal('0.01'))
+        return None
+
+    @property
+    def tem_receita(self):
+        return bool(self.produtividade_esperada_ha and self.preco_venda_unitario)
+
 
 class PlanejamentoCustoItem(models.Model):
     CATEGORIA_CHOICES = [
         ('MO', 'Mão de Obra'), ('MAQUINARIO', 'Maquinário'), ('INSUMO', 'Insumo'),
         ('SERVICO_EXTERNO', 'Serviço Externo'), ('ESTUFA', 'Estufa / Transplantio'),
     ]
+    FASE_CHOICES = [
+        ('GERAL', 'Geral'),
+        ('PREPARO_SOLO', 'Preparo de Solo'),
+        ('PLANTIO', 'Plantio / Semeadura'),
+        ('TRATOS_CULTURAIS', 'Tratos Culturais'),
+        ('COLHEITA', 'Colheita'),
+        ('POS_COLHEITA', 'Pós-Colheita'),
+    ]
 
     planejamento = models.ForeignKey(PlanejamentoCustoSafra, on_delete=models.CASCADE, related_name='itens')
+    fase = models.CharField('Fase de Cultivo', max_length=20, choices=FASE_CHOICES, default='GERAL')
     categoria = models.CharField(max_length=20, choices=CATEGORIA_CHOICES, verbose_name='Categoria')
     produto = models.ForeignKey('produtos.Produto', on_delete=models.SET_NULL, null=True, blank=True, help_text='Preencher para insumos')
     descricao = models.CharField(max_length=200)
@@ -866,6 +978,126 @@ class PlanejamentoCustoItem(models.Model):
         if self.area_ha:
             return (self.area_ha * self.custo_unitario).quantize(Decimal('0.01'))
         return Decimal('0')
+
+
+class PlanejamentoCustoItemIndireto(models.Model):
+    """Custos pós-campo (embalagem, comissão, energia, frete) do planejamento de safra."""
+
+    TIPO_CHOICES = [
+        ('EMBALAGEM', 'Embalagem'),
+        ('COMISSAO', 'Comissão de Venda (%)'),
+        ('ENERGIA', 'Energia Elétrica'),
+        ('FRETE', 'Frete / Logística'),
+        ('OUTROS', 'Outros'),
+    ]
+
+    planejamento = models.ForeignKey(
+        PlanejamentoCustoSafra, on_delete=models.CASCADE, related_name='itens_indiretos',
+        verbose_name='Planejamento',
+    )
+    tipo = models.CharField('Tipo', max_length=20, choices=TIPO_CHOICES)
+    descricao = models.CharField('Descrição', max_length=200)
+    valor_fixo = models.DecimalField(
+        'Valor Fixo (R$)', max_digits=12, decimal_places=2, null=True, blank=True,
+        help_text='Valor absoluto em reais. Use este ou o percentual.',
+    )
+    percentual_receita = models.DecimalField(
+        '% da Receita', max_digits=5, decimal_places=2, null=True, blank=True,
+        help_text='Percentual da receita esperada. Use este ou o valor fixo.',
+    )
+    inclui_no_total = models.BooleanField(
+        'Incluir no Total Geral', default=True,
+        help_text='Se marcado, esse custo entra no custo total do planejamento.',
+    )
+
+    class Meta:
+        db_table = 'pc_item_indireto'
+        verbose_name = 'Custo Pós-Campo'
+        verbose_name_plural = 'Custos Pós-Campo'
+        ordering = ['tipo', 'descricao']
+
+    def __str__(self):
+        return f"{self.get_tipo_display()} — {self.descricao}"
+
+    @property
+    def custo_calculado(self):
+        if self.percentual_receita is not None:
+            receita = self.planejamento.receita_esperada
+            if receita:
+                return (receita * self.percentual_receita / Decimal('100')).quantize(Decimal('0.01'))
+            return Decimal('0')
+        return self.valor_fixo or Decimal('0')
+
+
+class FormacaoPreco(models.Model):
+    """Formação de preço mínimo e preço-meta em BRL/USD/EUR para um planejamento de safra."""
+
+    planejamento = models.OneToOneField(
+        PlanejamentoCustoSafra, on_delete=models.CASCADE, related_name='formacao_preco',
+        verbose_name='Planejamento',
+    )
+    producao_prevista_total = models.DecimalField(
+        'Produção Prevista Total', max_digits=12, decimal_places=4, null=True, blank=True,
+        help_text='Total na unidade de produção do planejamento (sc, kg, t…).',
+    )
+    pct_avaria_prevista = models.DecimalField(
+        '% Avaria / Descarte', max_digits=5, decimal_places=2, default=Decimal('0'),
+        help_text='Percentual da produção bruta que se perde por avaria ou descarte.',
+    )
+    margem_desejada_pct = models.DecimalField(
+        'Margem Desejada (%)', max_digits=5, decimal_places=2, default=Decimal('20'),
+    )
+    inclui_custos_indiretos = models.BooleanField(
+        'Incluir Custos Pós-Campo', default=True,
+        help_text='Somar os itens indiretos marcados ao custo de campo.',
+    )
+
+    class Meta:
+        db_table = 'pc_formacao_preco'
+        verbose_name = 'Formação de Preço'
+        verbose_name_plural = 'Formações de Preço'
+
+    def __str__(self):
+        return f"Formação de Preço — {self.planejamento.nome}"
+
+    @property
+    def producao_comercializavel(self):
+        if not self.producao_prevista_total:
+            return None
+        fator = Decimal('1') - (self.pct_avaria_prevista / Decimal('100'))
+        return (self.producao_prevista_total * fator).quantize(Decimal('0.0001'))
+
+    @property
+    def custo_campo(self):
+        return self.planejamento.custo_total_planejado
+
+    @property
+    def custo_indireto_total(self):
+        return sum(
+            (i.custo_calculado for i in self.planejamento.itens_indiretos.filter(inclui_no_total=True)),
+            Decimal('0'),
+        )
+
+    @property
+    def custo_total_base(self):
+        base = self.custo_campo
+        if self.inclui_custos_indiretos:
+            base += self.custo_indireto_total
+        return base
+
+    @property
+    def custo_por_unidade(self):
+        prod = self.producao_comercializavel
+        if not prod or prod == 0:
+            return None
+        return (self.custo_total_base / prod).quantize(Decimal('0.01'))
+
+    @property
+    def preco_minimo_brl(self):
+        cpu = self.custo_por_unidade
+        if cpu is None:
+            return None
+        return (cpu * (Decimal('1') + self.margem_desejada_pct / Decimal('100'))).quantize(Decimal('0.01'))
 
 
 # ============================================================================
@@ -1009,6 +1241,17 @@ class PortalCampoConfig(models.Model):
         choices=HORARIO_TRABALHADORES_CHOICES,
         default=HORARIO_TRABALHADORES_AUTO,
         help_text='Define como o horário é preenchido ao adicionar outros trabalhadores na execução de uma OS.',
+    )
+    fator_encargos = models.DecimalField(
+        'Fator de Encargos Trabalhistas',
+        max_digits=5,
+        decimal_places=4,
+        default=Decimal('1.0000'),
+        help_text=(
+            'Multiplica o custo/hora da mão de obra para incluir encargos. '
+            'Exemplo: 1.70 para CLT (INSS + FGTS + férias + 13º ≈ +70%). '
+            'Use 1.0 para considerar apenas o salário base.'
+        ),
     )
     data_atualizacao = models.DateTimeField('Última atualização', auto_now=True)
 

@@ -6,10 +6,11 @@
 {% block content %}
 <div class="container-fluid mt-4">
   <div class="row justify-content-center">
-    <div class="col-lg-8">
+    <div class="col-lg-9">
+
       <div class="card border-0 shadow-sm rounded-4">
         <div class="card-header bg-white border-0 pt-3 pb-0">
-          <h6 class="fw-bold text-secondary"><i class="bi bi-clipboard-data text-warning"></i> {{ title }}</h6>
+          <h6 class="fw-bold text-secondary"><i class="bi bi-clipboard-data text-warning me-2"></i>{{ title }}</h6>
         </div>
         <div class="card-body">
           {% if safra_pre %}
@@ -18,162 +19,190 @@
             <span>Criando planejamento para a safra <strong>{{ safra_pre }}</strong> — campos pré-preenchidos automaticamente.</span>
           </div>
           {% endif %}
+
           <form method="post" novalidate>
             {% csrf_token %}
             {% if form.non_field_errors %}
-              <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+            <div class="alert alert-danger">{{ form.non_field_errors }}</div>
             {% endif %}
-            <div class="row g-3">
-              <div class="col-12">
-                <label class="form-label fw-semibold">Nome do Planejamento <span class="text-danger">*</span></label>
-                {{ form.nome }}
-                {% if form.nome.errors %}<div class="text-danger small">{{ form.nome.errors }}</div>{% endif %}
-              </div>
-              <div class="col-md-4">
-                <label class="form-label fw-semibold">Cultura <span class="text-danger">*</span></label>
-                {{ form.cultura }}
-                {% if form.cultura.errors %}<div class="text-danger small">{{ form.cultura.errors }}</div>{% endif %}
-              </div>
-              <div class="col-md-4">
-                <label class="form-label fw-semibold">Safra</label>
-                {{ form.safra }}
-                {% if form.safra.errors %}<div class="text-danger small">{{ form.safra.errors }}</div>{% endif %}
-              </div>
-              <div class="col-md-4">
-                <label class="form-label fw-semibold">Talhão</label>
-                {{ form.talhao }}
-                {% if form.talhao.errors %}<div class="text-danger small">{{ form.talhao.errors }}</div>{% endif %}
-              </div>
-              <div class="col-md-4">
-                <label class="form-label fw-semibold">Área (ha) <span class="text-danger">*</span></label>
-                {{ form.area_ha }}
-                {% if form.area_ha.errors %}<div class="text-danger small">{{ form.area_ha.errors }}</div>{% endif %}
-              </div>
-              <div class="col-12">
-                <label class="form-label fw-semibold">Observações</label>
-                {{ form.observacoes }}
-                {% if form.observacoes.errors %}<div class="text-danger small">{{ form.observacoes.errors }}</div>{% endif %}
+
+            <!-- Identificação -->
+            <div class="card border-0 bg-light rounded-3 mb-4 p-3">
+              <h6 class="fw-semibold text-secondary mb-3"><i class="bi bi-tag me-2"></i>Identificação</h6>
+              <div class="row g-3">
+                <div class="col-12">
+                  <label class="form-label fw-semibold">Nome do Planejamento <span class="text-danger">*</span></label>
+                  {{ form.nome }}
+                  {% if form.nome.errors %}<div class="text-danger small">{{ form.nome.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label fw-semibold">Cultura <span class="text-danger">*</span></label>
+                  {{ form.cultura }}
+                  {% if form.cultura.errors %}<div class="text-danger small">{{ form.cultura.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label fw-semibold">Safra <small class="text-muted fw-normal">(opcional)</small></label>
+                  {{ form.safra }}
+                  {% if form.safra.errors %}<div class="text-danger small">{{ form.safra.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label fw-semibold">Talhão <small class="text-muted fw-normal">(opcional)</small></label>
+                  {{ form.talhao }}
+                  {% if form.talhao.errors %}<div class="text-danger small">{{ form.talhao.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label fw-semibold">Área Total (ha) <span class="text-danger">*</span></label>
+                  {{ form.area_ha }}
+                  {% if form.area_ha.errors %}<div class="text-danger small">{{ form.area_ha.errors }}</div>{% endif %}
+                </div>
               </div>
             </div>
-            <div class="d-flex gap-2 mt-4">
-              <button type="submit" class="btn btn-warning"><i class="bi bi-check-lg"></i> Salvar</button>
-              <a href="{% url 'operacoes_campo:planejamento_custo_list' %}" class="btn btn-outline-secondary"><i class="bi bi-x"></i> Cancelar</a>
+
+            <!-- Receita esperada -->
+            <div class="card border-0 bg-light rounded-3 mb-4 p-3">
+              <h6 class="fw-semibold text-secondary mb-1"><i class="bi bi-graph-up-arrow me-2 text-success"></i>Receita Esperada <small class="text-muted fw-normal">(para margem e break-even — opcional)</small></h6>
+              <p class="text-muted small mb-3">Preencha para calcular a margem bruta e o ponto de equilíbrio do planejamento.</p>
+              <div class="row g-3">
+                <div class="col-md-4">
+                  <label class="form-label fw-semibold">Produtividade Esperada (por ha)</label>
+                  {{ form.produtividade_esperada_ha }}
+                  {% if form.produtividade_esperada_ha.errors %}<div class="text-danger small">{{ form.produtividade_esperada_ha.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-2">
+                  <label class="form-label fw-semibold">Unidade</label>
+                  {{ form.unidade_producao }}
+                  {% if form.unidade_producao.errors %}<div class="text-danger small">{{ form.unidade_producao.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label fw-semibold">Preço de Venda (R$/unidade)</label>
+                  {{ form.preco_venda_unitario }}
+                  {% if form.preco_venda_unitario.errors %}<div class="text-danger small">{{ form.preco_venda_unitario.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                  <div id="receita-preview" class="w-100 p-2 rounded-3 bg-success bg-opacity-10 text-center d-none">
+                    <small class="text-muted d-block">Receita estimada</small>
+                    <span class="fw-bold text-success" id="receita-valor">—</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Observações -->
+            <div class="mb-4">
+              <label class="form-label fw-semibold">Observações</label>
+              {{ form.observacoes }}
+            </div>
+
+            <div class="d-flex gap-2">
+              <button type="submit" class="btn btn-warning px-4"><i class="bi bi-check-lg me-1"></i>Salvar</button>
+              <a href="{% if editing %}{% url 'operacoes_campo:planejamento_custo_detail' plan.pk %}{% else %}{% url 'operacoes_campo:planejamento_custo_list' %}{% endif %}"
+                 class="btn btn-outline-secondary"><i class="bi bi-x me-1"></i>Cancelar</a>
             </div>
           </form>
-          <script>
-            document.addEventListener('DOMContentLoaded', function () {
-              const culturaEl = document.getElementById('id_cultura');
-              const safraEl = document.getElementById('id_safra');
-              const talhaoEl = document.getElementById('id_talhao');
-              const areaEl = document.getElementById('id_area_ha');
-              let lastAutoArea = '';
-
-              const fillOptions = (select, items, placeholder, selectedValue) => {
-                if (!select) return;
-                select.innerHTML = '';
-                const empty = document.createElement('option');
-                empty.value = '';
-                empty.textContent = placeholder || '-- Selecione --';
-                select.appendChild(empty);
-
-                items.forEach(item => {
-                  const option = document.createElement('option');
-                  option.value = item.id;
-                  option.textContent = item.nome;
-                  if (String(item.id) === String(selectedValue)) {
-                    option.selected = true;
-                  }
-                  if (item.area_hac !== undefined) {
-                    option.setAttribute('data-area-ha', item.area_hac);
-                  }
-                  select.appendChild(option);
-                });
-              };
-
-              const updateAreaFromTalhao = (value) => {
-                if (!areaEl) return;
-                const current = areaEl.value;
-                if (!current || current === lastAutoArea) {
-                  areaEl.value = value || '';
-                  lastAutoArea = value || '';
-                }
-              };
-
-              const loadSafras = async (culturaId) => {
-                if (!safraEl) return;
-                if (!culturaId) {
-                  fillOptions(safraEl, [], '-- Selecione a cultura primeiro --');
-                  fillOptions(talhaoEl, [], '-- Primeiro selecione uma safra --');
-                  return;
-                }
-                try {
-                  const response = await fetch(`{% url 'operacoes_campo:ajax_safras_planejamento_custo' %}?cultura_id=${encodeURIComponent(culturaId)}`);
-                  const data = await response.json();
-                  const selectedSafra = safraEl.value;
-                  fillOptions(safraEl, data.safras || [], '-- Selecione uma safra --', selectedSafra);
-                  if (safraEl.value) {
-                    loadTalhoes(safraEl.value);
-                  } else {
-                    fillOptions(talhaoEl, [], '-- Primeiro selecione uma safra --');
-                  }
-                } catch (error) {
-                  console.error('Erro ao carregar safra(s):', error);
-                }
-              };
-
-              const loadTalhoes = async (safraId) => {
-                if (!talhaoEl) return;
-                if (!safraId) {
-                  fillOptions(talhaoEl, [], '-- Primeiro selecione uma safra --');
-                  return;
-                }
-                try {
-                  const response = await fetch(`{% url 'operacoes_campo:ajax_talhoes_planejamento_custo' %}?safra_id=${encodeURIComponent(safraId)}`);
-                  const data = await response.json();
-                  const selectedTalhao = talhaoEl.value;
-                  fillOptions(talhaoEl, data.talhoes || [], '-- Selecione um talhão --', selectedTalhao);
-                  if (talhaoEl.value) {
-                    const option = talhaoEl.selectedOptions[0];
-                    if (option) {
-                      updateAreaFromTalhao(option.getAttribute('data-area-ha'));
-                    }
-                  }
-                } catch (error) {
-                  console.error('Erro ao carregar talhão(ões):', error);
-                }
-              };
-
-              if (culturaEl) {
-                culturaEl.addEventListener('change', function () {
-                  loadSafras(this.value);
-                });
-              }
-
-              if (safraEl) {
-                safraEl.addEventListener('change', function () {
-                  loadTalhoes(this.value);
-                });
-              }
-
-              if (talhaoEl) {
-                talhaoEl.addEventListener('change', function () {
-                  const option = talhaoEl.selectedOptions[0];
-                  const areaValue = option ? option.getAttribute('data-area-ha') : '';
-                  updateAreaFromTalhao(areaValue);
-                });
-              }
-
-              if (culturaEl && culturaEl.value) {
-                loadSafras(culturaEl.value);
-              }
-              if (safraEl && safraEl.value) {
-                loadTalhoes(safraEl.value);
-              }
-            });
-          </script>
         </div>
       </div>
+
     </div>
   </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const culturaEl   = document.getElementById('id_cultura');
+  const safraEl     = document.getElementById('id_safra');
+  const talhaoEl    = document.getElementById('id_talhao');
+  const areaEl      = document.getElementById('id_area_ha');
+  const prodEl      = document.getElementById('id_produtividade_esperada_ha');
+  const precoEl     = document.getElementById('id_preco_venda_unitario');
+  const unidEl      = document.getElementById('id_unidade_producao');
+  const receitaBox  = document.getElementById('receita-preview');
+  const receitaVal  = document.getElementById('receita-valor');
+  let lastAutoArea  = '';
+
+  // ── Preview de receita estimada ──────────────────────────────────────
+  function atualizarReceita() {
+    const area  = parseFloat(areaEl?.value)  || 0;
+    const prod  = parseFloat(prodEl?.value)  || 0;
+    const preco = parseFloat(precoEl?.value) || 0;
+    if (area && prod && preco) {
+      const receita = area * prod * preco;
+      receitaVal.textContent = 'R$ ' + receita.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+      receitaBox.classList.remove('d-none');
+    } else {
+      receitaBox.classList.add('d-none');
+    }
+  }
+  [areaEl, prodEl, precoEl].forEach(el => el?.addEventListener('input', atualizarReceita));
+  atualizarReceita();
+
+  // ── Cascata cultura → safra → talhão ────────────────────────────────
+  const fillOptions = (select, items, placeholder, selectedValue) => {
+    if (!select) return;
+    select.innerHTML = '';
+    const empty = document.createElement('option');
+    empty.value = ''; empty.textContent = placeholder || '-- Selecione --';
+    select.appendChild(empty);
+    items.forEach(item => {
+      const option = document.createElement('option');
+      option.value = item.id;
+      option.textContent = item.nome;
+      if (String(item.id) === String(selectedValue)) option.selected = true;
+      if (item.area_hac !== undefined) option.setAttribute('data-area-ha', item.area_hac);
+      select.appendChild(option);
+    });
+  };
+
+  const updateAreaFromTalhao = (value) => {
+    if (!areaEl) return;
+    const current = areaEl.value;
+    if (!current || current === lastAutoArea) {
+      areaEl.value = value || '';
+      lastAutoArea = value || '';
+      atualizarReceita();
+    }
+  };
+
+  const loadSafras = async (culturaId) => {
+    if (!safraEl) return;
+    if (!culturaId) {
+      fillOptions(safraEl, [], '-- Selecione a cultura primeiro --');
+      fillOptions(talhaoEl, [], '-- Primeiro selecione uma safra --');
+      return;
+    }
+    try {
+      const r = await fetch(`{% url 'operacoes_campo:ajax_safras_planejamento_custo' %}?cultura_id=${encodeURIComponent(culturaId)}`);
+      const data = await r.json();
+      const sel = safraEl.value;
+      fillOptions(safraEl, data.safras || [], '-- Selecione uma safra --', sel);
+      if (safraEl.value) loadTalhoes(safraEl.value);
+      else fillOptions(talhaoEl, [], '-- Primeiro selecione uma safra --');
+    } catch (e) { console.error(e); }
+  };
+
+  const loadTalhoes = async (safraId) => {
+    if (!talhaoEl) return;
+    if (!safraId) { fillOptions(talhaoEl, [], '-- Primeiro selecione uma safra --'); return; }
+    try {
+      const r = await fetch(`{% url 'operacoes_campo:ajax_talhoes_planejamento_custo' %}?safra_id=${encodeURIComponent(safraId)}`);
+      const data = await r.json();
+      const sel = talhaoEl.value;
+      fillOptions(talhaoEl, data.talhoes || [], '-- Selecione um talhão --', sel);
+      if (talhaoEl.value) {
+        const opt = talhaoEl.selectedOptions[0];
+        if (opt) updateAreaFromTalhao(opt.getAttribute('data-area-ha'));
+      }
+    } catch (e) { console.error(e); }
+  };
+
+  culturaEl?.addEventListener('change', function () { loadSafras(this.value); });
+  safraEl?.addEventListener('change', function () { loadTalhoes(this.value); });
+  talhaoEl?.addEventListener('change', function () {
+    const opt = talhaoEl.selectedOptions[0];
+    updateAreaFromTalhao(opt ? opt.getAttribute('data-area-ha') : '');
+  });
+
+  if (culturaEl?.value) loadSafras(culturaEl.value);
+  if (safraEl?.value) loadTalhoes(safraEl.value);
+});
+</script>
 {% endblock %}

@@ -19,7 +19,7 @@ from decimal import Decimal
 from .models import (
     OrdemServico, OrdemServicoInsumo, CustoTalhao, CustoHoraMaquina,
     TipoServicoOS, SubtipoServicoOS, ModalidadeExecucaoOS,
-    EtapaColheita, PushSubscriptionCampo,
+    EtapaColheita, PushSubscriptionCampo, OSIntervalo,
 )
 from cadastros.models import Talhao, Safra
 from .forms import (
@@ -780,6 +780,13 @@ def os_detail(request, pk):
         etapas_colheita = EtapaColheita.objects.filter(os=os_obj).order_by('numero_etapa')
         total_colheita_kg = sum((e.total_liquido_kg or Decimal('0')) for e in etapas_colheita)
 
+    tem_intervalo_aberto = os_obj.intervalos.filter(fim__isnull=True).exists()
+    intervalos = os_obj.intervalos.select_related('funcionario').order_by('-inicio')
+    maquinas_sem_horimetro_final = [
+        m for m in maquinas
+        if m.horimetro_inicial is not None and m.horimetro_final is None
+    ]
+
     context = {
         'os': os_obj,
         'funcionarios': funcionarios,
@@ -796,8 +803,113 @@ def os_detail(request, pk):
         'tipo_legado': tipo_legado,
         'etapas_colheita': etapas_colheita,
         'total_colheita_kg': total_colheita_kg,
+        'tem_intervalo_aberto': tem_intervalo_aberto,
+        'intervalos': intervalos,
+        'maquinas_sem_horimetro_final': maquinas_sem_horimetro_final,
     }
     return render(request, 'cadastros/os/os_detail.html', context)
+
+
+@login_required
+@require_POST
+def os_recalcular_custos(request, pk):
+    """
+    Recalcula CustoTalhao de uma OS concluída.
+    Fecha intervalos abertos, preenche hora_inicio/hora_fim ausentes
+    usando data_inicio/data_fim da OS, depois chama CustoTalhao.recalcular().
+    """
+    from django.utils import timezone as tz
+    empresa = request.user.empresa
+    os_obj = get_object_or_404(OrdemServico, pk=pk, empresa=empresa)
+
+    if os_obj.status != 'CONCLUIDA':
+        messages.error(request, 'Só é possível recalcular custos de OS concluídas.')
+        return redirect('operacoes_campo:os_detail', pk=pk)
+
+    data_fim = os_obj.data_fim or tz.now()
+    data_fim_local = tz.localtime(data_fim)
+
+    # Fecha OSIntervalo abertos (necessário para custo_intervalos no recalcular)
+    os_obj.intervalos.filter(fim__isnull=True).update(fim=data_fim)
+
+    # Backfill hora_inicio para trabalhadores sem horário de entrada
+    data_inicio = os_obj.data_inicio or data_fim
+    data_inicio_local = tz.localtime(data_inicio)
+    os_obj.funcionarios_os.filter(hora_inicio__isnull=True).update(
+        hora_inicio=data_inicio_local.time(),
+        data_execucao=data_inicio_local.date(),
+    )
+
+    # Backfill hora_fim para todos os trabalhadores sem horário de saída
+    os_obj.funcionarios_os.filter(hora_fim__isnull=True).update(
+        hora_fim=data_fim_local.time(),
+    )
+
+    try:
+        custo_obj, _ = CustoTalhao.objects.get_or_create(
+            os=os_obj,
+            defaults={
+                'empresa': empresa,
+                'talhao': os_obj.talhao,
+                'safra': os_obj.safra,
+            },
+        )
+        custo_obj.recalcular()
+        messages.success(request, 'Custos recalculados com sucesso.')
+    except Exception as e:
+        messages.error(request, f'Erro ao recalcular: {e}')
+
+    return redirect('operacoes_campo:os_detail', pk=pk)
+
+
+@login_required
+@require_POST
+def os_pausar_admin(request, pk):
+    empresa = request.user.empresa
+    os_obj = get_object_or_404(OrdemServico, pk=pk, empresa=empresa)
+
+    if os_obj.status != 'EM_ANDAMENTO':
+        messages.warning(request, 'Não é possível pausar esta OS.')
+        return redirect('operacoes_campo:os_detail', pk=pk)
+
+    agora = timezone.now()
+    atualizados = os_obj.intervalos.filter(fim__isnull=True).update(fim=agora)
+    if atualizados:
+        messages.info(request, f'OS pausada — {atualizados} intervalo(s) de trabalho encerrado(s).')
+    else:
+        messages.warning(request, 'Nenhum intervalo aberto encontrado.')
+    return redirect('operacoes_campo:os_detail', pk=pk)
+
+
+@login_required
+@require_POST
+def os_retomar_admin(request, pk):
+    empresa = request.user.empresa
+    os_obj = get_object_or_404(OrdemServico, pk=pk, empresa=empresa)
+
+    if os_obj.status != 'EM_ANDAMENTO':
+        messages.warning(request, 'Não é possível retomar esta OS.')
+        return redirect('operacoes_campo:os_detail', pk=pk)
+
+    if os_obj.intervalos.filter(fim__isnull=True).exists():
+        messages.warning(request, 'Esta OS já está em andamento.')
+        return redirect('operacoes_campo:os_detail', pk=pk)
+
+    # Recria intervalos para todos os funcionários que já trabalharam nesta OS
+    fechados_ids = set(os_obj.intervalos.filter(fim__isnull=False).values_list('funcionario_id', flat=True))
+    abertos_ids  = set(os_obj.intervalos.filter(fim__isnull=True).values_list('funcionario_id', flat=True))
+    retomar_ids  = fechados_ids - abertos_ids
+
+    if not retomar_ids:
+        messages.warning(request, 'Nenhum funcionário com intervalo anterior encontrado. Retome pelo portal do campo.')
+        return redirect('operacoes_campo:os_detail', pk=pk)
+
+    agora = timezone.now()
+    for fid in retomar_ids:
+        OSIntervalo.objects.create(os=os_obj, funcionario_id=fid, inicio=agora)
+
+    messages.success(request, f'OS retomada — {len(retomar_ids)} intervalo(s) de trabalho reaberto(s).')
+    return redirect('operacoes_campo:os_detail', pk=pk)
 
 
 @login_required
@@ -955,6 +1067,9 @@ def os_aprovar(request, pk):
             os_obj.data_aprovacao = timezone.now()
             os_obj.save()
             messages.success(request, f'OS {os_obj.numero} aprovada!')
+            # Notifica o responsável pela execução via push
+            if os_obj.responsavel_id:
+                _enviar_push_os(os_obj.responsavel, os_obj)
         return redirect('operacoes_campo:os_detail', pk=pk)
 
     return redirect('operacoes_campo:os_detail', pk=pk)
@@ -1003,6 +1118,12 @@ def os_iniciar(request, pk):
             os_obj.data_inicio = timezone.now()
             os_obj.save()
 
+            # Aviso não-bloqueante: máquinas sem horímetro inicial
+            maquinas_sem_hini = os_obj.maquinas_os.filter(horimetro_inicial__isnull=True)
+            if maquinas_sem_hini.exists():
+                nomes = ', '.join(str(m.veiculo) for m in maquinas_sem_hini)
+                messages.warning(request, f'Registre o horímetro inicial: {nomes}')
+
             if tipo_legado == 'PLANTIO':
                 os_obj.talhao.iniciar_cultivo(
                     cultura=os_obj.safra.cultura,
@@ -1032,6 +1153,15 @@ def os_concluir(request, pk):
         foto = request.FILES.get('foto_evidencia')
         if not foto and not os_obj.foto_evidencia:
             messages.error(request, 'Evidência fotográfica é obrigatória para concluir a OS (RN-03).')
+            return redirect('operacoes_campo:os_detail', pk=pk)
+
+        # Bloqueia se alguma máquina tem horímetro inicial mas falta o final
+        pendentes_hfim = os_obj.maquinas_os.filter(
+            horimetro_inicial__isnull=False, horimetro_final__isnull=True
+        )
+        if pendentes_hfim.exists():
+            nomes = ', '.join(str(m.veiculo) for m in pendentes_hfim)
+            messages.error(request, f'Preencha o horímetro final antes de concluir: {nomes}')
             return redirect('operacoes_campo:os_detail', pk=pk)
 
         # Se houver insumos lançados na OS, exige ao menos uma quantidade aplicada > 0.
@@ -1086,8 +1216,32 @@ def os_concluir(request, pk):
                         observacao=f'OS {os_obj.numero} - Item: {item.produto.nome}'
                     )
 
+                agora_conclusao = timezone.now()
+                agora_local = timezone.localtime(agora_conclusao)
+
+                # Fecha todos os OSIntervalo abertos
+                os_obj.intervalos.filter(fim__isnull=True).update(fim=agora_conclusao)
+
+                # Backfill hora_inicio para trabalhadores sem horário de entrada
+                data_inicio = os_obj.data_inicio or agora_conclusao
+                data_inicio_local = timezone.localtime(data_inicio)
+                os_obj.funcionarios_os.filter(hora_inicio__isnull=True).update(
+                    hora_inicio=data_inicio_local.time(),
+                    data_execucao=data_inicio_local.date(),
+                )
+
+                # Backfill hora_fim para todos os trabalhadores sem horário de saída
+                os_obj.funcionarios_os.filter(hora_fim__isnull=True).update(
+                    hora_fim=agora_local.time(),
+                )
+
+                # Backfill data_execucao das máquinas sem data
+                os_obj.maquinas_os.filter(data_execucao__isnull=True).update(
+                    data_execucao=data_inicio_local.date()
+                )
+
                 os_obj.status = 'CONCLUIDA'
-                os_obj.data_fim = timezone.now()
+                os_obj.data_fim = agora_conclusao
                 os_obj.save()
 
                 # Gera / atualiza CustoTalhao

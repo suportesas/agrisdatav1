@@ -17,8 +17,9 @@ urlpatterns = [
     # AJAX CRUD — itens da execução da OS
     path('os/<int:pk>/worker/add/',               views_portal_campo.ajax_add_worker,  name='ajax_add_worker'),
     path('os/<int:pk>/worker/<int:item_pk>/del/',  views_portal_campo.ajax_del_worker,  name='ajax_del_worker'),
-    path('os/<int:pk>/maquina/add/',               views_portal_campo.ajax_add_maquina, name='ajax_add_maquina'),
-    path('os/<int:pk>/maquina/<int:item_pk>/del/', views_portal_campo.ajax_del_maquina, name='ajax_del_maquina'),
+    path('os/<int:pk>/maquina/add/',                views_portal_campo.ajax_add_maquina,  name='ajax_add_maquina'),
+    path('os/<int:pk>/maquina/<int:item_pk>/edit/', views_portal_campo.ajax_edit_maquina, name='ajax_edit_maquina'),
+    path('os/<int:pk>/maquina/<int:item_pk>/del/',  views_portal_campo.ajax_del_maquina,  name='ajax_del_maquina'),
     path('os/<int:pk>/insumo/add/',                views_portal_campo.ajax_add_insumo,  name='ajax_add_insumo'),
     path('os/<int:pk>/insumo/<int:item_pk>/del/',  views_portal_campo.ajax_del_insumo,  name='ajax_del_insumo'),
 

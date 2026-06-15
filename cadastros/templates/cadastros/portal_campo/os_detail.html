@@ -64,15 +64,114 @@
   </div>
 </div>
 
+<!-- URLs AJAX (só usadas na fase APROVADA) -->
+{% if status == 'APROVADA' %}
+<div id="ajax-urls-detail"
+     data-worker-add="{% url 'portal_campo:ajax_add_worker' os.pk %}"
+     data-worker-del-base="/portal/campo/os/{{ os.pk }}/worker/"
+     data-maquina-add="{% url 'portal_campo:ajax_add_maquina' os.pk %}"
+     data-maquina-del-base="/portal/campo/os/{{ os.pk }}/maquina/"
+     data-csrf="{{ csrf_token }}"
+     data-hoje="{{ hoje }}"></div>
+{% endif %}
+
 <!-- Ações principais -->
 {% if status == 'APROVADA' %}
-<div class="d-grid gap-2 mb-3">
-  <form method="post" action="{% url 'portal_campo:os_iniciar' os.pk %}">
+
+<!-- Card: Equipe designada (pré-montagem antes de iniciar) -->
+<div class="card mb-3 border-0 shadow-sm">
+  <div class="card-body p-3">
+    <div class="fw-bold mb-2" style="font-size:.9rem;">
+      <i class="bi bi-people-fill me-1 text-primary"></i>Equipe designada
+      <span class="text-muted fw-normal small ms-1">(montar antes de iniciar)</span>
+    </div>
+
+    <!-- Lista de trabalhadores já registrados -->
+    <div id="detail-workers-list" class="mb-2">
+      {% for al in alocacoes %}
+      <div class="d-flex justify-content-between align-items-center py-1 border-bottom ajax-item" data-id="{{ al.pk }}">
+        <span class="small fw-semibold">{{ al.funcionario.nome_completo }}</span>
+        <button type="button" class="btn btn-sm btn-outline-danger rounded-circle p-0 det-del-worker"
+                data-id="{{ al.pk }}" style="width:26px;height:26px;">
+          <i class="bi bi-trash" style="font-size:.65rem;"></i>
+        </button>
+      </div>
+      {% empty %}
+      <div class="text-muted small" id="detail-workers-empty">Nenhum trabalhador adicionado ainda.</div>
+      {% endfor %}
+    </div>
+
+    <!-- Adicionar trabalhador (sem hora — será preenchida no Iniciar) -->
+    {% if funcionarios_empresa %}
+    <div class="d-flex gap-2 mb-3">
+      <select id="det-add-func" class="form-select form-select-sm">
+        <option value="">— Adicionar trabalhador —</option>
+        {% for f in funcionarios_empresa %}
+        <option value="{{ f.pk }}">{{ f.nome_completo }}{% if f.funcao %} — {{ f.funcao }}{% endif %}</option>
+        {% endfor %}
+      </select>
+      <button type="button" id="det-btn-add-worker"
+              class="btn btn-sm btn-outline-primary rounded-pill px-3 flex-shrink-0">
+        <i class="bi bi-person-plus"></i>
+      </button>
+    </div>
+    <div id="det-worker-erro" class="text-danger small mb-2 d-none"></div>
+    {% endif %}
+
+    <hr class="my-2">
+
+    <!-- Lista de máquinas já registradas -->
+    <div class="fw-semibold small mb-2" style="color:#555;">
+      <i class="bi bi-truck me-1"></i>Maquinário
+    </div>
+    <div id="detail-maquinas-list" class="mb-2">
+      {% for m in maquinas_detail %}
+      <div class="d-flex justify-content-between align-items-center py-1 border-bottom ajax-item" data-id="{{ m.pk }}">
+        <span class="small fw-semibold">{{ m.veiculo }}</span>
+        <button type="button" class="btn btn-sm btn-outline-danger rounded-circle p-0 det-del-maquina"
+                data-id="{{ m.pk }}" style="width:26px;height:26px;">
+          <i class="bi bi-trash" style="font-size:.65rem;"></i>
+        </button>
+      </div>
+      {% empty %}
+      <div class="text-muted small" id="detail-maquinas-empty">Nenhuma máquina adicionada ainda.</div>
+      {% endfor %}
+    </div>
+
+    <!-- Adicionar máquina -->
+    {% if veiculos %}
+    <div class="d-flex gap-2 mb-1">
+      <select id="det-add-maq" class="form-select form-select-sm">
+        <option value="">— Adicionar máquina —</option>
+        {% for v in veiculos %}
+        <option value="{{ v.pk }}">{{ v }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="d-flex gap-2 mb-1">
+      <input type="number" id="det-add-maq-hini" class="form-control form-control-sm"
+             step="0.01" min="0" placeholder="H.Ini (opcional)">
+      <button type="button" id="det-btn-add-maquina"
+              class="btn btn-sm btn-outline-primary rounded-pill px-3 flex-shrink-0">
+        <i class="bi bi-plus-lg"></i>
+      </button>
+    </div>
+    <div id="det-maquina-erro" class="text-danger small mt-1 d-none"></div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Botão Iniciar OS — após montar equipe -->
+<div class="d-grid mb-3">
+  <form method="post" action="{% url 'portal_campo:os_iniciar' os.pk %}" id="form-iniciar-os">
     {% csrf_token %}
+    <input type="hidden" name="latitude" id="iniciar-lat">
+    <input type="hidden" name="longitude" id="iniciar-lng">
     <button type="submit" class="btn btn-success w-100 rounded-pill py-2 fw-bold">
       <i class="bi bi-play-fill me-2"></i>Iniciar OS
     </button>
   </form>
+  <div class="text-muted small text-center mt-1" id="gps-status-iniciar"></div>
 </div>
 {% elif status == 'EM_ANDAMENTO' %}
 <div class="d-grid gap-2 mb-3">
@@ -80,7 +179,14 @@
   <!-- OS em andamento — pode pausar ou concluir -->
   <div class="alert alert-success py-2 px-3 mb-0 rounded-3 small d-flex align-items-center gap-2">
     <span class="spinner-grow spinner-grow-sm text-success flex-shrink-0" role="status"></span>
-    <span>Em andamento desde <strong>{{ intervalo_aberto.inicio|date:"d/m" }} {{ intervalo_aberto.inicio|time:"H:i" }}</strong></span>
+    <span>Em andamento desde <strong>{{ intervalo_aberto.inicio|date:"d/m" }} {{ intervalo_aberto.inicio|time:"H:i" }}</strong>
+      {% if intervalo_aberto.tem_gps %}
+      <a href="https://maps.google.com/?q={{ intervalo_aberto.latitude }},{{ intervalo_aberto.longitude }}"
+         target="_blank" class="ms-1 text-success" title="Ver no mapa">
+        <i class="bi bi-geo-alt-fill"></i>
+      </a>
+      {% endif %}
+    </span>
   </div>
   <form method="post" action="{% url 'portal_campo:os_pausar' os.pk %}">
     {% csrf_token %}
@@ -93,12 +199,15 @@
   <div class="alert alert-secondary py-2 px-3 mb-0 rounded-3 small">
     <i class="bi bi-pause-circle me-1"></i>OS pausada — retome quando estiver pronto.
   </div>
-  <form method="post" action="{% url 'portal_campo:os_retomar' os.pk %}">
+  <form method="post" action="{% url 'portal_campo:os_retomar' os.pk %}" id="form-retomar-os">
     {% csrf_token %}
+    <input type="hidden" name="latitude" id="retomar-lat">
+    <input type="hidden" name="longitude" id="retomar-lng">
     <button type="submit" class="btn btn-success w-100 rounded-pill py-2 fw-bold">
       <i class="bi bi-play-fill me-2"></i>Retomar
     </button>
   </form>
+  <div class="text-muted small text-center mt-1" id="gps-status-retomar"></div>
   {% endif %}
   <a href="{% url 'portal_campo:os_executar' os.pk %}"
      class="btn btn-outline-primary rounded-pill py-2 fw-semibold">
@@ -267,4 +376,141 @@
 {% endif %}
 
 {% endwith %}
+{% endblock %}
+
+{% block extra_js %}
+{% if os.status == 'APROVADA' %}
+<script>
+(function() {
+  const U = document.getElementById('ajax-urls-detail').dataset;
+
+  async function ajaxPost(url, body) {
+    const r = await fetch(url, {
+      method: 'POST',
+      headers: { 'X-CSRFToken': U.csrf, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    return r.json();
+  }
+
+  function showErr(id, msg) {
+    const el = document.getElementById(id);
+    el.textContent = msg; el.classList.remove('d-none');
+    setTimeout(() => el.classList.add('d-none'), 4000);
+  }
+
+  function removeEmpty(listId) {
+    document.querySelector(`#${listId} .text-muted`)?.remove();
+  }
+
+  // ── Adicionar trabalhador (sem hora — preenchida no Iniciar) ──
+  document.getElementById('det-btn-add-worker')?.addEventListener('click', async () => {
+    const fid = document.getElementById('det-add-func').value;
+    if (!fid) return showErr('det-worker-erro', 'Selecione o funcionário.');
+    const d = await ajaxPost(U.workerAdd, {
+      funcionario_id: fid, data: U.hoje, hora_inicio: null, hora_fim: null,
+    });
+    if (d.success) {
+      removeEmpty('detail-workers-list');
+      const item = document.createElement('div');
+      item.className = 'ajax-item d-flex justify-content-between align-items-center py-1 border-bottom';
+      item.dataset.id = d.id;
+      item.innerHTML =
+        `<span class="small fw-semibold">${d.nome}</span>` +
+        `<button type="button" class="btn btn-sm btn-outline-danger rounded-circle p-0 det-del-worker" ` +
+        `data-id="${d.id}" style="width:26px;height:26px;">` +
+        `<i class="bi bi-trash" style="font-size:.65rem;"></i></button>`;
+      document.getElementById('detail-workers-list').appendChild(item);
+      bindDel();
+      document.getElementById('det-add-func').value = '';
+    } else showErr('det-worker-erro', d.error || 'Erro ao adicionar.');
+  });
+
+  // ── Adicionar máquina ──
+  document.getElementById('det-btn-add-maquina')?.addEventListener('click', async () => {
+    const vid  = document.getElementById('det-add-maq').value;
+    const hini = document.getElementById('det-add-maq-hini').value || null;
+    if (!vid) return showErr('det-maquina-erro', 'Selecione o veículo.');
+    const d = await ajaxPost(U.maquinaAdd, {
+      veiculo_id: vid, data: U.hoje, horimetro_inicial: hini, horimetro_final: null,
+    });
+    if (d.success) {
+      removeEmpty('detail-maquinas-list');
+      const item = document.createElement('div');
+      item.className = 'ajax-item d-flex justify-content-between align-items-center py-1 border-bottom';
+      item.dataset.id = d.id;
+      const hiniLabel = hini ? ` <span class="text-muted small ms-1">H.Ini: ${hini}</span>` : '';
+      item.innerHTML =
+        `<span class="small fw-semibold">${d.veiculo}${hiniLabel}</span>` +
+        `<button type="button" class="btn btn-sm btn-outline-danger rounded-circle p-0 det-del-maquina" ` +
+        `data-id="${d.id}" style="width:26px;height:26px;">` +
+        `<i class="bi bi-trash" style="font-size:.65rem;"></i></button>`;
+      document.getElementById('detail-maquinas-list').appendChild(item);
+      bindDel();
+      document.getElementById('det-add-maq').value = '';
+      document.getElementById('det-add-maq-hini').value = '';
+    } else showErr('det-maquina-erro', d.error || 'Erro ao adicionar.');
+  });
+
+  // ── Bind botões de remover ──
+  function bindDel() {
+    document.querySelectorAll('.det-del-worker:not([data-bound])').forEach(btn => {
+      btn.dataset.bound = '1';
+      btn.addEventListener('click', async () => {
+        if (!confirm('Remover este trabalhador?')) return;
+        const d = await ajaxPost(U.workerDelBase + btn.dataset.id + '/del/', {});
+        if (d.success) btn.closest('.ajax-item').remove();
+      });
+    });
+    document.querySelectorAll('.det-del-maquina:not([data-bound])').forEach(btn => {
+      btn.dataset.bound = '1';
+      btn.addEventListener('click', async () => {
+        if (!confirm('Remover esta máquina?')) return;
+        const d = await ajaxPost(U.maquinaDelBase + btn.dataset.id + '/del/', {});
+        if (d.success) btn.closest('.ajax-item').remove();
+      });
+    });
+  }
+  bindDel();
+})();
+</script>
+{% endif %}
+
+<script>
+// GPS capture para Iniciar / Retomar OS
+(function() {
+  function capturarGPS(formId, latId, lngId, statusId) {
+    const form = document.getElementById(formId);
+    if (!form) return;
+    form.addEventListener('submit', function(e) {
+      if (!navigator.geolocation) return; // sem GPS → submete normalmente
+      const latInput = document.getElementById(latId);
+      const lngInput = document.getElementById(lngId);
+      if (latInput && latInput.value) return; // já capturado
+
+      e.preventDefault();
+      const statusEl = document.getElementById(statusId);
+      if (statusEl) { statusEl.textContent = 'Obtendo localização…'; }
+
+      navigator.geolocation.getCurrentPosition(
+        function(pos) {
+          if (latInput) latInput.value = pos.coords.latitude.toFixed(7);
+          if (lngInput) lngInput.value = pos.coords.longitude.toFixed(7);
+          if (statusEl) statusEl.textContent = '';
+          form.submit();
+        },
+        function() {
+          // GPS negado ou falhou → submete sem coordenadas
+          if (statusEl) statusEl.textContent = '';
+          form.submit();
+        },
+        { timeout: 8000, maximumAge: 30000 }
+      );
+    });
+  }
+
+  capturarGPS('form-iniciar-os', 'iniciar-lat', 'iniciar-lng', 'gps-status-iniciar');
+  capturarGPS('form-retomar-os', 'retomar-lat', 'retomar-lng', 'gps-status-retomar');
+})();
+</script>
 {% endblock %}

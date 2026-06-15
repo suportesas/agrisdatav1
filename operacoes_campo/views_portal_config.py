@@ -10,12 +10,17 @@ from .models import PortalCampoConfig
 class PortalCampoConfigForm(forms.ModelForm):
     class Meta:
         model = PortalCampoConfig
-        fields = ['horario_trabalhadores']
+        fields = ['horario_trabalhadores', 'fator_encargos']
         widgets = {
             'horario_trabalhadores': forms.RadioSelect(),
+            'fator_encargos': forms.NumberInput(attrs={
+                'class': 'form-control', 'step': '0.0001', 'min': '1', 'max': '3',
+                'placeholder': 'Ex: 1.70 para CLT',
+            }),
         }
         labels = {
             'horario_trabalhadores': 'Horário dos trabalhadores adicionais',
+            'fator_encargos': 'Fator de Encargos Trabalhistas',
         }
 
 

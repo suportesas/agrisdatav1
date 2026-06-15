@@ -224,6 +224,45 @@
           </div>
         </div>
 
+        <!-- Custo Estimado (Orçamento) -->
+        <div class="card border-0 shadow-sm mb-4">
+          <div class="card-header bg-light py-3" role="button" data-bs-toggle="collapse" data-bs-target="#custo-estimado-body" aria-expanded="{% if form.instance.tem_custo_estimado %}true{% else %}false{% endif %}">
+            <h5 class="mb-0 text-secondary d-flex align-items-center justify-content-between">
+              <span><i class="bi bi-calculator me-2"></i>Custo Estimado <small class="text-muted fw-normal">(Orçamento — Opcional)</small></span>
+              <i class="bi bi-chevron-down small text-muted"></i>
+            </h5>
+          </div>
+          <div class="collapse {% if form.instance.tem_custo_estimado %}show{% endif %}" id="custo-estimado-body">
+            <div class="card-body">
+              <p class="text-muted small mb-3">
+                <i class="bi bi-info-circle me-1"></i>Preencha para comparar o orçamento com o custo realizado ao encerrar a OS.
+              </p>
+              <div class="row g-3">
+                <div class="col-md-4">
+                  <label class="form-label fw-semibold">Mão de Obra (R$)</label>
+                  {{ form.custo_estimado_mao_obra }}
+                  {% if form.custo_estimado_mao_obra.errors %}<div class="text-danger small mt-1">{{ form.custo_estimado_mao_obra.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label fw-semibold">Maquinário (R$)</label>
+                  {{ form.custo_estimado_maquinario }}
+                  {% if form.custo_estimado_maquinario.errors %}<div class="text-danger small mt-1">{{ form.custo_estimado_maquinario.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label fw-semibold">Insumos (R$)</label>
+                  {{ form.custo_estimado_insumos }}
+                  {% if form.custo_estimado_insumos.errors %}<div class="text-danger small mt-1">{{ form.custo_estimado_insumos.errors }}</div>{% endif %}
+                </div>
+              </div>
+              {% if form.instance.tem_custo_estimado %}
+              <div class="mt-3 p-2 bg-light rounded-3 text-end small fw-semibold text-secondary">
+                Total estimado: R$ {{ form.instance.custo_estimado_total|floatformat:2 }}
+              </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
         <!-- Evidência Fotográfica -->
         <div class="card border-0 shadow-sm mb-4">
           <div class="card-header bg-light py-3">

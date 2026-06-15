@@ -19,6 +19,7 @@ from rh.models import Funcionario
 from operacoes_campo.models import (
     OrdemServico, OSFuncionario, OSMaquina, OrdemServicoInsumo,
     OSRegistroExecucao, OSIntervalo, PushSubscriptionCampo, PortalCampoConfig,
+    CustoTalhao,
 )
 from frota.models import Vehicle
 from produtos.models import Produto
@@ -202,7 +203,14 @@ def campo_os_detail(request, pk):
         'registro': registro,
         'intervalos': intervalos,
         'intervalo_aberto': intervalo_aberto,
+        'hoje': str(date.today()),
     })
+    # Selects de pré-montagem de equipe só são necessários na fase APROVADA
+    if os_obj.status == 'APROVADA':
+        ctx['funcionarios_empresa'] = Funcionario.objects.filter(
+            empresa=func.empresa, ativo=True).order_by('nome_completo')
+        ctx['veiculos'] = Vehicle.objects.filter(
+            empresa=func.empresa, ativo=True).order_by('marca', 'modelo', 'descricao')
     return render(request, 'cadastros/portal_campo/os_detail.html', ctx)
 
 
@@ -222,11 +230,24 @@ def campo_os_iniciar(request, pk):
 
     if os_obj.status == 'APROVADA':
         agora = timezone.now()
+        agora_local = timezone.localtime(agora)
         os_obj.status = 'EM_ANDAMENTO'
         os_obj.data_inicio = agora
         os_obj.save(update_fields=['status', 'data_inicio'])
-        OSIntervalo.objects.create(os=os_obj, funcionario=func, inicio=agora)
+        lat = request.POST.get('latitude') or None
+        lng = request.POST.get('longitude') or None
+        OSIntervalo.objects.create(os=os_obj, funcionario=func, inicio=agora, latitude=lat, longitude=lng)
+        # Trabalhadores pré-definidos (sem hora_inicio) recebem o horário de início da OS
+        os_obj.funcionarios_os.filter(hora_inicio__isnull=True).update(
+            hora_inicio=agora_local.time(),
+            data_execucao=agora_local.date(),
+        )
         messages.success(request, f'OS {os_obj.numero} iniciada.')
+        # Aviso não-bloqueante: máquinas sem horímetro inicial
+        maquinas_sem_hini = os_obj.maquinas_os.filter(horimetro_inicial__isnull=True)
+        if maquinas_sem_hini.exists():
+            nomes = ', '.join(str(m.veiculo) for m in maquinas_sem_hini)
+            messages.warning(request, f'Registre o horímetro inicial: {nomes}')
     else:
         messages.warning(request, 'Não é possível iniciar esta OS no status atual.')
 
@@ -285,7 +306,9 @@ def campo_os_retomar(request, pk):
         messages.warning(request, 'Esta OS já está em andamento.')
         return redirect('portal_campo:os_detail', pk=pk)
 
-    OSIntervalo.objects.create(os=os_obj, funcionario=func, inicio=timezone.now())
+    lat = request.POST.get('latitude') or None
+    lng = request.POST.get('longitude') or None
+    OSIntervalo.objects.create(os=os_obj, funcionario=func, inicio=timezone.now(), latitude=lat, longitude=lng)
 
     messages.success(request, 'OS retomada. Bom trabalho!')
     return redirect('portal_campo:os_detail', pk=pk)
@@ -336,6 +359,19 @@ def campo_os_executar(request, pk):
     produtos_insumo = Produto.objects.filter(ativo=True).select_related('unidade_medida').order_by('nome')
     portal_config, _ = PortalCampoConfig.objects.get_or_create(empresa=func.empresa)
 
+    # Horário do operador nesta OS para pré-preencher os campos de trabalhadores adicionais.
+    # Usa o intervalo aberto; se não houver, usa o intervalo mais recente encerrado.
+    intervalo_op = (
+        os_obj.intervalos.filter(funcionario=func, fim__isnull=True).first()
+        or os_obj.intervalos.filter(funcionario=func).order_by('-inicio').first()
+    )
+    if intervalo_op:
+        hora_ini_operador = timezone.localtime(intervalo_op.inicio).strftime('%H:%M')
+        data_execucao_operador = str(timezone.localtime(intervalo_op.inicio).date())
+    else:
+        hora_ini_operador = ''
+        data_execucao_operador = str(date.today())
+
     ctx = _base_ctx(request)
     ctx.update({
         'func': func,
@@ -350,6 +386,8 @@ def campo_os_executar(request, pk):
         'maquinas_registradas': os_obj.maquinas_os.select_related('veiculo').order_by('data_execucao'),
         'insumos_os': os_obj.insumos_os.select_related('produto', 'unidade_medida').order_by('id'),
         'portal_config': portal_config,
+        'hora_ini_operador': hora_ini_operador,
+        'data_execucao_operador': data_execucao_operador,
     })
     return render(request, 'cadastros/portal_campo/os_executar_form.html', ctx)
 
@@ -367,13 +405,38 @@ def _os_ajax_guard(request, pk):
     return func, os_obj
 
 
+def _fmt_date(d):
+    """Formata date ou string 'YYYY-MM-DD' como 'dd/mm'. Robusto contra strings retornadas pelo ORM."""
+    if not d:
+        return '–'
+    if hasattr(d, 'strftime'):
+        return d.strftime('%d/%m')
+    try:
+        from datetime import datetime as _dt
+        return _dt.strptime(str(d)[:10], '%Y-%m-%d').strftime('%d/%m')
+    except Exception:
+        return str(d)
+
+
+def _fmt_time(t):
+    """Formata time ou string 'HH:MM[:SS]' como 'HH:MM'. Robusto contra strings."""
+    if not t:
+        return None
+    if hasattr(t, 'strftime'):
+        return t.strftime('%H:%M')
+    return str(t)[:5]
+
+
 def _worker_html(f):
+    data_str = _fmt_date(f.data_execucao)
+    ini_str  = _fmt_time(f.hora_inicio) or '--:--'
+    fim_str  = _fmt_time(f.hora_fim) or '?'
     return (
         f'<div class="ajax-item d-flex justify-content-between align-items-center py-2 border-bottom" data-id="{f.pk}">'
         f'<div>'
         f'<div class="fw-semibold small">{f.funcionario.nome_completo}</div>'
         f'<div class="text-muted" style="font-size:.78rem;">'
-        f'{f.data_execucao.strftime("%d/%m")} · {f.hora_inicio.strftime("%H:%M")}–{f.hora_fim.strftime("%H:%M")}'
+        f'{data_str} · {ini_str}–{fim_str}'
         f'</div></div>'
         f'<button type="button" class="btn btn-sm btn-outline-danger rounded-circle p-0 ajax-del-worker" '
         f'data-id="{f.pk}" style="width:30px;height:30px;">'
@@ -384,18 +447,36 @@ def _worker_html(f):
 def _maquina_html(m):
     horas = f'{m.horas_trabalhadas:.1f}h' if m.horas_trabalhadas else ''
     hori = ''
+    h_ini_val = str(m.horimetro_inicial) if m.horimetro_inicial is not None else ''
+    h_fim_val = str(m.horimetro_final) if m.horimetro_final is not None else ''
     if m.horimetro_inicial is not None:
         hori = f' · H {m.horimetro_inicial}→{m.horimetro_final or "?"}'
     return (
-        f'<div class="ajax-item d-flex justify-content-between align-items-center py-2 border-bottom" data-id="{m.pk}">'
+        f'<div class="ajax-item border-bottom" data-id="{m.pk}">'
+        f'<div class="d-flex justify-content-between align-items-center py-2">'
         f'<div>'
         f'<div class="fw-semibold small">{m.veiculo}</div>'
         f'<div class="text-muted" style="font-size:.78rem;">'
-        f'{m.data_execucao.strftime("%d/%m")}{hori} {horas}'
+        f'{_fmt_date(m.data_execucao)}{hori} {horas}'
         f'</div></div>'
+        f'<div class="d-flex gap-1">'
+        f'<button type="button" class="btn btn-sm btn-outline-secondary rounded-circle p-0 ajax-edit-maquina" '
+        f'data-id="{m.pk}" data-hini="{h_ini_val}" data-hfim="{h_fim_val}" style="width:30px;height:30px;" title="Editar horímetro">'
+        f'<i class="bi bi-pencil" style="font-size:.7rem;"></i></button>'
         f'<button type="button" class="btn btn-sm btn-outline-danger rounded-circle p-0 ajax-del-maquina" '
         f'data-id="{m.pk}" style="width:30px;height:30px;">'
-        f'<i class="bi bi-trash"></i></button></div>'
+        f'<i class="bi bi-trash"></i></button>'
+        f'</div></div>'
+        f'<div class="maq-edit-form d-none px-1 pb-2" data-id="{m.pk}">'
+        f'<div class="row g-2 align-items-end">'
+        f'<div class="col-5"><label class="form-label small text-muted mb-1">H.Ini (h)</label>'
+        f'<input type="number" class="form-control form-control-sm maq-hini" step="0.01" min="0" value="{h_ini_val}" placeholder="Opcional"></div>'
+        f'<div class="col-5"><label class="form-label small text-muted mb-1">H.Fim (h)</label>'
+        f'<input type="number" class="form-control form-control-sm maq-hfim" step="0.01" min="0" value="{h_fim_val}" placeholder="Opcional"></div>'
+        f'<div class="col-2"><button type="button" class="btn btn-sm btn-success w-100 maq-save-edit" data-id="{m.pk}">'
+        f'<i class="bi bi-check-lg"></i></button></div>'
+        f'</div></div>'
+        f'</div>'
     )
 
 
@@ -423,33 +504,41 @@ def ajax_add_worker(request, pk):
     try:
         body = json.loads(request.body)
         fid = int(body['funcionario_id'])
-        data_exec = body.get('data') or str(date.today())
         hora_ini = body.get('hora_inicio') or None
         hora_fim = body.get('hora_fim') or None
+        data_exec = body.get('data') or None
 
-        # Se a config for OMITIR, usa horário do registro do operador como fallback
-        if not hora_ini or not hora_fim:
-            portal_config, _ = PortalCampoConfig.objects.get_or_create(empresa=func.empresa)
-            if portal_config.horario_trabalhadores == PortalCampoConfig.HORARIO_TRABALHADORES_OMITIR:
-                ultimo_reg = os_obj.funcionarios_os.filter(funcionario=func).order_by('-data_execucao', '-hora_inicio').first()
-                if ultimo_reg:
-                    hora_ini = hora_ini or str(ultimo_reg.hora_inicio)
-                    hora_fim = hora_fim or str(ultimo_reg.hora_fim)
-                    data_exec = data_exec or str(ultimo_reg.data_execucao)
+        # Fallback: usa OSIntervalo do operador nesta OS como fonte do horário.
+        # Funciona tanto no modo OMITIR quanto no AUTO (quando o operador não preencheu hora_ini).
+        if not hora_ini or not data_exec:
+            intervalo_op = (
+                os_obj.intervalos.filter(funcionario=func, fim__isnull=True).first()
+                or os_obj.intervalos.filter(funcionario=func).order_by('-inicio').first()
+            )
+            if intervalo_op:
+                inicio_local = timezone.localtime(intervalo_op.inicio)
+                hora_ini = hora_ini or inicio_local.strftime('%H:%M')
+                data_exec = data_exec or str(inicio_local.date())
+                # hora_fim: só copia se o intervalo já estiver encerrado e o campo estiver vazio
+                if not hora_fim and intervalo_op.fim:
+                    hora_fim = timezone.localtime(intervalo_op.fim).strftime('%H:%M')
 
-        if not hora_ini or not hora_fim:
-            return JsonResponse({'success': False, 'error': 'Informe início e término.'}, status=400)
+        data_exec = data_exec or str(date.today())
 
         trab = Funcionario.objects.get(pk=fid, empresa=func.empresa)
         f_rec = OSFuncionario.objects.create(
             os=os_obj, funcionario=trab,
             data_execucao=data_exec, hora_inicio=hora_ini, hora_fim=hora_fim,
         )
-        if os_obj.status == 'APROVADA':
-            os_obj.status = 'EM_ANDAMENTO'
-            os_obj.data_inicio = timezone.now()
-            os_obj.save(update_fields=['status', 'data_inicio'])
-        return JsonResponse({'success': True, 'id': f_rec.pk, 'html': _worker_html(f_rec)})
+        f_rec.refresh_from_db()  # garante tipos Python corretos (date/time) após create com strings
+        # Nota: a transição APROVADA→EM_ANDAMENTO ocorre exclusivamente via campo_os_iniciar.
+        # Adicionar equipe pré-start não muda o status da OS.
+        return JsonResponse({
+            'success': True,
+            'id': f_rec.pk,
+            'nome': trab.nome_completo,
+            'html': _worker_html(f_rec),
+        })
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=400)
 
@@ -479,16 +568,50 @@ def ajax_add_maquina(request, pk):
         data_exec = body.get('data') or str(date.today())
         h_ini = body.get('horimetro_inicial') or None
         h_fim = body.get('horimetro_final') or None
+
+        # EM_ANDAMENTO: horímetro inicial obrigatório
+        if os_obj.status == 'EM_ANDAMENTO' and not h_ini:
+            return JsonResponse({
+                'success': False,
+                'error': 'Informe o horímetro inicial para registrar o uso da máquina.'
+            }, status=400)
+
         veiculo = Vehicle.objects.get(pk=vid, empresa=func.empresa)
         m_rec = OSMaquina.objects.create(
             os=os_obj, veiculo=veiculo, data_execucao=data_exec,
             horimetro_inicial=h_ini, horimetro_final=h_fim,
         )
-        if os_obj.status == 'APROVADA':
-            os_obj.status = 'EM_ANDAMENTO'
-            os_obj.data_inicio = timezone.now()
-            os_obj.save(update_fields=['status', 'data_inicio'])
-        return JsonResponse({'success': True, 'id': m_rec.pk, 'html': _maquina_html(m_rec)})
+        m_rec.refresh_from_db()  # garante tipos Python corretos (date/Decimal) após create com strings
+        # Nota: a transição APROVADA→EM_ANDAMENTO ocorre exclusivamente via campo_os_iniciar.
+        return JsonResponse({
+            'success': True,
+            'id': m_rec.pk,
+            'veiculo': str(veiculo),
+            'html': _maquina_html(m_rec),
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=400)
+
+
+@campo_login_required
+@require_POST
+def ajax_edit_maquina(request, pk, item_pk):
+    """Atualiza horímetro inicial/final de uma máquina já adicionada à OS."""
+    func, os_obj = _os_ajax_guard(request, pk)
+    if not func:
+        return JsonResponse({'success': False}, status=403)
+    try:
+        body = json.loads(request.body)
+        m_rec = OSMaquina.objects.get(pk=item_pk, os=os_obj)
+        h_ini = body.get('horimetro_inicial') or None
+        h_fim = body.get('horimetro_final') or None
+        m_rec.horimetro_inicial = h_ini
+        m_rec.horimetro_final = h_fim
+        m_rec.save(update_fields=['horimetro_inicial', 'horimetro_final'])
+        m_rec.refresh_from_db()
+        return JsonResponse({'success': True, 'html': _maquina_html(m_rec)})
+    except OSMaquina.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Não encontrado'}, status=404)
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=400)
 
@@ -607,14 +730,33 @@ def campo_os_concluir(request, pk):
             messages.error(request, 'Uma foto de evidência é obrigatória (RN-03).')
             return redirect('portal_campo:os_concluir', pk=pk)
 
+        # Bloqueia se alguma máquina tem horímetro inicial mas falta o final
+        pendentes_hfim = os_obj.maquinas_os.filter(
+            horimetro_inicial__isnull=False, horimetro_final__isnull=True
+        )
+        if pendentes_hfim.exists():
+            nomes = ', '.join(str(m.veiculo) for m in pendentes_hfim)
+            messages.error(request, f'Preencha o horímetro final antes de concluir: {nomes}')
+            return redirect('portal_campo:os_concluir', pk=pk)
+
         from django.db import transaction
         with transaction.atomic():
             agora = timezone.now()
-            # Fecha qualquer intervalo ainda aberto do operador
-            intervalo_aberto = os_obj.intervalos.filter(fim__isnull=True).first()
-            if intervalo_aberto:
-                intervalo_aberto.fim = agora
-                intervalo_aberto.save(update_fields=['fim'])
+            agora_local = timezone.localtime(agora)
+            # Fecha todos os intervalos abertos
+            os_obj.intervalos.filter(fim__isnull=True).update(fim=agora)
+
+            # Backfill hora_inicio para trabalhadores sem entrada
+            data_inicio = os_obj.data_inicio or agora
+            data_inicio_local = timezone.localtime(data_inicio)
+            os_obj.funcionarios_os.filter(hora_inicio__isnull=True).update(
+                hora_inicio=data_inicio_local.time(),
+                data_execucao=data_inicio_local.date(),
+            )
+            # Preenche hora_fim de todos os trabalhadores sem saída
+            os_obj.funcionarios_os.filter(hora_fim__isnull=True).update(
+                hora_fim=agora_local.time(),
+            )
 
             if foto:
                 os_obj.foto_evidencia = foto
@@ -623,10 +765,18 @@ def campo_os_concluir(request, pk):
             os_obj.save(update_fields=['status', 'data_fim', 'foto_evidencia'])
 
             try:
-                custo_obj = os_obj.custo
+                custo_obj, _ = CustoTalhao.objects.get_or_create(
+                    os=os_obj,
+                    defaults={
+                        'empresa': os_obj.empresa,
+                        'talhao': os_obj.talhao,
+                        'safra': os_obj.safra,
+                    },
+                )
                 custo_obj.recalcular()
-            except Exception:
-                pass
+            except Exception as e:
+                import logging
+                logging.getLogger(__name__).error('Erro ao gerar CustoTalhao para OS %s: %s', os_obj.pk, e)
 
         messages.success(request, f'OS {os_obj.numero} concluída com sucesso!')
         return redirect('portal_campo:home')

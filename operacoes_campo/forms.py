@@ -12,6 +12,7 @@ from .models import (
     RegistroPluviometria, InspecaoQualidadeCampo,
     RegistroCadernoCampo, RegistroCadernoCampoInsumo, RegistroCadernoCampoFuncionario,
     PlanejamentoCustoSafra, PlanejamentoCustoItem,
+    PlanejamentoCustoItemIndireto, FormacaoPreco,
     TipoServicoOS, SubtipoServicoOS, ModalidadeExecucaoOS,
 )
 
@@ -26,6 +27,7 @@ class OrdemServicoForm(forms.ModelForm):
             'talhao', 'safra', 'responsavel', 'data_prevista',
             'area_executada_ha', 'fornecedor_servico', 'valor_servico_externo',
             'unidade_cobranca', 'requisicao', 'observacoes', 'foto_evidencia',
+            'custo_estimado_mao_obra', 'custo_estimado_maquinario', 'custo_estimado_insumos',
         ]
         widgets = {
             'tipo_servico': forms.Select(attrs={'class': 'form-select', 'id': 'id_tipo_servico'}),
@@ -42,6 +44,9 @@ class OrdemServicoForm(forms.ModelForm):
             'requisicao': forms.Select(attrs={'class': 'form-select'}),
             'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'foto_evidencia': forms.ClearableFileInput(attrs={'class': 'form-control', 'accept': 'image/*'}),
+            'custo_estimado_mao_obra': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': 'R$ 0,00'}),
+            'custo_estimado_maquinario': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': 'R$ 0,00'}),
+            'custo_estimado_insumos': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': 'R$ 0,00'}),
         }
 
     def __init__(self, *args, empresa=None, **kwargs):
@@ -87,7 +92,8 @@ class OrdemServicoForm(forms.ModelForm):
 
         for f in ['subtipo_servico', 'modalidade_execucao', 'safra', 'responsavel',
                   'fornecedor_servico', 'valor_servico_externo', 'unidade_cobranca',
-                  'requisicao', 'foto_evidencia']:
+                  'requisicao', 'foto_evidencia',
+                  'custo_estimado_mao_obra', 'custo_estimado_maquinario', 'custo_estimado_insumos']:
             self.fields[f].required = False
 
     def clean(self):
@@ -549,13 +555,20 @@ class RegistroCadernoCampoFuncionarioForm(forms.ModelForm):
 class PlanejamentoCustoSafraForm(forms.ModelForm):
     class Meta:
         model = PlanejamentoCustoSafra
-        fields = ['nome', 'cultura', 'safra', 'talhao', 'area_ha', 'observacoes']
+        fields = [
+            'nome', 'cultura', 'safra', 'talhao', 'area_ha',
+            'produtividade_esperada_ha', 'preco_venda_unitario', 'unidade_producao',
+            'observacoes',
+        ]
         widgets = {
             'nome': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Planejamento Tomate 2026'}),
             'cultura': forms.Select(attrs={'class': 'form-select'}),
             'safra': forms.Select(attrs={'class': 'form-select'}),
             'talhao': forms.Select(attrs={'class': 'form-select'}),
-            'area_ha': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.0001', 'placeholder': 'Ex: 2.5000 ha'}),
+            'area_ha': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.0001', 'placeholder': 'Ex: 2.5000'}),
+            'produtividade_esperada_ha': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.0001', 'placeholder': 'Ex: 60'}),
+            'preco_venda_unitario': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': 'R$ 0,00'}),
+            'unidade_producao': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'sc, kg, t…'}),
             'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
 
@@ -565,6 +578,9 @@ class PlanejamentoCustoSafraForm(forms.ModelForm):
         self.fields['safra'].required = False
         self.fields['talhao'].required = False
         self.fields['observacoes'].required = False
+        self.fields['produtividade_esperada_ha'].required = False
+        self.fields['preco_venda_unitario'].required = False
+        self.fields['unidade_producao'].required = False
         if self.user and self.user.empresa:
             from cadastros.models import Cultura, Safra, Talhao
             emp = self.user.empresa
@@ -596,21 +612,22 @@ class PlanejamentoCustoSafraForm(forms.ModelForm):
             else:
                 self.fields['talhao'].queryset = Talhao.objects.filter(empresa=emp, ativo=True).order_by('nome')
 
-            self.fields['talhao'].label_from_instance = lambda obj: f"{obj.codigo} — {obj.nome} ({obj.area_ha:.2f} ha)"
+            self.fields['talhao'].label_from_instance = lambda obj: f"{obj.codigo} — {obj.nome} ({obj.area_hac:.2f} ha)"
 
 
 class PlanejamentoCustoItemForm(forms.ModelForm):
     class Meta:
         model = PlanejamentoCustoItem
-        fields = ['categoria', 'produto', 'descricao', 'dose_por_ha', 'unidade_medida', 'custo_unitario', 'area_ha']
+        fields = ['fase', 'categoria', 'produto', 'descricao', 'dose_por_ha', 'unidade_medida', 'custo_unitario', 'area_ha']
         widgets = {
-            'categoria': forms.Select(attrs={'class': 'form-select'}),
-            'produto': forms.Select(attrs={'class': 'form-select'}),
-            'descricao': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Descrição do item de custo'}),
-            'dose_por_ha': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.0001', 'placeholder': 'Dose por ha'}),
-            'unidade_medida': forms.Select(attrs={'class': 'form-select'}),
-            'custo_unitario': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.0001', 'placeholder': 'R$/unidade'}),
-            'area_ha': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.0001', 'placeholder': 'ha'}),
+            'fase': forms.Select(attrs={'class': 'form-select form-select-sm'}),
+            'categoria': forms.Select(attrs={'class': 'form-select form-select-sm'}),
+            'produto': forms.Select(attrs={'class': 'form-select form-select-sm'}),
+            'descricao': forms.TextInput(attrs={'class': 'form-control form-control-sm', 'placeholder': 'Descrição do item de custo'}),
+            'dose_por_ha': forms.NumberInput(attrs={'class': 'form-control form-control-sm', 'step': '0.0001', 'placeholder': 'Dose/ha'}),
+            'unidade_medida': forms.Select(attrs={'class': 'form-select form-select-sm'}),
+            'custo_unitario': forms.NumberInput(attrs={'class': 'form-control form-control-sm', 'step': '0.0001', 'placeholder': 'R$/un'}),
+            'area_ha': forms.NumberInput(attrs={'class': 'form-control form-control-sm', 'step': '0.0001', 'placeholder': 'ha'}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -624,3 +641,46 @@ class PlanejamentoCustoItemForm(forms.ModelForm):
             emp = self.user.empresa
             self.fields['produto'].queryset = Produto.objects.filter(categoria__empresa=emp, ativo=True).order_by('nome')
             self.fields['unidade_medida'].queryset = UnidadeMedida.objects.filter(empresa=emp).order_by('sigla')
+
+
+class PlanejamentoCustoItemIndiretoForm(forms.ModelForm):
+    class Meta:
+        model = PlanejamentoCustoItemIndireto
+        fields = ['tipo', 'descricao', 'valor_fixo', 'percentual_receita', 'inclui_no_total']
+        widgets = {
+            'tipo': forms.Select(attrs={'class': 'form-select form-select-sm'}),
+            'descricao': forms.TextInput(attrs={'class': 'form-control form-control-sm', 'placeholder': 'Ex: Embalagem caixa 20kg'}),
+            'valor_fixo': forms.NumberInput(attrs={'class': 'form-control form-control-sm', 'step': '0.01', 'placeholder': 'R$ 0,00'}),
+            'percentual_receita': forms.NumberInput(attrs={'class': 'form-control form-control-sm', 'step': '0.01', 'placeholder': '% da receita'}),
+            'inclui_no_total': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['valor_fixo'].required = False
+        self.fields['percentual_receita'].required = False
+
+    def clean(self):
+        cleaned_data = super().clean()
+        valor_fixo = cleaned_data.get('valor_fixo')
+        percentual = cleaned_data.get('percentual_receita')
+        if not valor_fixo and not percentual:
+            raise ValidationError('Informe o valor fixo (R$) ou o percentual da receita.')
+        return cleaned_data
+
+
+class FormacaoPrecoForm(forms.ModelForm):
+    class Meta:
+        model = FormacaoPreco
+        fields = ['producao_prevista_total', 'pct_avaria_prevista', 'margem_desejada_pct', 'inclui_custos_indiretos']
+        widgets = {
+            'producao_prevista_total': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.0001', 'placeholder': 'Ex: 1200 sc'}),
+            'pct_avaria_prevista': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0', 'max': '100', 'placeholder': '0.00'}),
+            'margem_desejada_pct': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0', 'placeholder': '20.00'}),
+            'inclui_custos_indiretos': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['producao_prevista_total'].required = False
+        self.fields['pct_avaria_prevista'].required = False

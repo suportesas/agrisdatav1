@@ -90,6 +90,7 @@ urlpatterns = [
     path('planejamento-custo/<int:pk>/editar/', views_planejamento_custo.planejamento_custo_edit, name='planejamento_custo_edit'),
     path('planejamento-custo/<int:pk>/excluir/', views_planejamento_custo.planejamento_custo_delete, name='planejamento_custo_delete'),
     path('planejamento-custo/<int:pk>/itens/novo/', views_planejamento_custo.planejamento_custo_item_add, name='planejamento_custo_item_add'),
+    path('planejamento-custo/<int:pk>/itens/<int:item_pk>/editar/', views_planejamento_custo.planejamento_custo_item_edit, name='planejamento_custo_item_edit'),
     path('planejamento-custo/<int:pk>/itens/<int:item_pk>/excluir/', views_planejamento_custo.planejamento_custo_item_delete, name='planejamento_custo_item_delete'),
     path('planejamento-custo/<int:pk>/indireto/novo/', views_planejamento_custo.planejamento_custo_indireto_add, name='planejamento_custo_indireto_add'),
     path('planejamento-custo/<int:pk>/indireto/<int:item_pk>/excluir/', views_planejamento_custo.planejamento_custo_indireto_delete, name='planejamento_custo_indireto_delete'),
@@ -99,4 +100,7 @@ urlpatterns = [
     path('planejamento-custo/ajax/talhoes/', views_planejamento_custo.ajax_talhoes_por_safra, name='ajax_talhoes_planejamento_custo'),
     path('planejamento-custo/ajax/cotacoes/', views_planejamento_custo.ajax_cotacoes_bcb, name='ajax_cotacoes_bcb'),
     path('planejamento-custo/ajax/energia/', views_planejamento_custo.ajax_energia_periodo, name='ajax_energia_periodo'),
+    path('planejamento-custo/ajax/subcategorias/', views_planejamento_custo.ajax_subcategorias_por_categoria, name='ajax_subcategorias_custo'),
+    path('planejamento-custo/<int:pk>/ajax/talhoes-comparativo/', views_planejamento_custo.ajax_talhoes_comparativo, name='ajax_talhoes_comparativo'),
+    path('planejamento-custo/<int:pk>/ajax/comparativo-talhao/', views_planejamento_custo.ajax_comparativo_talhao, name='ajax_comparativo_talhao'),
 ]

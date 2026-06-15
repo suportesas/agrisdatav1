@@ -36,6 +36,20 @@ def _sort_key(item, key):
     return value
 
 
+_STATUS_PRIORITY = ('EM_ANDAMENTO', 'ABERTA', 'APROVADA', 'CONCLUIDA', 'CANCELADA')
+
+
+def _status_principal(ordens):
+    """Status mais urgente/ativo para exibição na célula da matriz."""
+    if not ordens:
+        return None
+    statuses = {o.status for o in ordens}
+    for s in _STATUS_PRIORITY:
+        if s in statuses:
+            return s
+    return ordens[0].status
+
+
 def _aplicar_ordenacao_consolidado(dados, campo, direcao, mapa_campos, campo_padrao):
     campo_real = mapa_campos.get(campo, campo_padrao)
     reverse = direcao == 'desc'
@@ -89,9 +103,50 @@ def os_list(request):
 
     talhoes = Talhao.objects.filter(empresa=empresa, ativo=True).order_by('nome')
     safras = Safra.objects.filter(fazenda__empresa=empresa).order_by('-ano', 'nome')
-    tipos_servico = TipoServicoOS.objects.filter(
+    tipos_servico = list(TipoServicoOS.objects.filter(
         Q(empresa=empresa) | Q(empresa=None), ativo=True
-    ).order_by('ordem', 'nome')
+    ).order_by('ordem', 'nome'))
+
+    view_mode = request.GET.get('view', 'kanban')
+
+    # Matriz: pivot talhão × tipo de serviço
+    matrix_rows = []
+    matrix_has_sem_tipo = False
+    if view_mode == 'matriz':
+        from collections import defaultdict
+        pivot = defaultdict(lambda: defaultdict(list))
+        for os_obj in qs:
+            tipo_key = os_obj.tipo_servico_id if os_obj.tipo_servico_id else 0
+            pivot[os_obj.talhao_id][tipo_key].append(os_obj)
+            if not os_obj.tipo_servico_id:
+                matrix_has_sem_tipo = True
+
+        talhao_ids = list(
+            qs.values_list('talhao_id', flat=True).distinct()
+        )
+        talhao_map = {t.id: t for t in Talhao.objects.filter(id__in=talhao_ids)}
+        talhoes_na_matriz = sorted(
+            [talhao_map[tid] for tid in talhao_ids if tid in talhao_map],
+            key=lambda t: t.nome,
+        )
+
+        for talhao in talhoes_na_matriz:
+            cells = []
+            for tipo in tipos_servico:
+                ordens_celula = pivot[talhao.id].get(tipo.id, [])
+                cells.append({
+                    'tipo_id': tipo.id,
+                    'ordens': ordens_celula,
+                    'status_principal': _status_principal(ordens_celula),
+                })
+            if matrix_has_sem_tipo:
+                ordens_sem_tipo = pivot[talhao.id].get(0, [])
+                cells.append({
+                    'tipo_id': 0,
+                    'ordens': ordens_sem_tipo,
+                    'status_principal': _status_principal(ordens_sem_tipo),
+                })
+            matrix_rows.append({'talhao': talhao, 'cells': cells})
 
     context = {
         'ordens': qs,
@@ -105,6 +160,10 @@ def os_list(request):
         'talhao_filter': talhao_filter or '',
         'safra_filter': safra_filter or '',
         'search': search,
+        'view_mode': view_mode,
+        'matrix_rows': matrix_rows,
+        'matrix_has_sem_tipo': matrix_has_sem_tipo,
+        'matrix_tipos': tipos_servico,
     }
     return render(request, 'cadastros/os/os_list.html', context)
 
@@ -733,8 +792,18 @@ def os_detail(request, pk):
 
     funcionarios = os_obj.funcionarios_os.select_related('funcionario').all()
     maquinas = os_obj.maquinas_os.select_related('veiculo', 'operador').all()
+    intervalos = os_obj.intervalos.select_related('funcionario').order_by('inicio')
 
-    custo_mo = sum(f.custo_calculado for f in funcionarios)
+    # Custo MO: mesma lógica de CustoTalhao.recalcular()
+    # Intervalos do portal têm prioridade; alocações manuais complementam apenas quem não tem intervalo
+    intervalos_fechados = [iv for iv in intervalos if iv.fim is not None]
+    workers_com_intervalo = {iv.funcionario_id for iv in intervalos_fechados}
+    custo_intervalos = sum(iv.custo_calculado for iv in intervalos_fechados)
+    custo_mo = custo_intervalos + sum(
+        f.custo_calculado for f in funcionarios
+        if f.funcionario_id not in workers_com_intervalo
+    )
+
     custo_maq = sum(m.custo_calculado for m in maquinas)
     custo_serv = os_obj.valor_servico_externo or Decimal('0')
     insumos_os = os_obj.insumos_os.select_related('produto', 'unidade_medida').all()
@@ -780,8 +849,7 @@ def os_detail(request, pk):
         etapas_colheita = EtapaColheita.objects.filter(os=os_obj).order_by('numero_etapa')
         total_colheita_kg = sum((e.total_liquido_kg or Decimal('0')) for e in etapas_colheita)
 
-    tem_intervalo_aberto = os_obj.intervalos.filter(fim__isnull=True).exists()
-    intervalos = os_obj.intervalos.select_related('funcionario').order_by('-inicio')
+    tem_intervalo_aberto = any(iv.fim is None for iv in intervalos)
     maquinas_sem_horimetro_final = [
         m for m in maquinas
         if m.horimetro_inicial is not None and m.horimetro_final is None
@@ -805,6 +873,9 @@ def os_detail(request, pk):
         'total_colheita_kg': total_colheita_kg,
         'tem_intervalo_aberto': tem_intervalo_aberto,
         'intervalos': intervalos,
+        'intervalos_fechados': intervalos_fechados,
+        'custo_intervalos': custo_intervalos,
+        'workers_com_intervalo': workers_com_intervalo,
         'maquinas_sem_horimetro_final': maquinas_sem_horimetro_final,
     }
     return render(request, 'cadastros/os/os_detail.html', context)

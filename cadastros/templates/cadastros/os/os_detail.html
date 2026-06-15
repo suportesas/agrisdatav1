@@ -269,23 +269,41 @@
           <div class="card border-0 shadow-sm">
             <div class="card-header bg-transparent py-2 d-flex justify-content-between align-items-center">
               <h6 class="mb-0"><i class="bi bi-people me-2 text-primary"></i>Mão de Obra</h6>
+              {% if intervalos_fechados %}
+              <span class="badge bg-info-subtle text-info border border-info-subtle small">
+                <i class="bi bi-phone me-1"></i>Via Portal do Campo
+              </span>
+              {% endif %}
             </div>
             <div class="card-body p-0">
-              {% if funcionarios %}
+              {% if intervalos_fechados or funcionarios %}
               <div class="table-responsive">
                 <table class="table table-sm align-middle mb-0">
                   <thead class="table-light">
                     <tr>
-                      <th>Funcionário</th><th>Data</th><th>Início</th><th>Fim</th>
+                      <th>Funcionário</th><th>Origem</th><th>Data</th><th>Início</th><th>Fim</th>
                       <th class="text-end">Horas</th><th class="text-end">Custo</th>
                     </tr>
                   </thead>
                   <tbody>
+                    {% for iv in intervalos_fechados %}
+                    <tr>
+                      <td class="fw-semibold">{{ iv.funcionario.nome_completo }}</td>
+                      <td><span class="badge bg-info-subtle text-info" style="font-size:.65rem;"><i class="bi bi-phone me-1"></i>Portal</span></td>
+                      <td>{{ iv.inicio|date:"d/m/Y" }}</td>
+                      <td>{{ iv.inicio|time:"H:i" }}</td>
+                      <td>{{ iv.fim|time:"H:i"|default:"—" }}</td>
+                      <td class="text-end">{% if iv.duracao_horas %}{{ iv.duracao_horas|floatformat:2 }}h{% else %}—{% endif %}</td>
+                      <td class="text-end fw-semibold text-primary">R$ {{ iv.custo_calculado|floatformat:2 }}</td>
+                    </tr>
+                    {% endfor %}
                     {% for f in funcionarios %}
+                    {% if f.funcionario_id not in workers_com_intervalo %}
                     <tr>
                       <td>
                         <div class="fw-semibold">{{ f.funcionario.nome_completo }}</div>
                       </td>
+                      <td><span class="badge bg-secondary-subtle text-secondary" style="font-size:.65rem;"><i class="bi bi-pencil me-1"></i>Manual</span></td>
                       <td>
                         {% if f.data_execucao %}
                           {{ f.data_execucao|date:"d/m/Y" }}
@@ -304,9 +322,10 @@
                       <td class="text-end">{{ f.horas_trabalhadas|floatformat:2 }}h</td>
                       <td class="text-end fw-semibold text-primary">R$ {{ f.custo_calculado|floatformat:2 }}</td>
                     </tr>
+                    {% endif %}
                     {% endfor %}
                     <tr class="table-light">
-                      <td colspan="5" class="text-end fw-bold text-muted small">Total M.O.:</td>
+                      <td colspan="6" class="text-end fw-bold text-muted small">Total M.O.:</td>
                       <td class="text-end fw-bold text-primary">R$ {{ custo_mo|floatformat:2 }}</td>
                     </tr>
                   </tbody>

@@ -13,15 +13,29 @@
       <h4 class="fw-bold mb-0"><i class="bi bi-clipboard-check text-success me-2"></i>Ordens de Serviço</h4>
       <small class="text-muted">Gestão de atividades no campo</small>
     </div>
-    <a href="{% url 'operacoes_campo:os_create' %}" class="btn btn-success">
-      <i class="bi bi-plus-circle me-1"></i> Nova OS
-    </a>
+    <div class="d-flex align-items-center gap-2">
+      <!-- Toggle de visualização -->
+      <div class="btn-group btn-group-sm" role="group">
+        <a href="?view=kanban{% if search %}&q={{ search }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if tipo_servico_filter %}&tipo_servico={{ tipo_servico_filter }}{% endif %}{% if talhao_filter %}&talhao={{ talhao_filter }}{% endif %}{% if safra_filter %}&safra={{ safra_filter }}{% endif %}"
+           class="btn {% if view_mode == 'kanban' %}btn-secondary{% else %}btn-outline-secondary{% endif %}" title="Kanban">
+          <i class="bi bi-kanban me-1"></i>Kanban
+        </a>
+        <a href="?view=matriz{% if search %}&q={{ search }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if tipo_servico_filter %}&tipo_servico={{ tipo_servico_filter }}{% endif %}{% if talhao_filter %}&talhao={{ talhao_filter }}{% endif %}{% if safra_filter %}&safra={{ safra_filter }}{% endif %}"
+           class="btn {% if view_mode == 'matriz' %}btn-secondary{% else %}btn-outline-secondary{% endif %}" title="Matriz">
+          <i class="bi bi-grid-3x3-gap me-1"></i>Matriz
+        </a>
+      </div>
+      <a href="{% url 'operacoes_campo:os_create' %}" class="btn btn-success btn-sm">
+        <i class="bi bi-plus-circle me-1"></i> Nova OS
+      </a>
+    </div>
   </div>
 
   <!-- Filtros -->
   <div class="card border-0 shadow-sm mb-3">
     <div class="card-body py-2">
       <form method="get" class="row g-2 align-items-end">
+        <input type="hidden" name="view" value="{{ view_mode }}">
         <div class="col-md-3">
           <input type="text" name="q" value="{{ search }}" class="form-control form-control-sm"
                  placeholder="Número, talhão, responsável...">
@@ -55,7 +69,7 @@
             <i class="bi bi-search me-1"></i>Filtrar
           </button>
           {% if search or status_filter or tipo_servico_filter or talhao_filter or safra_filter %}
-          <a href="{% url 'operacoes_campo:os_list' %}" class="btn btn-outline-danger btn-sm ms-1" title="Limpar filtros">
+          <a href="?view={{ view_mode }}" class="btn btn-outline-danger btn-sm ms-1" title="Limpar filtros">
             <i class="bi bi-x-circle"></i>
           </a>
           {% endif %}
@@ -64,35 +78,132 @@
     </div>
   </div>
 
-  <!-- Pills de status (clicáveis) -->
+  <!-- Pills de status -->
   <div class="d-flex gap-2 mb-3 flex-wrap">
-    <a href="?{% if search %}q={{ search }}&{% endif %}{% if tipo_servico_filter %}tipo_servico={{ tipo_servico_filter }}&{% endif %}{% if talhao_filter %}talhao={{ talhao_filter }}&{% endif %}{% if safra_filter %}safra={{ safra_filter }}{% endif %}"
+    {% with base_qs="view="|add:view_mode %}
+    <a href="?{{ base_qs }}{% if search %}&q={{ search }}{% endif %}{% if tipo_servico_filter %}&tipo_servico={{ tipo_servico_filter }}{% endif %}{% if talhao_filter %}&talhao={{ talhao_filter }}{% endif %}{% if safra_filter %}&safra={{ safra_filter }}{% endif %}"
        class="btn btn-sm {% if not status_filter %}btn-secondary{% else %}btn-outline-secondary{% endif %}">
       Total <span class="badge bg-white text-secondary ms-1">{{ stats.total }}</span>
     </a>
-    <a href="?status=ABERTA{% if search %}&q={{ search }}{% endif %}{% if tipo_servico_filter %}&tipo_servico={{ tipo_servico_filter }}{% endif %}{% if talhao_filter %}&talhao={{ talhao_filter }}{% endif %}{% if safra_filter %}&safra={{ safra_filter }}{% endif %}"
+    <a href="?{{ base_qs }}&status=ABERTA{% if search %}&q={{ search }}{% endif %}{% if tipo_servico_filter %}&tipo_servico={{ tipo_servico_filter }}{% endif %}{% if talhao_filter %}&talhao={{ talhao_filter }}{% endif %}{% if safra_filter %}&safra={{ safra_filter }}{% endif %}"
        class="btn btn-sm {% if status_filter == 'ABERTA' %}btn-warning{% else %}btn-outline-warning{% endif %} text-dark">
       Abertas <span class="badge bg-white text-dark ms-1">{{ stats.abertas }}</span>
     </a>
-    <a href="?status=APROVADA{% if search %}&q={{ search }}{% endif %}{% if tipo_servico_filter %}&tipo_servico={{ tipo_servico_filter }}{% endif %}{% if talhao_filter %}&talhao={{ talhao_filter }}{% endif %}{% if safra_filter %}&safra={{ safra_filter }}{% endif %}"
+    <a href="?{{ base_qs }}&status=APROVADA{% if search %}&q={{ search }}{% endif %}{% if tipo_servico_filter %}&tipo_servico={{ tipo_servico_filter }}{% endif %}{% if talhao_filter %}&talhao={{ talhao_filter }}{% endif %}{% if safra_filter %}&safra={{ safra_filter }}{% endif %}"
        class="btn btn-sm {% if status_filter == 'APROVADA' %}btn-primary{% else %}btn-outline-primary{% endif %}">
       Aprovadas <span class="badge bg-white text-primary ms-1">{{ stats.aprovadas }}</span>
     </a>
-    <a href="?status=EM_ANDAMENTO{% if search %}&q={{ search }}{% endif %}{% if tipo_servico_filter %}&tipo_servico={{ tipo_servico_filter }}{% endif %}{% if talhao_filter %}&talhao={{ talhao_filter }}{% endif %}{% if safra_filter %}&safra={{ safra_filter }}{% endif %}"
+    <a href="?{{ base_qs }}&status=EM_ANDAMENTO{% if search %}&q={{ search }}{% endif %}{% if tipo_servico_filter %}&tipo_servico={{ tipo_servico_filter }}{% endif %}{% if talhao_filter %}&talhao={{ talhao_filter }}{% endif %}{% if safra_filter %}&safra={{ safra_filter }}{% endif %}"
        class="btn btn-sm {% if status_filter == 'EM_ANDAMENTO' %}btn-info text-white{% else %}btn-outline-info{% endif %}">
       Em Andamento <span class="badge bg-white text-info ms-1">{{ stats.em_andamento }}</span>
     </a>
-    <a href="?status=CONCLUIDA{% if search %}&q={{ search }}{% endif %}{% if tipo_servico_filter %}&tipo_servico={{ tipo_servico_filter }}{% endif %}{% if talhao_filter %}&talhao={{ talhao_filter }}{% endif %}{% if safra_filter %}&safra={{ safra_filter }}{% endif %}"
+    <a href="?{{ base_qs }}&status=CONCLUIDA{% if search %}&q={{ search }}{% endif %}{% if tipo_servico_filter %}&tipo_servico={{ tipo_servico_filter }}{% endif %}{% if talhao_filter %}&talhao={{ talhao_filter }}{% endif %}{% if safra_filter %}&safra={{ safra_filter }}{% endif %}"
        class="btn btn-sm {% if status_filter == 'CONCLUIDA' %}btn-success{% else %}btn-outline-success{% endif %}">
       Concluídas <span class="badge bg-white text-success ms-1">{{ stats.concluidas }}</span>
     </a>
-    <a href="?status=CANCELADA{% if search %}&q={{ search }}{% endif %}{% if tipo_servico_filter %}&tipo_servico={{ tipo_servico_filter }}{% endif %}{% if talhao_filter %}&talhao={{ talhao_filter }}{% endif %}{% if safra_filter %}&safra={{ safra_filter }}{% endif %}"
+    <a href="?{{ base_qs }}&status=CANCELADA{% if search %}&q={{ search }}{% endif %}{% if tipo_servico_filter %}&tipo_servico={{ tipo_servico_filter }}{% endif %}{% if talhao_filter %}&talhao={{ talhao_filter }}{% endif %}{% if safra_filter %}&safra={{ safra_filter }}{% endif %}"
        class="btn btn-sm {% if status_filter == 'CANCELADA' %}btn-danger{% else %}btn-outline-danger{% endif %}">
       Canceladas <span class="badge bg-white text-danger ms-1">{{ stats.canceladas }}</span>
     </a>
+    {% endwith %}
   </div>
 
-  <!-- Kanban -->
+  {% if not ordens %}
+  <div class="text-center py-5 text-muted">
+    <i class="bi bi-clipboard-x display-5 opacity-25 d-block mb-3"></i>
+    <p class="mb-1">Nenhuma ordem de serviço encontrada.</p>
+    <a href="{% url 'operacoes_campo:os_create' %}" class="btn btn-success mt-2">
+      <i class="bi bi-plus-circle me-1"></i>Criar primeira OS
+    </a>
+  </div>
+
+  {% elif view_mode == 'matriz' %}
+  <!-- ================================================================ -->
+  <!-- MODO MATRIZ                                                        -->
+  <!-- ================================================================ -->
+  {% if not safra_filter %}
+  <div class="alert alert-info alert-sm d-flex align-items-center gap-2 py-2 mb-3">
+    <i class="bi bi-lightbulb-fill flex-shrink-0"></i>
+    <span>Filtre por <strong>safra</strong> acima para uma visão mais precisa por ciclo produtivo.</span>
+  </div>
+  {% endif %}
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+      <div class="os-matriz-wrapper">
+        <table class="table table-sm table-bordered align-middle os-matriz mb-0">
+          <thead>
+            <tr>
+              <th class="os-col-talhao">
+                <span class="text-muted fw-semibold small">Talhão</span>
+              </th>
+              {% for tipo in matrix_tipos %}
+              <th class="text-center os-col-tipo">
+                <i class="{{ tipo.icone }} me-1 opacity-75"></i>
+                <span class="d-block small fw-semibold" style="white-space:normal;line-height:1.2;">{{ tipo.nome }}</span>
+              </th>
+              {% endfor %}
+              {% if matrix_has_sem_tipo %}
+              <th class="text-center os-col-tipo">
+                <span class="d-block small text-muted fw-semibold">Sem Tipo</span>
+              </th>
+              {% endif %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in matrix_rows %}
+            <tr>
+              <td class="os-col-talhao fw-semibold text-dark">
+                <i class="bi bi-geo-alt text-primary me-1 opacity-75"></i>
+                {{ row.talhao.nome }}
+              </td>
+              {% for cell in row.cells %}
+              <td class="text-center p-1 os-cell {% if cell.status_principal %}os-cell-{{ cell.status_principal }}{% endif %}">
+                {% if cell.ordens %}
+                  {% if cell.ordens|length == 1 %}
+                    <a href="{% url 'operacoes_campo:os_detail' cell.ordens.0.pk %}"
+                       class="badge os-badge os-badge-{{ cell.status_principal }} text-decoration-none"
+                       title="{{ cell.ordens.0.numero }} — {{ cell.ordens.0.descricao_servico }}">
+                      {{ cell.status_principal|default:"—" }}
+                    </a>
+                  {% else %}
+                    <span class="badge os-badge os-badge-{{ cell.status_principal }} cursor-pointer"
+                          data-bs-toggle="popover"
+                          data-bs-placement="left"
+                          data-bs-html="true"
+                          data-bs-trigger="focus"
+                          tabindex="0"
+                          title="{{ cell.ordens|length }} OS"
+                          data-bs-content="{% for o in cell.ordens %}<a href='{% url 'operacoes_campo:os_detail' o.pk %}' class='d-block text-decoration-none mb-1'><span class='badge os-badge-sm os-badge-{{ o.status }} me-1'>{{ o.status }}</span>{{ o.numero }}</a>{% endfor %}">
+                      {{ cell.ordens|length }} OS
+                    </span>
+                  {% endif %}
+                {% else %}
+                  <span class="text-muted opacity-25">—</span>
+                {% endif %}
+              </td>
+              {% endfor %}
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Legenda -->
+  <div class="d-flex gap-3 flex-wrap mt-2 ps-1">
+    <span class="small text-muted"><span class="badge os-badge-ABERTA me-1">Aberta</span>Aguardando aprovação</span>
+    <span class="small text-muted"><span class="badge os-badge-APROVADA me-1">Aprovada</span>Aprovada, não iniciada</span>
+    <span class="small text-muted"><span class="badge os-badge-EM_ANDAMENTO me-1">Em Andamento</span>Em execução</span>
+    <span class="small text-muted"><span class="badge os-badge-CONCLUIDA me-1">Concluída</span>Finalizada</span>
+    <span class="small text-muted"><span class="badge os-badge-CANCELADA me-1">Cancelada</span></span>
+  </div>
+
+  {% else %}
+  <!-- ================================================================ -->
+  <!-- MODO KANBAN (padrão)                                               -->
+  <!-- ================================================================ -->
   <div class="os-kanban d-flex gap-3 overflow-auto pb-3" id="osKanban">
 
     <!-- ABERTAS -->
@@ -367,19 +478,12 @@
   </div>
   {% endif %}
 
-  {% if not ordens %}
-  <div class="text-center py-5 text-muted">
-    <i class="bi bi-clipboard-x display-5 opacity-25 d-block mb-3"></i>
-    <p class="mb-1">Nenhuma ordem de serviço encontrada.</p>
-    <a href="{% url 'operacoes_campo:os_create' %}" class="btn btn-success mt-2">
-      <i class="bi bi-plus-circle me-1"></i>Criar primeira OS
-    </a>
-  </div>
-  {% endif %}
+  {% endif %}{# fim view_mode #}
 
 </div>
 
 <style>
+/* ---- Kanban ---- */
 .os-kanban { padding-bottom: 1rem; }
 .kanban-column { display: flex; flex-direction: column; }
 .kanban-col-header { border-radius: .5rem .5rem 0 0; }
@@ -388,15 +492,79 @@
 .os-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.12) !important; }
 .btn-xs { font-size: 0.75rem; padding: .1rem .4rem; border-radius: .25rem; }
 .fs-xs { font-size: .65rem; }
+
+/* ---- Matriz ---- */
+.os-matriz-wrapper {
+  overflow: auto;
+  max-height: 72vh;
+  border-radius: var(--radius-card, 14px);
+}
+.os-matriz {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+.os-matriz thead th {
+  position: sticky;
+  top: 0;
+  background: #fff;
+  z-index: 3;
+  border-bottom: 2px solid #dee2e6;
+  vertical-align: middle;
+}
+.os-col-talhao {
+  position: sticky;
+  left: 0;
+  z-index: 4;
+  background: #fff;
+  min-width: 140px;
+  max-width: 180px;
+  white-space: nowrap;
+  border-right: 2px solid #dee2e6 !important;
+  font-size: .85rem;
+}
+.os-matriz thead .os-col-talhao {
+  z-index: 5;
+}
+.os-col-tipo {
+  min-width: 110px;
+  max-width: 150px;
+  padding: .4rem .3rem !important;
+}
+.os-cell {
+  vertical-align: middle;
+  padding: .35rem .25rem !important;
+}
+.os-cell-EM_ANDAMENTO { background: rgba(13,202,240,.06); }
+.os-cell-ABERTA       { background: rgba(255,193,7,.05); }
+.os-cell-APROVADA     { background: rgba(13,110,253,.05); }
+.os-cell-CONCLUIDA    { background: rgba(25,135,84,.05); }
+
+/* Badges da matriz */
+.os-badge {
+  font-size: .7rem;
+  font-weight: 600;
+  padding: .25em .5em;
+  border-radius: .3rem;
+  cursor: default;
+  display: inline-block;
+}
+a.os-badge { cursor: pointer; }
+a.os-badge:hover { filter: brightness(0.9); }
+.os-badge-ABERTA       { background:#fff3cd; color:#664d03; border:1px solid #ffc107; }
+.os-badge-APROVADA     { background:#cfe2ff; color:#084298; border:1px solid #9ec5fe; }
+.os-badge-EM_ANDAMENTO { background:#cff4fc; color:#055160; border:1px solid #9eeaf9; }
+.os-badge-CONCLUIDA    { background:#d1e7dd; color:#0a3622; border:1px solid #a3cfbb; }
+.os-badge-CANCELADA    { background:#f8d7da; color:#58151c; border:1px solid #f1aeb5; }
+.os-badge-sm { font-size: .65rem; padding: .15em .35em; border-radius: .25rem; }
+
+.cursor-pointer { cursor: pointer; }
 </style>
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+  {% if view_mode == 'kanban' %}
   const hoje = new Date();
   hoje.setHours(0, 0, 0, 0);
-
-  // Marcar atrasos e contar por coluna
-  const colunas = { ABERTA: 0, APROVADA: 0, EM_ANDAMENTO: 0, CONCLUIDA: 0 };
 
   document.querySelectorAll('.os-card').forEach(card => {
     const prevista = card.dataset.prevista;
@@ -409,19 +577,23 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   });
 
-  // Contar cards por coluna e mostrar empty state
   document.querySelectorAll('.kanban-cards').forEach(col => {
     const status = col.dataset.status;
     const cards = col.querySelectorAll('.os-card');
     const emptyEl = col.querySelector('.kanban-empty');
     const cnt = cards.length;
-
-    const badgeId = 'cnt-' + status.toLowerCase();
-    const badge = document.getElementById(badgeId);
+    const badge = document.getElementById('cnt-' + status.toLowerCase());
     if (badge) badge.textContent = cnt;
-
     if (cnt === 0 && emptyEl) emptyEl.classList.remove('d-none');
   });
+  {% endif %}
+
+  {% if view_mode == 'matriz' %}
+  // Inicializa popovers da matriz
+  document.querySelectorAll('[data-bs-toggle="popover"]').forEach(el => {
+    new bootstrap.Popover(el, { sanitize: false });
+  });
+  {% endif %}
 });
 </script>
 {% endblock %}

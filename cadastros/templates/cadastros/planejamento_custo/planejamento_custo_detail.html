@@ -53,19 +53,6 @@
       </div>
     </div>
     {% endif %}
-    {% if custo_real.total > 0 %}
-    <div class="col-6 col-md-3">
-      <div class="card border-0 shadow-sm text-center py-2">
-        <div class="text-muted small">Custo Real</div>
-        <div class="fw-bold text-danger fs-5">R$ {{ custo_real.total|floatformat:2 }}</div>
-        {% if variacao_pct %}
-        <div class="small {% if variacao > 0 %}text-danger{% else %}text-success{% endif %}">
-          {% if variacao > 0 %}+{% endif %}{{ variacao_pct|floatformat:1 }}% vs planejado
-        </div>
-        {% endif %}
-      </div>
-    </div>
-    {% endif %}
   </div>
 
   {# ── Abas ───────────────────────────────────────────────────────────────── #}
@@ -87,18 +74,11 @@
         <i class="bi bi-currency-exchange me-1"></i>Formação de Preço
       </button>
     </li>
-    {% if dre %}
     <li class="nav-item">
-      <button class="nav-link" id="tab-dre" data-bs-toggle="tab" data-bs-target="#pane-dre" type="button">
-        <i class="bi bi-graph-up-arrow me-1 {% if dre.lucro_real and dre.lucro_real > 0 %}text-success{% elif dre.lucro_real %}text-danger{% endif %}"></i>Resultado Real
-        {% if dre.lucro_real %}
-        <span class="badge ms-1 {% if dre.lucro_real > 0 %}bg-success{% else %}bg-danger{% endif %}">
-          {% if dre.lucro_real > 0 %}Lucro{% else %}Prejuízo{% endif %}
-        </span>
-        {% endif %}
+      <button class="nav-link" id="tab-comparativo" data-bs-toggle="tab" data-bs-target="#pane-comparativo" type="button">
+        <i class="bi bi-bar-chart me-1"></i>Comparativo
       </button>
     </li>
-    {% endif %}
   </ul>
 
   <div class="tab-content border border-top-0 rounded-bottom bg-white p-4 shadow-sm" id="planTabsContent">
@@ -108,6 +88,65 @@
     {# ================================================================== #}
     <div class="tab-pane fade show active" id="pane-campo" role="tabpanel">
 
+      {# ---- Card: Formulário de Adição ---- #}
+      <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header bg-transparent py-2">
+          <h6 class="mb-0 fw-semibold"><i class="bi bi-plus-circle me-2 text-success"></i>Novo Item de Custo</h6>
+        </div>
+        <div class="card-body">
+          <form method="post" action="{% url 'operacoes_campo:planejamento_custo_item_add' plan.pk %}">
+            {% csrf_token %}
+            <div class="row g-2 align-items-end">
+              {# Linha 1: TipoServiço | Operação | Categoria | Descrição | Produto #}
+              <div class="col-6 col-md-3">
+                <label class="form-label mb-1 small fw-semibold">Tipo de Serviço</label>
+                {{ item_form.tipo_servico }}
+              </div>
+              <div class="col-6 col-md-3">
+                <label class="form-label mb-1 small fw-semibold">Operação</label>
+                {{ item_form.subtipo_servico }}
+              </div>
+              <div class="col-6 col-md-2">
+                <label class="form-label mb-1 small fw-semibold">Categoria</label>
+                {{ item_form.categoria }}
+              </div>
+              <div class="col-12 col-md-2">
+                <label class="form-label mb-1 small fw-semibold">Descrição</label>
+                {{ item_form.descricao }}
+              </div>
+              <div class="col-6 col-md-2">
+                <label class="form-label mb-1 small fw-semibold">Produto (opt.)</label>
+                {{ item_form.produto }}
+              </div>
+              {# Linha 2: Dose/ha | Unid. | R$/un | Área | Botão #}
+              <div class="col-6 col-md-2">
+                <label class="form-label mb-1 small fw-semibold">Dose/ha</label>
+                {{ item_form.dose_por_ha }}
+              </div>
+              <div class="col-6 col-md-2">
+                <label class="form-label mb-1 small fw-semibold">Unid.</label>
+                {{ item_form.unidade_medida }}
+              </div>
+              <div class="col-6 col-md-2">
+                <label class="form-label mb-1 small fw-semibold">R$/un</label>
+                {{ item_form.custo_unitario }}
+              </div>
+              <div class="col-6 col-md-2">
+                <label class="form-label mb-1 small fw-semibold">Área (ha)</label>
+                {{ item_form.area_ha }}
+              </div>
+              <div class="col-12 col-md-auto">
+                <div class="d-flex align-items-end gap-2">
+                  <div id="item-custo-preview" class="text-success fw-bold small d-none"></div>
+                  <button type="submit" class="btn btn-warning btn-sm px-3"><i class="bi bi-plus me-1"></i>Adicionar</button>
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      {# ---- Card: Tabela de Itens ---- #}
       <div class="card border-0 shadow-sm mb-4">
         <div class="card-header bg-transparent py-2 d-flex justify-content-between align-items-center">
           <h6 class="mb-0 fw-semibold"><i class="bi bi-list-ul me-2 text-warning"></i>Itens de Custo de Campo</h6>
@@ -118,6 +157,7 @@
               <tr>
                 <th>Fase</th>
                 <th>Categoria</th>
+                <th>Operação</th>
                 <th>Descrição</th>
                 <th class="text-end">Dose/ha</th>
                 <th class="text-end">Área (ha)</th>
@@ -138,6 +178,7 @@
                   {% else %}<span class="badge bg-light text-dark border">{{ item.get_fase_display }}</span>{% endif %}
                 </td>
                 <td class="small">{{ item.get_categoria_display }}</td>
+                <td class="small text-muted">{{ item.subtipo_servico.nome|default:"—" }}</td>
                 <td>
                   <span class="fw-semibold small">{{ item.descricao }}</span>
                   {% if item.produto %}<div class="text-muted" style="font-size:.7rem">{{ item.produto.nome }}</div>{% endif %}
@@ -148,7 +189,23 @@
                 <td class="text-end small">{{ item.area_ha|floatformat:2 }}</td>
                 <td class="text-end small text-muted">R$ {{ item.custo_unitario|floatformat:4 }}</td>
                 <td class="text-end fw-bold text-warning">R$ {{ item.custo_total|floatformat:2 }}</td>
-                <td>
+                <td class="text-nowrap">
+                  <button type="button" class="btn btn-outline-primary btn-sm py-0 px-1 me-1 btn-editar-item"
+                    data-item-id="{{ item.pk }}"
+                    data-fase="{{ item.fase }}"
+                    data-tipo-servico-id="{{ item.tipo_servico_id|default:'' }}"
+                    data-subtipo-servico-id="{{ item.subtipo_servico_id|default:'' }}"
+                    data-categoria="{{ item.categoria }}"
+                    data-subcategoria-id="{{ item.subcategoria_id|default:'' }}"
+                    data-subcategoria-nome="{{ item.subcategoria.nome|default:'' }}"
+                    data-descricao="{{ item.descricao }}"
+                    data-produto-id="{{ item.produto_id|default:'' }}"
+                    data-dose-por-ha="{{ item.dose_por_ha|default:'' }}"
+                    data-unidade-medida-id="{{ item.unidade_medida_id|default:'' }}"
+                    data-custo-unitario="{{ item.custo_unitario }}"
+                    data-area-ha="{{ item.area_ha }}">
+                    <i class="bi bi-pencil" style="font-size:.75rem;"></i>
+                  </button>
                   <form method="post" action="{% url 'operacoes_campo:planejamento_custo_item_delete' plan.pk item.pk %}" class="d-inline">
                     {% csrf_token %}
                     <button type="submit" class="btn btn-outline-danger btn-sm py-0 px-1" onclick="return confirm('Remover?')">
@@ -158,13 +215,13 @@
                 </td>
               </tr>
               {% empty %}
-              <tr><td colspan="8" class="text-center text-muted py-4">Nenhum item cadastrado ainda.</td></tr>
+              <tr><td colspan="9" class="text-center text-muted py-4">Nenhum item cadastrado ainda.</td></tr>
               {% endfor %}
             </tbody>
             {% if itens %}
             <tfoot class="table-light">
               <tr>
-                <td colspan="6" class="text-end fw-bold">Total Campo</td>
+                <td colspan="7" class="text-end fw-bold">Total Campo</td>
                 <td class="text-end fw-bold text-warning">R$ {{ planejado_total|floatformat:2 }}</td>
                 <td></td>
               </tr>
@@ -172,127 +229,7 @@
             {% endif %}
           </table>
         </div>
-
-        <div class="card-footer bg-light">
-          <form method="post" action="{% url 'operacoes_campo:planejamento_custo_item_add' plan.pk %}">
-            {% csrf_token %}
-            <div class="row g-2 align-items-end">
-              <div class="col-6 col-md-2">
-                <label class="form-label mb-1 small fw-semibold">Fase</label>
-                {{ item_form.fase }}
-              </div>
-              <div class="col-6 col-md-2">
-                <label class="form-label mb-1 small fw-semibold">Categoria</label>
-                {{ item_form.categoria }}
-              </div>
-              <div class="col-12 col-md-3">
-                <label class="form-label mb-1 small fw-semibold">Descrição</label>
-                {{ item_form.descricao }}
-              </div>
-              <div class="col-6 col-md-2">
-                <label class="form-label mb-1 small fw-semibold">Produto (opt.)</label>
-                {{ item_form.produto }}
-              </div>
-              <div class="col-6 col-md-1">
-                <label class="form-label mb-1 small fw-semibold">Dose/ha</label>
-                {{ item_form.dose_por_ha }}
-              </div>
-              <div class="col-4 col-md-1">
-                <label class="form-label mb-1 small fw-semibold">Unid.</label>
-                {{ item_form.unidade_medida }}
-              </div>
-              <div class="col-4 col-md-1">
-                <label class="form-label mb-1 small fw-semibold">R$/un</label>
-                {{ item_form.custo_unitario }}
-              </div>
-              <div class="col-4 col-md-1">
-                <label class="form-label mb-1 small fw-semibold">Área (ha)</label>
-                {{ item_form.area_ha }}
-              </div>
-              <div class="col-12 col-md-auto">
-                <div class="d-flex align-items-end gap-2">
-                  <div id="item-custo-preview" class="text-success fw-bold small d-none"></div>
-                  <button type="submit" class="btn btn-warning btn-sm px-3"><i class="bi bi-plus me-1"></i>Adicionar</button>
-                </div>
-              </div>
-            </div>
-          </form>
-        </div>
       </div>
-
-      {% if comparativo_cat %}
-      <div class="card border-0 shadow-sm mb-4">
-        <div class="card-header bg-transparent py-2">
-          <h6 class="mb-0 fw-semibold"><i class="bi bi-bar-chart me-2 text-primary"></i>Planejado × Realizado por Categoria</h6>
-        </div>
-        <div class="table-responsive">
-          <table class="table table-sm align-middle mb-0">
-            <thead class="table-light">
-              <tr>
-                <th>Categoria</th>
-                <th class="text-end">Planejado</th>
-                <th class="text-end">Realizado</th>
-                <th class="text-end">Variação</th>
-                <th class="text-end">%</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for row in comparativo_cat %}
-              <tr>
-                <td>{{ row.label }}</td>
-                <td class="text-end text-muted">R$ {{ row.planejado|floatformat:2 }}</td>
-                <td class="text-end fw-semibold">R$ {{ row.real|floatformat:2 }}</td>
-                <td class="text-end small {% if row.variacao > 0 %}text-danger{% else %}text-success{% endif %}">
-                  {% if row.variacao > 0 %}+{% endif %}R$ {{ row.variacao|floatformat:2 }}
-                </td>
-                <td class="text-end small {% if row.variacao > 0 %}text-danger{% else %}text-success{% endif %}">
-                  {% if row.variacao_pct %}{% if row.variacao > 0 %}+{% endif %}{{ row.variacao_pct }}%{% else %}—{% endif %}
-                </td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-      </div>
-      {% endif %}
-
-      {% if custo_por_talhao %}
-      <div class="card border-0 shadow-sm">
-        <div class="card-header bg-transparent py-2">
-          <h6 class="mb-0 fw-semibold"><i class="bi bi-map me-2 text-success"></i>Custo Real por Talhão</h6>
-        </div>
-        <div class="table-responsive">
-          <table class="table table-sm align-middle mb-0">
-            <thead class="table-light">
-              <tr>
-                <th>Talhão</th>
-                <th class="text-end">MO</th>
-                <th class="text-end">Maquinário</th>
-                <th class="text-end">Insumos</th>
-                <th class="text-end">Serviço Ext.</th>
-                <th class="text-end">Área (ha)</th>
-                <th class="text-end fw-bold">Total</th>
-                <th class="text-end">R$/ha</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for row in custo_por_talhao %}
-              <tr>
-                <td class="fw-semibold small">{{ row.talhao.nome }}</td>
-                <td class="text-end small">R$ {{ row.mo|floatformat:2 }}</td>
-                <td class="text-end small">R$ {{ row.maq|floatformat:2 }}</td>
-                <td class="text-end small">R$ {{ row.ins|floatformat:2 }}</td>
-                <td class="text-end small">R$ {{ row.svc|floatformat:2 }}</td>
-                <td class="text-end small text-muted">{{ row.area|floatformat:2 }}</td>
-                <td class="text-end fw-bold text-danger">R$ {{ row.total|floatformat:2 }}</td>
-                <td class="text-end small text-muted">R$ {{ row.custo_ha|floatformat:2 }}</td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-      </div>
-      {% endif %}
 
     </div>
 
@@ -301,12 +238,52 @@
     {# ================================================================== #}
     <div class="tab-pane fade" id="pane-pos" role="tabpanel">
 
-      <div class="card border-0 shadow-sm mb-4">
+      {# ---- Card: Formulário Pós-Campo ---- #}
+      <div class="card border-0 shadow-sm mb-3">
         <div class="card-header bg-transparent py-2 d-flex justify-content-between align-items-center">
-          <h6 class="mb-0 fw-semibold"><i class="bi bi-box-seam me-2 text-info"></i>Custos Pós-Campo</h6>
+          <h6 class="mb-0 fw-semibold"><i class="bi bi-plus-circle me-2 text-success"></i>Novo Custo Pós-Campo</h6>
           <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modal-energia">
             <i class="bi bi-lightning-charge me-1"></i>Importar Energia
           </button>
+        </div>
+        <div class="card-body">
+          <form method="post" action="{% url 'operacoes_campo:planejamento_custo_indireto_add' plan.pk %}">
+            {% csrf_token %}
+            <div class="row g-2 align-items-end">
+              <div class="col-6 col-md-2">
+                <label class="form-label mb-1 small fw-semibold">Tipo</label>
+                {{ indireto_form.tipo }}
+              </div>
+              <div class="col-12 col-md-4">
+                <label class="form-label mb-1 small fw-semibold">Descrição</label>
+                {{ indireto_form.descricao }}
+              </div>
+              <div class="col-6 col-md-2">
+                <label class="form-label mb-1 small fw-semibold">Valor R$</label>
+                {{ indireto_form.valor_fixo }}
+              </div>
+              <div class="col-6 col-md-2">
+                <label class="form-label mb-1 small fw-semibold">ou % da receita</label>
+                {{ indireto_form.percentual_receita }}
+              </div>
+              <div class="col-6 col-md-1 d-flex align-items-end">
+                <div class="form-check mb-2">
+                  {{ indireto_form.inclui_no_total }}
+                  <label class="form-check-label small">No total</label>
+                </div>
+              </div>
+              <div class="col-6 col-md-1 d-flex align-items-end">
+                <button type="submit" class="btn btn-info btn-sm text-white w-100"><i class="bi bi-plus me-1"></i>Add</button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      {# ---- Card: Tabela Pós-Campo ---- #}
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-transparent py-2">
+          <h6 class="mb-0 fw-semibold"><i class="bi bi-box-seam me-2 text-info"></i>Custos Pós-Campo</h6>
         </div>
         <div class="table-responsive">
           <table class="table table-sm align-middle mb-0">
@@ -364,39 +341,6 @@
             </tfoot>
             {% endif %}
           </table>
-        </div>
-
-        <div class="card-footer bg-light">
-          <form method="post" action="{% url 'operacoes_campo:planejamento_custo_indireto_add' plan.pk %}">
-            {% csrf_token %}
-            <div class="row g-2 align-items-end">
-              <div class="col-6 col-md-2">
-                <label class="form-label mb-1 small fw-semibold">Tipo</label>
-                {{ indireto_form.tipo }}
-              </div>
-              <div class="col-12 col-md-4">
-                <label class="form-label mb-1 small fw-semibold">Descrição</label>
-                {{ indireto_form.descricao }}
-              </div>
-              <div class="col-6 col-md-2">
-                <label class="form-label mb-1 small fw-semibold">Valor R$</label>
-                {{ indireto_form.valor_fixo }}
-              </div>
-              <div class="col-6 col-md-2">
-                <label class="form-label mb-1 small fw-semibold">ou % da receita</label>
-                {{ indireto_form.percentual_receita }}
-              </div>
-              <div class="col-6 col-md-1 d-flex align-items-end">
-                <div class="form-check mb-2">
-                  {{ indireto_form.inclui_no_total }}
-                  <label class="form-check-label small">No total</label>
-                </div>
-              </div>
-              <div class="col-6 col-md-1 d-flex align-items-end">
-                <button type="submit" class="btn btn-info btn-sm text-white w-100"><i class="bi bi-plus me-1"></i>Add</button>
-              </div>
-            </div>
-          </form>
         </div>
       </div>
 
@@ -578,130 +522,117 @@
     </div>
 
     {# ================================================================== #}
-    {# ABA 4 — RESULTADO REAL                                               #}
+    {# ABA 4 — COMPARATIVO COM TALHÃO                                       #}
     {# ================================================================== #}
-    {% if dre %}
-    <div class="tab-pane fade" id="pane-dre" role="tabpanel">
+    <div class="tab-pane fade" id="pane-comparativo" role="tabpanel">
 
-      <div class="row g-3 mb-4">
-        <div class="col-6 col-md-3">
-          <div class="card border-0 shadow-sm text-center py-3">
-            <div class="text-muted small">Produção Real</div>
-            <div class="fw-bold fs-5">{{ dre.producao_real_unid|floatformat:2 }} {{ dre.unidade }}</div>
-            <div class="text-muted" style="font-size:.75rem;">{{ dre.producao_real_kg|floatformat:0 }} kg</div>
-          </div>
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
+        <div>
+          <h6 class="fw-semibold mb-0"><i class="bi bi-bar-chart me-2 text-primary"></i>Comparativo Planejado × Realizado</h6>
+          <small class="text-muted">Plano base: <strong>{{ plan.area_ha|floatformat:2 }} ha</strong> — valores ajustados automaticamente para a área do talhão selecionado</small>
         </div>
-        <div class="col-6 col-md-3">
-          <div class="card border-0 shadow-sm text-center py-3">
-            <div class="text-muted small">Receita Real</div>
-            <div class="fw-bold fs-5 text-success">{% if dre.receita_real %}R$ {{ dre.receita_real|floatformat:2 }}{% else %}—{% endif %}</div>
-            {% if not plan.preco_venda_unitario %}<div class="text-muted" style="font-size:.7rem;">Configure o preço de venda</div>{% endif %}
-          </div>
-        </div>
-        <div class="col-6 col-md-3">
-          <div class="card border-0 shadow-sm text-center py-3">
-            <div class="text-muted small">Custo Real Total</div>
-            <div class="fw-bold fs-5 text-danger">R$ {{ dre.custo_real_total|floatformat:2 }}</div>
-          </div>
-        </div>
-        <div class="col-6 col-md-3">
-          <div class="card border-0 shadow-sm text-center py-3 {% if dre.lucro_real and dre.lucro_real > 0 %}border-success-subtle bg-success bg-opacity-10{% elif dre.lucro_real %}border-danger-subtle bg-danger bg-opacity-10{% endif %}">
-            <div class="text-muted small">Resultado</div>
-            {% if dre.lucro_real is not None %}
-            <div class="fw-bold fs-5 {% if dre.lucro_real > 0 %}text-success{% else %}text-danger{% endif %}">
-              {% if dre.lucro_real > 0 %}+{% endif %}R$ {{ dre.lucro_real|floatformat:2 }}
-            </div>
-            {% if dre.margem_real_pct %}
-            <div class="small {% if dre.lucro_real > 0 %}text-success{% else %}text-danger{% endif %}">
-              {{ dre.margem_real_pct|floatformat:1 }}% margem real
-            </div>
-            {% endif %}
-            {% else %}
-            <div class="text-muted">— (configure preço de venda)</div>
-            {% endif %}
-          </div>
+        <div class="d-flex gap-2 align-items-center flex-wrap">
+          <select id="sel-talhao-comparativo" class="form-select form-select-sm" style="min-width:240px">
+            <option value="">— selecionar talhão —</option>
+          </select>
+          <button id="btn-comparar" class="btn btn-primary btn-sm" disabled>
+            <i class="bi bi-search me-1"></i>Comparar
+          </button>
         </div>
       </div>
 
-      {% if dre.receita_real and dre.custo_real_total %}
-      <div class="card border-0 shadow-sm mb-4">
-        <div class="card-body">
-          <h6 class="fw-semibold mb-3"><i class="bi bi-bar-chart-fill me-2 text-warning"></i>Receita × Custo</h6>
-          {% if dre.receita_real >= dre.custo_real_total %}
-            {% widthratio dre.custo_real_total dre.receita_real 100 as pct_custo %}
-            <div class="d-flex justify-content-between small mb-1">
-              <span class="text-success fw-semibold">Receita R$ {{ dre.receita_real|floatformat:2 }}</span>
-              <span class="text-danger">Custo {{ pct_custo }}%</span>
-            </div>
-            <div class="progress" style="height:28px;">
-              <div class="progress-bar bg-danger" style="width:{{ pct_custo }}%;" title="Custo R$ {{ dre.custo_real_total|floatformat:2 }}">
-                Custo
-              </div>
-              <div class="progress-bar bg-success" style="width:{% widthratio dre.lucro_real dre.receita_real 100 %}%;" title="Lucro">
-                Lucro
-              </div>
-            </div>
-          {% else %}
-            {% widthratio dre.receita_real dre.custo_real_total 100 as pct_receita %}
-            <div class="d-flex justify-content-between small mb-1">
-              <span class="text-danger fw-semibold">Custo R$ {{ dre.custo_real_total|floatformat:2 }}</span>
-              <span class="text-success">Receita cobre {{ pct_receita }}%</span>
-            </div>
-            <div class="progress" style="height:28px;">
-              <div class="progress-bar bg-success" style="width:{{ pct_receita }}%;" title="Receita">Receita</div>
-              <div class="progress-bar bg-danger bg-opacity-75" style="width:{% widthratio 100 1 1 as dummy %}{{ 100|add:0 }}%;" title="Deficit">Deficit</div>
-            </div>
-          {% endif %}
-        </div>
-      </div>
-      {% endif %}
-
-      <div class="card border-0 shadow-sm">
-        <div class="card-header bg-transparent py-2">
-          <h6 class="mb-0 fw-semibold"><i class="bi bi-list-check me-2 text-primary"></i>Etapas de Colheita Concluídas</h6>
-        </div>
-        <div class="table-responsive">
-          <table class="table table-sm align-middle mb-0">
-            <thead class="table-light">
-              <tr>
-                <th>OS</th>
-                <th>Talhão</th>
-                <th>Etapa</th>
-                <th class="text-end">Produção (kg)</th>
-                <th class="text-end">Produção ({{ dre.unidade }})</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for etapa in etapas_colheita %}
-              <tr>
-                <td class="small">
-                  <a href="{% url 'operacoes_campo:os_detail' etapa.os.pk %}" class="text-decoration-none">{{ etapa.os.numero }}</a>
-                </td>
-                <td class="small">{{ etapa.talhao.nome }}</td>
-                <td class="small">{{ etapa.numero_etapa }}ª etapa</td>
-                <td class="text-end fw-semibold">{{ etapa.total_liquido_kg|floatformat:2 }} kg</td>
-                <td class="text-end text-muted small">
-                  {% if plan.kg_por_unidade %}≈ {% widthratio etapa.total_liquido_kg plan.kg_por_unidade 1 %} {{ dre.unidade }}{% else %}—{% endif %}
-                </td>
-              </tr>
-              {% endfor %}
-            </tbody>
-            <tfoot class="table-light">
-              <tr>
-                <td colspan="3" class="text-end fw-bold">Total</td>
-                <td class="text-end fw-bold text-primary">{{ dre.producao_real_kg|floatformat:2 }} kg</td>
-                <td class="text-end fw-bold">{{ dre.producao_real_unid|floatformat:2 }} {{ dre.unidade }}</td>
-              </tr>
-            </tfoot>
-          </table>
+      <div id="comparativo-resultado">
+        <div class="text-center text-muted py-5">
+          <i class="bi bi-bar-chart fs-1 d-block mb-2 opacity-25"></i>
+          <p class="mb-0">Selecione um talhão com operações concluídas para ver o comparativo.</p>
+          <small>O sistema ajusta automaticamente os valores planejados para a área real do talhão.</small>
         </div>
       </div>
 
     </div>
-    {% endif %}
 
   </div>{# /tab-content #}
 
+</div>
+
+{# ── Modal: Editar Item de Custo de Campo ────────────────────────────────── #}
+<div class="modal fade" id="modal-editar-item" tabindex="-1">
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+      <div class="modal-header bg-primary bg-opacity-10">
+        <h5 class="modal-title fw-semibold"><i class="bi bi-pencil-square me-2 text-primary"></i>Editar Item de Custo</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form id="form-editar-item" method="post" action="">
+        {% csrf_token %}
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-6 col-md-3">
+              <label class="form-label fw-semibold small">Tipo de Serviço</label>
+              <select name="tipo_servico" id="edit_tipo_servico" class="form-select form-select-sm">
+                <option value="">--- Tipo ---</option>
+                {% for ts in item_form.tipo_servico.field.queryset %}
+                <option value="{{ ts.pk }}">{{ ts.nome }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-6 col-md-3">
+              <label class="form-label fw-semibold small">Operação</label>
+              <select name="subtipo_servico" id="edit_subtipo_servico" class="form-select form-select-sm" disabled>
+                <option value="">--- Operação ---</option>
+              </select>
+            </div>
+            <div class="col-6 col-md-2">
+              <label class="form-label fw-semibold small">Categoria</label>
+              <select name="categoria" id="edit_categoria" class="form-select form-select-sm">
+                {% for val, label in item_form.categoria.field.choices %}
+                <option value="{{ val }}">{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-12 col-md-2">
+              <label class="form-label fw-semibold small">Descrição</label>
+              <input type="text" name="descricao" id="edit_descricao" class="form-control form-control-sm" placeholder="Descrição do item" required>
+            </div>
+            <div class="col-6 col-md-2">
+              <label class="form-label fw-semibold small">Produto (opt.)</label>
+              <select name="produto" id="edit_produto" class="form-select form-select-sm">
+                <option value="">----------</option>
+                {% for prod in item_form.produto.field.queryset %}
+                <option value="{{ prod.pk }}">{{ prod }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-6 col-md-2">
+              <label class="form-label fw-semibold small">Dose/ha</label>
+              <input type="number" name="dose_por_ha" id="edit_dose_por_ha" class="form-control form-control-sm" step="0.0001" placeholder="Dose/ha">
+            </div>
+            <div class="col-6 col-md-2">
+              <label class="form-label fw-semibold small">Unidade</label>
+              <select name="unidade_medida" id="edit_unidade_medida" class="form-select form-select-sm">
+                <option value="">----------</option>
+                {% for un in item_form.unidade_medida.field.queryset %}
+                <option value="{{ un.pk }}">{{ un.sigla }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-6 col-md-2">
+              <label class="form-label fw-semibold small">R$/un</label>
+              <input type="number" name="custo_unitario" id="edit_custo_unitario" class="form-control form-control-sm" step="0.0001" required>
+            </div>
+            <div class="col-6 col-md-2">
+              <label class="form-label fw-semibold small">Área (ha)</label>
+              <input type="number" name="area_ha" id="edit_area_ha" class="form-control form-control-sm" step="0.0001" required>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>Salvar alterações</button>
+        </div>
+      </form>
+    </div>
+  </div>
 </div>
 
 {# ── Modal: Importar Energia ─────────────────────────────────────────────── #}
@@ -745,6 +676,230 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+
+  // ── Comparativo com Talhão ───────────────────────────────────────────────
+  const selTalhao   = document.getElementById('sel-talhao-comparativo');
+  const btnComparar = document.getElementById('btn-comparar');
+  const divResultado = document.getElementById('comparativo-resultado');
+  const URL_TALHOES = "{% url 'operacoes_campo:ajax_talhoes_comparativo' plan.pk %}";
+  const URL_COMP    = "{% url 'operacoes_campo:ajax_comparativo_talhao' plan.pk %}";
+
+  function fmtBRL(v) {
+    return 'R$ ' + parseFloat(v).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+  }
+  function varClass(v) { return parseFloat(v) > 0 ? 'text-danger' : 'text-success'; }
+  function varSinal(v) { return parseFloat(v) > 0 ? '+' : ''; }
+
+  // Carregar talhões disponíveis
+  (async () => {
+    try {
+      const r = await fetch(URL_TALHOES);
+      const data = await r.json();
+      if (data.talhoes && data.talhoes.length > 0) {
+        data.talhoes.forEach(t => {
+          const opt = document.createElement('option');
+          opt.value = t.id;
+          opt.textContent = `${t.nome} (${parseFloat(t.area).toFixed(2)} ha)`;
+          selTalhao.appendChild(opt);
+        });
+        btnComparar.disabled = false;
+      } else {
+        selTalhao.innerHTML = '<option value="">Nenhum talhão com custo registrado</option>';
+      }
+    } catch (e) { console.warn('Erro carregar talhões:', e); }
+  })();
+
+  selTalhao.addEventListener('change', function () {
+    btnComparar.disabled = !this.value;
+    if (!this.value) divResultado.innerHTML = '<div class="text-center text-muted py-4 small"><i class="bi bi-arrow-up-circle fs-4 d-block mb-1 opacity-50"></i>Selecione um talhão para comparar.</div>';
+  });
+
+  btnComparar.addEventListener('click', async function () {
+    const talhaoId = selTalhao.value;
+    if (!talhaoId) return;
+    this.disabled = true;
+    this.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Calculando…';
+    try {
+      const r = await fetch(`${URL_COMP}?talhao_id=${talhaoId}`);
+      const d = await r.json();
+      if (d.error) throw new Error(d.error);
+
+      const planHa = parseFloat(d.area_plan).toFixed(2);
+      const realHa = parseFloat(d.talhao.area).toFixed(2);
+      const fator  = parseFloat(d.fator).toFixed(4);
+
+      const colHeader = d.modo === 'tipo_servico' ? 'Tipo de Serviço / Operação' : 'Categoria';
+      let rows = d.linhas.map(l => `
+        <tr>
+          <td class="fw-semibold small">
+            ${l.label}
+            ${l.sublabel ? `<div class="text-muted" style="font-size:.7rem">${l.sublabel}</div>` : ''}
+          </td>
+          <td class="text-end text-muted small">${fmtBRL(l.planejado_orig)}</td>
+          <td class="text-end small text-primary">${fmtBRL(l.planejado_ajust)}</td>
+          <td class="text-end small fw-semibold">${fmtBRL(l.real)}</td>
+          <td class="text-end small ${varClass(l.variacao)}">${varSinal(l.variacao)}${fmtBRL(l.variacao)}</td>
+          <td class="text-end small ${varClass(l.variacao)}">${l.variacao_pct !== null ? varSinal(l.variacao) + l.variacao_pct + '%' : '—'}</td>
+        </tr>`).join('');
+
+      const t = d.totais;
+      divResultado.innerHTML = `
+        <div class="px-3 py-2 bg-light border-bottom small text-muted">
+          Plano base: <strong>${planHa} ha</strong> → Talhão <strong>${d.talhao.nome}</strong>: <strong>${realHa} ha</strong>
+          (fator de ajuste: ×${fator})
+        </div>
+        <div class="table-responsive">
+          <table class="table table-sm align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>${colHeader}</th>
+                <th class="text-end text-muted">Plano orig.<br><small>(${planHa} ha)</small></th>
+                <th class="text-end text-primary">Plano ajust.<br><small>(${realHa} ha)</small></th>
+                <th class="text-end">Real<br><small>(${realHa} ha)</small></th>
+                <th class="text-end">Variação R$</th>
+                <th class="text-end">%</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+            <tfoot class="table-light fw-bold">
+              <tr>
+                <td>Total</td>
+                <td class="text-end text-muted">${fmtBRL(t.planejado_orig)}</td>
+                <td class="text-end text-primary">${fmtBRL(t.planejado_ajust)}</td>
+                <td class="text-end">${fmtBRL(t.real)}</td>
+                <td class="text-end ${varClass(t.variacao)}">${varSinal(t.variacao)}${fmtBRL(t.variacao)}</td>
+                <td class="text-end ${varClass(t.variacao)}">${t.variacao_pct !== null ? varSinal(t.variacao) + t.variacao_pct + '%' : '—'}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>`;
+    } catch (e) {
+      divResultado.innerHTML = `<div class="alert alert-danger m-3">Erro: ${e.message}</div>`;
+    } finally {
+      this.disabled = false;
+      this.innerHTML = '<i class="bi bi-search me-1"></i>Comparar';
+    }
+  });
+
+  // ── Modal editar item ────────────────────────────────────────────────────
+  const modalEditarEl  = document.getElementById('modal-editar-item');
+  const formEditar     = document.getElementById('form-editar-item');
+  const EDIT_URL_BASE  = "{% url 'operacoes_campo:planejamento_custo_item_edit' plan.pk 0 %}".replace('/0/editar/', '/');
+  const AJAX_TIPOS_URL = "{% url 'operacoes_campo:os_ajax_opcoes_servico' %}";
+
+  // Cascade Tipo → Operação no modal de edição
+  async function carregarSubtiposEdit(tipoId, subtipoIdSelecionado) {
+    const sel = document.getElementById('edit_subtipo_servico');
+    sel.innerHTML = '<option value="">--- Operação ---</option>';
+    sel.disabled = true;
+    if (!tipoId) return;
+    try {
+      const r = await fetch(`${AJAX_TIPOS_URL}?tipo_id=${tipoId}`);
+      const data = await r.json();
+      if (data.subtipos && data.subtipos.length > 0) {
+        data.subtipos.forEach(s => {
+          const opt = document.createElement('option');
+          opt.value = s.id;
+          opt.textContent = s.nome;
+          if (String(s.id) === String(subtipoIdSelecionado)) opt.selected = true;
+          sel.appendChild(opt);
+        });
+        sel.disabled = false;
+      }
+    } catch (e) { console.warn('Erro subtipos edit:', e); }
+  }
+
+  document.getElementById('edit_tipo_servico')?.addEventListener('change', function () {
+    carregarSubtiposEdit(this.value, '');
+  });
+
+  document.getElementById('edit_produto')?.addEventListener('change', async function () {
+    if (!this.value) return;
+    try {
+      const r = await fetch(`${PRECO_URL}?produto_id=${encodeURIComponent(this.value)}`);
+      if (!r.ok) return;
+      const data = await r.json();
+      const c = document.getElementById('edit_custo_unitario');
+      const u = document.getElementById('edit_unidade_medida');
+      if (c && data.preco_custo) { c.value = data.preco_custo; }
+      if (u && data.unidade_medida_id) { u.value = data.unidade_medida_id; }
+    } catch (e) { console.warn('Erro preco produto edit:', e); }
+  });
+
+  // Django pt-br locale renders decimals with comma; number inputs require dot
+  function toNum(v) { return v ? String(v).replace(',', '.') : ''; }
+
+  document.querySelectorAll('.btn-editar-item').forEach(btn => {
+    btn.addEventListener('click', async function () {
+      const d = this.dataset;
+      formEditar.action = EDIT_URL_BASE + d.itemId + '/editar/';
+
+      document.getElementById('edit_tipo_servico').value   = d.tipoServicoId || '';
+      document.getElementById('edit_categoria').value      = d.categoria;
+      document.getElementById('edit_descricao').value      = d.descricao;
+      document.getElementById('edit_produto').value        = d.produtoId || '';
+      document.getElementById('edit_dose_por_ha').value    = toNum(d.dosePorHa);
+      document.getElementById('edit_unidade_medida').value = d.unidadeMedidaId || '';
+      document.getElementById('edit_custo_unitario').value = toNum(d.custoUnitario);
+      document.getElementById('edit_area_ha').value        = toNum(d.areaHa);
+
+      await carregarSubtiposEdit(d.tipoServicoId, d.subtipoServicoId);
+
+      bootstrap.Modal.getOrCreateInstance(modalEditarEl).show();
+    });
+  });
+
+  // ── Cascade Tipo → Operação no formulário de adição ──────────────────────
+  const tipoServicoEl    = document.getElementById('id_tipo_servico');
+  const subtipoServicoEl = document.getElementById('id_subtipo_servico');
+
+  async function carregarSubtipos(tipoId) {
+    subtipoServicoEl.innerHTML = '<option value="">--- Operação ---</option>';
+    subtipoServicoEl.disabled = true;
+    if (!tipoId) return;
+    try {
+      const r = await fetch(`${AJAX_TIPOS_URL}?tipo_id=${tipoId}`);
+      const data = await r.json();
+      if (data.subtipos && data.subtipos.length > 0) {
+        data.subtipos.forEach(s => {
+          const opt = document.createElement('option');
+          opt.value = s.id;
+          opt.textContent = s.nome;
+          subtipoServicoEl.appendChild(opt);
+        });
+        subtipoServicoEl.disabled = false;
+      }
+    } catch (e) { console.warn('Erro ao carregar subtipos:', e); }
+  }
+
+  tipoServicoEl?.addEventListener('change', function () {
+    carregarSubtipos(this.value);
+  });
+
+  // ── Auto-preenchimento pelo Produto ──────────────────────────────────────
+  const produtoEl  = document.getElementById('id_produto');
+  const PRECO_URL  = "{% url 'operacoes_campo:ajax_preco_produto' %}";
+
+  produtoEl?.addEventListener('change', async function () {
+    const produtoId = this.value;
+    if (!produtoId) return;
+    try {
+      const r = await fetch(`${PRECO_URL}?produto_id=${encodeURIComponent(produtoId)}`);
+      if (!r.ok) return;
+      const data = await r.json();
+      const custoInput  = document.getElementById('id_custo_unitario');
+      const unidSelect  = document.getElementById('id_unidade_medida');
+      if (custoInput && data.preco_custo) {
+        custoInput.value = data.preco_custo;
+        custoInput.dispatchEvent(new Event('input'));
+      }
+      if (unidSelect && data.unidade_medida_id) {
+        unidSelect.value = data.unidade_medida_id;
+      }
+    } catch (e) {
+      console.warn('Erro ao buscar preço do produto:', e);
+    }
+  });
 
   // ── Preview custo item campo ─────────────────────────────────────────────
   const doseEl  = document.getElementById('id_dose_por_ha');

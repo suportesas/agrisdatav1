@@ -860,8 +860,7 @@ document.addEventListener('DOMContentLoaded', function() {
         form.action = url;
         const body = document.getElementById('safraPlanModalBody');
         body.querySelectorAll('input').forEach(i => i.value = '');
-        var bsModal = new bootstrap.Modal(modal);
-        bsModal.show();
+        bootstrap.Modal.getOrCreateInstance(modal).show();
       });
     }
 
@@ -878,8 +877,7 @@ document.addEventListener('DOMContentLoaded', function() {
               body.innerHTML = js.html;
               const form = modal.querySelector('form');
               form.action = url; // set to update URL
-              var bsModal = new bootstrap.Modal(modal);
-              bsModal.show();
+              bootstrap.Modal.getOrCreateInstance(modal).show();
             } else {
               alert('Erro ao obter formulário de edição');
             }

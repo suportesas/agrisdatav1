@@ -933,11 +933,30 @@ class PlanejamentoCustoSafra(models.Model):
         return bool(self.produtividade_esperada_ha and self.preco_venda_unitario)
 
 
+CATEGORIA_CUSTO_CHOICES = [
+    ('MO', 'Mão de Obra'), ('MAQUINARIO', 'Maquinário'), ('INSUMO', 'Insumo'),
+    ('SERVICO_EXTERNO', 'Serviço Externo'), ('ESTUFA', 'Estufa / Transplantio'),
+]
+
+
+class SubcategoriaItemCusto(models.Model):
+    categoria = models.CharField(max_length=20, choices=CATEGORIA_CUSTO_CHOICES, verbose_name='Categoria')
+    nome = models.CharField(max_length=100, verbose_name='Nome')
+    ativo = models.BooleanField(default=True)
+
+    class Meta:
+        db_table = 'pc_subcategoria_item_custo'
+        ordering = ['categoria', 'nome']
+        unique_together = [('categoria', 'nome')]
+        verbose_name = 'Subcategoria de Custo'
+        verbose_name_plural = 'Subcategorias de Custo'
+
+    def __str__(self):
+        return self.nome
+
+
 class PlanejamentoCustoItem(models.Model):
-    CATEGORIA_CHOICES = [
-        ('MO', 'Mão de Obra'), ('MAQUINARIO', 'Maquinário'), ('INSUMO', 'Insumo'),
-        ('SERVICO_EXTERNO', 'Serviço Externo'), ('ESTUFA', 'Estufa / Transplantio'),
-    ]
+    CATEGORIA_CHOICES = CATEGORIA_CUSTO_CHOICES
     FASE_CHOICES = [
         ('GERAL', 'Geral'),
         ('PREPARO_SOLO', 'Preparo de Solo'),
@@ -948,8 +967,20 @@ class PlanejamentoCustoItem(models.Model):
     ]
 
     planejamento = models.ForeignKey(PlanejamentoCustoSafra, on_delete=models.CASCADE, related_name='itens')
-    fase = models.CharField('Fase de Cultivo', max_length=20, choices=FASE_CHOICES, default='GERAL')
+    fase = models.CharField('Fase de Cultivo', max_length=20, choices=FASE_CHOICES, default='GERAL', blank=True)
     categoria = models.CharField(max_length=20, choices=CATEGORIA_CHOICES, verbose_name='Categoria')
+    subcategoria = models.ForeignKey(
+        SubcategoriaItemCusto, on_delete=models.SET_NULL, null=True, blank=True,
+        verbose_name='Subcategoria', related_name='itens_custo',
+    )
+    tipo_servico = models.ForeignKey(
+        'operacoes_campo.TipoServicoOS', on_delete=models.SET_NULL, null=True, blank=True,
+        verbose_name='Tipo de Serviço', related_name='itens_planejamento',
+    )
+    subtipo_servico = models.ForeignKey(
+        'operacoes_campo.SubtipoServicoOS', on_delete=models.SET_NULL, null=True, blank=True,
+        verbose_name='Operação', related_name='itens_planejamento',
+    )
     produto = models.ForeignKey('produtos.Produto', on_delete=models.SET_NULL, null=True, blank=True, help_text='Preencher para insumos')
     descricao = models.CharField(max_length=200)
     dose_por_ha = models.DecimalField(max_digits=12, decimal_places=4, null=True, blank=True, verbose_name='Dose/ha')

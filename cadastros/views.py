@@ -2534,7 +2534,7 @@ def safra_update(request, pk):
 
 @login_required
 def safra_detail(request, pk):
-    from .models import CustoTalhao, EtapaColheita, RegistroCadernoCampo
+    from operacoes_campo.models import CustoTalhao, EtapaColheita, RegistroCadernoCampo
     from django.db.models import Sum, F, ExpressionWrapper, DecimalField as DjDecimalField
     from decimal import Decimal
 
@@ -2614,7 +2614,7 @@ def safra_detail(request, pk):
     comparativo.sort(key=lambda x: x['total_custo'], reverse=True)
 
     # Planejamentos de custo vinculados à safra
-    from .models import PlanejamentoCustoSafra
+    from operacoes_campo.models import PlanejamentoCustoSafra
     planejamentos_custo_qs = PlanejamentoCustoSafra.objects.filter(
         empresa=empresa, safra=safra
     ).select_related('cultura', 'talhao').prefetch_related('itens').order_by('-data_criacao')
@@ -3191,7 +3191,7 @@ def talhao_detail(request, pk):
     Detalhes do talhão com histórico
     🔒 ACESSO APENAS PARA EMPRESA DONA
     """
-    from .models import RegistroCadernoCampo, CustoTalhao, OrdemServico
+    from operacoes_campo.models import CustoTalhao, RegistroCadernoCampo, OrdemServico
     from estufas.models import Transplantio, ReplantioTalhao
     from mip.models import MonitoramentoMIP
 

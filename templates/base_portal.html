@@ -37,18 +37,28 @@
 </div>
 
 {% if messages %}
-<div class="px-3 pt-3">
-  {% for msg in messages %}
-  <div class="alert alert-{{ msg.tags|default:'info' }} alert-dismissible fade show py-2 rounded-3" role="alert">
-    {{ msg }}
-    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+<div class="container-fluid px-0 pt-3">
+  <div class="row justify-content-center mx-0">
+    <div class="col-12 col-md-8 col-lg-7 px-3">
+      {% for msg in messages %}
+      <div class="alert alert-{{ msg.tags|default:'info' }} alert-dismissible fade show py-2 rounded-3" role="alert">
+        {{ msg }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+      {% endfor %}
+    </div>
   </div>
-  {% endfor %}
 </div>
 {% endif %}
 
 <div class="content-area">
-  {% block content %}{% endblock %}
+  <div class="container-fluid px-0">
+    <div class="row justify-content-center mx-0">
+      <div class="col-12 col-md-8 col-lg-7">
+        {% block content %}{% endblock %}
+      </div>
+    </div>
+  </div>
 </div>
 
 <nav class="portal-nav">

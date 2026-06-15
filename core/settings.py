@@ -409,6 +409,13 @@ if SITE_DOMAIN:
     if csrf_origin not in CSRF_TRUSTED_ORIGINS:
         CSRF_TRUSTED_ORIGINS.append(csrf_origin)
 
+# Em desenvolvimento local, garante que 127.0.0.1 e localhost estejam sempre
+# aceitos, mesmo quando CSRF_TRUSTED_ORIGINS aponta só para um túnel ngrok/externo.
+if DEBUG:
+    for _local in ('http://127.0.0.1:8000', 'http://localhost:8000'):
+        if _local not in CSRF_TRUSTED_ORIGINS:
+            CSRF_TRUSTED_ORIGINS.append(_local)
+
 # IMPORTANTE: Crie um arquivo .env na raiz do projeto com:
 # EMAIL_HOST=smtp.gmail.com
 # EMAIL_PORT=587

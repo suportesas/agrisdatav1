@@ -618,9 +618,13 @@ class PlanejamentoCustoSafraForm(forms.ModelForm):
 class PlanejamentoCustoItemForm(forms.ModelForm):
     class Meta:
         model = PlanejamentoCustoItem
-        fields = ['fase', 'categoria', 'produto', 'descricao', 'dose_por_ha', 'unidade_medida', 'custo_unitario', 'area_ha']
+        fields = [
+            'tipo_servico', 'subtipo_servico', 'categoria',
+            'produto', 'descricao', 'dose_por_ha', 'unidade_medida', 'custo_unitario', 'area_ha',
+        ]
         widgets = {
-            'fase': forms.Select(attrs={'class': 'form-select form-select-sm'}),
+            'tipo_servico': forms.Select(attrs={'class': 'form-select form-select-sm'}),
+            'subtipo_servico': forms.Select(attrs={'class': 'form-select form-select-sm'}),
             'categoria': forms.Select(attrs={'class': 'form-select form-select-sm'}),
             'produto': forms.Select(attrs={'class': 'form-select form-select-sm'}),
             'descricao': forms.TextInput(attrs={'class': 'form-control form-control-sm', 'placeholder': 'Descrição do item de custo'}),
@@ -633,14 +637,29 @@ class PlanejamentoCustoItemForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
+        self.fields['tipo_servico'].required = False
+        self.fields['subtipo_servico'].required = False
         self.fields['produto'].required = False
         self.fields['dose_por_ha'].required = False
         self.fields['unidade_medida'].required = False
-        if self.user and self.user.empresa:
+        empresa = self.user.empresa if self.user and self.user.empresa else None
+        if empresa:
             from produtos.models import Produto, UnidadeMedida
-            emp = self.user.empresa
-            self.fields['produto'].queryset = Produto.objects.filter(categoria__empresa=emp, ativo=True).order_by('nome')
-            self.fields['unidade_medida'].queryset = UnidadeMedida.objects.filter(empresa=emp).order_by('sigla')
+            self.fields['produto'].queryset = Produto.objects.filter(categoria__empresa=empresa, ativo=True).order_by('nome')
+            self.fields['unidade_medida'].queryset = UnidadeMedida.objects.filter(empresa=empresa).order_by('sigla')
+            self.fields['tipo_servico'].queryset = TipoServicoOS.objects.filter(
+                Q(empresa=empresa) | Q(empresa=None), ativo=True
+            ).order_by('ordem', 'nome')
+            tipo_id = (
+                self.data.get('tipo_servico')
+                or getattr(self.instance, 'tipo_servico_id', None)
+            )
+            if tipo_id:
+                self.fields['subtipo_servico'].queryset = SubtipoServicoOS.objects.filter(
+                    tipo_servico_id=tipo_id, ativo=True
+                ).order_by('ordem', 'nome')
+            else:
+                self.fields['subtipo_servico'].queryset = SubtipoServicoOS.objects.none()
 
 
 class PlanejamentoCustoItemIndiretoForm(forms.ModelForm):

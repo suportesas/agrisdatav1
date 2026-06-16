@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Recepção no Packing — {{ lote.numero_lote }} | ERP Agrícola{% endblock %}
+{% block page_title %}Receber Lote no Packing{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+
+  <div class="d-flex align-items-center mb-4">
+    <a href="{% url 'operacoes_campo:lote_detail' lote.pk %}" class="btn btn-outline-secondary me-3">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    <div>
+      <h4 class="fw-bold text-secondary mb-0">
+        <i class="bi bi-box-arrow-in-down text-success"></i> Receber no Packing House
+      </h4>
+      <small class="text-muted">Lote {{ lote.numero_lote }} — {{ lote.talhao.nome }} / {{ lote.safra.nome }}</small>
+    </div>
+  </div>
+
+  <!-- Resumo do lote -->
+  <div class="card border-0 shadow-sm rounded-4 mb-4">
+    <div class="card-header bg-transparent fw-bold">
+      <i class="bi bi-info-circle me-2 text-primary"></i>Resumo do Lote
+    </div>
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-3 text-center">
+          <div class="h3 fw-bold text-success">{{ lote.peso_total_colhido_kg|floatformat:0 }} kg</div>
+          <div class="text-muted small">Peso Total Colhido</div>
+        </div>
+        <div class="col-md-3 text-center">
+          <div class="h3 fw-bold text-info">{{ lote.cultura.nome }}</div>
+          <div class="text-muted small">Cultura</div>
+        </div>
+        <div class="col-md-3 text-center">
+          <div class="h3 fw-bold text-secondary">{{ lote.talhao.nome }}</div>
+          <div class="text-muted small">Talhão</div>
+        </div>
+        <div class="col-md-3 text-center">
+          <div class="h3 fw-bold"><code class="small">{{ lote.codigo_rastreamento }}</code></div>
+          <div class="text-muted small">Código de Rastreamento</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Formulário de recepção -->
+  <div class="card border-0 shadow-sm rounded-4">
+    <div class="card-header bg-transparent fw-bold">
+      <i class="bi bi-clipboard-check me-2 text-success"></i>Dados de Recepção
+    </div>
+    <div class="card-body">
+      <form method="post">
+        {% csrf_token %}
+        <div class="row g-4">
+
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Armazém de Destino <span class="text-danger">*</span></label>
+            <select name="armazem_destino" class="form-select" required>
+              <option value="">Selecione o armazém...</option>
+              {% for armazem in armazens %}
+                <option value="{{ armazem.pk }}">{{ armazem.nome }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Quantidade Recebida (kg)</label>
+            <input type="number" name="quantidade_kg" class="form-control"
+              step="0.001" min="0"
+              value="{{ lote.peso_total_colhido_kg|floatformat:3 }}"
+              placeholder="Kg recebidos no packing">
+            <div class="form-text">Pode diferir do colhido por perdas no transporte.</div>
+          </div>
+
+          <div class="col-md-5">
+            <label class="form-label fw-semibold">Observações</label>
+            <textarea name="observacoes" class="form-control" rows="2"
+              placeholder="Condições de chegada, temperatura, observações..."></textarea>
+          </div>
+
+        </div>
+
+        <div class="alert alert-info mt-4 mb-0">
+          <i class="bi bi-info-circle me-2"></i>
+          Ao confirmar, será criada uma <strong>Ordem de Embalagem</strong> vinculada a este lote
+          e o status será atualizado para <strong>Recebido no Packing</strong>.
+        </div>
+
+        <div class="d-flex gap-2 mt-4">
+          <button type="submit" class="btn btn-success px-4">
+            <i class="bi bi-check-circle me-1"></i> Confirmar Recepção
+          </button>
+          <a href="{% url 'operacoes_campo:lote_detail' lote.pk %}" class="btn btn-outline-secondary">
+            Cancelar
+          </a>
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

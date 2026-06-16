@@ -149,6 +149,11 @@ class OrdemServico(models.Model):
 
     talhao = models.ForeignKey('cadastros.Talhao', on_delete=models.PROTECT, related_name='ordens_servico', verbose_name='Talhão')
     safra = models.ForeignKey('cadastros.Safra', on_delete=models.SET_NULL, null=True, blank=True, related_name='ordens_servico', verbose_name='Safra')
+    poco = models.ForeignKey(
+        'cadastros.Poco', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='ordens_servico', verbose_name='Poço / Bomba',
+        help_text='Preencher apenas para OS de Irrigação e Adubação/Fertirrigação',
+    )
     requisicao = models.ForeignKey('cadastros.Requisicao', on_delete=models.SET_NULL, null=True, blank=True, related_name='ordens_servico', verbose_name='Requisição de Insumos')
 
     solicitante = models.ForeignKey('usuarios.Usuario', on_delete=models.SET_NULL, null=True, blank=True, related_name='os_solicitadas', verbose_name='Solicitante')
@@ -688,6 +693,144 @@ class ViagemColheita(models.Model):
 
 
 # ============================================================================
+# LOTE DE PRODUÇÃO — RF-109 e RF-110 (rastreabilidade colheita → packing)
+# ============================================================================
+
+class LoteProducao(models.Model):
+    """
+    Lote centralizado de produção gerado ao concluir uma EtapaColheita.
+    Cria o vínculo rastreável entre talhão/safra → packing house.
+    """
+    STATUS_CHOICES = [
+        ('COLHIDO',          'Colhido — Aguardando Packing'),
+        ('RECEBIDO_PACKING', 'Recebido no Packing'),
+        ('EM_PROCESSAMENTO', 'Em Processamento'),
+        ('CONCLUIDO',        'Concluído'),
+        ('CANCELADO',        'Cancelado'),
+    ]
+
+    empresa = models.ForeignKey(
+        'empresas.Empresa', on_delete=models.CASCADE,
+        related_name='lotes_producao', verbose_name='Empresa',
+    )
+    numero_lote = models.CharField(
+        'Número do Lote', max_length=50, unique=True,
+        help_text='Auto-gerado: LP-YYYYMMDD-NNNNN',
+    )
+    talhao = models.ForeignKey(
+        'cadastros.Talhao', on_delete=models.PROTECT,
+        related_name='lotes_producao', verbose_name='Talhão',
+    )
+    safra = models.ForeignKey(
+        'cadastros.Safra', on_delete=models.PROTECT,
+        related_name='lotes_producao', verbose_name='Safra',
+    )
+    cultura = models.ForeignKey(
+        'cadastros.Cultura', on_delete=models.PROTECT,
+        related_name='lotes_producao', verbose_name='Cultura',
+    )
+    etapa_colheita = models.ForeignKey(
+        EtapaColheita, on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='lotes_producao', verbose_name='Etapa de Colheita',
+    )
+
+    # Dados agregados das viagens de colheita
+    peso_total_colhido_kg = models.DecimalField(
+        'Peso Total Colhido (kg)', max_digits=12, decimal_places=3, default=Decimal('0'),
+    )
+    data_colheita_inicio = models.DateField('Início da Colheita', null=True, blank=True)
+    data_colheita_fim = models.DateField('Fim da Colheita', null=True, blank=True)
+    umidade_media_pct = models.DecimalField(
+        'Umidade Média (%)', max_digits=5, decimal_places=2, null=True, blank=True,
+    )
+    impureza_media_pct = models.DecimalField(
+        'Impureza Média (%)', max_digits=5, decimal_places=2, null=True, blank=True,
+    )
+
+    # Status e recepção no packing
+    status = models.CharField(
+        'Status', max_length=30, choices=STATUS_CHOICES, default='COLHIDO',
+    )
+    data_recepcao_packing = models.DateTimeField('Data de Recepção no Packing', null=True, blank=True)
+    recebido_por = models.ForeignKey(
+        'usuarios.Usuario', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='lotes_recebidos', verbose_name='Recebido por',
+    )
+
+    # Código único de rastreabilidade
+    codigo_rastreamento = models.CharField(
+        'Código de Rastreamento', max_length=100, unique=True,
+        help_text='Formato: {safra.codigo}-TL{talhao.id}-{seq}',
+    )
+
+    observacoes = models.TextField('Observações', blank=True)
+    criado_por = models.ForeignKey(
+        'usuarios.Usuario', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='lotes_producao_criados', verbose_name='Criado por',
+    )
+    criado_em = models.DateTimeField('Criado em', auto_now_add=True)
+    atualizado_em = models.DateTimeField('Atualizado em', auto_now=True)
+
+    class Meta:
+        db_table = 'campo_lote_producao'
+        verbose_name = 'Lote de Produção'
+        verbose_name_plural = 'Lotes de Produção'
+        ordering = ['-criado_em']
+        indexes = [
+            models.Index(fields=['empresa', 'status']),
+            models.Index(fields=['safra', 'talhao']),
+        ]
+
+    def __str__(self):
+        return f'{self.numero_lote} — {self.talhao} / {self.safra}'
+
+    def save(self, *args, **kwargs):
+        if not self.numero_lote:
+            from django.utils import timezone as tz
+            hoje = tz.now().strftime('%Y%m%d')
+            ultimo = LoteProducao.objects.filter(
+                numero_lote__startswith=f'LP-{hoje}-'
+            ).order_by('numero_lote').last()
+            seq = 1
+            if ultimo:
+                try:
+                    seq = int(ultimo.numero_lote.split('-')[-1]) + 1
+                except (ValueError, IndexError):
+                    seq = LoteProducao.objects.filter(numero_lote__startswith=f'LP-{hoje}-').count() + 1
+            self.numero_lote = f'LP-{hoje}-{seq:05d}'
+
+        if not self.codigo_rastreamento:
+            safra_cod = getattr(self.safra, 'codigo', str(self.safra_id)) if self.safra_id else 'S0'
+            talhao_id = self.talhao_id or 0
+            seq_cod = self.numero_lote.split('-')[-1] if self.numero_lote else '00001'
+            self.codigo_rastreamento = f'{safra_cod}-TL{talhao_id:03d}-{seq_cod}'
+
+        super().save(*args, **kwargs)
+
+    def calcular_totais(self):
+        """Recalcula peso e médias a partir das ViagemColheita da EtapaColheita."""
+        if not self.etapa_colheita_id:
+            return
+        from django.db.models import Sum, Avg
+        viagens = self.etapa_colheita.viagens.all()
+        agg = viagens.aggregate(total=Sum('peso_final_kg'))
+        self.peso_total_colhido_kg = agg['total'] or Decimal('0')
+        umidade = viagens.exclude(umidade_pct__isnull=True).aggregate(m=Avg('umidade_pct'))
+        self.umidade_media_pct = umidade['m']
+        impureza = viagens.exclude(impureza_pct__isnull=True).aggregate(m=Avg('impureza_pct'))
+        self.impureza_media_pct = impureza['m']
+        if self.etapa_colheita.data_inicio:
+            self.data_colheita_inicio = self.etapa_colheita.data_inicio.date()
+        if self.etapa_colheita.data_fim:
+            self.data_colheita_fim = self.etapa_colheita.data_fim.date()
+        self.save(update_fields=[
+            'peso_total_colhido_kg', 'umidade_media_pct', 'impureza_media_pct',
+            'data_colheita_inicio', 'data_colheita_fim',
+        ])
+
+
+# ============================================================================
 # PLUVIOMETRIA (RF-107)
 # ============================================================================
 
@@ -1184,6 +1327,10 @@ class OSRegistroExecucao(models.Model):
     umidade_relativa_pct = models.DecimalField('Umidade Relativa (%)', max_digits=5, decimal_places=1, null=True, blank=True)
 
     # Irrigação / Fertirrigação (IRRIGACAO, ADUBACAO)
+    poco = models.ForeignKey(
+        'cadastros.Poco', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='registros_execucao', verbose_name='Poço utilizado',
+    )
     horas_bomba = models.DecimalField('Horas de Bomba', max_digits=7, decimal_places=2, null=True, blank=True)
     volume_agua_m3 = models.DecimalField('Volume de Água (m³)', max_digits=10, decimal_places=2, null=True, blank=True)
     setor_irrigado = models.CharField('Setor Irrigado', max_length=100, blank=True)

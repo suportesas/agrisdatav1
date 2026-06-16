@@ -5400,3 +5400,128 @@ def comissao_pagar(request, pk):
     
     return redirect('cadastros:comissao_list')
 
+
+
+# ============================================================
+# POÇOS / BOMBAS DE IRRIGAÇÃO — RF-029, RF-106
+# ============================================================
+
+@login_required
+def poco_list(request):
+    from .models import Poco
+    empresa = request.user.empresa
+    if not empresa:
+        messages.warning(request, 'Você não está vinculado a nenhuma empresa.')
+        return redirect('dashboard:index')
+
+    pocos = Poco.objects.filter(empresa=empresa).select_related('fazenda').prefetch_related('areas')
+
+    q = request.GET.get('q', '').strip()
+    if q:
+        pocos = pocos.filter(
+            Q(nome__icontains=q) | Q(identificacao__icontains=q) | Q(fazenda__nome__icontains=q)
+        )
+
+    fazenda_id = request.GET.get('fazenda')
+    if fazenda_id:
+        pocos = pocos.filter(fazenda_id=fazenda_id)
+
+    apenas_ativos = request.GET.get('ativo', '1')
+    if apenas_ativos == '1':
+        pocos = pocos.filter(ativo=True)
+
+    fazendas = Fazenda.objects.filter(empresa=empresa, ativa=True).order_by('nome')
+
+    return render(request, 'cadastros/poco/poco_list.html', {
+        'pocos': pocos,
+        'fazendas': fazendas,
+        'total': pocos.count(),
+    })
+
+
+@login_required
+def poco_create(request):
+    from .models import Poco
+    from .forms import PocoForm
+    empresa = request.user.empresa
+    if not empresa:
+        messages.error(request, 'Você não está vinculado a nenhuma empresa.')
+        return redirect('dashboard:index')
+
+    if request.method == 'POST':
+        form = PocoForm(request.POST, empresa=empresa)
+        if form.is_valid():
+            poco = form.save(commit=False)
+            poco.empresa = empresa
+            poco.cadastrado_por = request.user
+            poco.save()
+            form.save_m2m()
+            messages.success(request, f'Poço "{poco.nome}" cadastrado com sucesso!')
+            return redirect('cadastros:poco_detail', pk=poco.pk)
+    else:
+        form = PocoForm(empresa=empresa)
+
+    return render(request, 'cadastros/poco/poco_form.html', {
+        'form': form,
+        'title': 'Novo Poço',
+    })
+
+
+@login_required
+def poco_detail(request, pk):
+    from .models import Poco
+    empresa = request.user.empresa
+    poco = get_object_or_404(Poco, pk=pk, empresa=empresa)
+
+    from operacoes_campo.models import OSRegistroExecucao, OrdemServico
+    registros = OSRegistroExecucao.objects.filter(
+        poco=poco
+    ).select_related('ordem_servico__talhao').order_by('-ordem_servico__data_fim')[:20]
+
+    os_vinculadas = OrdemServico.objects.filter(
+        poco=poco
+    ).select_related('talhao').order_by('-data_cadastro')[:10]
+
+    return render(request, 'cadastros/poco/poco_detail.html', {
+        'poco': poco,
+        'registros': registros,
+        'os_vinculadas': os_vinculadas,
+        'total_horas': poco.get_total_horas_bomba(),
+        'total_volume': poco.get_total_volume_m3(),
+    })
+
+
+@login_required
+def poco_update(request, pk):
+    from .models import Poco
+    from .forms import PocoForm
+    empresa = request.user.empresa
+    poco = get_object_or_404(Poco, pk=pk, empresa=empresa)
+
+    if request.method == 'POST':
+        form = PocoForm(request.POST, instance=poco, empresa=empresa)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'Poço "{poco.nome}" atualizado!')
+            return redirect('cadastros:poco_detail', pk=poco.pk)
+    else:
+        form = PocoForm(instance=poco, empresa=empresa)
+
+    return render(request, 'cadastros/poco/poco_form.html', {
+        'form': form,
+        'poco': poco,
+        'title': f'Editar Poço: {poco.nome}',
+    })
+
+
+@login_required
+@require_POST
+def poco_toggle(request, pk):
+    from .models import Poco
+    empresa = request.user.empresa
+    poco = get_object_or_404(Poco, pk=pk, empresa=empresa)
+    poco.ativo = not poco.ativo
+    poco.save(update_fields=['ativo'])
+    estado = 'ativado' if poco.ativo else 'desativado'
+    messages.success(request, f'Poço "{poco.nome}" {estado}.')
+    return redirect('cadastros:poco_list')

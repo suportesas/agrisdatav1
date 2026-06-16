@@ -64,6 +64,13 @@
                 <label class="form-label fw-semibold">Safra <small class="text-muted">(auto-preenchida)</small></label>
                 {{ form.safra }}
               </div>
+              <div class="col-md-4" id="div_poco" style="display:none;">
+                <label class="form-label fw-semibold">
+                  <i class="bi bi-water text-primary me-1"></i>Poço / Bomba
+                  <small class="text-muted">(Irrigação/Fertirrigação)</small>
+                </label>
+                {{ form.poco }}
+              </div>
               <div class="col-md-4">
                 <label class="form-label fw-semibold">Cultura Atual <small class="text-muted">(do talhão)</small></label>
                 <input type="text" id="id_cultura_display" class="form-control" disabled placeholder="—">
@@ -657,6 +664,38 @@ if (tipoSelect) {
   const initSubtipo = subtipoSelect ? subtipoSelect.value : '';
   const initModalidade = modalidadeSelect ? modalidadeSelect.value : '';
   if (tipoSelect.value) loadOpcoes(tipoSelect.value, initSubtipo, initModalidade);
+}
+
+// ── Mostrar/ocultar campo Poço conforme tipo legado de OS ─────────────────────
+const TIPOS_COM_POCO = ['IRRIGACAO', 'ADUBACAO'];
+const divPoco = document.getElementById('div_poco');
+const AJAX_TIPO_LEGADO_URL = "{% url 'operacoes_campo:os_ajax_opcoes_servico' %}";
+
+function togglePoco(tipoLegado) {
+  if (!divPoco) return;
+  const mostrar = TIPOS_COM_POCO.includes(tipoLegado);
+  divPoco.style.display = mostrar ? '' : 'none';
+  const pocoSelect = document.getElementById('id_poco');
+  if (pocoSelect && !mostrar) pocoSelect.value = '';
+}
+
+// Ao mudar tipo_servico, busca o tipo_legado para decidir exibição
+if (tipoSelect) {
+  tipoSelect.addEventListener('change', function () {
+    const tipoId = this.value;
+    if (!tipoId) { togglePoco(''); return; }
+    fetch(AJAX_TIPO_LEGADO_URL + '?tipo_id=' + tipoId)
+      .then(r => r.json())
+      .then(data => { togglePoco(data.tipo_legado || ''); })
+      .catch(() => {});
+  });
+  // Inicialização: checa se já há tipo selecionado com poco
+  if (tipoSelect.value) {
+    fetch(AJAX_TIPO_LEGADO_URL + '?tipo_id=' + tipoSelect.value)
+      .then(r => r.json())
+      .then(data => { togglePoco(data.tipo_legado || ''); })
+      .catch(() => {});
+  }
 }
 
 // ── Auto-preenchimento de safra pelo talhão ──────────────────────────────────

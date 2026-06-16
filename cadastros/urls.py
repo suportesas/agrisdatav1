@@ -70,7 +70,14 @@ urlpatterns = [
     path('areas/<int:pk>/', views.area_detail, name='area_detail'),
     path('areas/<int:pk>/editar/', views.area_update, name='area_update'),
     path('areas/<int:pk>/excluir/', views.area_delete, name='area_delete'),
-    
+
+    # Poços / Bombas de Irrigação (RF-029, RF-106)
+    path('pocos/', views.poco_list, name='poco_list'),
+    path('pocos/novo/', views.poco_create, name='poco_create'),
+    path('pocos/<int:pk>/', views.poco_detail, name='poco_detail'),
+    path('pocos/<int:pk>/editar/', views.poco_update, name='poco_update'),
+    path('pocos/<int:pk>/toggle/', views.poco_toggle, name='poco_toggle'),
+
     # Talhões
     path('talhoes/', views.talhao_list, name='talhao_list'),
     path('talhoes/novo/', views.talhao_create, name='talhao_create'),

@@ -24,7 +24,7 @@ class OrdemServicoForm(forms.ModelForm):
         model = OrdemServico
         fields = [
             'tipo_servico', 'subtipo_servico', 'modalidade_execucao',
-            'talhao', 'safra', 'responsavel', 'data_prevista',
+            'talhao', 'safra', 'poco', 'responsavel', 'data_prevista',
             'area_executada_ha', 'fornecedor_servico', 'valor_servico_externo',
             'unidade_cobranca', 'requisicao', 'observacoes', 'foto_evidencia',
             'custo_estimado_mao_obra', 'custo_estimado_maquinario', 'custo_estimado_insumos',
@@ -35,6 +35,7 @@ class OrdemServicoForm(forms.ModelForm):
             'modalidade_execucao': forms.Select(attrs={'class': 'form-select', 'id': 'id_modalidade_execucao'}),
             'talhao': forms.Select(attrs={'class': 'form-select'}),
             'safra': forms.Select(attrs={'class': 'form-select'}),
+            'poco': forms.Select(attrs={'class': 'form-select', 'id': 'id_poco'}),
             'responsavel': forms.Select(attrs={'class': 'form-select'}),
             'data_prevista': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'area_executada_ha': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.0001', 'placeholder': 'Ex: 2.5000'}),
@@ -85,12 +86,16 @@ class OrdemServicoForm(forms.ModelForm):
             self.fields['fornecedor_servico'].queryset = Fornecedor.objects.filter(empresa=empresa, ativa=True).order_by('nome_fantasia', 'nome')
             self.fields['requisicao'].queryset = Requisicao.objects.filter(empresa=empresa).order_by('-data_requisicao')
 
+            from cadastros.models import Poco
+            self.fields['poco'].queryset = Poco.objects.filter(empresa=empresa, ativo=True).select_related('fazenda').order_by('fazenda__nome', 'identificacao')
+            self.fields['poco'].label_from_instance = lambda obj: f"{obj.identificacao} — {obj.nome} ({obj.fazenda.nome})"
+
             # label_from_instance para melhor legibilidade
             self.fields['talhao'].label_from_instance = lambda obj: f"{obj.codigo} — {obj.nome} ({obj.fazenda.nome if obj.fazenda else '?'})"
             self.fields['responsavel'].label_from_instance = lambda obj: f"{obj.nome_completo} — {obj.funcao}"
             self.fields['safra'].label_from_instance = lambda obj: f"{obj.nome} ({obj.fazenda.nome if obj.fazenda else '?'})"
 
-        for f in ['subtipo_servico', 'modalidade_execucao', 'safra', 'responsavel',
+        for f in ['subtipo_servico', 'modalidade_execucao', 'safra', 'poco', 'responsavel',
                   'fornecedor_servico', 'valor_servico_externo', 'unidade_cobranca',
                   'requisicao', 'foto_evidencia',
                   'custo_estimado_mao_obra', 'custo_estimado_maquinario', 'custo_estimado_insumos']:

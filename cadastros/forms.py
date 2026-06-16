@@ -3912,3 +3912,51 @@ class SolicitacaoManutencaoForm(forms.ModelForm):
             self.fields['vehicle'].queryset = vehicles_qs
         elif self.empresa:
             self.fields['vehicle'].queryset = Vehicle.objects.filter(empresa=self.empresa, ativo=True).order_by('descricao', 'modelo')
+
+
+# ============================================
+# POÇO / BOMBA DE IRRIGAÇÃO (RF-029, RF-106)
+# ============================================
+
+class PocoForm(forms.ModelForm):
+    """Cadastro de poços e bombas de irrigação/fertirrigação."""
+
+    class Meta:
+        from .models import Poco
+        model = Poco
+        fields = [
+            'fazenda', 'areas', 'nome', 'identificacao',
+            'tipo_bomba', 'potencia_cv', 'profundidade_m', 'capacidade_m3_h',
+            'horaletro_inicial', 'latitude', 'longitude',
+            'data_instalacao', 'ativo', 'observacoes',
+        ]
+        widgets = {
+            'fazenda': forms.Select(attrs={'class': 'form-select'}),
+            'areas': forms.SelectMultiple(attrs={'class': 'form-select', 'size': '5'}),
+            'nome': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Poço Norte'}),
+            'identificacao': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: P-01'}),
+            'tipo_bomba': forms.Select(attrs={'class': 'form-select'}),
+            'potencia_cv': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0'}),
+            'profundidade_m': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0'}),
+            'capacidade_m3_h': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0'}),
+            'horaletro_inicial': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0'}),
+            'latitude': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.0000001'}),
+            'longitude': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.0000001'}),
+            'data_instalacao': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+        }
+
+    def __init__(self, *args, empresa=None, **kwargs):
+        self.empresa = empresa
+        super().__init__(*args, **kwargs)
+        for field in ['potencia_cv', 'profundidade_m', 'capacidade_m3_h',
+                      'latitude', 'longitude', 'data_instalacao', 'observacoes']:
+            self.fields[field].required = False
+        self.fields['areas'].required = False
+        if self.empresa:
+            self.fields['fazenda'].queryset = Fazenda.objects.filter(
+                empresa=self.empresa, ativa=True
+            ).order_by('nome')
+            self.fields['areas'].queryset = Area.objects.filter(
+                empresa=self.empresa, ativa=True
+            ).order_by('fazenda__nome', 'nome')

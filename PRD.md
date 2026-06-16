@@ -217,6 +217,28 @@ RF-116 Métricas por kg produzido (fertilizantes, defensivos, carbono)
 RF-117 Fotos geolocalizadas
 RF-118 Integração com FieldView e máquinas agrícolas
 
+### Status de Implementação — 3.6 Produção Agrícola (Atualizado em 2026-06-15)
+
+- ✅ RF-100 Planejamento de safra — `Safra`, `SafraPlan` em `cadastros/models.py`
+- ✅ RF-101 Previsão de colheita por área — `SafraPlan.previsao_colheita`, `SafraReal`
+- ✅ RF-102 Orçamento e metas — `PlanejamentoCustoSafra`, `FormacaoPreco` em `operacoes_campo/models.py`
+- ✅ RF-103 Cadastro e ciclo de safra — CRUD completo, status PLANEJADA → EM_ANDAMENTO → FINALIZADA
+- ✅ RF-104 Monitoramento MIP — `MonitoramentoMIP`, `PragaNoMonitoramento`, `EstagioDesenvolvimento` em `mip/`
+- ✅ RF-105 Ordens de serviço — `OrdemServico`, `OSFuncionario`, `OSMaquina` em `operacoes_campo/models.py`
+- ✅ RF-106 Fertirrigação + controle de poços — modelo `Poco` em `cadastros/models.py`; FK `poco` em `OrdemServico` e `OSRegistroExecucao`; CRUD em `/cadastros/pocos/`
+- ✅ RF-107 Pluviometria — `RegistroPluviometria` em `operacoes_campo/models.py`
+- ✅ RF-108 Qualidade de campo — `InspecaoQualidadeCampo` (Brix, peso, defeitos)
+- ✅ RF-109 Lotes de produção e rastreabilidade — `LoteProducao` em `operacoes_campo/models.py`; gerado automaticamente ao concluir `EtapaColheita`; código único de rastreamento
+- ✅ RF-110 Integração com packing house — `OrdemEmbalagem.lote_producao` FK; fluxo de recepção em `/operacoes_campo/lotes-producao/<pk>/recepcao/`
+- ✅ RF-111 Caderno de campo digital (GLOBALG.A.P) — `RegistroCadernoCampo` em `operacoes_campo/`
+- ✅ RF-112 Histórico completo por talhão — `HistoricoTalhao` em `cadastros/models.py`
+- ✅ RF-113 Aplicações de defensivos/fertilizantes — `RegistroCadernoCampoInsumo`, `OrdemServicoInsumo`
+- ✅ RF-114 Consumo automático via almoxarifado — `os_concluir` cria `MovimentacaoEstoque SAIDA` para cada insumo aplicado
+- ✅ RF-115 Custos por talhão e safra — `CustoTalhao`, `PlanejamentoCustoSafra` com export Excel/PDF
+- ✅ RF-116 Métricas por kg produzido — produtividade kg/ha, custo/kg via `FormacaoPreco`
+- ⚠️ RF-117 Fotos geolocalizadas — campos `ImageField` existem em OS/Caderno/MIP; coordenadas GPS por foto não implementadas
+- ❌ RF-118 Integração com FieldView e máquinas agrícolas — integração externa, fora do escopo atual (Fase 7 do roadmap)
+
 3.7 Gestão de Estufas e Transplantio
 RF-1200 Cadastro de estufas
 RF-1201 Registro de lotes de mudas com ID único

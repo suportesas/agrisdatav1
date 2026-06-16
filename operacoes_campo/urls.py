@@ -2,7 +2,7 @@ from django.urls import path
 from . import (
     views_os, views_colheita, views_caderno_campo,
     views_pluviometria, views_qualidade_campo, views_planejamento_custo,
-    views_portal_config,
+    views_portal_config, views_lote_producao,
 )
 
 
@@ -103,4 +103,9 @@ urlpatterns = [
     path('planejamento-custo/ajax/subcategorias/', views_planejamento_custo.ajax_subcategorias_por_categoria, name='ajax_subcategorias_custo'),
     path('planejamento-custo/<int:pk>/ajax/talhoes-comparativo/', views_planejamento_custo.ajax_talhoes_comparativo, name='ajax_talhoes_comparativo'),
     path('planejamento-custo/<int:pk>/ajax/comparativo-talhao/', views_planejamento_custo.ajax_comparativo_talhao, name='ajax_comparativo_talhao'),
+
+    # ==================== LOTES DE PRODUÇÃO (RF-109, RF-110) ====================
+    path('lotes-producao/', views_lote_producao.lote_list, name='lote_list'),
+    path('lotes-producao/<int:pk>/', views_lote_producao.lote_detail, name='lote_detail'),
+    path('lotes-producao/<int:pk>/recepcao/', views_lote_producao.lote_recepcao_packing, name='lote_recepcao'),
 ]

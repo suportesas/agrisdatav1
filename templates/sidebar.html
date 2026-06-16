@@ -226,8 +226,10 @@
           <li class="submenu-divider"></li>
           <li><a href="{% url 'mip:monitoramento_mip_list' %}"><i class="bi bi-crosshair2"></i> Monitoramento MIP</a></li>
           <li><a href="{% url 'operacoes_campo:pluviometria_list' %}"><i class="bi bi-cloud-rain-heavy"></i> Pluviometria</a></li>
+          <li><a href="{% url 'cadastros:poco_list' %}"><i class="bi bi-water"></i> Poços / Bombas</a></li>
           <li><a href="{% url 'operacoes_campo:qualidade_campo_list' %}"><i class="bi bi-patch-check"></i> Qualidade de Campo</a></li>
           <li><a href="{% url 'operacoes_campo:caderno_campo_list' %}"><i class="bi bi-journal-text"></i> Caderno de Campo</a></li>
+          <li><a href="{% url 'operacoes_campo:lote_list' %}"><i class="bi bi-boxes"></i> Lotes de Produção</a></li>
           <li class="submenu-divider"></li>
           <li><a href="{% url 'portal_campo:login' %}" target="_blank"><i class="bi bi-person-badge-fill"></i> Portal do Campo</a></li>
         </ul>
@@ -576,6 +578,24 @@
               <li><a href="{% url 'adiantamentos:relatorio_adiantamentos' %}"><i class="bi bi-graph-up"></i> Relatório</a></li>
             </ul>
           </li>
+        </ul>
+      </li>
+      {% endif %}
+
+      <li class="nav-divider"></li>
+      <!-- ── CONTROLADORIA ── -->
+      {% if user.is_admin_empresa %}
+      <li class="nav-section">
+        <span>CONTROLADORIA</span>
+      </li>
+
+      <li class="nav-item has-submenu" data-start-collapsed="true">
+        <a href="#" class="nav-link">
+          <i class="bi bi-bar-chart-line-fill"></i>
+          <span>Controladoria</span>
+          <i class="bi bi-chevron-down submenu-arrow"></i>
+        </a>
+        <ul class="nav-submenu">
         </ul>
       </li>
       {% endif %}

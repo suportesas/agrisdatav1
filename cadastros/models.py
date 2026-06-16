@@ -2418,6 +2418,136 @@ class Area(models.Model):
         return 0
 
 
+class Poco(models.Model):
+    """
+    Poços e bombas de irrigação/fertirrigação — RF-029 e RF-106.
+    Vincula ordens de serviço de irrigação e adubação ao equipamento real utilizado.
+    """
+    TIPO_BOMBA = [
+        ('SUBMERSA',   'Bomba Submersa'),
+        ('CENTRIFUGA', 'Bomba Centrífuga'),
+        ('TURBINA',    'Bomba de Turbina'),
+        ('OUTRO',      'Outro'),
+    ]
+
+    empresa = models.ForeignKey(
+        'empresas.Empresa',
+        on_delete=models.CASCADE,
+        related_name='pocos',
+        verbose_name='Empresa',
+    )
+    fazenda = models.ForeignKey(
+        Fazenda,
+        on_delete=models.CASCADE,
+        related_name='pocos',
+        verbose_name='Fazenda',
+    )
+    areas = models.ManyToManyField(
+        Area,
+        blank=True,
+        related_name='pocos',
+        verbose_name='Áreas Atendidas',
+    )
+    nome = models.CharField('Nome', max_length=100)
+    identificacao = models.CharField(
+        'Identificação',
+        max_length=50,
+        help_text='Código do poço, ex: P-01',
+    )
+    tipo_bomba = models.CharField(
+        'Tipo de Bomba',
+        max_length=20,
+        choices=TIPO_BOMBA,
+        blank=True,
+    )
+    potencia_cv = models.DecimalField(
+        'Potência (CV)',
+        max_digits=8,
+        decimal_places=2,
+        null=True,
+        blank=True,
+    )
+    profundidade_m = models.DecimalField(
+        'Profundidade (m)',
+        max_digits=8,
+        decimal_places=2,
+        null=True,
+        blank=True,
+    )
+    capacidade_m3_h = models.DecimalField(
+        'Capacidade (m³/h)',
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+    )
+    horaletro_inicial = models.DecimalField(
+        'Horímetro Inicial (h)',
+        max_digits=12,
+        decimal_places=2,
+        default=0,
+    )
+    latitude = models.DecimalField(
+        'Latitude',
+        max_digits=10,
+        decimal_places=7,
+        null=True,
+        blank=True,
+    )
+    longitude = models.DecimalField(
+        'Longitude',
+        max_digits=10,
+        decimal_places=7,
+        null=True,
+        blank=True,
+    )
+    data_instalacao = models.DateField(
+        'Data de Instalação',
+        null=True,
+        blank=True,
+    )
+    ativo = models.BooleanField('Ativo', default=True)
+    observacoes = models.TextField('Observações', blank=True)
+
+    cadastrado_por = models.ForeignKey(
+        'usuarios.Usuario',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='pocos_cadastrados',
+        verbose_name='Cadastrado por',
+    )
+    data_cadastro = models.DateTimeField('Data de Cadastro', auto_now_add=True)
+    data_atualizacao = models.DateTimeField('Última Atualização', auto_now=True)
+
+    class Meta:
+        verbose_name = 'Poço'
+        verbose_name_plural = 'Poços'
+        ordering = ['fazenda', 'identificacao']
+        unique_together = [['empresa', 'fazenda', 'identificacao']]
+
+    def __str__(self):
+        return f'{self.identificacao} – {self.fazenda}'
+
+    def get_total_horas_bomba(self):
+        """Soma de horas de bomba registradas nas OS vinculadas."""
+        from operacoes_campo.models import OSRegistroExecucao
+        total = OSRegistroExecucao.objects.filter(
+            poco=self,
+            horas_bomba__isnull=False,
+        ).aggregate(total=models.Sum('horas_bomba'))['total']
+        return total or Decimal('0')
+
+    def get_total_volume_m3(self):
+        """Soma de volume de água registrado nas OS vinculadas."""
+        from operacoes_campo.models import OSRegistroExecucao
+        total = OSRegistroExecucao.objects.filter(
+            poco=self,
+            volume_agua_m3__isnull=False,
+        ).aggregate(total=models.Sum('volume_agua_m3'))['total']
+        return total or Decimal('0')
+
+
 class Talhao(models.Model):
     """
     Talhões - divisões de uma Área para plantio

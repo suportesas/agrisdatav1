@@ -1,0 +1,256 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ lote.numero_lote }} | ERP Agrícola{% endblock %}
+{% block page_title %}Lote {{ lote.numero_lote }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex align-items-center">
+      <a href="{% url 'operacoes_campo:lote_list' %}" class="btn btn-outline-secondary me-3">
+        <i class="bi bi-arrow-left"></i>
+      </a>
+      <div>
+        <h4 class="fw-bold text-secondary mb-0">
+          <i class="bi bi-boxes text-success"></i> {{ lote.numero_lote }}
+        </h4>
+        <small class="text-muted">
+          <code>{{ lote.codigo_rastreamento }}</code> &bull;
+          {{ lote.talhao.nome }} &bull; {{ lote.safra.nome }}
+        </small>
+      </div>
+    </div>
+    <div class="d-flex gap-2">
+      {% if lote.status == 'COLHIDO' %}
+      <a href="{% url 'operacoes_campo:lote_recepcao' lote.pk %}" class="btn btn-success">
+        <i class="bi bi-box-arrow-in-down"></i> Receber no Packing
+      </a>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- KPIs -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm rounded-4 text-center p-3">
+        <div class="display-6 fw-bold text-success">{{ lote.peso_total_colhido_kg|floatformat:0 }} kg</div>
+        <div class="text-muted small">Peso Total Colhido</div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm rounded-4 text-center p-3">
+        <div class="display-6 fw-bold text-info">{{ viagens|length }}</div>
+        <div class="text-muted small">Viagens de Colheita</div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm rounded-4 text-center p-3">
+        <div class="display-6 fw-bold text-primary">{{ ordens_embalagem|length }}</div>
+        <div class="text-muted small">Ordens de Embalagem</div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm rounded-4 text-center p-3">
+        {% if lote.status == 'COLHIDO' %}
+          <div class="display-6 fw-bold text-warning">Aguardando</div>
+        {% elif lote.status == 'RECEBIDO_PACKING' %}
+          <div class="display-6 fw-bold text-info">Recebido</div>
+        {% elif lote.status == 'CONCLUIDO' %}
+          <div class="display-6 fw-bold text-success">Concluído</div>
+        {% else %}
+          <div class="display-6 fw-bold text-secondary">{{ lote.get_status_display }}</div>
+        {% endif %}
+        <div class="text-muted small">Status</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+
+    <!-- Dados do lote -->
+    <div class="col-lg-4">
+      <div class="card shadow-sm border-0 rounded-4">
+        <div class="card-header bg-transparent fw-bold">
+          <i class="bi bi-info-circle me-2"></i>Dados do Lote
+        </div>
+        <div class="card-body">
+          <dl class="row mb-0">
+            <dt class="col-sm-5 text-muted">Talhão</dt>
+            <dd class="col-sm-7">{{ lote.talhao.nome }}</dd>
+            <dt class="col-sm-5 text-muted">Safra</dt>
+            <dd class="col-sm-7">{{ lote.safra.nome }}</dd>
+            <dt class="col-sm-5 text-muted">Cultura</dt>
+            <dd class="col-sm-7">{{ lote.cultura.nome }}</dd>
+            <dt class="col-sm-5 text-muted">Umidade Média</dt>
+            <dd class="col-sm-7">{% if lote.umidade_media_pct %}{{ lote.umidade_media_pct|floatformat:1 }}%{% else %}—{% endif %}</dd>
+            <dt class="col-sm-5 text-muted">Impureza Média</dt>
+            <dd class="col-sm-7">{% if lote.impureza_media_pct %}{{ lote.impureza_media_pct|floatformat:1 }}%{% else %}—{% endif %}</dd>
+            <dt class="col-sm-5 text-muted">Criado em</dt>
+            <dd class="col-sm-7">{{ lote.criado_em|date:"d/m/Y H:i" }}</dd>
+            {% if lote.data_recepcao_packing %}
+            <dt class="col-sm-5 text-muted">Recepção Packing</dt>
+            <dd class="col-sm-7">{{ lote.data_recepcao_packing|date:"d/m/Y H:i" }}</dd>
+            {% endif %}
+          </dl>
+        </div>
+      </div>
+    </div>
+
+    <!-- Timeline de rastreabilidade -->
+    <div class="col-lg-8">
+      <div class="card shadow-sm border-0 rounded-4">
+        <div class="card-header bg-transparent fw-bold">
+          <i class="bi bi-diagram-3 me-2 text-primary"></i>Timeline de Rastreabilidade
+        </div>
+        <div class="card-body">
+          <div class="timeline-steps">
+
+            <!-- Colheita -->
+            <div class="d-flex align-items-start mb-3">
+              <div class="me-3 text-center" style="min-width:40px;">
+                <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center" style="width:36px;height:36px;">
+                  <i class="bi bi-scissors"></i>
+                </div>
+                <div class="border-start border-success border-2 ms-3" style="height:40px;"></div>
+              </div>
+              <div>
+                <strong>Colheita</strong>
+                {% if lote.data_colheita_inicio %}
+                  <div class="text-muted small">
+                    {{ lote.data_colheita_inicio|date:"d/m/Y" }}
+                    {% if lote.data_colheita_fim %} → {{ lote.data_colheita_fim|date:"d/m/Y" }}{% endif %}
+                  </div>
+                {% endif %}
+                <div class="text-muted small">{{ lote.peso_total_colhido_kg|floatformat:0 }} kg · {{ viagens|length }} viagen{{ viagens|length|pluralize:"s" }}</div>
+              </div>
+            </div>
+
+            <!-- Recepção Packing -->
+            <div class="d-flex align-items-start mb-3">
+              <div class="me-3 text-center" style="min-width:40px;">
+                <div class="rounded-circle {% if lote.status != 'COLHIDO' %}bg-info{% else %}bg-light border{% endif %} text-white d-flex align-items-center justify-content-center" style="width:36px;height:36px;">
+                  <i class="bi bi-box-arrow-in-down {% if lote.status == 'COLHIDO' %}text-muted{% endif %}"></i>
+                </div>
+                <div class="border-start {% if lote.status != 'COLHIDO' %}border-info{% else %}border-secondary{% endif %} border-2 ms-3" style="height:40px;"></div>
+              </div>
+              <div>
+                <strong class="{% if lote.status == 'COLHIDO' %}text-muted{% endif %}">Packing House</strong>
+                {% if lote.data_recepcao_packing %}
+                  <div class="text-muted small">{{ lote.data_recepcao_packing|date:"d/m/Y H:i" }} — {{ lote.recebido_por }}</div>
+                {% elif lote.status == 'COLHIDO' %}
+                  <div class="text-muted small">Aguardando recepção</div>
+                {% endif %}
+                <div class="text-muted small">{{ ordens_embalagem|length }} ordem{{ ordens_embalagem|length|pluralize:"s" }} de embalagem</div>
+              </div>
+            </div>
+
+            <!-- Pallets -->
+            <div class="d-flex align-items-start">
+              <div class="me-3 text-center" style="min-width:40px;">
+                <div class="rounded-circle {% if pallets %}bg-primary{% else %}bg-light border{% endif %} text-white d-flex align-items-center justify-content-center" style="width:36px;height:36px;">
+                  <i class="bi bi-layers {% if not pallets %}text-muted{% endif %}"></i>
+                </div>
+              </div>
+              <div>
+                <strong class="{% if not pallets %}text-muted{% endif %}">Pallets Gerados</strong>
+                <div class="text-muted small">{{ pallets|length }} pallet{{ pallets|length|pluralize:"s" }}</div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Viagens de colheita -->
+    {% if viagens %}
+    <div class="col-12">
+      <div class="card shadow-sm border-0 rounded-4">
+        <div class="card-header bg-transparent fw-bold">
+          <i class="bi bi-truck me-2"></i>Viagens de Colheita
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-sm table-hover align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>#</th>
+                  <th>Carrocão</th>
+                  <th>Peso Bruto (kg)</th>
+                  <th>Tara (kg)</th>
+                  <th>Peso Líquido (kg)</th>
+                  <th>Desconto (kg)</th>
+                  <th>Peso Final (kg)</th>
+                  <th>Umidade %</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for viagem in viagens %}
+                <tr>
+                  <td>{{ viagem.numero_viagem }}</td>
+                  <td>{{ viagem.carrocao.numero_identificacao }}</td>
+                  <td>{{ viagem.peso_bruto_kg|floatformat:1 }}</td>
+                  <td>{{ viagem.tara_usada_kg|floatformat:1 }}</td>
+                  <td>{{ viagem.peso_liquido_kg|floatformat:1 }}</td>
+                  <td>{{ viagem.desconto_kg|floatformat:1 }}</td>
+                  <td><strong>{{ viagem.peso_final_kg|floatformat:1 }}</strong></td>
+                  <td>{{ viagem.umidade_pct|default:"—" }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+              <tfoot class="table-light">
+                <tr>
+                  <td colspan="6" class="text-end fw-bold">Total colhido:</td>
+                  <td><strong>{{ lote.peso_total_colhido_kg|floatformat:1 }} kg</strong></td>
+                  <td></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Ordens de embalagem -->
+    {% if ordens_embalagem %}
+    <div class="col-12">
+      <div class="card shadow-sm border-0 rounded-4">
+        <div class="card-header bg-transparent fw-bold">
+          <i class="bi bi-box-seam me-2"></i>Ordens de Embalagem
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-sm table-hover align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Número</th>
+                  <th>Tipo Embalagem</th>
+                  <th>Qtd. Entrada (kg)</th>
+                  <th>Status</th>
+                  <th>Pallets</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for ordem in ordens_embalagem %}
+                <tr>
+                  <td><strong>{{ ordem.numero }}</strong></td>
+                  <td>{{ ordem.tipo_embalagem|default:"—" }}</td>
+                  <td>{{ ordem.quantidade_entrada_kg|floatformat:1 }}</td>
+                  <td><span class="badge bg-light text-dark">{{ ordem.get_status_display }}</span></td>
+                  <td>{{ ordem.pallets.count }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+{% endblock %}

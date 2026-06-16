@@ -1,0 +1,195 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ poco.nome }} | ERP Agrícola{% endblock %}
+{% block page_title %}Poço: {{ poco.nome }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex align-items-center">
+      <a href="{% url 'cadastros:poco_list' %}" class="btn btn-outline-secondary me-3">
+        <i class="bi bi-arrow-left"></i>
+      </a>
+      <div>
+        <h4 class="fw-bold text-secondary mb-0">
+          <i class="bi bi-water text-primary"></i>
+          {{ poco.identificacao }} — {{ poco.nome }}
+        </h4>
+        <small class="text-muted">{{ poco.fazenda.nome }}</small>
+      </div>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{% url 'cadastros:poco_update' poco.pk %}" class="btn btn-outline-primary">
+        <i class="bi bi-pencil"></i> Editar
+      </a>
+      <form method="post" action="{% url 'cadastros:poco_toggle' poco.pk %}">
+        {% csrf_token %}
+        <button type="submit" class="btn {% if poco.ativo %}btn-outline-warning{% else %}btn-outline-success{% endif %}">
+          <i class="bi {% if poco.ativo %}bi-pause-circle{% else %}bi-play-circle{% endif %}"></i>
+          {% if poco.ativo %}Desativar{% else %}Ativar{% endif %}
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <div class="row g-4">
+
+    <!-- KPIs -->
+    <div class="col-12">
+      <div class="row g-3">
+        <div class="col-md-3">
+          <div class="card border-0 shadow-sm rounded-4 text-center p-3">
+            <div class="display-6 fw-bold text-primary">{{ total_horas|floatformat:1 }} h</div>
+            <div class="text-muted small">Total de Horas Bomba</div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="card border-0 shadow-sm rounded-4 text-center p-3">
+            <div class="display-6 fw-bold text-info">{{ total_volume|floatformat:1 }} m³</div>
+            <div class="text-muted small">Volume Total Aplicado</div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="card border-0 shadow-sm rounded-4 text-center p-3">
+            <div class="display-6 fw-bold text-success">{{ os_vinculadas.count }}</div>
+            <div class="text-muted small">Ordens de Serviço</div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="card border-0 shadow-sm rounded-4 text-center p-3">
+            <div class="display-6 fw-bold {% if poco.ativo %}text-success{% else %}text-secondary{% endif %}">
+              {% if poco.ativo %}Ativo{% else %}Inativo{% endif %}
+            </div>
+            <div class="text-muted small">Status</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dados técnicos -->
+    <div class="col-lg-4">
+      <div class="card shadow-sm border-0 rounded-4 h-100">
+        <div class="card-header bg-transparent fw-bold">
+          <i class="bi bi-gear me-2"></i>Especificações
+        </div>
+        <div class="card-body">
+          <dl class="row mb-0">
+            <dt class="col-sm-6 text-muted">Tipo de Bomba</dt>
+            <dd class="col-sm-6">{{ poco.get_tipo_bomba_display|default:"—" }}</dd>
+            <dt class="col-sm-6 text-muted">Potência</dt>
+            <dd class="col-sm-6">{% if poco.potencia_cv %}{{ poco.potencia_cv }} CV{% else %}—{% endif %}</dd>
+            <dt class="col-sm-6 text-muted">Profundidade</dt>
+            <dd class="col-sm-6">{% if poco.profundidade_m %}{{ poco.profundidade_m }} m{% else %}—{% endif %}</dd>
+            <dt class="col-sm-6 text-muted">Capacidade</dt>
+            <dd class="col-sm-6">{% if poco.capacidade_m3_h %}{{ poco.capacidade_m3_h }} m³/h{% else %}—{% endif %}</dd>
+            <dt class="col-sm-6 text-muted">Horímetro Inicial</dt>
+            <dd class="col-sm-6">{{ poco.horaletro_inicial }} h</dd>
+            <dt class="col-sm-6 text-muted">Data Instalação</dt>
+            <dd class="col-sm-6">{{ poco.data_instalacao|date:"d/m/Y"|default:"—" }}</dd>
+            {% if poco.latitude %}
+            <dt class="col-sm-6 text-muted">Localização</dt>
+            <dd class="col-sm-6"><small>{{ poco.latitude }}, {{ poco.longitude }}</small></dd>
+            {% endif %}
+          </dl>
+          {% if poco.observacoes %}
+          <hr>
+          <p class="text-muted small mb-0">{{ poco.observacoes }}</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Áreas atendidas -->
+    <div class="col-lg-4">
+      <div class="card shadow-sm border-0 rounded-4 h-100">
+        <div class="card-header bg-transparent fw-bold">
+          <i class="bi bi-map me-2"></i>Áreas Atendidas
+        </div>
+        <div class="card-body">
+          {% with areas=poco.areas.all %}
+          {% if areas %}
+          <ul class="list-group list-group-flush">
+            {% for area in areas %}
+            <li class="list-group-item px-0 py-1 border-0">
+              <i class="bi bi-check-circle-fill text-success me-1"></i> {{ area.nome }}
+            </li>
+            {% endfor %}
+          </ul>
+          {% else %}
+          <p class="text-muted small">Nenhuma área vinculada.</p>
+          {% endif %}
+          {% endwith %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Últimas OS -->
+    <div class="col-lg-4">
+      <div class="card shadow-sm border-0 rounded-4 h-100">
+        <div class="card-header bg-transparent fw-bold">
+          <i class="bi bi-calendar-check me-2"></i>Últimas OS Vinculadas
+        </div>
+        <div class="card-body p-0">
+          {% if os_vinculadas %}
+          <ul class="list-group list-group-flush">
+            {% for os in os_vinculadas %}
+            <li class="list-group-item">
+              <div class="d-flex justify-content-between">
+                <strong class="small">{{ os.numero }}</strong>
+                <span class="badge bg-light text-dark small">{{ os.get_tipo_display }}</span>
+              </div>
+              <div class="text-muted small">{{ os.talhao.nome }} — {{ os.data_prevista|date:"d/m/Y"|default:"—" }}</div>
+            </li>
+            {% endfor %}
+          </ul>
+          {% else %}
+          <div class="text-center py-4">
+            <p class="text-muted small">Nenhuma OS vinculada ainda.</p>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Histórico de execuções -->
+    {% if registros %}
+    <div class="col-12">
+      <div class="card shadow-sm border-0 rounded-4">
+        <div class="card-header bg-transparent fw-bold">
+          <i class="bi bi-clock-history me-2"></i>Histórico de Uso (últimas 20 execuções)
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-sm table-hover align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>OS</th>
+                  <th>Talhão</th>
+                  <th>Horas Bomba</th>
+                  <th>Volume (m³)</th>
+                  <th>Setor</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for reg in registros %}
+                <tr>
+                  <td><small>{{ reg.ordem_servico.numero }}</small></td>
+                  <td><small>{{ reg.ordem_servico.talhao.nome }}</small></td>
+                  <td>{{ reg.horas_bomba|default:"—" }}</td>
+                  <td>{{ reg.volume_agua_m3|default:"—" }}</td>
+                  <td>{{ reg.setor_irrigado|default:"—" }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+{% endblock %}

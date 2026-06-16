@@ -184,6 +184,25 @@ def etapa_concluir(request, os_pk, etapa_pk):
     etapa.data_fim = timezone.now()
     etapa.save()
 
+    # Gera LoteProducao automaticamente (RF-109)
+    if os_obj.safra_id and os_obj.talhao_id:
+        try:
+            from operacoes_campo.models import LoteProducao
+            cultura = os_obj.safra.cultura if os_obj.safra_id else None
+            if not LoteProducao.objects.filter(etapa_colheita=etapa).exists():
+                lote = LoteProducao(
+                    empresa=empresa,
+                    talhao=os_obj.talhao,
+                    safra=os_obj.safra,
+                    cultura=cultura,
+                    etapa_colheita=etapa,
+                    criado_por=request.user,
+                )
+                lote.save()
+                lote.calcular_totais()
+        except Exception:
+            pass  # Não bloqueia conclusão da etapa por falha no lote
+
     # Verifica se é a última etapa prevista
     cultura = os_obj.safra.cultura if os_obj.safra_id else None
     max_etapas = cultura.max_etapas_colheita if cultura else 1

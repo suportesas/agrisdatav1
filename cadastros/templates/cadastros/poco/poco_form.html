@@ -1,0 +1,144 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }} | ERP Agrícola{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+
+  <div class="d-flex align-items-center mb-4">
+    <a href="{% url 'cadastros:poco_list' %}" class="btn btn-outline-secondary me-3">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    <h4 class="fw-bold text-secondary mb-0">
+      <i class="bi bi-water text-primary"></i> {{ title }}
+    </h4>
+  </div>
+
+  <form method="post" novalidate>
+    {% csrf_token %}
+    <div class="row g-4">
+
+      <!-- Identificação -->
+      <div class="col-lg-8">
+        <div class="card shadow-sm border-0 rounded-4">
+          <div class="card-header bg-transparent fw-bold">
+            <i class="bi bi-card-text me-2 text-primary"></i>Identificação
+          </div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Fazenda <span class="text-danger">*</span></label>
+                {{ form.fazenda }}
+                {% if form.fazenda.errors %}
+                  <div class="text-danger small">{{ form.fazenda.errors }}</div>
+                {% endif %}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label fw-semibold">ID do Poço <span class="text-danger">*</span></label>
+                {{ form.identificacao }}
+                <div class="form-text">Ex: P-01, PCO-02</div>
+                {% if form.identificacao.errors %}
+                  <div class="text-danger small">{{ form.identificacao.errors }}</div>
+                {% endif %}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label fw-semibold">Nome <span class="text-danger">*</span></label>
+                {{ form.nome }}
+                {% if form.nome.errors %}
+                  <div class="text-danger small">{{ form.nome.errors }}</div>
+                {% endif %}
+              </div>
+              <div class="col-12">
+                <label class="form-label fw-semibold">Áreas Atendidas</label>
+                {{ form.areas }}
+                <div class="form-text">Segure Ctrl para selecionar múltiplas áreas.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Status -->
+      <div class="col-lg-4">
+        <div class="card shadow-sm border-0 rounded-4">
+          <div class="card-header bg-transparent fw-bold">
+            <i class="bi bi-toggle-on me-2 text-success"></i>Status
+          </div>
+          <div class="card-body">
+            <div class="form-check form-switch mt-1">
+              {{ form.ativo }}
+              <label class="form-check-label fw-semibold" for="{{ form.ativo.id_for_label }}">
+                Poço Ativo
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Especificações técnicas -->
+      <div class="col-12">
+        <div class="card shadow-sm border-0 rounded-4">
+          <div class="card-header bg-transparent fw-bold">
+            <i class="bi bi-gear me-2 text-secondary"></i>Especificações Técnicas
+          </div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-md-3">
+                <label class="form-label fw-semibold">Tipo de Bomba</label>
+                {{ form.tipo_bomba }}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label fw-semibold">Potência (CV)</label>
+                {{ form.potencia_cv }}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label fw-semibold">Profundidade (m)</label>
+                {{ form.profundidade_m }}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label fw-semibold">Capacidade (m³/h)</label>
+                {{ form.capacidade_m3_h }}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label fw-semibold">Horímetro Inicial (h)</label>
+                {{ form.horaletro_inicial }}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label fw-semibold">Data de Instalação</label>
+                {{ form.data_instalacao }}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label fw-semibold">Latitude</label>
+                {{ form.latitude }}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label fw-semibold">Longitude</label>
+                {{ form.longitude }}
+              </div>
+              <div class="col-12">
+                <label class="form-label fw-semibold">Observações</label>
+                {{ form.observacoes }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Ações -->
+    <div class="d-flex gap-2 mt-4">
+      <button type="submit" class="btn btn-primary px-4">
+        <i class="bi bi-check-circle me-1"></i> Salvar
+      </button>
+      <a href="{% if poco %}{% url 'cadastros:poco_detail' poco.pk %}{% else %}{% url 'cadastros:poco_list' %}{% endif %}"
+         class="btn btn-outline-secondary">
+        Cancelar
+      </a>
+    </div>
+
+  </form>
+</div>
+{% endblock %}

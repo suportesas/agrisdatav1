@@ -151,6 +151,15 @@ class OrdemEmbalagem(models.Model):
         blank=True,
         help_text='Safra de origem — define o prefixo do código de barras dos pallets',
     )
+    lote_producao = models.ForeignKey(
+        'operacoes_campo.LoteProducao',
+        on_delete=models.SET_NULL,
+        related_name='ordens_embalagem',
+        verbose_name='Lote de Produção',
+        null=True,
+        blank=True,
+        help_text='Lote de produção de campo que deu origem a esta ordem (RF-110)',
+    )
     capacidade_caixas_pallet = models.PositiveIntegerField(
         'Capacidade do Pallet (caixas)',
         null=True,

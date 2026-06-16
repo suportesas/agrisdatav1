@@ -132,6 +132,44 @@ def requisicao_pendentes_aprovacao(request):
 
 
 @login_required
+def requisicao_pendentes_atendimento(request):
+    """Lista requisições aprovadas aguardando liberação/atendimento pelo almoxarifado"""
+    empresa = getattr(request.user, 'empresa', None)
+    if not empresa:
+        messages.error(request, 'Usuario sem empresa vinculada.')
+        return redirect('dashboard:index')
+
+    # Filtra requisições APROVADAS
+    qs = Requisicao.objects.filter(empresa=empresa, status='APROVADA')
+    search = request.GET.get('search', '').strip()
+
+    if search:
+        qs = qs.filter(
+            Q(numero__icontains=search) |
+            Q(safra__nome__icontains=search) |
+            Q(fazenda__nome__icontains=search) |
+            Q(talhao__nome__icontains=search) |
+            Q(talhao__codigo__icontains=search) |
+            Q(funcionario_destino__nome_completo__icontains=search) |
+            Q(solicitante__nome_completo__icontains=search)
+        )
+
+    qs = qs.select_related('safra', 'fazenda', 'talhao', 'funcionario_destino', 'solicitante').order_by('-data_aprovacao')
+
+    paginator = Paginator(qs, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, 'cadastros/requisicao/pendentes_atendimento.html', {
+        'requisicoes': page_obj,
+        'page_obj': page_obj,
+        'is_paginated': page_obj.has_other_pages(),
+        'search': search,
+        'total_aguardando': Requisicao.objects.filter(empresa=empresa, status='APROVADA').count(),
+    })
+
+
+@login_required
 def requisicao_create(request):
     empresa = getattr(request.user, 'empresa', None)
     if not empresa:
@@ -280,6 +318,35 @@ def requisicao_atender(request, pk):
                 messages.error(request, 'Informe o recebedor do material antes de atender empréstimos.')
                 return redirect('cadastros:requisicao_detail', requisicao.id)
 
+            sai_do_estoque = not (requisicao.tipo == 'EMPRESTIMO' and requisicao.direcao_emprestimo == 'PRODUTOR_PARA_EMPRESA')
+            if sai_do_estoque:
+                from decimal import Decimal
+                from estoque.disponibilidade import reservas_por_produto
+
+                consumo_por_produto = {}
+                produtos_por_id = {}
+                for item in requisicao.itens.select_related('produto'):
+                    quantidade_base = item.quantidade_atendida or item.quantidade_solicitada
+                    consumo_por_produto[item.produto_id] = consumo_por_produto.get(item.produto_id, Decimal('0')) + (quantidade_base or Decimal('0'))
+                    produtos_por_id[item.produto_id] = item.produto
+
+                reservas = reservas_por_produto(empresa, excluir_requisicao_id=requisicao.id)
+                produtos_sem_saldo = []
+                for produto_id, consumo in consumo_por_produto.items():
+                    produto = produtos_por_id[produto_id]
+                    disponivel = Decimal(produto.estoque_atual or 0) - reservas.get(produto_id, Decimal('0'))
+                    if disponivel < consumo:
+                        produtos_sem_saldo.append(
+                            f"{produto.nome} (disponível: {disponivel}, necessário: {consumo})"
+                        )
+
+                if produtos_sem_saldo:
+                    messages.error(
+                        request,
+                        'Saldo insuficiente para atender a requisicao. Ajuste os itens: ' + '; '.join(sorted(set(produtos_sem_saldo)))
+                    )
+                    return redirect('cadastros:requisicao_detail', requisicao.id)
+
             # Criar MovimentacaoEstoque para cada item da requisição
             for item in requisicao.itens.all():
                 quantidade_base = item.quantidade_atendida or item.quantidade_solicitada
@@ -370,17 +437,41 @@ def requisicao_cancelar(request, pk):
     return redirect('cadastros:requisicao_detail', requisicao.id)
 
 
+_STATUS_ITENS_BLOQUEADOS = ('CANCELADA', 'ATENDIDA')
+
+
+def _revogar_aprovacao_se_necessario(requisicao):
+    """Se a requisicao ja estava APROVADA, qualquer alteracao nos itens a faz
+    voltar para PENDENTE, exigindo nova aprovacao antes de poder ser atendida."""
+    if requisicao.status != 'APROVADA':
+        return False
+
+    requisicao.status = 'PENDENTE'
+    requisicao.aprovador = None
+    requisicao.data_aprovacao = None
+    requisicao.assinatura_liberacao_interna_usuario = None
+    requisicao.assinatura_liberacao_interna_nome = ''
+    requisicao.assinatura_liberacao_interna_datahora = None
+    requisicao.save(update_fields=[
+        'status', 'aprovador', 'data_aprovacao',
+        'assinatura_liberacao_interna_usuario',
+        'assinatura_liberacao_interna_nome',
+        'assinatura_liberacao_interna_datahora',
+    ])
+    return True
+
+
 @login_required
 def requisicao_item_create(request, requisicao_id):
     empresa = getattr(request.user, 'empresa', None)
     requisicao = get_object_or_404(Requisicao, pk=requisicao_id, empresa=empresa)
 
-    if requisicao.status == 'CANCELADA':
-        messages.warning(request, 'Nao e possivel adicionar itens em requisicao cancelada.')
+    if requisicao.status in _STATUS_ITENS_BLOQUEADOS:
+        messages.warning(request, 'Nao e possivel adicionar itens em requisicao cancelada ou ja atendida.')
         return redirect('cadastros:requisicao_detail', requisicao.id)
 
     if request.method == 'POST':
-        form = RequisicaoItemForm(request.POST, empresa=empresa, requisicao_tipo=requisicao.tipo)
+        form = RequisicaoItemForm(request.POST, empresa=empresa, requisicao_tipo=requisicao.tipo, requisicao=requisicao)
         if form.is_valid():
             item = form.save(commit=False)
             item.requisicao = requisicao
@@ -393,10 +484,13 @@ def requisicao_item_create(request, requisicao_id):
                     item.custo_estimado = item.produto.preco_custo
             item.save()
 
-            messages.success(request, 'Item adicionado com sucesso.')
+            if _revogar_aprovacao_se_necessario(requisicao):
+                messages.warning(request, 'Item adicionado. Como a requisicao ja estava aprovada, ela voltou para PENDENTE e precisa ser aprovada novamente antes de ser liberada.')
+            else:
+                messages.success(request, 'Item adicionado com sucesso.')
             return redirect('cadastros:requisicao_detail', requisicao.id)
     else:
-        form = RequisicaoItemForm(empresa=empresa, requisicao_tipo=requisicao.tipo)
+        form = RequisicaoItemForm(empresa=empresa, requisicao_tipo=requisicao.tipo, requisicao=requisicao)
 
     return render(request, 'cadastros/requisicao/item_form.html', {
         'form': form,
@@ -411,18 +505,21 @@ def requisicao_item_update(request, requisicao_id, item_id):
     requisicao = get_object_or_404(Requisicao, pk=requisicao_id, empresa=empresa)
     item = get_object_or_404(RequisicaoItem, pk=item_id, requisicao=requisicao)
 
-    if requisicao.status == 'CANCELADA':
-        messages.warning(request, 'Nao e possivel editar itens em requisicao cancelada.')
+    if requisicao.status in _STATUS_ITENS_BLOQUEADOS:
+        messages.warning(request, 'Nao e possivel editar itens em requisicao cancelada ou ja atendida.')
         return redirect('cadastros:requisicao_detail', requisicao.id)
 
     if request.method == 'POST':
-        form = RequisicaoItemForm(request.POST, instance=item, empresa=empresa, requisicao_tipo=requisicao.tipo)
+        form = RequisicaoItemForm(request.POST, instance=item, empresa=empresa, requisicao_tipo=requisicao.tipo, requisicao=requisicao)
         if form.is_valid():
             form.save()
-            messages.success(request, 'Item atualizado com sucesso.')
+            if _revogar_aprovacao_se_necessario(requisicao):
+                messages.warning(request, 'Item atualizado. Como a requisicao ja estava aprovada, ela voltou para PENDENTE e precisa ser aprovada novamente antes de ser liberada.')
+            else:
+                messages.success(request, 'Item atualizado com sucesso.')
             return redirect('cadastros:requisicao_detail', requisicao.id)
     else:
-        form = RequisicaoItemForm(instance=item, empresa=empresa, requisicao_tipo=requisicao.tipo)
+        form = RequisicaoItemForm(instance=item, empresa=empresa, requisicao_tipo=requisicao.tipo, requisicao=requisicao)
 
     return render(request, 'cadastros/requisicao/item_form.html', {
         'form': form,
@@ -438,13 +535,16 @@ def requisicao_item_delete(request, requisicao_id, item_id):
     requisicao = get_object_or_404(Requisicao, pk=requisicao_id, empresa=empresa)
     item = get_object_or_404(RequisicaoItem, pk=item_id, requisicao=requisicao)
 
-    if requisicao.status == 'CANCELADA':
-        messages.warning(request, 'Nao e possivel excluir itens em requisicao cancelada.')
+    if requisicao.status in _STATUS_ITENS_BLOQUEADOS:
+        messages.warning(request, 'Nao e possivel excluir itens em requisicao cancelada ou ja atendida.')
         return redirect('cadastros:requisicao_detail', requisicao.id)
 
     if request.method == 'POST':
         item.delete()
-        messages.success(request, 'Item excluido com sucesso.')
+        if _revogar_aprovacao_se_necessario(requisicao):
+            messages.warning(request, 'Item excluido. Como a requisicao ja estava aprovada, ela voltou para PENDENTE e precisa ser aprovada novamente antes de ser liberada.')
+        else:
+            messages.success(request, 'Item excluido com sucesso.')
         return redirect('cadastros:requisicao_detail', requisicao.id)
 
     return render(request, 'cadastros/requisicao/item_confirm_delete.html', {

@@ -2320,30 +2320,6 @@ class RequisicaoForm(forms.ModelForm):
 
 class RequisicaoItemForm(forms.ModelForm):
     """Formulario de item da requisicao"""
-    def __init__(self, *args, **kwargs):
-        self.empresa = kwargs.pop('empresa', None)
-        self.requisicao_tipo = kwargs.pop('requisicao_tipo', None)
-        super().__init__(*args, **kwargs)
-
-        if self.empresa:
-            self.fields['produto'].queryset = Produto.objects.filter(
-                categoria__empresa=self.empresa,
-                ativo=True
-            ).order_by('nome')
-            self.fields['unidade_medida'].queryset = UnidadeMedida.objects.filter(
-                empresa=self.empresa,
-                ativo=True
-            ).order_by('sigla')
-
-        # Customiza o label do produto para mostrar o estoque atual
-        self.fields['produto'].label_from_instance = lambda obj: f"{obj.nome} - {getattr(obj, 'estoque_atual', 0)}"
-
-        self.fields['quantidade_atendida'].required = False
-        self.fields['quantidade_atendida'].initial = 0
-
-        if self.instance and self.instance.pk:
-            if self.instance.unidade_medida:
-                self.fields['unidade_medida'].initial = self.instance.unidade_medida
 
     class Meta:
         model = RequisicaoItem
@@ -2364,6 +2340,7 @@ class RequisicaoItemForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         self.empresa = kwargs.pop('empresa', None)
         self.requisicao_tipo = kwargs.pop('requisicao_tipo', None)
+        requisicao = kwargs.pop('requisicao', None)
         super().__init__(*args, **kwargs)
 
         if self.empresa:
@@ -2375,6 +2352,17 @@ class RequisicaoItemForm(forms.ModelForm):
                 empresa=self.empresa,
                 ativo=True
             ).order_by('sigla')
+
+            from decimal import Decimal
+            from estoque.disponibilidade import reservas_por_produto
+            requisicao_id = requisicao.id if requisicao else None
+            reservas = reservas_por_produto(self.empresa, excluir_requisicao_id=requisicao_id)
+
+            def _label(produto):
+                disponivel = Decimal(produto.estoque_atual or 0) - reservas.get(produto.id, Decimal('0'))
+                return f"{produto.nome} - Disponível: {disponivel}"
+
+            self.fields['produto'].label_from_instance = _label
 
         self.fields['quantidade_atendida'].required = False
         self.fields['quantidade_atendida'].initial = 0

@@ -562,9 +562,11 @@ def estoque_produtos_list(request):
     from decimal import Decimal
     from cadastros.models import Fazenda
     from usuarios.views import is_admin
-    
+    from estoque.disponibilidade import reservas_por_produto
+
     empresa = request.user.empresa
     busca = request.GET.get('busca', '')
+    reservas = reservas_por_produto(empresa)
     # Admins automaticamente têm permissão de ver estoque de outras fazendas
     can_choose_fazenda = is_admin(request.user) or request.user.has_perm('cadastros.view_other_fazendas_estoque')
     fazenda_id = request.GET.get('fazenda') if can_choose_fazenda else None
@@ -626,7 +628,12 @@ def estoque_produtos_list(request):
         
         # Define atributo para template (compatibilidade)
         produto.estoque_total = float(saldo)
-        
+
+        # Reserva: insumos comprometidos em OS/Requisicoes ja aprovadas mas ainda nao baixados
+        reservado = reservas.get(produto.id, Decimal('0'))
+        produto.estoque_reservado = float(reservado)
+        produto.estoque_disponivel = float(saldo - reservado)
+
         # Calcula status de alertas
         produto.alerta_tipo = None
         if saldo <= 0:
@@ -662,8 +669,8 @@ def produto_historico(request, pk):
     data_fim = request.GET.get('data_fim')
 
     movimentacoes = MovimentacaoEstoque.objects.filter(
+        Q(lote__produto=produto) | Q(produto=produto),
         empresa=empresa,
-        lote__produto=produto
     ).select_related('lote', 'armazem_origem', 'armazem_destino', 'executado_por').order_by('-data_cadastro')
 
     if tipo_filtro:

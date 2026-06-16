@@ -124,6 +124,7 @@ TEMPLATES = [
                 'django.template.context_processors.media',  # Para upload de arquivos
                 'core.context_processors.alertas_estoque',  # Context processor customizado para alertas
                 'core.context_processors.notificacoes_emprestimo',  # Mensagens não lidas de empréstimos no menu
+                'core.context_processors.requisicoes_aguardando_atendimento',  # Requisições aprovadas aguardando liberação do almoxarifado
                 'usuarios.context_processors.supabase_context',  # Injecta contexto Supabase
             ],
         },

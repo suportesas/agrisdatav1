@@ -994,7 +994,7 @@ def os_insumo_add(request, pk):
         return redirect('operacoes_campo:os_detail', pk=pk)
 
     if request.method == 'POST':
-        form = OrdemServicoInsumoForm(request.POST, empresa=empresa)
+        form = OrdemServicoInsumoForm(request.POST, empresa=empresa, os=os_obj)
         if form.is_valid():
             item = form.save(commit=False)
             item.empresa = empresa
@@ -1003,7 +1003,7 @@ def os_insumo_add(request, pk):
             messages.success(request, 'Insumo adicionado à OS com sucesso.')
             return redirect('operacoes_campo:os_detail', pk=pk)
     else:
-        form = OrdemServicoInsumoForm(empresa=empresa)
+        form = OrdemServicoInsumoForm(empresa=empresa, os=os_obj)
 
     return render(request, 'cadastros/os/os_insumo_form.html', {
         'os': os_obj,
@@ -1025,13 +1025,13 @@ def os_insumo_edit(request, pk, insumo_pk):
         return redirect('operacoes_campo:os_detail', pk=pk)
 
     if request.method == 'POST':
-        form = OrdemServicoInsumoForm(request.POST, instance=insumo, empresa=empresa)
+        form = OrdemServicoInsumoForm(request.POST, instance=insumo, empresa=empresa, os=os_obj)
         if form.is_valid():
             form.save()
             messages.success(request, 'Insumo da OS atualizado com sucesso.')
             return redirect('operacoes_campo:os_detail', pk=pk)
     else:
-        form = OrdemServicoInsumoForm(instance=insumo, empresa=empresa)
+        form = OrdemServicoInsumoForm(instance=insumo, empresa=empresa, os=os_obj)
 
     return render(request, 'cadastros/os/os_insumo_form.html', {
         'os': os_obj,
@@ -1247,13 +1247,20 @@ def os_concluir(request, pk):
             produto_id = item.produto_id
             consumo_por_produto[produto_id] = consumo_por_produto.get(produto_id, Decimal('0')) + (item.quantidade_aplicada or Decimal('0'))
 
+        from estoque.disponibilidade import reservas_por_produto
+
+        reservas = reservas_por_produto(empresa, excluir_os_id=os_obj.id)
         produtos_sem_saldo = []
+        produtos_validados = set()
         for item in insumos_os.filter(quantidade_aplicada__gt=0).select_related('produto'):
-            saldo = getattr(item.produto, 'estoque_atual', None)
+            if item.produto_id in produtos_validados:
+                continue
+            produtos_validados.add(item.produto_id)
+            disponivel = Decimal(item.produto.estoque_atual or 0) - reservas.get(item.produto_id, Decimal('0'))
             consumo = consumo_por_produto.get(item.produto_id, Decimal('0'))
-            if saldo is not None and saldo < consumo:
+            if disponivel < consumo:
                 produtos_sem_saldo.append(
-                    f"{item.produto.nome} (saldo: {saldo}, necessário: {consumo})"
+                    f"{item.produto.nome} (disponível: {disponivel}, necessário: {consumo})"
                 )
 
         if produtos_sem_saldo:

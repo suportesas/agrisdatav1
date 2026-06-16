@@ -130,12 +130,23 @@ class OrdemServicoInsumoForm(forms.ModelForm):
             'observacoes': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Observação opcional'}),
         }
 
-    def __init__(self, *args, empresa=None, **kwargs):
+    def __init__(self, *args, empresa=None, os=None, **kwargs):
         super().__init__(*args, **kwargs)
         if empresa:
             from produtos.models import Produto, UnidadeMedida
             self.fields['produto'].queryset = Produto.objects.filter(lotes__armazem__empresa=empresa).distinct().order_by('nome')
             self.fields['unidade_medida'].queryset = UnidadeMedida.objects.filter(empresa=empresa).order_by('nome')
+
+            from decimal import Decimal
+            from estoque.disponibilidade import reservas_por_produto
+            os_id = os.id if os else None
+            reservas = reservas_por_produto(empresa, excluir_os_id=os_id)
+
+            def _label(produto):
+                disponivel = Decimal(produto.estoque_atual or 0) - reservas.get(produto.id, Decimal('0'))
+                return f"{produto.nome} - Disponível: {disponivel}"
+
+            self.fields['produto'].label_from_instance = _label
         self.fields['quantidade_planejada'].required = False
         self.fields['custo_unitario'].required = False
         self.fields['observacoes'].required = False

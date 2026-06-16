@@ -111,6 +111,8 @@
                 <th>Produto</th>
                 <th>Categoria</th>
                 <th class="text-center">Estoque Atual</th>
+                <th class="text-center">Reservado</th>
+                <th class="text-center">Disponível</th>
                 <th class="text-center">Est. Mínimo</th>
                 <th class="text-center">Est. Máximo</th>
                 <th class="text-center">Situação</th>
@@ -147,6 +149,18 @@
                       <span class="text-danger fw-bold">0,00</span>
                     {% endif %}
                     <small class="text-muted">{{ produto.unidade_medida.sigla }}</small>
+                  </td>
+                  <td class="text-center">
+                    {% if produto.estoque_reservado %}
+                      <span class="text-warning fw-bold">{{ produto.estoque_reservado|floatformat:2 }}</span>
+                    {% else %}
+                      <span class="text-muted">0,00</span>
+                    {% endif %}
+                  </td>
+                  <td class="text-center">
+                    <strong class="{% if produto.estoque_disponivel <= 0 %}text-danger{% else %}text-success{% endif %}">
+                      {{ produto.estoque_disponivel|floatformat:2 }}
+                    </strong>
                   </td>
                   <td class="text-center text-muted">
                     {{ produto.estoque_minimo|floatformat:2 }}

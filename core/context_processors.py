@@ -108,3 +108,24 @@ def notificacoes_emprestimo(request):
         pass
 
     return {'notificacoes_emprestimo': payload}
+
+
+def requisicoes_aguardando_atendimento(request):
+    """Adiciona contador de requisições aprovadas aguardando liberação pelo almoxarifado."""
+    payload = {'total_aguardando': 0}
+
+    if not request.user.is_authenticated or request.user.is_superuser:
+        return {'requisicoes_aguardando_atendimento': payload}
+
+    empresa = getattr(request.user, 'empresa', None)
+    if not empresa:
+        return {'requisicoes_aguardando_atendimento': payload}
+
+    try:
+        from cadastros.models import Requisicao
+
+        payload['total_aguardando'] = Requisicao.objects.filter(empresa=empresa, status='APROVADA').count()
+    except Exception:
+        pass
+
+    return {'requisicoes_aguardando_atendimento': payload}

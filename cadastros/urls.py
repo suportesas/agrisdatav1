@@ -162,6 +162,7 @@ urlpatterns = [
     # ==================== REQUISICOES ====================
     path('requisicoes/', views_requisicao.requisicao_list, name='requisicao_list'),
     path('requisicoes/pendentes-aprovacao/', views_requisicao.requisicao_pendentes_aprovacao, name='requisicao_pendentes_aprovacao'),
+    path('requisicoes/aguardando-atendimento/', views_requisicao.requisicao_pendentes_atendimento, name='requisicao_pendentes_atendimento'),
     path('requisicoes/nova/', views_requisicao.requisicao_create, name='requisicao_create'),
     path('requisicoes/<int:pk>/', views_requisicao.requisicao_detail, name='requisicao_detail'),
     path('requisicoes/<int:pk>/editar/', views_requisicao.requisicao_update, name='requisicao_update'),

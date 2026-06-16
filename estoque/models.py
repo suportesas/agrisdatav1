@@ -754,10 +754,15 @@ class MovimentacaoEstoque(models.Model):
         ('TRANSFERENCIA_SAIDA', 'Transferência (Saída)'),
         ('AJUSTE_SAIDA', 'Ajuste de Saída'),
         ('DEVOLUCAO_FORNECEDOR', 'Devolução ao Fornecedor'),
+        ('OS_DIRETA', 'Ordem de Serviço (Baixa Direta)'),
+        ('PEDIDO_VENDA', 'Pedido de Venda'),
+        ('DEVOLUCAO_VENDA', 'Devolução de Venda'),
+        ('RECONTRATACAO', 'Recontratação'),
     ]
     origem = models.CharField(
         'Origem',
         max_length=50,
+        choices=ORIGEM_CHOICES,
         blank=True,
         null=True
     )

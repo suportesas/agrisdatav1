@@ -414,6 +414,9 @@
           {% if alertas_estoque.total_alertas > 0 %}
           <span class="badge bg-danger ms-2">{{ alertas_estoque.total_alertas }}</span>
           {% endif %}
+          {% if requisicoes_aguardando_atendimento.total_aguardando > 0 %}
+          <span class="badge bg-warning text-dark ms-2">{{ requisicoes_aguardando_atendimento.total_aguardando }}</span>
+          {% endif %}
           <i class="bi bi-chevron-down submenu-arrow"></i>
         </a>
         <ul class="nav-submenu">
@@ -445,6 +448,14 @@
           {% if user.tipo in 'ADMIN,GERENTE' %}
           <li><a href="{% url 'cadastros:requisicao_pendentes_aprovacao' %}" class="fw-bold text-danger"><i class="bi bi-hourglass-split text-warning"></i> <span class="badge bg-danger">Pendentes</span> Aprovação</a></li>
           {% endif %}
+          <li>
+            <a href="{% url 'cadastros:requisicao_pendentes_atendimento' %}" class="fw-bold text-warning-emphasis">
+              <i class="bi bi-box-arrow-up text-warning"></i> Aguardando Liberação
+              {% if requisicoes_aguardando_atendimento.total_aguardando > 0 %}
+              <span class="badge bg-warning text-dark ms-2">{{ requisicoes_aguardando_atendimento.total_aguardando }}</span>
+              {% endif %}
+            </a>
+          </li>
           <li class="submenu-divider"></li>
           <li><a href="{% url 'estoque:armazem_list' %}"><i class="bi bi-building"></i> Armazéns</a></li>
           <li><a href="{% url 'estoque:local_list' %}"><i class="bi bi-pin-map"></i> Locais</a></li>

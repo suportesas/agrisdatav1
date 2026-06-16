@@ -3710,7 +3710,14 @@ def fornecedor_detail(request, pk):
 
     # Avaliações
     total_avaliacoes = fornecedor.avaliacoes.count() if hasattr(fornecedor, 'avaliacoes') else 0
-    avaliacoes_recentes = fornecedor.avaliacoes.order_by('-data_avaliacao')[:5] if hasattr(fornecedor, 'avaliacoes') else []
+    avaliacoes_recentes = (
+        fornecedor.avaliacoes.select_related('recebimento', 'avaliador').order_by('-data_avaliacao')
+        if hasattr(fornecedor, 'avaliacoes') else []
+    )
+    nota_media_geral = (
+        fornecedor.avaliacoes.aggregate(media=Avg('nota_media')).get('media')
+        if hasattr(fornecedor, 'avaliacoes') else None
+    )
 
     # Indicadores de compras
     pedidos_qs = fornecedor.pedidos_compra.exclude(status='CANCELADO')
@@ -3727,6 +3734,7 @@ def fornecedor_detail(request, pk):
         'total_comprado': total_comprado,
         'total_avaliacoes': total_avaliacoes,
         'avaliacoes_recentes': avaliacoes_recentes,
+        'nota_media_geral': nota_media_geral,
         'contas': contas,
     }
 
@@ -4471,6 +4479,28 @@ def relatorio_fornecedor_ranking(request):
         'ranking': None,
     }
     return render(request, 'cadastros/relatorios/relatorio_fornecedor_ranking.html', context)
+
+
+@login_required
+def fornecedor_ranking_avaliacoes(request):
+    """Ranking de fornecedores pela nota média das avaliações de recebimento."""
+    empresa = request.user.empresa
+
+    fornecedores = (
+        Fornecedor.objects.filter(empresa=empresa)
+        .annotate(
+            nota_media_geral=Avg('avaliacoes__nota_media'),
+            total_avaliacoes=Count('avaliacoes', distinct=True),
+            total_recomenda=Count('avaliacoes', filter=Q(avaliacoes__recomenda=True), distinct=True),
+        )
+        .filter(total_avaliacoes__gt=0)
+        .order_by('-nota_media_geral')
+    )
+
+    context = {
+        'fornecedores': fornecedores,
+    }
+    return render(request, 'cadastros/relatorios/fornecedor_ranking_avaliacoes.html', context)
 
 
 # ==================== ENDEREÇOS DO CLIENTE ====================

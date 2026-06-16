@@ -515,8 +515,16 @@
 
       <!-- Tab: Avaliações -->
       <div class="tab-pane fade" id="avaliacoes">
-        <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
           <h5 class="fw-bold mb-0">Histórico de Avaliações</h5>
+          {% if nota_media_geral %}
+          <div class="text-center">
+            <div class="fw-bold fs-4 text-warning">
+              {{ nota_media_geral|floatformat:1 }} <i class="bi bi-star-fill"></i>
+            </div>
+            <div class="text-muted small">Média geral ({{ total_avaliacoes }} avaliaç{{ total_avaliacoes|pluralize:"ão,ões" }})</div>
+          </div>
+          {% endif %}
         </div>
 
         {% if avaliacoes_recentes %}
@@ -525,11 +533,14 @@
               <thead class="table-light">
                 <tr>
                   <th>Data</th>
-                  <th>Tipo</th>
-                  <th>Qualidade</th>
-                  <th>Prazo</th>
-                  <th>Atendimento</th>
-                  <th>Preço</th>
+                  <th>Recebimento</th>
+                  <th class="text-center">Qualidade</th>
+                  <th class="text-center">Prazo</th>
+                  <th class="text-center">Documentação</th>
+                  <th class="text-center">Atendimento</th>
+                  <th class="text-center">Preço</th>
+                  <th class="text-center">Nota Média</th>
+                  <th class="text-center">Recomenda</th>
                   <th>Avaliado por</th>
                 </tr>
               </thead>
@@ -537,12 +548,25 @@
                 {% for av in avaliacoes_recentes %}
                   <tr>
                     <td>{{ av.data_avaliacao|date:"d/m/Y" }}</td>
-                    <td>{{ av.get_tipo_avaliacao_display }}</td>
-                    <td>{{ av.nota_qualidade }}</td>
-                    <td>{{ av.nota_prazo_entrega }}</td>
-                    <td>{{ av.nota_atendimento }}</td>
-                    <td>{{ av.nota_preco }}</td>
-                    <td>{{ av.avaliado_por.get_full_name }}</td>
+                    <td>
+                      <a href="{% url 'compras:recebimento_detail' av.recebimento_id %}">
+                        {{ av.recebimento.numero }}
+                      </a>
+                    </td>
+                    <td class="text-center">{{ av.qualidade_produto }}</td>
+                    <td class="text-center">{{ av.prazo_entrega }}</td>
+                    <td class="text-center">{{ av.documentacao }}</td>
+                    <td class="text-center">{{ av.atendimento }}</td>
+                    <td class="text-center">{{ av.preco }}</td>
+                    <td class="text-center fw-bold">{{ av.nota_media|floatformat:1 }}</td>
+                    <td class="text-center">
+                      {% if av.recomenda %}
+                        <span class="badge bg-success">Sim</span>
+                      {% else %}
+                        <span class="badge bg-danger">Não</span>
+                      {% endif %}
+                    </td>
+                    <td>{{ av.avaliador.get_full_name }}</td>
                   </tr>
                 {% endfor %}
               </tbody>

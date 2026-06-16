@@ -135,6 +135,7 @@ urlpatterns = [
     path('fornecedores/<int:pk>/portal/bloquear/', views.fornecedor_bloquear_portal, name='fornecedor_bloquear_portal'),
     path('fornecedores/relatorio/', views.relatorio_fornecedor, name='relatorio_fornecedor'),
     path('fornecedores/relatorio-ranking/', views.relatorio_fornecedor_ranking, name='relatorio_fornecedor_ranking'),
+    path('fornecedores/ranking-avaliacoes/', views.fornecedor_ranking_avaliacoes, name='fornecedor_ranking_avaliacoes'),
 
     # Produtores
     path('produtores/', views_produtor.produtor_list, name='produtor_list'),

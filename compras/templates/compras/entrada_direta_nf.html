@@ -42,8 +42,9 @@
     <!-- Formulário -->
     <form method="post" id="entradaDiretaForm" enctype="multipart/form-data">
         {% csrf_token %}
-        <input type="hidden" name="itens_count" id="itensCount" value="1">
-        
+        <input type="hidden" name="itens_count" id="itensCount"
+               value="{% if xml_data.produtos %}{{ xml_data.produtos|length }}{% else %}0{% endif %}">
+
         <!-- Dados da Nota Fiscal -->
         <div class="card mb-4">
             <div class="card-header bg-info text-white">
@@ -169,6 +170,9 @@
                                             <i class="bi bi-exclamation-triangle"></i> Pendente
                                         </span>
                                         {% endif %}
+                                        <span class="badge bg-danger me-1">
+                                            <i class="bi bi-geo-alt"></i> Falta local de estoque
+                                        </span>
                                         <span class="item-nome">{{ item.nome }}</span>
                                     </td>
                                     <td class="text-center item-qtd">{{ item.quantidade|default:'' }}</td>
@@ -177,10 +181,16 @@
                                     <td class="text-end item-desc">0,00</td>
                                     <td class="text-end item-total fw-semibold">—</td>
                                     <td class="text-center">
-                                        <button type="button" class="btn btn-sm btn-outline-danger"
-                                                onclick="removerItemTabela(this)" title="Remover">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
+                                        <div class="btn-group btn-group-sm">
+                                            <button type="button" class="btn btn-outline-warning"
+                                                    onclick="editarItemTabela(this)" title="Editar (defina o Local de Estoque)">
+                                                <i class="bi bi-pencil"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-outline-danger"
+                                                    onclick="removerItemTabela(this)" title="Remover">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                                 {% endfor %}
@@ -280,8 +290,6 @@
 
                 <!-- Campos hidden submetidos ao servidor -->
                 <div id="hiddenItens" style="display:none"></div>
-                <input type="hidden" name="itens_count" id="itensCount"
-                       value="{% if xml_data.produtos %}{{ xml_data.produtos|length }}{% else %}0{% endif %}">
 
                 {% if xml_data.produtos %}
                 <!-- Hidden inputs pré-populados pelo XML -->
@@ -456,12 +464,7 @@
 </div>
 
 <script>
-let itemIndex = 1;
-
 document.addEventListener('DOMContentLoaded', function() {
-    itemIndex = document.querySelectorAll('.item-entrada').length;
-    document.getElementById('itensCount').value = itemIndex;
-
     // Preenche data e hora atual
     const dataRecebimento = document.getElementById('dataRecebimento');
     const horaRecebimento = document.getElementById('horaRecebimento');
@@ -873,6 +876,26 @@ document.addEventListener('DOMContentLoaded', function () {
             if (pendentes > 0) {
                 e.preventDefault();
                 alert(`Há ${pendentes} item(s) sem produto vinculado. Use o botão "Vincular Produto" antes de gravar.`);
+                return;
+            }
+
+            const linhas = document.querySelectorAll('#itensTableBody tr');
+            if (linhas.length === 0) {
+                e.preventDefault();
+                alert('Adicione pelo menos um item: preencha Produto, Quantidade, Preço e Local de Estoque e clique em "Confirmar Item" antes de gravar a entrada.');
+                return;
+            }
+
+            const semLocal = [];
+            linhas.forEach(tr => {
+                const idx = tr.getAttribute('data-index');
+                if (!_getHidden(`local_estoque_${idx}`)) {
+                    semLocal.push(tr.querySelector('.item-nome')?.textContent.trim() || `item ${idx}`);
+                }
+            });
+            if (semLocal.length > 0) {
+                e.preventDefault();
+                alert('Defina o Local de Estoque para: ' + semLocal.join(', ') + '. Clique no botão de editar (lápis) da linha para preencher.');
             }
         });
     }

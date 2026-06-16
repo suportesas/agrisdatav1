@@ -2277,6 +2277,7 @@ def entrada_direta_nf(request):
 
                 itens_count = int(request.POST.get('itens_count', 1))
                 itens = []
+                linhas_ignoradas = []
                 for i in range(itens_count):
                     produto_id = request.POST.get(f'produto_{i}')
                     unidade_id = request.POST.get(f'unidade_medida_{i}')
@@ -2297,7 +2298,17 @@ def entrada_direta_nf(request):
                         data_validade = None
                     observacoes_item = request.POST.get(f'observacoes_{i}') or ''
 
+                    # Linha completamente vazia (usuário não preencheu nada nessa posição) é
+                    # apenas descartada; mas se ALGUM campo foi preenchido e outro obrigatório
+                    # ficou faltando, isso é um erro de preenchimento que precisa ser avisado.
+                    campos_preenchidos = any([produto_id, quantidade, local_estoque_id])
                     if not produto_id or not quantidade or not local_estoque_id:
+                        if campos_preenchidos:
+                            faltantes = []
+                            if not produto_id: faltantes.append('produto')
+                            if not quantidade: faltantes.append('quantidade')
+                            if not local_estoque_id: faltantes.append('local de estoque')
+                            linhas_ignoradas.append(f'Linha {i + 1} (faltou: {", ".join(faltantes)})')
                         continue
 
                     item = ItemRecebimento.objects.create(
@@ -2314,6 +2325,12 @@ def entrada_direta_nf(request):
                     )
                     itens.append(item)
 
+                if not itens:
+                    raise ValueError(
+                        'Nenhum item válido foi informado. Preencha produto, quantidade e '
+                        'local de estoque para pelo menos um item antes de registrar a entrada.'
+                    )
+
                 for item in itens:
                     item.registrar_movimento_estoque()
 
@@ -2323,6 +2340,12 @@ def entrada_direta_nf(request):
                 if 'entrada_direta_xml_cache' in request.session:
                     del request.session['entrada_direta_xml_cache']
 
+            if linhas_ignoradas:
+                messages.warning(
+                    request,
+                    'Atenção: as seguintes linhas foram ignoradas por dados incompletos: '
+                    + '; '.join(linhas_ignoradas)
+                )
             messages.success(request, 'Entrada direta registrada e estoque atualizado!')
             return redirect('compras:recebimento_detail', pk=recebimento.pk)
         except Exception as e:
@@ -2521,12 +2544,14 @@ def recebimento_list(request):
     total_conferido = recebimentos.filter(status='CONFERIDO').count()
     total_divergente = recebimentos.filter(status='DIVERGENTE').count()
     total_cancelado = recebimentos.filter(status='CANCELADO').count()
+    total_finalizado = recebimentos.filter(status='FINALIZADO').count()
 
     # Abas por status
     tabs = [
         ('pendente', 'Pendente de Conferência', 'PENDENTE'),
         ('conferido', 'Conferido', 'CONFERIDO'),
         ('divergente', 'Com Divergência', 'DIVERGENTE'),
+        ('finalizado', 'Finalizado', 'FINALIZADO'),
         ('cancelado', 'Cancelado', 'CANCELADO'),
     ]
     tab_data = {}
@@ -2551,6 +2576,7 @@ def recebimento_list(request):
         'total_conferido': total_conferido,
         'total_divergente': total_divergente,
         'total_cancelado': total_cancelado,
+        'total_finalizado': total_finalizado,
         'fornecedores': fornecedores,
         'fornecedor_filtro': request.GET.get('fornecedor', ''),
         'xml_import_enabled': is_feature_enabled('COMPRAS_XML_IMPORT'),

@@ -819,6 +819,7 @@
             <ul class="nested-submenu">
               <li><a href="{% url 'cadastros:relatorio_fornecedor' %}"><i class="bi bi-file-earmark-text"></i> Relatório Fornecedor</a></li>
               <li><a href="{% url 'cadastros:relatorio_fornecedor_ranking' %}"><i class="bi bi-bar-chart-line"></i> Ranking de Compras</a></li>
+              <li><a href="{% url 'cadastros:fornecedor_ranking_avaliacoes' %}"><i class="bi bi-star-fill"></i> Ranking de Avaliações</a></li>
             </ul>
           </li>
           {% if user.is_admin_empresa or perms.patrimonio.view_patrimonio %}

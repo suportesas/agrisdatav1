@@ -34,7 +34,7 @@
 
     <!-- Cards de status -->
     <div class="row mb-4">
-        <div class="col-md-3">
+        <div class="col-md-2">
             <div class="card text-bg-warning h-100">
                 <div class="card-body text-center">
                     <div class="fs-2 fw-bold">{{ total_pendente }}</div>
@@ -42,7 +42,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
+        <div class="col-md-2">
             <div class="card text-bg-success h-100">
                 <div class="card-body text-center">
                     <div class="fs-2 fw-bold">{{ total_conferido }}</div>
@@ -50,7 +50,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
+        <div class="col-md-2">
             <div class="card text-bg-danger h-100">
                 <div class="card-body text-center">
                     <div class="fs-2 fw-bold">{{ total_divergente }}</div>
@@ -58,7 +58,15 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
+        <div class="col-md-2">
+            <div class="card text-bg-primary h-100">
+                <div class="card-body text-center">
+                    <div class="fs-2 fw-bold">{{ total_finalizado }}</div>
+                    <div>Finalizado</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
             <div class="card text-bg-secondary h-100">
                 <div class="card-body text-center">
                     <div class="fs-2 fw-bold">{{ total_cancelado }}</div>
@@ -112,6 +120,12 @@
                role="tab">Com Divergência</a>
         </li>
         <li class="nav-item" role="presentation">
+            <a class="nav-link {% if active_tab == 'finalizado' %}active{% endif %}"
+               id="tab-finalizado"
+               href="?tab=finalizado"
+               role="tab">Finalizado</a>
+        </li>
+        <li class="nav-item" role="presentation">
             <a class="nav-link {% if active_tab == 'cancelado' %}active{% endif %}"
                id="tab-cancelado"
                href="?tab=cancelado"
@@ -133,6 +147,11 @@
         </div>
         <div class="tab-pane fade {% if active_tab == 'divergente' %}show active{% endif %}" id="pane-divergente" role="tabpanel">
             {% with recebimentos=tab_data.divergente.recebimentos page_obj=tab_data.divergente.page_obj %}
+                {% include 'compras/recebimento_list_table.html' %}
+            {% endwith %}
+        </div>
+        <div class="tab-pane fade {% if active_tab == 'finalizado' %}show active{% endif %}" id="pane-finalizado" role="tabpanel">
+            {% with recebimentos=tab_data.finalizado.recebimentos page_obj=tab_data.finalizado.page_obj %}
                 {% include 'compras/recebimento_list_table.html' %}
             {% endwith %}
         </div>

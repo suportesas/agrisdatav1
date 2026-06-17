@@ -186,6 +186,30 @@ class NotaFiscal(FaturamentoBaseModel):
     pdf_danfe = models.TextField('DANFE PDF (base64)', blank=True)
     pdf_danfe_url = models.URLField('URL DANFE PDF (Storage)', blank=True)
     presenca_comprador = models.CharField('Presença do Comprador', max_length=1, choices=PRESENCA_COMPRADOR, default='9')
+
+    # ── Intermediador (indIntermed / infIntermed — obrigatório para indPres 2/3/4/9) ──
+    IND_INTERMEDIADOR_CHOICES = [
+        ('', 'Não se aplica (presencial)'),
+        ('0', '0 – Operação sem intermediador (site/plataforma própria)'),
+        ('1', '1 – Operação em site ou plataforma de terceiros (marketplace)'),
+    ]
+    ind_intermediador = models.CharField(
+        'Indicador de Intermediador (indIntermed)',
+        max_length=1,
+        choices=IND_INTERMEDIADOR_CHOICES,
+        blank=True,
+        default='',
+        help_text='Obrigatório quando indPres = 2, 3, 4 ou 9 (não presencial).',
+    )
+    intermediador_cnpj = models.CharField(
+        'CNPJ do Intermediador', max_length=14, blank=True,
+        help_text='CNPJ da plataforma intermediadora (somente dígitos). Obrigatório quando indIntermed = 1.',
+    )
+    intermediador_id_cadastro = models.CharField(
+        'ID Cad. no Intermediador (idCadIntTran)', max_length=60, blank=True,
+        help_text='Identificador do vendedor na plataforma intermediadora (ex: login, CPF, código). Obrigatório quando indIntermed = 1.',
+    )
+
     tipo_emissao = models.IntegerField('Tipo de Emissão', default=1, help_text='1=Normal')
     data_hora_emissao = models.DateTimeField('Data/Hora de Emissão SEFAZ', null=True, blank=True)
     motivo_cancelamento = models.CharField('Motivo do Cancelamento', max_length=255, blank=True)

@@ -362,6 +362,18 @@ class IntegranNotasClient:
             },
         }
 
+        # Intermediador (indIntermed / infIntermed) — obrigatório para indPres 2/3/4/9
+        ind_intermed = getattr(nf, 'ind_intermediador', '').strip()
+        if ind_intermed in ('0', '1'):
+            payload['ind_intermediador'] = ind_intermed
+            if ind_intermed == '1':
+                cnpj_int = _digits(getattr(nf, 'intermediador_cnpj', '') or '')
+                id_cad   = (getattr(nf, 'intermediador_id_cadastro', '') or '').strip()
+                payload['intermediador'] = {
+                    'cnpj':       cnpj_int,
+                    'id_cadastro': id_cad,
+                }
+
         # Exportação — grupo ZA da NF-e (<exporta>) — obrigatório para CFOP 7xxx
         uf_embarque    = getattr(nf, 'embarque_uf', '').strip().upper()
         local_embarque = getattr(nf, 'embarque_local', '').strip()

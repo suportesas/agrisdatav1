@@ -86,6 +86,41 @@
                 <label class="form-label">Presença do Comprador</label>
                 {{ form.presenca_comprador }}
               </div>
+
+              <!-- ── Intermediador (indIntermed) — visível apenas para indPres não presencial ── -->
+              <div class="col-12" id="intermediador-section" style="display:none;">
+                <div class="border rounded p-2 mt-1 border-info-subtle bg-info-subtle bg-opacity-10">
+                  <div class="row g-2 align-items-end">
+                    <div class="col-12 mb-1">
+                      <span class="fw-semibold small">
+                        <i class="bi bi-shop text-info me-1"></i>
+                        Intermediador da Operação
+                        <small class="text-muted fw-normal ms-1">(Obrigatório para indPres 2/3/4/9 — Rejeição 434)</small>
+                      </span>
+                    </div>
+                    <div class="col-md-5">
+                      <label class="form-label mb-1 small fw-semibold">Indicador de Intermediador <span class="text-danger">*</span></label>
+                      {{ form.ind_intermediador }}
+                    </div>
+                    <div id="intermediador-fields" style="display:none;" class="col-12">
+                      <div class="row g-2">
+                        <div class="col-md-4">
+                          <label class="form-label mb-1 small fw-semibold">CNPJ do Intermediador <span class="text-danger">*</span></label>
+                          {{ form.intermediador_cnpj }}
+                          <div class="form-text">CNPJ da plataforma (marketplace)</div>
+                        </div>
+                        <div class="col-md-6">
+                          <label class="form-label mb-1 small fw-semibold">ID Cad. na Plataforma (idCadIntTran) <span class="text-danger">*</span></label>
+                          {{ form.intermediador_id_cadastro }}
+                          <div class="form-text">Seu login, CPF ou código de vendedor na plataforma</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <!-- ── / Intermediador ── -->
+
               <div class="col-md-5">
                 <label class="form-label">Modalidade de Frete</label>
                 {{ form.modalidade_frete }}
@@ -1423,6 +1458,33 @@
   function toggle() { fields.style.display = chk.checked ? '' : 'none'; }
   chk.addEventListener('change', toggle);
   toggle();
+})();
+
+// ── Intermediador — visível quando indPres é não-presencial (2/3/4/9) ─────
+(function () {
+  const presSelect    = document.getElementById('id_presenca_comprador');
+  const interSection  = document.getElementById('intermediador-section');
+  const interSelect   = document.getElementById('id_ind_intermediador');
+  const interFields   = document.getElementById('intermediador-fields');
+  if (!presSelect || !interSection) return;
+
+  const NON_PRESENCIAL = new Set(['2', '3', '4', '9']);
+
+  function toggleSection() {
+    const show = NON_PRESENCIAL.has(presSelect.value);
+    interSection.style.display = show ? '' : 'none';
+    if (!show && interSelect) interSelect.value = '';
+    toggleFields();
+  }
+
+  function toggleFields() {
+    if (!interSelect || !interFields) return;
+    interFields.style.display = interSelect.value === '1' ? '' : 'none';
+  }
+
+  presSelect.addEventListener('change', toggleSection);
+  if (interSelect) interSelect.addEventListener('change', toggleFields);
+  toggleSection();
 })();
 
 // ── Exportação — só visível quando CFOP começa com 7 ─────────────────────

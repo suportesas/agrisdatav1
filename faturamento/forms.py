@@ -283,6 +283,10 @@ class NotaFiscalForm(FaturamentoBaseForm):
             'entrega_codigo_municipio',
             'entrega_nome_municipio',
             'entrega_uf',
+            # Intermediador
+            'ind_intermediador',
+            'intermediador_cnpj',
+            'intermediador_id_cadastro',
         ]
         _fc = {'class': 'form-control form-control-sm'}
         widgets = {
@@ -322,6 +326,10 @@ class NotaFiscalForm(FaturamentoBaseForm):
             'entrega_codigo_municipio': forms.TextInput(attrs={**_fc, 'placeholder': '7 dígitos IBGE', 'maxlength': '7'}),
             'entrega_nome_municipio': forms.TextInput(attrs={**_fc, 'placeholder': 'Município'}),
             'entrega_uf': forms.TextInput(attrs={**_fc, 'placeholder': 'UF', 'maxlength': '2', 'style': 'text-transform:uppercase;'}),
+            # Intermediador
+            'ind_intermediador': forms.Select(attrs={'class': 'form-select form-select-sm', 'id': 'id_ind_intermediador'}),
+            'intermediador_cnpj': forms.TextInput(attrs={**_fc, 'placeholder': 'Somente dígitos (14)', 'maxlength': '14'}),
+            'intermediador_id_cadastro': forms.TextInput(attrs={**_fc, 'placeholder': 'Ex: login, CPF, código na plataforma'}),
         }
 
     def __init__(self, *args, empresa=None, **kwargs):
@@ -336,7 +344,8 @@ class NotaFiscalForm(FaturamentoBaseForm):
         for f in ('embarque_uf', 'embarque_local', 'embarque_local_despacho',
                   'entrega_cnpj_cpf', 'entrega_logradouro', 'entrega_numero',
                   'entrega_complemento', 'entrega_bairro',
-                  'entrega_codigo_municipio', 'entrega_nome_municipio', 'entrega_uf'):
+                  'entrega_codigo_municipio', 'entrega_nome_municipio', 'entrega_uf',
+                  'ind_intermediador', 'intermediador_cnpj', 'intermediador_id_cadastro'):
             self.fields[f].required = False
 
 

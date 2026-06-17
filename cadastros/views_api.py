@@ -50,6 +50,23 @@ def api_transportadoras(request):
     })
 
 @login_required
+def api_transportadora_detail(request, pk):
+    """Retorna dados completos de uma transportadora para auto-preenchimento."""
+    t = Transportadora.objects.filter(pk=pk, empresa=request.user.empresa).first()
+    if not t:
+        return JsonResponse({'error': 'não encontrada'}, status=404)
+    endereco = ' '.join(filter(None, [t.logradouro, t.numero, t.complemento])).strip()
+    return JsonResponse({
+        'cnpj':       t.cnpj or '',
+        'nome':       t.razao_social or '',
+        'ie':         t.inscricao_estadual or '',
+        'endereco':   endereco,
+        'municipio':  t.cidade or '',
+        'uf':         t.uf or '',
+        'rntc':       t.rntc or '',
+    })
+
+@login_required
 def api_transportadora_viagens(request, pk):
     """JSON list of viagens for a transportadora with pagination/filters"""
     t = Transportadora.objects.filter(pk=pk, empresa=request.user.empresa).first()

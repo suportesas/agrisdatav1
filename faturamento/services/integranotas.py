@@ -547,6 +547,27 @@ class IntegranNotasClient:
             'imposto': self._build_impostos(item),
         }
 
+        # Rateio por item
+        if float(getattr(item, 'valor_frete_item', 0) or 0) > 0:
+            item_dict['valor_frete'] = str(item.valor_frete_item)
+        if float(getattr(item, 'valor_seguro_item', 0) or 0) > 0:
+            item_dict['valor_seguro'] = str(item.valor_seguro_item)
+        if float(getattr(item, 'valor_outras_despesas', 0) or 0) > 0:
+            item_dict['valor_outras_despesas'] = str(item.valor_outras_despesas)
+
+        # Pedido de Compra
+        ped = (getattr(item, 'pedido_compra', '') or '').strip()
+        if ped:
+            item_dict['pedido_compra'] = ped
+            item_ped = (getattr(item, 'item_pedido_compra', '') or '').strip()
+            if item_ped:
+                item_dict['item_pedido_compra'] = item_ped
+
+        # Informações adicionais do produto (DANFE)
+        comp = (getattr(item, 'complemento_descricao', '') or '').strip()
+        if comp:
+            item_dict['informacoes_adicionais_produto'] = comp[:500]
+
         # Unidade Tributável — exportação (CFOP 7xxx): qTrib / uTrib / vUnTrib
         qtrib = float(getattr(item, 'quantidade_tributavel', 0) or 0)
         if qtrib > 0:
@@ -615,6 +636,12 @@ class IntegranNotasClient:
         reducao_bc = float(getattr(item, 'icms_reducao_base', 0) or 0)
 
         icms_block: dict = {'situacao_tributaria': cst_icms}
+
+        # Benefício Fiscal (cBenef)
+        cbenefit = (getattr(item, 'beneficio_fiscal', '') or '').strip()
+        if cbenefit:
+            icms_block['codigo_beneficio_fiscal'] = cbenefit
+
         if item.aliquota_icms and float(item.aliquota_icms) > 0:
             icms_block.update({
                 'modalidade_base_calculo': modalidade_bc,
@@ -625,13 +652,20 @@ class IntegranNotasClient:
             if reducao_bc > 0:
                 icms_block['percentual_reducao_base'] = str(reducao_bc)
 
+        # Desoneração ICMS
+        motivo_deson = (getattr(item, 'icms_motivo_desoneracao', '') or '').strip()
+        valor_deson  = float(getattr(item, 'icms_valor_desoneracao', 0) or 0)
+        if motivo_deson and valor_deson > 0:
+            icms_block['motivo_desoneracao'] = motivo_deson
+            icms_block['valor_desoneracao']  = str(item.icms_valor_desoneracao)
+
         # ICMS ST (CST 10, 30, 70, 90 etc.)
         valor_st = float(getattr(item, 'valor_icms_st', 0) or 0)
         if valor_st > 0:
-            mva = float(getattr(item, 'icms_st_mva', 0) or 0)
+            mva    = float(getattr(item, 'icms_st_mva', 0) or 0)
             red_st = float(getattr(item, 'icms_st_reducao_base', 0) or 0)
             aliq_st = float(getattr(item, 'icms_st_aliquota', 0) or 0)
-            bc_st = float(getattr(item, 'icms_st_base_calculo', 0) or 0)
+            bc_st  = float(getattr(item, 'icms_st_base_calculo', 0) or 0)
             icms_block.update({
                 'modalidade_base_calculo_st': '4',
                 'percentual_mva_st': str(mva),
@@ -640,24 +674,40 @@ class IntegranNotasClient:
                 'aliquota_st': str(aliq_st),
                 'valor_st': str(valor_st),
             })
+            # FCP ST
+            fcp_st_aliq = float(getattr(item, 'fcp_st_aliquota', 0) or 0)
+            fcp_st_val  = float(getattr(item, 'fcp_st_valor', 0) or 0)
+            if fcp_st_aliq > 0:
+                icms_block.update({
+                    'percentual_fcp_st': str(item.fcp_st_aliquota),
+                    'valor_fcp_st':      str(item.fcp_st_valor),
+                    'base_calculo_fcp_st': str(item.fcp_st_base_calculo),
+                })
 
         impostos['icms'] = icms_block
 
+        # FCP normal
+        fcp_aliq = float(getattr(item, 'fcp_aliquota', 0) or 0)
+        if fcp_aliq > 0:
+            impostos['fcp'] = {
+                'base_calculo': str(item.fcp_base_calculo),
+                'aliquota':     str(item.fcp_aliquota),
+                'valor':        str(item.fcp_valor),
+            }
+
         # IPI
-        cst_ipi = getattr(item, 'cst_ipi', '') or ('50' if item.aliquota_ipi and float(item.aliquota_ipi) > 0 else '99')
-        if item.aliquota_ipi and float(item.aliquota_ipi) > 0:
+        # Omite bloco IPI quando alíquota = 0 — o grupo é opcional na NF-e.
+        # Enviar IPI com apenas 'valor: 0.00' causa erro na API IntegraNotas;
+        # enviar CST 52-55 + enquadramento 999 causa rejeição SEFAZ 388.
+        _ipi_aliq = item.aliquota_ipi and float(item.aliquota_ipi) > 0
+        if _ipi_aliq:
+            cst_ipi = getattr(item, 'cst_ipi', '') or '50'
             impostos['ipi'] = {
                 'situacao_tributaria': cst_ipi,
                 'codigo_enquadramento_legal': item.ipi_codigo_enquadramento or '999',
                 'base_calculo': str(item.valor_total),
                 'aliquota': str(item.aliquota_ipi),
                 'valor': str(item.valor_ipi),
-            }
-        else:
-            impostos['ipi'] = {
-                'situacao_tributaria': cst_ipi or '99',
-                'codigo_enquadramento_legal': item.ipi_codigo_enquadramento or '999',
-                'valor': '0.00',
             }
 
         # PIS
@@ -714,12 +764,45 @@ class IntegranNotasClient:
     def _build_frete(self, nf) -> dict:
         mod = MODALIDADE_FRETE_MAP.get(nf.modalidade_frete, '9')
         frete: dict = {'modalidade_frete': mod}
-        if nf.transportadora_id:
+
+        cnpj     = _digits(nf.transp_cnpj or '')
+        nome     = (nf.transp_nome or '').strip()
+        ie       = (nf.transp_ie or '').strip()
+        endereco = (nf.transp_endereco or '').strip()
+        municipio = (nf.transp_municipio or '').strip()
+        uf       = (nf.transp_uf or '').strip().upper()
+        rntc     = (nf.transp_rntc or '').strip()
+
+        # Fallback para dados do cadastro se os campos da NF estiverem vazios
+        if nf.transportadora_id and not any([cnpj, nome]):
             t = nf.transportadora
-            frete['transportadora'] = {
-                'cnpj': _digits(getattr(t, 'cnpj', '') or ''),
-                'nome': getattr(t, 'nome', '') or '',
+            cnpj      = cnpj or _digits(t.cnpj or '')
+            nome      = nome or t.razao_social or ''
+            ie        = ie or t.inscricao_estadual or ''
+            endereco  = endereco or ' '.join(filter(None, [t.logradouro, t.numero, t.complemento])).strip()
+            municipio = municipio or t.cidade or ''
+            uf        = uf or t.uf or ''
+            rntc      = rntc or t.rntc or ''
+
+        if cnpj or nome:
+            transp_data = {}
+            if cnpj:
+                transp_data['cnpj' if len(cnpj) == 14 else 'cpf'] = cnpj
+            if nome:       transp_data['nome']     = nome[:60]
+            if ie:         transp_data['ie']        = ie
+            if endereco:   transp_data['endereco']  = endereco[:100]
+            if municipio:  transp_data['municipio'] = municipio[:60]
+            if uf:         transp_data['uf']        = uf
+            frete['transportadora'] = transp_data
+
+        if nf.veic_placa:
+            frete['veiculo'] = {
+                'placa': nf.veic_placa.upper(),
+                'uf':    (nf.veic_uf or '').upper(),
             }
+            if rntc:
+                frete['veiculo']['rntc'] = rntc
+
         return frete
 
     def _build_pagamento(self, nf) -> dict:

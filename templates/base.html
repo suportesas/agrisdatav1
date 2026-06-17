@@ -191,6 +191,29 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- Utilitário global de formatação pt-BR -->
+  <script>
+  window.ptBR = {
+    // Exibição com separador de milhar: 1.234,56
+    num: (v, dec = 2) => (isNaN(+v) ? '–' : (+v).toLocaleString('pt-BR', {
+      minimumFractionDigits: dec, maximumFractionDigits: dec
+    })),
+    // Moeda com símbolo: R$ 1.234,56
+    moeda: v => 'R$ ' + ptBR.num(v, 2),
+    // Para inputs de formulário (sem milhar, vírgula decimal: "1234,56")
+    // Django com USE_L10N=True e DECIMAL_SEPARATOR=',' parseia corretamente
+    inp: (v, dec = 2) => (isNaN(+v) ? '' : (+v).toLocaleString('pt-BR', {
+      minimumFractionDigits: dec, maximumFractionDigits: dec, useGrouping: false
+    })),
+    // Formata data JS → dd/mm/aaaa
+    data: d => {
+      const dt = (d instanceof Date) ? d : new Date(d);
+      return isNaN(dt) ? '' : dt.toLocaleDateString('pt-BR');
+    },
+  };
+  </script>
+
   <script>
     // Toggle Sidebar and accessibility updates
     document.addEventListener("DOMContentLoaded", function() {

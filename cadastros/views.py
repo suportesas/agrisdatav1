@@ -101,7 +101,7 @@ from .views_armador import (
 )
 
 # API views
-from .views_api import api_transportadoras, api_transportadora_viagens
+from .views_api import api_transportadoras, api_transportadora_detail, api_transportadora_viagens
 
 # Vehicle related imports (models now in frota app)
 from frota.models import Vehicle, VehiclePlate, VehicleDocument

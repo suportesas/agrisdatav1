@@ -26,20 +26,21 @@
       </div>
     </div>
     <div class="d-flex gap-2">
-      <a href="{% url 'faturamento:nota_fiscal_pdf' nf.pk %}" class="btn btn-outline-secondary" target="_blank">
-        <i class="bi bi-file-earmark-text me-1"></i>PDF Interno
+      <a href="{% url 'faturamento:nota_fiscal_danfe_preview' nf.pk %}" class="btn btn-outline-primary" target="_blank" title="Pré-visualização do DANFE (funciona para Rascunho)">
+        <i class="bi bi-eye me-1"></i>Pré-visualizar DANFE
       </a>
-      {% if nf.xml_autorizacao %}
+      {% if nf.xml_autorizacao or nf.xml_autorizacao_url %}
       <a href="{% url 'faturamento:nota_fiscal_xml' nf.pk %}" class="btn btn-outline-success" title="Baixar XML autorizado pela SEFAZ">
         <i class="bi bi-file-earmark-code me-1"></i>XML
       </a>
       {% endif %}
-      {% if nf.pdf_danfe %}
+      {% if nf.pdf_danfe or nf.pdf_danfe_url %}
       <a href="{% url 'faturamento:nota_fiscal_danfe' nf.pk %}" class="btn btn-outline-danger" target="_blank">
         <i class="bi bi-file-pdf me-1"></i>DANFE
       </a>
       {% endif %}
-      {% if nf.status == 'RASCUNHO' %}
+      {# ── RASCUNHO sem chave → pode editar e emitir ── #}
+      {% if nf.status == 'RASCUNHO' and not nf.chave_acesso %}
       <a href="{% url 'faturamento:nota_fiscal_update' nf.pk %}" class="btn btn-outline-secondary">
         <i class="bi bi-pencil me-1"></i>Editar
       </a>
@@ -55,20 +56,23 @@
         <i class="bi bi-send me-1"></i>Emitir NF-e
       </button>
       {% endif %}
-      {% if nf.status == 'EMITIDA' and nf.chave_acesso and not nf.protocolo_autorizacao %}
+      {# ── Verificar: RASCUNHO em fila (chave sem protocolo) ou EMITIDA sem protocolo ── #}
+      {% if nf.chave_acesso and not nf.protocolo_autorizacao %}
       <form method="post" action="{% url 'faturamento:nota_fiscal_consultar' nf.pk %}" class="d-inline">
         {% csrf_token %}
-        <button type="submit" class="btn btn-outline-warning" title="Consulta o status atual na SEFAZ e atualiza protocolo/DANFE se já autorizada">
+        <button type="submit" class="btn btn-warning" title="Consulta o resultado da SEFAZ e atualiza o status">
           <i class="bi bi-arrow-clockwise me-1"></i>Verificar na SEFAZ
         </button>
       </form>
       {% endif %}
-      {% if nf.status == 'EMITIDA' and nf.chave_acesso %}
+      {# ── CC-e: só quando autorizada com protocolo ── #}
+      {% if nf.status == 'EMITIDA' and nf.protocolo_autorizacao %}
       <a href="{% url 'faturamento:nota_fiscal_carta_correcao' nf.pk %}" class="btn btn-outline-info" title="Carta de Correção (CC-e)">
         <i class="bi bi-pencil-square me-1"></i>CC-e
       </a>
       {% endif %}
-      {% if nf.status != 'CANCELADA' %}
+      {# ── Cancelar: apenas NFs autorizadas ou em fila podem ser canceladas ── #}
+      {% if nf.status == 'EMITIDA' or nf.status == 'RASCUNHO' and nf.chave_acesso %}
       <a href="{% url 'faturamento:nota_fiscal_cancelar' nf.pk %}" class="btn btn-outline-danger">
         <i class="bi bi-x-circle me-1"></i>Cancelar
       </a>
@@ -78,9 +82,21 @@
 
   <!-- Status Badge -->
   <div class="mb-3">
-    {% if nf.status == 'RASCUNHO' %}<span class="badge bg-secondary fs-6">Rascunho</span>
-    {% elif nf.status == 'EMITIDA' %}<span class="badge bg-success fs-6">Emitida</span>
-    {% else %}<span class="badge bg-danger fs-6">Cancelada</span>{% endif %}
+    {% if nf.status == 'RASCUNHO' and nf.chave_acesso %}
+      <span class="badge fs-6" style="background:#f59e0b;color:#000">
+        <i class="bi bi-hourglass-split me-1"></i>Aguardando SEFAZ
+      </span>
+    {% elif nf.status == 'RASCUNHO' %}
+      <span class="badge bg-secondary fs-6">Rascunho</span>
+    {% elif nf.status == 'EMITIDA' and not nf.protocolo_autorizacao %}
+      <span class="badge fs-6" style="background:#f59e0b;color:#000">
+        <i class="bi bi-hourglass-split me-1"></i>Aguardando Protocolo
+      </span>
+    {% elif nf.status == 'EMITIDA' %}
+      <span class="badge bg-success fs-6"><i class="bi bi-patch-check me-1"></i>Autorizada</span>
+    {% else %}
+      <span class="badge bg-danger fs-6">Cancelada</span>
+    {% endif %}
   </div>
 
   {% if nf.chave_acesso %}
@@ -109,13 +125,16 @@
   </div>
   {% endif %}
 
-  {% if nf.status == 'EMITIDA' and nf.chave_acesso and not nf.protocolo_autorizacao %}
+  {% if nf.chave_acesso and not nf.protocolo_autorizacao %}
   <div class="alert alert-warning d-flex align-items-center gap-2 py-2 px-3 mb-3">
     <i class="bi bi-hourglass-split fs-5"></i>
     <div>
       <strong>Aguardando autorização da SEFAZ.</strong>
-      A NF-e foi enviada mas o protocolo ainda não foi recebido.
-      Use o botão <strong>"Verificar na SEFAZ"</strong> para consultar o status atual.
+      A NF-e foi transmitida mas ainda não há protocolo de autorização.
+      Clique em <strong>"Verificar na SEFAZ"</strong> para consultar o resultado.
+      {% if nf.status == 'RASCUNHO' %}
+      <br><small class="text-muted">Enquanto não houver resultado, a NF-e não pode ser editada ou reemitida.</small>
+      {% endif %}
     </div>
   </div>
   {% endif %}
@@ -182,8 +201,8 @@
               {% if nf.especie_volumes %}<br><strong>Espécie:</strong> {{ nf.especie_volumes }}{% endif %}
               {% if nf.marca_volumes %}<br><strong>Marca:</strong> {{ nf.marca_volumes }}{% endif %}
               {% if nf.numeracao_volumes %}<br><strong>Numeração:</strong> {{ nf.numeracao_volumes }}{% endif %}
-              {% if nf.peso_bruto_kg %}<br><strong>Bruto:</strong> {{ nf.peso_bruto_kg|floatformat:3 }} kg{% endif %}
-              {% if nf.peso_liquido_kg %}<br><strong>Líquido:</strong> {{ nf.peso_liquido_kg|floatformat:3 }} kg{% endif %}
+              {% if nf.peso_bruto_kg %}<br><strong>Bruto:</strong> {{ nf.peso_bruto_kg|num_br:3 }} kg{% endif %}
+              {% if nf.peso_liquido_kg %}<br><strong>Líquido:</strong> {{ nf.peso_liquido_kg|num_br:3 }} kg{% endif %}
             </dd>
             {% endif %}
           </dl>
@@ -198,23 +217,23 @@
         <div class="card-body">
           <dl class="row mb-0">
             <dt class="col-sm-6">Valor dos Produtos</dt>
-            <dd class="col-sm-6 text-end">R$ {{ nf.valor_produtos|floatformat:2 }}</dd>
+            <dd class="col-sm-6 text-end">{{ nf.valor_produtos|moeda }}</dd>
             <dt class="col-sm-6">Frete</dt>
-            <dd class="col-sm-6 text-end">R$ {{ nf.valor_frete|floatformat:2 }}</dd>
+            <dd class="col-sm-6 text-end">{{ nf.valor_frete|moeda }}</dd>
             <dt class="col-sm-6">Seguro</dt>
-            <dd class="col-sm-6 text-end">R$ {{ nf.valor_seguro|floatformat:2 }}</dd>
+            <dd class="col-sm-6 text-end">{{ nf.valor_seguro|moeda }}</dd>
             <dt class="col-sm-6">Desconto</dt>
-            <dd class="col-sm-6 text-end text-danger">- R$ {{ nf.valor_desconto|floatformat:2 }}</dd>
+            <dd class="col-sm-6 text-end text-danger">- {{ nf.valor_desconto|moeda }}</dd>
             <dt class="col-sm-6">ICMS</dt>
-            <dd class="col-sm-6 text-end">R$ {{ nf.valor_icms|floatformat:2 }}</dd>
+            <dd class="col-sm-6 text-end">{{ nf.valor_icms|moeda }}</dd>
             <dt class="col-sm-6">IPI</dt>
-            <dd class="col-sm-6 text-end">R$ {{ nf.valor_ipi|floatformat:2 }}</dd>
+            <dd class="col-sm-6 text-end">{{ nf.valor_ipi|moeda }}</dd>
             <dt class="col-sm-6">PIS</dt>
-            <dd class="col-sm-6 text-end">R$ {{ nf.valor_pis|floatformat:2 }}</dd>
+            <dd class="col-sm-6 text-end">{{ nf.valor_pis|moeda }}</dd>
             <dt class="col-sm-6">COFINS</dt>
-            <dd class="col-sm-6 text-end">R$ {{ nf.valor_cofins|floatformat:2 }}</dd>
+            <dd class="col-sm-6 text-end">{{ nf.valor_cofins|moeda }}</dd>
             <dt class="col-sm-6 fw-bold border-top pt-2">VALOR TOTAL</dt>
-            <dd class="col-sm-6 text-end fw-bold border-top pt-2 text-primary">R$ {{ nf.valor_total|floatformat:2 }}</dd>
+            <dd class="col-sm-6 text-end fw-bold border-top pt-2 text-primary">{{ nf.valor_total|moeda }}</dd>
           </dl>
         </div>
       </div>
@@ -249,11 +268,11 @@
                   <td>{{ item.ncm|default:"—" }}</td>
                   <td>{{ item.cfop|default:"—" }}</td>
                   <td>{{ item.unidade }}</td>
-                  <td class="text-end">{{ item.quantidade|floatformat:4 }}</td>
-                  <td class="text-end">R$ {{ item.valor_unitario|floatformat:4 }}</td>
-                  <td class="text-end">R$ {{ item.valor_desconto|floatformat:2 }}</td>
-                  <td class="text-end fw-semibold">R$ {{ item.valor_total|floatformat:2 }}</td>
-                  <td class="text-end">R$ {{ item.valor_icms|floatformat:2 }}</td>
+                  <td class="text-end">{{ item.quantidade|num_br:4 }}</td>
+                  <td class="text-end">{{ item.valor_unitario|num_br:4 }}</td>
+                  <td class="text-end">{{ item.valor_desconto|moeda }}</td>
+                  <td class="text-end fw-semibold">{{ item.valor_total|moeda }}</td>
+                  <td class="text-end">{{ item.valor_icms|moeda }}</td>
                 </tr>
                 {% empty %}
                 <tr><td colspan="10" class="text-center text-muted py-3">Nenhum item.</td></tr>
@@ -458,6 +477,66 @@
     next();
   }
 
+  const pollUrl = '{% url "faturamento:nota_fiscal_consultar_ajax" nf.pk %}';
+
+  function iniciarPolling(chave) {
+    let tentativas = 0;
+    const MAX = 12;   // até ~60s
+    const INTERVALO = 5000; // 5s entre tentativas
+
+    function verificar() {
+      tentativas++;
+      subEl.innerHTML = `<code style="font-size:.65rem">${chave}</code><br>
+        <small class="text-muted">Verificando SEFAZ… (tentativa ${tentativas}/${MAX})</small>`;
+
+      fetch(pollUrl, { method: 'POST', headers: { 'X-CSRFToken': csrf } })
+        .then(r => r.json())
+        .then(res => {
+          if (res.status === 'authorized') {
+            iconeEl.innerHTML = '<i class="bi bi-patch-check-fill text-success" style="font-size:4rem"></i>';
+            msgEl.textContent = 'NF-e Autorizada pela SEFAZ!';
+            msgEl.className = 'fw-semibold fs-5 mb-1 text-success';
+            subEl.innerHTML = `Protocolo: <strong>${res.protocolo}</strong>`;
+            let btns = '<button class="btn btn-outline-secondary btn-sm" onclick="location.reload()">Fechar</button> ';
+            if (res.has_danfe)
+              btns += `<a href="${res.danfe_url}" class="btn btn-danger btn-sm" target="_blank"><i class="bi bi-file-pdf me-1"></i>Ver DANFE</a>`;
+            footerEl.innerHTML = btns;
+
+          } else if (res.status === 'rejected') {
+            iconeEl.innerHTML = '<i class="bi bi-x-octagon-fill text-danger" style="font-size:3.5rem"></i>';
+            msgEl.textContent = 'NF-e REJEITADA pela SEFAZ';
+            msgEl.className = 'fw-semibold fs-5 mb-1 text-danger';
+            subEl.innerHTML = `<div class="alert alert-danger py-2 mt-2 mb-0 text-start small">
+              <strong>Rejeição código ${res.codigo}:</strong><br>${res.mensagem}
+              <hr class="my-1"><span class="text-muted">A NF-e foi revertida para Rascunho — corrija o problema e reemita.</span>
+            </div>`;
+            footerEl.innerHTML = '<button class="btn btn-warning btn-sm" onclick="location.reload()">Fechar e corrigir</button>';
+
+          } else if (res.status === 'cancelled') {
+            iconeEl.innerHTML = '<i class="bi bi-slash-circle text-secondary" style="font-size:3.5rem"></i>';
+            msgEl.textContent = 'NF-e Cancelada';
+            msgEl.className = 'fw-semibold fs-5 mb-1 text-secondary';
+            subEl.textContent = res.mensagem || '';
+            footerEl.innerHTML = '<button class="btn btn-outline-secondary btn-sm" onclick="location.reload()">Fechar</button>';
+
+          } else if (res.status === 'pending' && tentativas < MAX) {
+            setTimeout(verificar, INTERVALO);
+
+          } else {
+            // Timeout ou erro de comunicação
+            subEl.innerHTML = `<code style="font-size:.65rem">${chave}</code><br>
+              <small class="text-muted">Tempo esgotado. Use "Verificar na SEFAZ" para consultar manualmente.</small>`;
+            footerEl.innerHTML = '<button class="btn btn-outline-secondary btn-sm" onclick="location.reload()">Fechar e verificar</button>';
+          }
+        })
+        .catch(() => {
+          if (tentativas < MAX) setTimeout(verificar, INTERVALO);
+        });
+    }
+
+    setTimeout(verificar, INTERVALO);
+  }
+
   function showResultado(data) {
     resultadoEl.style.display = '';
 
@@ -476,8 +555,11 @@
       iconeEl.innerHTML = '<i class="bi bi-hourglass-split text-warning" style="font-size:3.5rem"></i>';
       msgEl.textContent = 'Aguardando autorização da SEFAZ';
       msgEl.className = 'fw-semibold fs-5 mb-1 text-warning';
-      subEl.innerHTML = `Chave: <code style="font-size:.7rem">${data.chave}</code>`;
+      subEl.innerHTML = `<code style="font-size:.65rem">${data.chave}</code><br>
+        <small class="text-muted">Verificando resposta da SEFAZ automaticamente…</small>`;
       footerEl.innerHTML = '<button class="btn btn-outline-secondary btn-sm" onclick="location.reload()">Fechar e atualizar</button>';
+      // Polling automático — SEFAZ processa em fila (código 5023)
+      iniciarPolling(data.chave);
 
     } else {
       iconeEl.innerHTML = '<i class="bi bi-x-octagon-fill text-danger" style="font-size:3.5rem"></i>';

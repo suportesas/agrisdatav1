@@ -72,11 +72,11 @@
             {% if nf.quantidade_volumes %}Qtd: {{ nf.quantidade_volumes }}{% endif %}
             {% if nf.especie_volumes %}{% if nf.quantidade_volumes %}<br>{% endif %}Espécie: {{ nf.especie_volumes }}{% endif %}
             {% if nf.marca_volumes %}{% if nf.quantidade_volumes or nf.especie_volumes %}<br>{% endif %}Marca: {{ nf.marca_volumes }}{% endif %}
-            {% if nf.peso_bruto_kg %}{% if nf.quantidade_volumes or nf.especie_volumes or nf.marca_volumes %}<br>{% endif %}Bruto: {{ nf.peso_bruto_kg|floatformat:3 }} kg{% endif %}
-            {% if nf.peso_liquido_kg %}{% if nf.quantidade_volumes or nf.especie_volumes or nf.marca_volumes or nf.peso_bruto_kg %}<br>{% endif %}Líq: {{ nf.peso_liquido_kg|floatformat:3 }} kg{% endif %}
+            {% if nf.peso_bruto_kg %}{% if nf.quantidade_volumes or nf.especie_volumes or nf.marca_volumes %}<br>{% endif %}Bruto: {{ nf.peso_bruto_kg|num_br:3 }} kg{% endif %}
+            {% if nf.peso_liquido_kg %}{% if nf.quantidade_volumes or nf.especie_volumes or nf.marca_volumes or nf.peso_bruto_kg %}<br>{% endif %}Líq: {{ nf.peso_liquido_kg|num_br:3 }} kg{% endif %}
             {% if not nf.quantidade_volumes and not nf.especie_volumes and not nf.marca_volumes and not nf.peso_bruto_kg and not nf.peso_liquido_kg %}—{% endif %}
           </td>
-          <td class="text-end">R$ {{ nf.valor_total|floatformat:2 }}</td>
+          <td class="text-end">{{ nf.valor_total|moeda }}</td>
           <td>
             {% if nf.status == 'RASCUNHO' %}<span class="badge bg-secondary">Rascunho</span>
             {% elif nf.status == 'EMITIDA' %}<span class="badge bg-success">Emitida</span>

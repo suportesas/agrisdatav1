@@ -127,6 +127,9 @@ TEMPLATES = [
                 'core.context_processors.requisicoes_aguardando_atendimento',  # Requisições aprovadas aguardando liberação do almoxarifado
                 'usuarios.context_processors.supabase_context',  # Injecta contexto Supabase
             ],
+            'builtins': [
+                'core.templatetags.core_filters',  # |moeda e |num_br disponíveis em todos os templates
+            ],
         },
     },
 ]
@@ -216,10 +219,19 @@ USE_TZ = True
 FILE_CHARSET = 'utf-8'
 DEFAULT_CHARSET = 'utf-8'
 
-# Formato de data brasileiro
+# Formato pt-BR — datas, horas e números
 DATE_FORMAT = 'd/m/Y'
 DATETIME_FORMAT = 'd/m/Y H:i:s'
+SHORT_DATE_FORMAT = 'd/m/Y'
+SHORT_DATETIME_FORMAT = 'd/m/Y H:i'
 DATE_INPUT_FORMATS = ['%d/%m/%Y', '%Y-%m-%d']
+DATETIME_INPUT_FORMATS = ['%d/%m/%Y %H:%M:%S', '%d/%m/%Y %H:%M', '%Y-%m-%dT%H:%M']
+
+# Separadores numéricos brasileiros (vírgula decimal, ponto milhar)
+DECIMAL_SEPARATOR = ','
+THOUSAND_SEPARATOR = '.'
+NUMBER_GROUPING = 3
+USE_THOUSAND_SEPARATOR = False  # False: Django não insere separador nos templates automaticamente
 
 
 # Static files (CSS, JavaScript, Images)

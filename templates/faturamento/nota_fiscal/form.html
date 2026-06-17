@@ -121,14 +121,66 @@
               </div>
               <!-- ── / Intermediador ── -->
 
-              <div class="col-md-5">
-                <label class="form-label">Modalidade de Frete</label>
-                {{ form.modalidade_frete }}
+              <!-- ── Frete / Transporte ── -->
+              <div class="col-12">
+                <div class="border rounded p-2 mt-1 border-primary-subtle bg-light bg-opacity-50">
+                  <div class="row g-2 align-items-end">
+                    <div class="col-12 mb-1">
+                      <span class="fw-semibold small">
+                        <i class="bi bi-truck text-primary me-1"></i>Transporte
+                      </span>
+                    </div>
+
+                    <div class="col-md-4">
+                      <label class="form-label mb-1 small fw-semibold">Modalidade de Frete</label>
+                      {{ form.modalidade_frete }}
+                    </div>
+                    <div class="col-md-8">
+                      <label class="form-label mb-1 small fw-semibold">Transportadora Padrão</label>
+                      {{ form.transportadora }}
+                    </div>
+
+                    <div class="col-md-3">
+                      <label class="form-label mb-1 small">CNPJ/CPF</label>
+                      {{ form.transp_cnpj }}
+                    </div>
+                    <div class="col-md-5">
+                      <label class="form-label mb-1 small">Nome/Razão Social</label>
+                      {{ form.transp_nome }}
+                    </div>
+                    <div class="col-md-4">
+                      <label class="form-label mb-1 small">Inscrição Estadual</label>
+                      {{ form.transp_ie }}
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label mb-1 small">Endereço</label>
+                      {{ form.transp_endereco }}
+                    </div>
+                    <div class="col-md-4">
+                      <label class="form-label mb-1 small">Município</label>
+                      {{ form.transp_municipio }}
+                    </div>
+                    <div class="col-md-2">
+                      <label class="form-label mb-1 small">UF</label>
+                      {{ form.transp_uf }}
+                    </div>
+                    <div class="col-md-3">
+                      <label class="form-label mb-1 small">RNTC</label>
+                      {{ form.transp_rntc }}
+                    </div>
+                    <div class="col-md-3">
+                      <label class="form-label mb-1 small">Placa do Veículo</label>
+                      {{ form.veic_placa }}
+                    </div>
+                    <div class="col-md-2">
+                      <label class="form-label mb-1 small">UF da Placa</label>
+                      {{ form.veic_uf }}
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div class="col-md-5">
-                <label class="form-label">Transportadora</label>
-                {{ form.transportadora }}
-              </div>
+              <!-- ── / Transporte ── -->
+
               <div class="col-md-2">
                 <label class="form-label">Quantidade</label>
                 {{ form.quantidade_volumes }}
@@ -318,6 +370,21 @@
                     <th style="width:72px" class="text-center"><i class="bi bi-gear text-muted"></i></th>
                   </tr>
                 </thead>
+                {% if formset.non_form_errors or formset.errors %}
+                <tbody>
+                  <tr><td colspan="99">
+                    <div class="alert alert-danger small mb-0 py-2 px-3">
+                      <strong><i class="bi bi-exclamation-triangle me-1"></i>Erros nos itens da NF:</strong>
+                      {{ formset.non_form_errors }}
+                      {% for err in formset.errors %}
+                        {% if err %}
+                          <div>Item {{ forloop.counter }}: {{ err }}</div>
+                        {% endif %}
+                      {% endfor %}
+                    </div>
+                  </td></tr>
+                </tbody>
+                {% endif %}
                 <tbody id="items-body">
                   {% for item_form in formset %}
                   <tr class="item-row">
@@ -376,6 +443,10 @@
                             <div>
                               <label class="fiscal-label">CFOP</label>
                               {{ item_form.cfop }}
+                            </div>
+                            <div class="flex-grow-1">
+                              <label class="fiscal-label">Complemento da Descrição <small class="text-muted">(DANFE)</small></label>
+                              {{ item_form.complemento_descricao }}
                             </div>
                           </div>
                         </div>
@@ -555,6 +626,77 @@
                         </div>
                       </div>
                       <!-- ── / DI ── -->
+
+                      <!-- ── Rateio por Item & Pedido de Compra ── -->
+                      <div class="mt-2 row g-2 align-items-end px-1 pb-1">
+                        <div class="col-auto">
+                          <span class="fiscal-section-title text-secondary" style="font-size:.72rem;">
+                            <i class="bi bi-receipt me-1"></i>Valores por Item
+                          </span>
+                        </div>
+                        <div class="col-auto">
+                          <label class="fiscal-label">Frete (R$)</label>
+                          {{ item_form.valor_frete_item }}
+                        </div>
+                        <div class="col-auto">
+                          <label class="fiscal-label">Seguro (R$)</label>
+                          {{ item_form.valor_seguro_item }}
+                        </div>
+                        <div class="col-auto">
+                          <label class="fiscal-label">Outras Despesas (R$)</label>
+                          {{ item_form.valor_outras_despesas }}
+                        </div>
+                        <div class="col-auto ms-3">
+                          <span class="fiscal-section-title text-secondary" style="font-size:.72rem;">
+                            <i class="bi bi-bag me-1"></i>Pedido de Compra
+                          </span>
+                        </div>
+                        <div class="col-auto">
+                          <label class="fiscal-label">Nº Pedido</label>
+                          {{ item_form.pedido_compra }}
+                        </div>
+                        <div class="col-auto">
+                          <label class="fiscal-label">Item</label>
+                          {{ item_form.item_pedido_compra }}
+                        </div>
+                      </div>
+                      <!-- ── / Rateio & Pedido ── -->
+
+                      <!-- ── Benefício Fiscal / Desoneração ICMS ── -->
+                      <div class="mt-1 row g-2 align-items-end px-1 pb-1">
+                        <div class="col-auto">
+                          <span class="fiscal-section-title text-secondary" style="font-size:.72rem;">
+                            <i class="bi bi-shield-check me-1"></i>Benefício Fiscal / Desoneração
+                          </span>
+                        </div>
+                        <div class="col-auto">
+                          <label class="fiscal-label">cBenef <small class="text-muted">(RBC)</small></label>
+                          {{ item_form.beneficio_fiscal }}
+                        </div>
+                        <div class="col-auto deson-wrap" style="display:none;">
+                          <label class="fiscal-label">Motivo Desoneração ICMS</label>
+                          {{ item_form.icms_motivo_desoneracao }}
+                        </div>
+                      </div>
+                      <!-- ── / Benefício ── -->
+
+                      <!-- ── FCP — Fundo de Combate à Pobreza ── -->
+                      <div class="mt-1 row g-2 align-items-end px-1 pb-2">
+                        <div class="col-auto">
+                          <span class="fiscal-section-title text-secondary" style="font-size:.72rem;">
+                            <i class="bi bi-coin me-1"></i>FCP — Fundo de Combate à Pobreza
+                          </span>
+                        </div>
+                        <div class="col-auto">
+                          <label class="fiscal-label">Alíq. FCP (%)</label>
+                          {{ item_form.fcp_aliquota }}
+                        </div>
+                        <div class="col-auto">
+                          <label class="fiscal-label">Alíq. FCP ST (%)</label>
+                          {{ item_form.fcp_st_aliquota }}
+                        </div>
+                      </div>
+                      <!-- ── / FCP ── -->
 
                     </td>
                   </tr>
@@ -754,10 +896,13 @@
     row.querySelector('input[name$="-valor"]')?.addEventListener('input', () => delete row.dataset.auto, { once: true });
   }
 
-  // ── Unidade Tributável (exportação CFOP 7xxx) ─────────────────────
+  // ── Unidade Tributável (auto-conversão quando fator_conversao > 1) ─
   function atualizarTributavel(mainRow) {
-    const fator = mainRow._pesoLiq || 0;
-    if (!fator) return;
+    // Prioridade: fator_conversao do cadastro de produto; fallback para peso_liq (exportação)
+    const fator = (mainRow._fatorConversao && mainRow._fatorConversao > 1)
+                  ? mainRow._fatorConversao
+                  : (mainRow._pesoLiq || 0);
+    if (!fator || fator <= 1) return;
     const qtd = parseFloat(mainRow.querySelector('input[name$="-quantidade"]')?.value) || 0;
     const vu  = parseFloat(mainRow.querySelector('input[name$="-valor_unitario"]')?.value) || 0;
     const qtEl = mainRow.querySelector('input[name$="-quantidade_tributavel"]');
@@ -767,10 +912,14 @@
   }
 
   function toggleColTributavel() {
-    const temExport = [...body.querySelectorAll('input[name$="-cfop"]')]
-      .some(el => el.closest('.item-row')?.style.display !== 'none' && (el.value || '').startsWith('7'));
+    const temConversao = [...body.querySelectorAll('.item-row')].some(row => {
+      if (row.style.display === 'none') return false;
+      const cfop  = row.querySelector('input[name$="-cfop"]')?.value || '';
+      const fator = row._fatorConversao || row._pesoLiq || 1;
+      return cfop.startsWith('7') || fator > 1;
+    });
     document.querySelectorAll('.col-tributavel,.th-tributavel').forEach(el => {
-      el.style.display = temExport ? '' : 'none';
+      el.style.display = temConversao ? '' : 'none';
     });
   }
 
@@ -836,6 +985,9 @@
     setF('input[name$="-cst_cofins"]',                 t.cst_cofins);
     setF('input[name$="-aliquota_cofins"]',            t.aliquota_cofins);
     setF('input[name$="-natureza_receita_cofins"]',    t.natureza_receita_cofins);
+    setF('input[name$="-beneficio_fiscal"]',           t.beneficio_fiscal);
+    setF('input[name$="-fcp_aliquota"]',               t.fcp_aliquota);
+    setF('input[name$="-fcp_st_aliquota"]',            t.fcp_st_aliquota);
     // Show/hide Natureza da Receita por CST
     const CST_NAT = new Set(['04','05','06','07','08','09','49','99']);
     const fiscalSrc = fiscalRow || mainRow;
@@ -843,6 +995,8 @@
       const cst = i === 0 ? (t.cst_pis || '') : (t.cst_cofins || '');
       wrap.style.display = CST_NAT.has(cst) ? '' : 'none';
     });
+    // Show/hide Desoneração por CST ICMS
+    toggleDeson(fiscalSrc, t.cst_icms || '');
     updateFiscalBadge(mainRow, fiscalRow);
   }
 
@@ -1052,10 +1206,18 @@
           const vu = mainRow.querySelector('input[name$="-valor_unitario"]');
           if (vu) vu.value = data.preco_venda || '';
 
-          mainRow._pesoLiq   = parseFloat(data.peso_liquido_unitario) || 0;
-          mainRow._pesoBruto = parseFloat(data.peso_bruto_unitario)   || 0;
+          mainRow._pesoLiq        = parseFloat(data.peso_liquido_unitario) || 0;
+          mainRow._pesoBruto      = parseFloat(data.peso_bruto_unitario)   || 0;
+          mainRow._fatorConversao = parseFloat(data.fator_conversao) || 1;
+          mainRow._unidadeTrib    = data.unidade_tributavel || '';
+
+          // Preenche unidade tributável a partir do cadastro do produto
+          const utEl = mainRow.querySelector('input[name$="-unidade_tributavel"]');
+          if (utEl && data.unidade_tributavel) utEl.value = data.unidade_tributavel;
+
           recalcularTotais();
           atualizarTributavel(mainRow);
+          toggleColTributavel();
 
           const setF = (sel, val) => {
             const el = (rowFiscal && rowFiscal.querySelector(sel)) || mainRow.querySelector(sel);
@@ -1423,12 +1585,25 @@
     }
   }
 
+  const CST_DESON = new Set(['20','30','40','41','50','51','60','70','90','300','400','500','900']);
+
+  function toggleDeson(container, cst) {
+    if (!container) return;
+    const wrap = container.querySelector('.deson-wrap');
+    if (wrap) wrap.style.display = CST_DESON.has(String(cst).padStart ? String(cst) : '') ? '' : 'none';
+  }
+
   // Aplica a todos os fiscalRows existentes
   document.querySelectorAll('.item-fiscal-row').forEach(fr => {
     const origemSel = fr.querySelector('[name$="-origem_mercadoria"]');
     if (origemSel) {
       origemSel.addEventListener('change', () => toggleDI(fr));
       toggleDI(fr);
+    }
+    const cstInput = fr.querySelector('[name$="-cst_icms"]');
+    if (cstInput) {
+      cstInput.addEventListener('input', () => toggleDeson(fr, cstInput.value));
+      toggleDeson(fr, cstInput.value);
     }
   });
 
@@ -1442,6 +1617,10 @@
           if (origemSel) {
             origemSel.addEventListener('change', () => toggleDI(node));
             toggleDI(node);
+          }
+          const cstInput = node.querySelector('[name$="-cst_icms"]');
+          if (cstInput) {
+            cstInput.addEventListener('input', () => toggleDeson(node, cstInput.value));
           }
         }
       }));
@@ -1535,5 +1714,60 @@
 
   document.dispatchEvent(new Event('select2:ready'));
 })(jQuery);
+</script>
+
+<script>
+(function () {
+  const sel = document.getElementById('id_transportadora');
+  if (!sel) return;
+
+  const FIELDS = {
+    transp_cnpj:      'cnpj',
+    transp_nome:      'nome',
+    transp_ie:        'ie',
+    transp_endereco:  'endereco',
+    transp_municipio: 'municipio',
+    transp_uf:        'uf',
+    transp_rntc:      'rntc',
+  };
+
+  sel.addEventListener('change', function () {
+    const pk = this.value;
+    if (!pk) {
+      Object.keys(FIELDS).forEach(f => {
+        const el = document.getElementById('id_' + f);
+        if (el) el.value = '';
+      });
+      return;
+    }
+    fetch(`/cadastros/api/transportadoras/${pk}/`)
+      .then(r => r.json())
+      .then(data => {
+        Object.entries(FIELDS).forEach(([fieldId, key]) => {
+          const el = document.getElementById('id_' + fieldId);
+          if (el && !el.dataset.userEdited) el.value = data[key] || '';
+        });
+      })
+      .catch(() => {});
+  });
+
+  // Marcar campo como editado manualmente para não sobrescrever
+  Object.keys(FIELDS).forEach(f => {
+    const el = document.getElementById('id_' + f);
+    if (el) {
+      el.addEventListener('input', function () {
+        this.dataset.userEdited = '1';
+      });
+    }
+  });
+
+  // Limpar flag ao trocar transportadora
+  sel.addEventListener('change', function () {
+    Object.keys(FIELDS).forEach(f => {
+      const el = document.getElementById('id_' + f);
+      if (el) delete el.dataset.userEdited;
+    });
+  }, true); // capture = true, roda antes do listener de fetch
+})();
 </script>
 {% endblock %}

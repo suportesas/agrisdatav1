@@ -148,13 +148,25 @@ class NotaFiscal(FaturamentoBaseModel):
     status = models.CharField('Status', max_length=20, choices=STATUS, default='RASCUNHO')
     modalidade_frete = models.CharField('Modalidade de Frete', max_length=20, choices=MODALIDADE_FRETE, default='SEM_FRETE')
     transportadora = models.ForeignKey(
-        'cadastros.Fornecedor',
+        'cadastros.Transportadora',
         on_delete=models.SET_NULL,
         blank=True,
         null=True,
         related_name='notas_fiscais_transporte',
         verbose_name='Transportadora',
     )
+    # ── Dados da transportadora (preenchidos automaticamente do cadastro, editáveis) ──
+    transp_cnpj      = models.CharField('CNPJ/CPF Transp.', max_length=18, blank=True)
+    transp_nome      = models.CharField('Nome/Razão Social Transp.', max_length=60, blank=True)
+    transp_ie        = models.CharField('Inscrição Estadual Transp.', max_length=60, blank=True)
+    transp_endereco  = models.CharField('Endereço Transp.', max_length=100, blank=True)
+    transp_municipio = models.CharField('Município Transp.', max_length=60, blank=True)
+    transp_uf        = models.CharField('UF Transp.', max_length=2, blank=True)
+    transp_rntc      = models.CharField('RNTC', max_length=20, blank=True)
+    # ── Veículo de transporte ──
+    veic_placa = models.CharField('Placa do Veículo', max_length=7, blank=True)
+    veic_uf    = models.CharField('UF da Placa', max_length=2, blank=True)
+
     quantidade_volumes = models.PositiveIntegerField(
         'Quantidade de Volumes', blank=True, null=True,
         help_text='Quantidade de volumes transportados (grupo de volumes da NF-e)',
@@ -388,6 +400,49 @@ class ItemNotaFiscal(models.Model):
     di_numero_drawback  = models.CharField('Nº Ato Concessório Drawback', max_length=20, blank=True,
                               help_text='Suspensão ou Isenção — deixe em branco se não se aplica')
 
+    # ── Rateio por item ──────────────────────────────────────────────────────
+    valor_frete_item       = models.DecimalField('Frete (item)', max_digits=14, decimal_places=2, default=0)
+    valor_seguro_item      = models.DecimalField('Seguro (item)', max_digits=14, decimal_places=2, default=0)
+    valor_outras_despesas  = models.DecimalField('Outras Despesas', max_digits=14, decimal_places=2, default=0)
+
+    # ── Pedido de Compra ─────────────────────────────────────────────────────
+    pedido_compra      = models.CharField('Nº Pedido de Compra', max_length=15, blank=True)
+    item_pedido_compra = models.CharField('Item Pedido de Compra', max_length=6, blank=True)
+
+    # ── Benefício Fiscal e Desoneração ICMS ─────────────────────────────────
+    beneficio_fiscal = models.CharField('Benefício Fiscal (cBenef)', max_length=10, blank=True,
+                           help_text='Código RBC/RICMS do benefício fiscal de ICMS')
+
+    MOTIVO_DESONERACAO_CHOICES = [
+        ('1',  '1 - Táxi'),
+        ('2',  '2 - Deficiente Físico ou Mental'),
+        ('3',  '3 - Produtor Agropecuário'),
+        ('4',  '4 - Frotista/Locadora'),
+        ('5',  '5 - Diplomático/Consular'),
+        ('6',  '6 - Amazônia Ocidental / Áreas de Livre Comércio'),
+        ('7',  '7 - SUFRAMA'),
+        ('8',  '8 - Venda a Órgão Público'),
+        ('9',  '9 - Outros (NT 2011/004)'),
+        ('10', '10 - Deficiente Condutor (Conv. ICMS 38/12)'),
+        ('11', '11 - Deficiente não Condutor (Conv. ICMS 38/12)'),
+        ('12', '12 - Órgão de Fomento e Desenvolvimento Agropecuário'),
+    ]
+    icms_motivo_desoneracao  = models.CharField('Motivo Desoneração ICMS', max_length=2, blank=True,
+                                   choices=MOTIVO_DESONERACAO_CHOICES)
+    icms_valor_desoneracao   = models.DecimalField('Valor Desoneração ICMS', max_digits=14, decimal_places=2, default=0)
+
+    # ── FCP — Fundo de Combate à Pobreza ─────────────────────────────────────
+    fcp_base_calculo   = models.DecimalField('Base Cálculo FCP', max_digits=14, decimal_places=2, default=0)
+    fcp_aliquota       = models.DecimalField('Alíq. FCP (%)', max_digits=5, decimal_places=2, default=0)
+    fcp_valor          = models.DecimalField('Valor FCP', max_digits=14, decimal_places=2, default=0)
+    fcp_st_base_calculo = models.DecimalField('Base Cálculo FCP ST', max_digits=14, decimal_places=2, default=0)
+    fcp_st_aliquota    = models.DecimalField('Alíq. FCP ST (%)', max_digits=5, decimal_places=2, default=0)
+    fcp_st_valor       = models.DecimalField('Valor FCP ST', max_digits=14, decimal_places=2, default=0)
+
+    # ── Informações adicionais do produto (DANFE / infAdProd) ────────────────
+    complemento_descricao = models.CharField('Complemento da Descrição', max_length=500, blank=True,
+                                help_text='Informações adicionais do produto para o DANFE (infAdProd)')
+
     class Meta:
         verbose_name = 'Item da Nota Fiscal'
         verbose_name_plural = 'Itens da Nota Fiscal'
@@ -437,6 +492,29 @@ class ItemNotaFiscal(models.Model):
         # COFINS
         self.cofins_base_calculo = self.valor_total
         self.valor_cofins = self.cofins_base_calculo * d(self.aliquota_cofins) / _100
+
+        # FCP
+        if d(self.fcp_aliquota) > _0:
+            self.fcp_base_calculo = self.icms_base_calculo
+            self.fcp_valor = self.fcp_base_calculo * d(self.fcp_aliquota) / _100
+        else:
+            self.fcp_base_calculo = _0
+            self.fcp_valor = _0
+
+        if d(self.fcp_st_aliquota) > _0:
+            self.fcp_st_base_calculo = self.icms_st_base_calculo
+            self.fcp_st_valor = self.fcp_st_base_calculo * d(self.fcp_st_aliquota) / _100
+        else:
+            self.fcp_st_base_calculo = _0
+            self.fcp_st_valor = _0
+
+        # Desoneração ICMS (calculada quando motivo preenchido e CST sem débito)
+        CST_DESONERACAO = {'20', '30', '40', '41', '50', '51', '60', '70', '90',
+                           '300', '400', '500', '900'}
+        if self.icms_motivo_desoneracao and self.cst_icms in CST_DESONERACAO:
+            self.icms_valor_desoneracao = self.valor_total * d(self.aliquota_icms) / _100
+        elif not self.icms_motivo_desoneracao:
+            self.icms_valor_desoneracao = _0
 
         super().save(*args, **kwargs)
 

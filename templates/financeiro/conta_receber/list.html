@@ -72,8 +72,8 @@
               <td>{{ cr.data_emissao|date:"d/m/Y" }}</td>
               <td>{{ cr.data_vencimento|date:"d/m/Y" }}</td>
               <td>{{ cr.moeda }}</td>
-              <td class="text-end">{{ cr.valor_moeda|floatformat:2 }}</td>
-              <td class="text-end">{{ cr.valor_brl|floatformat:2 }}</td>
+              <td class="text-end">{{ cr.valor_moeda|num_br:2 }}</td>
+              <td class="text-end">{{ cr.valor_brl|moeda }}</td>
               <td>
                 {% if cr.status == 'ABERTA' %}<span class="badge bg-primary">Aberta</span>
                 {% elif cr.status == 'PARCIALMENTE_PAGA' %}<span class="badge bg-warning text-dark">Parcial</span>

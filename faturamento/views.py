@@ -1,3 +1,5 @@
+import logging
+
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
@@ -8,6 +10,26 @@ from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
+
+logger = logging.getLogger(__name__)
+
+
+def _nf_log_validation(op, form, formset, pag_formset, dup_formset):
+    """Loga erros de validação da NF-e no terminal do servidor (útil para diagnóstico)."""
+    parts = []
+    if not form.is_valid():
+        parts.append(f'NF={form.errors.as_data()}')
+    if not formset.is_valid():
+        parts.append(f'ITENS={formset.errors}')
+    if not pag_formset.is_valid():
+        parts.append(f'PAG={pag_formset.errors}')
+    if not dup_formset.is_valid():
+        parts.append(f'DUP={dup_formset.errors}')
+    if parts:
+        logger.warning('[NF %s] Validação falhou: %s', op, ' | '.join(str(p) for p in parts))
+    else:
+        logger.debug('[NF %s] Validação OK — salvando', op)
+
 
 from .forms import (
     CancelarCTeForm,
@@ -190,6 +212,7 @@ def nota_fiscal_create(request):
                                         form_kwargs={'empresa': empresa})
         pag_formset = PagamentoNFFormSet(request.POST, prefix='pagamentos')
         dup_formset = DuplicataNFFormSet(request.POST, prefix='duplicatas')
+        _nf_log_validation('CREATE', form, formset, pag_formset, dup_formset)
         if form.is_valid() and formset.is_valid() and pag_formset.is_valid() and dup_formset.is_valid():
             nf = form.save(user=request.user)
             if not nf.numero:
@@ -236,6 +259,22 @@ def nota_fiscal_create(request):
 
 
 @login_required
+def nota_fiscal_danfe_preview(request, pk):
+    empresa = _get_empresa(request)
+    nf = get_object_or_404(NotaFiscal, pk=pk, empresa=empresa)
+    cli = nf.cliente
+    endereco_cli = cli.enderecos.order_by('-padrao').first()
+    return render(request, 'faturamento/nota_fiscal/danfe_preview.html', {
+        'nf': nf,
+        'empresa': empresa,
+        'cli': cli,
+        'endereco_cli': endereco_cli,
+        'itens': nf.itens.order_by('numero_item'),
+        'duplicatas': nf.duplicatas.order_by('vencimento'),
+    })
+
+
+@login_required
 def nota_fiscal_detail(request, pk):
     empresa = _get_empresa(request)
     nf = get_object_or_404(NotaFiscal, pk=pk, empresa=empresa)
@@ -251,12 +290,19 @@ def nota_fiscal_update(request, pk):
         messages.error(request, 'Apenas NF-e em RASCUNHO podem ser editadas.')
         return redirect('faturamento:nota_fiscal_detail', pk=pk)
 
+    if nf.chave_acesso:
+        messages.warning(request,
+            'Esta NF-e foi enviada à SEFAZ e está aguardando resposta. '
+            'Use "Verificar na SEFAZ" para obter o resultado antes de editar.')
+        return redirect('faturamento:nota_fiscal_detail', pk=pk)
+
     if request.method == 'POST':
         form = NotaFiscalForm(request.POST, instance=nf, empresa=empresa)
         formset = ItemNotaFiscalFormSet(request.POST, instance=nf, prefix='itens',
                                         form_kwargs={'empresa': empresa})
         pag_formset = PagamentoNFFormSet(request.POST, instance=nf, prefix='pagamentos')
         dup_formset = DuplicataNFFormSet(request.POST, instance=nf, prefix='duplicatas')
+        _nf_log_validation('UPDATE', form, formset, pag_formset, dup_formset)
         if form.is_valid() and formset.is_valid() and pag_formset.is_valid() and dup_formset.is_valid():
             form.save(user=request.user)
             items = formset.save(commit=False)
@@ -310,6 +356,10 @@ def nota_fiscal_emitir_ajax(request, pk):
     if nf.status != 'RASCUNHO':
         return erro('Status da NF-e',
                     f'NF-e já está como "{nf.status}" e não pode ser emitida.')
+    if nf.chave_acesso:
+        return erro('Status da NF-e',
+                    'NF-e já foi enviada à SEFAZ e está aguardando resposta. '
+                    'Use "Verificar na SEFAZ" para obter o resultado antes de reemitir.')
 
     # ── 2. Configuração / Token ───────────────────────────────────────
     config = ConfiguracaoFiscal.objects.filter(empresa=empresa).first()
@@ -336,42 +386,121 @@ def nota_fiscal_emitir_ajax(request, pk):
         emitente_erros.append('CNPJ inválido ou não informado')
     if not (empresa.nome or '').strip():
         emitente_erros.append('Razão Social não informada')
+    ie_emitente = (empresa.inscricao_estadual or '').strip()
+    if not ie_emitente:
+        emitente_erros.append(
+            'Inscrição Estadual (IE) não informada — '
+            'preencha a IE ou "ISENTO" se for não contribuinte'
+        )
     if emitente_erros:
         return erro('Dados do emitente', ' | '.join(emitente_erros),
                     fix_url=cfg_url, fix_label='Corrigir dados do emitente')
-    ok('Dados do emitente', f'{empresa.nome}  ·  CNPJ {empresa.cnpj}')
+    ok('Dados do emitente', f'{empresa.nome}  ·  CNPJ {empresa.cnpj}  ·  IE {ie_emitente}')
 
-    # ── 4. Itens e dados fiscais ──────────────────────────────────────
+    # ── 4. Dados do destinatário ──────────────────────────────────────
+    cli = nf.cliente
+    cli_url = reverse('cadastros:cliente_update', args=[cli.pk])
+    dest_erros = []
+    doc_dest = _re.sub(r'\D', '', cli.cnpj_cpf or '')
+    if not doc_dest:
+        dest_erros.append('CNPJ/CPF não informado')
+    elif len(doc_dest) not in (11, 14):
+        dest_erros.append(f'CNPJ/CPF inválido ({len(doc_dest)} dígitos — esperado 11 ou 14)')
+    if not (cli.razao_social or '').strip():
+        dest_erros.append('Razão Social não informada')
+    pais_cli = (cli.pais or '').strip().lower()
+    is_exterior = pais_cli not in ('brasil', 'brazil', '')
+    end_cli = cli.enderecos.order_by('-padrao').first()
+    if not is_exterior:
+        if not end_cli:
+            dest_erros.append('Endereço não cadastrado')
+        else:
+            end_faltam = []
+            if not (end_cli.logradouro or '').strip(): end_faltam.append('Logradouro')
+            if not (end_cli.cidade or '').strip():     end_faltam.append('Cidade')
+            if not (end_cli.uf or '').strip():         end_faltam.append('UF')
+            if not (end_cli.cep or '').strip():        end_faltam.append('CEP')
+            if end_faltam:
+                dest_erros.append(f'Endereço incompleto: faltam {", ".join(end_faltam)}')
+    if dest_erros:
+        return erro('Dados do destinatário',
+                    f'{cli.razao_social or "?"}: {"; ".join(dest_erros)}',
+                    fix_url=cli_url, fix_label='Corrigir cadastro do cliente',
+                    errors=dest_erros)
+    ok('Dados do destinatário', f'{cli.razao_social}  ·  {cli.cnpj_cpf}')
+
+    # ── 5. Itens e dados fiscais ──────────────────────────────────────
     itens = list(nf.itens.all())
     if not itens:
         edit_url = reverse('faturamento:nota_fiscal_update', args=[pk])
         return erro('Itens da NF-e', 'Nenhum item cadastrado.',
                     fix_url=edit_url, fix_label='Adicionar itens')
 
+    edit_url = reverse('faturamento:nota_fiscal_update', args=[pk])
     item_erros = []
     for item in itens:
         faltam = []
-        if not item.ncm:      faltam.append('NCM')
-        if not item.cfop:     faltam.append('CFOP')
-        if not item.cst_icms: faltam.append('CST ICMS')
+        desc = (item.descricao or '')[:35]
+        # NCM: 8 dígitos exatos
+        ncm_digits = _re.sub(r'\D', '', item.ncm or '')
+        if not ncm_digits:
+            faltam.append('NCM ausente')
+        elif len(ncm_digits) != 8:
+            faltam.append(f'NCM "{ncm_digits}" inválido (deve ter 8 dígitos)')
+        # CFOP: 4 dígitos
+        cfop_digits = _re.sub(r'\D', '', item.cfop or '')
+        if not cfop_digits:
+            faltam.append('CFOP ausente')
+        elif len(cfop_digits) != 4:
+            faltam.append(f'CFOP "{cfop_digits}" inválido (deve ter 4 dígitos)')
+        # CST obrigatórios
+        if not item.cst_icms:  faltam.append('CST ICMS')
+        if not item.cst_pis:   faltam.append('CST PIS')
+        if not item.cst_cofins: faltam.append('CST COFINS')
+        # Quantidade e valor
+        if (item.quantidade or 0) <= 0:
+            faltam.append('Quantidade deve ser maior que zero')
+        if (item.valor_unitario or 0) <= 0:
+            faltam.append('Valor Unitário deve ser maior que zero')
+        # IPI: se alíquota > 0, CST deve corresponder a saída tributada (50)
+        aliq_ipi = item.aliquota_ipi or 0
+        if aliq_ipi > 0:
+            cst_ipi = (item.cst_ipi or '').strip()
+            if cst_ipi not in ('50',):
+                faltam.append(
+                    f'IPI: CST "{cst_ipi}" incompatível com alíquota {aliq_ipi}% '
+                    f'(use CST 50 — Saída Tributada)'
+                )
         if faltam:
-            item_erros.append(f'Item {item.numero_item} — {(item.descricao or "")[:35]}: faltam {", ".join(faltam)}')
+            item_erros.append(f'Item {item.numero_item} — {desc}: {"; ".join(faltam)}')
 
-    edit_url = reverse('faturamento:nota_fiscal_update', args=[pk])
     if item_erros:
         return erro('Dados fiscais dos itens',
-                    f'{len(item_erros)} item(ns) com dados incompletos.',
+                    f'{len(item_erros)} item(ns) com problemas fiscais.',
                     fix_url=edit_url, fix_label='Corrigir itens', errors=item_erros)
     ok('Dados fiscais dos itens',
-       f'{len(itens)} item{"ns" if len(itens) > 1 else ""} — NCM, CFOP e CST OK')
+       f'{len(itens)} item{"ns" if len(itens) > 1 else ""} — NCM, CFOP, CST e valores OK')
 
-    # ── 5. Transmissão ────────────────────────────────────────────────
+    # ── 6. Transmissão ────────────────────────────────────────────────
     import requests as _requests
     try:
         client = IntegranNotasClient(raw_token, config.ambiente_nfe)
         data = client.emitir_nfe(nf)
     except IntegranNotasError as exc:
-        erros_api = [str(e) for e in (exc.erros or [])]
+        def _fmt_api_erro(e):
+            if isinstance(e, dict):
+                campo = e.get('campo') or ''
+                msg   = e.get('erro') or e.get('message') or str(e)
+                detalhe = e.get('detalhes') or e.get('descricao') or ''
+                partes = []
+                if campo:
+                    partes.append(f'Campo: {campo}')
+                partes.append(msg)
+                if detalhe:
+                    partes.append(f'Detalhe: {detalhe}')
+                return ' — '.join(partes)
+            return str(e)
+        erros_api = [_fmt_api_erro(e) for e in (exc.erros or [])]
         return erro('Transmissão à SEFAZ', str(exc), errors=erros_api)
     except _requests.exceptions.HTTPError as exc:
         status_code = exc.response.status_code if exc.response is not None else '?'
@@ -399,7 +528,7 @@ def nota_fiscal_emitir_ajax(request, pk):
 
     ok('Transmissão à SEFAZ', 'Dados enviados ao IntegraNOtas')
 
-    # ── 6. Resultado ──────────────────────────────────────────────────
+    # ── 7. Resultado ──────────────────────────────────────────────────
     chave     = data.get('chave', '')
     protocolo = data.get('protocolo', '')
     xml_b64   = data.get('xml', '')
@@ -407,14 +536,14 @@ def nota_fiscal_emitir_ajax(request, pk):
     codigo    = data.get('codigo')
 
     if codigo == 5023:
+        # Mantém RASCUNHO — só muda para EMITIDA quando a SEFAZ confirmar (código 100)
         nf.chave_acesso      = chave
-        nf.status            = 'EMITIDA'
         nf.data_hora_emissao = timezone.now()
         nf.atualizado_por    = request.user
-        nf.save(update_fields=['chave_acesso', 'status', 'data_hora_emissao', 'atualizado_por'])
+        nf.save(update_fields=['chave_acesso', 'data_hora_emissao', 'atualizado_por'])
         steps.append({'status': 'pending', 'label': 'Aguardando autorização da SEFAZ',
                       'message': 'NF em fila de processamento (código 5023). '
-                                 'Use "Verificar na SEFAZ" para atualizar o protocolo.',
+                                 'Verificando resposta automaticamente…',
                       'chave': chave})
         return JsonResponse({'steps': steps, 'success': True, 'pending': True, 'chave': chave})
 
@@ -650,7 +779,14 @@ def nota_fiscal_consultar(request, pk):
 
         else:
             mensagem = data.get('mensagem') or data.get('message') or f'Código {codigo}'
-            messages.warning(request, f'Resposta da SEFAZ: {mensagem}')
+            # Rejeição — reverte para RASCUNHO limpo independente do status atual
+            if not nf.protocolo_autorizacao:
+                nf.status = 'RASCUNHO'
+                nf.chave_acesso = ''
+                nf.save(update_fields=['status', 'chave_acesso'])
+                logger.warning('[NF %s] Rejeitada pela SEFAZ (código %s): %s — revertida para RASCUNHO',
+                               nf.numero or 'S/N', codigo, mensagem)
+            messages.error(request, f'NF-e REJEITADA pela SEFAZ (código {codigo}): {mensagem}')
 
     except IntegranNotasError as exc:
         erros = '; '.join(str(e) for e in exc.erros) if exc.erros else ''
@@ -659,6 +795,81 @@ def nota_fiscal_consultar(request, pk):
         messages.error(request, f'Falha na comunicação com IntegraNota: {exc}')
 
     return redirect('faturamento:nota_fiscal_detail', pk=pk)
+
+
+@login_required
+@require_POST
+def nota_fiscal_consultar_ajax(request, pk):
+    """AJAX: consulta status na SEFAZ e retorna JSON (usado para polling após código 5023)."""
+    from .services.integranotas import IntegranNotasClient, IntegranNotasError
+
+    empresa = _get_empresa(request)
+    nf = get_object_or_404(NotaFiscal, pk=pk, empresa=empresa)
+
+    if not nf.chave_acesso:
+        return JsonResponse({'status': 'error', 'mensagem': 'NF sem chave de acesso.'})
+
+    config = ConfiguracaoFiscal.objects.filter(empresa=empresa).first()
+    if not config or not config.has_token:
+        return JsonResponse({'status': 'error', 'mensagem': 'Token não configurado.'})
+
+    try:
+        client = IntegranNotasClient(config.get_token(), config.ambiente_nfe)
+        data = client.consultar_nfe(nf.chave_acesso)
+        codigo = data.get('codigo')
+
+        if codigo == 100:
+            fields = []
+            if data.get('protocolo'):
+                nf.protocolo_autorizacao = data['protocolo']
+                fields.append('protocolo_autorizacao')
+            if data.get('xml'):
+                nf.xml_autorizacao = data['xml']
+                fields.append('xml_autorizacao')
+            if data.get('pdf'):
+                nf.pdf_danfe = data['pdf']
+                fields.append('pdf_danfe')
+            if nf.status != 'EMITIDA':
+                nf.status = 'EMITIDA'
+                fields.append('status')
+            if not nf.data_hora_emissao:
+                nf.data_hora_emissao = timezone.now()
+                fields.append('data_hora_emissao')
+            if fields:
+                _extra = _upload_fiscal_docs(nf, nf.empresa_id, 'nfe', nf.numero, nf.serie,
+                                             data.get('xml'), data.get('pdf'))
+                nf.save(update_fields=list(dict.fromkeys(fields + _extra)))
+            return JsonResponse({
+                'status': 'authorized',
+                'protocolo': nf.protocolo_autorizacao,
+                'has_danfe': bool(nf.pdf_danfe or nf.pdf_danfe_url),
+                'danfe_url': nf.pdf_danfe_url or '',
+                'detail_url': reverse('faturamento:nota_fiscal_detail', args=[pk]),
+            })
+
+        elif codigo == 5023:
+            return JsonResponse({'status': 'pending'})
+
+        elif codigo == 101:
+            nf.status = 'CANCELADA'
+            nf.save(update_fields=['status'])
+            return JsonResponse({'status': 'cancelled', 'mensagem': 'NF-e cancelada na SEFAZ.'})
+
+        else:
+            mensagem = data.get('mensagem') or data.get('message') or f'Código {codigo}'
+            if not nf.protocolo_autorizacao:
+                nf.status = 'RASCUNHO'
+                nf.chave_acesso = ''
+                nf.save(update_fields=['status', 'chave_acesso'])
+                logger.warning('[NF %s] Rejeitada (ajax) pelo SEFAZ código %s: %s — revertida para RASCUNHO',
+                               nf.numero or 'S/N', codigo, mensagem)
+            return JsonResponse({'status': 'rejected', 'codigo': codigo, 'mensagem': mensagem})
+
+    except IntegranNotasError as exc:
+        erros = '; '.join(str(e) for e in exc.erros) if exc.erros else ''
+        return JsonResponse({'status': 'error', 'mensagem': f'{exc} {erros}'.strip()})
+    except Exception as exc:
+        return JsonResponse({'status': 'error', 'mensagem': str(exc)})
 
 
 @login_required
@@ -1510,14 +1721,14 @@ def ajax_produto_detail(request, pk):
     empresa = _get_empresa(request)
     from produtos.models import Produto
     try:
-        produto = Produto.objects.select_related('ncm', 'unidade_venda').get(pk=pk, categoria__empresa=empresa)
+        produto = Produto.objects.select_related('ncm', 'unidade_venda', 'unidade_medida').get(pk=pk, categoria__empresa=empresa)
     except Produto.DoesNotExist:
         return JsonResponse({'erro': 'Produto não encontrado'}, status=404)
 
     tributacoes = []
     for t in produto.tributacoes.select_related('cfop').filter(ativo=True):
         tributacoes.append({
-            'cfop': t.cfop.codigo,
+            'cfop': t.cfop.codigo if t.cfop_id else '',
             'padrao': bool(t.padrao),
             'cst_icms': t.icms_situacao_tributaria,
             'icms_modalidade_base': t.icms_modalidade_base or '3',
@@ -1535,17 +1746,26 @@ def ajax_produto_detail(request, pk):
             'cst_cofins': t.cofins_situacao_tributaria,
             'aliquota_cofins': float(t.cofins_aliquota),
             'natureza_receita_cofins': t.natureza_receita_cofins or '',
+            'beneficio_fiscal': t.beneficio_fiscal or '',
         })
+
+    fator = float(produto.fator_conversao or 1)
+    un_med_sigla = produto.unidade_medida.sigla if produto.unidade_medida_id else ''
+    un_venda_sigla = produto.unidade_venda.sigla if produto.unidade_venda_id else ''
+    # Unidade tributável = unidade_medida quando difere da unidade_venda; caso contrário KG (fallback peso)
+    un_trib = un_med_sigla if (un_med_sigla and un_med_sigla != un_venda_sigla) else ''
 
     return JsonResponse({
         'nome': produto.nome,
         'ncm': produto.ncm.codigo if produto.ncm_id else '',
         'cest': produto.cest or '',
         'origem_mercadoria': produto.origem_mercadoria or '0',
-        'unidade': produto.unidade_venda.sigla if produto.unidade_venda_id else '',
+        'unidade': un_venda_sigla,
         'preco_venda': float(produto.preco_venda),
         'peso_liquido_unitario': float(produto.peso_liquido_unitario or 0),
         'peso_bruto_unitario':   float(produto.peso_bruto_unitario or 0),
+        'fator_conversao': fator,
+        'unidade_tributavel': un_trib,
         'tributacoes': tributacoes,
     })
 

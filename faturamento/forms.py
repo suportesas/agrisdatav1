@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django import forms
 from django.core.validators import MinLengthValidator
 from django.forms import inlineformset_factory
@@ -258,6 +260,15 @@ class NotaFiscalForm(FaturamentoBaseForm):
             'presenca_comprador',
             'modalidade_frete',
             'transportadora',
+            'transp_cnpj',
+            'transp_nome',
+            'transp_ie',
+            'transp_endereco',
+            'transp_municipio',
+            'transp_uf',
+            'transp_rntc',
+            'veic_placa',
+            'veic_uf',
             'quantidade_volumes',
             'especie_volumes',
             'marca_volumes',
@@ -299,6 +310,15 @@ class NotaFiscalForm(FaturamentoBaseForm):
             'presenca_comprador': forms.Select(attrs={'class': 'form-select'}),
             'modalidade_frete': forms.Select(attrs={'class': 'form-select'}),
             'transportadora': forms.Select(attrs={'class': 'form-select'}),
+            'transp_cnpj':      forms.TextInput(attrs={'class': 'form-control form-control-sm', 'placeholder': 'CNPJ/CPF'}),
+            'transp_nome':      forms.TextInput(attrs={'class': 'form-control form-control-sm', 'placeholder': 'Nome/Razão Social'}),
+            'transp_ie':        forms.TextInput(attrs={'class': 'form-control form-control-sm', 'placeholder': 'Inscrição Estadual'}),
+            'transp_endereco':  forms.TextInput(attrs={'class': 'form-control form-control-sm', 'placeholder': 'Endereço'}),
+            'transp_municipio': forms.TextInput(attrs={'class': 'form-control form-control-sm', 'placeholder': 'Município'}),
+            'transp_uf':        forms.TextInput(attrs={'class': 'form-control form-control-sm', 'placeholder': 'UF', 'maxlength': '2', 'style': 'text-transform:uppercase;'}),
+            'transp_rntc':      forms.TextInput(attrs={'class': 'form-control form-control-sm', 'placeholder': 'RNTC'}),
+            'veic_placa':       forms.TextInput(attrs={'class': 'form-control form-control-sm', 'placeholder': 'AAA0000', 'maxlength': '7', 'style': 'text-transform:uppercase;'}),
+            'veic_uf':          forms.TextInput(attrs={'class': 'form-control form-control-sm', 'placeholder': 'UF', 'maxlength': '2', 'style': 'text-transform:uppercase;'}),
             'quantidade_volumes': forms.NumberInput(attrs={'class': 'form-control', 'step': '1', 'min': '0'}),
             'especie_volumes': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: SACOS'}),
             'marca_volumes': forms.TextInput(attrs={'class': 'form-control'}),
@@ -335,11 +355,15 @@ class NotaFiscalForm(FaturamentoBaseForm):
     def __init__(self, *args, empresa=None, **kwargs):
         super().__init__(*args, empresa=empresa, **kwargs)
         if empresa:
-            from cadastros.models import Cliente, Fornecedor
+            from cadastros.models import Cliente, Transportadora
             self.fields['cliente'].queryset = Cliente.objects.filter(empresa=empresa, status='ATIVO').order_by('razao_social')
-            self.fields['transportadora'].queryset = Fornecedor.objects.filter(empresa=empresa, ativa=True).order_by('nome')
+            self.fields['transportadora'].queryset = Transportadora.objects.filter(empresa=empresa).order_by('razao_social')
             self.fields['transportadora'].required = False
             self.fields['informacoes_fisco'].required = False
+        # Campos de transporte e veículo são opcionais
+        for f in ('transp_cnpj', 'transp_nome', 'transp_ie', 'transp_endereco',
+                  'transp_municipio', 'transp_uf', 'transp_rntc', 'veic_placa', 'veic_uf'):
+            self.fields[f].required = False
         # Campos de exportação e entrega são sempre opcionais
         for f in ('embarque_uf', 'embarque_local', 'embarque_local_despacho',
                   'entrega_cnpj_cpf', 'entrega_logradouro', 'entrega_numero',
@@ -387,6 +411,12 @@ CST_IPI_CHOICES = [
 
 
 class ItemNotaFiscalForm(forms.ModelForm):
+    # DecimalFields que têm default=0 mas não blank=True no model — tornamos opcionais no form
+    _DECIMAL_ZERO_FIELDS = (
+        'valor_frete_item', 'valor_seguro_item', 'valor_outras_despesas',
+        'fcp_aliquota', 'fcp_st_aliquota',
+    )
+
     def __init__(self, *args, empresa=None, **kwargs):
         super().__init__(*args, **kwargs)
         from produtos.models import Produto
@@ -396,6 +426,16 @@ class ItemNotaFiscalForm(forms.ModelForm):
             ).select_related('unidade_venda').order_by('codigo', 'nome')
         else:
             self.fields['produto'].queryset = Produto.objects.none()
+        for f in self._DECIMAL_ZERO_FIELDS:
+            self.fields[f].required = False
+            self.fields[f].initial = Decimal('0')
+
+    def clean(self):
+        cleaned_data = super().clean()
+        for f in self._DECIMAL_ZERO_FIELDS:
+            if cleaned_data.get(f) is None:
+                cleaned_data[f] = Decimal('0')
+        return cleaned_data
 
     class Meta:
         model = ItemNotaFiscal
@@ -420,6 +460,16 @@ class ItemNotaFiscalForm(forms.ModelForm):
             'di_valor_afrmm', 'di_tipo_intermediario', 'di_cnpj_adquirente',
             'di_codigo_exportador', 'di_numero_adicao', 'di_codigo_fabricante',
             'di_desconto_adicao', 'di_numero_drawback',
+            # Rateio por item
+            'valor_frete_item', 'valor_seguro_item', 'valor_outras_despesas',
+            # Pedido de Compra
+            'pedido_compra', 'item_pedido_compra',
+            # Benefício Fiscal / Desoneração
+            'beneficio_fiscal', 'icms_motivo_desoneracao',
+            # FCP
+            'fcp_aliquota', 'fcp_st_aliquota',
+            # Complemento
+            'complemento_descricao',
         ]
         widgets = {
             'numero_item': forms.HiddenInput(),
@@ -480,6 +530,25 @@ class ItemNotaFiscalForm(forms.ModelForm):
             'di_desconto_adicao':    forms.NumberInput(attrs=_sm_num),
             'di_numero_drawback':    forms.TextInput(attrs={**_sm, 'maxlength': '20',
                                                             'placeholder': 'Nº ato concessório drawback'}),
+            # Rateio por item
+            'valor_frete_item':      forms.NumberInput(attrs=_sm_num),
+            'valor_seguro_item':     forms.NumberInput(attrs=_sm_num),
+            'valor_outras_despesas': forms.NumberInput(attrs=_sm_num),
+            # Pedido de Compra
+            'pedido_compra':         forms.TextInput(attrs={**_sm, 'maxlength': '15',
+                                                            'placeholder': 'Nº do pedido'}),
+            'item_pedido_compra':    forms.TextInput(attrs={**_sm, 'maxlength': '6',
+                                                            'placeholder': 'Item', 'style': 'width:70px'}),
+            # Benefício Fiscal / Desoneração
+            'beneficio_fiscal':         forms.TextInput(attrs={**_sm, 'maxlength': '10',
+                                                               'placeholder': 'Ex: PR810001'}),
+            'icms_motivo_desoneracao':  forms.Select(attrs=_sm_sel),
+            # FCP
+            'fcp_aliquota':    forms.NumberInput(attrs=_sm_num),
+            'fcp_st_aliquota': forms.NumberInput(attrs=_sm_num),
+            # Complemento
+            'complemento_descricao': forms.TextInput(attrs={**_sm, 'maxlength': '500',
+                                                            'placeholder': 'Complemento para DANFE (infAdProd)'}),
         }
 
 

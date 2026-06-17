@@ -156,6 +156,7 @@ urlpatterns = [
     path('transportadoras/<int:pk>/frete/', views.transportadora_update_frete, name='transportadora_update_frete'),
     # API JSON endpoints
     path('api/transportadoras/', views.api_transportadoras, name='api_transportadoras'),
+    path('api/transportadoras/<int:pk>/', views.api_transportadora_detail, name='api_transportadora_detail'),
     path('api/transportadoras/<int:pk>/viagens/', views.api_transportadora_viagens, name='api_transportadora_viagens'),
 
     # Veículos/Frota agora em /frota/ (app frota)

@@ -387,7 +387,10 @@
                 {% endif %}
                 <tbody id="items-body">
                   {% for item_form in formset %}
-                  <tr class="item-row">
+                  <tr class="item-row"
+                      data-fator="{{ item_form.instance.produto.fator_conversao|default:'1' }}"
+                      data-peso-liq="{{ item_form.instance.produto.peso_liquido_unitario|default:'0' }}"
+                      data-unidade-trib="{{ item_form.instance.produto.unidade_medida.sigla|default:'' }}">
                     <td class="text-center">
                       {{ item_form.id }}
                       <div class="d-none">{{ item_form.DELETE }}</div>
@@ -1271,6 +1274,11 @@
 
   // ── Inicializar linhas existentes ─────────────────────────────────
   body.querySelectorAll('.item-row').forEach(row => {
+    // Inicializar fator de conversão a partir de data-attributes (modo edição)
+    if (!row._fatorConversao) {
+      row._fatorConversao = parseFloat(row.dataset.fator) || 1;
+      row._pesoLiq        = parseFloat(row.dataset.pesoLiq) || 0;
+    }
     attachToggleFiscal(row);
     attachRemove(row);
     attachCalcListeners(row);
@@ -1278,6 +1286,7 @@
     const fr = row.nextElementSibling;
     updateFiscalBadge(row, fr?.classList.contains('item-fiscal-row') ? fr : null);
   });
+  toggleColTributavel();
 
   // Ocultar linhas extras vazias quando já existem itens salvos
   const temItensSalvos = [...body.querySelectorAll('.item-row')].some(

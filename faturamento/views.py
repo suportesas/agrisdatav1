@@ -481,6 +481,22 @@ def nota_fiscal_emitir_ajax(request, pk):
     ok('Dados fiscais dos itens',
        f'{len(itens)} item{"ns" if len(itens) > 1 else ""} — NCM, CFOP, CST e valores OK')
 
+    # ── 5b. Preencher campos tributáveis server-side (fallback quando JS não preencheu) ──
+    from decimal import Decimal as _Dec, ROUND_HALF_UP
+    _fields_trib = ['quantidade_tributavel', 'unidade_tributavel', 'valor_unitario_tributavel']
+    for _item in nf.itens.select_related('produto__unidade_medida', 'produto__unidade_venda').all():
+        _prod = _item.produto
+        if not _prod:
+            continue
+        _fator = float(_prod.fator_conversao or 1)
+        _un_med   = (_prod.unidade_medida.sigla if _prod.unidade_medida_id else '').strip()
+        _un_venda = (_prod.unidade_venda.sigla  if _prod.unidade_venda_id  else '').strip()
+        if _fator > 1 and _un_med and _un_med != _un_venda and not float(_item.quantidade_tributavel or 0):
+            _item.quantidade_tributavel     = (_item.quantidade * _Dec(str(_fator))).quantize(_Dec('0.0001'), rounding=ROUND_HALF_UP)
+            _item.unidade_tributavel        = _un_med
+            _item.valor_unitario_tributavel = (_item.valor_unitario / _Dec(str(_fator))).quantize(_Dec('0.0001'), rounding=ROUND_HALF_UP)
+            _item.save(update_fields=_fields_trib)
+
     # ── 6. Transmissão ────────────────────────────────────────────────
     import requests as _requests
     try:
@@ -779,6 +795,46 @@ def nota_fiscal_consultar(request, pk):
 
         else:
             mensagem = data.get('mensagem') or data.get('message') or f'Código {codigo}'
+
+            # ── Rejeição 539: SEFAZ já tem esse número com chave diferente ──
+            if codigo == 539:
+                import re as _re539
+                _m = _re539.search(r'chNFe[:\s]*(\d{44})', mensagem or '')
+                if _m:
+                    chave_sefaz = _m.group(1)
+                    nf.chave_acesso = chave_sefaz
+                    nf.save(update_fields=['chave_acesso'])
+                    try:
+                        data2 = client.consultar_nfe(chave_sefaz)
+                        if data2.get('codigo') == 100:
+                            _fields = ['chave_acesso', 'status']
+                            nf.status = 'EMITIDA'
+                            if data2.get('protocolo'):
+                                nf.protocolo_autorizacao = data2['protocolo']
+                                _fields.append('protocolo_autorizacao')
+                            if data2.get('xml'):
+                                nf.xml_autorizacao = data2['xml']
+                                _fields.append('xml_autorizacao')
+                            if data2.get('pdf'):
+                                nf.pdf_danfe = data2['pdf']
+                                _fields.append('pdf_danfe')
+                            if not nf.data_hora_emissao:
+                                nf.data_hora_emissao = timezone.now()
+                                _fields.append('data_hora_emissao')
+                            _extra = _upload_fiscal_docs(nf, nf.empresa_id, 'nfe',
+                                                         nf.numero, nf.serie,
+                                                         data2.get('xml'), data2.get('pdf'))
+                            nf.save(update_fields=list(dict.fromkeys(_fields + _extra)))
+                            messages.success(request,
+                                f'NF-e recuperada e autorizada pela SEFAZ. Protocolo: {nf.protocolo_autorizacao}')
+                            return redirect('faturamento:nota_fiscal_detail', pk=pk)
+                    except Exception:
+                        pass
+                    messages.warning(request,
+                        'NF-e já registrada na SEFAZ com chave diferente. '
+                        'A chave foi salva — use "Verificar na SEFAZ" para confirmar a autorização.')
+                    return redirect('faturamento:nota_fiscal_detail', pk=pk)
+
             # Rejeição — reverte para RASCUNHO limpo independente do status atual
             if not nf.protocolo_autorizacao:
                 nf.status = 'RASCUNHO'
@@ -857,6 +913,53 @@ def nota_fiscal_consultar_ajax(request, pk):
 
         else:
             mensagem = data.get('mensagem') or data.get('message') or f'Código {codigo}'
+
+            # ── Rejeição 539: SEFAZ já tem esse número com chave diferente ──
+            if codigo == 539:
+                import re as _re539
+                _m = _re539.search(r'chNFe[:\s]*(\d{44})', mensagem or '')
+                if _m:
+                    chave_sefaz = _m.group(1)
+                    nf.chave_acesso = chave_sefaz
+                    nf.save(update_fields=['chave_acesso'])
+                    try:
+                        data2 = client.consultar_nfe(chave_sefaz)
+                        if data2.get('codigo') == 100:
+                            _fields = ['chave_acesso', 'status']
+                            nf.status = 'EMITIDA'
+                            if data2.get('protocolo'):
+                                nf.protocolo_autorizacao = data2['protocolo']
+                                _fields.append('protocolo_autorizacao')
+                            if data2.get('xml'):
+                                nf.xml_autorizacao = data2['xml']
+                                _fields.append('xml_autorizacao')
+                            if data2.get('pdf'):
+                                nf.pdf_danfe = data2['pdf']
+                                _fields.append('pdf_danfe')
+                            if not nf.data_hora_emissao:
+                                nf.data_hora_emissao = timezone.now()
+                                _fields.append('data_hora_emissao')
+                            _extra = _upload_fiscal_docs(nf, nf.empresa_id, 'nfe',
+                                                         nf.numero, nf.serie,
+                                                         data2.get('xml'), data2.get('pdf'))
+                            nf.save(update_fields=list(dict.fromkeys(_fields + _extra)))
+                            return JsonResponse({
+                                'status': 'authorized',
+                                'protocolo': nf.protocolo_autorizacao,
+                                'has_danfe': bool(nf.pdf_danfe or nf.pdf_danfe_url),
+                                'danfe_url': nf.pdf_danfe_url or '',
+                                'detail_url': reverse('faturamento:nota_fiscal_detail', args=[pk]),
+                            })
+                        if data2.get('codigo') == 5023:
+                            return JsonResponse({'status': 'pending'})
+                    except Exception:
+                        pass
+                    return JsonResponse({
+                        'status': 'rejected', 'codigo': 539,
+                        'mensagem': 'NF-e já registrada na SEFAZ com chave diferente. '
+                                    'A chave foi salva — use "Verificar na SEFAZ" para confirmar.',
+                    })
+
             if not nf.protocolo_autorizacao:
                 nf.status = 'RASCUNHO'
                 nf.chave_acesso = ''
@@ -1010,19 +1113,74 @@ def nota_fiscal_danfe(request, pk):
 def nota_fiscal_xml(request, pk):
     """Download do XML autorizado da NF-e (Supabase URL ou base64)."""
     import base64
-    from django.shortcuts import redirect as _redirect
+    import urllib.request as _ur
     empresa = _get_empresa(request)
     nf = get_object_or_404(NotaFiscal, pk=pk, empresa=empresa)
+
+    xml_bytes = None
+    chave = nf.chave_acesso or f'NF{nf.numero}_{nf.serie}'
+
     if nf.xml_autorizacao_url:
-        return _redirect(nf.xml_autorizacao_url)
-    if not nf.xml_autorizacao:
+        try:
+            with _ur.urlopen(nf.xml_autorizacao_url) as r:
+                xml_bytes = r.read()
+        except Exception:
+            pass
+
+    if xml_bytes is None and nf.xml_autorizacao:
+        xml_bytes = base64.b64decode(nf.xml_autorizacao)
+
+    if not xml_bytes:
         messages.error(request, 'XML não disponível — a NF-e ainda não foi autorizada pela SEFAZ.')
         return redirect('faturamento:nota_fiscal_detail', pk=pk)
-    xml_bytes = base64.b64decode(nf.xml_autorizacao)
-    chave = nf.chave_acesso or f'NF{nf.numero}_{nf.serie}'
+
     response = HttpResponse(xml_bytes, content_type='application/xml; charset=utf-8')
     response['Content-Disposition'] = f'attachment; filename="{chave}-nfe.xml"'
     return response
+
+
+@login_required
+def nota_fiscal_clone(request, pk):
+    """Clona uma NF-e como novo rascunho (sem número, sem chave fiscal)."""
+    empresa = _get_empresa(request)
+    nf = get_object_or_404(NotaFiscal, pk=pk, empresa=empresa)
+
+    itens      = list(nf.itens.all())
+    pagamentos = list(nf.pagamentos.all())
+    duplicatas = list(nf.duplicatas.all())
+
+    nf.pk = None
+    nf.numero                 = None
+    nf.chave_acesso           = ''
+    nf.protocolo_autorizacao  = ''
+    nf.xml_autorizacao        = ''
+    nf.xml_autorizacao_url    = ''
+    nf.pdf_danfe              = ''
+    nf.pdf_danfe_url          = ''
+    nf.status                 = 'RASCUNHO'
+    nf.data_hora_emissao      = None
+    nf.motivo_cancelamento    = ''
+    nf.data_cancelamento      = None
+    nf.manifestacao_tipo      = ''
+    nf.manifestacao_protocolo = ''
+    nf.manifestacao_data      = None
+    nf.save()
+
+    for item in itens:
+        item.pk = None
+        item.nota_fiscal = nf
+        item.save()
+    for pag in pagamentos:
+        pag.pk = None
+        pag.nota_fiscal = nf
+        pag.save()
+    for dup in duplicatas:
+        dup.pk = None
+        dup.nota_fiscal = nf
+        dup.save()
+
+    messages.success(request, f'NF-e clonada como rascunho #{nf.pk}. Revise os dados antes de emitir.')
+    return redirect('faturamento:nota_fiscal_update', pk=nf.pk)
 
 
 @login_required

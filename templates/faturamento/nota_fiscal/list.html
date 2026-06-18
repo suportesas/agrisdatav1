@@ -55,7 +55,6 @@
           <th>Cliente</th>
           <th>Emissão</th>
           <th>CFOP</th>
-          <th>Volumes</th>
           <th class="text-end">Valor Total</th>
           <th>Status</th>
           <th>Ações</th>
@@ -68,47 +67,79 @@
           <td>{{ nf.cliente.razao_social }}</td>
           <td>{{ nf.data_emissao|date:"d/m/Y" }}</td>
           <td>{{ nf.cfop }}</td>
-          <td>
-            {% if nf.quantidade_volumes %}Qtd: {{ nf.quantidade_volumes }}{% endif %}
-            {% if nf.especie_volumes %}{% if nf.quantidade_volumes %}<br>{% endif %}Espécie: {{ nf.especie_volumes }}{% endif %}
-            {% if nf.marca_volumes %}{% if nf.quantidade_volumes or nf.especie_volumes %}<br>{% endif %}Marca: {{ nf.marca_volumes }}{% endif %}
-            {% if nf.peso_bruto_kg %}{% if nf.quantidade_volumes or nf.especie_volumes or nf.marca_volumes %}<br>{% endif %}Bruto: {{ nf.peso_bruto_kg|num_br:3 }} kg{% endif %}
-            {% if nf.peso_liquido_kg %}{% if nf.quantidade_volumes or nf.especie_volumes or nf.marca_volumes or nf.peso_bruto_kg %}<br>{% endif %}Líq: {{ nf.peso_liquido_kg|num_br:3 }} kg{% endif %}
-            {% if not nf.quantidade_volumes and not nf.especie_volumes and not nf.marca_volumes and not nf.peso_bruto_kg and not nf.peso_liquido_kg %}—{% endif %}
-          </td>
           <td class="text-end">{{ nf.valor_total|moeda }}</td>
           <td>
-            {% if nf.status == 'RASCUNHO' %}<span class="badge bg-secondary">Rascunho</span>
-            {% elif nf.status == 'EMITIDA' %}<span class="badge bg-success">Emitida</span>
-            {% else %}<span class="badge bg-danger">Cancelada</span>{% endif %}
+            {% if nf.status == 'RASCUNHO' and nf.chave_acesso %}
+              <span class="badge" style="background:#f59e0b;color:#000"><i class="bi bi-hourglass-split me-1"></i>Ag. SEFAZ</span>
+            {% elif nf.status == 'RASCUNHO' %}
+              <span class="badge bg-secondary">Rascunho</span>
+            {% elif nf.status == 'EMITIDA' and not nf.protocolo_autorizacao %}
+              <span class="badge" style="background:#f59e0b;color:#000"><i class="bi bi-hourglass-split me-1"></i>Ag. Protocolo</span>
+            {% elif nf.status == 'EMITIDA' %}
+              <span class="badge bg-success"><i class="bi bi-patch-check me-1"></i>Autorizada</span>
+            {% else %}
+              <span class="badge bg-danger">Cancelada</span>
+            {% endif %}
           </td>
           <td class="text-nowrap">
-            <a href="{% url 'faturamento:nota_fiscal_detail' nf.pk %}" class="btn btn-sm btn-outline-primary" title="Detalhes">
-              <i class="bi bi-eye"></i>
-            </a>
-            {% if nf.status == 'RASCUNHO' %}
-            <a href="{% url 'faturamento:nota_fiscal_update' nf.pk %}" class="btn btn-sm btn-outline-secondary" title="Editar">
-              <i class="bi bi-pencil"></i>
-            </a>
-            {% endif %}
-            <a href="{% url 'faturamento:nota_fiscal_pdf' nf.pk %}" class="btn btn-sm btn-outline-danger" title="PDF Interno" target="_blank">
-              <i class="bi bi-file-pdf"></i>
-            </a>
-            {% if nf.xml_autorizacao %}
-            <a href="{% url 'faturamento:nota_fiscal_xml' nf.pk %}" class="btn btn-sm btn-outline-success" title="Baixar XML autorizado">
-              <i class="bi bi-file-earmark-code"></i>
-            </a>
-            {% endif %}
-            {% if nf.pdf_danfe %}
-            <a href="{% url 'faturamento:nota_fiscal_danfe' nf.pk %}" class="btn btn-sm btn-outline-warning" title="DANFE" target="_blank">
-              <i class="bi bi-file-earmark-text"></i>
-            </a>
-            {% endif %}
+            <div class="dropdown">
+              <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button"
+                      data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="bi bi-three-dots-vertical"></i>
+              </button>
+              <ul class="dropdown-menu dropdown-menu-end">
+                <li>
+                  <a class="dropdown-item" href="{% url 'faturamento:nota_fiscal_detail' nf.pk %}">
+                    <i class="bi bi-eye me-2"></i>Visualizar Detalhes
+                  </a>
+                </li>
+                {% if nf.status == 'RASCUNHO' and not nf.chave_acesso %}
+                <li>
+                  <a class="dropdown-item" href="{% url 'faturamento:nota_fiscal_update' nf.pk %}">
+                    <i class="bi bi-pencil me-2"></i>Editar
+                  </a>
+                </li>
+                {% endif %}
+                {% if nf.xml_autorizacao or nf.xml_autorizacao_url %}
+                <li>
+                  <a class="dropdown-item" href="{% url 'faturamento:nota_fiscal_xml' nf.pk %}">
+                    <i class="bi bi-file-earmark-code me-2 text-success"></i>Baixar XML
+                  </a>
+                </li>
+                {% endif %}
+                {% if nf.pdf_danfe or nf.pdf_danfe_url %}
+                <li>
+                  <a class="dropdown-item" href="{% url 'faturamento:nota_fiscal_danfe' nf.pk %}" target="_blank">
+                    <i class="bi bi-file-pdf me-2 text-danger"></i>DANFE
+                  </a>
+                </li>
+                {% endif %}
+                <li>
+                  <a class="dropdown-item" href="{% url 'faturamento:nota_fiscal_danfe_preview' nf.pk %}" target="_blank">
+                    <i class="bi bi-eye me-2 text-primary"></i>Pré-visualizar DANFE
+                  </a>
+                </li>
+                <li><hr class="dropdown-divider"></li>
+                <li>
+                  <a class="dropdown-item" href="{% url 'faturamento:nota_fiscal_clone' nf.pk %}">
+                    <i class="bi bi-copy me-2 text-secondary"></i>Clonar NF-e
+                  </a>
+                </li>
+                {% if nf.status == 'EMITIDA' %}
+                <li><hr class="dropdown-divider"></li>
+                <li>
+                  <a class="dropdown-item text-danger" href="{% url 'faturamento:nota_fiscal_cancelar' nf.pk %}">
+                    <i class="bi bi-x-circle me-2"></i>Cancelar NF-e
+                  </a>
+                </li>
+                {% endif %}
+              </ul>
+            </div>
           </td>
         </tr>
         {% empty %}
         <tr>
-          <td colspan="7" class="text-center text-muted py-4">Nenhuma nota fiscal encontrada.</td>
+          <td colspan="6" class="text-center text-muted py-4">Nenhuma nota fiscal encontrada.</td>
         </tr>
         {% endfor %}
       </tbody>

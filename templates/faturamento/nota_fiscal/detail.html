@@ -29,6 +29,9 @@
       <a href="{% url 'faturamento:nota_fiscal_danfe_preview' nf.pk %}" class="btn btn-outline-primary" target="_blank" title="Pré-visualização do DANFE (funciona para Rascunho)">
         <i class="bi bi-eye me-1"></i>Pré-visualizar DANFE
       </a>
+      <a href="{% url 'faturamento:nota_fiscal_clone' nf.pk %}" class="btn btn-outline-secondary" title="Clonar esta NF-e como novo rascunho">
+        <i class="bi bi-copy me-1"></i>Clonar
+      </a>
       {% if nf.xml_autorizacao or nf.xml_autorizacao_url %}
       <a href="{% url 'faturamento:nota_fiscal_xml' nf.pk %}" class="btn btn-outline-success" title="Baixar XML autorizado pela SEFAZ">
         <i class="bi bi-file-earmark-code me-1"></i>XML

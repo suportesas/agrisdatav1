@@ -491,6 +491,7 @@
     </thead>
     <tbody>
       {% for item in itens %}
+      {% with tem_trib=item.unidade_tributavel and item.unidade_tributavel != item.unidade %}
       <tr>
         <td>{{ item.produto.codigo|default:"—" }}</td>
         <td>
@@ -500,9 +501,18 @@
         <td class="center">{{ item.ncm|default:"—" }}</td>
         <td class="center">{{ item.cst_icms|default:"—" }}</td>
         <td class="center">{{ item.cfop|default:"—" }}</td>
-        <td class="center">{{ item.unidade }}</td>
-        <td class="num">{{ item.quantidade|floatformat:4 }}</td>
-        <td class="num">{{ item.valor_unitario|floatformat:4 }}</td>
+        <td class="center">
+          {{ item.unidade }}
+          {% if tem_trib %}<br><span style="font-size:5pt;color:#555">{{ item.unidade_tributavel }}</span>{% endif %}
+        </td>
+        <td class="num">
+          {{ item.quantidade|floatformat:4 }}
+          {% if tem_trib %}<br><span style="font-size:5pt;color:#555">{{ item.quantidade_tributavel|floatformat:4 }}</span>{% endif %}
+        </td>
+        <td class="num">
+          {{ item.valor_unitario|floatformat:4 }}
+          {% if tem_trib %}<br><span style="font-size:5pt;color:#555">{{ item.valor_unitario_tributavel|floatformat:10 }}</span>{% endif %}
+        </td>
         <td class="num">{{ item.valor_total|floatformat:2 }}</td>
         <td class="num">{{ item.icms_base_calculo|floatformat:2 }}</td>
         <td class="num">{{ item.valor_icms|floatformat:2 }}</td>
@@ -510,16 +520,7 @@
         <td class="center">{{ item.aliquota_icms|floatformat:0 }}%</td>
         <td class="center">{{ item.aliquota_ipi|floatformat:0 }}%</td>
       </tr>
-      <!-- Linha tributável (se unidade tributável diferente) -->
-      {% if item.unidade_tributavel and item.unidade_tributavel != item.unidade %}
-      <tr style="background:#f9f9f9">
-        <td></td>
-        <td colspan="4" style="font-size:5.5pt;color:#555;padding-left:6px">
-          ↳ Unid. Tributável: {{ item.unidade_tributavel }} — Qtd: {{ item.quantidade_tributavel|floatformat:4 }} — Vl. Unit: {{ item.valor_unitario_tributavel|floatformat:4 }}
-        </td>
-        <td colspan="9"></td>
-      </tr>
-      {% endif %}
+      {% endwith %}
       {% endfor %}
     </tbody>
   </table>

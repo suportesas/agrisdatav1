@@ -232,6 +232,10 @@ class IntegranNotasClient:
             self._atribuir_numero(nf)
         payload = self._build_payload(nf)
         logger.info('IntegraNota: emitindo NF %s/%s', nf.numero, nf.serie)
+        logger.info('IntegraNota payload frete.transportadora: %s', payload.get('frete', {}).get('transportadora'))
+        for _it in payload.get('itens', []):
+            if _it.get('unidade_tributavel'):
+                logger.info('IntegraNota item %s: uTrib=%s qTrib=%s', _it.get('numero_item'), _it.get('unidade_tributavel'), _it.get('quantidade_tributavel'))
         resp = requests.post(
             f'{self.base_url}/nfe',
             json=payload,
@@ -825,32 +829,23 @@ class IntegranNotasClient:
         mod = MODALIDADE_FRETE_MAP.get(nf.modalidade_frete, '9')
         frete: dict = {'modalidade_frete': mod}
 
-        cnpj     = _digits(nf.transp_cnpj or '')
-        nome     = (nf.transp_nome or '').strip()
-        ie       = (nf.transp_ie or '').strip()
-        endereco = (nf.transp_endereco or '').strip()
-        municipio = (nf.transp_municipio or '').strip()
-        uf       = (nf.transp_uf or '').strip().upper()
-        rntc     = (nf.transp_rntc or '').strip()
-
-        # Fallback para dados do cadastro se os campos da NF estiverem vazios
-        if nf.transportadora_id and not any([cnpj, nome]):
-            t = nf.transportadora
-            cnpj      = cnpj or _digits(t.cnpj or '')
-            nome      = nome or t.razao_social or ''
-            ie        = ie or t.inscricao_estadual or ''
-            endereco  = endereco or ' '.join(filter(None, [t.logradouro, t.numero, t.complemento])).strip()
-            municipio = municipio or t.cidade or ''
-            uf        = uf or t.uf or ''
-            rntc      = rntc or t.rntc or ''
+        # Lê campos transp_* da NF; fallback campo-a-campo do FK de transportadora
+        t = nf.transportadora if nf.transportadora_id else None
+        cnpj      = _digits(nf.transp_cnpj or '') or (t and _digits(t.cnpj or '') or '')
+        nome      = (nf.transp_nome or '').strip() or (t.razao_social if t else '')
+        ie        = (nf.transp_ie or '').strip() or (t.inscricao_estadual if t else '')
+        endereco  = (nf.transp_endereco or '').strip() or (
+            ' '.join(filter(None, [t.logradouro, t.numero, t.complemento])).strip() if t else '')
+        municipio = (nf.transp_municipio or '').strip() or (t.cidade if t else '')
+        uf        = (nf.transp_uf or '').strip().upper() or ((t.uf or '').upper() if t else '')
+        rntc      = (nf.transp_rntc or '').strip() or (t.rntc if t else '')
 
         if cnpj or nome:
             transp_data = {}
-            # IntegraNotas descarta <transporta> quando o CNPJ raiz da transportadora
-            # coincide com o do emitente (regra NF-e: CNPJ transportador ≠ CNPJ emitente).
-            # Solução: omitir CNPJ nesse caso — IntegraNotas inclui <xNome> e demais campos.
+            # IntegraNotas strips <transporta> when carrier CNPJ root matches emitter root.
+            # Omit CNPJ in that case so IntegraNotas includes <xNome> without triggering the check.
             emit_cnpj = _digits(getattr(nf.empresa, 'cnpj', '') or '')
-            cnpj_raiz_igual = cnpj and emit_cnpj and cnpj[:8] == emit_cnpj[:8]
+            cnpj_raiz_igual = bool(cnpj and emit_cnpj and cnpj[:8] == emit_cnpj[:8])
             if cnpj and not cnpj_raiz_igual:
                 transp_data['cnpj' if len(cnpj) == 14 else 'cpf'] = cnpj
             if nome:       transp_data['nome']     = nome[:60]
@@ -858,7 +853,8 @@ class IntegranNotasClient:
             if endereco:   transp_data['endereco']  = endereco[:60]
             if municipio:  transp_data['municipio'] = municipio[:60]
             if uf:         transp_data['uf']        = uf
-            frete['transportadora'] = transp_data
+            if transp_data:
+                frete['transportadora'] = transp_data
 
         if nf.veic_placa:
             frete['veiculo'] = {

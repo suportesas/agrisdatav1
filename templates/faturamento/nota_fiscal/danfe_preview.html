@@ -491,7 +491,6 @@
     </thead>
     <tbody>
       {% for item in itens %}
-      {% with tem_trib=item.quantidade_tributavel and item.unidade_tributavel and item.unidade_tributavel != item.unidade %}
       <tr>
         <td>{{ item.produto.codigo|default:"—" }}</td>
         <td>
@@ -503,15 +502,15 @@
         <td class="center">{{ item.cfop|default:"—" }}</td>
         <td class="center">
           {{ item.unidade }}
-          {% if tem_trib %}<br><span style="font-size:5pt;color:#555">{{ item.unidade_tributavel }}</span>{% endif %}
+          {% if item.quantidade_tributavel and item.unidade_tributavel and item.unidade_tributavel != item.unidade %}<br><span style="font-size:5pt;color:#555">{{ item.unidade_tributavel }}</span>{% endif %}
         </td>
         <td class="num">
           {{ item.quantidade|floatformat:4 }}
-          {% if tem_trib %}<br><span style="font-size:5pt;color:#555">{{ item.quantidade_tributavel|floatformat:4 }}</span>{% endif %}
+          {% if item.quantidade_tributavel and item.unidade_tributavel and item.unidade_tributavel != item.unidade %}<br><span style="font-size:5pt;color:#555">{{ item.quantidade_tributavel|floatformat:4 }}</span>{% endif %}
         </td>
         <td class="num">
           {{ item.valor_unitario|floatformat:4 }}
-          {% if tem_trib %}<br><span style="font-size:5pt;color:#555">{{ item.valor_unitario_tributavel|floatformat:10 }}</span>{% endif %}
+          {% if item.quantidade_tributavel and item.unidade_tributavel and item.unidade_tributavel != item.unidade %}<br><span style="font-size:5pt;color:#555">{{ item.valor_unitario_tributavel|floatformat:10 }}</span>{% endif %}
         </td>
         <td class="num">{{ item.valor_total|floatformat:2 }}</td>
         <td class="num">{{ item.icms_base_calculo|floatformat:2 }}</td>
@@ -520,7 +519,6 @@
         <td class="center">{{ item.aliquota_icms|floatformat:0 }}%</td>
         <td class="center">{{ item.aliquota_ipi|floatformat:0 }}%</td>
       </tr>
-      {% endwith %}
       {% endfor %}
     </tbody>
   </table>

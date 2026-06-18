@@ -628,11 +628,12 @@ class IntegranNotasClient:
             item_dict['informacoes_adicionais_produto'] = comp[:500]
 
         # Unidade Tributável — exportação (CFOP 7xxx): qTrib / uTrib / vUnTrib
+        # vUnTrib exige até 10 casas decimais no leiaute NF-e (NT 2012/003)
         qtrib = float(getattr(item, 'quantidade_tributavel', 0) or 0)
         if qtrib > 0:
             item_dict['unidade_tributavel']        = getattr(item, 'unidade_tributavel', '') or 'KG'
             item_dict['quantidade_tributavel']     = str(item.quantidade_tributavel)
-            item_dict['valor_unitario_tributavel'] = str(item.valor_unitario_tributavel or 0)
+            item_dict['valor_unitario_tributavel'] = f"{float(item.valor_unitario_tributavel or 0):.10f}"
 
         # DI — Declaração de Importação (origens 1, 2, 6, 7)
         di = self._build_di(item)

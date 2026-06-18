@@ -164,6 +164,23 @@ def faturamento_dashboard(request):
 
 # ─────────────────────────── Nota Fiscal ───────────────────────────
 
+def _auto_fill_transp(nf):
+    """Copia dados da transportadora FK para os campos transp_* quando estão em branco."""
+    if nf.transportadora and not (nf.transp_nome or '').strip():
+        t = nf.transportadora
+        nf.transp_nome = t.razao_social or ''
+        nf.transp_cnpj = t.cnpj or ''
+        nf.transp_ie = t.inscricao_estadual or ''
+        nf.transp_endereco = ', '.join(p for p in [t.logradouro, t.numero, t.complemento] if p).strip()
+        nf.transp_municipio = t.cidade or ''
+        nf.transp_uf = t.uf or ''
+        nf.transp_rntc = t.rntc or ''
+        nf.save(update_fields=[
+            'transp_nome', 'transp_cnpj', 'transp_ie',
+            'transp_endereco', 'transp_municipio', 'transp_uf', 'transp_rntc',
+        ])
+
+
 @login_required
 def nota_fiscal_list(request):
     empresa = _get_empresa(request)
@@ -269,6 +286,7 @@ def nota_fiscal_create(request):
                 if _pl:
                     NotaFiscal.objects.filter(pk=nf.pk).update(peso_liquido_kg=_pl)
             nf.calcular_totais()
+            _auto_fill_transp(nf)
             messages.success(request, f'NF {nf.numero}/{nf.serie} criada com sucesso.')
             return redirect('faturamento:nota_fiscal_detail', pk=nf.pk)
     else:
@@ -295,16 +313,48 @@ def nota_fiscal_create(request):
 
 @login_required
 def nota_fiscal_danfe_preview(request, pk):
+    from decimal import Decimal as _Dec, ROUND_HALF_UP
     empresa = _get_empresa(request)
-    nf = get_object_or_404(NotaFiscal, pk=pk, empresa=empresa)
+    nf = get_object_or_404(
+        NotaFiscal.objects.select_related('transportadora'),
+        pk=pk, empresa=empresa,
+    )
     cli = nf.cliente
     endereco_cli = cli.enderecos.order_by('-padrao').first()
+
+    # Transportadora: injeta em memória se transp_nome vazio mas FK setado
+    if nf.transportadora and not (nf.transp_nome or '').strip():
+        t = nf.transportadora
+        nf.transp_nome = t.razao_social or ''
+        nf.transp_cnpj = t.cnpj or ''
+        nf.transp_ie = t.inscricao_estadual or ''
+        nf.transp_endereco = ', '.join(p for p in [t.logradouro, t.numero, t.complemento] if p).strip()
+        nf.transp_municipio = t.cidade or ''
+        nf.transp_uf = t.uf or ''
+        nf.transp_rntc = t.rntc or ''
+
+    # Conversão de unidade: calcula em memória para itens sem qty_tributavel
+    itens = list(
+        nf.itens.select_related('produto__unidade_medida', 'produto__unidade_venda')
+        .order_by('numero_item')
+    )
+    for _item in itens:
+        if float(_item.quantidade_tributavel or 0) == 0 and _item.produto:
+            _prod = _item.produto
+            _fator = float(_prod.fator_conversao or 1)
+            _un_med = (_prod.unidade_medida.sigla if _prod.unidade_medida_id else '').strip()
+            _un_vnd = (_prod.unidade_venda.sigla if _prod.unidade_venda_id else '').strip()
+            if _fator > 1 and _un_med and _un_med != _un_vnd:
+                _item.quantidade_tributavel = (_item.quantidade * _Dec(str(_fator))).quantize(_Dec('0.0001'), rounding=ROUND_HALF_UP)
+                _item.unidade_tributavel = _un_med
+                _item.valor_unitario_tributavel = (_item.valor_unitario / _Dec(str(_fator))).quantize(_Dec('0.0001'), rounding=ROUND_HALF_UP)
+
     return render(request, 'faturamento/nota_fiscal/danfe_preview.html', {
         'nf': nf,
         'empresa': empresa,
         'cli': cli,
         'endereco_cli': endereco_cli,
-        'itens': nf.itens.order_by('numero_item'),
+        'itens': itens,
         'duplicatas': nf.duplicatas.order_by('vencimento'),
     })
 
@@ -384,6 +434,7 @@ def nota_fiscal_update(request, pk):
                 if _pl:
                     NotaFiscal.objects.filter(pk=nf.pk).update(peso_liquido_kg=_pl)
             nf.calcular_totais()
+            _auto_fill_transp(nf)
             messages.success(request, 'NF-e atualizada com sucesso.')
             return redirect('faturamento:nota_fiscal_detail', pk=pk)
     else:
@@ -1467,16 +1518,47 @@ def nota_fiscal_inutilizar(request):
 
 @login_required
 def nota_fiscal_pdf(request, pk):
-    empresa = _get_empresa(request)
-    nf = get_object_or_404(NotaFiscal, pk=pk, empresa=empresa)
-
+    from decimal import Decimal as _Dec, ROUND_HALF_UP
     from django.template.loader import get_template
     from xhtml2pdf import pisa
     from django.http import HttpResponse
     import io
 
+    empresa = _get_empresa(request)
+    nf = get_object_or_404(
+        NotaFiscal.objects.select_related('transportadora'),
+        pk=pk, empresa=empresa,
+    )
+
+    # Transportadora: injeta em memória se transp_nome vazio mas FK setado
+    if nf.transportadora and not (nf.transp_nome or '').strip():
+        t = nf.transportadora
+        nf.transp_nome = t.razao_social or ''
+        nf.transp_cnpj = t.cnpj or ''
+        nf.transp_ie = t.inscricao_estadual or ''
+        nf.transp_endereco = ', '.join(p for p in [t.logradouro, t.numero, t.complemento] if p).strip()
+        nf.transp_municipio = t.cidade or ''
+        nf.transp_uf = t.uf or ''
+        nf.transp_rntc = t.rntc or ''
+
+    # Conversão de unidade: calcula em memória para itens sem qty_tributavel
+    itens = list(
+        nf.itens.select_related('produto__unidade_medida', 'produto__unidade_venda')
+        .order_by('numero_item')
+    )
+    for _item in itens:
+        if float(_item.quantidade_tributavel or 0) == 0 and _item.produto:
+            _prod = _item.produto
+            _fator = float(_prod.fator_conversao or 1)
+            _un_med = (_prod.unidade_medida.sigla if _prod.unidade_medida_id else '').strip()
+            _un_vnd = (_prod.unidade_venda.sigla if _prod.unidade_venda_id else '').strip()
+            if _fator > 1 and _un_med and _un_med != _un_vnd:
+                _item.quantidade_tributavel = (_item.quantidade * _Dec(str(_fator))).quantize(_Dec('0.0001'), rounding=ROUND_HALF_UP)
+                _item.unidade_tributavel = _un_med
+                _item.valor_unitario_tributavel = (_item.valor_unitario / _Dec(str(_fator))).quantize(_Dec('0.0001'), rounding=ROUND_HALF_UP)
+
     template = get_template('faturamento/nota_fiscal/pdf.html')
-    html = template.render({'nf': nf, 'empresa': empresa})
+    html = template.render({'nf': nf, 'empresa': empresa, 'itens': itens})
     result = io.BytesIO()
     pdf = pisa.pisaDocument(io.BytesIO(html.encode('utf-8')), result)
     if not pdf.err:

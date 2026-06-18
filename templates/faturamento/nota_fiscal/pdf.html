@@ -92,15 +92,15 @@
       </tr>
     </thead>
     <tbody>
-      {% for item in nf.itens.all %}
+      {% for item in itens %}
       <tr>
         <td>{{ item.numero_item }}</td>
         <td>{{ item.descricao }}</td>
         <td>{{ item.ncm|default:"" }}</td>
         <td>{{ item.cfop|default:"" }}</td>
-        <td>{{ item.unidade }}</td>
-        <td class="text-right">{{ item.quantidade|floatformat:4 }}</td>
-        <td class="text-right">{{ item.valor_unitario|floatformat:4 }}</td>
+        <td>{{ item.unidade }}{% if item.quantidade_tributavel and item.unidade_tributavel and item.unidade_tributavel != item.unidade %}<br><small>{{ item.unidade_tributavel }}</small>{% endif %}</td>
+        <td class="text-right">{{ item.quantidade|floatformat:4 }}{% if item.quantidade_tributavel and item.unidade_tributavel and item.unidade_tributavel != item.unidade %}<br><small>{{ item.quantidade_tributavel|floatformat:4 }}</small>{% endif %}</td>
+        <td class="text-right">{{ item.valor_unitario|floatformat:4 }}{% if item.quantidade_tributavel and item.unidade_tributavel and item.unidade_tributavel != item.unidade %}<br><small>{{ item.valor_unitario_tributavel|floatformat:4 }}</small>{% endif %}</td>
         <td class="text-right">{{ item.valor_desconto|floatformat:2 }}</td>
         <td class="text-right">{{ item.valor_total|floatformat:2 }}</td>
         <td class="text-right">{{ item.aliquota_icms|floatformat:2 }}%</td>
@@ -111,26 +111,56 @@
   </table>
 </div>
 
-<!-- Frete -->
-{% if nf.modalidade_frete != 'SEM_FRETE' %}
+<!-- Frete / Transportador -->
 <div class="section">
-  <div class="section-title">TRANSPORTADOR</div>
+  <div class="section-title">TRANSPORTADOR / VOLUMES TRANSPORTADOS</div>
   <div class="section-body">
     <div class="row">
+      <div class="col" style="flex:2">
+        <div class="label">RAZÃO SOCIAL</div>
+        <div class="value">{{ nf.transp_nome|default:nf.transportadora.razao_social|default:"—" }}</div>
+      </div>
       <div class="col">
-        <div class="label">MODALIDADE</div>
+        <div class="label">FRETE POR CONTA</div>
         <div class="value">{{ nf.get_modalidade_frete_display }}</div>
       </div>
-      {% if nf.transportadora %}
       <div class="col">
-        <div class="label">TRANSPORTADORA</div>
-        <div class="value">{{ nf.transportadora.razao_social }}</div>
+        <div class="label">CÓDIGO ANTT</div>
+        <div class="value">{{ nf.transp_rntc|default:nf.transportadora.rntc|default:"—" }}</div>
       </div>
-      {% endif %}
+      <div class="col">
+        <div class="label">PLACA DO VEÍCULO</div>
+        <div class="value">{{ nf.veic_placa|default:"—" }}</div>
+      </div>
+      <div class="col">
+        <div class="label">UF</div>
+        <div class="value">{{ nf.veic_uf|default:"—" }}</div>
+      </div>
+      <div class="col">
+        <div class="label">CNPJ / CPF</div>
+        <div class="value">{{ nf.transp_cnpj|default:nf.transportadora.cnpj|default:"—" }}</div>
+      </div>
+    </div>
+    <div class="row" style="margin-top:4px">
+      <div class="col" style="flex:3">
+        <div class="label">ENDEREÇO</div>
+        <div class="value">{{ nf.transp_endereco|default:nf.transportadora.logradouro|default:"—" }}</div>
+      </div>
+      <div class="col" style="flex:2">
+        <div class="label">MUNICÍPIO</div>
+        <div class="value">{{ nf.transp_municipio|default:nf.transportadora.cidade|default:"—" }}</div>
+      </div>
+      <div class="col">
+        <div class="label">UF</div>
+        <div class="value">{{ nf.transp_uf|default:nf.transportadora.uf|default:"—" }}</div>
+      </div>
+      <div class="col" style="flex:2">
+        <div class="label">INSCRIÇÃO ESTADUAL</div>
+        <div class="value">{{ nf.transp_ie|default:nf.transportadora.inscricao_estadual|default:"—" }}</div>
+      </div>
     </div>
   </div>
 </div>
-{% endif %}
 
 {% if nf.quantidade_volumes or nf.especie_volumes or nf.marca_volumes or nf.numeracao_volumes or nf.peso_bruto_kg or nf.peso_liquido_kg %}
 <div class="section">

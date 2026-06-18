@@ -423,10 +423,19 @@ class Produto(models.Model):
             ('unidade_venda', self.unidade_venda),
         ]
 
-        tipos = {unidade.tipo for _, unidade in unidades if unidade}
+        # Com fator_conversao > 1, unidade_medida é a unidade tributária (ex: KG para CX)
+        # e pode ter tipo diferente. Valida apenas consistência entre compra e venda.
+        fator = float(self.fator_conversao or 1)
+        pares_validar = (
+            [('unidade_compra', self.unidade_compra), ('unidade_venda', self.unidade_venda)]
+            if fator > 1
+            else unidades
+        )
+
+        tipos = {u.tipo for _, u in pares_validar if u}
         if len(tipos) > 1:
-            mensagem = 'As unidades de medida, compra e venda devem possuir o mesmo tipo.'
-            for campo, unidade in unidades:
+            mensagem = 'As unidades de compra e venda devem possuir o mesmo tipo.'
+            for campo, unidade in pares_validar:
                 if unidade:
                     errors[campo] = mensagem
 

@@ -476,6 +476,27 @@ class EnderecoFazendaForm(forms.ModelForm):
         return cleaned
 
 
+PAIS_CHOICES = [
+    ('', '— Selecione —'),
+    ('1058', '1058 — Brasil'),
+    ('1068', '1068 — Argentina'), ('1120', '1120 — Bolívia'), ('1589', '1589 — Chile'),
+    ('1635', '1635 — Colômbia'), ('2143', '2143 — Equador'), ('4375', '4375 — Paraguai'),
+    ('4391', '4391 — Peru'), ('5266', '5266 — Uruguai'), ('5290', '5290 — Venezuela'),
+    ('1490', '1490 — Canadá'), ('4235', '4235 — Estados Unidos'), ('3700', '3700 — México'),
+    ('3581', '3581 — Alemanha'), ('1040', '1040 — Áustria'), ('1074', '1074 — Bélgica'),
+    ('2100', '2100 — Dinamarca'), ('4170', '4170 — Espanha'), ('1279', '1279 — Finlândia'),
+    ('1155', '1155 — França'), ('3298', '3298 — Grécia'), ('4855', '4855 — Holanda'),
+    ('3344', '3344 — Hungria'), ('3514', '3514 — Irlanda'), ('3735', '3735 — Itália'),
+    ('4839', '4839 — Noruega'), ('4422', '4422 — Polônia'), ('4731', '4731 — Portugal'),
+    ('4766', '4766 — Reino Unido'), ('2437', '2437 — República Tcheca'), ('4502', '4502 — Rússia'),
+    ('4936', '4936 — Suécia'), ('4952', '4952 — Suíça'), ('5185', '5185 — Turquia'),
+    ('4553', '4553 — Arábia Saudita'), ('1023', '1023 — Austrália'), ('1503', '1503 — China'),
+    ('1694', '1694 — Coreia do Sul'), ('2127', '2127 — Emirados Árabes'), ('3395', '3395 — Índia'),
+    ('3557', '3557 — Israel'), ('3549', '3549 — Japão'), ('4847', '4847 — Singapura'), ('4995', '4995 — Taiwan'),
+    ('2186', '2186 — Egito'), ('3697', '3697 — Marrocos'), ('4804', '4804 — Nigéria'),
+]
+
+
 class ClienteForm(forms.ModelForm):
     """Formulário de Cliente com lógica de país/UF e botão Buscar CNPJ"""
 
@@ -512,7 +533,7 @@ class ClienteForm(forms.ModelForm):
             'inscricao_estadual', 'inscricao_municipal', 'inscricao_suframa', 'eori', 'regime_tributario',
             'contribuinte_icms', 'indicador_ie',
             'contato_principal_nome', 'contato_principal_telefone', 'contato_principal_email',
-            'pais', 'moeda_padrao', 'porto_destino',
+            'pais', 'codigo_pais', 'moeda_padrao', 'porto_destino',
             'limite_credito', 'prazo_pagamento', 'prazo_pagamento_padrao', 'forma_pagamento_padrao', 'desconto_padrao',
             'vendedor_responsavel', 'observacoes_comerciais',
             'acesso_portal', 'usuario_vinculado'
@@ -532,6 +553,7 @@ class ClienteForm(forms.ModelForm):
             'eori': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_eori'}),
             'contribuinte_icms': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'pais': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_pais'}),
+            'codigo_pais': forms.Select(choices=PAIS_CHOICES, attrs={'class': 'form-select'}),
             'contato_principal_nome': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_contato_principal_nome'}),
             'contato_principal_telefone': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_contato_principal_telefone', 'data-auto': 'true'}),
             'contato_principal_email': forms.EmailInput(attrs={'class': 'form-control', 'id': 'id_contato_principal_email', 'data-auto': 'true'}),

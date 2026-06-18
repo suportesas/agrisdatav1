@@ -405,7 +405,7 @@
       </td>
       <td class="box-right" style="width:12%">
         <span class="lbl">Código ANTT</span>
-        <span class="val-sm">{{ nf.transp_rntc|default:"—" }}</span>
+        <span class="val-sm">{{ nf.transp_rntc|default:nf.transportadora.rntc|default:"—" }}</span>
       </td>
       <td class="box-right" style="width:10%">
         <span class="lbl">Placa do Veíc.</span>
@@ -417,25 +417,25 @@
       </td>
       <td style="width:17%">
         <span class="lbl">CNPJ / CPF</span>
-        <span class="val-sm">{{ nf.transp_cnpj|default:"—" }}</span>
+        <span class="val-sm">{{ nf.transp_cnpj|default:nf.transportadora.cnpj|default:"—" }}</span>
       </td>
     </tr>
     <tr class="data-row">
       <td class="box-right" colspan="2">
         <span class="lbl">Endereço</span>
-        <span class="val-sm">{{ nf.transp_endereco|default:"—" }}</span>
+        <span class="val-sm">{{ nf.transp_endereco|default:nf.transportadora.logradouro|default:"—" }}</span>
       </td>
       <td class="box-right" colspan="2">
         <span class="lbl">Município</span>
-        <span class="val-sm">{{ nf.transp_municipio|default:"—" }}</span>
+        <span class="val-sm">{{ nf.transp_municipio|default:nf.transportadora.cidade|default:"—" }}</span>
       </td>
       <td class="box-right">
         <span class="lbl">UF</span>
-        <span class="val-sm">{{ nf.transp_uf|default:"—" }}</span>
+        <span class="val-sm">{{ nf.transp_uf|default:nf.transportadora.uf|default:"—" }}</span>
       </td>
       <td>
         <span class="lbl">Inscrição Estadual</span>
-        <span class="val-sm">{{ nf.transp_ie|default:"—" }}</span>
+        <span class="val-sm">{{ nf.transp_ie|default:nf.transportadora.inscricao_estadual|default:"—" }}</span>
       </td>
     </tr>
     <tr class="data-row">
@@ -491,7 +491,7 @@
     </thead>
     <tbody>
       {% for item in itens %}
-      {% with tem_trib=item.unidade_tributavel and item.unidade_tributavel != item.unidade %}
+      {% with tem_trib=item.quantidade_tributavel and item.unidade_tributavel and item.unidade_tributavel != item.unidade %}
       <tr>
         <td>{{ item.produto.codigo|default:"—" }}</td>
         <td>

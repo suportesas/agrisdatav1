@@ -80,6 +80,55 @@ MODALIDADE_FRETE_MAP = {
 }
 
 
+PAIS_IBGE_MAP: dict[str, str] = {
+    'argentina': '1068', 'bolívia': '1120', 'bolivia': '1120',
+    'brasil': '1058', 'brazil': '1058',
+    'chile': '1589', 'colômbia': '1635', 'colombia': '1635',
+    'equador': '2143', 'ecuador': '2143',
+    'paraguai': '4375', 'paraguay': '4375',
+    'peru': '4391', 'uruguai': '5266', 'uruguay': '5266',
+    'venezuela': '5290',
+    'canadá': '1490', 'canada': '1490',
+    'estados unidos': '4235', 'estados unidos da américa': '4235',
+    'eua': '4235', 'usa': '4235', 'united states': '4235',
+    'méxico': '3700', 'mexico': '3700',
+    'alemanha': '3581', 'germany': '3581',
+    'áustria': '1040', 'austria': '1040',
+    'bélgica': '1074', 'belgium': '1074',
+    'dinamarca': '2100', 'denmark': '2100',
+    'espanha': '4170', 'spain': '4170',
+    'finlândia': '1279', 'finland': '1279',
+    'frança': '1155', 'france': '1155',
+    'grécia': '3298', 'greece': '3298',
+    'holanda': '4855', 'países baixos': '4855', 'netherlands': '4855',
+    'hungria': '3344', 'hungary': '3344',
+    'irlanda': '3514', 'ireland': '3514',
+    'itália': '3735', 'italy': '3735',
+    'noruega': '4839', 'norway': '4839',
+    'polônia': '4422', 'poland': '4422',
+    'portugal': '4731',
+    'reino unido': '4766', 'uk': '4766', 'united kingdom': '4766',
+    'república tcheca': '2437', 'czech republic': '2437',
+    'rússia': '4502', 'russia': '4502',
+    'suécia': '4936', 'sweden': '4936',
+    'suíça': '4952', 'switzerland': '4952',
+    'turquia': '5185', 'turkey': '5185',
+    'arábia saudita': '4553', 'saudi arabia': '4553',
+    'austrália': '1023', 'australia': '1023',
+    'china': '1503',
+    'coreia do sul': '1694', 'south korea': '1694',
+    'emirados árabes': '2127', 'uae': '2127', 'united arab emirates': '2127',
+    'índia': '3395', 'india': '3395',
+    'israel': '3557',
+    'japão': '3549', 'japan': '3549',
+    'singapura': '4847', 'singapore': '4847',
+    'taiwan': '4995',
+    'egito': '2186', 'egypt': '2186',
+    'marrocos': '3697', 'morocco': '3697',
+    'nigéria': '4804', 'nigeria': '4804',
+}
+
+
 class IntegranNotasError(Exception):
     """Raised when IntegraNota returns a non-success response."""
     def __init__(self, message, codigo=None, erros=None):
@@ -495,8 +544,18 @@ class IntegranNotasClient:
                 # Endereço exterior: municipio = 9999999, UF = EX, sem IBGE obrigatório
                 codigo_mun = '9999999'
                 uf_dest = 'EX'
-                codigo_pais = '9999'
                 nome_pais = pais_end
+                # Prioridade: campo codigo_pais do cadastro → mapeamento por nome → erro
+                codigo_pais = (getattr(cliente, 'codigo_pais', '') or '').strip()
+                if not codigo_pais:
+                    codigo_pais = PAIS_IBGE_MAP.get(pais_end.lower().strip(), '')
+                if not codigo_pais:
+                    raise IntegranNotasError(
+                        f'País "{pais_end}" sem código IBGE válido. '
+                        'Preencha o campo "Cód. IBGE País" no cadastro do cliente '
+                        'ou use um nome reconhecido (ex: "Estados Unidos", "Argentina").',
+                        codigo=None,
+                    )
             else:
                 codigo_mun = (endereco_obj.codigo_municipio or '').strip()
                 if not codigo_mun:
@@ -802,6 +861,17 @@ class IntegranNotasClient:
             }
             if rntc:
                 frete['veiculo']['rntc'] = rntc
+
+        if any([nf.quantidade_volumes, nf.especie_volumes, nf.marca_volumes,
+                nf.numeracao_volumes, nf.peso_bruto_kg, nf.peso_liquido_kg]):
+            vol: dict = {}
+            if nf.quantidade_volumes: vol['quantidade']   = nf.quantidade_volumes
+            if nf.especie_volumes:    vol['especie']      = nf.especie_volumes
+            if nf.marca_volumes:      vol['marca']        = nf.marca_volumes
+            if nf.numeracao_volumes:  vol['numeracao']    = nf.numeracao_volumes
+            if nf.peso_liquido_kg:    vol['peso_liquido'] = str(nf.peso_liquido_kg)
+            if nf.peso_bruto_kg:      vol['peso_bruto']   = str(nf.peso_bruto_kg)
+            frete['volumes'] = [vol]
 
         return frete
 

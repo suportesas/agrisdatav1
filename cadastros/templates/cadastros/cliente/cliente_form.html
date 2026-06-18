@@ -366,9 +366,13 @@
       </div>
       <div class="form-section-body">
         <div class="row g-3">
-          <div class="col-md-4">
+          <div class="col-md-3">
             <label class="form-label fw-semibold">País</label>
             {{ form.pais }}
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Cód. IBGE País <small class="text-muted">(NF-e)</small></label>
+            {{ form.codigo_pais }}
           </div>
           <div class="col-md-4">
             <label class="form-label fw-semibold">Moeda Padrão</label>
@@ -898,6 +902,79 @@ document.getElementById('btnImprimirAjuda').addEventListener('click', function()
   window.print();
   area.style.display = 'none';
 });
+</script>
+
+<script>
+// Sincronização bidirecional entre campo "País" e "Cód. IBGE País"
+(function () {
+  const paisInput    = document.getElementById('id_pais');
+  const codigoSelect = document.getElementById('id_codigo_pais');
+  if (!paisInput || !codigoSelect) return;
+
+  // Mapa nome → código (para busca ao digitar no campo País)
+  const nomeParaCodigo = {
+    'argentina':'1068','bolívia':'1120','bolivia':'1120',
+    'brasil':'1058','brazil':'1058',
+    'chile':'1589','colômbia':'1635','colombia':'1635',
+    'equador':'2143','ecuador':'2143',
+    'paraguai':'4375','paraguay':'4375',
+    'peru':'4391','uruguai':'5266','uruguay':'5266','venezuela':'5290',
+    'canadá':'1490','canada':'1490',
+    'estados unidos':'4235','estados unidos da américa':'4235',
+    'eua':'4235','usa':'4235','united states':'4235',
+    'méxico':'3700','mexico':'3700',
+    'alemanha':'3581','germany':'3581',
+    'áustria':'1040','austria':'1040',
+    'bélgica':'1074','belgium':'1074',
+    'dinamarca':'2100','denmark':'2100',
+    'espanha':'4170','spain':'4170',
+    'finlândia':'1279','finland':'1279',
+    'frança':'1155','france':'1155',
+    'grécia':'3298','greece':'3298',
+    'holanda':'4855','países baixos':'4855','netherlands':'4855',
+    'hungria':'3344','hungary':'3344',
+    'irlanda':'3514','ireland':'3514',
+    'itália':'3735','italy':'3735',
+    'noruega':'4839','norway':'4839',
+    'polônia':'4422','poland':'4422',
+    'portugal':'4731',
+    'reino unido':'4766','uk':'4766','united kingdom':'4766',
+    'república tcheca':'2437','czech republic':'2437',
+    'rússia':'4502','russia':'4502',
+    'suécia':'4936','sweden':'4936',
+    'suíça':'4952','switzerland':'4952',
+    'turquia':'5185','turkey':'5185',
+    'arábia saudita':'4553','saudi arabia':'4553',
+    'austrália':'1023','australia':'1023',
+    'china':'1503',
+    'coreia do sul':'1694','south korea':'1694',
+    'emirados árabes':'2127','uae':'2127','united arab emirates':'2127',
+    'índia':'3395','india':'3395',
+    'israel':'3557',
+    'japão':'3549','japan':'3549',
+    'singapura':'4847','singapore':'4847',
+    'taiwan':'4995',
+    'egito':'2186','egypt':'2186',
+    'marrocos':'3697','morocco':'3697',
+    'nigéria':'4804','nigeria':'4804',
+  };
+
+  // Ao alterar o campo País → auto-seleciona o código IBGE
+  paisInput.addEventListener('blur', function () {
+    const codigo = nomeParaCodigo[this.value.trim().toLowerCase()];
+    if (codigo) codigoSelect.value = codigo;
+  });
+
+  // Ao selecionar o código IBGE → auto-preenche o campo País com o nome do país
+  codigoSelect.addEventListener('change', function () {
+    const opt = this.options[this.selectedIndex];
+    if (opt && opt.value) {
+      // Label está no formato "4855 — Holanda"; extrai só o nome
+      const partes = opt.text.split(' — ');
+      if (partes.length > 1) paisInput.value = partes[1];
+    }
+  });
+})();
 </script>
 
 {% endblock %}

@@ -1022,6 +1022,8 @@ class Cliente(models.Model):
 
     # Exportação / Importador
     pais = models.CharField('País', max_length=100, blank=True, default='Brasil')
+    codigo_pais = models.CharField('Cód. IBGE País', max_length=4, blank=True, default='1058',
+                                   help_text='Código IBGE para NF-e (ex: 1058=Brasil, 4235=EUA)')
     moeda_padrao = models.CharField('Moeda Padrão', max_length=10, blank=True, null=True)
     porto_destino = models.ForeignKey('cadastros.Porto', on_delete=models.SET_NULL, null=True, blank=True)
     incoterm_padrao = models.CharField('Incoterm', max_length=20, blank=True, null=True)

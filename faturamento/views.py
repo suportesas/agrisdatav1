@@ -233,6 +233,41 @@ def nota_fiscal_create(request):
             pag_formset.save()
             dup_formset.instance = nf
             dup_formset.save()
+            # Preenche campos tributáveis (conversão CX→KG) ao salvar
+            from decimal import Decimal as _Dec, ROUND_HALF_UP
+            _ft = ['quantidade_tributavel', 'unidade_tributavel', 'valor_unitario_tributavel']
+            for _item in nf.itens.select_related('produto__unidade_medida', 'produto__unidade_venda').all():
+                _prod = _item.produto
+                if not _prod:
+                    continue
+                _fator   = float(_prod.fator_conversao or 1)
+                _un_med  = (_prod.unidade_medida.sigla if _prod.unidade_medida_id else '').strip()
+                _un_vnd  = (_prod.unidade_venda.sigla  if _prod.unidade_venda_id  else '').strip()
+                if _fator > 1 and _un_med and _un_med != _un_vnd and not float(_item.quantidade_tributavel or 0):
+                    _item.quantidade_tributavel     = (_item.quantidade * _Dec(str(_fator))).quantize(_Dec('0.0001'), rounding=ROUND_HALF_UP)
+                    _item.unidade_tributavel        = _un_med
+                    _item.valor_unitario_tributavel = (_item.valor_unitario / _Dec(str(_fator))).quantize(_Dec('0.0001'), rounding=ROUND_HALF_UP)
+                    _item.save(update_fields=_ft)
+            # Auto-calcula volumes a partir dos itens se campos não foram preenchidos manualmente
+            _itens_db = list(nf.itens.select_related('produto').all())
+            if not nf.quantidade_volumes:
+                _qtd_vol = sum(int(_i.quantidade) for _i in _itens_db if _i.quantidade)
+                if _qtd_vol:
+                    NotaFiscal.objects.filter(pk=nf.pk).update(quantidade_volumes=_qtd_vol)
+            if not nf.peso_bruto_kg:
+                _pb = sum(
+                    (_i.produto.peso_bruto_unitario or _Dec(0)) * _i.quantidade
+                    for _i in _itens_db if _i.produto and _i.produto.peso_bruto_unitario
+                )
+                if _pb:
+                    NotaFiscal.objects.filter(pk=nf.pk).update(peso_bruto_kg=_pb)
+            if not nf.peso_liquido_kg:
+                _pl = sum(
+                    (_i.produto.peso_liquido_unitario or _Dec(0)) * _i.quantidade
+                    for _i in _itens_db if _i.produto and _i.produto.peso_liquido_unitario
+                )
+                if _pl:
+                    NotaFiscal.objects.filter(pk=nf.pk).update(peso_liquido_kg=_pl)
             nf.calcular_totais()
             messages.success(request, f'NF {nf.numero}/{nf.serie} criada com sucesso.')
             return redirect('faturamento:nota_fiscal_detail', pk=nf.pk)
@@ -313,6 +348,41 @@ def nota_fiscal_update(request, pk):
                 obj.delete()
             pag_formset.save()
             dup_formset.save()
+            # Preenche campos tributáveis (conversão CX→KG) ao salvar
+            from decimal import Decimal as _Dec, ROUND_HALF_UP
+            _ft = ['quantidade_tributavel', 'unidade_tributavel', 'valor_unitario_tributavel']
+            for _item in nf.itens.select_related('produto__unidade_medida', 'produto__unidade_venda').all():
+                _prod = _item.produto
+                if not _prod:
+                    continue
+                _fator  = float(_prod.fator_conversao or 1)
+                _un_med = (_prod.unidade_medida.sigla if _prod.unidade_medida_id else '').strip()
+                _un_vnd = (_prod.unidade_venda.sigla  if _prod.unidade_venda_id  else '').strip()
+                if _fator > 1 and _un_med and _un_med != _un_vnd and not float(_item.quantidade_tributavel or 0):
+                    _item.quantidade_tributavel     = (_item.quantidade * _Dec(str(_fator))).quantize(_Dec('0.0001'), rounding=ROUND_HALF_UP)
+                    _item.unidade_tributavel        = _un_med
+                    _item.valor_unitario_tributavel = (_item.valor_unitario / _Dec(str(_fator))).quantize(_Dec('0.0001'), rounding=ROUND_HALF_UP)
+                    _item.save(update_fields=_ft)
+            # Auto-calcula volumes a partir dos itens se campos não foram preenchidos manualmente
+            _itens_db = list(nf.itens.select_related('produto').all())
+            if not nf.quantidade_volumes:
+                _qtd_vol = sum(int(_i.quantidade) for _i in _itens_db if _i.quantidade)
+                if _qtd_vol:
+                    NotaFiscal.objects.filter(pk=nf.pk).update(quantidade_volumes=_qtd_vol)
+            if not nf.peso_bruto_kg:
+                _pb = sum(
+                    (_i.produto.peso_bruto_unitario or _Dec(0)) * _i.quantidade
+                    for _i in _itens_db if _i.produto and _i.produto.peso_bruto_unitario
+                )
+                if _pb:
+                    NotaFiscal.objects.filter(pk=nf.pk).update(peso_bruto_kg=_pb)
+            if not nf.peso_liquido_kg:
+                _pl = sum(
+                    (_i.produto.peso_liquido_unitario or _Dec(0)) * _i.quantidade
+                    for _i in _itens_db if _i.produto and _i.produto.peso_liquido_unitario
+                )
+                if _pl:
+                    NotaFiscal.objects.filter(pk=nf.pk).update(peso_liquido_kg=_pl)
             nf.calcular_totais()
             messages.success(request, 'NF-e atualizada com sucesso.')
             return redirect('faturamento:nota_fiscal_detail', pk=pk)

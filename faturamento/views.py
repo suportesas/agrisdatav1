@@ -516,6 +516,56 @@ def nota_fiscal_emitir_ajax(request, pk):
                     partes.append(f'Detalhe: {detalhe}')
                 return ' — '.join(partes)
             return str(e)
+
+        # ── Error 5008: NF já existe no IntegraNotas ─────────────────────
+        # Mensagem contém o path: /nfe/{44-digit-chave}
+        if exc.codigo == 5008:
+            import re as _re
+            _m = _re.search(r'/nfe/(\d{44})', str(exc))
+            if _m:
+                chave_5008 = _m.group(1)
+                nf.chave_acesso = chave_5008
+                nf.save(update_fields=['chave_acesso'])
+                try:
+                    data2 = client.consultar_nfe(chave_5008)
+                    codigo2 = data2.get('codigo')
+                    if codigo2 == 100:
+                        protocolo2 = data2.get('protocolo', '')
+                        xml2 = data2.get('xml', '')
+                        pdf2 = data2.get('pdf', '')
+                        nf.protocolo_autorizacao = protocolo2
+                        nf.xml_autorizacao       = xml2
+                        nf.pdf_danfe             = pdf2
+                        nf.status                = 'EMITIDA'
+                        nf.data_hora_emissao     = timezone.now()
+                        nf.atualizado_por        = request.user
+                        _base_f = ['chave_acesso', 'protocolo_autorizacao', 'xml_autorizacao',
+                                   'pdf_danfe', 'status', 'data_hora_emissao', 'atualizado_por']
+                        _extra2 = _upload_fiscal_docs(nf, nf.empresa_id, 'nfe', nf.numero, nf.serie, xml2, pdf2)
+                        nf.save(update_fields=list(dict.fromkeys(_base_f + _extra2)))
+                        steps.append({'status': 'authorized', 'label': 'NF-e Autorizada (recuperada) ✓',
+                                      'protocolo': protocolo2, 'chave': chave_5008})
+                        return JsonResponse({
+                            'steps': steps, 'success': True, 'authorized': True,
+                            'chave': chave_5008, 'protocolo': protocolo2,
+                            'has_danfe': bool(pdf2),
+                            'danfe_url': reverse('faturamento:nota_fiscal_danfe', args=[pk]),
+                            'detail_url': reverse('faturamento:nota_fiscal_detail', args=[pk]),
+                        })
+                    elif codigo2 == 5023:
+                        nf.data_hora_emissao = timezone.now()
+                        nf.atualizado_por    = request.user
+                        nf.save(update_fields=['data_hora_emissao', 'atualizado_por'])
+                        steps.append({'status': 'pending', 'label': 'Aguardando autorização da SEFAZ',
+                                      'message': 'NF em fila (5008→5023). Verificando…', 'chave': chave_5008})
+                        return JsonResponse({'steps': steps, 'success': True, 'pending': True, 'chave': chave_5008})
+                except Exception:
+                    pass
+                steps.append({'status': 'pending', 'label': 'NF já enviada — verifique na SEFAZ',
+                              'message': f'IntegraNotas indica NF já existente. Chave armazenada: {chave_5008}',
+                              'chave': chave_5008})
+                return JsonResponse({'steps': steps, 'success': True, 'pending': True, 'chave': chave_5008})
+
         erros_api = [_fmt_api_erro(e) for e in (exc.erros or [])]
         return erro('Transmissão à SEFAZ', str(exc), errors=erros_api)
     except _requests.exceptions.HTTPError as exc:
@@ -661,6 +711,41 @@ def nota_fiscal_emitir(request, pk):
             messages.success(request, f'NF {nf.numero}/{nf.serie} autorizada! Chave: {chave}')
 
     except IntegranNotasError as exc:
+        # ── Error 5008: NF já existe no IntegraNotas ─────────────────────
+        if exc.codigo == 5008:
+            import re as _re
+            _m = _re.search(r'/nfe/(\d{44})', str(exc))
+            if _m:
+                chave_5008 = _m.group(1)
+                nf.chave_acesso = chave_5008
+                nf.save(update_fields=['chave_acesso'])
+                try:
+                    data2 = client.consultar_nfe(chave_5008)
+                    if data2.get('codigo') == 100:
+                        xml2 = data2.get('xml', '')
+                        pdf2 = data2.get('pdf', '')
+                        nf.protocolo_autorizacao = data2.get('protocolo', '')
+                        nf.xml_autorizacao       = xml2
+                        nf.pdf_danfe             = pdf2
+                        nf.status                = 'EMITIDA'
+                        nf.data_hora_emissao     = timezone.now()
+                        nf.atualizado_por        = request.user
+                        _base = ['chave_acesso', 'protocolo_autorizacao', 'xml_autorizacao',
+                                 'pdf_danfe', 'status', 'data_hora_emissao', 'atualizado_por']
+                        _extra = _upload_fiscal_docs(nf, nf.empresa_id, 'nfe', nf.numero, nf.serie, xml2, pdf2)
+                        nf.save(update_fields=list(dict.fromkeys(_base + _extra)))
+                        messages.success(request, f'NF {nf.numero}/{nf.serie} autorizada (recuperada)! Chave: {chave_5008}')
+                        return redirect('faturamento:nota_fiscal_detail', pk=pk)
+                    elif data2.get('codigo') == 5023:
+                        nf.data_hora_emissao = timezone.now()
+                        nf.atualizado_por    = request.user
+                        nf.save(update_fields=['data_hora_emissao', 'atualizado_por'])
+                        messages.info(request, f'NF {nf.numero}/{nf.serie} enviada — aguardando autorização SEFAZ. Chave: {chave_5008}')
+                        return redirect('faturamento:nota_fiscal_detail', pk=pk)
+                except Exception:
+                    pass
+                messages.warning(request, f'NF já enviada ao IntegraNotas. Chave armazenada: {chave_5008}. Use "Verificar na SEFAZ".')
+                return redirect('faturamento:nota_fiscal_detail', pk=pk)
         erros = '; '.join(str(e) for e in exc.erros) if exc.erros else ''
         msg = f'Erro IntegraNota [{exc.codigo}]: {exc} {erros}'.strip()
         messages.error(request, msg)

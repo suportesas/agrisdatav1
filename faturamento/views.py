@@ -349,6 +349,38 @@ def nota_fiscal_danfe_preview(request, pk):
                 _item.unidade_tributavel = _un_med
                 _item.valor_unitario_tributavel = (_item.valor_unitario / _Dec(str(_fator))).quantize(_Dec('0.0001'), rounding=ROUND_HALF_UP)
 
+    # Generate Code128 barcode SVG for chave de acesso
+    barcode_svg = ''
+    if nf.chave_acesso:
+        try:
+            import io as _io
+            import re as _re
+            from barcode import Code128
+            from barcode.writer import SVGWriter
+            _buf = _io.BytesIO()
+            Code128(nf.chave_acesso, writer=SVGWriter()).write(_buf, options={
+                'write_text': False,
+                'module_height': 16.0,
+                'quiet_zone': 2.0,
+                'font_size': 0,
+                'text_distance': 0,
+                'module_width': 0.29,
+            })
+            _svg = _buf.getvalue().decode('utf-8')
+            _svg = _re.sub(r'<[?]xml[^?]*[?]>', '', _svg)
+            _svg = _re.sub(r'<!DOCTYPE[^>]*>', '', _svg)
+            _wm = _re.search(r'width="([\d.]+)mm"', _svg)
+            _hm = _re.search(r'height="([\d.]+)mm"', _svg)
+            if _wm and _hm:
+                _w, _h = _wm.group(1), _hm.group(1)
+                _svg = _svg.replace(
+                    'width="' + _w + 'mm" height="' + _h + 'mm"',
+                    'viewBox="0 0 ' + _w + ' ' + _h + '" preserveAspectRatio="none" style="width:100%;height:17mm;display:block"',
+                )
+            barcode_svg = _svg.strip()
+        except Exception:
+            pass
+
     return render(request, 'faturamento/nota_fiscal/danfe_preview.html', {
         'nf': nf,
         'empresa': empresa,
@@ -356,6 +388,7 @@ def nota_fiscal_danfe_preview(request, pk):
         'endereco_cli': endereco_cli,
         'itens': itens,
         'duplicatas': nf.duplicatas.order_by('vencimento'),
+        'barcode_svg': barcode_svg,
     })
 
 
@@ -1299,7 +1332,7 @@ def integranotas_webhook(request):
 
 @login_required
 def nota_fiscal_danfe(request, pk):
-    """Download do DANFE PDF da NF-e (Supabase URL ou base64)."""
+    """Download do DANFE PDF da NF-e (IntegraNotas)."""
     import base64
     from django.shortcuts import redirect as _redirect
     empresa = _get_empresa(request)

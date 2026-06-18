@@ -27,7 +27,12 @@
 </head>
 <body>
 
-<div class="danfe-title">DANFE SIMPLIFICADO — NOTA FISCAL ELETRÔNICA</div>
+<div class="danfe-title">DANFE — DOCUMENTO AUXILIAR DA NOTA FISCAL ELETRÔNICA</div>
+{% if nf.chave_acesso %}
+<div style="border:1px solid #000;padding:3px 6px;margin-bottom:4px;font-size:7pt;word-break:break-all;">
+  <strong>CHAVE DE ACESSO:</strong> {{ nf.chave_acesso }}
+</div>
+{% endif %}
 
 {% if nf.status == 'CANCELADA' %}
 <div class="stamp">CANCELADA</div>
@@ -48,6 +53,12 @@
     <div class="label">Natureza da Operação</div>
     <div class="value">{{ nf.natureza_operacao }}</div>
     <div class="label">CFOP: {{ nf.cfop }}</div>
+    {% if nf.protocolo_autorizacao %}
+    <div class="label" style="margin-top:4px">Protocolo: {{ nf.protocolo_autorizacao }}</div>
+    {% endif %}
+    {% if nf.data_hora_emissao %}
+    <div class="label">Autorizado em: {{ nf.data_hora_emissao|date:"d/m/Y H:i" }}</div>
+    {% endif %}
   </div>
 </div>
 

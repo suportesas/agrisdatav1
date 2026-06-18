@@ -846,11 +846,16 @@ class IntegranNotasClient:
 
         if cnpj or nome:
             transp_data = {}
-            if cnpj:
+            # IntegraNotas descarta <transporta> quando o CNPJ raiz da transportadora
+            # coincide com o do emitente (regra NF-e: CNPJ transportador ≠ CNPJ emitente).
+            # Solução: omitir CNPJ nesse caso — IntegraNotas inclui <xNome> e demais campos.
+            emit_cnpj = _digits(getattr(nf.empresa, 'cnpj', '') or '')
+            cnpj_raiz_igual = cnpj and emit_cnpj and cnpj[:8] == emit_cnpj[:8]
+            if cnpj and not cnpj_raiz_igual:
                 transp_data['cnpj' if len(cnpj) == 14 else 'cpf'] = cnpj
             if nome:       transp_data['nome']     = nome[:60]
             if ie:         transp_data['ie']        = ie
-            if endereco:   transp_data['endereco']  = endereco[:100]
+            if endereco:   transp_data['endereco']  = endereco[:60]
             if municipio:  transp_data['municipio'] = municipio[:60]
             if uf:         transp_data['uf']        = uf
             frete['transportadora'] = transp_data

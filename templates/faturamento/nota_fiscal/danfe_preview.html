@@ -2,317 +2,413 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>Pré-visualização DANFE — NF {{ nf.numero|default:"S/N" }}/{{ nf.serie }}</title>
+<title>DANFE — NF {{ nf.numero|default:"S/N" }}/{{ nf.serie }}</title>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: Arial, sans-serif; font-size: 7.5pt; color: #000; background: #f0f0f0; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 7pt;
+  color: #000;
+  background: #e0e0e0;
+}
 
-  /* ── Barra de ações (não imprime) ── */
-  .no-print {
-    background: #1e1e2e; color: #fff; padding: 10px 20px;
-    display: flex; align-items: center; gap: 12px;
-    position: sticky; top: 0; z-index: 100;
-  }
-  .no-print h6 { margin: 0; font-size: 13px; flex: 1; }
-  .no-print .badge-draft { background: #f59e0b; color: #000; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
-  .no-print .btn-pr { padding: 6px 16px; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; }
-  .no-print .btn-print { background: #7c3aed; color: #fff; }
-  .no-print .btn-back  { background: #374151; color: #fff; }
-  @media print { .no-print { display: none !important; } }
+/* ── Barra de ações ── */
+.no-print {
+  background: #1a1a2e; color: #fff; padding: 8px 20px;
+  display: flex; align-items: center; gap: 10px;
+  position: sticky; top: 0; z-index: 100;
+  box-shadow: 0 2px 8px rgba(0,0,0,.5);
+}
+.no-print h6 { margin: 0; font-size: 12px; flex: 1; font-weight: 600; }
+.badge-draft  { background: #f59e0b; color: #000; padding: 2px 10px; border-radius: 20px; font-size: 10px; font-weight: 700; }
+.badge-cancel { background: #dc2626; color: #fff; padding: 2px 10px; border-radius: 20px; font-size: 10px; font-weight: 700; }
+.btn-pr { padding: 6px 16px; border: none; border-radius: 5px; cursor: pointer; font-size: 11px; font-weight: 700; }
+.btn-print { background: #7c3aed; color: #fff; }
+.btn-back  { background: #4b5563; color: #fff; }
+@media print { .no-print { display: none !important; } }
 
-  /* ── Página DANFE ── */
-  .danfe-page {
-    width: 210mm; margin: 12px auto; background: #fff;
-    border: 1px solid #999; padding: 4mm;
-  }
-  @media print {
-    body { background: #fff; }
-    .danfe-page { margin: 0; border: none; padding: 6mm; width: 100%; }
-    @page { size: A4; margin: 6mm; }
-  }
+/* ── Página ── */
+.danfe-page {
+  width: 210mm;
+  margin: 14px auto;
+  background: #fff;
+  box-shadow: 0 4px 24px rgba(0,0,0,.25);
+  padding: 3mm;
+}
+@media print {
+  body { background: #fff; }
+  .danfe-page { margin: 0; box-shadow: none; padding: 3mm; width: 100%; }
+  @page { size: A4 portrait; margin: 5mm; }
+}
 
-  /* ── Tabelas / células ── */
-  table { border-collapse: collapse; width: 100%; }
-  .box { border: 1px solid #000; }
-  .box-top { border-top: 1px solid #000; }
-  .box-bot { border-bottom: 1px solid #000; }
-  .box-left { border-left: 1px solid #000; }
-  .box-right { border-right: 1px solid #000; }
+/* ── Elementos base ── */
+table { border-collapse: collapse; width: 100%; }
+.bx  { border: 1px solid #000; }
+.br  { border-right: 1px solid #000; }
+.bb  { border-bottom: 1px solid #000; }
+.bt  { border-top: 1px solid #000; }
+.bl  { border-left: 1px solid #000; }
 
-  td, th { padding: 1px 3px; vertical-align: top; }
-  .lbl { font-size: 5.5pt; color: #333; display: block; text-transform: uppercase; font-weight: normal; letter-spacing: 0.02em; }
-  .val { font-size: 7.5pt; font-weight: bold; display: block; }
-  .val-sm { font-size: 6.5pt; display: block; }
-  .val-lg { font-size: 9pt; font-weight: bold; display: block; }
-  .section-title {
-    font-size: 6pt; font-weight: bold; text-align: center; background: #eee;
-    border-bottom: 1px solid #999; padding: 1px; letter-spacing: 0.05em; text-transform: uppercase;
-  }
-  .center { text-align: center; }
-  .right  { text-align: right; }
+td, th { padding: 1px 2px; vertical-align: top; }
 
-  /* ── Cabeçalho ── */
-  .header-table td { vertical-align: middle; }
-  .emitter-cell { width: 55mm; border-right: 1px solid #000; padding: 2mm; }
-  .danfe-title-cell { width: 80mm; border-right: 1px solid #000; text-align: center; padding: 2mm; }
-  .io-cell { width: 30mm; padding: 2mm; text-align: center; }
+/* Labels e valores */
+.lbl {
+  font-size: 5pt; color: #555;
+  display: block; text-transform: uppercase;
+  letter-spacing: 0.03em; line-height: 1.2;
+}
+.val  { font-size: 7pt;   font-weight: bold; display: block; line-height: 1.3; }
+.val2 { font-size: 6.5pt; display: block; line-height: 1.3; }
+.val3 { font-size: 8.5pt; font-weight: bold; display: block; }
+.right  { text-align: right; }
+.center { text-align: center; }
 
-  .emitter-name { font-size: 10pt; font-weight: bold; }
-  .emitter-addr { font-size: 6.5pt; margin-top: 2px; }
-  .danfe-main-title { font-size: 11pt; font-weight: bold; letter-spacing: 0.03em; }
-  .danfe-sub-title  { font-size: 7pt; }
-  .danfe-doc-type   { font-size: 8pt; font-weight: bold; margin: 4px 0 2px; }
-  .nf-number        { font-size: 9pt; font-weight: bold; }
-  .nf-serie         { font-size: 8pt; }
-  .nf-folha         { font-size: 7pt; color: #555; }
-  .io-box { border: 2px solid #000; display: inline-block; padding: 2px 10px; margin-bottom: 4px; font-size: 8pt; font-weight: bold; }
-  .io-label { font-size: 5.5pt; text-transform: uppercase; }
+/* Cabeçalho de seção */
+.sec-hd {
+  background: #ccc;
+  font-size: 6pt; font-weight: bold;
+  text-align: center; text-transform: uppercase;
+  letter-spacing: 0.06em; padding: 1px 2px;
+  border-bottom: 1px solid #000;
+}
 
-  /* Barcode placeholder */
-  .barcode-area { min-height: 16mm; display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 2px 0; }
-  .barcode-bars { font-size: 28pt; letter-spacing: -3px; color: #000; line-height: 1; font-family: 'Libre Barcode 128', monospace; overflow: hidden; }
-  .barcode-key { font-size: 5.5pt; word-break: break-all; margin-top: 2px; text-align: center; }
-  .barcode-placeholder { font-size: 6.5pt; color: #999; border: 1px dashed #bbb; padding: 6px 20px; border-radius: 4px; text-align: center; }
+/* ══ CANHOTO ══ */
+.canhoto {
+  border: 1px solid #000;
+  padding: 1mm 2mm;
+  margin-bottom: 0;
+}
+.canhoto-top {
+  font-size: 6pt; line-height: 1.4;
+}
+.canhoto-bot {
+  display: flex; gap: 4mm;
+  border-top: 1px solid #aaa;
+  padding-top: 1mm; margin-top: 1mm;
+}
+.canhoto-bot-col { flex: 1; }
+.canhoto-label { font-size: 5pt; color: #555; text-transform: uppercase; }
+.canhoto-line  { border-bottom: 1px solid #888; margin-top: 4mm; }
+.dash-sep {
+  border-top: 2px dashed #777;
+  margin: 1.5mm 0;
+}
+.nfe-badge {
+  text-align: right; font-size: 7pt; font-weight: bold;
+}
 
-  /* ── Tabela de dados ── */
-  .data-row { border-top: 1px solid #000; }
-  .data-row td { border-right: 1px solid #000; }
-  .data-row td:last-child { border-right: none; }
+/* ══ CABEÇALHO DANFE ══
+   Proporções extraídas do DANFE oficial IntegraNotas:
+   Emitente ~40% | DANFE ~18% | Barcode ~42%                    */
+.hd-emit {
+  width: 82mm;
+  border-right: 1px solid #000;
+  padding: 2mm;
+  vertical-align: middle;
+}
+.hd-danfe {
+  border-right: 1px solid #000;
+  text-align: center;
+  padding: 2mm;
+  vertical-align: middle;
+}
+.hd-bc {
+  width: 85mm;
+  padding: 1mm;
+  vertical-align: top;
+}
 
-  /* ── Itens ── */
-  .items-table th { background: #eee; font-size: 5.5pt; font-weight: bold; text-align: center; border: 1px solid #555; padding: 1px 2px; white-space: nowrap; }
-  .items-table td { border: 1px solid #777; font-size: 6.5pt; padding: 1px 2px; }
-  .items-table .num { text-align: right; }
+.hd-emit-label { font-size: 5pt; color: #555; text-transform: uppercase; display: block; margin-bottom: 1mm; font-style: italic; }
+.emit-name { font-size: 9pt; font-weight: bold; text-transform: uppercase; line-height: 1.2; }
+.emit-addr { font-size: 5.5pt; margin-top: 2px; line-height: 1.5; color: #222; }
 
-  /* ── Fatura ── */
-  .fat-table th { font-size: 5.5pt; font-weight: bold; text-align: center; border: 1px solid #555; background: #eee; padding: 1px 3px; }
-  .fat-table td { border: 1px solid #777; font-size: 6.5pt; text-align: center; padding: 1px 3px; }
+.danfe-ttl  { font-size: 14pt; font-weight: 900; letter-spacing: 0.1em; }
+.danfe-sub  { font-size: 5pt; margin: 1px 0 3px; line-height: 1.3; }
+.io-opts    { font-size: 5.5pt; margin: 2px 0; line-height: 1.6; }
+.io-box     { display: inline-block; border: 2px solid #000; width: 6mm; height: 6mm; line-height: 5.5mm; text-align: center; font-size: 9pt; font-weight: 900; vertical-align: middle; margin-left: 2px; }
+.nf-num     { font-size: 8pt; font-weight: bold; margin-top: 3px; }
+.nf-ser     { font-size: 7pt; }
+.nf-fol     { font-size: 5.5pt; color: #555; }
 
-  /* ── Cálculo Imposto ── */
-  .imp-table td { border-right: 1px solid #000; padding: 1px 3px; }
-  .imp-table td:last-child { border-right: none; }
+/* Barcode e chave (coluna direita) */
+.bc-img {
+  display: block;
+  width: 100%;
+  margin-bottom: 1mm;
+}
+.bc-lbl   { font-size: 5pt; text-transform: uppercase; text-align: center; display: block; font-weight: bold; }
+.bc-chave {
+  font-size: 5pt; font-family: 'Courier New', monospace;
+  text-align: center; line-height: 1.4; display: block; margin-top: 1px;
+}
+.bc-consult { font-size: 4pt; color: #444; text-align: center; line-height: 1.4; display: block; margin-top: 1px; }
 
-  /* ── Dados adicionais ── */
-  .add-data { font-size: 6.5pt; min-height: 18mm; padding: 2px 3px; }
+/* ══ TABELA DE DADOS (linhas com bordas) ══ */
+.dr { border-top: 1px solid #000; }
+.dr td { border-right: 1px solid #000; }
+.dr td:last-child { border-right: none; }
 
-  /* ── Draft watermark ── */
-  .watermark {
-    position: fixed; top: 50%; left: 50%;
-    transform: translate(-50%, -50%) rotate(-30deg);
-    font-size: 80pt; font-weight: 900; color: rgba(124,58,237,0.08);
-    pointer-events: none; white-space: nowrap; z-index: 0;
-  }
+/* ══ ITENS ══ */
+.it-table th {
+  background: #ddd; font-size: 5pt; font-weight: bold;
+  text-align: center; border: 1px solid #777;
+  padding: 1px 1px; white-space: nowrap; vertical-align: bottom;
+}
+.it-table td { border: 1px solid #999; font-size: 5.5pt; padding: 1px 2px; vertical-align: middle; }
+.it-table .num { text-align: right; }
+.it-trib { font-size: 4.5pt; color: #444; display: block; }
+
+/* ══ FATURA ══ */
+.fat th { font-size: 5pt; font-weight: bold; text-align: center; border: 1px solid #888; background: #ddd; padding: 1px 4px; }
+.fat td { border: 1px solid #aaa; font-size: 6pt; text-align: center; padding: 1px 4px; }
+
+/* ══ MARCAS D'ÁGUA ══ */
+.wm {
+  position: fixed; top: 50%; left: 50%;
+  transform: translate(-50%,-50%) rotate(-25deg);
+  font-size: 68pt; font-weight: 900;
+  pointer-events: none; white-space: nowrap; z-index: 0;
+}
+.wm-cancel { color: rgba(180,0,0,.13); }
+.wm-draft  { color: rgba(80,40,180,.07); }
 </style>
-{% if not nf.chave_acesso %}
-<style>/* Sem barcode real — usa placeholder */</style>
-{% endif %}
 </head>
 <body>
 
-<!-- Barra de ações (não imprime) -->
+<!-- Marca d'água -->
+{% if nf.status == 'CANCELADA' %}<div class="wm wm-cancel">CANCELADA</div>{% endif %}
+{% if nf.status == 'RASCUNHO'  %}<div class="wm wm-draft">RASCUNHO</div>{% endif %}
+
+<!-- Barra de ações -->
 <div class="no-print">
-  <h6>Pré-visualização DANFE &mdash; NF {{ nf.numero|default:"S/N" }}/{{ nf.serie }}</h6>
-  {% if nf.status == 'RASCUNHO' %}
-  <span class="badge-draft">RASCUNHO — Não é o DANFE oficial</span>
-  {% endif %}
-  <button class="btn-pr btn-print" onclick="window.print()">&#128438; Imprimir / Salvar PDF</button>
-  <button class="btn-pr btn-back" onclick="window.close()">Fechar</button>
+  <h6>DANFE — NF {{ nf.numero|default:"S/N" }}/{{ nf.serie }}</h6>
+  {% if nf.status == 'RASCUNHO'  %}<span class="badge-draft">RASCUNHO — Sem validade fiscal</span>{% endif %}
+  {% if nf.status == 'CANCELADA' %}<span class="badge-cancel">CANCELADA</span>{% endif %}
+  <button class="btn-pr btn-print" onclick="window.print()">Imprimir / Salvar PDF</button>
+  <button class="btn-pr btn-back"  onclick="window.close()">Fechar</button>
 </div>
 
-<!-- Watermark rascunho -->
-{% if nf.status == 'RASCUNHO' %}
-<div class="watermark">RASCUNHO</div>
-{% endif %}
-
-<!-- ── DANFE ───────────────────────────────────────────────── -->
 <div class="danfe-page">
 
-  <!-- ════════════════ 1. CABEÇALHO ════════════════ -->
-  <table class="box" style="margin-bottom:0">
+  <!-- ═══════════════════════════════════
+       CANHOTO (tira de recebimento)
+  ═══════════════════════════════════ -->
+  <div class="canhoto">
+    <div class="canhoto-top">
+      RECEBEMOS DE <strong>{{ empresa.razao_social|upper }}</strong> OS PRODUTOS E/OU SERVIÇOS CONSTANTES DA NOTA FISCAL ELETRÔNICA INDICADA ABAIXO.<br>
+      <span style="font-size:5pt">EMISSÃO: {{ nf.data_emissao|date:"d/m/Y" }} &nbsp;&nbsp; VALOR TOTAL: R$ {{ nf.valor_total|floatformat:2 }} &nbsp;&nbsp; DESTINATÁRIO: {{ nf.cliente.razao_social }}</span>
+    </div>
+    <div class="canhoto-bot">
+      <div class="canhoto-bot-col" style="flex:2">
+        <div class="canhoto-label">Data de Recebimento</div>
+        <div class="canhoto-line"></div>
+      </div>
+      <div class="canhoto-bot-col" style="flex:3">
+        <div class="canhoto-label">Identificação e Assinatura do Recebedor</div>
+        <div class="canhoto-line"></div>
+      </div>
+      <div style="text-align:right; align-self:flex-start; white-space:nowrap">
+        <div class="nfe-badge">NF-e</div>
+        <div style="font-size:7.5pt;font-weight:bold">Nº. {{ nf.numero|stringformat:"09d" }}</div>
+        <div style="font-size:6pt">Série {{ nf.serie|stringformat:"03d" }}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="dash-sep"></div>
+
+  <!-- ═══════════════════════════════════
+       CABEÇALHO: Emitente | DANFE | Barcode
+       Colunas: ~82mm | ~37mm | ~85mm
+  ═══════════════════════════════════ -->
+  <table class="bx">
     <tr>
-      <!-- Emitente -->
-      <td class="emitter-cell">
+
+      <!-- Emitente (~82mm) -->
+      <td class="hd-emit">
+        <span class="hd-emit-label">Identificação do Emitente</span>
         {% if empresa.logo %}
-        <img src="{{ empresa.logo.url }}" style="max-height:14mm;max-width:45mm;margin-bottom:2px;display:block">
+        <img src="{{ empresa.logo.url }}" style="max-height:10mm;max-width:55mm;margin-bottom:2px;display:block">
         {% endif %}
-        <div class="emitter-name">{{ empresa.razao_social|upper }}</div>
-        <div class="emitter-addr">
-          {{ empresa.endereco }}{% if empresa.numero_endereco %}, {{ empresa.numero_endereco }}{% endif %}<br>
-          {{ empresa.bairro }}{% if empresa.bairro %} — {% endif %}{{ empresa.cidade }}/{{ empresa.uf }}<br>
-          CEP {{ empresa.cep }}
-          {% if empresa.telefone %} &nbsp; Tel: {{ empresa.telefone }}{% endif %}
+        <div class="emit-name">{{ empresa.razao_social }}</div>
+        <div class="emit-addr">
+          {% if empresa.endereco %}{{ empresa.endereco }}{% if empresa.numero_endereco %}, {{ empresa.numero_endereco }}{% endif %}{% endif %}<br>
+          {% if empresa.bairro %}{{ empresa.bairro }} — {% endif %}{{ empresa.cep|default:"" }}<br>
+          {{ empresa.cidade }} - {{ empresa.uf }}
+          {% if empresa.telefone %}<br>Fone/Fax: {{ empresa.telefone }}{% endif %}
         </div>
       </td>
 
-      <!-- Título DANFE -->
-      <td class="danfe-title-cell">
-        <div class="danfe-main-title">DANFE</div>
-        <div class="danfe-sub-title">Documento Auxiliar da Nota Fiscal Eletrônica</div>
-        <div style="margin:4px 0">
-          <span class="io-label">0 - Entrada</span><br>
-          <span class="io-label">1 - Saída</span>
+      <!-- Título DANFE (~37mm auto) -->
+      <td class="hd-danfe">
+        <div class="danfe-ttl">DANFE</div>
+        <div class="danfe-sub">Documento Auxiliar da<br>Nota Fiscal Eletrônica</div>
+        <div class="io-opts">
+          0 - ENTRADA<br>
+          1 - SAÍDA <span class="io-box">{{ nf.cfop|slice:":1"|default:"1" }}</span>
         </div>
-        <div class="io-box">{{ nf.cfop|slice:":1"|default:"1" }}</div><br>
-        <div class="nf-number">Nº {{ nf.numero|stringformat:"09d"|default:"000000000" }}</div>
-        <div class="nf-serie">SÉRIE: {{ nf.serie|stringformat:"03d" }}</div>
-        <div class="nf-folha">FOLHA: 1 de 1</div>
-
-        <!-- Barcode / Chave de Acesso -->
-        <div class="barcode-area" style="margin-top:4px">
-          {% if nf.chave_acesso %}
-          <div class="barcode-key">{{ nf.chave_acesso }}</div>
-          {% else %}
-          <div class="barcode-placeholder">Chave de acesso disponível após autorização da SEFAZ</div>
-          {% endif %}
-        </div>
+        <div class="nf-num">Nº. {{ nf.numero|stringformat:"09d" }}</div>
+        <div class="nf-ser">Série {{ nf.serie|stringformat:"03d" }}</div>
+        <div class="nf-fol">Folha 1/1</div>
       </td>
 
-      <!-- Entrada / Saída -->
-      <td class="io-cell">
-        <div style="font-size:5.5pt;text-transform:uppercase;margin-bottom:2px">Entrada / Saída</div>
-        <div style="font-size:22pt;font-weight:900;line-height:1">{{ nf.cfop|slice:":1"|default:"1" }}</div>
-        <div style="font-size:6pt;margin-top:6px">VALOR TOTAL DA NOTA</div>
-        <div style="font-size:9pt;font-weight:bold">R$ {{ nf.valor_total|floatformat:2 }}</div>
-        {% if nf.protocolo_autorizacao %}
-        <div style="font-size:5pt;margin-top:4px;word-break:break-all">
-          <strong>Protocolo:</strong><br>{{ nf.protocolo_autorizacao }}
+      <!-- Barcode + Chave de Acesso (~85mm) -->
+      <td class="hd-bc">
+        {% if barcode_svg %}
+        <div class="bc-img">{{ barcode_svg|safe }}</div>
+        {% elif nf.chave_acesso %}
+        <div style="height:17mm;border:1px solid #ccc;display:flex;align-items:center;justify-content:center;margin-bottom:1mm;">
+          <span style="font-size:4pt;color:#aaa;font-family:monospace">{{ nf.chave_acesso }}</span>
+        </div>
+        {% else %}
+        <div style="height:17mm;border:1px solid #ccc;display:flex;align-items:center;justify-content:center;margin-bottom:1mm;">
+          <span style="font-size:4pt;color:#bbb;font-style:italic">Disponível após autorização SEFAZ</span>
         </div>
         {% endif %}
+        <span class="bc-lbl">Chave de Acesso</span>
+        {% if nf.chave_acesso %}
+        <span class="bc-chave">{{ nf.chave_acesso|slice:":4" }} {{ nf.chave_acesso|slice:"4:8" }} {{ nf.chave_acesso|slice:"8:12" }} {{ nf.chave_acesso|slice:"12:16" }} {{ nf.chave_acesso|slice:"16:20" }} {{ nf.chave_acesso|slice:"20:24" }} {{ nf.chave_acesso|slice:"24:28" }} {{ nf.chave_acesso|slice:"28:32" }} {{ nf.chave_acesso|slice:"32:36" }} {{ nf.chave_acesso|slice:"36:40" }} {{ nf.chave_acesso|slice:"40:44" }}</span>
+        {% endif %}
+        <span class="bc-consult">Consulta de autenticidade no portal nacional da NF-e<br>www.nfe.fazenda.gov.br/portal ou no site da Sefaz Autorizadora</span>
       </td>
+
     </tr>
   </table>
 
-  <!-- ── Natureza / IE / CNPJ ── -->
-  <table class="box-bot box-left box-right" style="margin-top:0">
-    <tr class="data-row">
+  <!-- Natureza da Operação | Protocolo de Autorização -->
+  <table class="bx" style="border-top:none">
+    <tr class="dr">
       <td style="width:55%">
         <span class="lbl">Natureza da Operação</span>
         <span class="val">{{ nf.natureza_operacao }}</span>
       </td>
-      <td style="width:20%">
+      <td class="bl">
+        <span class="lbl">Protocolo de Autorização de Uso</span>
+        <span class="val">
+          {% if nf.protocolo_autorizacao %}
+            {{ nf.protocolo_autorizacao }}{% if nf.data_hora_emissao %} - {{ nf.data_hora_emissao|date:"d/m/Y H:i:s" }}{% endif %}
+          {% else %}—{% endif %}
+        </span>
+      </td>
+    </tr>
+  </table>
+
+  <!-- IE | IE Municipal | IE Subst. Trib. | CNPJ -->
+  <table class="bx" style="border-top:none">
+    <tr class="dr">
+      <td style="width:22%">
         <span class="lbl">Inscrição Estadual</span>
         <span class="val">{{ empresa.inscricao_estadual|default:"—" }}</span>
       </td>
-      <td style="width:10%">
-        <span class="lbl">IE Sub. Trib.</span>
+      <td class="bl" style="width:18%">
+        <span class="lbl">Inscrição Municipal</span>
+        <span class="val">{{ empresa.inscricao_municipal|default:"—" }}</span>
+      </td>
+      <td class="bl" style="width:28%">
+        <span class="lbl">Inscrição Estadual do Subst. Tribut.</span>
         <span class="val">—</span>
       </td>
-      <td style="width:15%">
-        <span class="lbl">CNPJ</span>
+      <td class="bl" style="width:32%">
+        <span class="lbl">CNPJ / CPF</span>
         <span class="val">{{ empresa.get_cnpj_formatado }}</span>
       </td>
     </tr>
   </table>
 
-  <!-- ── Chave de Acesso ── -->
-  {% if nf.chave_acesso %}
-  <table class="box-bot box-left box-right">
-    <tr>
-      <td style="text-align:center;padding:1px 3px">
-        <span class="lbl">Chave de Acesso</span>
-        <span style="font-size:7pt;font-weight:bold;font-family:monospace;letter-spacing:1px">
-          {{ nf.chave_acesso }}
-        </span>
-      </td>
-    </tr>
-    {% if nf.protocolo_autorizacao %}
-    <tr>
-      <td style="text-align:center;padding:1px 3px">
-        <span class="lbl">Protocolo de Autorização de Uso</span>
-        <span class="val" style="font-size:7pt">{{ nf.protocolo_autorizacao }}</span>
-      </td>
-    </tr>
-    {% endif %}
-  </table>
+  <!-- Banner status -->
+  {% if nf.status == 'RASCUNHO' %}
+  <div style="background:#f3f4f6;border:1px solid #000;border-top:none;text-align:center;font-size:6pt;font-weight:bold;color:#555;padding:1px">
+    PRÉ-VISUALIZAÇÃO — DOCUMENTO SEM VALIDADE FISCAL — NF-e ainda não autorizada pela SEFAZ
+  </div>
   {% endif %}
 
-  <div style="height:2px"></div>
+  <div style="height:1.5mm"></div>
 
-  <!-- ════════════════ 2. DESTINATÁRIO ════════════════ -->
-  <div class="section-title">Destinatário / Remetente</div>
-  <table class="box">
-    <tr class="data-row">
-      <td style="width:55%">
+  <!-- ═══════════════════════════════════
+       DESTINATÁRIO / REMETENTE
+  ═══════════════════════════════════ -->
+  <div class="sec-hd">Destinatário / Remetente</div>
+  <table class="bx" style="border-top:none">
+    <tr class="dr">
+      <td style="width:54%">
         <span class="lbl">Nome / Razão Social</span>
         <span class="val">{{ nf.cliente.razao_social }}</span>
       </td>
-      <td style="width:25%">
+      <td class="bl" style="width:28%">
         <span class="lbl">CNPJ / CPF</span>
         <span class="val">{{ nf.cliente.cnpj_cpf|default:"—" }}</span>
       </td>
-      <td style="width:20%">
-        <span class="lbl">Data de Emissão</span>
+      <td class="bl" style="width:18%">
+        <span class="lbl">Data da Emissão</span>
         <span class="val">{{ nf.data_emissao|date:"d/m/Y" }}</span>
       </td>
     </tr>
-    <tr class="data-row">
+    <tr class="dr">
       <td colspan="2">
         <span class="lbl">Endereço</span>
-        <span class="val-sm">
-          {% if endereco_cli %}
-            {{ endereco_cli.logradouro }}{% if endereco_cli.numero %}, {{ endereco_cli.numero }}{% endif %}
-            {% if endereco_cli.complemento %} — {{ endereco_cli.complemento }}{% endif %}
-          {% else %}{{ nf.cliente.pais }}{% endif %}
+        <span class="val2">
+          {% if endereco_cli %}{{ endereco_cli.logradouro }}{% if endereco_cli.numero %}, {{ endereco_cli.numero }}{% endif %}{% if endereco_cli.complemento %} — {{ endereco_cli.complemento }}{% endif %}
+          {% else %}{{ nf.cliente.pais|default:"—" }}{% endif %}
         </span>
       </td>
-      <td>
-        <span class="lbl">Data de Saída / Entrada</span>
+      <td class="bl">
+        <span class="lbl">Data da Saída/Entrada</span>
         <span class="val">{{ nf.data_saida|date:"d/m/Y"|default:"—" }}</span>
       </td>
     </tr>
-    <tr class="data-row">
+    <tr class="dr">
       <td>
         <span class="lbl">Bairro / Distrito</span>
-        <span class="val-sm">{{ endereco_cli.bairro|default:"—" }}</span>
+        <span class="val2">{{ endereco_cli.bairro|default:"—" }}</span>
       </td>
-      <td>
+      <td class="bl">
         <span class="lbl">CEP</span>
-        <span class="val-sm">{{ endereco_cli.cep|default:"—" }}</span>
+        <span class="val2">{{ endereco_cli.cep|default:"—" }}</span>
       </td>
-      <td>
-        <span class="lbl">Hora de Saída</span>
-        <span class="val">—</span>
+      <td class="bl">
+        <span class="lbl">Hora da Saída/Entrada</span>
+        <span class="val2">{{ nf.data_hora_emissao|date:"H:i:s"|default:"—" }}</span>
       </td>
     </tr>
-    <tr class="data-row">
+    <tr class="dr">
       <td style="width:40%">
         <span class="lbl">Município</span>
-        <span class="val-sm">{% if endereco_cli %}{{ endereco_cli.cidade }}{% else %}{{ nf.cliente.pais }}{% endif %}</span>
+        <span class="val2">{% if endereco_cli %}{{ endereco_cli.cidade }}{% else %}{{ nf.cliente.pais|default:"—" }}{% endif %}</span>
       </td>
-      <td>
+      <td class="bl" style="width:20%">
         <span class="lbl">Fone / Fax</span>
-        <span class="val-sm">{{ nf.cliente.contato_principal_telefone|default:"—" }}</span>
+        <span class="val2">{{ nf.cliente.contato_principal_telefone|default:"—" }}</span>
       </td>
-      <td>
+      <td class="bl" style="width:7%">
         <span class="lbl">UF</span>
-        <span class="val">{% if endereco_cli %}{{ endereco_cli.uf }}{% else %}EX{% endif %}</span>
+        <span class="val2">{% if endereco_cli %}{{ endereco_cli.uf }}{% else %}EX{% endif %}</span>
       </td>
-    </tr>
-    <tr class="data-row">
-      <td colspan="2">
+      <td class="bl" style="width:15%">
         <span class="lbl">Inscrição Estadual</span>
-        <span class="val-sm">{{ nf.cliente.inscricao_estadual|default:"—" }}</span>
+        <span class="val2">{{ nf.cliente.inscricao_estadual|default:"—" }}</span>
       </td>
-      <td>
+      <td class="bl" style="width:18%">
         <span class="lbl">País</span>
-        <span class="val-sm">{{ nf.cliente.pais|default:"Brasil" }}</span>
+        <span class="val2">{{ nf.cliente.pais|default:"Brasil" }}</span>
       </td>
     </tr>
   </table>
 
-  <div style="height:2px"></div>
+  <div style="height:1.5mm"></div>
 
-  <!-- ════════════════ 3. FATURA ════════════════ -->
+  <!-- ═══════════════════════════════════
+       FATURA / DUPLICATA
+  ═══════════════════════════════════ -->
   {% if duplicatas %}
-  <div class="section-title">Fatura</div>
-  <table class="box">
+  <div class="sec-hd">Fatura / Duplicata</div>
+  <table class="bx" style="border-top:none">
     <tr>
       <td>
-        <table class="fat-table" style="width:auto">
+        <table class="fat" style="width:auto">
           <tr>
-            <th>Número</th>
-            <th>Data de Vencimento</th>
-            <th>Valor</th>
+            <th>Num.</th>
+            <th>Venc.</th>
+            <th>Valor R$</th>
           </tr>
           {% for dup in duplicatas %}
           <tr>
@@ -325,194 +421,225 @@
       </td>
     </tr>
   </table>
-  <div style="height:2px"></div>
+  <div style="height:1.5mm"></div>
   {% endif %}
 
-  <!-- ════════════════ 4. CÁLCULO DO IMPOSTO ════════════════ -->
-  <div class="section-title">Cálculo do Imposto</div>
-  <table class="box">
+  <!-- ═══════════════════════════════════
+       CÁLCULO DO IMPOSTO
+  ═══════════════════════════════════ -->
+  <div class="sec-hd">Cálculo do Imposto</div>
+  <table class="bx" style="border-top:none">
     <tr>
-      <td class="box-right" style="width:16%">
-        <span class="lbl">Base Cálc. ICMS</span>
-        <span class="val">{{ nf.valor_icms|floatformat:2|default:"0,00" }}</span>
+      <td class="br" style="width:12%">
+        <span class="lbl">Base de Cálc. do ICMS</span>
+        <span class="val right">{{ nf.base_calculo_icms|floatformat:2|default:"0,00" }}</span>
       </td>
-      <td class="box-right" style="width:16%">
-        <span class="lbl">Valor ICMS</span>
-        <span class="val">{{ nf.valor_icms|floatformat:2 }}</span>
+      <td class="br" style="width:11%">
+        <span class="lbl">Valor do ICMS</span>
+        <span class="val right">{{ nf.valor_icms|floatformat:2 }}</span>
       </td>
-      <td class="box-right" style="width:16%">
-        <span class="lbl">BC ICMS ST</span>
-        <span class="val">0,00</span>
+      <td class="br" style="width:12%">
+        <span class="lbl">Base de Cálc. ICMS S.T.</span>
+        <span class="val right">0,00</span>
       </td>
-      <td class="box-right" style="width:16%">
-        <span class="lbl">Valor ICMS ST</span>
-        <span class="val">{{ nf.valor_icms_st|floatformat:2 }}</span>
+      <td class="br" style="width:12%">
+        <span class="lbl">Valor do ICMS Subst.</span>
+        <span class="val right">{{ nf.valor_icms_st|floatformat:2 }}</span>
       </td>
-      <td style="width:20%">
-        <span class="lbl">Valor Total dos Produtos</span>
-        <span class="val">{{ nf.valor_produtos|floatformat:2 }}</span>
+      <td class="br" style="width:10%">
+        <span class="lbl">V. Imp. Importação</span>
+        <span class="val right">0,00</span>
       </td>
-      <td class="box-left" style="width:16%">
-        <span class="lbl">Valor Aprox. Tributos</span>
-        <span class="val">0,00</span>
+      <td class="br" style="width:10%">
+        <span class="lbl">V. ICMS UF Remet.</span>
+        <span class="val right">0,00</span>
+      </td>
+      <td class="br" style="width:10%">
+        <span class="lbl">V. FCP UF Dest.</span>
+        <span class="val right">0,00</span>
+      </td>
+      <td style="width:23%">
+        <span class="lbl">V. Total Produtos</span>
+        <span class="val right">{{ nf.valor_produtos|floatformat:2 }}</span>
       </td>
     </tr>
-    <tr class="data-row">
-      <td class="box-right">
-        <span class="lbl">Valor Frete</span>
-        <span class="val">{{ nf.valor_frete|floatformat:2 }}</span>
+    <tr class="dr">
+      <td class="br">
+        <span class="lbl">Valor do Frete</span>
+        <span class="val right">{{ nf.valor_frete|floatformat:2 }}</span>
       </td>
-      <td class="box-right">
-        <span class="lbl">Valor Seguro</span>
-        <span class="val">{{ nf.valor_seguro|floatformat:2 }}</span>
+      <td class="br">
+        <span class="lbl">Valor do Seguro</span>
+        <span class="val right">{{ nf.valor_seguro|floatformat:2 }}</span>
       </td>
-      <td class="box-right">
+      <td class="br">
         <span class="lbl">Desconto</span>
-        <span class="val">{{ nf.valor_desconto|floatformat:2 }}</span>
+        <span class="val right">{{ nf.valor_desconto|floatformat:2 }}</span>
       </td>
-      <td class="box-right">
+      <td class="br">
         <span class="lbl">Outras Despesas</span>
-        <span class="val">0,00</span>
+        <span class="val right">0,00</span>
       </td>
-      <td class="box-right">
-        <span class="lbl">Valor IPI</span>
-        <span class="val">{{ nf.valor_ipi|floatformat:2 }}</span>
+      <td class="br">
+        <span class="lbl">Valor Total IPI</span>
+        <span class="val right">{{ nf.valor_ipi|floatformat:2 }}</span>
+      </td>
+      <td class="br">
+        <span class="lbl">V. ICMS UF Dest.</span>
+        <span class="val right">0,00</span>
+      </td>
+      <td class="br">
+        <span class="lbl">V. Tot. Trib.</span>
+        <span class="val right">0,00</span>
       </td>
       <td>
-        <span class="lbl">Valor Total da Nota</span>
-        <span class="val-lg">{{ nf.valor_total|floatformat:2 }}</span>
+        <span class="lbl">V. Total da Nota</span>
+        <span class="val3 right">{{ nf.valor_total|floatformat:2 }}</span>
       </td>
     </tr>
   </table>
 
-  <div style="height:2px"></div>
+  <div style="height:1.5mm"></div>
 
-  <!-- ════════════════ 5. TRANSPORTADOR ════════════════ -->
-  <div class="section-title">Transportador / Volumes Transportados</div>
-  <table class="box">
+  <!-- ═══════════════════════════════════
+       TRANSPORTADOR / VOLUMES
+  ═══════════════════════════════════ -->
+  <div class="sec-hd">Transportador / Volumes Transportados</div>
+  <table class="bx" style="border-top:none">
     <tr>
-      <td class="box-right" style="width:40%">
-        <span class="lbl">Razão Social</span>
-        <span class="val-sm">{{ nf.transp_nome|default:nf.transportadora.razao_social|default:"—" }}</span>
+      <td class="br" style="width:36%">
+        <span class="lbl">Nome / Razão Social</span>
+        <span class="val2">{{ nf.transp_nome|default:nf.transportadora.razao_social|default:"—" }}</span>
       </td>
-      <td class="box-right" style="width:15%">
-        <span class="lbl">Frete Por Conta</span>
-        <span class="val-sm">
-          {% if nf.modalidade_frete == 'CIF' or nf.modalidade_frete == 'EMITENTE' %}0 - Rem.
-          {% elif nf.modalidade_frete == 'FOB' or nf.modalidade_frete == 'DESTINATARIO' %}1 - Dest.
-          {% else %}9 - S/F{% endif %}
+      <td class="br" style="width:13%">
+        <span class="lbl">Frete</span>
+        <span class="val2">
+          {% if nf.modalidade_frete == 'CIF' or nf.modalidade_frete == 'EMITENTE' %}0-Por conta do Emit
+          {% elif nf.modalidade_frete == 'FOB' or nf.modalidade_frete == 'DESTINATARIO' %}1-Por conta do Dest
+          {% elif nf.modalidade_frete == 'SEM_FRETE' %}9-Sem Frete
+          {% else %}{{ nf.get_modalidade_frete_display }}{% endif %}
         </span>
       </td>
-      <td class="box-right" style="width:12%">
+      <td class="br" style="width:15%">
         <span class="lbl">Código ANTT</span>
-        <span class="val-sm">{{ nf.transp_rntc|default:nf.transportadora.rntc|default:"—" }}</span>
+        <span class="val2">{{ nf.transp_rntc|default:nf.transportadora.rntc|default:"—" }}</span>
       </td>
-      <td class="box-right" style="width:10%">
-        <span class="lbl">Placa do Veíc.</span>
-        <span class="val-sm">{{ nf.veic_placa|default:"—" }}</span>
+      <td class="br" style="width:10%">
+        <span class="lbl">Placa do Veículo</span>
+        <span class="val2">{{ nf.veic_placa|default:"—" }}</span>
       </td>
-      <td class="box-right" style="width:6%">
+      <td class="br" style="width:6%">
         <span class="lbl">UF</span>
-        <span class="val-sm">{{ nf.veic_uf|default:"—" }}</span>
+        <span class="val2">{{ nf.veic_uf|default:"—" }}</span>
       </td>
-      <td style="width:17%">
+      <td style="width:20%">
         <span class="lbl">CNPJ / CPF</span>
-        <span class="val-sm">{{ nf.transp_cnpj|default:nf.transportadora.cnpj|default:"—" }}</span>
+        <span class="val2">{{ nf.transp_cnpj|default:nf.transportadora.cnpj|default:"—" }}</span>
       </td>
     </tr>
-    <tr class="data-row">
-      <td class="box-right" colspan="2">
+    <tr class="dr">
+      <td class="br" colspan="2">
         <span class="lbl">Endereço</span>
-        <span class="val-sm">{{ nf.transp_endereco|default:nf.transportadora.logradouro|default:"—" }}</span>
+        <span class="val2">{{ nf.transp_endereco|default:nf.transportadora.logradouro|default:"—" }}</span>
       </td>
-      <td class="box-right" colspan="2">
+      <td class="br" colspan="2">
         <span class="lbl">Município</span>
-        <span class="val-sm">{{ nf.transp_municipio|default:nf.transportadora.cidade|default:"—" }}</span>
+        <span class="val2">{{ nf.transp_municipio|default:nf.transportadora.cidade|default:"—" }}</span>
       </td>
-      <td class="box-right">
+      <td class="br">
         <span class="lbl">UF</span>
-        <span class="val-sm">{{ nf.transp_uf|default:nf.transportadora.uf|default:"—" }}</span>
+        <span class="val2">{{ nf.transp_uf|default:nf.transportadora.uf|default:"—" }}</span>
       </td>
       <td>
         <span class="lbl">Inscrição Estadual</span>
-        <span class="val-sm">{{ nf.transp_ie|default:nf.transportadora.inscricao_estadual|default:"—" }}</span>
+        <span class="val2">{{ nf.transp_ie|default:nf.transportadora.inscricao_estadual|default:"—" }}</span>
       </td>
     </tr>
-    <tr class="data-row">
-      <td class="box-right" style="width:10%">
+    <tr class="dr">
+      <td class="br" style="width:10%">
         <span class="lbl">Quantidade</span>
-        <span class="val-sm">{{ nf.quantidade_volumes|default:"—" }}</span>
+        <span class="val2">{{ nf.quantidade_volumes|default:"—" }}</span>
       </td>
-      <td class="box-right" style="width:12%">
+      <td class="br" style="width:12%">
         <span class="lbl">Espécie</span>
-        <span class="val-sm">{{ nf.especie_volumes|default:"—" }}</span>
+        <span class="val2">{{ nf.especie_volumes|default:"—" }}</span>
       </td>
-      <td class="box-right" style="width:20%">
+      <td class="br" style="width:20%">
         <span class="lbl">Marca</span>
-        <span class="val-sm">{{ nf.marca_volumes|default:"—" }}</span>
+        <span class="val2">{{ nf.marca_volumes|default:"—" }}</span>
       </td>
-      <td class="box-right" style="width:20%">
+      <td class="br" style="width:20%">
         <span class="lbl">Numeração</span>
-        <span class="val-sm">{{ nf.numeracao_volumes|default:"—" }}</span>
+        <span class="val2">{{ nf.numeracao_volumes|default:"—" }}</span>
       </td>
-      <td class="box-right">
-        <span class="lbl">Peso Bruto (kg)</span>
-        <span class="val-sm">{{ nf.peso_bruto_kg|floatformat:3|default:"—" }}</span>
+      <td class="br" style="width:19%">
+        <span class="lbl">Peso Bruto</span>
+        <span class="val2 right">{{ nf.peso_bruto_kg|floatformat:3|default:"—" }}</span>
       </td>
-      <td>
-        <span class="lbl">Peso Líquido (kg)</span>
-        <span class="val-sm">{{ nf.peso_liquido_kg|floatformat:3|default:"—" }}</span>
+      <td style="width:19%">
+        <span class="lbl">Peso Líquido</span>
+        <span class="val2 right">{{ nf.peso_liquido_kg|floatformat:3|default:"—" }}</span>
       </td>
     </tr>
   </table>
 
-  <div style="height:2px"></div>
+  <div style="height:1.5mm"></div>
 
-  <!-- ════════════════ 6. DADOS DO PRODUTO / SERVIÇO ════════════════ -->
-  <div class="section-title">Dados do Produto / Serviço</div>
-  <table class="box items-table">
+  <!-- ═══════════════════════════════════
+       DADOS DOS PRODUTOS / SERVIÇOS
+  ═══════════════════════════════════ -->
+  <div class="sec-hd">Dados dos Produtos / Serviços</div>
+  <table class="bx it-table" style="border-top:none">
     <thead>
       <tr>
-        <th style="width:6%">Cód. Prod.</th>
-        <th style="width:28%">Descrição do Produto / Serviço</th>
-        <th style="width:7%">NCM / SH</th>
-        <th style="width:4%">CST</th>
+        <th style="width:6%">Código<br>Produto</th>
+        <th style="width:26%">Descrição do Produto / Serviço</th>
+        <th style="width:7%">NCM/SH</th>
+        <th style="width:5%">O/CST</th>
         <th style="width:5%">CFOP</th>
-        <th style="width:5%">Unid.</th>
-        <th style="width:7%">Quant.</th>
-        <th style="width:8%">Valor Unit.</th>
-        <th style="width:8%">Valor Total</th>
-        <th style="width:7%">BC ICMS</th>
-        <th style="width:6%">Vl. ICMS</th>
-        <th style="width:6%">Vl. IPI</th>
-        <th style="width:4%">Alíq. ICMS</th>
-        <th style="width:4%">Alíq. IPI</th>
+        <th style="width:5%">UN</th>
+        <th style="width:7%">Quant</th>
+        <th style="width:8%">Valor<br>Unit</th>
+        <th style="width:8%">Valor<br>Total</th>
+        <th style="width:5%">Valor<br>Desc</th>
+        <th style="width:6%">B.Cálc<br>ICMS</th>
+        <th style="width:5%">Valor<br>ICMS</th>
+        <th style="width:5%">Valor<br>IPI</th>
+        <th style="width:4%">Alíq.<br>ICMS</th>
+        <th style="width:4%">Alíq.<br>IPI</th>
       </tr>
     </thead>
     <tbody>
       {% for item in itens %}
       <tr>
-        <td>{{ item.produto.codigo|default:"—" }}</td>
+        <td class="center">{{ item.produto.codigo|default:"—" }}</td>
         <td>
           {{ item.descricao }}
-          {% if item.complemento_descricao %}<br><span style="color:#555;font-size:5.5pt">{{ item.complemento_descricao }}</span>{% endif %}
+          {% if item.complemento_descricao %}<span class="it-trib" style="color:#555">{{ item.complemento_descricao }}</span>{% endif %}
         </td>
         <td class="center">{{ item.ncm|default:"—" }}</td>
-        <td class="center">{{ item.cst_icms|default:"—" }}</td>
+        <td class="center">{{ item.origem_mercadoria|default:"0" }}/{{ item.cst_icms|default:"—" }}</td>
         <td class="center">{{ item.cfop|default:"—" }}</td>
         <td class="center">
           {{ item.unidade }}
-          {% if item.quantidade_tributavel and item.unidade_tributavel and item.unidade_tributavel != item.unidade %}<br><span style="font-size:5pt;color:#555">{{ item.unidade_tributavel }}</span>{% endif %}
+          {% if item.quantidade_tributavel and item.unidade_tributavel and item.unidade_tributavel != item.unidade %}
+          <span class="it-trib">{{ item.unidade_tributavel }}</span>
+          {% endif %}
         </td>
         <td class="num">
           {{ item.quantidade|floatformat:4 }}
-          {% if item.quantidade_tributavel and item.unidade_tributavel and item.unidade_tributavel != item.unidade %}<br><span style="font-size:5pt;color:#555">{{ item.quantidade_tributavel|floatformat:4 }}</span>{% endif %}
+          {% if item.quantidade_tributavel and item.unidade_tributavel and item.unidade_tributavel != item.unidade %}
+          <span class="it-trib right">{{ item.quantidade_tributavel|floatformat:4 }}</span>
+          {% endif %}
         </td>
         <td class="num">
           {{ item.valor_unitario|floatformat:4 }}
-          {% if item.quantidade_tributavel and item.unidade_tributavel and item.unidade_tributavel != item.unidade %}<br><span style="font-size:5pt;color:#555">{{ item.valor_unitario_tributavel|floatformat:10 }}</span>{% endif %}
+          {% if item.quantidade_tributavel and item.unidade_tributavel and item.unidade_tributavel != item.unidade %}
+          <span class="it-trib right">{{ item.valor_unitario_tributavel|floatformat:10 }}</span>
+          {% endif %}
         </td>
         <td class="num">{{ item.valor_total|floatformat:2 }}</td>
+        <td class="num">{{ item.valor_desconto|floatformat:2 }}</td>
         <td class="num">{{ item.icms_base_calculo|floatformat:2 }}</td>
         <td class="num">{{ item.valor_icms|floatformat:2 }}</td>
         <td class="num">{{ item.valor_ipi|floatformat:2 }}</td>
@@ -523,31 +650,33 @@
     </tbody>
   </table>
 
-  <div style="height:2px"></div>
+  <div style="height:1.5mm"></div>
 
-  <!-- ════════════════ 7. DADOS ADICIONAIS ════════════════ -->
-  <div class="section-title">Dados Adicionais</div>
-  <table class="box">
+  <!-- ═══════════════════════════════════
+       DADOS ADICIONAIS
+  ═══════════════════════════════════ -->
+  <div class="sec-hd">Dados Adicionais</div>
+  <table class="bx" style="border-top:none">
     <tr>
-      <td class="box-right" style="width:70%">
+      <td class="br" style="width:70%">
         <span class="lbl">Informações Complementares</span>
-        <div class="add-data">{{ nf.informacoes_complementares|linebreaksbr }}</div>
+        <div style="font-size:6pt;min-height:18mm;padding-top:2px;line-height:1.5">
+          {{ nf.informacoes_complementares|linebreaksbr|default:"" }}
+        </div>
       </td>
       <td style="width:30%">
         <span class="lbl">Reservado ao Fisco</span>
-        <div class="add-data">{{ nf.informacoes_fisco|linebreaksbr }}</div>
+        <div style="font-size:6pt;min-height:18mm;padding-top:2px">
+          {{ nf.informacoes_fisco|linebreaksbr|default:"" }}
+        </div>
       </td>
     </tr>
   </table>
 
-  <!-- ── Rodapé de rascunho ── -->
-  {% if nf.status == 'RASCUNHO' %}
-  <div style="margin-top:6px;text-align:center;font-size:6.5pt;color:#999;border-top:1px dashed #ccc;padding-top:4px">
-    DOCUMENTO SEM VALIDADE FISCAL — PRÉ-VISUALIZAÇÃO GERADA EM {{ "now"|date:"d/m/Y H:i" }} — NF-e ainda não autorizada pela SEFAZ
+  <div style="margin-top:2mm;font-size:5pt;color:#888;text-align:right">
+    Impresso em {{ "now"|date:"d/m/Y" }} às {{ "now"|date:"H:i:s" }}
   </div>
-  {% endif %}
 
 </div><!-- /danfe-page -->
-
 </body>
 </html>

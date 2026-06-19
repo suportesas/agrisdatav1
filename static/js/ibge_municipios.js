@@ -8,6 +8,10 @@
 
   var _cache = {};
 
+  function normalize(str) {
+    return (str || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+  }
+
   function fetchMunicipios(uf, cb) {
     uf = (uf || '').trim().toUpperCase();
     if (uf.length !== 2) { cb([]); return; }
@@ -32,10 +36,13 @@
   }
 
   function autofill(munInput, codInput, municipios) {
-    var nome = (munInput.value || '').trim().toLowerCase();
+    var nome = normalize(munInput.value);
     if (!nome) return;
-    var found = municipios.find(function (m) { return m.nome.toLowerCase() === nome; });
-    if (found) codInput.value = found.id;
+    var found = municipios.find(function (m) { return normalize(m.nome) === nome; });
+    if (found) {
+      codInput.value = found.id;
+      codInput.dispatchEvent(new Event('change'));
+    }
   }
 
   /**
@@ -54,8 +61,14 @@
     munEl.setAttribute('list', datalistId);
     munEl.setAttribute('autocomplete', 'off');
 
+    function getCache() {
+      return _cache[(ufEl.value || '').trim().toUpperCase()] || [];
+    }
+
     function load() {
-      fetchMunicipios(ufEl.value, function (muns) {
+      var uf = (ufEl.value || '').trim().toUpperCase();
+      if (uf.length !== 2) return;
+      fetchMunicipios(uf, function (muns) {
         fillDatalist(datalistId, muns);
         autofill(munEl, codEl, muns);
       });
@@ -64,16 +77,15 @@
     ufEl.addEventListener('change', load);
     ufEl.addEventListener('blur', load);
 
-    munEl.addEventListener('change', function () {
-      var muns = _cache[(ufEl.value || '').trim().toUpperCase()] || [];
-      autofill(munEl, codEl, muns);
-    });
+    // 'input' dispara ao selecionar do datalist imediatamente (sem precisar sair do campo)
+    munEl.addEventListener('input', function () { autofill(munEl, codEl, getCache()); });
+    munEl.addEventListener('change', function () { autofill(munEl, codEl, getCache()); });
 
     // Pré-carregar se UF já preenchida (edição de registro existente)
     if ((ufEl.value || '').trim().length === 2) load();
   }
 
   global.setupIBGEAutocomplete = setupIBGEAutocomplete;
-  global._ibgeMunCache = _cache;       // expõe cache para outros scripts da página
+  global._ibgeMunCache = _cache;
 
 }(window));

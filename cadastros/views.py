@@ -908,16 +908,23 @@ def cfop_delete(request, pk):
 @login_required
 def cfop_autocomplete(request):
     q = request.GET.get('q', '').strip()
+    tipo = request.GET.get('tipo', '')
     # Prefer company-scoped CFOPs when user has empresa
     if request.user.is_authenticated and getattr(request.user, 'empresa', None):
         from .models import EmpresaCFOP
         qs = EmpresaCFOP.objects.filter(empresa=request.user.empresa, ativo=True)
     else:
         qs = CFOP.objects.filter(ativo=True)
+    CTE_PRIORITY = ['6351', '6352', '6353', '5351', '5352', '5353', '6360', '5360']
+    if tipo == 'cte':
+        qs = qs.filter(Q(codigo__startswith='5') | Q(codigo__startswith='6'))
     if q:
         qs = qs.filter(Q(codigo__icontains=q) | Q(nome__icontains=q))
+    raw = list(qs.order_by('codigo')[:30])
+    if tipo == 'cte' and not q:
+        raw.sort(key=lambda c: (0 if c.codigo in CTE_PRIORITY else 1, c.codigo))
     items = []
-    for c in qs.order_by('codigo')[:20]:
+    for c in raw:
         # 1. Try explicit natureza_operacao FK (CFOP global or via template)
         nat = None
         if hasattr(c, 'template') and getattr(c, 'template'):

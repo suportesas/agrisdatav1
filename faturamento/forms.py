@@ -790,7 +790,9 @@ class ConhecimentoTransporteForm(FaturamentoBaseForm):
     class Meta:
         model = ConhecimentoTransporte
         fields = [
-            'remetente', 'destinatario', 'tomador', 'transportadora',
+            'tipo_cte',
+            'remetente', 'destinatario', 'expedidor', 'recebedor',
+            'tipo_tomador', 'tomador', 'transportadora',
             'motorista', 'veiculo',
             'data_emissao', 'cfop', 'natureza_operacao', 'tipo_servico',
             'globalizado', 'referencia_despacho',
@@ -808,7 +810,7 @@ class ConhecimentoTransporteForm(FaturamentoBaseForm):
             'partilha_valor_icms_uf_inicio', 'partilha_valor_icms_uf_fim',
             'partilha_percentual_fcp_uf_fim', 'partilha_valor_fcp_uf_fim',
             # Modal rodoviário
-            'rntrc_override',
+            'placa_veiculo_override', 'rntrc_override',
             # Reforma tributária
             'reforma_cst', 'reforma_classificacao',
             # Fatura
@@ -819,8 +821,12 @@ class ConhecimentoTransporteForm(FaturamentoBaseForm):
         _dec4 = {'class': 'form-control', 'step': '0.0001', 'min': '0'}
         _pct  = {'class': 'form-control', 'step': '0.01', 'min': '0', 'max': '100'}
         widgets = {
+            'tipo_cte':          forms.Select(attrs={'class': 'form-select'}),
             'remetente':         forms.Select(attrs={'class': 'form-select'}),
             'destinatario':      forms.Select(attrs={'class': 'form-select'}),
+            'expedidor':         forms.Select(attrs={'class': 'form-select'}),
+            'recebedor':         forms.Select(attrs={'class': 'form-select'}),
+            'tipo_tomador':      forms.Select(attrs={'class': 'form-select', 'id': 'id_tipo_tomador'}),
             'tomador':           forms.Select(attrs={'class': 'form-select'}),
             'transportadora':    forms.Select(attrs={'class': 'form-select'}),
             'motorista':         forms.Select(attrs={'class': 'form-select'}),
@@ -864,7 +870,8 @@ class ConhecimentoTransporteForm(FaturamentoBaseForm):
             'partilha_percentual_fcp_uf_fim': forms.NumberInput(attrs=_pct),
             'partilha_valor_fcp_uf_fim':     forms.NumberInput(attrs=_dec2),
             # Modal rodoviário
-            'rntrc_override': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Auto (da transportadora)'}),
+            'placa_veiculo_override': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Preenchida ao selecionar o veículo'}),
+            'rntrc_override': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Preenchido ao selecionar a transportadora'}),
             # Reforma tributária
             'reforma_cst':           forms.Select(attrs={'class': 'form-select'}),
             'reforma_classificacao': forms.Select(attrs={'class': 'form-select'}),
@@ -880,14 +887,26 @@ class ConhecimentoTransporteForm(FaturamentoBaseForm):
         if empresa:
             from cadastros.models import Cliente, Transportadora
             from frota.models import Motorista, Vehicle
-            self.fields['remetente'].queryset = Cliente.objects.filter(empresa=empresa, status='ATIVO').order_by('razao_social')
-            self.fields['destinatario'].queryset = Cliente.objects.filter(empresa=empresa, status='ATIVO').order_by('razao_social')
-            self.fields['tomador'].queryset = Cliente.objects.filter(empresa=empresa, status='ATIVO').order_by('razao_social')
+            clientes_ativos = Cliente.objects.filter(empresa=empresa, status='ATIVO').order_by('razao_social')
+            self.fields['remetente'].queryset = clientes_ativos
+            self.fields['destinatario'].queryset = clientes_ativos
+            self.fields['expedidor'].queryset = clientes_ativos
+            self.fields['recebedor'].queryset = clientes_ativos
+            self.fields['tomador'].queryset = clientes_ativos
             self.fields['transportadora'].queryset = Transportadora.objects.filter(empresa=empresa).order_by('razao_social')
             self.fields['motorista'].queryset = Motorista.objects.filter(empresa=empresa, ativo=True).order_by('nome')
             self.fields['veiculo'].queryset = Vehicle.objects.filter(empresa=empresa).order_by('descricao')
-            self.fields['motorista'].required = False
-            self.fields['veiculo'].required = False
+        self.fields['motorista'].required = False
+        self.fields['veiculo'].required = False
+        self.fields['expedidor'].required = False
+        self.fields['recebedor'].required = False
+        self.fields['tomador'].required = False
+
+    def clean(self):
+        cleaned = super().clean()
+        if cleaned.get('tipo_tomador') == '4' and not cleaned.get('tomador'):
+            self.add_error('tomador', 'Informe o Tomador quando "Tomador do Serviço" for "4 - Outros".')
+        return cleaned
 
 
 class CancelarCTeForm(forms.Form):

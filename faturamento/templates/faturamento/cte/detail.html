@@ -48,13 +48,12 @@
         <i class="bi bi-pencil me-1"></i> Editar
       </a>
       {# — Emitir — #}
-      <form method="post" action="{% url 'faturamento:cte_emitir' ct.pk %}" class="d-inline"
-            onsubmit="return confirm('Confirma a emissão do CT-e na SEFAZ?')">
-        {% csrf_token %}
-        <button type="submit" class="btn btn-sm btn-success">
-          <i class="bi bi-send me-1"></i> Emitir na SEFAZ
-        </button>
-      </form>
+      <button type="button" class="btn btn-sm btn-success" id="btn-emitir-cte"
+              data-ajax-url="{% url 'faturamento:cte_emitir_ajax' ct.pk %}"
+              data-poll-url="{% url 'faturamento:cte_consultar_ajax' ct.pk %}"
+              data-csrf="{{ csrf_token }}">
+        <i class="bi bi-send me-1"></i> Emitir na SEFAZ
+      </button>
       {% endif %}
 
       {% if ct.status == 'EMITIDO' or ct.chave_acesso %}
@@ -271,4 +270,202 @@
     {% endif %}
   </div>
 </div>
+
+<!-- Modal: Emissão CT-e (progressivo) -->
+<div class="modal fade" id="modalEmissaoCTe" tabindex="-1"
+     data-bs-backdrop="static" data-bs-keyboard="false" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" style="max-width:520px">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header border-0 pb-0">
+        <h5 class="modal-title fw-semibold">
+          <i class="bi bi-send me-2 text-success"></i>Emissão de CT-e
+        </h5>
+      </div>
+      <div class="modal-body px-4 py-3">
+        <div id="cte-emissao-loading" class="text-center py-3">
+          <div class="spinner-border text-success mb-3" style="width:2.5rem;height:2.5rem"></div>
+          <div class="text-muted small">Validando dados e conectando à SEFAZ...</div>
+        </div>
+        <ul id="cte-emissao-steps" class="list-unstyled mb-0" style="display:none"></ul>
+        <div id="cte-emissao-resultado" style="display:none" class="text-center py-3">
+          <div id="cte-emissao-icone" class="mb-3"></div>
+          <div id="cte-emissao-msg" class="fw-semibold fs-5 mb-1"></div>
+          <div id="cte-emissao-sub" class="text-muted small font-monospace"></div>
+        </div>
+      </div>
+      <div class="modal-footer border-0 pt-0" id="cte-emissao-footer">
+        <div class="text-muted small w-100 text-center">
+          <i class="bi bi-hourglass-split me-1"></i>Aguarde, não feche esta janela...
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .cte-emissao-step { display:flex; gap:.6rem; align-items:flex-start; padding:.45rem 0; border-bottom:1px solid #f0f0f0; animation: cteStepIn .25s ease; }
+  .cte-emissao-step:last-child { border-bottom:none; }
+  .cte-emissao-step .step-icon { font-size:1rem; flex-shrink:0; padding-top:1px; }
+  .cte-emissao-step .step-label { font-size:.875rem; font-weight:600; }
+  .cte-emissao-step .step-msg   { font-size:.78rem; color:#6c757d; margin-top:2px; }
+  .cte-emissao-step .step-errors { font-size:.78rem; color:#dc3545; margin-top:4px; padding-left:0; list-style:none; }
+  .cte-emissao-step .step-errors li::before { content:"• "; }
+  .cte-emissao-step .step-fix { font-size:.78rem; margin-top:4px; }
+  @keyframes cteStepIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:none} }
+</style>
+
+<script>
+(function () {
+  var btnEmitir = document.getElementById('btn-emitir-cte');
+  if (!btnEmitir) return;
+
+  var ajaxUrl  = btnEmitir.dataset.ajaxUrl;
+  var pollUrl  = btnEmitir.dataset.pollUrl;
+  var csrf     = btnEmitir.dataset.csrf;
+
+  var loadingEl   = document.getElementById('cte-emissao-loading');
+  var stepsEl     = document.getElementById('cte-emissao-steps');
+  var resultadoEl = document.getElementById('cte-emissao-resultado');
+  var iconeEl     = document.getElementById('cte-emissao-icone');
+  var msgEl       = document.getElementById('cte-emissao-msg');
+  var subEl       = document.getElementById('cte-emissao-sub');
+  var footerEl    = document.getElementById('cte-emissao-footer');
+
+  var modal = null;
+  function getModal() {
+    if (!modal) modal = new bootstrap.Modal(document.getElementById('modalEmissaoCTe'));
+    return modal;
+  }
+
+  function resetModal() {
+    loadingEl.style.display   = '';
+    stepsEl.style.display     = 'none';
+    stepsEl.innerHTML         = '';
+    resultadoEl.style.display = 'none';
+    footerEl.innerHTML        = '<div class="text-muted small w-100 text-center"><i class="bi bi-hourglass-split me-1"></i>Aguarde, não feche esta janela...</div>';
+  }
+
+  function iconHtml(status) {
+    var icons = {
+      ok:         '<i class="bi bi-check-circle-fill text-success"></i>',
+      error:      '<i class="bi bi-x-circle-fill text-danger"></i>',
+      warning:    '<i class="bi bi-exclamation-triangle-fill text-warning"></i>',
+      pending:    '<i class="bi bi-hourglass-split text-warning"></i>',
+      authorized: '<i class="bi bi-check-circle-fill text-success"></i>',
+    };
+    return icons[status] || '';
+  }
+
+  function renderStep(s) {
+    var li = document.createElement('li');
+    li.className = 'cte-emissao-step';
+    var errorsHtml = '';
+    if (s.errors && s.errors.length) {
+      errorsHtml = '<ul class="step-errors">' + s.errors.map(function(e){ return '<li>' + e + '</li>'; }).join('') + '</ul>';
+    }
+    var fixHtml = '';
+    if (s.fix_url) {
+      fixHtml = '<div class="step-fix"><a href="' + s.fix_url + '" class="btn btn-sm btn-outline-danger py-0 px-2"><i class="bi bi-arrow-right-circle me-1"></i>' + (s.fix_label || 'Corrigir') + '</a></div>';
+    }
+    li.innerHTML = '<div class="step-icon">' + iconHtml(s.status) + '</div>' +
+      '<div class="step-body"><div class="step-label">' + s.label + '</div>' +
+      (s.message ? '<div class="step-msg">' + s.message + '</div>' : '') +
+      errorsHtml + fixHtml + '</div>';
+    return li;
+  }
+
+  function animateSteps(steps, onDone) {
+    stepsEl.style.display = '';
+    var i = 0;
+    function next() {
+      if (i >= steps.length) { onDone(); return; }
+      stepsEl.appendChild(renderStep(steps[i]));
+      i++;
+      setTimeout(next, 350);
+    }
+    next();
+  }
+
+  function iniciarPolling(chave) {
+    var tentativas = 0, MAX = 12, INTERVALO = 5000;
+    function verificar() {
+      tentativas++;
+      subEl.innerHTML = '<code style="font-size:.65rem">' + chave + '</code><br>' +
+        '<small class="text-muted">Verificando SEFAZ… (tentativa ' + tentativas + '/' + MAX + ')</small>';
+      fetch(pollUrl, { method: 'POST', headers: { 'X-CSRFToken': csrf } })
+        .then(function(r){ return r.json(); })
+        .then(function(res) {
+          if (res.status === 'authorized') {
+            iconeEl.innerHTML = '<i class="bi bi-patch-check-fill text-success" style="font-size:4rem"></i>';
+            msgEl.textContent = 'CT-e Autorizado pela SEFAZ!';
+            msgEl.className = 'fw-semibold fs-5 mb-1 text-success';
+            subEl.innerHTML = 'Protocolo: <strong>' + res.protocolo + '</strong>';
+            var btns = '<button class="btn btn-outline-secondary btn-sm" onclick="location.reload()">Fechar</button> ';
+            if (res.has_dacte) btns += '<a href="' + res.dacte_url + '" class="btn btn-primary btn-sm" target="_blank"><i class="bi bi-printer me-1"></i>DACTE</a>';
+            footerEl.innerHTML = btns;
+          } else if (res.status === 'rejected') {
+            iconeEl.innerHTML = '<i class="bi bi-x-octagon-fill text-danger" style="font-size:3.5rem"></i>';
+            msgEl.textContent = 'CT-e REJEITADO pela SEFAZ';
+            msgEl.className = 'fw-semibold fs-5 mb-1 text-danger';
+            subEl.innerHTML = '<div class="alert alert-danger py-2 mt-2 mb-0 text-start small"><strong>Código ' + res.codigo + ':</strong><br>' + res.mensagem + '</div>';
+            footerEl.innerHTML = '<button class="btn btn-warning btn-sm" onclick="location.reload()">Fechar e corrigir</button>';
+          } else if (res.status === 'pending' && tentativas < MAX) {
+            setTimeout(verificar, INTERVALO);
+          } else {
+            subEl.innerHTML = '<code style="font-size:.65rem">' + chave + '</code><br><small class="text-muted">Tempo esgotado. Use "Consultar Situação SEFAZ" para verificar manualmente.</small>';
+            footerEl.innerHTML = '<button class="btn btn-outline-secondary btn-sm" onclick="location.reload()">Fechar e verificar</button>';
+          }
+        })
+        .catch(function() { if (tentativas < MAX) setTimeout(verificar, INTERVALO); });
+    }
+    setTimeout(verificar, INTERVALO);
+  }
+
+  function showResultado(data) {
+    resultadoEl.style.display = '';
+    if (data.authorized) {
+      iconeEl.innerHTML = '<i class="bi bi-patch-check-fill text-success" style="font-size:4rem"></i>';
+      msgEl.textContent = 'CT-e Autorizado pela SEFAZ!';
+      msgEl.className = 'fw-semibold fs-5 mb-1 text-success';
+      subEl.innerHTML = 'Protocolo: <strong>' + data.protocolo + '</strong>';
+      var btns = '<button class="btn btn-outline-secondary btn-sm" onclick="location.reload()">Fechar</button> ';
+      if (data.has_dacte) btns += '<a href="' + data.dacte_url + '" class="btn btn-primary btn-sm" target="_blank"><i class="bi bi-printer me-1"></i>DACTE</a>';
+      footerEl.innerHTML = btns;
+    } else if (data.pending) {
+      iconeEl.innerHTML = '<i class="bi bi-hourglass-split text-warning" style="font-size:3.5rem"></i>';
+      msgEl.textContent = 'Aguardando autorização da SEFAZ';
+      msgEl.className = 'fw-semibold fs-5 mb-1 text-warning';
+      subEl.innerHTML = '<code style="font-size:.65rem">' + data.chave + '</code><br><small class="text-muted">Verificando resposta automaticamente…</small>';
+      footerEl.innerHTML = '<button class="btn btn-outline-secondary btn-sm" onclick="location.reload()">Fechar e atualizar</button>';
+      iniciarPolling(data.chave);
+    } else {
+      iconeEl.innerHTML = '<i class="bi bi-x-octagon-fill text-danger" style="font-size:3.5rem"></i>';
+      msgEl.textContent = 'Não foi possível emitir o CT-e';
+      msgEl.className = 'fw-semibold fs-5 mb-1 text-danger';
+      subEl.textContent = 'Corrija os erros indicados acima e tente novamente.';
+      footerEl.innerHTML = '<button class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Fechar</button>';
+    }
+  }
+
+  btnEmitir.addEventListener('click', function () {
+    resetModal();
+    getModal().show();
+    fetch(ajaxUrl, { method: 'POST', headers: { 'X-CSRFToken': csrf, 'Accept': 'application/json' } })
+      .then(function(r){ return r.json(); })
+      .then(function(data) {
+        loadingEl.style.display = 'none';
+        animateSteps(data.steps, function(){ showResultado(data); });
+      })
+      .catch(function(err) {
+        loadingEl.style.display = 'none';
+        stepsEl.style.display = '';
+        var li = document.createElement('li');
+        li.className = 'cte-emissao-step';
+        li.innerHTML = '<div class="step-icon">' + iconHtml('error') + '</div><div class="step-body"><div class="step-label text-danger">Falha de comunicação</div><div class="step-msg">' + err + '</div></div>';
+        stepsEl.appendChild(li);
+        showResultado({ success: false });
+      });
+  });
+})();
+</script>
 {% endblock %}

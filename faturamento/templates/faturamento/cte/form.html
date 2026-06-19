@@ -40,13 +40,13 @@
         </button>
       </li>
       <li class="nav-item">
-        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-tributos" type="button">
-          <i class="bi bi-bank me-1"></i>Tributação
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-cobrancas" type="button">
+          <i class="bi bi-receipt me-1"></i>Valores e Cobranças
         </button>
       </li>
       <li class="nav-item">
-        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-cobrancas" type="button">
-          <i class="bi bi-receipt me-1"></i>Valores e Cobranças
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-tributos" type="button">
+          <i class="bi bi-bank me-1"></i>Tributação
         </button>
       </li>
       <li class="nav-item">
@@ -57,6 +57,15 @@
       <li class="nav-item">
         <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-obs" type="button">
           <i class="bi bi-chat-left-text me-1"></i>Informações Adicionais
+        </button>
+      </li>
+      <li class="nav-item ms-auto d-flex align-items-center pe-1">
+        <button type="button" id="btn-ajuda-aba"
+                class="btn btn-link p-0 text-muted"
+                style="font-size:1.1rem;line-height:1;opacity:.55;"
+                title="Ajuda sobre esta aba"
+                data-bs-toggle="modal" data-bs-target="#modalAjudaAba">
+          <i class="bi bi-question-circle"></i>
         </button>
       </li>
     </ul>
@@ -73,6 +82,14 @@
           <div class="card-body">
             <div class="row g-3">
               <div class="col-md-4">
+                <label class="form-label">Tomador do Serviço <span class="text-danger">*</span></label>
+                {{ form.tipo_tomador }}
+              </div>
+              <div class="col-md-4 {% if form.tipo_tomador.value != '4' %}d-none{% endif %}" id="bloco-tomador-outros">
+                <label class="form-label">Tomador (Outros) <span class="text-danger">*</span></label>
+                {{ form.tomador }}
+              </div>
+              <div class="col-md-4">
                 <label class="form-label">Remetente <span class="text-danger">*</span></label>
                 {{ form.remetente }}
               </div>
@@ -81,8 +98,12 @@
                 {{ form.destinatario }}
               </div>
               <div class="col-md-4">
-                <label class="form-label">Tomador do Serviço <span class="text-danger">*</span></label>
-                {{ form.tomador }}
+                <label class="form-label">Expedidor</label>
+                {{ form.expedidor }}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Recebedor</label>
+                {{ form.recebedor }}
               </div>
               <div class="col-md-4">
                 <label class="form-label">Transportadora <span class="text-danger">*</span></label>
@@ -106,21 +127,25 @@
           <div class="card-body">
             <div class="row g-3">
               <div class="col-md-3">
+                <label class="form-label">Tipo do CT-e <span class="text-danger">*</span></label>
+                {{ form.tipo_cte }}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">Tipo de Serviço <span class="text-danger">*</span></label>
+                {{ form.tipo_servico }}
+              </div>
+              <div class="col-md-3">
                 <label class="form-label">Data de Emissão <span class="text-danger">*</span></label>
                 {{ form.data_emissao }}
               </div>
-              <div class="col-md-2" style="position:relative;">
+              <div class="col-md-3" style="position:relative;">
                 <label class="form-label">CFOP</label>
                 {{ form.cfop }}
                 <div id="cfop-dropdown" style="display:none;position:absolute;z-index:1055;width:340px;background:#fff;border:1px solid #c4b5fd;border-radius:8px;box-shadow:0 4px 16px rgba(124,58,237,.12);max-height:260px;overflow-y:auto;margin-top:2px;"></div>
               </div>
-              <div class="col-md-4">
+              <div class="col-md-12">
                 <label class="form-label">Natureza da Operação</label>
                 {{ form.natureza_operacao }}
-              </div>
-              <div class="col-md-3">
-                <label class="form-label">Tipo de Serviço</label>
-                {{ form.tipo_servico }}
               </div>
             </div>
 
@@ -156,45 +181,52 @@
         <div class="card">
           <div class="card-header py-2"><i class="bi bi-map me-1"></i> Percurso (Origem → Destino)</div>
           <div class="card-body">
-            <div class="row g-3">
+            <div class="alert alert-info d-flex align-items-center gap-2 py-2 mb-3" style="font-size:.85rem;">
+              <i class="bi bi-magic"></i>
+              <span>Preencha a <strong>UF</strong> e depois escolha o <strong>Município</strong> na lista — o código IBGE será preenchido automaticamente.</span>
+            </div>
+            <div class="row g-3 align-items-end mb-3">
               <div class="col-md-2">
-                <label class="form-label">UF de Início <span class="text-danger">*</span></label>
+                <label class="form-label fw-semibold">UF Origem <span class="text-danger">*</span></label>
                 {{ form.uf_inicio }}
               </div>
-              <div class="col-md-4">
-                <label class="form-label">Município de Início <span class="text-danger">*</span></label>
-                {{ form.municipio_inicio }}
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Município de Início <span class="text-danger">*</span></label>
+                <div class="input-group">
+                  {{ form.municipio_inicio }}
+                  <span class="input-group-text bg-white" title="Selecione o município para preencher o código IBGE automaticamente">
+                    <i class="bi bi-geo-alt text-primary"></i>
+                  </span>
+                </div>
               </div>
-              <div class="col-md-2">
-                <label class="form-label">
-                  Cód. IBGE Início <span class="text-danger">*</span>
-                  <a href="https://servicodados.ibge.gov.br/api/docs/localidades" target="_blank"
-                     class="ms-1 text-muted" style="font-size:.75rem;" title="Consultar códigos IBGE">
-                    <i class="bi bi-question-circle"></i>
-                  </a>
+              <div class="col-md-4">
+                <label class="form-label fw-semibold">
+                  Cód. IBGE <span class="text-danger">*</span>
+                  <span class="badge bg-success ms-1" style="font-size:.65rem;vertical-align:middle;">Auto</span>
                 </label>
                 {{ form.codigo_municipio_inicio }}
-                <div class="form-text">7 dígitos — ex: 2408003 (Mossoró)</div>
               </div>
-              <div class="col-md-1"></div>
+            </div>
+            <div class="row g-3 align-items-end">
               <div class="col-md-2">
-                <label class="form-label">UF de Fim <span class="text-danger">*</span></label>
+                <label class="form-label fw-semibold">UF Destino <span class="text-danger">*</span></label>
                 {{ form.uf_fim }}
               </div>
-              <div class="col-md-4">
-                <label class="form-label">Município de Fim <span class="text-danger">*</span></label>
-                {{ form.municipio_fim }}
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Município de Fim <span class="text-danger">*</span></label>
+                <div class="input-group">
+                  {{ form.municipio_fim }}
+                  <span class="input-group-text bg-white" title="Selecione o município para preencher o código IBGE automaticamente">
+                    <i class="bi bi-geo-alt text-primary"></i>
+                  </span>
+                </div>
               </div>
-              <div class="col-md-2">
-                <label class="form-label">
-                  Cód. IBGE Fim <span class="text-danger">*</span>
-                  <a href="https://servicodados.ibge.gov.br/api/docs/localidades" target="_blank"
-                     class="ms-1 text-muted" style="font-size:.75rem;" title="Consultar códigos IBGE">
-                    <i class="bi bi-question-circle"></i>
-                  </a>
+              <div class="col-md-4">
+                <label class="form-label fw-semibold">
+                  Cód. IBGE <span class="text-danger">*</span>
+                  <span class="badge bg-success ms-1" style="font-size:.65rem;vertical-align:middle;">Auto</span>
                 </label>
                 {{ form.codigo_municipio_fim }}
-                <div class="form-text">7 dígitos — ex: 3550308 (São Paulo)</div>
               </div>
             </div>
           </div>
@@ -237,26 +269,111 @@
             <div class="row g-3 align-items-end">
               <div class="col-md-3">
                 <label class="form-label">Placa do Veículo</label>
-                <input type="text" id="placa-display" class="form-control bg-light" readonly
-                       placeholder="Preenchido ao selecionar o veículo" title="Placa atual do veículo selecionado">
-                <div class="form-text">Lida do cadastro do veículo selecionado.</div>
+                {{ form.placa_veiculo_override }}
+                <div class="form-text">Preenchida automaticamente. Edite se necessário.</div>
               </div>
               <div class="col-md-3">
                 <label class="form-label">RNTRC da Transportadora</label>
-                <input type="text" id="rntrc-display" class="form-control bg-light" readonly
-                       placeholder="Preenchido automaticamente" title="RNTRC registrado na transportadora">
-                <div class="form-text">Lido do cadastro da transportadora selecionada.</div>
-              </div>
-              <div class="col-md-3">
-                <label class="form-label">RNTRC — override <span class="badge bg-secondary ms-1" style="font-size:.7rem;">opcional</span></label>
                 {{ form.rntrc_override }}
-                <div class="form-text">Preencha só se quiser sobrescrever o RNTRC neste CT-e.</div>
+                <div class="form-text">Preenchido automaticamente. Edite se necessário.</div>
               </div>
             </div>
           </div>
         </div>
 
       </div><!-- /tab-carga -->
+
+
+      <!-- ═══ ABA TRIBUTAÇÃO ══════════════════════════════════════════════════ -->
+      <!-- ═══ ABA VALORES E COBRANÇAS ════════════════════════════════════════ -->
+      <div class="tab-pane fade" id="tab-cobrancas">
+
+        <!-- Serviços -->
+        <div class="card mb-3">
+          <div class="card-header py-2"><i class="bi bi-currency-dollar me-1"></i> Serviços</div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-md-3">
+                <label class="form-label">Valor Total da Prestação <span class="text-danger">*</span></label>
+                {{ form.valor_servico }}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">Valor a Receber</label>
+                {{ form.valor_receber }}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">Valor Aproximado dos Tributos</label>
+                {{ form.valor_aproximado_tributos }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Fatura -->
+        <div class="card mb-3">
+          <div class="card-header py-2"><i class="bi bi-receipt-cutoff me-1"></i> Fatura</div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-md-3">
+                <label class="form-label">Número</label>
+                {{ form.fatura_numero }}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">Valor Origem (R$)</label>
+                {{ form.fatura_valor_original }}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">Valor Desconto (R$)</label>
+                {{ form.fatura_valor_desconto }}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">Valor Final (R$)</label>
+                <input type="text" id="fatura-valor-final" class="form-control bg-light" readonly placeholder="Calculado automaticamente">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Prestações (componentes do frete) -->
+        <div class="card">
+          <div class="card-header py-2">
+            Prestações <span class="badge bg-secondary ms-1" style="font-size:.7rem;">componentes do valor do frete</span>
+          </div>
+          <div class="card-body">
+            {{ comp_formset.management_form }}
+            <table class="table table-sm" id="comp-table">
+              <thead class="table-light">
+                <tr>
+                  <th>Nome</th>
+                  <th style="width:160px;">Valor (R$)</th>
+                  <th style="width:40px;"></th>
+                </tr>
+              </thead>
+              <tbody id="comp-tbody">
+                {% for cf in comp_formset %}
+                <tr>
+                  <td>{{ cf.nome }}{{ cf.id }}</td>
+                  <td>{{ cf.valor }}</td>
+                  <td>{{ cf.DELETE }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+            <table style="display:none"><tbody id="comp-empty-row">
+              <tr id="comp-template-row">
+                <td><input type="text" name="comp-__prefix__-nome" maxlength="60" class="form-control form-control-sm" placeholder="Ex: FRETE PESO, FRETE VALOR, SEC/CAT, ADEME…" id="id_comp-__prefix__-nome"></td>
+                <td><input type="number" name="comp-__prefix__-valor" step="0.01" min="0" class="form-control form-control-sm text-end" id="id_comp-__prefix__-valor" value="0"></td>
+                <td><input type="checkbox" name="comp-__prefix__-DELETE" id="id_comp-__prefix__-DELETE" class="form-check-input">
+                    <input type="hidden" name="comp-__prefix__-id" id="id_comp-__prefix__-id"></td>
+              </tr>
+            </tbody></table>
+            <button type="button" class="btn btn-outline-secondary btn-sm mt-2" onclick="adicionarLinhaPrestacao()">
+              <i class="bi bi-plus-circle me-1"></i> Adicionar Prestação
+            </button>
+          </div>
+        </div>
+
+      </div><!-- /tab-cobrancas -->
 
 
       <!-- ═══ ABA TRIBUTAÇÃO ══════════════════════════════════════════════════ -->
@@ -369,97 +486,6 @@
       </div><!-- /tab-tributos -->
 
 
-      <!-- ═══ ABA VALORES E COBRANÇAS ════════════════════════════════════════ -->
-      <div class="tab-pane fade" id="tab-cobrancas">
-
-        <!-- Serviços -->
-        <div class="card mb-3">
-          <div class="card-header py-2"><i class="bi bi-currency-dollar me-1"></i> Serviços</div>
-          <div class="card-body">
-            <div class="row g-3">
-              <div class="col-md-3">
-                <label class="form-label">Valor Total da Prestação <span class="text-danger">*</span></label>
-                {{ form.valor_servico }}
-              </div>
-              <div class="col-md-3">
-                <label class="form-label">Valor a Receber</label>
-                {{ form.valor_receber }}
-              </div>
-              <div class="col-md-3">
-                <label class="form-label">Valor Aproximado dos Tributos</label>
-                {{ form.valor_aproximado_tributos }}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Fatura -->
-        <div class="card mb-3">
-          <div class="card-header py-2"><i class="bi bi-receipt-cutoff me-1"></i> Fatura</div>
-          <div class="card-body">
-            <div class="row g-3">
-              <div class="col-md-3">
-                <label class="form-label">Número</label>
-                {{ form.fatura_numero }}
-              </div>
-              <div class="col-md-3">
-                <label class="form-label">Valor Origem (R$)</label>
-                {{ form.fatura_valor_original }}
-              </div>
-              <div class="col-md-3">
-                <label class="form-label">Valor Desconto (R$)</label>
-                {{ form.fatura_valor_desconto }}
-              </div>
-              <div class="col-md-3">
-                <label class="form-label">Valor Final (R$)</label>
-                <input type="text" id="fatura-valor-final" class="form-control bg-light" readonly placeholder="Calculado automaticamente">
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Prestações (componentes do frete) -->
-        <div class="card">
-          <div class="card-header py-2">
-            Prestações <span class="badge bg-secondary ms-1" style="font-size:.7rem;">componentes do valor do frete</span>
-          </div>
-          <div class="card-body">
-            {{ comp_formset.management_form }}
-            <table class="table table-sm" id="comp-table">
-              <thead class="table-light">
-                <tr>
-                  <th>Nome</th>
-                  <th style="width:160px;">Valor (R$)</th>
-                  <th style="width:40px;"></th>
-                </tr>
-              </thead>
-              <tbody id="comp-tbody">
-                {% for cf in comp_formset %}
-                <tr>
-                  <td>{{ cf.nome }}{{ cf.id }}</td>
-                  <td>{{ cf.valor }}</td>
-                  <td>{{ cf.DELETE }}</td>
-                </tr>
-                {% endfor %}
-              </tbody>
-            </table>
-            <table style="display:none"><tbody id="comp-empty-row">
-              <tr id="comp-template-row">
-                <td><input type="text" name="comp-__prefix__-nome" maxlength="60" class="form-control form-control-sm" placeholder="Ex: FRETE PESO, FRETE VALOR, SEC/CAT, ADEME…" id="id_comp-__prefix__-nome"></td>
-                <td><input type="number" name="comp-__prefix__-valor" step="0.01" min="0" class="form-control form-control-sm text-end" id="id_comp-__prefix__-valor" value="0"></td>
-                <td><input type="checkbox" name="comp-__prefix__-DELETE" id="id_comp-__prefix__-DELETE" class="form-check-input">
-                    <input type="hidden" name="comp-__prefix__-id" id="id_comp-__prefix__-id"></td>
-              </tr>
-            </tbody></table>
-            <button type="button" class="btn btn-outline-secondary btn-sm mt-2" onclick="adicionarLinhaPrestacao()">
-              <i class="bi bi-plus-circle me-1"></i> Adicionar Prestação
-            </button>
-          </div>
-        </div>
-
-      </div><!-- /tab-cobrancas -->
-
-
       <!-- ═══ ABA DOCUMENTOS (NF-e / CT-e) ════════════════════════════════════ -->
       <div class="tab-pane fade" id="tab-documentos">
         <div class="d-flex align-items-center justify-content-between mb-2">
@@ -536,6 +562,24 @@
       <a href="{% url 'faturamento:cte_list' %}" class="btn btn-outline-secondary">Cancelar</a>
     </div>
   </form>
+</div>
+
+<!-- Modal: Ajuda por aba -->
+<div class="modal fade" id="modalAjudaAba" tabindex="-1" aria-labelledby="modalAjudaAbaLbl" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" style="max-width:520px;">
+    <div class="modal-content">
+      <div class="modal-header py-2 border-0" style="background:linear-gradient(135deg,#7c3aed 0%,#06b6d4 100%);">
+        <h6 class="modal-title text-white fw-semibold mb-0" id="modalAjudaAbaLbl">
+          <i class="bi bi-question-circle me-2"></i><span id="ajuda-titulo"></span>
+        </h6>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="ajuda-corpo" style="font-size:.9rem;line-height:1.6;"></div>
+      <div class="modal-footer py-2 border-0">
+        <button type="button" class="btn btn-sm btn-primary" data-bs-dismiss="modal">Entendido</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- Modal: Importar de NF-e -->
@@ -1157,6 +1201,29 @@ function adicionarLinhaFormset(chave, descricao) {
 </script>
 
 <script>
+// Tomador do Serviço: mostrar/esconder bloco "Tomador (Outros)" quando tipo=4
+(function(){
+  'use strict';
+  var sel   = document.getElementById('id_tipo_tomador');
+  var bloco = document.getElementById('bloco-tomador-outros');
+
+  function sync(){
+    if (!bloco) return;
+    if (sel && sel.value === '4') {
+      bloco.classList.remove('d-none');
+    } else {
+      bloco.classList.add('d-none');
+    }
+  }
+
+  if (sel) sel.addEventListener('change', sync);
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', sync);
+  } else {
+    sync();
+  }
+})();
+
 // CT-e Globalizado: mostrar/esconder campo referencia_despacho
 (function(){
   'use strict';
@@ -1220,20 +1287,20 @@ function adicionarLinhaPrestacao() {
   totalInput.value = idx + 1;
 }
 
-// Auto-fill Placa from selected vehicle
+// Auto-fill Placa from selected vehicle (preenche id_placa_veiculo_override se estiver vazio)
 (function(){
   'use strict';
   var veiculoSel = document.getElementById('id_veiculo');
-  var placaDisp  = document.getElementById('placa-display');
+  var placaInput = document.getElementById('id_placa_veiculo_override');
   var VEI_URL    = "{% url 'frota:api_vehicles' %}";
 
   function loadPlaca(pk){
-    if (!pk || !placaDisp) return;
+    if (!pk || !placaInput) return;
     fetch(VEI_URL + '?per=500')
       .then(function(r){ return r.json(); })
       .then(function(data){
         var item = (data.items || []).find(function(v){ return String(v.id) === String(pk); });
-        placaDisp.value = (item && item.placa_atual) ? item.placa_atual : '';
+        if (item && item.placa_atual) placaInput.value = item.placa_atual;
       }).catch(function(){});
   }
 
@@ -1243,20 +1310,20 @@ function adicionarLinhaPrestacao() {
   }
 })();
 
-// Auto-fill RNTRC from selected transportadora
+// Auto-fill RNTRC from selected transportadora (preenche id_rntrc_override se estiver vazio)
 (function(){
   'use strict';
   var transpSel  = document.getElementById('id_transportadora');
-  var rntrcDisp  = document.getElementById('rntrc-display');
+  var rntrcInput = document.getElementById('id_rntrc_override');
   var API_URL    = "{% url 'cadastros:api_transportadoras' %}";
 
   function loadRntrc(pk){
-    if (!pk || !rntrcDisp) return;
+    if (!pk || !rntrcInput) return;
     fetch(API_URL + '?per=200')
       .then(function(r){ return r.json(); })
       .then(function(data){
         var item = (data.items || []).find(function(t){ return String(t.id) === String(pk); });
-        rntrcDisp.value = (item && item.rntc) ? item.rntc : '';
+        if (item && item.rntc) rntrcInput.value = item.rntc;
       }).catch(function(){});
   }
 
@@ -1295,6 +1362,39 @@ function adicionarLinhaPrestacao() {
   calcIcms();
 })();
 </script>
+
+<script>
+// Auto-preenchimento da Base de Cálculo ICMS conforme CST selecionado
+(function () {
+  'use strict';
+  var cstSel    = document.getElementById('id_cst_icms');
+  var valorServ = document.getElementById('id_valor_servico');
+  var bcInput   = document.getElementById('id_base_calculo_icms');
+  var redInput  = document.getElementById('id_reducao_base_icms');
+
+  function preencheBC() {
+    if (!cstSel || !valorServ || !bcInput) return;
+    var cst = cstSel.value;
+    var vt  = parseFloat(valorServ.value || 0);
+
+    if (cst === '00') {
+      bcInput.value = vt.toFixed(2);
+      bcInput.dispatchEvent(new Event('input'));
+    } else if (cst === '20') {
+      var red = parseFloat((redInput && redInput.value) || 0);
+      bcInput.value = (vt * (1 - red / 100)).toFixed(2);
+      bcInput.dispatchEvent(new Event('input'));
+    }
+  }
+
+  if (cstSel)    cstSel.addEventListener('change', preencheBC);
+  if (valorServ) valorServ.addEventListener('input', preencheBC);
+  if (redInput)  redInput.addEventListener('input', preencheBC);
+
+  preencheBC();
+})();
+</script>
+
 <script>
 (function (){
   'use strict';
@@ -1302,7 +1402,7 @@ function adicionarLinhaPrestacao() {
   var dropdown   = document.getElementById('cfop-dropdown');
   var natInput   = document.getElementById('id_natureza_operacao');
   var timer      = null;
-  var AUTOCOMPLETE_URL = "{% url 'cadastros:cfop_autocomplete' %}";
+  var AUTOCOMPLETE_URL = "{% url 'cadastros:cfop_autocomplete' %}?tipo=cte";
   var activeIdx  = -1;
   var lastItems  = [];
 
@@ -1366,7 +1466,7 @@ function adicionarLinhaPrestacao() {
     var q = cfopInput.value.trim();
     if (!q){ closeDropdown(); return; }
     timer = setTimeout(function(){
-      fetch(AUTOCOMPLETE_URL + '?q=' + encodeURIComponent(q))
+      fetch(AUTOCOMPLETE_URL + '&q=' + encodeURIComponent(q))
         .then(function(r){ return r.json(); })
         .then(function(data){ renderDropdown(data.items || []); })
         .catch(function(){ closeDropdown(); });
@@ -1402,5 +1502,126 @@ document.addEventListener('DOMContentLoaded', function () {
   setupIBGEAutocomplete('id_uf_inicio', 'id_municipio_inicio', 'id_codigo_municipio_inicio', 'dl-mun-inicio');
   setupIBGEAutocomplete('id_uf_fim',    'id_municipio_fim',    'id_codigo_municipio_fim',    'dl-mun-fim');
 });
+</script>
+
+<script>
+// Ajuda por aba — conteúdo de cada aba
+(function () {
+  'use strict';
+
+  var AJUDA = {
+    'tab-geral': {
+      titulo: 'Aba Geral',
+      corpo: `
+        <p><strong>Partes Envolvidas</strong></p>
+        <ul class="mb-3">
+          <li><strong>Tomador do Serviço</strong> — quem paga o frete. Escolha o papel (Remetente, Expedidor, Recebedor, Destinatário ou Outros). Se "Outros", selecione o cliente correspondente.</li>
+          <li><strong>Remetente</strong> — quem envia a mercadoria.</li>
+          <li><strong>Destinatário</strong> — quem recebe a mercadoria.</li>
+          <li><strong>Expedidor / Recebedor</strong> — intermediários opcionais de entrega/coleta.</li>
+        </ul>
+        <p><strong>Dados do Documento</strong></p>
+        <ul class="mb-0">
+          <li><strong>Tipo do CT-e</strong> — use "Normal" na maioria dos casos. "Complemento" e "Anulação" são para correções.</li>
+          <li><strong>CFOP</strong> — código fiscal da operação. Digite as primeiras letras para pesquisar. O mais comum para transporte interestadual é <em>6351</em>.</li>
+          <li><strong>CT-e Globalizado</strong> — marque quando o CT-e cobrir múltiplas NF-e de uma mesma coleta dentro do mesmo Estado.</li>
+        </ul>`
+    },
+    'tab-percurso': {
+      titulo: 'Aba Percurso',
+      corpo: `
+        <p>Informe a origem e o destino do transporte.</p>
+        <ul class="mb-3">
+          <li><strong>UF de Início / UF de Fim</strong> — sigla do estado (ex: <em>RN</em>, <em>SP</em>).</li>
+          <li><strong>Município de Início / Município de Fim</strong> — preencha a UF primeiro, depois escolha o município na lista que aparece.</li>
+          <li><strong>Cód. IBGE</strong> — preenchido automaticamente ao selecionar o município. Contém 7 dígitos e identifica o município para a SEFAZ.</li>
+        </ul>
+        <p class="mb-0 text-muted small">Dica: ao digitar a UF e sair do campo, os municípios já são carregados para o campo de busca.</p>`
+    },
+    'tab-carga': {
+      titulo: 'Aba Carga e Modal',
+      corpo: `
+        <p><strong>Carga e Transporte</strong></p>
+        <ul class="mb-3">
+          <li><strong>Valor da Carga</strong> — valor total das mercadorias transportadas (soma das NF-e).</li>
+          <li><strong>Peso Bruto (kg)</strong> — peso total da carga em quilogramas.</li>
+          <li><strong>Modalidade de Frete</strong> — <em>CIF</em>: frete por conta do remetente; <em>FOB</em>: por conta do destinatário/tomador.</li>
+          <li><strong>Produto Predominante</strong> — ex: SOJA, MILHO, ALGODÃO.</li>
+        </ul>
+        <p><strong>Modal Rodoviário</strong></p>
+        <ul class="mb-0">
+          <li><strong>Placa do Veículo</strong> — preenchida automaticamente ao selecionar o veículo. Pode ser editada se necessário.</li>
+          <li><strong>RNTRC</strong> — registro da transportadora no ANTT. Preenchido automaticamente; edite apenas se o número for diferente para este CT-e.</li>
+        </ul>`
+    },
+    'tab-cobrancas': {
+      titulo: 'Aba Valores e Cobranças',
+      corpo: `
+        <p><strong>Serviços</strong></p>
+        <ul class="mb-3">
+          <li><strong>Valor Total da Prestação</strong> — valor total do serviço de transporte cobrado.</li>
+          <li><strong>Valor a Receber</strong> — valor líquido a receber após descontos.</li>
+          <li><strong>Valor Aproximado dos Tributos</strong> — conforme Lei 12.741/2012.</li>
+        </ul>
+        <p><strong>Fatura</strong></p>
+        <ul class="mb-3">
+          <li>Preencha quando o CT-e possuir cobrança vinculada. O <strong>Valor Final</strong> é calculado automaticamente (Origem − Desconto).</li>
+        </ul>
+        <p><strong>Prestações</strong></p>
+        <ul class="mb-0">
+          <li>Detalha a composição do valor do frete em componentes (ex: <em>Frete Peso</em>, <em>Frete Valor</em>, <em>ADEME</em>, <em>SEC/CAT</em>). Obrigatório para emissão SEFAZ.</li>
+        </ul>`
+    },
+    'tab-tributos': {
+      titulo: 'Aba Tributação',
+      corpo: `
+        <p><strong>ICMS</strong></p>
+        <ul class="mb-3">
+          <li><strong>CST</strong> — situação tributária. Use <em>00</em> para tributação normal, <em>40</em> para isento, <em>41</em> para não tributado.</li>
+          <li><strong>Base de Cálculo / Alíquota</strong> — o <strong>Valor ICMS</strong> é calculado automaticamente quando "Auto" está marcado.</li>
+        </ul>
+        <p><strong>Partilha ICMS</strong></p>
+        <ul class="mb-3">
+          <li>Necessário apenas em operações interestaduais onde há partilha do ICMS entre os estados de origem e destino.</li>
+        </ul>
+        <p><strong>Reforma Tributária</strong></p>
+        <ul class="mb-0">
+          <li>Campos da NT 2024 (IBS/CBS). Preencha somente quando exigido pela SEFAZ do seu estado.</li>
+        </ul>`
+    },
+    'tab-documentos': {
+      titulo: 'Aba Documentos (NF-e)',
+      corpo: `
+        <p>Liste as chaves de acesso das NF-e transportadas por este CT-e.</p>
+        <ul class="mb-3">
+          <li><strong>Chave NF-e</strong> — 44 dígitos numéricos (sem espaços ou pontos). Cada NF-e deve ter sua linha.</li>
+          <li><strong>Descrição</strong> — identificação opcional para facilitar a leitura (ex: produto ou número da nota).</li>
+        </ul>
+        <p class="mb-3">Use o botão <strong>Importar de NF-e</strong> (canto superior direito) para preencher automaticamente as chaves a partir das notas emitidas no sistema.</p>
+        <p class="mb-0 text-danger small"><i class="bi bi-exclamation-triangle me-1"></i>Pelo menos uma NF-e é obrigatória para salvar o CT-e.</p>`
+    },
+    'tab-obs': {
+      titulo: 'Aba Informações Adicionais',
+      corpo: `
+        <p>Campo de texto livre para <strong>observações</strong> que serão impressas no DACTE e transmitidas à SEFAZ no campo <em>xObs</em>.</p>
+        <ul class="mb-0">
+          <li>Informe instruções especiais de entrega, referências internas, condições de pagamento ou quaisquer outras informações relevantes.</li>
+          <li>Máximo recomendado: 2000 caracteres.</li>
+          <li>Não inclua dados fiscais neste campo — use os campos específicos das outras abas.</li>
+        </ul>`
+    },
+  };
+
+  var modal = document.getElementById('modalAjudaAba');
+  if (!modal) return;
+
+  modal.addEventListener('show.bs.modal', function () {
+    var abaAtiva = document.querySelector('#cteTabs .nav-link.active');
+    var abaId = abaAtiva ? abaAtiva.getAttribute('data-bs-target').replace('#', '') : null;
+    var info = (abaId && AJUDA[abaId]) ? AJUDA[abaId] : { titulo: 'Ajuda', corpo: '<p>Nenhuma informação disponível para esta aba.</p>' };
+    document.getElementById('ajuda-titulo').textContent = info.titulo;
+    document.getElementById('ajuda-corpo').innerHTML = info.corpo;
+  });
+})();
 </script>
 {% endblock %}

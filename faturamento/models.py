@@ -805,9 +805,23 @@ class ConhecimentoTransporte(FaturamentoBaseModel):
         ('REDESPACHO',   'Redespacho'),
         ('INTERMEDIARIO','Intermediário'),
     ]
+    TIPO_CTE = [
+        ('0', '0 - CT-e Normal'),
+        ('1', '1 - CT-e Complemento de Valores'),
+        ('2', '2 - CT-e de Anulação'),
+        ('3', '3 - CT-e Substituto'),
+    ]
+    TIPO_TOMADOR = [
+        ('0', '0 - Remetente'),
+        ('1', '1 - Expedidor'),
+        ('2', '2 - Recebedor'),
+        ('3', '3 - Destinatário'),
+        ('4', '4 - Outros'),
+    ]
 
     numero          = models.PositiveIntegerField('Número CT-e', null=True, blank=True)
     serie           = models.CharField('Série', max_length=3, default='1')
+    tipo_cte        = models.CharField('Tipo do CT-e', max_length=1, choices=TIPO_CTE, default='0')
     data_emissao    = models.DateField('Data de Emissão', default=timezone.now)
     cfop            = models.CharField('CFOP', max_length=4, default='6351', help_text='6351=Prestação de serviço de transporte')
     natureza_operacao = models.CharField('Natureza da Operação', max_length=60, default='PRESTAÇÃO DE SERVIÇO DE TRANSPORTE')
@@ -832,10 +846,27 @@ class ConhecimentoTransporte(FaturamentoBaseModel):
         related_name='cte_destinatario', verbose_name='Destinatário',
         help_text='Quem recebe a mercadoria',
     )
+    expedidor       = models.ForeignKey(
+        'cadastros.Cliente', on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='cte_expedidor', verbose_name='Expedidor',
+        help_text='Estabelecimento que entrega a carga ao transportador (opcional)',
+    )
+    recebedor       = models.ForeignKey(
+        'cadastros.Cliente', on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='cte_recebedor', verbose_name='Recebedor',
+        help_text='Estabelecimento que recebe a carga do transportador (opcional)',
+    )
+    tipo_tomador    = models.CharField(
+        'Tomador do Serviço', max_length=1, choices=TIPO_TOMADOR, default='0',
+        help_text='Indica quem é o tomador: 0=Remetente, 1=Expedidor, 2=Recebedor, 3=Destinatário, 4=Outros',
+    )
     tomador         = models.ForeignKey(
-        'cadastros.Cliente', on_delete=models.PROTECT,
-        related_name='cte_tomador', verbose_name='Tomador do Serviço',
-        help_text='Responsável pelo pagamento do frete',
+        'cadastros.Cliente', on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='cte_tomador', verbose_name='Tomador (Outros)',
+        help_text='Obrigatório apenas quando Tomador = 4 (Outros)',
     )
     transportadora  = models.ForeignKey(
         'cadastros.Transportadora', on_delete=models.PROTECT,
@@ -888,10 +919,15 @@ class ConhecimentoTransporte(FaturamentoBaseModel):
     valor_icms         = models.DecimalField('Valor ICMS', max_digits=14, decimal_places=2, default=0)
 
     # Modal Rodoviário
+    placa_veiculo_override = models.CharField(
+        'Placa do Veículo (override)',
+        max_length=10, blank=True,
+        help_text='Preenchida automaticamente do veículo selecionado. Edite apenas se precisar usar uma placa diferente.',
+    )
     rntrc_override = models.CharField(
         'RNTRC (override)',
         max_length=20, blank=True,
-        help_text='Preencha apenas para sobrescrever o RNTRC da transportadora neste CT-e',
+        help_text='Preenchido automaticamente da transportadora selecionada. Edite apenas se precisar usar um RNTRC diferente.',
     )
 
     # Reforma Tributária (IBS/CBS — NT 2024)

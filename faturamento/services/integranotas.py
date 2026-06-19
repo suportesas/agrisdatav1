@@ -65,6 +65,28 @@ def _digits(value: str) -> str:
     return _ONLY_DIGITS.sub('', value or '')
 
 
+def _ie(value: str) -> str:
+    v = (value or '').strip().upper()
+    return v if v == 'ISENTO' else _ONLY_DIGITS.sub('', v)
+
+
+def _ie_info(obj) -> tuple:
+    """Retorna (indicador_ie, inscricao_estadual) normalizados para SEFAZ CT-e.
+
+    Derivado do valor da IE (não do campo indicador_ie do cadastro, que é projetado para NF-e):
+    - IE com dígitos reais → indicador '1' (Contribuinte ICMS)
+    - IE = 'ISENTO' → indicador '9' (Não Contribuinte) — CT-e regra 617 rejeita '2' na maioria das UFs
+    - Sem IE → indicador '9' (Não Contribuinte)
+    """
+    ie_raw = (getattr(obj, 'inscricao_estadual', '') or '').strip()
+    if ie_raw.upper() == 'ISENTO':
+        return '9', ''
+    ie_clean = _ONLY_DIGITS.sub('', ie_raw)
+    if ie_clean:
+        return '1', ie_clean
+    return '9', ''
+
+
 CRT_MAP = {
     'SIMPLES_NACIONAL': '1',
     'LUCRO_PRESUMIDO': '2',
@@ -485,7 +507,7 @@ class IntegranNotasClient:
         return {
             'cnpj': _digits(empresa.cnpj or ''),
             'nome': empresa.nome,
-            'inscricao_estadual': empresa.inscricao_estadual or '',
+            'inscricao_estadual': _ie(empresa.inscricao_estadual),
             'crt': crt,
             'endereco': {
                 'logradouro': empresa.endereco or '',
@@ -1162,10 +1184,10 @@ class IntegranNotasClient:
             parte['cnpj'] = doc
         elif len(doc) == 11:
             parte['cpf'] = doc
-        ie = (getattr(cliente, 'inscricao_estadual', '') or '').strip()
-        if ie:
-            parte['inscricao_estadual'] = ie
-        parte['indicador_inscricao_estadual'] = getattr(cliente, 'indicador_ie', None) or '9'
+        ind, ie_str = _ie_info(cliente)
+        parte['indicador_inscricao_estadual'] = ind
+        if ie_str:
+            parte['inscricao_estadual'] = ie_str
         endereco = (
             cliente.enderecos.filter(padrao=True).first()
             or cliente.enderecos.first()
@@ -1188,24 +1210,36 @@ class IntegranNotasClient:
         return parte
 
     def _build_tomador_cte(self, ct) -> dict:
-        """Monta o bloco tomador com tipo derivado do relacionamento."""
-        tomador = ct.tomador
-        # Determina o tipo do tomador comparando com as outras partes
-        if tomador.pk == ct.remetente.pk:
-            tipo = '0'   # Remetente
-        elif tomador.pk == ct.destinatario.pk:
-            tipo = '3'   # Destinatário
-        else:
-            tipo = '4'   # Outros — precisa de dados completos
+        """Monta o bloco tomador a partir de ct.tipo_tomador.
 
-        ie_ind = getattr(tomador, 'indicador_ie', None) or '9'
-        result: dict = {
-            'tipo': tipo,
-            'indicador_inscricao_estadual': ie_ind,
+        Tipos 0-3: tomador é uma das partes já declaradas; bloco precisa de 'tipo'
+        e 'indicador_inscricao_estadual' (obrigatório pela IntegraNotas).
+        Tipo 4: tomador externo — exige dados completos via ct.tomador FK.
+        """
+        tipo = ct.tipo_tomador or '0'
+        result: dict = {'tipo': tipo}
+
+        # indicador_inscricao_estadual: obrigatório para todos os tipos
+        parte_map = {
+            '0': ct.remetente,
+            '1': getattr(ct, 'expedidor', None),
+            '2': getattr(ct, 'recebedor', None),
+            '3': ct.destinatario,
         }
+        parte_ref = parte_map.get(tipo)
+        ind_ie, ie_str = _ie_info(parte_ref) if parte_ref else ('9', '')
+        result['indicador_inscricao_estadual'] = ind_ie
+        if ie_str:
+            result['inscricao_estadual'] = ie_str
 
-        # tipo '4' (Outros) exige dados completos do tomador
         if tipo == '4':
+            tomador = ct.tomador
+            if not tomador:
+                return result
+            ind_tom, ie_tom = _ie_info(tomador)
+            result['indicador_inscricao_estadual'] = ind_tom
+            if ie_tom:
+                result['inscricao_estadual'] = ie_tom
             doc = _digits(tomador.cnpj_cpf or '')
             result['razao_social'] = tomador.razao_social
             result['nome'] = tomador.razao_social
@@ -1213,9 +1247,6 @@ class IntegranNotasClient:
                 result['cnpj'] = doc
             elif len(doc) == 11:
                 result['cpf'] = doc
-            ie = (getattr(tomador, 'inscricao_estadual', '') or '').strip()
-            if ie:
-                result['inscricao_estadual'] = ie
             endereco = (
                 tomador.enderecos.filter(padrao=True).first()
                 or tomador.enderecos.first()
@@ -1237,11 +1268,13 @@ class IntegranNotasClient:
         if not rntrc:
             rntrc = getattr(ct.transportadora, 'rntc', '') or ''
         modal: dict = {'rntrc': rntrc}
-        if ct.veiculo:
+        placa = (getattr(ct, 'placa_veiculo_override', '') or '').strip()
+        if not placa and ct.veiculo:
             placa = ct.veiculo.get_current_plate() or ''
             if not placa:
                 first = ct.veiculo.plates.order_by('-vigencia_inicio').first()
                 placa = first.placa if first else ''
+        if placa:
             modal['veiculo'] = {'placa': placa, 'uf': ct.uf_inicio}
         if ct.motorista:
             modal['condutor'] = {

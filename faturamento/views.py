@@ -2647,6 +2647,262 @@ def cte_detail(request, pk):
     return render(request, 'faturamento/cte/detail.html', {'ct': ct})
 
 
+def _validar_cte(ct):
+    import re as _re
+    erros = []
+
+    # IE do emitente
+    ie_emit = (getattr(ct.empresa, 'inscricao_estadual', '') or '').strip()
+    if not ie_emit:
+        erros.append({'aba': 'Configuração', 'campo': 'Inscrição Estadual do emitente',
+                      'msg': 'Preencha a IE em Minha Empresa antes de emitir.'})
+
+    # Aba Geral
+    if not ct.cfop:
+        erros.append({'aba': 'Geral', 'campo': 'CFOP', 'msg': 'Campo obrigatório.'})
+    if not ct.natureza_operacao:
+        erros.append({'aba': 'Geral', 'campo': 'Natureza da Operação', 'msg': 'Campo obrigatório.'})
+    if not ct.remetente_id:
+        erros.append({'aba': 'Geral', 'campo': 'Remetente', 'msg': 'Campo obrigatório.'})
+    if not ct.destinatario_id:
+        erros.append({'aba': 'Geral', 'campo': 'Destinatário', 'msg': 'Campo obrigatório.'})
+    if ct.tipo_tomador == '4' and not ct.tomador_id:
+        erros.append({'aba': 'Geral', 'campo': 'Tomador (Outros)', 'msg': 'Obrigatório quando Tomador = "4 - Outros".'})
+    if not ct.transportadora_id:
+        erros.append({'aba': 'Geral', 'campo': 'Transportadora', 'msg': 'Campo obrigatório.'})
+
+    # Aba Percurso
+    if not ct.uf_inicio:
+        erros.append({'aba': 'Percurso', 'campo': 'UF de Início', 'msg': 'Campo obrigatório.'})
+    if not ct.municipio_inicio:
+        erros.append({'aba': 'Percurso', 'campo': 'Município de Início', 'msg': 'Campo obrigatório.'})
+    if not ct.codigo_municipio_inicio or len(ct.codigo_municipio_inicio.strip()) != 7:
+        erros.append({'aba': 'Percurso', 'campo': 'Cód. IBGE Início', 'msg': 'Obrigatório — deve ter exatamente 7 dígitos.'})
+    if not ct.uf_fim:
+        erros.append({'aba': 'Percurso', 'campo': 'UF de Fim', 'msg': 'Campo obrigatório.'})
+    if not ct.municipio_fim:
+        erros.append({'aba': 'Percurso', 'campo': 'Município de Fim', 'msg': 'Campo obrigatório.'})
+    if not ct.codigo_municipio_fim or len(ct.codigo_municipio_fim.strip()) != 7:
+        erros.append({'aba': 'Percurso', 'campo': 'Cód. IBGE Fim', 'msg': 'Obrigatório — deve ter exatamente 7 dígitos.'})
+
+    # Aba Carga e Modal
+    if not ct.valor_carga or ct.valor_carga <= 0:
+        erros.append({'aba': 'Carga e Modal', 'campo': 'Valor da Carga', 'msg': 'Deve ser maior que zero.'})
+    if not ct.peso_bruto_kg or ct.peso_bruto_kg <= 0:
+        erros.append({'aba': 'Carga e Modal', 'campo': 'Peso Bruto (kg)', 'msg': 'Deve ser maior que zero.'})
+    placa_ef = (ct.placa_veiculo_override or '').strip()
+    if not placa_ef and ct.veiculo_id:
+        placa_ef = ct.veiculo.get_current_plate() or ''
+    if not placa_ef:
+        erros.append({'aba': 'Carga e Modal', 'campo': 'Placa do Veículo', 'msg': 'Campo obrigatório.'})
+    rntrc_ef = (ct.rntrc_override or '').strip() or (ct.transportadora.rntc if ct.transportadora_id else '')
+    if not rntrc_ef:
+        erros.append({'aba': 'Carga e Modal', 'campo': 'RNTRC', 'msg': 'Preencha o RNTRC na transportadora ou no campo RNTRC do CT-e.'})
+
+    # Aba Valores e Cobranças
+    if not ct.valor_servico or ct.valor_servico <= 0:
+        erros.append({'aba': 'Valores e Cobranças', 'campo': 'Valor Total da Prestação', 'msg': 'Deve ser maior que zero.'})
+    if not ct.componentes_valor.exists():
+        erros.append({'aba': 'Valores e Cobranças', 'campo': 'Prestações', 'msg': 'Adicione ao menos uma prestação (componente do frete).'})
+
+    # Aba Tributação
+    cst = ct.cst_icms or ''
+    if cst in ('00', '20') and (not ct.base_calculo_icms or ct.base_calculo_icms <= 0):
+        erros.append({'aba': 'Tributação', 'campo': 'Base de Cálculo ICMS', 'msg': 'Deve ser maior que zero para o CST selecionado.'})
+    if cst in ('00', '20') and (not ct.aliquota_icms or ct.aliquota_icms <= 0):
+        erros.append({'aba': 'Tributação', 'campo': 'Alíquota ICMS (%)', 'msg': 'Deve ser maior que zero para o CST selecionado.'})
+
+    # Aba Documentos
+    docs_validos = [d for d in ct.documentos_vinculados.all() if _re.fullmatch(r'\d{44}', d.chave_nfe or '')]
+    if not docs_validos:
+        erros.append({'aba': 'Documentos (NF-e)', 'campo': 'Chave NF-e', 'msg': 'Adicione ao menos uma NF-e com chave válida (44 dígitos).'})
+
+    return erros
+
+
+@login_required
+def cte_validar(request, pk):
+    empresa = _get_empresa(request)
+    ct = get_object_or_404(ConhecimentoTransporte, pk=pk, empresa=empresa)
+    erros = _validar_cte(ct)
+    return JsonResponse({'valido': len(erros) == 0, 'erros': erros})
+
+
+@login_required
+@require_POST
+def cte_emitir_ajax(request, pk):
+    """AJAX: valida, emite e retorna progresso passo a passo em JSON."""
+    import re as _re
+    from .services.integranotas import IntegranNotasClient, IntegranNotasError
+
+    empresa = _get_empresa(request)
+    ct = get_object_or_404(ConhecimentoTransporte, pk=pk, empresa=empresa)
+    steps = []
+
+    def ok(label, msg=None):
+        steps.append({'status': 'ok', 'label': label, 'message': msg or ''})
+
+    def erro(label, msg, fix_url=None, fix_label=None, errors=None):
+        steps.append({'status': 'error', 'label': label, 'message': msg,
+                      'fix_url': fix_url, 'fix_label': fix_label, 'errors': errors or []})
+        return JsonResponse({'steps': steps, 'success': False})
+
+    # 1. Status
+    if ct.status != 'RASCUNHO':
+        return erro('Status do CT-e', f'CT-e já está como "{ct.status}" e não pode ser emitido.')
+
+    # 2. Token / Configuração
+    config = ConfiguracaoFiscal.objects.filter(empresa=empresa).first()
+    cfg_url = reverse('faturamento:configuracao')
+    if not config:
+        return erro('Token IntegraNotas', 'Configuração fiscal não encontrada.',
+                    fix_url=cfg_url, fix_label='Configurar')
+    raw_token = config.get_token()
+    if not raw_token:
+        return erro('Token IntegraNotas', 'Token não configurado.',
+                    fix_url=cfg_url, fix_label='Configurar token')
+    ambiente_label = 'Produção' if config.ambiente_nfe == '1' else 'Homologação'
+    ok('Token IntegraNotas', f'Ambiente: {ambiente_label}')
+
+    # 3. Emitente
+    ie_emit = (empresa.inscricao_estadual or '').strip()
+    cnpj_emit = _re.sub(r'\D', '', empresa.cnpj or '')
+    emit_erros = []
+    if len(cnpj_emit) != 14:
+        emit_erros.append('CNPJ inválido')
+    if not (empresa.nome or '').strip():
+        emit_erros.append('Razão Social não informada')
+    if not ie_emit:
+        emit_erros.append('IE não informada — preencha a IE ou "ISENTO"')
+    if emit_erros:
+        return erro('Dados do emitente', ' | '.join(emit_erros),
+                    fix_url=cfg_url, fix_label='Corrigir dados do emitente')
+    ok('Dados do emitente', f'{empresa.nome} · CNPJ {empresa.cnpj} · IE {ie_emit}')
+
+    # 4. Validação pré-emissão
+    erros_ct = _validar_cte(ct)
+    if erros_ct:
+        edit_url = reverse('faturamento:cte_update', args=[pk])
+        err_list = [f"[{e['aba']}] {e['campo']}: {e['msg']}" for e in erros_ct]
+        return erro('Validação do CT-e',
+                    f'{len(erros_ct)} campo(s) obrigatório(s) não preenchido(s).',
+                    fix_url=edit_url, fix_label='Corrigir CT-e', errors=err_list)
+    ok('Validação do CT-e', 'Todos os campos obrigatórios preenchidos')
+
+    # 5. Número
+    if not ct.numero:
+        ultimo = ConhecimentoTransporte.objects.filter(empresa=empresa).exclude(pk=pk).order_by('-numero').values_list('numero', flat=True).first()
+        ct.numero = (ultimo or 0) + 1
+        ct.save(update_fields=['numero'])
+    ok('Numeração', f'CT-e {ct.numero}/{ct.serie}')
+
+    # 6. Transmissão
+    try:
+        client = IntegranNotasClient(raw_token, config.ambiente_nfe)
+        resp = client.emitir_cte(ct)
+    except IntegranNotasError as exc:
+        def _fmt(e):
+            if isinstance(e, dict):
+                partes = []
+                if e.get('campo'): partes.append(f"Campo: {e['campo']}")
+                partes.append(e.get('erro') or e.get('message') or str(e))
+                if e.get('detalhes'): partes.append(f"Detalhe: {e['detalhes']}")
+                return ' — '.join(partes)
+            return str(e)
+        errs = [_fmt(e) for e in exc.erros] if exc.erros else [str(exc)]
+        return erro('Transmissão à SEFAZ', f'Erro IntegraNotas [{exc.codigo}]', errors=errs)
+    except Exception as exc:
+        return erro('Transmissão à SEFAZ', f'Falha de comunicação: {exc}')
+
+    ok('Transmissão à SEFAZ', 'Dados enviados ao IntegraNotas')
+
+    # 7. Resultado
+    chave     = resp.get('chave', '')
+    protocolo = resp.get('protocolo', '')
+    xml_b64   = resp.get('xml', '')
+    pdf_b64   = resp.get('pdf', '')
+    codigo    = resp.get('codigo')
+
+    if codigo == 5023:
+        ct.chave_acesso      = chave
+        ct.data_hora_emissao = timezone.now()
+        ct.save(update_fields=['chave_acesso', 'data_hora_emissao'])
+        steps.append({'status': 'pending', 'label': 'Aguardando autorização da SEFAZ',
+                      'message': 'CT-e em fila (código 5023). Verificando automaticamente…',
+                      'chave': chave})
+        return JsonResponse({'steps': steps, 'success': True, 'pending': True, 'chave': chave})
+
+    if resp.get('sucesso') or codigo == 100:
+        ct.status            = 'EMITIDO'
+        ct.chave_acesso      = chave
+        ct.protocolo         = protocolo
+        ct.xml_autorizacao   = xml_b64
+        ct.pdf_dacte         = pdf_b64
+        ct.data_hora_emissao = timezone.now()
+        _base = ['status', 'chave_acesso', 'protocolo', 'xml_autorizacao',
+                 'pdf_dacte', 'data_hora_emissao']
+        _extra = _upload_fiscal_docs(ct, ct.empresa_id, 'cte', ct.numero, ct.serie, xml_b64, pdf_b64)
+        ct.save(update_fields=list(dict.fromkeys(_base + _extra)))
+        steps.append({'status': 'authorized', 'label': 'CT-e Autorizado pela SEFAZ ✓',
+                      'protocolo': protocolo, 'chave': chave})
+        return JsonResponse({
+            'steps': steps, 'success': True, 'authorized': True,
+            'chave': chave, 'protocolo': protocolo,
+            'has_dacte': bool(pdf_b64),
+            'dacte_url': reverse('faturamento:cte_dacte', args=[pk]),
+            'detail_url': reverse('faturamento:cte_detail', args=[pk]),
+        })
+
+    return erro('SEFAZ', resp.get('mensagem', 'Resposta inesperada da SEFAZ.'))
+
+
+@login_required
+@require_POST
+def cte_consultar_ajax(request, pk):
+    """AJAX: consulta status do CT-e na SEFAZ para polling após código 5023."""
+    from .services.integranotas import IntegranNotasClient, IntegranNotasError
+    empresa = _get_empresa(request)
+    ct = get_object_or_404(ConhecimentoTransporte, pk=pk, empresa=empresa)
+    if not ct.chave_acesso:
+        return JsonResponse({'status': 'error', 'mensagem': 'CT-e sem chave de acesso.'})
+    config = ConfiguracaoFiscal.objects.filter(empresa=empresa).first()
+    if not config or not config.get_token():
+        return JsonResponse({'status': 'error', 'mensagem': 'Token não configurado.'})
+    try:
+        client = IntegranNotasClient(config.get_token(), config.ambiente_nfe)
+        data = client.consultar_cte(ct.chave_acesso)
+        codigo = data.get('codigo')
+        if codigo == 100 or data.get('sucesso'):
+            fields = []
+            if data.get('protocolo') and not ct.protocolo:
+                ct.protocolo = data['protocolo']; fields.append('protocolo')
+            if data.get('xml') and not ct.xml_autorizacao:
+                ct.xml_autorizacao = data['xml']; fields.append('xml_autorizacao')
+            if data.get('pdf') and not ct.pdf_dacte:
+                ct.pdf_dacte = data['pdf']; fields.append('pdf_dacte')
+            if ct.status != 'EMITIDO':
+                ct.status = 'EMITIDO'; fields.append('status')
+            if fields:
+                _extra = _upload_fiscal_docs(ct, ct.empresa_id, 'cte', ct.numero, ct.serie,
+                                             data.get('xml'), data.get('pdf'))
+                ct.save(update_fields=list(dict.fromkeys(fields + _extra)))
+            return JsonResponse({
+                'status': 'authorized',
+                'protocolo': ct.protocolo or '',
+                'has_dacte': bool(ct.pdf_dacte),
+                'dacte_url': reverse('faturamento:cte_dacte', args=[pk]),
+                'detail_url': reverse('faturamento:cte_detail', args=[pk]),
+            })
+        elif codigo == 5023:
+            return JsonResponse({'status': 'pending'})
+        else:
+            return JsonResponse({'status': 'rejected',
+                                 'codigo': codigo,
+                                 'mensagem': data.get('mensagem', f'Código {codigo}')})
+    except Exception as exc:
+        return JsonResponse({'status': 'error', 'mensagem': str(exc)})
+
+
 @login_required
 def cte_emitir(request, pk):
     empresa = _get_empresa(request)
@@ -2654,6 +2910,11 @@ def cte_emitir(request, pk):
     if ct.status != 'RASCUNHO':
         messages.error(request, 'CT-e ja foi emitido ou cancelado.')
         return redirect('faturamento:cte_detail', pk=pk)
+    erros_pre = _validar_cte(ct)
+    if erros_pre:
+        for e in erros_pre:
+            messages.error(request, f"[{e['aba']}] {e['campo']}: {e['msg']}")
+        return redirect('faturamento:cte_update', pk=pk)
     try:
         config = empresa.configuracao_fiscal
     except Exception:

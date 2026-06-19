@@ -584,6 +584,116 @@
   </div>
 </div>
 
+<!-- Modal: Importar NF-e / CT-e para a aba Documentos -->
+<div class="modal fade" id="modalImportarDocs" tabindex="-1" aria-labelledby="modalImportarDocsLbl" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalImportarDocsLbl">
+          <i class="bi bi-download me-2 text-primary"></i>Importar NF-e / CT-e como Documentos Transportados
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body pb-1">
+        <ul class="nav nav-tabs mb-3" id="tabDocsCte" role="tablist">
+          <li class="nav-item">
+            <button class="nav-link active" id="docs-tab-nfe-btn" data-bs-toggle="tab" data-bs-target="#docs-tab-nfe" type="button">
+              <i class="bi bi-file-earmark-text me-1"></i>NF-e
+              <span id="docs-badge-nfe" class="badge rounded-pill ms-1" style="background:#7c3aed;display:none;">0</span>
+            </button>
+          </li>
+          <li class="nav-item">
+            <button class="nav-link" id="docs-tab-cte-btn" data-bs-toggle="tab" data-bs-target="#docs-tab-cte" type="button">
+              <i class="bi bi-truck me-1"></i>CT-e
+              <span id="docs-badge-cte" class="badge rounded-pill ms-1" style="background:#7c3aed;display:none;">0</span>
+            </button>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <!-- NF-e -->
+          <div class="tab-pane fade show active" id="docs-tab-nfe">
+            <div class="input-group mb-2">
+              <span class="input-group-text"><i class="bi bi-search"></i></span>
+              <input type="text" id="docs-nfe-search" class="form-control form-control-sm" placeholder="Buscar por cliente ou número da NF-e…">
+            </div>
+            <div id="docs-nfe-loading" class="text-center text-muted py-2 d-none">
+              <div class="spinner-border spinner-border-sm me-1"></div>Buscando…
+            </div>
+            <div class="table-responsive">
+              <table class="table table-sm table-hover mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th style="width:36px"><input type="checkbox" id="docs-nfe-check-all" class="form-check-input" title="Sel. todos"></th>
+                    <th>NF-e</th><th>Cliente / Destinatário</th><th>Emissão</th>
+                    <th class="text-end">Valor Total</th><th class="text-end">Peso (kg)</th>
+                  </tr>
+                </thead>
+                <tbody id="docs-nfe-tbody">
+                  <tr><td colspan="6" class="text-center text-muted py-3">Digite para buscar NF-e emitidas.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <!-- CT-e -->
+          <div class="tab-pane fade" id="docs-tab-cte">
+            <div class="input-group mb-2">
+              <span class="input-group-text"><i class="bi bi-search"></i></span>
+              <input type="text" id="docs-cte-search" class="form-control form-control-sm" placeholder="Buscar por destinatário ou número do CT-e…">
+            </div>
+            <div id="docs-cte-loading" class="text-center text-muted py-2 d-none">
+              <div class="spinner-border spinner-border-sm me-1"></div>Buscando…
+            </div>
+            <div class="table-responsive">
+              <table class="table table-sm table-hover mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th style="width:36px"><input type="checkbox" id="docs-cte-check-all" class="form-check-input" title="Sel. todos"></th>
+                    <th>CT-e</th><th>Destinatário</th><th>Emissão</th>
+                    <th class="text-end">Valor Serviço</th><th class="text-end">Peso (kg)</th>
+                  </tr>
+                </thead>
+                <tbody id="docs-cte-tbody">
+                  <tr><td colspan="6" class="text-center text-muted py-3">Digite para buscar CT-e emitidos.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Painel de somatório -->
+      <div id="docs-painel-somatorio" class="border-top border-bottom py-2 px-3" style="background:#f8f7ff;display:none;">
+        <div class="d-flex flex-wrap gap-4 align-items-center small">
+          <div>
+            <span class="text-muted me-1">Selecionados:</span>
+            <strong id="docs-sum-nfe-count">0 NF-e</strong>
+            <span class="text-muted mx-1">+</span>
+            <strong id="docs-sum-cte-count">0 CT-e</strong>
+          </div>
+          <div class="vr d-none d-sm-block"></div>
+          <div>
+            <span class="text-muted me-1"><i class="bi bi-currency-dollar"></i> Valor Total:</span>
+            <strong class="text-success" id="docs-sum-valor">R$ 0,00</strong>
+          </div>
+          <div class="vr d-none d-sm-block"></div>
+          <div>
+            <span class="text-muted me-1"><i class="bi bi-box-seam"></i> Peso Total:</span>
+            <strong class="text-primary" id="docs-sum-peso">0,000 kg</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary" id="btn-importar-docs" disabled>
+          <i class="bi bi-check-lg me-1"></i>Importar Selecionados
+          <span class="badge bg-white text-primary ms-1" id="docs-btn-count-badge" style="display:none;">0</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 function removerLinhaDoc(btn) {
   var tr = btn.closest('tr');
@@ -673,10 +783,22 @@ function adicionarLinhaFormset(chave, descricao) {
 
   function buscarNFe(q) {
     var loading = document.getElementById('nfe-loading');
+    var tbody = document.getElementById('nfe-tbody');
     if (loading) loading.classList.remove('d-none');
     fetch(AJAX_URL + '?q=' + encodeURIComponent(q))
-      .then(function (r) { return r.json(); })
-      .then(function (data) { nfeBusca = data.results; renderizarTabela(nfeBusca); })
+      .then(function (r) {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
+      })
+      .then(function (data) {
+        if (data.error) throw new Error(data.error);
+        nfeBusca = data.results;
+        renderizarTabela(nfeBusca);
+      })
+      .catch(function () {
+        if (tbody) tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger py-3">'
+          + '<i class="bi bi-exclamation-triangle me-1"></i>Erro ao carregar NF-e. Recarregue a página e tente novamente.</td></tr>';
+      })
       .finally(function () { if (loading) loading.classList.add('d-none'); });
   }
 
@@ -807,6 +929,233 @@ function adicionarLinhaFormset(chave, descricao) {
   }
 })();
 </script>
+
+<script>
+(function () {
+  'use strict';
+
+  var URL_NFE = "{% url 'faturamento:ajax_nfe_para_cte' %}";
+  var URL_CTE = "{% url 'faturamento:ajax_nfe_para_cte' %}?tipo=cte";
+  var debNFe = null, debCTe = null;
+  var selectedDocs = new Map();
+
+  var modalEl = document.getElementById('modalImportarDocs');
+  if (!modalEl) return;
+
+  modalEl.addEventListener('shown.bs.modal', function () {
+    document.getElementById('docs-nfe-search').focus();
+    buscarNFe('');
+  });
+  modalEl.addEventListener('hidden.bs.modal', function () {
+    selectedDocs.clear();
+    atualizarResumo();
+  });
+
+  document.getElementById('docs-tab-cte-btn').addEventListener('shown.bs.tab', function () {
+    if (!document.getElementById('docs-cte-search').dataset.loaded) buscarCTe('');
+  });
+
+  document.getElementById('docs-nfe-search').addEventListener('input', function () {
+    clearTimeout(debNFe);
+    debNFe = setTimeout(function () { buscarNFe(this.value.trim()); }.bind(this), 350);
+  });
+  document.getElementById('docs-cte-search').addEventListener('input', function () {
+    clearTimeout(debCTe);
+    debCTe = setTimeout(function () { buscarCTe(this.value.trim()); }.bind(this), 350);
+  });
+
+  function buscarNFe(q) {
+    var loading = document.getElementById('docs-nfe-loading');
+    var tbody = document.getElementById('docs-nfe-tbody');
+    loading.classList.remove('d-none');
+    fetch(URL_NFE + '?q=' + encodeURIComponent(q))
+      .then(function (r) {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
+      })
+      .then(function (data) {
+        if (data.error) throw new Error(data.error);
+        renderNFe(data.results);
+      })
+      .catch(function () {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger py-3">'
+          + '<i class="bi bi-exclamation-triangle me-1"></i>Erro ao carregar NF-e. Recarregue a página e tente novamente.</td></tr>';
+      })
+      .finally(function () { loading.classList.add('d-none'); });
+  }
+
+  function buscarCTe(q) {
+    var loading = document.getElementById('docs-cte-loading');
+    var tbody = document.getElementById('docs-cte-tbody');
+    loading.classList.remove('d-none');
+    fetch(URL_CTE + '&q=' + encodeURIComponent(q))
+      .then(function (r) {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
+      })
+      .then(function (data) {
+        if (data.error) throw new Error(data.error);
+        renderCTe(data.results);
+        document.getElementById('docs-cte-search').dataset.loaded = '1';
+      })
+      .catch(function () {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger py-3">'
+          + '<i class="bi bi-exclamation-triangle me-1"></i>Erro ao carregar CT-e. Recarregue a página e tente novamente.</td></tr>';
+      })
+      .finally(function () { loading.classList.add('d-none'); });
+  }
+
+  function renderNFe(notas) {
+    var tbody = document.getElementById('docs-nfe-tbody');
+    if (!notas.length) {
+      tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-3">Nenhuma NF-e emitida encontrada.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = notas.map(function (n) {
+      var key = 'nfe:' + n.chave_acesso;
+      var checked = selectedDocs.has(key) ? 'checked' : '';
+      var peso = parseFloat(n.peso_bruto_kg || 0).toLocaleString('pt-BR', {minimumFractionDigits: 3});
+      var valor = parseFloat(n.valor_total || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2});
+      return '<tr>' +
+        '<td><input type="checkbox" class="form-check-input docs-check" ' + checked +
+        ' data-key="' + escH(key) + '" data-tipo="nfe"' +
+        ' data-chave="' + escH(n.chave_acesso) + '"' +
+        ' data-numero="' + n.numero + '" data-serie="' + escH(n.serie) + '"' +
+        ' data-nome="' + escH(n.cliente_nome) + '"' +
+        ' data-valor="' + (n.valor_total || 0) + '" data-peso="' + (n.peso_bruto_kg || 0) + '">' +
+        '</td>' +
+        '<td><strong>' + String(n.numero).padStart(9, '0') + '/' + n.serie + '</strong></td>' +
+        '<td>' + escH(n.cliente_nome) + '</td>' +
+        '<td class="text-muted small">' + n.data_emissao + '</td>' +
+        '<td class="text-end">R$ ' + valor + '</td>' +
+        '<td class="text-end text-muted small">' + peso + '</td>' +
+        '</tr>';
+    }).join('');
+    tbody.querySelectorAll('.docs-check').forEach(function (cb) { cb.addEventListener('change', onCheck); });
+  }
+
+  function renderCTe(ctes) {
+    var tbody = document.getElementById('docs-cte-tbody');
+    if (!ctes.length) {
+      tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-3">Nenhum CT-e emitido encontrado.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = ctes.map(function (c) {
+      var key = 'cte:' + c.chave_acesso;
+      var checked = selectedDocs.has(key) ? 'checked' : '';
+      var peso = parseFloat(c.peso_bruto_kg || 0).toLocaleString('pt-BR', {minimumFractionDigits: 3});
+      var valor = parseFloat(c.valor_total || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2});
+      return '<tr>' +
+        '<td><input type="checkbox" class="form-check-input docs-check" ' + checked +
+        ' data-key="' + escH(key) + '" data-tipo="cte"' +
+        ' data-chave="' + escH(c.chave_acesso) + '"' +
+        ' data-numero="' + c.numero + '" data-serie="' + escH(c.serie) + '"' +
+        ' data-nome="' + escH(c.destinatario_nome) + '"' +
+        ' data-valor="' + (c.valor_total || 0) + '" data-peso="' + (c.peso_bruto_kg || 0) + '">' +
+        '</td>' +
+        '<td><strong>' + String(c.numero).padStart(9, '0') + '/' + c.serie + '</strong></td>' +
+        '<td>' + escH(c.destinatario_nome) + '</td>' +
+        '<td class="text-muted small">' + c.data_emissao + '</td>' +
+        '<td class="text-end">R$ ' + valor + '</td>' +
+        '<td class="text-end text-muted small">' + peso + '</td>' +
+        '</tr>';
+    }).join('');
+    tbody.querySelectorAll('.docs-check').forEach(function (cb) { cb.addEventListener('change', onCheck); });
+  }
+
+  document.getElementById('docs-nfe-check-all').addEventListener('change', function () {
+    document.querySelectorAll('#docs-nfe-tbody .docs-check').forEach(function (cb) {
+      cb.checked = this.checked;
+      syncMap(cb);
+    }, this);
+    atualizarResumo();
+  });
+
+  document.getElementById('docs-cte-check-all').addEventListener('change', function () {
+    document.querySelectorAll('#docs-cte-tbody .docs-check').forEach(function (cb) {
+      cb.checked = this.checked;
+      syncMap(cb);
+    }, this);
+    atualizarResumo();
+  });
+
+  function onCheck(e) { syncMap(e.target); atualizarResumo(); }
+
+  function syncMap(cb) {
+    var key = cb.dataset.key;
+    if (!key) return;
+    if (cb.checked) {
+      selectedDocs.set(key, {
+        tipo:   cb.dataset.tipo,
+        chave:  cb.dataset.chave,
+        numero: cb.dataset.numero,
+        serie:  cb.dataset.serie,
+        nome:   cb.dataset.nome,
+        valor:  parseFloat(cb.dataset.valor || 0),
+        peso:   parseFloat(cb.dataset.peso  || 0),
+      });
+    } else {
+      selectedDocs.delete(key);
+    }
+  }
+
+  function atualizarResumo() {
+    var nNfe = 0, nCte = 0, somaValor = 0, somaPeso = 0;
+    selectedDocs.forEach(function (item) {
+      if (item.tipo === 'nfe') nNfe++; else nCte++;
+      somaValor += item.valor;
+      somaPeso  += item.peso;
+    });
+    var total = nNfe + nCte;
+
+    var bNfe = document.getElementById('docs-badge-nfe');
+    var bCte = document.getElementById('docs-badge-cte');
+    if (bNfe) { bNfe.textContent = nNfe; bNfe.style.display = nNfe > 0 ? '' : 'none'; }
+    if (bCte) { bCte.textContent = nCte; bCte.style.display = nCte > 0 ? '' : 'none'; }
+
+    var painel = document.getElementById('docs-painel-somatorio');
+    if (painel) painel.style.display = total > 0 ? '' : 'none';
+    var elNfe   = document.getElementById('docs-sum-nfe-count');
+    var elCte   = document.getElementById('docs-sum-cte-count');
+    var elValor = document.getElementById('docs-sum-valor');
+    var elPeso  = document.getElementById('docs-sum-peso');
+    if (elNfe)   elNfe.textContent   = nNfe + ' NF-e';
+    if (elCte)   elCte.textContent   = nCte + ' CT-e';
+    if (elValor) elValor.textContent = 'R$ ' + somaValor.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    if (elPeso)  elPeso.textContent  = somaPeso.toLocaleString('pt-BR', {minimumFractionDigits: 3, maximumFractionDigits: 3}) + ' kg';
+
+    var btn   = document.getElementById('btn-importar-docs');
+    var badge = document.getElementById('docs-btn-count-badge');
+    if (btn)   btn.disabled = total === 0;
+    if (badge) { badge.textContent = total; badge.style.display = total > 0 ? '' : 'none'; }
+  }
+
+  document.getElementById('btn-importar-docs').addEventListener('click', function () {
+    var chavesExistentes = new Set();
+    document.querySelectorAll('#docs-tbody input[name$="-chave_nfe"]').forEach(function (inp) {
+      if (inp.value) chavesExistentes.add(inp.value);
+    });
+
+    selectedDocs.forEach(function (item) {
+      if (chavesExistentes.has(item.chave)) return;
+      var prefixo = item.tipo === 'nfe' ? 'NF-e' : 'CT-e';
+      var descricao = prefixo + ' ' + String(item.numero).padStart(9, '0') + '/' + item.serie + ' — ' + item.nome;
+      adicionarLinhaFormset(item.chave, descricao.substring(0, 200));
+    });
+
+    var tabDocBtn = document.querySelector('[data-bs-target="#tab-documentos"]');
+    if (tabDocBtn) tabDocBtn.click();
+
+    var bsModal = bootstrap.Modal.getInstance(modalEl);
+    if (bsModal) bsModal.hide();
+  });
+
+  function escH(s) {
+    return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+})();
+</script>
+
 <script>
 // CT-e Globalizado: mostrar/esconder campo referencia_despacho
 (function(){

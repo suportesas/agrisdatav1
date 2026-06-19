@@ -2294,36 +2294,46 @@ def ajax_nfe_para_cte(request):
     else:
         notas = (
             NotaFiscal.objects
-            .filter(empresa=empresa, status='EMITIDA')
+            .filter(
+                empresa=empresa,
+                status='EMITIDA',
+                cliente__isnull=False,
+                chave_acesso__gt='',
+            )
             .select_related('cliente', 'transportadora')
         )
         if q:
             notas = notas.filter(Q(cliente__razao_social__icontains=q) | Q(numero__icontains=q))
         notas = notas.order_by('-data_emissao')[:50]
-        for n in notas:
-            endereco = n.cliente.enderecos.filter(padrao=True).first()
-            results.append({
-                'id':                  n.pk,
-                'tipo_doc':            'nfe',
-                'numero':              n.numero,
-                'serie':               n.serie,
-                'cliente_id':          n.cliente_id,
-                'cliente_nome':        n.cliente.razao_social,
-                'valor_total':         str(n.valor_total),
-                'chave_acesso':        n.chave_acesso or '',
-                'data_emissao':        n.data_emissao.strftime('%d/%m/%Y'),
-                'transportadora_id':   '',
-                'transportadora_nome': n.transportadora.nome if n.transportadora else '',
-                'modalidade_frete':    n.modalidade_frete or '',
-                'peso_bruto_kg':       str(n.peso_bruto_kg or '0'),
-                'natureza_operacao':   n.natureza_operacao or '',
-                'valor_frete':         str(n.valor_frete or '0'),
-                'produto_predominante': '',
-                'cliente_uf':          endereco.uf if endereco else '',
-                'cliente_municipio':   endereco.cidade if endereco else '',
-                'empresa_uf':          empresa.uf or '',
-                'empresa_municipio':   empresa.cidade or '',
-            })
+        try:
+            for n in notas:
+                endereco = n.cliente.enderecos.filter(padrao=True).first()
+                results.append({
+                    'id':                  n.pk,
+                    'tipo_doc':            'nfe',
+                    'numero':              n.numero,
+                    'serie':               n.serie,
+                    'cliente_id':          n.cliente_id,
+                    'cliente_nome':        n.cliente.razao_social,
+                    'valor_total':         str(n.valor_total),
+                    'chave_acesso':        n.chave_acesso or '',
+                    'data_emissao':        n.data_emissao.strftime('%d/%m/%Y'),
+                    'transportadora_id':   '',
+                    'transportadora_nome': str(n.transportadora) if n.transportadora else '',
+                    'modalidade_frete':    n.modalidade_frete or '',
+                    'peso_bruto_kg':       str(n.peso_bruto_kg or '0'),
+                    'natureza_operacao':   n.natureza_operacao or '',
+                    'valor_frete':         str(n.valor_frete or '0'),
+                    'produto_predominante': '',
+                    'cliente_uf':          endereco.uf if endereco else '',
+                    'cliente_municipio':   endereco.cidade if endereco else '',
+                    'empresa_uf':          empresa.uf or '',
+                    'empresa_municipio':   empresa.cidade or '',
+                })
+        except Exception as exc:
+            import logging
+            logging.getLogger(__name__).error('ajax_nfe_para_cte error: %s', exc)
+            return JsonResponse({'results': [], 'error': str(exc)})
 
     return JsonResponse({'results': results})
 

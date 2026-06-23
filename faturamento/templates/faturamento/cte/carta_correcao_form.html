@@ -20,24 +20,51 @@
     Permite corrigir dados do CT-e que não alterem o valor do frete, a natureza da prestação, os remetentes/destinatários ou a data de emissão.
   </div>
 
-  {% if messages %}{% for msg in messages %}
-  <div class="alert alert-{{ msg.tags }} alert-dismissible fade show py-2 mb-3">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
-  {% endfor %}{% endif %}
+  <div class="alert alert-light border py-2 px-3 mb-4 small">
+    <div><strong>Chave de acesso:</strong> <code>{{ ct.chave_acesso }}</code></div>
+    {% if ct.protocolo %}<div><strong>Protocolo:</strong> <code>{{ ct.protocolo }}</code></div>{% endif %}
+  </div>
 
   <div class="card border-0 shadow-sm mb-4">
     <div class="card-header fw-semibold">Enviar CC-e nº {{ proxima_sequencia }}</div>
     <div class="card-body">
-      <form method="post">
+      <form method="post" id="form-correcoes">
         {% csrf_token %}
-        <div class="mb-3">
-          <label class="form-label fw-semibold">Texto da Correção <span class="text-danger">*</span></label>
-          <textarea name="correcao" id="id_correcao" class="form-control" rows="5"
-                    placeholder="Descreva a correção (mínimo 15 caracteres)" maxlength="1000">{{ correcao|default:"" }}</textarea>
-          <div class="d-flex justify-content-between mt-1">
-            <small class="text-muted">Mínimo 15, máximo 1000 caracteres.</small>
-            <small id="char-count" class="text-muted">0 / 1000</small>
+        <input type="hidden" name="correcoes_json" id="id_correcoes_json" value="[]">
+
+        <!-- Sequência (opcional) -->
+        <div class="row g-3 mb-3">
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Sequência (opcional)</label>
+            <input type="number" name="sequencia" class="form-control" min="1" step="1"
+                   value="{{ sequencia|default:'' }}" placeholder="Automática">
+            <small class="text-muted">Deixe em branco para a API definir automaticamente.</small>
           </div>
         </div>
+
+        <!-- Tabela de Correções -->
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Correções <span class="text-danger">*</span></label>
+          <div class="table-responsive">
+            <table class="table table-sm table-bordered mb-3" id="tbl-correcoes">
+              <thead class="table-light">
+                <tr>
+                  <th style="width:20%">Grupo a Alterar <span class="text-danger">*</span></th>
+                  <th style="width:25%">Campo a Alterar <span class="text-danger">*</span></th>
+                  <th style="width:15%">Índice (opcional)</th>
+                  <th style="width:35%">Valor Alterado <span class="text-danger">*</span></th>
+                  <th style="width:5%"></th>
+                </tr>
+              </thead>
+              <tbody id="tbody-correcoes">
+              </tbody>
+            </table>
+          </div>
+          <button type="button" class="btn btn-sm btn-outline-success" id="btn-add-linha">
+            <i class="bi bi-plus me-1"></i> Adicionar Linha
+          </button>
+        </div>
+
         <div class="d-flex gap-2">
           <button type="submit" class="btn btn-info text-white"><i class="bi bi-send me-1"></i>Enviar CC-e</button>
           <a href="{% url 'faturamento:cte_detail' ct.pk %}" class="btn btn-outline-secondary">Cancelar</a>
@@ -70,10 +97,150 @@
 
 <script>
 (function(){
-  const ta=document.getElementById('id_correcao'), c=document.getElementById('char-count');
-  if(!ta||!c) return;
-  function upd(){const n=ta.value.length; c.textContent=n+' / 1000'; c.className=n<15?'text-danger small':n>900?'text-warning small':'text-muted small';}
-  ta.addEventListener('input',upd); upd();
+  const tbody = document.getElementById('tbody-correcoes');
+  const btnAdd = document.getElementById('btn-add-linha');
+  const hiddenInput = document.getElementById('id_correcoes_json');
+  const form = document.getElementById('form-correcoes');
+
+  // Grupos válidos conforme documentação IntegraNotas
+  const GRUPOS = {
+    'ide': 'Identificação (ide)',
+    'emit': 'Emitente (emit)',
+    'dest': 'Destinatário (dest)',
+    'retirada': 'Retirada (retirada)',
+    'entrega': 'Entrega (entrega)',
+    'tomador': 'Tomador (tomador)',
+    'comp': 'Componentes (comp)',
+    'desc': 'Descrição (desc)',
+    'infadic': 'Informações Adicionais (infadic)',
+  };
+
+  // Campos por grupo (sugestoes para agilizar preenchimento)
+  const CAMPOS_POR_GRUPO = {
+    'ide': ['natOp', 'modelo', 'serie', 'nCT', 'dEmi', 'tpEmis'],
+    'emit': ['razao', 'nome', 'inscr', 'UF', 'CNPJ', 'CPF'],
+    'dest': ['razao', 'nome', 'inscr', 'UF', 'CNPJ', 'CPF'],
+    'retirada': ['razao', 'nome', 'CNPJ', 'CPF', 'inscr'],
+    'entrega': ['razao', 'nome', 'CNPJ', 'CPF', 'inscr'],
+    'tomador': ['razao', 'nome', 'CNPJ', 'CPF', 'inscr'],
+    'comp': ['nome', 'valor'],
+    'desc': ['texto'],
+    'infadic': ['Obs'],
+  };
+
+  function criarLinha() {
+    const datalistId = `campos-sugestoes-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>
+        <select class="form-select form-select-sm grupo-select" required>
+          <option value="">-- Selecione --</option>
+          ${Object.entries(GRUPOS).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}
+        </select>
+      </td>
+      <td>
+        <input type="text" class="form-control form-control-sm campo-input" placeholder="Selecione o grupo para sugerir campos" list="${datalistId}" required>
+        <datalist id="${datalistId}" class="campo-sugestoes"></datalist>
+      </td>
+      <td>
+        <input type="number" class="form-control form-control-sm indice-input" placeholder="Índice" min="0">
+      </td>
+      <td>
+        <input type="text" class="form-control form-control-sm valor-input" placeholder="Valor" required>
+      </td>
+      <td class="text-center">
+        <button type="button" class="btn btn-sm btn-danger btn-remover" title="Remover">
+          <i class="bi bi-trash"></i>
+        </button>
+      </td>
+    `;
+    
+    const grupoSelect = tr.querySelector('.grupo-select');
+    const campoInput = tr.querySelector('.campo-input');
+    const campoSugestoes = tr.querySelector('.campo-sugestoes');
+    const btnRemover = tr.querySelector('.btn-remover');
+    const inputs = tr.querySelectorAll('input, select');
+
+    // Evento para atualizar campo quando grupo mudar
+    grupoSelect.addEventListener('change', () => {
+      const grupo = grupoSelect.value;
+      const camposSugeridos = CAMPOS_POR_GRUPO[grupo] || [];
+
+      campoSugestoes.innerHTML = '';
+      camposSugeridos.forEach(campo => {
+        const opt = document.createElement('option');
+        opt.value = campo;
+        campoSugestoes.appendChild(opt);
+      });
+
+      if (grupo) {
+        campoInput.placeholder = 'Campo (editavel)';
+        const campoAtual = campoInput.value.trim();
+        const campoValidoNoGrupo = camposSugeridos.includes(campoAtual);
+        if (camposSugeridos.length > 0 && (!campoAtual || !campoValidoNoGrupo)) {
+          campoInput.value = camposSugeridos[0];
+        }
+      } else {
+        campoInput.placeholder = 'Selecione o grupo para sugerir campos';
+      }
+      salvarJSON();
+    });
+
+    // Evento para remover linha
+    btnRemover.addEventListener('click', () => {
+      tr.remove();
+      salvarJSON();
+    });
+
+    // Evento para atualizar quando valor muda
+    inputs.forEach(el => {
+      el.addEventListener('change', salvarJSON);
+      el.addEventListener('input', salvarJSON);
+    });
+
+    tbody.appendChild(tr);
+    salvarJSON();
+  }
+
+  function salvarJSON() {
+    const correcoes = [];
+    document.querySelectorAll('#tbody-correcoes tr').forEach(tr => {
+      const grupo = tr.querySelector('.grupo-select').value;
+      const campoInput = tr.querySelector('.campo-input');
+      const indice = tr.querySelector('.indice-input').value;
+      const valor = tr.querySelector('.valor-input').value;
+
+      const campo = (campoInput.value || '').trim();
+
+      if (grupo && campo && valor) {
+        const corr = {
+          'grupo_corrigido': grupo,
+          'campo_corrigido': campo,
+          'valor_corrigido': valor,
+        };
+        if (indice) {
+          corr['indice_item'] = parseInt(indice);
+        }
+        correcoes.push(corr);
+      }
+    });
+    hiddenInput.value = JSON.stringify(correcoes);
+  }
+
+  btnAdd.addEventListener('click', criarLinha);
+
+  // Submissão do formulário
+  form.addEventListener('submit', (e) => {
+    const correcoes = JSON.parse(hiddenInput.value || '[]');
+    if (correcoes.length === 0) {
+      e.preventDefault();
+      alert('Adicione pelo menos uma correção.');
+      return false;
+    }
+  });
+
+  // Inicia com uma linha vazia
+  criarLinha();
 })();
 </script>
 {% endblock %}

@@ -64,7 +64,7 @@
 
       {# — XML — #}
       {% if ct.chave_acesso %}
-      <a href="{% url 'faturamento:cte_xml' ct.pk %}" class="btn btn-sm btn-outline-secondary">
+      <a href="{% url 'faturamento:cte_xml' ct.pk %}" class="btn btn-sm btn-outline-secondary" download>
         <i class="bi bi-filetype-xml me-1"></i> XML
       </a>
       {% endif %}
@@ -72,7 +72,7 @@
 
       {% if ct.status == 'CANCELADO' and ct.xml_cancelamento %}
       {# — XML Cancelamento — #}
-      <a href="{% url 'faturamento:cte_xml_cancelamento' ct.pk %}" class="btn btn-sm btn-outline-secondary">
+      <a href="{% url 'faturamento:cte_xml_cancelamento' ct.pk %}" class="btn btn-sm btn-outline-secondary" download>
         <i class="bi bi-filetype-xml me-1"></i> XML Cancelamento
       </a>
       {% endif %}

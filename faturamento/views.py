@@ -14,6 +14,19 @@ from django.views.decorators.http import require_POST
 logger = logging.getLogger(__name__)
 
 
+def _numero_from_cte_chave(chave: str) -> int | None:
+    """Extrai o número do CT-e (9 dígitos) da chave de acesso de 44 dígitos."""
+    import re as _re
+    digits = _re.sub(r'\D', '', chave or '')
+    if len(digits) != 44:
+        return None
+    try:
+        # Posição do número (nCT) na chave: índices 25..33
+        return int(digits[25:34])
+    except Exception:
+        return None
+
+
 def _nf_log_validation(op, form, formset, pag_formset, dup_formset):
     """Loga erros de validação da NF-e no terminal do servidor (útil para diagnóstico)."""
     parts = []
@@ -2791,10 +2804,39 @@ def cte_emitir_ajax(request, pk):
 
     # 5. Número
     if not ct.numero:
-        ultimo = ConhecimentoTransporte.objects.filter(empresa=empresa).exclude(pk=pk).order_by('-numero').values_list('numero', flat=True).first()
+        ultimo = (
+            ConhecimentoTransporte.objects
+            .filter(empresa=empresa, serie=ct.serie)
+            .exclude(pk=pk)
+            .order_by('-numero')
+            .values_list('numero', flat=True)
+            .first()
+        )
         ct.numero = (ultimo or 0) + 1
         ct.save(update_fields=['numero'])
-    ok('Numeração', f'CT-e {ct.numero}/{ct.serie}')
+
+    # Se o número já estiver em uso na mesma série, reajusta automaticamente
+    duplicado = (
+        ConhecimentoTransporte.objects
+        .filter(empresa=empresa, serie=ct.serie, numero=ct.numero)
+        .exclude(pk=pk)
+        .exists()
+    )
+    if duplicado:
+        numero_anterior = ct.numero
+        ultimo = (
+            ConhecimentoTransporte.objects
+            .filter(empresa=empresa, serie=ct.serie)
+            .exclude(pk=pk)
+            .order_by('-numero')
+            .values_list('numero', flat=True)
+            .first()
+        )
+        ct.numero = (ultimo or 0) + 1
+        ct.save(update_fields=['numero'])
+        ok('Numeração', f'CT-e {numero_anterior}/{ct.serie} já existia; ajustado para {ct.numero}/{ct.serie}')
+    else:
+        ok('Numeração', f'CT-e {ct.numero}/{ct.serie}')
 
     # 6. Transmissão
     try:
@@ -2809,6 +2851,80 @@ def cte_emitir_ajax(request, pk):
                 if e.get('detalhes'): partes.append(f"Detalhe: {e['detalhes']}")
                 return ' — '.join(partes)
             return str(e)
+
+        # 5008: CT-e já existe no IntegraNotas -> recuperar por chave
+        if exc.codigo == 5008:
+            _m = _re.search(r'/cte/(\d{44})', str(exc))
+            if _m:
+                chave_5008 = _m.group(1)
+                numero_chave_5008 = _numero_from_cte_chave(chave_5008)
+                ct.chave_acesso = chave_5008
+                _f = ['chave_acesso']
+                if numero_chave_5008 and ct.numero != numero_chave_5008:
+                    ct.numero = numero_chave_5008
+                    _f.append('numero')
+                ct.save(update_fields=_f)
+
+                try:
+                    data2 = client.consultar_cte(chave_5008)
+                    codigo2 = data2.get('codigo')
+
+                    if codigo2 == 100 or data2.get('sucesso'):
+                        protocolo2 = data2.get('protocolo', '')
+                        xml2 = data2.get('xml', '')
+                        pdf2 = data2.get('pdf', '')
+                        ct.status = 'EMITIDO'
+                        ct.chave_acesso = chave_5008
+                        ct.protocolo = protocolo2
+                        ct.xml_autorizacao = xml2
+                        ct.pdf_dacte = pdf2
+                        ct.data_hora_emissao = timezone.now()
+                        _base = ['status', 'chave_acesso', 'protocolo', 'xml_autorizacao', 'pdf_dacte', 'data_hora_emissao']
+                        if numero_chave_5008:
+                            _base.append('numero')
+                        _extra = _upload_fiscal_docs(ct, ct.empresa_id, 'cte', ct.numero, ct.serie, xml2, pdf2)
+                        ct.save(update_fields=list(dict.fromkeys(_base + _extra)))
+
+                        steps.append({
+                            'status': 'authorized',
+                            'label': 'CT-e Autorizado (recuperado) ✓',
+                            'protocolo': protocolo2,
+                            'chave': chave_5008,
+                        })
+                        return JsonResponse({
+                            'steps': steps, 'success': True, 'authorized': True,
+                            'chave': chave_5008, 'protocolo': protocolo2,
+                            'has_dacte': bool(pdf2),
+                            'dacte_url': reverse('faturamento:cte_dacte', args=[pk]),
+                            'detail_url': reverse('faturamento:cte_detail', args=[pk]),
+                        })
+
+                    if codigo2 == 5023:
+                        ct.chave_acesso = chave_5008
+                        ct.data_hora_emissao = timezone.now()
+                        _f = ['chave_acesso', 'data_hora_emissao']
+                        if numero_chave_5008 and ct.numero != numero_chave_5008:
+                            ct.numero = numero_chave_5008
+                            _f.append('numero')
+                        ct.save(update_fields=_f)
+                        steps.append({
+                            'status': 'pending',
+                            'label': 'Aguardando autorização da SEFAZ',
+                            'message': 'CT-e em fila (5008→5023). Verificando automaticamente…',
+                            'chave': chave_5008,
+                        })
+                        return JsonResponse({'steps': steps, 'success': True, 'pending': True, 'chave': chave_5008})
+                except Exception:
+                    pass
+
+                steps.append({
+                    'status': 'pending',
+                    'label': 'CT-e já enviado — verifique na SEFAZ',
+                    'message': f'IntegraNotas indica CT-e já existente. Chave armazenada: {chave_5008}',
+                    'chave': chave_5008,
+                })
+                return JsonResponse({'steps': steps, 'success': True, 'pending': True, 'chave': chave_5008})
+
         errs = [_fmt(e) for e in exc.erros] if exc.erros else [str(exc)]
         return erro('Transmissão à SEFAZ', f'Erro IntegraNotas [{exc.codigo}]', errors=errs)
     except Exception as exc:
@@ -2824,15 +2940,23 @@ def cte_emitir_ajax(request, pk):
     codigo    = resp.get('codigo')
 
     if codigo == 5023:
+        numero_chave = _numero_from_cte_chave(chave)
+        _f = ['chave_acesso', 'data_hora_emissao']
+        if numero_chave and ct.numero != numero_chave:
+            ct.numero = numero_chave
+            _f.append('numero')
         ct.chave_acesso      = chave
         ct.data_hora_emissao = timezone.now()
-        ct.save(update_fields=['chave_acesso', 'data_hora_emissao'])
+        ct.save(update_fields=_f)
         steps.append({'status': 'pending', 'label': 'Aguardando autorização da SEFAZ',
                       'message': 'CT-e em fila (código 5023). Verificando automaticamente…',
                       'chave': chave})
         return JsonResponse({'steps': steps, 'success': True, 'pending': True, 'chave': chave})
 
     if resp.get('sucesso') or codigo == 100:
+        numero_chave = _numero_from_cte_chave(chave)
+        if numero_chave and ct.numero != numero_chave:
+            ct.numero = numero_chave
         ct.status            = 'EMITIDO'
         ct.chave_acesso      = chave
         ct.protocolo         = protocolo
@@ -2841,6 +2965,8 @@ def cte_emitir_ajax(request, pk):
         ct.data_hora_emissao = timezone.now()
         _base = ['status', 'chave_acesso', 'protocolo', 'xml_autorizacao',
                  'pdf_dacte', 'data_hora_emissao']
+        if numero_chave:
+            _base.append('numero')
         _extra = _upload_fiscal_docs(ct, ct.empresa_id, 'cte', ct.numero, ct.serie, xml_b64, pdf_b64)
         ct.save(update_fields=list(dict.fromkeys(_base + _extra)))
         steps.append({'status': 'authorized', 'label': 'CT-e Autorizado pela SEFAZ ✓',
@@ -2921,9 +3047,36 @@ def cte_emitir(request, pk):
         messages.error(request, 'Configure o token IntegraNotas em Faturamento > Configuracao Fiscal.')
         return redirect('faturamento:cte_detail', pk=pk)
     if not ct.numero:
-        ultimo = ConhecimentoTransporte.objects.filter(empresa=empresa).exclude(pk=pk).order_by('-numero').values_list('numero', flat=True).first()
+        ultimo = (
+            ConhecimentoTransporte.objects
+            .filter(empresa=empresa, serie=ct.serie)
+            .exclude(pk=pk)
+            .order_by('-numero')
+            .values_list('numero', flat=True)
+            .first()
+        )
         ct.numero = (ultimo or 0) + 1
         ct.save(update_fields=['numero'])
+
+    duplicado = (
+        ConhecimentoTransporte.objects
+        .filter(empresa=empresa, serie=ct.serie, numero=ct.numero)
+        .exclude(pk=pk)
+        .exists()
+    )
+    if duplicado:
+        numero_anterior = ct.numero
+        ultimo = (
+            ConhecimentoTransporte.objects
+            .filter(empresa=empresa, serie=ct.serie)
+            .exclude(pk=pk)
+            .order_by('-numero')
+            .values_list('numero', flat=True)
+            .first()
+        )
+        ct.numero = (ultimo or 0) + 1
+        ct.save(update_fields=['numero'])
+        messages.warning(request, f'Número {numero_anterior}/{ct.serie} já estava em uso. Ajustado para {ct.numero}/{ct.serie}.')
     from .services.integranotas import IntegranNotasClient, IntegranNotasError
     client = IntegranNotasClient(token=config.get_token(), ambiente=config.ambiente_nfe)
     try:
@@ -2933,8 +3086,12 @@ def cte_emitir(request, pk):
             time.sleep(4)
             resp = client.consultar_cte(resp.get('chave', ''))
         if resp.get('sucesso') or resp.get('codigo') == 100:
+            chave_resp = resp.get('chave', '')
+            numero_chave = _numero_from_cte_chave(chave_resp)
+            if numero_chave and ct.numero != numero_chave:
+                ct.numero = numero_chave
             ct.status = 'EMITIDO'
-            ct.chave_acesso = resp.get('chave', '')
+            ct.chave_acesso = chave_resp
             ct.protocolo = resp.get('protocolo', '')
             ct.xml_autorizacao = resp.get('xml', '')
             ct.pdf_dacte = resp.get('pdf', '')
@@ -2946,6 +3103,42 @@ def cte_emitir(request, pk):
         else:
             messages.error(request, f'SEFAZ: {resp.get("mensagem", "Erro desconhecido")}')
     except IntegranNotasError as e:
+        if e.codigo == 5008:
+            import re as _re
+            _m = _re.search(r'/cte/(\d{44})', str(e))
+            if _m:
+                chave_5008 = _m.group(1)
+                numero_chave_5008 = _numero_from_cte_chave(chave_5008)
+                ct.chave_acesso = chave_5008
+                _f = ['chave_acesso']
+                if numero_chave_5008 and ct.numero != numero_chave_5008:
+                    ct.numero = numero_chave_5008
+                    _f.append('numero')
+                ct.save(update_fields=_f)
+                try:
+                    data2 = client.consultar_cte(chave_5008)
+                    if data2.get('codigo') == 100 or data2.get('sucesso'):
+                        xml2 = data2.get('xml', '')
+                        pdf2 = data2.get('pdf', '')
+                        ct.protocolo = data2.get('protocolo', '')
+                        ct.xml_autorizacao = xml2
+                        ct.pdf_dacte = pdf2
+                        ct.status = 'EMITIDO'
+                        ct.data_hora_emissao = timezone.now()
+                        _upload_fiscal_docs(ct, ct.empresa_id, 'cte', ct.numero, ct.serie, xml2, pdf2)
+                        ct.save()
+                        messages.success(request, f'CT-e {ct.numero}/{ct.serie} autorizado (recuperado)! Chave: {chave_5008}')
+                        return redirect('faturamento:cte_detail', pk=pk)
+                    if data2.get('codigo') == 5023:
+                        ct.data_hora_emissao = timezone.now()
+                        ct.save(update_fields=['data_hora_emissao'])
+                        messages.info(request, f'CT-e {ct.numero}/{ct.serie} em processamento SEFAZ. Chave: {chave_5008}')
+                        return redirect('faturamento:cte_detail', pk=pk)
+                except Exception:
+                    pass
+                messages.warning(request, f'CT-e já enviado ao IntegraNotas. Chave armazenada: {chave_5008}. Use "Verificar na SEFAZ".')
+                return redirect('faturamento:cte_detail', pk=pk)
+
         erros = '; '.join(str(x) for x in e.erros) if e.erros else str(e)
         messages.error(request, f'Erro IntegraNotas [{e.codigo}]: {erros}')
     except Exception as e:
@@ -3064,6 +3257,7 @@ def cte_consultar(request, pk):
 
 @login_required
 def cte_carta_correcao(request, pk):
+    import json
     from .services.integranotas import IntegranNotasClient, IntegranNotasError
     empresa = _get_empresa(request)
     ct = get_object_or_404(ConhecimentoTransporte, pk=pk, empresa=empresa)
@@ -3075,37 +3269,149 @@ def cte_carta_correcao(request, pk):
     proxima_sequencia = cartas.count() + 1
 
     if request.method == 'POST':
-        correcao = request.POST.get('correcao', '').strip()
-        if len(correcao) < 15:
-            messages.error(request, 'O texto da correção deve ter pelo menos 15 caracteres.')
-            return render(request, 'faturamento/cte/carta_correcao_form.html',
-                          {'ct': ct, 'cartas': cartas, 'proxima_sequencia': proxima_sequencia, 'correcao': correcao})
+        # Recupera JSON com múltiplas correções
+        correcoes_json = request.POST.get('correcoes_json', '[]').strip()
+        sequencia_manual_raw = request.POST.get('sequencia', '').strip()
+        sequencia_manual = None
+
+        # Valida sequência manual se informada
+        if sequencia_manual_raw:
+            try:
+                sequencia_manual = int(sequencia_manual_raw)
+                if sequencia_manual <= 0:
+                    raise ValueError('Sequência deve ser maior que zero')
+            except (ValueError, TypeError):
+                messages.error(request, 'Sequência inválida. Informe um número inteiro positivo.')
+                return render(request, 'faturamento/cte/carta_correcao_form.html', {
+                    'ct': ct,
+                    'cartas': cartas,
+                    'proxima_sequencia': proxima_sequencia,
+                    'sequencia': sequencia_manual_raw,
+                })
+
+        # Valida e carrega correções
+        try:
+            correcoes = json.loads(correcoes_json)
+        except json.JSONDecodeError:
+            messages.error(request, 'Erro ao processar correções. Formato inválido.')
+            return render(request, 'faturamento/cte/carta_correcao_form.html', {
+                'ct': ct,
+                'cartas': cartas,
+                'proxima_sequencia': proxima_sequencia,
+                'sequencia': sequencia_manual_raw,
+            })
+
+        # Valida que há ao menos uma correção
+        if not correcoes or len(correcoes) == 0:
+            messages.error(request, 'Adicione pelo menos uma correção.')
+            return render(request, 'faturamento/cte/carta_correcao_form.html', {
+                'ct': ct,
+                'cartas': cartas,
+                'proxima_sequencia': proxima_sequencia,
+                'sequencia': sequencia_manual_raw,
+            })
+
+        # Valida campos obrigatórios em cada correção
+        for i, corr in enumerate(correcoes):
+            if not corr.get('grupo_corrigido', '').strip():
+                messages.error(request, f'Linha {i+1}: Grupo a ser alterado é obrigatório.')
+                return render(request, 'faturamento/cte/carta_correcao_form.html', {
+                    'ct': ct,
+                    'cartas': cartas,
+                    'proxima_sequencia': proxima_sequencia,
+                    'sequencia': sequencia_manual_raw,
+                })
+            if not corr.get('campo_corrigido', '').strip():
+                messages.error(request, f'Linha {i+1}: Campo a ser alterado é obrigatório.')
+                return render(request, 'faturamento/cte/carta_correcao_form.html', {
+                    'ct': ct,
+                    'cartas': cartas,
+                    'proxima_sequencia': proxima_sequencia,
+                    'sequencia': sequencia_manual_raw,
+                })
+            if not corr.get('valor_corrigido', '').strip():
+                messages.error(request, f'Linha {i+1}: Valor alterado é obrigatório.')
+                return render(request, 'faturamento/cte/carta_correcao_form.html', {
+                    'ct': ct,
+                    'cartas': cartas,
+                    'proxima_sequencia': proxima_sequencia,
+                    'sequencia': sequencia_manual_raw,
+                })
+            # Limpa indice_item se vazio
+            if not str(corr.get('indice_item', '')).strip():
+                corr.pop('indice_item', None)
+            else:
+                try:
+                    corr['indice_item'] = int(corr['indice_item'])
+                except ValueError:
+                    corr['indice_item'] = None
+
         try:
             config = empresa.configuracao_fiscal
             client = IntegranNotasClient(token=config.get_token(), ambiente=config.ambiente_nfe)
-            resultado = client.carta_correcao_cte(ct.chave_acesso, correcao, proxima_sequencia)
+            resultado = client.correcao_cte(ct.chave_acesso, correcoes, sequencia=sequencia_manual)
         except IntegranNotasError as exc:
-            messages.error(request, f'Erro [{exc.codigo}]: {exc}')
-            return render(request, 'faturamento/cte/carta_correcao_form.html',
-                          {'ct': ct, 'cartas': cartas, 'proxima_sequencia': proxima_sequencia, 'correcao': correcao})
+            erros = '; '.join(str(e) for e in (exc.erros or []))
+            msg = f'Erro [{exc.codigo}]: {exc}'
+            if erros:
+                msg = f'{msg} — {erros}'
+            messages.error(request, msg)
+            return render(request, 'faturamento/cte/carta_correcao_form.html', {
+                'ct': ct,
+                'cartas': cartas,
+                'proxima_sequencia': proxima_sequencia,
+                'sequencia': sequencia_manual_raw,
+            })
         except Exception as exc:
             messages.error(request, f'Falha na comunicação: {exc}')
-            return render(request, 'faturamento/cte/carta_correcao_form.html',
-                          {'ct': ct, 'cartas': cartas, 'proxima_sequencia': proxima_sequencia, 'correcao': correcao})
+            return render(request, 'faturamento/cte/carta_correcao_form.html', {
+                'ct': ct,
+                'cartas': cartas,
+                'proxima_sequencia': proxima_sequencia,
+                'sequencia': sequencia_manual_raw,
+            })
 
-        CartaCorrecaoCTe.objects.create(
-            cte=ct,
-            sequencia=proxima_sequencia,
-            correcao=correcao,
-            protocolo=resultado.get('protocolo', '') or resultado.get('numero_protocolo', ''),
-            xml_retorno=resultado.get('xml', ''),
-            criado_por=request.user,
+        sequencia_api = (
+            resultado.get('numero_carta_correcao')
+            or resultado.get('sequencial')
+            or proxima_sequencia
         )
-        messages.success(request, f'Carta de Correção nº {proxima_sequencia} enviada com sucesso.')
+        try:
+            sequencia_api = int(sequencia_api)
+        except Exception:
+            sequencia_api = proxima_sequencia
+
+        protocolo = resultado.get('protocolo', '') or resultado.get('numero_protocolo', '')
+        xml_retorno = (
+            resultado.get('xml_carta_correcao', '')
+            or resultado.get('xml', '')
+        )
+
+        CartaCorrecaoCTe.objects.update_or_create(
+            cte=ct,
+            sequencia=sequencia_api,
+            defaults={
+                'correcao': json.dumps(correcoes),
+                'protocolo': protocolo,
+                'xml_retorno': xml_retorno,
+                'criado_por': request.user,
+            },
+        )
+
+        if sequencia_api != proxima_sequencia:
+            messages.success(
+                request,
+                f'Carta de Correção ({len(correcoes)} linha(s)) registrada com sucesso (sequência: {sequencia_api}).',
+            )
+        else:
+            messages.success(request, f'Carta de Correção nº {sequencia_api} ({len(correcoes)} linha(s)) enviada com sucesso.')
         return redirect('faturamento:cte_detail', pk=pk)
 
     return render(request, 'faturamento/cte/carta_correcao_form.html', {
-        'ct': ct, 'cartas': cartas, 'proxima_sequencia': proxima_sequencia,
+        'ct': ct,
+        'cartas': cartas,
+        'proxima_sequencia': proxima_sequencia,
+        'sequencia': '',
     })
 
 
@@ -3220,12 +3526,19 @@ def cte_clone(request, pk):
 def cte_xml(request, pk):
     """Download do XML autorizado do CT-e (Supabase URL ou base64)."""
     import base64
-    from django.shortcuts import redirect as _redirect
-    from .services.integranotas import IntegranNotasClient, IntegranNotasError
+    import urllib.request as _ur
+    from .services.integranotas import IntegranNotasClient
     empresa = _get_empresa(request)
     ct = get_object_or_404(ConhecimentoTransporte, pk=pk, empresa=empresa)
     if ct.xml_autorizacao_url:
-        return _redirect(ct.xml_autorizacao_url)
+        try:
+            xml_bytes = _ur.urlopen(ct.xml_autorizacao_url, timeout=20).read()
+            resp = HttpResponse(xml_bytes, content_type='application/xml; charset=utf-8')
+            resp['Content-Disposition'] = f'attachment; filename="CTE_{ct.numero}_{ct.serie}.xml"'
+            return resp
+        except Exception:
+            # Se a URL estiver indisponível, tenta as demais fontes abaixo.
+            pass
     if not ct.xml_autorizacao and ct.chave_acesso:
         try:
             config = empresa.configuracao_fiscal
@@ -3248,7 +3561,7 @@ def cte_xml(request, pk):
         messages.error(request, 'XML de autorização não disponível para este CT-e.')
         return redirect('faturamento:cte_detail', pk=pk)
     xml_bytes = base64.b64decode(ct.xml_autorizacao)
-    resp = HttpResponse(xml_bytes, content_type='application/xml')
+    resp = HttpResponse(xml_bytes, content_type='application/xml; charset=utf-8')
     resp['Content-Disposition'] = f'attachment; filename="CTE_{ct.numero}_{ct.serie}.xml"'
     return resp
 
@@ -3257,16 +3570,22 @@ def cte_xml(request, pk):
 def cte_xml_cancelamento(request, pk):
     """Download do XML de cancelamento do CT-e (Supabase URL ou base64)."""
     import base64
-    from django.shortcuts import redirect as _redirect
+    import urllib.request as _ur
     empresa = _get_empresa(request)
     ct = get_object_or_404(ConhecimentoTransporte, pk=pk, empresa=empresa)
     if ct.xml_cancelamento_url:
-        return _redirect(ct.xml_cancelamento_url)
+        try:
+            xml_bytes = _ur.urlopen(ct.xml_cancelamento_url, timeout=20).read()
+            resp = HttpResponse(xml_bytes, content_type='application/xml; charset=utf-8')
+            resp['Content-Disposition'] = f'attachment; filename="CANCEL_CTE_{ct.numero}_{ct.serie}.xml"'
+            return resp
+        except Exception:
+            pass
     if not ct.xml_cancelamento:
         messages.error(request, 'XML de cancelamento não disponível para este CT-e.')
         return redirect('faturamento:cte_detail', pk=pk)
     xml_bytes = base64.b64decode(ct.xml_cancelamento)
-    resp = HttpResponse(xml_bytes, content_type='application/xml')
+    resp = HttpResponse(xml_bytes, content_type='application/xml; charset=utf-8')
     resp['Content-Disposition'] = f'attachment; filename="CANCEL_CTE_{ct.numero}_{ct.serie}.xml"'
     return resp
 

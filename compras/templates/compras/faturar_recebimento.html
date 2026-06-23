@@ -347,7 +347,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Validação do formulário
     const form = document.querySelector('form.needs-validation');
     form.addEventListener('submit', function(e) {
-        if (!form.checkValidity() === false) {
+        if (!form.checkValidity()) {
             e.preventDefault();
             e.stopPropagation();
         }

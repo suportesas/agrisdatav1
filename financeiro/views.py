@@ -28,6 +28,31 @@ from .forms import (
 )
 
 
+def _gerar_parcelas_automaticas(conta, quantidade_parcelas, intervalo_dias, primeira_data_vencimento):
+    """Cria parcelas sequenciais com vencimento incremental a partir do cadastro."""
+    valor_total = conta.valor_ajustado or conta.valor_total
+    valor_base = (valor_total / quantidade_parcelas).quantize(Decimal('0.01'))
+    valor_acumulado = Decimal('0.00')
+
+    for numero_parcela in range(1, quantidade_parcelas + 1):
+        if numero_parcela == quantidade_parcelas:
+            valor_parcela = valor_total - valor_acumulado
+        else:
+            valor_parcela = valor_base
+
+        data_vencimento = primeira_data_vencimento + timedelta(days=intervalo_dias * (numero_parcela - 1))
+
+        ParcelaContaPagar.objects.create(
+            conta_pagar=conta,
+            numero_parcela=numero_parcela,
+            valor_parcela=valor_parcela,
+            valor_total_parcela=valor_parcela,
+            data_vencimento=data_vencimento,
+            status='ABERTA',
+        )
+        valor_acumulado += valor_parcela
+
+
 # ============================================
 # VIEWS - DASHBOARD
 # ============================================
@@ -148,8 +173,11 @@ def conta_pagar_list(request):
     empresa = request.user.empresa
     
     # Base query
-    contas = ContaPagar.objects.filter(empresa=empresa).prefetch_related(
-        'fornecedor', 'parcelas', 'pagamentos'
+    contas = ContaPagar.objects.filter(empresa=empresa).select_related(
+        'fornecedor'
+    ).prefetch_related('pagamentos').annotate(
+        total_parcelas=Count('parcelas', distinct=True),
+        parcelas_pagas=Count('parcelas', filter=Q(parcelas__status='PAGA'), distinct=True),
     )
     
     # Filtros
@@ -451,22 +479,37 @@ def conta_pagar_create(request):
     empresa = request.user.empresa
     
     if request.method == 'POST':
-        form = ContaPageForm(request.POST)
+        form = ContaPageForm(request.POST, empresa=empresa)
         if form.is_valid():
-            conta = form.save(commit=False)
-            conta.empresa = empresa
-            conta.criado_por = request.user
-            conta.save()
-            
-            # Gerar número automático se não tiver
-            if not conta.numero:
-                conta.numero = f"CP-{conta.id:06d}"
+            with transaction.atomic():
+                conta = form.save(commit=False)
+                conta.empresa = empresa
+                conta.criado_por = request.user
+                conta.calcular_valor_ajustado()
                 conta.save()
+                
+                # Gerar número automático se não tiver
+                if not conta.numero:
+                    conta.numero = f"CP-{conta.id:06d}"
+                    conta.save(update_fields=['numero'])
+
+                _gerar_parcelas_automaticas(
+                    conta=conta,
+                    quantidade_parcelas=form.cleaned_data.get('quantidade_parcelas') or 1,
+                    intervalo_dias=form.cleaned_data.get('intervalo_dias') or 30,
+                    primeira_data_vencimento=form.cleaned_data['primeira_data_vencimento'],
+                )
             
-            messages.success(request, f'Conta {conta.numero} criada com sucesso!')
+            messages.success(
+                request,
+                f'Conta {conta.numero} criada com {conta.parcelas.count()} parcelas automaticamente!'
+            )
             return redirect('financeiro:conta_pagar_detail', pk=conta.pk)
     else:
-        form = ContaPageForm(initial={'empresa': empresa})
+        form = ContaPageForm(
+            initial={'empresa': empresa, 'data_emissao': timezone.now().date()},
+            empresa=empresa,
+        )
     
     context = {
         'form': form,
@@ -483,13 +526,15 @@ def conta_pagar_edit(request, pk):
     conta = get_object_or_404(ContaPagar, pk=pk, empresa=empresa)
     
     if request.method == 'POST':
-        form = ContaPageForm(request.POST, instance=conta)
+        form = ContaPageForm(request.POST, instance=conta, empresa=empresa)
         if form.is_valid():
-            form.save()
+            conta = form.save(commit=False)
+            conta.calcular_valor_ajustado()
+            conta.save()
             messages.success(request, f'Conta {conta.numero} atualizada com sucesso!')
             return redirect('financeiro:conta_pagar_detail', pk=conta.pk)
     else:
-        form = ContaPageForm(instance=conta)
+        form = ContaPageForm(instance=conta, empresa=empresa)
     
     context = {
         'form': form,
@@ -535,11 +580,14 @@ def parcela_list(request):
     
     parcelas = ParcelaContaPagar.objects.filter(
         conta_pagar__empresa=empresa
-    ).prefetch_related('conta_pagar__fornecedor')
+    ).select_related('conta_pagar__fornecedor').annotate(
+        total_parcelas_conta=Count('conta_pagar__parcelas', distinct=True),
+        parcelas_pagas_conta=Count('conta_pagar__parcelas', filter=Q(conta_pagar__parcelas__status='PAGA'), distinct=True),
+    )
     
     # Filtros
     status = request.GET.get('status', '')
-    vencimento = request.GET.get('vencimento', 'todas')
+    vencimento = request.GET.get('vencimento') or request.GET.get('tipo_vencimento') or 'todas'
     
     if status:
         parcelas = parcelas.filter(status=status)
@@ -550,13 +598,13 @@ def parcela_list(request):
             data_vencimento__lt=hoje,
             status='ABERTA'
         )
-    elif vencimento == 'proximas':
+    elif vencimento in ['proximas', 'proximas_7']:
         parcelas = parcelas.filter(
             data_vencimento__gte=hoje,
             data_vencimento__lte=hoje + timedelta(days=7),
             status='ABERTA'
         )
-    elif vencimento == '30dias':
+    elif vencimento in ['30dias', 'proximas_30']:
         parcelas = parcelas.filter(
             data_vencimento__gte=hoje,
             data_vencimento__lte=hoje + timedelta(days=30),
@@ -571,12 +619,18 @@ def parcela_list(request):
     paginator = Paginator(parcelas, 30)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
+    base_parcelas = ParcelaContaPagar.objects.filter(conta_pagar__empresa=empresa)
     
     context = {
         'page_obj': page_obj,
         'parcelas': page_obj.object_list,
         'status_filter': status,
         'vencimento_filter': vencimento,
+        'total_parcelas': base_parcelas.count(),
+        'parcelas_abertas': base_parcelas.filter(status='ABERTA').count(),
+        'parcelas_vencidas': base_parcelas.filter(status='VENCIDA').count(),
+        'parcelas_pagas': base_parcelas.filter(status='PAGA').count(),
+        'is_paginated': page_obj.has_other_pages(),
     }
     
     return render(request, 'financeiro/parcela_list.html', context)

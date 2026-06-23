@@ -18,7 +18,6 @@
             <form method="post" novalidate>
                 {% csrf_token %}
 
-                <!-- Identificação -->
                 <div class="card mb-4">
                     <div class="card-header bg-light">
                         <h5 class="mb-0"><i class="bi bi-info-circle"></i> Identificação</h5>
@@ -80,7 +79,6 @@
                     </div>
                 </div>
 
-                <!-- Valores -->
                 <div class="card mb-4">
                     <div class="card-header bg-light">
                         <h5 class="mb-0"><i class="bi bi-cash-coin"></i> Valores</h5>
@@ -114,7 +112,80 @@
                     </div>
                 </div>
 
-                <!-- Configurações -->
+                {% if not form.instance.id %}
+                <div class="card mb-4 border-primary-subtle">
+                    <div class="card-header bg-primary-subtle">
+                        <h5 class="mb-0"><i class="bi bi-diagram-3"></i> Parcelamento Automático</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="{{ form.quantidade_parcelas.id_for_label }}" class="form-label">{{ form.quantidade_parcelas.label }}</label>
+                                    {{ form.quantidade_parcelas }}
+                                    {% if form.quantidade_parcelas.help_text %}
+                                    <div class="form-text">{{ form.quantidade_parcelas.help_text }}</div>
+                                    {% endif %}
+                                    {% if form.quantidade_parcelas.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.quantidade_parcelas.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="{{ form.intervalo_dias.id_for_label }}" class="form-label">{{ form.intervalo_dias.label }}</label>
+                                    {{ form.intervalo_dias }}
+                                    {% if form.intervalo_dias.help_text %}
+                                    <div class="form-text">{{ form.intervalo_dias.help_text }}</div>
+                                    {% endif %}
+                                    {% if form.intervalo_dias.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.intervalo_dias.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="{{ form.primeira_data_vencimento.id_for_label }}" class="form-label">{{ form.primeira_data_vencimento.label }}</label>
+                                    {{ form.primeira_data_vencimento }}
+                                    {% if form.primeira_data_vencimento.help_text %}
+                                    <div class="form-text">{{ form.primeira_data_vencimento.help_text }}</div>
+                                    {% endif %}
+                                    {% if form.primeira_data_vencimento.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.primeira_data_vencimento.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-light border mb-0">
+                            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                                <div>
+                                    <strong>Prévia das parcelas</strong>
+                                    <div class="text-muted small">Exemplo aprovado: o sistema pode gerar 24 parcelas e depois mostrar progresso como 12/24 pagas.</div>
+                                </div>
+                                <span class="badge text-bg-primary" id="parcelamentoResumo">1 parcela prevista</span>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-sm align-middle mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Parcela</th>
+                                            <th>Vencimento</th>
+                                            <th class="text-end">Valor</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="parcelamentoPreviewBody">
+                                        <tr>
+                                            <td colspan="3" class="text-muted">Preencha os dados para visualizar a distribuição automática.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
                 <div class="card mb-4">
                     <div class="card-header bg-light">
                         <h5 class="mb-0"><i class="bi bi-sliders"></i> Configurações</h5>
@@ -130,16 +201,13 @@
                     </div>
                 </div>
 
-                <!-- Observações -->
                 <div class="card mb-4">
                     <div class="card-header bg-light">
                         <h5 class="mb-0"><i class="bi bi-sticky"></i> Observações</h5>
                     </div>
                     <div class="card-body">
                         <div class="mb-3">
-                            <label for="{{ form.observacoes.id_for_label }}" class="form-label">
-                                {{ form.observacoes.label }}
-                            </label>
+                            <label for="{{ form.observacoes.id_for_label }}" class="form-label">{{ form.observacoes.label }}</label>
                             {{ form.observacoes }}
                             {% if form.observacoes.errors %}
                             <div class="invalid-feedback d-block">{{ form.observacoes.errors.0 }}</div>
@@ -148,7 +216,6 @@
                     </div>
                 </div>
 
-                <!-- Erros gerais do formulário -->
                 {% if form.non_field_errors %}
                 <div class="alert alert-danger">
                     {% for error in form.non_field_errors %}
@@ -157,10 +224,9 @@
                 </div>
                 {% endif %}
 
-                <!-- Botões -->
                 <div class="mb-3">
                     <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-check-circle"></i> 
+                        <i class="bi bi-check-circle"></i>
                         {% if form.instance.id %}Salvar Alterações{% else %}Criar Conta{% endif %}
                     </button>
                     <a href="{% url 'financeiro:conta_pagar_list' %}" class="btn btn-outline-secondary">
@@ -176,10 +242,80 @@
     .form-control, .form-select {
         border-radius: 0.375rem;
     }
-    
+
     .form-control:focus, .form-select:focus {
         border-color: #0d6efd;
         box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
     }
 </style>
+
+{% if not form.instance.id %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const quantidadeInput = document.getElementById('{{ form.quantidade_parcelas.id_for_label }}');
+    const intervaloInput = document.getElementById('{{ form.intervalo_dias.id_for_label }}');
+    const primeiroVencimentoInput = document.getElementById('{{ form.primeira_data_vencimento.id_for_label }}');
+    const valorTotalInput = document.getElementById('{{ form.valor_total.id_for_label }}');
+    const descontoInput = document.getElementById('{{ form.desconto_negociado.id_for_label }}');
+    const resumo = document.getElementById('parcelamentoResumo');
+    const previewBody = document.getElementById('parcelamentoPreviewBody');
+
+    function formatCurrency(value) {
+        return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+    }
+
+    function formatDate(date) {
+        return date.toLocaleDateString('pt-BR');
+    }
+
+    function renderPreview() {
+        const quantidade = parseInt(quantidadeInput?.value || '1', 10);
+        const intervalo = parseInt(intervaloInput?.value || '30', 10);
+        const primeiroVencimento = primeiroVencimentoInput?.value;
+        const valorTotal = parseFloat((valorTotalInput?.value || '0').replace(',', '.'));
+        const desconto = parseFloat((descontoInput?.value || '0').replace(',', '.'));
+        const valorLiquido = Math.max(valorTotal - desconto, 0);
+
+        if (!quantidade || !intervalo || !primeiroVencimento || valorLiquido <= 0) {
+            previewBody.innerHTML = '<tr><td colspan="3" class="text-muted">Preencha valor, quantidade, intervalo e primeiro vencimento para visualizar as parcelas.</td></tr>';
+            resumo.textContent = 'Aguardando dados do parcelamento';
+            return;
+        }
+
+        const base = Math.floor((valorLiquido / quantidade) * 100) / 100;
+        let acumulado = 0;
+        const primeiraData = new Date(primeiroVencimento + 'T00:00:00');
+        const linhas = [];
+
+        for (let indice = 1; indice <= quantidade; indice += 1) {
+            const valor = indice === quantidade ? Number((valorLiquido - acumulado).toFixed(2)) : Number(base.toFixed(2));
+            acumulado = Number((acumulado + valor).toFixed(2));
+
+            const vencimento = new Date(primeiraData);
+            vencimento.setDate(vencimento.getDate() + ((indice - 1) * intervalo));
+
+            linhas.push(`
+                <tr>
+                    <td><strong>${indice}/${quantidade}</strong></td>
+                    <td>${formatDate(vencimento)}</td>
+                    <td class="text-end">${formatCurrency(valor)}</td>
+                </tr>
+            `);
+        }
+
+        previewBody.innerHTML = linhas.join('');
+        resumo.textContent = `${quantidade} parcelas previstas`;
+    }
+
+    [quantidadeInput, intervaloInput, primeiroVencimentoInput, valorTotalInput, descontoInput].forEach(function (campo) {
+        if (campo) {
+            campo.addEventListener('input', renderPreview);
+            campo.addEventListener('change', renderPreview);
+        }
+    });
+
+    renderPreview();
+});
+</script>
+{% endif %}
 {% endblock %}

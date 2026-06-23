@@ -1,8 +1,11 @@
 """
 Forms para o módulo financeiro
 """
+from datetime import timedelta
+
 from django import forms
 from django.forms.models import inlineformset_factory
+from django.utils import timezone
 from .models import (
     ConfiguracaoJurosMulta,
     ContaPagar,
@@ -45,6 +48,37 @@ class ConfiguracaoJurosMultaForm(forms.ModelForm):
 class ContaPageForm(forms.ModelForm):
     """Form para criação/edição de conta a pagar"""
 
+    quantidade_parcelas = forms.IntegerField(
+        label='Quantidade de Parcelas',
+        min_value=1,
+        initial=1,
+        required=False,
+        widget=forms.NumberInput(attrs={
+            'class': 'form-control',
+            'min': '1',
+            'max': '999'
+        })
+    )
+    intervalo_dias = forms.IntegerField(
+        label='Intervalo entre Parcelas (dias)',
+        min_value=1,
+        initial=30,
+        required=False,
+        widget=forms.NumberInput(attrs={
+            'class': 'form-control',
+            'min': '1',
+            'max': '365'
+        })
+    )
+    primeira_data_vencimento = forms.DateField(
+        label='Primeiro Vencimento',
+        required=False,
+        widget=forms.DateInput(attrs={
+            'class': 'form-control',
+            'type': 'date'
+        })
+    )
+
     def __init__(self, *args, empresa=None, **kwargs):
         super().__init__(*args, **kwargs)
         if empresa:
@@ -56,6 +90,13 @@ class ContaPageForm(forms.ModelForm):
                 empresa=empresa, ativo=True
             ).order_by('codigo')
 
+        if not self.instance.pk:
+            data_base = timezone.now().date()
+            self.fields['primeira_data_vencimento'].initial = data_base + timedelta(days=30)
+            self.fields['quantidade_parcelas'].help_text = 'Exemplo: 24 parcelas para um consórcio.'
+            self.fields['intervalo_dias'].help_text = 'Use 30 para vencimentos mensais.'
+            self.fields['primeira_data_vencimento'].help_text = 'A lista de parcelas exibirá 1/24, 2/24 e assim por diante.'
+
     class Meta:
         model = ContaPagar
         fields = [
@@ -63,6 +104,7 @@ class ContaPageForm(forms.ModelForm):
             'fornecedor',
             'empresa',
             'recebimento',
+            'data_emissao',
             'valor_total',
             'desconto_negociado',
             'requer_aprovacao',
@@ -80,6 +122,10 @@ class ContaPageForm(forms.ModelForm):
             'recebimento': forms.Select(attrs={
                 'class': 'form-control',
                 'required': False
+            }),
+            'data_emissao': forms.DateInput(attrs={
+                'class': 'form-control',
+                'type': 'date'
             }),
             'valor_total': forms.NumberInput(attrs={
                 'class': 'form-control',
@@ -114,6 +160,26 @@ class ContaPageForm(forms.ModelForm):
                 if ContaPagar.objects.filter(numero=numero).exists():
                     raise forms.ValidationError('Este número de conta já existe.')
         return numero
+
+    def clean(self):
+        cleaned_data = super().clean()
+        if self.instance.pk:
+            return cleaned_data
+
+        quantidade_parcelas = cleaned_data.get('quantidade_parcelas') or 1
+        intervalo_dias = cleaned_data.get('intervalo_dias') or 30
+        primeira_data_vencimento = cleaned_data.get('primeira_data_vencimento')
+
+        if quantidade_parcelas < 1:
+            self.add_error('quantidade_parcelas', 'Informe ao menos uma parcela.')
+
+        if intervalo_dias < 1:
+            self.add_error('intervalo_dias', 'O intervalo deve ser maior que zero.')
+
+        if not primeira_data_vencimento:
+            self.add_error('primeira_data_vencimento', 'Informe o primeiro vencimento.')
+
+        return cleaned_data
 
 
 class ParcelaContaPageForm(forms.ModelForm):

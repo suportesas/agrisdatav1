@@ -5,7 +5,6 @@
 
 {% block content %}
 <div class="container-fluid">
-    <!-- Header -->
     <div class="row mb-4">
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center">
@@ -20,13 +19,12 @@
         </div>
     </div>
 
-    <!-- Estatísticas -->
     <div class="row mb-4">
         <div class="col-md-3">
             <div class="card">
                 <div class="card-body text-center">
                     <h5 class="card-title">Total</h5>
-                    <h2>{{ stats.total_contas }}</h2>
+                    <h2>{{ stats.total }}</h2>
                 </div>
             </div>
         </div>
@@ -34,7 +32,7 @@
             <div class="card">
                 <div class="card-body text-center">
                     <h5 class="card-title">Abertas</h5>
-                    <h2 class="text-warning">{{ stats.contas_abertas }}</h2>
+                    <h2 class="text-warning">{{ stats.abertas }}</h2>
                 </div>
             </div>
         </div>
@@ -42,7 +40,7 @@
             <div class="card">
                 <div class="card-body text-center">
                     <h5 class="card-title">Aprovadas</h5>
-                    <h2 class="text-info">{{ stats.contas_aprovadas }}</h2>
+                    <h2 class="text-info">{{ stats.aprovadas }}</h2>
                 </div>
             </div>
         </div>
@@ -50,13 +48,12 @@
             <div class="card">
                 <div class="card-body text-center">
                     <h5 class="card-title">Pagas</h5>
-                    <h2 class="text-success">{{ stats.contas_pagas }}</h2>
+                    <h2 class="text-success">{{ stats.pagas }}</h2>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Filtros -->
     <div class="card mb-4">
         <div class="card-body">
             <form method="get" class="row g-3">
@@ -95,7 +92,6 @@
         </div>
     </div>
 
-    <!-- Tabela de Contas -->
     <div class="card">
         <div class="table-responsive">
             <table class="table table-hover mb-0">
@@ -105,6 +101,7 @@
                         <th>Fornecedor</th>
                         <th>Valor</th>
                         <th>Data Emissão</th>
+                        <th>Parcelas</th>
                         <th>Status</th>
                         <th class="text-center">Ações</th>
                     </tr>
@@ -116,6 +113,14 @@
                         <td>{{ conta.fornecedor.nome }}</td>
                         <td>R$ {{ conta.valor_total|floatformat:2 }}</td>
                         <td>{{ conta.data_emissao|date:'d/m/Y' }}</td>
+                        <td>
+                            {% if conta.total_parcelas %}
+                            <div class="fw-semibold">{{ conta.parcelas_pagas }}/{{ conta.total_parcelas }} pagas</div>
+                            <small class="text-muted">Parcelamento automático</small>
+                            {% else %}
+                            <span class="text-muted">Sem parcelas</span>
+                            {% endif %}
+                        </td>
                         <td>
                             <span class="badge bg-{% if conta.status == 'PAGA' %}success{% elif conta.status == 'ABERTA' %}warning{% elif conta.status == 'APROVADA' %}info{% else %}secondary{% endif %}">
                                 {{ conta.get_status_display }}
@@ -134,7 +139,7 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="6" class="text-center text-muted py-4">
+                        <td colspan="7" class="text-center text-muted py-4">
                             <i class="bi bi-inbox"></i> Nenhuma conta encontrada
                         </td>
                     </tr>
@@ -144,7 +149,6 @@
         </div>
     </div>
 
-    <!-- Paginação -->
     {% if page_obj.has_other_pages %}
     <nav class="mt-4" aria-label="Paginação">
         <ul class="pagination justify-content-center">

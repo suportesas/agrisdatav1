@@ -4,14 +4,12 @@
 
 {% block content %}
 <div class="container-fluid">
-    <!-- Header -->
     <div class="row mb-4">
         <div class="col-12">
             <h1><i class="bi bi-calendar-check"></i> Parcelas a Pagar</h1>
         </div>
     </div>
 
-    <!-- Filtros -->
     <div class="card mb-4">
         <div class="card-body">
             <form method="get" class="row g-3">
@@ -19,10 +17,10 @@
                     <label for="status" class="form-label">Status</label>
                     <select name="status" id="status" class="form-select">
                         <option value="">-- Todos --</option>
-                        <option value="ABERTA" {% if request.GET.status == 'ABERTA' %}selected{% endif %}>Abertas</option>
-                        <option value="VENCIDA" {% if request.GET.status == 'VENCIDA' %}selected{% endif %}>Vencidas</option>
-                        <option value="PAGA" {% if request.GET.status == 'PAGA' %}selected{% endif %}>Pagas</option>
-                        <option value="RENEGOCIADA" {% if request.GET.status == 'RENEGOCIADA' %}selected{% endif %}>Renegociadas</option>
+                        <option value="ABERTA" {% if status_filter == 'ABERTA' %}selected{% endif %}>Abertas</option>
+                        <option value="VENCIDA" {% if status_filter == 'VENCIDA' %}selected{% endif %}>Vencidas</option>
+                        <option value="PAGA" {% if status_filter == 'PAGA' %}selected{% endif %}>Pagas</option>
+                        <option value="RENEGOCIADA" {% if status_filter == 'RENEGOCIADA' %}selected{% endif %}>Renegociadas</option>
                     </select>
                 </div>
 
@@ -30,9 +28,9 @@
                     <label for="tipo_vencimento" class="form-label">Período</label>
                     <select name="tipo_vencimento" id="tipo_vencimento" class="form-select">
                         <option value="">-- Todos --</option>
-                        <option value="vencidas" {% if request.GET.tipo_vencimento == 'vencidas' %}selected{% endif %}>Vencidas</option>
-                        <option value="proximas_7" {% if request.GET.tipo_vencimento == 'proximas_7' %}selected{% endif %}>Próximos 7 dias</option>
-                        <option value="proximas_30" {% if request.GET.tipo_vencimento == 'proximas_30' %}selected{% endif %}>Próximos 30 dias</option>
+                        <option value="vencidas" {% if vencimento_filter == 'vencidas' %}selected{% endif %}>Vencidas</option>
+                        <option value="proximas_7" {% if vencimento_filter == 'proximas_7' or vencimento_filter == 'proximas' %}selected{% endif %}>Próximos 7 dias</option>
+                        <option value="proximas_30" {% if vencimento_filter == 'proximas_30' or vencimento_filter == '30dias' %}selected{% endif %}>Próximos 30 dias</option>
                     </select>
                 </div>
 
@@ -46,7 +44,6 @@
         </div>
     </div>
 
-    <!-- Stats Cards -->
     <div class="row mb-4">
         <div class="col-md-3">
             <div class="card">
@@ -82,7 +79,6 @@
         </div>
     </div>
 
-    <!-- Tabela de Parcelas -->
     <div class="card">
         <div class="table-responsive">
             <table class="table table-hover mb-0">
@@ -110,7 +106,10 @@
                             </a>
                         </td>
                         <td>{{ parcela.conta_pagar.fornecedor.nome }}</td>
-                        <td><strong>{{ parcela.numero_parcela }}</strong></td>
+                        <td>
+                            <strong>{{ parcela.numero_parcela }}/{{ parcela.total_parcelas_conta }}</strong>
+                            <br><small class="text-muted">{{ parcela.parcelas_pagas_conta }}/{{ parcela.total_parcelas_conta }} pagas</small>
+                        </td>
                         <td>
                             <strong>{{ parcela.data_vencimento|date:'d/m/Y' }}</strong>
                             {% if parcela.status == 'VENCIDA' %}
@@ -161,31 +160,30 @@
             </table>
         </div>
 
-        <!-- Paginação -->
         {% if is_paginated %}
         <nav aria-label="Page navigation" class="border-top p-3">
             <ul class="pagination mb-0">
                 {% if page_obj.has_previous %}
                 <li class="page-item">
-                    <a class="page-link" href="?page=1{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.tipo_vencimento %}&tipo_vencimento={{ request.GET.tipo_vencimento }}{% endif %}">Primeira</a>
+                    <a class="page-link" href="?page=1{% if status_filter %}&status={{ status_filter }}{% endif %}{% if vencimento_filter and vencimento_filter != 'todas' %}&tipo_vencimento={{ vencimento_filter }}{% endif %}">Primeira</a>
                 </li>
                 <li class="page-item">
-                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.tipo_vencimento %}&tipo_vencimento={{ request.GET.tipo_vencimento }}{% endif %}">Anterior</a>
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if vencimento_filter and vencimento_filter != 'todas' %}&tipo_vencimento={{ vencimento_filter }}{% endif %}">Anterior</a>
                 </li>
                 {% endif %}
 
                 {% for num in page_obj.paginator.page_range %}
                 <li class="page-item {% if page_obj.number == num %}active{% endif %}">
-                    <a class="page-link" href="?page={{ num }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.tipo_vencimento %}&tipo_vencimento={{ request.GET.tipo_vencimento }}{% endif %}">{{ num }}</a>
+                    <a class="page-link" href="?page={{ num }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if vencimento_filter and vencimento_filter != 'todas' %}&tipo_vencimento={{ vencimento_filter }}{% endif %}">{{ num }}</a>
                 </li>
                 {% endfor %}
 
                 {% if page_obj.has_next %}
                 <li class="page-item">
-                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.tipo_vencimento %}&tipo_vencimento={{ request.GET.tipo_vencimento }}{% endif %}">Próxima</a>
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if vencimento_filter and vencimento_filter != 'todas' %}&tipo_vencimento={{ vencimento_filter }}{% endif %}">Próxima</a>
                 </li>
                 <li class="page-item">
-                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.tipo_vencimento %}&tipo_vencimento={{ request.GET.tipo_vencimento }}{% endif %}">Última</a>
+                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if vencimento_filter and vencimento_filter != 'todas' %}&tipo_vencimento={{ vencimento_filter }}{% endif %}">Última</a>
                 </li>
                 {% endif %}
             </ul>

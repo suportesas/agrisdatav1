@@ -961,11 +961,30 @@ class IntegranNotasClient:
         resp.raise_for_status()
         return resp.json()
 
-    def carta_correcao_cte(self, chave: str, correcao: str, sequencia: int = 1) -> dict:
-        """Envia Carta de Correção (CC-e) para CT-e autorizado."""
+    def correcao_cte(self, chave: str, correcoes: list, sequencia: int | None = None) -> dict:
+        """Envia Carta de Correção (CC-e) para CT-e autorizado com estrutura de múltiplas correções.
+
+        Args:
+            chave: Chave de acesso do CT-e
+            correcoes: Lista de dicts com: grupo_corrigido, campo_corrigido, valor_corrigido, indice_item (opcional)
+            sequencia: Sequencial opcional (gerenciado automaticamente pela API se não informado)
+
+        Exemplo:
+            correcoes = [
+                {
+                    'grupo_corrigido': 'ide',
+                    'campo_corrigido': 'natOp',
+                    'valor_corrigido': 'PRESTACAO DE SERVIÇO'
+                }
+            ]
+        """
+        payload = {'correcoes': correcoes}
+        if sequencia is not None:
+            payload['sequencia'] = sequencia
+
         resp = requests.post(
             f'{self.base_url}/cte/{chave}/carta-correcao',
-            json={'correcao': correcao, 'sequencia': sequencia},
+            json=payload,
             headers=self._headers(),
             timeout=self.TIMEOUT,
         )
@@ -978,6 +997,13 @@ class IntegranNotasClient:
                 erros=data.get('erros', []),
             )
         return data
+
+    def carta_correcao_cte(self, chave: str, correcao: str, sequencia: int | None = None) -> dict:
+        """DEPRECATED: Use correcao_cte com estrutura de múltiplas correções.
+        Mantido para compatibilidade com código legado.
+        """
+        correcoes = [{'campo_corrigido': 'observacao', 'valor_corrigido': correcao}]
+        return self.correcao_cte(chave, correcoes, sequencia)
 
     def manifesta_desacordo_cte(self, chave: str, descricao: str) -> dict:
         """Registra Manifestação de Desacordo no CT-e (código 7 = desacordo)."""

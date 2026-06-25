@@ -11,7 +11,7 @@
     <h3 class="mb-0">Configuração Fiscal</h3>
   </div>
 
-  <div class="row">
+  <div class="row g-4">
     <div class="col-md-8">
       <div class="card border-0 shadow-sm">
         <div class="card-header fw-semibold">Parâmetros Fiscais da Empresa</div>
@@ -31,14 +31,82 @@
                 <label class="form-label">Série NF-e</label>
                 {{ form.serie_nfe }}
               </div>
-              <div class="col-md-3">
-                <label class="form-label">Número Inicial NF-e
+            </div>
+
+            <!-- Sequência de Numeração -->
+            <hr class="my-4">
+            <h6 class="fw-semibold mb-2"><i class="bi bi-123 me-2"></i>Sequência de Numeração</h6>
+            <div class="alert alert-warning py-2 small mb-3">
+              <i class="bi bi-exclamation-triangle me-1"></i>
+              Estes campos definem o <strong>número inicial</strong> quando <strong>não há documentos emitidos</strong> neste sistema
+              (ex: ao migrar de outro sistema em produção). Após o primeiro documento ser emitido, a numeração segue automaticamente
+              e estes campos são ignorados.
+            </div>
+            <!-- NF-e -->
+            <div class="row g-3 mb-2">
+              <div class="col-md-2">
+                <label class="form-label fw-semibold text-muted small text-uppercase">NF-e</label>
+              </div>
+              <div class="col-md-2">
+                <label class="form-label">Série
                   <i class="bi bi-info-circle text-muted" data-bs-toggle="tooltip"
-                     title="Número de partida ao migrar de outro sistema. Após a primeira NF ser emitida aqui, a numeração continua automaticamente e este campo é ignorado."></i>
+                     title="Série da NF-e (geralmente 1)."></i>
+                </label>
+                {{ form.serie_nfe }}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Próximo Nº
+                  <i class="bi bi-info-circle text-muted" data-bs-toggle="tooltip"
+                     title="Número de partida ao migrar de outro sistema. Após a primeira NF-e emitida aqui, este campo é ignorado."></i>
                 </label>
                 {{ form.numero_nfe_inicial }}
-                <small class="text-muted">Para migração: informe o próximo número (ex: última = 3365 → informe <strong>3366</strong>).</small>
+                <small class="text-muted">Ex: última NF-e foi 3365 → informe <strong>3366</strong></small>
               </div>
+            </div>
+            <!-- CT-e -->
+            <div class="row g-3 mb-2">
+              <div class="col-md-2">
+                <label class="form-label fw-semibold text-muted small text-uppercase">CT-e</label>
+              </div>
+              <div class="col-md-2">
+                <label class="form-label">Série
+                  <i class="bi bi-info-circle text-muted" data-bs-toggle="tooltip"
+                     title="Série do CT-e (geralmente 1)."></i>
+                </label>
+                {{ form.serie_cte }}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Próximo Nº
+                  <i class="bi bi-info-circle text-muted" data-bs-toggle="tooltip"
+                     title="Número de partida para CT-e ao migrar de outro sistema."></i>
+                </label>
+                {{ form.numero_cte_inicial }}
+                <small class="text-muted">Ex: último CT-e foi 120 → informe <strong>121</strong></small>
+              </div>
+            </div>
+            <!-- MDF-e -->
+            <div class="row g-3 mb-2">
+              <div class="col-md-2">
+                <label class="form-label fw-semibold text-muted small text-uppercase">MDF-e</label>
+              </div>
+              <div class="col-md-2">
+                <label class="form-label">Série
+                  <i class="bi bi-info-circle text-muted" data-bs-toggle="tooltip"
+                     title="Série do MDF-e (geralmente 1)."></i>
+                </label>
+                {{ form.serie_mdfe }}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Próximo Nº
+                  <i class="bi bi-info-circle text-muted" data-bs-toggle="tooltip"
+                     title="Número de partida para MDF-e ao migrar de outro sistema."></i>
+                </label>
+                {{ form.numero_mdfe_inicial }}
+                <small class="text-muted">Ex: último MDF-e foi 45 → informe <strong>46</strong></small>
+              </div>
+            </div>
+
+            <div class="row g-3 mt-0">
               <div class="col-md-3">
                 <label class="form-label">CFOP Venda Interna</label>
                 {{ form.cfop_venda_interna }}
@@ -272,8 +340,10 @@
         </div>
       </div>
     </div>
+  </div>
 
     <div class="col-md-4">
+      <div style="position:sticky;top:1rem;">
       <div class="card border-0 shadow-sm">
         <div class="card-header fw-semibold">Dicas</div>
         <div class="card-body text-muted small">
@@ -289,6 +359,7 @@
           <p><strong>Certificado Digital:</strong> Use o tipo <strong>A1</strong> (.pfx / .p12). Certificados A3 (token/cartão) precisam ser exportados para A1 antes de importar.</p>
           <p>O certificado deve ser emitido em nome do <strong>CNPJ da empresa emitente</strong>. Verifique a validade regularmente — certificados vencidos bloqueiam a emissão.</p>
         </div>
+      </div>
       </div>
     </div>
   </div>

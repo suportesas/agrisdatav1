@@ -14,6 +14,8 @@
       </small>
     </div>
     <div class="d-flex gap-2 flex-wrap">
+
+      {# ── RASCUNHO ── #}
       {% if mdfe.status == 'RASCUNHO' %}
         <a href="{% url 'faturamento:mdfe_update' mdfe.pk %}" class="btn btn-outline-secondary btn-sm">
           <i class="bi bi-pencil me-1"></i> Editar
@@ -25,24 +27,22 @@
           <i class="bi bi-send me-1"></i> Emitir na SEFAZ
         </button>
       {% endif %}
-      {% if mdfe.chave_acesso %}
-        <a href="{% url 'faturamento:mdfe_preview' mdfe.pk %}" class="btn btn-outline-secondary btn-sm" target="_blank" title="Preview DAMDFE">
-          <i class="bi bi-eye me-1"></i> Preview
-        </a>
-      {% endif %}
+
+      {# ── EMITIDO ── #}
       {% if mdfe.status == 'EMITIDO' %}
         <a href="{% url 'faturamento:mdfe_damdfe' mdfe.pk %}" class="btn btn-primary btn-sm" target="_blank">
           <i class="bi bi-file-earmark-pdf me-1"></i> DAMDFE
         </a>
-        {% if mdfe.chave_acesso and not mdfe.protocolo %}
+        <a href="{% url 'faturamento:mdfe_xml' mdfe.pk %}" class="btn btn-outline-secondary btn-sm" download title="Baixar XML autorizado">
+          <i class="bi bi-filetype-xml me-1"></i> XML
+        </a>
         <form method="post" action="{% url 'faturamento:mdfe_consultar' mdfe.pk %}" class="d-inline">
           {% csrf_token %}
-          <button type="submit" class="btn btn-outline-warning btn-sm" title="Consultar status na SEFAZ">
-            <i class="bi bi-arrow-clockwise me-1"></i> Verificar SEFAZ
+          <button type="submit" class="btn btn-outline-info btn-sm" title="Consultar situação na SEFAZ">
+            <i class="bi bi-arrow-repeat me-1"></i> Consultar SEFAZ
           </button>
         </form>
-        {% endif %}
-        <a href="{% url 'faturamento:mdfe_inclui_condutor' mdfe.pk %}" class="btn btn-outline-info btn-sm" title="Incluir Condutor">
+        <a href="{% url 'faturamento:mdfe_inclui_condutor' mdfe.pk %}" class="btn btn-outline-secondary btn-sm" title="Incluir Condutor">
           <i class="bi bi-person-plus me-1"></i> Condutor
         </a>
         <a href="{% url 'faturamento:mdfe_inclui_nfe' mdfe.pk %}" class="btn btn-outline-secondary btn-sm" title="Incluir NF-e/CT-e">
@@ -51,15 +51,44 @@
         <a href="{% url 'faturamento:mdfe_encerrar' mdfe.pk %}" class="btn btn-warning btn-sm">
           <i class="bi bi-check2-circle me-1"></i> Encerrar
         </a>
-        <a href="{% url 'faturamento:mdfe_cancelar' mdfe.pk %}" class="btn btn-outline-danger btn-sm">
+        <a href="{% url 'faturamento:mdfe_cancelar' mdfe.pk %}" class="btn btn-danger btn-sm">
           <i class="bi bi-x-circle me-1"></i> Cancelar
         </a>
       {% endif %}
+
+      {# ── ENCERRADO ── #}
       {% if mdfe.status == 'ENCERRADO' %}
         <a href="{% url 'faturamento:mdfe_damdfe' mdfe.pk %}" class="btn btn-primary btn-sm" target="_blank">
           <i class="bi bi-file-earmark-pdf me-1"></i> DAMDFE
         </a>
+        <a href="{% url 'faturamento:mdfe_xml' mdfe.pk %}" class="btn btn-outline-secondary btn-sm" download title="Baixar XML autorizado">
+          <i class="bi bi-filetype-xml me-1"></i> XML
+        </a>
+        <form method="post" action="{% url 'faturamento:mdfe_consultar' mdfe.pk %}" class="d-inline">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-outline-info btn-sm" title="Consultar situação na SEFAZ">
+            <i class="bi bi-arrow-repeat me-1"></i> Consultar SEFAZ
+          </button>
+        </form>
       {% endif %}
+
+      {# ── CANCELADO ── #}
+      {% if mdfe.status == 'CANCELADO' %}
+        {% if mdfe.xml_cancelamento or mdfe.xml_cancelamento_url %}
+        <a href="{% url 'faturamento:mdfe_xml_cancelamento' mdfe.pk %}" class="btn btn-outline-secondary btn-sm" download title="Baixar XML de cancelamento">
+          <i class="bi bi-filetype-xml me-1"></i> XML Cancelamento
+        </a>
+        {% endif %}
+      {% endif %}
+
+      {# ── Com chave: Preview (qualquer status) ── #}
+      {% if mdfe.chave_acesso %}
+        <a href="{% url 'faturamento:mdfe_preview' mdfe.pk %}" class="btn btn-outline-secondary btn-sm" target="_blank" title="Preview DAMDFE">
+          <i class="bi bi-eye me-1"></i> Preview
+        </a>
+      {% endif %}
+
+      {# ── Sempre ── #}
       <form method="post" action="{% url 'faturamento:mdfe_clonar' mdfe.pk %}" class="d-inline"
             onsubmit="return confirm('Clonar este MDF-e como novo Rascunho?')">
         {% csrf_token %}
@@ -70,6 +99,7 @@
       <a href="{% url 'faturamento:mdfe_list' %}" class="btn btn-outline-secondary btn-sm">
         <i class="bi bi-arrow-left me-1"></i> Voltar
       </a>
+
     </div>
   </div>
 

@@ -10,7 +10,10 @@
       "Bash(where python *)",
       "Bash(.venv/Scripts/python.exe manage.py migrate)",
       "Bash(venv/Scripts/python.exe manage.py migrate)",
-      "Bash(python manage.py showmigrations faturamento)"
+      "Bash(python manage.py showmigrations faturamento)",
+      "Bash(python manage.py migrate faturamento 0044_add_serie_cte_mdfe)",
+      "Bash(/c/erp_agricola_novo/venv/Scripts/python.exe manage.py migrate faturamento 0044_add_serie_cte_mdfe)",
+      "Bash(/c/erp_agricola_novo/venv/Scripts/python.exe manage.py check --deploy)"
     ]
   }
 }

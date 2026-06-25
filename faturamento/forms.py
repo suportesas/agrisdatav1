@@ -209,6 +209,10 @@ class ConfiguracaoFiscalForm(forms.ModelForm):
             'regime_tributario',
             'serie_nfe',
             'numero_nfe_inicial',
+            'serie_cte',
+            'numero_cte_inicial',
+            'serie_mdfe',
+            'numero_mdfe_inicial',
             'cfop_venda_interna',
             'cfop_venda_exportacao',
             'natureza_operacao_padrao',
@@ -219,8 +223,12 @@ class ConfiguracaoFiscalForm(forms.ModelForm):
         ]
         widgets = {
             'regime_tributario': forms.Select(attrs={'class': 'form-select'}),
-            'serie_nfe': forms.NumberInput(attrs={'class': 'form-control'}),
-            'numero_nfe_inicial': forms.NumberInput(attrs={'class': 'form-control', 'min': 1}),
+            'serie_nfe':          forms.NumberInput(attrs={'class': 'form-control', 'min': 1}),
+            'numero_nfe_inicial':  forms.NumberInput(attrs={'class': 'form-control', 'min': 1}),
+            'serie_cte':          forms.NumberInput(attrs={'class': 'form-control', 'min': 1}),
+            'numero_cte_inicial':  forms.NumberInput(attrs={'class': 'form-control', 'min': 1}),
+            'serie_mdfe':         forms.NumberInput(attrs={'class': 'form-control', 'min': 1}),
+            'numero_mdfe_inicial': forms.NumberInput(attrs={'class': 'form-control', 'min': 1}),
             'cfop_venda_interna': forms.TextInput(attrs={'class': 'form-control'}),
             'cfop_venda_exportacao': forms.TextInput(attrs={'class': 'form-control'}),
             'natureza_operacao_padrao': forms.TextInput(attrs={'class': 'form-control'}),
@@ -790,6 +798,7 @@ class ConhecimentoTransporteForm(FaturamentoBaseForm):
     class Meta:
         model = ConhecimentoTransporte
         fields = [
+            'serie',
             'tipo_cte',
             'remetente', 'destinatario', 'expedidor', 'recebedor',
             'tipo_tomador', 'tomador', 'transportadora',
@@ -821,6 +830,7 @@ class ConhecimentoTransporteForm(FaturamentoBaseForm):
         _dec4 = {'class': 'form-control', 'step': '0.0001', 'min': '0'}
         _pct  = {'class': 'form-control', 'step': '0.01', 'min': '0', 'max': '100'}
         widgets = {
+            'serie':             forms.NumberInput(attrs={'class': 'form-control', 'min': 1, 'style': 'width:80px'}),
             'tipo_cte':          forms.Select(attrs={'class': 'form-select'}),
             'remetente':         forms.Select(attrs={'class': 'form-select'}),
             'destinatario':      forms.Select(attrs={'class': 'form-select'}),
@@ -967,6 +977,7 @@ class ManifestoDocumentoFiscalForm(FaturamentoBaseForm):
     class Meta:
         model = ManifestoDocumentoFiscal
         fields = [
+            'serie',
             'motorista', 'veiculo',
             'data_emissao',
             'uf_inicio', 'municipio_carregamento', 'codigo_municipio_carregamento', 'uf_fim',
@@ -982,6 +993,7 @@ class ManifestoDocumentoFiscalForm(FaturamentoBaseForm):
             'informacoes_fisco', 'informacoes_contribuinte',
         ]
         widgets = {
+            'serie':                     forms.NumberInput(attrs={'class': 'form-control', 'min': 1, 'style': 'width:80px'}),
             'motorista':                 forms.Select(attrs={'class': 'form-select'}),
             'veiculo':                   forms.Select(attrs={'class': 'form-select', 'id': 'id_veiculo'}),
             'data_emissao':              forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'),

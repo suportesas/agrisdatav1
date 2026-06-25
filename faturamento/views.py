@@ -2610,7 +2610,9 @@ def cte_create(request):
                 messages.success(request, 'CT-e criado com sucesso.')
                 return redirect('faturamento:cte_detail', pk=ct.pk)
     else:
-        form = ConhecimentoTransporteForm(empresa=empresa)
+        _cfg_cte = ConfiguracaoFiscal.objects.filter(empresa=empresa).first()
+        _serie_cte_ini = _cfg_cte.serie_cte if _cfg_cte else 1
+        form = ConhecimentoTransporteForm(empresa=empresa, initial={'serie': _serie_cte_ini})
         docs_formset = DocumentoVinculadoCTeFormSet(prefix='docs')
         comp_formset = ComponenteValorCTeFormSet(prefix='comp')
     return render(request, 'faturamento/cte/form.html', {
@@ -2812,7 +2814,7 @@ def cte_emitir_ajax(request, pk):
             .values_list('numero', flat=True)
             .first()
         )
-        ct.numero = (ultimo or 0) + 1
+        ct.numero = (ultimo + 1) if ultimo else (config.numero_cte_inicial or 1)
         ct.save(update_fields=['numero'])
 
     # Se o número já estiver em uso na mesma série, reajusta automaticamente
@@ -3760,7 +3762,9 @@ def mdfe_create(request):
             messages.success(request, 'MDF-e criado com sucesso.')
             return redirect('faturamento:mdfe_detail', pk=mdfe.pk)
     else:
-        form = ManifestoDocumentoFiscalForm(empresa=empresa)
+        _cfg_mdfe = ConfiguracaoFiscal.objects.filter(empresa=empresa).first()
+        _serie_mdfe_ini = _cfg_mdfe.serie_mdfe if _cfg_mdfe else 1
+        form = ManifestoDocumentoFiscalForm(empresa=empresa, initial={'serie': _serie_mdfe_ini})
         fs = _mdfe_formsets(request)
     ctx = {'form': form, 'action': 'Novo'}
     ctx.update(fs)
@@ -3876,7 +3880,7 @@ def mdfe_emitir_ajax(request, pk):
             .values_list('numero', flat=True)
             .first()
         )
-        mdfe.numero = (ultimo or 0) + 1
+        mdfe.numero = (ultimo + 1) if ultimo else (config.numero_mdfe_inicial or 1)
         mdfe.save(update_fields=['numero'])
     ok('Numeração', f'MDF-e {mdfe.numero}/{mdfe.serie}')
 
@@ -3998,8 +4002,8 @@ def mdfe_emitir(request, pk):
         messages.error(request, 'Configure o token IntegraNotas em Faturamento > Configuracao Fiscal.')
         return redirect('faturamento:mdfe_detail', pk=pk)
     if not mdfe.numero:
-        ultimo = ManifestoDocumentoFiscal.objects.filter(empresa=empresa).exclude(pk=pk).order_by('-numero').values_list('numero', flat=True).first()
-        mdfe.numero = (ultimo or 0) + 1
+        ultimo = ManifestoDocumentoFiscal.objects.filter(empresa=empresa, serie=mdfe.serie).exclude(pk=pk).order_by('-numero').values_list('numero', flat=True).first()
+        mdfe.numero = (ultimo + 1) if ultimo else (config.numero_mdfe_inicial or 1)
         mdfe.save(update_fields=['numero'])
     from .services.integranotas import IntegranNotasClient, IntegranNotasError
     client = IntegranNotasClient(token=config.get_token(), ambiente=config.ambiente_nfe)
@@ -4079,11 +4083,19 @@ def mdfe_cancelar(request, pk):
                 config = empresa.configuracao_fiscal
                 from .services.integranotas import IntegranNotasClient, IntegranNotasError
                 client = IntegranNotasClient(token=config.get_token(), ambiente=config.ambiente_nfe)
-                client.cancelar_mdfe(mdfe.chave_acesso, form.cleaned_data['justificativa'])
+                data = client.cancelar_mdfe(mdfe.chave_acesso, form.cleaned_data['justificativa'])
                 mdfe.status = 'CANCELADO'
                 mdfe.motivo_cancelamento = form.cleaned_data['justificativa']
                 mdfe.data_cancelamento = timezone.now()
-                mdfe.save()
+                if data.get('xml'):
+                    mdfe.xml_cancelamento = data['xml']
+                    _extra = _upload_fiscal_docs(mdfe, mdfe.empresa_id, 'mdfe', mdfe.numero, mdfe.serie,
+                                                 xml_cancel_b64=data['xml'])
+                    mdfe.save(update_fields=list(dict.fromkeys(
+                        ['status', 'motivo_cancelamento', 'data_cancelamento', 'xml_cancelamento'] + _extra
+                    )))
+                else:
+                    mdfe.save(update_fields=['status', 'motivo_cancelamento', 'data_cancelamento'])
                 messages.success(request, 'MDF-e cancelado com sucesso.')
                 return redirect('faturamento:mdfe_detail', pk=pk)
             except Exception as e:
@@ -4151,6 +4163,74 @@ def mdfe_consultar(request, pk):
     except Exception as e:
         messages.error(request, f'Erro ao consultar SEFAZ: {e}')
     return redirect('faturamento:mdfe_detail', pk=pk)
+
+
+@login_required
+def mdfe_xml(request, pk):
+    """Download do XML autorizado do MDF-e."""
+    import base64
+    import urllib.request as _ur
+    from .services.integranotas import IntegranNotasClient
+    empresa = _get_empresa(request)
+    mdfe = get_object_or_404(ManifestoDocumentoFiscal, pk=pk, empresa=empresa)
+    if mdfe.xml_autorizacao_url:
+        try:
+            xml_bytes = _ur.urlopen(mdfe.xml_autorizacao_url, timeout=20).read()
+            resp = HttpResponse(xml_bytes, content_type='application/xml; charset=utf-8')
+            resp['Content-Disposition'] = f'attachment; filename="MDFE_{mdfe.numero}_{mdfe.serie}.xml"'
+            return resp
+        except Exception:
+            pass
+    if not mdfe.xml_autorizacao and mdfe.chave_acesso:
+        try:
+            config = empresa.configuracao_fiscal
+            client = IntegranNotasClient(token=config.get_token(), ambiente=config.ambiente_nfe)
+            data = client.consultar_mdfe(mdfe.chave_acesso)
+            if data.get('xml'):
+                mdfe.xml_autorizacao = data['xml']
+                fields = ['xml_autorizacao']
+                if data.get('protocolo') and not mdfe.protocolo:
+                    mdfe.protocolo = data['protocolo']
+                    fields.append('protocolo')
+                _extra = _upload_fiscal_docs(mdfe, mdfe.empresa_id, 'mdfe', mdfe.numero, mdfe.serie,
+                                             xml_b64=data['xml'])
+                mdfe.save(update_fields=list(dict.fromkeys(fields + _extra)))
+                if mdfe.xml_autorizacao_url:
+                    from django.shortcuts import redirect as _redirect
+                    return _redirect(mdfe.xml_autorizacao_url)
+        except Exception:
+            pass
+    if not mdfe.xml_autorizacao:
+        messages.error(request, 'XML de autorização não disponível para este MDF-e.')
+        return redirect('faturamento:mdfe_detail', pk=pk)
+    xml_bytes = base64.b64decode(mdfe.xml_autorizacao)
+    resp = HttpResponse(xml_bytes, content_type='application/xml; charset=utf-8')
+    resp['Content-Disposition'] = f'attachment; filename="MDFE_{mdfe.numero}_{mdfe.serie}.xml"'
+    return resp
+
+
+@login_required
+def mdfe_xml_cancelamento(request, pk):
+    """Download do XML de cancelamento do MDF-e."""
+    import base64
+    import urllib.request as _ur
+    empresa = _get_empresa(request)
+    mdfe = get_object_or_404(ManifestoDocumentoFiscal, pk=pk, empresa=empresa)
+    if mdfe.xml_cancelamento_url:
+        try:
+            xml_bytes = _ur.urlopen(mdfe.xml_cancelamento_url, timeout=20).read()
+            resp = HttpResponse(xml_bytes, content_type='application/xml; charset=utf-8')
+            resp['Content-Disposition'] = f'attachment; filename="CANCEL_MDFE_{mdfe.numero}_{mdfe.serie}.xml"'
+            return resp
+        except Exception:
+            pass
+    if not mdfe.xml_cancelamento:
+        messages.error(request, 'XML de cancelamento não disponível para este MDF-e.')
+        return redirect('faturamento:mdfe_detail', pk=pk)
+    xml_bytes = base64.b64decode(mdfe.xml_cancelamento)
+    resp = HttpResponse(xml_bytes, content_type='application/xml; charset=utf-8')
+    resp['Content-Disposition'] = f'attachment; filename="CANCEL_MDFE_{mdfe.numero}_{mdfe.serie}.xml"'
+    return resp
 
 
 @login_required

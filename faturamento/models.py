@@ -57,7 +57,9 @@ class ConfiguracaoFiscal(models.Model):
     ]
 
     regime_tributario = models.CharField('Regime Tributário', max_length=20, choices=REGIME, default='SIMPLES_NACIONAL')
-    serie_nfe = models.IntegerField('Série NF-e', default=1)
+    serie_nfe  = models.IntegerField('Série NF-e',  default=1)
+    serie_cte  = models.IntegerField('Série CT-e',  default=1)
+    serie_mdfe = models.IntegerField('Série MDF-e', default=1)
     cfop_venda_interna = models.CharField('CFOP Venda Interna', max_length=10, default='5102')
     cfop_venda_exportacao = models.CharField('CFOP Venda Exportação', max_length=10, default='7101')
     natureza_operacao_padrao = models.CharField('Natureza da Operação Padrão', max_length=100, default='VENDA DE MERCADORIA')
@@ -70,6 +72,18 @@ class ConfiguracaoFiscal(models.Model):
         default=1,
         help_text='Usado somente quando não há notas emitidas neste sistema. '
                   'Para migrar de outro sistema, informe o próximo número (ex: última nota foi 3365 → informe 3366).',
+    )
+    numero_cte_inicial = models.PositiveIntegerField(
+        'Número Inicial do CT-e',
+        default=1,
+        help_text='Usado somente quando não há CT-e emitidos neste sistema. '
+                  'Para migrar de outro sistema, informe o próximo número.',
+    )
+    numero_mdfe_inicial = models.PositiveIntegerField(
+        'Número Inicial do MDF-e',
+        default=1,
+        help_text='Usado somente quando não há MDF-e emitidos neste sistema. '
+                  'Para migrar de outro sistema, informe o próximo número.',
     )
 
     # Certificado Digital A1
@@ -1155,6 +1169,8 @@ class ManifestoDocumentoFiscal(FaturamentoBaseModel):
     protocolo       = models.CharField('Protocolo de Autorização', max_length=60, blank=True)
     xml_autorizacao     = models.TextField('XML Autorizado (base64)', blank=True)
     xml_autorizacao_url = models.URLField('URL XML Autorizado (Storage)', blank=True)
+    xml_cancelamento    = models.TextField('XML Cancelamento (base64)', blank=True)
+    xml_cancelamento_url = models.URLField('URL XML Cancelamento (Storage)', blank=True)
     pdf_damdfe          = models.TextField('DAMDFE PDF (base64)', blank=True)
     pdf_damdfe_url      = models.URLField('URL DAMDFE PDF (Storage)', blank=True)
     status              = models.CharField('Status', max_length=20, choices=STATUS, default='RASCUNHO')

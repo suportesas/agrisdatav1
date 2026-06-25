@@ -3639,13 +3639,14 @@ def fornecedor_list(request):
         messages.error(request, '❌ Você não está vinculado a nenhuma empresa.')
         return redirect('dashboard:index')
 
-    fornecedores = Fornecedor.objects.filter(empresa=empresa).order_by('nome')
+    fornecedores = Fornecedor.objects.filter(empresa=empresa)
 
     # busca e filtros
     q = request.GET.get('q', '').strip()
     status = request.GET.get('status', '').strip()
     categoria = request.GET.get('categoria', '').strip()
     tipo = request.GET.get('tipo', '').strip()
+    sort_by = request.GET.get('sort', 'nome')
 
     if q:
         fornecedores = fornecedores.filter(
@@ -3672,16 +3673,23 @@ def fornecedor_list(request):
         elif tipo == 'NACIONAL':
             fornecedores = fornecedores.filter(is_exportador=False)
 
+    sort_map = {
+        'nome': 'nome', '-nome': '-nome',
+        'cnpj': 'cnpj_cpf', '-cnpj': '-cnpj_cpf',
+        'status': '-ativa', '-status': 'ativa',
+    }
+    fornecedores = fornecedores.distinct().order_by(sort_map.get(sort_by, 'nome'))
+
     # pagination
-    per_page = request.GET.get('per_page', '10')
+    per_page = request.GET.get('per_page', '25')
     try:
         per_page = int(per_page)
         if per_page not in [10, 25, 50, 100]:
-            per_page = 10
+            per_page = 25
     except ValueError:
-        per_page = 10
-    
-    paginator = Paginator(fornecedores.distinct().order_by('nome'), per_page)
+        per_page = 25
+
+    paginator = Paginator(fornecedores, per_page)
     page = request.GET.get('page')
     try:
         fornecedores_page = paginator.get_page(page)
@@ -3702,6 +3710,8 @@ def fornecedor_list(request):
         'categorias': categorias,
         'paginator': paginator,
         'per_page': per_page,
+        'per_page_options': [10, 25, 50, 100],
+        'sort_by': sort_by,
     }
     return render(request, 'cadastros/fornecedor/fornecedor_list.html', context)
 

@@ -1651,14 +1651,18 @@ class IntegranNotasClient:
             if rb.capacidade_m3:
                 rd['capacidade_m3'] = rb.capacidade_m3
             if rb.prop_cpf_cnpj:
-                rd['prop'] = {
-                    'cpf_cnpj': _digits(rb.prop_cpf_cnpj),
-                    'nome': rb.prop_nome,
-                    'tipo': rb.prop_tipo,
-                    'uf': rb.prop_uf,
-                    'rntrc': rb.prop_rntrc,
-                    'tipo_transportador': rb.prop_tipo_transportador,
-                }
+                prop_rb: dict = {'cpf_cnpj': _digits(rb.prop_cpf_cnpj)}
+                if rb.prop_nome:
+                    prop_rb['nome'] = rb.prop_nome
+                if rb.prop_tipo:
+                    prop_rb['tipo'] = rb.prop_tipo
+                if rb.prop_uf:
+                    prop_rb['uf'] = rb.prop_uf
+                if rb.prop_rntrc:
+                    prop_rb['rntrc'] = rb.prop_rntrc
+                if rb.prop_tipo_transportador:
+                    prop_rb['tipo_transportador'] = rb.prop_tipo_transportador
+                rd['prop'] = prop_rb
             reboques.append(rd)
         if reboques:
             modal['reboque'] = reboques

@@ -3,14 +3,6 @@
 
 {% block extra_css %}
 <style>
-  .info-card {
-    border-left: 4px solid #0d6efd;
-    transition: all 0.3s ease;
-  }
-  .info-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-  }
   .tab-content {
     background: white;
     border-radius: 0 0 10px 10px;
@@ -45,14 +37,22 @@
     </ol>
   </nav>
 
-  {% url 'cadastros:fornecedor_update' fornecedor.pk as fornecedor_update_url %}
-  {% url 'cadastros:fornecedor_delete' fornecedor.pk as fornecedor_delete_url %}
-  {% include 'cadastros/partials/entity_header.html' with title=fornecedor.get_nome_exibicao subtitle=fornecedor.nome icon="<i class='bi bi-building text-primary'></i>" edit_url=fornecedor_update_url delete_url=fornecedor_delete_url %}
-
-  <div class="d-flex justify-content-end mb-3">
-    <a class="btn btn-outline-primary" href="{% url 'cadastros:fornecedor_pdf' fornecedor.pk %}" target="_blank" rel="noopener">
-      <i class="bi bi-file-earmark-pdf"></i> Ver PDF
-    </a>
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="fw-bold mb-1"><i class="bi bi-building text-primary me-2"></i>{{ fornecedor.get_nome_exibicao }}</h2>
+      {% if fornecedor.nome_fantasia %}<small class="text-muted">{{ fornecedor.nome }}</small>{% endif %}
+    </div>
+    <div class="btn-group">
+      <a href="{% url 'cadastros:fornecedor_update' fornecedor.pk %}" class="btn btn-outline-secondary">
+        <i class="bi bi-pencil"></i> Editar
+      </a>
+      <a href="{% url 'cadastros:fornecedor_pdf' fornecedor.pk %}" class="btn btn-outline-primary" target="_blank" rel="noopener">
+        <i class="bi bi-file-earmark-pdf"></i> Ver PDF
+      </a>
+      <a href="{% url 'cadastros:fornecedor_delete' fornecedor.pk %}" class="btn btn-outline-danger">
+        <i class="bi bi-trash"></i> Excluir
+      </a>
+    </div>
   </div>
 
   {% if not fornecedor.ativa %}
@@ -74,73 +74,6 @@
       </div>
     </div>
   {% endif %}
-
-  <!-- Cards de Contagem -->
-  <div class="row g-3 mb-4">
-    <div class="col-md-3">
-      <div class="card info-card border-0 shadow-sm h-100">
-        <div class="card-body">
-          <div class="d-flex align-items-center">
-            <div class="bg-info bg-opacity-10 text-info rounded-circle p-3 me-3">
-              <i class="bi bi-geo-alt fs-4"></i>
-            </div>
-            <div>
-              <h6 class="text-muted mb-0 small">Endereços</h6>
-              <h4 class="mb-0 fw-bold">{{ fornecedor.enderecos.count }}</h4>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="col-md-3">
-      <div class="card info-card border-0 shadow-sm h-100">
-        <div class="card-body">
-          <div class="d-flex align-items-center">
-            <div class="bg-success bg-opacity-10 text-success rounded-circle p-3 me-3">
-              <i class="bi bi-people fs-4"></i>
-            </div>
-            <div>
-              <h6 class="text-muted mb-0 small">Contatos</h6>
-              <h4 class="mb-0 fw-bold">{{ fornecedor.contatos.count }}</h4>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="col-md-3">
-      <div class="card info-card border-0 shadow-sm h-100">
-        <div class="card-body">
-          <div class="d-flex align-items-center">
-            <div class="bg-primary bg-opacity-10 text-primary rounded-circle p-3 me-3">
-              <i class="bi bi-bank fs-4"></i>
-            </div>
-            <div>
-              <h6 class="text-muted mb-0 small">Contas</h6>
-              <h4 class="mb-0 fw-bold">{{ contas.count }}</h4>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="col-md-3">
-      <div class="card info-card border-0 shadow-sm h-100">
-        <div class="card-body">
-          <div class="d-flex align-items-center">
-            <div class="bg-warning bg-opacity-10 text-warning rounded-circle p-3 me-3">
-              <i class="bi bi-file-earmark fs-4"></i>
-            </div>
-            <div>
-              <h6 class="text-muted mb-0 small">Documentos</h6>
-              <h4 class="mb-0 fw-bold">{{ fornecedor.documentos.count }}</h4>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
 
   <!-- Tabs -->
   <div class="card border-0 shadow-sm">

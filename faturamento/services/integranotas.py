@@ -1461,7 +1461,7 @@ class IntegranNotasClient:
         for doc in mdfe.documentos_vinculados.all():
             codigo = doc.codigo_municipio_descarregamento or ''
             nome   = doc.municipio_descarregamento or ''
-            cep    = (doc.cep_descarregamento or '').replace('-', '').replace('.', '')
+            cep    = (doc.cep_descarregamento or '').replace('-', '').replace('.', '').zfill(8) if (doc.cep_descarregamento or '').strip() else ''
             chave_id = doc.chave[:10] + '…' if doc.chave else '(sem chave)'
             if not codigo:
                 docs_sem_ibge.append(chave_id)
@@ -1506,8 +1506,8 @@ class IntegranNotasClient:
         percursos = [{'uf': p.uf} for p in mdfe.percursos.order_by('ordem')]
 
         plates = mdfe.veiculo.plates.order_by('-id').first()
-        placa = mdfe.placa_tracao or (plates.placa if plates else '')
-        uf_tracao = mdfe.uf_tracao or mdfe.veiculo.uf_licenciamento or mdfe.uf_inicio
+        placa = (mdfe.placa_tracao or (plates.placa if plates else '')).upper()
+        uf_tracao = (mdfe.uf_tracao or mdfe.veiculo.uf_licenciamento or mdfe.uf_inicio or '').upper()
         tara_tracao = mdfe.tara_tracao_kg if mdfe.tara_tracao_kg is not None else mdfe.veiculo.tara_kg
 
         # ── Condutores (motorista principal + CondutorMDFe pré-emissão) ────────
@@ -1537,20 +1537,19 @@ class IntegranNotasClient:
 
         # Proprietário/possuidor diferente do emitente
         if mdfe.proprietario_diferente and mdfe.prop_cpf_cnpj:
-            prop: dict = {'cpf_cnpj': _digits(mdfe.prop_cpf_cnpj)}
+            digits_prop = _digits(mdfe.prop_cpf_cnpj)
+            prop: dict = {'cnpj': digits_prop} if len(digits_prop) == 14 else {'cpf': digits_prop}
             if mdfe.prop_rntrc:
                 prop['rntrc'] = mdfe.prop_rntrc
             if mdfe.prop_nome:
                 prop['nome'] = mdfe.prop_nome
             if mdfe.prop_ie:
-                prop['ie'] = mdfe.prop_ie
+                prop['inscricao_estadual'] = mdfe.prop_ie
             if mdfe.prop_uf:
                 prop['uf'] = mdfe.prop_uf
             if mdfe.prop_tipo:
                 prop['tipo'] = mdfe.prop_tipo
-            if mdfe.prop_tipo_transportador:
-                prop['tipo_transportador'] = mdfe.prop_tipo_transportador
-            veiculo_payload['prop'] = prop
+            veiculo_payload['proprietario'] = prop
 
         # ── Modal rodoviário ─────────────────────────────────────────────────────
         modal: dict = {
@@ -1570,8 +1569,16 @@ class IntegranNotasClient:
         if mdfe.cod_ag_porto:
             modal['cod_ag_porto'] = mdfe.cod_ag_porto
 
-        # CIOTs
-        ciots = [{'ciot': c.ciot, 'cpf_cnpj': _digits(c.cpf_cnpj)} for c in mdfe.ciots.all()]
+        # CIOTs — infANTT/infCIOT: CNPJ ou CPF separados (não cpf_cnpj unificado)
+        ciots = []
+        for c in mdfe.ciots.all():
+            digits_ciot = _digits(c.cpf_cnpj)
+            entry: dict = {'ciot': c.ciot}
+            if len(digits_ciot) == 14:
+                entry['cnpj'] = digits_ciot
+            else:
+                entry['cpf'] = digits_ciot
+            ciots.append(entry)
         if ciots:
             modal['ciot'] = ciots
 
@@ -1637,7 +1644,7 @@ class IntegranNotasClient:
         # Reboques
         reboques = []
         for rb in mdfe.reboques.all():
-            rd: dict = {'placa': rb.placa, 'uf': rb.uf}
+            rd: dict = {'placa': (rb.placa or '').upper(), 'uf': (rb.uf or '').upper()}
             if rb.rntrc:
                 rd['rntrc'] = rb.rntrc
             if rb.tipo_carroceria:
@@ -1651,7 +1658,8 @@ class IntegranNotasClient:
             if rb.capacidade_m3:
                 rd['capacidade_m3'] = rb.capacidade_m3
             if rb.prop_cpf_cnpj:
-                prop_rb: dict = {'cpf_cnpj': _digits(rb.prop_cpf_cnpj)}
+                digits_rb = _digits(rb.prop_cpf_cnpj)
+                prop_rb: dict = {'cnpj': digits_rb} if len(digits_rb) == 14 else {'cpf': digits_rb}
                 if rb.prop_nome:
                     prop_rb['nome'] = rb.prop_nome
                 if rb.prop_tipo:
@@ -1660,9 +1668,9 @@ class IntegranNotasClient:
                     prop_rb['uf'] = rb.prop_uf
                 if rb.prop_rntrc:
                     prop_rb['rntrc'] = rb.prop_rntrc
-                if rb.prop_tipo_transportador:
-                    prop_rb['tipo_transportador'] = rb.prop_tipo_transportador
-                rd['prop'] = prop_rb
+                if rb.prop_ie:
+                    prop_rb['inscricao_estadual'] = rb.prop_ie
+                rd['proprietario'] = prop_rb
             reboques.append(rd)
         if reboques:
             modal['reboque'] = reboques
@@ -1671,10 +1679,21 @@ class IntegranNotasClient:
         seguros = []
         for sg in mdfe.seguros.all():
             sd: dict = {'n_apolice': sg.n_apolice, 'responsavel': sg.responsavel}
+            # CNPJ/CPF do responsável: só enviar quando responsavel ≠ "1" (Emitente)
+            # Quando responsavel="1" o emitente já consta no bloco raiz — enviar aqui gera rejeição
+            if sg.responsavel != '1' and sg.cpf_cnpj:
+                digits_sg = _digits(sg.cpf_cnpj)
+                if len(digits_sg) == 14:
+                    sd['cnpj'] = digits_sg
+                else:
+                    sd['cpf'] = digits_sg
             if sg.seguradora:
-                sd['seguradora'] = sg.seguradora
+                sd['nome_seguradora'] = sg.seguradora
+            if sg.cnpj_seguradora:
+                sd['cnpj_seguradora'] = _digits(sg.cnpj_seguradora)
+            # nAverb tem cardinalidade 0..999 no XML — IntegraNotas espera array
             if sg.n_averbacao:
-                sd['n_averbacao'] = sg.n_averbacao
+                sd['numero_averbacao'] = [sg.n_averbacao]
             seguros.append(sd)
 
         # ── Produto Predominante — na raiz do payload (prodPred no XML MDF-e) ──
@@ -1705,7 +1724,7 @@ class IntegranNotasClient:
                         "1 município de descarregamento (lotação). "
                         "Preencha o campo 'Município de Carregamento' do MDF-e."
                     )
-                cep_carga = (empresa.cep or '').replace('-', '').replace('.', '')
+                cep_carga = (empresa.cep or '').replace('-', '').replace('.', '').zfill(8) if (empresa.cep or '').strip() else ''
                 cep_desc  = mun_desc.get('cep', '')
                 mun_carg_obj: dict = {'codigo_municipio': cod_ibge_carga, 'nome_municipio': nom_carga}
                 if cep_carga:
@@ -1727,7 +1746,7 @@ class IntegranNotasClient:
             )
 
         payload: dict = {
-            'tipo_operacao': '1',
+            'tipo_operacao': mdfe.tipo_emitente,  # '1'=PST (serviço), '2'=TCP (carga própria)
             'serie': str(mdfe.serie),
             'numero': str(mdfe.numero),
             'data_emissao': mdfe.data_emissao.strftime('%Y-%m-%dT00:00:00-03:00') if hasattr(mdfe.data_emissao, 'strftime') else str(mdfe.data_emissao),
@@ -1750,13 +1769,14 @@ class IntegranNotasClient:
         # Campos opcionais: só incluir quando preenchidos (schema SEFAZ exige minLength=1)
         if percursos:
             payload['percursos'] = percursos
-        if mdfe.tipo_transporte:
+        # tipo_transporte só pode ser enviado se proprietario estiver presente no veiculo (Rej. 745)
+        if mdfe.tipo_transporte and 'proprietario' in veiculo_payload:
             payload['tipo_transporte'] = mdfe.tipo_transporte
         if mdfe.informacoes_fisco:
             payload['informacoes_adicionais_fisco'] = mdfe.informacoes_fisco
         if mdfe.informacoes_contribuinte:
             payload['informacoes_adicionais_contribuinte'] = mdfe.informacoes_contribuinte
         if seguros:
-            payload['seguro'] = seguros
+            modal['seguro'] = seguros
         logger.debug('MDF-e payload: %s', payload)
         return payload

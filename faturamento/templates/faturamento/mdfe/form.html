@@ -213,6 +213,11 @@
               <div class="card-header py-2"><i class="bi bi-box-seam me-1"></i> Carga</div>
               <div class="card-body">
                 <div class="row g-3">
+                  <div class="col-md-4">
+                    <label class="form-label fw-semibold">Tipo de Emitente <span class="text-danger">*</span></label>
+                    {{ form.tipo_emitente }}
+                    <div id="alerta-tipo-emitente" class="alert alert-sm py-2 px-3 mt-2 mb-0 d-none" role="alert"></div>
+                  </div>
                   <div class="col-md-3">
                     <label class="form-label">Tipo de Transporte</label>
                     {{ form.tipo_transporte }}
@@ -633,12 +638,32 @@
       <div class="tab-pane fade" id="tab-seguro">
         {{ seguro_formset.management_form }}
         <table class="table table-sm" id="seg-table">
-          <thead class="table-light"><tr><th>Responsável</th><th>Seguradora</th><th>Nº Apólice</th><th>Nº Averbação</th><th></th></tr></thead>
+          <thead class="table-light"><tr>
+            <th>Responsável</th>
+            <th style="width:130px">CPF/CNPJ Resp.</th>
+            <th>Seguradora</th>
+            <th style="width:130px">CNPJ Seguradora</th>
+            <th style="width:120px">Nº Apólice</th>
+            <th style="width:120px">Nº Averbação</th>
+            <th></th>
+          </tr></thead>
           <tbody id="seg-tbody">
             {% for sf in seguro_formset %}
             <tr>
-              <td>{{ sf.responsavel }}</td><td>{{ sf.seguradora }}</td>
-              <td>{{ sf.n_apolice }}</td><td>{{ sf.n_averbacao }}</td>
+              <td>{{ sf.responsavel }}</td>
+              <td><input type="text" name="seg-{{ forloop.counter0 }}-cpf_cnpj"
+                         id="id_seg-{{ forloop.counter0 }}-cpf_cnpj"
+                         value="{{ sf.instance.cpf_cnpj }}"
+                         maxlength="14" class="form-control form-control-sm"
+                         placeholder="CPF/CNPJ"></td>
+              <td>{{ sf.seguradora }}</td>
+              <td><input type="text" name="seg-{{ forloop.counter0 }}-cnpj_seguradora"
+                         id="id_seg-{{ forloop.counter0 }}-cnpj_seguradora"
+                         value="{{ sf.instance.cnpj_seguradora }}"
+                         maxlength="14" class="form-control form-control-sm"
+                         placeholder="CNPJ"></td>
+              <td>{{ sf.n_apolice }}</td>
+              <td>{{ sf.n_averbacao }}</td>
               <td>{{ sf.DELETE }}{{ sf.id }}</td>
             </tr>
             {% endfor %}
@@ -652,7 +677,9 @@
                 <option value="2">2 - Contratante do Seguro</option>
               </select>
             </td>
+            <td><input type="text" name="seg-__prefix__-cpf_cnpj" maxlength="14" class="form-control form-control-sm" placeholder="CPF/CNPJ" id="id_seg-__prefix__-cpf_cnpj"></td>
             <td><input type="text" name="seg-__prefix__-seguradora" maxlength="30" class="form-control form-control-sm" id="id_seg-__prefix__-seguradora"></td>
+            <td><input type="text" name="seg-__prefix__-cnpj_seguradora" maxlength="14" class="form-control form-control-sm" placeholder="CNPJ" id="id_seg-__prefix__-cnpj_seguradora"></td>
             <td><input type="text" name="seg-__prefix__-n_apolice" maxlength="20" class="form-control form-control-sm" id="id_seg-__prefix__-n_apolice"></td>
             <td><input type="text" name="seg-__prefix__-n_averbacao" maxlength="40" class="form-control form-control-sm" id="id_seg-__prefix__-n_averbacao"></td>
             <td>
@@ -1174,6 +1201,41 @@ function percExcluir(btn) {
 <script src="{% static 'js/ibge_municipios.js' %}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+
+  // ── Alerta Tipo de Emitente ─────────────────────────────────────────────
+  const MSGS_EMITENTE = {
+    '2': {
+      cls: 'alert-info',
+      icon: 'bi-truck',
+      txt: '<strong>TCP — Transportador de Carga Própria:</strong> a empresa transporta sua própria carga (ex.: produtor levando mercadorias para venda). <strong>Seguro não é obrigatório</strong> pelo SEFAZ neste modo. Não é necessário informar Contratante.'
+    },
+    '1': {
+      cls: 'alert-warning',
+      icon: 'bi-building',
+      txt: '<strong>PST — Prestador de Serviço de Transporte:</strong> a empresa transporta carga de terceiros como serviço. <strong>Seguro da carga é obrigatório</strong> pelo SEFAZ. É necessário informar ao menos um Contratante na aba Modal.'
+    }
+  };
+
+  function atualizarAlertaEmitente() {
+    const sel = document.getElementById('id_tipo_emitente');
+    const alerta = document.getElementById('alerta-tipo-emitente');
+    if (!sel || !alerta) return;
+    const cfg = MSGS_EMITENTE[sel.value];
+    if (cfg) {
+      alerta.className = 'alert alert-sm py-2 px-3 mt-2 mb-0 ' + cfg.cls;
+      alerta.innerHTML = '<i class="bi ' + cfg.icon + ' me-1"></i> ' + cfg.txt;
+    } else {
+      alerta.className = 'alert alert-sm py-2 px-3 mt-2 mb-0 d-none';
+      alerta.innerHTML = '';
+    }
+  }
+
+  const selEmitente = document.getElementById('id_tipo_emitente');
+  if (selEmitente) {
+    selEmitente.addEventListener('change', atualizarAlertaEmitente);
+    atualizarAlertaEmitente(); // exibir ao carregar a página
+  }
+
   // ── Município de Carregamento ───────────────────────────────────────────
   setupIBGEAutocomplete('id_uf_inicio', 'id_municipio_carregamento', 'id_codigo_municipio_carregamento', 'dl-mun-carg');
 

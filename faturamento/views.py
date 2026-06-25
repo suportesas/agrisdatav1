@@ -3798,6 +3798,194 @@ def mdfe_detail(request, pk):
 
 
 @login_required
+@require_POST
+def mdfe_emitir_ajax(request, pk):
+    """AJAX: valida, emite e retorna progresso passo a passo em JSON."""
+    from .services.integranotas import IntegranNotasClient, IntegranNotasError
+
+    empresa = _get_empresa(request)
+    mdfe = get_object_or_404(ManifestoDocumentoFiscal, pk=pk, empresa=empresa)
+    steps = []
+
+    def ok(label, msg=None):
+        steps.append({'status': 'ok', 'label': label, 'message': msg or ''})
+
+    def erro(label, msg, fix_url=None, fix_label=None, errors=None):
+        steps.append({'status': 'error', 'label': label, 'message': msg,
+                      'fix_url': fix_url, 'fix_label': fix_label, 'errors': errors or []})
+        return JsonResponse({'steps': steps, 'success': False})
+
+    # 1. Status
+    if mdfe.status != 'RASCUNHO':
+        return erro('Status do MDF-e', f'MDF-e já está como "{mdfe.status}" e não pode ser emitido.')
+
+    # 2. Token / Configuração
+    config = ConfiguracaoFiscal.objects.filter(empresa=empresa).first()
+    cfg_url = reverse('faturamento:configuracao')
+    if not config:
+        return erro('Token IntegraNotas', 'Configuração fiscal não encontrada.',
+                    fix_url=cfg_url, fix_label='Configurar')
+    raw_token = config.get_token()
+    if not raw_token:
+        return erro('Token IntegraNotas', 'Token não configurado.',
+                    fix_url=cfg_url, fix_label='Configurar token')
+    ambiente_label = 'Produção' if config.ambiente_nfe == '1' else 'Homologação'
+    ok('Token IntegraNotas', f'Ambiente: {ambiente_label}')
+
+    # 3. Emitente
+    import re as _re
+    cnpj_emit = _re.sub(r'\D', '', empresa.cnpj or '')
+    emit_erros = []
+    if len(cnpj_emit) != 14:
+        emit_erros.append('CNPJ inválido')
+    if not (empresa.nome or '').strip():
+        emit_erros.append('Razão Social não informada')
+    if emit_erros:
+        return erro('Dados do emitente', ' | '.join(emit_erros),
+                    fix_url=cfg_url, fix_label='Corrigir dados do emitente')
+    ok('Dados do emitente', f'{empresa.nome} · CNPJ {empresa.cnpj}')
+
+    # 4. Validação básica do MDF-e
+    mdfe_erros = []
+    if not mdfe.motorista_id:
+        mdfe_erros.append('Motorista não informado')
+    if not mdfe.veiculo_id:
+        mdfe_erros.append('Veículo não informado')
+    if not mdfe.uf_inicio:
+        mdfe_erros.append('UF de início não informada')
+    if not mdfe.uf_fim:
+        mdfe_erros.append('UF destino não informada')
+    if not mdfe.municipio_carregamento:
+        mdfe_erros.append('Município de carregamento não informado')
+    if not mdfe.documentos_vinculados.exists():
+        mdfe_erros.append('Nenhum documento vinculado (NF-e/CT-e)')
+    if mdfe_erros:
+        edit_url = reverse('faturamento:mdfe_update', args=[pk])
+        return erro('Validação do MDF-e',
+                    f'{len(mdfe_erros)} campo(s) obrigatório(s) não preenchido(s).',
+                    fix_url=edit_url, fix_label='Corrigir MDF-e', errors=mdfe_erros)
+    ok('Validação do MDF-e', 'Campos obrigatórios preenchidos')
+
+    # 5. Número
+    if not mdfe.numero:
+        ultimo = (
+            ManifestoDocumentoFiscal.objects
+            .filter(empresa=empresa, serie=mdfe.serie)
+            .exclude(pk=pk)
+            .order_by('-numero')
+            .values_list('numero', flat=True)
+            .first()
+        )
+        mdfe.numero = (ultimo or 0) + 1
+        mdfe.save(update_fields=['numero'])
+    ok('Numeração', f'MDF-e {mdfe.numero}/{mdfe.serie}')
+
+    # 6. Transmissão
+    try:
+        client = IntegranNotasClient(raw_token, config.ambiente_nfe)
+        resp = client.emitir_mdfe(mdfe)
+    except IntegranNotasError as exc:
+        def _fmt(e):
+            if isinstance(e, dict):
+                partes = []
+                if e.get('campo'): partes.append(f"Campo: {e['campo']}")
+                partes.append(e.get('erro') or e.get('message') or str(e))
+                if e.get('detalhes'): partes.append(f"Detalhe: {e['detalhes']}")
+                return ' — '.join(partes)
+            return str(e)
+        errs = [_fmt(e) for e in exc.erros] if exc.erros else [str(exc)]
+        return erro('Transmissão à SEFAZ', f'Erro IntegraNotas [{exc.codigo}]', errors=errs)
+    except Exception as exc:
+        return erro('Transmissão à SEFAZ', f'Falha de comunicação: {exc}')
+
+    ok('Transmissão à SEFAZ', 'Dados enviados ao IntegraNotas')
+
+    # 7. Resultado
+    chave     = resp.get('chave', '')
+    protocolo = resp.get('protocolo', '')
+    xml_b64   = resp.get('xml', '')
+    pdf_b64   = resp.get('pdf', '')
+    codigo    = resp.get('codigo')
+
+    if codigo == 5023:
+        mdfe.chave_acesso      = chave
+        mdfe.data_hora_emissao = timezone.now()
+        mdfe.save(update_fields=['chave_acesso', 'data_hora_emissao'])
+        steps.append({'status': 'pending', 'label': 'Aguardando autorização da SEFAZ',
+                      'message': 'MDF-e em fila (código 5023). Verificando automaticamente…',
+                      'chave': chave})
+        return JsonResponse({'steps': steps, 'success': True, 'pending': True, 'chave': chave})
+
+    if resp.get('sucesso') or codigo in (100, 2):
+        mdfe.status            = 'EMITIDO'
+        mdfe.chave_acesso      = chave
+        mdfe.protocolo         = protocolo
+        mdfe.xml_autorizacao   = xml_b64
+        mdfe.pdf_damdfe        = pdf_b64
+        mdfe.data_hora_emissao = timezone.now()
+        _extra = _upload_fiscal_docs(mdfe, mdfe.empresa_id, 'mdfe', mdfe.numero, mdfe.serie, xml_b64, pdf_b64)
+        _base  = ['status', 'chave_acesso', 'protocolo', 'xml_autorizacao', 'pdf_damdfe', 'data_hora_emissao']
+        mdfe.save(update_fields=list(dict.fromkeys(_base + _extra)))
+        steps.append({'status': 'authorized', 'label': 'MDF-e Autorizado pela SEFAZ ✓',
+                      'protocolo': protocolo, 'chave': chave})
+        return JsonResponse({
+            'steps': steps, 'success': True, 'authorized': True,
+            'chave': chave, 'protocolo': protocolo,
+            'has_damdfe': bool(pdf_b64),
+            'damdfe_url': reverse('faturamento:mdfe_damdfe', args=[pk]),
+            'detail_url': reverse('faturamento:mdfe_detail', args=[pk]),
+        })
+
+    return erro('SEFAZ', resp.get('mensagem', 'Resposta inesperada da SEFAZ.'))
+
+
+@login_required
+@require_POST
+def mdfe_consultar_ajax(request, pk):
+    """AJAX: consulta status do MDF-e na SEFAZ para polling após código 5023."""
+    from .services.integranotas import IntegranNotasClient, IntegranNotasError
+    empresa = _get_empresa(request)
+    mdfe = get_object_or_404(ManifestoDocumentoFiscal, pk=pk, empresa=empresa)
+    if not mdfe.chave_acesso:
+        return JsonResponse({'status': 'error', 'mensagem': 'MDF-e sem chave de acesso.'})
+    config = ConfiguracaoFiscal.objects.filter(empresa=empresa).first()
+    if not config or not config.get_token():
+        return JsonResponse({'status': 'error', 'mensagem': 'Token não configurado.'})
+    try:
+        client = IntegranNotasClient(config.get_token(), config.ambiente_nfe)
+        data = client.consultar_mdfe(mdfe.chave_acesso)
+        codigo = data.get('codigo')
+        if codigo == 100 or data.get('sucesso') or codigo == 2:
+            fields = []
+            if data.get('protocolo') and not mdfe.protocolo:
+                mdfe.protocolo = data['protocolo']; fields.append('protocolo')
+            if data.get('xml') and not mdfe.xml_autorizacao:
+                mdfe.xml_autorizacao = data['xml']; fields.append('xml_autorizacao')
+            if data.get('pdf') and not mdfe.pdf_damdfe:
+                mdfe.pdf_damdfe = data['pdf']; fields.append('pdf_damdfe')
+            if mdfe.status != 'EMITIDO':
+                mdfe.status = 'EMITIDO'; fields.append('status')
+            if fields:
+                _extra = _upload_fiscal_docs(mdfe, mdfe.empresa_id, 'mdfe', mdfe.numero, mdfe.serie,
+                                             data.get('xml'), data.get('pdf'))
+                mdfe.save(update_fields=list(dict.fromkeys(fields + _extra)))
+            return JsonResponse({
+                'status': 'authorized',
+                'protocolo': mdfe.protocolo or '',
+                'has_damdfe': bool(mdfe.pdf_damdfe),
+                'damdfe_url': reverse('faturamento:mdfe_damdfe', args=[pk]),
+                'detail_url': reverse('faturamento:mdfe_detail', args=[pk]),
+            })
+        elif codigo == 5023:
+            return JsonResponse({'status': 'pending'})
+        else:
+            return JsonResponse({'status': 'rejected', 'codigo': codigo,
+                                 'mensagem': data.get('mensagem', 'Rejeitado pela SEFAZ.')})
+    except Exception as exc:
+        return JsonResponse({'status': 'error', 'mensagem': str(exc)})
+
+
+@login_required
 def mdfe_emitir(request, pk):
     empresa = _get_empresa(request)
     mdfe = get_object_or_404(ManifestoDocumentoFiscal, pk=pk, empresa=empresa)

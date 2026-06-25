@@ -1074,6 +1074,10 @@ class ManifestoDocumentoFiscal(FaturamentoBaseModel):
         ('ETC',   'ETC — Empresa de Transporte de Cargas'),
         ('CTC',   'CTC — Cooperativa de Transporte de Cargas'),
     ]
+    TIPO_EMITENTE_MDFE = [
+        ('2', 'TCP — Transportador de Carga Própria'),
+        ('1', 'PST — Prestador de Serviço de Transporte'),
+    ]
     TIPO_TRANSPORTE = [
         ('1', 'Carga Geral'),
         ('2', 'Frigorificada/Aquecida'),
@@ -1112,6 +1116,10 @@ class ManifestoDocumentoFiscal(FaturamentoBaseModel):
     municipio_carregamento      = models.CharField('Município de Carregamento', max_length=100)
     codigo_municipio_carregamento = models.CharField('Código IBGE Município de Carregamento', max_length=7, blank=True, help_text='7 dígitos IBGE')
     uf_fim          = models.CharField('UF de Destino Final', max_length=2, help_text='Ex: MG')
+
+    # Tipo de emitente do MDF-e: 1=PST (presta serviço de transporte), 2=TCP (carga própria)
+    tipo_emitente   = models.CharField('Tipo de Emitente', max_length=1, choices=TIPO_EMITENTE_MDFE, default='2',
+                                       help_text='TCP = transporta carga própria; PST = presta serviço de transporte a terceiros')
 
     # Carga
     tipo_transporte = models.CharField('Tipo de Transporte', max_length=1, choices=TIPO_TRANSPORTE, default='1')
@@ -1354,11 +1362,13 @@ class SeguroMDFe(models.Model):
         ('1', '1 - Emitente do MDF-e'),
         ('2', '2 - Contratante do Seguro'),
     ]
-    mdfe        = models.ForeignKey(ManifestoDocumentoFiscal, on_delete=models.CASCADE, related_name='seguros')
-    responsavel = models.CharField('Responsável pelo Seguro', max_length=1, choices=RESPONSAVEL, default='1')
-    seguradora  = models.CharField('Nome da Seguradora', max_length=30, blank=True)
-    n_apolice   = models.CharField('Número da Apólice', max_length=20)
-    n_averbacao = models.CharField('Número de Averbação', max_length=40, blank=True)
+    mdfe             = models.ForeignKey(ManifestoDocumentoFiscal, on_delete=models.CASCADE, related_name='seguros')
+    responsavel      = models.CharField('Responsável pelo Seguro', max_length=1, choices=RESPONSAVEL, default='1')
+    cpf_cnpj         = models.CharField('CPF/CNPJ do Responsável', max_length=14, blank=True, help_text='14 dígitos sem formatação')
+    seguradora       = models.CharField('Nome da Seguradora', max_length=30, blank=True)
+    cnpj_seguradora  = models.CharField('CNPJ da Seguradora', max_length=14, blank=True, help_text='14 dígitos sem formatação')
+    n_apolice        = models.CharField('Número da Apólice', max_length=20)
+    n_averbacao      = models.CharField('Número de Averbação', max_length=40, blank=True)
 
     class Meta:
         verbose_name = 'Seguro MDF-e'

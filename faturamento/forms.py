@@ -970,7 +970,7 @@ class ManifestoDocumentoFiscalForm(FaturamentoBaseForm):
             'motorista', 'veiculo',
             'data_emissao',
             'uf_inicio', 'municipio_carregamento', 'codigo_municipio_carregamento', 'uf_fim',
-            'tipo_transporte', 'valor_carga', 'peso_bruto_kg',
+            'tipo_emitente', 'tipo_transporte', 'valor_carga', 'peso_bruto_kg',
             # Modal Rodoviário — Veículo de Tração extras
             'rntrc_veiculo', 'cod_ag_porto', 'tipo_carroceria', 'tipo_rodado',
             'placa_tracao', 'uf_tracao', 'tara_tracao_kg',
@@ -989,6 +989,7 @@ class ManifestoDocumentoFiscalForm(FaturamentoBaseForm):
             'municipio_carregamento':         forms.TextInput(attrs={'class': 'form-control'}),
             'codigo_municipio_carregamento':  forms.TextInput(attrs={'class': 'form-control', 'maxlength': '7', 'placeholder': '7 dígitos IBGE'}),
             'uf_fim':                         forms.TextInput(attrs={'class': 'form-control', 'maxlength': '2', 'placeholder': 'MG'}),
+            'tipo_emitente':             forms.Select(attrs={'class': 'form-select'}),
             'tipo_transporte':           forms.Select(attrs={'class': 'form-select'}),
             'valor_carga':               forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'peso_bruto_kg':             forms.NumberInput(attrs={'class': 'form-control', 'step': '0.001'}),
@@ -1030,6 +1031,27 @@ class ManifestoDocumentoFiscalForm(FaturamentoBaseForm):
                 self.initial.setdefault('uf_tracao', instance.veiculo.uf_licenciamento or '')
             if instance.tara_tracao_kg is None:
                 self.initial.setdefault('tara_tracao_kg', instance.veiculo.tara_kg)
+
+    def clean_veiculo(self):
+        veiculo = self.cleaned_data.get('veiculo')
+        if not veiculo or not self.empresa:
+            return veiculo
+        qs = ManifestoDocumentoFiscal.objects.filter(
+            empresa=self.empresa,
+            veiculo=veiculo,
+            status__in=('RASCUNHO', 'EMITIDO'),
+        )
+        if self.instance and self.instance.pk:
+            qs = qs.exclude(pk=self.instance.pk)
+        aberto = qs.order_by('-id').first()
+        if aberto:
+            num = aberto.numero or 'S/N'
+            raise forms.ValidationError(
+                f'Este veículo já possui o MDF-e {num}/{aberto.serie} '
+                f'({aberto.get_status_display()}) em aberto. '
+                f'Encerre ou cancele-o antes de criar um novo manifesto.'
+            )
+        return veiculo
 
 
 class EncerrarMDFeForm(forms.Form):
@@ -1237,12 +1259,14 @@ PagamentoFreteMDFeFormSet = inlineformset_factory(
 class SeguroMDFeForm(forms.ModelForm):
     class Meta:
         model = SeguroMDFe
-        fields = ['responsavel', 'seguradora', 'n_apolice', 'n_averbacao']
+        fields = ['responsavel', 'cpf_cnpj', 'seguradora', 'cnpj_seguradora', 'n_apolice', 'n_averbacao']
         widgets = {
-            'responsavel':  forms.Select(attrs={'class': 'form-select form-select-sm'}),
-            'seguradora':   forms.TextInput(attrs={'class': 'form-control form-control-sm', 'maxlength': '30'}),
-            'n_apolice':    forms.TextInput(attrs={'class': 'form-control form-control-sm', 'maxlength': '20'}),
-            'n_averbacao':  forms.TextInput(attrs={'class': 'form-control form-control-sm', 'maxlength': '40'}),
+            'responsavel':     forms.Select(attrs={'class': 'form-select form-select-sm'}),
+            'cpf_cnpj':        forms.TextInput(attrs={'class': 'form-control form-control-sm', 'maxlength': '14', 'placeholder': 'CPF/CNPJ (só dígitos)'}),
+            'seguradora':      forms.TextInput(attrs={'class': 'form-control form-control-sm', 'maxlength': '30', 'placeholder': 'Nome da Seguradora'}),
+            'cnpj_seguradora': forms.TextInput(attrs={'class': 'form-control form-control-sm', 'maxlength': '14', 'placeholder': 'CNPJ (14 dígitos)'}),
+            'n_apolice':       forms.TextInput(attrs={'class': 'form-control form-control-sm', 'maxlength': '20'}),
+            'n_averbacao':     forms.TextInput(attrs={'class': 'form-control form-control-sm', 'maxlength': '40'}),
         }
 
 

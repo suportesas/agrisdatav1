@@ -158,11 +158,23 @@
     {% for cc in nf.cartas_correcao.all %}
     <div class="mb-2 {% if not forloop.last %}border-bottom pb-2{% endif %}">
       <div class="d-flex gap-3 flex-wrap">
-        <div><small class="text-muted d-block">Seq.</small><code class="small">{{ cc.sequencia }}</code></div>
-        <div><small class="text-muted d-block">Data</small><span class="small">{{ cc.criado_em|date:"d/m/Y H:i" }}</span></div>
-        {% if cc.protocolo %}<div><small class="text-muted d-block">Protocolo</small><code class="small">{{ cc.protocolo }}</code></div>{% endif %}
+        <div><span class="text-muted">Seq.:</span> <code>{{ cc.sequencia }}</code></div>
+        <div><span class="text-muted">Data:</span> {{ cc.criado_em|date:"d/m/Y H:i" }}</div>
+        {% if cc.protocolo %}<div><span class="text-muted">Protocolo:</span> <code>{{ cc.protocolo }}</code></div>{% endif %}
       </div>
-      <div class="mt-1 small text-muted">{{ cc.correcao }}</div>
+      <div class="text-muted mt-1 small">{{ cc.correcao|truncatechars:150 }}</div>
+      <div class="mt-1 d-flex gap-2">
+        <a href="{% url 'faturamento:nfe_cce_print' nf.pk cc.pk %}" target="_blank"
+           class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size:11px;">
+          <i class="bi bi-printer me-1"></i>Imprimir CC-e
+        </a>
+        {% if cc.protocolo %}
+        <a href="{% url 'faturamento:nfe_cce_xml' nf.pk cc.pk %}"
+           class="btn btn-sm btn-outline-success py-0 px-2" style="font-size:11px;">
+          <i class="bi bi-file-earmark-code me-1"></i>XML CC-e
+        </a>
+        {% endif %}
+      </div>
     </div>
     {% endfor %}
   </div>

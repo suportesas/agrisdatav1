@@ -311,8 +311,8 @@ class IntegranNotasClient:
     def carta_correcao_nfe(self, chave: str, correcao: str, sequencia: int = 1) -> dict:
         """Envia Carta de Correção (CC-e) para NF-e autorizada."""
         resp = requests.post(
-            f'{self.base_url}/nfe/{chave}/carta-correcao',
-            json={'correcao': correcao, 'sequencia': sequencia},
+            f'{self.base_url}/nfe/correcao',
+            json={'chave': chave, 'justificativa': correcao},
             headers=self._headers(),
             timeout=self.TIMEOUT,
         )
@@ -325,6 +325,33 @@ class IntegranNotasClient:
                 erros=data.get('erros', []),
             )
         return data
+
+    def buscar_xml_cce_nfe(self, chave: str, sequencia: int) -> str | None:
+        """Busca o XML base64 de uma CC-e já emitida consultando a NF-e na API.
+        Retorna a string base64 ou None se não encontrado."""
+        resp = requests.get(
+            f'{self.base_url}/nfe/{chave}',
+            headers=self._headers(),
+            timeout=self.TIMEOUT,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        # Procura em listas de eventos/cartas de correção na resposta
+        for key in ('cartas_correcao', 'eventos', 'cce', 'correcoes'):
+            lista = data.get(key) or []
+            for item in lista:
+                seq = item.get('sequencia') or item.get('seq')
+                if str(seq) == str(sequencia):
+                    for xml_key in ('xml', 'xml_cce', 'xml_carta_correcao', 'xmlRetorno'):
+                        xml_b64 = item.get(xml_key)
+                        if xml_b64:
+                            return xml_b64
+        # Fallback: XML direto da CC-e se houver somente uma
+        for xml_key in ('xml_carta_correcao', 'xml_cce'):
+            xml_b64 = data.get(xml_key)
+            if xml_b64:
+                return xml_b64
+        return None
 
     def inutilizar_nfe(self, cnpj: str, serie: int, numero_ini: int, numero_fim: int,
                        justificativa: str, ano: int) -> dict:

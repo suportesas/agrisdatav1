@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CC-e NF-e {{ nf.numero }}/{{ nf.serie }} — Seq. {{ cc.sequencia }}</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; font-size: 11pt; color: #000; background: #fff; }
+
+  .page { max-width: 210mm; margin: 0 auto; padding: 15mm 15mm 10mm; }
+
+  /* Cabeçalho */
+  .header { border: 2px solid #000; display: flex; margin-bottom: 8px; }
+  .header-logo { width: 180px; padding: 10px; border-right: 1px solid #000; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 13pt; text-align: center; }
+  .header-center { flex: 1; padding: 8px 12px; border-right: 1px solid #000; }
+  .header-center .doc-title { font-size: 13pt; font-weight: bold; text-align: center; margin-bottom: 4px; }
+  .header-center .doc-subtitle { font-size: 9pt; text-align: center; color: #333; }
+  .header-right { width: 200px; padding: 8px 10px; font-size: 9pt; }
+
+  /* Seções */
+  .section { border: 1px solid #000; margin-bottom: 6px; }
+  .section-title { background: #e0e0e0; padding: 3px 8px; font-weight: bold; font-size: 9pt; border-bottom: 1px solid #000; text-transform: uppercase; }
+  .section-body { padding: 6px 8px; }
+
+  /* Grid de campos */
+  .grid { display: flex; flex-wrap: wrap; gap: 0; }
+  .field { padding: 4px 8px; }
+  .field .label { font-size: 7.5pt; color: #555; display: block; }
+  .field .value { font-size: 10pt; font-weight: bold; }
+  .field.w100 { width: 100%; }
+  .field.w50  { width: 50%; }
+  .field.w33  { width: 33.33%; }
+  .field.w25  { width: 25%; }
+  .field-sep { border-left: 1px solid #ccc; }
+
+  /* Caixa de texto da correção */
+  .correcao-box { padding: 8px; font-size: 10.5pt; line-height: 1.6; white-space: pre-wrap; word-break: break-word; border: 1px solid #ddd; background: #fafafa; border-radius: 2px; }
+
+  /* Condições de uso */
+  .condicoes { margin-top: 8px; font-size: 8pt; color: #444; line-height: 1.55; padding: 6px 8px; border: 1px solid #ccc; }
+
+  /* Assinaturas */
+  .assinaturas { margin-top: 20px; display: flex; gap: 30px; }
+  .assinatura { flex: 1; border-top: 1px solid #000; padding-top: 6px; text-align: center; font-size: 9pt; }
+
+  /* Rodapé */
+  .footer { margin-top: 10px; font-size: 8pt; color: #555; text-align: center; border-top: 1px solid #ccc; padding-top: 6px; }
+
+  /* Barra de impressão */
+  .print-bar { background: #f8f9fa; border-bottom: 1px solid #dee2e6; padding: 10px 20px; display: flex; gap: 10px; align-items: center; }
+  .print-bar button { background: #0d6efd; color: #fff; border: none; padding: 8px 20px; border-radius: 4px; font-size: 12px; cursor: pointer; }
+  .print-bar a { color: #666; text-decoration: none; font-size: 12px; }
+
+  @media print {
+    .print-bar { display: none; }
+    .page { padding: 10mm; }
+    body { font-size: 10pt; }
+  }
+</style>
+</head>
+<body>
+
+<div class="print-bar">
+  <button onclick="window.print()">🖨 Imprimir / Salvar PDF</button>
+  <a href="javascript:history.back()">← Voltar</a>
+  <span style="color:#666;font-size:11px;">Use Ctrl+P ou clique em "Imprimir" para gerar o PDF</span>
+</div>
+
+<div class="page">
+
+  <!-- Cabeçalho -->
+  <div class="header">
+    <div class="header-logo">
+      {{ empresa.nome|upper }}
+    </div>
+    <div class="header-center">
+      <div class="doc-title">CARTA DE CORREÇÃO ELETRÔNICA — CC-e</div>
+      <div class="doc-subtitle">NF-e — Nota Fiscal Eletrônica</div>
+      <div class="doc-subtitle" style="margin-top:4px;">Evento: 110110 — Carta de Correção</div>
+    </div>
+    <div class="header-right">
+      <div style="margin-bottom:4px;"><strong>Seq. CC-e:</strong> {{ cc.sequencia }}</div>
+      <div style="margin-bottom:4px;"><strong>Data:</strong> {{ cc.criado_em|date:"d/m/Y" }}</div>
+      <div style="margin-bottom:4px;"><strong>Hora:</strong> {{ cc.criado_em|date:"H:i" }}</div>
+      {% if cc.protocolo %}
+      <div><strong>Protocolo:</strong><br><span style="font-size:8pt;">{{ cc.protocolo }}</span></div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Emitente -->
+  <div class="section">
+    <div class="section-title">Emitente</div>
+    <div class="section-body grid">
+      <div class="field w50">
+        <span class="label">Razão Social / Nome</span>
+        <span class="value">{{ empresa.nome }}</span>
+      </div>
+      <div class="field w25 field-sep">
+        <span class="label">CNPJ</span>
+        <span class="value">{{ empresa.cnpj|default:"—" }}</span>
+      </div>
+      <div class="field w25 field-sep">
+        <span class="label">IE</span>
+        <span class="value">{{ empresa.inscricao_estadual|default:"—" }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dados da NF-e -->
+  <div class="section">
+    <div class="section-title">Dados da NF-e Corrigida</div>
+    <div class="section-body grid">
+      <div class="field w25">
+        <span class="label">Número NF-e</span>
+        <span class="value">{{ nf.numero|stringformat:"09d" }}</span>
+      </div>
+      <div class="field w25 field-sep">
+        <span class="label">Série</span>
+        <span class="value">{{ nf.serie }}</span>
+      </div>
+      <div class="field w25 field-sep">
+        <span class="label">Data de Emissão</span>
+        <span class="value">{{ nf.data_emissao|date:"d/m/Y" }}</span>
+      </div>
+      <div class="field w25 field-sep">
+        <span class="label">CFOP</span>
+        <span class="value">{{ nf.cfop }}</span>
+      </div>
+      <div class="field w100" style="padding-top:0;">
+        <span class="label">Chave de Acesso</span>
+        <span class="value" style="font-size:9pt;letter-spacing:1px;">{{ nf.chave_acesso }}</span>
+      </div>
+      {% if nf.protocolo_autorizacao %}
+      <div class="field w50">
+        <span class="label">Protocolo de Autorização NF-e</span>
+        <span class="value">{{ nf.protocolo_autorizacao }}</span>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Destinatário -->
+  <div class="section">
+    <div class="section-title">Destinatário</div>
+    <div class="section-body grid">
+      <div class="field w50">
+        <span class="label">Razão Social / Nome</span>
+        <span class="value">{{ nf.cliente.razao_social }}</span>
+      </div>
+      <div class="field w50 field-sep">
+        <span class="label">CNPJ / CPF / ID Estrangeiro</span>
+        <span class="value">{{ nf.cliente.cnpj|default:"—" }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Texto da Correção -->
+  <div class="section">
+    <div class="section-title">Texto da Carta de Correção</div>
+    <div class="section-body">
+      <div class="correcao-box">{{ cc.correcao }}</div>
+    </div>
+  </div>
+
+  <!-- Autorização SEFAZ -->
+  {% if cc.protocolo %}
+  <div class="section">
+    <div class="section-title">Autorização SEFAZ</div>
+    <div class="section-body grid">
+      <div class="field w50">
+        <span class="label">Protocolo de Registro</span>
+        <span class="value">{{ cc.protocolo }}</span>
+      </div>
+      <div class="field w25 field-sep">
+        <span class="label">Data / Hora Registro</span>
+        <span class="value">{{ cc.criado_em|date:"d/m/Y H:i" }}</span>
+      </div>
+      <div class="field w25 field-sep">
+        <span class="label">Código do Evento</span>
+        <span class="value">110110</span>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Assinaturas -->
+  <div class="assinaturas">
+    <div class="assinatura">
+      Emitente<br>{{ empresa.nome }}
+    </div>
+    <div class="assinatura">
+      Destinatário<br>{{ nf.cliente.razao_social }}
+    </div>
+  </div>
+
+  <!-- Condições de uso -->
+  <div class="condicoes">
+    A Carta de Correcao e disciplinada pelo paragrafo 1o-A do art. 7o do Convenio S/N, de 15 de dezembro de 1970 e pode ser utilizada para regularizacao de erro ocorrido na emissao de documento fiscal, desde que o erro nao esteja relacionado com: I - as variaveis que determinam o valor do imposto tais como: base de calculo, aliquota, diferenca de preco, quantidade, valor da operacao ou da prestacao; II - a correcao de dados cadastrais que implique mudanca do remetente ou do destinatario; III - a data de emissao ou de saida.
+  </div>
+
+  <div class="footer">
+    Documento auxiliar da Carta de Correção Eletrônica — A CC-e não pode ser utilizada para alterar o valor da NF-e, natureza da operação, remetente, destinatário ou data de emissão.
+  </div>
+
+</div>
+</body>
+</html>

@@ -24,6 +24,8 @@ urlpatterns = [
     path('notas-fiscais/<int:pk>/xml/', views.nota_fiscal_xml, name='nota_fiscal_xml'),
     path('notas-fiscais/<int:pk>/clonar/', views.nota_fiscal_clone, name='nota_fiscal_clone'),
     path('notas-fiscais/<int:pk>/carta-correcao/', views.nota_fiscal_carta_correcao, name='nota_fiscal_carta_correcao'),
+    path('notas-fiscais/<int:nf_pk>/cce/<int:cc_pk>/print/', views.nfe_cce_print, name='nfe_cce_print'),
+    path('notas-fiscais/<int:nf_pk>/cce/<int:cc_pk>/xml/', views.nfe_cce_xml, name='nfe_cce_xml'),
     path('notas-fiscais/inutilizar/', views.nota_fiscal_inutilizar, name='nota_fiscal_inutilizar'),
 
     # Invoice de Exportação
@@ -70,6 +72,7 @@ urlpatterns = [
     path('cte/<int:pk>/desacordo/', views.cte_manifestar_desacordo, name='cte_manifestar_desacordo'),
     path('cte/<int:pk>/insucesso-entrega/', views.cte_insucesso_entrega, name='cte_insucesso_entrega'),
     path('cte/<int:cte_pk>/cce/<int:cc_pk>/print/', views.cte_cce_print, name='cte_cce_print'),
+    path('cte/<int:cte_pk>/cce/<int:cc_pk>/xml/', views.cte_cce_xml, name='cte_cce_xml'),
     path('cte/<int:pk>/preview/', views.cte_preview, name='cte_preview'),
     path('cte/<int:pk>/clonar/', views.cte_clone, name='cte_clone'),
     path('cte/<int:pk>/xml/', views.cte_xml, name='cte_xml'),

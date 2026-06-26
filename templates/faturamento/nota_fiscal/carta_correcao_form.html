@@ -73,6 +73,7 @@
             <th>Data</th>
             <th>Protocolo</th>
             <th>Texto</th>
+            <th></th>
           </tr>
         </thead>
         <tbody>
@@ -82,6 +83,18 @@
             <td>{{ cc.criado_em|date:"d/m/Y H:i" }}</td>
             <td><code class="small">{{ cc.protocolo|default:"—" }}</code></td>
             <td class="text-muted small">{{ cc.correcao|truncatechars:120 }}</td>
+            <td class="text-nowrap">
+              <a href="{% url 'faturamento:nfe_cce_print' nf.pk cc.pk %}" target="_blank"
+                 class="btn btn-sm btn-outline-secondary py-0 px-2" title="Imprimir CC-e">
+                <i class="bi bi-printer"></i>
+              </a>
+              {% if cc.protocolo %}
+              <a href="{% url 'faturamento:nfe_cce_xml' nf.pk cc.pk %}"
+                 class="btn btn-sm btn-outline-success py-0 px-2 ms-1" title="Baixar XML CC-e">
+                <i class="bi bi-file-earmark-code"></i>
+              </a>
+              {% endif %}
+            </td>
           </tr>
           {% endfor %}
         </tbody>

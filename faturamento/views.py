@@ -1478,7 +1478,12 @@ def nota_fiscal_carta_correcao(request, pk):
                 sequencia=proxima_sequencia,
                 correcao=form.cleaned_data['correcao'],
                 protocolo=resultado.get('protocolo', '') or resultado.get('numero_protocolo', ''),
-                xml_retorno=resultado.get('xml', ''),
+                xml_retorno=(
+                    resultado.get('xml_carta_correcao', '')
+                    or resultado.get('xml_cce', '')
+                    or resultado.get('xml', '')
+                    or resultado.get('xmlRetorno', '')
+                ),
                 criado_por=request.user,
             )
             messages.success(request, f'Carta de Correção nº {proxima_sequencia} enviada com sucesso.')
@@ -1492,6 +1497,59 @@ def nota_fiscal_carta_correcao(request, pk):
         'cartas': cartas_anteriores,
         'proxima_sequencia': proxima_sequencia,
     })
+
+
+@login_required
+def nfe_cce_print(request, nf_pk, cc_pk):
+    """Página de impressão da Carta de Correção (CC-e) da NF-e."""
+    empresa = _get_empresa(request)
+    nf = get_object_or_404(NotaFiscal, pk=nf_pk, empresa=empresa)
+    cc = get_object_or_404(CartaCorrecaoNFe, pk=cc_pk, nota_fiscal=nf)
+    return render(request, 'faturamento/nota_fiscal/cce_print.html', {
+        'nf': nf,
+        'cc': cc,
+        'empresa': empresa,
+    })
+
+
+@login_required
+def nfe_cce_xml(request, nf_pk, cc_pk):
+    """Download do XML da Carta de Correção (CC-e) da NF-e.
+    Se xml_retorno estiver vazio, busca na API e cacheia no banco."""
+    import base64
+    from .services.integranotas import IntegranNotasClient
+    empresa = _get_empresa(request)
+    nf = get_object_or_404(NotaFiscal, pk=nf_pk, empresa=empresa)
+    cc = get_object_or_404(CartaCorrecaoNFe, pk=cc_pk, nota_fiscal=nf)
+
+    xml_b64 = cc.xml_retorno
+
+    # Se não tiver XML salvo, tenta buscar na API
+    if not xml_b64 and nf.chave_acesso:
+        try:
+            config = ConfiguracaoFiscal.objects.filter(empresa=empresa).first()
+            if config and config.has_token:
+                client = IntegranNotasClient(config.get_token(), config.ambiente_nfe)
+                xml_b64 = client.buscar_xml_cce_nfe(nf.chave_acesso, cc.sequencia)
+                if xml_b64:
+                    cc.xml_retorno = xml_b64
+                    cc.save(update_fields=['xml_retorno'])
+        except Exception:
+            pass
+
+    if not xml_b64:
+        messages.error(request, 'XML da CC-e não disponível. A API não retornou o XML para esta correção.')
+        return redirect('faturamento:nota_fiscal_detail', pk=nf_pk)
+
+    try:
+        xml_bytes = base64.b64decode(xml_b64)
+    except Exception:
+        xml_bytes = xml_b64.encode('utf-8')
+
+    chave = nf.chave_acesso or f'NF{nf.numero}_{nf.serie}'
+    response = HttpResponse(xml_bytes, content_type='application/xml; charset=utf-8')
+    response['Content-Disposition'] = f'attachment; filename="CCe_{chave}_seq{cc.sequencia}.xml"'
+    return response
 
 
 @login_required
@@ -3430,6 +3488,26 @@ def cte_cce_print(request, cte_pk, cc_pk):
         'correcoes': correcoes,
         'empresa': empresa,
     })
+
+
+@login_required
+def cte_cce_xml(request, cte_pk, cc_pk):
+    """Download do XML da Carta de Correção (CC-e) do CT-e."""
+    import base64
+    empresa = _get_empresa(request)
+    ct = get_object_or_404(ConhecimentoTransporte, pk=cte_pk, empresa=empresa)
+    cc = get_object_or_404(CartaCorrecaoCTe, pk=cc_pk, cte=ct)
+    if not cc.xml_retorno:
+        messages.error(request, 'XML da CC-e não disponível.')
+        return redirect('faturamento:cte_detail', pk=cte_pk)
+    try:
+        xml_bytes = base64.b64decode(cc.xml_retorno)
+    except Exception:
+        xml_bytes = cc.xml_retorno.encode('utf-8')
+    chave = ct.chave_acesso or f'CTE{ct.numero}_{ct.serie}'
+    response = HttpResponse(xml_bytes, content_type='application/xml; charset=utf-8')
+    response['Content-Disposition'] = f'attachment; filename="CCe_{chave}_seq{cc.sequencia}.xml"'
+    return response
 
 
 @login_required

@@ -976,3 +976,51 @@ class ProdutoDocumento(models.Model):
                 return f"{size:.1f} {unit}"
             size /= 1024.0
         return f"{size:.1f} TB"
+
+
+class DimensaoVariante(models.Model):
+    """Eixo de variação configurável por empresa (ex: Calibre, Marca, Variedade)."""
+    empresa = models.ForeignKey(
+        'empresas.Empresa',
+        on_delete=models.CASCADE,
+        related_name='dimensoes_variante',
+        verbose_name='Empresa',
+    )
+    nome  = models.CharField(max_length=100, verbose_name='Nome')
+    ordem = models.PositiveSmallIntegerField(default=0, verbose_name='Ordem')
+    ativo = models.BooleanField(default=True, verbose_name='Ativo')
+
+    class Meta:
+        verbose_name = 'Dimensão de Variante'
+        verbose_name_plural = 'Dimensões de Variantes'
+        ordering = ['ordem', 'nome']
+        unique_together = [['empresa', 'nome']]
+
+    def __str__(self):
+        return self.nome
+
+
+class ProdutoAtributo(models.Model):
+    """Par dimensão→valor associado a um produto específico."""
+    produto  = models.ForeignKey(
+        Produto,
+        on_delete=models.CASCADE,
+        related_name='atributos',
+        verbose_name='Produto',
+    )
+    dimensao = models.ForeignKey(
+        DimensaoVariante,
+        on_delete=models.PROTECT,
+        related_name='atributos',
+        verbose_name='Dimensão',
+    )
+    valor = models.CharField(max_length=200, verbose_name='Valor')
+
+    class Meta:
+        verbose_name = 'Atributo do Produto'
+        verbose_name_plural = 'Atributos do Produto'
+        ordering = ['dimensao__ordem', 'dimensao__nome']
+        unique_together = [['produto', 'dimensao']]
+
+    def __str__(self):
+        return f'{self.dimensao.nome}: {self.valor}'

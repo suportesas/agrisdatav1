@@ -1,0 +1,634 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<style>
+:root { --violet: #7c3aed; --violet-light: #ede9fe; }
+
+.page-header { background: linear-gradient(135deg, var(--violet) 0%, #5b21b6 100%); border-radius: 16px; color: #fff; padding: 1.5rem 2rem; margin-bottom: 1.5rem; }
+.page-header h1 { font-size: 1.6rem; font-weight: 700; margin: 0; }
+.page-header p  { margin: .25rem 0 0; opacity: .85; font-size: .9rem; }
+
+.section-card { border: none; border-radius: 14px; box-shadow: 0 2px 12px rgba(124,58,237,.08); margin-bottom: 1.25rem; }
+.section-card .card-header { background: var(--violet-light); border-bottom: 2px solid #ddd6fe; border-radius: 14px 14px 0 0; padding: .75rem 1.25rem; font-weight: 600; color: var(--violet); }
+
+/* Dimensão row */
+.dim-row { background: #faf9ff; border: 1px solid #e9d5ff; border-radius: 12px; padding: 1rem 1.1rem; margin-bottom: .75rem; }
+.dim-label { font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: #7c3aed; margin-bottom: .3rem; }
+.dim-name-input { font-weight: 600; border: 1.5px solid #c4b5fd; background: #fff; border-radius: 8px; padding: .35rem .65rem; width: 100%; color: #1e1b4b; font-size: .9rem; }
+.dim-name-input:focus { outline: none; border-color: #7c3aed; box-shadow: 0 0 0 2px rgba(124,58,237,.15); }
+
+/* Chips */
+.chips-area { display: flex; flex-wrap: wrap; gap: .35rem; align-items: center; min-height: 36px; background: #fff; border: 1px solid #d1d5db; border-radius: 8px; padding: .3rem .5rem; cursor: text; }
+.chip { display: inline-flex; align-items: center; gap: .25rem; background: var(--violet-light); color: var(--violet); border-radius: 20px; padding: .15rem .55rem; font-size: .8rem; font-weight: 500; }
+.chip-remove { background: none; border: none; color: var(--violet); cursor: pointer; padding: 0; line-height: 1; font-size: .9rem; }
+.chips-input { border: none; outline: none; min-width: 100px; font-size: .875rem; }
+
+/* Preview table */
+#previewCard { display: none; }
+.preview-table th { background: var(--violet-light); color: var(--violet); font-size: .8rem; }
+.preview-table td { vertical-align: middle; }
+.nome-input { border: 1px solid #e5e7eb; border-radius: 6px; padding: .2rem .5rem; font-size: .85rem; width: 100%; }
+.nome-input:focus { outline: none; border-color: var(--violet); box-shadow: 0 0 0 2px rgba(124,58,237,.15); }
+
+/* Buttons */
+.btn-violet  { background: var(--violet); color: #fff; border: none; }
+.btn-violet:hover { background: #5b21b6; color: #fff; }
+.btn-violet-outline { border: 2px solid var(--violet); color: var(--violet); background: transparent; }
+.btn-violet-outline:hover { background: var(--violet-light); }
+
+/* Toast */
+#toast-container { position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 9999; display: flex; flex-direction: column; gap: .5rem; }
+.toast-item { padding: .75rem 1.25rem; border-radius: 10px; font-size: .9rem; font-weight: 500; color: #fff; box-shadow: 0 4px 16px rgba(0,0,0,.15); animation: slideIn .25s ease; }
+.toast-success { background: #059669; }
+.toast-error   { background: #dc2626; }
+@keyframes slideIn { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="toast-container"></div>
+
+<!-- Header -->
+<div class="page-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+  <div>
+    <h1><i class="bi bi-grid-3x3-gap me-2"></i>Gerar Variações de Produto</h1>
+    <p>Crie múltiplos produtos combinando dimensões como Calibre, Marca e Variedade de uma só vez.</p>
+  </div>
+  <a href="{% url 'produtos:produto_list' %}" class="btn btn-light">
+    <i class="bi bi-arrow-left me-1"></i> Voltar
+  </a>
+</div>
+
+{% if produto_origem_json != 'null' %}
+<div class="alert d-flex align-items-center gap-3 mb-3"
+     style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;color:#166534;">
+  <i class="bi bi-check-circle-fill fs-5"></i>
+  <div>
+    <strong>Dados herdados do produto base.</strong>
+    Categoria, NCM, unidades, tipo e origem já estão preenchidos — defina apenas as dimensões de variação.
+  </div>
+</div>
+{% endif %}
+
+<form id="mainForm" novalidate>
+  {% csrf_token %}
+
+  <!-- ZONA A – Dados Base -->
+  <div class="card section-card">
+    <div class="card-header"><i class="bi bi-box me-2"></i>Dados Base do Produto</div>
+    <div class="card-body">
+      <div class="row g-3">
+
+        <div class="col-12 col-md-6">
+          <label class="form-label fw-semibold">Nome Base <span class="text-danger">*</span></label>
+          <input type="text" id="baseNome" class="form-control" placeholder="Ex: Melão Amarelo 10 Kg" required>
+          <div class="form-text">Nome que aparecerá em todas as combinações (antes dos atributos).</div>
+        </div>
+
+        <div class="col-6 col-md-3">
+          <label class="form-label fw-semibold">Categoria <span class="text-danger">*</span></label>
+          <select id="categoriaId" class="form-select" required>
+            <option value="">Selecione...</option>
+            {% for cat in categorias %}
+            <option value="{{ cat.id }}">{{ cat.nome }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-6 col-md-3">
+          <label class="form-label fw-semibold">NCM <span class="text-danger">*</span></label>
+          <div class="position-relative">
+            <input type="text" id="ncmSearch" class="form-control" placeholder="Código ou descrição..." autocomplete="off">
+            <input type="hidden" id="ncmId">
+            <div id="ncmDropdown" class="position-absolute w-100 bg-white border rounded shadow-sm" style="z-index:1000;max-height:220px;overflow-y:auto;display:none;top:100%;left:0;"></div>
+          </div>
+          <div id="ncmBadge" class="mt-1" style="display:none;"></div>
+        </div>
+
+        <div class="col-6 col-md-4">
+          <label class="form-label fw-semibold">Unidade de Medida <span class="text-danger">*</span></label>
+          <select id="unidadeMedidaId" class="form-select" required>
+            <option value="">Selecione...</option>
+            {% for u in unidades %}
+            <option value="{{ u.id }}">{{ u.sigla }} – {{ u.nome }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-6 col-md-4">
+          <label class="form-label fw-semibold">Unidade de Compra <span class="text-danger">*</span></label>
+          <select id="unidadeCompraId" class="form-select" required>
+            <option value="">Selecione...</option>
+            {% for u in unidades %}
+            <option value="{{ u.id }}">{{ u.sigla }} – {{ u.nome }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-6 col-md-4">
+          <label class="form-label fw-semibold">Unidade de Venda <span class="text-danger">*</span></label>
+          <select id="unidadeVendaId" class="form-select" required>
+            <option value="">Selecione...</option>
+            {% for u in unidades %}
+            <option value="{{ u.id }}">{{ u.sigla }} – {{ u.nome }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-6 col-md-3">
+          <label class="form-label fw-semibold">Tipo do Item</label>
+          <select id="tipoItem" class="form-select">
+            {% for v, l in tipo_item_choices %}
+            <option value="{{ v }}" {% if v == "00" %}selected{% endif %}>{{ l }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-6 col-md-3">
+          <label class="form-label fw-semibold">Origem da Mercadoria</label>
+          <select id="origemMercadoria" class="form-select">
+            {% for v, l in origem_choices %}
+            <option value="{{ v }}" {% if v == "0" %}selected{% endif %}>{{ l }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-6 col-md-2">
+          <label class="form-label fw-semibold">Fator de Conversão</label>
+          <input type="number" id="fatorConversao" class="form-control" value="1" min="0.0001" step="0.0001">
+          <div class="form-text">Ex: 10 para CX de 10 KG</div>
+        </div>
+
+        <div class="col-6 col-md-2">
+          <label class="form-label fw-semibold">Peso Líq./Unidade (kg)</label>
+          <input type="number" id="pesoLiquido" class="form-control" value="0" min="0" step="0.001">
+        </div>
+
+        <div class="col-6 col-md-2">
+          <label class="form-label fw-semibold">Peso Bruto/Unidade (kg)</label>
+          <input type="number" id="pesoBruto" class="form-control" value="0" min="0" step="0.001">
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ZONA B – Dimensões -->
+  <div class="card section-card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <span><i class="bi bi-sliders me-2"></i>Dimensões de Variação</span>
+      <button type="button" class="btn btn-sm btn-violet-outline" id="addDimBtn">
+        <i class="bi bi-plus me-1"></i>Adicionar Dimensão
+      </button>
+    </div>
+    <div class="card-body">
+      <p class="text-muted small mb-3">
+        Defina cada eixo de variação (ex: Calibre, Marca, Variedade) e informe os valores separados por <strong>Enter</strong> ou <strong>vírgula</strong>.
+        Você pode adicionar quantas dimensões precisar.
+      </p>
+      <datalist id="dimNamesList"></datalist>
+      <div id="dimensoesList"></div>
+      <div id="emptyDims" class="text-center text-muted py-3" style="display:none;">
+        <i class="bi bi-sliders" style="font-size:2rem;"></i>
+        <p class="mt-2 mb-0">Nenhuma dimensão adicionada. Clique em "Adicionar Dimensão".</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Botão preview -->
+  <div class="d-flex gap-2 mb-3">
+    <button type="button" id="previewBtn" class="btn btn-violet px-4">
+      <i class="bi bi-eye me-2"></i>Gerar Preview
+    </button>
+    <button type="button" id="createBtn" class="btn btn-success px-4" disabled>
+      <i class="bi bi-check2-circle me-2"></i>Criar <span id="createCount">0</span> Produto(s) Selecionado(s)
+    </button>
+  </div>
+
+</form>
+
+<!-- ZONA C – Preview -->
+<div class="card section-card" id="previewCard">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span><i class="bi bi-table me-2"></i>Preview das Combinações</span>
+    <div class="d-flex gap-2 align-items-center">
+      <span class="text-muted small" id="previewCount"></span>
+      <button type="button" class="btn btn-sm btn-outline-secondary" id="selectAllBtn">Selecionar Todos</button>
+      <button type="button" class="btn btn-sm btn-outline-secondary" id="deselectAllBtn">Desmarcar Todos</button>
+    </div>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0 preview-table">
+        <thead id="previewHead"></thead>
+        <tbody id="previewBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ──────────────────────────────────────────────
+// DADOS DO SERVIDOR
+// ──────────────────────────────────────────────
+const DIMENSOES_EXISTENTES = {{ dimensoes_json|safe }};
+const PRODUTO_ORIGEM = {{ produto_origem_json|safe }};
+const NCM_BUSCAR_URL = "{% url 'produtos:ncm_buscar_ajax' %}";
+const VARIACAO_CRIAR_URL = "{% url 'produtos:variacao_gerar' %}";
+const CSRF_TOKEN = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+// ──────────────────────────────────────────────
+// PRÉ-PREENCHIMENTO A PARTIR DO PRODUTO ORIGEM
+// ──────────────────────────────────────────────
+function preencherDoOrigem(p) {
+  if (!p) return;
+
+  // Nome base: remover o produto base do nome no campo (usuário define o nome base)
+  document.getElementById('baseNome').value = p.nome;
+
+  // Categoria
+  const catSel = document.getElementById('categoriaId');
+  if (catSel.querySelector(`option[value="${p.categoria_id}"]`)) catSel.value = p.categoria_id;
+
+  // NCM
+  if (p.ncm_id) {
+    document.getElementById('ncmId').value = p.ncm_id;
+    document.getElementById('ncmSearch').value = p.ncm_codigo;
+    const badge = document.getElementById('ncmBadge');
+    badge.style.display = 'block';
+    badge.innerHTML = `<span class="badge rounded-pill text-bg-light border" style="font-size:.78rem;">${p.ncm_codigo} – ${(p.ncm_descricao||'').substring(0,60)}${(p.ncm_descricao||'').length>60?'…':''}</span>`;
+  }
+
+  // Unidades
+  const setSelect = (id, val) => {
+    const el = document.getElementById(id);
+    if (el && el.querySelector(`option[value="${val}"]`)) el.value = val;
+  };
+  setSelect('unidadeMedidaId', p.unidade_medida_id);
+  setSelect('unidadeCompraId', p.unidade_compra_id);
+  setSelect('unidadeVendaId', p.unidade_venda_id);
+
+  // Tipo e origem
+  setSelect('tipoItem', p.tipo_item);
+  setSelect('origemMercadoria', p.origem_mercadoria);
+
+  // Fator de conversão e pesos
+  document.getElementById('fatorConversao').value = p.fator_conversao || 1;
+  document.getElementById('pesoLiquido').value = p.peso_liquido || 0;
+  document.getElementById('pesoBruto').value = p.peso_bruto || 0;
+}
+
+if (PRODUTO_ORIGEM) preencherDoOrigem(PRODUTO_ORIGEM);
+
+// ──────────────────────────────────────────────
+// NCM AUTOCOMPLETE
+// ──────────────────────────────────────────────
+let ncmTimer = null;
+const ncmSearch = document.getElementById('ncmSearch');
+const ncmDropdown = document.getElementById('ncmDropdown');
+const ncmId = document.getElementById('ncmId');
+const ncmBadge = document.getElementById('ncmBadge');
+
+ncmSearch.addEventListener('input', () => {
+  clearTimeout(ncmTimer);
+  const q = ncmSearch.value.trim();
+  if (q.length < 2) { ncmDropdown.style.display = 'none'; return; }
+  ncmTimer = setTimeout(async () => {
+    const res = await fetch(`${NCM_BUSCAR_URL}?q=${encodeURIComponent(q)}`);
+    const data = await res.json();
+    const items = data.results || data;
+    if (!items.length) { ncmDropdown.style.display = 'none'; return; }
+    ncmDropdown.innerHTML = items.map(i =>
+      `<div class="px-3 py-2 border-bottom ncm-opt" style="cursor:pointer;font-size:.85rem;"
+            data-id="${i.id}" data-codigo="${i.codigo}" data-desc="${i.descricao}">
+         <strong>${i.codigo}</strong> – ${i.descricao}
+       </div>`
+    ).join('');
+    ncmDropdown.querySelectorAll('.ncm-opt').forEach(el => {
+      el.addEventListener('click', () => selectNcm(el.dataset.id, el.dataset.codigo, el.dataset.desc));
+    });
+    ncmDropdown.style.display = 'block';
+  }, 280);
+});
+
+function selectNcm(id, codigo, desc) {
+  ncmId.value = id;
+  ncmSearch.value = codigo;
+  ncmDropdown.style.display = 'none';
+  ncmBadge.style.display = 'block';
+  ncmBadge.innerHTML = `<span class="badge rounded-pill text-bg-light border" style="font-size:.78rem;">${codigo} – ${desc.substring(0,60)}${desc.length>60?'…':''}</span>`;
+}
+
+document.addEventListener('click', e => {
+  if (!ncmDropdown.contains(e.target) && e.target !== ncmSearch) ncmDropdown.style.display = 'none';
+});
+
+// ──────────────────────────────────────────────
+// UNIDADE AUTO-FILL
+// ──────────────────────────────────────────────
+document.getElementById('unidadeMedidaId').addEventListener('change', function() {
+  const v = this.value;
+  const c = document.getElementById('unidadeCompraId');
+  const vd = document.getElementById('unidadeVendaId');
+  if (!c.value) c.value = v;
+  if (!vd.value) vd.value = v;
+});
+
+// ──────────────────────────────────────────────
+// DATALIST para nomes de dimensões
+// ──────────────────────────────────────────────
+const dimNamesList = document.getElementById('dimNamesList');
+DIMENSOES_EXISTENTES.forEach(d => {
+  const opt = document.createElement('option'); opt.value = d.nome; dimNamesList.appendChild(opt);
+});
+
+// ──────────────────────────────────────────────
+// DIMENSÕES DINÂMICAS
+// ──────────────────────────────────────────────
+let dimCounter = 0;
+const dimensoesList = document.getElementById('dimensoesList');
+const emptyDims = document.getElementById('emptyDims');
+
+function updateEmptyState() {
+  const rows = dimensoesList.querySelectorAll('.dim-row');
+  emptyDims.style.display = rows.length === 0 ? 'block' : 'none';
+}
+
+function addDimension(nome = '') {
+  dimCounter++;
+  const id = `dim_${dimCounter}`;
+  const row = document.createElement('div');
+  row.className = 'dim-row d-flex align-items-start gap-3';
+  row.id = id;
+  row.innerHTML = `
+    <div class="d-flex justify-content-between align-items-start mb-2">
+      <div class="flex-grow-1 me-3">
+        <div class="dim-label"><i class="bi bi-tag me-1"></i>Nome da Dimensão</div>
+        <input type="text" class="dim-name-input" list="dimNamesList"
+               placeholder="Ex: Calibre, Marca, Variedade…" value="${nome}">
+      </div>
+      <button type="button" class="btn btn-sm btn-outline-danger remove-dim-btn mt-3" data-dim="${id}">
+        <i class="bi bi-trash3"></i>
+      </button>
+    </div>
+    <div class="dim-label"><i class="bi bi-tags me-1"></i>Valores <span class="text-muted fw-normal" style="text-transform:none;letter-spacing:0;">(pressione Enter ou vírgula após cada valor)</span></div>
+    <div class="chips-area" data-dim="${id}">
+      <input type="text" class="chips-input" placeholder="Ex: 05  →  depois  06  →  depois  07…">
+    </div>`;
+  dimensoesList.appendChild(row);
+
+  const chipsArea = row.querySelector('.chips-area');
+  const chipsInput = row.querySelector('.chips-input');
+  const nameInput  = row.querySelector('.dim-name-input');
+
+  chipsInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault();
+      addChip(chipsArea, chipsInput.value.trim());
+      chipsInput.value = '';
+    } else if (e.key === 'Backspace' && !chipsInput.value) {
+      const chips = chipsArea.querySelectorAll('.chip');
+      if (chips.length) chips[chips.length - 1].remove();
+    }
+  });
+
+  chipsInput.addEventListener('blur', () => {
+    if (chipsInput.value.trim()) { addChip(chipsArea, chipsInput.value.trim()); chipsInput.value = ''; }
+  });
+
+  chipsArea.addEventListener('click', e => {
+    if (e.target === chipsArea || e.target.classList.contains('chips-input')) chipsInput.focus();
+  });
+
+  row.querySelector('.remove-dim-btn').addEventListener('click', () => {
+    row.remove(); updateEmptyState();
+  });
+
+  updateEmptyState();
+  nameInput.focus();
+}
+
+function addChip(chipsArea, value) {
+  if (!value) return;
+  const existing = [...chipsArea.querySelectorAll('.chip')].map(c => c.dataset.value);
+  if (existing.includes(value)) return;
+  const input = chipsArea.querySelector('.chips-input');
+  const chip = document.createElement('span');
+  chip.className = 'chip';
+  chip.dataset.value = value;
+  chip.innerHTML = `${escHtml(value)}<button class="chip-remove" type="button" title="Remover">×</button>`;
+  chip.querySelector('.chip-remove').addEventListener('click', () => chip.remove());
+  chipsArea.insertBefore(chip, input);
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+document.getElementById('addDimBtn').addEventListener('click', () => addDimension());
+updateEmptyState();
+
+// ──────────────────────────────────────────────
+// LER DIMENSÕES DO DOM
+// ──────────────────────────────────────────────
+function getDimensions() {
+  const dims = [];
+  dimensoesList.querySelectorAll('.dim-row').forEach(row => {
+    const nome = row.querySelector('.dim-name-input').value.trim();
+    const valores = [...row.querySelectorAll('.chip')].map(c => c.dataset.value).filter(Boolean);
+    if (nome && valores.length) dims.push({ nome, valores });
+  });
+  return dims;
+}
+
+// ──────────────────────────────────────────────
+// PRODUTO CARTESIANO
+// ──────────────────────────────────────────────
+function cartesian(arrays) {
+  if (!arrays.length) return [[]];
+  return arrays.reduce((acc, arr) =>
+    acc.flatMap(combo => arr.map(val => [...combo, val])), [[]]
+  );
+}
+
+// ──────────────────────────────────────────────
+// VALIDAÇÃO BASE
+// ──────────────────────────────────────────────
+function validarBase() {
+  const erros = [];
+  if (!document.getElementById('baseNome').value.trim()) erros.push('Nome Base é obrigatório.');
+  if (!document.getElementById('categoriaId').value) erros.push('Categoria é obrigatória.');
+  if (!document.getElementById('ncmId').value) erros.push('NCM é obrigatório.');
+  if (!document.getElementById('unidadeMedidaId').value) erros.push('Unidade de Medida é obrigatória.');
+  if (!document.getElementById('unidadeCompraId').value) erros.push('Unidade de Compra é obrigatória.');
+  if (!document.getElementById('unidadeVendaId').value) erros.push('Unidade de Venda é obrigatória.');
+  return erros;
+}
+
+// ──────────────────────────────────────────────
+// GERAR PREVIEW
+// ──────────────────────────────────────────────
+const previewCard = document.getElementById('previewCard');
+const previewHead = document.getElementById('previewHead');
+const previewBody = document.getElementById('previewBody');
+const previewCount = document.getElementById('previewCount');
+const createBtn = document.getElementById('createBtn');
+const createCount = document.getElementById('createCount');
+
+document.getElementById('previewBtn').addEventListener('click', () => {
+  const errosBase = validarBase();
+  if (errosBase.length) { showToast(errosBase.join(' '), 'error'); return; }
+
+  const dims = getDimensions();
+  if (!dims.length) { showToast('Adicione ao menos uma dimensão de variação.', 'error'); return; }
+
+  const baseName = document.getElementById('baseNome').value.trim();
+  const combos = cartesian(dims.map(d => d.valores));
+
+  // Cabeçalho
+  previewHead.innerHTML = `<tr>
+    <th style="width:40px;"><input type="checkbox" id="checkAll" class="form-check-input" checked></th>
+    <th>Nome do Produto</th>
+    ${dims.map(d => `<th>${escHtml(d.nome)}</th>`).join('')}
+  </tr>`;
+
+  document.getElementById('checkAll').addEventListener('change', function() {
+    previewBody.querySelectorAll('.row-check').forEach(cb => { cb.checked = this.checked; });
+    updateCreateBtn();
+  });
+
+  // Linhas
+  previewBody.innerHTML = '';
+  combos.forEach((combo, idx) => {
+    const attrParts = combo.join(' ');
+    const nomeGerado = `${baseName} ${attrParts}`.trim();
+    const attrObj = {};
+    dims.forEach((d, i) => { attrObj[d.nome] = combo[i]; });
+
+    const tr = document.createElement('tr');
+    tr.dataset.atributos = JSON.stringify(attrObj);
+    tr.innerHTML = `
+      <td><input type="checkbox" class="form-check-input row-check" checked></td>
+      <td><input type="text" class="nome-input" value="${escHtml(nomeGerado)}" data-idx="${idx}"></td>
+      ${combo.map(v => `<td><span class="badge rounded-pill" style="background:#ede9fe;color:#7c3aed;">${escHtml(v)}</span></td>`).join('')}`;
+    tr.querySelector('.row-check').addEventListener('change', updateCreateBtn);
+    previewBody.appendChild(tr);
+  });
+
+  previewCard.style.display = 'block';
+  previewCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  previewCount.textContent = `${combos.length} combinação(ões)`;
+  updateCreateBtn();
+});
+
+function updateCreateBtn() {
+  const checked = previewBody.querySelectorAll('.row-check:checked').length;
+  createCount.textContent = checked;
+  createBtn.disabled = checked === 0;
+}
+
+document.getElementById('selectAllBtn').addEventListener('click', () => {
+  previewBody.querySelectorAll('.row-check').forEach(cb => cb.checked = true);
+  const ca = document.getElementById('checkAll'); if (ca) ca.checked = true;
+  updateCreateBtn();
+});
+document.getElementById('deselectAllBtn').addEventListener('click', () => {
+  previewBody.querySelectorAll('.row-check').forEach(cb => cb.checked = false);
+  const ca = document.getElementById('checkAll'); if (ca) ca.checked = false;
+  updateCreateBtn();
+});
+
+// ──────────────────────────────────────────────
+// CRIAR PRODUTOS
+// ──────────────────────────────────────────────
+createBtn.addEventListener('click', async () => {
+  const combinacoes = [];
+  previewBody.querySelectorAll('tr').forEach(tr => {
+    const cb = tr.querySelector('.row-check');
+    if (!cb || !cb.checked) return;
+    const nome = tr.querySelector('.nome-input').value.trim();
+    const atributos = JSON.parse(tr.dataset.atributos || '{}');
+    combinacoes.push({ nome, atributos });
+  });
+
+  if (!combinacoes.length) { showToast('Nenhuma combinação selecionada.', 'error'); return; }
+
+  createBtn.disabled = true;
+  createBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Criando…';
+
+  const payload = {
+    base_nome: document.getElementById('baseNome').value.trim(),
+    categoria_id: parseInt(document.getElementById('categoriaId').value),
+    ncm_id: parseInt(document.getElementById('ncmId').value),
+    unidade_medida_id: parseInt(document.getElementById('unidadeMedidaId').value),
+    unidade_compra_id: parseInt(document.getElementById('unidadeCompraId').value),
+    unidade_venda_id: parseInt(document.getElementById('unidadeVendaId').value),
+    tipo_item: document.getElementById('tipoItem').value,
+    origem_mercadoria: document.getElementById('origemMercadoria').value,
+    fator_conversao: parseFloat(document.getElementById('fatorConversao').value) || 1,
+    peso_liquido: parseFloat(document.getElementById('pesoLiquido').value) || 0,
+    peso_bruto: parseFloat(document.getElementById('pesoBruto').value) || 0,
+    combinacoes,
+  };
+
+  try {
+    const res = await fetch(VARIACAO_CRIAR_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF_TOKEN },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      let msg = `${data.criados} produto(s) criado(s) com sucesso!`;
+      if (data.erros && data.erros.length) msg += ` (${data.erros.length} erro(s)).`;
+      showToast(msg, 'success');
+
+      // Desabilitar linhas criadas
+      previewBody.querySelectorAll('tr').forEach(tr => {
+        if (tr.querySelector('.row-check:checked')) {
+          tr.style.opacity = '.4';
+          tr.querySelector('.row-check').disabled = true;
+        }
+      });
+
+      if (data.erros && data.erros.length) {
+        data.erros.forEach(e => showToast(`Erro: ${e.nome} – ${e.erro}`, 'error'));
+      }
+
+      // Adicionar dimensões novas ao datalist
+      const dims = getDimensions();
+      dims.forEach(d => {
+        const exists = [...dimNamesList.querySelectorAll('option')].some(o => o.value === d.nome);
+        if (!exists) { const opt = document.createElement('option'); opt.value = d.nome; dimNamesList.appendChild(opt); }
+      });
+
+    } else {
+      showToast(`Erro: ${data.error}`, 'error');
+    }
+  } catch (err) {
+    showToast(`Erro de comunicação: ${err.message}`, 'error');
+  } finally {
+    createBtn.disabled = false;
+    createBtn.innerHTML = `<i class="bi bi-check2-circle me-2"></i>Criar <span id="createCount">${document.querySelectorAll('.row-check:not(:disabled)').length}</span> Produto(s) Selecionado(s)`;
+    updateCreateBtn();
+  }
+});
+
+// ──────────────────────────────────────────────
+// TOAST
+// ──────────────────────────────────────────────
+function showToast(msg, type = 'success') {
+  const container = document.getElementById('toast-container');
+  const el = document.createElement('div');
+  el.className = `toast-item toast-${type}`;
+  el.textContent = msg;
+  container.appendChild(el);
+  setTimeout(() => el.remove(), 4500);
+}
+</script>
+{% endblock %}

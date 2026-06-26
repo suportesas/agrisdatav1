@@ -49,6 +49,15 @@ urlpatterns = [
     path('subcategorias/<int:pk>/excluir/', views.subcategoria_delete, name='subcategoria_delete'),
     path('subcategorias/ajax/criar/', views.subcategoria_create_ajax, name='subcategoria_create_ajax'),
     
+    # Gerador de Variações
+    path('variacao/gerar/', views.produto_variacao_form, name='variacao_form'),
+    path('variacao/criar/', views.produto_variacao_gerar, name='variacao_gerar'),
+
+    # Atributos de Variação
+    path('<int:produto_pk>/atributos/', views.produto_atributo_listar, name='atributo_listar'),
+    path('<int:produto_pk>/atributos/salvar/', views.produto_atributo_salvar, name='atributo_salvar'),
+    path('atributos/<int:pk>/excluir/', views.produto_atributo_excluir, name='atributo_excluir'),
+
     # Produto
     path('', views.produto_list, name='produto_list'),
     path('<int:pk>/', views.produto_detail, name='produto_detail'),

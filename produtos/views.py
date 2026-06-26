@@ -55,13 +55,14 @@ def categoria_seed(request):
     messages.success(request, f'Categorias padrão populadas! Criadas: {criados}, já existentes: {ignorados}')
     return redirect('produtos:categoria_list')
 from django.db.models import Q, Count, Sum, F
+from django.db import transaction
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.core.paginator import Paginator
 from django.urls import reverse
 import json
 from decimal import Decimal
-from .models import UnidadeMedida, Categoria, SubCategoria, Produto, ProdutoTributacao, NaturezaOperacao, ProdutoDefensivoCultura, ProdutoFornecedor, TipoProduto
+from .models import UnidadeMedida, Categoria, SubCategoria, Produto, ProdutoTributacao, NaturezaOperacao, ProdutoDefensivoCultura, ProdutoFornecedor, TipoProduto, DimensaoVariante, ProdutoAtributo
 from .forms import UnidadeMedidaForm, CategoriaForm, SubCategoriaForm, ProdutoForm, ProdutoTributacaoForm, NaturezaOperacaoForm, ProdutoDefensivoCulturaForm
 from cadastros.models import NCM, CFOP, Fornecedor
 from emprestimos.models import EmprestimoProdutor
@@ -491,7 +492,8 @@ def produto_detail(request, pk):
         Produto.objects.select_related(
             'categoria', 'subcategoria', 'unidade_medida',
             'unidade_compra', 'unidade_venda', 'ncm', 'fornecedor_padrao'
-        ).prefetch_related('tributacoes', 'documentos').filter(categoria__empresa=request.user.empresa),
+        ).prefetch_related('tributacoes', 'documentos', 'atributos__dimensao')
+        .filter(categoria__empresa=request.user.empresa),
         pk=pk
     )
     # Buscar fornecedores relacionados ao produto
@@ -1309,11 +1311,205 @@ def produto_fornecedor_delete(request, pk):
             return JsonResponse({'success': False, 'error': 'Não autorizado'}, status=403)
         
         produto_fornecedor.delete()
-        
+
         return JsonResponse({
             'success': True,
             'message': 'Fornecedor removido com sucesso!'
         })
-        
+
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+# ============== ATRIBUTOS DE VARIAÇÃO (CRUD inline) ==============
+
+@login_required
+@require_POST
+def produto_atributo_salvar(request, produto_pk):
+    empresa = request.user.empresa
+    produto = get_object_or_404(Produto, pk=produto_pk, categoria__empresa=empresa)
+    try:
+        data = json.loads(request.body)
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({'success': False, 'error': 'JSON inválido.'}, status=400)
+
+    dim_nome = (data.get('dimensao_nome') or '').strip()
+    valor    = (data.get('valor') or '').strip()
+    atrib_pk = data.get('atributo_id')
+
+    if not dim_nome or not valor:
+        return JsonResponse({'success': False, 'error': 'Dimensão e valor são obrigatórios.'}, status=400)
+
+    dim, _ = DimensaoVariante.objects.get_or_create(
+        empresa=empresa, nome=dim_nome, defaults={'ordem': 0}
+    )
+
+    if atrib_pk:
+        atrib = get_object_or_404(ProdutoAtributo, pk=atrib_pk, produto=produto)
+        # Se mudou a dimensão, verificar conflito
+        if atrib.dimensao_id != dim.pk:
+            if ProdutoAtributo.objects.filter(produto=produto, dimensao=dim).exclude(pk=atrib_pk).exists():
+                return JsonResponse({'success': False, 'error': f'Já existe um atributo "{dim_nome}" neste produto.'}, status=400)
+            atrib.dimensao = dim
+        atrib.valor = valor
+        atrib.save()
+        msg = 'Atributo atualizado.'
+    else:
+        if ProdutoAtributo.objects.filter(produto=produto, dimensao=dim).exists():
+            return JsonResponse({'success': False, 'error': f'Já existe um atributo "{dim_nome}" neste produto.'}, status=400)
+        atrib = ProdutoAtributo.objects.create(produto=produto, dimensao=dim, valor=valor)
+        msg = 'Atributo adicionado.'
+
+    return JsonResponse({
+        'success': True,
+        'message': msg,
+        'atributo': {'id': atrib.pk, 'dimensao': dim.nome, 'valor': atrib.valor},
+    })
+
+
+@login_required
+@require_POST
+def produto_atributo_excluir(request, pk):
+    empresa = request.user.empresa
+    atrib = get_object_or_404(ProdutoAtributo, pk=pk, produto__categoria__empresa=empresa)
+    atrib.delete()
+    return JsonResponse({'success': True, 'message': 'Atributo removido.'})
+
+
+@login_required
+def produto_atributo_listar(request, produto_pk):
+    empresa = request.user.empresa
+    produto = get_object_or_404(Produto, pk=produto_pk, categoria__empresa=empresa)
+    atributos = list(
+        produto.atributos.select_related('dimensao')
+        .values('id', 'dimensao__nome', 'valor')
+        .order_by('dimensao__ordem', 'dimensao__nome')
+    )
+    dimensoes = list(
+        DimensaoVariante.objects.filter(empresa=empresa, ativo=True)
+        .values_list('nome', flat=True)
+        .order_by('ordem', 'nome')
+    )
+    return JsonResponse({'atributos': atributos, 'dimensoes': dimensoes})
+
+
+# ============== GERADOR DE VARIAÇÕES ==============
+
+@login_required
+def produto_variacao_form(request):
+    empresa = request.user.empresa
+    categorias = Categoria.objects.filter(empresa=empresa, ativo=True).order_by('nome')
+    unidades = UnidadeMedida.objects.filter(empresa=empresa, ativo=True).order_by('nome')
+    dimensoes = list(
+        DimensaoVariante.objects.filter(empresa=empresa, ativo=True)
+        .values('id', 'nome', 'ordem')
+        .order_by('ordem', 'nome')
+    )
+
+    produto_origem_json = 'null'
+    origem_pk = request.GET.get('origem')
+    if origem_pk:
+        try:
+            p = Produto.objects.select_related(
+                'categoria', 'ncm', 'unidade_medida', 'unidade_compra', 'unidade_venda'
+            ).get(pk=origem_pk, categoria__empresa=empresa)
+            produto_origem_json = json.dumps({
+                'id': p.pk,
+                'nome': p.nome,
+                'categoria_id': p.categoria_id,
+                'ncm_id': p.ncm_id,
+                'ncm_codigo': p.ncm.codigo if p.ncm else '',
+                'ncm_descricao': p.ncm.descricao if p.ncm else '',
+                'unidade_medida_id': p.unidade_medida_id,
+                'unidade_compra_id': p.unidade_compra_id,
+                'unidade_venda_id': p.unidade_venda_id,
+                'tipo_item': p.tipo_item,
+                'origem_mercadoria': p.origem_mercadoria,
+                'peso_liquido': float(p.peso_liquido_unitario),
+                'peso_bruto': float(p.peso_bruto_unitario),
+                'fator_conversao': float(p.fator_conversao),
+            }, ensure_ascii=False)
+        except Produto.DoesNotExist:
+            pass
+
+    return render(request, 'produtos/produto/variacao_gerar.html', {
+        'categorias': categorias,
+        'unidades': unidades,
+        'dimensoes_json': json.dumps(dimensoes, ensure_ascii=False),
+        'tipo_item_choices': Produto.TIPO_ITEM_CHOICES,
+        'origem_choices': Produto.ORIGEM_MERCADORIA_CHOICES,
+        'produto_origem_json': produto_origem_json,
+    })
+
+
+@login_required
+@require_POST
+def produto_variacao_gerar(request):
+    empresa = request.user.empresa
+    try:
+        data = json.loads(request.body)
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({'success': False, 'error': 'JSON inválido.'}, status=400)
+
+    combinacoes = data.get('combinacoes', [])
+    if not combinacoes:
+        return JsonResponse({'success': False, 'error': 'Nenhuma combinação selecionada.'}, status=400)
+
+    # Validar campos base obrigatórios
+    try:
+        categoria = Categoria.objects.get(pk=data['categoria_id'], empresa=empresa)
+        ncm = NCM.objects.get(pk=data['ncm_id'])
+        um  = UnidadeMedida.objects.get(pk=data['unidade_medida_id'], empresa=empresa)
+        uc  = UnidadeMedida.objects.get(pk=data['unidade_compra_id'], empresa=empresa)
+        uv  = UnidadeMedida.objects.get(pk=data['unidade_venda_id'], empresa=empresa)
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': f'Campos base inválidos: {e}'}, status=400)
+
+    criados = []
+    erros = []
+
+    try:
+        with transaction.atomic():
+            for combo in combinacoes:
+                nome = (combo.get('nome') or '').strip()
+                atributos = combo.get('atributos', {})
+                if not nome:
+                    erros.append({'nome': '(sem nome)', 'erro': 'Nome vazio, combinação ignorada.'})
+                    continue
+                produto = Produto(
+                    nome=nome,
+                    categoria=categoria,
+                    ncm=ncm,
+                    unidade_medida=um,
+                    unidade_compra=uc,
+                    unidade_venda=uv,
+                    tipo_item=data.get('tipo_item', '00'),
+                    origem_mercadoria=data.get('origem_mercadoria', '0'),
+                    peso_liquido_unitario=data.get('peso_liquido', 0) or 0,
+                    peso_bruto_unitario=data.get('peso_bruto', 0) or 0,
+                    fator_conversao=data.get('fator_conversao', 1) or 1,
+                )
+                produto.save()
+
+                for dim_nome, valor in atributos.items():
+                    dim_nome = dim_nome.strip()
+                    valor = valor.strip()
+                    if not dim_nome or not valor:
+                        continue
+                    dim, _ = DimensaoVariante.objects.get_or_create(
+                        empresa=empresa,
+                        nome=dim_nome,
+                        defaults={'ordem': 0},
+                    )
+                    ProdutoAtributo.objects.create(produto=produto, dimensao=dim, valor=valor)
+
+                criados.append({'id': produto.pk, 'nome': produto.nome, 'codigo': produto.codigo})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+    return JsonResponse({
+        'success': True,
+        'criados': len(criados),
+        'erros': erros,
+        'produtos': criados,
+    })

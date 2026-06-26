@@ -12,6 +12,9 @@
          onclick="return confirm('Clonar o produto &quot;{{ produto.nome }}&quot;?\n\nUma cópia será criada e aberta para edição.')">
         <i class="bi bi-copy me-1"></i> Clonar
       </a>
+      <a href="{% url 'produtos:variacao_form' %}?origem={{ produto.pk }}" class="btn btn-outline-primary">
+        <i class="bi bi-grid-3x3-gap me-1"></i> Gerar Variações
+      </a>
       <a href="{% url 'produtos:produto_delete' produto.pk %}" class="btn btn-danger">
         <i class="bi bi-trash"></i> Excluir
       </a>
@@ -171,6 +174,21 @@
             <span class="text-muted">Nenhum anexo cadastrado para este produto.</span>
           </div>
           {% endif %}
+        </div>
+      </div>
+
+      <!-- Atributos de Variação -->
+      <div class="card mb-3" id="cardAtributos">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <strong><i class="bi bi-tags me-2"></i>Atributos de Variação</strong>
+          <button type="button" class="btn btn-sm btn-primary" onclick="abrirModalAtributo()">
+            <i class="bi bi-plus-circle me-1"></i>Adicionar
+          </button>
+        </div>
+        <div class="card-body p-0" id="atributosContainer">
+          <div class="text-center text-muted py-3" id="atributosLoading">
+            <div class="spinner-border spinner-border-sm me-2"></div> Carregando…
+          </div>
         </div>
       </div>
 
@@ -467,4 +485,182 @@
     {% endif %}
   </div>
 </div>
+<!-- Modal: Adicionar / Editar Atributo -->
+<div class="modal fade" id="modalAtributo" tabindex="-1">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header" style="background:#ede9fe;">
+        <h6 class="modal-title fw-bold" id="modalAtributoTitulo">
+          <i class="bi bi-tag me-2" style="color:#7c3aed;"></i>Atributo de Variação
+        </h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="atributoId">
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Dimensão <span class="text-danger">*</span></label>
+          <input type="text" id="atributoDimensao" class="form-control"
+                 list="modalDimList" placeholder="Ex: Calibre, Marca, Variedade…">
+          <datalist id="modalDimList"></datalist>
+        </div>
+        <div class="mb-1">
+          <label class="form-label fw-semibold">Valor <span class="text-danger">*</span></label>
+          <input type="text" id="atributoValor" class="form-control" placeholder="Ex: 05, Terra Brasilis, Goldex…">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary btn-sm" id="btnSalvarAtributo">
+          <i class="bi bi-check2 me-1"></i>Salvar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const PRODUTO_PK = {{ produto.pk }};
+const URL_ATRIB_LISTAR = "{% url 'produtos:atributo_listar' produto.pk %}";
+const URL_ATRIB_SALVAR = "{% url 'produtos:atributo_salvar' produto.pk %}";
+const URL_ATRIB_EXCLUIR_BASE = "/produtos/atributos/";
+const CSRF = document.querySelector('[name=csrfmiddlewaretoken]') && document.querySelector('[name=csrfmiddlewaretoken]').value
+           || '{{ csrf_token }}';
+
+let _modalAtributo = null;
+function getModal() {
+  if (!_modalAtributo) _modalAtributo = new bootstrap.Modal(document.getElementById('modalAtributo'));
+  return _modalAtributo;
+}
+
+// ── Carregar atributos ──────────────────────────────
+async function carregarAtributos() {
+  const container = document.getElementById('atributosContainer');
+  try {
+    const res = await fetch(URL_ATRIB_LISTAR);
+    const data = await res.json();
+
+    // Preencher datalist do modal
+    const dl = document.getElementById('modalDimList');
+    dl.innerHTML = '';
+    (data.dimensoes || []).forEach(n => {
+      const opt = document.createElement('option'); opt.value = n; dl.appendChild(opt);
+    });
+
+    if (!data.atributos || !data.atributos.length) {
+      container.innerHTML = `
+        <div class="text-center text-muted py-3">
+          <i class="bi bi-tags" style="font-size:2rem;"></i>
+          <p class="mt-2 mb-0 small">Nenhum atributo cadastrado.<br>
+          Use o gerador de variações ou clique em <strong>Adicionar</strong>.</p>
+        </div>`;
+      return;
+    }
+
+    let rows = data.atributos.map(a => `
+      <tr>
+        <td><span class="badge rounded-pill" style="background:#ede9fe;color:#7c3aed;">${esc(a.dimensao__nome)}</span></td>
+        <td class="fw-semibold">${esc(a.valor)}</td>
+        <td class="text-end">
+          <button class="btn btn-xs btn-outline-warning me-1" style="padding:.15rem .45rem;font-size:.78rem;"
+                  onclick="editarAtributo(${a.id},'${esc(a.dimensao__nome)}','${esc(a.valor)}')">
+            <i class="bi bi-pencil"></i>
+          </button>
+          <button class="btn btn-xs btn-outline-danger" style="padding:.15rem .45rem;font-size:.78rem;"
+                  onclick="excluirAtributo(${a.id})">
+            <i class="bi bi-trash3"></i>
+          </button>
+        </td>
+      </tr>`).join('');
+
+    container.innerHTML = `
+      <div class="table-responsive">
+        <table class="table table-sm table-hover align-middle mb-0">
+          <thead style="background:#f5f3ff;">
+            <tr>
+              <th style="color:#7c3aed;">Dimensão</th>
+              <th style="color:#7c3aed;">Valor</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>`;
+  } catch (e) {
+    container.innerHTML = `<div class="text-danger p-3">Erro ao carregar atributos.</div>`;
+  }
+}
+
+// ── Abrir modal para adicionar ──────────────────────
+function abrirModalAtributo() {
+  document.getElementById('atributoId').value = '';
+  document.getElementById('atributoDimensao').value = '';
+  document.getElementById('atributoValor').value = '';
+  document.getElementById('modalAtributoTitulo').innerHTML =
+    '<i class="bi bi-tag me-2" style="color:#7c3aed;"></i>Adicionar Atributo';
+  getModal().show();
+  setTimeout(() => document.getElementById('atributoDimensao').focus(), 300);
+}
+
+// ── Abrir modal para editar ─────────────────────────
+function editarAtributo(id, dimensao, valor) {
+  document.getElementById('atributoId').value = id;
+  document.getElementById('atributoDimensao').value = dimensao;
+  document.getElementById('atributoValor').value = valor;
+  document.getElementById('modalAtributoTitulo').innerHTML =
+    '<i class="bi bi-pencil me-2" style="color:#7c3aed;"></i>Editar Atributo';
+  getModal().show();
+  setTimeout(() => document.getElementById('atributoValor').focus(), 300);
+}
+
+// ── Salvar ──────────────────────────────────────────
+document.getElementById('btnSalvarAtributo').addEventListener('click', async () => {
+  const dimensao = document.getElementById('atributoDimensao').value.trim();
+  const valor    = document.getElementById('atributoValor').value.trim();
+  const id       = document.getElementById('atributoId').value;
+  if (!dimensao || !valor) { alert('Preencha a dimensão e o valor.'); return; }
+
+  const payload = { dimensao_nome: dimensao, valor };
+  if (id) payload.atributo_id = parseInt(id);
+
+  const btn = document.getElementById('btnSalvarAtributo');
+  btn.disabled = true;
+  try {
+    const res = await fetch(URL_ATRIB_SALVAR, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (data.success) {
+      getModal().hide();
+      carregarAtributos();
+    } else {
+      alert(data.error || 'Erro ao salvar.');
+    }
+  } catch (e) {
+    alert('Erro de comunicação.');
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+// ── Excluir ─────────────────────────────────────────
+async function excluirAtributo(id) {
+  if (!confirm('Remover este atributo?')) return;
+  const res = await fetch(`${URL_ATRIB_EXCLUIR_BASE}${id}/excluir/`, {
+    method: 'POST',
+    headers: { 'X-CSRFToken': CSRF },
+  });
+  const data = await res.json();
+  if (data.success) carregarAtributos();
+  else alert(data.error || 'Erro ao remover.');
+}
+
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+// ── Inicializar ─────────────────────────────────────
+carregarAtributos();
+</script>
 {% endblock %}

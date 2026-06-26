@@ -23,7 +23,10 @@
       "Bash(curl -s \"https://raw.githubusercontent.com/cloud-dfe/sdk-python/main/examples/cte/cte.py\")",
       "Bash(curl -s \"https://raw.githubusercontent.com/cloud-dfe/sdk-python/main/src/dfe/__init__.py\")",
       "Bash(gh api *)",
-      "Bash(python3 -c \"import sys,base64; print\\(base64.b64decode\\(sys.stdin.read\\(\\)\\).decode\\(\\)\\)\")"
+      "Bash(python3 -c \"import sys,base64; print\\(base64.b64decode\\(sys.stdin.read\\(\\)\\).decode\\(\\)\\)\")",
+      "Bash(python manage.py makemigrations produtos)",
+      "PowerShell(& \"c:\\\\erp_agricola_novo\\\\venv\\\\Scripts\\\\python.exe\" \"c:\\\\erp_agricola_novo\\\\manage.py\" makemigrations produtos 2>&1)",
+      "PowerShell(& \"c:\\\\erp_agricola_novo\\\\venv\\\\Scripts\\\\python.exe\" \"c:\\\\erp_agricola_novo\\\\manage.py\" migrate 2>&1)"
     ]
   }
 }

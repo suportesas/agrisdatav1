@@ -128,6 +128,7 @@
 
 /* Table row hover */
 tbody tr:hover td { background: #faf5ff; }
+tbody tr.row-clickable:hover td { background: #ede9fe; }
 </style>
 {% endblock %}
 
@@ -402,7 +403,6 @@ tbody tr:hover td { background: #faf5ff; }
         <table class="table table-hover align-middle mb-0">
           <thead style="background:#f5f3ff;">
             <tr>
-              <th style="width:48px;"></th>
               <th>
                 <a href="?q={{ query }}&categoria={{ categoria_filter }}&tipo={{ tipo_filter }}&status={{ status_filter }}&per_page={{ per_page }}&sort={% if sort_by == 'codigo' %}-codigo{% else %}codigo{% endif %}" class="sort-link {% if sort_by == 'codigo' or sort_by == '-codigo' %}active{% endif %}">
                   Código <i class="bi bi-arrow-down-up"></i>
@@ -433,18 +433,8 @@ tbody tr:hover td { background: #faf5ff; }
           <tbody>
             {% for produto in page_obj.object_list %}
             {% with estoque=produto.estoque_atual minimo=produto.estoque_minimo %}
-            <tr>
-              <td>
-                {% if produto.imagem %}
-                <img src="{{ produto.imagem.url }}" width="36" height="36"
-                     class="rounded-2" style="object-fit:cover;">
-                {% else %}
-                <div class="rounded-2 d-flex align-items-center justify-content-center"
-                     style="width:36px;height:36px;background:#ede9fe;">
-                  <i class="bi bi-box" style="color:#7c3aed;font-size:.9rem;"></i>
-                </div>
-                {% endif %}
-              </td>
+            <tr class="row-clickable" data-href="{% url 'produtos:produto_detail' produto.pk %}"
+                style="cursor:pointer;" title="Clique para ver o detalhe">
               <td><code class="text-primary">{{ produto.codigo }}</code></td>
               <td>
                 <strong>{{ produto.nome|truncatechars:45 }}</strong>
@@ -593,6 +583,14 @@ document.addEventListener('DOMContentLoaded', function () {
   // Tooltips Bootstrap
   document.querySelectorAll('[title]').forEach(el => {
     new bootstrap.Tooltip(el, { trigger: 'hover' });
+  });
+
+  // Linhas clicáveis — ignora cliques em links e botões de ação
+  document.querySelectorAll('tr.row-clickable').forEach(tr => {
+    tr.addEventListener('click', e => {
+      if (e.target.closest('a, button')) return;
+      window.location.href = tr.dataset.href;
+    });
   });
 });
 </script>

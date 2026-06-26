@@ -110,6 +110,13 @@
         <i class="bi bi-hand-thumbs-down me-1"></i> Desacordo
       </a>
       {% endif %}
+
+      {# — Insucesso na Entrega — #}
+      {% if not ct.insucesso_protocolo %}
+      <a href="{% url 'faturamento:cte_insucesso_entrega' ct.pk %}" class="btn btn-sm btn-outline-danger">
+        <i class="bi bi-truck me-1"></i> Insucesso na Entrega
+      </a>
+      {% endif %}
       {% endif %}
 
     </div>
@@ -168,6 +175,21 @@
     <div class="d-flex gap-4 flex-wrap">
       <div><span class="text-muted">Protocolo:</span> <code>{{ ct.desacordo_protocolo }}</code></div>
       <div><span class="text-muted">Motivo:</span> {{ ct.desacordo_descricao }}</div>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if ct.insucesso_protocolo %}
+  <div class="border rounded border-danger-subtle bg-danger-subtle py-2 px-3 mb-3 small">
+    <div class="d-flex align-items-center gap-2 mb-1">
+      <i class="bi bi-truck text-danger"></i>
+      <strong>Insucesso na Entrega registrado em {{ ct.insucesso_data|date:"d/m/Y H:i" }}</strong>
+    </div>
+    <div class="d-flex gap-4 flex-wrap">
+      <div><span class="text-muted">Protocolo:</span> <code>{{ ct.insucesso_protocolo }}</code></div>
+      <div><span class="text-muted">Motivo:</span> {{ ct.insucesso_motivo }}</div>
+      <div><span class="text-muted">Justificativa:</span> {{ ct.insucesso_justificativa }}</div>
+      <div><span class="text-muted">Chave NF-e:</span> <code>{{ ct.insucesso_chave_nfe }}</code></div>
     </div>
   </div>
   {% endif %}

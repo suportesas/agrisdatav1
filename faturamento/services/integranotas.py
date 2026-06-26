@@ -87,6 +87,12 @@ def _ie_info(obj) -> tuple:
     return '9', ''
 
 
+def _is_exterior(cliente) -> bool:
+    tipo = getattr(cliente, 'tipo_cliente', '') or ''
+    pais = (getattr(cliente, 'pais', '') or 'Brasil').strip()
+    return tipo == 'IMPORTADOR' or pais.lower() not in ('brasil', '')
+
+
 CRT_MAP = {
     'SIMPLES_NACIONAL': '1',
     'LUCRO_PRESUMIDO': '2',
@@ -1023,6 +1029,24 @@ class IntegranNotasClient:
             )
         return data
 
+    def insucesso_entrega_cte(self, chave: str, payload: dict) -> dict:
+        """Registra Insucesso na Entrega da Carga no CT-e (evento SEFAZ 610410)."""
+        resp = requests.post(
+            f'{self.base_url}/cte/insucesso-entrega',
+            json={'chave': chave, **payload},
+            headers=self._headers(),
+            timeout=self.TIMEOUT,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        if not data.get('sucesso'):
+            raise IntegranNotasError(
+                data.get('mensagem', 'Erro ao registrar insucesso na entrega'),
+                codigo=data.get('codigo'),
+                erros=data.get('erros', []),
+            )
+        return data
+
     def preview_cte(self, chave: str) -> dict:
         """Retorna o PDF preview do CT-e (antes ou depois da emissão)."""
         resp = requests.post(
@@ -1204,16 +1228,23 @@ class IntegranNotasClient:
         return {'icms': icms}
 
     def _build_parte_cte(self, cliente) -> dict:
-        doc = _digits(cliente.cnpj_cpf or '')
         parte: dict = {'razao_social': cliente.razao_social, 'nome': cliente.razao_social}
-        if len(doc) == 14:
-            parte['cnpj'] = doc
-        elif len(doc) == 11:
-            parte['cpf'] = doc
-        ind, ie_str = _ie_info(cliente)
-        parte['indicador_inscricao_estadual'] = ind
-        if ie_str:
-            parte['inscricao_estadual'] = ie_str
+        exterior = _is_exterior(cliente)
+
+        if exterior:
+            parte['indicador_inscricao_estadual'] = '9'
+            parte['cnpj'] = '00000000000000'
+        else:
+            doc = _digits(cliente.cnpj_cpf or '')
+            if len(doc) == 14:
+                parte['cnpj'] = doc
+            elif len(doc) == 11:
+                parte['cpf'] = doc
+            ind, ie_str = _ie_info(cliente)
+            parte['indicador_inscricao_estadual'] = ind
+            if ie_str:
+                parte['inscricao_estadual'] = ie_str
+
         endereco = (
             cliente.enderecos.filter(padrao=True).first()
             or cliente.enderecos.first()
@@ -1224,15 +1255,42 @@ class IntegranNotasClient:
                 'Cadastre um endereço antes de emitir o CT-e.',
                 codigo=None,
             )
-        parte['endereco'] = {
-            'logradouro': endereco.logradouro or '',
-            'numero': endereco.numero or 'S/N',
-            'bairro': endereco.bairro or '',
-            'codigo_municipio': (getattr(endereco, 'codigo_municipio', '') or '9999999'),
-            'nome_municipio': endereco.cidade or '',
-            'uf': endereco.uf or '',
-            'cep': _digits(endereco.cep or ''),
-        }
+
+        pais_cli = (getattr(cliente, 'pais', '') or 'Brasil').strip()
+        pais_end = (getattr(endereco, 'pais', '') or pais_cli or 'Brasil').strip()
+        is_ext_end = exterior or pais_end.lower() not in ('brasil', '')
+
+        if is_ext_end:
+            codigo_pais = (getattr(cliente, 'codigo_pais', '') or '').strip()
+            if not codigo_pais:
+                codigo_pais = PAIS_IBGE_MAP.get(pais_end.lower().strip(), '')
+            if not codigo_pais:
+                raise IntegranNotasError(
+                    f'País "{pais_end}" sem código IBGE válido. '
+                    'Preencha o campo "Cód. IBGE País" no cadastro do cliente.',
+                    codigo=None,
+                )
+            parte['endereco'] = {
+                'logradouro': endereco.logradouro or '',
+                'numero': endereco.numero or 'S/N',
+                'bairro': endereco.bairro or '',
+                'codigo_municipio': '9999999',
+                'nome_municipio': 'Exterior',
+                'uf': 'EX',
+                'cep': '00000000',
+                'codigo_pais': codigo_pais,
+                'nome_pais': pais_end,
+            }
+        else:
+            parte['endereco'] = {
+                'logradouro': endereco.logradouro or '',
+                'numero': endereco.numero or 'S/N',
+                'bairro': endereco.bairro or '',
+                'codigo_municipio': (getattr(endereco, 'codigo_municipio', '') or '9999999'),
+                'nome_municipio': endereco.cidade or '',
+                'uf': endereco.uf or '',
+                'cep': _digits(endereco.cep or ''),
+            }
         return parte
 
     def _build_tomador_cte(self, ct) -> dict:
@@ -1262,31 +1320,61 @@ class IntegranNotasClient:
             tomador = ct.tomador
             if not tomador:
                 return result
-            ind_tom, ie_tom = _ie_info(tomador)
-            result['indicador_inscricao_estadual'] = ind_tom
-            if ie_tom:
-                result['inscricao_estadual'] = ie_tom
-            doc = _digits(tomador.cnpj_cpf or '')
+            exterior_tom = _is_exterior(tomador)
+            if exterior_tom:
+                result['indicador_inscricao_estadual'] = '9'
+                result['cnpj'] = '00000000000000'
+            else:
+                ind_tom, ie_tom = _ie_info(tomador)
+                result['indicador_inscricao_estadual'] = ind_tom
+                if ie_tom:
+                    result['inscricao_estadual'] = ie_tom
+                doc = _digits(tomador.cnpj_cpf or '')
+                if len(doc) == 14:
+                    result['cnpj'] = doc
+                elif len(doc) == 11:
+                    result['cpf'] = doc
             result['razao_social'] = tomador.razao_social
             result['nome'] = tomador.razao_social
-            if len(doc) == 14:
-                result['cnpj'] = doc
-            elif len(doc) == 11:
-                result['cpf'] = doc
             endereco = (
                 tomador.enderecos.filter(padrao=True).first()
                 or tomador.enderecos.first()
             )
             if endereco:
-                result['endereco'] = {
-                    'logradouro': endereco.logradouro or '',
-                    'numero': endereco.numero or 'S/N',
-                    'bairro': endereco.bairro or '',
-                    'codigo_municipio': (getattr(endereco, 'codigo_municipio', '') or '9999999'),
-                    'nome_municipio': endereco.cidade or '',
-                    'uf': endereco.uf or '',
-                    'cep': _digits(endereco.cep or ''),
-                }
+                pais_cli = (getattr(tomador, 'pais', '') or 'Brasil').strip()
+                pais_end = (getattr(endereco, 'pais', '') or pais_cli or 'Brasil').strip()
+                is_ext_end = exterior_tom or pais_end.lower() not in ('brasil', '')
+                if is_ext_end:
+                    codigo_pais = (getattr(tomador, 'codigo_pais', '') or '').strip()
+                    if not codigo_pais:
+                        codigo_pais = PAIS_IBGE_MAP.get(pais_end.lower().strip(), '')
+                    if not codigo_pais:
+                        raise IntegranNotasError(
+                            f'País "{pais_end}" sem código IBGE válido. '
+                            'Preencha o campo "Cód. IBGE País" no cadastro do tomador.',
+                            codigo=None,
+                        )
+                    result['endereco'] = {
+                        'logradouro': endereco.logradouro or '',
+                        'numero': endereco.numero or 'S/N',
+                        'bairro': endereco.bairro or '',
+                        'codigo_municipio': '9999999',
+                        'nome_municipio': 'Exterior',
+                        'uf': 'EX',
+                        'cep': '00000000',
+                        'codigo_pais': codigo_pais,
+                        'nome_pais': pais_end,
+                    }
+                else:
+                    result['endereco'] = {
+                        'logradouro': endereco.logradouro or '',
+                        'numero': endereco.numero or 'S/N',
+                        'bairro': endereco.bairro or '',
+                        'codigo_municipio': (getattr(endereco, 'codigo_municipio', '') or '9999999'),
+                        'nome_municipio': endereco.cidade or '',
+                        'uf': endereco.uf or '',
+                        'cep': _digits(endereco.cep or ''),
+                    }
         return result
 
     def _build_modal_rodoviario_cte(self, ct) -> dict:

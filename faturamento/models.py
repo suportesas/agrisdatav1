@@ -1003,6 +1003,13 @@ class ConhecimentoTransporte(FaturamentoBaseModel):
     desacordo_protocolo = models.CharField('Protocolo do Desacordo', max_length=50, blank=True)
     desacordo_data      = models.DateTimeField('Data/Hora do Desacordo', null=True, blank=True)
 
+    # Insucesso na Entrega da Carga
+    insucesso_protocolo     = models.CharField('Protocolo Insucesso', max_length=50, blank=True)
+    insucesso_data          = models.DateTimeField('Data/Hora Insucesso', null=True, blank=True)
+    insucesso_motivo        = models.CharField('Motivo Insucesso', max_length=10, blank=True)
+    insucesso_justificativa = models.CharField('Justificativa Insucesso', max_length=255, blank=True)
+    insucesso_chave_nfe     = models.CharField('Chave NF-e Insucesso', max_length=44, blank=True)
+
     class Meta:
         verbose_name = 'Conhecimento de Transporte (CT-e)'
         verbose_name_plural = 'Conhecimentos de Transporte (CT-e)'

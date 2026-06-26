@@ -3459,6 +3459,93 @@ def cte_manifestar_desacordo(request, pk):
 
 
 @login_required
+def cte_insucesso_entrega(request, pk):
+    from .services.integranotas import IntegranNotasClient, IntegranNotasError
+    import re as _re
+    empresa = _get_empresa(request)
+    ct = get_object_or_404(ConhecimentoTransporte, pk=pk, empresa=empresa)
+    if ct.status != 'EMITIDO' or not ct.chave_acesso:
+        messages.error(request, 'Insucesso só pode ser registrado para CT-e autorizado.')
+        return redirect('faturamento:cte_detail', pk=pk)
+    if ct.insucesso_protocolo:
+        messages.info(request, 'Este CT-e já possui insucesso na entrega registrado.')
+        return redirect('faturamento:cte_detail', pk=pk)
+
+    MOTIVOS = [
+        ('01', '01 — Destinatário não encontrado'),
+        ('02', '02 — Recusa do destinatário'),
+        ('03', '03 — Endereço errado'),
+        ('04', '04 — Outros'),
+    ]
+
+    if request.method == 'POST':
+        data_hora      = request.POST.get('data_hora_tentativa', '').strip()
+        num_tentativas = request.POST.get('numero_tentativas', '1').strip()
+        motivo         = request.POST.get('motivo', '').strip()
+        justificativa  = request.POST.get('justificativa', '').strip()
+        latitude       = request.POST.get('latitude', '').strip()
+        longitude      = request.POST.get('longitude', '').strip()
+        chave_nfe      = request.POST.get('chave_nfe', '').strip()
+
+        erros = []
+        if not data_hora:
+            erros.append('Data e hora da tentativa são obrigatórios.')
+        if motivo not in [m[0] for m in MOTIVOS]:
+            erros.append('Selecione um motivo válido.')
+        if len(justificativa) < 15:
+            erros.append('A justificativa deve ter pelo menos 15 caracteres.')
+        if not _re.fullmatch(r'\d{44}', chave_nfe):
+            erros.append('Informe a chave da NF-e com exatamente 44 dígitos.')
+
+        ctx = {'ct': ct, 'motivos': MOTIVOS,
+               'data_hora_tentativa': data_hora, 'numero_tentativas': num_tentativas,
+               'motivo': motivo, 'justificativa': justificativa,
+               'latitude': latitude, 'longitude': longitude, 'chave_nfe': chave_nfe}
+        if erros:
+            for e in erros:
+                messages.error(request, e)
+            return render(request, 'faturamento/cte/insucesso_entrega_form.html', ctx)
+
+        payload = {
+            'data_hora_tentativa': data_hora,
+            'numero_tentativas': num_tentativas,
+            'motivo': motivo,
+            'justificativa': justificativa,
+            'chave_nfe': chave_nfe,
+        }
+        if latitude:
+            payload['latitude'] = latitude
+        if longitude:
+            payload['longitude'] = longitude
+
+        try:
+            config = empresa.configuracao_fiscal
+            client = IntegranNotasClient(token=config.get_token(), ambiente=config.ambiente_nfe)
+            resultado = client.insucesso_entrega_cte(ct.chave_acesso, payload)
+        except IntegranNotasError as exc:
+            messages.error(request, f'Erro [{exc.codigo}]: {exc}')
+            return render(request, 'faturamento/cte/insucesso_entrega_form.html', ctx)
+        except Exception as exc:
+            messages.error(request, f'Falha na comunicação: {exc}')
+            return render(request, 'faturamento/cte/insucesso_entrega_form.html', ctx)
+
+        ct.insucesso_protocolo     = resultado.get('protocolo', '') or resultado.get('numero_protocolo', '')
+        ct.insucesso_data          = timezone.now()
+        ct.insucesso_motivo        = motivo
+        ct.insucesso_justificativa = justificativa
+        ct.insucesso_chave_nfe     = chave_nfe
+        ct.save(update_fields=[
+            'insucesso_protocolo', 'insucesso_data',
+            'insucesso_motivo', 'insucesso_justificativa', 'insucesso_chave_nfe',
+        ])
+        messages.success(request, 'Insucesso na Entrega registrado com sucesso na SEFAZ.')
+        return redirect('faturamento:cte_detail', pk=pk)
+
+    return render(request, 'faturamento/cte/insucesso_entrega_form.html',
+                  {'ct': ct, 'motivos': MOTIVOS})
+
+
+@login_required
 def cte_preview(request, pk):
     """Abre o PDF preview do CT-e diretamente no browser."""
     from .services.integranotas import IntegranNotasClient, IntegranNotasError

@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load core_filters %}
 {% block title %}CC-e — CT-e {{ ct.numero }}/{{ ct.serie }}{% endblock %}
 {% block page_title %}Carta de Correção CT-e{% endblock %}
 
@@ -78,14 +79,20 @@
     <div class="card-header fw-semibold">Histórico de CC-e</div>
     <div class="card-body p-0">
       <table class="table table-sm mb-0">
-        <thead class="table-light"><tr><th>Seq.</th><th>Data</th><th>Protocolo</th><th>Texto</th></tr></thead>
+        <thead class="table-light"><tr><th>Seq.</th><th>Data</th><th>Protocolo</th><th>Texto</th><th></th></tr></thead>
         <tbody>
           {% for cc in cartas %}
           <tr>
             <td><span class="badge bg-secondary">{{ cc.sequencia }}</span></td>
             <td>{{ cc.criado_em|date:"d/m/Y H:i" }}</td>
             <td><code class="small">{{ cc.protocolo|default:"—" }}</code></td>
-            <td class="text-muted small">{{ cc.correcao|truncatechars:100 }}</td>
+            <td class="text-muted small">{{ cc.correcao|cce_resumo }}</td>
+            <td>
+              <a href="{% url 'faturamento:cte_cce_print' ct.pk cc.pk %}" target="_blank"
+                 class="btn btn-sm btn-outline-secondary py-0 px-2" title="Imprimir CC-e">
+                <i class="bi bi-printer"></i>
+              </a>
+            </td>
           </tr>
           {% endfor %}
         </tbody>
@@ -102,30 +109,36 @@
   const hiddenInput = document.getElementById('id_correcoes_json');
   const form = document.getElementById('form-correcoes');
 
-  // Grupos válidos conforme documentação IntegraNotas
+  // Grupos válidos para CC-e de CT-e (SEFAZ evento 110110)
   const GRUPOS = {
-    'ide': 'Identificação (ide)',
-    'emit': 'Emitente (emit)',
-    'dest': 'Destinatário (dest)',
-    'retirada': 'Retirada (retirada)',
-    'entrega': 'Entrega (entrega)',
-    'tomador': 'Tomador (tomador)',
-    'comp': 'Componentes (comp)',
-    'desc': 'Descrição (desc)',
-    'infadic': 'Informações Adicionais (infadic)',
+    'compl':   'Complemento (compl) — Observações',
+    'ide':     'Identificação (ide)',
+    'emit':    'Emitente (emit)',
+    'rem':     'Remetente (rem)',
+    'exped':   'Expedidor (exped)',
+    'receb':   'Recebedor (receb)',
+    'dest':    'Destinatário (dest)',
+    'toma3':   'Tomador (toma3)',
+    'toma4':   'Tomador Outros (toma4)',
+    'infCarga':'Informações da Carga (infCarga)',
+    'infAdic': 'Informações Adicionais (infAdic)',
+    'cobr':    'Cobrança (cobr)',
   };
 
-  // Campos por grupo (sugestoes para agilizar preenchimento)
+  // Campos por grupo (sugestões para agilizar preenchimento)
   const CAMPOS_POR_GRUPO = {
-    'ide': ['natOp', 'modelo', 'serie', 'nCT', 'dEmi', 'tpEmis'],
-    'emit': ['razao', 'nome', 'inscr', 'UF', 'CNPJ', 'CPF'],
-    'dest': ['razao', 'nome', 'inscr', 'UF', 'CNPJ', 'CPF'],
-    'retirada': ['razao', 'nome', 'CNPJ', 'CPF', 'inscr'],
-    'entrega': ['razao', 'nome', 'CNPJ', 'CPF', 'inscr'],
-    'tomador': ['razao', 'nome', 'CNPJ', 'CPF', 'inscr'],
-    'comp': ['nome', 'valor'],
-    'desc': ['texto'],
-    'infadic': ['Obs'],
+    'compl':    ['xObs', 'xCaracAd', 'xCaracSer', 'xEmi', 'destCalc'],
+    'ide':      ['natOp', 'CFOP', 'serie', 'nCT', 'dhEmi', 'tpServ'],
+    'emit':     ['xNome', 'xFant', 'IE', 'CNPJ'],
+    'rem':      ['xNome', 'IE', 'CNPJ', 'CPF', 'fone'],
+    'exped':    ['xNome', 'IE', 'CNPJ', 'CPF', 'fone'],
+    'receb':    ['xNome', 'IE', 'CNPJ', 'CPF', 'fone'],
+    'dest':     ['xNome', 'IE', 'CNPJ', 'CPF', 'fone'],
+    'toma3':    ['xNome', 'IE', 'CNPJ', 'CPF'],
+    'toma4':    ['xNome', 'IE', 'CNPJ', 'CPF'],
+    'infCarga': ['proPred', 'xOutCat', 'vCarga'],
+    'infAdic':  ['infCpl', 'infAdFisco'],
+    'cobr':     ['nFat', 'vOrig', 'vLiq'],
   };
 
   function criarLinha() {
@@ -219,7 +232,7 @@
           'valor_corrigido': valor,
         };
         if (indice) {
-          corr['indice_item'] = parseInt(indice);
+          corr['numero_item_grupo_corrigido'] = indice;
         }
         correcoes.push(corr);
       }

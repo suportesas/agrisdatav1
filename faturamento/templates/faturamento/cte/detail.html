@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load core_filters %}
 {% block page_title %}CT-e {{ ct.numero|default:"S/N" }}/{{ ct.serie }}{% endblock %}
 {% block content %}
 <div class="container-fluid mt-3 px-3 px-xl-4">
@@ -208,7 +209,13 @@
         <div><span class="text-muted">Data:</span> {{ cc.criado_em|date:"d/m/Y H:i" }}</div>
         {% if cc.protocolo %}<div><span class="text-muted">Protocolo:</span> <code>{{ cc.protocolo }}</code></div>{% endif %}
       </div>
-      <div class="text-muted mt-1">{{ cc.correcao }}</div>
+      <div class="text-muted mt-1">{{ cc.correcao|cce_resumo }}</div>
+      <div class="mt-1">
+        <a href="{% url 'faturamento:cte_cce_print' ct.pk cc.pk %}" target="_blank"
+           class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size:11px;">
+          <i class="bi bi-printer me-1"></i>Imprimir CC-e
+        </a>
+      </div>
     </div>
     {% endfor %}
   </div>

@@ -69,6 +69,7 @@ urlpatterns = [
     path('cte/<int:pk>/carta-correcao/', views.cte_carta_correcao, name='cte_carta_correcao'),
     path('cte/<int:pk>/desacordo/', views.cte_manifestar_desacordo, name='cte_manifestar_desacordo'),
     path('cte/<int:pk>/insucesso-entrega/', views.cte_insucesso_entrega, name='cte_insucesso_entrega'),
+    path('cte/<int:cte_pk>/cce/<int:cc_pk>/print/', views.cte_cce_print, name='cte_cce_print'),
     path('cte/<int:pk>/preview/', views.cte_preview, name='cte_preview'),
     path('cte/<int:pk>/clonar/', views.cte_clone, name='cte_clone'),
     path('cte/<int:pk>/xml/', views.cte_xml, name='cte_xml'),

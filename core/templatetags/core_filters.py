@@ -1,3 +1,5 @@
+import json as _json
+
 from django import template
 from django.template.defaultfilters import floatformat
 
@@ -21,3 +23,29 @@ def num_br(value, decimals=2):
         return floatformat(value, f'{int(decimals)}g')
     except (ValueError, TypeError):
         return ''
+
+
+@register.filter
+def cce_resumo(value):
+    """Formata JSON de correções CC-e em texto legível.
+
+    Entrada: '[{"grupo_corrigido":"compl","campo_corrigido":"xObs","valor_corrigido":"Texto"}]'
+    Saída:   'compl.xObs = "Texto"'
+    """
+    try:
+        correcoes = _json.loads(value or '[]')
+        if not isinstance(correcoes, list):
+            return value
+        partes = []
+        for c in correcoes:
+            grupo = c.get('grupo_corrigido', '')
+            campo = c.get('campo_corrigido', '')
+            valor = c.get('valor_corrigido', '')
+            item  = c.get('numero_item_grupo_corrigido', '')
+            chave = f'{grupo}.{campo}' if grupo else campo
+            if item:
+                chave = f'{chave}[{item}]'
+            partes.append(f'{chave} = "{valor}"')
+        return ' | '.join(partes) if partes else value
+    except Exception:
+        return value

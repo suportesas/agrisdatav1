@@ -984,12 +984,12 @@ class IntegranNotasClient:
                 }
             ]
         """
-        payload = {'correcoes': correcoes}
+        payload = {'chave': chave, 'correcoes': correcoes}
         if sequencia is not None:
             payload['sequencia'] = sequencia
 
         resp = requests.post(
-            f'{self.base_url}/cte/{chave}/carta-correcao',
+            f'{self.base_url}/cte/correcao',
             json=payload,
             headers=self._headers(),
             timeout=self.TIMEOUT,

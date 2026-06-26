@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CC-e CT-e {{ ct.numero }}/{{ ct.serie }} — Seq. {{ cc.sequencia }}</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; font-size: 11pt; color: #000; background: #fff; }
+
+  .page { max-width: 210mm; margin: 0 auto; padding: 15mm 15mm 10mm; }
+
+  /* Cabeçalho */
+  .header { border: 2px solid #000; display: flex; margin-bottom: 8px; }
+  .header-logo { width: 180px; padding: 10px; border-right: 1px solid #000; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 13pt; }
+  .header-center { flex: 1; padding: 8px 12px; border-right: 1px solid #000; }
+  .header-center .doc-title { font-size: 13pt; font-weight: bold; text-align: center; margin-bottom: 4px; }
+  .header-center .doc-subtitle { font-size: 9pt; text-align: center; color: #333; }
+  .header-right { width: 200px; padding: 8px 10px; font-size: 9pt; }
+
+  /* Seções */
+  .section { border: 1px solid #000; margin-bottom: 6px; }
+  .section-title { background: #e0e0e0; padding: 3px 8px; font-weight: bold; font-size: 9pt; border-bottom: 1px solid #000; text-transform: uppercase; }
+  .section-body { padding: 6px 8px; }
+
+  /* Grid de campos */
+  .grid { display: flex; flex-wrap: wrap; gap: 0; }
+  .field { padding: 4px 8px; }
+  .field .label { font-size: 7.5pt; color: #555; display: block; }
+  .field .value { font-size: 10pt; font-weight: bold; }
+  .field.w100 { width: 100%; }
+  .field.w50  { width: 50%; }
+  .field.w33  { width: 33.33%; }
+  .field.w25  { width: 25%; }
+  .field-sep { border-left: 1px solid #ccc; }
+
+  /* Tabela de correções */
+  table.correcoes { width: 100%; border-collapse: collapse; font-size: 10pt; }
+  table.correcoes th { background: #f0f0f0; border: 1px solid #999; padding: 5px 8px; text-align: left; font-size: 9pt; }
+  table.correcoes td { border: 1px solid #999; padding: 5px 8px; vertical-align: top; }
+  table.correcoes tr:nth-child(even) td { background: #fafafa; }
+
+  /* Rodapé */
+  .footer { margin-top: 10px; font-size: 8pt; color: #555; text-align: center; border-top: 1px solid #ccc; padding-top: 6px; }
+
+  /* Botão de impressão — escondido na impressão */
+  .print-bar { background: #f8f9fa; border-bottom: 1px solid #dee2e6; padding: 10px 20px; display: flex; gap: 10px; align-items: center; }
+  .print-bar button { background: #0d6efd; color: #fff; border: none; padding: 8px 20px; border-radius: 4px; font-size: 12px; cursor: pointer; }
+  .print-bar a { color: #666; text-decoration: none; font-size: 12px; }
+
+  @media print {
+    .print-bar { display: none; }
+    .page { padding: 10mm; }
+    body { font-size: 10pt; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Barra de impressão (oculta ao imprimir) -->
+<div class="print-bar">
+  <button onclick="window.print()">🖨 Imprimir / Salvar PDF</button>
+  <a href="javascript:history.back()">← Voltar</a>
+  <span style="color:#666;font-size:11px;">Use Ctrl+P ou clique em "Imprimir" para gerar o PDF</span>
+</div>
+
+<div class="page">
+
+  <!-- Cabeçalho -->
+  <div class="header">
+    <div class="header-logo">
+      {{ empresa.nome|upper }}
+    </div>
+    <div class="header-center">
+      <div class="doc-title">CARTA DE CORREÇÃO ELETRÔNICA — CC-e</div>
+      <div class="doc-subtitle">CT-e — Conhecimento de Transporte Eletrônico</div>
+      <div class="doc-subtitle" style="margin-top:4px;">Evento: 110110 — Carta de Correção</div>
+    </div>
+    <div class="header-right">
+      <div style="margin-bottom:4px;"><strong>Seq. CC-e:</strong> {{ cc.sequencia }}</div>
+      <div style="margin-bottom:4px;"><strong>Data:</strong> {{ cc.criado_em|date:"d/m/Y" }}</div>
+      <div style="margin-bottom:4px;"><strong>Hora:</strong> {{ cc.criado_em|date:"H:i" }}</div>
+      {% if cc.protocolo %}
+      <div><strong>Protocolo:</strong><br><span style="font-size:8pt;">{{ cc.protocolo }}</span></div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Dados do Emitente -->
+  <div class="section">
+    <div class="section-title">Emitente</div>
+    <div class="section-body grid">
+      <div class="field w50">
+        <span class="label">Razão Social</span>
+        <span class="value">{{ empresa.nome }}</span>
+      </div>
+      <div class="field w25 field-sep">
+        <span class="label">CNPJ</span>
+        <span class="value">{{ empresa.cnpj }}</span>
+      </div>
+      <div class="field w25 field-sep">
+        <span class="label">IE</span>
+        <span class="value">{{ empresa.inscricao_estadual|default:"—" }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dados do CT-e -->
+  <div class="section">
+    <div class="section-title">Dados do CT-e Corrigido</div>
+    <div class="section-body grid">
+      <div class="field w25">
+        <span class="label">Número CT-e</span>
+        <span class="value">{{ ct.numero|stringformat:"09d" }}</span>
+      </div>
+      <div class="field w25 field-sep">
+        <span class="label">Série</span>
+        <span class="value">{{ ct.serie }}</span>
+      </div>
+      <div class="field w25 field-sep">
+        <span class="label">Data de Emissão</span>
+        <span class="value">{{ ct.data_emissao|date:"d/m/Y" }}</span>
+      </div>
+      <div class="field w25 field-sep">
+        <span class="label">CFOP</span>
+        <span class="value">{{ ct.cfop }}</span>
+      </div>
+      <div class="field w100" style="padding-top:0;">
+        <span class="label">Chave de Acesso</span>
+        <span class="value" style="font-size:9pt;letter-spacing:1px;">{{ ct.chave_acesso }}</span>
+      </div>
+      {% if ct.protocolo %}
+      <div class="field w50">
+        <span class="label">Protocolo de Autorização CT-e</span>
+        <span class="value">{{ ct.protocolo }}</span>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Remetente / Destinatário -->
+  <div class="section">
+    <div class="section-title">Partes</div>
+    <div class="section-body grid">
+      <div class="field w50">
+        <span class="label">Remetente</span>
+        <span class="value">{{ ct.remetente.razao_social }}</span>
+      </div>
+      <div class="field w50 field-sep">
+        <span class="label">Destinatário</span>
+        <span class="value">{{ ct.destinatario.razao_social }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Correções -->
+  <div class="section">
+    <div class="section-title">Correções</div>
+    <div class="section-body">
+      {% if correcoes %}
+      <table class="correcoes">
+        <thead>
+          <tr>
+            <th style="width:5%">#</th>
+            <th style="width:20%">Grupo</th>
+            <th style="width:25%">Campo</th>
+            <th style="width:10%">N° Item</th>
+            <th>Novo Valor</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in correcoes %}
+          <tr>
+            <td style="text-align:center;">{{ forloop.counter }}</td>
+            <td><code>{{ c.grupo_corrigido|default:"—" }}</code></td>
+            <td><code>{{ c.campo_corrigido|default:"—" }}</code></td>
+            <td style="text-align:center;">{{ c.numero_item_grupo_corrigido|default:"—" }}</td>
+            <td><strong>{{ c.valor_corrigido|default:"—" }}</strong></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <p style="color:#666;">Sem detalhes de correção disponíveis.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Protocolo de autorização -->
+  {% if cc.protocolo %}
+  <div class="section">
+    <div class="section-title">Autorização SEFAZ</div>
+    <div class="section-body grid">
+      <div class="field w50">
+        <span class="label">Protocolo de Registro</span>
+        <span class="value">{{ cc.protocolo }}</span>
+      </div>
+      <div class="field w25 field-sep">
+        <span class="label">Data / Hora Registro</span>
+        <span class="value">{{ cc.criado_em|date:"d/m/Y H:i" }}</span>
+      </div>
+      <div class="field w25 field-sep">
+        <span class="label">Código do Evento</span>
+        <span class="value">110110</span>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Assinaturas -->
+  <div style="margin-top:20px; display:flex; gap:30px;">
+    <div style="flex:1; border-top:1px solid #000; padding-top:6px; text-align:center; font-size:9pt;">
+      Emitente<br>{{ empresa.nome }}
+    </div>
+    <div style="flex:1; border-top:1px solid #000; padding-top:6px; text-align:center; font-size:9pt;">
+      Destinatário<br>{{ ct.destinatario.razao_social }}
+    </div>
+  </div>
+
+  <div class="footer">
+    Documento auxiliar da Carta de Correção Eletrônica — A CC-e não pode ser utilizada para alterar o valor do CT-e, natureza da operação, remetente, destinatário ou data de emissão.
+  </div>
+
+</div>
+
+</body>
+</html>

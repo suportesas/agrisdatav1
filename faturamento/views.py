@@ -3339,14 +3339,10 @@ def cte_carta_correcao(request, pk):
                     'proxima_sequencia': proxima_sequencia,
                     'sequencia': sequencia_manual_raw,
                 })
-            # Limpa indice_item se vazio
-            if not str(corr.get('indice_item', '')).strip():
-                corr.pop('indice_item', None)
-            else:
-                try:
-                    corr['indice_item'] = int(corr['indice_item'])
-                except ValueError:
-                    corr['indice_item'] = None
+            # Limpa numero_item_grupo_corrigido se vazio
+            if not str(corr.get('numero_item_grupo_corrigido', '')).strip():
+                corr.pop('numero_item_grupo_corrigido', None)
+                corr.pop('indice_item', None)  # compatibilidade com JSON antigo
 
         try:
             config = empresa.configuracao_fiscal
@@ -3414,6 +3410,25 @@ def cte_carta_correcao(request, pk):
         'cartas': cartas,
         'proxima_sequencia': proxima_sequencia,
         'sequencia': '',
+    })
+
+
+@login_required
+def cte_cce_print(request, cte_pk, cc_pk):
+    """Página de impressão da Carta de Correção (CC-e) do CT-e."""
+    import json as _json
+    empresa = _get_empresa(request)
+    ct = get_object_or_404(ConhecimentoTransporte, pk=cte_pk, empresa=empresa)
+    cc = get_object_or_404(CartaCorrecaoCTe, pk=cc_pk, cte=ct)
+    try:
+        correcoes = _json.loads(cc.correcao or '[]')
+    except Exception:
+        correcoes = []
+    return render(request, 'faturamento/cte/cce_print.html', {
+        'ct': ct,
+        'cc': cc,
+        'correcoes': correcoes,
+        'empresa': empresa,
     })
 
 

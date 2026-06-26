@@ -26,7 +26,11 @@
       "Bash(python3 -c \"import sys,base64; print\\(base64.b64decode\\(sys.stdin.read\\(\\)\\).decode\\(\\)\\)\")",
       "Bash(python manage.py makemigrations produtos)",
       "PowerShell(& \"c:\\\\erp_agricola_novo\\\\venv\\\\Scripts\\\\python.exe\" \"c:\\\\erp_agricola_novo\\\\manage.py\" makemigrations produtos 2>&1)",
-      "PowerShell(& \"c:\\\\erp_agricola_novo\\\\venv\\\\Scripts\\\\python.exe\" \"c:\\\\erp_agricola_novo\\\\manage.py\" migrate 2>&1)"
+      "PowerShell(& \"c:\\\\erp_agricola_novo\\\\venv\\\\Scripts\\\\python.exe\" \"c:\\\\erp_agricola_novo\\\\manage.py\" migrate 2>&1)",
+      "Bash(python manage.py migrate drawback --run-syncdb)",
+      "Bash(python -m django --version)",
+      "Bash(py -m django --version)",
+      "PowerShell(& \"c:\\\\erp_agricola_novo\\\\venv\\\\Scripts\\\\python.exe\" -c \"import django; print\\(django.__version__\\)\")"
     ]
   }
 }

@@ -1,0 +1,338 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}AC {{ ac.numero_ac }} — Drawback{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+  <!-- Cabeçalho -->
+  <div class="d-flex justify-content-between align-items-start mb-4 flex-wrap gap-2">
+    <div class="d-flex align-items-center gap-3">
+      <a href="{% url 'drawback:dashboard' %}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i>
+      </a>
+      <div>
+        <h1 class="h4 fw-bold mb-0" style="color:var(--color-primary)">
+          AC {{ ac.numero_ac }}
+          <span class="badge ms-2
+            {% if ac.status == 'ATIVO' %}bg-success
+            {% elif ac.status == 'VENCIDO' %}bg-danger
+            {% else %}bg-secondary{% endif %} fs-6">
+            {{ ac.get_status_display }}
+          </span>
+        </h1>
+        <small class="text-muted">
+          {{ ac.get_tipo_display }} &bull;
+          Vigência: {{ ac.data_inicio|date:"d/m/Y" }} a {{ ac.data_fim_efetiva|date:"d/m/Y" }}
+          {% if ac.data_prorrogacao %}<span class="badge bg-info text-dark ms-1">Prorrogado</span>{% endif %}
+          {% if ac.nivel_alerta %}
+          &bull; <span class="text-{% if ac.nivel_alerta == 'critico' %}danger{% elif ac.nivel_alerta == 'danger' %}warning{% else %}warning{% endif %} fw-semibold">
+            <i class="bi bi-clock"></i> {{ ac.dias_para_vencer }} dias para vencer
+          </span>
+          {% endif %}
+        </small>
+      </div>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      <a href="{% url 'drawback:ac_edit' ac.pk %}" class="btn btn-sm btn-outline-primary">
+        <i class="bi bi-pencil me-1"></i>Editar AC
+      </a>
+      <a href="{% url 'drawback:entrada_create' ac.pk %}" class="btn btn-sm btn-success">
+        <i class="bi bi-box-arrow-in-down me-1"></i>Nova Entrada
+      </a>
+      <a href="{% url 'drawback:saida_create' ac.pk %}" class="btn btn-sm btn-warning">
+        <i class="bi bi-box-arrow-up me-1"></i>Nova Saída
+      </a>
+      <div class="dropdown">
+        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+          <i class="bi bi-file-earmark-excel me-1"></i>XLSX
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end">
+          <li><h6 class="dropdown-header">Importar planilha</h6></li>
+          <li><a class="dropdown-item" href="{% url 'drawback:importar_xlsx' ac.pk %}">
+            <i class="bi bi-upload me-2"></i>Importar Entradas ou Saídas
+          </a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><h6 class="dropdown-header">Baixar modelo</h6></li>
+          <li><a class="dropdown-item" href="{% url 'drawback:download_modelo_xlsx' ac.pk 'entradas' %}">
+            <i class="bi bi-download me-2"></i>Modelo de Entradas
+          </a></li>
+          <li><a class="dropdown-item" href="{% url 'drawback:download_modelo_xlsx' ac.pk 'saidas' %}">
+            <i class="bi bi-download me-2"></i>Modelo de Saídas
+          </a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><h6 class="dropdown-header">Relatório</h6></li>
+          <li><a class="dropdown-item" href="{% url 'drawback:relatorio' ac.pk %}">
+            <i class="bi bi-printer me-2"></i>Ver Relatório (PDF)
+          </a></li>
+          <li><a class="dropdown-item" href="{% url 'drawback:relatorio_xlsx' ac.pk %}">
+            <i class="bi bi-file-earmark-excel me-2"></i>Exportar Relatório XLSX
+          </a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Abas -->
+  <ul class="nav nav-tabs mb-4" id="acTabs" role="tablist">
+    <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#resumo">
+      <i class="bi bi-speedometer2 me-1"></i>Resumo
+    </a></li>
+    <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#entradas">
+      <i class="bi bi-box-arrow-in-down me-1"></i>Entradas
+      <span class="badge bg-success ms-1">{{ entradas|length }}</span>
+    </a></li>
+    <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#saidas">
+      <i class="bi bi-box-arrow-up me-1"></i>Saídas
+      <span class="badge bg-warning text-dark ms-1">{{ saidas|length }}</span>
+    </a></li>
+    <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#historico">
+      <i class="bi bi-clock-history me-1"></i>Anulados
+      <span class="badge bg-secondary ms-1">{{ entradas_anuladas|length|add:saidas_anuladas|length }}</span>
+    </a></li>
+  </ul>
+
+  <div class="tab-content">
+
+    <!-- ABA RESUMO -->
+    <div class="tab-pane fade show active" id="resumo">
+      {% for p in produtos %}
+      {% with comprado=p.quantidade_comprada exportado=p.quantidade_exportada saldo_c=p.saldo_compra saldo_e=p.saldo_exportacao pct=p.percentual_cumprido %}
+      <div class="card mb-3" style="border-radius:var(--radius-card)">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-baseline mb-3">
+            <h5 class="fw-bold mb-0">{{ p.produto.nome }}</h5>
+            <span class="text-muted small">{{ p.descricao_mercadoria }} &bull; NCM {{ p.ncm }} &bull; {{ p.unidade_medida.sigla }}</span>
+          </div>
+          <div class="row g-3 mb-3">
+            <div class="col-6 col-md-2">
+              <div class="text-center p-3 rounded" style="background:#F3F4F6">
+                <div class="small text-muted">Autorizado</div>
+                <div class="fs-5 fw-bold">{{ p.quantidade_autorizada|floatformat:3|intcomma }}</div>
+              </div>
+            </div>
+            <div class="col-6 col-md-2">
+              <div class="text-center p-3 rounded" style="background:#EDE9FE">
+                <div class="small text-muted">Comprado</div>
+                <div class="fs-5 fw-bold" style="color:var(--color-primary)">{{ comprado|floatformat:3|intcomma }}</div>
+              </div>
+            </div>
+            <div class="col-6 col-md-2">
+              <div class="text-center p-3 rounded" style="background:{% if saldo_c <= 0 %}#FEE2E2{% else %}#F0FDF4{% endif %}">
+                <div class="small text-muted">Saldo Compra</div>
+                <div class="fs-5 fw-bold {% if saldo_c <= 0 %}text-danger{% else %}text-success{% endif %}">
+                  {{ saldo_c|floatformat:3|intcomma }}
+                </div>
+              </div>
+            </div>
+            <div class="col-6 col-md-2">
+              <div class="text-center p-3 rounded" style="background:#ECFDF5">
+                <div class="small text-muted">Exportado</div>
+                <div class="fs-5 fw-bold text-success">{{ exportado|floatformat:3|intcomma }}</div>
+              </div>
+            </div>
+            <div class="col-6 col-md-2">
+              <div class="text-center p-3 rounded" style="background:{% if saldo_e < 0 %}#FEE2E2{% else %}#FFF9C4{% endif %}">
+                <div class="small text-muted">Saldo p/ Exportar</div>
+                <div class="fs-5 fw-bold {% if saldo_e < 0 %}text-danger{% else %}text-warning{% endif %}">
+                  {{ saldo_e|floatformat:3|intcomma }}
+                </div>
+              </div>
+            </div>
+            <div class="col-6 col-md-2">
+              <div class="text-center p-3 rounded" style="background:{% if pct >= 100 %}#ECFDF5{% else %}#FFF9C4{% endif %}">
+                <div class="small text-muted">% Cumprido</div>
+                <div class="fs-5 fw-bold {% if pct >= 100 %}text-success{% else %}text-warning{% endif %}">{{ pct }}%</div>
+              </div>
+            </div>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <div class="flex-grow-1">
+              <div class="progress" style="height:12px;border-radius:6px">
+                <div class="progress-bar {% if pct >= 100 %}bg-success{% elif pct >= 60 %}bg-primary{% else %}bg-warning{% endif %}"
+                     style="width:{% if pct > 100 %}100{% else %}{{ pct }}{% endif %}%"></div>
+              </div>
+            </div>
+            <small class="fw-semibold">{{ pct }}% de {{ p.quantidade_minima_export|floatformat:3|intcomma }} {{ p.unidade_medida.sigla }}</small>
+          </div>
+        </div>
+      </div>
+      {% endwith %}
+      {% endfor %}
+    </div>
+
+    <!-- ABA ENTRADAS -->
+    <div class="tab-pane fade" id="entradas">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle">
+          <thead class="table-light">
+            <tr>
+              <th>Data Recebimento</th><th>Tipo</th><th>Fornecedor</th>
+              <th>NF</th><th>Produto</th><th class="text-end">Quantidade</th>
+              <th class="text-end">Valor Unit R$</th><th>Origem</th><th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for e in entradas %}
+            <tr>
+              <td>{{ e.data_recebimento|date:"d/m/Y" }}</td>
+              <td>
+                <span class="badge {% if e.tipo_compra == 'IMPORTACAO' %}bg-info text-dark{% else %}bg-primary{% endif %}">
+                  {{ e.get_tipo_compra_display }}
+                </span>
+              </td>
+              <td>{{ e.fornecedor|default:"—" }}</td>
+              <td>{{ e.numero_nf }}{% if e.serie_nf %}/{{ e.serie_nf }}{% endif %}</td>
+              <td>{{ e.drawback_produto.produto.nome }}</td>
+              <td class="text-end fw-semibold">{{ e.quantidade|floatformat:3|intcomma }} {{ e.drawback_produto.unidade_medida.sigla }}</td>
+              <td class="text-end">{% if e.valor_unitario %}R$ {{ e.valor_unitario|floatformat:4|intcomma }}{% else %}—{% endif %}</td>
+              <td>
+                <span class="badge {% if e.retroativo %}bg-warning text-dark{% else %}bg-success{% endif %}">
+                  {% if e.retroativo %}Retroativo{% else %}Normal{% endif %}
+                </span>
+                <span class="badge bg-secondary ms-1">{{ e.get_origem_display }}</span>
+              </td>
+              <td>
+                <button class="btn btn-sm btn-outline-danger" data-bs-toggle="modal"
+                        data-bs-target="#modalAnularEntrada{{ e.pk }}">
+                  <i class="bi bi-x-circle"></i>
+                </button>
+              </td>
+            </tr>
+            <!-- Modal anular -->
+            <div class="modal fade" id="modalAnularEntrada{{ e.pk }}" tabindex="-1">
+              <div class="modal-dialog modal-sm">
+                <div class="modal-content">
+                  <div class="modal-header"><h5 class="modal-title">Anular Entrada</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                  </div>
+                  <form method="post" action="{% url 'drawback:entrada_anular' e.pk %}">
+                    {% csrf_token %}
+                    <div class="modal-body">
+                      <p class="small">NF {{ e.numero_nf }} — {{ e.quantidade|floatformat:3 }} {{ e.drawback_produto.unidade_medida.sigla }}</p>
+                      <label class="form-label fw-semibold">Motivo <span class="text-danger">*</span></label>
+                      <textarea name="motivo_anulacao" class="form-control" rows="3" required></textarea>
+                    </div>
+                    <div class="modal-footer">
+                      <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                      <button type="submit" class="btn btn-sm btn-danger">Anular</button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+            {% empty %}
+            <tr><td colspan="9" class="text-center text-muted py-4">Nenhuma entrada registrada.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ABA SAÍDAS -->
+    <div class="tab-pane fade" id="saidas">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle">
+          <thead class="table-light">
+            <tr>
+              <th>Data Embarque</th><th>Cliente</th><th>NF-e</th>
+              <th>RE</th><th>DUE</th><th>Produto</th>
+              <th class="text-end">Quantidade</th><th class="text-end">FOB USD</th>
+              <th>Origem</th><th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for s in saidas %}
+            <tr>
+              <td>{{ s.data_embarque|date:"d/m/Y" }}</td>
+              <td>{{ s.cliente|default:"—" }}</td>
+              <td>{{ s.numero_nfe|default:"—" }}</td>
+              <td>{{ s.numero_re|default:"—" }}</td>
+              <td>{{ s.numero_due|default:"—" }}</td>
+              <td>{{ s.drawback_produto.produto.nome }}</td>
+              <td class="text-end fw-semibold">{{ s.quantidade|floatformat:3|intcomma }} {{ s.drawback_produto.unidade_medida.sigla }}</td>
+              <td class="text-end">{% if s.valor_fob_usd %}USD {{ s.valor_fob_usd|floatformat:2|intcomma }}{% else %}—{% endif %}</td>
+              <td>
+                <span class="badge {% if s.retroativo %}bg-warning text-dark{% else %}bg-success{% endif %}">
+                  {% if s.retroativo %}Retroativo{% else %}Normal{% endif %}
+                </span>
+              </td>
+              <td>
+                <button class="btn btn-sm btn-outline-danger" data-bs-toggle="modal"
+                        data-bs-target="#modalAnularSaida{{ s.pk }}">
+                  <i class="bi bi-x-circle"></i>
+                </button>
+              </td>
+            </tr>
+            <div class="modal fade" id="modalAnularSaida{{ s.pk }}" tabindex="-1">
+              <div class="modal-dialog modal-sm">
+                <div class="modal-content">
+                  <div class="modal-header"><h5 class="modal-title">Anular Saída</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                  </div>
+                  <form method="post" action="{% url 'drawback:saida_anular' s.pk %}">
+                    {% csrf_token %}
+                    <div class="modal-body">
+                      <p class="small">{{ s.numero_nfe|default:s.numero_re|default:"—" }} — {{ s.quantidade|floatformat:3 }} {{ s.drawback_produto.unidade_medida.sigla }}</p>
+                      <label class="form-label fw-semibold">Motivo <span class="text-danger">*</span></label>
+                      <textarea name="motivo_anulacao" class="form-control" rows="3" required></textarea>
+                    </div>
+                    <div class="modal-footer">
+                      <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                      <button type="submit" class="btn btn-sm btn-danger">Anular</button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+            {% empty %}
+            <tr><td colspan="10" class="text-center text-muted py-4">Nenhuma saída registrada.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ABA HISTÓRICO / ANULADOS -->
+    <div class="tab-pane fade" id="historico">
+      {% if entradas_anuladas %}
+      <h6 class="text-muted mb-2">Entradas Anuladas</h6>
+      <div class="table-responsive mb-4">
+        <table class="table table-sm table-hover text-muted">
+          <thead class="table-light"><tr><th>Data</th><th>NF</th><th>Produto</th><th>Qtd</th><th>Motivo</th></tr></thead>
+          <tbody>
+            {% for e in entradas_anuladas %}
+            <tr><td>{{ e.data_recebimento|date:"d/m/Y" }}</td><td>{{ e.numero_nf }}</td>
+              <td>{{ e.drawback_produto.produto.nome }}</td>
+              <td>{{ e.quantidade|floatformat:3 }}</td>
+              <td>{{ e.motivo_anulacao }}</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% endif %}
+      {% if saidas_anuladas %}
+      <h6 class="text-muted mb-2">Saídas Anuladas</h6>
+      <div class="table-responsive">
+        <table class="table table-sm table-hover text-muted">
+          <thead class="table-light"><tr><th>Data</th><th>NF-e</th><th>Produto</th><th>Qtd</th><th>Motivo</th></tr></thead>
+          <tbody>
+            {% for s in saidas_anuladas %}
+            <tr><td>{{ s.data_embarque|date:"d/m/Y" }}</td><td>{{ s.numero_nfe|default:"—" }}</td>
+              <td>{{ s.drawback_produto.produto.nome }}</td>
+              <td>{{ s.quantidade|floatformat:3 }}</td>
+              <td>{{ s.motivo_anulacao }}</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% endif %}
+      {% if not entradas_anuladas and not saidas_anuladas %}
+      <p class="text-muted text-center py-4">Nenhum registro anulado.</p>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+{% endblock %}

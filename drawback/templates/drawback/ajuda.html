@@ -1,0 +1,428 @@
+{% extends "base.html" %}
+
+{% block title %}Ajuda — Drawback{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width:900px">
+
+  <!-- Cabeçalho -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h1 class="h3 fw-bold mb-0" style="color:var(--color-primary)">
+        <i class="bi bi-question-circle me-2"></i>Como usar o módulo de Drawback
+      </h1>
+      <p class="text-muted small mb-0">Guia passo a passo para controle do Ato Concessório</p>
+    </div>
+    <a href="{% url 'drawback:dashboard' %}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left me-1"></i>Voltar ao painel
+    </a>
+  </div>
+
+  <!-- O que é Drawback -->
+  <div class="card mb-4 border-0 shadow-sm" style="border-radius:var(--radius-card)">
+    <div class="card-body p-4">
+      <h5 class="fw-bold mb-3" style="color:var(--color-primary)">
+        <i class="bi bi-info-circle me-2"></i>O que é Drawback?
+      </h5>
+      <p class="mb-2">
+        O <strong>Drawback</strong> é um regime aduaneiro especial (Lei 8.402/92) que suspende ou isenta
+        tributos federais (II, IPI, PIS, COFINS) na compra de insumos — importados ou do mercado interno —
+        utilizados na fabricação de produtos exportados.
+      </p>
+      <p class="mb-0 text-muted">
+        O <strong>Ato Concessório (AC)</strong> é o documento emitido pelo MDIC que autoriza o benefício,
+        define os produtos, quantidades e o prazo de vigência (geralmente 2 anos).
+        Para manter o benefício, a empresa precisa comprovar a exportação dentro do prazo.
+      </p>
+    </div>
+  </div>
+
+  <!-- Fluxo geral -->
+  <div class="card mb-4 border-0 shadow-sm" style="border-radius:var(--radius-card)">
+    <div class="card-body p-4">
+      <h5 class="fw-bold mb-4" style="color:var(--color-primary)">
+        <i class="bi bi-diagram-3 me-2"></i>Fluxo de trabalho
+      </h5>
+      <div class="row g-0 align-items-stretch">
+
+        <div class="col-12 col-md text-center px-2 mb-3 mb-md-0">
+          <div class="rounded-3 p-3 h-100 d-flex flex-column align-items-center justify-content-center"
+               style="background:#ede9fe">
+            <div class="rounded-circle d-flex align-items-center justify-content-center mb-2"
+                 style="width:44px;height:44px;background:var(--color-primary)">
+              <i class="bi bi-file-earmark-text text-white fs-5"></i>
+            </div>
+            <div class="fw-semibold small">Cadastrar AC</div>
+            <div class="text-muted" style="font-size:.78rem">número, datas, tipo</div>
+          </div>
+        </div>
+        <div class="col-auto d-none d-md-flex align-items-center px-1 text-muted">
+          <i class="bi bi-chevron-right fs-5"></i>
+        </div>
+
+        <div class="col-12 col-md text-center px-2 mb-3 mb-md-0">
+          <div class="rounded-3 p-3 h-100 d-flex flex-column align-items-center justify-content-center"
+               style="background:#e0f2fe">
+            <div class="rounded-circle d-flex align-items-center justify-content-center mb-2"
+                 style="width:44px;height:44px;background:#0ea5e9">
+              <i class="bi bi-boxes text-white fs-5"></i>
+            </div>
+            <div class="fw-semibold small">Cadastrar produtos</div>
+            <div class="text-muted" style="font-size:.78rem">qtd autorizada + mínimo de exportação</div>
+          </div>
+        </div>
+        <div class="col-auto d-none d-md-flex align-items-center px-1 text-muted">
+          <i class="bi bi-chevron-right fs-5"></i>
+        </div>
+
+        <div class="col-12 col-md text-center px-2 mb-3 mb-md-0">
+          <div class="rounded-3 p-3 h-100 d-flex flex-column align-items-center justify-content-center"
+               style="background:#fef9c3">
+            <div class="rounded-circle d-flex align-items-center justify-content-center mb-2"
+                 style="width:44px;height:44px;background:#ca8a04">
+              <i class="bi bi-file-earmark-excel text-white fs-5"></i>
+            </div>
+            <div class="fw-semibold small">Regularizar retroativo</div>
+            <div class="text-muted" style="font-size:.78rem">importar planilha de 2025</div>
+          </div>
+        </div>
+        <div class="col-auto d-none d-md-flex align-items-center px-1 text-muted">
+          <i class="bi bi-chevron-right fs-5"></i>
+        </div>
+
+        <div class="col-12 col-md text-center px-2 mb-3 mb-md-0">
+          <div class="rounded-3 p-3 h-100 d-flex flex-column align-items-center justify-content-center"
+               style="background:#dcfce7">
+            <div class="rounded-circle d-flex align-items-center justify-content-center mb-2"
+                 style="width:44px;height:44px;background:#16a34a">
+              <i class="bi bi-arrow-left-right text-white fs-5"></i>
+            </div>
+            <div class="fw-semibold small">Operação normal</div>
+            <div class="text-muted" style="font-size:.78rem">entradas e saídas contínuas</div>
+          </div>
+        </div>
+        <div class="col-auto d-none d-md-flex align-items-center px-1 text-muted">
+          <i class="bi bi-chevron-right fs-5"></i>
+        </div>
+
+        <div class="col-12 col-md text-center px-2">
+          <div class="rounded-3 p-3 h-100 d-flex flex-column align-items-center justify-content-center"
+               style="background:#fee2e2">
+            <div class="rounded-circle d-flex align-items-center justify-content-center mb-2"
+                 style="width:44px;height:44px;background:#dc2626">
+              <i class="bi bi-bar-chart text-white fs-5"></i>
+            </div>
+            <div class="fw-semibold small">Monitorar saldo</div>
+            <div class="text-muted" style="font-size:.78rem">alertas de vencimento e cumprimento</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Passo 1 -->
+  <div class="card mb-3 border-0 shadow-sm" style="border-radius:var(--radius-card)">
+    <div class="card-header bg-white border-0 py-3 d-flex align-items-center" style="border-radius:var(--radius-card) var(--radius-card) 0 0">
+      <span class="badge rounded-pill me-2 fs-6" style="background:var(--color-primary)">1</span>
+      <h6 class="fw-bold mb-0">Cadastrar o Ato Concessório (AC)</h6>
+    </div>
+    <div class="card-body pb-4">
+      <ol class="mb-3">
+        <li>Clique em <strong>"Novo AC"</strong> no painel principal.</li>
+        <li>Informe o <strong>Número do AC</strong> exatamente como aparece no documento do MDIC (ex: <code>23/0001234-0</code>).</li>
+        <li>Selecione o <strong>Tipo</strong>: normalmente <em>Suspensão</em> (tributos suspensos na compra, regularizados ao exportar).</li>
+        <li>Preencha as <strong>datas de início e vencimento</strong>. Se houve prorrogação, informe a data de prorrogação.</li>
+        <li>Adicione cada <strong>produto autorizado</strong> com a quantidade total autorizada pelo MDIC e a quantidade mínima de exportação exigida.</li>
+      </ol>
+      <div class="alert alert-info py-2 mb-0" style="font-size:.875rem">
+        <i class="bi bi-info-circle me-1"></i>
+        <strong>NCM:</strong> se o produto já tiver NCM cadastrado, ele é preenchido automaticamente. Você pode corrigir se a descrição no AC for diferente.
+      </div>
+    </div>
+  </div>
+
+  <!-- Passo 2 — Importação XLSX -->
+  <div class="card mb-3 border-0 shadow-sm" id="importar-xlsx" style="border-radius:var(--radius-card)">
+    <div class="card-header bg-white border-0 py-3 d-flex align-items-center" style="border-radius:var(--radius-card) var(--radius-card) 0 0">
+      <span class="badge rounded-pill me-2 fs-6" style="background:#ca8a04">2</span>
+      <h6 class="fw-bold mb-0">Regularizar lançamentos retroativos via XLSX (ex: 2025)</h6>
+    </div>
+    <div class="card-body pb-4">
+      <p class="mb-3">
+        Se você já tem entradas de insumos e exportações em uma planilha manual que ainda não foram lançadas no ERP,
+        use a importação XLSX para regularizar esses dados de uma só vez.
+      </p>
+
+      <h6 class="fw-semibold mb-2">Como fazer:</h6>
+      <ol class="mb-3">
+        <li>Abra o AC desejado e clique em <strong>"Importar XLSX"</strong>.</li>
+        <li>Baixe o <strong>modelo colorido</strong> (botões "Modelo de Entradas" e "Modelo de Saídas").</li>
+        <li>Preencha a aba <em>Entradas</em> com as compras de insumos e a aba <em>Saídas</em> com as exportações.</li>
+        <li>Salve o arquivo e faça o upload no campo de importação.</li>
+        <li>O sistema mostra uma <strong>prévia com validação linha a linha</strong> — linhas vermelhas indicam erros a corrigir.</li>
+        <li>Após corrigir erros, confirme a importação. Os registros são salvos com a marcação <em>"Retroativo"</em>.</li>
+      </ol>
+
+      <div class="row g-3">
+        <div class="col-12 col-md-6">
+          <div class="rounded-3 p-3" style="background:#f0fdf4">
+            <div class="fw-semibold small mb-2 text-success"><i class="bi bi-check-circle me-1"></i>Aba Entradas — campos obrigatórios</div>
+            <ul class="small mb-0 ps-3">
+              <li><strong>Produto</strong> — nome exato conforme listado na aba "Produtos do AC"</li>
+              <li><strong>Tipo de Compra</strong> — <code>IMPORTACAO</code> ou <code>MERCADO_INTERNO</code></li>
+              <li><strong>Fornecedor</strong> — nome ou CNPJ cadastrado no sistema</li>
+              <li><strong>Nº NF</strong> — número da nota fiscal de entrada</li>
+              <li><strong>Data NF</strong> e <strong>Data Recebimento</strong> — formato DD/MM/AAAA</li>
+              <li><strong>Quantidade</strong> — número com ponto como separador decimal (ex: <code>1250.500</code>)</li>
+            </ul>
+          </div>
+        </div>
+        <div class="col-12 col-md-6">
+          <div class="rounded-3 p-3" style="background:#eff6ff">
+            <div class="fw-semibold small mb-2 text-primary"><i class="bi bi-check-circle me-1"></i>Aba Saídas — campos obrigatórios</div>
+            <ul class="small mb-0 ps-3">
+              <li><strong>Produto</strong> — nome exato conforme aba "Produtos do AC"</li>
+              <li><strong>Nº NF-e / Invoice</strong> — número da nota de saída ou invoice</li>
+              <li><strong>Data Embarque</strong> — formato DD/MM/AAAA</li>
+              <li><strong>Quantidade</strong> — número com ponto decimal</li>
+              <li><strong>RE</strong> e <strong>DUE</strong> — opcionais (Siscomex)</li>
+              <li><strong>Cliente</strong> — nome do cliente exportação (opcional)</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="alert alert-warning mt-3 py-2 mb-0" style="font-size:.875rem">
+        <i class="bi bi-exclamation-triangle me-1"></i>
+        <strong>Atenção:</strong> Na aba "Produtos do AC" do modelo XLSX há a lista de produtos cadastrados com os nomes corretos.
+        Use esses nomes sem alteração para evitar erros de validação.
+      </div>
+    </div>
+  </div>
+
+  <!-- Passo 3 — Lançamento manual -->
+  <div class="card mb-3 border-0 shadow-sm" style="border-radius:var(--radius-card)">
+    <div class="card-header bg-white border-0 py-3 d-flex align-items-center" style="border-radius:var(--radius-card) var(--radius-card) 0 0">
+      <span class="badge rounded-pill me-2 fs-6" style="background:#0ea5e9">3</span>
+      <h6 class="fw-bold mb-0">Lançamento manual (um registro por vez)</h6>
+    </div>
+    <div class="card-body pb-4">
+      <p class="mb-3">
+        Para lançar um único recebimento ou exportação, use os botões <strong>"Entrada"</strong> e <strong>"Saída"</strong>
+        diretamente no card do AC no painel.
+      </p>
+      <div class="row g-3">
+        <div class="col-12 col-md-6">
+          <div class="rounded-3 p-3 h-100" style="background:#f9f5ff">
+            <div class="fw-semibold small mb-2" style="color:var(--color-primary)">
+              <i class="bi bi-box-arrow-in-down me-1"></i>Registrar Entrada (compra de insumo)
+            </div>
+            <ul class="small mb-0 ps-3">
+              <li>Selecione o produto do AC</li>
+              <li>O saldo disponível para comprar é exibido automaticamente</li>
+              <li>Informe fornecedor, NF, data e quantidade</li>
+              <li>Marque <em>"Retroativo"</em> para regularizações de períodos anteriores</li>
+            </ul>
+          </div>
+        </div>
+        <div class="col-12 col-md-6">
+          <div class="rounded-3 p-3 h-100" style="background:#f0fdf4">
+            <div class="fw-semibold small mb-2 text-success">
+              <i class="bi bi-box-arrow-up me-1"></i>Registrar Saída (exportação)
+            </div>
+            <ul class="small mb-0 ps-3">
+              <li>Selecione o produto do AC</li>
+              <li>O saldo disponível para exportar é exibido (quantidade comprada − já exportada)</li>
+              <li>Informe NF-e/Invoice, data de embarque e quantidade</li>
+              <li>RE e DUE (Siscomex) são opcionais mas recomendados</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Monitoramento -->
+  <div class="card mb-3 border-0 shadow-sm" style="border-radius:var(--radius-card)">
+    <div class="card-header bg-white border-0 py-3 d-flex align-items-center" style="border-radius:var(--radius-card) var(--radius-card) 0 0">
+      <span class="badge rounded-pill me-2 fs-6" style="background:#dc2626">4</span>
+      <h6 class="fw-bold mb-0">Monitorar saldos e alertas</h6>
+    </div>
+    <div class="card-body pb-4">
+      <p class="mb-3">O painel exibe em tempo real para cada produto:</p>
+      <div class="table-responsive">
+        <table class="table table-sm table-bordered mb-3">
+          <thead class="table-light">
+            <tr>
+              <th>Indicador</th><th>Significado</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="badge" style="background:#F3F4F6;color:#374151">Autorizado</span></td>
+              <td>Quantidade total autorizada pelo MDIC no AC</td>
+            </tr>
+            <tr>
+              <td><span class="badge" style="background:#EDE9FE;color:var(--color-primary)">Comprado</span></td>
+              <td>Total já comprado com o benefício (soma de entradas ativas)</td>
+            </tr>
+            <tr>
+              <td><span class="badge bg-success">Exportado</span></td>
+              <td>Total já exportado e vinculado ao AC (soma de saídas ativas)</td>
+            </tr>
+            <tr>
+              <td><span class="badge" style="background:#FFF9C4;color:#92400e">Saldo p/ Exportar</span></td>
+              <td>Comprado − Exportado. Deve zerar antes do vencimento do AC.</td>
+            </tr>
+            <tr>
+              <td>Barra de progresso (%)</td>
+              <td>Exportado ÷ Quantidade mínima de exportação. Precisa atingir 100% para cumprir o AC.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="alert alert-warning py-2 mb-2" style="font-size:.875rem">
+        <i class="bi bi-bell me-1"></i>
+        <strong>Alerta de vencimento:</strong> O sistema destaca ACs que vencem em menos de 30 dias (laranja) e 15 dias (vermelho).
+        Execute o comando <code>python manage.py atualizar_status_drawback</code> periodicamente (recomendado: diário via cron) para marcar ACs expirados automaticamente.
+      </div>
+    </div>
+  </div>
+
+  <!-- Anulação -->
+  <div class="card mb-3 border-0 shadow-sm" style="border-radius:var(--radius-card)">
+    <div class="card-header bg-white border-0 py-3 d-flex align-items-center" style="border-radius:var(--radius-card) var(--radius-card) 0 0">
+      <span class="badge rounded-pill me-2 fs-6" style="background:#6b7280">5</span>
+      <h6 class="fw-bold mb-0">Corrigir um lançamento errado (Anulação)</h6>
+    </div>
+    <div class="card-body pb-4">
+      <p class="mb-2">
+        Entradas e Saídas <strong>nunca são excluídas</strong> — apenas anuladas com registro de motivo
+        (rastreabilidade para auditoria).
+      </p>
+      <ol class="mb-0">
+        <li>Abra os detalhes do AC (botão <em>"Ver detalhes"</em>).</li>
+        <li>Na aba <em>Entradas</em> ou <em>Saídas</em>, clique no ícone <i class="bi bi-x-circle text-danger"></i> ao lado do registro.</li>
+        <li>Informe o motivo e confirme. O registro fica visível na aba <em>Anulados</em> com badge vermelho.</li>
+        <li>Crie um novo lançamento correto. O saldo é recalculado automaticamente.</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- Relatório -->
+  <div class="card mb-4 border-0 shadow-sm" style="border-radius:var(--radius-card)">
+    <div class="card-header bg-white border-0 py-3 d-flex align-items-center" style="border-radius:var(--radius-card) var(--radius-card) 0 0">
+      <span class="badge rounded-pill me-2 fs-6" style="background:#0ea5e9">6</span>
+      <h6 class="fw-bold mb-0">Exportar relatório XLSX</h6>
+    </div>
+    <div class="card-body pb-4">
+      <p class="mb-2">
+        Na tela de detalhes do AC, clique em <strong>"Exportar XLSX"</strong> para gerar um relatório com três abas:
+      </p>
+      <ul class="mb-0">
+        <li><strong>Resumo</strong> — totais por produto (autorizado, comprado, exportado, saldos)</li>
+        <li><strong>Entradas</strong> — listagem completa das compras com NF, fornecedor e datas</li>
+        <li><strong>Saídas</strong> — listagem completa das exportações com NF-e, RE, DUE e datas</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- FAQ -->
+  <div class="card mb-4 border-0 shadow-sm" style="border-radius:var(--radius-card)">
+    <div class="card-body p-4">
+      <h5 class="fw-bold mb-3" style="color:var(--color-primary)">
+        <i class="bi bi-patch-question me-2"></i>Perguntas frequentes
+      </h5>
+
+      <div class="accordion accordion-flush" id="faqDrawback">
+
+        <div class="accordion-item border-bottom">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
+              O que acontece se o saldo de compra ficar negativo?
+            </button>
+          </h2>
+          <div id="faq1" class="accordion-collapse collapse" data-bs-parent="#faqDrawback">
+            <div class="accordion-body text-muted">
+              O sistema bloqueia o lançamento quando a quantidade informada ultrapassa o saldo disponível.
+              Isso protege contra erros de digitação e garante que você não supere o limite autorizado pelo MDIC.
+              Se precisar aumentar o limite, solicite aditivo ao AC junto ao despachante.
+            </div>
+          </div>
+        </div>
+
+        <div class="accordion-item border-bottom">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">
+              Posso usar drawback para insumos comprados no mercado interno?
+            </button>
+          </h2>
+          <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faqDrawback">
+            <div class="accordion-body text-muted">
+              Sim. O Drawback na modalidade Suspensão (Lei 12.350/2010, art. 31) abrange tanto insumos importados
+              quanto adquiridos no mercado interno. Ao registrar a entrada, selecione <em>"Mercado Interno"</em>
+              no campo "Tipo de Compra". Exemplos: Caixa, Cola, Mulching, Manta.
+            </div>
+          </div>
+        </div>
+
+        <div class="accordion-item border-bottom">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">
+              O AC pode ser prorrogado?
+            </button>
+          </h2>
+          <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqDrawback">
+            <div class="accordion-body text-muted">
+              Sim. Nos casos previstos na legislação, é possível solicitar prorrogação ao MDIC.
+              Ao obter aprovação, edite o AC e preencha o campo <em>"Data de Prorrogação"</em>.
+              O sistema passará a usar essa data como novo vencimento efetivo.
+            </div>
+          </div>
+        </div>
+
+        <div class="accordion-item border-bottom">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#faq4">
+              O que são RE e DUE?
+            </button>
+          </h2>
+          <div id="faq4" class="accordion-collapse collapse" data-bs-parent="#faqDrawback">
+            <div class="accordion-body text-muted">
+              <strong>RE</strong> (Registro de Exportação) e <strong>DUE</strong> (Declaração Única de Exportação)
+              são documentos do Siscomex. O DUE é o documento mais recente e unificado.
+              Esses campos são opcionais no sistema, mas recomendados para facilitar a comprovação
+              perante a Receita Federal e o MDIC.
+            </div>
+          </div>
+        </div>
+
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#faq5">
+              O que significa "Lançamento Retroativo"?
+            </button>
+          </h2>
+          <div id="faq5" class="accordion-collapse collapse" data-bs-parent="#faqDrawback">
+            <div class="accordion-body text-muted">
+              Registros marcados como <em>Retroativo</em> são lançamentos de regularização de períodos
+              em que as operações ocorreram mas ainda não estavam no ERP (ex: movimentos de 2025 registrados
+              manualmente em planilha). Eles têm exatamente o mesmo efeito nos saldos que registros normais,
+              mas ficam identificados para fins de auditoria.
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <div class="text-center mb-4">
+    <a href="{% url 'drawback:dashboard' %}" class="btn btn-primary">
+      <i class="bi bi-shield-check me-1"></i>Ir para o painel de Drawback
+    </a>
+  </div>
+
+</div>
+{% endblock %}

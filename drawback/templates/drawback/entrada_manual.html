@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="row justify-content-center">
+    <div class="col-12 col-lg-8">
+
+      <div class="d-flex align-items-center mb-4">
+        <a href="{% url 'drawback:ac_detail' ac.pk %}" class="btn btn-sm btn-outline-secondary me-3">
+          <i class="bi bi-arrow-left"></i>
+        </a>
+        <div>
+          <h1 class="h4 fw-bold mb-0" style="color:var(--color-primary)">{{ titulo }}</h1>
+          <small class="text-muted">AC {{ ac.numero_ac }} &bull; Vigência até {{ ac.data_fim_efetiva|date:"d/m/Y" }}</small>
+        </div>
+      </div>
+
+      <div class="alert alert-info d-flex align-items-start gap-2 py-2">
+        <i class="bi bi-info-circle-fill mt-1"></i>
+        <div class="small">
+          <strong>Lançamento retroativo:</strong> informe os dados conforme a nota fiscal original.
+          O campo <em>Tipo de Compra</em> distingue insumos importados dos comprados no mercado nacional.
+        </div>
+      </div>
+
+      <div class="card" style="border-radius:var(--radius-card)">
+        <div class="card-header" style="background:var(--color-primary);color:#fff">
+          <i class="bi bi-box-arrow-in-down me-2"></i>Dados da Entrada
+        </div>
+        <div class="card-body">
+          <form method="post">
+            {% csrf_token %}
+            <div class="row g-3">
+
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Produto do AC <span class="text-danger">*</span></label>
+                {{ form.drawback_produto }}
+                {% if form.drawback_produto.errors %}<div class="text-danger small">{{ form.drawback_produto.errors }}</div>{% endif %}
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Tipo de Compra <span class="text-danger">*</span></label>
+                {{ form.tipo_compra }}
+              </div>
+
+              <div class="col-12">
+                <!-- Saldo em tempo real -->
+                <div id="saldo-info" class="alert alert-secondary py-2 small d-none">
+                  <i class="bi bi-bar-chart me-1"></i>
+                  <span id="saldo-texto"></span>
+                </div>
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Fornecedor <span class="text-danger">*</span></label>
+                {{ form.fornecedor }}
+                {% if form.fornecedor.errors %}<div class="text-danger small">{{ form.fornecedor.errors }}</div>{% endif %}
+              </div>
+
+              <div class="col-md-3">
+                <label class="form-label fw-semibold">Número da NF <span class="text-danger">*</span></label>
+                {{ form.numero_nf }}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label fw-semibold">Série</label>
+                {{ form.serie_nf }}
+              </div>
+
+              <div class="col-md-4">
+                <label class="form-label fw-semibold">Data da NF <span class="text-danger">*</span></label>
+                {{ form.data_nf }}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-semibold">Data do Recebimento <span class="text-danger">*</span></label>
+                {{ form.data_recebimento }}
+              </div>
+
+              <div class="col-md-2">
+                <label class="form-label fw-semibold">Quantidade <span class="text-danger">*</span></label>
+                {{ form.quantidade }}
+                {% if form.quantidade.errors %}<div class="text-danger small">{{ form.quantidade.errors }}</div>{% endif %}
+              </div>
+              <div class="col-md-2">
+                <label class="form-label fw-semibold">Valor Unit. (R$)</label>
+                {{ form.valor_unitario }}
+              </div>
+
+              <div class="col-12">
+                <label class="form-label fw-semibold">Observações</label>
+                {{ form.observacoes }}
+              </div>
+
+              {% if form.non_field_errors %}
+              <div class="col-12">
+                <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+              </div>
+              {% endif %}
+
+            </div>
+
+            <div class="d-flex gap-2 mt-4">
+              <button type="submit" class="btn btn-success px-4">
+                <i class="bi bi-check-circle me-1"></i>Salvar Entrada
+              </button>
+              <a href="{% url 'drawback:ac_detail' ac.pk %}" class="btn btn-outline-secondary">Cancelar</a>
+            </div>
+          </form>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+const saldoUrl = "{% url 'drawback:ajax_saldo_produto' 0 %}".replace('/0/', '/');
+const produtoSelect = document.getElementById('id_drawback_produto');
+const saldoInfo = document.getElementById('saldo-info');
+const saldoTexto = document.getElementById('saldo-texto');
+
+produtoSelect?.addEventListener('change', function() {
+  const id = this.value;
+  if (!id) { saldoInfo.classList.add('d-none'); return; }
+  fetch(saldoUrl + id + '/')
+    .then(r => r.json())
+    .then(d => {
+      saldoTexto.textContent = `Saldo disponível para comprar: ${d.saldo_compra.toFixed(3)} ${d.unidade} ` +
+        `(Autorizado: ${d.quantidade_autorizada.toFixed(3)} — Já comprado: ${d.quantidade_comprada.toFixed(3)})`;
+      saldoInfo.classList.remove('d-none');
+      saldoInfo.className = 'alert py-2 small ' + (d.saldo_compra <= 0 ? 'alert-danger' : d.saldo_compra < d.quantidade_autorizada * 0.2 ? 'alert-warning' : 'alert-info');
+    });
+});
+if (produtoSelect?.value) produtoSelect.dispatchEvent(new Event('change'));
+</script>
+{% endblock %}

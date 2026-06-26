@@ -200,7 +200,7 @@ def nota_fiscal_list(request):
     if not empresa:
         return redirect('dashboard:index')
 
-    qs = NotaFiscal.objects.filter(empresa=empresa).select_related('cliente')
+    qs = NotaFiscal.objects.filter(empresa=empresa).select_related('cliente', 'transportadora', 'natureza_operacao')
 
     status_filter = request.GET.get('status', '')
     q = request.GET.get('q', '')

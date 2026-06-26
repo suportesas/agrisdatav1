@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="row justify-content-center">
+    <div class="col-12 col-lg-8">
+
+      <div class="d-flex align-items-center mb-4">
+        <a href="{% url 'drawback:ac_detail' ac.pk %}" class="btn btn-sm btn-outline-secondary me-3">
+          <i class="bi bi-arrow-left"></i>
+        </a>
+        <div>
+          <h1 class="h4 fw-bold mb-0" style="color:var(--color-primary)">{{ titulo }}</h1>
+          <small class="text-muted">AC {{ ac.numero_ac }} &bull; Vigência até {{ ac.data_fim_efetiva|date:"d/m/Y" }}</small>
+        </div>
+      </div>
+
+      <div class="alert alert-warning d-flex align-items-start gap-2 py-2">
+        <i class="bi bi-info-circle-fill mt-1"></i>
+        <div class="small">
+          <strong>RE e DUE:</strong> para lançamentos retroativos de 2025, podem ficar em branco.
+          Preencha quando tiver os documentos do Siscomex disponíveis.
+        </div>
+      </div>
+
+      <div class="card" style="border-radius:var(--radius-card)">
+        <div class="card-header" style="background:#f59e0b;color:#fff">
+          <i class="bi bi-box-arrow-up me-2"></i>Dados da Saída (Exportação)
+        </div>
+        <div class="card-body">
+          <form method="post">
+            {% csrf_token %}
+            <div class="row g-3">
+
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Produto do AC <span class="text-danger">*</span></label>
+                {{ form.drawback_produto }}
+                {% if form.drawback_produto.errors %}<div class="text-danger small">{{ form.drawback_produto.errors }}</div>{% endif %}
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Cliente</label>
+                {{ form.cliente }}
+              </div>
+
+              <div class="col-12">
+                <div id="saldo-info" class="alert alert-secondary py-2 small d-none">
+                  <i class="bi bi-bar-chart me-1"></i>
+                  <span id="saldo-texto"></span>
+                </div>
+              </div>
+
+              <div class="col-md-4">
+                <label class="form-label fw-semibold">Número NF-e / Invoice</label>
+                {{ form.numero_nfe }}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-semibold">RE (Registro de Exportação)</label>
+                {{ form.numero_re }}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-semibold">DUE</label>
+                {{ form.numero_due }}
+              </div>
+
+              <div class="col-md-4">
+                <label class="form-label fw-semibold">Data de Embarque <span class="text-danger">*</span></label>
+                {{ form.data_embarque }}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-semibold">Quantidade <span class="text-danger">*</span></label>
+                {{ form.quantidade }}
+                {% if form.quantidade.errors %}<div class="text-danger small">{{ form.quantidade.errors }}</div>{% endif %}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-semibold">Valor FOB (USD)</label>
+                {{ form.valor_fob_usd }}
+              </div>
+
+              <div class="col-12">
+                <label class="form-label fw-semibold">Observações</label>
+                {{ form.observacoes }}
+              </div>
+
+              {% if form.non_field_errors %}
+              <div class="col-12">
+                <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+              </div>
+              {% endif %}
+
+            </div>
+            <div class="d-flex gap-2 mt-4">
+              <button type="submit" class="btn btn-warning px-4">
+                <i class="bi bi-check-circle me-1"></i>Salvar Saída
+              </button>
+              <a href="{% url 'drawback:ac_detail' ac.pk %}" class="btn btn-outline-secondary">Cancelar</a>
+            </div>
+          </form>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+const saldoUrl = "{% url 'drawback:ajax_saldo_produto' 0 %}".replace('/0/', '/');
+const produtoSelect = document.getElementById('id_drawback_produto');
+const saldoInfo = document.getElementById('saldo-info');
+const saldoTexto = document.getElementById('saldo-texto');
+
+produtoSelect?.addEventListener('change', function() {
+  const id = this.value;
+  if (!id) { saldoInfo.classList.add('d-none'); return; }
+  fetch(saldoUrl + id + '/')
+    .then(r => r.json())
+    .then(d => {
+      saldoTexto.textContent = `Saldo disponível para exportar: ${d.saldo_exportacao.toFixed(3)} ${d.unidade} ` +
+        `(Comprado: ${d.quantidade_comprada.toFixed(3)} — Já exportado: ${d.quantidade_exportada.toFixed(3)})`;
+      saldoInfo.classList.remove('d-none');
+      saldoInfo.className = 'alert py-2 small ' + (d.saldo_exportacao <= 0 ? 'alert-danger' : 'alert-warning');
+    });
+});
+if (produtoSelect?.value) produtoSelect.dispatchEvent(new Event('change'));
+</script>
+{% endblock %}

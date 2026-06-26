@@ -1,10 +1,21 @@
 from django.shortcuts import get_object_or_404, render
 from django.contrib.auth.decorators import login_required
+from django.db.models import Prefetch as _Prefetch
 
 @login_required
 def cotacao_item_comparativo(request, pk):
     """Exibe o comparativo de propostas para cada item da cotação"""
-    cotacao = get_object_or_404(Cotacao, pk=pk, empresa=request.user.empresa)
+    cotacao = get_object_or_404(
+        Cotacao.objects.prefetch_related(
+            _Prefetch(
+                'itens',
+                queryset=ItemCotacao.objects.select_related('produto', 'unidade_medida').prefetch_related(
+                    _Prefetch('propostas', queryset=FornecedorCotacao.objects.select_related('fornecedor'))
+                )
+            )
+        ),
+        pk=pk, empresa=request.user.empresa,
+    )
     if request.method == 'POST':
         from decimal import Decimal, InvalidOperation
         
@@ -79,9 +90,8 @@ def cotacao_item_comparativo(request, pk):
         # Mantém no comparativo para exibir o botão de gerar pedido quando liberado
         return redirect(reverse('compras:cotacao_item_comparativo', args=[pk]))
     itens_data = []
-    for item in cotacao.itens.select_related('produto', 'unidade_medida').all():
-        # Recarrega propostas do banco para garantir status atualizado
-        propostas = list(item.propostas.select_related('fornecedor').all())
+    for item in cotacao.itens.all():
+        propostas = list(item.propostas.all())
         menor_preco = min([p.preco_unitario for p in propostas], default=None)
         for p in propostas:
             p.melhor_preco = (p.preco_unitario == menor_preco) if menor_preco is not None else False
@@ -143,25 +153,14 @@ def solicitacao_list(request):
     """Lista todas as solicitações de compra"""
     solicitacoes = SolicitacaoCompra.objects.filter(
         empresa=request.user.empresa
-    ).select_related('solicitante', 'aprovador')
-    
+    ).select_related('solicitante', 'aprovador').prefetch_related('itens__produto')
+
     # Filtros
     status = request.GET.get('status')
     if status:
         solicitacoes = solicitacoes.filter(status=status)
-    
 
-    # Atualiza status dos itens e da solicitação para garantir dados atualizados
-    updated_solicitacoes = []
-    for s in solicitacoes:
-        # Atualiza status de cada item
-        for item in s.itens.all():
-            if hasattr(item, 'atualizar_status'):
-                item.atualizar_status()
-        s.atualizar_status_cotacao()
-        # Recarrega do banco para garantir dados atualizados
-        updated_solicitacoes.append(type(s).objects.get(pk=s.pk))
-    solicitacoes = updated_solicitacoes
+    solicitacoes = solicitacoes.order_by('-criado_em')
 
     # Paginação
     paginator = Paginator(solicitacoes, 20)

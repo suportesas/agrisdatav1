@@ -87,6 +87,7 @@ INSTALLED_APPS = [
     'estufas',      # Módulo de Estufas, Lotes de Mudas e Transplantio
     'rh',           # Módulo de Recursos Humanos (Funcionários, Contratos, Férias, ASO)
     'operacoes_campo',  # Módulo de Operações de Campo (OS, Colheita, Caderno de Campo)
+    'drawback',         # Módulo de Controle de Drawback (AC, Entradas, Saídas)
 ]
 
 

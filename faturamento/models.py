@@ -281,7 +281,10 @@ class NotaFiscal(FaturamentoBaseModel):
         verbose_name = 'Nota Fiscal'
         verbose_name_plural = 'Notas Fiscais'
         ordering = ['-data_emissao', '-numero']
-        indexes = [models.Index(fields=['empresa', 'status'])]
+        indexes = [
+            models.Index(fields=['empresa', 'status'], name='nf_empresa_status_idx'),
+            models.Index(fields=['empresa', '-data_emissao'], name='nf_empresa_data_emissao_idx'),
+        ]
 
     def __str__(self):
         return f'NF {self.numero or "S/N"}/{self.serie} - {self.cliente}'

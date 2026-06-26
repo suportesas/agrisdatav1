@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}Importar XLSX — Drawback{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="row justify-content-center">
+    <div class="col-12 col-lg-7">
+
+      <div class="d-flex align-items-center mb-4">
+        <a href="{% url 'drawback:ac_detail' ac.pk %}" class="btn btn-sm btn-outline-secondary me-3">
+          <i class="bi bi-arrow-left"></i>
+        </a>
+        <div>
+          <h1 class="h4 fw-bold mb-0" style="color:var(--color-primary)">Importar Planilha XLSX</h1>
+          <small class="text-muted">AC {{ ac.numero_ac }}</small>
+        </div>
+      </div>
+
+      <!-- Download dos modelos -->
+      <div class="card mb-4" style="border-radius:var(--radius-card);border:1px solid #EDE9FE">
+        <div class="card-body py-3">
+          <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <div>
+              <strong><i class="bi bi-download me-2" style="color:var(--color-primary)"></i>Baixar modelo de planilha</strong>
+              <div class="small text-muted">Preencha o modelo e importe aqui. As abas incluem lista de produtos e instruções.</div>
+            </div>
+            <div class="d-flex gap-2">
+              <a href="{% url 'drawback:download_modelo_xlsx' ac.pk 'entradas' %}" class="btn btn-sm btn-outline-success">
+                <i class="bi bi-file-earmark-excel me-1"></i>Modelo Entradas
+              </a>
+              <a href="{% url 'drawback:download_modelo_xlsx' ac.pk 'saidas' %}" class="btn btn-sm btn-outline-warning">
+                <i class="bi bi-file-earmark-excel me-1"></i>Modelo Saídas
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Upload -->
+      <div class="card" style="border-radius:var(--radius-card)">
+        <div class="card-header" style="background:var(--color-primary);color:#fff">
+          <i class="bi bi-upload me-2"></i>Upload do arquivo preenchido
+        </div>
+        <div class="card-body">
+          <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Tipo de importação <span class="text-danger">*</span></label>
+              {{ form.tipo }}
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Arquivo XLSX <span class="text-danger">*</span></label>
+              {{ form.arquivo }}
+              <div class="form-text">{{ form.arquivo.help_text }}</div>
+              {% if form.arquivo.errors %}<div class="text-danger small mt-1">{{ form.arquivo.errors }}</div>{% endif %}
+            </div>
+
+            <div class="alert alert-info small">
+              <i class="bi bi-info-circle me-1"></i>
+              Após o upload, você verá um <strong>preview linha a linha</strong> com validação de saldo.
+              Apenas as linhas válidas serão importadas.
+            </div>
+
+            <div class="d-flex gap-2">
+              <button type="submit" class="btn btn-primary px-4">
+                <i class="bi bi-search me-1"></i>Validar arquivo
+              </button>
+              <a href="{% url 'drawback:ac_detail' ac.pk %}" class="btn btn-outline-secondary">Cancelar</a>
+            </div>
+          </form>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}

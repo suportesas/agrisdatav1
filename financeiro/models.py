@@ -466,6 +466,9 @@ class ParcelaContaPagar(models.Model):
         verbose_name_plural = 'Parcelas de Contas a Pagar'
         ordering = ['conta_pagar', 'numero_parcela']
         unique_together = ['conta_pagar', 'numero_parcela']
+        indexes = [
+            models.Index(fields=['status', 'data_vencimento'], name='parcela_pagar_status_venc_idx'),
+        ]
     
     def __str__(self):
         return f"{self.conta_pagar.numero} - Parcela {self.numero_parcela}"
@@ -937,6 +940,9 @@ class ParcelaContaReceber(models.Model):
         verbose_name = 'Parcela de Conta a Receber'
         verbose_name_plural = 'Parcelas de Contas a Receber'
         ordering = ['conta_receber', 'numero_parcela']
+        indexes = [
+            models.Index(fields=['status', 'data_vencimento'], name='par_receber_status_venc_idx'),
+        ]
         unique_together = [('conta_receber', 'numero_parcela')]
 
     def __str__(self):

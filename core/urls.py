@@ -129,6 +129,7 @@ urlpatterns = [
     path('estufas/', include(('estufas.urls', 'estufas'))),
     path('rh/', include(('rh.urls', 'rh'))),
     path('campo/', include(('operacoes_campo.urls', 'operacoes_campo'))),
+    path('drawback/', include(('drawback.urls', 'drawback'))),
 
     # ============================================
     # API REST

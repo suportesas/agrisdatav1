@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% block title %}Preview Importação — Drawback{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+  <div class="d-flex align-items-center mb-4">
+    <a href="{% url 'drawback:importar_xlsx' ac.pk %}" class="btn btn-sm btn-outline-secondary me-3">
+      <i class="bi bi-arrow-left"></i> Voltar
+    </a>
+    <div>
+      <h1 class="h4 fw-bold mb-0" style="color:var(--color-primary)">Preview da Importação</h1>
+      <small class="text-muted">AC {{ ac.numero_ac }} — {{ tipo|capfirst }}</small>
+    </div>
+  </div>
+
+  <!-- Resumo -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-4">
+      <div class="card text-center p-3" style="border-left:4px solid #22c55e;border-radius:var(--radius-card)">
+        <div class="text-success fs-1 fw-bold">{{ total_ok }}</div>
+        <div class="text-muted small">Linhas válidas (serão importadas)</div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card text-center p-3" style="border-left:4px solid #ef4444;border-radius:var(--radius-card)">
+        <div class="text-danger fs-1 fw-bold">{{ total_erro }}</div>
+        <div class="text-muted small">Linhas com erro (serão ignoradas)</div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card text-center p-3" style="border-left:4px solid var(--color-primary);border-radius:var(--radius-card)">
+        <div style="color:var(--color-primary)" class="fs-1 fw-bold">{{ resultados|length }}</div>
+        <div class="text-muted small">Total de linhas encontradas</div>
+      </div>
+    </div>
+  </div>
+
+  {% if total_erro > 0 %}
+  <div class="alert alert-warning">
+    <i class="bi bi-exclamation-triangle me-2"></i>
+    <strong>{{ total_erro }} linha(s) com erro serão ignoradas.</strong>
+    Corrija o arquivo e reimporte, ou prossiga importando apenas as linhas válidas.
+  </div>
+  {% endif %}
+
+  <!-- Tabela de preview -->
+  <div class="card" style="border-radius:var(--radius-card)">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <span class="fw-semibold">Resultado da validação linha a linha</span>
+      {% if total_ok > 0 %}
+      <form method="post" action="{% url 'drawback:importar_confirmar' ac.pk %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-success btn-sm">
+          <i class="bi bi-check-circle me-1"></i>Confirmar importação ({{ total_ok }} linhas)
+        </button>
+      </form>
+      {% endif %}
+    </div>
+    <div class="table-responsive">
+      <table class="table table-sm align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th style="width:50px">Linha</th>
+            <th>Status</th>
+            {% if tipo == 'entradas' %}
+            <th>Tipo</th><th>Fornecedor</th><th>NF</th><th>Data Rec.</th>
+            <th>Produto</th><th class="text-end">Qtd</th>
+            <th class="text-end">Saldo Antes</th><th class="text-end">Saldo Depois</th>
+            {% else %}
+            <th>NF-e</th><th>RE/DUE</th><th>Embarque</th>
+            <th>Produto</th><th class="text-end">Qtd</th>
+            <th class="text-end">Saldo Antes</th><th class="text-end">Saldo Depois</th>
+            {% endif %}
+            <th>Erros / Avisos</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in resultados %}
+          <tr class="{% if r.ok %}table-success{% else %}table-danger{% endif %}">
+            <td class="fw-semibold">{{ r.linha }}</td>
+            <td>
+              {% if r.ok %}
+              <span class="badge bg-success"><i class="bi bi-check-circle"></i> OK</span>
+              {% else %}
+              <span class="badge bg-danger"><i class="bi bi-x-circle"></i> Erro</span>
+              {% endif %}
+            </td>
+            {% if tipo == 'entradas' %}
+            <td><span class="badge {% if r.tipo_compra == 'IMPORTACAO' %}bg-info text-dark{% else %}bg-primary{% endif %} small">{{ r.tipo_compra }}</span></td>
+            <td class="small">{{ r.fornecedor_str|truncatechars:20 }}</td>
+            <td class="small">{{ r.numero_nf }}</td>
+            <td class="small">{% if r.data_recebimento %}{{ r.data_recebimento|date:"d/m/Y" }}{% else %}—{% endif %}</td>
+            <td class="small">{{ r.produto_str|truncatechars:25 }}</td>
+            <td class="text-end small">{% if r.quantidade %}{{ r.quantidade|floatformat:3 }}{% else %}—{% endif %}</td>
+            <td class="text-end small">{% if r.saldo_antes is not None %}{{ r.saldo_antes|floatformat:3 }}{% else %}—{% endif %}</td>
+            <td class="text-end small {% if r.saldo_depois is not None and r.saldo_depois < 0 %}text-danger fw-bold{% endif %}">
+              {% if r.saldo_depois is not None %}{{ r.saldo_depois|floatformat:3 }}{% else %}—{% endif %}
+            </td>
+            {% else %}
+            <td class="small">{{ r.numero_nfe|default:"—" }}</td>
+            <td class="small">{{ r.numero_re|default:r.numero_due|default:"—" }}</td>
+            <td class="small">{% if r.data_embarque %}{{ r.data_embarque|date:"d/m/Y" }}{% else %}—{% endif %}</td>
+            <td class="small">{{ r.produto_str|truncatechars:25 }}</td>
+            <td class="text-end small">{% if r.quantidade %}{{ r.quantidade|floatformat:3 }}{% else %}—{% endif %}</td>
+            <td class="text-end small">{% if r.saldo_antes is not None %}{{ r.saldo_antes|floatformat:3 }}{% else %}—{% endif %}</td>
+            <td class="text-end small {% if r.saldo_depois is not None and r.saldo_depois < 0 %}text-danger fw-bold{% endif %}">
+              {% if r.saldo_depois is not None %}{{ r.saldo_depois|floatformat:3 }}{% else %}—{% endif %}
+            </td>
+            {% endif %}
+            <td class="small">
+              {% if r.erros %}
+                {% for e in r.erros %}
+                <div class="text-danger"><i class="bi bi-x-circle me-1"></i>{{ e }}</div>
+                {% endfor %}
+              {% endif %}
+              {% if r.aviso_fornecedor %}<div class="text-warning small"><i class="bi bi-exclamation-triangle me-1"></i>{{ r.aviso_fornecedor }}</div>{% endif %}
+              {% if not r.erros and not r.aviso_fornecedor %}<span class="text-success">—</span>{% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if total_ok > 0 %}
+    <div class="card-footer d-flex justify-content-end">
+      <form method="post" action="{% url 'drawback:importar_confirmar' ac.pk %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-success">
+          <i class="bi bi-check-circle me-1"></i>Confirmar importação de {{ total_ok }} linha(s) válida(s)
+        </button>
+      </form>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

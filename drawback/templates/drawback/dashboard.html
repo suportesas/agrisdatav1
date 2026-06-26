@@ -1,0 +1,261 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}Drawback{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+  <!-- Cabeçalho -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h1 class="h3 fw-bold mb-0" style="color:var(--color-primary)">
+        <i class="bi bi-shield-check me-2"></i>Controle de Drawback
+      </h1>
+      <p class="text-muted small mb-0">Atos Concessórios, entradas de insumos e exportações</p>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{% url 'drawback:ajuda' %}" class="btn btn-outline-secondary" title="Como usar este módulo">
+        <i class="bi bi-question-circle me-1"></i>Como usar
+      </a>
+      <a href="{% url 'drawback:ac_create' %}" class="btn btn-primary">
+        <i class="bi bi-plus-circle me-1"></i>Novo AC
+      </a>
+    </div>
+  </div>
+
+  <!-- Guia Rápido (expansível) — exibido automaticamente quando não há ACs -->
+  <div class="card mb-4 border-0" style="background:linear-gradient(135deg,#ede9fe 0%,#e0f2fe 100%); border-radius:var(--radius-card)">
+    <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center py-3"
+         style="cursor:pointer" data-bs-toggle="collapse" data-bs-target="#guiaRapido"
+         aria-expanded="{{ sem_acs|yesno:'true,false' }}" aria-controls="guiaRapido">
+      <span class="fw-semibold" style="color:var(--color-primary)">
+        <i class="bi bi-lightbulb me-2"></i>Guia Rápido — como começar
+      </span>
+      <i class="bi bi-chevron-down" id="guiaChevron"></i>
+    </div>
+    <div class="collapse {% if sem_acs %}show{% endif %}" id="guiaRapido">
+      <div class="card-body pt-0 pb-4">
+        <div class="row g-3">
+
+          <div class="col-12 col-md-4">
+            <div class="rounded-3 p-3 h-100" style="background:rgba(255,255,255,0.7)">
+              <div class="d-flex align-items-center mb-2">
+                <span class="badge rounded-pill me-2" style="background:var(--color-primary);font-size:.85rem">1</span>
+                <span class="fw-semibold">Cadastrar o AC</span>
+              </div>
+              <p class="small text-muted mb-2">
+                Clique em <strong>Novo AC</strong> e informe o número do Ato Concessório (ex: <code>23/0001234-0</code>),
+                as datas de início e vencimento, tipo (geralmente <em>Suspensão</em>) e os produtos autorizados
+                com as quantidades do MDIC.
+              </p>
+              <a href="{% url 'drawback:ac_create' %}" class="btn btn-sm btn-primary">
+                <i class="bi bi-plus-circle me-1"></i>Novo AC
+              </a>
+            </div>
+          </div>
+
+          <div class="col-12 col-md-4">
+            <div class="rounded-3 p-3 h-100" style="background:rgba(255,255,255,0.7)">
+              <div class="d-flex align-items-center mb-2">
+                <span class="badge rounded-pill me-2" style="background:#0ea5e9;font-size:.85rem">2</span>
+                <span class="fw-semibold">Regularizar 2025 (retroativo)</span>
+              </div>
+              <p class="small text-muted mb-2">
+                Para lançamentos já ocorridos e não registrados no ERP, use a
+                <strong>Importação XLSX</strong>: baixe o modelo colorido, preencha as abas
+                <em>Entradas</em> e <em>Saídas</em> com os dados da planilha manual e faça o upload.
+                O sistema valida saldo linha a linha antes de salvar.
+              </p>
+              <a href="{% url 'drawback:ajuda' %}#importar-xlsx" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-file-earmark-excel me-1"></i>Ver instruções de importação
+              </a>
+            </div>
+          </div>
+
+          <div class="col-12 col-md-4">
+            <div class="rounded-3 p-3 h-100" style="background:rgba(255,255,255,0.7)">
+              <div class="d-flex align-items-center mb-2">
+                <span class="badge rounded-pill me-2" style="background:#16a34a;font-size:.85rem">3</span>
+                <span class="fw-semibold">Operação contínua</span>
+              </div>
+              <p class="small text-muted mb-2">
+                Após a regularização, use os botões <strong>Entrada</strong> e <strong>Saída</strong>
+                em cada AC para lançar novas compras e exportações individualmente.
+                Os saldos são atualizados em tempo real. Ao atingir 100% do mínimo exportado,
+                o AC está cumprido.
+              </p>
+              <a href="{% url 'drawback:ajuda' %}" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-book me-1"></i>Guia completo
+              </a>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    (function(){
+      var el = document.getElementById('guiaRapido');
+      var icon = document.getElementById('guiaChevron');
+      if(el && icon){
+        el.addEventListener('show.bs.collapse', function(){ icon.className='bi bi-chevron-up'; });
+        el.addEventListener('hide.bs.collapse', function(){ icon.className='bi bi-chevron-down'; });
+        if(el.classList.contains('show')){ icon.className='bi bi-chevron-up'; }
+      }
+    })();
+  </script>
+
+  {% if acs_vencendo %}
+  <div class="alert alert-warning d-flex align-items-center mb-4" role="alert">
+    <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
+    <div>
+      <strong>{{ acs_vencendo|length }} AC(s) vencendo em menos de 30 dias:</strong>
+      {% for ac in acs_vencendo %}
+        <a href="{% url 'drawback:ac_detail' ac.pk %}" class="alert-link ms-2">{{ ac.numero_ac }}</a>
+        ({{ ac.dias_para_vencer }} dias){% if not forloop.last %},{% endif %}
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Cards de resumo (ACs ativos) -->
+  {% for ac in acs_ativos %}
+  <div class="card mb-4" style="border-radius:var(--radius-card); border-left: 4px solid
+    {% if ac.nivel_alerta == 'critico' %}#dc3545
+    {% elif ac.nivel_alerta == 'danger' %}#fd7e14
+    {% elif ac.nivel_alerta == 'warning' %}#ffc107
+    {% else %}var(--color-primary){% endif %};">
+
+    <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+      <div>
+        <span class="fw-bold fs-5" style="color:var(--color-primary)">AC {{ ac.numero_ac }}</span>
+        <span class="badge ms-2
+          {% if ac.tipo == 'SUSPENSAO' %}bg-primary
+          {% elif ac.tipo == 'ISENCAO' %}bg-info
+          {% else %}bg-secondary{% endif %}">
+          {{ ac.get_tipo_display }}
+        </span>
+        {% if ac.nivel_alerta %}
+        <span class="badge ms-1
+          {% if ac.nivel_alerta == 'critico' %}bg-danger
+          {% elif ac.nivel_alerta == 'danger' %}bg-warning text-dark
+          {% else %}bg-warning text-dark{% endif %}">
+          <i class="bi bi-clock me-1"></i>{{ ac.dias_para_vencer }} dias para vencer
+        </span>
+        {% endif %}
+      </div>
+      <div class="d-flex gap-2 align-items-center">
+        <small class="text-muted">{{ ac.data_inicio|date:"d/m/Y" }} → {{ ac.data_fim_efetiva|date:"d/m/Y" }}</small>
+        <a href="{% url 'drawback:ac_detail' ac.pk %}" class="btn btn-sm btn-outline-primary">
+          <i class="bi bi-eye me-1"></i>Ver detalhes
+        </a>
+        <a href="{% url 'drawback:entrada_create' ac.pk %}" class="btn btn-sm btn-success">
+          <i class="bi bi-box-arrow-in-down me-1"></i>Entrada
+        </a>
+        <a href="{% url 'drawback:saida_create' ac.pk %}" class="btn btn-sm btn-warning">
+          <i class="bi bi-box-arrow-up me-1"></i>Saída
+        </a>
+        <a href="{% url 'drawback:importar_xlsx' ac.pk %}" class="btn btn-sm btn-outline-secondary">
+          <i class="bi bi-file-earmark-excel me-1"></i>Importar XLSX
+        </a>
+      </div>
+    </div>
+
+    <div class="card-body">
+      {% for produto in ac.produtos.all %}
+      {% with comprado=produto.quantidade_comprada exportado=produto.quantidade_exportada saldo_c=produto.saldo_compra saldo_e=produto.saldo_exportacao pct=produto.percentual_cumprido %}
+      <div class="mb-3 pb-3 {% if not forloop.last %}border-bottom{% endif %}">
+        <div class="d-flex justify-content-between align-items-baseline mb-1">
+          <span class="fw-semibold">{{ produto.produto.nome }}</span>
+          <span class="small text-muted">{{ produto.unidade_medida.sigla }}</span>
+        </div>
+        <div class="row g-2 mb-2">
+          <div class="col-6 col-md-3">
+            <div class="rounded p-2 text-center" style="background:#F3F4F6">
+              <div class="small text-muted">Autorizado</div>
+              <div class="fw-bold">{{ produto.quantidade_autorizada|floatformat:3|intcomma }}</div>
+            </div>
+          </div>
+          <div class="col-6 col-md-3">
+            <div class="rounded p-2 text-center" style="background:#EDE9FE">
+              <div class="small text-muted">Comprado</div>
+              <div class="fw-bold" style="color:var(--color-primary)">{{ comprado|floatformat:3|intcomma }}</div>
+            </div>
+          </div>
+          <div class="col-6 col-md-3">
+            <div class="rounded p-2 text-center" style="background:#ECFDF5">
+              <div class="small text-muted">Exportado</div>
+              <div class="fw-bold text-success">{{ exportado|floatformat:3|intcomma }}</div>
+            </div>
+          </div>
+          <div class="col-6 col-md-3">
+            <div class="rounded p-2 text-center" style="background:{% if saldo_e < 0 %}#FEE2E2{% else %}#FFF9C4{% endif %}">
+              <div class="small text-muted">Saldo p/ Exportar</div>
+              <div class="fw-bold {% if saldo_e < 0 %}text-danger{% else %}text-warning{% endif %}">
+                {{ saldo_e|floatformat:3|intcomma }}
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Barra de progresso -->
+        <div class="d-flex align-items-center gap-2">
+          <div class="flex-grow-1">
+            <div class="progress" style="height:10px; border-radius:5px">
+              <div class="progress-bar {% if pct >= 100 %}bg-success{% elif pct >= 50 %}bg-primary{% else %}bg-warning{% endif %}"
+                   style="width:{% if pct > 100 %}100{% else %}{{ pct }}{% endif %}%"></div>
+            </div>
+          </div>
+          <small class="text-muted fw-semibold" style="min-width:48px">{{ pct }}%</small>
+          <small class="text-muted">cumprido</small>
+        </div>
+      </div>
+      {% endwith %}
+      {% empty %}
+      <p class="text-muted small">Nenhum produto cadastrado neste AC.</p>
+      {% endfor %}
+    </div>
+  </div>
+  {% empty %}
+  <div class="text-center py-5">
+    <i class="bi bi-shield-x fs-1 text-muted"></i>
+    <p class="mt-3 text-muted">Nenhum AC ativo. <a href="{% url 'drawback:ac_create' %}">Cadastre o primeiro Ato Concessório</a>.</p>
+  </div>
+  {% endfor %}
+
+  <!-- ACs encerrados/vencidos -->
+  {% with inativos=acs|dictsortreversed:"data_inicio" %}
+  {% if acs|length > acs_ativos|length %}
+  <h5 class="text-muted mt-2 mb-3">Histórico</h5>
+  <div class="table-responsive">
+    <table class="table table-sm table-hover">
+      <thead class="table-light">
+        <tr>
+          <th>Nº AC</th><th>Tipo</th><th>Vigência</th><th>Status</th><th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for ac in acs %}
+        {% if ac.status != 'ATIVO' %}
+        <tr>
+          <td class="fw-semibold">{{ ac.numero_ac }}</td>
+          <td>{{ ac.get_tipo_display }}</td>
+          <td>{{ ac.data_inicio|date:"d/m/Y" }} → {{ ac.data_fim_efetiva|date:"d/m/Y" }}</td>
+          <td>
+            <span class="badge {% if ac.status == 'VENCIDO' %}bg-danger{% elif ac.status == 'ENCERRADO' %}bg-secondary{% else %}bg-dark{% endif %}">
+              {{ ac.get_status_display }}
+            </span>
+          </td>
+          <td><a href="{% url 'drawback:ac_detail' ac.pk %}" class="btn btn-sm btn-outline-secondary">Ver</a></td>
+        </tr>
+        {% endif %}
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+  {% endwith %}
+
+</div>
+{% endblock %}

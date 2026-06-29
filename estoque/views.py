@@ -29,34 +29,69 @@ from xhtml2pdf import pisa
 def dashboard(request):
     """Dashboard do estoque"""
     empresa = request.user.empresa
-    
-    # Estatísticas
+    hoje = timezone.now().date()
+    inicio_mes = hoje.replace(day=1)
+    data_vence_30 = hoje + timedelta(days=30)
+    data_vence_7 = hoje + timedelta(days=7)
+
+    lotes_qs = Lote.objects.filter(empresa=empresa)
+
+    # KPIs principais
     total_armazens = Armazem.objects.filter(empresa=empresa, ativo=True).count()
     total_locais = LocalEstocagem.objects.filter(armazem__empresa=empresa, ativo=True).count()
-    total_lotes = Lote.objects.filter(empresa=empresa).exclude(status='ESGOTADO').count()
-    
-    # Lotes vencendo nos próximos 30 dias
-    data_limite = timezone.now().date() + timedelta(days=30)
-    lotes_proximos_vencimento = Lote.objects.filter(
-        empresa=empresa,
-        data_validade__lte=data_limite,
-        data_validade__gte=timezone.now().date(),
+    total_lotes = lotes_qs.exclude(status='ESGOTADO').count()
+    valor_total_estoque = lotes_qs.filter(
         status='DISPONIVEL'
-    ).select_related('produto', 'armazem', 'unidade_medida')[:10]
-    
-    # Lotes vencidos
-    lotes_vencidos = Lote.objects.filter(
-        empresa=empresa,
+    ).aggregate(total=Sum('valor_total'))['total'] or Decimal('0.00')
+
+    # Status dos lotes
+    lotes_disponiveis = lotes_qs.filter(status='DISPONIVEL').count()
+    lotes_bloqueados = lotes_qs.filter(status='BLOQUEADO').count()
+    lotes_vencidos_count = lotes_qs.filter(status='VENCIDO').count()
+    lotes_quarentena = lotes_qs.filter(status='QUARENTENA').count()
+
+    # Vencimentos
+    lotes_vencendo_7d = lotes_qs.filter(
+        data_validade__gte=hoje,
+        data_validade__lte=data_vence_7,
+        status='DISPONIVEL',
+    ).count()
+    lotes_proximos_vencimento = lotes_qs.filter(
+        data_validade__gte=hoje,
+        data_validade__lte=data_vence_30,
+        status='DISPONIVEL',
+    ).select_related('produto', 'armazem', 'unidade_medida').order_by('data_validade')[:10]
+    lotes_vencidos = lotes_qs.filter(
         status='VENCIDO'
-    ).select_related('produto')[:5]
-    
+    ).select_related('produto', 'armazem')[:5]
+
+    # Movimentações
+    mov_qs = MovimentacaoEstoque.objects.filter(empresa=empresa)
+    movimentacoes_mes = mov_qs.filter(data_movimentacao__date__gte=inicio_mes).count()
+    entradas_mes = mov_qs.filter(data_movimentacao__date__gte=inicio_mes, tipo='ENTRADA').count()
+    saidas_mes = mov_qs.filter(data_movimentacao__date__gte=inicio_mes, tipo='SAIDA').count()
+    ultimas_movimentacoes = mov_qs.select_related(
+        'produto', 'armazem_destino', 'armazem_origem', 'cadastrado_por'
+    ).order_by('-data_movimentacao')[:8]
+
     context = {
         'total_armazens': total_armazens,
         'total_locais': total_locais,
         'total_lotes': total_lotes,
+        'valor_total_estoque': valor_total_estoque,
+        'lotes_disponiveis': lotes_disponiveis,
+        'lotes_bloqueados': lotes_bloqueados,
+        'lotes_vencidos_count': lotes_vencidos_count,
+        'lotes_quarentena': lotes_quarentena,
         'lotes_vencendo': lotes_proximos_vencimento.count(),
+        'lotes_vencendo_7d': lotes_vencendo_7d,
         'lotes_proximos_vencimento': lotes_proximos_vencimento,
         'lotes_vencidos': lotes_vencidos,
+        'movimentacoes_mes': movimentacoes_mes,
+        'entradas_mes': entradas_mes,
+        'saidas_mes': saidas_mes,
+        'ultimas_movimentacoes': ultimas_movimentacoes,
+        'hoje': hoje,
     }
     return render(request, 'estoque/dashboard.html', context)
 

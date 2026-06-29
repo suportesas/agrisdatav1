@@ -269,20 +269,112 @@
       <p>Visão geral da sua empresa</p>
     </div>
 
-    <div class="simple-grid">
-      <article class="panel">
-        <h3>Fazendas ativas</h3>
-        <p class="val">{{ total_fazendas|default:0 }}</p>
+    <div class="kpi-grid">
+      <article class="kpi" style="--kpi-color:#ef4444;">
+        <h6>Contas a Pagar Vencidas</h6>
+        <p class="val">{{ parcelas_vencidas_count|default:0 }}</p>
+        <div class="meta">R$ {{ valor_vencido|floatformat:2 }}</div>
       </article>
-      <article class="panel">
-        <h3>Usuários ativos</h3>
-        <p class="val">{{ total_usuarios|default:0 }}</p>
+      <article class="kpi" style="--kpi-color:#06b6d4;">
+        <h6>A Receber (em aberto)</h6>
+        <p class="val">{{ contas_receber_abertas|default:0 }}</p>
+        <div class="meta">R$ {{ valor_a_receber|floatformat:2 }}</div>
       </article>
-      <article class="panel">
-        <h3>Pendências de empréstimos</h3>
-        <p class="val">{{ total_emprestimos_com_pendencia|default:0 }}</p>
+      <article class="kpi" style="--kpi-color:#7c3aed;">
+        <h6>Compras do Mês</h6>
+        <p class="val">{{ compras_mes_count|default:0 }}</p>
+        <div class="meta">R$ {{ compras_mes|floatformat:2 }}</div>
+      </article>
+      <article class="kpi" style="--kpi-color:#16a34a;">
+        <h6>Vendas do Mês</h6>
+        <p class="val">{{ vendas_mes_count|default:0 }}</p>
+        <div class="meta">R$ {{ vendas_mes|floatformat:2 }}</div>
       </article>
     </div>
+
+    <div class="panel-grid">
+      <article class="panel">
+        <h3>Vence nos próximos 7 dias</h3>
+        {% if parcelas_a_vencer_7d_count > 0 %}
+          <div style="display:flex;align-items:center;gap:1rem;padding:0.75rem 0;">
+            <span style="font-size:2rem;font-weight:800;color:#f59e0b;">{{ parcelas_a_vencer_7d_count }}</span>
+            <div>
+              <div style="color:#111827;font-weight:600;">parcela{{ parcelas_a_vencer_7d_count|pluralize }} a vencer</div>
+              <div class="meta">Total: R$ {{ valor_a_vencer_7d|floatformat:2 }}</div>
+            </div>
+          </div>
+        {% else %}
+          <p class="meta" style="padding:0.5rem 0;">Nenhuma parcela vencendo nos próximos 7 dias.</p>
+        {% endif %}
+        <a href="{% url 'financeiro:dashboard' %}" class="btn btn-sm btn-outline-primary mt-2">Ver Dashboard Financeiro</a>
+      </article>
+
+      <article class="panel">
+        <h3>Ações necessárias</h3>
+        <div class="mini-list">
+          <div class="mini-item">
+            <div>
+              <strong>Solicitações de Compra</strong>
+              <div><small class="text-muted">Aguardando aprovação</small></div>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+              {% if solicitacoes_pendentes_count > 0 %}
+                <span class="chip warn">{{ solicitacoes_pendentes_count }}</span>
+              {% else %}
+                <span class="chip ok">0</span>
+              {% endif %}
+              <a href="{% url 'compras:solicitacao_list' %}" class="btn btn-sm btn-outline-secondary">Ver</a>
+            </div>
+          </div>
+          <div class="mini-item">
+            <div>
+              <strong>Empréstimos</strong>
+              <div><small class="text-muted">Mensagens não lidas</small></div>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+              {% if total_emprestimos_com_pendencia > 0 %}
+                <span class="chip warn">{{ total_mensagens_produtor_nao_lidas|default:0 }}</span>
+              {% else %}
+                <span class="chip ok">0</span>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </article>
+    </div>
+
+    <div class="kpi-grid" style="margin-bottom:1rem;">
+      <article class="kpi" style="--kpi-color:#0ea5e9;">
+        <h6>Fazendas</h6>
+        <p class="val">{{ total_fazendas|default:0 }}</p>
+        <div class="meta">Cadastradas</div>
+      </article>
+      <article class="kpi" style="--kpi-color:#0ea5e9;">
+        <h6>Clientes</h6>
+        <p class="val">{{ total_clientes|default:0 }}</p>
+        <div class="meta">Cadastrados</div>
+      </article>
+      <article class="kpi" style="--kpi-color:#0ea5e9;">
+        <h6>Produtores</h6>
+        <p class="val">{{ total_produtores|default:0 }}</p>
+        <div class="meta">Cadastrados</div>
+      </article>
+      <article class="kpi" style="--kpi-color:#0ea5e9;">
+        <h6>Armazéns</h6>
+        <p class="val">{{ total_armazens|default:0 }}</p>
+        <div class="meta">Cadastrados</div>
+      </article>
+    </div>
+
+    <article class="panel" style="margin-bottom:1rem;">
+      <h3>Acesso rápido</h3>
+      <div style="display:flex;flex-wrap:wrap;gap:0.6rem;margin-top:0.5rem;">
+        <a href="{% url 'financeiro:dashboard' %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-cash-stack me-1"></i>Financeiro</a>
+        <a href="{% url 'compras:dashboard_compras' %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-cart me-1"></i>Compras</a>
+        <a href="{% url 'estoque:dashboard' %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-box-seam me-1"></i>Estoque</a>
+        <a href="{% url 'produtos:dashboard' %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-grid me-1"></i>Produtos</a>
+      </div>
+    </article>
 
     <div class="panel mt-3">
       <h3>{{ titulo_pendencias_emprestimo }}</h3>
@@ -300,7 +392,7 @@
             </div>
             <div class="d-flex align-items-center gap-2">
               <span class="chip warn">{{ item.unread_mensagens_interno_count }} nova{{ item.unread_mensagens_interno_count|pluralize }}</span>
-              <a href="{% url 'cadastros:emprestimo_detalhe' item.pk %}" class="btn btn-sm btn-outline-primary">Abrir</a>
+              <a href="{% url 'emprestimos:emprestimo_detalhe' item.pk %}" class="btn btn-sm btn-outline-primary">Abrir</a>
             </div>
           </div>
         {% empty %}

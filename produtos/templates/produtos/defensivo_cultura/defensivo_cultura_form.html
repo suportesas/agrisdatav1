@@ -89,12 +89,17 @@
           </div>
         </div>
         
-        <h5 class="mb-3 mt-4"><i class="bi bi-calculator me-2"></i>Dosagem Convertida (Cálculo)</h5>
+        <h5 class="mb-3 mt-4"><i class="bi bi-calculator me-2"></i>Concentração na Calda (Cálculo)</h5>
+        <div class="alert alert-info py-2 px-3 mb-3 small">
+          <i class="bi bi-info-circle me-1"></i>
+          Concentração calculada para o volume de calda informado abaixo. Se nenhum volume for informado, usa o volume mínimo/máximo da bula como referência.
+          Fórmula: <code>(Dosagem mL/ha ÷ Volume L/ha) × 100 = mL/100L</code>
+        </div>
         <div class="row">
           <div class="col-md-4 mb-3">
             {{ form.dosagem_minima_calc.label_tag }}
             {{ form.dosagem_minima_calc }}
-            <small class="text-muted d-block">Fórmula: (Dosagem ml/ha) ÷ (Volume L/ha) × 100</small>
+            <small class="text-muted d-block">Concentração mínima (mL/100L de calda)</small>
             {% if form.dosagem_minima_calc.errors %}
             <div class="text-danger">{{ form.dosagem_minima_calc.errors }}</div>
             {% endif %}
@@ -102,7 +107,7 @@
           <div class="col-md-4 mb-3">
             {{ form.dosagem_maxima_calc.label_tag }}
             {{ form.dosagem_maxima_calc }}
-            <small class="text-muted d-block">Fórmula: (Dosagem ml/ha) ÷ (Volume L/ha) × 100</small>
+            <small class="text-muted d-block">Concentração máxima (mL/100L de calda)</small>
             {% if form.dosagem_maxima_calc.errors %}
             <div class="text-danger">{{ form.dosagem_maxima_calc.errors }}</div>
             {% endif %}
@@ -110,28 +115,28 @@
           <div class="col-md-4 mb-3">
             {{ form.unidade_dosagem_calc.label_tag }}
             {{ form.unidade_dosagem_calc }}
-            <small class="text-muted d-block">Ex: ml/100L para conversão de ml/ha</small>
+            <small class="text-muted d-block">Ex: mL/100L</small>
             {% if form.unidade_dosagem_calc.errors %}
             <div class="text-danger">{{ form.unidade_dosagem_calc.errors }}</div>
             {% endif %}
           </div>
         </div>
-        
-        <h5 class="mb-3 mt-4"><i class="bi bi-arrows-angle-expand me-2"></i>Cálculo Reverso (Volume → Dosagem)</h5>
+
+        <h5 class="mb-3 mt-4"><i class="bi bi-arrows-angle-expand me-2"></i>Simulação por Volume de Calda</h5>
         <div class="row">
           <div class="col-md-6 mb-3">
             {{ form.volume_calda_aplicacao.label_tag }}
             {{ form.volume_calda_aplicacao }}
-            <small class="text-muted d-block">Digite o volume de calda que será aplicado</small>
+            <small class="text-muted d-block">Volume de calda que será aplicado por hectare (L/ha)</small>
             {% if form.volume_calda_aplicacao.errors %}
             <div class="text-danger">{{ form.volume_calda_aplicacao.errors }}</div>
             {% endif %}
           </div>
           <div class="col-md-6 mb-3">
-            {{ form.dosagem_calculada_ha.label_tag }}
+            <label class="form-label">Dosagem por Hectare (conforme bula)</label>
             {{ form.dosagem_calculada_ha }}
             <div id="alertaDosagem" class="mt-1"></div>
-            <small class="text-muted d-block">Fórmula: (Dosagem ml/100L) × (Volume L) ÷ 100</small>
+            <small class="text-muted d-block">Dose/ha da bula (mL/ha). A concentração na calda é exibida no alerta acima.</small>
             {% if form.dosagem_calculada_ha.errors %}
             <div class="text-danger">{{ form.dosagem_calculada_ha.errors }}</div>
             {% endif %}
@@ -201,75 +206,98 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-  // Elementos do formulário
-  const dosagemMinima = document.getElementById('id_dosagem_minima');
-  const dosagemMaxima = document.getElementById('id_dosagem_maxima');
-  const volumeCaldaMinimo = document.getElementById('id_volume_calda_minimo');
-  const volumeCaldaMaximo = document.getElementById('id_volume_calda_maximo');
-  const dosagemMinimaCalc = document.getElementById('id_dosagem_minima_calc');
-  const dosagemMaximaCalc = document.getElementById('id_dosagem_maxima_calc');
+  const dosagemMinima       = document.getElementById('id_dosagem_minima');
+  const dosagemMaxima       = document.getElementById('id_dosagem_maxima');
+  const unidadeDosagemSel   = document.getElementById('id_unidade_dosagem');
+  const volumeCaldaMinimo   = document.getElementById('id_volume_calda_minimo');
+  const volumeCaldaMaximo   = document.getElementById('id_volume_calda_maximo');
+  const dosagemMinimaCalc   = document.getElementById('id_dosagem_minima_calc');
+  const dosagemMaximaCalc   = document.getElementById('id_dosagem_maxima_calc');
   const volumeCaldaAplicacao = document.getElementById('id_volume_calda_aplicacao');
-  const dosagemCalculadaHa = document.getElementById('id_dosagem_calculada_ha');
-  const alertaDosagem = document.getElementById('alertaDosagem');
+  const dosagemCalculadaHa  = document.getElementById('id_dosagem_calculada_ha');
+  const alertaDosagem       = document.getElementById('alertaDosagem');
 
-  // Função para calcular dosagem ml/ha → ml/100L (Forward)
+  // Retorna fator de conversão para mL com base na sigla da unidade selecionada.
+  // Unidade "L" (litro) → multiplica por 1000 para obter mL.
+  function fatorMl() {
+    const texto = unidadeDosagemSel?.options[unidadeDosagemSel?.selectedIndex]?.text || '';
+    const sigla = texto.split(' - ')[0].trim().toLowerCase();
+    return (sigla === 'l' || sigla === 'lt' || sigla === 'litro' || sigla === 'litros') ? 1000 : 1;
+  }
+
+  // Calcula concentrações (mL/100L) e preenche os campos de cálculo.
+  // Quando volume_calda_aplicacao está preenchido, usa esse volume.
+  // Caso contrário usa os volumes mínimo/máximo da bula como referência.
   function calcularDosagem() {
-    const dosMin = parseFloat(dosagemMinima?.value) || 0;
-    const dosMax = parseFloat(dosagemMaxima?.value) || 0;
-    const volMin = parseFloat(volumeCaldaMinimo?.value) || 0;
-    const volMax = parseFloat(volumeCaldaMaximo?.value) || 0;
+    const dosMin   = parseFloat(dosagemMinima?.value)       || 0;
+    const dosMax   = parseFloat(dosagemMaxima?.value)       || 0;
+    const volMin   = parseFloat(volumeCaldaMinimo?.value)   || 0;
+    const volMax   = parseFloat(volumeCaldaMaximo?.value)   || 0;
+    const volAplic = parseFloat(volumeCaldaAplicacao?.value) || 0;
+    const fator    = fatorMl();
 
-    if (dosMin > 0 && volMin > 0) {
-      const calcMin = (dosMin / volMin) * 100;
-      if (dosagemMinimaCalc) dosagemMinimaCalc.value = calcMin.toFixed(3);
+    const dosMin_mL = dosMin * fator;
+    const dosMax_mL = dosMax * fator;
+
+    // Volume de referência: usa o volume informado; se ausente, usa o volume de bula
+    const refVolMin = volAplic > 0 ? volAplic : volMin;
+    const refVolMax = volAplic > 0 ? volAplic : volMax;
+
+    if (dosMin_mL > 0 && refVolMin > 0) {
+      if (dosagemMinimaCalc) dosagemMinimaCalc.value = ((dosMin_mL / refVolMin) * 100).toFixed(3);
     } else {
       if (dosagemMinimaCalc) dosagemMinimaCalc.value = '';
     }
 
-    if (dosMax > 0 && volMax > 0) {
-      const calcMax = (dosMax / volMax) * 100;
-      if (dosagemMaximaCalc) dosagemMaximaCalc.value = calcMax.toFixed(3);
+    if (dosMax_mL > 0 && refVolMax > 0) {
+      if (dosagemMaximaCalc) dosagemMaximaCalc.value = ((dosMax_mL / refVolMax) * 100).toFixed(3);
     } else {
       if (dosagemMaximaCalc) dosagemMaximaCalc.value = '';
     }
 
-    // Se houver volume de calda aplicação, recalcular também o reverso
-    calcularDosagemReversa();
+    calcularSimulacao();
   }
 
-  // Função para calcular Volume → Dosagem (Reverse)
-  function calcularDosagemReversa() {
-    const dosMinCalc = parseFloat(dosagemMinimaCalc?.value) || 0;
-    const dosMaxCalc = parseFloat(dosagemMaximaCalc?.value) || 0;
-    const dosMin = parseFloat(dosagemMinima?.value) || 0;
-    const dosMax = parseFloat(dosagemMaxima?.value) || 0;
-    const volumeAplicacao = parseFloat(volumeCaldaAplicacao?.value) || 0;
+  // Exibe a dosagem/ha da bula e a concentração para o volume informado.
+  function calcularSimulacao() {
+    const dosMin   = parseFloat(dosagemMinima?.value)       || 0;
+    const dosMax   = parseFloat(dosagemMaxima?.value)       || 0;
+    const volMin   = parseFloat(volumeCaldaMinimo?.value)   || 0;
+    const volMax   = parseFloat(volumeCaldaMaximo?.value)   || 0;
+    const volAplic = parseFloat(volumeCaldaAplicacao?.value) || 0;
+    const fator    = fatorMl();
 
-    if (dosMinCalc > 0 && volumeAplicacao > 0) {
-      // Fórmula: (Dosagem ml/100L) × (Volume L) ÷ 100 = ml/ha
-      const dosagemCalculada = (dosMinCalc * volumeAplicacao) / 100;
-      if (dosagemCalculadaHa) dosagemCalculadaHa.value = dosagemCalculada.toFixed(3);
+    const dosMin_mL = dosMin * fator;
+    const dosMax_mL = dosMax * fator;
 
-      // Validar se a dosagem calculada está dentro do range
+    if (volAplic > 0 && dosMin_mL > 0) {
+      // Dosagem/ha é sempre o valor da bula — o volume não muda a dose por hectare
+      if (dosagemCalculadaHa) dosagemCalculadaHa.value = dosMin_mL.toFixed(3);
+
+      // Concentração na calda para o volume informado
+      const concMin = (dosMin_mL / volAplic) * 100;
+      const concMax = (dosMax_mL / volAplic) * 100;
+
+      let alertClass = 'success';
+      let icone = 'check-circle';
+      let msgVolume = '';
+
+      if (volMin > 0 && volAplic < volMin) {
+        alertClass = 'warning';
+        icone = 'exclamation-triangle';
+        msgVolume = `<br><strong>Atenção:</strong> Volume ${volAplic} L/ha está abaixo do mínimo recomendado pela bula (${volMin} L/ha).`;
+      } else if (volMax > 0 && volAplic > volMax) {
+        alertClass = 'warning';
+        icone = 'exclamation-triangle';
+        msgVolume = `<br><strong>Atenção:</strong> Volume ${volAplic} L/ha está acima do máximo recomendado pela bula (${volMax} L/ha).`;
+      }
+
       if (alertaDosagem) {
-        if (dosMin > 0 && dosagemCalculada < dosMin) {
-          alertaDosagem.innerHTML = `<div class="alert alert-danger py-1 px-2 mb-0 small">
-            <i class="bi bi-exclamation-triangle me-1"></i>
-            Atenção: Dosagem calculada (${dosagemCalculada.toFixed(3)} ml/ha) está abaixo do mínimo recomendado (${dosMin} ml/ha)
-          </div>`;
-        } else if (dosMax > 0 && dosagemCalculada > dosMax) {
-          alertaDosagem.innerHTML = `<div class="alert alert-danger py-1 px-2 mb-0 small">
-            <i class="bi bi-exclamation-triangle me-1"></i>
-            Atenção: Dosagem calculada (${dosagemCalculada.toFixed(3)} ml/ha) está acima do máximo recomendado (${dosMax} ml/ha)
-          </div>`;
-        } else if (dosMin > 0 && dosMax > 0) {
-          alertaDosagem.innerHTML = `<div class="alert alert-success py-1 px-2 mb-0 small">
-            <i class="bi bi-check-circle me-1"></i>
-            Dosagem calculada está dentro do range recomendado (${dosMin} - ${dosMax} ml/ha)
-          </div>`;
-        } else {
-          alertaDosagem.innerHTML = '';
-        }
+        alertaDosagem.innerHTML = `<div class="alert alert-${alertClass} py-2 px-3 mb-0 small">
+          <i class="bi bi-${icone} me-1"></i>
+          Para <strong>${volAplic} L/ha</strong> de calda: adicione <strong>${concMin.toFixed(0)} a ${concMax.toFixed(0)} mL a cada 100L</strong> de água
+          (dose/ha conforme bula: ${dosMin_mL.toFixed(0)}–${dosMax_mL.toFixed(0)} mL/ha).${msgVolume}
+        </div>`;
       }
     } else {
       if (dosagemCalculadaHa) dosagemCalculadaHa.value = '';
@@ -277,17 +305,13 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  // Event listeners para cálculo forward
-  if (dosagemMinima) dosagemMinima.addEventListener('input', calcularDosagem);
-  if (dosagemMaxima) dosagemMaxima.addEventListener('input', calcularDosagem);
-  if (volumeCaldaMinimo) volumeCaldaMinimo.addEventListener('input', calcularDosagem);
-  if (volumeCaldaMaximo) volumeCaldaMaximo.addEventListener('input', calcularDosagem);
+  if (dosagemMinima)       dosagemMinima.addEventListener('input', calcularDosagem);
+  if (dosagemMaxima)       dosagemMaxima.addEventListener('input', calcularDosagem);
+  if (volumeCaldaMinimo)   volumeCaldaMinimo.addEventListener('input', calcularDosagem);
+  if (volumeCaldaMaximo)   volumeCaldaMaximo.addEventListener('input', calcularDosagem);
+  if (unidadeDosagemSel)   unidadeDosagemSel.addEventListener('change', calcularDosagem);
+  if (volumeCaldaAplicacao) volumeCaldaAplicacao.addEventListener('input', calcularDosagem);
 
-  // Event listeners para cálculo reverso
-  if (volumeCaldaAplicacao) volumeCaldaAplicacao.addEventListener('input', calcularDosagemReversa);
-  if (dosagemMinimaCalc) dosagemMinimaCalc.addEventListener('input', calcularDosagemReversa);
-
-  // Calcular ao carregar a página (caso haja valores pré-preenchidos)
   calcularDosagem();
 });
 </script>

@@ -533,22 +533,14 @@
           <i class="bi bi-chevron-down submenu-arrow"></i>
         </a>
         <ul class="nav-submenu">
-          <li><a href="{% url 'financeiro:conta_pagar_list' %}"><i class="bi bi-list-check"></i> Contas a Pagar</a></li>
-          <li><a href="{% url 'financeiro:parcela_list' %}"><i class="bi bi-calendar-check"></i> Parcelas</a></li>
+          <li><a href="{% url 'financeiro:dashboard' %}"><i class="bi bi-speedometer2"></i> Dashboard Financeiro</a></li>
 
           <li class="submenu-divider"></li>
-          <li><a href="{% url 'financeiro:relatorio_contas_vencer' %}"><i class="bi bi-calendar-plus"></i> Contas a Vencer</a></li>
-          <li><a href="{% url 'financeiro:relatorio_contas_vencidas' %}"><i class="bi bi-exclamation-triangle"></i> Contas Vencidas</a></li>
-          <li><a href="{% url 'financeiro:relatorio_fluxo_caixa' %}"><i class="bi bi-graph-up"></i> Fluxo de Caixa</a></li>
 
-          <!-- Configurações Comerciais (Submenu) -->
-          <li class="has-submenu">
-            <a href="#"><i class="bi bi-gear"></i> Configurações <i class="bi bi-chevron-right ms-auto"></i></a>
-            <ul class="nested-submenu">
-              <li><a href="{% url 'cadastros:prazo_pagamento_list' %}"><i class="bi bi-calendar-event"></i> Prazos de Pagamento</a></li>
-              <li><a href="{% url 'compras:forma_pagamento_list' %}"><i class="bi bi-credit-card"></i> Formas de Pagamento</a></li>
-            </ul>
-          </li>
+          <li><a href="{% url 'financeiro:conta_pagar_list' %}"><i class="bi bi-list-check"></i> Contas a Pagar</a></li>
+          <li><a href="{% url 'financeiro:parcela_list' %}"><i class="bi bi-calendar-check"></i> Agenda de Pagamentos</a></li>
+          <li><a href="{% url 'financeiro:conta_receber_list' %}"><i class="bi bi-cash-coin"></i> Contas a Receber</a></li>
+          <li><a href="{% url 'financeiro:relatorio_fluxo_caixa' %}"><i class="bi bi-graph-up"></i> Fluxo de Caixa</a></li>
 
           <li class="submenu-divider"></li>
 
@@ -588,15 +580,6 @@
               <li><a href="{% url 'adiantamentos:adiantamento_create' %}"><i class="bi bi-plus-circle"></i> Novo Adiantamento</a></li>
               <li><a href="{% url 'adiantamentos:relatorio_adiantamentos' %}"><i class="bi bi-graph-up"></i> Relatório</a></li>
             </ul>
-          </li>
-
-          <li class="submenu-divider"></li>
-
-          <!-- Drawback -->
-          <li>
-            <a href="{% url 'drawback:dashboard' %}">
-              <i class="bi bi-shield-check"></i> Drawback
-            </a>
           </li>
 
         </ul>
@@ -650,6 +633,8 @@
           <li><a href="{% url 'exportacao:solicitacao_booking_list' %}"><i class="bi bi-file-earmark-plus"></i> Solicitações Booking</a></li>
           <li><a href="{% url 'exportacao:booking_list' %}"><i class="bi bi-box-seam"></i> Bookings</a></li>
           <li><a href="{% url 'exportacao:ordem_coleta_list' %}"><i class="bi bi-truck"></i> Ordens de Coleta</a></li>
+          <li class="submenu-divider"></li>
+          <li><a href="{% url 'drawback:dashboard' %}"><i class="bi bi-shield-check"></i> Drawback</a></li>
         </ul>
       </li>
       {% endif %}
@@ -689,9 +674,6 @@
         <ul class="nav-submenu">
           <li><a href="{% url 'vendas:pedido_list' %}"><i class="bi bi-list-ul"></i> Pedidos de Venda</a></li>
           <li><a href="{% url 'vendas:pedido_create' %}"><i class="bi bi-plus-circle"></i> Novo Pedido</a></li>
-          <li class="submenu-divider"></li>
-          <li><a href="{% url 'financeiro:conta_receber_list' %}"><i class="bi bi-cash-coin"></i> Contas a Receber</a></li>
-          <li><a href="{% url 'financeiro:conta_receber_create' %}"><i class="bi bi-plus-circle"></i> Nova CR</a></li>
         </ul>
       </li>
       {% endif %}

@@ -54,32 +54,109 @@
         </div>
     </div>
 
+    {# ── tabs de período rápido ── #}
+    <div class="d-flex gap-2 mb-3 flex-wrap align-items-center">
+        <a href="{% url 'financeiro:conta_pagar_list' %}?periodo=todos"
+           class="btn btn-sm {% if periodo == 'todos' or not periodo %}btn-secondary{% else %}btn-outline-secondary{% endif %}">
+            Todas
+        </a>
+        <a href="{% url 'financeiro:conta_pagar_list' %}?periodo=vencidas"
+           class="btn btn-sm {% if periodo == 'vencidas' %}btn-danger{% else %}btn-outline-danger{% endif %}">
+            Vencidas
+            {% if n_vencidas %}<span class="badge {% if periodo == 'vencidas' %}bg-white text-danger{% else %}bg-danger{% endif %} ms-1">{{ n_vencidas }}</span>{% endif %}
+        </a>
+        <a href="{% url 'financeiro:conta_pagar_list' %}?periodo=semana"
+           class="btn btn-sm {% if periodo == 'semana' %}btn-warning text-white{% else %}btn-outline-warning{% endif %}"
+           title="Vencimentos de {{ inicio_semana|date:'d/m' }} a {{ fim_semana|date:'d/m' }}">
+            Esta Semana
+            {% if n_semana %}<span class="badge {% if periodo == 'semana' %}bg-white text-warning{% else %}bg-warning text-dark{% endif %} ms-1">{{ n_semana }}</span>{% endif %}
+        </a>
+        <a href="{% url 'financeiro:conta_pagar_list' %}?periodo=proximas"
+           class="btn btn-sm {% if periodo == 'proximas' %}btn-info text-white{% else %}btn-outline-info{% endif %}">
+            A Vencer
+        </a>
+        <a href="{% url 'financeiro:conta_pagar_list' %}?periodo=30dias"
+           class="btn btn-sm {% if periodo == '30dias' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+            Próx. 30 dias
+        </a>
+    </div>
+
+    {# ── navegador de semana ISO (visível apenas quando periodo=semana) ── #}
+    {% if periodo == 'semana' %}
+    <div class="d-flex align-items-center gap-2 mb-3 flex-wrap">
+        {# seta: semana anterior #}
+        <a href="?periodo=semana&semana_iso={{ semana_anterior }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if fornecedor_filter %}&fornecedor={{ fornecedor_filter }}{% endif %}{% if data_ini %}&data_ini={{ data_ini }}{% endif %}{% if data_fim %}&data_fim={{ data_fim }}{% endif %}"
+           class="btn btn-sm btn-outline-secondary" title="Semana anterior">
+            <i class="bi bi-chevron-left"></i>
+        </a>
+
+        {# label: Semana 26/2025 · 23/06 – 29/06 #}
+        <span class="fw-semibold px-1">
+            Semana {{ num_semana_ano }}/{{ ano_semana }}
+            <span class="text-muted fw-normal small ms-1">{{ inicio_semana|date:'d/m' }} – {{ fim_semana|date:'d/m' }}</span>
+        </span>
+
+        {# seta: próxima semana #}
+        <a href="?periodo=semana&semana_iso={{ semana_proxima }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if fornecedor_filter %}&fornecedor={{ fornecedor_filter }}{% endif %}{% if data_ini %}&data_ini={{ data_ini }}{% endif %}{% if data_fim %}&data_fim={{ data_fim }}{% endif %}"
+           class="btn btn-sm btn-outline-secondary" title="Próxima semana">
+            <i class="bi bi-chevron-right"></i>
+        </a>
+
+        {# seletor de semana ISO nativo — o browser mostra "Semana 26, 2025" #}
+        <form method="get" class="d-flex align-items-center gap-1 ms-2">
+            <input type="hidden" name="periodo" value="semana">
+            {% if status_filter %}<input type="hidden" name="status" value="{{ status_filter }}">{% endif %}
+            {% if fornecedor_filter %}<input type="hidden" name="fornecedor" value="{{ fornecedor_filter }}">{% endif %}
+            {% if data_ini %}<input type="hidden" name="data_ini" value="{{ data_ini }}">{% endif %}
+            {% if data_fim %}<input type="hidden" name="data_fim" value="{{ data_fim }}">{% endif %}
+            <input type="week" name="semana_iso" class="form-control form-control-sm" style="width:auto"
+                   value="{{ semana_iso }}" title="Escolha a semana pelo número">
+            <button type="submit" class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-arrow-right-circle"></i>
+            </button>
+        </form>
+
+        {# atalho: voltar à semana atual #}
+        <a href="?periodo=semana{% if status_filter %}&status={{ status_filter }}{% endif %}{% if fornecedor_filter %}&fornecedor={{ fornecedor_filter }}{% endif %}{% if data_ini %}&data_ini={{ data_ini }}{% endif %}{% if data_fim %}&data_fim={{ data_fim }}{% endif %}"
+           class="btn btn-sm btn-link text-muted" title="Voltar para a semana atual">
+            <i class="bi bi-calendar-check"></i> Semana atual
+        </a>
+    </div>
+    {% endif %}
+
+    {# ── filtros avançados ── #}
     <div class="card mb-4">
         <div class="card-body">
             <form method="get" class="row g-3">
-                <div class="col-md-4">
+                <input type="hidden" name="periodo" value="{{ periodo }}">
+
+                <div class="col-md-3">
                     <label class="form-label">Status</label>
                     <select name="status" class="form-select">
                         <option value="">-- Todos --</option>
-                        <option value="ABERTA" {% if status_filter == 'ABERTA' %}selected{% endif %}>Aberta</option>
-                        <option value="APROVADA" {% if status_filter == 'APROVADA' %}selected{% endif %}>Aprovada</option>
-                        <option value="PAGA" {% if status_filter == 'PAGA' %}selected{% endif %}>Paga</option>
+                        <option value="ABERTA"    {% if status_filter == 'ABERTA' %}selected{% endif %}>Aberta</option>
+                        <option value="APROVADA"  {% if status_filter == 'APROVADA' %}selected{% endif %}>Aprovada</option>
+                        <option value="PAGA"      {% if status_filter == 'PAGA' %}selected{% endif %}>Paga</option>
                         <option value="CANCELADA" {% if status_filter == 'CANCELADA' %}selected{% endif %}>Cancelada</option>
                     </select>
                 </div>
-                <div class="col-md-4">
+
+                <div class="col-md-3">
                     <label class="form-label">Fornecedor</label>
-                    <input type="text" name="fornecedor" class="form-control" placeholder="Nome do fornecedor" value="{{ fornecedor_filter }}">
+                    <input type="text" name="fornecedor" class="form-control"
+                           placeholder="Nome do fornecedor" value="{{ fornecedor_filter }}">
                 </div>
-                <div class="col-md-4">
-                    <label class="form-label">Período</label>
-                    <select name="periodo" class="form-select">
-                        <option value="todos" {% if periodo_filter == 'todos' %}selected{% endif %}>Todos</option>
-                        <option value="30dias" {% if periodo_filter == '30dias' %}selected{% endif %}>Próximos 30 dias</option>
-                        <option value="vencidas" {% if periodo_filter == 'vencidas' %}selected{% endif %}>Vencidas</option>
-                        <option value="proximas" {% if periodo_filter == 'proximas' %}selected{% endif %}>Próximas a vencer</option>
-                    </select>
+
+                <div class="col-md-3">
+                    <label class="form-label">Emissão — de</label>
+                    <input type="date" name="data_ini" class="form-control" value="{{ data_ini }}">
                 </div>
+
+                <div class="col-md-3">
+                    <label class="form-label">até</label>
+                    <input type="date" name="data_fim" class="form-control" value="{{ data_fim }}">
+                </div>
+
                 <div class="col-12">
                     <button type="submit" class="btn btn-primary">
                         <i class="bi bi-search"></i> Filtrar
@@ -150,14 +227,16 @@
     </div>
 
     {% if page_obj.has_other_pages %}
+    {# macro-like snippet para preservar todos os filtros na paginação #}
+    {% with qs_extra=""|add:"" %}
     <nav class="mt-4" aria-label="Paginação">
         <ul class="pagination justify-content-center">
             {% if page_obj.has_previous %}
             <li class="page-item">
-                <a class="page-link" href="?page=1{% if status_filter %}&status={{ status_filter }}{% endif %}{% if fornecedor_filter %}&fornecedor={{ fornecedor_filter }}{% endif %}{% if periodo_filter %}&periodo={{ periodo_filter }}{% endif %}">Primeira</a>
+                <a class="page-link" href="?page=1{% if periodo %}&periodo={{ periodo }}{% endif %}{% if semana_iso and periodo == 'semana' %}&semana_iso={{ semana_iso }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if fornecedor_filter %}&fornecedor={{ fornecedor_filter }}{% endif %}{% if data_ini %}&data_ini={{ data_ini }}{% endif %}{% if data_fim %}&data_fim={{ data_fim }}{% endif %}">Primeira</a>
             </li>
             <li class="page-item">
-                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if fornecedor_filter %}&fornecedor={{ fornecedor_filter }}{% endif %}{% if periodo_filter %}&periodo={{ periodo_filter }}{% endif %}">Anterior</a>
+                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if periodo %}&periodo={{ periodo }}{% endif %}{% if semana_iso and periodo == 'semana' %}&semana_iso={{ semana_iso }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if fornecedor_filter %}&fornecedor={{ fornecedor_filter }}{% endif %}{% if data_ini %}&data_ini={{ data_ini }}{% endif %}{% if data_fim %}&data_fim={{ data_fim }}{% endif %}">Anterior</a>
             </li>
             {% endif %}
 
@@ -166,21 +245,22 @@
             <li class="page-item active"><span class="page-link">{{ num }}</span></li>
             {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
             <li class="page-item">
-                <a class="page-link" href="?page={{ num }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if fornecedor_filter %}&fornecedor={{ fornecedor_filter }}{% endif %}{% if periodo_filter %}&periodo={{ periodo_filter }}{% endif %}">{{ num }}</a>
+                <a class="page-link" href="?page={{ num }}{% if periodo %}&periodo={{ periodo }}{% endif %}{% if semana_iso and periodo == 'semana' %}&semana_iso={{ semana_iso }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if fornecedor_filter %}&fornecedor={{ fornecedor_filter }}{% endif %}{% if data_ini %}&data_ini={{ data_ini }}{% endif %}{% if data_fim %}&data_fim={{ data_fim }}{% endif %}">{{ num }}</a>
             </li>
             {% endif %}
             {% endfor %}
 
             {% if page_obj.has_next %}
             <li class="page-item">
-                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if fornecedor_filter %}&fornecedor={{ fornecedor_filter }}{% endif %}{% if periodo_filter %}&periodo={{ periodo_filter }}{% endif %}">Próxima</a>
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if periodo %}&periodo={{ periodo }}{% endif %}{% if semana_iso and periodo == 'semana' %}&semana_iso={{ semana_iso }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if fornecedor_filter %}&fornecedor={{ fornecedor_filter }}{% endif %}{% if data_ini %}&data_ini={{ data_ini }}{% endif %}{% if data_fim %}&data_fim={{ data_fim }}{% endif %}">Próxima</a>
             </li>
             <li class="page-item">
-                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if fornecedor_filter %}&fornecedor={{ fornecedor_filter }}{% endif %}{% if periodo_filter %}&periodo={{ periodo_filter }}{% endif %}">Última</a>
+                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if periodo %}&periodo={{ periodo }}{% endif %}{% if semana_iso and periodo == 'semana' %}&semana_iso={{ semana_iso }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if fornecedor_filter %}&fornecedor={{ fornecedor_filter }}{% endif %}{% if data_ini %}&data_ini={{ data_ini }}{% endif %}{% if data_fim %}&data_fim={{ data_fim }}{% endif %}">Última</a>
             </li>
             {% endif %}
         </ul>
     </nav>
+    {% endwith %}
     {% endif %}
 </div>
 {% endblock %}

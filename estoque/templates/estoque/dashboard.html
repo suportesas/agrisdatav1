@@ -1,362 +1,570 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Estoque - Dashboard{% endblock %}
+{% block title %}Estoque | Dashboard{% endblock %}
 
 {% block extra_css %}
 <style>
-  .stat-card {
-    background: white;
+  /* ── layout ── */
+  .es-wrap {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 1.25rem 1rem;
+  }
+  .es-head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-bottom: 1.25rem;
+    flex-wrap: wrap;
+    gap: .5rem;
+  }
+  .es-head h1 {
+    font-size: 1.55rem;
+    font-weight: 800;
+    color: #1f2937;
+    margin: 0;
+  }
+  .es-head .sub {
+    color: #6b7280;
+    font-size: .875rem;
+    margin: .15rem 0 0;
+  }
+
+  /* ── KPI cards ── */
+  .kpi-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: .85rem;
+    margin-bottom: 1rem;
+  }
+  .kpi {
+    background: #fff;
+    border: 1px solid #e5e7eb;
     border-radius: 12px;
-    padding: 24px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-    transition: transform 0.2s;
+    padding: .9rem 1rem;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 1px 4px rgba(0,0,0,.04);
   }
-  .stat-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
-  }
-  .stat-value {
-    font-size: 2.5rem;
-    font-weight: 700;
-    color: #1e293b;
-  }
-  .stat-label {
-    color: #64748b;
-    font-size: 0.95rem;
-    margin-top: 8px;
-  }
-  .stat-icon {
-    font-size: 3rem;
-    opacity: 0.2;
+  .kpi::before {
+    content: '';
     position: absolute;
-    right: 24px;
-    top: 24px;
+    left: 0; top: 0; bottom: 0;
+    width: 4px;
+    background: var(--kc, #7c3aed);
   }
-  .quick-actions {
-    background: white;
-    border-radius: 12px;
-    padding: 24px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  .kpi .kpi-icon {
+    position: absolute;
+    right: .9rem; top: .75rem;
+    font-size: 2rem;
+    opacity: .08;
+    color: var(--kc, #7c3aed);
   }
-  .action-card {
-    background: white;
-    border: 2px solid #e2e8f0;
+  .kpi h6 {
+    margin: 0;
+    font-size: .72rem;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    color: #6b7280;
+  }
+  .kpi .val {
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: #111827;
+    line-height: 1.1;
+    margin: .3rem 0 .2rem;
+  }
+  .kpi .meta {
+    font-size: .78rem;
+    color: #6b7280;
+  }
+
+  /* ── status pills ── */
+  .status-row {
+    display: flex;
+    gap: .6rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+  }
+  .stpill {
+    display: flex;
+    align-items: center;
+    gap: .4rem;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: .45rem .85rem;
+    font-size: .82rem;
+    font-weight: 600;
+    color: #374151;
+    box-shadow: 0 1px 3px rgba(0,0,0,.04);
+  }
+  .stpill .dot {
+    width: 9px; height: 9px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .stpill .num { font-size: 1rem; font-weight: 800; }
+
+  /* ── panels ── */
+  .panel-grid {
+    display: grid;
+    grid-template-columns: 1.15fr .85fr;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+  .panel {
+    background: #fff;
+    border: 1px solid #e5e7eb;
     border-radius: 12px;
-    padding: 24px 16px;
-    text-align: center;
-    transition: all 0.3s ease;
-    cursor: pointer;
-    text-decoration: none;
+    box-shadow: 0 1px 4px rgba(0,0,0,.04);
+    overflow: hidden;
+  }
+  .panel-hd {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: .75rem 1rem;
+    border-bottom: 1px solid #f3f4f6;
+  }
+  .panel-hd h3 {
+    margin: 0;
+    font-size: .9rem;
+    font-weight: 700;
+    color: #111827;
+  }
+  .panel-body { padding: .75rem 1rem; }
+
+  /* ── table inside panel ── */
+  .es-table { width: 100%; border-collapse: collapse; font-size: .82rem; }
+  .es-table th {
+    text-align: left;
+    padding: .45rem .6rem;
+    color: #6b7280;
+    font-size: .7rem;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    border-bottom: 1px solid #f3f4f6;
+  }
+  .es-table td {
+    padding: .55rem .6rem;
+    color: #374151;
+    border-bottom: 1px solid #f9fafb;
+    vertical-align: middle;
+  }
+  .es-table tr:last-child td { border-bottom: none; }
+  .es-table tr:hover td { background: #f9fafb; }
+
+  /* ── badge ── */
+  .bdg {
+    display: inline-block;
+    border-radius: 999px;
+    font-size: .7rem;
+    font-weight: 700;
+    padding: .15rem .5rem;
+    white-space: nowrap;
+  }
+  .bdg-green  { background:#dcfce7; color:#166534; }
+  .bdg-red    { background:#fee2e2; color:#991b1b; }
+  .bdg-yellow { background:#fef3c7; color:#92400e; }
+  .bdg-orange { background:#ffedd5; color:#9a3412; }
+  .bdg-gray   { background:#f1f5f9; color:#475569; }
+  .bdg-purple { background:#ede9fe; color:#5b21b6; }
+
+  /* ── urgency bar for days-to-expire ── */
+  .days-bar {
+    display: flex;
+    align-items: center;
+    gap: .4rem;
+  }
+  .days-bar .track {
+    width: 50px; height: 6px;
+    background: #e5e7eb;
+    border-radius: 999px;
+    overflow: hidden;
+  }
+  .days-bar .fill { height: 100%; border-radius: 999px; }
+
+  /* ── movimentações list ── */
+  .mov-list { display: grid; gap: .4rem; }
+  .mov-item {
+    display: flex;
+    align-items: center;
+    gap: .65rem;
+    padding: .5rem .6rem;
+    border-radius: 8px;
+    border: 1px solid #f3f4f6;
+  }
+  .mov-icon {
+    width: 30px; height: 30px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: .9rem;
+    flex-shrink: 0;
+  }
+  .mov-icon.entrada { background:#dcfce7; color:#166534; }
+  .mov-icon.saida   { background:#fee2e2; color:#991b1b; }
+  .mov-icon.transf  { background:#dbeafe; color:#1e40af; }
+  .mov-icon.ajuste  { background:#fef3c7; color:#92400e; }
+  .mov-icon.outro   { background:#f1f5f9; color:#475569; }
+  .mov-desc { flex: 1; min-width: 0; }
+  .mov-desc .title  { font-size: .82rem; font-weight: 600; color: #111827; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mov-desc .sub    { font-size: .72rem; color: #6b7280; }
+  .mov-date { font-size: .72rem; color: #9ca3af; white-space: nowrap; }
+
+  /* ── quick actions ── */
+  .qa-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: .65rem;
+    margin-bottom: 1rem;
+  }
+  .qa-btn {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 12px;
-    min-height: 140px;
-    justify-content: center;
+    gap: .35rem;
+    padding: .8rem .5rem;
+    background: #fff;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 10px;
+    text-decoration: none;
+    transition: all .18s ease;
+    font-size: .78rem;
+    font-weight: 600;
+    color: #374151;
   }
-  .action-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+  .qa-btn i { font-size: 1.35rem; }
+  .qa-btn:hover {
+    color: #fff;
+    border-color: transparent;
+    text-decoration: none;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,.12);
+  }
+  .qa-btn.c-green:hover  { background: #10b981; }
+  .qa-btn.c-red:hover    { background: #ef4444; }
+  .qa-btn.c-blue:hover   { background: #3b82f6; }
+  .qa-btn.c-violet:hover { background: #7c3aed; }
+  .qa-btn.c-slate:hover  { background: #475569; }
+  .qa-btn.c-cyan:hover   { background: #06b6d4; }
+  .qa-btn.c-green  i { color: #10b981; }
+  .qa-btn.c-red    i { color: #ef4444; }
+  .qa-btn.c-blue   i { color: #3b82f6; }
+  .qa-btn.c-violet i { color: #7c3aed; }
+  .qa-btn.c-slate  i { color: #475569; }
+  .qa-btn.c-cyan   i { color: #06b6d4; }
+  .qa-btn:hover i { color: #fff; }
+
+  /* ── reports section ── */
+  .rpt-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem;
+    padding: .75rem 1rem;
+  }
+  .rpt-link {
+    display: inline-flex;
+    align-items: center;
+    gap: .35rem;
+    padding: .4rem .85rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: .8rem;
+    font-weight: 600;
+    color: #374151;
+    text-decoration: none;
+    background: #fff;
+    transition: all .15s;
+  }
+  .rpt-link:hover {
+    background: #7c3aed;
+    color: #fff;
+    border-color: #7c3aed;
     text-decoration: none;
   }
-  .action-card.success {
-    border-color: #10b981;
+  .rpt-link i { font-size: .95rem; }
+
+  /* ── alert expired ── */
+  .expired-banner {
+    display: flex;
+    align-items: flex-start;
+    gap: .75rem;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 10px;
+    padding: .85rem 1rem;
+    margin-bottom: 1rem;
   }
-  .action-card.success:hover {
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-    border-color: #10b981;
+  .expired-banner i { color: #dc2626; font-size: 1.2rem; flex-shrink: 0; margin-top: .1rem; }
+  .expired-banner .title { font-weight: 700; color: #991b1b; font-size: .875rem; margin-bottom: .3rem; }
+  .expired-banner ul { margin: 0; padding-left: 1rem; font-size: .82rem; color: #7f1d1d; }
+  .expired-banner ul li { margin-bottom: .15rem; }
+  .expired-banner a { color: #dc2626; font-weight: 700; }
+
+  /* ── responsive ── */
+  @media (max-width: 1100px) {
+    .kpi-row { grid-template-columns: repeat(2, 1fr); }
+    .panel-grid { grid-template-columns: 1fr; }
+    .qa-grid { grid-template-columns: repeat(3, 1fr); }
   }
-  .action-card.warning {
-    border-color: #f59e0b;
-  }
-  .action-card.warning:hover {
-    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-    border-color: #f59e0b;
-  }
-  .action-card.info {
-    border-color: #3b82f6;
-  }
-  .action-card.info:hover {
-    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-    border-color: #3b82f6;
-  }
-  .action-card.primary {
-    border-color: #6366f1;
-  }
-  .action-card.primary:hover {
-    background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
-    border-color: #6366f1;
-  }
-  .action-card.secondary {
-    border-color: #64748b;
-  }
-  .action-card.secondary:hover {
-    background: linear-gradient(135deg, #64748b 0%, #475569 100%);
-    border-color: #64748b;
-  }
-  .action-card-icon {
-    font-size: 3rem;
-    transition: all 0.3s ease;
-  }
-  .action-card.success .action-card-icon {
-    color: #10b981;
-  }
-  .action-card.warning .action-card-icon {
-    color: #f59e0b;
-  }
-  .action-card.info .action-card-icon {
-    color: #3b82f6;
-  }
-  .action-card.primary .action-card-icon {
-    color: #6366f1;
-  }
-  .action-card.secondary .action-card-icon {
-    color: #64748b;
-  }
-  .action-card:hover .action-card-icon {
-    color: white;
-    transform: scale(1.1);
-  }
-  .action-card-text {
-    font-weight: 600;
-    font-size: 0.95rem;
-    transition: all 0.3s ease;
-  }
-  .action-card.success .action-card-text {
-    color: #10b981;
-  }
-  .action-card.warning .action-card-text {
-    color: #f59e0b;
-  }
-  .action-card.info .action-card-text {
-    color: #3b82f6;
-  }
-  .action-card.primary .action-card-text {
-    color: #6366f1;
-  }
-  .action-card.secondary .action-card-text {
-    color: #64748b;
-  }
-  .action-card.danger {
-    border-color: #ef4444;
-  }
-  .action-card.danger:hover {
-    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-    border-color: #ef4444;
-  }
-  .action-card.danger .action-card-icon {
-    color: #ef4444;
-  }
-  .action-card.danger .action-card-text {
-    color: #ef4444;
-  }
-  .action-card:hover .action-card-text {
-    color: white;
-  }
-  .action-btn {
-    padding: 12px 24px;
-    border-radius: 8px;
-    transition: all 0.2s;
+  @media (max-width: 640px) {
+    .kpi-row { grid-template-columns: 1fr 1fr; }
+    .qa-grid { grid-template-columns: repeat(3, 1fr); }
   }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid">
-  <div class="d-flex justify-content-between align-items-center mb-4">
+<div class="es-wrap">
+
+  {# ── cabeçalho ── #}
+  <div class="es-head">
     <div>
-      <h2 class="mb-1"><i class="bi bi-box-seam"></i> Gestão de Estoque</h2>
-      <p class="text-muted">Visão geral do estoque e movimentações</p>
+      <h1><i class="bi bi-box-seam me-2" style="color:#7c3aed;"></i>Estoque</h1>
+      <p class="sub">Visão geral, alertas e acesso rápido às operações</p>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{% url 'estoque:entrada_create' %}" class="btn btn-sm btn-success">
+        <i class="bi bi-box-arrow-in-down me-1"></i>Entrada
+      </a>
+      <a href="{% url 'estoque:saida_create' %}" class="btn btn-sm btn-danger">
+        <i class="bi bi-box-arrow-up me-1"></i>Saída
+      </a>
     </div>
   </div>
 
-  <!-- Estatísticas -->
-  <div class="row mb-4">
-    <div class="col-md-3">
-      <div class="stat-card position-relative">
-        <i class="bi bi-building stat-icon"></i>
-        <div class="stat-value text-primary">{{ total_armazens }}</div>
-        <div class="stat-label">Armazéns Ativos</div>
-      </div>
-    </div>
-    <div class="col-md-3">
-      <div class="stat-card position-relative">
-        <i class="bi bi-pin-map stat-icon"></i>
-        <div class="stat-value text-success">{{ total_locais }}</div>
-        <div class="stat-label">Locais de Estocagem</div>
-      </div>
-    </div>
-    <div class="col-md-3">
-      <div class="stat-card position-relative">
-        <i class="bi bi-box2 stat-icon"></i>
-        <div class="stat-value text-info">{{ total_lotes }}</div>
-        <div class="stat-label">Lotes em Estoque</div>
-      </div>
-    </div>
-    <div class="col-md-3">
-      <div class="stat-card position-relative">
-        <i class="bi bi-exclamation-triangle stat-icon"></i>
-        <div class="stat-value text-warning">{{ lotes_vencendo }}</div>
-        <div class="stat-label">Lotes Vencendo</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Ações Rápidas -->
-  <div class="row mb-4">
-    <div class="col-12">
-      <div class="quick-actions">
-        <h5 class="mb-4"><i class="bi bi-lightning-charge"></i> Ações Rápidas</h5>
-        <div class="row g-3">
-          <div class="col-6 col-md-4 col-lg-2">
-            <a href="{% url 'estoque:entrada_create' %}" class="action-card success">
-              <i class="bi bi-box-arrow-in-down action-card-icon"></i>
-              <span class="action-card-text">Entrada</span>
-            </a>
-          </div>
-          <div class="col-6 col-md-4 col-lg-2">
-            <a href="{% url 'estoque:saida_create' %}" class="action-card warning">
-              <i class="bi bi-box-arrow-up action-card-icon"></i>
-              <span class="action-card-text">Saída</span>
-            </a>
-          </div>
-          <div class="col-6 col-md-4 col-lg-2">
-            <a href="{% url 'estoque:transferencia_create' %}" class="action-card info">
-              <i class="bi bi-arrow-left-right action-card-icon"></i>
-              <span class="action-card-text">Transferência</span>
-            </a>
-          </div>
-          <div class="col-6 col-md-4 col-lg-2">
-            <a href="{% url 'estoque:lote_create' %}" class="action-card primary">
-              <i class="bi bi-box2 action-card-icon"></i>
-              <span class="action-card-text">Novo Lote</span>
-            </a>
-          </div>
-          <div class="col-6 col-md-4 col-lg-2">
-            <a href="{% url 'estoque:movimentacao_list' %}" class="action-card secondary">
-              <i class="bi bi-list-ul action-card-icon"></i>
-              <span class="action-card-text">Movimentações</span>
-            </a>
-          </div>
-          <div class="col-6 col-md-4 col-lg-2">
-            <a href="{% url 'estoque:relatorio_estoque' %}" class="action-card secondary">
-              <i class="bi bi-file-earmark-bar-graph action-card-icon"></i>
-              <span class="action-card-text">Relatório</span>
-            </a>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Relatórios Avançados -->
-  <div class="row mb-4">
-    <div class="col-12">
-      <div class="quick-actions">
-        <h5 class="mb-4"><i class="bi bi-graph-up"></i> Relatórios Avançados (FASE 3)</h5>
-        <div class="row g-3">
-          <div class="col-6 col-md-4 col-lg-2">
-            <a href="{% url 'estoque:relatorio_abc' %}" class="action-card primary">
-              <i class="bi bi-pie-chart action-card-icon"></i>
-              <span class="action-card-text">Análise ABC</span>
-            </a>
-          </div>
-          <div class="col-6 col-md-4 col-lg-2">
-            <a href="{% url 'estoque:relatorio_comparativo' %}" class="action-card info">
-              <i class="bi bi-graph-up action-card-icon"></i>
-              <span class="action-card-text">Comparativo</span>
-            </a>
-          </div>
-          <div class="col-6 col-md-4 col-lg-2">
-            <a href="{% url 'estoque:relatorio_auditoria' %}" class="action-card secondary">
-              <i class="bi bi-clock-history action-card-icon"></i>
-              <span class="action-card-text">Auditoria</span>
-            </a>
-          </div>
-          <div class="col-6 col-md-4 col-lg-2">
-            <a href="{% url 'estoque:relatorio_rastreamento' %}" class="action-card primary">
-              <i class="bi bi-upc-scan action-card-icon"></i>
-              <span class="action-card-text">Rastreamento</span>
-            </a>
-          </div>
-          <div class="col-6 col-md-4 col-lg-2">
-            <a href="{% url 'estoque:relatorio_alertas_estoque' %}" class="action-card danger">
-              <i class="bi bi-exclamation-triangle action-card-icon"></i>
-              <span class="action-card-text">Alertas</span>
-            </a>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+  {# ── lotes vencidos — banner de alerta ── #}
   {% if lotes_vencidos %}
-  <div class="row mb-4">
-    <div class="col-12">
-      <div class="alert alert-danger">
-        <h5><i class="bi bi-exclamation-octagon"></i> Lotes Vencidos</h5>
-        <ul class="mb-0">
-          {% for lote in lotes_vencidos %}
-          <li>
-            <a href="{% url 'estoque:lote_detail' lote.pk %}" class="text-danger fw-bold text-decoration-none">
-              <strong>{{ lote.numero_lote }}</strong>
-            </a> - {{ lote.produto.nome }} 
-            (Venceu em {{ lote.data_validade|date:"d/m/Y" }})
-          </li>
-          {% endfor %}
-        </ul>
-      </div>
+  <div class="expired-banner">
+    <i class="bi bi-exclamation-octagon-fill"></i>
+    <div>
+      <div class="title">{{ lotes_vencidos|length }} lote{{ lotes_vencidos|length|pluralize }} vencido{{ lotes_vencidos|length|pluralize }} detectado{{ lotes_vencidos|length|pluralize }}</div>
+      <ul>
+        {% for lote in lotes_vencidos %}
+        <li>
+          <a href="{% url 'estoque:lote_detail' lote.pk %}">{{ lote.numero_lote }}</a>
+          — {{ lote.produto.nome }}
+          {% if lote.armazem %} · {{ lote.armazem.nome }}{% endif %}
+          (venceu {{ lote.data_validade|date:"d/m/Y" }})
+        </li>
+        {% endfor %}
+      </ul>
     </div>
   </div>
   {% endif %}
 
-  <!-- Lotes Próximos do Vencimento -->
-  {% if lotes_proximos_vencimento %}
-  <div class="row">
-    <div class="col-12">
-      <div class="card">
-        <div class="card-header bg-warning text-white">
-          <h5 class="mb-0"><i class="bi bi-clock-history"></i> Lotes Próximos do Vencimento (30 dias)</h5>
-        </div>
-        <div class="card-body">
-          <div class="table-responsive">
-            <table class="table table-hover">
-              <thead>
-                <tr>
-                  <th>Lote</th>
-                  <th>Produto</th>
-                  <th>Armazém</th>
-                  <th>Quantidade</th>
-                  <th>Validade</th>
-                  <th>Dias</th>
-                  <th>Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for lote in lotes_proximos_vencimento %}
-                <tr>
-                  <td><strong>{{ lote.numero_lote }}</strong></td>
-                  <td>{{ lote.produto.nome }}</td>
-                  <td>{{ lote.armazem.nome }}</td>
-                  <td>{{ lote.quantidade_atual }} {{ lote.unidade_medida.sigla }}</td>
-                  <td>{{ lote.data_validade|date:"d/m/Y" }}</td>
-                  <td>
-                    <span class="badge bg-warning">{{ lote.dias_para_vencer }} dias</span>
-                  </td>
-                  <td>
-                    <a href="{% url 'estoque:lote_detail' lote.pk %}" class="btn btn-sm btn-outline-primary">
-                      <i class="bi bi-eye"></i>
-                    </a>
-                  </td>
-                </tr>
-                {% endfor %}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
+  {# ── KPIs principais ── #}
+  <div class="kpi-row">
+    <div class="kpi" style="--kc:#7c3aed;">
+      <i class="bi bi-currency-dollar kpi-icon"></i>
+      <h6>Valor em Estoque</h6>
+      <p class="val">R$ {{ valor_total_estoque|floatformat:2 }}</p>
+      <p class="meta">Lotes disponíveis</p>
+    </div>
+    <div class="kpi" style="--kc:#06b6d4;">
+      <i class="bi bi-box2 kpi-icon"></i>
+      <h6>Lotes Ativos</h6>
+      <p class="val">{{ total_lotes }}</p>
+      <p class="meta">{{ total_armazens }} armazém{{ total_armazens|pluralize:"éns" }} · {{ total_locais }} local{{ total_locais|pluralize:"is" }}</p>
+    </div>
+    <div class="kpi" style="--kc:#10b981;">
+      <i class="bi bi-arrow-left-right kpi-icon"></i>
+      <h6>Movimentações (mês)</h6>
+      <p class="val">{{ movimentacoes_mes }}</p>
+      <p class="meta">{{ entradas_mes }} entrada{{ entradas_mes|pluralize }} · {{ saidas_mes }} saída{{ saidas_mes|pluralize }}</p>
+    </div>
+    <div class="kpi" style="--kc:{% if lotes_vencendo_7d > 0 %}#ef4444{% else %}#f59e0b{% endif %};">
+      <i class="bi bi-clock-history kpi-icon"></i>
+      <h6>Vencendo (30 dias)</h6>
+      <p class="val">{{ lotes_vencendo }}</p>
+      <p class="meta">
+        {% if lotes_vencendo_7d > 0 %}
+          <span style="color:#ef4444;font-weight:700;">{{ lotes_vencendo_7d }} vence{{ lotes_vencendo_7d|pluralize:"m" }} em 7 dias</span>
+        {% else %}
+          Nenhum crítico nos próximos 7 dias
+        {% endif %}
+      </p>
     </div>
   </div>
-  {% endif %}
+
+  {# ── distribuição de status ── #}
+  <div class="status-row">
+    <div class="stpill">
+      <span class="dot" style="background:#10b981;"></span>
+      <span class="num">{{ lotes_disponiveis }}</span>
+      Disponível
+    </div>
+    <div class="stpill">
+      <span class="dot" style="background:#ef4444;"></span>
+      <span class="num">{{ lotes_vencidos_count }}</span>
+      Vencido
+    </div>
+    <div class="stpill">
+      <span class="dot" style="background:#f59e0b;"></span>
+      <span class="num">{{ lotes_bloqueados }}</span>
+      Bloqueado
+    </div>
+    <div class="stpill">
+      <span class="dot" style="background:#8b5cf6;"></span>
+      <span class="num">{{ lotes_quarentena }}</span>
+      Quarentena
+    </div>
+  </div>
+
+  {# ── ações rápidas ── #}
+  <div class="qa-grid">
+    <a href="{% url 'estoque:entrada_create' %}" class="qa-btn c-green">
+      <i class="bi bi-box-arrow-in-down"></i>Entrada
+    </a>
+    <a href="{% url 'estoque:saida_create' %}" class="qa-btn c-red">
+      <i class="bi bi-box-arrow-up"></i>Saída
+    </a>
+    <a href="{% url 'estoque:transferencia_create' %}" class="qa-btn c-blue">
+      <i class="bi bi-arrow-left-right"></i>Transferência
+    </a>
+    <a href="{% url 'estoque:lote_create' %}" class="qa-btn c-violet">
+      <i class="bi bi-box2"></i>Novo Lote
+    </a>
+    <a href="{% url 'estoque:movimentacao_list' %}" class="qa-btn c-slate">
+      <i class="bi bi-list-ul"></i>Movimentações
+    </a>
+    <a href="{% url 'estoque:inventario_ciclico_list' %}" class="qa-btn c-cyan">
+      <i class="bi bi-clipboard-check"></i>Inventário
+    </a>
+  </div>
+
+  {# ── painéis: vencimentos + últimas movimentações ── #}
+  <div class="panel-grid">
+
+    {# lotes próximos do vencimento #}
+    <div class="panel">
+      <div class="panel-hd">
+        <h3><i class="bi bi-clock me-1" style="color:#f59e0b;"></i>Vencendo nos próximos 30 dias</h3>
+        <a href="{% url 'estoque:lote_list' %}" class="btn btn-xs btn-outline-secondary" style="font-size:.75rem;padding:.2rem .6rem;">Ver todos</a>
+      </div>
+      {% if lotes_proximos_vencimento %}
+      <table class="es-table">
+        <thead>
+          <tr>
+            <th>Lote / Produto</th>
+            <th>Armazém</th>
+            <th>Qtd</th>
+            <th>Validade</th>
+            <th>Dias</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for lote in lotes_proximos_vencimento %}
+          {% with dias=lote.dias_para_vencer %}
+          <tr>
+            <td>
+              <div style="font-weight:600;font-size:.82rem;color:#111827;">{{ lote.numero_lote }}</div>
+              <div style="font-size:.75rem;color:#6b7280;">{{ lote.produto.nome }}</div>
+            </td>
+            <td style="font-size:.78rem;">{{ lote.armazem.nome }}</td>
+            <td style="font-size:.78rem;">{{ lote.quantidade_atual|floatformat:0 }} {{ lote.unidade_medida.sigla }}</td>
+            <td style="font-size:.78rem;">{{ lote.data_validade|date:"d/m/Y" }}</td>
+            <td>
+              <div class="days-bar">
+                <div class="track">
+                  <div class="fill" style="width:{{ dias|default:0|floatformat:0 }}%;{% if dias <= 7 %}background:#ef4444;{% elif dias <= 15 %}background:#f59e0b;{% else %}background:#10b981;{% endif %}"></div>
+                </div>
+                <span class="bdg {% if dias <= 7 %}bdg-red{% elif dias <= 15 %}bdg-yellow{% else %}bdg-green{% endif %}">
+                  {{ dias }}d
+                </span>
+              </div>
+            </td>
+            <td>
+              <a href="{% url 'estoque:lote_detail' lote.pk %}" class="btn btn-xs btn-outline-primary" style="font-size:.72rem;padding:.15rem .5rem;">
+                <i class="bi bi-eye"></i>
+              </a>
+            </td>
+          </tr>
+          {% endwith %}
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div class="panel-body" style="color:#6b7280;font-size:.85rem;">
+        <i class="bi bi-check-circle text-success me-1"></i>Nenhum lote vencendo nos próximos 30 dias.
+      </div>
+      {% endif %}
+    </div>
+
+    {# últimas movimentações #}
+    <div class="panel">
+      <div class="panel-hd">
+        <h3><i class="bi bi-arrow-left-right me-1" style="color:#3b82f6;"></i>Últimas movimentações</h3>
+        <a href="{% url 'estoque:movimentacao_list' %}" class="btn btn-xs btn-outline-secondary" style="font-size:.75rem;padding:.2rem .6rem;">Ver todas</a>
+      </div>
+      <div class="panel-body">
+        {% if ultimas_movimentacoes %}
+        <div class="mov-list">
+          {% for mov in ultimas_movimentacoes %}
+          <div class="mov-item">
+            <div class="mov-icon
+              {% if mov.tipo == 'ENTRADA' %}entrada
+              {% elif mov.tipo == 'SAIDA' %}saida
+              {% elif mov.tipo == 'TRANSFERENCIA' %}transf
+              {% elif mov.tipo == 'AJUSTE' %}ajuste
+              {% else %}outro{% endif %}">
+              {% if mov.tipo == 'ENTRADA' %}<i class="bi bi-box-arrow-in-down"></i>
+              {% elif mov.tipo == 'SAIDA' %}<i class="bi bi-box-arrow-up"></i>
+              {% elif mov.tipo == 'TRANSFERENCIA' %}<i class="bi bi-arrow-left-right"></i>
+              {% elif mov.tipo == 'AJUSTE' %}<i class="bi bi-sliders"></i>
+              {% else %}<i class="bi bi-circle"></i>{% endif %}
+            </div>
+            <div class="mov-desc">
+              <div class="title">{{ mov.numero }}</div>
+              <div class="sub">
+                {% if mov.produto %}{{ mov.produto.nome }}{% else %}—{% endif %}
+                · {{ mov.get_tipo_display }}
+              </div>
+            </div>
+            <div class="mov-date">{{ mov.data_movimentacao|date:"d/m H:i" }}</div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <p style="color:#6b7280;font-size:.85rem;">Sem movimentações registradas.</p>
+        {% endif %}
+      </div>
+    </div>
+
+  </div>
+
+  {# ── relatórios ── #}
+  <div class="panel">
+    <div class="panel-hd">
+      <h3><i class="bi bi-graph-up me-1" style="color:#7c3aed;"></i>Relatórios</h3>
+    </div>
+    <div class="rpt-grid">
+      <a href="{% url 'estoque:relatorio_estoque' %}" class="rpt-link">
+        <i class="bi bi-file-earmark-bar-graph"></i>Posição de Estoque
+      </a>
+      <a href="{% url 'estoque:relatorio_abc' %}" class="rpt-link">
+        <i class="bi bi-pie-chart"></i>Análise ABC
+      </a>
+      <a href="{% url 'estoque:relatorio_comparativo' %}" class="rpt-link">
+        <i class="bi bi-graph-up-arrow"></i>Comparativo
+      </a>
+      <a href="{% url 'estoque:relatorio_auditoria' %}" class="rpt-link">
+        <i class="bi bi-clock-history"></i>Auditoria
+      </a>
+      <a href="{% url 'estoque:relatorio_rastreamento' %}" class="rpt-link">
+        <i class="bi bi-upc-scan"></i>Rastreamento
+      </a>
+      <a href="{% url 'estoque:relatorio_alertas_estoque' %}" class="rpt-link">
+        <i class="bi bi-bell"></i>Alertas
+      </a>
+      <a href="{% url 'estoque:inventario_ciclico_relatorio_acuracia' %}" class="rpt-link">
+        <i class="bi bi-clipboard-data"></i>Acurácia de Inventário
+      </a>
+    </div>
+  </div>
+
 </div>
 {% endblock %}

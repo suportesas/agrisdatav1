@@ -126,10 +126,26 @@ def financeiro_dashboard(request):
         total=Sum('valor_total'),
         contas_count=Count('id')
     ).order_by('-total')[:5]
-    
+
     # Últimas contas
     ultimas_contas = ContaPagar.objects.filter(empresa=empresa).order_by('-data_criacao')[:5]
-    
+
+    # ── Contas a Receber ──
+    cr_abertas_qs = ContaReceber.objects.filter(
+        empresa=empresa, status__in=['ABERTA', 'VENCIDA']
+    )
+    cr_abertas_count = cr_abertas_qs.count()
+    valor_a_receber = cr_abertas_qs.aggregate(
+        total=Sum('valor_brl')
+    )['total'] or Decimal('0.00')
+    cr_recebimentos_mes = RecebimentoContaReceber.objects.filter(
+        conta_receber__empresa=empresa,
+        data_recebimento__gte=datetime(hoje.year, hoje.month, 1).date(),
+        data_recebimento__lte=hoje,
+    ).aggregate(total=Sum('valor_recebido'))['total'] or Decimal('0.00')
+
+    posicao_liquida = valor_a_receber - valor_vencido
+
     context = {
         'stats': {
             'total_contas': total_contas,
@@ -158,8 +174,13 @@ def financeiro_dashboard(request):
         'ultimas_contas': ultimas_contas,
         'parcelas_vencidas': parcelas_vencidas[:10],
         'parcelas_proximas': parcelas_proximas[:10],
+        # CR
+        'cr_abertas_count': cr_abertas_count,
+        'valor_a_receber': valor_a_receber,
+        'cr_recebimentos_mes': cr_recebimentos_mes,
+        'posicao_liquida': posicao_liquida,
     }
-    
+
     return render(request, 'financeiro/dashboard.html', context)
 
 
@@ -184,16 +205,63 @@ def conta_pagar_list(request):
     status = request.GET.get('status', '')
     fornecedor = request.GET.get('fornecedor', '')
     periodo = request.GET.get('periodo', 'todos')
-    
+    data_ini = request.GET.get('data_ini', '')
+    data_fim = request.GET.get('data_fim', '')
+
     if status:
         contas = contas.filter(status=status)
-    
+
     if fornecedor:
         contas = contas.filter(fornecedor__nome__icontains=fornecedor)
-    
-    # Filtro por período
+
+    # Filtro de data de emissão (intervalo livre — campo data_ini/data_fim)
+    if data_ini:
+        try:
+            contas = contas.filter(data_emissao__gte=datetime.strptime(data_ini, '%Y-%m-%d').date())
+        except ValueError:
+            pass
+    if data_fim:
+        try:
+            contas = contas.filter(data_emissao__lte=datetime.strptime(data_fim, '%Y-%m-%d').date())
+        except ValueError:
+            pass
+
+    # Filtro por período (vencimento de parcelas)
     hoje = timezone.now().date()
-    if periodo == '30dias':
+
+    # Semana ISO 8601: param ?semana_iso=YYYY-Www (ex: 2025-W26)
+    # Um ano tem 52 ou 53 semanas. date.fromisocalendar(year, week, 1) retorna a
+    # segunda-feira exata da semana — correto independente de virada de ano.
+    semana_iso_str = request.GET.get('semana_iso', '')
+    if semana_iso_str:
+        try:
+            # Formato esperado: "2025-W26"
+            partes = semana_iso_str.split('-W')
+            iso_year, iso_week = int(partes[0]), int(partes[1])
+            import datetime as _dt
+            inicio_semana = _dt.date.fromisocalendar(iso_year, iso_week, 1)
+        except (ValueError, IndexError, AttributeError):
+            inicio_semana = hoje - timedelta(days=hoje.weekday())
+    else:
+        inicio_semana = hoje - timedelta(days=hoje.weekday())
+
+    fim_semana = inicio_semana + timedelta(days=6)
+
+    # Calcula o valor ISO para as semanas anterior e próxima
+    _prev = inicio_semana - timedelta(days=7)
+    _next = inicio_semana + timedelta(days=7)
+    iso_semana_atual = f"{inicio_semana.isocalendar()[0]}-W{inicio_semana.isocalendar()[1]:02d}"
+    iso_semana_anterior = f"{_prev.isocalendar()[0]}-W{_prev.isocalendar()[1]:02d}"
+    iso_semana_proxima = f"{_next.isocalendar()[0]}-W{_next.isocalendar()[1]:02d}"
+    num_semana_ano = inicio_semana.isocalendar()[1]   # 1‥52/53
+    ano_semana = inicio_semana.isocalendar()[0]
+
+    if periodo == 'semana':
+        contas = contas.filter(
+            parcelas__data_vencimento__gte=inicio_semana,
+            parcelas__data_vencimento__lte=fim_semana,
+        ).distinct()
+    elif periodo == '30dias':
         contas = contas.filter(
             parcelas__data_vencimento__gte=hoje,
             parcelas__data_vencimento__lte=hoje + timedelta(days=30)
@@ -208,16 +276,16 @@ def conta_pagar_list(request):
             parcelas__data_vencimento__gte=hoje,
             parcelas__status='ABERTA'
         ).distinct()
-    
+
     # Ordenação
     order_by = request.GET.get('order_by', '-data_emissao')
     contas = contas.order_by(order_by)
-    
+
     # Paginação
     paginator = Paginator(contas, 20)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
-    
+
     # Estatísticas
     stats = {
         'total': ContaPagar.objects.filter(empresa=empresa).count(),
@@ -226,7 +294,20 @@ def conta_pagar_list(request):
         'pagas': ContaPagar.objects.filter(empresa=empresa, status='PAGA').count(),
         'valor_total': ContaPagar.objects.filter(empresa=empresa).aggregate(Sum('valor_total'))['valor_total__sum'] or Decimal('0.00'),
     }
-    
+
+    n_vencidas = ParcelaContaPagar.objects.filter(
+        conta_pagar__empresa=empresa,
+        data_vencimento__lt=hoje,
+        status__in=['ABERTA', 'VENCIDA'],
+    ).count()
+
+    n_semana = ParcelaContaPagar.objects.filter(
+        conta_pagar__empresa=empresa,
+        data_vencimento__gte=inicio_semana,
+        data_vencimento__lte=fim_semana,
+        status='ABERTA',
+    ).count()
+
     context = {
         'page_obj': page_obj,
         'contas': page_obj.object_list,
@@ -234,8 +315,20 @@ def conta_pagar_list(request):
         'status_filter': status,
         'fornecedor_filter': fornecedor,
         'periodo_filter': periodo,
+        'periodo': periodo,
+        'data_ini': data_ini,
+        'data_fim': data_fim,
+        'n_vencidas': n_vencidas,
+        'n_semana': n_semana,
+        'inicio_semana': inicio_semana,
+        'fim_semana': fim_semana,
+        'semana_iso': iso_semana_atual,
+        'semana_anterior': iso_semana_anterior,
+        'semana_proxima': iso_semana_proxima,
+        'num_semana_ano': num_semana_ano,
+        'ano_semana': ano_semana,
     }
-    
+
     return render(request, 'financeiro/conta_pagar_list.html', context)
 
 

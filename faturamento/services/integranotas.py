@@ -459,7 +459,11 @@ class IntegranNotasClient:
             'presenca_comprador': nf.presenca_comprador or '9',
             'tipo_emissao': str(nf.tipo_emissao or 1),
             'emitente': self._build_emitente(empresa, config),
-            'destinatario': self._build_destinatario(nf.cliente),
+            'destinatario': (
+                self._build_destinatario_fornecedor(nf.fornecedor)
+                if nf.fornecedor_id
+                else self._build_destinatario(nf.cliente)
+            ),
             'itens': [self._build_item(item) for item in nf.itens.all()],
             'totais': self._build_totais(nf),
             'frete': self._build_frete(nf),
@@ -513,6 +517,14 @@ class IntegranNotasClient:
             elif len(doc_entrega) == 11:
                 entrega_block['cpf'] = doc_entrega
             payload['local_entrega'] = entrega_block
+
+        # NF-e Referenciada — obrigatória para devolução (finalidade 4)
+        chave_ref = (getattr(nf, 'chave_nfe_referenciada', '') or '').strip()
+        if not chave_ref and getattr(nf, 'recebimento_origem_id', None):
+            # Fallback: lê diretamente do recebimento de origem
+            chave_ref = (getattr(nf.recebimento_origem, 'chave_nfe', '') or '').strip()
+        if chave_ref and len(chave_ref) == 44:
+            payload['notas_referenciadas'] = [{'nfe': {'chave': chave_ref}}]
 
         # Cobrança (duplicatas)
         duplicatas = list(nf.duplicatas.all()) if hasattr(nf, 'duplicatas') else []
@@ -642,6 +654,72 @@ class IntegranNotasClient:
             }
         return dest
 
+    def _build_destinatario_fornecedor(self, fornecedor) -> dict:
+        doc = _digits(fornecedor.cnpj_cpf or '')
+        dest: dict = {'nome': fornecedor.nome}
+
+        ie = (fornecedor.inscricao_estadual or '').strip()
+        if ie and ie.upper() not in ('ISENTO', 'ISENto', ''):
+            dest['indicador_inscricao_estadual'] = '1'
+            dest['inscricao_estadual'] = ie
+        else:
+            dest['indicador_inscricao_estadual'] = '9'
+            dest['inscricao_estadual'] = ''
+
+        if len(doc) == 14:
+            dest['cnpj'] = doc
+        elif len(doc) == 11:
+            dest['cpf'] = doc
+        else:
+            raise IntegranNotasError(
+                f'Fornecedor "{fornecedor.nome}" sem CNPJ/CPF válido (14 ou 11 dígitos). '
+                'Corrija o documento no cadastro do fornecedor antes de emitir.',
+                codigo=None,
+            )
+
+        # Tenta endereço padrão de FornecedorEndereco; usa campos diretos como fallback
+        end = fornecedor.enderecos.filter(padrao=True).first()
+        if end:
+            logradouro = end.logradouro or ''
+            numero = end.numero or 'S/N'
+            complemento = end.complemento or ''
+            bairro = end.bairro or ''
+            cidade = end.cidade or ''
+            uf = end.uf or ''
+            cep = _digits(end.cep or '')
+            codigo_mun = (end.codigo_municipio or '').strip()
+        else:
+            logradouro = fornecedor.endereco or ''
+            numero = fornecedor.numero or 'S/N'
+            complemento = fornecedor.complemento or ''
+            bairro = fornecedor.bairro or ''
+            cidade = fornecedor.cidade or ''
+            uf = fornecedor.uf or ''
+            cep = _digits(fornecedor.cep or '')
+            codigo_mun = ''
+
+        if not codigo_mun:
+            raise IntegranNotasError(
+                f'Fornecedor "{fornecedor.nome}" sem Código IBGE do município. '
+                'Preencha o campo "Código IBGE" no endereço padrão do fornecedor antes de emitir.',
+                codigo=None,
+            )
+
+        dest['endereco'] = {
+            'logradouro': logradouro,
+            'numero': numero,
+            'complemento': complemento,
+            'bairro': bairro,
+            'codigo_municipio': codigo_mun,
+            'nome_municipio': cidade,
+            'uf': uf,
+            'cep': cep,
+            'codigo_pais': '1058',
+            'nome_pais': 'Brasil',
+            'telefone': _digits(fornecedor.telefone or ''),
+        }
+        return dest
+
     def _build_item(self, item) -> dict:
         produto_codigo = ''
         if item.produto_id:
@@ -764,7 +842,7 @@ class IntegranNotasClient:
         if item.aliquota_icms and float(item.aliquota_icms) > 0:
             icms_block.update({
                 'modalidade_base_calculo': modalidade_bc,
-                'base_calculo': str(item.icms_base_calculo),
+                'valor_base_calculo': str(item.icms_base_calculo),
                 'aliquota': str(item.aliquota_icms),
                 'valor': str(item.valor_icms),
             })
@@ -809,9 +887,9 @@ class IntegranNotasClient:
         fcp_aliq = float(getattr(item, 'fcp_aliquota', 0) or 0)
         if fcp_aliq > 0:
             impostos['fcp'] = {
-                'base_calculo': str(item.fcp_base_calculo),
-                'aliquota':     str(item.fcp_aliquota),
-                'valor':        str(item.fcp_valor),
+                'valor_base_calculo': str(item.fcp_base_calculo),
+                'aliquota':           str(item.fcp_aliquota),
+                'valor':              str(item.fcp_valor),
             }
 
         # IPI
@@ -824,7 +902,7 @@ class IntegranNotasClient:
             impostos['ipi'] = {
                 'situacao_tributaria': cst_ipi,
                 'codigo_enquadramento_legal': item.ipi_codigo_enquadramento or '999',
-                'base_calculo': str(item.valor_total),
+                'valor_base_calculo': str(item.valor_total),
                 'aliquota': str(item.aliquota_ipi),
                 'valor': str(item.valor_ipi),
             }
@@ -836,9 +914,11 @@ class IntegranNotasClient:
         if nat_pis:
             pis_block['natureza_receita'] = nat_pis
         if item.aliquota_pis and float(item.aliquota_pis) > 0:
+            # IntegraNotas aceita no máximo 4 casas decimais para aliquota
+            _aliq_pis = f"{float(item.aliquota_pis):.4f}".rstrip('0').rstrip('.')
             pis_block.update({
-                'base_calculo': str(item.pis_base_calculo),
-                'aliquota_percentual': str(item.aliquota_pis),
+                'valor_base_calculo': str(item.pis_base_calculo),
+                'aliquota': _aliq_pis,
                 'valor': str(item.valor_pis),
             })
         else:
@@ -852,9 +932,11 @@ class IntegranNotasClient:
         if nat_cofins:
             cofins_block['natureza_receita'] = nat_cofins
         if item.aliquota_cofins and float(item.aliquota_cofins) > 0:
+            # IntegraNotas aceita no máximo 4 casas decimais para aliquota
+            _aliq_cofins = f"{float(item.aliquota_cofins):.4f}".rstrip('0').rstrip('.')
             cofins_block.update({
-                'base_calculo': str(item.cofins_base_calculo),
-                'aliquota_percentual': str(item.aliquota_cofins),
+                'valor_base_calculo': str(item.cofins_base_calculo),
+                'aliquota': _aliq_cofins,
                 'valor': str(item.valor_cofins),
             })
         else:

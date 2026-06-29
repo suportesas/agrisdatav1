@@ -1518,7 +1518,7 @@ class FornecedorDadoBancarioForm(forms.ModelForm):
 class FornecedorEnderecoForm(forms.ModelForm):
     class Meta:
         model = FornecedorEndereco
-        fields = ['tipo', 'cep', 'logradouro', 'numero', 'complemento', 'bairro', 'cidade', 'uf', 'pais', 'padrao']
+        fields = ['tipo', 'cep', 'logradouro', 'numero', 'complemento', 'bairro', 'cidade', 'uf', 'codigo_municipio', 'pais', 'padrao']
         widgets = {
             'tipo': forms.Select(attrs={'class': 'form-select'}),
             'cep': forms.TextInput(attrs={'class': 'form-control'}),
@@ -1528,6 +1528,7 @@ class FornecedorEnderecoForm(forms.ModelForm):
             'bairro': forms.TextInput(attrs={'class': 'form-control'}),
             'cidade': forms.TextInput(attrs={'class': 'form-control'}),
             'uf': forms.TextInput(attrs={'class': 'form-control'}),
+            'codigo_municipio': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '7 dígitos IBGE', 'maxlength': 7}),
             'pais': forms.TextInput(attrs={'class': 'form-control'}),
         }
 

@@ -3530,12 +3530,167 @@ def processar_relatorio_compras(request, form):
             nome_arquivo, formato
         )
         resultados.append(('WhatsApp', sucesso, msg))
-    
+
     # Exibir resultados
     for tipo, sucesso, mensagem in resultados:
         if sucesso:
             messages.success(request, f'{tipo}: {mensagem}')
         else:
             messages.error(request, f'{tipo}: {mensagem}')
-    
+
     return redirect('compras:relatorio_compras')
+
+
+@login_required
+def devolucao_compra_create(request, pk):
+    """Gera NF-e de devolução de compra a partir de um RecebimentoCompra finalizado."""
+    from django.db import transaction
+    from django.urls import reverse
+    from decimal import Decimal, InvalidOperation
+    from .models import RecebimentoCompra, ItemRecebimento
+    from faturamento.models import NotaFiscal, ItemNotaFiscal
+
+    empresa = request.user.empresa
+    recebimento = get_object_or_404(
+        RecebimentoCompra.objects.select_related(
+            'fornecedor', 'pedido__fornecedor'
+        ).prefetch_related(
+            'itens__produto__ncm',
+            'itens__produto__unidade_medida',
+            'itens__unidade_medida',
+        ),
+        pk=pk,
+        empresa=empresa,
+        status='FINALIZADO',
+    )
+
+    fornecedor = recebimento.fornecedor or (recebimento.pedido.fornecedor if recebimento.pedido else None)
+    if not fornecedor:
+        messages.error(request, 'Não foi possível identificar o fornecedor deste recebimento.')
+        return redirect('compras:recebimento_detail', pk=pk)
+
+    # CFOP: intraestadual (5202) ou interestadual (6202)
+    uf_empresa = (empresa.uf or '').strip().upper()
+    uf_fornecedor = (fornecedor.uf or '').strip().upper()
+    cfop_padrao = '5202' if (uf_empresa and uf_empresa == uf_fornecedor) else '6202'
+
+    # Quantidades já devolvidas por item (apenas NF-es emitidas)
+    from django.db.models import Sum as _Sum
+    qtd_devolvida_map = {}
+    for item_rec in recebimento.itens.all():
+        devolvido = ItemNotaFiscal.objects.filter(
+            item_recebimento_origem=item_rec,
+            nota_fiscal__finalidade_nfe='4',
+            nota_fiscal__status='EMITIDA',
+        ).aggregate(total=_Sum('quantidade'))['total'] or Decimal('0')
+        qtd_devolvida_map[item_rec.pk] = devolvido
+
+    itens_recebimento = list(recebimento.itens.select_related(
+        'produto__ncm', 'produto__unidade_medida', 'unidade_medida'
+    ).all())
+
+    for item in itens_recebimento:
+        devolvida = qtd_devolvida_map.get(item.pk, Decimal('0'))
+        item.qtd_ja_devolvida = devolvida
+        item.qtd_disponivel_devolver = item.quantidade_recebida - devolvida
+
+    if request.method == 'POST':
+        cfop = request.POST.get('cfop', cfop_padrao).strip() or cfop_padrao
+        serie = request.POST.get('serie', '1').strip() or '1'
+        motivo = request.POST.get('motivo', '').strip()
+
+        itens_selecionados = []
+        erros = []
+        for item in itens_recebimento:
+            raw = request.POST.get(f'qtd_{item.pk}', '').strip()
+            if not raw:
+                continue
+            try:
+                qtd = Decimal(raw.replace(',', '.'))
+            except InvalidOperation:
+                erros.append(f'Quantidade inválida para o produto "{item.produto}".')
+                continue
+            if qtd <= 0:
+                continue
+            if qtd > item.qtd_disponivel_devolver:
+                erros.append(
+                    f'Quantidade ({qtd}) para "{item.produto}" excede '
+                    f'o disponível para devolução ({item.qtd_disponivel_devolver}).'
+                )
+                continue
+            itens_selecionados.append((item, qtd))
+
+        if erros:
+            for e in erros:
+                messages.error(request, e)
+        elif not itens_selecionados:
+            messages.error(request, 'Selecione ao menos um item e informe a quantidade a devolver.')
+        else:
+            ref_nf = recebimento.nota_fiscal or ''
+            ref_serie = recebimento.serie_nota or '1'
+            ref_chave = recebimento.chave_nfe or ''
+            info_complementar = f'Devolução referente à NF nº {ref_nf}, série {ref_serie}'
+            if ref_chave:
+                info_complementar += f', chave {ref_chave}'
+            if motivo:
+                info_complementar += f'. Motivo: {motivo}'
+
+            with transaction.atomic():
+                nf = NotaFiscal.objects.create(
+                    empresa=empresa,
+                    criado_por=request.user,
+                    atualizado_por=request.user,
+                    fornecedor=fornecedor,
+                    recebimento_origem=recebimento,
+                    chave_nfe_referenciada=recebimento.chave_nfe or '',
+                    finalidade_nfe='4',
+                    natureza_operacao='DEVOLUÇÃO DE MERCADORIA',
+                    cfop=cfop,
+                    serie=int(serie),
+                    status='RASCUNHO',
+                    presenca_comprador='9',
+                    informacoes_complementares=info_complementar,
+                )
+
+                for numero_item, (item_rec, qtd) in enumerate(itens_selecionados, start=1):
+                    produto = item_rec.produto
+                    ncm_codigo = produto.ncm.codigo if produto and produto.ncm_id else ''
+                    unidade_sigla = (
+                        item_rec.unidade_medida.sigla
+                        if item_rec.unidade_medida_id
+                        else (produto.unidade_medida.sigla if produto and produto.unidade_medida_id else 'UN')
+                    )
+                    preco = item_rec.preco_unitario or Decimal('0')
+                    ItemNotaFiscal.objects.create(
+                        nota_fiscal=nf,
+                        numero_item=numero_item,
+                        produto=produto,
+                        descricao=str(produto) if produto else '',
+                        ncm=ncm_codigo,
+                        cfop=cfop,
+                        unidade=unidade_sigla,
+                        quantidade=qtd,
+                        valor_unitario=preco,
+                        item_recebimento_origem=item_rec,
+                    )
+
+                nf.calcular_totais()
+
+            messages.success(
+                request,
+                'NF-e de devolução criada em rascunho. Revise os impostos antes de emitir.'
+            )
+            return redirect(reverse('faturamento:nota_fiscal_detail', args=[nf.pk]))
+
+    devolucoes_existentes = NotaFiscal.objects.filter(
+        recebimento_origem=recebimento, finalidade_nfe='4'
+    ).exclude(status='CANCELADA').count()
+
+    context = {
+        'recebimento': recebimento,
+        'fornecedor': fornecedor,
+        'itens': itens_recebimento,
+        'cfop_padrao': cfop_padrao,
+        'devolucoes_existentes': devolucoes_existentes,
+    }
+    return render(request, 'compras/devolucao_compra_form.html', context)

@@ -4776,6 +4776,8 @@ class FornecedorEndereco(models.Model):
     cidade = models.CharField('Cidade', max_length=100, blank=True)
     uf = models.CharField('UF', max_length=2, blank=True)
     pais = models.CharField('País', max_length=100, default='Brasil')
+    codigo_municipio = models.CharField('Código IBGE', max_length=7, blank=True,
+                                        help_text='Código IBGE do município — obrigatório para emissão de NF-e')
 
     padrao = models.BooleanField('Endereço Padrão', default=False)
     preenchido_via_api = models.BooleanField('Preenchido via API', default=False)

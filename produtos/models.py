@@ -800,7 +800,7 @@ class ProdutoTributacao(models.Model):
     
     # Tributação PIS
     pis_situacao_tributaria = models.CharField(max_length=2, choices=CST_PIS_COFINS_CHOICES, verbose_name='CST PIS')
-    pis_aliquota = models.DecimalField(max_digits=5, decimal_places=2, default=0, verbose_name='Alíquota PIS (%)')
+    pis_aliquota = models.DecimalField(max_digits=9, decimal_places=6, default=0, verbose_name='Alíquota PIS (%)')
     pis_base_calculo = models.DecimalField(max_digits=5, decimal_places=2, default=100, verbose_name='Base de Cálculo PIS (%)')
     natureza_receita_pis = models.CharField(
         max_length=3, blank=True, verbose_name='Natureza da Receita PIS',
@@ -809,7 +809,7 @@ class ProdutoTributacao(models.Model):
 
     # Tributação COFINS
     cofins_situacao_tributaria = models.CharField(max_length=2, choices=CST_PIS_COFINS_CHOICES, verbose_name='CST COFINS')
-    cofins_aliquota = models.DecimalField(max_digits=5, decimal_places=2, default=0, verbose_name='Alíquota COFINS (%)')
+    cofins_aliquota = models.DecimalField(max_digits=9, decimal_places=6, default=0, verbose_name='Alíquota COFINS (%)')
     cofins_base_calculo = models.DecimalField(max_digits=5, decimal_places=2, default=100, verbose_name='Base de Cálculo COFINS (%)')
     natureza_receita_cofins = models.CharField(
         max_length=3, blank=True, verbose_name='Natureza da Receita COFINS',

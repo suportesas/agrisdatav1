@@ -2,7 +2,7 @@ from decimal import Decimal
 
 from django import forms
 from django.core.validators import MinLengthValidator
-from django.forms import inlineformset_factory
+from django.forms import inlineformset_factory, BaseInlineFormSet
 
 from .models import (
     CartaCorrecaoNFe,
@@ -260,6 +260,7 @@ class NotaFiscalForm(FaturamentoBaseForm):
         model = NotaFiscal
         fields = [
             'cliente',
+            'fornecedor',
             'natureza_operacao',
             'finalidade_nfe',
             'data_emissao',
@@ -306,10 +307,13 @@ class NotaFiscalForm(FaturamentoBaseForm):
             'ind_intermediador',
             'intermediador_cnpj',
             'intermediador_id_cadastro',
+            # Documento referenciado (devolução)
+            'chave_nfe_referenciada',
         ]
         _fc = {'class': 'form-control form-control-sm'}
         widgets = {
             'cliente': forms.Select(attrs={'class': 'form-select'}),
+            'fornecedor': forms.Select(attrs={'class': 'form-select'}),
             'natureza_operacao': forms.TextInput(attrs={'class': 'form-control'}),
             'finalidade_nfe': forms.Select(attrs={'class': 'form-select'}),
             'data_emissao': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'),
@@ -358,16 +362,22 @@ class NotaFiscalForm(FaturamentoBaseForm):
             'ind_intermediador': forms.Select(attrs={'class': 'form-select form-select-sm', 'id': 'id_ind_intermediador'}),
             'intermediador_cnpj': forms.TextInput(attrs={**_fc, 'placeholder': 'Somente dígitos (14)', 'maxlength': '14'}),
             'intermediador_id_cadastro': forms.TextInput(attrs={**_fc, 'placeholder': 'Ex: login, CPF, código na plataforma'}),
+            # Documento referenciado (devolução)
+            'chave_nfe_referenciada': forms.TextInput(attrs={**_fc, 'placeholder': '44 dígitos — chave da NF-e original devolvida', 'maxlength': '44'}),
         }
 
     def __init__(self, *args, empresa=None, **kwargs):
         super().__init__(*args, empresa=empresa, **kwargs)
         if empresa:
-            from cadastros.models import Cliente, Transportadora
+            from cadastros.models import Cliente, Fornecedor, Transportadora
             self.fields['cliente'].queryset = Cliente.objects.filter(empresa=empresa, status='ATIVO').order_by('razao_social')
+            self.fields['fornecedor'].queryset = Fornecedor.objects.filter(empresa=empresa, ativa=True).order_by('nome')
             self.fields['transportadora'].queryset = Transportadora.objects.filter(empresa=empresa).order_by('razao_social')
             self.fields['transportadora'].required = False
             self.fields['informacoes_fisco'].required = False
+        # Cliente e Fornecedor são mutuamente exclusivos — nenhum é obrigatório individualmente
+        self.fields['cliente'].required = False
+        self.fields['fornecedor'].required = False
         # Campos de transporte e veículo são opcionais
         for f in ('transp_cnpj', 'transp_nome', 'transp_ie', 'transp_endereco',
                   'transp_municipio', 'transp_uf', 'transp_rntc', 'veic_placa', 'veic_uf'):
@@ -379,6 +389,14 @@ class NotaFiscalForm(FaturamentoBaseForm):
                   'entrega_codigo_municipio', 'entrega_nome_municipio', 'entrega_uf',
                   'ind_intermediador', 'intermediador_cnpj', 'intermediador_id_cadastro'):
             self.fields[f].required = False
+
+    def clean(self):
+        cleaned = super().clean()
+        if not cleaned.get('cliente') and not cleaned.get('fornecedor'):
+            raise forms.ValidationError(
+                'Informe o Cliente (NF-e normal) ou o Fornecedor (NF-e de devolução de compra).'
+            )
+        return cleaned
 
 
 _sm = {'class': 'form-control form-control-sm'}
@@ -421,7 +439,22 @@ CST_IPI_CHOICES = [
 class ItemNotaFiscalForm(forms.ModelForm):
     # DecimalFields que têm default=0 mas não blank=True no model — tornamos opcionais no form
     _DECIMAL_ZERO_FIELDS = (
+        'valor_desconto',
+        # ICMS
+        'icms_reducao_base', 'aliquota_icms',
+        # ICMS ST
+        'icms_st_aliquota', 'icms_st_mva', 'icms_st_reducao_base',
+        # IPI
+        'aliquota_ipi',
+        # PIS / COFINS
+        'aliquota_pis', 'aliquota_cofins',
+        # Unidade tributável (exportação)
+        'quantidade_tributavel', 'valor_unitario_tributavel',
+        # DI
+        'di_valor_afrmm', 'di_desconto_adicao',
+        # Rateio
         'valor_frete_item', 'valor_seguro_item', 'valor_outras_despesas',
+        # FCP
         'fcp_aliquota', 'fcp_st_aliquota',
     )
 
@@ -438,11 +471,27 @@ class ItemNotaFiscalForm(forms.ModelForm):
             self.fields[f].required = False
             self.fields[f].initial = Decimal('0')
 
+    def _get_validation_exclusions(self):
+        # Exclui numero_item da checagem de unique_together — o view atribui
+        # o valor correto sequencialmente antes de persistir.
+        exclude = super()._get_validation_exclusions()
+        exclude.add('numero_item')
+        return exclude
+
     def clean(self):
         cleaned_data = super().clean()
+        from decimal import ROUND_HALF_UP
         for f in self._DECIMAL_ZERO_FIELDS:
             if cleaned_data.get(f) is None:
                 cleaned_data[f] = Decimal('0')
+        # Normaliza aliquotas para no máximo 6 casas decimais (alinha com ProdutoTributacao)
+        for f in ('aliquota_pis', 'aliquota_cofins'):
+            val = cleaned_data.get(f)
+            if val is not None:
+                try:
+                    cleaned_data[f] = val.quantize(Decimal('0.000001'), rounding=ROUND_HALF_UP)
+                except Exception:
+                    pass
         return cleaned_data
 
     class Meta:
@@ -560,10 +609,19 @@ class ItemNotaFiscalForm(forms.ModelForm):
         }
 
 
+class ItemNotaFiscalBaseFormSet(BaseInlineFormSet):
+    def validate_unique(self):
+        # numero_item é renumerado sequencialmente pelo view antes de salvar;
+        # pular a checagem de unique_together evita erros espúrios quando
+        # o JS submete um numero_item que coincide com um registro existente.
+        pass
+
+
 ItemNotaFiscalFormSet = inlineformset_factory(
     NotaFiscal,
     ItemNotaFiscal,
     form=ItemNotaFiscalForm,
+    formset=ItemNotaFiscalBaseFormSet,
     extra=0,
     can_delete=True,
     min_num=1,

@@ -1,3 +1,5 @@
+from decimal import Decimal, ROUND_HALF_UP
+
 from django import forms
 from django.core.exceptions import ValidationError
 from django.forms.widgets import Select
@@ -379,7 +381,7 @@ class ProdutoTributacaoForm(forms.ModelForm):
             
             # PIS
             'pis_situacao_tributaria': forms.Select(attrs={'class': 'form-select', 'id': 'id_pis_situacao_tributaria'}),
-            'pis_aliquota': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': '%'}),
+            'pis_aliquota': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.000001', 'placeholder': '%'}),
             'pis_base_calculo': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': '%'}),
             'natureza_receita_pis': forms.TextInput(attrs={
                 'class': 'form-control', 'maxlength': '3',
@@ -388,7 +390,7 @@ class ProdutoTributacaoForm(forms.ModelForm):
             }),
             # COFINS
             'cofins_situacao_tributaria': forms.Select(attrs={'class': 'form-select', 'id': 'id_cofins_situacao_tributaria'}),
-            'cofins_aliquota': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': '%'}),
+            'cofins_aliquota': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.000001', 'placeholder': '%'}),
             'cofins_base_calculo': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': '%'}),
             'natureza_receita_cofins': forms.TextInput(attrs={
                 'class': 'form-control', 'maxlength': '3',
@@ -402,6 +404,18 @@ class ProdutoTributacaoForm(forms.ModelForm):
             'ativo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
+
+    def _round_aliquota(self, field_name):
+        value = self.cleaned_data.get(field_name)
+        if value is not None:
+            return value.quantize(Decimal('0.000001'), rounding=ROUND_HALF_UP)
+        return value
+
+    def clean_pis_aliquota(self):
+        return self._round_aliquota('pis_aliquota')
+
+    def clean_cofins_aliquota(self):
+        return self._round_aliquota('cofins_aliquota')
 
 class ProdutoDefensivoCulturaForm(forms.ModelForm):
     """Formulário para registrar cultura e praga combatida por defensivo"""

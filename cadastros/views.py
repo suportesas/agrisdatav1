@@ -1332,6 +1332,7 @@ def buscar_cep(request):
                 'bairro': dados.get('bairro', ''),
                 'cidade': dados.get('localidade', ''),
                 'uf': dados.get('uf', ''),
+                'ibge': dados.get('ibge', ''),
             }
             # Return both wrapped ('dados') and flat keys for backward compatibility with older clients
             resp_payload = {'sucesso': True, 'dados': resultado}

@@ -155,6 +155,34 @@ class NotaFiscal(FaturamentoBaseModel):
         on_delete=models.PROTECT,
         related_name='notas_fiscais',
         verbose_name='Cliente',
+        null=True,
+        blank=True,
+    )
+    fornecedor = models.ForeignKey(
+        'cadastros.Fornecedor',
+        on_delete=models.PROTECT,
+        related_name='notas_fiscais_devolucao',
+        verbose_name='Fornecedor (Devolução)',
+        null=True,
+        blank=True,
+        help_text='Preenchido automaticamente em NF-e de devolução de compra.',
+    )
+    recebimento_origem = models.ForeignKey(
+        'compras.RecebimentoCompra',
+        on_delete=models.SET_NULL,
+        related_name='notas_devolucao',
+        verbose_name='Recebimento de Origem',
+        null=True,
+        blank=True,
+        help_text='Recebimento de compra que originou esta NF-e de devolução.',
+    )
+    chave_nfe_referenciada = models.CharField(
+        'Chave NF-e Referenciada',
+        max_length=44,
+        blank=True,
+        help_text='Chave de acesso (44 dígitos) da NF-e original referenciada — '
+                  'obrigatória para devolução (finalidade 4). '
+                  'Preenchida automaticamente do recebimento de origem.',
     )
     data_emissao = models.DateField('Data de Emissão', default=timezone.now)
     data_saida = models.DateField('Data de Saída', blank=True, null=True)
@@ -287,7 +315,8 @@ class NotaFiscal(FaturamentoBaseModel):
         ]
 
     def __str__(self):
-        return f'NF {self.numero or "S/N"}/{self.serie} - {self.cliente}'
+        dest = self.cliente or self.fornecedor or '—'
+        return f'NF {self.numero or "S/N"}/{self.serie} - {dest}'
 
     def calcular_totais(self):
         items = self.itens.all()
@@ -357,13 +386,13 @@ class ItemNotaFiscal(models.Model):
     valor_ipi = models.DecimalField('Valor IPI', max_digits=14, decimal_places=2, default=0)
     ipi_codigo_enquadramento = models.CharField('Código Enquadramento IPI', max_length=3, default='999', blank=True)
     # PIS
-    aliquota_pis = models.DecimalField('Alíq. PIS (%)', max_digits=5, decimal_places=2, default=0)
+    aliquota_pis = models.DecimalField('Alíq. PIS (%)', max_digits=9, decimal_places=6, default=0)
     valor_pis = models.DecimalField('Valor PIS', max_digits=14, decimal_places=2, default=0)
     pis_base_calculo = models.DecimalField('Base de Cálculo PIS', max_digits=14, decimal_places=2, default=0)
     natureza_receita_pis = models.CharField('Natureza da Receita PIS', max_length=3, blank=True,
         help_text='Código 3 dígitos — obrigatório para CST 04-09, 49, 99.')
     # COFINS
-    aliquota_cofins = models.DecimalField('Alíq. COFINS (%)', max_digits=5, decimal_places=2, default=0)
+    aliquota_cofins = models.DecimalField('Alíq. COFINS (%)', max_digits=9, decimal_places=6, default=0)
     valor_cofins = models.DecimalField('Valor COFINS', max_digits=14, decimal_places=2, default=0)
     cofins_base_calculo = models.DecimalField('Base de Cálculo COFINS', max_digits=14, decimal_places=2, default=0)
     natureza_receita_cofins = models.CharField('Natureza da Receita COFINS', max_length=3, blank=True,
@@ -459,6 +488,17 @@ class ItemNotaFiscal(models.Model):
     # ── Informações adicionais do produto (DANFE / infAdProd) ────────────────
     complemento_descricao = models.CharField('Complemento da Descrição', max_length=500, blank=True,
                                 help_text='Informações adicionais do produto para o DANFE (infAdProd)')
+
+    # ── Rastreabilidade de devolução de compra ───────────────────────────────
+    item_recebimento_origem = models.ForeignKey(
+        'compras.ItemRecebimento',
+        on_delete=models.SET_NULL,
+        related_name='itens_nf_devolucao',
+        verbose_name='Item de Recebimento de Origem',
+        null=True,
+        blank=True,
+        help_text='Item do recebimento de compra que originou este item na NF-e de devolução.',
+    )
 
     class Meta:
         verbose_name = 'Item da Nota Fiscal'

@@ -553,6 +553,9 @@ window.addEventListener('error', function(e){ try { console.error('Uncaught erro
             if (ufField) ufField.value = (d.uf || ufField.value).toUpperCase();
           }
           if (form.querySelector('input[name="cep"]')) form.querySelector('input[name="cep"]').value = d.cep || cepInput.value;
+          if (d.ibge && form.querySelector('input[name="codigo_municipio"]')) {
+            form.querySelector('input[name="codigo_municipio"]').value = d.ibge;
+          }
 
         } catch (err) {
           console.error(err);

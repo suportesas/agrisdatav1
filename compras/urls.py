@@ -84,6 +84,7 @@ urlpatterns = [
     path('recebimentos/<int:pk>/entrada-estoque/', views.recebimento_entrada_estoque, name='recebimento_entrada_estoque'),
     path('recebimentos/<int:pk>/avaliar-fornecedor/', views.avaliar_fornecedor, name='avaliar_fornecedor'),
     path('recebimentos/<int:pk>/manifestar/', views.recebimento_manifestar, name='recebimento_manifestar'),
+    path('recebimentos/<int:pk>/devolucao/', views.devolucao_compra_create, name='devolucao_compra'),
     path('mde/', views.mde_list, name='mde_list'),
     path('recebimentos/<int:recebimento_pk>/faturar/', views_simples.faturar_recebimento, name='faturar_recebimento'),
     

@@ -98,6 +98,47 @@ from .models import (
 from .fiscal_storage import upload_xml as _fs_xml, upload_pdf as _fs_pdf
 
 
+def _registrar_baixa_devolucao(nf):
+    """Cria MovimentacaoEstoque de saída para NF-e de devolução de compra (finalidade_nfe='4').
+
+    Chamado após SEFAZ autorizar — usa item_recebimento_origem para obter lote e local de estocagem.
+    """
+    if nf.finalidade_nfe != '4':
+        return
+    from estoque.models import MovimentacaoEstoque, Lote
+    from django.db.models import Sum
+    for item_nf in nf.itens.select_related(
+        'item_recebimento_origem__lote',
+        'item_recebimento_origem__local_estoque',
+        'produto',
+    ):
+        item_rec = item_nf.item_recebimento_origem
+        if not item_rec or not item_nf.produto:
+            continue
+        lote = item_rec.lote
+        local = item_rec.local_estoque
+        MovimentacaoEstoque.objects.create(
+            empresa=nf.empresa,
+            produto=item_nf.produto,
+            lote=lote,
+            tipo='SAIDA',
+            origem='DEVOLUCAO_FORNECEDOR',
+            quantidade=item_nf.quantidade,
+            documento=str(nf.numero or ''),
+            observacao=f'Devolução NF-e {nf.numero}/{nf.serie} — chave {nf.chave_acesso}',
+            status='EXECUTADO',
+        )
+        if lote:
+            total = (
+                Lote.objects.filter(
+                    produto=item_nf.produto,
+                    status='DISPONIVEL',
+                ).aggregate(total=Sum('quantidade_disponivel'))['total'] or 0
+            )
+            item_nf.produto.estoque_atual = total
+            item_nf.produto.save(update_fields=['estoque_atual'])
+
+
 def _get_empresa(request):
     return request.user.empresa
 
@@ -200,7 +241,7 @@ def nota_fiscal_list(request):
     if not empresa:
         return redirect('dashboard:index')
 
-    qs = NotaFiscal.objects.filter(empresa=empresa).select_related('cliente', 'transportadora', 'natureza_operacao')
+    qs = NotaFiscal.objects.filter(empresa=empresa).select_related('cliente', 'transportadora')
 
     status_filter = request.GET.get('status', '')
     q = request.GET.get('q', '')
@@ -333,7 +374,7 @@ def nota_fiscal_danfe_preview(request, pk):
         pk=pk, empresa=empresa,
     )
     cli = nf.cliente
-    endereco_cli = cli.enderecos.order_by('-padrao').first()
+    endereco_cli = cli.enderecos.order_by('-padrao').first() if cli else None
 
     # Transportadora: injeta em memória se transp_nome vazio mas FK setado
     if nf.transportadora and not (nf.transp_nome or '').strip():
@@ -436,12 +477,27 @@ def nota_fiscal_update(request, pk):
         _nf_log_validation('UPDATE', form, formset, pag_formset, dup_formset)
         if form.is_valid() and formset.is_valid() and pag_formset.is_valid() and dup_formset.is_valid():
             form.save(user=request.user)
-            items = formset.save(commit=False)
-            for idx, item in enumerate(items, start=1):
-                item.numero_item = idx
-                item.save()
-            for obj in formset.deleted_objects:
-                obj.delete()
+            # Atribuir numero_item sequencial antes de salvar para evitar conflito
+            # de unique_together quando o JS submete valores incorretos.
+            _n = 1
+            for _f in formset.forms:
+                if formset.can_delete and formset._should_delete_form(_f):
+                    continue
+                _f.instance.numero_item = _n
+                _n += 1
+            formset.save()
+            # Renumerar todos os itens em dois passos para corrigir itens não alterados
+            # que possam ter ficado com numero_item errado após adição/remoção.
+            _INF = nf.itens.model
+            _all_it = list(nf.itens.order_by('pk'))
+            if _all_it:
+                _off = max(i.numero_item for i in _all_it) + len(_all_it) + 1
+                for _i2, _it2 in enumerate(_all_it):
+                    _it2.numero_item = _off + _i2
+                _INF.objects.bulk_update(_all_it, ['numero_item'])
+                for _i2, _it2 in enumerate(_all_it, start=1):
+                    _it2.numero_item = _i2
+                _INF.objects.bulk_update(_all_it, ['numero_item'])
             pag_formset.save()
             dup_formset.save()
             # Preenche campos tributáveis (conversão CX→KG) ao salvar
@@ -566,35 +622,70 @@ def nota_fiscal_emitir_ajax(request, pk):
 
     # ── 4. Dados do destinatário ──────────────────────────────────────
     cli = nf.cliente
-    cli_url = reverse('cadastros:cliente_update', args=[cli.pk])
+    forn = nf.fornecedor
+    if not cli and not forn:
+        return erro('Dados do destinatário',
+                    'Nenhum destinatário informado. Preencha o campo Cliente ou Fornecedor.',
+                    fix_url=reverse('faturamento:nota_fiscal_update', args=[pk]),
+                    fix_label='Editar NF-e')
     dest_erros = []
-    doc_dest = _re.sub(r'\D', '', cli.cnpj_cpf or '')
-    if not doc_dest:
-        dest_erros.append('CNPJ/CPF não informado')
-    elif len(doc_dest) not in (11, 14):
-        dest_erros.append(f'CNPJ/CPF inválido ({len(doc_dest)} dígitos — esperado 11 ou 14)')
-    if not (cli.razao_social or '').strip():
-        dest_erros.append('Razão Social não informada')
-    pais_cli = (cli.pais or '').strip().lower()
-    is_exterior = pais_cli not in ('brasil', 'brazil', '')
-    end_cli = cli.enderecos.order_by('-padrao').first()
-    if not is_exterior:
-        if not end_cli:
-            dest_erros.append('Endereço não cadastrado')
-        else:
-            end_faltam = []
-            if not (end_cli.logradouro or '').strip(): end_faltam.append('Logradouro')
-            if not (end_cli.cidade or '').strip():     end_faltam.append('Cidade')
-            if not (end_cli.uf or '').strip():         end_faltam.append('UF')
-            if not (end_cli.cep or '').strip():        end_faltam.append('CEP')
-            if end_faltam:
-                dest_erros.append(f'Endereço incompleto: faltam {", ".join(end_faltam)}')
+    if forn and not cli:
+        # NF-e de devolução de compra: destinatário é o fornecedor
+        doc_dest = _re.sub(r'\D', '', forn.cnpj_cpf or '')
+        dest_nome = forn.nome
+        fix_url = reverse('cadastros:fornecedor_detail', args=[forn.pk])
+        fix_label = 'Corrigir cadastro do fornecedor'
+        if not doc_dest:
+            dest_erros.append('CNPJ/CPF não informado')
+        elif len(doc_dest) not in (11, 14):
+            dest_erros.append(f'CNPJ/CPF inválido ({len(doc_dest)} dígitos — esperado 11 ou 14)')
+        if not dest_nome.strip():
+            dest_erros.append('Nome não informado')
+        end_forn = forn.enderecos.filter(padrao=True).first()
+        cidade = (end_forn.cidade if end_forn else forn.cidade) or ''
+        uf = (end_forn.uf if end_forn else forn.uf) or ''
+        cep = (end_forn.cep if end_forn else forn.cep) or ''
+        logradouro = (end_forn.logradouro if end_forn else forn.endereco) or ''
+        codigo_mun = (end_forn.codigo_municipio if end_forn else '') or ''
+        end_faltam = []
+        if not logradouro.strip(): end_faltam.append('Logradouro')
+        if not cidade.strip():     end_faltam.append('Cidade')
+        if not uf.strip():         end_faltam.append('UF')
+        if not cep.strip():        end_faltam.append('CEP')
+        if not codigo_mun.strip(): end_faltam.append('Código IBGE')
+        if end_faltam:
+            dest_erros.append(f'Endereço incompleto: faltam {", ".join(end_faltam)}')
+    else:
+        doc_dest = _re.sub(r'\D', '', cli.cnpj_cpf or '')
+        dest_nome = cli.razao_social or ''
+        fix_url = reverse('cadastros:cliente_update', args=[cli.pk])
+        fix_label = 'Corrigir cadastro do cliente'
+        if not doc_dest:
+            dest_erros.append('CNPJ/CPF não informado')
+        elif len(doc_dest) not in (11, 14):
+            dest_erros.append(f'CNPJ/CPF inválido ({len(doc_dest)} dígitos — esperado 11 ou 14)')
+        if not dest_nome.strip():
+            dest_erros.append('Razão Social não informada')
+        pais_cli = (cli.pais or '').strip().lower()
+        is_exterior = pais_cli not in ('brasil', 'brazil', '')
+        end_cli = cli.enderecos.order_by('-padrao').first()
+        if not is_exterior:
+            if not end_cli:
+                dest_erros.append('Endereço não cadastrado')
+            else:
+                end_faltam = []
+                if not (end_cli.logradouro or '').strip(): end_faltam.append('Logradouro')
+                if not (end_cli.cidade or '').strip():     end_faltam.append('Cidade')
+                if not (end_cli.uf or '').strip():         end_faltam.append('UF')
+                if not (end_cli.cep or '').strip():        end_faltam.append('CEP')
+                if end_faltam:
+                    dest_erros.append(f'Endereço incompleto: faltam {", ".join(end_faltam)}')
     if dest_erros:
         return erro('Dados do destinatário',
-                    f'{cli.razao_social or "?"}: {"; ".join(dest_erros)}',
-                    fix_url=cli_url, fix_label='Corrigir cadastro do cliente',
+                    f'{dest_nome or "?"}: {"; ".join(dest_erros)}',
+                    fix_url=fix_url, fix_label=fix_label,
                     errors=dest_erros)
-    ok('Dados do destinatário', f'{cli.razao_social}  ·  {cli.cnpj_cpf}')
+    ok('Dados do destinatário', f'{dest_nome}  ·  {doc_dest}')
 
     # ── 5. Itens e dados fiscais ──────────────────────────────────────
     itens = list(nf.itens.all())
@@ -710,6 +801,7 @@ def nota_fiscal_emitir_ajax(request, pk):
                                    'pdf_danfe', 'status', 'data_hora_emissao', 'atualizado_por']
                         _extra2 = _upload_fiscal_docs(nf, nf.empresa_id, 'nfe', nf.numero, nf.serie, xml2, pdf2)
                         nf.save(update_fields=list(dict.fromkeys(_base_f + _extra2)))
+                        _registrar_baixa_devolucao(nf)
                         steps.append({'status': 'authorized', 'label': 'NF-e Autorizada (recuperada) ✓',
                                       'protocolo': protocolo2, 'chave': chave_5008})
                         return JsonResponse({
@@ -792,6 +884,7 @@ def nota_fiscal_emitir_ajax(request, pk):
                     'pdf_danfe', 'status', 'data_hora_emissao', 'atualizado_por']
     _extra = _upload_fiscal_docs(nf, nf.empresa_id, 'nfe', nf.numero, nf.serie, xml_b64, pdf_b64)
     nf.save(update_fields=list(dict.fromkeys(_base_fields + _extra)))
+    _registrar_baixa_devolucao(nf)
     steps.append({'status': 'authorized', 'label': 'NF-e Autorizada pela SEFAZ ✓',
                   'protocolo': protocolo, 'chave': chave})
     return JsonResponse({
@@ -875,6 +968,7 @@ def nota_fiscal_emitir(request, pk):
                      'pdf_danfe', 'status', 'data_hora_emissao', 'atualizado_por']
             _extra = _upload_fiscal_docs(nf, nf.empresa_id, 'nfe', nf.numero, nf.serie, xml_b64, pdf_b64)
             nf.save(update_fields=list(dict.fromkeys(_base + _extra)))
+            _registrar_baixa_devolucao(nf)
             messages.success(request, f'NF {nf.numero}/{nf.serie} autorizada! Chave: {chave}')
 
     except IntegranNotasError as exc:

@@ -57,10 +57,32 @@
             <div class="alert alert-danger">{{ form.non_field_errors }}</div>
             {% endif %}
             <div class="row g-3">
-              <div class="col-md-8">
-                <label class="form-label">Cliente *</label>
+              <!-- Destinatário: Cliente (NF normal) ou Fornecedor (NF devolução) -->
+              <div class="col-md-8" id="campo-cliente"
+                   {% if nf and nf.fornecedor_id %}style="display:none"{% endif %}>
+                <label class="form-label">Cliente</label>
                 {{ form.cliente }}
                 {% if form.cliente.errors %}<div class="text-danger small">{{ form.cliente.errors }}</div>{% endif %}
+              </div>
+              <div class="col-md-8" id="campo-fornecedor"
+                   {% if not nf or not nf.fornecedor_id %}style="display:none"{% endif %}>
+                <label class="form-label">
+                  Fornecedor
+                  <span class="badge bg-warning text-dark ms-1" style="font-size:.7rem">Devolução</span>
+                </label>
+                {{ form.fornecedor }}
+                {% if form.fornecedor.errors %}<div class="text-danger small">{{ form.fornecedor.errors }}</div>{% endif %}
+                <div class="form-text">Destinatário em NF-e de devolução de compra (finalidade 4).</div>
+              </div>
+              <div class="col-md-12" id="campo-chave-ref"
+                   {% if not nf or not nf.fornecedor_id %}style="display:none"{% endif %}>
+                <label class="form-label">
+                  Chave NF-e Referenciada
+                  <span class="badge bg-danger ms-1" style="font-size:.7rem">Obrigatória</span>
+                </label>
+                {{ form.chave_nfe_referenciada }}
+                {% if form.chave_nfe_referenciada.errors %}<div class="text-danger small">{{ form.chave_nfe_referenciada.errors }}</div>{% endif %}
+                <div class="form-text">Chave de acesso (44 dígitos) da NF-e original recebida do fornecedor — obrigatória pela SEFAZ para NF-e de devolução.</div>
               </div>
               <div class="col-md-4">
                 <label class="form-label">Data de Emissão *</label>
@@ -1777,6 +1799,34 @@
       if (el) delete el.dataset.userEdited;
     });
   }, true); // capture = true, roda antes do listener de fetch
+})();
+
+// ── Toggle Cliente / Fornecedor conforme finalidade_nfe ──────────────────
+(function () {
+  const finalidadeSel = document.getElementById('id_finalidade_nfe');
+  const campoCliente   = document.getElementById('campo-cliente');
+  const campoFornecedor = document.getElementById('campo-fornecedor');
+  const campoChaveRef   = document.getElementById('campo-chave-ref');
+  if (!finalidadeSel || !campoCliente || !campoFornecedor) return;
+
+  function toggleDestinatario() {
+    const isDevolucao = finalidadeSel.value === '4';
+    campoCliente.style.display   = isDevolucao ? 'none' : '';
+    campoFornecedor.style.display = isDevolucao ? '' : 'none';
+    if (campoChaveRef) campoChaveRef.style.display = isDevolucao ? '' : 'none';
+    // Limpa o campo que ficou oculto para não enviar valor residual
+    if (isDevolucao) {
+      const sel = document.getElementById('id_cliente');
+      if (sel) sel.value = '';
+    } else {
+      const sel = document.getElementById('id_fornecedor');
+      if (sel) sel.value = '';
+    }
+  }
+
+  finalidadeSel.addEventListener('change', toggleDestinatario);
+  // Não chama toggleDestinatario() na inicialização — o estado inicial
+  // já vem correto via atributo style do Django template (nf.fornecedor_id).
 })();
 </script>
 {% endblock %}

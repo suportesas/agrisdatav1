@@ -19,7 +19,11 @@
           </h3>
         </div>
         <div class="text-muted small mt-1 d-flex gap-3 flex-wrap">
-          <span><i class="bi bi-person me-1"></i>{{ nf.cliente.razao_social }}</span>
+          <span><i class="bi bi-person me-1"></i>
+            {% if nf.cliente %}{{ nf.cliente.razao_social }}
+            {% elif nf.fornecedor %}{{ nf.fornecedor.nome }} <span class="badge bg-warning text-dark ms-1">Devolução</span>
+            {% else %}—{% endif %}
+          </span>
           <span><i class="bi bi-calendar3 me-1"></i>{{ nf.data_emissao|date:"d/m/Y" }}</span>
           <span><i class="bi bi-upc me-1"></i>CFOP {{ nf.cfop }}</span>
         </div>
@@ -187,14 +191,26 @@
         <div class="card-header fw-semibold">Dados da NF-e</div>
         <div class="card-body">
           <dl class="row mb-0">
-            <dt class="col-sm-5">Cliente</dt>
-            <dd class="col-sm-7">{{ nf.cliente.razao_social }}</dd>
+            <dt class="col-sm-5">{% if nf.fornecedor and not nf.cliente %}Fornecedor (Devolução){% else %}Cliente{% endif %}</dt>
+            <dd class="col-sm-7">
+              {% if nf.cliente %}{{ nf.cliente.razao_social }}
+              {% elif nf.fornecedor %}<a href="{% url 'cadastros:fornecedor_detail' nf.fornecedor.pk %}">{{ nf.fornecedor.nome }}</a>
+              {% else %}—{% endif %}
+            </dd>
+            {% if nf.recebimento_origem %}
+            <dt class="col-sm-5">Recebimento Origem</dt>
+            <dd class="col-sm-7"><a href="{% url 'compras:recebimento_detail' nf.recebimento_origem.pk %}">{{ nf.recebimento_origem.numero }}</a></dd>
+            {% endif %}
             {% if nf.romaneio_origem %}
             <dt class="col-sm-5">Romaneio</dt>
             <dd class="col-sm-7"><a href="{% url 'embalagem:romaneio_detail' nf.romaneio_origem.pk %}">{{ nf.romaneio_origem.numero }}</a></dd>
             {% endif %}
             <dt class="col-sm-5">CNPJ / CPF</dt>
-            <dd class="col-sm-7">{{ nf.cliente.cnpj_cpf|default:"—" }}</dd>
+            <dd class="col-sm-7">
+              {% if nf.cliente %}{{ nf.cliente.cnpj_cpf|default:"—" }}
+              {% elif nf.fornecedor %}{{ nf.fornecedor.cnpj_cpf|default:"—" }}
+              {% else %}—{% endif %}
+            </dd>
             <dt class="col-sm-5">Natureza da Operação</dt>
             <dd class="col-sm-7">{{ nf.natureza_operacao }}</dd>
             <dt class="col-sm-5">CFOP</dt>

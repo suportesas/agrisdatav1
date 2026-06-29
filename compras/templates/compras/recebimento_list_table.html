@@ -69,9 +69,15 @@
                         <i class="bi bi-eye"></i>
                     </a>
                     {% if recebimento.status == 'PENDENTE' %}
-                    <a href="{% url 'compras:recebimento_conferir' recebimento.pk %}" 
+                    <a href="{% url 'compras:recebimento_conferir' recebimento.pk %}"
                        class="btn btn-sm btn-success" title="Conferir">
                         <i class="bi bi-check-circle"></i>
+                    </a>
+                    {% endif %}
+                    {% if recebimento.status == 'FINALIZADO' %}
+                    <a href="{% url 'compras:devolucao_compra' recebimento.pk %}"
+                       class="btn btn-sm btn-outline-warning" title="Criar NF-e de Devolução">
+                        <i class="bi bi-arrow-return-left"></i>
                     </a>
                     {% endif %}
                 </td>

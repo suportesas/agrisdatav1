@@ -5,8 +5,8 @@
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
 <style>
-  #produtos-tbody tr { transition: opacity .2s; }
-  #produtos-tbody tr.marcado-remover { opacity: .35; text-decoration: line-through; }
+  .tr-remover { transition: opacity .2s; }
+  .tr-remover.marcado-remover { opacity: .35; text-decoration: line-through; }
 </style>
 {% endblock %}
 
@@ -72,7 +72,13 @@
               </div>
               <div class="col-md-6">
                 <label class="form-label fw-semibold">Despachante Aduaneiro</label>
-                {{ form.despachante }}
+                {{ form.despachante.as_hidden }}
+                <select id="despachante-select" class="form-select">
+                  {% if form.instance.despachante %}
+                  <option value="{{ form.instance.despachante }}" selected>{{ form.instance.despachante }}</option>
+                  {% endif %}
+                </select>
+                <div class="form-text">Digite para buscar no cadastro de fornecedores ou escreva livremente.</div>
               </div>
               <div class="col-md-6">
                 <label class="form-label fw-semibold">Nº Processo Siscomex</label>
@@ -91,14 +97,14 @@
           <div class="card-header d-flex justify-content-between align-items-center fw-semibold"
                style="background:var(--color-primary);color:#fff;border-radius:var(--radius-card) var(--radius-card) 0 0">
             <span><i class="bi bi-box-seam me-2"></i>Produtos Autorizados no AC</span>
-            <span id="badge-count" class="badge bg-white text-primary">{{ formset_rows|length }} produto(s)</span>
           </div>
 
-          <!-- Inputs ocultos do formset (management + dados) -->
+          <!-- Formset management form + inputs ocultos dos produtos -->
           {{ formset.management_form }}
           <div id="formset-hidden">
             {% for row in formset_rows %}
             <input type="hidden" name="{{ row.prefix }}-id"                    value="{{ row.pk }}">
+            <input type="hidden" name="{{ row.prefix }}-tipo_produto"          value="{{ row.tipo_produto }}">
             <input type="hidden" name="{{ row.prefix }}-produto"               value="{{ row.produto_id }}">
             <input type="hidden" name="{{ row.prefix }}-ncm"                   value="{{ row.ncm }}">
             <input type="hidden" name="{{ row.prefix }}-descricao_mercadoria"  value="{{ row.descricao }}">
@@ -111,10 +117,18 @@
             {% endfor %}
           </div>
 
-          <!-- ── FORMULÁRIO DE ENTRADA DE PRODUTO ── -->
+          <!-- ── FORMULÁRIO DE ENTRADA (compartilhado) ── -->
           <div class="p-4 border-bottom" style="background:#fafafa">
             <div class="row g-3">
-              <div class="col-md-5">
+              <div class="col-md-3">
+                <label class="form-label fw-semibold small">Tipo de Item <span class="text-danger">*</span></label>
+                <select id="ui-tipo" class="form-select">
+                  <option value="EXPORTACAO">🟢 Exportação (produto final)</option>
+                  <option value="IMPORTACAO">🔵 Importação (insumo)</option>
+                  <option value="MERCADO_INTERNO" selected>🟠 Mercado Interno (insumo)</option>
+                </select>
+              </div>
+              <div class="col-md-4">
                 <label class="form-label fw-semibold small">Produto <span class="text-danger">*</span></label>
                 <select id="ui-produto" class="form-select">
                   <option value="">Buscar produto...</option>
@@ -122,16 +136,16 @@
               </div>
               <div class="col-md-5">
                 <label class="form-label fw-semibold small">Descrição conforme AC <span class="text-danger">*</span>
-                  <span class="text-muted fw-normal">(texto do documento MDIC)</span>
+                  <span class="text-muted fw-normal">(texto do MDIC)</span>
                 </label>
                 <input type="text" id="ui-descricao" class="form-control"
-                       placeholder="Ex: CAIXA DE PAPELÃO ONDULADO KR...">
+                       placeholder="Ex: CAIXA DE PAPELÃO ONDULADO...">
               </div>
               <div class="col-md-2">
                 <label class="form-label fw-semibold small">NCM</label>
                 <input type="text" id="ui-ncm" class="form-control" maxlength="10" placeholder="00000000">
               </div>
-              <div class="col-md-3">
+              <div class="col-md-2">
                 <label class="form-label fw-semibold small">Unidade <span class="text-danger">*</span></label>
                 <select id="ui-unidade" class="form-select">
                   <option value="">Selecione...</option>
@@ -140,11 +154,11 @@
                   {% endfor %}
                 </select>
               </div>
-              <div class="col-md-3">
-                <label class="form-label fw-semibold small">Qtd Autorizada (MDIC) <span class="text-danger">*</span></label>
+              <div class="col-md-2">
+                <label class="form-label fw-semibold small">Qtd Autorizada <span class="text-danger">*</span></label>
                 <input type="number" id="ui-qtd-aut" class="form-control" step="0.001" min="0.001" placeholder="0.000">
               </div>
-              <div class="col-md-3">
+              <div class="col-md-3" id="grupo-qtd-min" style="display:none">
                 <label class="form-label fw-semibold small">Qtd Mínima a Exportar <span class="text-danger">*</span></label>
                 <input type="number" id="ui-qtd-min" class="form-control" step="0.001" min="0.001" placeholder="0.000">
               </div>
@@ -161,48 +175,159 @@
             </div>
           </div>
 
-          <!-- Tabela de produtos já adicionados -->
-          <div class="table-responsive" id="tabela-wrapper"
-               {% if not formset_rows %}style="display:none"{% endif %}>
-            <table class="table table-sm table-hover mb-0">
-              <thead style="background:#f3f0ff">
-                <tr>
-                  <th class="ps-3" style="min-width:180px">Produto</th>
-                  <th style="min-width:180px">Descrição no AC</th>
-                  <th>NCM</th>
-                  <th>Unidade</th>
-                  <th class="text-end">Qtd Autorizada</th>
-                  <th class="text-end">Qtd Mín. Export</th>
-                  <th style="width:48px"></th>
-                </tr>
-              </thead>
-              <tbody id="produtos-tbody">
-                {% for row in formset_rows %}
-                <tr data-idx="{{ forloop.counter0 }}"
-                    {% if row.pk %}data-existing="1"{% endif %}>
-                  <td class="ps-3 fw-semibold">{{ row.produto_nome }}</td>
-                  <td>{{ row.descricao }}</td>
-                  <td><span class="text-muted small">{{ row.ncm|default:"—" }}</span></td>
-                  <td>{{ row.unidade_sigla }}</td>
-                  <td class="text-end">{{ row.qtd_autorizada }}</td>
-                  <td class="text-end">{{ row.qtd_minima }}</td>
-                  <td class="text-end pe-2">
-                    <button type="button" class="btn btn-sm btn-outline-danger btn-remover"
-                            data-idx="{{ forloop.counter0 }}" title="Remover">
-                      <i class="bi bi-trash3"></i>
-                    </button>
-                  </td>
-                </tr>
-                {% endfor %}
-              </tbody>
-            </table>
+          <!-- ── ABAS POR TIPO ── -->
+          <div class="px-4 pt-3 pb-0">
+            <ul class="nav nav-tabs" id="produtosTabs">
+              <li class="nav-item">
+                <button class="nav-link text-success fw-semibold active" data-bs-toggle="tab" data-bs-target="#tab-export">
+                  <i class="bi bi-box-arrow-up me-1"></i>Exportação
+                  <span class="badge bg-success ms-1" id="badge-EXPORTACAO">{{ formset_rows|length }}</span>
+                </button>
+              </li>
+              <li class="nav-item">
+                <button class="nav-link text-primary fw-semibold" data-bs-toggle="tab" data-bs-target="#tab-import">
+                  <i class="bi bi-box-arrow-in-down me-1"></i>Importação
+                  <span class="badge bg-primary ms-1" id="badge-IMPORTACAO">0</span>
+                </button>
+              </li>
+              <li class="nav-item">
+                <button class="nav-link fw-semibold" style="color:#d97706" data-bs-toggle="tab" data-bs-target="#tab-mi">
+                  <i class="bi bi-shop me-1"></i>Mercado Interno
+                  <span class="badge ms-1" style="background:#d97706" id="badge-MERCADO_INTERNO">0</span>
+                </button>
+              </li>
+            </ul>
           </div>
 
-          <div id="msg-vazio" class="text-center py-4 text-muted {% if formset_rows %}d-none{% endif %}">
-            <i class="bi bi-inbox fs-2 mb-2 d-block"></i>
-            Nenhum produto adicionado ainda.
-          </div>
-        </div>
+          <div class="tab-content pb-3">
+
+            <!-- ABA EXPORTAÇÃO -->
+            <div class="tab-pane fade show active" id="tab-export">
+              <div class="table-responsive" id="wrapper-EXPORTACAO">
+                <table class="table table-sm table-hover mb-0">
+                  <thead style="background:#d1fae5">
+                    <tr>
+                      <th class="ps-3" style="min-width:180px">Produto</th>
+                      <th style="min-width:200px">Descrição no AC</th>
+                      <th>NCM</th>
+                      <th>Unid</th>
+                      <th class="text-end">Qtd Autorizada</th>
+                      <th class="text-end">Qtd Mín. Export.</th>
+                      <th style="width:48px"></th>
+                    </tr>
+                  </thead>
+                  <tbody id="tbody-EXPORTACAO">
+                    {% for row in formset_rows %}{% if row.tipo_produto == 'EXPORTACAO' %}
+                    <tr class="tr-remover" data-idx="{{ forloop.counter0 }}"
+                        {% if row.pk %}data-existing="1"{% endif %}>
+                      <td class="ps-3 fw-semibold">{{ row.produto_nome }}</td>
+                      <td class="small">{{ row.descricao }}</td>
+                      <td class="small text-muted">{{ row.ncm|default:"—" }}</td>
+                      <td>{{ row.unidade_sigla }}</td>
+                      <td class="text-end">{{ row.qtd_autorizada }}</td>
+                      <td class="text-end">{{ row.qtd_minima|default:"—" }}</td>
+                      <td class="text-end pe-2">
+                        <button type="button" class="btn btn-sm btn-outline-danger btn-remover"
+                                data-idx="{{ forloop.counter0 }}" title="Remover">
+                          <i class="bi bi-trash3"></i>
+                        </button>
+                      </td>
+                    </tr>
+                    {% endif %}{% endfor %}
+                  </tbody>
+                </table>
+              </div>
+              <div id="vazio-EXPORTACAO" class="text-center py-4 text-muted d-none">
+                <i class="bi bi-box-arrow-up fs-2 mb-2 d-block text-success"></i>
+                Nenhum produto de exportação adicionado.<br>
+                <small>Selecione "Exportação" no tipo acima e adicione os produtos que serão embarcados.</small>
+              </div>
+            </div>
+
+            <!-- ABA IMPORTAÇÃO -->
+            <div class="tab-pane fade" id="tab-import">
+              <div class="table-responsive" id="wrapper-IMPORTACAO">
+                <table class="table table-sm table-hover mb-0">
+                  <thead style="background:#dbeafe">
+                    <tr>
+                      <th class="ps-3" style="min-width:180px">Produto</th>
+                      <th style="min-width:200px">Descrição no AC</th>
+                      <th>NCM</th>
+                      <th>Unid</th>
+                      <th class="text-end">Qtd Autorizada</th>
+                      <th style="width:48px"></th>
+                    </tr>
+                  </thead>
+                  <tbody id="tbody-IMPORTACAO">
+                    {% for row in formset_rows %}{% if row.tipo_produto == 'IMPORTACAO' %}
+                    <tr class="tr-remover" data-idx="{{ forloop.counter0 }}"
+                        {% if row.pk %}data-existing="1"{% endif %}>
+                      <td class="ps-3 fw-semibold">{{ row.produto_nome }}</td>
+                      <td class="small">{{ row.descricao }}</td>
+                      <td class="small text-muted">{{ row.ncm|default:"—" }}</td>
+                      <td>{{ row.unidade_sigla }}</td>
+                      <td class="text-end">{{ row.qtd_autorizada }}</td>
+                      <td class="text-end pe-2">
+                        <button type="button" class="btn btn-sm btn-outline-danger btn-remover"
+                                data-idx="{{ forloop.counter0 }}" title="Remover">
+                          <i class="bi bi-trash3"></i>
+                        </button>
+                      </td>
+                    </tr>
+                    {% endif %}{% endfor %}
+                  </tbody>
+                </table>
+              </div>
+              <div id="vazio-IMPORTACAO" class="text-center py-4 text-muted d-none">
+                <i class="bi bi-box-arrow-in-down fs-2 mb-2 d-block text-primary"></i>
+                Nenhum insumo importado adicionado.<br>
+                <small>Selecione "Importação" no tipo acima para adicionar insumos que virão do exterior.</small>
+              </div>
+            </div>
+
+            <!-- ABA MERCADO INTERNO -->
+            <div class="tab-pane fade" id="tab-mi">
+              <div class="table-responsive" id="wrapper-MERCADO_INTERNO">
+                <table class="table table-sm table-hover mb-0">
+                  <thead style="background:#fef3c7">
+                    <tr>
+                      <th class="ps-3" style="min-width:180px">Produto</th>
+                      <th style="min-width:200px">Descrição no AC</th>
+                      <th>NCM</th>
+                      <th>Unid</th>
+                      <th class="text-end">Qtd Autorizada</th>
+                      <th style="width:48px"></th>
+                    </tr>
+                  </thead>
+                  <tbody id="tbody-MERCADO_INTERNO">
+                    {% for row in formset_rows %}{% if row.tipo_produto == 'MERCADO_INTERNO' %}
+                    <tr class="tr-remover" data-idx="{{ forloop.counter0 }}"
+                        {% if row.pk %}data-existing="1"{% endif %}>
+                      <td class="ps-3 fw-semibold">{{ row.produto_nome }}</td>
+                      <td class="small">{{ row.descricao }}</td>
+                      <td class="small text-muted">{{ row.ncm|default:"—" }}</td>
+                      <td>{{ row.unidade_sigla }}</td>
+                      <td class="text-end">{{ row.qtd_autorizada }}</td>
+                      <td class="text-end pe-2">
+                        <button type="button" class="btn btn-sm btn-outline-danger btn-remover"
+                                data-idx="{{ forloop.counter0 }}" title="Remover">
+                          <i class="bi bi-trash3"></i>
+                        </button>
+                      </td>
+                    </tr>
+                    {% endif %}{% endfor %}
+                  </tbody>
+                </table>
+              </div>
+              <div id="vazio-MERCADO_INTERNO" class="text-center py-4 text-muted d-none">
+                <i class="bi bi-shop fs-2 mb-2 d-block" style="color:#d97706"></i>
+                Nenhum insumo de mercado interno adicionado.<br>
+                <small>Selecione "Mercado Interno" no tipo acima para adicionar insumos comprados no Brasil.</small>
+              </div>
+            </div>
+
+          </div><!-- tab-content -->
+        </div><!-- card produtos -->
 
         <div class="d-flex gap-2">
           <button type="submit" class="btn btn-primary px-4">
@@ -219,15 +344,27 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
-const PREFIX = 'produtos';
-const AJAX_BUSCAR = '{% url "produtos:ajax_buscar_produtos" %}';
-const AJAX_INFO   = '/drawback/ajax/produto/';   // + produto_id + /
+const PREFIX       = 'produtos';
+const AJAX_BUSCAR  = '{% url "produtos:ajax_buscar_produtos" %}';
+const AJAX_INFO    = '/drawback/ajax/produto/';
 
-// nextIndex = quantos produtos já estão na lista (inicial + enviados com erro)
 let nextIndex = {{ formset_rows|length }};
-
-// Sincroniza TOTAL_FORMS com a quantidade real de produtos
 document.getElementById(`id_${PREFIX}-TOTAL_FORMS`).value = nextIndex;
+
+// ── Inicializa badges com contagem real ─────────────────────────────────────
+(function initBadges() {
+  ['EXPORTACAO','IMPORTACAO','MERCADO_INTERNO'].forEach(tipo => {
+    const count = document.getElementById(`tbody-${tipo}`)?.querySelectorAll('tr').length || 0;
+    document.getElementById(`badge-${tipo}`).textContent = count;
+    sincronizarVazio(tipo);
+  });
+})();
+
+// ── Exibir/ocultar Qtd Mínima conforme tipo ─────────────────────────────────
+document.getElementById('ui-tipo').addEventListener('change', function() {
+  document.getElementById('grupo-qtd-min').style.display =
+    this.value === 'EXPORTACAO' ? '' : 'none';
+});
 
 // ── Select2 para busca de produto ────────────────────────────────────────────
 $('#ui-produto').select2({
@@ -245,102 +382,80 @@ $('#ui-produto').select2({
   },
 });
 
-// Ao selecionar produto: auto-preenche descrição, NCM e unidade via AJAX
 $('#ui-produto').on('select2:select', function(e) {
   const produtoId = e.params.data.id;
   const texto     = e.params.data.text || '';
-
-  // Descrição: nome do produto (parte após " — ")
-  const descEl = document.getElementById('ui-descricao');
+  const descEl    = document.getElementById('ui-descricao');
   if (!descEl.value) {
     const partes = texto.split(' — ');
     descEl.value = partes.length > 1 ? partes.slice(1).join(' — ') : texto;
   }
-
-  // Busca NCM e unidade via AJAX
   fetch(`${AJAX_INFO}${produtoId}/`)
     .then(r => r.json())
     .then(data => {
       if (!data.ok) return;
-
-      // NCM
-      if (data.ncm) {
-        document.getElementById('ui-ncm').value = data.ncm;
-      }
-
-      // Unidade de medida — seleciona a opção correspondente se existir no <select>
+      if (data.ncm) document.getElementById('ui-ncm').value = data.ncm;
       if (data.unidade_id) {
         const sel = document.getElementById('ui-unidade');
         const opt = sel.querySelector(`option[value="${data.unidade_id}"]`);
         if (opt) {
           sel.value = data.unidade_id;
         } else {
-          // Unidade não está na lista (diferente empresa ou não cadastrada) — adiciona temporariamente
-          const newOpt = new Option(
-            `${data.unidade_sigla} — ${data.unidade_nome}`,
-            data.unidade_id,
-            true, true
-          );
+          const newOpt = new Option(`${data.unidade_sigla} — ${data.unidade_nome}`, data.unidade_id, true, true);
           newOpt.dataset.sigla = data.unidade_sigla;
-          newOpt.dataset.temp  = '1';
           sel.appendChild(newOpt);
           sel.value = data.unidade_id;
         }
       }
-
       document.getElementById('ui-qtd-aut').focus();
     })
-    .catch(() => {
-      // Falha silenciosa — usuário preenche manualmente
-      document.getElementById('ui-qtd-aut').focus();
-    });
+    .catch(() => document.getElementById('ui-qtd-aut').focus());
 });
 
-// ── Adicionar produto à lista ─────────────────────────────────────────────────
-document.getElementById('btn-add').addEventListener('click', function () {
+// ── Adicionar produto ─────────────────────────────────────────────────────────
+document.getElementById('btn-add').addEventListener('click', function() {
   const erroEl = document.getElementById('add-erro');
   erroEl.textContent = '';
 
-  const s2 = $('#ui-produto').select2('data');
+  const tipo        = document.getElementById('ui-tipo').value;
+  const s2          = $('#ui-produto').select2('data');
   const produtoId   = s2.length ? s2[0].id   : '';
   const produtoText = s2.length ? s2[0].text  : '';
   const descricao   = document.getElementById('ui-descricao').value.trim();
   const ncm         = document.getElementById('ui-ncm').value.trim();
   const unSel       = document.getElementById('ui-unidade');
   const unidadeId   = unSel.value;
-  const unidadeSigla = unSel.selectedIndex >= 0
-    ? unSel.options[unSel.selectedIndex].dataset.sigla || ''
-    : '';
-  const qtdAut = document.getElementById('ui-qtd-aut').value;
-  const qtdMin = document.getElementById('ui-qtd-min').value;
-  const obs    = document.getElementById('ui-obs').value.trim();
+  const unidadeSigla = unSel.selectedIndex >= 0 ? (unSel.options[unSel.selectedIndex].dataset.sigla || '') : '';
+  const qtdAut      = document.getElementById('ui-qtd-aut').value;
+  const qtdMin      = document.getElementById('ui-qtd-min').value;
+  const obs         = document.getElementById('ui-obs').value.trim();
 
-  // Validação
   const erros = [];
-  if (!produtoId)                            erros.push('Produto obrigatório.');
-  if (!descricao)                            erros.push('Descrição obrigatória.');
-  if (!unidadeId)                            erros.push('Unidade obrigatória.');
-  if (!qtdAut || parseFloat(qtdAut) <= 0)   erros.push('Qtd Autorizada inválida.');
-  if (!qtdMin || parseFloat(qtdMin) <= 0)   erros.push('Qtd Mínima inválida.');
+  if (!produtoId)                          erros.push('Produto obrigatório.');
+  if (!descricao)                          erros.push('Descrição obrigatória.');
+  if (!unidadeId)                          erros.push('Unidade obrigatória.');
+  if (!qtdAut || parseFloat(qtdAut) <= 0) erros.push('Qtd Autorizada inválida.');
+  if (tipo === 'EXPORTACAO' && (!qtdMin || parseFloat(qtdMin) <= 0))
+    erros.push('Qtd Mínima a Exportar obrigatória para itens de exportação.');
   if (erros.length) { erroEl.textContent = erros.join(' '); return; }
 
-  // Nome limpo para exibição
   const partes = produtoText.split(' — ');
   const produtoNome = partes.length > 1 ? partes.slice(1).join(' — ') : produtoText;
 
-  // Adiciona inputs ocultos ao formset
   const idx = nextIndex;
-  [
+  const campos = [
     ['id',                       ''],
+    ['tipo_produto',             tipo],
     ['produto',                  produtoId],
     ['ncm',                      ncm],
     ['descricao_mercadoria',     descricao],
     ['unidade_medida',           unidadeId],
     ['quantidade_autorizada',    qtdAut],
-    ['quantidade_minima_export', qtdMin],
+    ['quantidade_minima_export', tipo === 'EXPORTACAO' ? qtdMin : ''],
     ['observacoes',              obs],
     ['DELETE',                   ''],
-  ].forEach(([campo, valor]) => {
+  ];
+  campos.forEach(([campo, valor]) => {
     const inp = document.createElement('input');
     inp.type  = 'hidden';
     inp.name  = `${PREFIX}-${idx}-${campo}`;
@@ -352,93 +467,129 @@ document.getElementById('btn-add').addEventListener('click', function () {
   nextIndex++;
   document.getElementById(`id_${PREFIX}-TOTAL_FORMS`).value = nextIndex;
 
-  // Adiciona linha na tabela
+  // Linha na tabela correta
   const tr = document.createElement('tr');
+  tr.className   = 'tr-remover';
   tr.dataset.idx = idx;
+  const colQtdMin = tipo === 'EXPORTACAO'
+    ? `<td class="text-end">${parseFloat(qtdMin).toFixed(3)}</td>` : '';
   tr.innerHTML = `
     <td class="ps-3 fw-semibold">${esc(produtoNome)}</td>
-    <td>${esc(descricao)}</td>
-    <td><span class="text-muted small">${esc(ncm) || '—'}</span></td>
+    <td class="small">${esc(descricao)}</td>
+    <td class="small text-muted">${esc(ncm) || '—'}</td>
     <td>${esc(unidadeSigla)}</td>
     <td class="text-end">${parseFloat(qtdAut).toFixed(3)}</td>
-    <td class="text-end">${parseFloat(qtdMin).toFixed(3)}</td>
+    ${colQtdMin}
     <td class="text-end pe-2">
       <button type="button" class="btn btn-sm btn-outline-danger btn-remover"
               data-idx="${idx}" title="Remover">
         <i class="bi bi-trash3"></i>
       </button>
     </td>`;
-  document.getElementById('produtos-tbody').appendChild(tr);
+  document.getElementById(`tbody-${tipo}`).appendChild(tr);
 
-  atualizarVisibilidade();
-  atualizarBadge();
+  atualizarBadge(tipo);
+  sincronizarVazio(tipo);
 
-  // Limpa formulário de entrada e volta o foco
   $('#ui-produto').val(null).trigger('change');
   ['ui-descricao','ui-ncm','ui-qtd-aut','ui-qtd-min','ui-obs'].forEach(id => {
-    document.getElementById(id).value = '';
+    const el = document.getElementById(id);
+    if (el) el.value = '';
   });
   document.getElementById('ui-unidade').value = '';
   setTimeout(() => $('#ui-produto').select2('open'), 80);
 });
 
-// ── Remover / restaurar produto ───────────────────────────────────────────────
-document.addEventListener('click', function (e) {
+// ── Remover / restaurar produto ──────────────────────────────────────────────
+document.addEventListener('click', function(e) {
   const btn = e.target.closest('.btn-remover');
   if (!btn) return;
-
   const idx = btn.dataset.idx;
-  const tr  = document.querySelector(`#produtos-tbody tr[data-idx="${idx}"]`);
+  const tr  = document.querySelector(`.tr-remover[data-idx="${idx}"]`);
   if (!tr) return;
 
+  // Determinar tipo da linha pela sua tbody
+  const tipo = tr.closest('tbody')?.id?.replace('tbody-', '') || '';
+
   if (btn.dataset.restaurar) {
-    // Restaurar produto existente marcado para deleção
     const del = document.getElementById(`del-${idx}`);
     if (del) del.value = '';
     tr.classList.remove('marcado-remover');
     btn.innerHTML = '<i class="bi bi-trash3"></i>';
     btn.title     = 'Remover';
-    btn.classList.replace('btn-outline-secondary', 'btn-outline-danger');
+    btn.classList.replace('btn-outline-secondary','btn-outline-danger');
     delete btn.dataset.restaurar;
   } else if (tr.dataset.existing) {
-    // Marcar para deleção (produto já salvo no banco)
     const del = document.getElementById(`del-${idx}`);
     if (del) del.value = 'on';
     tr.classList.add('marcado-remover');
-    btn.innerHTML      = '<i class="bi bi-arrow-counterclockwise"></i>';
-    btn.title          = 'Restaurar';
-    btn.classList.replace('btn-outline-danger', 'btn-outline-secondary');
+    btn.innerHTML = '<i class="bi bi-arrow-counterclockwise"></i>';
+    btn.title     = 'Restaurar';
+    btn.classList.replace('btn-outline-danger','btn-outline-secondary');
     btn.dataset.restaurar = '1';
   } else {
-    // Produto novo — remove da lista e do formset
-    document.querySelectorAll(`#formset-hidden [name^="${PREFIX}-${idx}-"]`)
-      .forEach(el => el.remove());
+    document.querySelectorAll(`#formset-hidden [name^="${PREFIX}-${idx}-"]`).forEach(el => el.remove());
     tr.remove();
   }
 
-  atualizarVisibilidade();
-  atualizarBadge();
+  atualizarBadge(tipo);
+  sincronizarVazio(tipo);
 });
 
-// ── Utilidades ────────────────────────────────────────────────────────────────
-function atualizarVisibilidade() {
-  const tbody  = document.getElementById('produtos-tbody');
-  const vazio  = document.getElementById('msg-vazio');
-  const tabela = document.getElementById('tabela-wrapper');
-  const tem    = tbody.querySelectorAll('tr').length > 0;
-  tabela.style.display = tem ? '' : 'none';
-  vazio.classList.toggle('d-none', tem);
+// ── Utilitários ──────────────────────────────────────────────────────────────
+function atualizarBadge(tipo) {
+  const count = document.getElementById(`tbody-${tipo}`)
+    ?.querySelectorAll('tr:not(.marcado-remover)').length || 0;
+  document.getElementById(`badge-${tipo}`).textContent = count;
 }
 
-function atualizarBadge() {
-  const ativos = document.querySelectorAll('#produtos-tbody tr:not(.marcado-remover)').length;
-  document.getElementById('badge-count').textContent = `${ativos} produto(s)`;
+function sincronizarVazio(tipo) {
+  const tbody = document.getElementById(`tbody-${tipo}`);
+  const vazio = document.getElementById(`vazio-${tipo}`);
+  const wrapper = document.getElementById(`wrapper-${tipo}`);
+  const tem = tbody?.querySelectorAll('tr').length > 0;
+  if (wrapper) wrapper.style.display = tem ? '' : 'none';
+  if (vazio)   vazio.classList.toggle('d-none', tem);
 }
 
 function esc(str) {
-  return String(str || '')
-    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+  return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;')
     .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
+
+// ── Select2 para Despachante Aduaneiro ───────────────────────────────────────
+const AJAX_FORNECEDOR   = '{% url "drawback:ajax_buscar_fornecedores" %}';
+const despachanteHidden = document.getElementById('id_despachante');
+
+$('#despachante-select').select2({
+  theme: 'bootstrap-5',
+  width: '100%',
+  placeholder: 'Buscar fornecedor ou digitar nome...',
+  allowClear: true,
+  minimumInputLength: 2,
+  tags: true,
+  ajax: {
+    url: AJAX_FORNECEDOR,
+    dataType: 'json',
+    delay: 300,
+    data: p => ({ q: p.term }),
+    processResults: d => ({ results: d.results }),
+    cache: true,
+  },
+  createTag: function(params) {
+    const term = $.trim(params.term);
+    if (!term) return null;
+    return { id: term, text: term, nome: term };
+  },
+  language: {
+    inputTooShort: () => 'Digite 2+ letras para buscar no cadastro',
+    noResults: () => 'Nenhum fornecedor encontrado — pressione Enter para usar o nome digitado',
+    searching: () => 'Buscando...',
+  },
+}).on('select2:select', function(e) {
+  despachanteHidden.value = e.params.data.nome || e.params.data.id;
+}).on('select2:clear', function() {
+  despachanteHidden.value = '';
+});
 </script>
 {% endblock %}

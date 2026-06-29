@@ -19,8 +19,8 @@
       <div class="alert alert-warning d-flex align-items-start gap-2 py-2">
         <i class="bi bi-info-circle-fill mt-1"></i>
         <div class="small">
-          <strong>RE e DUE:</strong> para lançamentos retroativos de 2025, podem ficar em branco.
-          Preencha quando tiver os documentos do Siscomex disponíveis.
+          <strong>Somente produtos de Exportação</strong> aparecem neste formulário (a fruta exportada).
+          RE e DUE podem ficar em branco para lançamentos retroativos — preencha quando tiver os documentos do Siscomex.
         </div>
       </div>
 
@@ -117,7 +117,7 @@ produtoSelect?.addEventListener('change', function() {
     .then(r => r.json())
     .then(d => {
       saldoTexto.textContent = `Saldo disponível para exportar: ${d.saldo_exportacao.toFixed(3)} ${d.unidade} ` +
-        `(Comprado: ${d.quantidade_comprada.toFixed(3)} — Já exportado: ${d.quantidade_exportada.toFixed(3)})`;
+        `(Autorizado: ${d.quantidade_autorizada.toFixed(3)} — Já exportado: ${d.quantidade_exportada.toFixed(3)})`;
       saldoInfo.classList.remove('d-none');
       saldoInfo.className = 'alert py-2 small ' + (d.saldo_exportacao <= 0 ? 'alert-danger' : 'alert-warning');
     });

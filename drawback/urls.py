@@ -34,7 +34,8 @@ urlpatterns = [
     path('vincular/entrada/<int:item_recebimento_id>/', views.vincular_entrada_erp, name='vincular_entrada_erp'),
     path('vincular/saida/<int:item_nfe_id>/', views.vincular_saida_erp, name='vincular_saida_erp'),
 
-    # AJAX — saldo por produto e info do produto
+    # AJAX
     path('ajax/saldo/<int:produto_ac_id>/', views.ajax_saldo_produto, name='ajax_saldo_produto'),
     path('ajax/produto/<int:produto_id>/', views.ajax_produto_info, name='ajax_produto_info'),
+    path('ajax/fornecedores/', views.ajax_buscar_fornecedores, name='ajax_buscar_fornecedores'),
 ]

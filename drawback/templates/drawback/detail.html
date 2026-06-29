@@ -97,69 +97,112 @@
 
     <!-- ABA RESUMO -->
     <div class="tab-pane fade show active" id="resumo">
-      {% for p in produtos %}
-      {% with comprado=p.quantidade_comprada exportado=p.quantidade_exportada saldo_c=p.saldo_compra saldo_e=p.saldo_exportacao pct=p.percentual_cumprido %}
-      <div class="card mb-3" style="border-radius:var(--radius-card)">
-        <div class="card-body">
-          <div class="d-flex justify-content-between align-items-baseline mb-3">
-            <h5 class="fw-bold mb-0">{{ p.produto.nome }}</h5>
-            <span class="text-muted small">{{ p.descricao_mercadoria }} &bull; NCM {{ p.ncm }} &bull; {{ p.unidade_medida.sigla }}</span>
-          </div>
-          <div class="row g-3 mb-3">
-            <div class="col-6 col-md-2">
-              <div class="text-center p-3 rounded" style="background:#F3F4F6">
-                <div class="small text-muted">Autorizado</div>
-                <div class="fs-5 fw-bold">{{ p.quantidade_autorizada|floatformat:3|intcomma }}</div>
+
+      {% for secao_tipo, secao_label, secao_cor, secao_icone in resumo_secoes %}
+      {% with secao_produtos=produtos|dictsort:"produto__nome" %}
+      <div class="mb-4">
+        <h6 class="fw-bold mb-3 d-flex align-items-center gap-2">
+          <i class="{{ secao_icone }}" style="color:{{ secao_cor }}"></i>
+          <span style="color:{{ secao_cor }}">{{ secao_label }}</span>
+        </h6>
+
+        {% for p in produtos %}{% if p.tipo_produto == secao_tipo %}
+        {% with comprado=p.quantidade_comprada exportado=p.quantidade_exportada saldo_c=p.saldo_compra saldo_e=p.saldo_exportacao pct=p.percentual_cumprido %}
+        <div class="card mb-3" style="border-radius:var(--radius-card); border-left:4px solid {{ secao_cor }}">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-baseline mb-3 flex-wrap gap-1">
+              <div>
+                <span class="badge me-2" style="background:{{ secao_cor }}; font-size:.75rem">{{ p.get_tipo_produto_display }}</span>
+                <strong>{{ p.produto.nome }}</strong>
               </div>
+              <span class="text-muted small">{{ p.descricao_mercadoria }} &bull; NCM {{ p.ncm }} &bull; {{ p.unidade_medida.sigla }}</span>
             </div>
-            <div class="col-6 col-md-2">
-              <div class="text-center p-3 rounded" style="background:#EDE9FE">
-                <div class="small text-muted">Comprado</div>
-                <div class="fs-5 fw-bold" style="color:var(--color-primary)">{{ comprado|floatformat:3|intcomma }}</div>
+
+            {% if p.tipo_produto == 'EXPORTACAO' %}
+            <!-- Cards para produto de exportação -->
+            <div class="row g-3 mb-3">
+              <div class="col-6 col-md-3">
+                <div class="text-center p-3 rounded" style="background:#F3F4F6">
+                  <div class="small text-muted">Autorizado</div>
+                  <div class="fs-5 fw-bold">{{ p.quantidade_autorizada|floatformat:3|intcomma }}</div>
+                </div>
               </div>
-            </div>
-            <div class="col-6 col-md-2">
-              <div class="text-center p-3 rounded" style="background:{% if saldo_c <= 0 %}#FEE2E2{% else %}#F0FDF4{% endif %}">
-                <div class="small text-muted">Saldo Compra</div>
-                <div class="fs-5 fw-bold {% if saldo_c <= 0 %}text-danger{% else %}text-success{% endif %}">
-                  {{ saldo_c|floatformat:3|intcomma }}
+              <div class="col-6 col-md-3">
+                <div class="text-center p-3 rounded" style="background:#ECFDF5">
+                  <div class="small text-muted">Exportado</div>
+                  <div class="fs-5 fw-bold text-success">{{ exportado|floatformat:3|intcomma }}</div>
+                </div>
+              </div>
+              <div class="col-6 col-md-3">
+                <div class="text-center p-3 rounded" style="background:{% if saldo_e < 0 %}#FEE2E2{% else %}#FFF9C4{% endif %}">
+                  <div class="small text-muted">Saldo p/ Exportar</div>
+                  <div class="fs-5 fw-bold {% if saldo_e < 0 %}text-danger{% else %}text-warning{% endif %}">
+                    {{ saldo_e|floatformat:3|intcomma }}
+                  </div>
+                </div>
+              </div>
+              <div class="col-6 col-md-3">
+                <div class="text-center p-3 rounded" style="background:{% if pct >= 100 %}#ECFDF5{% else %}#FFF9C4{% endif %}">
+                  <div class="small text-muted">% Cumprido</div>
+                  <div class="fs-5 fw-bold {% if pct >= 100 %}text-success{% else %}text-warning{% endif %}">{{ pct }}%</div>
                 </div>
               </div>
             </div>
-            <div class="col-6 col-md-2">
-              <div class="text-center p-3 rounded" style="background:#ECFDF5">
-                <div class="small text-muted">Exportado</div>
-                <div class="fs-5 fw-bold text-success">{{ exportado|floatformat:3|intcomma }}</div>
+            <div class="d-flex align-items-center gap-2">
+              <div class="flex-grow-1">
+                <div class="progress" style="height:12px;border-radius:6px">
+                  <div class="progress-bar {% if pct >= 100 %}bg-success{% elif pct >= 60 %}bg-primary{% else %}bg-warning{% endif %}"
+                       style="width:{% if pct > 100 %}100{% else %}{{ pct }}{% endif %}%"></div>
+                </div>
               </div>
+              <small class="fw-semibold">{{ pct }}% de {{ p.quantidade_minima_export|floatformat:3|intcomma }} {{ p.unidade_medida.sigla }}</small>
             </div>
-            <div class="col-6 col-md-2">
-              <div class="text-center p-3 rounded" style="background:{% if saldo_e < 0 %}#FEE2E2{% else %}#FFF9C4{% endif %}">
-                <div class="small text-muted">Saldo p/ Exportar</div>
-                <div class="fs-5 fw-bold {% if saldo_e < 0 %}text-danger{% else %}text-warning{% endif %}">
-                  {{ saldo_e|floatformat:3|intcomma }}
+
+            {% else %}
+            <!-- Cards para insumos (importação ou mercado interno) -->
+            <div class="row g-3">
+              <div class="col-6 col-md-3">
+                <div class="text-center p-3 rounded" style="background:#F3F4F6">
+                  <div class="small text-muted">Autorizado</div>
+                  <div class="fs-5 fw-bold">{{ p.quantidade_autorizada|floatformat:3|intcomma }}</div>
+                </div>
+              </div>
+              <div class="col-6 col-md-3">
+                <div class="text-center p-3 rounded" style="background:#EDE9FE">
+                  <div class="small text-muted">Comprado</div>
+                  <div class="fs-5 fw-bold" style="color:var(--color-primary)">{{ comprado|floatformat:3|intcomma }}</div>
+                </div>
+              </div>
+              <div class="col-6 col-md-3">
+                <div class="text-center p-3 rounded" style="background:{% if saldo_c <= 0 %}#FEE2E2{% else %}#F0FDF4{% endif %}">
+                  <div class="small text-muted">Saldo p/ Comprar</div>
+                  <div class="fs-5 fw-bold {% if saldo_c <= 0 %}text-danger{% else %}text-success{% endif %}">
+                    {{ saldo_c|floatformat:3|intcomma }}
+                  </div>
+                </div>
+              </div>
+              <div class="col-6 col-md-3">
+                <div class="text-center p-3 rounded" style="background:{% if pct >= 100 %}#ECFDF5{% else %}#FFF9C4{% endif %}">
+                  <div class="small text-muted">% Utilizado</div>
+                  <div class="fs-5 fw-bold {% if pct >= 100 %}text-success{% else %}text-warning{% endif %}">{{ pct }}%</div>
                 </div>
               </div>
             </div>
-            <div class="col-6 col-md-2">
-              <div class="text-center p-3 rounded" style="background:{% if pct >= 100 %}#ECFDF5{% else %}#FFF9C4{% endif %}">
-                <div class="small text-muted">% Cumprido</div>
-                <div class="fs-5 fw-bold {% if pct >= 100 %}text-success{% else %}text-warning{% endif %}">{{ pct }}%</div>
-              </div>
-            </div>
-          </div>
-          <div class="d-flex align-items-center gap-2">
-            <div class="flex-grow-1">
-              <div class="progress" style="height:12px;border-radius:6px">
-                <div class="progress-bar {% if pct >= 100 %}bg-success{% elif pct >= 60 %}bg-primary{% else %}bg-warning{% endif %}"
-                     style="width:{% if pct > 100 %}100{% else %}{{ pct }}{% endif %}%"></div>
-              </div>
-            </div>
-            <small class="fw-semibold">{{ pct }}% de {{ p.quantidade_minima_export|floatformat:3|intcomma }} {{ p.unidade_medida.sigla }}</small>
+            {% endif %}
+
           </div>
         </div>
+        {% endwith %}
+        {% endif %}{% endfor %}
+
+        {% comment %}Mensagem quando seção está vazia{% endcomment %}
+        {% with tem_items=False %}
+        {% for p in produtos %}{% if p.tipo_produto == secao_tipo %}{% with tem_items=True %}{% endwith %}{% endif %}{% endfor %}
+        {% endwith %}
       </div>
       {% endwith %}
       {% endfor %}
+
     </div>
 
     <!-- ABA ENTRADAS -->

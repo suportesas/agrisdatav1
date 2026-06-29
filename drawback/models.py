@@ -82,6 +82,12 @@ class AtoConcessorio(models.Model):
 
 
 class DrawbackProdutoAC(models.Model):
+    TIPO_PRODUTO_CHOICES = [
+        ('EXPORTACAO',      'Exportação (produto final)'),
+        ('IMPORTACAO',      'Importação (insumo importado)'),
+        ('MERCADO_INTERNO', 'Mercado Interno (insumo nacional)'),
+    ]
+
     ato_concessorio = models.ForeignKey(
         AtoConcessorio, on_delete=models.CASCADE,
         related_name='produtos', verbose_name='Ato Concessório',
@@ -89,6 +95,11 @@ class DrawbackProdutoAC(models.Model):
     produto = models.ForeignKey(
         'produtos.Produto', on_delete=models.PROTECT,
         related_name='drawback_produtos', verbose_name='Produto',
+    )
+    tipo_produto = models.CharField(
+        'Tipo', max_length=20,
+        choices=TIPO_PRODUTO_CHOICES,
+        default='MERCADO_INTERNO',
     )
     ncm = models.CharField('NCM', max_length=10, blank=True)
     descricao_mercadoria = models.CharField('Descrição conforme AC', max_length=200)
@@ -102,18 +113,19 @@ class DrawbackProdutoAC(models.Model):
     )
     quantidade_minima_export = models.DecimalField(
         'Quantidade Mínima a Exportar', max_digits=15, decimal_places=3,
-        help_text='Mínimo necessário para comprovar cumprimento do AC',
+        null=True, blank=True,
+        help_text='Apenas para itens de Exportação',
     )
     observacoes = models.TextField('Observações', blank=True)
 
     class Meta:
         verbose_name = 'Produto do AC'
         verbose_name_plural = 'Produtos do AC'
-        ordering = ['produto__nome']
-        unique_together = [('ato_concessorio', 'produto')]
+        ordering = ['tipo_produto', 'produto__nome']
+        unique_together = [('ato_concessorio', 'produto', 'tipo_produto')]
 
     def __str__(self):
-        return f'{self.produto.nome} — AC {self.ato_concessorio.numero_ac}'
+        return f'{self.produto.nome} [{self.get_tipo_produto_display()}] — AC {self.ato_concessorio.numero_ac}'
 
     def save(self, *args, **kwargs):
         if not self.ncm and self.produto_id:
@@ -138,17 +150,26 @@ class DrawbackProdutoAC(models.Model):
 
     @property
     def saldo_compra(self):
+        if self.tipo_produto == 'EXPORTACAO':
+            return Decimal('0')
         return self.quantidade_autorizada - self.quantidade_comprada
 
     @property
     def saldo_exportacao(self):
-        return self.quantidade_comprada - self.quantidade_exportada
+        if self.tipo_produto == 'EXPORTACAO':
+            return self.quantidade_autorizada - self.quantidade_exportada
+        return Decimal('0')
 
     @property
     def percentual_cumprido(self):
-        if not self.quantidade_minima_export:
+        if self.tipo_produto == 'EXPORTACAO':
+            if not self.quantidade_minima_export:
+                return Decimal('0')
+            return (self.quantidade_exportada / self.quantidade_minima_export * 100).quantize(Decimal('0.1'))
+        # Para insumos: percentual de uso em relação ao autorizado
+        if not self.quantidade_autorizada:
             return Decimal('0')
-        return (self.quantidade_exportada / self.quantidade_minima_export * 100).quantize(Decimal('0.1'))
+        return (self.quantidade_comprada / self.quantidade_autorizada * 100).quantize(Decimal('0.1'))
 
 
 class EntradaDrawback(models.Model):

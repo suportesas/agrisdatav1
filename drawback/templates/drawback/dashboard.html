@@ -59,7 +59,7 @@
             <div class="rounded-3 p-3 h-100" style="background:rgba(255,255,255,0.7)">
               <div class="d-flex align-items-center mb-2">
                 <span class="badge rounded-pill me-2" style="background:#0ea5e9;font-size:.85rem">2</span>
-                <span class="fw-semibold">Regularizar 2025 (retroativo)</span>
+                <span class="fw-semibold">Regularizar (retroativo)</span>
               </div>
               <p class="small text-muted mb-2">
                 Para lançamentos já ocorridos e não registrados no ERP, use a
@@ -168,29 +168,29 @@
       {% with comprado=produto.quantidade_comprada exportado=produto.quantidade_exportada saldo_c=produto.saldo_compra saldo_e=produto.saldo_exportacao pct=produto.percentual_cumprido %}
       <div class="mb-3 pb-3 {% if not forloop.last %}border-bottom{% endif %}">
         <div class="d-flex justify-content-between align-items-baseline mb-1">
-          <span class="fw-semibold">{{ produto.produto.nome }}</span>
+          <div>
+            <span class="badge me-1 {% if produto.tipo_produto == 'EXPORTACAO' %}bg-success{% elif produto.tipo_produto == 'IMPORTACAO' %}bg-primary{% else %}bg-warning text-dark{% endif %}" style="font-size:.65rem">
+              {% if produto.tipo_produto == 'EXPORTACAO' %}Export{% elif produto.tipo_produto == 'IMPORTACAO' %}Import{% else %}M.Interno{% endif %}
+            </span>
+            <span class="fw-semibold">{{ produto.produto.nome }}</span>
+          </div>
           <span class="small text-muted">{{ produto.unidade_medida.sigla }}</span>
         </div>
+        {% if produto.tipo_produto == 'EXPORTACAO' %}
         <div class="row g-2 mb-2">
-          <div class="col-6 col-md-3">
+          <div class="col-6 col-md-4">
             <div class="rounded p-2 text-center" style="background:#F3F4F6">
               <div class="small text-muted">Autorizado</div>
               <div class="fw-bold">{{ produto.quantidade_autorizada|floatformat:3|intcomma }}</div>
             </div>
           </div>
-          <div class="col-6 col-md-3">
-            <div class="rounded p-2 text-center" style="background:#EDE9FE">
-              <div class="small text-muted">Comprado</div>
-              <div class="fw-bold" style="color:var(--color-primary)">{{ comprado|floatformat:3|intcomma }}</div>
-            </div>
-          </div>
-          <div class="col-6 col-md-3">
+          <div class="col-6 col-md-4">
             <div class="rounded p-2 text-center" style="background:#ECFDF5">
               <div class="small text-muted">Exportado</div>
               <div class="fw-bold text-success">{{ exportado|floatformat:3|intcomma }}</div>
             </div>
           </div>
-          <div class="col-6 col-md-3">
+          <div class="col-6 col-md-4">
             <div class="rounded p-2 text-center" style="background:{% if saldo_e < 0 %}#FEE2E2{% else %}#FFF9C4{% endif %}">
               <div class="small text-muted">Saldo p/ Exportar</div>
               <div class="fw-bold {% if saldo_e < 0 %}text-danger{% else %}text-warning{% endif %}">
@@ -199,7 +199,30 @@
             </div>
           </div>
         </div>
-        <!-- Barra de progresso -->
+        {% else %}
+        <div class="row g-2 mb-2">
+          <div class="col-6 col-md-4">
+            <div class="rounded p-2 text-center" style="background:#F3F4F6">
+              <div class="small text-muted">Autorizado</div>
+              <div class="fw-bold">{{ produto.quantidade_autorizada|floatformat:3|intcomma }}</div>
+            </div>
+          </div>
+          <div class="col-6 col-md-4">
+            <div class="rounded p-2 text-center" style="background:#EDE9FE">
+              <div class="small text-muted">Comprado</div>
+              <div class="fw-bold" style="color:var(--color-primary)">{{ comprado|floatformat:3|intcomma }}</div>
+            </div>
+          </div>
+          <div class="col-6 col-md-4">
+            <div class="rounded p-2 text-center" style="background:{% if saldo_c <= 0 %}#FEE2E2{% else %}#F0FDF4{% endif %}">
+              <div class="small text-muted">Saldo p/ Comprar</div>
+              <div class="fw-bold {% if saldo_c <= 0 %}text-danger{% else %}text-success{% endif %}">
+                {{ saldo_c|floatformat:3|intcomma }}
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endif %}
         <div class="d-flex align-items-center gap-2">
           <div class="flex-grow-1">
             <div class="progress" style="height:10px; border-radius:5px">
@@ -208,7 +231,7 @@
             </div>
           </div>
           <small class="text-muted fw-semibold" style="min-width:48px">{{ pct }}%</small>
-          <small class="text-muted">cumprido</small>
+          <small class="text-muted">{% if produto.tipo_produto == 'EXPORTACAO' %}cumprido{% else %}utilizado{% endif %}</small>
         </div>
       </div>
       {% endwith %}

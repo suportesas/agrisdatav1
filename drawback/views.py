@@ -22,6 +22,30 @@ def _empresa(request):
 
 
 @login_required
+def ajax_buscar_fornecedores(request):
+    """Autocomplete de fornecedores para o campo Despachante Aduaneiro."""
+    from django.db.models import Q
+    from cadastros.models import Fornecedor
+    q = request.GET.get('q', '').strip()
+    empresa = _empresa(request)
+    if len(q) < 2:
+        return JsonResponse({'results': []})
+    qs = Fornecedor.objects.filter(empresa=empresa, ativa=True).filter(
+        Q(nome__icontains=q) | Q(nome_fantasia__icontains=q) | Q(cnpj_cpf__icontains=q)
+    ).order_by('nome')[:15]
+    results = []
+    for f in qs:
+        nome = f.nome_fantasia or f.nome
+        cnpj = f.cnpj_cpf
+        results.append({
+            'id': nome,
+            'text': f'{nome} — {cnpj}' if cnpj else nome,
+            'nome': nome,
+        })
+    return JsonResponse({'results': results})
+
+
+@login_required
 def ajax_produto_info(request, produto_id):
     """Retorna NCM e unidade de medida de um produto para auto-preenchimento."""
     from produtos.models import Produto
@@ -79,6 +103,8 @@ def _formset_context(empresa, formset):
             rows.append({
                 'prefix': fform.prefix,
                 'pk': fform.instance.pk,
+                'tipo_produto': fform.instance.tipo_produto,
+                'tipo_produto_display': fform.instance.get_tipo_produto_display(),
                 'produto_id': fform.instance.produto_id,
                 'produto_nome': fform.instance.produto.nome,
                 'ncm': fform.instance.ncm or '',
@@ -86,7 +112,7 @@ def _formset_context(empresa, formset):
                 'unidade_id': fform.instance.unidade_medida_id,
                 'unidade_sigla': fform.instance.unidade_medida.sigla,
                 'qtd_autorizada': str(fform.instance.quantidade_autorizada),
-                'qtd_minima': str(fform.instance.quantidade_minima_export),
+                'qtd_minima': str(fform.instance.quantidade_minima_export or ''),
                 'obs': fform.instance.observacoes or '',
             })
         elif fform.has_changed():
@@ -106,9 +132,12 @@ def _formset_context(empresa, formset):
                     unidade_sigla = u.sigla
                 except Exception:
                     pass
+            tipo = fform['tipo_produto'].value() or 'MERCADO_INTERNO'
             rows.append({
                 'prefix': fform.prefix,
                 'pk': '',
+                'tipo_produto': tipo,
+                'tipo_produto_display': dict(DrawbackProdutoAC.TIPO_PRODUTO_CHOICES).get(tipo, tipo),
                 'produto_id': pid,
                 'produto_nome': produto_nome,
                 'ncm': fform['ncm'].value() or '',
@@ -192,6 +221,12 @@ def ac_detail(request, pk):
     entradas_anuladas = ac.entradas.filter(anulado=True).order_by('-data_registro')
     saidas_anuladas = ac.saidas.filter(anulado=True).order_by('-data_registro')
 
+    resumo_secoes = [
+        ('EXPORTACAO',      'Itens de Exportação',            '#16a34a', 'bi bi-box-arrow-up'),
+        ('IMPORTACAO',      'Itens de Importação',            '#2563eb', 'bi bi-box-arrow-in-down'),
+        ('MERCADO_INTERNO', 'Itens de Compras no Mercado Interno', '#d97706', 'bi bi-shop'),
+    ]
+
     return render(request, 'drawback/detail.html', {
         'ac': ac,
         'produtos': produtos,
@@ -199,6 +234,7 @@ def ac_detail(request, pk):
         'saidas': saidas,
         'entradas_anuladas': entradas_anuladas,
         'saidas_anuladas': saidas_anuladas,
+        'resumo_secoes': resumo_secoes,
     })
 
 
@@ -217,6 +253,11 @@ def entrada_create(request, ac_pk):
             entrada.origem = 'MANUAL'
             entrada.retroativo = True
             entrada.registrado_por = request.user
+            # Deriva tipo_compra automaticamente do tipo do produto no AC
+            if entrada.drawback_produto.tipo_produto == 'IMPORTACAO':
+                entrada.tipo_compra = 'IMPORTACAO'
+            else:
+                entrada.tipo_compra = 'MERCADO_INTERNO'
             entrada.save()
             messages.success(request, 'Entrada registrada com sucesso.')
             return redirect('drawback:ac_detail', pk=ac.pk)
@@ -887,6 +928,7 @@ def ajax_saldo_produto(request, produto_ac_id):
     )
     return JsonResponse({
         'produto': produto_ac.produto.nome,
+        'tipo_produto': produto_ac.tipo_produto,
         'unidade': produto_ac.unidade_medida.sigla,
         'quantidade_autorizada': float(produto_ac.quantidade_autorizada),
         'quantidade_comprada': float(produto_ac.quantidade_comprada),

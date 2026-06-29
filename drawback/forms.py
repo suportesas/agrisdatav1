@@ -29,10 +29,11 @@ class DrawbackProdutoACForm(forms.ModelForm):
     class Meta:
         model = DrawbackProdutoAC
         fields = (
-            'produto', 'ncm', 'descricao_mercadoria', 'unidade_medida',
+            'tipo_produto', 'produto', 'ncm', 'descricao_mercadoria', 'unidade_medida',
             'quantidade_autorizada', 'quantidade_minima_export', 'observacoes',
         )
         widgets = {
+            'tipo_produto': forms.Select(attrs={'class': 'form-select'}),
             'produto': forms.Select(attrs={'class': 'form-select'}),
             'ncm': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '00000000'}),
             'descricao_mercadoria': forms.TextInput(attrs={'class': 'form-control'}),
@@ -53,6 +54,7 @@ class DrawbackProdutoACForm(forms.ModelForm):
         if empresa:
             um_qs = um_qs.filter(empresa=empresa)
         self.fields['unidade_medida'].queryset = um_qs
+        self.fields['quantidade_minima_export'].required = False
 
 
 class DrawbackProdutoACBaseFormSet(BaseInlineFormSet):
@@ -79,13 +81,12 @@ class EntradaDrawbackForm(forms.ModelForm):
     class Meta:
         model = EntradaDrawback
         fields = (
-            'drawback_produto', 'tipo_compra', 'fornecedor',
+            'drawback_produto', 'fornecedor',
             'numero_nf', 'serie_nf', 'data_nf', 'data_recebimento',
             'quantidade', 'valor_unitario', 'observacoes',
         )
         widgets = {
             'drawback_produto': forms.Select(attrs={'class': 'form-select'}),
-            'tipo_compra': forms.Select(attrs={'class': 'form-select'}),
             'fornecedor': forms.Select(attrs={'class': 'form-select'}),
             'numero_nf': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '000000'}),
             'serie_nf': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '1'}),
@@ -99,9 +100,11 @@ class EntradaDrawbackForm(forms.ModelForm):
     def __init__(self, *args, ato_concessorio=None, empresa=None, **kwargs):
         super().__init__(*args, **kwargs)
         if ato_concessorio:
+            # Apenas insumos (importados ou domésticos) — não produtos de exportação
             self.fields['drawback_produto'].queryset = DrawbackProdutoAC.objects.filter(
-                ato_concessorio=ato_concessorio
-            ).select_related('produto', 'unidade_medida').order_by('produto__nome')
+                ato_concessorio=ato_concessorio,
+                tipo_produto__in=['IMPORTACAO', 'MERCADO_INTERNO'],
+            ).select_related('produto', 'unidade_medida').order_by('tipo_produto', 'produto__nome')
         if empresa:
             from cadastros.models import Fornecedor
             self.fields['fornecedor'].queryset = Fornecedor.objects.filter(
@@ -118,10 +121,7 @@ class EntradaDrawbackForm(forms.ModelForm):
         quantidade = cleaned.get('quantidade')
         if produto_ac and quantidade:
             saldo = produto_ac.saldo_compra
-            # Para novos registros, saldo deve ser >= quantidade
-            instance_id = self.instance.pk
-            if instance_id:
-                # Na edição, somar de volta o valor antigo antes de comparar
+            if self.instance.pk:
                 saldo += self.instance.quantidade
             if quantidade > saldo:
                 raise forms.ValidationError(
@@ -154,8 +154,10 @@ class SaidaDrawbackForm(forms.ModelForm):
     def __init__(self, *args, ato_concessorio=None, empresa=None, **kwargs):
         super().__init__(*args, **kwargs)
         if ato_concessorio:
+            # Apenas produtos de Exportação (a fruta / produto final)
             self.fields['drawback_produto'].queryset = DrawbackProdutoAC.objects.filter(
-                ato_concessorio=ato_concessorio
+                ato_concessorio=ato_concessorio,
+                tipo_produto='EXPORTACAO',
             ).select_related('produto', 'unidade_medida').order_by('produto__nome')
         if empresa:
             from cadastros.models import Cliente
@@ -171,14 +173,13 @@ class SaidaDrawbackForm(forms.ModelForm):
         quantidade = cleaned.get('quantidade')
         if produto_ac and quantidade:
             saldo = produto_ac.saldo_exportacao
-            instance_id = self.instance.pk
-            if instance_id:
+            if self.instance.pk:
                 saldo += self.instance.quantidade
             if quantidade > saldo:
                 raise forms.ValidationError(
-                    f'Quantidade ({quantidade}) excede o saldo disponível para exportar '
+                    f'Quantidade ({quantidade}) excede o saldo autorizado para exportação '
                     f'neste produto ({saldo}). '
-                    f'Comprado: {produto_ac.quantidade_comprada} — Já exportado: {produto_ac.quantidade_exportada}.'
+                    f'Autorizado: {produto_ac.quantidade_autorizada} — Já exportado: {produto_ac.quantidade_exportada}.'
                 )
         return cleaned
 

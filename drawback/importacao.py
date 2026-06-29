@@ -52,13 +52,20 @@ def validar_entradas(workbook, ato_concessorio, empresa):
     except KeyError:
         return [], ['Aba "Entradas" não encontrada no arquivo.']
 
-    # mapa de produtos do AC: nome_lower → DrawbackProdutoAC
-    produtos_ac = {
-        p.produto.nome.lower(): p
-        for p in DrawbackProdutoAC.objects.filter(
-            ato_concessorio=ato_concessorio
-        ).select_related('produto', 'unidade_medida')
+    # mapa de produtos do AC por tipo: (nome_lower, tipo_produto) → DrawbackProdutoAC
+    # Apenas insumos (importação e mercado interno) são válidos para entradas
+    _qs_entradas = DrawbackProdutoAC.objects.filter(
+        ato_concessorio=ato_concessorio,
+        tipo_produto__in=['IMPORTACAO', 'MERCADO_INTERNO'],
+    ).select_related('produto', 'unidade_medida')
+    produtos_ac_por_tipo = {
+        (p.produto.nome.lower(), p.tipo_produto): p
+        for p in _qs_entradas
     }
+    # Fallback: mapa apenas por nome (para retrocompatibilidade quando tipo não distingue)
+    produtos_ac_por_nome = {}
+    for p in _qs_entradas:
+        produtos_ac_por_nome[p.produto.nome.lower()] = p
 
     # mapa de fornecedores: nome_lower → Fornecedor (e cnpj)
     fornecedores = {}
@@ -69,8 +76,7 @@ def validar_entradas(workbook, ato_concessorio, empresa):
             fornecedores[cnpj] = f
 
     resultados = []
-    saldo_acumulado = {p_id: p.saldo_compra for p_id, p in
-                       {p.id: p for p in produtos_ac.values()}.items()}
+    saldo_acumulado = {p.id: p.saldo_compra for p in produtos_ac_por_nome.values()}
 
     TIPOS_VALIDOS = {'IMPORTACAO', 'MERCADO_INTERNO'}
 
@@ -121,10 +127,13 @@ def validar_entradas(workbook, ato_concessorio, empresa):
 
         valor_unitario = _parse_decimal(valor_unit_raw)
 
-        # Busca produto no AC
-        produto_ac = produtos_ac.get(produto_str.lower())
+        # Busca produto no AC — tenta match por (nome, tipo_compra) primeiro
+        produto_ac = (
+            produtos_ac_por_tipo.get((produto_str.lower(), tipo_compra))
+            or produtos_ac_por_nome.get(produto_str.lower())
+        ) if tipo_compra else produtos_ac_por_nome.get(produto_str.lower())
         if not produto_ac:
-            erros.append(f'Produto "{produto_str}" não encontrado nos produtos autorizados deste AC.')
+            erros.append(f'Produto "{produto_str}" não encontrado nos insumos autorizados deste AC.')
 
         # Busca fornecedor
         forn_key = fornecedor_str.lower().replace('.', '').replace('/', '').replace('-', '')
@@ -191,10 +200,12 @@ def validar_saidas(workbook, ato_concessorio, empresa):
         except KeyError:
             return [], ['Aba "Saídas" não encontrada no arquivo.']
 
+    # Apenas produtos de EXPORTACAO são válidos para saídas
     produtos_ac = {
         p.produto.nome.lower(): p
         for p in DrawbackProdutoAC.objects.filter(
-            ato_concessorio=ato_concessorio
+            ato_concessorio=ato_concessorio,
+            tipo_produto='EXPORTACAO',
         ).select_related('produto', 'unidade_medida')
     }
 
@@ -240,7 +251,7 @@ def validar_saidas(workbook, ato_concessorio, empresa):
 
         produto_ac = produtos_ac.get(produto_str.lower())
         if not produto_ac:
-            erros.append(f'Produto "{produto_str}" não encontrado nos produtos autorizados deste AC.')
+            erros.append(f'Produto "{produto_str}" não encontrado nos itens de Exportação deste AC.')
 
         cliente_obj = clientes.get(cliente_str.lower())
 

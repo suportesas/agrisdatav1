@@ -20,7 +20,7 @@
         <i class="bi bi-info-circle-fill mt-1"></i>
         <div class="small">
           <strong>Lançamento retroativo:</strong> informe os dados conforme a nota fiscal original.
-          O campo <em>Tipo de Compra</em> distingue insumos importados dos comprados no mercado nacional.
+          O tipo de compra (Importação ou Mercado Interno) é definido automaticamente pelo produto selecionado.
         </div>
       </div>
 
@@ -40,12 +40,13 @@
               </div>
 
               <div class="col-md-6">
-                <label class="form-label fw-semibold">Tipo de Compra <span class="text-danger">*</span></label>
-                {{ form.tipo_compra }}
+                <label class="form-label fw-semibold">Tipo de Compra</label>
+                <div id="tipo-badge" class="mt-1">
+                  <span class="badge bg-secondary">Selecione o produto acima</span>
+                </div>
               </div>
 
               <div class="col-12">
-                <!-- Saldo em tempo real -->
                 <div id="saldo-info" class="alert alert-secondary py-2 small d-none">
                   <i class="bi bi-bar-chart me-1"></i>
                   <span id="saldo-texto"></span>
@@ -114,17 +115,29 @@
 </div>
 
 <script>
-const saldoUrl = "{% url 'drawback:ajax_saldo_produto' 0 %}".replace('/0/', '/');
+const saldoUrl     = "{% url 'drawback:ajax_saldo_produto' 0 %}".replace('/0/', '/');
 const produtoSelect = document.getElementById('id_drawback_produto');
-const saldoInfo = document.getElementById('saldo-info');
-const saldoTexto = document.getElementById('saldo-texto');
+const saldoInfo     = document.getElementById('saldo-info');
+const saldoTexto    = document.getElementById('saldo-texto');
+const tipoBadge     = document.getElementById('tipo-badge');
+
+const TIPO_LABELS = {
+  'IMPORTACAO':      { label: 'Importação',      cls: 'bg-primary' },
+  'MERCADO_INTERNO': { label: 'Mercado Interno',  cls: 'bg-warning text-dark' },
+};
 
 produtoSelect?.addEventListener('change', function() {
   const id = this.value;
-  if (!id) { saldoInfo.classList.add('d-none'); return; }
+  if (!id) {
+    saldoInfo.classList.add('d-none');
+    tipoBadge.innerHTML = '<span class="badge bg-secondary">Selecione o produto acima</span>';
+    return;
+  }
   fetch(saldoUrl + id + '/')
     .then(r => r.json())
     .then(d => {
+      const t = TIPO_LABELS[d.tipo_produto] || { label: d.tipo_produto, cls: 'bg-secondary' };
+      tipoBadge.innerHTML = `<span class="badge ${t.cls}">${t.label}</span>`;
       saldoTexto.textContent = `Saldo disponível para comprar: ${d.saldo_compra.toFixed(3)} ${d.unidade} ` +
         `(Autorizado: ${d.quantidade_autorizada.toFixed(3)} — Já comprado: ${d.quantidade_comprada.toFixed(3)})`;
       saldoInfo.classList.remove('d-none');

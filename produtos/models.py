@@ -280,7 +280,18 @@ class Produto(models.Model):
     observacoes = models.TextField(blank=True, verbose_name='Observações')
     imagem = models.ImageField(upload_to='produtos/', blank=True, null=True, verbose_name='Imagem')
     ativo = models.BooleanField(default=True, verbose_name='Ativo')
-    
+
+    # Variantes
+    produto_base = models.ForeignKey(
+        'self',
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name='variantes',
+        verbose_name='Produto Base',
+        help_text='Se preenchido, este produto é uma variante do produto base selecionado.',
+    )
+
     # Categoria Agrícola
     categoria_agricola = models.CharField(max_length=20, choices=CATEGORIA_AGRICOLA_CHOICES, blank=True, verbose_name='Categoria Agrícola')
     
@@ -388,6 +399,19 @@ class Produto(models.Model):
     
     def __str__(self):
         return f"{self.codigo} - {self.nome}"
+
+    @property
+    def is_variante(self):
+        return self.produto_base_id is not None
+
+    @property
+    def nome_completo(self):
+        """Retorna nome concatenado com atributos ordenados, ex: 'Caixa 10 kg Goldmin Selecto 03'."""
+        if not self.is_variante:
+            return self.nome
+        atributos = self.atributos.select_related('dimensao').order_by('dimensao__ordem', 'dimensao__nome')
+        partes = [self.produto_base.nome] + [a.valor for a in atributos]
+        return ' '.join(partes)
 
     def clean(self):
         super().clean()

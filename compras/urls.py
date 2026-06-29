@@ -14,6 +14,15 @@ from .views_forma_pagamento import (
     forma_pagamento_list, forma_pagamento_create, forma_pagamento_edit,
     forma_pagamento_delete
 )
+from .views_planejamento_embalagem import (
+    planejamento_embalagem_list,
+    planejamento_embalagem_create,
+    planejamento_embalagem_detail,
+    planejamento_embalagem_update,
+    planejamento_embalagem_aprovar,
+    planejamento_embalagem_revisar_precos,
+    planejamento_embalagem_gerar,
+)
 
 app_name = 'compras'
 
@@ -103,6 +112,17 @@ urlpatterns = [
          lambda request: __import__('compras.views_template_teste').views_template_teste.template_teste(request),
          name='cotacao_teste_template'),
     
+    # ========================================
+    # 📦 PLANEJAMENTO DE COMPRAS DE EMBALAGENS
+    # ========================================
+    path('planejamento-embalagem/', planejamento_embalagem_list, name='planejamento_embalagem_list'),
+    path('planejamento-embalagem/novo/', planejamento_embalagem_create, name='planejamento_embalagem_create'),
+    path('planejamento-embalagem/<int:pk>/', planejamento_embalagem_detail, name='planejamento_embalagem_detail'),
+    path('planejamento-embalagem/<int:pk>/editar/', planejamento_embalagem_update, name='planejamento_embalagem_update'),
+    path('planejamento-embalagem/<int:pk>/aprovar/', planejamento_embalagem_aprovar, name='planejamento_embalagem_aprovar'),
+    path('planejamento-embalagem/<int:pk>/revisar-precos/', planejamento_embalagem_revisar_precos, name='planejamento_embalagem_revisar_precos'),
+    path('planejamento-embalagem/<int:pk>/gerar/', planejamento_embalagem_gerar, name='planejamento_embalagem_gerar'),
+
     # Relatórios
     path('relatorios/', views.relatorio_compras_simples, name='relatorio_compras_simples'),
     path('relatorios/pdf/', views.relatorio_compras_simples_pdf, name='relatorio_compras_simples_pdf'),

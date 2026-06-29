@@ -30,7 +30,21 @@
       "Bash(python manage.py migrate drawback --run-syncdb)",
       "Bash(python -m django --version)",
       "Bash(py -m django --version)",
-      "PowerShell(& \"c:\\\\erp_agricola_novo\\\\venv\\\\Scripts\\\\python.exe\" -c \"import django; print\\(django.__version__\\)\")"
+      "PowerShell(& \"c:\\\\erp_agricola_novo\\\\venv\\\\Scripts\\\\python.exe\" -c \"import django; print\\(django.__version__\\)\")",
+      "Bash(python manage.py migrate produtos 0026 --run-syncdb)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" \"http://127.0.0.1:8000/empresas/preferencias/\")",
+      "PowerShell(Get-Process python -ErrorAction SilentlyContinue)",
+      "PowerShell(Stop-Process -Name python -Force -ErrorAction SilentlyContinue)",
+      "PowerShell(Set-Location \"c:\\\\erp_agricola_novo\"; Start-Process -FilePath \"c:\\\\erp_agricola_novo\\\\venv\\\\Scripts\\\\python.exe\" -ArgumentList \"manage.py\", \"runserver\" -WindowStyle Hidden; Start-Sleep 5; \\(Invoke-WebRequest -Uri \"http://127.0.0.1:8000/\" -UseBasicParsing -ErrorAction SilentlyContinue\\).StatusCode)",
+      "Bash(curl -sv \"http://127.0.0.1:8000/empresas/preferencias/\")",
+      "Bash(python manage.py makemigrations compras --name planejamento_compras_embalagem)",
+      "Bash(ls .venv/Scripts/)",
+      "Bash(ls venv/Scripts/)",
+      "Bash(ls env/Scripts/)",
+      "Bash(.venv/Scripts/python.exe manage.py makemigrations compras --name planejamento_compras_embalagem)",
+      "PowerShell(& \"c:\\\\erp_agricola_novo\\\\venv\\\\Scripts\\\\python.exe\" \"c:\\\\erp_agricola_novo\\\\manage.py\" makemigrations compras --name planejamento_compras_embalagem 2>&1)",
+      "PowerShell(& \"c:\\\\erp_agricola_novo\\\\venv\\\\Scripts\\\\python.exe\" \"c:\\\\erp_agricola_novo\\\\manage.py\" migrate compras 2>&1)",
+      "PowerShell(& \"c:\\\\erp_agricola_novo\\\\venv\\\\Scripts\\\\python.exe\" \"c:\\\\erp_agricola_novo\\\\manage.py\" check compras 2>&1)"
     ]
   }
 }

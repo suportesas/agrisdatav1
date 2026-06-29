@@ -576,7 +576,20 @@ class Empresa(models.Model):
         null=True,
         blank=True
     )
-    
+
+    # Preferências de produtos/variantes
+    EXIBIR_ESTOQUE_BASE_CHOICES = [
+        ('SOMA', 'Somar estoque das variantes'),
+        ('OCULTAR', 'Mostrar "—" (sem estoque direto)'),
+    ]
+    exibir_estoque_base = models.CharField(
+        'Estoque do produto base',
+        max_length=10,
+        choices=EXIBIR_ESTOQUE_BASE_CHOICES,
+        default='OCULTAR',
+        help_text='Como exibir o estoque de produtos base que possuem variantes: somar o estoque de todas as variantes ou mostrar "—".',
+    )
+
     class Meta:
         ordering = ['nome']
         verbose_name = "Empresa"

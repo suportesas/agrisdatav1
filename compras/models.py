@@ -2078,3 +2078,257 @@ class PedidoCompraMensagem(models.Model):
 
     def __str__(self):
         return f"{self.pedido.numero} - {self.autor} ({self.data_envio:%d/%m/%Y %H:%M})"
+
+
+# ============================================================
+# PLANEJAMENTO DE COMPRAS DE EMBALAGENS
+# ============================================================
+
+class PlanejamentoComprasEmbalagem(models.Model):
+    """
+    Documento de planejamento anual/safra para compra de embalagens.
+    Não é uma requisição nem pedido — é uma previsão de necessidade que
+    pode gerar SolicitacaoCompra ou PedidoCompra conforme a safra avança.
+    """
+
+    STATUS = [
+        ('RASCUNHO', 'Rascunho'),
+        ('EM_REVISAO', 'Em Revisão'),
+        ('APROVADO', 'Aprovado'),
+        ('ENCERRADO', 'Encerrado'),
+    ]
+
+    empresa = models.ForeignKey(
+        'empresas.Empresa',
+        on_delete=models.PROTECT,
+        related_name='planejamentos_embalagem',
+        verbose_name='Empresa',
+    )
+    safra = models.ForeignKey(
+        'cadastros.Safra',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='planejamentos_embalagem',
+        verbose_name='Safra',
+    )
+    numero = models.CharField(
+        'Número',
+        max_length=20,
+        unique=True,
+        editable=False,
+    )
+    nome = models.CharField('Nome do Planejamento', max_length=200)
+    status = models.CharField('Status', max_length=20, choices=STATUS, default='RASCUNHO')
+    data_inicio = models.DateField('Início da Safra')
+    data_fim = models.DateField('Fim da Safra')
+    responsavel = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name='planejamentos_embalagem_responsavel',
+        verbose_name='Responsável',
+    )
+    observacoes = models.TextField('Observações', blank=True)
+    criado_em = models.DateTimeField(auto_now_add=True)
+    atualizado_em = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Planejamento de Compras de Embalagens'
+        verbose_name_plural = 'Planejamentos de Compras de Embalagens'
+        ordering = ['-criado_em']
+
+    def save(self, *args, **kwargs):
+        if not self.numero:
+            from django.db.models import Max
+            ultimo = (
+                PlanejamentoComprasEmbalagem.objects
+                .filter(empresa=self.empresa)
+                .aggregate(Max('numero'))['numero__max']
+            )
+            if ultimo:
+                try:
+                    seq = int(ultimo.split('-')[-1]) + 1
+                except (ValueError, IndexError):
+                    seq = 1
+            else:
+                seq = 1
+            self.numero = f'PLAN-EMBAL-{seq:04d}'
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f'{self.numero} — {self.nome}'
+
+    @property
+    def custo_estimado_total(self):
+        from django.db.models import Sum, F, ExpressionWrapper, DecimalField
+        resultado = self.itens.aggregate(
+            total=Sum(
+                ExpressionWrapper(
+                    F('quantidade_planejada') * F('preco_estimado_unitario'),
+                    output_field=DecimalField(max_digits=14, decimal_places=2),
+                )
+            )
+        )
+        from decimal import Decimal
+        return resultado['total'] or Decimal('0')
+
+    @property
+    def custo_atual_total(self):
+        from django.db.models import Sum, F, ExpressionWrapper, DecimalField
+        resultado = self.itens.aggregate(
+            total=Sum(
+                ExpressionWrapper(
+                    F('quantidade_planejada') * F('preco_atual_unitario'),
+                    output_field=DecimalField(max_digits=14, decimal_places=2),
+                )
+            )
+        )
+        from decimal import Decimal
+        return resultado['total'] or Decimal('0')
+
+    @property
+    def variacao_custo_pct(self):
+        estimado = self.custo_estimado_total
+        atual = self.custo_atual_total
+        if estimado and estimado != 0:
+            return ((atual - estimado) / estimado) * 100
+        return None
+
+    @property
+    def total_itens(self):
+        return self.itens.count()
+
+    @property
+    def itens_convertidos(self):
+        return self.itens.exclude(status='PLANEJADO').count()
+
+
+class ItemPlanejamentoEmbalagem(models.Model):
+    """
+    Linha do planejamento de compras de embalagens.
+    Cada linha representa um tipo de embalagem necessária em determinada fase/data da safra.
+    """
+
+    FASE_CHOICES = [
+        ('GERAL', 'Geral'),
+        ('INICIO_SAFRA', 'Início da Safra'),
+        ('MEIO_SAFRA', 'Meio da Safra'),
+        ('FINAL_SAFRA', 'Final da Safra'),
+    ]
+
+    STATUS_ITEM = [
+        ('PLANEJADO', 'Planejado'),
+        ('SOLICITADO', 'Solicitação Gerada'),
+        ('PEDIDO', 'Pedido Gerado'),
+        ('RECEBIDO', 'Recebido'),
+    ]
+
+    planejamento = models.ForeignKey(
+        PlanejamentoComprasEmbalagem,
+        on_delete=models.CASCADE,
+        related_name='itens',
+        verbose_name='Planejamento',
+    )
+    tipo_embalagem = models.ForeignKey(
+        'embalagem.TipoEmbalagem',
+        on_delete=models.PROTECT,
+        related_name='itens_planejamento',
+        verbose_name='Tipo de Embalagem',
+    )
+    fase = models.CharField(
+        'Fase da Safra',
+        max_length=20,
+        choices=FASE_CHOICES,
+        default='GERAL',
+    )
+    data_prevista = models.DateField('Data Prevista de Necessidade')
+    quantidade_planejada = models.DecimalField(
+        'Quantidade Planejada',
+        max_digits=12,
+        decimal_places=2,
+        validators=[MinValueValidator(0.01)],
+    )
+    unidade_medida = models.ForeignKey(
+        'produtos.UnidadeMedida',
+        on_delete=models.PROTECT,
+        verbose_name='Unidade',
+    )
+    preco_estimado_unitario = models.DecimalField(
+        'Preço Estimado (unitário)',
+        max_digits=12,
+        decimal_places=4,
+        validators=[MinValueValidator(0)],
+    )
+    preco_atual_unitario = models.DecimalField(
+        'Preço Atual (unitário)',
+        max_digits=12,
+        decimal_places=4,
+        validators=[MinValueValidator(0)],
+        help_text='Pode ser atualizado durante a safra conforme cotações.',
+    )
+    fornecedor_preferencial = models.ForeignKey(
+        'cadastros.Fornecedor',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='itens_planejamento_preferencial',
+        verbose_name='Fornecedor Preferencial',
+    )
+    fornecedor_alternativo = models.ForeignKey(
+        'cadastros.Fornecedor',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='itens_planejamento_alternativo',
+        verbose_name='Fornecedor Alternativo',
+    )
+    status = models.CharField(
+        'Status',
+        max_length=20,
+        choices=STATUS_ITEM,
+        default='PLANEJADO',
+    )
+    solicitacao_compra = models.ForeignKey(
+        'SolicitacaoCompra',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='itens_planejamento_embalagem',
+        verbose_name='Solicitação de Compra',
+    )
+    pedido_compra = models.ForeignKey(
+        'PedidoCompra',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='itens_planejamento_embalagem',
+        verbose_name='Pedido de Compra',
+    )
+    observacoes = models.TextField('Observações', blank=True)
+
+    class Meta:
+        verbose_name = 'Item do Planejamento de Embalagens'
+        verbose_name_plural = 'Itens do Planejamento de Embalagens'
+        ordering = ['data_prevista', 'fase']
+
+    def __str__(self):
+        return f'{self.tipo_embalagem} — {self.quantidade_planejada} {self.unidade_medida}'
+
+    def save(self, *args, **kwargs):
+        if not self.pk and not self.preco_atual_unitario:
+            self.preco_atual_unitario = self.preco_estimado_unitario
+        super().save(*args, **kwargs)
+
+    @property
+    def custo_estimado(self):
+        return self.quantidade_planejada * self.preco_estimado_unitario
+
+    @property
+    def custo_atual(self):
+        return self.quantidade_planejada * self.preco_atual_unitario
+
+    @property
+    def variacao_custo_pct(self):
+        if self.preco_estimado_unitario and self.preco_estimado_unitario != 0:
+            return ((self.preco_atual_unitario - self.preco_estimado_unitario) / self.preco_estimado_unitario) * 100
+        return None

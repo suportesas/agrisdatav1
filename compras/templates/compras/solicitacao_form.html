@@ -821,5 +821,114 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('✗ Formulário NÃO encontrado');
     }
 });
+
+// ──────────────────────────────────────────────────────────────────
+// SELETOR DE VARIANTES — extensão do produto-select2
+// Quando um produto BASE (com variantes) é selecionado via Select2,
+// exibe dropdowns de dimensão abaixo do select para refinar a escolha.
+// ──────────────────────────────────────────────────────────────────
+(function() {
+  const DIMENSOES_URL = '{% url "produtos:ajax_variante_dimensoes" %}';
+  const RESOLVER_URL  = '{% url "produtos:ajax_variante_resolver" %}';
+  const CSRF = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+  function getPanelId(select) {
+    return 'variante-panel-' + select.name.replace(/[^a-z0-9]/gi, '_');
+  }
+
+  function removerPanel(select) {
+    const panelId = getPanelId(select);
+    const old = document.getElementById(panelId);
+    if (old) old.remove();
+  }
+
+  async function verificarVariantes(select) {
+    const produtoId = select.value;
+    if (!produtoId) { removerPanel(select); return; }
+
+    const res = await fetch(`${DIMENSOES_URL}?produto_base_id=${produtoId}`).catch(() => null);
+    if (!res || !res.ok) { removerPanel(select); return; }
+    const data = await res.json();
+    if (!data.dimensoes || !data.dimensoes.length) { removerPanel(select); return; }
+
+    // Produto tem variantes — mostrar painel
+    removerPanel(select);
+    const panelId = getPanelId(select);
+    const panel = document.createElement('div');
+    panel.id = panelId;
+    panel.className = 'variante-panel mt-1 p-2 rounded border border-purple-200';
+    panel.style.cssText = 'background:#f5f3ff;border-color:#c4b5fd!important;font-size:.82rem;';
+    panel.innerHTML = `
+      <div class="d-flex align-items-center gap-1 mb-1" style="color:#7c3aed;font-weight:600;">
+        <i class="bi bi-layers"></i> Selecione os atributos da variante:
+      </div>
+      <div class="row g-1">
+        ${data.dimensoes.map(d => `
+          <div class="col">
+            <label style="font-size:.75rem;font-weight:600;color:#5b21b6;">${escHtml(d.nome)}</label>
+            <select class="form-select form-select-sm variante-dim-sel" data-dim-id="${d.id}" data-produto-base-id="${produtoId}">
+              <option value="">-- selecione --</option>
+              ${d.valores.map(v => `<option value="${escHtml(v)}">${escHtml(v)}</option>`).join('')}
+            </select>
+          </div>
+        `).join('')}
+      </div>
+      <div class="variante-resultado mt-1"></div>
+    `;
+    select.closest('td').appendChild(panel);
+
+    // Quando todos os selects estão preenchidos, resolver
+    panel.querySelectorAll('.variante-dim-sel').forEach(sel => {
+      sel.addEventListener('change', () => tentarResolver(panel, select));
+    });
+  }
+
+  async function tentarResolver(panel, selectOriginal) {
+    const dimSelects = [...panel.querySelectorAll('.variante-dim-sel')];
+    const atributos = {};
+    let completo = true;
+    for (const s of dimSelects) {
+      if (!s.value) { completo = false; break; }
+      atributos[s.dataset.dimId] = s.value;
+    }
+    const resultado = panel.querySelector('.variante-resultado');
+    resultado.innerHTML = '';
+    if (!completo) return;
+
+    const produtoBaseId = dimSelects[0].dataset.produtoBaseId;
+    const res = await fetch(RESOLVER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+      body: JSON.stringify({ produto_base_id: produtoBaseId, atributos }),
+    }).catch(() => null);
+
+    if (!res || !res.ok) { resultado.innerHTML = '<small class="text-danger">Erro de comunicação.</small>'; return; }
+    const data = await res.json();
+
+    if (data.erro) {
+      resultado.innerHTML = `<small class="text-warning"><i class="bi bi-exclamation-triangle"></i> ${escHtml(data.erro)}</small>`;
+      return;
+    }
+
+    // Atualizar o Select2 com a variante resolvida
+    const newOpt = new Option(data.nome_completo, data.produto_id, true, true);
+    $(selectOriginal).append(newOpt).trigger('change');
+    resultado.innerHTML = `<small class="text-success"><i class="bi bi-check-circle-fill"></i> <strong>${escHtml(data.nome_completo)}</strong> <code>${escHtml(data.codigo)}</code></small>`;
+  }
+
+  function escHtml(s) {
+    return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  // Hook no evento select2:select existente
+  $(document).on('select2:select', '[name$="produto"]', function() {
+    verificarVariantes(this);
+  });
+
+  // Limpar painel quando o produto é desmarcado
+  $(document).on('select2:clear', '[name$="produto"]', function() {
+    removerPanel(this);
+  });
+})();
 </script>
 {% endblock %}

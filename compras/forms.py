@@ -9,7 +9,9 @@ from .models import (
     Cotacao,
     ItemCotacao,
     FornecedorCotacao,
-    SolicitacaoMensagem
+    SolicitacaoMensagem,
+    PlanejamentoComprasEmbalagem,
+    ItemPlanejamentoEmbalagem,
 )
 
 # Classe base do formset para passar empresa para todos os formulários do formset de propostas
@@ -354,4 +356,121 @@ class SolicitacaoMensagemForm(forms.ModelForm):
         }
         labels = {
             'mensagem': 'Mensagem',
+        }
+
+
+# ============================================================
+# PLANEJAMENTO DE COMPRAS DE EMBALAGENS
+# ============================================================
+
+class PlanejamentoComprasEmbalagemForm(forms.ModelForm):
+    class Meta:
+        model = PlanejamentoComprasEmbalagem
+        fields = ['safra', 'nome', 'data_inicio', 'data_fim', 'responsavel', 'observacoes']
+        widgets = {
+            'nome': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Planejamento Embalagens Manga Tommy 2025'}),
+            'data_inicio': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'data_fim': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'safra': forms.Select(attrs={'class': 'form-select'}),
+            'responsavel': forms.Select(attrs={'class': 'form-select'}),
+            'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+        }
+
+    def __init__(self, *args, empresa=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if empresa:
+            from cadastros.models import Safra
+            from usuarios.models import Usuario
+            self.fields['safra'].queryset = Safra.objects.filter(
+                fazenda__empresa=empresa
+            ).order_by('-ano', 'nome')
+            self.fields['responsavel'].queryset = Usuario.objects.filter(
+                empresa=empresa, is_active=True
+            ).order_by('first_name', 'last_name')
+        self.fields['safra'].required = False
+
+
+class ItemPlanejamentoEmbalagemForm(forms.ModelForm):
+    class Meta:
+        model = ItemPlanejamentoEmbalagem
+        fields = [
+            'tipo_embalagem', 'fase', 'data_prevista',
+            'quantidade_planejada', 'unidade_medida',
+            'preco_estimado_unitario', 'preco_atual_unitario',
+            'fornecedor_preferencial', 'fornecedor_alternativo',
+            'observacoes',
+        ]
+        widgets = {
+            'tipo_embalagem': forms.Select(attrs={'class': 'form-select form-select-sm select-tipo-embalagem'}),
+            'fase': forms.Select(attrs={'class': 'form-select form-select-sm'}),
+            'data_prevista': forms.DateInput(attrs={'class': 'form-control form-control-sm', 'type': 'date'}),
+            'quantidade_planejada': forms.NumberInput(attrs={'class': 'form-control form-control-sm', 'step': '0.01', 'min': '0.01'}),
+            'unidade_medida': forms.Select(attrs={'class': 'form-select form-select-sm'}),
+            'preco_estimado_unitario': forms.NumberInput(attrs={'class': 'form-control form-control-sm preco-estimado', 'step': '0.0001', 'min': '0'}),
+            'preco_atual_unitario': forms.NumberInput(attrs={'class': 'form-control form-control-sm preco-atual', 'step': '0.0001', 'min': '0'}),
+            'fornecedor_preferencial': forms.Select(attrs={'class': 'form-select form-select-sm'}),
+            'fornecedor_alternativo': forms.Select(attrs={'class': 'form-select form-select-sm'}),
+            'observacoes': forms.TextInput(attrs={'class': 'form-control form-control-sm', 'placeholder': 'Obs...'}),
+        }
+
+    def __init__(self, *args, empresa=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if empresa:
+            from embalagem.models import TipoEmbalagem
+            from produtos.models import UnidadeMedida
+            from cadastros.models import Fornecedor
+            self.fields['tipo_embalagem'].queryset = TipoEmbalagem.objects.filter(
+                empresa=empresa, ativo=True
+            ).order_by('nome')
+            self.fields['unidade_medida'].queryset = UnidadeMedida.objects.filter(
+                empresa=empresa
+            ).order_by('nome')
+            self.fields['fornecedor_preferencial'].queryset = Fornecedor.objects.filter(
+                empresa=empresa, ativa=True
+            ).order_by('nome')
+            self.fields['fornecedor_alternativo'].queryset = Fornecedor.objects.filter(
+                empresa=empresa, ativa=True
+            ).order_by('nome')
+        self.fields['fornecedor_preferencial'].required = False
+        self.fields['fornecedor_alternativo'].required = False
+        self.fields['observacoes'].required = False
+        self.fields['preco_atual_unitario'].required = False
+
+
+class BaseItemPlanejamentoFormSet(BaseInlineFormSet):
+    def __init__(self, *args, **kwargs):
+        self.empresa = kwargs.pop('empresa', None)
+        super().__init__(*args, **kwargs)
+
+    def _construct_form(self, i, **kwargs):
+        kwargs['empresa'] = self.empresa
+        return super()._construct_form(i, **kwargs)
+
+
+ItemPlanejamentoFormSet = inlineformset_factory(
+    PlanejamentoComprasEmbalagem,
+    ItemPlanejamentoEmbalagem,
+    form=ItemPlanejamentoEmbalagemForm,
+    formset=BaseItemPlanejamentoFormSet,
+    extra=1,
+    min_num=1,
+    validate_min=True,
+    can_delete=True,
+)
+
+
+class RevisarPrecosItemForm(forms.ModelForm):
+    """Form simplificado para a tela de revisão de preços."""
+    class Meta:
+        model = ItemPlanejamentoEmbalagem
+        fields = ['preco_atual_unitario', 'observacoes']
+        widgets = {
+            'preco_atual_unitario': forms.NumberInput(attrs={
+                'class': 'form-control form-control-sm preco-campo',
+                'step': '0.0001', 'min': '0',
+            }),
+            'observacoes': forms.TextInput(attrs={
+                'class': 'form-control form-control-sm',
+                'placeholder': 'Motivo da revisão...',
+            }),
         }

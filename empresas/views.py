@@ -12,7 +12,7 @@ from django.template.loader import render_to_string
 from django.contrib.auth.models import Permission
 
 from .models import Empresa, Plano, Role, PermissionTemplate, RoleAudit
-from .forms import EmpresaForm, PlanoForm
+from .forms import EmpresaForm, EmpresaPreferenciasForm, PlanoForm
 
 # Nomes amigáveis dos apps do ERP (usados na matriz de permissões)
 APP_LABELS_PT = {
@@ -161,6 +161,30 @@ def empresa_update(request, pk):
         'form': form,
         'empresa': empresa,
         'action': 'Editar'
+    })
+
+
+@login_required
+def empresa_preferencias(request):
+    """Preferências operacionais da empresa do usuário logado."""
+    empresa = request.user.empresa
+    if empresa is None:
+        messages.error(request, "Nenhuma empresa vinculada ao seu usuário.")
+        return redirect('/')
+
+    if request.method == 'POST':
+        form = EmpresaPreferenciasForm(request.POST, instance=empresa)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Preferências salvas com sucesso.")
+            next_url = request.POST.get('next') or request.GET.get('next') or 'produtos:produto_list'
+            return redirect(next_url)
+    else:
+        form = EmpresaPreferenciasForm(instance=empresa)
+
+    return render(request, 'empresas/empresa_preferencias.html', {
+        'form': form,
+        'empresa': empresa,
     })
 
 

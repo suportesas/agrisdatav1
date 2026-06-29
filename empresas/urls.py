@@ -12,6 +12,7 @@ urlpatterns = [
     path('minha-empresa/logo/', views.empresa_logo_update, name='empresa_logo_update'),
     path('<int:pk>/excluir/', views.empresa_delete, name='empresa_delete'),
     path('minha/', views.minha_empresa, name='minha_empresa'),
+    path('preferencias/', views.empresa_preferencias, name='empresa_preferencias'),
     path('painel-admin/', views.painel_admin, name='painel_admin'),
 
     # Roles / Permissões

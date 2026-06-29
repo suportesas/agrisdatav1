@@ -384,10 +384,12 @@ def produto_list(request):
     tipo_filter = request.GET.get('tipo', '')
     status_filter = request.GET.get('status', 'ativo')
     sort_by = request.GET.get('sort', 'nome')
+    # Padrão: ocultar variantes (exibe apenas bases e produtos simples)
+    mostrar_variantes = request.GET.get('variantes', '') == '1'
 
     empresa = request.user.empresa
     qs_base = Produto.objects.select_related(
-        'categoria', 'unidade_medida', 'ncm', 'tipo_produto'
+        'categoria', 'unidade_medida', 'ncm', 'tipo_produto', 'produto_base'
     ).filter(categoria__empresa=empresa)
 
     # KPIs (calculados antes dos filtros)
@@ -416,6 +418,10 @@ def produto_list(request):
     elif status_filter == 'inativo':
         produtos = produtos.filter(ativo=False)
 
+    # Ocultar variantes por padrão (produtos com produto_base preenchido)
+    if not mostrar_variantes:
+        produtos = produtos.filter(produto_base__isnull=True)
+
     sort_map = {
         'nome': 'nome', '-nome': '-nome',
         'codigo': 'codigo', '-codigo': '-codigo',
@@ -438,6 +444,29 @@ def produto_list(request):
     page_obj = paginator.get_page(request.GET.get('page'))
 
     produto_ids = [p.id for p in page_obj.object_list]
+
+    # Anotar contagem de variantes nos produtos da página atual
+    from django.db.models import Count as DjangoCount
+    variantes_qs = (
+        Produto.objects.filter(produto_base_id__in=produto_ids)
+        .values('produto_base_id')
+        .annotate(total=DjangoCount('id'), estoque_soma=Sum('estoque_atual'))
+    )
+    variantes_counts = {}
+    variantes_estoque = {}
+    for row in variantes_qs:
+        variantes_counts[row['produto_base_id']] = row['total']
+        variantes_estoque[row['produto_base_id']] = row['estoque_soma'] or Decimal('0')
+
+    exibir_estoque_base = getattr(empresa, 'exibir_estoque_base', 'OCULTAR')
+
+    for p in page_obj.object_list:
+        p.num_variantes = variantes_counts.get(p.id, 0)
+        if p.num_variantes > 0 and exibir_estoque_base == 'SOMA':
+            p.estoque_base_agregado = variantes_estoque.get(p.id, Decimal('0'))
+        else:
+            p.estoque_base_agregado = None  # None = mostrar "—" no template
+
     metricas_por_produto = {}
     total_entrada = Decimal('0')
     total_saida = Decimal('0')
@@ -483,6 +512,8 @@ def produto_list(request):
         'emprestimo_total_entrada': total_entrada,
         'emprestimo_total_saida': total_saida,
         'emprestimo_total_saldo': total_entrada - total_saida,
+        'mostrar_variantes': mostrar_variantes,
+        'exibir_estoque_base': exibir_estoque_base,
     })
 
 
@@ -491,17 +522,37 @@ def produto_detail(request, pk):
     produto = get_object_or_404(
         Produto.objects.select_related(
             'categoria', 'subcategoria', 'unidade_medida',
-            'unidade_compra', 'unidade_venda', 'ncm', 'fornecedor_padrao'
+            'unidade_compra', 'unidade_venda', 'ncm', 'fornecedor_padrao', 'produto_base'
         ).prefetch_related('tributacoes', 'documentos', 'atributos__dimensao')
         .filter(categoria__empresa=request.user.empresa),
         pk=pk
     )
-    # Buscar fornecedores relacionados ao produto
     fornecedores_produto = ProdutoFornecedor.objects.filter(produto=produto).select_related('fornecedor')
-    
+
+    # Para produto base: buscar variantes com seus atributos ordenados
+    variantes = []
+    dimensoes_base = []
+    if not produto.is_variante:
+        variantes_qs = (
+            produto.variantes
+            .prefetch_related('atributos__dimensao')
+            .order_by('nome')
+        )
+        variantes = list(variantes_qs)
+        if variantes:
+            # Coletar dimensões únicas em ordem para montar o cabeçalho da tabela
+            dims_vistas = {}
+            for v in variantes:
+                for a in v.atributos.all():
+                    key = (a.dimensao.ordem, a.dimensao.nome)
+                    dims_vistas[key] = a.dimensao.nome
+            dimensoes_base = [nome for _, nome in sorted(dims_vistas.keys())]
+
     return render(request, 'produtos/produto/produto_detail.html', {
         'produto': produto,
-        'fornecedores_produto': fornecedores_produto
+        'fornecedores_produto': fornecedores_produto,
+        'variantes': variantes,
+        'dimensoes_base': dimensoes_base,
     })
 
 
@@ -720,7 +771,11 @@ def produtotributacao_delete(request, pk):
 
 @login_required
 def ajax_buscar_produtos(request):
-    """Autocomplete: busca produtos por nome ou código (max 15 resultados)."""
+    """Autocomplete: busca produtos por nome ou código (max 15 resultados).
+    Parâmetros opcionais:
+    - apenas_base=1: retorna somente produtos base (produto_base__isnull=True)
+    - excluir_variantes=1: sinônimo de apenas_base=1
+    """
     q = request.GET.get('q', '').strip()
     empresa = request.user.empresa
     if not q or len(q) < 2:
@@ -729,9 +784,189 @@ def ajax_buscar_produtos(request):
         categoria__empresa=empresa, ativo=True
     ).filter(
         Q(nome__icontains=q) | Q(codigo__icontains=q)
-    ).select_related('ncm')[:15]
-    results = [{'id': p.pk, 'text': f'{p.codigo} — {p.nome}'} for p in qs]
+    ).select_related('ncm')
+    apenas_base = request.GET.get('apenas_base') == '1' or request.GET.get('excluir_variantes') == '1'
+    if apenas_base:
+        qs = qs.filter(produto_base__isnull=True)
+    qs = qs[:15]
+    results = [
+        {
+            'id': p.pk,
+            'text': f'{p.codigo} — {p.nome}',
+            'tem_variantes': p.variantes.exists() if not apenas_base else False,
+        }
+        for p in qs
+    ]
     return JsonResponse({'results': results})
+
+
+@login_required
+def ajax_variante_dimensoes(request):
+    """Retorna dimensões e valores disponíveis para um produto base.
+    GET ?produto_base_id=X
+    Resposta: {dimensoes: [{id, nome, valores: [str]}]}
+    """
+    empresa = request.user.empresa
+    produto_base_id = request.GET.get('produto_base_id')
+    if not produto_base_id:
+        return JsonResponse({'dimensoes': []})
+    try:
+        base = Produto.objects.get(pk=produto_base_id, categoria__empresa=empresa, produto_base__isnull=True)
+    except Produto.DoesNotExist:
+        return JsonResponse({'error': 'Produto base não encontrado.'}, status=404)
+
+    # Coletar dimensões e valores a partir das variantes existentes
+    from collections import defaultdict
+    dim_valores = defaultdict(set)
+    dim_meta = {}
+    for atributo in (
+        ProdutoAtributo.objects
+        .filter(produto__produto_base=base, produto__ativo=True)
+        .select_related('dimensao')
+        .order_by('dimensao__ordem', 'dimensao__nome')
+    ):
+        d = atributo.dimensao
+        dim_meta[d.pk] = {'id': d.pk, 'nome': d.nome, 'ordem': d.ordem}
+        dim_valores[d.pk].add(atributo.valor)
+
+    dimensoes = [
+        {**dim_meta[pk], 'valores': sorted(dim_valores[pk])}
+        for pk in sorted(dim_meta, key=lambda k: dim_meta[k]['ordem'])
+    ]
+    return JsonResponse({'produto_base': {'id': base.pk, 'nome': base.nome}, 'dimensoes': dimensoes})
+
+
+@login_required
+@require_POST
+def ajax_variante_resolver(request):
+    """Resolve a variante exata dado o produto base e os atributos selecionados.
+    POST JSON: {produto_base_id: X, atributos: {dimensao_id: valor, ...}}
+    Resposta: {produto_id, nome_completo, codigo} ou {erro}
+    """
+    empresa = request.user.empresa
+    try:
+        data = json.loads(request.body)
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({'erro': 'JSON inválido.'}, status=400)
+
+    produto_base_id = data.get('produto_base_id')
+    atributos_selecionados = data.get('atributos', {})  # {str(dimensao_id): valor}
+
+    if not produto_base_id or not atributos_selecionados:
+        return JsonResponse({'erro': 'produto_base_id e atributos são obrigatórios.'}, status=400)
+
+    try:
+        base = Produto.objects.get(pk=produto_base_id, categoria__empresa=empresa)
+    except Produto.DoesNotExist:
+        return JsonResponse({'erro': 'Produto base não encontrado.'}, status=404)
+
+    # Buscar todas as variantes do base e filtrar pelos atributos
+    variantes = Produto.objects.filter(produto_base=base, ativo=True).prefetch_related('atributos__dimensao')
+    for variante in variantes:
+        attrs = {str(a.dimensao_id): a.valor for a in variante.atributos.all()}
+        if all(attrs.get(str(dim_id)) == valor for dim_id, valor in atributos_selecionados.items()):
+            return JsonResponse({
+                'produto_id': variante.pk,
+                'nome_completo': variante.nome_completo,
+                'codigo': variante.codigo,
+                'preco_venda': str(variante.preco_venda),
+                'unidade_sigla': variante.unidade_venda.sigla if variante.unidade_venda else '',
+            })
+
+    return JsonResponse({'erro': 'Nenhuma variante encontrada para esta combinação de atributos.'})
+
+
+@login_required
+def relatorio_por_atributo(request):
+    """Relatório de faturamento/compras filtrado por dimensão de variante (Variedade, Marca, Calibre)."""
+    empresa = request.user.empresa
+    dimensoes = DimensaoVariante.objects.filter(empresa=empresa, ativo=True).order_by('ordem', 'nome')
+
+    dimensao_id = request.GET.get('dimensao')
+    valor_filtro = request.GET.get('valor', '').strip()
+    data_inicio = request.GET.get('data_inicio')
+    data_fim = request.GET.get('data_fim')
+
+    resultados = None
+    dimensao_selecionada = None
+    valores_disponiveis = []
+
+    if dimensao_id:
+        try:
+            dimensao_selecionada = DimensaoVariante.objects.get(pk=dimensao_id, empresa=empresa)
+            valores_disponiveis = (
+                ProdutoAtributo.objects
+                .filter(dimensao=dimensao_selecionada)
+                .values_list('valor', flat=True)
+                .distinct()
+                .order_by('valor')
+            )
+        except DimensaoVariante.DoesNotExist:
+            pass
+
+    if dimensao_selecionada and valor_filtro:
+        # Produtos com esse atributo
+        produto_ids = ProdutoAtributo.objects.filter(
+            dimensao=dimensao_selecionada, valor=valor_filtro
+        ).values_list('produto_id', flat=True)
+
+        # Faturamento (ItemNotaFiscal)
+        try:
+            from faturamento.models import ItemNotaFiscal
+            qs_nfe = ItemNotaFiscal.objects.filter(
+                produto_id__in=produto_ids,
+                nota__empresa=empresa,
+            ).select_related('produto', 'nota')
+            if data_inicio:
+                qs_nfe = qs_nfe.filter(nota__data_emissao__gte=data_inicio)
+            if data_fim:
+                qs_nfe = qs_nfe.filter(nota__data_emissao__lte=data_fim)
+            fat_total = qs_nfe.aggregate(
+                qtd=Sum('quantidade'), valor=Sum('valor_total')
+            )
+            faturamento_itens = qs_nfe.order_by('-nota__data_emissao')[:50]
+        except Exception:
+            fat_total = {'qtd': None, 'valor': None}
+            faturamento_itens = []
+
+        # Compras (ItemRecebimento)
+        try:
+            from compras.models import ItemRecebimento
+            qs_compra = ItemRecebimento.objects.filter(
+                produto_id__in=produto_ids,
+                recebimento__empresa=empresa,
+            ).select_related('produto', 'recebimento')
+            if data_inicio:
+                qs_compra = qs_compra.filter(recebimento__data_recebimento__gte=data_inicio)
+            if data_fim:
+                qs_compra = qs_compra.filter(recebimento__data_recebimento__lte=data_fim)
+            compra_total = qs_compra.aggregate(
+                qtd=Sum('quantidade'), valor=Sum('valor_total')
+            )
+            compra_itens = qs_compra.order_by('-recebimento__data_recebimento')[:50]
+        except Exception:
+            compra_total = {'qtd': None, 'valor': None}
+            compra_itens = []
+
+        resultados = {
+            'dimensao': dimensao_selecionada,
+            'valor': valor_filtro,
+            'fat_total': fat_total,
+            'faturamento_itens': faturamento_itens,
+            'compra_total': compra_total,
+            'compra_itens': compra_itens,
+        }
+
+    return render(request, 'produtos/relatorio_atributo.html', {
+        'dimensoes': dimensoes,
+        'dimensao_selecionada': dimensao_selecionada,
+        'valores_disponiveis': valores_disponiveis,
+        'valor_filtro': valor_filtro,
+        'data_inicio': data_inicio or '',
+        'data_fim': data_fim or '',
+        'resultados': resultados,
+        'dimensao_id': dimensao_id or '',
+    })
 
 
 @login_required
@@ -1468,6 +1703,15 @@ def produto_variacao_gerar(request):
     criados = []
     erros = []
 
+    # Produto base opcional — agrupa as variantes criadas
+    produto_base_obj = None
+    produto_base_id = data.get('produto_base_id')
+    if produto_base_id:
+        try:
+            produto_base_obj = Produto.objects.get(pk=produto_base_id, categoria__empresa=empresa)
+        except Produto.DoesNotExist:
+            pass
+
     try:
         with transaction.atomic():
             for combo in combinacoes:
@@ -1488,6 +1732,7 @@ def produto_variacao_gerar(request):
                     peso_liquido_unitario=data.get('peso_liquido', 0) or 0,
                     peso_bruto_unitario=data.get('peso_bruto', 0) or 0,
                     fator_conversao=data.get('fator_conversao', 1) or 1,
+                    produto_base=produto_base_obj,
                 )
                 produto.save()
 

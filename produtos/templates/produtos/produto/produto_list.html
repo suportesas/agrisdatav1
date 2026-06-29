@@ -141,9 +141,15 @@ tbody tr.row-clickable:hover td { background: #ede9fe; }
       <h2 class="mb-0 fw-semibold"><i class="bi bi-box-seam me-2 text-primary"></i>Produtos</h2>
       <p class="text-muted small mb-0">Catálogo de produtos da empresa</p>
     </div>
-    <a href="{% url 'produtos:produto_create' %}" class="btn btn-primary">
-      <i class="bi bi-plus-circle me-1"></i> Novo Produto
-    </a>
+    <div class="d-flex gap-2 flex-wrap justify-content-end">
+      <a href="{% url 'empresas:empresa_preferencias' %}?next={{ request.get_full_path|urlencode }}"
+         class="btn btn-outline-secondary" title="Configurações de exibição">
+        <i class="bi bi-sliders me-1"></i>Configurações
+      </a>
+      <a href="{% url 'produtos:produto_create' %}" class="btn btn-primary">
+        <i class="bi bi-plus-circle me-1"></i> Novo Produto
+      </a>
+    </div>
   </div>
 
   <!-- KPIs -->
@@ -287,6 +293,18 @@ tbody tr.row-clickable:hover td { background: #ede9fe; }
           Estoque {% if sort_by == 'estoque' %}<i class="bi bi-chevron-up"></i>{% elif sort_by == '-estoque' %}<i class="bi bi-chevron-down"></i>{% endif %}
         </a>
       </div>
+      <!-- Toggle variantes -->
+      {% if mostrar_variantes %}
+      <a href="?q={{ query }}&categoria={{ categoria_filter }}&tipo={{ tipo_filter }}&status={{ status_filter }}&per_page={{ per_page }}&sort={{ sort_by }}"
+         class="btn btn-sm btn-warning" title="Ocultar variantes individuais">
+        <i class="bi bi-layers me-1"></i>Ocultar Variantes
+      </a>
+      {% else %}
+      <a href="?q={{ query }}&categoria={{ categoria_filter }}&tipo={{ tipo_filter }}&status={{ status_filter }}&per_page={{ per_page }}&sort={{ sort_by }}&variantes=1"
+         class="btn btn-sm btn-outline-secondary" title="Mostrar todas as variantes individualmente">
+        <i class="bi bi-layers me-1"></i>Ver Variantes
+      </a>
+      {% endif %}
       <!-- Toggle visualização -->
       <div class="view-toggle btn-group" role="group">
         <button type="button" class="btn btn-sm btn-outline-secondary" id="btnGridView" title="Grade">
@@ -348,13 +366,26 @@ tbody tr.row-clickable:hover td { background: #ede9fe; }
           <div class="product-body">
             <h6 class="product-name mb-1" title="{{ produto.nome }}">{{ produto.nome|truncatechars:50 }}</h6>
             <small class="product-code">{{ produto.codigo }}</small>
-            {% if produto.tipo_produto %}
-            <div class="mt-1">
+            <div class="mt-1 d-flex flex-wrap gap-1">
+              {% if produto.tipo_produto %}
               <span class="badge" style="background:#e0f2fe;color:#0369a1;font-size:.66rem;">
                 <i class="bi bi-tag me-1"></i>{{ produto.tipo_produto.nome }}
               </span>
+              {% endif %}
+              {% if produto.num_variantes %}
+              <a href="?q={{ query }}&categoria={{ categoria_filter }}&tipo={{ tipo_filter }}&status={{ status_filter }}&per_page={{ per_page }}&sort={{ sort_by }}&variantes=1&q={{ produto.nome }}"
+                 class="badge text-decoration-none"
+                 style="background:#ede9fe;color:#7c3aed;font-size:.66rem;"
+                 title="Ver {{ produto.num_variantes }} variante(s) deste produto">
+                <i class="bi bi-layers me-1"></i>{{ produto.num_variantes }} variante{{ produto.num_variantes|pluralize }}
+              </a>
+              {% endif %}
+              {% if produto.is_variante %}
+              <span class="badge" style="background:#fef3c7;color:#92400e;font-size:.66rem;">
+                <i class="bi bi-diagram-2 me-1"></i>Variante de {{ produto.produto_base.nome|truncatechars:20 }}
+              </span>
+              {% endif %}
             </div>
-            {% endif %}
           </div>
 
           <!-- Preço + Estoque -->
@@ -364,7 +395,17 @@ tbody tr.row-clickable:hover td { background: #ede9fe; }
               <div class="price-tag">R$ {{ produto.preco_venda|floatformat:2 }}</div>
             </div>
             <div class="text-end">
-              {% if produto.controla_estoque %}
+              {% if produto.num_variantes %}
+                {% if produto.estoque_base_agregado is not None %}
+                  <span class="stock-chip ok" title="Soma do estoque de {{ produto.num_variantes }} variante{{ produto.num_variantes|pluralize }}">
+                    <i class="bi bi-layers-fill"></i>{{ produto.estoque_base_agregado|floatformat:"-3" }} {{ produto.unidade_medida.sigla }}
+                  </span>
+                {% else %}
+                  <span class="stock-chip na" title="Estoque controlado por variante">
+                    <i class="bi bi-layers"></i>por variante
+                  </span>
+                {% endif %}
+              {% elif produto.controla_estoque %}
                 {% if minimo and estoque <= minimo %}
                   <span class="stock-chip {% if estoque == 0 %}empty{% else %}low{% endif %}">
                     <i class="bi bi-exclamation-triangle-fill"></i>{{ estoque|floatformat:"-3" }} {{ produto.unidade_medida.sigla }}
@@ -441,6 +482,15 @@ tbody tr.row-clickable:hover td { background: #ede9fe; }
                 {% if produto.nome_resumido %}
                 <br><small class="text-muted">{{ produto.nome_resumido }}</small>
                 {% endif %}
+                {% if produto.num_variantes %}
+                <br>
+                <a href="?q={{ produto.nome }}&variantes=1&status={{ status_filter }}" class="badge text-decoration-none" style="background:#ede9fe;color:#7c3aed;font-size:.68rem;">
+                  <i class="bi bi-layers me-1"></i>{{ produto.num_variantes }} variante{{ produto.num_variantes|pluralize }}
+                </a>
+                {% endif %}
+                {% if produto.is_variante %}
+                <br><small class="text-muted"><i class="bi bi-diagram-2"></i> Variante de {{ produto.produto_base.nome|truncatechars:25 }}</small>
+                {% endif %}
               </td>
               <td class="d-none d-lg-table-cell">
                 <span class="badge rounded-pill" style="background:#ede9fe;color:#7c3aed;">
@@ -455,7 +505,16 @@ tbody tr.row-clickable:hover td { background: #ede9fe; }
               <td class="d-none d-md-table-cell text-muted small">{{ produto.unidade_medida.sigla }}</td>
               <td class="text-end fw-semibold text-success">R$ {{ produto.preco_venda|floatformat:2 }}</td>
               <td class="text-end">
-                {% if produto.controla_estoque %}
+                {% if produto.num_variantes %}
+                  {% if produto.estoque_base_agregado is not None %}
+                    <span class="fw-semibold stock-ok" title="Soma do estoque de {{ produto.num_variantes }} variante{{ produto.num_variantes|pluralize }}">
+                      <i class="bi bi-layers-fill"></i> {{ produto.estoque_base_agregado|floatformat:"-3" }}
+                    </span>
+                    <small class="text-muted"> {{ produto.unidade_medida.sigla }}</small>
+                  {% else %}
+                    <span class="text-muted small" title="Estoque controlado por variante">—</span>
+                  {% endif %}
+                {% elif produto.controla_estoque %}
                   {% if minimo and estoque <= minimo %}
                     <span class="fw-bold {% if estoque == 0 %}stock-empty{% else %}stock-low{% endif %}">
                       <i class="bi bi-exclamation-triangle-fill"></i> {{ estoque|floatformat:"-3" }}

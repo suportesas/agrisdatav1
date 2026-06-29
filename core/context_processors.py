@@ -128,6 +128,51 @@ def notificacoes_emprestimo(request):
     return {'notificacoes_emprestimo': payload}
 
 
+def alertas_drawback(request):
+    """Adiciona contadores de alertas de drawback (ACs vencendo) ao contexto global."""
+    payload = {'total_alertas_drawback': 0, 'nivel_maior': None}
+
+    if not request.user.is_authenticated:
+        return {'alertas_drawback': payload}
+
+    empresa = getattr(request.user, 'empresa', None)
+    if not empresa:
+        return {'alertas_drawback': payload}
+
+    cache_key = f'alertas_drawback_{empresa.pk}'
+    cached = cache.get(cache_key)
+    if cached is not None:
+        return {'alertas_drawback': cached}
+
+    try:
+        from drawback.models import AtoConcessorio
+        from django.utils import timezone
+        import datetime
+
+        hoje = timezone.now().date()
+        acs = AtoConcessorio.objects.filter(empresa=empresa, status='ATIVO')
+
+        nivel_maior = None
+        total = 0
+        for ac in acs:
+            nivel = ac.nivel_alerta
+            if nivel:
+                total += 1
+                if nivel == 'critico':
+                    nivel_maior = 'critico'
+                elif nivel == 'danger' and nivel_maior != 'critico':
+                    nivel_maior = 'danger'
+                elif nivel == 'warning' and nivel_maior not in ('critico', 'danger'):
+                    nivel_maior = 'warning'
+
+        payload = {'total_alertas_drawback': total, 'nivel_maior': nivel_maior}
+    except Exception:
+        pass
+
+    cache.set(cache_key, payload, timeout=300)
+    return {'alertas_drawback': payload}
+
+
 def requisicoes_aguardando_atendimento(request):
     """Adiciona contador de requisições aprovadas aguardando liberação pelo almoxarifado."""
     payload = {'total_aguardando': 0}

@@ -1504,7 +1504,8 @@ def configuracao_sistema(request):
         config.save()
         
         messages.success(request, '✅ Configurações atualizadas com sucesso!')
-        return redirect('configuracao_sistema')
+        next_url = request.POST.get('next') or request.GET.get('next') or 'configuracao_sistema'
+        return redirect(next_url)
     
     context = {
         'config': config,

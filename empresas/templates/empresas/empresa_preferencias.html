@@ -1,0 +1,104 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Preferências da Empresa{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center gap-3 mb-4">
+  <div style="background:linear-gradient(135deg,#7c3aed,#5b21b6);border-radius:12px;width:48px;height:48px;display:flex;align-items:center;justify-content:center;">
+    <i class="bi bi-sliders text-white fs-5"></i>
+  </div>
+  <div>
+    <h1 class="h4 fw-bold mb-0">Preferências da Empresa</h1>
+    <p class="text-muted small mb-0">{{ empresa.nome }}</p>
+  </div>
+</div>
+
+<form method="post">
+  {% csrf_token %}
+  {% if request.GET.next %}
+  <input type="hidden" name="next" value="{{ request.GET.next }}">
+  {% endif %}
+
+  <!-- Produtos & Estoque -->
+  <div class="card mb-4" style="border:none;border-radius:14px;box-shadow:0 2px 12px rgba(124,58,237,.08);">
+    <div class="card-header" style="background:#f5f3ff;border-radius:14px 14px 0 0;border-bottom:2px solid #ede9fe;">
+      <h6 class="fw-bold mb-0" style="color:#7c3aed;">
+        <i class="bi bi-box-seam me-2"></i>Produtos e Estoque
+      </h6>
+    </div>
+    <div class="card-body">
+      <label class="form-label fw-semibold">Como exibir o estoque de produtos base com variantes?</label>
+      <p class="text-muted small mb-3">
+        Quando um produto tem variantes (ex: <em>Caixa 10 kg → Goldmin Selecto 03, Natal Terra Brasilis 05</em>),
+        o estoque real fica em cada variante. Esta configuração define o que aparece na coluna "Estoque" do produto base.
+      </p>
+
+      <div class="d-flex flex-column gap-3">
+        {% for value, label in form.exibir_estoque_base.field.choices %}
+        <label class="d-flex align-items-start gap-3 p-3 rounded-3 border cursor-pointer pref-option {% if form.exibir_estoque_base.value == value %}border-primary bg-primary-subtle{% else %}border-light-subtle{% endif %}"
+               style="cursor:pointer;" for="id_exibir_estoque_base_{{ forloop.counter0 }}">
+          <input class="form-check-input mt-1 flex-shrink-0" type="radio"
+                 name="{{ form.exibir_estoque_base.html_name }}"
+                 id="id_exibir_estoque_base_{{ forloop.counter0 }}"
+                 value="{{ value }}"
+                 {% if form.exibir_estoque_base.value == value %}checked{% endif %}>
+          <div>
+            {% if value == 'SOMA' %}
+              <div class="fw-semibold">
+                <i class="bi bi-layers-fill text-primary me-1"></i>Somar estoque das variantes
+              </div>
+              <div class="text-muted small mt-1">
+                O produto base mostra a <strong>soma</strong> do estoque de todas as suas variantes.
+                Útil para ter visibilidade rápida do volume total disponível por produto.
+              </div>
+              <div class="mt-2">
+                <span class="badge" style="background:#ede9fe;color:#7c3aed;font-size:.78rem;">
+                  <i class="bi bi-layers-fill me-1"></i>125 CX
+                </span>
+                <small class="text-muted ms-1">← exibição na lista</small>
+              </div>
+            {% else %}
+              <div class="fw-semibold">
+                <i class="bi bi-dash-circle text-muted me-1"></i>Mostrar "—" (sem estoque direto)
+              </div>
+              <div class="text-muted small mt-1">
+                O produto base não exibe estoque — apenas as variantes têm saldo.
+                Útil para não confundir o estoque agregado com um saldo operável diretamente.
+              </div>
+              <div class="mt-2">
+                <span class="text-muted small" title="Estoque controlado por variante">—</span>
+                <small class="text-muted ms-1">← exibição na lista</small>
+              </div>
+            {% endif %}
+          </div>
+        </label>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <div class="d-flex gap-2">
+    <button type="submit" class="btn btn-primary px-4">
+      <i class="bi bi-check-circle me-1"></i>Salvar preferências
+    </button>
+    <a href="{% if request.GET.next %}{{ request.GET.next }}{% else %}{% url 'produtos:produto_list' %}{% endif %}"
+       class="btn btn-outline-secondary">
+      Cancelar
+    </a>
+  </div>
+</form>
+
+<script>
+document.querySelectorAll('.pref-option input[type=radio]').forEach(radio => {
+  radio.addEventListener('change', () => {
+    document.querySelectorAll('.pref-option').forEach(el => {
+      el.classList.remove('border-primary', 'bg-primary-subtle');
+      el.classList.add('border-light-subtle');
+    });
+    radio.closest('.pref-option').classList.add('border-primary', 'bg-primary-subtle');
+    radio.closest('.pref-option').classList.remove('border-light-subtle');
+  });
+});
+</script>
+{% endblock %}

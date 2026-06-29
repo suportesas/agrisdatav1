@@ -1,0 +1,195 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Relatório por Atributo — Produtos{% endblock %}
+
+{% block extra_css %}
+<style>
+.page-header { background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%); border-radius: 16px; color: #fff; padding: 1.5rem 2rem; margin-bottom: 1.5rem; }
+.page-header h1 { font-size: 1.5rem; font-weight: 700; margin: 0; }
+.filter-card { border: none; border-radius: 14px; box-shadow: 0 2px 10px rgba(124,58,237,.08); }
+.kpi-box { border-radius: 12px; padding: 1rem 1.25rem; }
+.kpi-box.fat { background: linear-gradient(135deg, #ede9fe, #ddd6fe); }
+.kpi-box.compra { background: linear-gradient(135deg, #e0f2fe, #bae6fd); }
+.kpi-label { font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: #5b21b6; }
+.kpi-value { font-size: 1.6rem; font-weight: 800; color: #1e1b4b; }
+.result-table th { background: #f5f3ff; color: #5b21b6; font-size: .82rem; }
+.result-table td { font-size: .84rem; vertical-align: middle; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+  <div>
+    <h1><i class="bi bi-bar-chart-line me-2"></i>Relatório por Atributo de Variante</h1>
+    <p class="mb-0 opacity-85">Filtre faturamento e compras por Variedade, Marca, Calibre ou qualquer outra dimensão.</p>
+  </div>
+  <a href="{% url 'produtos:produto_list' %}" class="btn btn-light">
+    <i class="bi bi-arrow-left me-1"></i>Produtos
+  </a>
+</div>
+
+<!-- Filtros -->
+<div class="card filter-card mb-4">
+  <div class="card-body">
+    <form method="get" class="row g-3 align-items-end">
+      <div class="col-12 col-md-3">
+        <label class="form-label fw-semibold">Dimensão</label>
+        <select name="dimensao" class="form-select" id="dimensaoSelect" onchange="this.form.submit()">
+          <option value="">Selecione...</option>
+          {% for d in dimensoes %}
+          <option value="{{ d.id }}" {% if d.id|stringformat:"s" == dimensao_id %}selected{% endif %}>{{ d.nome }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      {% if dimensao_selecionada %}
+      <div class="col-12 col-md-3">
+        <label class="form-label fw-semibold">Valor</label>
+        <select name="valor" class="form-select">
+          <option value="">Todos os valores</option>
+          {% for v in valores_disponiveis %}
+          <option value="{{ v }}" {% if v == valor_filtro %}selected{% endif %}>{{ v }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      {% endif %}
+
+      <div class="col-6 col-md-2">
+        <label class="form-label fw-semibold">Data início</label>
+        <input type="date" name="data_inicio" class="form-control" value="{{ data_inicio }}">
+      </div>
+      <div class="col-6 col-md-2">
+        <label class="form-label fw-semibold">Data fim</label>
+        <input type="date" name="data_fim" class="form-control" value="{{ data_fim }}">
+      </div>
+      <div class="col-12 col-md-2 d-flex gap-2">
+        {% if dimensao_selecionada %}
+        <button type="submit" class="btn btn-primary flex-fill">
+          <i class="bi bi-funnel me-1"></i>Filtrar
+        </button>
+        {% endif %}
+        <a href="{% url 'produtos:relatorio_por_atributo' %}" class="btn btn-outline-secondary">
+          <i class="bi bi-x"></i>
+        </a>
+      </div>
+      {% if dimensao_selecionada %}
+      <input type="hidden" name="dimensao" value="{{ dimensao_selecionada.id }}">
+      {% endif %}
+    </form>
+  </div>
+</div>
+
+{% if not dimensao_selecionada %}
+<div class="text-center py-5 text-muted">
+  <i class="bi bi-bar-chart display-4"></i>
+  <p class="mt-3">Selecione uma dimensão para gerar o relatório.</p>
+  <p class="small">Dimensões disponíveis: {{ dimensoes|join:", " }}</p>
+</div>
+
+{% elif not valor_filtro %}
+<div class="alert alert-info">
+  <i class="bi bi-info-circle me-2"></i>Selecione um valor de <strong>{{ dimensao_selecionada.nome }}</strong> para ver os resultados.
+  <ul class="mt-2 mb-0">
+    {% for v in valores_disponiveis %}<li>{{ v }}</li>{% empty %}<li><em>Nenhum valor cadastrado</em></li>{% endfor %}
+  </ul>
+</div>
+
+{% elif resultados %}
+<!-- KPIs -->
+<div class="row g-3 mb-4">
+  <div class="col-12">
+    <h5 class="fw-bold" style="color:#7c3aed;">
+      <i class="bi bi-layers me-1"></i>{{ resultados.dimensao.nome }}: <strong>{{ resultados.valor }}</strong>
+    </h5>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="kpi-box fat">
+      <div class="kpi-label">Qtd Faturada</div>
+      <div class="kpi-value">{{ resultados.fat_total.qtd|default:0|floatformat:3 }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="kpi-box fat">
+      <div class="kpi-label">Valor Faturado</div>
+      <div class="kpi-value">R$ {{ resultados.fat_total.valor|default:0|floatformat:2 }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="kpi-box compra">
+      <div class="kpi-label">Qtd Comprada</div>
+      <div class="kpi-value">{{ resultados.compra_total.qtd|default:0|floatformat:3 }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="kpi-box compra">
+      <div class="kpi-label">Valor Comprado</div>
+      <div class="kpi-value">R$ {{ resultados.compra_total.valor|default:0|floatformat:2 }}</div>
+    </div>
+  </div>
+</div>
+
+<!-- Faturamento -->
+{% if resultados.faturamento_itens %}
+<div class="card mb-4" style="border:none;border-radius:14px;box-shadow:0 2px 10px rgba(124,58,237,.08);">
+  <div class="card-header" style="background:#f5f3ff;border-radius:14px 14px 0 0;color:#5b21b6;font-weight:700;border-bottom:2px solid #ddd6fe;">
+    <i class="bi bi-receipt me-1"></i>Faturamento (últimos 50 registros)
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-sm result-table mb-0">
+        <thead>
+          <tr><th>Data NF</th><th>Produto</th><th>NF-e</th><th class="text-end">Qtd</th><th class="text-end">Valor Total</th></tr>
+        </thead>
+        <tbody>
+          {% for item in resultados.faturamento_itens %}
+          <tr>
+            <td>{{ item.nota.data_emissao|date:"d/m/Y" }}</td>
+            <td>{{ item.produto.nome }}</td>
+            <td>{{ item.nota.numero_nfe }}</td>
+            <td class="text-end">{{ item.quantidade|floatformat:3 }}</td>
+            <td class="text-end">R$ {{ item.valor_total|floatformat:2 }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% else %}
+<div class="alert alert-light mb-4">Nenhum faturamento encontrado para este atributo no período.</div>
+{% endif %}
+
+<!-- Compras -->
+{% if resultados.compra_itens %}
+<div class="card" style="border:none;border-radius:14px;box-shadow:0 2px 10px rgba(6,182,212,.08);">
+  <div class="card-header" style="background:#e0f2fe;border-radius:14px 14px 0 0;color:#0369a1;font-weight:700;border-bottom:2px solid #bae6fd;">
+    <i class="bi bi-box-arrow-in-down me-1"></i>Compras Recebidas (últimos 50 registros)
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-sm result-table mb-0">
+        <thead>
+          <tr><th>Data Receb.</th><th>Produto</th><th>NF Fornecedor</th><th class="text-end">Qtd</th><th class="text-end">Valor Total</th></tr>
+        </thead>
+        <tbody>
+          {% for item in resultados.compra_itens %}
+          <tr>
+            <td>{{ item.recebimento.data_recebimento|date:"d/m/Y" }}</td>
+            <td>{{ item.produto.nome }}</td>
+            <td>{{ item.recebimento.numero_nf|default:"—" }}</td>
+            <td class="text-end">{{ item.quantidade|floatformat:3 }}</td>
+            <td class="text-end">R$ {{ item.valor_total|default:0|floatformat:2 }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% else %}
+<div class="alert alert-light">Nenhuma compra encontrada para este atributo no período.</div>
+{% endif %}
+
+{% endif %}
+{% endblock %}

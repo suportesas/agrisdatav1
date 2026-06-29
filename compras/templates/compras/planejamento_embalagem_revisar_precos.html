@@ -1,0 +1,110 @@
+{% extends 'base.html' %}
+
+{% block title %}Revisar Preços — {{ planejamento.numero }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+  <div class="d-flex align-items-center gap-2 mb-4">
+    <a href="{% url 'compras:planejamento_embalagem_detail' pk=planejamento.pk %}" class="btn btn-sm btn-outline-secondary">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    <div>
+      <h4 class="fw-bold mb-0"><i class="bi bi-arrow-repeat text-warning me-2"></i>Revisão de Preços</h4>
+      <p class="text-muted small mb-0">{{ planejamento.numero }} — {{ planejamento.nome }}</p>
+    </div>
+  </div>
+
+  <div class="alert alert-info">
+    <i class="bi bi-info-circle me-2"></i>
+    Atualize os preços atuais dos itens conforme as cotações mais recentes. O preço estimado original é mantido para comparação.
+    Se o planejamento estiver <strong>Aprovado</strong>, ele voltará para <strong>Em Revisão</strong> após salvar.
+  </div>
+
+  <form method="post">
+    {% csrf_token %}
+    <div class="card border-0 shadow-sm" style="border-radius:var(--radius-card);">
+      <div class="table-responsive">
+        <table class="table table-hover table-sm align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Tipo de Embalagem</th>
+              <th>Fase</th>
+              <th class="text-end">Qtd</th>
+              <th>Un.</th>
+              <th class="text-end">Pr. Estimado</th>
+              <th style="min-width:140px;">Pr. Atual</th>
+              <th class="text-end">Custo Estimado</th>
+              <th class="text-end">Custo Atual</th>
+              <th>Observação da Revisão</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in itens %}
+            <tr>
+              <td>{{ item.tipo_embalagem }}</td>
+              <td><span class="badge bg-secondary-subtle text-secondary">{{ item.get_fase_display }}</span></td>
+              <td class="text-end">{{ item.quantidade_planejada|floatformat:2 }}</td>
+              <td>{{ item.unidade_medida }}</td>
+              <td class="text-end text-muted">R$ {{ item.preco_estimado_unitario|floatformat:4 }}</td>
+              <td>
+                <input type="number" name="preco_{{ item.pk }}"
+                       value="{{ item.preco_atual_unitario }}"
+                       class="form-control form-control-sm preco-campo"
+                       step="0.0001" min="0"
+                       data-qty="{{ item.quantidade_planejada }}"
+                       data-estimado="{{ item.preco_estimado_unitario }}">
+              </td>
+              <td class="text-end text-muted">R$ <span class="custo-estimado-cell">{{ item.custo_estimado|floatformat:2 }}</span></td>
+              <td class="text-end fw-semibold">R$ <span class="custo-atual-cell">{{ item.custo_atual|floatformat:2 }}</span></td>
+              <td>
+                <input type="text" name="obs_{{ item.pk }}"
+                       value="{{ item.observacoes }}"
+                       class="form-control form-control-sm"
+                       placeholder="Motivo da revisão...">
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="9" class="text-center text-muted py-4">Nenhum item.</td></tr>
+            {% endfor %}
+          </tbody>
+          <tfoot class="table-light fw-semibold">
+            <tr>
+              <td colspan="6" class="text-end">Total</td>
+              <td class="text-end" id="footer-estimado">R$ {{ planejamento.custo_estimado_total|floatformat:2 }}</td>
+              <td class="text-end" id="footer-atual">R$ {{ planejamento.custo_atual_total|floatformat:2 }}</td>
+              <td></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+
+    <div class="d-flex gap-2 mt-3">
+      <button type="submit" class="btn btn-warning"><i class="bi bi-check-lg me-1"></i>Salvar Revisão</button>
+      <a href="{% url 'compras:planejamento_embalagem_detail' pk=planejamento.pk %}" class="btn btn-outline-secondary">Cancelar</a>
+    </div>
+  </form>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  function recalc() {
+    let totalAtual = 0;
+    document.querySelectorAll('.preco-campo').forEach(function (inp) {
+      const qty = parseFloat(inp.dataset.qty) || 0;
+      const pa  = parseFloat(inp.value) || 0;
+      const custo = qty * pa;
+      totalAtual += custo;
+      const row = inp.closest('tr');
+      row.querySelector('.custo-atual-cell').textContent = custo.toLocaleString('pt-BR', {minimumFractionDigits:2});
+    });
+    document.getElementById('footer-atual').textContent = 'R$ ' + totalAtual.toLocaleString('pt-BR', {minimumFractionDigits:2});
+  }
+  document.querySelectorAll('.preco-campo').forEach(i => i.addEventListener('input', recalc));
+})();
+</script>
+{% endblock %}

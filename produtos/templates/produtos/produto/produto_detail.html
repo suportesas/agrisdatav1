@@ -177,7 +177,88 @@
         </div>
       </div>
 
-      <!-- Atributos de Variação -->
+      <!-- Atributos de Variação / Variantes -->
+      {% if variantes %}
+      <!-- Produto BASE com variantes: exibir tabela de variantes -->
+      <div class="card mb-3">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <strong>
+            <i class="bi bi-layers me-2" style="color:#7c3aed;"></i>
+            Variantes
+            <span class="badge ms-1" style="background:#ede9fe;color:#7c3aed;font-size:.72rem;">{{ variantes|length }}</span>
+          </strong>
+          <a href="{% url 'produtos:variacao_form' %}?origem={{ produto.pk }}"
+             class="btn btn-sm btn-outline-primary">
+            <i class="bi bi-plus-circle me-1"></i>Gerar variações
+          </a>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-sm table-hover align-middle mb-0">
+              <thead style="background:#f5f3ff;">
+                <tr>
+                  <th>Código</th>
+                  <th>Nome completo</th>
+                  {% for dim in dimensoes_base %}
+                  <th>{{ dim }}</th>
+                  {% endfor %}
+                  <th class="text-end">Estoque</th>
+                  <th class="text-center">Status</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for variante in variantes %}
+                <tr>
+                  <td><code class="text-primary small">{{ variante.codigo }}</code></td>
+                  <td>
+                    <span class="fw-semibold small">{{ variante.nome_completo }}</span>
+                  </td>
+                  {% for dim in dimensoes_base %}
+                  <td class="small">
+                    {% for a in variante.atributos.all %}
+                      {% if a.dimensao.nome == dim %}
+                        <span class="badge" style="background:#ede9fe;color:#7c3aed;">{{ a.valor }}</span>
+                      {% endif %}
+                    {% endfor %}
+                  </td>
+                  {% endfor %}
+                  <td class="text-end small">
+                    {% if variante.controla_estoque %}
+                      {{ variante.estoque_atual|floatformat:"-3" }} {{ variante.unidade_medida.sigla }}
+                    {% else %}
+                      <span class="text-muted">N/C</span>
+                    {% endif %}
+                  </td>
+                  <td class="text-center">
+                    {% if variante.ativo %}
+                      <span class="badge bg-success-subtle text-success" style="font-size:.68rem;">Ativo</span>
+                    {% else %}
+                      <span class="badge bg-secondary-subtle text-secondary" style="font-size:.68rem;">Inativo</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    <a href="{% url 'produtos:produto_detail' variante.pk %}"
+                       class="btn btn-xs btn-outline-secondary" style="padding:.2rem .45rem;font-size:.72rem;"
+                       title="Ver variante">
+                      <i class="bi bi-eye"></i>
+                    </a>
+                    <a href="{% url 'produtos:produto_update' variante.pk %}"
+                       class="btn btn-xs btn-outline-warning" style="padding:.2rem .45rem;font-size:.72rem;"
+                       title="Editar variante">
+                      <i class="bi bi-pencil"></i>
+                    </a>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      {% else %}
+      <!-- Produto simples ou variante: exibir atributos individuais via AJAX -->
       <div class="card mb-3" id="cardAtributos">
         <div class="card-header d-flex justify-content-between align-items-center">
           <strong><i class="bi bi-tags me-2"></i>Atributos de Variação</strong>
@@ -191,6 +272,7 @@
           </div>
         </div>
       </div>
+      {% endif %}
 
       <!-- Fornecedores que Vendem Este Produto -->
       <div class="card mb-3">
@@ -661,6 +743,8 @@ function esc(s) {
 }
 
 // ── Inicializar ─────────────────────────────────────
-carregarAtributos();
+if (document.getElementById('atributosContainer')) {
+  carregarAtributos();
+}
 </script>
 {% endblock %}

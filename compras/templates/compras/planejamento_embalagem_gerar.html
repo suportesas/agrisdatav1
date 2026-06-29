@@ -1,0 +1,201 @@
+{% extends 'base.html' %}
+
+{% block title %}Gerar SC / Pedido — {{ planejamento.numero }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+  <div class="d-flex align-items-center gap-2 mb-4">
+    <a href="{% url 'compras:planejamento_embalagem_detail' pk=planejamento.pk %}" class="btn btn-sm btn-outline-secondary">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    <div>
+      <h4 class="fw-bold mb-0"><i class="bi bi-send text-primary me-2"></i>Gerar Documento de Compra</h4>
+      <p class="text-muted small mb-0">{{ planejamento.numero }} — {{ planejamento.nome }}</p>
+    </div>
+  </div>
+
+  {% if itens %}
+  <form method="post" id="form-gerar">
+    {% csrf_token %}
+
+    <!-- Tipo de geração -->
+    <div class="card border-0 shadow-sm mb-4" style="border-radius:var(--radius-card);">
+      <div class="card-header bg-white border-bottom fw-semibold">
+        <i class="bi bi-diagram-3 text-primary me-2"></i>Tipo de Documento
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <div class="form-check p-3 border rounded-3 cursor-pointer h-100" id="card-sc">
+              <input class="form-check-input" type="radio" name="tipo_geracao" id="tipo_sc" value="SC" checked>
+              <label class="form-check-label w-100" for="tipo_sc" style="cursor:pointer;">
+                <div class="fw-semibold mb-1"><i class="bi bi-file-text text-info me-1"></i>Solicitação de Compra</div>
+                <p class="text-muted small mb-0">
+                  Cria uma SC que segue o fluxo normal: aprovação → cotação → pedido.<br>
+                  Ideal quando ainda não tem fornecedor definido ou precisa de aprovação interna.
+                </p>
+              </label>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="form-check p-3 border rounded-3 cursor-pointer h-100" id="card-po">
+              <input class="form-check-input" type="radio" name="tipo_geracao" id="tipo_po" value="PO">
+              <label class="form-check-label w-100" for="tipo_po" style="cursor:pointer;">
+                <div class="fw-semibold mb-1"><i class="bi bi-file-earmark-check text-primary me-1"></i>Pedido de Compra Direto</div>
+                <p class="text-muted small mb-0">
+                  Cria o PO diretamente com o fornecedor preferencial de cada item — sem cotação.<br>
+                  <strong>Requer fornecedor preferencial</strong> em todos os itens selecionados.
+                </p>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Seleção de itens -->
+    <div class="card border-0 shadow-sm mb-4" style="border-radius:var(--radius-card);">
+      <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+        <span class="fw-semibold"><i class="bi bi-list-check text-primary me-2"></i>Selecione os Itens</span>
+        <div class="d-flex gap-2">
+          <button type="button" id="btn-select-all" class="btn btn-sm btn-outline-secondary">Selecionar Todos</button>
+          <button type="button" id="btn-deselect-all" class="btn btn-sm btn-outline-secondary">Limpar</button>
+        </div>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover table-sm align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th style="width:40px;"></th>
+              <th>Tipo de Embalagem</th>
+              <th>Fase</th>
+              <th>Data Prevista</th>
+              <th class="text-end">Qtd</th>
+              <th>Un.</th>
+              <th class="text-end">Preço Atual</th>
+              <th class="text-end">Custo</th>
+              <th>Forn. Preferencial</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in itens %}
+            <tr class="item-row {% if not item.fornecedor_preferencial %}sem-fornecedor{% endif %}">
+              <td class="text-center">
+                <input class="form-check-input item-check" type="checkbox"
+                       name="itens_selecionados" value="{{ item.pk }}" checked>
+              </td>
+              <td>{{ item.tipo_embalagem }}</td>
+              <td><span class="badge bg-secondary-subtle text-secondary">{{ item.get_fase_display }}</span></td>
+              <td>{{ item.data_prevista|date:"d/m/Y" }}</td>
+              <td class="text-end">{{ item.quantidade_planejada|floatformat:2 }}</td>
+              <td>{{ item.unidade_medida }}</td>
+              <td class="text-end">R$ {{ item.preco_atual_unitario|floatformat:4 }}</td>
+              <td class="text-end fw-semibold">R$ {{ item.custo_atual|floatformat:2 }}</td>
+              <td>
+                {% if item.fornecedor_preferencial %}
+                  <span class="badge bg-success-subtle text-success">{{ item.fornecedor_preferencial }}</span>
+                {% else %}
+                  <span class="badge bg-warning-subtle text-warning"><i class="bi bi-exclamation-triangle me-1"></i>Sem fornecedor</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Aviso PO sem fornecedor -->
+    <div id="aviso-fornecedor" class="alert alert-warning d-none">
+      <i class="bi bi-exclamation-triangle-fill me-2"></i>
+      Alguns itens selecionados não têm fornecedor preferencial. No modo <strong>Pedido Direto</strong>, esses itens serão ignorados.
+      Para incluí-los, use <strong>Solicitação de Compra</strong> ou defina um fornecedor preferencial no planejamento.
+    </div>
+
+    <!-- Resumo selecionado -->
+    <div class="card border-0 bg-primary-subtle mb-4" style="border-radius:var(--radius-card);">
+      <div class="card-body py-3">
+        <div class="row text-center">
+          <div class="col"><div class="text-muted small">Itens Selecionados</div><div class="fw-bold fs-5" id="resumo-itens">0</div></div>
+          <div class="col"><div class="text-muted small">Custo Total</div><div class="fw-bold fs-5" id="resumo-custo">R$ 0,00</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="d-flex gap-2">
+      <button type="submit" class="btn btn-primary" id="btn-gerar">
+        <i class="bi bi-send me-1"></i><span id="btn-gerar-label">Gerar Solicitação de Compra</span>
+      </button>
+      <a href="{% url 'compras:planejamento_embalagem_detail' pk=planejamento.pk %}" class="btn btn-outline-secondary">Cancelar</a>
+    </div>
+  </form>
+
+  {% else %}
+  <div class="alert alert-info">
+    <i class="bi bi-info-circle me-2"></i>
+    Todos os itens do planejamento já foram convertidos em SC ou Pedido de Compra.
+  </div>
+  <a href="{% url 'compras:planejamento_embalagem_detail' pk=planejamento.pk %}" class="btn btn-outline-secondary">Voltar</a>
+  {% endif %}
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  const checksItens = document.querySelectorAll('.item-check');
+  const btnLabel    = document.getElementById('btn-gerar-label');
+  const avisoForn   = document.getElementById('aviso-fornecedor');
+  const resumoItens = document.getElementById('resumo-itens');
+  const resumoCusto = document.getElementById('resumo-custo');
+
+  // Dados dos itens para cálculo
+  const itemData = {};
+  {% for item in itens %}
+  itemData[{{ item.pk }}] = {
+    custo: {{ item.custo_atual }},
+    temFornecedor: {% if item.fornecedor_preferencial %}true{% else %}false{% endif %}
+  };
+  {% endfor %}
+
+  function update() {
+    const tipoPO = document.getElementById('tipo_po').checked;
+    btnLabel.textContent = tipoPO ? 'Gerar Pedido de Compra Direto' : 'Gerar Solicitação de Compra';
+
+    let count = 0, total = 0, semForn = 0;
+    checksItens.forEach(function (ch) {
+      if (ch.checked) {
+        count++;
+        total += itemData[ch.value]?.custo || 0;
+        if (!itemData[ch.value]?.temFornecedor) semForn++;
+      }
+    });
+    resumoItens.textContent = count;
+    resumoCusto.textContent = 'R$ ' + total.toLocaleString('pt-BR', {minimumFractionDigits:2});
+    avisoForn.classList.toggle('d-none', !(tipoPO && semForn > 0));
+  }
+
+  checksItens.forEach(ch => ch.addEventListener('change', update));
+  document.querySelectorAll('input[name=tipo_geracao]').forEach(r => r.addEventListener('change', update));
+  document.getElementById('btn-select-all')?.addEventListener('click', function () {
+    checksItens.forEach(ch => ch.checked = true); update();
+  });
+  document.getElementById('btn-deselect-all')?.addEventListener('click', function () {
+    checksItens.forEach(ch => ch.checked = false); update();
+  });
+
+  // Realce das cards de tipo
+  document.querySelectorAll('input[name=tipo_geracao]').forEach(r => r.addEventListener('change', function () {
+    document.getElementById('card-sc').classList.toggle('border-info',  document.getElementById('tipo_sc').checked);
+    document.getElementById('card-po').classList.toggle('border-primary', document.getElementById('tipo_po').checked);
+    document.getElementById('card-sc').classList.toggle('border-primary', document.getElementById('tipo_po').checked);
+    document.getElementById('card-po').classList.toggle('border-info',   document.getElementById('tipo_sc').checked);
+  }));
+  document.getElementById('card-sc').classList.add('border-info');
+
+  update();
+})();
+</script>
+{% endblock %}

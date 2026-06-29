@@ -10,8 +10,9 @@ from django.conf.urls.static import static
 from django.contrib.auth import views as auth_views
 from usuarios import views as user_views
 from compras import views as compras_views
-from core.views_public import (landing_page, recursos_page, sobre_page, planos_page, 
+from core.views_public import (landing_page, recursos_page, sobre_page, planos_page,
                                faq_page, contato_page, recursos_avancados_page, page_not_found)
+from core import views_hub
 
 
 def root_redirect(request):
@@ -94,6 +95,7 @@ urlpatterns = [
     # CONFIGURAÇÕES DO SISTEMA
     # ============================================
     path('configuracoes/', include([
+        path('', views_hub.configuracoes_hub, name='configuracoes_hub'),
         path('sistema/', user_views.configuracao_sistema, name='configuracao_sistema'),
     ])),
 

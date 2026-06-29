@@ -1,0 +1,203 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ planejamento.numero }} — Planejamento Embalagens{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+  <!-- Breadcrumb / header -->
+  <div class="d-flex align-items-start justify-content-between mb-4 flex-wrap gap-2">
+    <div class="d-flex align-items-center gap-2">
+      <a href="{% url 'compras:planejamento_embalagem_list' %}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i>
+      </a>
+      <div>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+          <h4 class="fw-bold mb-0">{{ planejamento.numero }}</h4>
+          {% if planejamento.status == 'APROVADO' %}
+            <span class="badge bg-success">Aprovado</span>
+          {% elif planejamento.status == 'RASCUNHO' %}
+            <span class="badge bg-secondary">Rascunho</span>
+          {% elif planejamento.status == 'EM_REVISAO' %}
+            <span class="badge bg-warning text-dark">Em Revisão</span>
+          {% else %}
+            <span class="badge bg-dark">Encerrado</span>
+          {% endif %}
+        </div>
+        <p class="text-muted small mb-0">{{ planejamento.nome }}</p>
+      </div>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      {% if planejamento.status in 'RASCUNHO,EM_REVISAO' %}
+        <a href="{% url 'compras:planejamento_embalagem_update' pk=planejamento.pk %}" class="btn btn-sm btn-outline-secondary">
+          <i class="bi bi-pencil me-1"></i>Editar
+        </a>
+        <form method="post" action="{% url 'compras:planejamento_embalagem_aprovar' pk=planejamento.pk %}" class="d-inline">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-sm btn-success">
+            <i class="bi bi-check-circle me-1"></i>Aprovar
+          </button>
+        </form>
+      {% endif %}
+      {% if planejamento.status != 'ENCERRADO' %}
+        <a href="{% url 'compras:planejamento_embalagem_revisar_precos' pk=planejamento.pk %}" class="btn btn-sm btn-outline-warning">
+          <i class="bi bi-arrow-repeat me-1"></i>Revisar Preços
+        </a>
+        <a href="{% url 'compras:planejamento_embalagem_gerar' pk=planejamento.pk %}" class="btn btn-sm btn-primary">
+          <i class="bi bi-send me-1"></i>Gerar SC / Pedido
+        </a>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Resumo financeiro -->
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+      <div class="card border-0 bg-primary-subtle h-100" style="border-radius:var(--radius-card);">
+        <div class="card-body text-center py-3">
+          <div class="text-muted small">Custo Estimado</div>
+          <div class="fw-bold fs-5">R$ {{ planejamento.custo_estimado_total|floatformat:2 }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card border-0 bg-info-subtle h-100" style="border-radius:var(--radius-card);">
+        <div class="card-body text-center py-3">
+          <div class="text-muted small">Custo Atual</div>
+          <div class="fw-bold fs-5">R$ {{ planejamento.custo_atual_total|floatformat:2 }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card border-0 bg-light h-100" style="border-radius:var(--radius-card);">
+        <div class="card-body text-center py-3">
+          <div class="text-muted small">Variação</div>
+          {% with var=planejamento.variacao_custo_pct %}
+            {% if var is not None %}
+              <div class="fw-bold fs-5 {% if var > 0 %}text-danger{% elif var < 0 %}text-success{% endif %}">
+                {{ var|floatformat:1 }}%
+              </div>
+            {% else %}
+              <div class="fw-bold fs-5">—</div>
+            {% endif %}
+          {% endwith %}
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card border-0 bg-light h-100" style="border-radius:var(--radius-card);">
+        <div class="card-body text-center py-3">
+          <div class="text-muted small">Itens Convertidos</div>
+          <div class="fw-bold fs-5">{{ planejamento.itens_convertidos }}/{{ planejamento.total_itens }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Informações gerais -->
+  <div class="card border-0 shadow-sm mb-4" style="border-radius:var(--radius-card);">
+    <div class="card-header bg-white border-bottom fw-semibold">
+      <i class="bi bi-info-circle text-primary me-2"></i>Informações Gerais
+    </div>
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-4">
+          <span class="text-muted small d-block">Safra</span>
+          <strong>{{ planejamento.safra|default:"—" }}</strong>
+        </div>
+        <div class="col-md-4">
+          <span class="text-muted small d-block">Período</span>
+          <strong>{{ planejamento.data_inicio|date:"d/m/Y" }} — {{ planejamento.data_fim|date:"d/m/Y" }}</strong>
+        </div>
+        <div class="col-md-4">
+          <span class="text-muted small d-block">Responsável</span>
+          <strong>{{ planejamento.responsavel.get_full_name|default:planejamento.responsavel }}</strong>
+        </div>
+        {% if planejamento.observacoes %}
+        <div class="col-12">
+          <span class="text-muted small d-block">Observações</span>
+          <span>{{ planejamento.observacoes }}</span>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabela de itens -->
+  <div class="card border-0 shadow-sm" style="border-radius:var(--radius-card);">
+    <div class="card-header bg-white border-bottom fw-semibold">
+      <i class="bi bi-list-ul text-primary me-2"></i>Itens do Planejamento
+    </div>
+    <div class="table-responsive">
+      <table class="table table-hover table-sm mb-0 align-middle">
+        <thead class="table-light">
+          <tr>
+            <th>Tipo de Embalagem</th>
+            <th>Fase</th>
+            <th>Data Prevista</th>
+            <th class="text-end">Qtd</th>
+            <th>Un.</th>
+            <th class="text-end">Pr. Estimado</th>
+            <th class="text-end">Pr. Atual</th>
+            <th class="text-end">Custo Atual</th>
+            <th>Forn. Preferencial</th>
+            <th>Forn. Alternativo</th>
+            <th>Status</th>
+            <th>Documento</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in planejamento.itens.all %}
+          <tr>
+            <td>{{ item.tipo_embalagem }}</td>
+            <td><span class="badge bg-secondary-subtle text-secondary">{{ item.get_fase_display }}</span></td>
+            <td>{{ item.data_prevista|date:"d/m/Y" }}</td>
+            <td class="text-end">{{ item.quantidade_planejada|floatformat:2 }}</td>
+            <td>{{ item.unidade_medida }}</td>
+            <td class="text-end">R$ {{ item.preco_estimado_unitario|floatformat:4 }}</td>
+            <td class="text-end">
+              R$ {{ item.preco_atual_unitario|floatformat:4 }}
+              {% if item.variacao_custo_pct is not None and item.variacao_custo_pct != 0 %}
+                <small class="{% if item.variacao_custo_pct > 0 %}text-danger{% else %}text-success{% endif %}">
+                  ({% if item.variacao_custo_pct > 0 %}+{% endif %}{{ item.variacao_custo_pct|floatformat:1 }}%)
+                </small>
+              {% endif %}
+            </td>
+            <td class="text-end fw-semibold">R$ {{ item.custo_atual|floatformat:2 }}</td>
+            <td>{{ item.fornecedor_preferencial|default:"—" }}</td>
+            <td>{{ item.fornecedor_alternativo|default:"—" }}</td>
+            <td>
+              {% if item.status == 'PLANEJADO' %}
+                <span class="badge bg-secondary">Planejado</span>
+              {% elif item.status == 'SOLICITADO' %}
+                <span class="badge bg-info text-dark">SC Gerada</span>
+              {% elif item.status == 'PEDIDO' %}
+                <span class="badge bg-primary">Pedido Gerado</span>
+              {% else %}
+                <span class="badge bg-success">Recebido</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if item.solicitacao_compra %}
+                <a href="{% url 'compras:solicitacao_detail' pk=item.solicitacao_compra.pk %}" class="badge bg-info text-dark text-decoration-none">
+                  {{ item.solicitacao_compra.numero }}
+                </a>
+              {% elif item.pedido_compra %}
+                <a href="{% url 'compras:pedido_detail' pk=item.pedido_compra.pk %}" class="badge bg-primary text-decoration-none">
+                  {{ item.pedido_compra.numero }}
+                </a>
+              {% else %}
+                <span class="text-muted">—</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="12" class="text-center text-muted py-4">Nenhum item cadastrado.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

@@ -91,6 +91,17 @@ class EmpresaLogoForm(forms.ModelForm):
         }
 
 
+class EmpresaPreferenciasForm(forms.ModelForm):
+    """Preferências operacionais da empresa (produtos, estoque, etc.)"""
+
+    class Meta:
+        model = Empresa
+        fields = ['exibir_estoque_base']
+        widgets = {
+            'exibir_estoque_base': forms.RadioSelect(attrs={'class': 'form-check-input'}),
+        }
+
+
 class PlanoForm(forms.ModelForm):
     """Formulário para criar/editar planos"""
     

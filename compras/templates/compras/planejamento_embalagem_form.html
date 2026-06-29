@@ -1,0 +1,291 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block extra_head %}
+<style>
+  .formset-row td { vertical-align: middle; }
+  .formset-row.d-none { display: none !important; }
+  #id_empty_row { display: none; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+  <div class="d-flex align-items-center mb-4 gap-2">
+    <a href="{% url 'compras:planejamento_embalagem_list' %}" class="btn btn-sm btn-outline-secondary">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    <div>
+      <h4 class="fw-bold mb-0">{{ titulo }}</h4>
+      <p class="text-muted small mb-0">Planejamento de Compras de Embalagens por Safra</p>
+    </div>
+  </div>
+
+  <form method="post" id="form-planejamento">
+    {% csrf_token %}
+
+    <!-- CABEÇALHO -->
+    <div class="card border-0 shadow-sm mb-4" style="border-radius: var(--radius-card);">
+      <div class="card-header bg-white border-bottom fw-semibold">
+        <i class="bi bi-info-circle text-primary me-2"></i>Informações Gerais
+      </div>
+      <div class="card-body">
+        {% if form.non_field_errors %}
+          <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+        {% endif %}
+        <div class="row g-3">
+          <div class="col-md-8">
+            <label class="form-label fw-semibold">Nome do Planejamento <span class="text-danger">*</span></label>
+            {{ form.nome }}
+            {% if form.nome.errors %}<div class="text-danger small">{{ form.nome.errors }}</div>{% endif %}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Safra</label>
+            {{ form.safra }}
+            {% if form.safra.errors %}<div class="text-danger small">{{ form.safra.errors }}</div>{% endif %}
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Início da Safra <span class="text-danger">*</span></label>
+            {{ form.data_inicio }}
+            {% if form.data_inicio.errors %}<div class="text-danger small">{{ form.data_inicio.errors }}</div>{% endif %}
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Fim da Safra <span class="text-danger">*</span></label>
+            {{ form.data_fim }}
+            {% if form.data_fim.errors %}<div class="text-danger small">{{ form.data_fim.errors }}</div>{% endif %}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Responsável <span class="text-danger">*</span></label>
+            {{ form.responsavel }}
+            {% if form.responsavel.errors %}<div class="text-danger small">{{ form.responsavel.errors }}</div>{% endif %}
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-semibold">Observações</label>
+            {{ form.observacoes }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ITENS -->
+    <div class="card border-0 shadow-sm mb-4" style="border-radius: var(--radius-card);">
+      <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+        <span class="fw-semibold"><i class="bi bi-list-ul text-primary me-2"></i>Itens do Planejamento</span>
+        <button type="button" id="btn-add-item" class="btn btn-sm btn-outline-primary">
+          <i class="bi bi-plus-circle me-1"></i> Adicionar Item
+        </button>
+      </div>
+      <div class="card-body p-0">
+        {{ formset.management_form }}
+        {% if formset.non_form_errors %}
+          <div class="alert alert-danger m-3">{{ formset.non_form_errors }}</div>
+        {% endif %}
+        <div class="table-responsive">
+          <table class="table table-sm table-hover mb-0" id="formset-table">
+            <thead class="table-light">
+              <tr>
+                <th style="min-width:200px;">Tipo de Embalagem</th>
+                <th style="min-width:130px;">Fase</th>
+                <th style="min-width:120px;">Data Prevista</th>
+                <th style="min-width:100px;">Qtd</th>
+                <th style="min-width:90px;">Unidade</th>
+                <th style="min-width:120px;">Preço Estimado</th>
+                <th style="min-width:120px;">Preço Atual</th>
+                <th style="min-width:160px;">Fornecedor Preferencial</th>
+                <th style="min-width:160px;">Fornecedor Alternativo</th>
+                <th style="min-width:120px;">Obs.</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="formset-body">
+              {% for f in formset %}
+              <tr class="formset-row{% if f.instance.pk and f.initial.DELETE %} d-none{% endif %}" data-form-idx="{{ forloop.counter0 }}">
+                {% for hidden in f.hidden_fields %} {{ hidden }} {% endfor %}
+                <td>{{ f.tipo_embalagem }}{% if f.tipo_embalagem.errors %}<div class="text-danger small">{{ f.tipo_embalagem.errors }}</div>{% endif %}</td>
+                <td>{{ f.fase }}</td>
+                <td>{{ f.data_prevista }}{% if f.data_prevista.errors %}<div class="text-danger small">{{ f.data_prevista.errors }}</div>{% endif %}</td>
+                <td>{{ f.quantidade_planejada }}{% if f.quantidade_planejada.errors %}<div class="text-danger small">{{ f.quantidade_planejada.errors }}</div>{% endif %}</td>
+                <td>{{ f.unidade_medida }}</td>
+                <td>{{ f.preco_estimado_unitario }}</td>
+                <td>{{ f.preco_atual_unitario }}</td>
+                <td>{{ f.fornecedor_preferencial }}</td>
+                <td>{{ f.fornecedor_alternativo }}</td>
+                <td>{{ f.observacoes }}</td>
+                <td class="text-center">
+                  {% if f.instance.pk %}
+                    <div class="form-check">
+                      {{ f.DELETE }}
+                    </div>
+                  {% else %}
+                    <button type="button" class="btn btn-sm btn-outline-danger btn-remove-row" title="Remover">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Linha vazia (template para clonagem) -->
+        <table class="d-none" id="empty-row-template">
+          <tbody>
+            <tr class="formset-row" id="id_empty_row">
+              {% with f=formset.empty_form %}
+              {% for hidden in f.hidden_fields %} {{ hidden }} {% endfor %}
+              <td>{{ f.tipo_embalagem }}</td>
+              <td>{{ f.fase }}</td>
+              <td>{{ f.data_prevista }}</td>
+              <td>{{ f.quantidade_planejada }}</td>
+              <td>{{ f.unidade_medida }}</td>
+              <td>{{ f.preco_estimado_unitario }}</td>
+              <td>{{ f.preco_atual_unitario }}</td>
+              <td>{{ f.fornecedor_preferencial }}</td>
+              <td>{{ f.fornecedor_alternativo }}</td>
+              <td>{{ f.observacoes }}</td>
+              <td class="text-center">
+                <button type="button" class="btn btn-sm btn-outline-danger btn-remove-row" title="Remover">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </td>
+              {% endwith %}
+            </tr>
+          </tbody>
+        </table>
+
+      </div>
+    </div>
+
+    <!-- Resumo de custo em tempo real -->
+    <div class="card border-0 shadow-sm mb-4 bg-primary-subtle" style="border-radius: var(--radius-card);">
+      <div class="card-body py-3">
+        <div class="row text-center">
+          <div class="col">
+            <div class="text-muted small">Total Estimado</div>
+            <div class="fw-bold fs-5" id="total-estimado">R$ 0,00</div>
+          </div>
+          <div class="col">
+            <div class="text-muted small">Total Atual</div>
+            <div class="fw-bold fs-5" id="total-atual">R$ 0,00</div>
+          </div>
+          <div class="col">
+            <div class="text-muted small">Variação</div>
+            <div class="fw-bold fs-5" id="total-variacao">—</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="d-flex gap-2">
+      <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>Salvar Planejamento</button>
+      {% if planejamento %}
+        <a href="{% url 'compras:planejamento_embalagem_detail' pk=planejamento.pk %}" class="btn btn-outline-secondary">Cancelar</a>
+      {% else %}
+        <a href="{% url 'compras:planejamento_embalagem_list' %}" class="btn btn-outline-secondary">Cancelar</a>
+      {% endif %}
+    </div>
+
+  </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  const tbody = document.getElementById('formset-body');
+  const totalFormsInput = document.getElementById('id_form-TOTAL_FORMS');
+  const emptyRowTpl = document.querySelector('#empty-row-template tr');
+
+  function getFormCount() {
+    return parseInt(totalFormsInput.value);
+  }
+
+  function updateFormIndexes() {
+    const rows = tbody.querySelectorAll('tr.formset-row');
+    rows.forEach((row, idx) => {
+      row.querySelectorAll('input, select, textarea').forEach(el => {
+        if (el.name) el.name = el.name.replace(/form-\d+-/, `form-${idx}-`);
+        if (el.id)   el.id   = el.id.replace(/form-\d+-/, `form-${idx}-`);
+      });
+      row.querySelectorAll('label').forEach(el => {
+        if (el.htmlFor) el.htmlFor = el.htmlFor.replace(/form-\d+-/, `form-${idx}-`);
+      });
+    });
+    totalFormsInput.value = rows.length;
+  }
+
+  document.getElementById('btn-add-item').addEventListener('click', function () {
+    const idx = getFormCount();
+    const newRow = emptyRowTpl.cloneNode(true);
+    newRow.id = '';
+    newRow.querySelectorAll('input, select, textarea').forEach(el => {
+      if (el.name) el.name = el.name.replace(/__prefix__/g, idx);
+      if (el.id)   el.id   = el.id.replace(/__prefix__/g, idx);
+      if (el.tagName === 'SELECT') el.selectedIndex = 0;
+      else if (el.type !== 'hidden') el.value = '';
+    });
+    tbody.appendChild(newRow);
+    totalFormsInput.value = idx + 1;
+    bindRemoveButtons();
+    bindPriceSync(newRow);
+    calcTotals();
+  });
+
+  function bindRemoveButtons() {
+    tbody.querySelectorAll('.btn-remove-row').forEach(btn => {
+      btn.onclick = function () {
+        btn.closest('tr').remove();
+        updateFormIndexes();
+        calcTotals();
+      };
+    });
+  }
+
+  function bindPriceSync(row) {
+    const estimInput = row.querySelector('.preco-estimado');
+    const atualInput = row.querySelector('.preco-atual');
+    if (estimInput && atualInput) {
+      estimInput.addEventListener('input', function () {
+        if (!atualInput.value || atualInput.value === '0') {
+          atualInput.value = estimInput.value;
+        }
+        calcTotals();
+      });
+      atualInput.addEventListener('input', calcTotals);
+      row.querySelector('.formset-row .form-control-sm, input')
+        && row.querySelectorAll('input[type=number]').forEach(i => i.addEventListener('input', calcTotals));
+    }
+  }
+
+  function calcTotals() {
+    let estimado = 0, atual = 0;
+    tbody.querySelectorAll('tr.formset-row').forEach(row => {
+      const qtd = parseFloat(row.querySelector('input[name$="-quantidade_planejada"]')?.value) || 0;
+      const pe  = parseFloat(row.querySelector('input[name$="-preco_estimado_unitario"]')?.value) || 0;
+      const pa  = parseFloat(row.querySelector('input[name$="-preco_atual_unitario"]')?.value) || 0;
+      estimado += qtd * pe;
+      atual    += qtd * pa;
+    });
+    document.getElementById('total-estimado').textContent = 'R$ ' + estimado.toLocaleString('pt-BR', {minimumFractionDigits:2});
+    document.getElementById('total-atual').textContent    = 'R$ ' + atual.toLocaleString('pt-BR', {minimumFractionDigits:2});
+    if (estimado > 0) {
+      const var_ = ((atual - estimado) / estimado * 100).toFixed(1);
+      const el = document.getElementById('total-variacao');
+      el.textContent = (var_ >= 0 ? '+' : '') + var_ + '%';
+      el.className = 'fw-bold fs-5 ' + (var_ > 0 ? 'text-danger' : var_ < 0 ? 'text-success' : '');
+    } else {
+      document.getElementById('total-variacao').textContent = '—';
+    }
+  }
+
+  // bind eventos nas linhas existentes
+  tbody.querySelectorAll('tr.formset-row').forEach(row => bindPriceSync(row));
+  tbody.querySelectorAll('input[type=number]').forEach(i => i.addEventListener('input', calcTotals));
+  bindRemoveButtons();
+  calcTotals();
+})();
+</script>
+{% endblock %}

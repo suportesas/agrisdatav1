@@ -573,6 +573,7 @@ createBtn.addEventListener('click', async () => {
     peso_liquido: parseFloat(document.getElementById('pesoLiquido').value) || 0,
     peso_bruto: parseFloat(document.getElementById('pesoBruto').value) || 0,
     combinacoes,
+    produto_base_id: PRODUTO_ORIGEM ? PRODUTO_ORIGEM.id : null,
   };
 
   try {

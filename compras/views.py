@@ -160,7 +160,7 @@ def solicitacao_list(request):
     if status:
         solicitacoes = solicitacoes.filter(status=status)
 
-    solicitacoes = solicitacoes.order_by('-criado_em')
+    solicitacoes = solicitacoes.order_by('-data_cadastro')
 
     # Paginação
     paginator = Paginator(solicitacoes, 20)

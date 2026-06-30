@@ -25,6 +25,13 @@
   .item-fiscal-row .fiscal-section.piscofins { border-color: #20c997; }
   .fiscal-label { font-size: .68rem; font-weight: 700; color: #6c757d; margin-bottom: 2px; display: block; text-transform: uppercase; letter-spacing: .02em; }
   .fiscal-section-title { font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 6px; }
+  .fiscal-tabs { border-bottom: 1px solid #dee2e6; }
+  .fiscal-tabs .nav-link { font-size: .72rem; font-weight: 600; padding: 4px 10px; color: #6c757d; }
+  .fiscal-tabs .nav-link.active { color: #0d6efd; font-weight: 700; }
+  .fiscal-tab-content { background: #fff; border: 1px solid #dee2e6; border-top: none; padding: 8px; border-radius: 0 0 .375rem .375rem; }
+  .fiscal-subtabs { margin-bottom: 8px; gap: 4px; }
+  .fiscal-subtabs .nav-link { font-size: .66rem; font-weight: 600; padding: 3px 9px; color: #6c757d; border-radius: 4px; background: #f1f3f5; }
+  .fiscal-subtabs .nav-link.active { background: #e7f1ff; color: #0d6efd; }
   .item-total { font-size: .85rem; }
   .btn-toggle-fiscal { padding: 2px 7px; }
   .remove-item { padding: 2px 6px; }
@@ -68,11 +75,11 @@
                    {% if not nf or not nf.fornecedor_id %}style="display:none"{% endif %}>
                 <label class="form-label">
                   Fornecedor
-                  <span class="badge bg-warning text-dark ms-1" style="font-size:.7rem">Devolução</span>
+                  <span id="badge-fornecedor-motivo" class="badge bg-warning text-dark ms-1" style="font-size:.7rem">{% if nf.finalidade_nfe == '4' %}Devolução{% else %}Entrada{% endif %}</span>
                 </label>
                 {{ form.fornecedor }}
                 {% if form.fornecedor.errors %}<div class="text-danger small">{{ form.fornecedor.errors }}</div>{% endif %}
-                <div class="form-text">Destinatário em NF-e de devolução de compra (finalidade 4).</div>
+                <div id="hint-fornecedor" class="form-text">{% if nf.finalidade_nfe == '4' %}Destinatário em NF-e de devolução de compra (finalidade 4).{% else %}Destinatário em NF-e de entrada (CFOP 1xxx/2xxx/3xxx) — ex: compra de produtor rural sem nota fiscal.{% endif %}</div>
               </div>
               <div class="col-md-12" id="campo-chave-ref"
                    {% if not nf or not nf.fornecedor_id and nf.finalidade_nfe != '4' %}style="display:none"{% endif %}>
@@ -473,294 +480,352 @@
                   <tr class="item-fiscal-row" style="display:none">
                     <td colspan="9">
                       <div class="row g-0 px-1 py-2">
+                        <div class="col-12">
 
-                        <!-- Classificação -->
-                        <div class="col-12 mb-2">
-                          <div class="fiscal-section d-flex flex-wrap gap-2 align-items-end">
-                            <span class="fiscal-section-title w-100 text-secondary"><i class="bi bi-tag me-1"></i>Classificação Fiscal</span>
-                            <div>
-                              <label class="fiscal-label">NCM</label>
-                              {{ item_form.ncm }}
+                          <ul class="nav nav-tabs fiscal-tabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                              <button class="nav-link active" id="tab-classif-{{ forloop.counter0 }}" data-bs-toggle="tab" data-bs-target="#pane-classif-{{ forloop.counter0 }}" type="button" role="tab" aria-controls="pane-classif-{{ forloop.counter0 }}" aria-selected="true">
+                                <i class="bi bi-tag me-1"></i>Classificação Fiscal
+                              </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                              <button class="nav-link" id="tab-trib-{{ forloop.counter0 }}" data-bs-toggle="tab" data-bs-target="#pane-trib-{{ forloop.counter0 }}" type="button" role="tab" aria-controls="pane-trib-{{ forloop.counter0 }}" aria-selected="false">
+                                <i class="bi bi-percent me-1"></i>Tributação
+                              </button>
+                            </li>
+                            <li class="nav-item fiscal-tab-di" role="presentation" style="display:none;">
+                              <button class="nav-link" id="tab-di-{{ forloop.counter0 }}" data-bs-toggle="tab" data-bs-target="#pane-di-{{ forloop.counter0 }}" type="button" role="tab" aria-controls="pane-di-{{ forloop.counter0 }}" aria-selected="false">
+                                <i class="bi bi-file-earmark-text me-1 text-danger"></i>DI
+                              </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                              <button class="nav-link" id="tab-beneficio-{{ forloop.counter0 }}" data-bs-toggle="tab" data-bs-target="#pane-beneficio-{{ forloop.counter0 }}" type="button" role="tab" aria-controls="pane-beneficio-{{ forloop.counter0 }}" aria-selected="false">
+                                <i class="bi bi-shield-check me-1"></i>Benefício Fiscal
+                              </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                              <button class="nav-link" id="tab-pedido-{{ forloop.counter0 }}" data-bs-toggle="tab" data-bs-target="#pane-pedido-{{ forloop.counter0 }}" type="button" role="tab" aria-controls="pane-pedido-{{ forloop.counter0 }}" aria-selected="false">
+                                <i class="bi bi-bag me-1"></i>Pedido / Valores
+                              </button>
+                            </li>
+                          </ul>
+
+                          <div class="tab-content fiscal-tab-content">
+
+                            <!-- ── Pane: Classificação Fiscal ── -->
+                            <div class="tab-pane fade show active" id="pane-classif-{{ forloop.counter0 }}" role="tabpanel" aria-labelledby="tab-classif-{{ forloop.counter0 }}">
+                              <div class="fiscal-section d-flex flex-wrap gap-2 align-items-end">
+                                <div>
+                                  <label class="fiscal-label">NCM</label>
+                                  {{ item_form.ncm }}
+                                </div>
+                                <div>
+                                  <label class="fiscal-label">CEST</label>
+                                  {{ item_form.cest }}
+                                </div>
+                                <div>
+                                  <label class="fiscal-label">EAN/GTIN</label>
+                                  {{ item_form.ean }}
+                                </div>
+                                <div>
+                                  <label class="fiscal-label">Origem</label>
+                                  {{ item_form.origem_mercadoria }}
+                                </div>
+                                <div>
+                                  <label class="fiscal-label">CFOP</label>
+                                  {{ item_form.cfop }}
+                                </div>
+                                <div class="flex-grow-1">
+                                  <label class="fiscal-label">Complemento da Descrição <small class="text-muted">(DANFE)</small></label>
+                                  {{ item_form.complemento_descricao }}
+                                </div>
+                              </div>
                             </div>
-                            <div>
-                              <label class="fiscal-label">CEST</label>
-                              {{ item_form.cest }}
+
+                            <!-- ── Pane: Tributação (sub-abas: ICMS, ICMS-ST, IPI, PIS/COFINS, FCP) ── -->
+                            <div class="tab-pane fade" id="pane-trib-{{ forloop.counter0 }}" role="tabpanel" aria-labelledby="tab-trib-{{ forloop.counter0 }}">
+
+                              <ul class="nav nav-pills fiscal-subtabs" role="tablist">
+                                <li class="nav-item" role="presentation">
+                                  <button class="nav-link active" id="subtab-icms-{{ forloop.counter0 }}" data-bs-toggle="tab" data-bs-target="#subpane-icms-{{ forloop.counter0 }}" type="button" role="tab" aria-controls="subpane-icms-{{ forloop.counter0 }}" aria-selected="true">
+                                    <i class="bi bi-percent me-1"></i>ICMS
+                                  </button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                  <button class="nav-link" id="subtab-st-{{ forloop.counter0 }}" data-bs-toggle="tab" data-bs-target="#subpane-st-{{ forloop.counter0 }}" type="button" role="tab" aria-controls="subpane-st-{{ forloop.counter0 }}" aria-selected="false">
+                                    <i class="bi bi-arrow-repeat me-1"></i>ICMS-ST
+                                  </button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                  <button class="nav-link" id="subtab-ipi-{{ forloop.counter0 }}" data-bs-toggle="tab" data-bs-target="#subpane-ipi-{{ forloop.counter0 }}" type="button" role="tab" aria-controls="subpane-ipi-{{ forloop.counter0 }}" aria-selected="false">
+                                    <i class="bi bi-box me-1"></i>IPI
+                                  </button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                  <button class="nav-link" id="subtab-piscofins-{{ forloop.counter0 }}" data-bs-toggle="tab" data-bs-target="#subpane-piscofins-{{ forloop.counter0 }}" type="button" role="tab" aria-controls="subpane-piscofins-{{ forloop.counter0 }}" aria-selected="false">
+                                    <i class="bi bi-bank me-1"></i>PIS/COFINS
+                                  </button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                  <button class="nav-link" id="subtab-fcp-{{ forloop.counter0 }}" data-bs-toggle="tab" data-bs-target="#subpane-fcp-{{ forloop.counter0 }}" type="button" role="tab" aria-controls="subpane-fcp-{{ forloop.counter0 }}" aria-selected="false">
+                                    <i class="bi bi-coin me-1"></i>FCP
+                                  </button>
+                                </li>
+                              </ul>
+
+                              <div class="tab-content">
+
+                                <!-- ICMS -->
+                                <div class="tab-pane fade show active" id="subpane-icms-{{ forloop.counter0 }}" role="tabpanel" aria-labelledby="subtab-icms-{{ forloop.counter0 }}">
+                                  <div class="fiscal-section icms d-flex flex-wrap gap-2 align-items-end">
+                                    <div>
+                                      <label class="fiscal-label">CST ICMS</label>
+                                      {{ item_form.cst_icms }}
+                                    </div>
+                                    <div>
+                                      <label class="fiscal-label">Modalidade BC</label>
+                                      {{ item_form.icms_modalidade_base }}
+                                    </div>
+                                    <div>
+                                      <label class="fiscal-label">Red. BC (%)</label>
+                                      {{ item_form.icms_reducao_base }}
+                                    </div>
+                                    <div>
+                                      <label class="fiscal-label">Alíq. ICMS (%)</label>
+                                      {{ item_form.aliquota_icms }}
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <!-- ICMS ST -->
+                                <div class="tab-pane fade" id="subpane-st-{{ forloop.counter0 }}" role="tabpanel" aria-labelledby="subtab-st-{{ forloop.counter0 }}">
+                                  <div class="fiscal-section st d-flex flex-wrap gap-2 align-items-end">
+                                    <div>
+                                      <label class="fiscal-label">Alíq. ST (%)</label>
+                                      {{ item_form.icms_st_aliquota }}
+                                    </div>
+                                    <div>
+                                      <label class="fiscal-label">MVA ST (%)</label>
+                                      {{ item_form.icms_st_mva }}
+                                    </div>
+                                    <div>
+                                      <label class="fiscal-label">Red. BC ST (%)</label>
+                                      {{ item_form.icms_st_reducao_base }}
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <!-- IPI -->
+                                <div class="tab-pane fade" id="subpane-ipi-{{ forloop.counter0 }}" role="tabpanel" aria-labelledby="subtab-ipi-{{ forloop.counter0 }}">
+                                  <div class="fiscal-section ipi d-flex flex-wrap gap-2 align-items-end">
+                                    <div>
+                                      <label class="fiscal-label">CST IPI</label>
+                                      {{ item_form.cst_ipi }}
+                                    </div>
+                                    <div>
+                                      <label class="fiscal-label">Alíq. IPI (%)</label>
+                                      {{ item_form.aliquota_ipi }}
+                                    </div>
+                                    <div>
+                                      <label class="fiscal-label">Cód. Enquadramento</label>
+                                      {{ item_form.ipi_codigo_enquadramento }}
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <!-- PIS / COFINS -->
+                                <div class="tab-pane fade" id="subpane-piscofins-{{ forloop.counter0 }}" role="tabpanel" aria-labelledby="subtab-piscofins-{{ forloop.counter0 }}">
+                                  <div class="fiscal-section piscofins">
+                                    <!-- linha PIS -->
+                                    <div class="d-flex flex-wrap gap-2 align-items-end mb-1">
+                                      <div>
+                                        <label class="fiscal-label">CST PIS</label>
+                                        {{ item_form.cst_pis }}
+                                      </div>
+                                      <div class="nat-receita-wrap" style="display:none;">
+                                        <label class="fiscal-label">Nat. Receita PIS</label>
+                                        {{ item_form.natureza_receita_pis }}
+                                      </div>
+                                      <div>
+                                        <label class="fiscal-label">Alíq. PIS (%)</label>
+                                        {{ item_form.aliquota_pis }}
+                                      </div>
+                                    </div>
+                                    <!-- linha COFINS -->
+                                    <div class="d-flex flex-wrap gap-2 align-items-end">
+                                      <div>
+                                        <label class="fiscal-label">CST COFINS</label>
+                                        {{ item_form.cst_cofins }}
+                                      </div>
+                                      <div class="nat-receita-wrap" style="display:none;">
+                                        <label class="fiscal-label">Nat. Receita COFINS</label>
+                                        {{ item_form.natureza_receita_cofins }}
+                                      </div>
+                                      <div>
+                                        <label class="fiscal-label">Alíq. COFINS (%)</label>
+                                        {{ item_form.aliquota_cofins }}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <!-- FCP -->
+                                <div class="tab-pane fade" id="subpane-fcp-{{ forloop.counter0 }}" role="tabpanel" aria-labelledby="subtab-fcp-{{ forloop.counter0 }}">
+                                  <div class="fiscal-section d-flex flex-wrap gap-2 align-items-end">
+                                    <div>
+                                      <label class="fiscal-label">Alíq. FCP (%)</label>
+                                      {{ item_form.fcp_aliquota }}
+                                    </div>
+                                    <div>
+                                      <label class="fiscal-label">Alíq. FCP ST (%)</label>
+                                      {{ item_form.fcp_st_aliquota }}
+                                    </div>
+                                  </div>
+                                </div>
+
+                              </div>
                             </div>
-                            <div>
-                              <label class="fiscal-label">EAN/GTIN</label>
-                              {{ item_form.ean }}
+
+                            <!-- ── Pane: DI — Declaração de Importação ── -->
+                            <div class="tab-pane fade" id="pane-di-{{ forloop.counter0 }}" role="tabpanel" aria-labelledby="tab-di-{{ forloop.counter0 }}">
+                              <div class="di-section">
+                                <div class="fiscal-section" style="border-left:3px solid #dc3545; padding:8px 10px; background:#fff8f8;">
+                                  <span class="fiscal-section-title w-100 text-danger d-block mb-2">
+                                    <i class="bi bi-file-earmark-text me-1"></i>DI — Declaração de Importação
+                                    <small class="text-muted fw-normal ms-1">(Grupo I da NF-e — obrigatório para origem estrangeira)</small>
+                                  </span>
+                                  <div class="row g-2">
+                                    <div class="col-md-3">
+                                      <label class="fiscal-label">Nº da DI <span class="text-danger">*</span></label>
+                                      {{ item_form.di_numero }}
+                                    </div>
+                                    <div class="col-md-2">
+                                      <label class="fiscal-label">Data Registro DI <span class="text-danger">*</span></label>
+                                      {{ item_form.di_data_registro }}
+                                    </div>
+                                    <div class="col-md-4">
+                                      <label class="fiscal-label">Local do Desembaraço <span class="text-danger">*</span></label>
+                                      {{ item_form.di_local_desembaraco }}
+                                    </div>
+                                    <div class="col-md-1">
+                                      <label class="fiscal-label">UF Desemb. <span class="text-danger">*</span></label>
+                                      {{ item_form.di_uf_desembaraco }}
+                                    </div>
+                                    <div class="col-md-2">
+                                      <label class="fiscal-label">Data Desembaraço <span class="text-danger">*</span></label>
+                                      {{ item_form.di_data_desembaraco }}
+                                    </div>
+                                    <div class="col-md-3">
+                                      <label class="fiscal-label">Via de Transporte <span class="text-danger">*</span></label>
+                                      {{ item_form.di_via_transporte }}
+                                    </div>
+                                    <div class="col-md-2 di-afrmm-wrap" style="display:none;">
+                                      <label class="fiscal-label">Valor AFRMM (R$)</label>
+                                      {{ item_form.di_valor_afrmm }}
+                                      <small class="text-muted" style="font-size:.65rem;">Só via marítima</small>
+                                    </div>
+                                    <div class="col-md-3">
+                                      <label class="fiscal-label">Tipo Intermediário <span class="text-danger">*</span></label>
+                                      {{ item_form.di_tipo_intermediario }}
+                                    </div>
+                                    <div class="col-md-4 di-cnpj-wrap" style="display:none;">
+                                      <label class="fiscal-label">CNPJ Adquirente/Encomendante</label>
+                                      {{ item_form.di_cnpj_adquirente }}
+                                    </div>
+                                    <div class="col-md-4">
+                                      <label class="fiscal-label">Código do Exportador <span class="text-danger">*</span></label>
+                                      {{ item_form.di_codigo_exportador }}
+                                    </div>
+                                  </div>
+                                  <!-- Adição da DI -->
+                                  <div class="mt-2 pt-2 border-top">
+                                    <span class="fiscal-label text-danger d-block mb-1">Adição da DI</span>
+                                    <div class="row g-2">
+                                      <div class="col-md-1">
+                                        <label class="fiscal-label">Nº Adição</label>
+                                        {{ item_form.di_numero_adicao }}
+                                      </div>
+                                      <div class="col-md-4">
+                                        <label class="fiscal-label">Cód. Fabricante</label>
+                                        {{ item_form.di_codigo_fabricante }}
+                                      </div>
+                                      <div class="col-md-2">
+                                        <label class="fiscal-label">Desconto Adição (R$)</label>
+                                        {{ item_form.di_desconto_adicao }}
+                                      </div>
+                                      <div class="col-md-4">
+                                        <label class="fiscal-label">Nº Drawback <small class="text-muted">(se houver)</small></label>
+                                        {{ item_form.di_numero_drawback }}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
                             </div>
-                            <div>
-                              <label class="fiscal-label">Origem</label>
-                              {{ item_form.origem_mercadoria }}
+
+                            <!-- ── Pane: Benefício Fiscal / Desoneração ICMS ── -->
+                            <div class="tab-pane fade" id="pane-beneficio-{{ forloop.counter0 }}" role="tabpanel" aria-labelledby="tab-beneficio-{{ forloop.counter0 }}">
+                              <div class="d-flex flex-wrap gap-2 align-items-end">
+                                <div>
+                                  <label class="fiscal-label">cBenef <small class="text-muted">(RBC)</small></label>
+                                  {{ item_form.beneficio_fiscal }}
+                                </div>
+                                <div class="deson-wrap" style="display:none;">
+                                  <label class="fiscal-label">Motivo Desoneração ICMS</label>
+                                  {{ item_form.icms_motivo_desoneracao }}
+                                </div>
+                              </div>
                             </div>
-                            <div>
-                              <label class="fiscal-label">CFOP</label>
-                              {{ item_form.cfop }}
+
+                            <!-- ── Pane: Pedido de Compra / Rateio por Item ── -->
+                            <div class="tab-pane fade" id="pane-pedido-{{ forloop.counter0 }}" role="tabpanel" aria-labelledby="tab-pedido-{{ forloop.counter0 }}">
+                              <div class="row g-2 align-items-end">
+                                <div class="col-auto">
+                                  <span class="fiscal-section-title text-secondary" style="font-size:.72rem;">
+                                    <i class="bi bi-receipt me-1"></i>Valores por Item
+                                  </span>
+                                </div>
+                                <div class="col-auto">
+                                  <label class="fiscal-label">Frete (R$)</label>
+                                  {{ item_form.valor_frete_item }}
+                                </div>
+                                <div class="col-auto">
+                                  <label class="fiscal-label">Seguro (R$)</label>
+                                  {{ item_form.valor_seguro_item }}
+                                </div>
+                                <div class="col-auto">
+                                  <label class="fiscal-label">Outras Despesas (R$)</label>
+                                  {{ item_form.valor_outras_despesas }}
+                                </div>
+                                <div class="col-auto ms-3">
+                                  <span class="fiscal-section-title text-secondary" style="font-size:.72rem;">
+                                    <i class="bi bi-bag me-1"></i>Pedido de Compra
+                                  </span>
+                                </div>
+                                <div class="col-auto">
+                                  <label class="fiscal-label">Nº Pedido</label>
+                                  {{ item_form.pedido_compra }}
+                                </div>
+                                <div class="col-auto">
+                                  <label class="fiscal-label">Item</label>
+                                  {{ item_form.item_pedido_compra }}
+                                </div>
+                              </div>
                             </div>
-                            <div class="flex-grow-1">
-                              <label class="fiscal-label">Complemento da Descrição <small class="text-muted">(DANFE)</small></label>
-                              {{ item_form.complemento_descricao }}
-                            </div>
+
                           </div>
                         </div>
-
-                        <!-- ICMS -->
-                        <div class="col-md-6 mb-2 pe-md-1">
-                          <div class="fiscal-section icms d-flex flex-wrap gap-2 align-items-end h-100">
-                            <span class="fiscal-section-title w-100 text-primary"><i class="bi bi-percent me-1"></i>ICMS</span>
-                            <div>
-                              <label class="fiscal-label">CST ICMS</label>
-                              {{ item_form.cst_icms }}
-                            </div>
-                            <div>
-                              <label class="fiscal-label">Modalidade BC</label>
-                              {{ item_form.icms_modalidade_base }}
-                            </div>
-                            <div>
-                              <label class="fiscal-label">Red. BC (%)</label>
-                              {{ item_form.icms_reducao_base }}
-                            </div>
-                            <div>
-                              <label class="fiscal-label">Alíq. ICMS (%)</label>
-                              {{ item_form.aliquota_icms }}
-                            </div>
-                          </div>
-                        </div>
-
-                        <!-- ICMS ST -->
-                        <div class="col-md-6 mb-2 ps-md-1">
-                          <div class="fiscal-section st d-flex flex-wrap gap-2 align-items-end h-100">
-                            <span class="fiscal-section-title w-100 text-warning"><i class="bi bi-arrow-repeat me-1"></i>ICMS-ST</span>
-                            <div>
-                              <label class="fiscal-label">Alíq. ST (%)</label>
-                              {{ item_form.icms_st_aliquota }}
-                            </div>
-                            <div>
-                              <label class="fiscal-label">MVA ST (%)</label>
-                              {{ item_form.icms_st_mva }}
-                            </div>
-                            <div>
-                              <label class="fiscal-label">Red. BC ST (%)</label>
-                              {{ item_form.icms_st_reducao_base }}
-                            </div>
-                          </div>
-                        </div>
-
-                        <!-- IPI -->
-                        <div class="col-md-5 mb-2 pe-md-1">
-                          <div class="fiscal-section ipi d-flex flex-wrap gap-2 align-items-end h-100">
-                            <span class="fiscal-section-title w-100" style="color:#6f42c1"><i class="bi bi-box me-1"></i>IPI</span>
-                            <div>
-                              <label class="fiscal-label">CST IPI</label>
-                              {{ item_form.cst_ipi }}
-                            </div>
-                            <div>
-                              <label class="fiscal-label">Alíq. IPI (%)</label>
-                              {{ item_form.aliquota_ipi }}
-                            </div>
-                            <div>
-                              <label class="fiscal-label">Cód. Enquadramento</label>
-                              {{ item_form.ipi_codigo_enquadramento }}
-                            </div>
-                          </div>
-                        </div>
-
-                        <!-- PIS / COFINS -->
-                        <div class="col-md-7 mb-2 ps-md-1">
-                          <div class="fiscal-section piscofins h-100">
-                            <span class="fiscal-section-title w-100 text-success d-block mb-1"><i class="bi bi-bank me-1"></i>PIS / COFINS</span>
-                            <!-- linha PIS -->
-                            <div class="d-flex flex-wrap gap-2 align-items-end mb-1">
-                              <div>
-                                <label class="fiscal-label">CST PIS</label>
-                                {{ item_form.cst_pis }}
-                              </div>
-                              <div class="nat-receita-wrap" style="display:none;">
-                                <label class="fiscal-label">Nat. Receita PIS</label>
-                                {{ item_form.natureza_receita_pis }}
-                              </div>
-                              <div>
-                                <label class="fiscal-label">Alíq. PIS (%)</label>
-                                {{ item_form.aliquota_pis }}
-                              </div>
-                            </div>
-                            <!-- linha COFINS -->
-                            <div class="d-flex flex-wrap gap-2 align-items-end">
-                              <div>
-                                <label class="fiscal-label">CST COFINS</label>
-                                {{ item_form.cst_cofins }}
-                              </div>
-                              <div class="nat-receita-wrap" style="display:none;">
-                                <label class="fiscal-label">Nat. Receita COFINS</label>
-                                {{ item_form.natureza_receita_cofins }}
-                              </div>
-                              <div>
-                                <label class="fiscal-label">Alíq. COFINS (%)</label>
-                                {{ item_form.aliquota_cofins }}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-
                       </div>
-
-                      <!-- ── DI — Declaração de Importação ── -->
-                      <div class="di-section mt-2" style="display:none;">
-                        <div class="fiscal-section" style="border-left:3px solid #dc3545; padding:8px 10px; background:#fff8f8;">
-                          <span class="fiscal-section-title w-100 text-danger d-block mb-2">
-                            <i class="bi bi-file-earmark-text me-1"></i>DI — Declaração de Importação
-                            <small class="text-muted fw-normal ms-1">(Grupo I da NF-e — obrigatório para origem estrangeira)</small>
-                          </span>
-                          <div class="row g-2">
-                            <div class="col-md-3">
-                              <label class="fiscal-label">Nº da DI <span class="text-danger">*</span></label>
-                              {{ item_form.di_numero }}
-                            </div>
-                            <div class="col-md-2">
-                              <label class="fiscal-label">Data Registro DI <span class="text-danger">*</span></label>
-                              {{ item_form.di_data_registro }}
-                            </div>
-                            <div class="col-md-4">
-                              <label class="fiscal-label">Local do Desembaraço <span class="text-danger">*</span></label>
-                              {{ item_form.di_local_desembaraco }}
-                            </div>
-                            <div class="col-md-1">
-                              <label class="fiscal-label">UF Desemb. <span class="text-danger">*</span></label>
-                              {{ item_form.di_uf_desembaraco }}
-                            </div>
-                            <div class="col-md-2">
-                              <label class="fiscal-label">Data Desembaraço <span class="text-danger">*</span></label>
-                              {{ item_form.di_data_desembaraco }}
-                            </div>
-                            <div class="col-md-3">
-                              <label class="fiscal-label">Via de Transporte <span class="text-danger">*</span></label>
-                              {{ item_form.di_via_transporte }}
-                            </div>
-                            <div class="col-md-2 di-afrmm-wrap" style="display:none;">
-                              <label class="fiscal-label">Valor AFRMM (R$)</label>
-                              {{ item_form.di_valor_afrmm }}
-                              <small class="text-muted" style="font-size:.65rem;">Só via marítima</small>
-                            </div>
-                            <div class="col-md-3">
-                              <label class="fiscal-label">Tipo Intermediário <span class="text-danger">*</span></label>
-                              {{ item_form.di_tipo_intermediario }}
-                            </div>
-                            <div class="col-md-4 di-cnpj-wrap" style="display:none;">
-                              <label class="fiscal-label">CNPJ Adquirente/Encomendante</label>
-                              {{ item_form.di_cnpj_adquirente }}
-                            </div>
-                            <div class="col-md-4">
-                              <label class="fiscal-label">Código do Exportador <span class="text-danger">*</span></label>
-                              {{ item_form.di_codigo_exportador }}
-                            </div>
-                          </div>
-                          <!-- Adição da DI -->
-                          <div class="mt-2 pt-2 border-top">
-                            <span class="fiscal-label text-danger d-block mb-1">Adição da DI</span>
-                            <div class="row g-2">
-                              <div class="col-md-1">
-                                <label class="fiscal-label">Nº Adição</label>
-                                {{ item_form.di_numero_adicao }}
-                              </div>
-                              <div class="col-md-4">
-                                <label class="fiscal-label">Cód. Fabricante</label>
-                                {{ item_form.di_codigo_fabricante }}
-                              </div>
-                              <div class="col-md-2">
-                                <label class="fiscal-label">Desconto Adição (R$)</label>
-                                {{ item_form.di_desconto_adicao }}
-                              </div>
-                              <div class="col-md-4">
-                                <label class="fiscal-label">Nº Drawback <small class="text-muted">(se houver)</small></label>
-                                {{ item_form.di_numero_drawback }}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      <!-- ── / DI ── -->
-
-                      <!-- ── Rateio por Item & Pedido de Compra ── -->
-                      <div class="mt-2 row g-2 align-items-end px-1 pb-1">
-                        <div class="col-auto">
-                          <span class="fiscal-section-title text-secondary" style="font-size:.72rem;">
-                            <i class="bi bi-receipt me-1"></i>Valores por Item
-                          </span>
-                        </div>
-                        <div class="col-auto">
-                          <label class="fiscal-label">Frete (R$)</label>
-                          {{ item_form.valor_frete_item }}
-                        </div>
-                        <div class="col-auto">
-                          <label class="fiscal-label">Seguro (R$)</label>
-                          {{ item_form.valor_seguro_item }}
-                        </div>
-                        <div class="col-auto">
-                          <label class="fiscal-label">Outras Despesas (R$)</label>
-                          {{ item_form.valor_outras_despesas }}
-                        </div>
-                        <div class="col-auto ms-3">
-                          <span class="fiscal-section-title text-secondary" style="font-size:.72rem;">
-                            <i class="bi bi-bag me-1"></i>Pedido de Compra
-                          </span>
-                        </div>
-                        <div class="col-auto">
-                          <label class="fiscal-label">Nº Pedido</label>
-                          {{ item_form.pedido_compra }}
-                        </div>
-                        <div class="col-auto">
-                          <label class="fiscal-label">Item</label>
-                          {{ item_form.item_pedido_compra }}
-                        </div>
-                      </div>
-                      <!-- ── / Rateio & Pedido ── -->
-
-                      <!-- ── Benefício Fiscal / Desoneração ICMS ── -->
-                      <div class="mt-1 row g-2 align-items-end px-1 pb-1">
-                        <div class="col-auto">
-                          <span class="fiscal-section-title text-secondary" style="font-size:.72rem;">
-                            <i class="bi bi-shield-check me-1"></i>Benefício Fiscal / Desoneração
-                          </span>
-                        </div>
-                        <div class="col-auto">
-                          <label class="fiscal-label">cBenef <small class="text-muted">(RBC)</small></label>
-                          {{ item_form.beneficio_fiscal }}
-                        </div>
-                        <div class="col-auto deson-wrap" style="display:none;">
-                          <label class="fiscal-label">Motivo Desoneração ICMS</label>
-                          {{ item_form.icms_motivo_desoneracao }}
-                        </div>
-                      </div>
-                      <!-- ── / Benefício ── -->
-
-                      <!-- ── FCP — Fundo de Combate à Pobreza ── -->
-                      <div class="mt-1 row g-2 align-items-end px-1 pb-2">
-                        <div class="col-auto">
-                          <span class="fiscal-section-title text-secondary" style="font-size:.72rem;">
-                            <i class="bi bi-coin me-1"></i>FCP — Fundo de Combate à Pobreza
-                          </span>
-                        </div>
-                        <div class="col-auto">
-                          <label class="fiscal-label">Alíq. FCP (%)</label>
-                          {{ item_form.fcp_aliquota }}
-                        </div>
-                        <div class="col-auto">
-                          <label class="fiscal-label">Alíq. FCP ST (%)</label>
-                          {{ item_form.fcp_st_aliquota }}
-                        </div>
-                      </div>
-                      <!-- ── / FCP ── -->
-
                     </td>
                   </tr>
                   {% endfor %}
                 </tbody>
                 <tfoot class="table-light">
                   <tr>
-                    <td colspan="7" class="text-end text-muted small fw-semibold pe-3">Subtotal Produtos:</td>
-                    <td class="text-end fw-bold text-success" id="tfoot-subtotal">R$ 0,00</td>
-                    <td></td>
+                    <td colspan="99" class="text-end px-3 py-2">
+                      <span class="text-muted small fw-semibold me-2">Subtotal Produtos:</span>
+                      <span class="fw-bold text-success fs-6" id="tfoot-subtotal">R$ 0,00</span>
+                    </td>
                   </tr>
                 </tfoot>
               </table>
@@ -1397,6 +1462,36 @@
       });
     });
 
+    // Renomeia ids/atributos das abas e sub-abas fiscais (índice sempre no final do id,
+    // ex: tab-trib-0, pane-trib-0, subtab-icms-0, subpane-icms-0 — diferente do padrão
+    // -N- (no meio) usado nos campos do formset, já tratado acima).
+    if (newFiscal) {
+      const SUFFIX_IDX_RE = /-\d+$/;
+      newFiscal.querySelectorAll('[id]').forEach(el => {
+        if (SUFFIX_IDX_RE.test(el.id)) el.id = el.id.replace(SUFFIX_IDX_RE, `-${idx}`);
+      });
+      ['data-bs-target', 'aria-controls', 'aria-labelledby'].forEach(attr => {
+        newFiscal.querySelectorAll(`[${attr}]`).forEach(el => {
+          const val = el.getAttribute(attr);
+          const cleaned = attr === 'data-bs-target' ? val.replace('#', '') : val;
+          if (!SUFFIX_IDX_RE.test(cleaned)) return;
+          const renamed = cleaned.replace(SUFFIX_IDX_RE, `-${idx}`);
+          el.setAttribute(attr, attr === 'data-bs-target' ? `#${renamed}` : renamed);
+        });
+      });
+      // Reseta as abas ativas (clone pode ter herdado outra aba/sub-aba ativa)
+      newFiscal.querySelectorAll('.nav-link').forEach(btn => btn.classList.remove('active'));
+      newFiscal.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('show', 'active'));
+      const classifBtn   = newFiscal.querySelector('[id^="tab-classif-"]');
+      const classifPane  = newFiscal.querySelector('[id^="pane-classif-"]');
+      const icmsSubBtn   = newFiscal.querySelector('[id^="subtab-icms-"]');
+      const icmsSubPane  = newFiscal.querySelector('[id^="subpane-icms-"]');
+      classifBtn?.classList.add('active');
+      classifPane?.classList.add('show', 'active');
+      icmsSubBtn?.classList.add('active');
+      icmsSubPane?.classList.add('show', 'active');
+    }
+
     newMain.style.display = '';
     newMain.querySelector('.btn-toggle-fiscal i').className = 'bi bi-chevron-down';
     if (newFiscal) newFiscal.style.display = 'none';
@@ -1617,11 +1712,32 @@
   function toggleDI(fiscalRow) {
     if (!fiscalRow) return;
     const origemSel  = fiscalRow.querySelector('[name$="-origem_mercadoria"]');
+    const cfopInput  = fiscalRow.querySelector('[name$="-cfop"]');
     const diSection  = fiscalRow.querySelector('.di-section');
-    if (!origemSel || !diSection) return;
+    if (!diSection) return;
 
-    const isImportado = ORIGENS_IMPORTADO.has(origemSel.value);
-    diSection.style.display = isImportado ? '' : 'none';
+    const origem = origemSel ? origemSel.value : '';
+    const cfop   = (cfopInput ? cfopInput.value : '').replace('.', '').trim();
+    // Mostra DI se origem estrangeira OU CFOP de devolução de exportação (3xxx/drawback)
+    const isImportado     = ORIGENS_IMPORTADO.has(origem);
+    const isDevExportacao = /^3/.test(cfop);
+    const show = isImportado || isDevExportacao;
+    diSection.style.display = show ? '' : 'none';
+
+    // Aba DI: mostra/oculta o item de menu; se estava ativa e deixou de ser
+    // necessária, volta para a aba Classificação Fiscal automaticamente.
+    const diTabItem = fiscalRow.querySelector('.fiscal-tab-di');
+    if (diTabItem) {
+      const diTabBtn = diTabItem.querySelector('.nav-link');
+      const wasActive = diTabBtn?.classList.contains('active');
+      diTabItem.style.display = show ? '' : 'none';
+      if (!show && wasActive) {
+        const classifTabBtn = fiscalRow.querySelector('[id^="tab-classif-"]');
+        if (classifTabBtn && window.bootstrap?.Tab) {
+          bootstrap.Tab.getOrCreateInstance(classifTabBtn).show();
+        }
+      }
+    }
 
     // AFRMM só para via marítima (via=1)
     const viaSel   = fiscalRow.querySelector('[name$="-di_via_transporte"]');
@@ -1653,13 +1769,20 @@
     if (wrap) wrap.style.display = CST_DESON.has(String(cst).padStart ? String(cst) : '') ? '' : 'none';
   }
 
+  function bindDIRow(fr) {
+    const origemSel = fr.querySelector('[name$="-origem_mercadoria"]');
+    const cfopInput = fr.querySelector('[name$="-cfop"]');
+    if (origemSel) origemSel.addEventListener('change', () => toggleDI(fr));
+    if (cfopInput) {
+      cfopInput.addEventListener('input',  () => toggleDI(fr));
+      cfopInput.addEventListener('change', () => toggleDI(fr));
+    }
+    toggleDI(fr);
+  }
+
   // Aplica a todos os fiscalRows existentes
   document.querySelectorAll('.item-fiscal-row').forEach(fr => {
-    const origemSel = fr.querySelector('[name$="-origem_mercadoria"]');
-    if (origemSel) {
-      origemSel.addEventListener('change', () => toggleDI(fr));
-      toggleDI(fr);
-    }
+    bindDIRow(fr);
     const cstInput = fr.querySelector('[name$="-cst_icms"]');
     if (cstInput) {
       cstInput.addEventListener('input', () => toggleDeson(fr, cstInput.value));
@@ -1673,11 +1796,7 @@
     new MutationObserver(mutations => {
       mutations.forEach(m => m.addedNodes.forEach(node => {
         if (node.classList?.contains('item-fiscal-row')) {
-          const origemSel = node.querySelector('[name$="-origem_mercadoria"]');
-          if (origemSel) {
-            origemSel.addEventListener('change', () => toggleDI(node));
-            toggleDI(node);
-          }
+          bindDIRow(node);
           const cstInput = node.querySelector('[name$="-cst_icms"]');
           if (cstInput) {
             cstInput.addEventListener('input', () => toggleDeson(node, cstInput.value));
@@ -1832,26 +1951,47 @@
   }, true); // capture = true, roda antes do listener de fetch
 })();
 
-// ── Toggle Cliente / Fornecedor conforme finalidade_nfe ──────────────────
+// ── Toggle Cliente / Fornecedor conforme finalidade_nfe e CFOP ──────────
 (function () {
-  const finalidadeSel = document.getElementById('id_finalidade_nfe');
+  const finalidadeSel  = document.getElementById('id_finalidade_nfe');
+  const cfopInput      = document.getElementById('id_cfop');
   const campoCliente   = document.getElementById('campo-cliente');
   const campoFornecedor = document.getElementById('campo-fornecedor');
   const campoChaveRef   = document.getElementById('campo-chave-ref');
   if (!finalidadeSel || !campoCliente || !campoFornecedor) return;
 
-  function toggleDestinatario() {
+  function usaFornecedor() {
     const isDevolucao = finalidadeSel.value === '4';
-    campoCliente.style.display   = isDevolucao ? 'none' : '';
-    campoFornecedor.style.display = isDevolucao ? '' : 'none';
-    if (campoChaveRef) campoChaveRef.style.display = isDevolucao ? '' : 'none';
+    const cfop = ((cfopInput ? cfopInput.value : '') || '').replace(/\D/g, '');
+    // Entrada (CFOP 1xxx/2xxx/3xxx) ou devolução → destinatário é Fornecedor
+    const isEntrada = /^[123]/.test(cfop);
+    return isDevolucao || isEntrada;
+  }
+
+  function toggleDestinatario() {
+    const fornecedor = usaFornecedor();
+    const isDevolucao = finalidadeSel.value === '4';
+    campoCliente.style.display    = fornecedor ? 'none' : '';
+    campoFornecedor.style.display = fornecedor ? ''     : 'none';
     // Limpa o campo que ficou oculto para não enviar valor residual
-    if (isDevolucao) {
+    if (fornecedor) {
       const sel = document.getElementById('id_cliente');
       if (sel) sel.value = '';
     } else {
       const sel = document.getElementById('id_fornecedor');
       if (sel) sel.value = '';
+    }
+    // Badge/hint: distingue devolução de compra de entrada normal (ex: produtor rural)
+    const badge = document.getElementById('badge-fornecedor-motivo');
+    const hint  = document.getElementById('hint-fornecedor');
+    if (badge && hint) {
+      if (isDevolucao) {
+        badge.textContent = 'Devolução';
+        hint.textContent = 'Destinatário em NF-e de devolução de compra (finalidade 4).';
+      } else {
+        badge.textContent = 'Entrada';
+        hint.textContent = 'Destinatário em NF-e de entrada (CFOP 1xxx/2xxx/3xxx) — ex: compra de produtor rural sem nota fiscal.';
+      }
     }
   }
 
@@ -1863,10 +2003,15 @@
     const campoRef = document.getElementById('campo-chave-ref');
     if (campoRef) campoRef.style.display = (isDevolucao || temFornecedor) ? '' : 'none';
   }
-  finalidadeSel.addEventListener('change', function() {
+
+  finalidadeSel.addEventListener('change', function () {
     toggleDestinatario();
     toggleCampoRef();
   });
+  if (cfopInput) {
+    cfopInput.addEventListener('change', toggleDestinatario);
+    cfopInput.addEventListener('input',  toggleDestinatario);
+  }
   toggleCampoRef();
   // Não chama toggleDestinatario() na inicialização — o estado inicial
   // já vem correto via atributo style do Django template (nf.fornecedor_id).

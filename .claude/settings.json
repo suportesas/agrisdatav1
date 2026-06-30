@@ -52,7 +52,10 @@
       "Bash(/c/erp_agricola_novo/venv/Scripts/python.exe manage.py migrate)",
       "Bash(/c/erp_agricola_novo/venv/Scripts/python.exe -c \"import ast; ast.parse\\(open\\('faturamento/forms.py'\\).read\\(\\)\\); print\\('OK'\\)\")",
       "Bash(/c/erp_agricola_novo/venv/Scripts/python.exe -c ' *)",
-      "Bash(/c/erp_agricola_novo/venv/Scripts/python.exe manage.py check)"
+      "Bash(/c/erp_agricola_novo/venv/Scripts/python.exe manage.py check)",
+      "Bash(python manage.py check)",
+      "Bash(./venv/Scripts/python.exe manage.py check)",
+      "Bash(./venv/Scripts/python.exe -c ' *)"
     ]
   }
 }

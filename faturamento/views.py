@@ -1561,6 +1561,41 @@ def nota_fiscal_clone(request, pk):
     return redirect('faturamento:nota_fiscal_update', pk=nf.pk)
 
 
+# Mapeamento SEFAZ: CFOP de saída → CFOP de devolução (entrada)
+_CFOP_DEV = {
+    # Vendas internas (5xxx) → devoluções internas (1xxx)
+    '5101': '1201', '5102': '1202', '5103': '1202', '5104': '1202',
+    '5105': '1202', '5106': '1202', '5109': '1202', '5110': '1202',
+    '5111': '1201', '5112': '1201', '5113': '1202', '5114': '1202',
+    '5115': '1202', '5116': '1202', '5117': '1202', '5118': '1201',
+    '5120': '1202', '5122': '1202', '5123': '1202',
+    '5401': '1401', '5403': '1403', '5405': '1405', '5410': '1410',
+    # Vendas interestaduais (6xxx) → devoluções interestaduais (2xxx)
+    '6101': '2201', '6102': '2202', '6103': '2202', '6104': '2202',
+    '6105': '2202', '6106': '2202', '6109': '2202', '6110': '2202',
+    '6111': '2201', '6112': '2201', '6113': '2202', '6114': '2202',
+    '6115': '2202', '6116': '2202', '6117': '2202', '6118': '2201',
+    '6120': '2202', '6122': '2202', '6123': '2202',
+    '6401': '2401', '6403': '2403', '6405': '2405', '6410': '2410',
+    # Exportações (7xxx) → devoluções do exterior (3xxx)
+    '7101': '3201', '7102': '3202', '7105': '3202', '7106': '3202',
+    '7127': '3211', '7129': '3211',
+    '7501': '3212', '7504': '3212',
+}
+
+
+def _cfop_devolucao(cfop):
+    d = (cfop or '').replace('.', '').strip()
+    if len(d) != 4:
+        return cfop
+    mapped = _CFOP_DEV.get(d)
+    if mapped:
+        return mapped
+    # Fallback: troca primeiro dígito (5→1, 6→2, 7→3)
+    novo = {'5': '1', '6': '2', '7': '3'}.get(d[0], d[0])
+    return novo + d[1:]
+
+
 @login_required
 def nota_fiscal_devolucao(request, pk):
     """Cria rascunho de NF-e de devolução a partir de uma NF de saída autorizada."""
@@ -1606,22 +1641,14 @@ def nota_fiscal_devolucao(request, pk):
         nf_dev.natureza_operacao       = 'DEVOLUÇÃO DE VENDA'
         nf_dev.nota_mae                = None
         nf_dev.status_faturamento      = 'NAO_APLICA'
-        # CFOP cabeçalho: 5xxx → 1xxx, 6xxx → 2xxx
-        cfop_cab = nf_dev.cfop or ''
-        if cfop_cab.startswith('5'):
-            nf_dev.cfop = '1' + cfop_cab[1:]
-        elif cfop_cab.startswith('6'):
-            nf_dev.cfop = '2' + cfop_cab[1:]
+        # CFOP cabeçalho: converte via tabela SEFAZ (7127→3211, 6101→2201, etc.)
+        nf_dev.cfop = _cfop_devolucao(nf_dev.cfop)
         nf_dev.save()
 
         for item in itens:
-            cfop_item = item.cfop or ''
             item.pk          = None
             item.nota_fiscal = nf_dev
-            if cfop_item.startswith('5'):
-                item.cfop = '1' + cfop_item[1:]
-            elif cfop_item.startswith('6'):
-                item.cfop = '2' + cfop_item[1:]
+            item.cfop        = _cfop_devolucao(item.cfop)
             item.save()
 
     messages.info(

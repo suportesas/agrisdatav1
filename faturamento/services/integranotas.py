@@ -518,13 +518,22 @@ class IntegranNotasClient:
                 entrega_block['cpf'] = doc_entrega
             payload['local_entrega'] = entrega_block
 
-        # NF-e Referenciada — obrigatória para devolução (finalidade 4)
-        chave_ref = (getattr(nf, 'chave_nfe_referenciada', '') or '').strip()
-        if not chave_ref and getattr(nf, 'recebimento_origem_id', None):
-            # Fallback: lê diretamente do recebimento de origem
-            chave_ref = (getattr(nf.recebimento_origem, 'chave_nfe', '') or '').strip()
-        if chave_ref and len(chave_ref) == 44:
-            payload['notas_referenciadas'] = [{'nfe': {'chave': chave_ref}}]
+        # NF-e Referenciada — obrigatória para devolução e para Nota Mãe de agrupamento
+        refs = []
+        # Prioridade 1: modelo NFeReferenciada (Nota Mãe com N filhas referenciadas)
+        for ref in nf.nfes_referenciadas.all():
+            chave = (ref.chave_acesso_referenciada or '').strip()
+            if len(chave) == 44:
+                refs.append({'nfe': {'chave': chave}})
+        # Prioridade 2: campo singular (devolução simples ou recebimento de origem)
+        if not refs:
+            chave_ref = (getattr(nf, 'chave_nfe_referenciada', '') or '').strip()
+            if not chave_ref and getattr(nf, 'recebimento_origem_id', None):
+                chave_ref = (getattr(nf.recebimento_origem, 'chave_nfe', '') or '').strip()
+            if chave_ref and len(chave_ref) == 44:
+                refs.append({'nfe': {'chave': chave_ref}})
+        if refs:
+            payload['notas_referenciadas'] = refs
 
         # Cobrança (duplicatas)
         duplicatas = list(nf.duplicatas.all()) if hasattr(nf, 'duplicatas') else []

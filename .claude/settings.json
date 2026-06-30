@@ -44,7 +44,15 @@
       "Bash(.venv/Scripts/python.exe manage.py makemigrations compras --name planejamento_compras_embalagem)",
       "PowerShell(& \"c:\\\\erp_agricola_novo\\\\venv\\\\Scripts\\\\python.exe\" \"c:\\\\erp_agricola_novo\\\\manage.py\" makemigrations compras --name planejamento_compras_embalagem 2>&1)",
       "PowerShell(& \"c:\\\\erp_agricola_novo\\\\venv\\\\Scripts\\\\python.exe\" \"c:\\\\erp_agricola_novo\\\\manage.py\" migrate compras 2>&1)",
-      "PowerShell(& \"c:\\\\erp_agricola_novo\\\\venv\\\\Scripts\\\\python.exe\" \"c:\\\\erp_agricola_novo\\\\manage.py\" check compras 2>&1)"
+      "PowerShell(& \"c:\\\\erp_agricola_novo\\\\venv\\\\Scripts\\\\python.exe\" \"c:\\\\erp_agricola_novo\\\\manage.py\" check compras 2>&1)",
+      "Bash(python manage.py makemigrations faturamento --name notafiscal_agrupamento_fields)",
+      "Bash(python -m site)",
+      "PowerShell(& \".venv\\\\Scripts\\\\python.exe\" manage.py makemigrations faturamento --name notafiscal_agrupamento_fields 2>&1)",
+      "Bash(/c/erp_agricola_novo/venv/Scripts/python.exe manage.py makemigrations faturamento --name notafiscal_agrupamento_fields)",
+      "Bash(/c/erp_agricola_novo/venv/Scripts/python.exe manage.py migrate)",
+      "Bash(/c/erp_agricola_novo/venv/Scripts/python.exe -c \"import ast; ast.parse\\(open\\('faturamento/forms.py'\\).read\\(\\)\\); print\\('OK'\\)\")",
+      "Bash(/c/erp_agricola_novo/venv/Scripts/python.exe -c ' *)",
+      "Bash(/c/erp_agricola_novo/venv/Scripts/python.exe manage.py check)"
     ]
   }
 }

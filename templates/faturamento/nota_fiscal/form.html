@@ -75,7 +75,7 @@
                 <div class="form-text">Destinatário em NF-e de devolução de compra (finalidade 4).</div>
               </div>
               <div class="col-md-12" id="campo-chave-ref"
-                   {% if not nf or not nf.fornecedor_id %}style="display:none"{% endif %}>
+                   {% if not nf or not nf.fornecedor_id and nf.finalidade_nfe != '4' %}style="display:none"{% endif %}>
                 <label class="form-label">
                   Chave NF-e Referenciada
                   <span class="badge bg-danger ms-1" style="font-size:.7rem">Obrigatória</span>
@@ -88,6 +88,28 @@
                 <label class="form-label">Data de Emissão *</label>
                 {{ form.data_emissao }}
               </div>
+              <!-- Tipo de Operação — Faturamento Agrupado -->
+              <div class="col-md-12">
+                <div class="border rounded p-3" style="background:#f5f3ff;border-color:#c4b5fd !important;">
+                  <div class="row g-2 align-items-center">
+                    <div class="col-md-4">
+                      <label class="form-label fw-semibold mb-1">
+                        <i class="bi bi-diagram-3 me-1" style="color:#7c3aed;"></i>Tipo de Operação
+                      </label>
+                      {{ form.tipo_operacao }}
+                      {% if form.tipo_operacao.errors %}<div class="text-danger small">{{ form.tipo_operacao.errors }}</div>{% endif %}
+                    </div>
+                    <div class="col-md-8 d-flex align-items-center">
+                      <small class="text-muted" id="tipo-op-hint">
+                        <span id="hint-venda"><i class="bi bi-cart me-1"></i>NF-e de venda direta (fluxo padrão).</span>
+                        <span id="hint-remessa" style="display:none"><i class="bi bi-box-arrow-right me-1 text-warning"></i><strong>Remessa:</strong> baixa o estoque físico agora. O faturamento (financeiro) ocorre depois, na Nota Mãe.</span>
+                        <span id="hint-faturamento" style="display:none"><i class="bi bi-file-earmark-check me-1 text-success"></i><strong>Faturamento:</strong> consolida remessas anteriores. Não move estoque.</span>
+                        <span id="hint-outro" style="display:none"><i class="bi bi-arrow-left-right me-1"></i>Operação especial — preencha CFOP manualmente.</span>
+                      </small>
+                    </div>
+                  </div>
+                </div>
+              </div>
               <div class="col-md-6">
                 <label class="form-label">Natureza da Operação *</label>
                 {{ form.natureza_operacao }}
@@ -97,7 +119,9 @@
                 {{ form.finalidade_nfe }}
               </div>
               <div class="col-md-3">
-                <label class="form-label">CFOP Padrão</label>
+                <label class="form-label">CFOP Padrão
+                  <span id="badge-tp-nf" class="badge ms-1 bg-secondary" style="font-size:.7rem;" title="Tipo NF derivado do CFOP (tpNF)">—</span>
+                </label>
                 {{ form.cfop }}
               </div>
               <div class="col-md-3">
@@ -380,6 +404,7 @@
                   <tr>
                     <th style="width:40px" class="text-center">#</th>
                     <th style="width:185px">Produto</th>
+                    <th style="width:130px" class="th-lote">Lote</th>
                     <th>Descrição</th>
                     <th style="width:75px">UN</th>
                     <th style="width:110px">Qtd.</th>
@@ -392,7 +417,7 @@
                     <th style="width:72px" class="text-center"><i class="bi bi-gear text-muted"></i></th>
                   </tr>
                 </thead>
-                {% if formset.non_form_errors or formset.errors %}
+                {% if formset.total_error_count %}
                 <tbody>
                   <tr><td colspan="99">
                     <div class="alert alert-danger small mb-0 py-2 px-3">
@@ -420,6 +445,10 @@
                       <span class="item-seq fw-semibold text-primary" style="font-size:.85rem">{{ forloop.counter }}</span>
                     </td>
                     <td>{{ item_form.produto }}</td>
+                    <td class="td-lote">
+                      {{ item_form.lote }}
+                      {% if item_form.lote.errors %}<div class="text-danger" style="font-size:.7rem">{{ item_form.lote.errors }}</div>{% endif %}
+                    </td>
                     <td>{{ item_form.descricao }}</td>
                     <td>{{ item_form.unidade }}</td>
                     <td>{{ item_form.quantidade }}</td>
@@ -1714,6 +1743,8 @@
 })();
 </script>
 
+{% include 'faturamento/_help_faturamento_agrupado.html' %}
+
 {% endblock %}
 
 {% block extra_js %}
@@ -1824,9 +1855,92 @@
     }
   }
 
-  finalidadeSel.addEventListener('change', toggleDestinatario);
+  // Visibilidade do campo chave referenciada: aparece para fornecedor (devolução compra)
+  // OU quando finalidade_nfe = 4 (devolução de venda para cliente)
+  function toggleCampoRef() {
+    const isDevolucao = finalidadeSel.value === '4';
+    const temFornecedor = !!(document.getElementById('id_fornecedor')?.value);
+    const campoRef = document.getElementById('campo-chave-ref');
+    if (campoRef) campoRef.style.display = (isDevolucao || temFornecedor) ? '' : 'none';
+  }
+  finalidadeSel.addEventListener('change', function() {
+    toggleDestinatario();
+    toggleCampoRef();
+  });
+  toggleCampoRef();
   // Não chama toggleDestinatario() na inicialização — o estado inicial
   // já vem correto via atributo style do Django template (nf.fornecedor_id).
+})();
+</script>
+
+<!-- Badge tpNF dinâmico no campo CFOP -->
+<script>
+(function () {
+  const cfopInput  = document.getElementById('id_cfop');
+  const badgeTpNf  = document.getElementById('badge-tp-nf');
+  if (!cfopInput || !badgeTpNf) return;
+  function atualizarTpNf() {
+    const v = (cfopInput.value || '').trim().replace(/\D/g, '');
+    if (/^[12]/.test(v)) {
+      badgeTpNf.className = 'badge ms-1 bg-info text-dark';
+      badgeTpNf.textContent = '↓ Entrada';
+      badgeTpNf.title = 'tpNF=0 (Entrada) — CFOP iniciado em 1 ou 2';
+    } else if (/^[567]/.test(v)) {
+      badgeTpNf.className = 'badge ms-1 bg-success';
+      badgeTpNf.textContent = '↑ Saída';
+      badgeTpNf.title = 'tpNF=1 (Saída) — CFOP iniciado em 5, 6 ou 7';
+    } else {
+      badgeTpNf.className = 'badge ms-1 bg-secondary';
+      badgeTpNf.textContent = '—';
+      badgeTpNf.title = 'Tipo NF derivado do CFOP (tpNF)';
+    }
+  }
+  cfopInput.addEventListener('input', atualizarTpNf);
+  atualizarTpNf();
+})();
+</script>
+
+<!-- Tipo de Operação: hint dinâmico + visibilidade coluna Lote -->
+<script>
+(function () {
+  const tipoSel   = document.getElementById('id_tipo_operacao');
+  const thLote    = document.querySelector('.th-lote');
+  const tdLotes   = () => document.querySelectorAll('.td-lote');
+
+  const hints = {
+    VENDA:       document.getElementById('hint-venda'),
+    REMESSA:     document.getElementById('hint-remessa'),
+    FATURAMENTO: document.getElementById('hint-faturamento'),
+  };
+
+  function atualizarTipoOp() {
+    const val = tipoSel ? tipoSel.value : 'VENDA';
+
+    // Hint informativo
+    Object.values(hints).forEach(h => { if (h) h.style.display = 'none'; });
+    const hint = hints[val] || document.getElementById('hint-outro');
+    if (hint) hint.style.display = '';
+
+    // Coluna Lote: visível apenas para REMESSA
+    const mostrarLote = (val === 'REMESSA');
+    if (thLote) thLote.style.display = mostrarLote ? '' : 'none';
+    tdLotes().forEach(td => { td.style.display = mostrarLote ? '' : 'none'; });
+
+    // Preenche sugestão de Natureza da Operação automaticamente
+    const natInput = document.getElementById('id_natureza_operacao');
+    if (natInput && !natInput.dataset.userEdited) {
+      if (val === 'REMESSA')     natInput.value = 'REMESSA PARA FATURAMENTO POSTERIOR';
+      if (val === 'VENDA')       natInput.value = '';
+    }
+  }
+
+  if (tipoSel) {
+    tipoSel.addEventListener('change', atualizarTipoOp);
+    // Marca edição manual para não sobrescrever
+    const natInput = document.getElementById('id_natureza_operacao');
+    if (natInput) natInput.addEventListener('input', () => { natInput.dataset.userEdited = '1'; });
+    atualizarTipoOp();
+  }
 })();
 </script>
 {% endblock %}

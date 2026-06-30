@@ -65,6 +65,26 @@ class ConfiguracaoFiscal(models.Model):
     natureza_operacao_padrao = models.CharField('Natureza da Operação Padrão', max_length=100, default='VENDA DE MERCADORIA')
     observacoes_padrao_nfe = models.TextField('Obs. Padrão NF-e', blank=True)
     observacoes_padrao_invoice = models.TextField('Obs. Padrão Invoice', blank=True)
+
+    # ── Faturamento Agrupado — configurações ─────────────────────────────────
+    FINANCEIRO_REMESSA_CHOICES = [
+        ('DESABILITADO', 'Não criar automaticamente'),
+        ('NOTA_MAE', 'Criar na autorização da Nota Mãe'),
+        ('NOTAS_FILHAS', 'Criar na autorização de cada Nota Filha'),
+    ]
+    financeiro_remessa_origem = models.CharField(
+        'Contas a Receber — Faturamento Agrupado',
+        max_length=20,
+        choices=FINANCEIRO_REMESSA_CHOICES,
+        default='NOTA_MAE',
+    )
+    remessa_lote_obrigatorio = models.BooleanField(
+        'Lote obrigatório nas NF-e de Remessa',
+        default=True,
+        help_text='Quando ativo, impede emissão de NF Remessa sem lote em todos os itens. '
+                  'Desative para operações em que rastreabilidade por lote não é exigida.',
+    )
+
     token_integranotas = models.CharField('Token IntegraNota', max_length=500, blank=True, help_text='Bearer token da API IntegraNota')
     ambiente_nfe = models.CharField('Ambiente NF-e', max_length=1, choices=AMBIENTE_NFE, default='2', help_text='2=Homologação (testes), 1=Produção')
     numero_nfe_inicial = models.PositiveIntegerField(
@@ -268,6 +288,43 @@ class NotaFiscal(FaturamentoBaseModel):
     data_hora_emissao = models.DateTimeField('Data/Hora de Emissão SEFAZ', null=True, blank=True)
     motivo_cancelamento = models.CharField('Motivo do Cancelamento', max_length=255, blank=True)
     data_cancelamento = models.DateTimeField('Data/Hora do Cancelamento', null=True, blank=True)
+
+    # ── Faturamento Agrupado (Remessa → Faturamento) ─────────────────────────
+    TIPO_OPERACAO_CHOICES = [
+        ('VENDA', 'Venda Direta'),
+        ('REMESSA', 'Remessa para Faturamento Posterior'),
+        ('FATURAMENTO', 'Faturamento de Remessas Anteriores'),
+        ('DEVOLUCAO', 'Devolução'),
+        ('COMPLEMENTAR', 'Complementar'),
+    ]
+    STATUS_FATURAMENTO_CHOICES = [
+        ('NAO_APLICA', 'Não se aplica'),
+        ('PENDENTE', 'Aguardando Faturamento'),
+        ('FATURADA', 'Faturada'),
+    ]
+    tipo_operacao = models.CharField(
+        'Tipo de Operação',
+        max_length=20,
+        choices=TIPO_OPERACAO_CHOICES,
+        default='VENDA',
+        db_index=True,
+    )
+    status_faturamento = models.CharField(
+        'Status do Faturamento',
+        max_length=20,
+        choices=STATUS_FATURAMENTO_CHOICES,
+        default='NAO_APLICA',
+        db_index=True,
+    )
+    nota_mae = models.ForeignKey(
+        'self',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='notas_filhas',
+        verbose_name='Nota Mãe (Faturamento)',
+        help_text='Preenchido automaticamente ao fechar o lote de faturamento.',
+    )
 
     # ── Manifestação do Destinatário (MD-e) ─────────────────────────────────────
     manifestacao_tipo = models.CharField('Tipo de Manifestação', max_length=40, blank=True)
@@ -489,6 +546,17 @@ class ItemNotaFiscal(models.Model):
     complemento_descricao = models.CharField('Complemento da Descrição', max_length=500, blank=True,
                                 help_text='Informações adicionais do produto para o DANFE (infAdProd)')
 
+    # ── Rastreabilidade de lote (Remessa / Faturamento Agrupado) ────────────
+    lote = models.ForeignKey(
+        'estoque.Lote',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='itens_nota_fiscal',
+        verbose_name='Lote (Rastreabilidade)',
+        help_text='Lote do produto — obrigatório para NF-e de Remessa quando configurado.',
+    )
+
     # ── Rastreabilidade de devolução de compra ───────────────────────────────
     item_recebimento_origem = models.ForeignKey(
         'compras.ItemRecebimento',
@@ -679,6 +747,49 @@ class InutilizacaoNFe(models.Model):
 
     def __str__(self):
         return f'Inut. {self.serie}/{self.numero_ini}-{self.numero_fim} ({self.ano})'
+
+
+class NFeReferenciada(models.Model):
+    """Referências de NF-e no grupo <NFref> da NF-e Mãe de faturamento agrupado.
+
+    Suporta N referências (uma por Nota Filha de remessa).
+    """
+    nota_fiscal = models.ForeignKey(
+        NotaFiscal,
+        on_delete=models.CASCADE,
+        related_name='nfes_referenciadas',
+        verbose_name='Nota Fiscal',
+    )
+    chave_acesso_referenciada = models.CharField(
+        'Chave de Acesso Referenciada',
+        max_length=44,
+    )
+    numero_referenciado = models.PositiveIntegerField(
+        'Número NF Referenciada',
+        null=True,
+        blank=True,
+    )
+    data_emissao_referenciada = models.DateField(
+        'Data Emissão Referenciada',
+        null=True,
+        blank=True,
+    )
+
+    class Meta:
+        verbose_name = 'NF-e Referenciada'
+        verbose_name_plural = 'NF-es Referenciadas'
+        unique_together = (('nota_fiscal', 'chave_acesso_referenciada'),)
+        indexes = [
+            models.Index(fields=['chave_acesso_referenciada'], name='idx_nfe_ref_chave'),
+        ]
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        if self.chave_acesso_referenciada and len(self.chave_acesso_referenciada) != 44:
+            raise ValidationError('A chave de acesso referenciada deve ter exatamente 44 dígitos.')
+
+    def __str__(self):
+        return f'NFref {self.numero_referenciado} → {self.nota_fiscal}'
 
 
 class InvoiceExportacao(FaturamentoBaseModel):

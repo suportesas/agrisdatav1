@@ -23,6 +23,7 @@ urlpatterns = [
     path('notas-fiscais/<int:pk>/danfe-preview/', views.nota_fiscal_danfe_preview, name='nota_fiscal_danfe_preview'),
     path('notas-fiscais/<int:pk>/xml/', views.nota_fiscal_xml, name='nota_fiscal_xml'),
     path('notas-fiscais/<int:pk>/clonar/', views.nota_fiscal_clone, name='nota_fiscal_clone'),
+    path('notas-fiscais/<int:pk>/devolucao/', views.nota_fiscal_devolucao, name='nota_fiscal_devolucao'),
     path('notas-fiscais/<int:pk>/carta-correcao/', views.nota_fiscal_carta_correcao, name='nota_fiscal_carta_correcao'),
     path('notas-fiscais/<int:nf_pk>/cce/<int:cc_pk>/print/', views.nfe_cce_print, name='nfe_cce_print'),
     path('notas-fiscais/<int:nf_pk>/cce/<int:cc_pk>/xml/', views.nfe_cce_xml, name='nfe_cce_xml'),
@@ -104,6 +105,11 @@ urlpatterns = [
     # Histórico de Cotações BCB
     path('cotacoes-bcb/', views.cotacoes_bcb_list, name='cotacoes_bcb_list'),
     path('cotacoes-bcb/buscar-hoje/', views.cotacoes_bcb_buscar_hoje, name='cotacoes_bcb_buscar_hoje'),
+
+    # Faturamento Agrupado
+    path('remessas-pendentes/', views.remessas_pendentes, name='remessas_pendentes'),
+    path('fechar-lote/', views.fechar_lote, name='fechar_lote'),
+    path('gerar-nota-mae/', views.gerar_nota_mae, name='gerar_nota_mae'),
 
     # AJAX
     path('ajax/produto/<int:pk>/', views.ajax_produto_detail, name='ajax_produto_detail'),

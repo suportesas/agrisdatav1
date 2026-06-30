@@ -1,0 +1,237 @@
+{% extends 'base.html' %}
+{% block title %}Fechamento de Lote — Prévia da Nota Mãe{% endblock %}
+{% block page_title %}Fechamento de Lote{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+  <div class="d-flex align-items-center mb-3 gap-3">
+    <a href="{% url 'faturamento:remessas_pendentes' %}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left me-1"></i>Voltar
+    </a>
+    <h2 class="mb-0">
+      <i class="bi bi-file-earmark-check me-2 text-primary"></i>
+      Prévia da Nota Fiscal Mãe
+    </h2>
+  </div>
+
+  {% if messages %}
+    {% for msg in messages %}
+      <div class="alert alert-{{ msg.tags|default:'info' }} alert-dismissible fade show" role="alert">
+        {{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <form method="post" action="{% url 'faturamento:gerar_nota_mae' %}" id="form-nota-mae">
+    {% csrf_token %}
+
+    <!-- Campos ocultos: IDs das notas selecionadas -->
+    {% for nid in notas_ids %}
+      <input type="hidden" name="notas_ids" value="{{ nid }}">
+    {% endfor %}
+
+    <!-- CABEÇALHO -->
+    <div class="card shadow-sm border-0 mb-3">
+      <div class="card-header bg-primary text-white">
+        <i class="bi bi-person-check me-2"></i>Cabeçalho do Faturamento
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold small">Cliente</label>
+            <p class="form-control-plaintext fw-semibold">
+              {{ cliente.razao_social }}
+              <small class="text-muted">({{ cliente.cnpj_cpf }})</small>
+            </p>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold small">Período das Remessas</label>
+            <p class="form-control-plaintext">
+              {{ periodo_de|date:"d/m/Y" }} a {{ periodo_ate|date:"d/m/Y" }}
+            </p>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold small" for="id_data_emissao">Data de Emissão da NF Mãe</label>
+            <input type="date"
+                   name="data_emissao"
+                   id="id_data_emissao"
+                   value="{{ data_emissao_hoje|date:'Y-m-d' }}"
+                   class="form-control">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold small" for="id_cfop">CFOP</label>
+            <select name="cfop" id="id_cfop" class="form-select">
+              {% for val, label in cfops_faturamento %}
+                <option value="{{ val }}" {% if val == cfop_sugerido %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold small" for="id_natureza">Natureza da Operação</label>
+            <input type="text"
+                   name="natureza_operacao"
+                   id="id_natureza"
+                   value="FATURAMENTO DE REMESSAS ANTERIORES"
+                   class="form-control">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- NOTAS REFERENCIADAS -->
+    <div class="card shadow-sm border-0 mb-3">
+      <div class="card-header bg-light d-flex align-items-center gap-2">
+        <i class="bi bi-lock text-secondary"></i>
+        <span class="fw-semibold">Notas Referenciadas</span>
+        <span class="badge bg-secondary ms-1">{{ notas|length }}</span>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-sm table-bordered mb-0 align-middle">
+            <thead class="table-light">
+              <tr>
+                <th>NF #</th>
+                <th>Data</th>
+                <th class="text-end">Valor</th>
+                <th>Chave de Acesso</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for nf in notas %}
+              <tr>
+                <td>{{ nf.numero|stringformat:"06d" }}</td>
+                <td>{{ nf.data_emissao|date:"d/m/Y" }}</td>
+                <td class="text-end">R$ {{ nf.valor_total|floatformat:2 }}</td>
+                <td class="font-monospace small text-muted">{{ nf.chave_acesso }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ITENS CONSOLIDADOS -->
+    <div class="card shadow-sm border-0 mb-3">
+      <div class="card-header bg-light d-flex align-items-center gap-2">
+        <i class="bi bi-lock text-secondary"></i>
+        <span class="fw-semibold">Itens Consolidados</span>
+        <small class="text-muted">(agrupados por Produto + Lote)</small>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-sm table-bordered mb-0 align-middle">
+            <thead class="table-light">
+              <tr>
+                <th>Produto</th>
+                <th>Lote</th>
+                <th class="text-end">Qtd Total</th>
+                <th>Un</th>
+                <th class="text-end">Valor Unit.</th>
+                <th class="text-end">Subtotal</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in itens_consolidados %}
+              <tr>
+                <td>{{ item.descricao }}</td>
+                <td>
+                  {% if item.lote %}
+                    <span class="badge bg-info text-dark">{{ item.lote }}</span>
+                  {% else %}
+                    <span class="text-muted">—</span>
+                  {% endif %}
+                </td>
+                <td class="text-end">{{ item.quantidade|floatformat:4 }}</td>
+                <td>{{ item.unidade }}</td>
+                <td class="text-end">R$ {{ item.valor_unitario|floatformat:4 }}</td>
+                <td class="text-end fw-semibold">R$ {{ item.valor_total|floatformat:2 }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TOTAIS -->
+    <div class="card shadow-sm border-0 mb-3">
+      <div class="card-header bg-light d-flex align-items-center gap-2">
+        <i class="bi bi-lock text-secondary"></i>
+        <span class="fw-semibold">Totais</span>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-4 offset-md-8">
+            <table class="table table-sm mb-0">
+              <tr>
+                <td class="text-muted">Valor Produtos</td>
+                <td class="text-end fw-semibold">R$ {{ valor_total|floatformat:2 }}</td>
+              </tr>
+              <tr>
+                <td class="text-muted">Valor Desconto</td>
+                <td class="text-end">R$ 0,00</td>
+              </tr>
+              <tr class="table-primary">
+                <td class="fw-bold">Valor Total</td>
+                <td class="text-end fw-bold fs-5">R$ {{ valor_total|floatformat:2 }}</td>
+              </tr>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- INFORMAÇÕES COMPLEMENTARES -->
+    <div class="card shadow-sm border-0 mb-4">
+      <div class="card-header bg-light fw-semibold">
+        <i class="bi bi-chat-left-text me-2"></i>Informações Complementares
+      </div>
+      <div class="card-body">
+        <textarea name="informacoes_complementares"
+                  class="form-control font-monospace"
+                  rows="8"
+                  id="id_infcpl">{{ infcpl }}</textarea>
+        <small class="text-muted">Pré-preenchido automaticamente. Edite se necessário.</small>
+      </div>
+    </div>
+
+    <!-- AÇÕES -->
+    <div class="d-flex justify-content-between">
+      <a href="{% url 'faturamento:remessas_pendentes' %}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i>Voltar e Reeditar
+      </a>
+      <button type="submit" id="btn-gerar" class="btn btn-success btn-lg">
+        <i class="bi bi-check-circle-fill me-2"></i>Gerar Nota Fiscal Mãe
+      </button>
+    </div>
+
+  </form>
+
+</div>
+
+{% include 'faturamento/_help_faturamento_agrupado.html' %}
+
+<!-- Loading overlay -->
+<div id="loading-overlay"
+     class="position-fixed top-0 start-0 w-100 h-100 bg-dark bg-opacity-50 d-none"
+     style="z-index:2000;">
+  <div class="d-flex justify-content-center align-items-center h-100">
+    <div class="text-center text-white">
+      <div class="spinner-border mb-3" role="status" style="width:3rem;height:3rem;"></div>
+      <p class="fs-5 fw-semibold">Gerando e transmitindo à SEFAZ…</p>
+      <p class="small text-light">Aguarde, não feche esta janela.</p>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.getElementById('form-nota-mae').addEventListener('submit', function() {
+    document.getElementById('btn-gerar').disabled = true;
+    document.getElementById('loading-overlay').classList.remove('d-none');
+  });
+</script>
+{% endblock %}

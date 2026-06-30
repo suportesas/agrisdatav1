@@ -1,0 +1,170 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block title %}Remessas Pendentes de Faturamento{% endblock %}
+{% block page_title %}Remessas Pendentes de Faturamento{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2><i class="bi bi-clock-history me-2 text-warning"></i>Remessas Pendentes de Faturamento</h2>
+    <a href="{% url 'faturamento:nota_fiscal_create' %}" class="btn btn-primary">
+      <i class="bi bi-plus-circle me-1"></i>Nova Remessa
+    </a>
+  </div>
+
+  {% if messages %}
+    {% for msg in messages %}
+      <div class="alert alert-{{ msg.tags|default:'info' }} alert-dismissible fade show" role="alert">
+        {{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- Filtros -->
+  <form method="get" class="card card-body mb-3 shadow-sm border-0">
+    <div class="row g-2 align-items-end">
+      <div class="col-md-4">
+        <label class="form-label small mb-1">Cliente</label>
+        <select name="cliente_id" class="form-select select2-cliente" id="id_cliente_filtro">
+          <option value="">Todos os clientes</option>
+          {% for c in clientes %}
+            <option value="{{ c.pk }}" {% if c.pk|stringformat:"s" == cliente_id_sel %}selected{% endif %}>
+              {{ c.razao_social }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label small mb-1">De</label>
+        <input type="date" name="data_de" value="{{ data_de }}" class="form-control">
+      </div>
+      <div class="col-md-2">
+        <label class="form-label small mb-1">Até</label>
+        <input type="date" name="data_ate" value="{{ data_ate }}" class="form-control">
+      </div>
+      <div class="col-md-2 d-flex gap-2">
+        <button type="submit" class="btn btn-outline-primary flex-fill">
+          <i class="bi bi-search me-1"></i>Buscar
+        </button>
+        <a href="{% url 'faturamento:remessas_pendentes' %}" class="btn btn-outline-secondary">Limpar</a>
+      </div>
+    </div>
+  </form>
+
+  <!-- Tabela de remessas -->
+  <form id="form-selecao" method="post" action="{% url 'faturamento:fechar_lote' %}">
+    {% csrf_token %}
+
+    <div class="card shadow-sm border-0">
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover table-bordered align-middle mb-0" id="tabela-remessas">
+            <thead class="table-light">
+              <tr>
+                <th style="width:40px">
+                  <input type="checkbox" id="chk-todos" class="form-check-input" title="Selecionar todas visíveis">
+                </th>
+                <th>NF #</th>
+                <th>Data</th>
+                <th>Cliente</th>
+                <th class="text-end">Valor</th>
+                <th>CFOP</th>
+                <th>Status Fat.</th>
+                <th>Chave</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for nf in notas %}
+              <tr>
+                <td class="text-center">
+                  <input type="checkbox"
+                         name="notas_ids"
+                         value="{{ nf.pk }}"
+                         class="form-check-input chk-nota"
+                         data-valor="{{ nf.valor_total }}"
+                         data-cliente-id="{{ nf.cliente_id }}"
+                         data-cliente-nome="{{ nf.cliente.razao_social }}">
+                </td>
+                <td>
+                  <a href="{% url 'faturamento:nota_fiscal_detail' nf.pk %}" target="_blank">
+                    {{ nf.numero|stringformat:"06d" }}
+                  </a>
+                </td>
+                <td>{{ nf.data_emissao|date:"d/m/Y" }}</td>
+                <td>{{ nf.cliente.razao_social }}</td>
+                <td class="text-end">R$ {{ nf.valor_total|floatformat:2 }}</td>
+                <td><span class="badge bg-secondary">{{ nf.cfop }}</span></td>
+                <td><span class="badge bg-warning text-dark">Pendente</span></td>
+                <td>
+                  {% if nf.chave_acesso %}
+                    <span title="{{ nf.chave_acesso }}"
+                          data-bs-toggle="tooltip"
+                          class="text-muted font-monospace small">
+                      {{ nf.chave_acesso|slice:":8" }}…
+                    </span>
+                  {% else %}
+                    <span class="text-muted small">—</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="8" class="text-center text-muted py-4">
+                  <i class="bi bi-inbox fs-3 d-block mb-2"></i>
+                  Nenhuma remessa pendente encontrada.
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+            {% if notas %}
+            <tfoot class="table-light">
+              <tr>
+                <td colspan="4" class="text-end fw-semibold">Total geral:</td>
+                <td class="text-end fw-semibold">R$ {{ total_geral|floatformat:2 }}</td>
+                <td colspan="3"></td>
+              </tr>
+            </tfoot>
+            {% endif %}
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Barra sticky de resumo -->
+    <div id="barra-selecao"
+         class="position-fixed bottom-0 start-0 end-0 bg-dark text-white d-none"
+         style="z-index:1050; padding: 0.75rem 1.5rem;">
+      <div class="d-flex justify-content-between align-items-center">
+        <span>
+          <i class="bi bi-check2-square me-2"></i>
+          <span id="qtd-selecionadas">0</span> nota(s) selecionada(s) &mdash;
+          <strong>Total: R$ <span id="total-selecionado">0,00</span></strong>
+          <small class="ms-3 text-muted" id="nome-cliente-sel"></small>
+        </span>
+        <button type="submit" id="btn-fechar-lote" class="btn btn-warning fw-semibold" disabled>
+          <i class="bi bi-lightning-fill me-1"></i>Fechar Lote de Faturamento
+        </button>
+      </div>
+    </div>
+
+  </form>
+
+</div>
+{% endblock %}
+
+{% include 'faturamento/_help_faturamento_agrupado.html' %}
+
+{% block extra_js %}
+<script src="{{ STATIC_URL }}faturamento/js/remessas_pendentes.js"></script>
+<script>
+  // Ativa tooltips do Bootstrap
+  document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
+    new bootstrap.Tooltip(el);
+  });
+  // Select2 para o filtro de cliente (se disponível)
+  if (typeof $ !== 'undefined' && $.fn.select2) {
+    $('#id_cliente_filtro').select2({ theme: 'bootstrap-5', placeholder: 'Todos os clientes', allowClear: true });
+  }
+</script>
+{% endblock %}

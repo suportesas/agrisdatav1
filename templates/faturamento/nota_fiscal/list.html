@@ -125,6 +125,15 @@
                     <i class="bi bi-copy me-2 text-secondary"></i>Clonar NF-e
                   </a>
                 </li>
+                {% if nf.status == 'EMITIDA' and nf.finalidade_nfe != '4' and nf.chave_acesso %}
+                <li><hr class="dropdown-divider"></li>
+                <li>
+                  <a class="dropdown-item text-warning" href="{% url 'faturamento:nota_fiscal_devolucao' nf.pk %}"
+                     onclick="return confirm('Criar rascunho de NF-e de devolução?\n\nOs CFOPs serão convertidos automaticamente (5xxx→1xxx).')">
+                    <i class="bi bi-arrow-return-left me-2"></i>Criar Devolução
+                  </a>
+                </li>
+                {% endif %}
                 {% if nf.status == 'EMITIDA' %}
                 <li><hr class="dropdown-divider"></li>
                 <li>

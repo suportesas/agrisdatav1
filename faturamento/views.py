@@ -139,6 +139,21 @@ def _registrar_baixa_devolucao(nf):
             item_nf.produto.save(update_fields=['estoque_atual'])
 
 
+def _processar_autorizacao_agrupamento(nf):
+    """Dispara lógica de faturamento agrupado após SEFAZ autorizar a NF-e."""
+    from .services.agrupamento import processar_autorizacao_remessa, processar_autorizacao_faturamento
+    try:
+        if nf.tipo_operacao == 'REMESSA':
+            processar_autorizacao_remessa(nf)
+        elif nf.tipo_operacao == 'FATURAMENTO':
+            processar_autorizacao_faturamento(nf)
+    except Exception as exc:
+        import logging
+        logging.getLogger(__name__).error(
+            'Erro ao processar agrupamento pós-autorização NF %s: %s', nf.pk, exc
+        )
+
+
 def _get_empresa(request):
     return request.user.empresa
 
@@ -802,6 +817,7 @@ def nota_fiscal_emitir_ajax(request, pk):
                         _extra2 = _upload_fiscal_docs(nf, nf.empresa_id, 'nfe', nf.numero, nf.serie, xml2, pdf2)
                         nf.save(update_fields=list(dict.fromkeys(_base_f + _extra2)))
                         _registrar_baixa_devolucao(nf)
+                        _processar_autorizacao_agrupamento(nf)
                         steps.append({'status': 'authorized', 'label': 'NF-e Autorizada (recuperada) ✓',
                                       'protocolo': protocolo2, 'chave': chave_5008})
                         return JsonResponse({
@@ -885,6 +901,7 @@ def nota_fiscal_emitir_ajax(request, pk):
     _extra = _upload_fiscal_docs(nf, nf.empresa_id, 'nfe', nf.numero, nf.serie, xml_b64, pdf_b64)
     nf.save(update_fields=list(dict.fromkeys(_base_fields + _extra)))
     _registrar_baixa_devolucao(nf)
+    _processar_autorizacao_agrupamento(nf)
     steps.append({'status': 'authorized', 'label': 'NF-e Autorizada pela SEFAZ ✓',
                   'protocolo': protocolo, 'chave': chave})
     return JsonResponse({
@@ -969,6 +986,7 @@ def nota_fiscal_emitir(request, pk):
             _extra = _upload_fiscal_docs(nf, nf.empresa_id, 'nfe', nf.numero, nf.serie, xml_b64, pdf_b64)
             nf.save(update_fields=list(dict.fromkeys(_base + _extra)))
             _registrar_baixa_devolucao(nf)
+            _processar_autorizacao_agrupamento(nf)
             messages.success(request, f'NF {nf.numero}/{nf.serie} autorizada! Chave: {chave}')
 
     except IntegranNotasError as exc:
@@ -1045,6 +1063,15 @@ def nota_fiscal_cancelar(request, pk):
         messages.warning(request, 'NF-e já está cancelada.')
         return redirect('faturamento:nota_fiscal_detail', pk=pk)
 
+    # Bloqueia cancelamento de NF filha já faturada
+    if nf.status_faturamento == 'FATURADA':
+        messages.error(
+            request,
+            'Esta NF-e de remessa já foi faturada (vinculada à Nota Mãe). '
+            'Para cancelá-la é necessário cancelar a Nota Mãe primeiro.'
+        )
+        return redirect('faturamento:nota_fiscal_detail', pk=pk)
+
     if request.method == 'POST':
         form = NotaFiscalCancelarForm(request.POST)
         if form.is_valid():
@@ -1065,6 +1092,11 @@ def nota_fiscal_cancelar(request, pk):
                 except Exception as exc:
                     messages.error(request, f'Falha na comunicação com IntegraNota: {exc}')
                     return render(request, 'faturamento/nota_fiscal/cancelar_form.html', {'form': form, 'nf': nf})
+
+            # Estorno de estoque para remessa pendente
+            if nf.status_faturamento == 'PENDENTE':
+                from .services.agrupamento import registrar_estorno_remessa
+                registrar_estorno_remessa(nf)
 
             nf.status = 'CANCELADA'
             nf.motivo_cancelamento = justificativa
@@ -1527,6 +1559,77 @@ def nota_fiscal_clone(request, pk):
 
     messages.success(request, f'NF-e clonada como rascunho #{nf.pk}. Revise os dados antes de emitir.')
     return redirect('faturamento:nota_fiscal_update', pk=nf.pk)
+
+
+@login_required
+def nota_fiscal_devolucao(request, pk):
+    """Cria rascunho de NF-e de devolução a partir de uma NF de saída autorizada."""
+    from datetime import date
+    from django.db import transaction
+
+    empresa = _get_empresa(request)
+    nf_orig = get_object_or_404(NotaFiscal, pk=pk, empresa=empresa)
+
+    if nf_orig.status != 'EMITIDA' or not nf_orig.chave_acesso:
+        messages.error(request, 'Devolução só pode ser criada a partir de uma NF-e autorizada pela SEFAZ.')
+        return redirect('faturamento:nota_fiscal_detail', pk=pk)
+
+    if nf_orig.finalidade_nfe == '4':
+        messages.error(request, 'Não é possível criar devolução de uma NF-e que já é de devolução.')
+        return redirect('faturamento:nota_fiscal_detail', pk=pk)
+
+    itens = list(nf_orig.itens.all())
+
+    with transaction.atomic():
+        nf_dev = NotaFiscal.objects.get(pk=pk)
+        nf_dev.pk                  = None
+        nf_dev.numero              = None
+        nf_dev.chave_acesso        = ''
+        nf_dev.protocolo_autorizacao = ''
+        nf_dev.xml_autorizacao     = ''
+        nf_dev.xml_autorizacao_url = ''
+        nf_dev.pdf_danfe           = ''
+        nf_dev.pdf_danfe_url       = ''
+        nf_dev.status              = 'RASCUNHO'
+        nf_dev.data_hora_emissao   = None
+        nf_dev.motivo_cancelamento = ''
+        nf_dev.data_cancelamento   = None
+        nf_dev.manifestacao_tipo      = ''
+        nf_dev.manifestacao_protocolo = ''
+        nf_dev.manifestacao_data      = None
+        nf_dev.data_emissao        = date.today()
+        nf_dev.data_saida          = None
+        # Campos de devolução
+        nf_dev.finalidade_nfe          = '4'
+        nf_dev.tipo_operacao           = 'DEVOLUCAO'
+        nf_dev.chave_nfe_referenciada  = nf_orig.chave_acesso
+        nf_dev.natureza_operacao       = 'DEVOLUÇÃO DE VENDA'
+        nf_dev.nota_mae                = None
+        nf_dev.status_faturamento      = 'NAO_APLICA'
+        # CFOP cabeçalho: 5xxx → 1xxx, 6xxx → 2xxx
+        cfop_cab = nf_dev.cfop or ''
+        if cfop_cab.startswith('5'):
+            nf_dev.cfop = '1' + cfop_cab[1:]
+        elif cfop_cab.startswith('6'):
+            nf_dev.cfop = '2' + cfop_cab[1:]
+        nf_dev.save()
+
+        for item in itens:
+            cfop_item = item.cfop or ''
+            item.pk          = None
+            item.nota_fiscal = nf_dev
+            if cfop_item.startswith('5'):
+                item.cfop = '1' + cfop_item[1:]
+            elif cfop_item.startswith('6'):
+                item.cfop = '2' + cfop_item[1:]
+            item.save()
+
+    messages.info(
+        request,
+        f'Rascunho de devolução criado (NF #{nf_dev.pk}). '
+        f'Verifique o CFOP, CST e demais dados fiscais antes de emitir.'
+    )
+    return redirect('faturamento:nota_fiscal_update', pk=nf_dev.pk)
 
 
 @login_required
@@ -4683,4 +4786,216 @@ def mdfe_clonar(request, pk):
 
     messages.success(request, f'MDF-e clonado com sucesso. Edite os dados antes de emitir.')
     return redirect('faturamento:mdfe_update', pk=novo.pk)
+
+
+# ═══════════════════════════════════════════════════════════════════
+#  FATURAMENTO AGRUPADO — Remessas Pendentes e Nota Mãe
+# ═══════════════════════════════════════════════════════════════════
+
+@login_required
+def remessas_pendentes(request):
+    """Tela A — Dashboard de NF-es de Remessa aguardando faturamento."""
+    empresa = _get_empresa(request)
+
+    qs = NotaFiscal.objects.filter(
+        empresa=empresa,
+        tipo_operacao='REMESSA',
+        status='EMITIDA',
+        status_faturamento='PENDENTE',
+    ).select_related('cliente').order_by('cliente__razao_social', 'data_emissao')
+
+    # Filtros opcionais
+    cliente_id = request.GET.get('cliente_id', '').strip()
+    data_de = request.GET.get('data_de', '').strip()
+    data_ate = request.GET.get('data_ate', '').strip()
+
+    if cliente_id:
+        qs = qs.filter(cliente_id=cliente_id)
+    if data_de:
+        qs = qs.filter(data_emissao__gte=data_de)
+    if data_ate:
+        qs = qs.filter(data_emissao__lte=data_ate)
+
+    from cadastros.models import Cliente
+    clientes = Cliente.objects.filter(empresa=empresa, ativo=True).order_by('razao_social')
+
+    return render(request, 'faturamento/remessas_pendentes.html', {
+        'notas': qs,
+        'clientes': clientes,
+        'cliente_id_sel': cliente_id,
+        'data_de': data_de,
+        'data_ate': data_ate,
+        'total_geral': qs.aggregate(t=Sum('valor_total'))['t'] or 0,
+    })
+
+
+@login_required
+@require_POST
+def fechar_lote(request):
+    """Tela B — Prévia da Nota Mãe. Processa em memória, não persiste."""
+    from django.core.exceptions import ValidationError as DjValidationError
+    from .services.agrupamento import (
+        validar_selecao_notas,
+        consolidar_itens_para_nota_mae,
+        gerar_infcpl_faturamento,
+        inferir_cfop_faturamento,
+    )
+
+    empresa = _get_empresa(request)
+    notas_ids = request.POST.getlist('notas_ids')
+
+    try:
+        notas = validar_selecao_notas(notas_ids, empresa)
+    except DjValidationError as exc:
+        messages.error(request, ' '.join(exc.messages))
+        return redirect('faturamento:remessas_pendentes')
+
+    notas_list = list(notas.order_by('data_emissao'))
+    cliente = notas_list[0].cliente
+    itens_consolidados = consolidar_itens_para_nota_mae(notas_list)
+    infcpl = gerar_infcpl_faturamento(notas_list)
+    cfop_sugerido = inferir_cfop_faturamento(empresa, cliente)
+
+    # Período das remessas
+    datas = [nf.data_emissao for nf in notas_list]
+    periodo_de = min(datas)
+    periodo_ate = max(datas)
+
+    valor_total = sum(nf.valor_total for nf in notas_list)
+
+    CFOPS_FATURAMENTO = [
+        ('5116', '5.116 — Venda de produção própria (interno)'),
+        ('5117', '5.117 — Venda de mercadoria adquirida (interno)'),
+        ('6116', '6.116 — Venda de produção própria (interestadual)'),
+        ('6117', '6.117 — Venda de mercadoria adquirida (interestadual)'),
+    ]
+
+    return render(request, 'faturamento/fechar_lote_preview.html', {
+        'notas': notas_list,
+        'notas_ids': notas_ids,
+        'cliente': cliente,
+        'periodo_de': periodo_de,
+        'periodo_ate': periodo_ate,
+        'itens_consolidados': itens_consolidados,
+        'infcpl': infcpl,
+        'cfop_sugerido': cfop_sugerido,
+        'cfops_faturamento': CFOPS_FATURAMENTO,
+        'valor_total': valor_total,
+        'data_emissao_hoje': timezone.now().date(),
+    })
+
+
+@login_required
+@require_POST
+def gerar_nota_mae(request):
+    """Cria a Nota Mãe e emite para a SEFAZ (síncrono)."""
+    from django.core.exceptions import ValidationError as DjValidationError
+    from .services.agrupamento import validar_selecao_notas, criar_nota_mae, inferir_cfop_faturamento, gerar_infcpl_faturamento, consolidar_itens_para_nota_mae
+    from .services.integranotas import IntegranNotasClient, IntegranNotasError
+    import datetime
+
+    empresa = _get_empresa(request)
+    notas_ids = request.POST.getlist('notas_ids')
+
+    try:
+        notas = validar_selecao_notas(notas_ids, empresa)
+    except DjValidationError as exc:
+        messages.error(request, ' '.join(exc.messages))
+        return redirect('faturamento:remessas_pendentes')
+
+    notas_list = list(notas.order_by('data_emissao'))
+    cliente = notas_list[0].cliente
+
+    # Campos editáveis da prévia
+    data_emissao_str = request.POST.get('data_emissao', str(timezone.now().date()))
+    try:
+        data_emissao = datetime.date.fromisoformat(data_emissao_str)
+    except ValueError:
+        data_emissao = timezone.now().date()
+
+    cfop = request.POST.get('cfop', inferir_cfop_faturamento(empresa, cliente))
+    natureza_operacao = request.POST.get(
+        'natureza_operacao', 'FATURAMENTO DE REMESSAS ANTERIORES'
+    )
+    informacoes_complementares = request.POST.get(
+        'informacoes_complementares', gerar_infcpl_faturamento(notas_list)
+    )
+
+    try:
+        nota_mae = criar_nota_mae(
+            notas_filhas=notas_list,
+            data_emissao=data_emissao,
+            cfop=cfop,
+            natureza_operacao=natureza_operacao,
+            informacoes_complementares=informacoes_complementares,
+            empresa=empresa,
+            usuario=request.user,
+        )
+    except DjValidationError as exc:
+        messages.error(request, 'Erro ao criar Nota Mãe: ' + ' '.join(exc.messages))
+        return redirect('faturamento:remessas_pendentes')
+    except Exception as exc:
+        messages.error(request, f'Erro inesperado ao criar Nota Mãe: {exc}')
+        return redirect('faturamento:remessas_pendentes')
+
+    # Tenta emitir para SEFAZ
+    config = ConfiguracaoFiscal.objects.filter(empresa=empresa).first()
+    if config and config.has_token:
+        try:
+            from .services.integranotas import IntegranNotasClient
+            client = IntegranNotasClient(config.get_token(), config.ambiente_nfe)
+            resultado = client.emitir_nfe(nota_mae)
+            codigo = resultado.get('codigo')
+            if codigo == 100:
+                chave = resultado.get('chave', '')
+                protocolo = resultado.get('protocolo', '')
+                xml_b64 = resultado.get('xml', '')
+                pdf_b64 = resultado.get('pdf', '')
+                nota_mae.chave_acesso = chave
+                nota_mae.protocolo_autorizacao = protocolo
+                nota_mae.xml_autorizacao = xml_b64
+                nota_mae.pdf_danfe = pdf_b64
+                nota_mae.status = 'EMITIDA'
+                nota_mae.data_hora_emissao = timezone.now()
+                nota_mae.atualizado_por = request.user
+                _base = ['chave_acesso', 'protocolo_autorizacao', 'xml_autorizacao',
+                         'pdf_danfe', 'status', 'data_hora_emissao', 'atualizado_por']
+                _extra = _upload_fiscal_docs(
+                    nota_mae, nota_mae.empresa_id, 'nfe',
+                    nota_mae.numero, nota_mae.serie, xml_b64, pdf_b64
+                )
+                nota_mae.save(update_fields=list(dict.fromkeys(_base + _extra)))
+                _processar_autorizacao_agrupamento(nota_mae)
+                messages.success(
+                    request,
+                    f'Nota Mãe NF {nota_mae.numero}/{nota_mae.serie} gerada e autorizada! '
+                    f'Chave: {chave}'
+                )
+            else:
+                msg_sefaz = resultado.get('mensagem', f'Código {codigo}')
+                messages.warning(
+                    request,
+                    f'Nota Mãe criada como Rascunho. SEFAZ retornou: {msg_sefaz}. '
+                    'Emita manualmente pela tela de detalhes.'
+                )
+        except IntegranNotasError as exc:
+            messages.error(
+                request,
+                f'Nota Mãe criada como Rascunho. Erro SEFAZ [{exc.codigo}]: {exc}. '
+                'Emita manualmente pela tela de detalhes.'
+            )
+        except Exception as exc:
+            messages.error(
+                request,
+                f'Nota Mãe criada como Rascunho. Falha na comunicação: {exc}. '
+                'Emita manualmente pela tela de detalhes.'
+            )
+    else:
+        messages.info(
+            request,
+            'Nota Mãe criada como Rascunho (token IntegraNota não configurado). '
+            'Emita manualmente pela tela de detalhes.'
+        )
+
+    return redirect('faturamento:nota_fiscal_detail', pk=nota_mae.pk)
 

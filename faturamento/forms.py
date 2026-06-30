@@ -309,6 +309,8 @@ class NotaFiscalForm(FaturamentoBaseForm):
             'intermediador_id_cadastro',
             # Documento referenciado (devolução)
             'chave_nfe_referenciada',
+            # Faturamento Agrupado
+            'tipo_operacao',
         ]
         _fc = {'class': 'form-control form-control-sm'}
         widgets = {
@@ -364,6 +366,8 @@ class NotaFiscalForm(FaturamentoBaseForm):
             'intermediador_id_cadastro': forms.TextInput(attrs={**_fc, 'placeholder': 'Ex: login, CPF, código na plataforma'}),
             # Documento referenciado (devolução)
             'chave_nfe_referenciada': forms.TextInput(attrs={**_fc, 'placeholder': '44 dígitos — chave da NF-e original devolvida', 'maxlength': '44'}),
+            # Faturamento Agrupado
+            'tipo_operacao': forms.Select(attrs={'class': 'form-select'}),
         }
 
     def __init__(self, *args, empresa=None, **kwargs):
@@ -396,6 +400,8 @@ class NotaFiscalForm(FaturamentoBaseForm):
             raise forms.ValidationError(
                 'Informe o Cliente (NF-e normal) ou o Fornecedor (NF-e de devolução de compra).'
             )
+        if cleaned.get('tipo_operacao') == 'REMESSA' and not cleaned.get('cliente'):
+            self.add_error('cliente', 'Cliente é obrigatório para NF-e de Remessa.')
         return cleaned
 
 
@@ -460,13 +466,21 @@ class ItemNotaFiscalForm(forms.ModelForm):
 
     def __init__(self, *args, empresa=None, **kwargs):
         super().__init__(*args, **kwargs)
+        self._empresa = empresa
         from produtos.models import Produto
         if empresa:
             self.fields['produto'].queryset = Produto.objects.filter(
                 categoria__empresa=empresa, ativo=True
             ).select_related('unidade_venda').order_by('codigo', 'nome')
+            from estoque.models import Lote
+            self.fields['lote'].queryset = Lote.objects.filter(
+                empresa=empresa, status='DISPONIVEL'
+            ).select_related('produto').order_by('produto__nome', 'numero_lote')
         else:
             self.fields['produto'].queryset = Produto.objects.none()
+            from estoque.models import Lote
+            self.fields['lote'].queryset = Lote.objects.none()
+        self.fields['lote'].required = False
         for f in self._DECIMAL_ZERO_FIELDS:
             self.fields[f].required = False
             self.fields[f].initial = Decimal('0')
@@ -490,6 +504,17 @@ class ItemNotaFiscalForm(forms.ModelForm):
             if val is not None:
                 try:
                     cleaned_data[f] = val.quantize(Decimal('0.000001'), rounding=ROUND_HALF_UP)
+                except Exception:
+                    pass
+        # Validação de lote obrigatório para NF de Remessa (configurável por empresa)
+        nota_tipo = self.data.get('tipo_operacao')
+        if nota_tipo == 'REMESSA' and not cleaned_data.get('lote'):
+            empresa = self._empresa
+            if empresa:
+                try:
+                    cfg = empresa.configuracao_fiscal
+                    if cfg.remessa_lote_obrigatorio:
+                        self.add_error('lote', 'Lote obrigatório para itens de NF-e de Remessa (configuração da empresa).')
                 except Exception:
                     pass
         return cleaned_data
@@ -527,6 +552,8 @@ class ItemNotaFiscalForm(forms.ModelForm):
             'fcp_aliquota', 'fcp_st_aliquota',
             # Complemento
             'complemento_descricao',
+            # Rastreabilidade
+            'lote',
         ]
         widgets = {
             'numero_item': forms.HiddenInput(),
@@ -606,6 +633,8 @@ class ItemNotaFiscalForm(forms.ModelForm):
             # Complemento
             'complemento_descricao': forms.TextInput(attrs={**_sm, 'maxlength': '500',
                                                             'placeholder': 'Complemento para DANFE (infAdProd)'}),
+            # Rastreabilidade
+            'lote': forms.Select(attrs=_sm_sel),
         }
 
 

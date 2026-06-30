@@ -36,6 +36,14 @@
       <a href="{% url 'faturamento:nota_fiscal_clone' nf.pk %}" class="btn btn-outline-secondary" title="Clonar esta NF-e como novo rascunho">
         <i class="bi bi-copy me-1"></i>Clonar
       </a>
+      {% if nf.status == 'EMITIDA' and nf.finalidade_nfe != '4' and nf.chave_acesso %}
+      <a href="{% url 'faturamento:nota_fiscal_devolucao' nf.pk %}"
+         class="btn btn-outline-warning"
+         title="Criar rascunho de NF-e de devolução desta nota"
+         onclick="return confirm('Criar rascunho de NF-e de devolução para esta nota?\n\nOs itens e CFOP serão ajustados automaticamente (5xxx→1xxx).')">
+        <i class="bi bi-arrow-return-left me-1"></i>Criar Devolução
+      </a>
+      {% endif %}
       {% if nf.xml_autorizacao or nf.xml_autorizacao_url %}
       <a href="{% url 'faturamento:nota_fiscal_xml' nf.pk %}" class="btn btn-outline-success" title="Baixar XML autorizado pela SEFAZ">
         <i class="bi bi-file-earmark-code me-1"></i>XML
@@ -180,6 +188,72 @@
         {% endif %}
       </div>
     </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {# ── Documentos Referenciados (devolução simples ou Nota Mãe de agrupamento) ── #}
+  {% if nf.chave_nfe_referenciada or nf.nfes_referenciadas.exists %}
+  <div class="border rounded py-2 px-3 mb-3" style="border-color:#c4b5fd !important;background:#f5f3ff;">
+    <div class="d-flex align-items-center gap-2 mb-2">
+      <i class="bi bi-link-45deg" style="color:#7c3aed;font-size:1.1rem;"></i>
+      <small class="fw-semibold" style="color:#7c3aed;">Documentos Referenciados</small>
+      {% if nf.nfes_referenciadas.exists %}
+        <span class="badge bg-light text-dark border" style="font-size:.7rem;">{{ nf.nfes_referenciadas.count }} NF(s)</span>
+      {% endif %}
+    </div>
+    {% if nf.nfes_referenciadas.exists %}
+      {# Nota Mãe — múltiplas filhas referenciadas #}
+      <div class="table-responsive">
+        <table class="table table-sm mb-0" style="font-size:.85rem;">
+          <thead class="table-light">
+            <tr><th>NF #</th><th>Data Emissão</th><th>Chave de Acesso</th></tr>
+          </thead>
+          <tbody>
+            {% for ref in nf.nfes_referenciadas.all %}
+            <tr>
+              <td>{% if ref.numero_referenciado %}{{ ref.numero_referenciado|stringformat:"06d" }}{% else %}—{% endif %}</td>
+              <td>{% if ref.data_emissao_referenciada %}{{ ref.data_emissao_referenciada|date:"d/m/Y" }}{% else %}—{% endif %}</td>
+              <td>
+                <code class="small text-muted" title="{{ ref.chave_acesso_referenciada }}">
+                  {{ ref.chave_acesso_referenciada|slice:":20" }}…{{ ref.chave_acesso_referenciada|slice:"-4:" }}
+                </code>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% elif nf.chave_nfe_referenciada %}
+      {# Devolução simples — referência única #}
+      <div>
+        <small class="text-muted d-block mb-1">Chave da NF-e referenciada ({{ nf.get_finalidade_nfe_display }})</small>
+        <code class="small" style="word-break:break-all;">{{ nf.chave_nfe_referenciada }}</code>
+      </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {# ── Vínculo Nota Mãe / Filha (faturamento agrupado) ── #}
+  {% if nf.nota_mae %}
+  <div class="alert alert-success py-2 px-3 mb-3 d-flex align-items-center gap-2">
+    <i class="bi bi-diagram-2 text-success"></i>
+    <span>Faturada pela
+      <a href="{% url 'faturamento:nota_fiscal_detail' nf.nota_mae.pk %}" class="fw-semibold">
+        NF-e Mãe Nº {{ nf.nota_mae.numero|stringformat:"09d" }}
+      </a>
+    </span>
+    <span class="badge bg-success ms-1">{{ nf.get_status_faturamento_display }}</span>
+  </div>
+  {% endif %}
+  {% if nf.notas_filhas.exists %}
+  <div class="alert alert-info py-2 px-3 mb-3 d-flex align-items-center gap-2 flex-wrap">
+    <i class="bi bi-diagram-3 text-info"></i>
+    <span class="fw-semibold">Nota Mãe — consolida {{ nf.notas_filhas.count }} remessa(s):</span>
+    {% for filha in nf.notas_filhas.all %}
+      <a href="{% url 'faturamento:nota_fiscal_detail' filha.pk %}" class="badge bg-light text-dark border">
+        Nº {{ filha.numero|stringformat:"06d" }}
+      </a>
     {% endfor %}
   </div>
   {% endif %}

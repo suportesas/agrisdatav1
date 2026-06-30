@@ -21,6 +21,7 @@ from .models import (
     ItemNotaFiscal,
     ItemPackingList,
     ManifestoDocumentoFiscal,
+    NFeReferenciada,
     NotaFiscal,
     PackingList,
     PagamentoFreteMDFe,
@@ -689,6 +690,34 @@ class DuplicataNFForm(forms.ModelForm):
 DuplicataNFFormSet = inlineformset_factory(
     NotaFiscal, DuplicataNF,
     form=DuplicataNFForm,
+    extra=0, can_delete=True, min_num=0,
+)
+
+
+class NFeReferenciadaForm(forms.ModelForm):
+    class Meta:
+        model = NFeReferenciada
+        fields = ['chave_acesso_referenciada', 'numero_referenciado', 'data_emissao_referenciada']
+        widgets = {
+            'chave_acesso_referenciada': forms.TextInput(attrs={
+                'class': 'form-control form-control-sm',
+                'placeholder': '44 dígitos da chave de acesso',
+                'maxlength': '44',
+            }),
+            'numero_referenciado': forms.NumberInput(attrs={
+                'class': 'form-control form-control-sm',
+                'placeholder': 'Nº NF',
+            }),
+            'data_emissao_referenciada': forms.DateInput(attrs={
+                'class': 'form-control form-control-sm',
+                'type': 'date',
+            }, format='%Y-%m-%d'),
+        }
+
+
+NFeReferenciadaFormSet = inlineformset_factory(
+    NotaFiscal, NFeReferenciada,
+    form=NFeReferenciadaForm,
     extra=0, can_delete=True, min_num=0,
 )
 

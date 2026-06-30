@@ -52,6 +52,7 @@
     {{ formset.management_form }}
     {{ pag_formset.management_form }}
     {{ dup_formset.management_form }}
+    {{ ref_formset.management_form }}
 
     <div class="row g-3">
 
@@ -934,6 +935,60 @@
         </div>
       </div>
 
+      <!-- ── Documentos Referenciados ────────────────────────────────── -->
+      <div class="col-12">
+        <div class="card border-0 shadow-sm">
+          <div class="card-header fw-semibold d-flex justify-content-between align-items-center">
+            <span><i class="bi bi-link-45deg me-2" style="color:#7c3aed"></i>Documentos Referenciados <small class="text-muted fw-normal ms-1">(NFref — SEFAZ)</small></span>
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="add-referencia" title="Adicionar referência">
+              <i class="bi bi-plus-lg"></i> Adicionar
+            </button>
+          </div>
+          {% if ref_formset.non_form_errors or ref_formset.errors %}
+          <div class="alert alert-danger small m-2 mb-0 py-2">
+            {{ ref_formset.non_form_errors }}
+            {% for err in ref_formset.errors %}{% if err %}{{ err }}{% endif %}{% endfor %}
+          </div>
+          {% endif %}
+          <div class="card-body p-0">
+            <table class="table table-sm mb-0" id="ref-table">
+              <thead class="table-light">
+                <tr>
+                  <th>Chave de Acesso NF-e Referenciada <small class="text-muted fw-normal">(44 dígitos)</small></th>
+                  <th style="width:100px">Nº NF</th>
+                  <th style="width:130px">Data Emissão</th>
+                  <th style="width:42px"></th>
+                </tr>
+              </thead>
+              <tbody id="ref-body">
+                {% for rf in ref_formset %}
+                <tr class="ref-row">
+                  {{ rf.id }}
+                  <td>
+                    <div class="d-none">{{ rf.DELETE }}</div>
+                    {{ rf.chave_acesso_referenciada }}
+                    {% if rf.chave_acesso_referenciada.errors %}<div class="text-danger" style="font-size:.7rem">{{ rf.chave_acesso_referenciada.errors }}</div>{% endif %}
+                  </td>
+                  <td>{{ rf.numero_referenciado }}</td>
+                  <td>{{ rf.data_emissao_referenciada }}</td>
+                  <td class="text-center">
+                    <button type="button" class="btn btn-outline-danger btn-sm remove-ref" style="padding:1px 6px" title="Remover">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          <div class="card-footer text-muted small">
+            <i class="bi bi-info-circle me-1"></i>
+            Referências são enviadas no bloco <code>&lt;NFref&gt;</code> da SEFAZ — obrigatório para devolução e NF-e de faturamento agrupado.
+            O campo "Chave NF-e Referenciada" do cabeçalho (devolução simples) continua funcionando independentemente.
+          </div>
+        </div>
+      </div>
+
       <!-- ── Informações Complementares ──────────────────────────────── -->
       <div class="col-12">
         <div class="card border-0 shadow-sm">
@@ -995,9 +1050,11 @@
   const TOTAL_ITENS = document.getElementById('id_itens-TOTAL_FORMS');
   const TOTAL_PAG   = document.getElementById('id_pagamentos-TOTAL_FORMS');
   const TOTAL_DUP   = document.getElementById('id_duplicatas-TOTAL_FORMS');
+  const TOTAL_REF   = document.getElementById('id_referencias-TOTAL_FORMS');
   const body        = document.getElementById('items-body');
   const pagBody     = document.getElementById('pag-body');
   const dupBody     = document.getElementById('dup-body');
+  const refBody     = document.getElementById('ref-body');
   const fmt = v => 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   let _nfTotal = 0;
@@ -1639,6 +1696,63 @@
     }
     TOTAL_DUP.value = idx + 1;
   });
+
+  // ── Documentos Referenciados ──────────────────────────────────────
+  function attachRemoveRef(row) {
+    row.querySelector('.remove-ref')?.addEventListener('click', function () {
+      const chk = row.querySelector('input[type=checkbox][name$="-DELETE"]');
+      if (chk) { chk.checked = true; row.style.display = 'none'; }
+      else row.remove();
+    });
+  }
+
+  if (refBody) {
+    refBody.querySelectorAll('.ref-row').forEach(attachRemoveRef);
+
+    document.getElementById('add-referencia')?.addEventListener('click', function () {
+      const idx  = parseInt(TOTAL_REF.value);
+      const rows = [...refBody.querySelectorAll('.ref-row')];
+      const tmpl = rows.at(-1);
+
+      if (!tmpl) {
+        const tr = document.createElement('tr');
+        tr.className = 'ref-row';
+        tr.innerHTML = `
+          <td>
+            <input type="hidden" name="referencias-${idx}-DELETE">
+            <input type="hidden" name="referencias-${idx}-id">
+            <input type="text" name="referencias-${idx}-chave_acesso_referenciada"
+                   class="form-control form-control-sm" maxlength="44"
+                   placeholder="44 dígitos da chave de acesso">
+          </td>
+          <td><input type="number" name="referencias-${idx}-numero_referenciado"
+                     class="form-control form-control-sm" placeholder="Nº NF"></td>
+          <td><input type="date" name="referencias-${idx}-data_emissao_referenciada"
+                     class="form-control form-control-sm"></td>
+          <td class="text-center">
+            <button type="button" class="btn btn-outline-danger btn-sm remove-ref" style="padding:1px 6px" title="Remover">
+              <i class="bi bi-trash"></i>
+            </button>
+          </td>`;
+        refBody.appendChild(tr);
+        attachRemoveRef(tr);
+        tr.querySelector('input[name$="-chave_acesso_referenciada"]')?.focus();
+      } else {
+        const newRow = tmpl.cloneNode(true);
+        newRow.querySelectorAll('input').forEach(el => {
+          el.name = el.name.replace(/-\d+-/, `-${idx}-`);
+          if (el.id) el.id = el.id.replace(/-\d+-/, `-${idx}-`);
+          if (el.type === 'checkbox') el.checked = false;
+          else el.value = '';
+        });
+        newRow.style.display = '';
+        refBody.appendChild(newRow);
+        attachRemoveRef(newRow);
+        newRow.querySelector('input[name$="-chave_acesso_referenciada"]')?.focus();
+      }
+      TOTAL_REF.value = idx + 1;
+    });
+  }
 
   // ── Pré-validação antes de salvar ─────────────────────────────────
   const nfForm    = document.getElementById('nf-form');

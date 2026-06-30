@@ -58,6 +58,7 @@ from .forms import (
     DocumentoVinculadoCTeFormSet,
     DocumentoVinculadoMDFeFormSet,
     DuplicataNFFormSet,
+    NFeReferenciadaFormSet,
     EncerrarMDFeForm,
     InvoiceExportacaoForm,
     InutilizacaoNFeForm,
@@ -298,8 +299,9 @@ def nota_fiscal_create(request):
                                         form_kwargs={'empresa': empresa})
         pag_formset = PagamentoNFFormSet(request.POST, prefix='pagamentos')
         dup_formset = DuplicataNFFormSet(request.POST, prefix='duplicatas')
+        ref_formset = NFeReferenciadaFormSet(request.POST, prefix='referencias')
         _nf_log_validation('CREATE', form, formset, pag_formset, dup_formset)
-        if form.is_valid() and formset.is_valid() and pag_formset.is_valid() and dup_formset.is_valid():
+        if form.is_valid() and formset.is_valid() and pag_formset.is_valid() and dup_formset.is_valid() and ref_formset.is_valid():
             nf = form.save(user=request.user)
             if not nf.numero:
                 ultimo = NotaFiscal.objects.filter(empresa=empresa).exclude(numero__isnull=True).order_by('-numero').first()
@@ -319,6 +321,8 @@ def nota_fiscal_create(request):
             pag_formset.save()
             dup_formset.instance = nf
             dup_formset.save()
+            ref_formset.instance = nf
+            ref_formset.save()
             # Preenche campos tributáveis (conversão CX→KG) ao salvar
             from decimal import Decimal as _Dec, ROUND_HALF_UP
             _ft = ['quantidade_tributavel', 'unidade_tributavel', 'valor_unitario_tributavel']
@@ -370,12 +374,14 @@ def nota_fiscal_create(request):
                                         form_kwargs={'empresa': empresa})
         pag_formset = PagamentoNFFormSet(prefix='pagamentos')
         dup_formset = DuplicataNFFormSet(prefix='duplicatas')
+        ref_formset = NFeReferenciadaFormSet(prefix='referencias')
 
     return render(request, 'faturamento/nota_fiscal/form.html', {
         'form': form,
         'formset': formset,
         'pag_formset': pag_formset,
         'dup_formset': dup_formset,
+        'ref_formset': ref_formset,
         'title': 'Nova Nota Fiscal',
     })
 
@@ -489,8 +495,9 @@ def nota_fiscal_update(request, pk):
                                         form_kwargs={'empresa': empresa})
         pag_formset = PagamentoNFFormSet(request.POST, instance=nf, prefix='pagamentos')
         dup_formset = DuplicataNFFormSet(request.POST, instance=nf, prefix='duplicatas')
+        ref_formset = NFeReferenciadaFormSet(request.POST, instance=nf, prefix='referencias')
         _nf_log_validation('UPDATE', form, formset, pag_formset, dup_formset)
-        if form.is_valid() and formset.is_valid() and pag_formset.is_valid() and dup_formset.is_valid():
+        if form.is_valid() and formset.is_valid() and pag_formset.is_valid() and dup_formset.is_valid() and ref_formset.is_valid():
             form.save(user=request.user)
             # Atribuir numero_item sequencial antes de salvar para evitar conflito
             # de unique_together quando o JS submete valores incorretos.
@@ -515,6 +522,7 @@ def nota_fiscal_update(request, pk):
                 _INF.objects.bulk_update(_all_it, ['numero_item'])
             pag_formset.save()
             dup_formset.save()
+            ref_formset.save()
             # Preenche campos tributáveis (conversão CX→KG) ao salvar
             from decimal import Decimal as _Dec, ROUND_HALF_UP
             _ft = ['quantidade_tributavel', 'unidade_tributavel', 'valor_unitario_tributavel']
@@ -560,12 +568,23 @@ def nota_fiscal_update(request, pk):
                                         form_kwargs={'empresa': empresa})
         pag_formset = PagamentoNFFormSet(instance=nf, prefix='pagamentos')
         dup_formset = DuplicataNFFormSet(instance=nf, prefix='duplicatas')
+        # Se a NF tem chave singular (devolução simples) mas ainda sem registro
+        # NFeReferenciada, migra automaticamente para a tabela many-to-many.
+        chave_singular = (nf.chave_nfe_referenciada or '').strip()
+        if chave_singular and len(chave_singular) == 44 and not nf.nfes_referenciadas.exists():
+            from .models import NFeReferenciada
+            NFeReferenciada.objects.create(
+                nota_fiscal=nf,
+                chave_acesso_referenciada=chave_singular,
+            )
+        ref_formset = NFeReferenciadaFormSet(instance=nf, prefix='referencias')
 
     return render(request, 'faturamento/nota_fiscal/form.html', {
         'form': form,
         'formset': formset,
         'pag_formset': pag_formset,
         'dup_formset': dup_formset,
+        'ref_formset': ref_formset,
         'nf': nf,
         'title': f'Editar NF {nf.numero}/{nf.serie}',
     })

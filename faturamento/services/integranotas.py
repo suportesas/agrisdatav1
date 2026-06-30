@@ -444,9 +444,9 @@ class IntegranNotasClient:
         except Exception:
             config = None
 
-        # tipo_operacao: 0=entrada (CFOP 1xxx/2xxx), 1=saída
+        # tipo_operacao: 0=entrada (CFOP 1xxx/2xxx/3xxx), 1=saída
         cfop_str = str(nf.cfop or '5102')
-        tipo_operacao = '0' if cfop_str.startswith(('1', '2')) else '1'
+        tipo_operacao = '0' if cfop_str.startswith(('1', '2', '3')) else '1'
 
         payload: dict = {
             'natureza_operacao': nf.natureza_operacao,
@@ -789,12 +789,15 @@ class IntegranNotasClient:
         return item_dict
 
     def _build_di(self, item) -> dict | None:
-        """Constrói o bloco DI para item importado. Retorna None se não aplicável."""
-        if item.origem_mercadoria not in ('1', '2', '6', '7'):
+        """Constrói o bloco DI para item importado ou CFOP 3xxx (devolução do exterior/drawback)."""
+        cfop = str(getattr(item, 'cfop', '') or '').strip()
+        origem = item.origem_mercadoria
+        precisa_di = (origem in ('1', '2', '6', '7')) or cfop.startswith('3')
+        if not precisa_di:
             return None
         numero = (getattr(item, 'di_numero', '') or '').strip()
         if not numero:
-            return None  # DI não informada
+            return None  # DI não informada — campos obrigatórios não preenchidos
 
         di: dict = {
             'numero':            numero,

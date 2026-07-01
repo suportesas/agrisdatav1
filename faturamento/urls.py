@@ -14,6 +14,7 @@ urlpatterns = [
     path('notas-fiscais/<int:pk>/editar/', views.nota_fiscal_update, name='nota_fiscal_update'),
     path('notas-fiscais/<int:pk>/emitir/', views.nota_fiscal_emitir, name='nota_fiscal_emitir'),
     path('notas-fiscais/<int:pk>/emitir/ajax/', views.nota_fiscal_emitir_ajax, name='nota_fiscal_emitir_ajax'),
+    path('notas-fiscais/<int:pk>/debug-payload/', views.nota_fiscal_debug_payload, name='nota_fiscal_debug_payload'),
     path('notas-fiscais/<int:pk>/cancelar/', views.nota_fiscal_cancelar, name='nota_fiscal_cancelar'),
     path('notas-fiscais/<int:pk>/consultar/', views.nota_fiscal_consultar, name='nota_fiscal_consultar'),
     path('notas-fiscais/<int:pk>/consultar/ajax/', views.nota_fiscal_consultar_ajax, name='nota_fiscal_consultar_ajax'),

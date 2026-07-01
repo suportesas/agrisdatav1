@@ -591,6 +591,31 @@ def nota_fiscal_update(request, pk):
 
 
 @login_required
+def nota_fiscal_debug_payload(request, pk):
+    """Debug: retorna o payload JSON que seria enviado ao IntegraNotas (apenas superuser)."""
+    import json as _json
+    from .services.integranotas import IntegranNotasClient
+
+    if not request.user.is_superuser:
+        from django.http import HttpResponseForbidden
+        return HttpResponseForbidden('Apenas superuser pode acessar este recurso.')
+
+    empresa = _get_empresa(request)
+    nf = get_object_or_404(NotaFiscal, pk=pk, empresa=empresa)
+    from django.conf import settings as _s
+    client = IntegranNotasClient(
+        getattr(_s, 'INTEGRANOTAS_TOKEN', ''),
+        str(getattr(_s, 'INTEGRANOTAS_CNPJ', '') or (nf.empresa.cnpj or ''))
+    )
+    try:
+        payload = client._build_payload(nf)
+    except Exception as e:
+        payload = {'erro': str(e)}
+
+    return JsonResponse(payload, json_dumps_params={'ensure_ascii': False, 'indent': 2})
+
+
+@login_required
 @require_POST
 def nota_fiscal_emitir_ajax(request, pk):
     """AJAX: valida, emite e retorna progresso passo a passo em JSON."""
@@ -754,6 +779,31 @@ def nota_fiscal_emitir_ajax(request, pk):
             faltam.append('Quantidade deve ser maior que zero')
         if (item.valor_unitario or 0) <= 0:
             faltam.append('Valor Unitário deve ser maior que zero')
+        # DI obrigatória para CFOP 3xxx — valida campos críticos
+        if cfop_digits.startswith('3') and (item.di_numero or '').strip():
+            di_num_digits = _re.sub(r'\D', '', item.di_numero or '')
+            if len(di_num_digits) > 10:
+                faltam.append(
+                    f'Nº DI "{item.di_numero}" tem {len(di_num_digits)} dígitos '
+                    f'(máx 10 — SEFAZ). Use "0000000000" para drawback sem DI real.'
+                )
+            di_campos = {
+                'Data registro DI': item.di_data_registro,
+                'Local do desembaraço': item.di_local_desembaraco,
+                'UF desembaraço': item.di_uf_desembaraco,
+                'Data desembaraço': item.di_data_desembaraco,
+                'Via de transporte': item.di_via_transporte,
+                'Código do exportador': item.di_codigo_exportador,
+                'Cód. fabricante DI': item.di_codigo_fabricante,
+            }
+            di_faltam = [k for k, v in di_campos.items() if not v]
+            if di_faltam:
+                faltam.append(f'DI incompleta — preencha: {", ".join(di_faltam)}')
+            dw = _re.sub(r'\D', '', item.di_numero_drawback or '')
+            if dw and len(dw) != 11:
+                faltam.append(f'Nº Drawback "{item.di_numero_drawback}" deve ter exatamente 11 dígitos (tem {len(dw)})')
+        elif cfop_digits.startswith('3') and not (item.di_numero or '').strip():
+            faltam.append('CFOP 3xxx exige Declaração de Importação (aba DI no item)')
         # IPI: se alíquota > 0, CST deve corresponder a saída tributada (50)
         aliq_ipi = item.aliquota_ipi or 0
         if aliq_ipi > 0:
@@ -1484,6 +1534,15 @@ def integranotas_webhook(request):
         if not nf.data_cancelamento:
             nf.data_cancelamento = timezone.now()
         nf.save(update_fields=['status', 'data_cancelamento'])
+    elif codigo and not nf.protocolo_autorizacao:
+        # Rejeição SEFAZ (ex.: 525, 539…) — reverte para RASCUNHO editável
+        nf.status = 'RASCUNHO'
+        nf.chave_acesso = ''
+        nf.save(update_fields=['status', 'chave_acesso'])
+        import logging as _log
+        _log.getLogger(__name__).warning(
+            '[Webhook NF %s] Rejeição SEFAZ código %s: %s — revertida para RASCUNHO',
+            nf.numero or 'S/N', codigo, payload.get('mensagem', ''))
 
     return HttpResponse(status=200)
 
@@ -1596,10 +1655,10 @@ _CFOP_DEV = {
     '6115': '2202', '6116': '2202', '6117': '2202', '6118': '2201',
     '6120': '2202', '6122': '2202', '6123': '2202',
     '6401': '2401', '6403': '2403', '6405': '2405', '6410': '2410',
-    # Exportações (7xxx) → devoluções do exterior (3xxx)
-    '7101': '3201', '7102': '3202', '7105': '3202', '7106': '3202',
-    '7127': '3211', '7129': '3211',
-    '7501': '3212', '7504': '3212',
+    # Exportações (7xxx) → retorno do exterior sem DI (3949 evita rejeição 525)
+    '7101': '3949', '7102': '3949', '7105': '3949', '7106': '3949',
+    '7127': '3949', '7129': '3949',
+    '7501': '3949', '7504': '3949',
 }
 
 
@@ -1663,17 +1722,41 @@ def nota_fiscal_devolucao(request, pk):
         # CFOP cabeçalho: converte via tabela SEFAZ (7127→3211, 6101→2201, etc.)
         nf_dev.cfop = _cfop_devolucao(nf_dev.cfop)
         nf_dev.save()
+        if nf_orig.chave_acesso:
+            from .models import NFeReferenciada
+            NFeReferenciada.objects.get_or_create(
+                nota_fiscal=nf_dev,
+                chave_acesso_referenciada=nf_orig.chave_acesso,
+            )
 
+        cnpj_empresa = _re.sub(r'\D', '', nf_orig.empresa.cnpj or '')
         for item in itens:
             item.pk          = None
             item.nota_fiscal = nf_dev
             item.cfop        = _cfop_devolucao(item.cfop)
+            # Auto-preenche DI para itens com CFOP 3xxx (retorno de exportação/drawback).
+            # Convenção SEFAZ: nDI = zeros quando não há DI real de importação.
+            if item.cfop.startswith('3') and not (item.di_numero or '').strip():
+                item.di_numero            = '0000000000'
+                item.di_data_registro     = date.today()
+                item.di_data_desembaraco  = date.today()
+                item.di_via_transporte    = '1'   # marítima
+                item.di_tipo_intermediario = '1'  # conta própria
+                item.di_numero_adicao     = '1'
+                item.di_codigo_fabricante = '1'
+                item.di_codigo_exportador = cnpj_empresa
+                # Local/UF do porto de embarque da NF original
+                if nf_orig.embarque_local:
+                    item.di_local_desembaraco = nf_orig.embarque_local
+                if nf_orig.embarque_uf:
+                    item.di_uf_desembaraco = nf_orig.embarque_uf
+                # di_numero_drawback deixado em branco — usuário preenche com o ato concessório real
             item.save()
 
     messages.info(
         request,
         f'Rascunho de devolução criado (NF #{nf_dev.pk}). '
-        f'Verifique o CFOP, CST e demais dados fiscais antes de emitir.'
+        f'Preencha o Nº do Drawback na aba DI de cada item com CFOP 3xxx antes de emitir.'
     )
     return redirect('faturamento:nota_fiscal_update', pk=nf_dev.pk)
 

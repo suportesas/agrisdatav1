@@ -308,8 +308,6 @@ class NotaFiscalForm(FaturamentoBaseForm):
             'ind_intermediador',
             'intermediador_cnpj',
             'intermediador_id_cadastro',
-            # Documento referenciado (devolução)
-            'chave_nfe_referenciada',
             # Faturamento Agrupado
             'tipo_operacao',
         ]
@@ -598,7 +596,9 @@ class ItemNotaFiscalForm(forms.ModelForm):
                                                               'maxlength': '3', 'style': 'width:70px',
                                                               'title': 'Natureza da Receita COFINS (3 dígitos)'}),
             # DI - Declaração de Importação
-            'di_numero':             forms.TextInput(attrs={**_sm, 'placeholder': '24/1234567-8', 'maxlength': '12'}),
+            'di_numero':             forms.TextInput(attrs={**_sm, 'maxlength': '10',
+                                                             'placeholder': '0000000000',
+                                                             'title': 'Máx 10 dígitos. Drawback s/ DI real: use 0000000000'}),
             'di_data_registro':      forms.DateInput(attrs={**_sm, 'type': 'date'}, format='%Y-%m-%d'),
             'di_local_desembaraco':  forms.TextInput(attrs={**_sm, 'placeholder': 'Ex: Porto de Fortaleza'}),
             'di_uf_desembaraco':     forms.TextInput(attrs={**_sm, 'maxlength': '2', 'placeholder': 'CE',
@@ -613,8 +613,9 @@ class ItemNotaFiscalForm(forms.ModelForm):
                                                             'style': 'width:60px;'}),
             'di_codigo_fabricante':  forms.TextInput(attrs={**_sm, 'placeholder': 'Código do fabricante'}),
             'di_desconto_adicao':    forms.NumberInput(attrs=_sm_num),
-            'di_numero_drawback':    forms.TextInput(attrs={**_sm, 'maxlength': '20',
-                                                            'placeholder': 'Nº ato concessório drawback'}),
+            'di_numero_drawback':    forms.TextInput(attrs={**_sm, 'maxlength': '11',
+                                                            'placeholder': 'Ex: 20220031150',
+                                                            'title': 'Exatamente 11 dígitos (ato concessório drawback)'}),
             # Rateio por item
             'valor_frete_item':      forms.NumberInput(attrs=_sm_num),
             'valor_seguro_item':     forms.NumberInput(attrs=_sm_num),

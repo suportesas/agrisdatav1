@@ -70,6 +70,12 @@
               data-csrf="{{ csrf_token }}">
         <i class="bi bi-send me-1"></i>Emitir NF-e
       </button>
+      {% if request.user.is_superuser %}
+      <a href="{% url 'faturamento:nota_fiscal_debug_payload' nf.pk %}" target="_blank"
+         class="btn btn-outline-secondary btn-sm" title="Ver JSON completo que será enviado ao IntegraNotas">
+        <i class="bi bi-braces me-1"></i>Debug Payload
+      </a>
+      {% endif %}
       {% endif %}
       {# ── Verificar: RASCUNHO em fila (chave sem protocolo) ou EMITIDA sem protocolo ── #}
       {% if nf.chave_acesso and not nf.protocolo_autorizacao %}

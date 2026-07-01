@@ -82,16 +82,6 @@
                 {% if form.fornecedor.errors %}<div class="text-danger small">{{ form.fornecedor.errors }}</div>{% endif %}
                 <div id="hint-fornecedor" class="form-text">{% if nf.finalidade_nfe == '4' %}Destinatário em NF-e de devolução de compra (finalidade 4).{% else %}Destinatário em NF-e de entrada (CFOP 1xxx/2xxx/3xxx) — ex: compra de produtor rural sem nota fiscal.{% endif %}</div>
               </div>
-              <div class="col-md-12" id="campo-chave-ref"
-                   {% if not nf or not nf.fornecedor_id and nf.finalidade_nfe != '4' %}style="display:none"{% endif %}>
-                <label class="form-label">
-                  Chave NF-e Referenciada
-                  <span class="badge bg-danger ms-1" style="font-size:.7rem">Obrigatória</span>
-                </label>
-                {{ form.chave_nfe_referenciada }}
-                {% if form.chave_nfe_referenciada.errors %}<div class="text-danger small">{{ form.chave_nfe_referenciada.errors }}</div>{% endif %}
-                <div class="form-text">Chave de acesso (44 dígitos) da NF-e original recebida do fornecedor — obrigatória pela SEFAZ para NF-e de devolução.</div>
-              </div>
               <div class="col-md-4">
                 <label class="form-label">Data de Emissão *</label>
                 {{ form.data_emissao }}
@@ -129,6 +119,12 @@
               <div class="col-md-3">
                 <label class="form-label">CFOP Padrão
                   <span id="badge-tp-nf" class="badge ms-1 bg-secondary" style="font-size:.7rem;" title="Tipo NF derivado do CFOP (tpNF)">—</span>
+                  <span id="icon-cfop-devolucao-ext" style="display:none"
+                        data-bs-toggle="popover" data-bs-trigger="hover focus" data-bs-placement="right" data-bs-html="true"
+                        data-bs-title="<i class='bi bi-info-circle-fill text-primary me-1'></i>Retorno de Exportação"
+                        data-bs-content="Use <strong>3949</strong> para retorno de mercadoria exportada <em>sem</em> processo de importação formal (sem DI).<br><br>CFOPs 3201/3211 exigem Declaração de Importação e serão rejeitados pela SEFAZ (código 525) se a DI não for preenchida.">
+                    <i class="bi bi-question-circle-fill text-primary" style="cursor:pointer;font-size:.9rem"></i>
+                  </span>
                 </label>
                 {{ form.cfop }}
               </div>
@@ -691,10 +687,26 @@
                             <div class="tab-pane fade" id="pane-di-{{ forloop.counter0 }}" role="tabpanel" aria-labelledby="tab-di-{{ forloop.counter0 }}">
                               <div class="di-section">
                                 <div class="fiscal-section" style="border-left:3px solid #dc3545; padding:8px 10px; background:#fff8f8;">
-                                  <span class="fiscal-section-title w-100 text-danger d-block mb-2">
-                                    <i class="bi bi-file-earmark-text me-1"></i>DI — Declaração de Importação
-                                    <small class="text-muted fw-normal ms-1">(Grupo I da NF-e — obrigatório para origem estrangeira)</small>
-                                  </span>
+                                  <div class="d-flex align-items-center justify-content-between mb-2 flex-wrap gap-2">
+                                    <span class="fiscal-section-title text-danger">
+                                      <i class="bi bi-file-earmark-text me-1"></i>DI — Declaração de Importação
+                                      <small class="text-muted fw-normal ms-1">(obrigatório para CFOP 3xxx)</small>
+                                    </span>
+                                    <button type="button"
+                                            class="btn btn-sm btn-outline-danger btn-preencher-di"
+                                            data-idx="{{ forloop.counter0 }}"
+                                            data-cnpj="{{ nf.empresa.cnpj|default:'' }}"
+                                            data-local="{{ nf.embarque_local|default:'' }}"
+                                            data-uf="{{ nf.embarque_uf|default:'' }}"
+                                            title="Preenche nDI=0000000000 + datas + via marítima + exportador (padrão drawback sem DI real)">
+                                      <i class="bi bi-magic me-1"></i>Preencher DI Drawback
+                                    </button>
+                                  </div>
+                                  <div class="alert alert-warning py-1 px-2 mb-2" style="font-size:.78rem;">
+                                    <i class="bi bi-exclamation-triangle me-1"></i>
+                                    <strong>Retorno de exportação com drawback:</strong> use <code>Nº DI = 0000000000</code> (zeros) quando não há DI real de importação.
+                                    Preencha o <strong>Nº Drawback</strong> com o número do ato concessório (11 dígitos).
+                                  </div>
                                   <div class="row g-2">
                                     <div class="col-md-3">
                                       <label class="fiscal-label">Nº da DI <span class="text-danger">*</span></label>
@@ -984,7 +996,6 @@
           <div class="card-footer text-muted small">
             <i class="bi bi-info-circle me-1"></i>
             Referências são enviadas no bloco <code>&lt;NFref&gt;</code> da SEFAZ — obrigatório para devolução e NF-e de faturamento agrupado.
-            O campo "Chave NF-e Referenciada" do cabeçalho (devolução simples) continua funcionando independentemente.
           </div>
         </div>
       </div>
@@ -1873,6 +1884,55 @@
       intermediarioSel.addEventListener('change', updateCnpj);
       updateCnpj();
     }
+
+    // Botão "Preencher DI Drawback" — preenche campos com valores padrão SEFAZ
+    const btnDI = fiscalRow.querySelector('.btn-preencher-di');
+    if (btnDI) {
+      btnDI.addEventListener('click', () => {
+        const idx   = btnDI.dataset.idx;
+        const cnpj  = (btnDI.dataset.cnpj || '').replace(/\D/g, '');
+        const local = btnDI.dataset.local || '';
+        const uf    = (btnDI.dataset.uf   || '').toUpperCase();
+        const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+
+        const pref = `itens-${idx}-`;
+        const set  = (name, val) => {
+          const el = document.getElementById(`id_${pref}${name}`);
+          if (el && !el.value) el.value = val;  // só preenche se estiver vazio
+        };
+        const force = (name, val) => {
+          const el = document.getElementById(`id_${pref}${name}`);
+          if (el) el.value = val;
+        };
+
+        // nDI: convenção SEFAZ para drawback sem DI real → 10 zeros
+        force('di_numero', '0000000000');
+        force('di_data_registro', today);
+        force('di_data_desembaraco', today);
+        force('di_via_transporte', '1');
+        force('di_tipo_intermediario', '1');
+        force('di_numero_adicao', '1');
+        force('di_codigo_fabricante', '1');
+        if (cnpj) set('di_codigo_exportador', cnpj);
+        if (local) set('di_local_desembaraco', local);
+        if (uf)    set('di_uf_desembaraco', uf);
+
+        // Dispara eventos para atualizar os watchers (AFRMM, CNPJ adquirente)
+        fiscalRow.querySelectorAll('[name$="-di_via_transporte"], [name$="-di_tipo_intermediario"]')
+          .forEach(el => el.dispatchEvent(new Event('change')));
+
+        // Realça o campo drawback como pendente se ainda estiver vazio
+        const dw = document.getElementById(`id_${pref}di_numero_drawback`);
+        if (dw) {
+          if (!dw.value) {
+            dw.classList.add('is-invalid');
+            dw.focus();
+            dw.setAttribute('title', 'Preencha com o número do ato concessório de drawback (11 dígitos)');
+          }
+          dw.addEventListener('input', () => dw.classList.remove('is-invalid'), { once: true });
+        }
+      });
+    }
   }
 
   const CST_DESON = new Set(['20','30','40','41','50','51','60','70','90','300','400','500','900']);
@@ -2071,7 +2131,6 @@
   const cfopInput      = document.getElementById('id_cfop');
   const campoCliente   = document.getElementById('campo-cliente');
   const campoFornecedor = document.getElementById('campo-fornecedor');
-  const campoChaveRef   = document.getElementById('campo-chave-ref');
   if (!finalidadeSel || !campoCliente || !campoFornecedor) return;
 
   function usaFornecedor() {
@@ -2109,24 +2168,13 @@
     }
   }
 
-  // Visibilidade do campo chave referenciada: aparece para fornecedor (devolução compra)
-  // OU quando finalidade_nfe = 4 (devolução de venda para cliente)
-  function toggleCampoRef() {
-    const isDevolucao = finalidadeSel.value === '4';
-    const temFornecedor = !!(document.getElementById('id_fornecedor')?.value);
-    const campoRef = document.getElementById('campo-chave-ref');
-    if (campoRef) campoRef.style.display = (isDevolucao || temFornecedor) ? '' : 'none';
-  }
-
   finalidadeSel.addEventListener('change', function () {
     toggleDestinatario();
-    toggleCampoRef();
   });
   if (cfopInput) {
     cfopInput.addEventListener('change', toggleDestinatario);
     cfopInput.addEventListener('input',  toggleDestinatario);
   }
-  toggleCampoRef();
   // Não chama toggleDestinatario() na inicialização — o estado inicial
   // já vem correto via atributo style do Django template (nf.fornecedor_id).
 })();
@@ -2156,6 +2204,33 @@
   }
   cfopInput.addEventListener('input', atualizarTpNf);
   atualizarTpNf();
+})();
+</script>
+
+<!-- Ícone orientação CFOP devolução exportação -->
+<script>
+(function () {
+  const cfopInput   = document.getElementById('id_cfop');
+  const finalidade  = document.getElementById('id_finalidade_nfe');
+  const iconDev     = document.getElementById('icon-cfop-devolucao-ext');
+  if (!iconDev) return;
+
+  // Inicializa o popover Bootstrap
+  new bootstrap.Popover(iconDev, { sanitize: false });
+
+  function toggleIcone() {
+    const cfop = (cfopInput ? cfopInput.value : '').replace(/\D/g, '');
+    const isDev = finalidade && finalidade.value === '4';
+    const isExt = /^3/.test(cfop);
+    iconDev.style.display = (isDev && isExt) ? '' : 'none';
+  }
+
+  if (cfopInput) {
+    cfopInput.addEventListener('input', toggleIcone);
+    cfopInput.addEventListener('change', toggleIcone);
+  }
+  if (finalidade) finalidade.addEventListener('change', toggleIcone);
+  toggleIcone();
 })();
 </script>
 

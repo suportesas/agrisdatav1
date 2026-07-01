@@ -497,7 +497,7 @@ class ItemNotaFiscal(models.Model):
                               help_text='Obrigatório quando tipo intermediário = 2 ou 3')
     di_codigo_exportador = models.CharField('Código do Exportador', max_length=60, blank=True)
     # Adição da DI (adi) — suporte a 1 adição inline (caso mais comum)
-    di_numero_adicao    = models.CharField('Nº Adição', max_length=3, blank=True)
+    di_numero_adicao    = models.CharField('Nº Adição', max_length=3, blank=True, default='1')
     di_codigo_fabricante = models.CharField('Código do Fabricante', max_length=60, blank=True)
     di_desconto_adicao  = models.DecimalField('Desconto da Adição (R$)', max_digits=14, decimal_places=2, default=0)
     di_numero_drawback  = models.CharField('Nº Ato Concessório Drawback', max_length=20, blank=True,

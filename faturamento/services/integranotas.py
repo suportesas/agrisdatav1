@@ -259,11 +259,24 @@ class IntegranNotasClient:
         if not nf.numero:
             self._atribuir_numero(nf)
         payload = self._build_payload(nf)
-        logger.info('IntegraNota: emitindo NF %s/%s', nf.numero, nf.serie)
+        import json as _json
+        logger.info('IntegraNota: emitindo NF %s/%s — tipo_op=%s finalidade=%s cfop_nf=%s',
+                    nf.numero, nf.serie,
+                    payload.get('tipo_operacao'), payload.get('finalidade_emissao'),
+                    nf.cfop)
         logger.info('IntegraNota payload frete.transportadora: %s', payload.get('frete', {}).get('transportadora'))
         for _it in payload.get('itens', []):
             if _it.get('unidade_tributavel'):
                 logger.info('IntegraNota item %s: uTrib=%s qTrib=%s', _it.get('numero_item'), _it.get('unidade_tributavel'), _it.get('quantidade_tributavel'))
+            if _it.get('declaracao_importacao'):
+                logger.info(
+                    'IntegraNota item %s: DI PRESENTE cfop=%s origem=%s '
+                    'declaracao_importacao=%s declaracoes_importacao=%s di=%s',
+                    _it.get('numero_item'), _it.get('cfop'), _it.get('origem'),
+                    _json.dumps(_it.get('declaracao_importacao'), ensure_ascii=False),
+                    _json.dumps(_it.get('declaracoes_importacao'), ensure_ascii=False),
+                    _json.dumps(_it.get('di'), ensure_ascii=False),
+                )
         resp = requests.post(
             f'{self.base_url}/nfe',
             json=payload,
@@ -272,6 +285,11 @@ class IntegranNotasClient:
         )
         resp.raise_for_status()
         data = resp.json()
+        logger.info('IntegraNota resposta NF %s/%s: codigo=%s sucesso=%s mensagem=%s erros=%s',
+                    nf.numero, nf.serie,
+                    data.get('codigo'), data.get('sucesso'),
+                    data.get('mensagem', ''),
+                    data.get('erros', []))
         if not data.get('sucesso') and data.get('codigo') not in (100, 5023):
             raise IntegranNotasError(
                 data.get('mensagem', 'Erro desconhecido na emissão'),
@@ -486,11 +504,13 @@ class IntegranNotasClient:
                     'id_cadastro': id_cad,
                 }
 
-        # Exportação — grupo ZA da NF-e (<exporta>) — obrigatório para CFOP 7xxx
+        # Exportação — grupo ZA da NF-e (<exporta>) — obrigatório para CFOP 7xxx.
+        # NÃO incluir para CFOP 3xxx (devolução/entrada do exterior): SEFAZ rejeita
+        # <exporta> em NF-e de entrada (tipo_operacao=0).
         uf_embarque    = getattr(nf, 'embarque_uf', '').strip().upper()
         local_embarque = getattr(nf, 'embarque_local', '').strip()
         local_despacho = getattr(nf, 'embarque_local_despacho', '').strip()
-        if uf_embarque or local_embarque:
+        if (uf_embarque or local_embarque) and cfop_str.startswith('7'):
             exporta: dict = {}
             if uf_embarque:
                 exporta['uf_local_embarque'] = uf_embarque
@@ -781,10 +801,19 @@ class IntegranNotasClient:
             item_dict['quantidade_tributavel']     = str(item.quantidade_tributavel)
             item_dict['valor_unitario_tributavel'] = f"{float(item.valor_unitario_tributavel or 0):.10f}"
 
-        # DI — Declaração de Importação (origens 1, 2, 6, 7)
+        # DI — Declaração de Importação (origens 1, 2, 6, 7 ou CFOP 3xxx)
         di = self._build_di(item)
         if di:
-            item_dict['declaracao_importacao'] = [di]
+            # Tentamos todas as variações de nome conhecidas — IntegraNotas ignora
+            # campos desconhecidos, então enviar múltiplos nomes é seguro.
+            item_dict['declaracao_importacao']  = [di]   # nome descritivo (singular)
+            item_dict['declaracoes_importacao'] = [di]   # nome descritivo (plural)
+            item_dict['di']                     = [di]   # tag XML <DI> (abreviado)
+            # IntegraNotas só gera <DI> no XML quando origem indica produto estrangeiro.
+            # Para CFOP 3xxx com DI obrigatória (ex.: devolução drawback), forçamos
+            # origem='1' no payload — apenas para a API, sem alterar o banco de dados.
+            if item_dict.get('origem') == '0':
+                item_dict['origem'] = '1'
 
         return item_dict
 
@@ -798,6 +827,15 @@ class IntegranNotasClient:
         numero = (getattr(item, 'di_numero', '') or '').strip()
         if not numero:
             return None  # DI não informada — campos obrigatórios não preenchidos
+
+        # SEFAZ schema nDI: máximo 10 dígitos.
+        # Para retorno de exportação/drawback sem DI real, convenção SEFAZ é '0000000000'.
+        # Se o número informado ultrapassar 10 chars, truncamos com aviso.
+        numero_digits = re.sub(r'\D', '', numero)
+        if len(numero_digits) > 10:
+            logger.warning('DI nDI "%s" tem %d dígitos (max 10) — truncando para 10', numero, len(numero_digits))
+            numero_digits = numero_digits[:10]
+        numero = numero_digits or numero[:10]
 
         di: dict = {
             'numero':            numero,
@@ -831,9 +869,22 @@ class IntegranNotasClient:
             adicao['valor_desconto'] = str(item.di_desconto_adicao)
         drawback = (item.di_numero_drawback or '').strip()
         if drawback:
-            adicao['numero_drawback'] = drawback
+            # SEFAZ schema nDraw: [0-9]{11} — exatamente 11 dígitos (ou omitido)
+            digs_dw = re.sub(r'\D', '', drawback)
+            if len(digs_dw) == 11:
+                adicao['numero_drawback'] = digs_dw
+            else:
+                logger.warning('DI drawback "%s" ignorado — deve ter 11 dígitos (tem %d)', drawback, len(digs_dw))
 
         di['adicoes'] = [adicao]
+
+        # Garante que todos os campos obrigatórios da DI estão preenchidos.
+        # Campos vazios causam rejeição silenciosa no IntegraNotas.
+        campos_obrig = ['data_registro', 'local_desembaraco', 'uf_desembaraco',
+                        'data_desembaraco', 'via_transporte']
+        if any(not di.get(c) for c in campos_obrig):
+            return None
+
         return di
 
     def _build_impostos(self, item) -> dict:

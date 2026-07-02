@@ -11,8 +11,8 @@ from django.http import JsonResponse
 from django.template.loader import render_to_string
 from django.contrib.auth.models import Permission
 
-from .models import Empresa, Plano, Role, PermissionTemplate, RoleAudit
-from .forms import EmpresaForm, EmpresaPreferenciasForm, PlanoForm
+from .models import APIKey, Empresa, Plano, Role, PermissionTemplate, RoleAudit
+from .forms import APIKeyForm, EmpresaForm, EmpresaPreferenciasForm, PlanoForm
 
 # Nomes amigáveis dos apps do ERP (usados na matriz de permissões)
 APP_LABELS_PT = {
@@ -809,3 +809,42 @@ def api_plano_dados(request, plano_id):
         return JsonResponse({'erro': 'Plano não encontrado'}, status=404)
     except Exception as e:
         return JsonResponse({'erro': str(e)}, status=500)
+
+
+# ─────────────────────────── API Keys ────────────────────────────────────────
+
+@login_required
+def api_key_list(request):
+    empresa = request.user.empresa
+    keys = APIKey.objects.filter(empresa=empresa).order_by('-criado_em')
+    return render(request, 'empresas/api_key_list.html', {'keys': keys})
+
+
+@login_required
+def api_key_create(request):
+    empresa = request.user.empresa
+    raw_key = None
+    if request.method == 'POST':
+        form = APIKeyForm(request.POST)
+        if form.is_valid():
+            instance, raw_key = APIKey.gerar(
+                empresa=empresa,
+                nome=form.cleaned_data['nome'],
+                criado_por=request.user,
+            )
+            messages.success(request, 'Chave de API criada com sucesso. Copie-a agora — ela não será exibida novamente.')
+            form = APIKeyForm()
+    else:
+        form = APIKeyForm()
+    return render(request, 'empresas/api_key_form.html', {'form': form, 'raw_key': raw_key})
+
+
+@login_required
+@require_POST
+def api_key_revoke(request, pk):
+    empresa = request.user.empresa
+    api_key = get_object_or_404(APIKey, pk=pk, empresa=empresa)
+    api_key.ativo = False
+    api_key.save(update_fields=['ativo'])
+    messages.success(request, f'Chave "{api_key.nome}" revogada.')
+    return redirect('empresas:api_key_list')

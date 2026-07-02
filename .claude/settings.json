@@ -55,7 +55,20 @@
       "Bash(/c/erp_agricola_novo/venv/Scripts/python.exe manage.py check)",
       "Bash(python manage.py check)",
       "Bash(./venv/Scripts/python.exe manage.py check)",
-      "Bash(./venv/Scripts/python.exe -c ' *)"
+      "Bash(./venv/Scripts/python.exe -c ' *)",
+      "Bash(python -c \"import ast; ast.parse\\(open\\('embalagem/views.py', encoding='utf-8'\\).read\\(\\)\\)\")",
+      "Bash(python -c \"import barcode; print\\(getattr\\(barcode,'__version__','unknown'\\)\\)\")",
+      "Bash(./venv/Scripts/python.exe -c \"import barcode, xhtml2pdf, rest_framework; print\\('barcode', getattr\\(barcode,'__version__','?'\\)\\); print\\('xhtml2pdf ok'\\); print\\('drf ok'\\)\")",
+      "Bash(./venv/Scripts/python.exe -m pip show python-barcode)",
+      "Bash(python -c ' *)",
+      "Bash(./venv/Scripts/python.exe manage.py makemigrations empresas)",
+      "Bash(./venv/Scripts/python.exe manage.py makemigrations etiquetas_avulsas)",
+      "Bash(./venv/Scripts/python.exe manage.py migrate empresas etiquetas_avulsas)",
+      "Bash(./venv/Scripts/python.exe manage.py migrate empresas)",
+      "Bash(./venv/Scripts/python.exe manage.py migrate etiquetas_avulsas)",
+      "Bash(./venv/Scripts/python.exe manage.py test etiquetas_avulsas -v 2)",
+      "Bash(./venv/Scripts/python.exe manage.py test etiquetas_avulsas --keepdb -v 2)",
+      "Bash(./venv/Scripts/python.exe manage.py test etiquetas_avulsas --noinput -v 2)"
     ]
   }
 }

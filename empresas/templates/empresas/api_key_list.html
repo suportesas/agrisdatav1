@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Chaves de API | ERP Agrícola{% endblock %}
+{% block page_title %}Chaves de API{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <div class="card shadow-sm border-0 rounded-4">
+    <div class="card-body p-4">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="fw-bold text-secondary mb-0">
+          <i class="bi bi-key"></i> Chaves de API
+        </h4>
+        <a href="{% url 'empresas:api_key_create' %}" class="btn btn-success">
+          <i class="bi bi-plus-circle"></i> Nova Chave
+        </a>
+      </div>
+
+      <table class="table align-middle">
+        <thead>
+          <tr>
+            <th>Nome</th>
+            <th>Prefixo</th>
+            <th>Status</th>
+            <th>Uso</th>
+            <th>Criada em</th>
+            <th>Última utilização</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for key in keys %}
+          <tr>
+            <td>{{ key.nome }}</td>
+            <td><code>{{ key.prefixo }}...</code></td>
+            <td>
+              {% if key.ativo %}
+                <span class="badge bg-success">Ativa</span>
+              {% else %}
+                <span class="badge bg-secondary">Revogada</span>
+              {% endif %}
+            </td>
+            <td>{{ key.usage_count }}</td>
+            <td>{{ key.criado_em|date:"d/m/Y H:i" }}</td>
+            <td>{{ key.ultima_utilizacao_em|date:"d/m/Y H:i"|default:"—" }}</td>
+            <td>
+              {% if key.ativo %}
+              <form method="post" action="{% url 'empresas:api_key_revoke' key.pk %}" onsubmit="return confirm('Revogar esta chave?');">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-outline-danger">
+                  <i class="bi bi-x-circle"></i> Revogar
+                </button>
+              </form>
+              {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="7" class="text-center text-muted py-4">Nenhuma chave de API cadastrada.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

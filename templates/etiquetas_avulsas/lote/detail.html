@@ -1,0 +1,141 @@
+{% extends 'base.html' %}
+{% block title %}Lote {{ lote.numero_lote }}{% endblock %}
+{% block page_title %}Lote {{ lote.numero_lote }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="mb-0">Impressão de Etiquetas — {{ lote.numero_lote }}</h3>
+    <a href="{% url 'etiquetas_avulsas:lote_list' %}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left"></i> Voltar
+    </a>
+  </div>
+
+  <div class="card border-0 shadow-sm mb-3">
+    <div class="card-body">
+      <div class="row small">
+        <div class="col-md-3"><strong>Fazenda:</strong> {{ lote.fazenda_nome|default:"—" }}</div>
+        <div class="col-md-3"><strong>Cliente:</strong> {{ lote.cliente_nome|default:"—" }}</div>
+        <div class="col-md-3"><strong>Produto:</strong> {{ lote.produto_nome|default:"—" }}</div>
+        <div class="col-md-3"><strong>Total Pallets:</strong> {{ lote.total_pallets }}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm mb-3">
+    <div class="card-body py-2">
+      <div class="row g-2 align-items-end">
+        <div class="col-auto">
+          <label class="form-label small mb-0">Marcar intervalo (Nº pallet)</label>
+        </div>
+        <div class="col-auto">
+          <input type="number" id="intervalo-de" class="form-control form-control-sm" placeholder="de" min="1" style="width:90px">
+        </div>
+        <div class="col-auto">até</div>
+        <div class="col-auto">
+          <input type="number" id="intervalo-ate" class="form-control form-control-sm" placeholder="até" min="1" style="width:90px">
+        </div>
+        <div class="col-auto">
+          <button type="button" id="aplicar-intervalo" class="btn btn-sm btn-outline-primary">Marcar intervalo</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <form method="post" action="{% url 'etiquetas_avulsas:lote_etiquetas_pdf' lote.pk %}" target="_blank">
+    {% csrf_token %}
+    <div class="card border-0 shadow-sm">
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover table-sm mb-0">
+            <thead class="table-light">
+              <tr>
+                <th style="width:3%">
+                  <input type="checkbox" id="selecionar-todos" checked>
+                </th>
+                <th>Pallet</th>
+                <th>Código de Barras</th>
+                <th class="text-end">Caixas</th>
+                <th>Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for etiqueta in etiquetas %}
+              <tr>
+                <td>
+                  {% if etiqueta.status == 'CANCELADA' %}
+                  <input type="checkbox" class="etiqueta-check" data-seq="{{ etiqueta.numero_sequencial }}" disabled>
+                  {% else %}
+                  <input type="checkbox" name="etiqueta_ids" value="{{ etiqueta.pk }}" class="etiqueta-check"
+                         data-seq="{{ etiqueta.numero_sequencial }}" checked>
+                  {% endif %}
+                </td>
+                <td><strong>{{ etiqueta.codigo_pallet }}</strong></td>
+                <td class="font-monospace">{{ etiqueta.codigo_pallet }}</td>
+                <td class="text-end">{{ etiqueta.caixas }}</td>
+                <td>
+                  {% if etiqueta.status == 'IMPRESSA' %}<span class="badge bg-success">Impressa</span>
+                  {% elif etiqueta.status == 'CANCELADA' %}<span class="badge bg-danger">Cancelada</span>
+                  {% else %}<span class="badge bg-secondary">Gerada</span>{% endif %}
+                </td>
+                <td class="text-end">
+                  <a href="{% url 'etiquetas_avulsas:etiqueta_update' etiqueta.pk %}" class="btn btn-sm btn-outline-secondary" title="Editar caixas">
+                    <i class="bi bi-pencil"></i>
+                  </a>
+                  {% if etiqueta.status != 'CANCELADA' %}
+                  <button type="button" class="btn btn-sm btn-outline-danger btn-cancelar-etiqueta"
+                          data-url="{% url 'etiquetas_avulsas:etiqueta_cancelar' etiqueta.pk %}"
+                          data-codigo="{{ etiqueta.codigo_pallet }}" title="Cancelar pallet">
+                    <i class="bi bi-x-circle"></i>
+                  </button>
+                  {% endif %}
+                </td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="6" class="text-center text-muted py-4">Nenhuma etiqueta neste lote.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="d-flex justify-content-end mt-3">
+      <button type="submit" class="btn btn-success px-4">
+        <i class="bi bi-printer"></i> Imprimir Etiquetas Selecionadas
+      </button>
+    </div>
+  </form>
+
+  <form id="form-cancelar-etiqueta" method="post" style="display:none">
+    {% csrf_token %}
+  </form>
+</div>
+
+<script>
+document.getElementById('selecionar-todos').addEventListener('change', function () {
+  document.querySelectorAll('.etiqueta-check').forEach(function (cb) { cb.checked = this.checked; }.bind(this));
+});
+
+document.getElementById('aplicar-intervalo').addEventListener('click', function () {
+  var de = parseInt(document.getElementById('intervalo-de').value, 10);
+  var ate = parseInt(document.getElementById('intervalo-ate').value, 10);
+  if (isNaN(de) || isNaN(ate)) { return; }
+  document.querySelectorAll('.etiqueta-check').forEach(function (cb) {
+    var seq = parseInt(cb.dataset.seq, 10);
+    cb.checked = (seq >= de && seq <= ate);
+  });
+  document.getElementById('selecionar-todos').checked = false;
+});
+
+document.querySelectorAll('.btn-cancelar-etiqueta').forEach(function (btn) {
+  btn.addEventListener('click', function () {
+    if (!confirm('Cancelar o pallet ' + btn.dataset.codigo + '? Ele deixará de ser impresso neste lote.')) { return; }
+    var form = document.getElementById('form-cancelar-etiqueta');
+    form.action = btn.dataset.url;
+    form.submit();
+  });
+});
+</script>
+{% endblock %}

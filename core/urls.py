@@ -125,6 +125,7 @@ urlpatterns = [
     path('vendas/', include(('vendas.urls', 'vendas'))),
     path('portal/cliente/', include(('portal.urls', 'portal_cliente'))),
     path('embalagem/', include(('embalagem.urls', 'embalagem'))),
+    path('etiquetas-avulsas/', include(('etiquetas_avulsas.urls', 'etiquetas_avulsas'))),
     path('frota/', include(('frota.urls', 'frota'))),
     path('mip/', include(('mip.urls', 'mip'))),
     path('emprestimos/', include(('emprestimos.urls', 'emprestimos'))),
@@ -138,6 +139,7 @@ urlpatterns = [
     # ============================================
     path('api/', include([
         path('auth/', include('rest_framework.urls')),
+        path('etiquetas/v1/', include('etiquetas_avulsas.api.urls')),
     ])),
     
     # ============================================

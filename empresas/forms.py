@@ -1,5 +1,5 @@
 from django import forms
-from .models import Empresa, Plano, Role
+from .models import APIKey, Empresa, Plano, Role
 
 
 class EmpresaForm(forms.ModelForm):
@@ -171,3 +171,17 @@ class RoleForm(forms.ModelForm):
         if len(name) < 3:
             raise forms.ValidationError('O nome deve ter pelo menos 3 caracteres.')
         return name
+
+
+class APIKeyForm(forms.ModelForm):
+    """Formulário para criar chaves de API. A chave em si é gerada pelo servidor."""
+
+    class Meta:
+        model = APIKey
+        fields = ['nome']
+        widgets = {
+            'nome': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ex: Integração Sistema X',
+            }),
+        }

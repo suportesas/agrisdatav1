@@ -923,6 +923,65 @@ class PermissionTemplate(models.Model):
         return f"{self.nome} ({self.empresa.nome})"
 
 
+class APIKey(models.Model):
+    """Chave de API por empresa, usada para autenticar integrações externas
+    (ex: clientes que consomem módulos do sistema via API sem usar o ERP completo)."""
+
+    empresa = models.ForeignKey(
+        Empresa,
+        on_delete=models.CASCADE,
+        related_name='api_keys',
+        verbose_name='Empresa'
+    )
+    nome = models.CharField('Nome/Descrição', max_length=100, help_text='Ex: Integração Sistema X')
+    prefixo = models.CharField('Prefixo', max_length=8, editable=False)
+    chave_hash = models.CharField('Hash da Chave', max_length=128, unique=True, editable=False)
+    ativo = models.BooleanField('Ativo', default=True)
+    usage_count = models.PositiveIntegerField('Contador de Uso', default=0)
+    criado_em = models.DateTimeField('Criado em', auto_now_add=True)
+    criado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name='Criado por'
+    )
+    ultima_utilizacao_em = models.DateTimeField('Última Utilização', null=True, blank=True)
+
+    class Meta:
+        verbose_name = 'Chave de API'
+        verbose_name_plural = 'Chaves de API'
+        indexes = [
+            models.Index(fields=['chave_hash']),
+            models.Index(fields=['empresa', 'ativo']),
+        ]
+
+    def __str__(self):
+        return f'{self.nome} ({self.prefixo}...)'
+
+    @classmethod
+    def gerar(cls, empresa, nome, criado_por=None):
+        """Gera uma nova chave de API. Retorna (instance, raw_key).
+        raw_key só existe neste momento — apenas o hash é persistido."""
+        import hashlib
+        import secrets
+        raw_key = secrets.token_urlsafe(32)
+        chave_hash = hashlib.sha256(raw_key.encode()).hexdigest()
+        instance = cls.objects.create(
+            empresa=empresa,
+            nome=nome,
+            prefixo=raw_key[:8],
+            chave_hash=chave_hash,
+            criado_por=criado_por,
+        )
+        return instance, raw_key
+
+    def registrar_uso(self):
+        self.usage_count = models.F('usage_count') + 1
+        self.ultima_utilizacao_em = timezone.now()
+        self.save(update_fields=['usage_count', 'ultima_utilizacao_em'])
+
+
 # ===== SIGNAL para popular categorias ao criar empresa =====
 from django.db.models.signals import post_save
 from django.dispatch import receiver

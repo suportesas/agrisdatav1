@@ -46,4 +46,9 @@ urlpatterns = [
     path('grupos/<int:pk>/relatorio/', views_grupo.grupo_relatorio_consolidado, name='grupo_relatorio_consolidado'),
     path('grupos/ajuda/', views_grupo.ajuda_grupos_corporativos, name='ajuda_grupos_corporativos'),
     path('ajuda/usuarios-grupos/', views_grupo.ajuda_usuarios_grupos, name='ajuda_usuarios_grupos'),
+
+    # Chaves de API
+    path('api-keys/', views.api_key_list, name='api_key_list'),
+    path('api-keys/nova/', views.api_key_create, name='api_key_create'),
+    path('api-keys/<int:pk>/revogar/', views.api_key_revoke, name='api_key_revoke'),
 ]

@@ -81,6 +81,7 @@ INSTALLED_APPS = [
     'vendas',       # Módulo de Vendas (Pré-venda / Pedido de Venda)
     'portal',       # Portal do Cliente (acesso externo)
     'embalagem',    # Embalamento, Pallets, Romaneio de Venda
+    'etiquetas_avulsas',  # Etiquetas de Pallet Avulso (venda standalone + API externa)
     'frota',        # Módulo de Frota (veículos, motoristas, abastecimento, manutenção)
     'mip',          # Módulo MIP - Monitoramento de Pragas
     'emprestimos',  # Módulo de Empréstimos de Produtores
@@ -501,6 +502,9 @@ FEATURE_FLAGS = {
 
     # Fase 7
     'ARMADOR_INTEGRACOES_EXTERNAS': get_bool_env('FF_ARMADOR_INTEGRACOES_EXTERNAS', False),
+
+    # Etiquetas de Pallet Avulso — API externa (venda standalone)
+    'ETIQUETA_AVULSA_API': get_bool_env('FF_ETIQUETA_AVULSA_API', False),
 }
 
 

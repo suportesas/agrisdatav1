@@ -13,6 +13,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
+from core.barcode_utils import barcode_b64 as _barcode_b64
 from estoque.models import Armazem
 
 from .forms import ItemPalletForm, OrdemEmbalagemForm, RomaneioVendaForm, TipoEmbalagemForm, TrocarClienteRomaneioForm
@@ -259,23 +260,6 @@ def pallet_list(request):
 
 
 # ─────────────────────────── Etiqueta PDF ───────────────────────────────────
-
-def _barcode_b64(codigo):
-    """Gera um Code128 em base64 para embutir no PDF."""
-    try:
-        import barcode as pybarcode
-        import base64
-        cls = pybarcode.get_barcode_class('code128')
-        buf = io.BytesIO()
-        cls(codigo, writer=pybarcode.writer.ImageWriter()).write(buf, options={
-            'module_height': 10, 'module_width': 0.4, 'quiet_zone': 2,
-            'text_distance': 1, 'font_size': 7, 'write_text': False,
-        })
-        buf.seek(0)
-        return base64.b64encode(buf.read()).decode()
-    except Exception:
-        return None
-
 
 def _render_etiqueta_pdf(pallets, romaneio=None):
     """Gera PDF com etiquetas dos pallets usando xhtml2pdf."""

@@ -1,0 +1,147 @@
+{% extends 'base.html' %}
+{% block title %}Adicionar Pallets — {{ lote.numero_lote }}{% endblock %}
+{% block page_title %}Adicionar Pallets — {{ lote.numero_lote }}{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="card border-0 shadow-sm">
+    <div class="card-body p-4">
+      <h4 class="fw-bold mb-1"><i class="bi bi-plus-circle"></i> Adicionar Pallets ao Lote {{ lote.numero_lote }}</h4>
+      <p class="text-muted mb-4">Informe o produto e a quantidade desta leva. Pode ser um produto diferente do que já está no lote.</p>
+
+      <form method="post" novalidate>
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+        <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+        {% endif %}
+
+        <div class="row g-3 mb-4">
+          <div class="col-12"><h6 class="text-primary border-bottom pb-2"><i class="bi bi-box-seam"></i> Produto</h6></div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Produto</label>
+            {{ form.produto }}
+            {{ form.produto_texto }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Cultura</label>
+            {{ form.cultura }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Variedade</label>
+            {{ form.variedade }}
+            <small class="text-muted">Preenche sozinha ao escolher a Cultura, mas pode editar.</small>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold d-flex justify-content-between">
+              Marca
+              <a href="{% url 'produtos:marca_create' %}" target="_blank" class="small">+ Nova marca</a>
+            </label>
+            {{ form.marca }}
+            {{ form.marca_texto }}
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Cultivares</label>
+            {{ form.cultivares }}
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Tipo / Size</label>
+            {{ form.tipo_size }}
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Temperatura (°C)</label>
+            {{ form.temperatura }}
+          </div>
+        </div>
+
+        <div class="row g-3 mb-4">
+          <div class="col-12"><h6 class="text-primary border-bottom pb-2"><i class="bi bi-box"></i> Embalagem / Pallets</h6></div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Embalagem</label>
+            {{ form.embalagem }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Carimbo (Trace/Lote)</label>
+            {{ form.carimbo }}
+          </div>
+          <div class="col-md-4"></div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Caixas por Pallet</label>
+            {{ form.caixas }}
+            {% if form.caixas.errors %}<div class="text-danger small">{{ form.caixas.errors|join:", " }}</div>{% endif %}
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Peso Líquido/Caixa (kg)</label>
+            {{ form.peso_liquido_cx }}
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Peso Bruto/Caixa (kg)</label>
+            {{ form.peso_bruto_cx }}
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Quantidade de Pallets</label>
+            {{ form.quantidade }}
+            {% if form.quantidade.errors %}<div class="text-danger small">{{ form.quantidade.errors|join:", " }}</div>{% endif %}
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-between gap-3">
+          <a href="{% url 'etiquetas_avulsas:lote_detail' lote.pk %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Voltar
+          </a>
+          <button type="submit" class="btn btn-success px-5">
+            <i class="bi bi-check-circle"></i> Adicionar ao Lote
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var produtoAjaxUrl = '{% url "produtos:ajax_buscar_produtos" %}';
+  var produtoSelect = document.querySelector('[name="produto"]');
+  if (produtoSelect) {
+    $(produtoSelect).select2({
+      theme: 'bootstrap-5',
+      width: '100%',
+      placeholder: 'Buscar produto...',
+      allowClear: true,
+      minimumInputLength: 2,
+      ajax: {
+        url: produtoAjaxUrl,
+        dataType: 'json',
+        delay: 250,
+        data: function (params) { return { q: params.term }; },
+        processResults: function (data) { return { results: data.results || [] }; },
+        cache: true,
+      },
+      language: {
+        inputTooShort: function () { return 'Digite ao menos 2 caracteres para buscar'; },
+        noResults: function () { return 'Nenhum produto encontrado'; },
+      },
+    });
+  }
+
+  var culturaSelect = document.querySelector('[name="cultura"]');
+  var variedadeInput = document.querySelector('[name="variedade"]');
+  if (culturaSelect && variedadeInput) {
+    culturaSelect.addEventListener('change', function () {
+      var opt = culturaSelect.options[culturaSelect.selectedIndex];
+      var variedade = opt ? opt.getAttribute('data-variedade') : '';
+      if (variedade) { variedadeInput.value = variedade; }
+    });
+  }
+});
+</script>
+{% endblock %}

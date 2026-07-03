@@ -15,6 +15,12 @@ urlpatterns = [
     path('tipos-produto/<int:pk>/excluir/', views_tipo_produto.tipo_produto_delete, name='tipo_produto_delete'),
     path('tipos-produto/ajax/listar/', views_tipo_produto.tipo_produto_listar_ajax, name='tipo_produto_listar_ajax'),
     
+    # Marca
+    path('marcas/', views.marca_list, name='marca_list'),
+    path('marcas/cadastrar/', views.marca_create, name='marca_create'),
+    path('marcas/<int:pk>/editar/', views.marca_update, name='marca_update'),
+    path('marcas/<int:pk>/toggle-ativo/', views.marca_toggle_ativo, name='marca_toggle_ativo'),
+
     # Unidade de Medida
     path('unidades/', views.unidademedida_list, name='unidademedida_list'),
     path('unidades/cadastrar/', views.unidademedida_create, name='unidademedida_create'),

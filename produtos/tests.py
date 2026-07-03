@@ -7,7 +7,7 @@ from django.db.models.signals import post_save
 from cadastros.models import NCM
 from empresas.models import Empresa, Plano
 from empresas import signals as empresa_signals
-from produtos.models import Categoria, Produto, SubCategoria, TipoProduto, UnidadeMedida
+from produtos.models import Categoria, Marca, Produto, SubCategoria, TipoProduto, UnidadeMedida
 
 
 class ProdutoValidationTests(TestCase):
@@ -170,4 +170,24 @@ class ProdutoValidationTests(TestCase):
 		self.assertEqual(produto.ingrediente_ativo, '')
 		self.assertEqual(produto.registro_mapa, '')
 		self.assertEqual(produto.tipo_fertilizante, '')
+
+
+class MarcaModelTests(TestCase):
+	def setUp(self):
+		plano = Plano.objects.create(codigo='PEQUENO', nome='Plano Teste', valor_mensal=Decimal('100'))
+		self.empresa = Empresa.objects.create(nome='Empresa Teste', plano=plano)
+		self.outra_empresa = Empresa.objects.create(nome='Outra Empresa', plano=plano)
+
+	def test_marca_nasce_ativa(self):
+		marca = Marca.objects.create(empresa=self.empresa, nome='Terra Brasilis')
+		self.assertTrue(marca.ativo)
+
+	def test_nome_unico_por_empresa_mas_repetivel_entre_empresas(self):
+		Marca.objects.create(empresa=self.empresa, nome='Terra Brasilis')
+		# mesma empresa, mesmo nome -> deve falhar
+		with self.assertRaises(Exception):
+			Marca.objects.create(empresa=self.empresa, nome='Terra Brasilis')
+		# empresa diferente, mesmo nome -> deve funcionar
+		Marca.objects.create(empresa=self.outra_empresa, nome='Terra Brasilis')
+		self.assertEqual(Marca.objects.filter(nome='Terra Brasilis').count(), 2)
 		self.assertEqual(produto.formula_npk, '')

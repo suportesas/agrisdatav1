@@ -6,10 +6,10 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
-from .forms import EtiquetaAvulsaEditForm, LoteEtiquetaAvulsaForm
+from .forms import EtiquetaAvulsaEditForm, ItemPalletForm, LoteEtiquetaAvulsaForm
 from .models import EtiquetaAvulsa, LoteEtiquetaAvulsa
 from .pdf import render_etiqueta_avulsa_pdf
-from .services import criar_lote_com_etiquetas
+from .services import LoteConcluidoError, adicionar_pallets, concluir_lote, criar_lote_com_etiquetas
 
 
 def _get_empresa(request):
@@ -20,18 +20,21 @@ def _get_empresa(request):
 def lote_create(request):
     empresa = _get_empresa(request)
     if request.method == 'POST':
-        form = LoteEtiquetaAvulsaForm(request.POST, empresa=empresa)
-        if form.is_valid():
-            lote = form.save(commit=False)
+        lote_form = LoteEtiquetaAvulsaForm(request.POST, empresa=empresa)
+        item_form = ItemPalletForm(request.POST, empresa=empresa)
+        if lote_form.is_valid() and item_form.is_valid():
+            lote = lote_form.save(commit=False)
             lote.origem = 'UI'
             lote.criado_por = request.user
-            criar_lote_com_etiquetas(lote, empresa)
+            quantidade = item_form.cleaned_data['quantidade']
+            lote = criar_lote_com_etiquetas(lote, empresa, quantidade, item_form.item_data())
             messages.success(request, f'Lote {lote.numero_lote} criado com {lote.total_pallets} etiqueta(s).')
             return redirect('etiquetas_avulsas:lote_detail', pk=lote.pk)
     else:
-        form = LoteEtiquetaAvulsaForm(empresa=empresa)
+        lote_form = LoteEtiquetaAvulsaForm(empresa=empresa)
+        item_form = ItemPalletForm(empresa=empresa)
     return render(request, 'etiquetas_avulsas/lote/form.html', {
-        'form': form, 'title': 'Nova Etiqueta de Pallet Avulso',
+        'lote_form': lote_form, 'item_form': item_form, 'title': 'Nova Etiqueta de Pallet Avulso',
     })
 
 
@@ -44,6 +47,42 @@ def lote_detail(request, pk):
         'lote': lote,
         'etiquetas': etiquetas,
     })
+
+
+@login_required
+def lote_adicionar_pallets(request, pk):
+    empresa = _get_empresa(request)
+    lote = get_object_or_404(LoteEtiquetaAvulsa, pk=pk, empresa=empresa)
+    if lote.status == 'CONCLUIDA':
+        messages.warning(request, 'Este lote já foi concluído; não é possível adicionar mais pallets.')
+        return redirect('etiquetas_avulsas:lote_detail', pk=pk)
+
+    if request.method == 'POST':
+        form = ItemPalletForm(request.POST, empresa=empresa)
+        if form.is_valid():
+            quantidade = form.cleaned_data['quantidade']
+            try:
+                lote = adicionar_pallets(lote, empresa, quantidade, form.item_data())
+            except LoteConcluidoError:
+                messages.warning(request, 'Este lote já foi concluído; não é possível adicionar mais pallets.')
+                return redirect('etiquetas_avulsas:lote_detail', pk=pk)
+            messages.success(request, f'{quantidade} pallet(s) adicionado(s) ao lote {lote.numero_lote}.')
+            return redirect('etiquetas_avulsas:lote_detail', pk=pk)
+    else:
+        form = ItemPalletForm(empresa=empresa)
+    return render(request, 'etiquetas_avulsas/lote/adicionar_pallets.html', {
+        'form': form, 'lote': lote,
+    })
+
+
+@login_required
+@require_POST
+def lote_concluir(request, pk):
+    empresa = _get_empresa(request)
+    lote = get_object_or_404(LoteEtiquetaAvulsa, pk=pk, empresa=empresa)
+    lote = concluir_lote(lote)
+    messages.success(request, f'Lote {lote.numero_lote} concluído.')
+    return redirect('etiquetas_avulsas:lote_detail', pk=pk)
 
 
 @login_required

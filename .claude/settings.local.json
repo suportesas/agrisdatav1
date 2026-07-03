@@ -139,7 +139,9 @@
       "Bash(curl -s -b /tmp/test_cookies.txt http://127.0.0.1:8000/campo/ordens-servico/8/editar/ -o /tmp/os_edit.html -w '%{http_code}')",
       "Bash(curl -s -b /tmp/test_cookies.txt http://127.0.0.1:8000/campo/ordens-servico/8/ -o /tmp/os_concluida_detail.html -w '%{http_code}')",
       "Bash(grep -E \"custo|R\\\\$|total|mao.obra|maquinario|283|224|59\" /tmp/os_concluida_detail.html)",
-      "Bash(curl -s -c /tmp/portal_cookies.txt http://127.0.0.1:8000/portal/campo/login/)"
+      "Bash(curl -s -c /tmp/portal_cookies.txt http://127.0.0.1:8000/portal/campo/login/)",
+      "Bash(where python *)",
+      "Bash(python3 -c \"print\\(1\\)\")"
     ],
     "additionalDirectories": [
       "\\tmp"

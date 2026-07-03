@@ -18,7 +18,7 @@
           <thead class="table-light">
             <tr>
               <th>Nome</th>
-              <th>Cultura / Produto</th>
+              <th>Cultura / Produto / Subcategoria</th>
               <th>Variedade</th>
               <th>Marca</th>
               <th>Calibre</th>
@@ -33,7 +33,7 @@
             {% for t in tipos %}
             <tr>
               <td><strong>{{ t.nome }}</strong></td>
-              <td>{{ t.cultura|default:t.produto|default:"—" }}</td>
+              <td>{{ t.cultura|default:t.produto|default:t.subcategoria|default:"—" }}</td>
               <td>{{ t.variedade|default:"—" }}</td>
               <td>{{ t.marca|default:"—" }}</td>
               <td>{{ t.tipo_calibre|default:"—" }}</td>

@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-3">
+  <h1>{{ action }} Marca</h1>
+  <form method="post">
+    {% csrf_token %}
+    <div class="row">
+      <div class="col-md-6 mb-3">
+        {{ form.nome.label_tag }}
+        {{ form.nome }}
+        {% if form.nome.errors %}<div class="text-danger">{{ form.nome.errors }}</div>{% endif %}
+      </div>
+    </div>
+    <div class="mb-3 form-check">
+      {{ form.ativo }} {{ form.ativo.label_tag }}
+    </div>
+
+    <button class="btn btn-primary">Salvar</button>
+    <a class="btn btn-secondary ms-2" href="{% url 'produtos:marca_list' %}">Cancelar</a>
+  </form>
+</div>
+{% endblock %}

@@ -38,7 +38,10 @@
             <dd class="col-sm-9">Produto do cadastro (opcional). Usado para vincular à pré-venda ao gerar o Pedido de Venda a partir do Romaneio.</dd>
 
             <dt class="col-sm-3">Cultura</dt>
-            <dd class="col-sm-9">Alternativa ao Produto para classificar por cultura agrícola (ex: Manga, Limão). Preencha <em>Produto</em> ou <em>Cultura</em>, não os dois.</dd>
+            <dd class="col-sm-9">Alternativa ao Produto para classificar por cultura agrícola (ex: Manga, Limão).</dd>
+
+            <dt class="col-sm-3">Subcategoria</dt>
+            <dd class="col-sm-9">Alternativa para aplicar este tipo de embalagem a todos os produtos de uma subcategoria (ex: todos os produtos de "Melão"), sem precisar cadastrar um por produto. Preencha ao menos um entre <em>Produto</em>, <em>Cultura</em> ou <em>Subcategoria</em>.</dd>
 
             <dt class="col-sm-3">Variedade</dt>
             <dd class="col-sm-9">Variedade da fruta ou produto. Ex: <em>Tommy Atkins</em>, <em>Kent</em>, <em>Palmer</em>. Aparece na etiqueta de pallet.</dd>
@@ -104,13 +107,17 @@
             <label class="form-label fw-semibold">Variedade</label>
             {{ form.variedade }}
           </div>
-          <div class="col-md-6">
+          <div class="col-md-4">
             <label class="form-label fw-semibold">Produto</label>
             {{ form.produto }}
           </div>
-          <div class="col-md-6">
+          <div class="col-md-4">
             <label class="form-label fw-semibold">Cultura</label>
             {{ form.cultura }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Subcategoria</label>
+            {{ form.subcategoria }}
           </div>
           <div class="col-md-6">
             <label class="form-label fw-semibold">Marca</label>

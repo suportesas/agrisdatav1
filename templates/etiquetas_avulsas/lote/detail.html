@@ -5,7 +5,11 @@
 {% block content %}
 <div class="container-fluid py-4">
   <div class="d-flex justify-content-between align-items-center mb-4">
-    <h3 class="mb-0">Impressão de Etiquetas — {{ lote.numero_lote }}</h3>
+    <h3 class="mb-0">
+      Impressão de Etiquetas — {{ lote.numero_lote }}
+      {% if lote.status == 'CONCLUIDA' %}<span class="badge bg-dark ms-2">Concluída</span>
+      {% else %}<span class="badge bg-primary ms-2">Aberta</span>{% endif %}
+    </h3>
     <a href="{% url 'etiquetas_avulsas:lote_list' %}" class="btn btn-outline-secondary">
       <i class="bi bi-arrow-left"></i> Voltar
     </a>
@@ -14,13 +18,32 @@
   <div class="card border-0 shadow-sm mb-3">
     <div class="card-body">
       <div class="row small">
-        <div class="col-md-3"><strong>Fazenda:</strong> {{ lote.fazenda_nome|default:"—" }}</div>
-        <div class="col-md-3"><strong>Cliente:</strong> {{ lote.cliente_nome|default:"—" }}</div>
-        <div class="col-md-3"><strong>Produto:</strong> {{ lote.produto_nome|default:"—" }}</div>
-        <div class="col-md-3"><strong>Total Pallets:</strong> {{ lote.total_pallets }}</div>
+        <div class="col-md-4"><strong>Fazenda:</strong> {{ lote.fazenda_nome|default:"—" }}</div>
+        <div class="col-md-4"><strong>Cliente:</strong> {{ lote.cliente_nome|default:"—" }}</div>
+        <div class="col-md-4"><strong>Total Pallets:</strong> {{ lote.total_pallets }}</div>
       </div>
     </div>
   </div>
+
+  {% if lote.status == 'ABERTA' %}
+  <div class="card border-0 shadow-sm mb-3">
+    <div class="card-body py-2">
+      <div class="row g-2 align-items-center">
+        <div class="col-auto">
+          <a href="{% url 'etiquetas_avulsas:lote_adicionar_pallets' lote.pk %}" class="btn btn-sm btn-outline-success">
+            <i class="bi bi-plus-circle"></i> Adicionar mais pallets
+          </a>
+        </div>
+        <div class="col-auto ms-auto">
+          <button type="button" id="btn-concluir-carga" class="btn btn-sm btn-outline-dark"
+                  data-url="{% url 'etiquetas_avulsas:lote_concluir' lote.pk %}">
+            <i class="bi bi-check2-circle"></i> Concluir Carga
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
 
   <div class="card border-0 shadow-sm mb-3">
     <div class="card-body py-2">
@@ -55,6 +78,7 @@
                 </th>
                 <th>Pallet</th>
                 <th>Código de Barras</th>
+                <th>Produto</th>
                 <th class="text-end">Caixas</th>
                 <th>Status</th>
                 <th></th>
@@ -73,6 +97,7 @@
                 </td>
                 <td><strong>{{ etiqueta.codigo_pallet }}</strong></td>
                 <td class="font-monospace">{{ etiqueta.codigo_pallet }}</td>
+                <td>{{ etiqueta.produto_nome|default:"—" }}{% if etiqueta.variedade %} / {{ etiqueta.variedade }}{% endif %}</td>
                 <td class="text-end">{{ etiqueta.caixas }}</td>
                 <td>
                   {% if etiqueta.status == 'IMPRESSA' %}<span class="badge bg-success">Impressa</span>
@@ -93,7 +118,7 @@
                 </td>
               </tr>
               {% empty %}
-              <tr><td colspan="6" class="text-center text-muted py-4">Nenhuma etiqueta neste lote.</td></tr>
+              <tr><td colspan="7" class="text-center text-muted py-4">Nenhuma etiqueta neste lote.</td></tr>
               {% endfor %}
             </tbody>
           </table>
@@ -109,6 +134,9 @@
   </form>
 
   <form id="form-cancelar-etiqueta" method="post" style="display:none">
+    {% csrf_token %}
+  </form>
+  <form id="form-concluir-lote" method="post" style="display:none">
     {% csrf_token %}
   </form>
 </div>
@@ -137,5 +165,15 @@ document.querySelectorAll('.btn-cancelar-etiqueta').forEach(function (btn) {
     form.submit();
   });
 });
+
+var btnConcluir = document.getElementById('btn-concluir-carga');
+if (btnConcluir) {
+  btnConcluir.addEventListener('click', function () {
+    if (!confirm('Concluir esta carga? Não será mais possível adicionar novos pallets.')) { return; }
+    var form = document.getElementById('form-concluir-lote');
+    form.action = this.dataset.url;
+    form.submit();
+  });
+}
 </script>
 {% endblock %}

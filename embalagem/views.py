@@ -58,7 +58,7 @@ def embalagem_dashboard(request):
 @login_required
 def tipo_embalagem_list(request):
     empresa = _get_empresa(request)
-    qs = TipoEmbalagem.objects.filter(empresa=empresa).select_related('produto', 'cultura')
+    qs = TipoEmbalagem.objects.filter(empresa=empresa).select_related('produto', 'cultura', 'subcategoria')
     q = request.GET.get('q', '')
     if q:
         qs = qs.filter(nome__icontains=q)

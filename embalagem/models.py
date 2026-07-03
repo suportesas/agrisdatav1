@@ -33,6 +33,15 @@ class TipoEmbalagem(models.Model):
         blank=True,
         null=True,
     )
+    subcategoria = models.ForeignKey(
+        'produtos.SubCategoria',
+        on_delete=models.PROTECT,
+        related_name='tipos_embalagem',
+        verbose_name='Subcategoria',
+        blank=True,
+        null=True,
+        help_text='Aplica este tipo de embalagem a todos os produtos desta subcategoria.',
+    )
     nome = models.CharField('Nome da Embalagem', max_length=100,
                             help_text='Ex: Caixa 5kg Manga Tommy')
     variedade = models.CharField('Variedade', max_length=100, blank=True)
@@ -75,6 +84,8 @@ class TipoEmbalagem(models.Model):
                 partes.append(self.cultura.variedade)
         elif self.produto:
             partes.append(self.produto.nome)
+        elif self.subcategoria:
+            partes.append(self.subcategoria.nome)
         if self.variedade:
             partes.append(self.variedade)
         if self.marca:

@@ -28,7 +28,7 @@
         <table class="table table-hover table-sm align-middle mb-0">
           <thead class="table-light">
             <tr>
-              <th>Tipo de Embalagem</th>
+              <th>Produto</th>
               <th>Fase</th>
               <th class="text-end">Qtd</th>
               <th>Un.</th>
@@ -42,7 +42,7 @@
           <tbody>
             {% for item in itens %}
             <tr>
-              <td>{{ item.tipo_embalagem }}</td>
+              <td>{{ item.produto|default:item.tipo_embalagem|default:"—" }}</td>
               <td><span class="badge bg-secondary-subtle text-secondary">{{ item.get_fase_display }}</span></td>
               <td class="text-end">{{ item.quantidade_planejada|floatformat:2 }}</td>
               <td>{{ item.unidade_medida }}</td>

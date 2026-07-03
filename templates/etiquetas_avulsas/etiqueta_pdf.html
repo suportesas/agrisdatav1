@@ -67,13 +67,13 @@
   <div class="secao">
     <div class="secao-titulo">Product / Produto</div>
     <table class="dados">
-      <tr><td class="lbl">Product:</td><td class="val">{{ lote.produto_nome }}{% if lote.variedade %} / {{ lote.variedade }}{% endif %}</td></tr>
-      {% if lote.marca %}<tr><td class="lbl">Brand:</td><td>{{ lote.marca }}</td></tr>{% endif %}
-      {% if lote.embalagem %}<tr><td class="lbl">Packaging:</td><td>{{ lote.embalagem }}</td></tr>{% endif %}
-      {% if lote.tipo_size %}<tr><td class="lbl">Size:</td><td>{{ lote.tipo_size }}</td></tr>{% endif %}
-      {% if lote.cultivares %}<tr><td class="lbl">Cultivar:</td><td>{{ lote.cultivares }}</td></tr>{% endif %}
-      {% if lote.carimbo %}<tr><td class="lbl">Trace Code:</td><td><strong>{{ lote.carimbo }}</strong></td></tr>{% endif %}
-      {% if lote.temperatura %}<tr><td class="lbl">Temperature:</td><td>{{ lote.temperatura }}°C</td></tr>{% endif %}
+      <tr><td class="lbl">Product:</td><td class="val">{{ etiqueta.produto_nome }}{% if etiqueta.variedade %} / {{ etiqueta.variedade }}{% endif %}</td></tr>
+      {% if etiqueta.marca_nome %}<tr><td class="lbl">Brand:</td><td>{{ etiqueta.marca_nome }}</td></tr>{% endif %}
+      {% if etiqueta.embalagem %}<tr><td class="lbl">Packaging:</td><td>{{ etiqueta.embalagem }}</td></tr>{% endif %}
+      {% if etiqueta.tipo_size %}<tr><td class="lbl">Size:</td><td>{{ etiqueta.tipo_size }}</td></tr>{% endif %}
+      {% if etiqueta.cultivares %}<tr><td class="lbl">Cultivar:</td><td>{{ etiqueta.cultivares }}</td></tr>{% endif %}
+      {% if etiqueta.carimbo %}<tr><td class="lbl">Trace Code:</td><td><strong>{{ etiqueta.carimbo }}</strong></td></tr>{% endif %}
+      {% if etiqueta.temperatura %}<tr><td class="lbl">Temperature:</td><td>{{ etiqueta.temperatura }}°C</td></tr>{% endif %}
     </table>
   </div>
 

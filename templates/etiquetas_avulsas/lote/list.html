@@ -32,6 +32,7 @@
             <tr>
               <th>Lote</th>
               <th>Origem</th>
+              <th>Status</th>
               <th>Fazenda</th>
               <th>Cliente</th>
               <th>Produto</th>
@@ -48,9 +49,13 @@
                 {% if lote.origem == 'API' %}<span class="badge bg-info">API</span>
                 {% else %}<span class="badge bg-secondary">Interno</span>{% endif %}
               </td>
+              <td>
+                {% if lote.status == 'CONCLUIDA' %}<span class="badge bg-dark">Concluída</span>
+                {% else %}<span class="badge bg-primary">Aberta</span>{% endif %}
+              </td>
               <td>{{ lote.fazenda_nome|default:"—" }}</td>
               <td>{{ lote.cliente_nome|default:"—" }}</td>
-              <td>{{ lote.produto_nome|default:"—" }}</td>
+              <td>{{ lote.produtos_resumo }}</td>
               <td class="text-end">{{ lote.total_pallets }}</td>
               <td>{{ lote.criado_em|date:"d/m/Y H:i" }}</td>
               <td>
@@ -60,7 +65,7 @@
               </td>
             </tr>
             {% empty %}
-            <tr><td colspan="8" class="text-center text-muted py-4">Nenhum lote encontrado.</td></tr>
+            <tr><td colspan="9" class="text-center text-muted py-4">Nenhum lote encontrado.</td></tr>
             {% endfor %}
           </tbody>
         </table>

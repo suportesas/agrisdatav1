@@ -14,6 +14,10 @@ class LoteEtiquetaAvulsa(models.Model):
         ('UI', 'Interno'),
         ('API', 'API Externa'),
     ]
+    STATUS = [
+        ('ABERTA', 'Aberta'),
+        ('CONCLUIDA', 'Concluída'),
+    ]
 
     empresa = models.ForeignKey(
         'empresas.Empresa',
@@ -22,6 +26,7 @@ class LoteEtiquetaAvulsa(models.Model):
         verbose_name='Empresa',
     )
     numero_lote = models.CharField('Número do Lote', max_length=20, blank=True)
+    status = models.CharField('Status', max_length=20, choices=STATUS, default='ABERTA')
     origem = models.CharField('Origem', max_length=10, choices=ORIGEM, default='UI')
     api_key = models.ForeignKey(
         'empresas.APIKey',
@@ -99,40 +104,7 @@ class LoteEtiquetaAvulsa(models.Model):
     )
     navio_texto = models.CharField('Navio', max_length=150, blank=True)
 
-    # Produto
-    produto = models.ForeignKey(
-        'produtos.Produto',
-        on_delete=models.SET_NULL,
-        related_name='lotes_etiqueta_avulsa',
-        verbose_name='Produto',
-        null=True,
-        blank=True,
-    )
-    produto_texto = models.CharField('Produto', max_length=150, blank=True)
-    cultura = models.ForeignKey(
-        'cadastros.Cultura',
-        on_delete=models.SET_NULL,
-        related_name='lotes_etiqueta_avulsa',
-        verbose_name='Cultura',
-        null=True,
-        blank=True,
-    )
-
-    # Campos sempre em texto livre — sem cadastro correspondente no sistema
-    variedade = models.CharField('Variedade', max_length=100, blank=True)
-    embalagem = models.CharField('Embalagem', max_length=100, blank=True)
-    marca = models.CharField('Marca', max_length=100, blank=True)
-    cultivares = models.CharField('Cultivares', max_length=150, blank=True)
-    tipo_size = models.CharField('Tipo / Size', max_length=30, blank=True)
-    temperatura = models.CharField('Temperatura', max_length=20, blank=True)
-    carimbo = models.CharField('Carimbo (Trace/Lote)', max_length=50, blank=True)
-
-    caixas_por_pallet = models.PositiveIntegerField('Caixas por Pallet')
-    peso_liquido_cx = models.DecimalField(
-        'Peso Líquido/Caixa (kg)', max_digits=10, decimal_places=3, null=True, blank=True)
-    peso_bruto_cx = models.DecimalField(
-        'Peso Bruto/Caixa (kg)', max_digits=10, decimal_places=3, null=True, blank=True)
-    total_pallets = models.PositiveIntegerField('Total de Pallets')
+    total_pallets = models.PositiveIntegerField('Total de Pallets', default=0)
     comentarios = models.TextField('Comentários', blank=True)
 
     criado_por = models.ForeignKey(
@@ -203,8 +175,15 @@ class LoteEtiquetaAvulsa(models.Model):
         return self.navio.nome if self.navio else self.navio_texto
 
     @property
-    def produto_nome(self):
-        return self.produto.nome if self.produto else self.produto_texto
+    def produtos_resumo(self):
+        """Lista (sem repetição) dos produtos das levas já adicionadas a este
+        lote — uma carga pode misturar mais de um produto."""
+        nomes = []
+        for et in self.etiquetas.filter(ativo=True).select_related('produto'):
+            nome = et.produto_nome
+            if nome and nome not in nomes:
+                nomes.append(nome)
+        return ', '.join(nomes) if nomes else '—'
 
 
 # ──────────────────────────── EtiquetaAvulsa ────────────────────────────────
@@ -231,6 +210,46 @@ class EtiquetaAvulsa(models.Model):
     )
     codigo_pallet = models.CharField('Código do Pallet', max_length=30)
     numero_sequencial = models.PositiveIntegerField('Nº na sequência do lote')
+
+    # Produto — cada leva de pallets adicionada pode ter um produto diferente
+    # (uma carga pode misturar mais de um tipo de produto).
+    produto = models.ForeignKey(
+        'produtos.Produto',
+        on_delete=models.SET_NULL,
+        related_name='etiquetas_avulsas',
+        verbose_name='Produto',
+        null=True,
+        blank=True,
+    )
+    produto_texto = models.CharField('Produto', max_length=150, blank=True)
+    cultura = models.ForeignKey(
+        'cadastros.Cultura',
+        on_delete=models.SET_NULL,
+        related_name='etiquetas_avulsas',
+        verbose_name='Cultura',
+        null=True,
+        blank=True,
+    )
+    variedade = models.CharField('Variedade', max_length=100, blank=True)
+    embalagem = models.CharField('Embalagem', max_length=100, blank=True)
+    marca = models.ForeignKey(
+        'produtos.Marca',
+        on_delete=models.SET_NULL,
+        related_name='etiquetas_avulsas',
+        verbose_name='Marca',
+        null=True,
+        blank=True,
+    )
+    marca_texto = models.CharField('Marca', max_length=100, blank=True)
+    cultivares = models.CharField('Cultivares', max_length=150, blank=True)
+    tipo_size = models.CharField('Tipo / Size', max_length=30, blank=True)
+    temperatura = models.CharField('Temperatura', max_length=20, blank=True)
+    carimbo = models.CharField('Carimbo (Trace/Lote)', max_length=50, blank=True)
+    peso_liquido_cx = models.DecimalField(
+        'Peso Líquido/Caixa (kg)', max_digits=10, decimal_places=3, null=True, blank=True)
+    peso_bruto_cx = models.DecimalField(
+        'Peso Bruto/Caixa (kg)', max_digits=10, decimal_places=3, null=True, blank=True)
+
     caixas = models.PositiveIntegerField('Caixas')
     status = models.CharField('Status', max_length=20, choices=STATUS, default='GERADA')
     impressa_em = models.DateTimeField('Impressa em', null=True, blank=True)
@@ -251,6 +270,14 @@ class EtiquetaAvulsa(models.Model):
 
     def __str__(self):
         return self.codigo_pallet
+
+    @property
+    def produto_nome(self):
+        return self.produto.nome if self.produto else self.produto_texto
+
+    @property
+    def marca_nome(self):
+        return self.marca.nome if self.marca else self.marca_texto
 
     @classmethod
     def _gerar_codigo_base(cls, empresa):

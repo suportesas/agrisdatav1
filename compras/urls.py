@@ -22,6 +22,7 @@ from .views_planejamento_embalagem import (
     planejamento_embalagem_aprovar,
     planejamento_embalagem_revisar_precos,
     planejamento_embalagem_gerar,
+    get_dados_planejamento_embalagem_por_produto,
 )
 
 app_name = 'compras'
@@ -118,6 +119,7 @@ urlpatterns = [
     # ========================================
     path('planejamento-embalagem/', planejamento_embalagem_list, name='planejamento_embalagem_list'),
     path('planejamento-embalagem/novo/', planejamento_embalagem_create, name='planejamento_embalagem_create'),
+    path('planejamento-embalagem/api/produto/<int:produto_id>/dados/', get_dados_planejamento_embalagem_por_produto, name='planejamento_embalagem_dados_produto'),
     path('planejamento-embalagem/<int:pk>/', planejamento_embalagem_detail, name='planejamento_embalagem_detail'),
     path('planejamento-embalagem/<int:pk>/editar/', planejamento_embalagem_update, name='planejamento_embalagem_update'),
     path('planejamento-embalagem/<int:pk>/aprovar/', planejamento_embalagem_aprovar, name='planejamento_embalagem_aprovar'),

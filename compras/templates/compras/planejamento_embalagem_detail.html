@@ -132,7 +132,8 @@
       <table class="table table-hover table-sm mb-0 align-middle">
         <thead class="table-light">
           <tr>
-            <th>Tipo de Embalagem</th>
+            <th>Produto</th>
+            <th>Categoria</th>
             <th>Fase</th>
             <th>Data Prevista</th>
             <th class="text-end">Qtd</th>
@@ -141,7 +142,6 @@
             <th class="text-end">Pr. Atual</th>
             <th class="text-end">Custo Atual</th>
             <th>Forn. Preferencial</th>
-            <th>Forn. Alternativo</th>
             <th>Status</th>
             <th>Documento</th>
           </tr>
@@ -149,7 +149,8 @@
         <tbody>
           {% for item in planejamento.itens.all %}
           <tr>
-            <td>{{ item.tipo_embalagem }}</td>
+            <td>{{ item.produto|default:item.tipo_embalagem|default:"—" }}</td>
+            <td>{{ item.produto.categoria|default:"—" }}</td>
             <td><span class="badge bg-secondary-subtle text-secondary">{{ item.get_fase_display }}</span></td>
             <td>{{ item.data_prevista|date:"d/m/Y" }}</td>
             <td class="text-end">{{ item.quantidade_planejada|floatformat:2 }}</td>
@@ -165,7 +166,6 @@
             </td>
             <td class="text-end fw-semibold">R$ {{ item.custo_atual|floatformat:2 }}</td>
             <td>{{ item.fornecedor_preferencial|default:"—" }}</td>
-            <td>{{ item.fornecedor_alternativo|default:"—" }}</td>
             <td>
               {% if item.status == 'PLANEJADO' %}
                 <span class="badge bg-secondary">Planejado</span>

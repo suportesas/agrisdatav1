@@ -20,6 +20,7 @@ from .models import (
 from .forms import (
     PlanejamentoComprasEmbalagemForm,
     ItemPlanejamentoFormSet,
+    ItemPlanejamentoEmbalagemForm,
     RevisarPrecosItemForm,
 )
 
@@ -85,6 +86,7 @@ def planejamento_embalagem_create(request):
     return render(request, 'compras/planejamento_embalagem_form.html', {
         'form': form,
         'formset': formset,
+        'entry_form': ItemPlanejamentoEmbalagemForm(empresa=empresa, prefix='entry'),
         'titulo': 'Novo Planejamento de Embalagens',
         'modo': 'criar',
     })
@@ -99,10 +101,10 @@ def planejamento_embalagem_detail(request, pk):
     empresa = request.user.empresa
     planejamento = get_object_or_404(
         PlanejamentoComprasEmbalagem.objects.prefetch_related(
+            'itens__produto',
             'itens__tipo_embalagem',
             'itens__unidade_medida',
             'itens__fornecedor_preferencial',
-            'itens__fornecedor_alternativo',
             'itens__solicitacao_compra',
             'itens__pedido_compra',
         ),
@@ -150,6 +152,7 @@ def planejamento_embalagem_update(request, pk):
     return render(request, 'compras/planejamento_embalagem_form.html', {
         'form': form,
         'formset': formset,
+        'entry_form': ItemPlanejamentoEmbalagemForm(empresa=empresa, prefix='entry'),
         'planejamento': planejamento,
         'titulo': f'Editar {planejamento.numero}',
         'modo': 'editar',
@@ -182,7 +185,7 @@ def planejamento_embalagem_aprovar(request, pk):
 def planejamento_embalagem_revisar_precos(request, pk):
     empresa = request.user.empresa
     planejamento = get_object_or_404(PlanejamentoComprasEmbalagem, pk=pk, empresa=empresa)
-    itens = planejamento.itens.select_related('tipo_embalagem', 'unidade_medida').all()
+    itens = planejamento.itens.select_related('produto', 'tipo_embalagem', 'unidade_medida').all()
 
     if request.method == 'POST':
         with transaction.atomic():
@@ -222,7 +225,7 @@ def planejamento_embalagem_gerar(request, pk):
         return redirect('compras:planejamento_embalagem_detail', pk=pk)
 
     itens_planejados = planejamento.itens.filter(status='PLANEJADO').select_related(
-        'tipo_embalagem', 'unidade_medida', 'fornecedor_preferencial'
+        'produto', 'tipo_embalagem', 'unidade_medida', 'fornecedor_preferencial'
     )
 
     if request.method == 'POST':
@@ -260,12 +263,13 @@ def _gerar_solicitacao(request, planejamento, itens):
             status='PENDENTE',
         )
         for item in itens:
-            # Busca o produto via tipo_embalagem
-            produto = item.tipo_embalagem.produto
+            # Fallback para tipo_embalagem.produto mantém compatibilidade com
+            # itens antigos criados antes do campo produto existir.
+            produto = item.produto or (item.tipo_embalagem.produto if item.tipo_embalagem else None)
             if not produto:
                 messages.warning(
                     request,
-                    f'Item "{item.tipo_embalagem}" não tem produto cadastrado — ignorado na solicitação.',
+                    f'Item "{item.tipo_embalagem or item}" não tem produto cadastrado — ignorado na solicitação.',
                 )
                 continue
             ItemSolicitacaoCompra.objects.create(
@@ -273,7 +277,7 @@ def _gerar_solicitacao(request, planejamento, itens):
                 produto=produto,
                 quantidade=item.quantidade_planejada,
                 unidade_medida=item.unidade_medida,
-                especificacao=str(item.tipo_embalagem),
+                especificacao=str(item.tipo_embalagem) if item.tipo_embalagem else '',
                 observacoes=item.observacoes,
             )
             item.solicitacao_compra = solicitacao
@@ -303,7 +307,7 @@ def _gerar_pedido_direto(request, planejamento, itens):
             sem_fornecedor.append(item)
 
     if sem_fornecedor:
-        nomes = ', '.join(str(i.tipo_embalagem) for i in sem_fornecedor)
+        nomes = ', '.join(str(i.produto or i.tipo_embalagem) for i in sem_fornecedor)
         messages.warning(
             request,
             f'Os itens a seguir não têm fornecedor preferencial e foram ignorados: {nomes}. '
@@ -326,11 +330,11 @@ def _gerar_pedido_direto(request, planejamento, itens):
                 data_entrega_prevista=min(i.data_prevista for i in itens_grupo),
             )
             for item in itens_grupo:
-                produto = item.tipo_embalagem.produto
+                produto = item.produto or (item.tipo_embalagem.produto if item.tipo_embalagem else None)
                 if not produto:
                     messages.warning(
                         request,
-                        f'Item "{item.tipo_embalagem}" não tem produto cadastrado — ignorado no pedido.',
+                        f'Item "{item.tipo_embalagem or item}" não tem produto cadastrado — ignorado no pedido.',
                     )
                     continue
                 ItemPedidoCompra.objects.create(
@@ -339,7 +343,7 @@ def _gerar_pedido_direto(request, planejamento, itens):
                     quantidade_pedida=item.quantidade_planejada,
                     unidade_medida=item.unidade_medida,
                     preco_unitario=item.preco_atual_unitario,
-                    especificacao=str(item.tipo_embalagem),
+                    especificacao=str(item.tipo_embalagem) if item.tipo_embalagem else '',
                     observacoes=item.observacoes,
                 )
                 item.pedido_compra = pedido
@@ -354,3 +358,44 @@ def _gerar_pedido_direto(request, planejamento, itens):
     if len(pedidos_criados) == 1:
         return redirect('compras:pedido_detail', pk=pedidos_criados[0].pk)
     return redirect('compras:planejamento_embalagem_detail', pk=planejamento.pk)
+
+
+# ─────────────────────────────────────────────
+# API — DADOS DO PRODUTO PARA AUTOPREENCHIMENTO
+# ─────────────────────────────────────────────
+
+@login_required
+def get_dados_planejamento_embalagem_por_produto(request, produto_id):
+    """API: dados de um produto para autopreencher o item do planejamento
+    (unidade padrão, fornecedor correspondente e preço de compra)."""
+    from produtos.models import Produto, ProdutoFornecedor
+
+    try:
+        produto = Produto.objects.select_related('unidade_medida').get(
+            id=produto_id, categoria__empresa=request.user.empresa
+        )
+    except Produto.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Produto não encontrado'}, status=404)
+
+    produto_fornecedor = ProdutoFornecedor.objects.filter(
+        produto=produto, ativo=True,
+        fornecedor__empresa=request.user.empresa, fornecedor__ativa=True,
+    ).select_related('fornecedor').order_by('-fornecedor_preferencial', 'fornecedor__nome').first()
+
+    if produto_fornecedor:
+        fornecedor_id = produto_fornecedor.fornecedor_id
+        fornecedor_nome = produto_fornecedor.fornecedor.nome
+        preco_compra = produto_fornecedor.preco_compra
+    else:
+        fornecedor_id = None
+        fornecedor_nome = None
+        preco_compra = produto.preco_custo
+
+    return JsonResponse({
+        'success': True,
+        'unidade_padrao_id': produto.unidade_medida.id,
+        'unidade_padrao_nome': produto.unidade_medida.nome,
+        'fornecedor_id': fornecedor_id,
+        'fornecedor_nome': fornecedor_nome,
+        'preco_compra': str(preco_compra) if preco_compra is not None else None,
+    })

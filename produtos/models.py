@@ -37,6 +37,24 @@ class TipoProduto(models.Model):
         return self.nome
 
 
+class Marca(models.Model):
+    """Marca comercial vinculável a produtos/etiquetas (ex: em etiquetas_avulsas)."""
+    empresa = models.ForeignKey('empresas.Empresa', on_delete=models.CASCADE, related_name='marcas', verbose_name='Empresa')
+    nome = models.CharField(max_length=100, verbose_name='Nome')
+    ativo = models.BooleanField(default=True, verbose_name='Ativo')
+
+    class Meta:
+        verbose_name = 'Marca'
+        verbose_name_plural = 'Marcas'
+        ordering = ['nome']
+        constraints = [
+            models.UniqueConstraint(fields=['empresa', 'nome'], name='unique_marca_por_empresa'),
+        ]
+
+    def __str__(self):
+        return self.nome
+
+
 class UnidadeMedida(models.Model):
     TIPO_CHOICES = [
         ('PESO', 'Peso'),

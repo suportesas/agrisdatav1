@@ -2,6 +2,11 @@
 {% block title %}{{ title }}{% endblock %}
 {% block page_title %}{{ title }}{% endblock %}
 
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid py-4">
   <div class="card border-0 shadow-sm">
@@ -11,79 +16,95 @@
       <form method="post" novalidate>
         {% csrf_token %}
 
-        {% if form.non_field_errors %}
-        <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+        {% if lote_form.non_field_errors %}
+        <div class="alert alert-danger">{{ lote_form.non_field_errors }}</div>
         {% endif %}
 
         <div class="row g-3 mb-4">
-          <div class="col-12"><h6 class="text-primary border-bottom pb-2"><i class="bi bi-geo-alt"></i> Origem / Destino</h6></div>
+          <div class="col-12"><h6 class="text-primary border-bottom pb-2"><i class="bi bi-geo-alt"></i> Origem / Destino da Carga</h6></div>
           <div class="col-md-4">
             <label class="form-label fw-semibold">Safra</label>
-            {{ form.safra }}
-            {{ form.safra_texto }}
+            {{ lote_form.safra }}
+            {{ lote_form.safra_texto }}
             <small class="text-muted">Define o prefixo do código de barras dos pallets; muda de safra, reinicia a numeração.</small>
           </div>
           <div class="col-md-4">
             <label class="form-label fw-semibold">Fazenda</label>
-            {{ form.fazenda }}
-            {{ form.fazenda_texto }}
+            {{ lote_form.fazenda }}
+            {{ lote_form.fazenda_texto }}
           </div>
           <div class="col-md-4">
             <label class="form-label fw-semibold">Importador / Cliente</label>
-            {{ form.cliente }}
-            {{ form.cliente_texto }}
+            {{ lote_form.cliente }}
+            {{ lote_form.cliente_texto }}
           </div>
           <div class="col-md-4">
             <label class="form-label fw-semibold">Cliente Final</label>
-            {{ form.cliente_final_texto }}
+            {{ lote_form.cliente_final_texto }}
           </div>
           <div class="col-md-4">
             <label class="form-label fw-semibold">Porto Origem</label>
-            {{ form.porto_origem }}
-            {{ form.porto_origem_texto }}
+            {{ lote_form.porto_origem }}
+            {{ lote_form.porto_origem_texto }}
           </div>
           <div class="col-md-4">
             <label class="form-label fw-semibold">Porto Destino</label>
-            {{ form.porto_destino }}
-            {{ form.porto_destino_texto }}
+            {{ lote_form.porto_destino }}
+            {{ lote_form.porto_destino_texto }}
           </div>
           <div class="col-md-4">
             <label class="form-label fw-semibold">Navio</label>
-            {{ form.navio }}
-            {{ form.navio_texto }}
+            {{ lote_form.navio }}
+            {{ lote_form.navio_texto }}
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-semibold">Comentários</label>
+            {{ lote_form.comentarios }}
           </div>
         </div>
 
+        {% if item_form.non_field_errors %}
+        <div class="alert alert-danger">{{ item_form.non_field_errors }}</div>
+        {% endif %}
+
         <div class="row g-3 mb-4">
-          <div class="col-12"><h6 class="text-primary border-bottom pb-2"><i class="bi bi-box-seam"></i> Produto</h6></div>
+          <div class="col-12">
+            <h6 class="text-primary border-bottom pb-2"><i class="bi bi-box-seam"></i> Produto (primeira leva de pallets)</h6>
+            <small class="text-muted">Uma carga pode ter mais de um produto — depois de criar, dá para adicionar mais levas de outro produto ao mesmo lote.</small>
+          </div>
           <div class="col-md-4">
             <label class="form-label fw-semibold">Produto</label>
-            {{ form.produto }}
-            {{ form.produto_texto }}
+            {{ item_form.produto }}
+            {{ item_form.produto_texto }}
           </div>
           <div class="col-md-4">
             <label class="form-label fw-semibold">Cultura</label>
-            {{ form.cultura }}
+            {{ item_form.cultura }}
           </div>
           <div class="col-md-4">
             <label class="form-label fw-semibold">Variedade</label>
-            {{ form.variedade }}
+            {{ item_form.variedade }}
+            <small class="text-muted">Preenche sozinha ao escolher a Cultura, mas pode editar.</small>
           </div>
           <div class="col-md-3">
-            <label class="form-label fw-semibold">Marca</label>
-            {{ form.marca }}
+            <label class="form-label fw-semibold d-flex justify-content-between">
+              Marca
+              <a href="{% url 'produtos:marca_create' %}" target="_blank" class="small">+ Nova marca</a>
+            </label>
+            {{ item_form.marca }}
+            {{ item_form.marca_texto }}
           </div>
           <div class="col-md-3">
             <label class="form-label fw-semibold">Cultivares</label>
-            {{ form.cultivares }}
+            {{ item_form.cultivares }}
           </div>
           <div class="col-md-3">
             <label class="form-label fw-semibold">Tipo / Size</label>
-            {{ form.tipo_size }}
+            {{ item_form.tipo_size }}
           </div>
           <div class="col-md-3">
             <label class="form-label fw-semibold">Temperatura (°C)</label>
-            {{ form.temperatura }}
+            {{ item_form.temperatura }}
           </div>
         </div>
 
@@ -91,35 +112,31 @@
           <div class="col-12"><h6 class="text-primary border-bottom pb-2"><i class="bi bi-box"></i> Embalagem / Pallets</h6></div>
           <div class="col-md-4">
             <label class="form-label fw-semibold">Embalagem</label>
-            {{ form.embalagem }}
+            {{ item_form.embalagem }}
           </div>
           <div class="col-md-4">
             <label class="form-label fw-semibold">Carimbo (Trace/Lote)</label>
-            {{ form.carimbo }}
+            {{ item_form.carimbo }}
           </div>
           <div class="col-md-4"></div>
           <div class="col-md-3">
             <label class="form-label fw-semibold">Caixas por Pallet</label>
-            {{ form.caixas_por_pallet }}
-            {% if form.caixas_por_pallet.errors %}<div class="text-danger small">{{ form.caixas_por_pallet.errors|join:", " }}</div>{% endif %}
+            {{ item_form.caixas }}
+            {% if item_form.caixas.errors %}<div class="text-danger small">{{ item_form.caixas.errors|join:", " }}</div>{% endif %}
           </div>
           <div class="col-md-3">
             <label class="form-label fw-semibold">Peso Líquido/Caixa (kg)</label>
-            {{ form.peso_liquido_cx }}
+            {{ item_form.peso_liquido_cx }}
           </div>
           <div class="col-md-3">
             <label class="form-label fw-semibold">Peso Bruto/Caixa (kg)</label>
-            {{ form.peso_bruto_cx }}
+            {{ item_form.peso_bruto_cx }}
           </div>
           <div class="col-md-3">
-            <label class="form-label fw-semibold">Total de Pallets</label>
-            {{ form.total_pallets }}
-            {% if form.total_pallets.errors %}<div class="text-danger small">{{ form.total_pallets.errors|join:", " }}</div>{% endif %}
-            <small class="text-muted">Gera uma etiqueta sequencial para cada pallet.</small>
-          </div>
-          <div class="col-12">
-            <label class="form-label fw-semibold">Comentários</label>
-            {{ form.comentarios }}
+            <label class="form-label fw-semibold">Quantidade Inicial de Pallets</label>
+            {{ item_form.quantidade }}
+            {% if item_form.quantidade.errors %}<div class="text-danger small">{{ item_form.quantidade.errors|join:", " }}</div>{% endif %}
+            <small class="text-muted">Gera essa quantidade agora; dá para adicionar mais pallets depois, enquanto o lote estiver "Aberta".</small>
           </div>
         </div>
 
@@ -135,4 +152,46 @@
     </div>
   </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var produtoAjaxUrl = '{% url "produtos:ajax_buscar_produtos" %}';
+  var produtoSelect = document.querySelector('[name="produto"]');
+  if (produtoSelect) {
+    $(produtoSelect).select2({
+      theme: 'bootstrap-5',
+      width: '100%',
+      placeholder: 'Buscar produto...',
+      allowClear: true,
+      minimumInputLength: 2,
+      ajax: {
+        url: produtoAjaxUrl,
+        dataType: 'json',
+        delay: 250,
+        data: function (params) { return { q: params.term }; },
+        processResults: function (data) { return { results: data.results || [] }; },
+        cache: true,
+      },
+      language: {
+        inputTooShort: function () { return 'Digite ao menos 2 caracteres para buscar'; },
+        noResults: function () { return 'Nenhum produto encontrado'; },
+      },
+    });
+  }
+
+  var culturaSelect = document.querySelector('[name="cultura"]');
+  var variedadeInput = document.querySelector('[name="variedade"]');
+  if (culturaSelect && variedadeInput) {
+    culturaSelect.addEventListener('change', function () {
+      var opt = culturaSelect.options[culturaSelect.selectedIndex];
+      var variedade = opt ? opt.getAttribute('data-variedade') : '';
+      if (variedade) { variedadeInput.value = variedade; }
+    });
+  }
+});
+</script>
 {% endblock %}

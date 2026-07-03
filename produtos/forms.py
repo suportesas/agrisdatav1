@@ -3,8 +3,18 @@ from decimal import Decimal, ROUND_HALF_UP
 from django import forms
 from django.core.exceptions import ValidationError
 from django.forms.widgets import Select
-from .models import UnidadeMedida, Categoria, SubCategoria, Produto, ProdutoTributacao, NaturezaOperacao, ProdutoDefensivoCultura, TipoProduto
+from .models import Marca, UnidadeMedida, Categoria, SubCategoria, Produto, ProdutoTributacao, NaturezaOperacao, ProdutoDefensivoCultura, TipoProduto
 from estoque.models import Armazem
+
+
+class MarcaForm(forms.ModelForm):
+    class Meta:
+        model = Marca
+        fields = ['nome', 'ativo']
+        widgets = {
+            'nome': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Terra Brasilis'}),
+            'ativo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
 
 
 class TipoProdutoForm(forms.ModelForm):

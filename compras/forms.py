@@ -369,8 +369,8 @@ class PlanejamentoComprasEmbalagemForm(forms.ModelForm):
         fields = ['safra', 'nome', 'data_inicio', 'data_fim', 'responsavel', 'observacoes']
         widgets = {
             'nome': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Planejamento Embalagens Manga Tommy 2025'}),
-            'data_inicio': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'data_fim': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'data_inicio': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'),
+            'data_fim': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'),
             'safra': forms.Select(attrs={'class': 'form-select'}),
             'responsavel': forms.Select(attrs={'class': 'form-select'}),
             'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
@@ -394,45 +394,40 @@ class ItemPlanejamentoEmbalagemForm(forms.ModelForm):
     class Meta:
         model = ItemPlanejamentoEmbalagem
         fields = [
-            'tipo_embalagem', 'fase', 'data_prevista',
+            'produto', 'fase', 'data_prevista',
             'quantidade_planejada', 'unidade_medida',
             'preco_estimado_unitario', 'preco_atual_unitario',
-            'fornecedor_preferencial', 'fornecedor_alternativo',
+            'fornecedor_preferencial',
             'observacoes',
         ]
         widgets = {
-            'tipo_embalagem': forms.Select(attrs={'class': 'form-select form-select-sm select-tipo-embalagem'}),
+            'produto': forms.HiddenInput(),
             'fase': forms.Select(attrs={'class': 'form-select form-select-sm'}),
-            'data_prevista': forms.DateInput(attrs={'class': 'form-control form-control-sm', 'type': 'date'}),
+            'data_prevista': forms.DateInput(attrs={'class': 'form-control form-control-sm', 'type': 'date'}, format='%Y-%m-%d'),
             'quantidade_planejada': forms.NumberInput(attrs={'class': 'form-control form-control-sm', 'step': '0.01', 'min': '0.01'}),
             'unidade_medida': forms.Select(attrs={'class': 'form-select form-select-sm'}),
             'preco_estimado_unitario': forms.NumberInput(attrs={'class': 'form-control form-control-sm preco-estimado', 'step': '0.0001', 'min': '0'}),
             'preco_atual_unitario': forms.NumberInput(attrs={'class': 'form-control form-control-sm preco-atual', 'step': '0.0001', 'min': '0'}),
             'fornecedor_preferencial': forms.Select(attrs={'class': 'form-select form-select-sm'}),
-            'fornecedor_alternativo': forms.Select(attrs={'class': 'form-select form-select-sm'}),
             'observacoes': forms.TextInput(attrs={'class': 'form-control form-control-sm', 'placeholder': 'Obs...'}),
         }
 
     def __init__(self, *args, empresa=None, **kwargs):
         super().__init__(*args, **kwargs)
         if empresa:
-            from embalagem.models import TipoEmbalagem
-            from produtos.models import UnidadeMedida
+            from produtos.models import Produto, UnidadeMedida
             from cadastros.models import Fornecedor
-            self.fields['tipo_embalagem'].queryset = TipoEmbalagem.objects.filter(
-                empresa=empresa, ativo=True
-            ).order_by('nome')
+            self.fields['produto'].queryset = Produto.objects.filter(
+                categoria__empresa=empresa, ativo=True
+            )
             self.fields['unidade_medida'].queryset = UnidadeMedida.objects.filter(
                 empresa=empresa
             ).order_by('nome')
             self.fields['fornecedor_preferencial'].queryset = Fornecedor.objects.filter(
                 empresa=empresa, ativa=True
             ).order_by('nome')
-            self.fields['fornecedor_alternativo'].queryset = Fornecedor.objects.filter(
-                empresa=empresa, ativa=True
-            ).order_by('nome')
+        self.fields['produto'].required = True
         self.fields['fornecedor_preferencial'].required = False
-        self.fields['fornecedor_alternativo'].required = False
         self.fields['observacoes'].required = False
         self.fields['preco_atual_unitario'].required = False
 
@@ -445,6 +440,11 @@ class BaseItemPlanejamentoFormSet(BaseInlineFormSet):
     def _construct_form(self, i, **kwargs):
         kwargs['empresa'] = self.empresa
         return super()._construct_form(i, **kwargs)
+
+    def get_form_kwargs(self, index):
+        kwargs = super().get_form_kwargs(index)
+        kwargs['empresa'] = self.empresa
+        return kwargs
 
 
 ItemPlanejamentoFormSet = inlineformset_factory(

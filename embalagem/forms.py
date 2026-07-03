@@ -6,13 +6,14 @@ class TipoEmbalagemForm(forms.ModelForm):
     class Meta:
         model = TipoEmbalagem
         fields = [
-            'produto', 'cultura', 'nome', 'variedade', 'marca', 'tipo_calibre',
+            'produto', 'cultura', 'subcategoria', 'nome', 'variedade', 'marca', 'tipo_calibre',
             'peso_liquido_cx', 'peso_bruto_cx', 'caixas_por_pallet', 'peso_pallet_vazio',
             'trace_code', 'ativo',
         ]
         widgets = {
             'produto': forms.Select(attrs={'class': 'form-select'}),
             'cultura': forms.Select(attrs={'class': 'form-select'}),
+            'subcategoria': forms.Select(attrs={'class': 'form-select'}),
             'nome': forms.TextInput(attrs={'class': 'form-control'}),
             'variedade': forms.TextInput(attrs={'class': 'form-control'}),
             'marca': forms.TextInput(attrs={'class': 'form-control'}),
@@ -28,12 +29,16 @@ class TipoEmbalagemForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.empresa = empresa
         if empresa:
-            from produtos.models import Produto
+            from produtos.models import Produto, SubCategoria
             from cadastros.models import Cultura
             self.fields['produto'].queryset = Produto.objects.filter(categoria__empresa=empresa, ativo=True).order_by('nome')
             self.fields['cultura'].queryset = Cultura.objects.filter(empresa=empresa).order_by('nome')
+            self.fields['subcategoria'].queryset = SubCategoria.objects.filter(
+                categoria__empresa=empresa, ativo=True
+            ).select_related('categoria').order_by('categoria__nome', 'nome')
         self.fields['produto'].required = False
         self.fields['cultura'].required = False
+        self.fields['subcategoria'].required = False
 
     def clean(self):
         cleaned = super().clean()
@@ -52,8 +57,9 @@ class TipoEmbalagemForm(forms.ModelForm):
 
         produto = cleaned.get('produto')
         cultura = cleaned.get('cultura')
-        if not produto and not cultura:
-            raise forms.ValidationError('Informe pelo menos Produto ou Cultura para o tipo de embalagem.')
+        subcategoria = cleaned.get('subcategoria')
+        if not produto and not cultura and not subcategoria:
+            raise forms.ValidationError('Informe pelo menos Produto, Cultura ou Subcategoria para o tipo de embalagem.')
 
         return cleaned
 

@@ -2229,10 +2229,20 @@ class ItemPlanejamentoEmbalagem(models.Model):
         related_name='itens',
         verbose_name='Planejamento',
     )
+    produto = models.ForeignKey(
+        'produtos.Produto',
+        on_delete=models.PROTECT,
+        related_name='itens_planejamento_embalagem',
+        null=True,
+        blank=True,
+        verbose_name='Produto',
+    )
     tipo_embalagem = models.ForeignKey(
         'embalagem.TipoEmbalagem',
         on_delete=models.PROTECT,
         related_name='itens_planejamento',
+        null=True,
+        blank=True,
         verbose_name='Tipo de Embalagem',
     )
     fase = models.CharField(
@@ -2312,7 +2322,7 @@ class ItemPlanejamentoEmbalagem(models.Model):
         ordering = ['data_prevista', 'fase']
 
     def __str__(self):
-        return f'{self.tipo_embalagem} — {self.quantidade_planejada} {self.unidade_medida}'
+        return f'{self.produto or self.tipo_embalagem} — {self.quantidade_planejada} {self.unidade_medida}'
 
     def save(self, *args, **kwargs):
         if not self.pk and not self.preco_atual_unitario:

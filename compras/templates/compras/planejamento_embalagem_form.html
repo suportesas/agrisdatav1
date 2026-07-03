@@ -2,11 +2,12 @@
 
 {% block title %}{{ titulo }}{% endblock %}
 
-{% block extra_head %}
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
 <style>
-  .formset-row td { vertical-align: middle; }
-  .formset-row.d-none { display: none !important; }
-  #id_empty_row { display: none; }
+  #entry-produto-wrap .select2-container { width: 100% !important; }
+  #summary-table td { vertical-align: middle; }
 </style>
 {% endblock %}
 
@@ -69,94 +70,148 @@
       </div>
     </div>
 
-    <!-- ITENS -->
+    <!-- ADICIONAR ITEM (formulário único) -->
     <div class="card border-0 shadow-sm mb-4" style="border-radius: var(--radius-card);">
-      <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
-        <span class="fw-semibold"><i class="bi bi-list-ul text-primary me-2"></i>Itens do Planejamento</span>
-        <button type="button" id="btn-add-item" class="btn btn-sm btn-outline-primary">
-          <i class="bi bi-plus-circle me-1"></i> Adicionar Item
-        </button>
+      <div class="card-header bg-white border-bottom fw-semibold">
+        <i class="bi bi-plus-circle text-primary me-2"></i>Adicionar Item
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-3" id="entry-produto-wrap">
+            <label class="form-label fw-semibold">Produto <span class="text-danger">*</span></label>
+            <select id="entry-produto" class="form-select form-select-sm">
+              <option value=""></option>
+            </select>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label fw-semibold">Categoria</label>
+            <div id="entry-categoria-display" class="form-control form-control-sm bg-light text-muted">—</div>
+          </div>
+          <div class="col-md-2" data-entry-field="fase">
+            <label class="form-label fw-semibold">Fase</label>
+            {{ entry_form.fase }}
+          </div>
+          <div class="col-md-2" data-entry-field="data_prevista">
+            <label class="form-label fw-semibold">Data Prevista <span class="text-danger">*</span></label>
+            {{ entry_form.data_prevista }}
+          </div>
+          <div class="col-md-3" data-entry-field="quantidade_planejada">
+            <label class="form-label fw-semibold">Qtd <span class="text-danger">*</span></label>
+            {{ entry_form.quantidade_planejada }}
+          </div>
+
+          <div class="col-md-2" data-entry-field="unidade_medida">
+            <label class="form-label fw-semibold">Unidade <span class="text-danger">*</span></label>
+            {{ entry_form.unidade_medida }}
+          </div>
+          <div class="col-md-2" data-entry-field="preco_estimado_unitario">
+            <label class="form-label fw-semibold">Preço Estimado <span class="text-danger">*</span></label>
+            {{ entry_form.preco_estimado_unitario }}
+          </div>
+          <div class="col-md-2" data-entry-field="preco_atual_unitario">
+            <label class="form-label fw-semibold">Preço Atual</label>
+            {{ entry_form.preco_atual_unitario }}
+          </div>
+          <div class="col-md-3" data-entry-field="fornecedor_preferencial">
+            <label class="form-label fw-semibold">Fornecedor Preferencial</label>
+            {{ entry_form.fornecedor_preferencial }}
+          </div>
+          <div class="col-md-3" data-entry-field="observacoes">
+            <label class="form-label fw-semibold">Observações</label>
+            {{ entry_form.observacoes }}
+          </div>
+        </div>
+        <div class="d-flex gap-2 mt-3">
+          <button type="button" id="btn-add-item" class="btn btn-primary btn-sm">
+            <i class="bi bi-plus-circle me-1"></i><span id="btn-add-item-label">Adicionar Item</span>
+          </button>
+          <button type="button" id="btn-cancel-edit-item" class="btn btn-outline-secondary btn-sm d-none">
+            Cancelar edição
+          </button>
+        </div>
+        <div id="entry-validation-msg" class="alert alert-danger mt-3 d-none"></div>
+      </div>
+    </div>
+
+    <!-- LISTA DE ITENS LANÇADOS -->
+    <div class="card border-0 shadow-sm mb-4" style="border-radius: var(--radius-card);">
+      <div class="card-header bg-white border-bottom fw-semibold">
+        <i class="bi bi-list-ul text-primary me-2"></i>Itens do Planejamento
       </div>
       <div class="card-body p-0">
-        {{ formset.management_form }}
         {% if formset.non_form_errors %}
           <div class="alert alert-danger m-3">{{ formset.non_form_errors }}</div>
         {% endif %}
         <div class="table-responsive">
-          <table class="table table-sm table-hover mb-0" id="formset-table">
+          <table class="table table-sm table-hover mb-0" id="summary-table">
             <thead class="table-light">
               <tr>
-                <th style="min-width:200px;">Tipo de Embalagem</th>
-                <th style="min-width:130px;">Fase</th>
-                <th style="min-width:120px;">Data Prevista</th>
-                <th style="min-width:100px;">Qtd</th>
-                <th style="min-width:90px;">Unidade</th>
-                <th style="min-width:120px;">Preço Estimado</th>
-                <th style="min-width:120px;">Preço Atual</th>
-                <th style="min-width:160px;">Fornecedor Preferencial</th>
-                <th style="min-width:160px;">Fornecedor Alternativo</th>
-                <th style="min-width:120px;">Obs.</th>
-                <th></th>
+                <th>Produto</th>
+                <th>Categoria</th>
+                <th>Fase</th>
+                <th>Data Prevista</th>
+                <th>Qtd</th>
+                <th>Unidade</th>
+                <th>Preço Estimado</th>
+                <th>Preço Atual</th>
+                <th>Fornecedor Preferencial</th>
+                <th>Subtotal</th>
+                <th>Obs.</th>
+                <th>Ações</th>
               </tr>
             </thead>
-            <tbody id="formset-body">
-              {% for f in formset %}
-              <tr class="formset-row{% if f.instance.pk and f.initial.DELETE %} d-none{% endif %}" data-form-idx="{{ forloop.counter0 }}">
-                {% for hidden in f.hidden_fields %} {{ hidden }} {% endfor %}
-                <td>{{ f.tipo_embalagem }}{% if f.tipo_embalagem.errors %}<div class="text-danger small">{{ f.tipo_embalagem.errors }}</div>{% endif %}</td>
-                <td>{{ f.fase }}</td>
-                <td>{{ f.data_prevista }}{% if f.data_prevista.errors %}<div class="text-danger small">{{ f.data_prevista.errors }}</div>{% endif %}</td>
-                <td>{{ f.quantidade_planejada }}{% if f.quantidade_planejada.errors %}<div class="text-danger small">{{ f.quantidade_planejada.errors }}</div>{% endif %}</td>
-                <td>{{ f.unidade_medida }}</td>
-                <td>{{ f.preco_estimado_unitario }}</td>
-                <td>{{ f.preco_atual_unitario }}</td>
-                <td>{{ f.fornecedor_preferencial }}</td>
-                <td>{{ f.fornecedor_alternativo }}</td>
-                <td>{{ f.observacoes }}</td>
-                <td class="text-center">
-                  {% if f.instance.pk %}
-                    <div class="form-check">
-                      {{ f.DELETE }}
-                    </div>
-                  {% else %}
-                    <button type="button" class="btn btn-sm btn-outline-danger btn-remove-row" title="Remover">
-                      <i class="bi bi-trash"></i>
-                    </button>
-                  {% endif %}
-                </td>
+            <tbody id="summary-body">
+              <tr id="summary-empty-row">
+                <td colspan="12" class="text-center text-muted py-4">Nenhum item adicionado ainda.</td>
               </tr>
-              {% endfor %}
             </tbody>
           </table>
         </div>
-
-        <!-- Linha vazia (template para clonagem) -->
-        <table class="d-none" id="empty-row-template">
-          <tbody>
-            <tr class="formset-row" id="id_empty_row">
-              {% with f=formset.empty_form %}
-              {% for hidden in f.hidden_fields %} {{ hidden }} {% endfor %}
-              <td>{{ f.tipo_embalagem }}</td>
-              <td>{{ f.fase }}</td>
-              <td>{{ f.data_prevista }}</td>
-              <td>{{ f.quantidade_planejada }}</td>
-              <td>{{ f.unidade_medida }}</td>
-              <td>{{ f.preco_estimado_unitario }}</td>
-              <td>{{ f.preco_atual_unitario }}</td>
-              <td>{{ f.fornecedor_preferencial }}</td>
-              <td>{{ f.fornecedor_alternativo }}</td>
-              <td>{{ f.observacoes }}</td>
-              <td class="text-center">
-                <button type="button" class="btn btn-sm btn-outline-danger btn-remove-row" title="Remover">
-                  <i class="bi bi-trash"></i>
-                </button>
-              </td>
-              {% endwith %}
-            </tr>
-          </tbody>
-        </table>
-
       </div>
+    </div>
+
+    <!-- FORMSET REAL (oculto — fonte de verdade enviada ao backend) -->
+    <div class="d-none" id="formset-wrapper" data-formset-prefix="{{ formset.prefix }}">
+      {{ formset.management_form }}
+      <table>
+        <tbody id="formset-body">
+          {% for f in formset %}
+          <tr class="formset-row" data-form-idx="{{ forloop.counter0 }}" data-has-pk="{% if f.instance.pk %}1{% else %}0{% endif %}">
+            {% for hidden in f.hidden_fields %} {{ hidden }} {% endfor %}
+            <td class="f-produto" data-produto-nome="{{ f.instance.produto|default:'' }}" data-categoria-nome="{{ f.instance.produto.categoria.nome|default:'' }}">{{ f.produto }}{% if f.produto.errors %}<div class="text-danger small">{{ f.produto.errors }}</div>{% endif %}</td>
+            <td class="f-fase">{{ f.fase }}</td>
+            <td class="f-data_prevista">{{ f.data_prevista }}{% if f.data_prevista.errors %}<div class="text-danger small">{{ f.data_prevista.errors }}</div>{% endif %}</td>
+            <td class="f-quantidade_planejada">{{ f.quantidade_planejada }}{% if f.quantidade_planejada.errors %}<div class="text-danger small">{{ f.quantidade_planejada.errors }}</div>{% endif %}</td>
+            <td class="f-unidade_medida">{{ f.unidade_medida }}</td>
+            <td class="f-preco_estimado_unitario">{{ f.preco_estimado_unitario }}</td>
+            <td class="f-preco_atual_unitario">{{ f.preco_atual_unitario }}</td>
+            <td class="f-fornecedor_preferencial">{{ f.fornecedor_preferencial }}</td>
+            <td class="f-observacoes">{{ f.observacoes }}</td>
+            <td class="f-delete">{% if f.instance.pk %}{{ f.DELETE }}{% endif %}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      <table id="empty-row-template">
+        <tbody>
+          <tr class="formset-row" id="id_empty_row" data-has-pk="0">
+            {% with f=formset.empty_form %}
+            {% for hidden in f.hidden_fields %} {{ hidden }} {% endfor %}
+            <td class="f-produto" data-produto-nome="" data-categoria-nome="">{{ f.produto }}</td>
+            <td class="f-fase">{{ f.fase }}</td>
+            <td class="f-data_prevista">{{ f.data_prevista }}</td>
+            <td class="f-quantidade_planejada">{{ f.quantidade_planejada }}</td>
+            <td class="f-unidade_medida">{{ f.unidade_medida }}</td>
+            <td class="f-preco_estimado_unitario">{{ f.preco_estimado_unitario }}</td>
+            <td class="f-preco_atual_unitario">{{ f.preco_atual_unitario }}</td>
+            <td class="f-fornecedor_preferencial">{{ f.fornecedor_preferencial }}</td>
+            <td class="f-observacoes">{{ f.observacoes }}</td>
+            <td class="f-delete"></td>
+            {% endwith %}
+          </tr>
+        </tbody>
+      </table>
     </div>
 
     <!-- Resumo de custo em tempo real -->
@@ -193,81 +248,309 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
 (function () {
-  const tbody = document.getElementById('formset-body');
-  const totalFormsInput = document.getElementById('id_form-TOTAL_FORMS');
+  const formsetBody = document.getElementById('formset-body');
+  const prefix = document.getElementById('formset-wrapper').dataset.formsetPrefix;
+  const totalFormsInput = document.getElementById(`id_${prefix}-TOTAL_FORMS`);
+  const prefixRegex = new RegExp(`${prefix}-\\d+-`);
   const emptyRowTpl = document.querySelector('#empty-row-template tr');
+  const summaryBody = document.getElementById('summary-body');
+  const categoriaDisplay = document.getElementById('entry-categoria-display');
+
+  const entryFields = {
+    produto: document.getElementById('entry-produto'),
+    fase: document.querySelector('[data-entry-field="fase"] select'),
+    data_prevista: document.querySelector('[data-entry-field="data_prevista"] input'),
+    quantidade_planejada: document.querySelector('[data-entry-field="quantidade_planejada"] input'),
+    unidade_medida: document.querySelector('[data-entry-field="unidade_medida"] select'),
+    preco_estimado_unitario: document.querySelector('[data-entry-field="preco_estimado_unitario"] input'),
+    preco_atual_unitario: document.querySelector('[data-entry-field="preco_atual_unitario"] input'),
+    fornecedor_preferencial: document.querySelector('[data-entry-field="fornecedor_preferencial"] select'),
+    observacoes: document.querySelector('[data-entry-field="observacoes"] input, [data-entry-field="observacoes"] textarea'),
+  };
+
+  // Campos do "Adicionar Item" são só um rascunho de UI (copiados para o
+  // formset oculto via JS) — não devem exigir validação nativa do navegador
+  // nem ser submetidos como campos próprios do form.
+  Object.values(entryFields).forEach(el => {
+    if (!el) return;
+    el.required = false;
+    el.removeAttribute('name');
+  });
+
+  const FIELD_ORDER = [
+    'produto', 'fase', 'data_prevista', 'quantidade_planejada',
+    'unidade_medida', 'preco_estimado_unitario', 'preco_atual_unitario',
+    'fornecedor_preferencial', 'observacoes',
+  ];
+
+  let editingIdx = null; // null = modo "adicionar"; caso contrário, data-form-idx da linha em edição
 
   function getFormCount() {
     return parseInt(totalFormsInput.value);
   }
 
   function updateFormIndexes() {
-    const rows = tbody.querySelectorAll('tr.formset-row');
+    const rows = formsetBody.querySelectorAll('tr.formset-row');
     rows.forEach((row, idx) => {
       row.querySelectorAll('input, select, textarea').forEach(el => {
-        if (el.name) el.name = el.name.replace(/form-\d+-/, `form-${idx}-`);
-        if (el.id)   el.id   = el.id.replace(/form-\d+-/, `form-${idx}-`);
+        if (el.name) el.name = el.name.replace(prefixRegex, `${prefix}-${idx}-`);
+        if (el.id)   el.id   = el.id.replace(prefixRegex, `${prefix}-${idx}-`);
       });
-      row.querySelectorAll('label').forEach(el => {
-        if (el.htmlFor) el.htmlFor = el.htmlFor.replace(/form-\d+-/, `form-${idx}-`);
-      });
+      row.dataset.formIdx = idx;
     });
     totalFormsInput.value = rows.length;
   }
 
-  document.getElementById('btn-add-item').addEventListener('click', function () {
-    const idx = getFormCount();
-    const newRow = emptyRowTpl.cloneNode(true);
-    newRow.id = '';
-    newRow.querySelectorAll('input, select, textarea').forEach(el => {
-      if (el.name) el.name = el.name.replace(/__prefix__/g, idx);
-      if (el.id)   el.id   = el.id.replace(/__prefix__/g, idx);
-      if (el.tagName === 'SELECT') el.selectedIndex = 0;
-      else if (el.type !== 'hidden') el.value = '';
-    });
-    tbody.appendChild(newRow);
-    totalFormsInput.value = idx + 1;
-    bindRemoveButtons();
-    bindPriceSync(newRow);
-    calcTotals();
-  });
-
-  function bindRemoveButtons() {
-    tbody.querySelectorAll('.btn-remove-row').forEach(btn => {
-      btn.onclick = function () {
-        btn.closest('tr').remove();
-        updateFormIndexes();
-        calcTotals();
-      };
-    });
+  function isRowUsable(row) {
+    if (isRowDeleted(row)) return false;
+    if (row.dataset.hasPk === '1') return true;
+    return row.dataset.claimed === '1';
   }
 
-  function bindPriceSync(row) {
-    const estimInput = row.querySelector('.preco-estimado');
-    const atualInput = row.querySelector('.preco-atual');
-    if (estimInput && atualInput) {
-      estimInput.addEventListener('input', function () {
-        if (!atualInput.value || atualInput.value === '0') {
-          atualInput.value = estimInput.value;
-        }
-        calcTotals();
-      });
-      atualInput.addEventListener('input', calcTotals);
-      row.querySelector('.formset-row .form-control-sm, input')
-        && row.querySelectorAll('input[type=number]').forEach(i => i.addEventListener('input', calcTotals));
+  function fieldCellInput(row, fieldName) {
+    return row.querySelector(`.f-${fieldName} input, .f-${fieldName} select, .f-${fieldName} textarea`);
+  }
+
+  function selectText(selectEl) {
+    if (!selectEl || selectEl.selectedIndex < 0) return '';
+    const opt = selectEl.options[selectEl.selectedIndex];
+    return opt ? opt.text.trim() : '';
+  }
+
+  function formatMoney(value) {
+    const n = parseFloat(value) || 0;
+    return 'R$ ' + n.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+  }
+
+  function formatDateBR(value) {
+    if (!value) return '';
+    const parts = value.split('-');
+    if (parts.length !== 3) return value;
+    return `${parts[2]}/${parts[1]}/${parts[0]}`;
+  }
+
+  function isRowDeleted(row) {
+    const del = row.querySelector('.f-delete input[type="checkbox"]');
+    return !!(del && del.checked);
+  }
+
+  function renderSummaryFromHiddenRows() {
+    summaryBody.innerHTML = '';
+    const rows = Array.from(formsetBody.querySelectorAll('tr.formset-row'));
+    const visiveis = rows.filter(isRowUsable);
+
+    if (visiveis.length === 0) {
+      const tr = document.createElement('tr');
+      tr.id = 'summary-empty-row';
+      tr.innerHTML = '<td colspan="12" class="text-center text-muted py-4">Nenhum item adicionado ainda.</td>';
+      summaryBody.appendChild(tr);
+      calcTotals();
+      return;
+    }
+
+    visiveis.forEach(row => {
+      const idx = row.dataset.formIdx;
+      const produtoCell = row.querySelector('.f-produto');
+      const produtoNome = produtoCell?.dataset.produtoNome || '';
+      const categoriaNome = produtoCell?.dataset.categoriaNome || '';
+      const qtd = parseFloat(fieldCellInput(row, 'quantidade_planejada')?.value) || 0;
+      const precoEstimado = parseFloat(fieldCellInput(row, 'preco_estimado_unitario')?.value) || 0;
+      const precoAtual = fieldCellInput(row, 'preco_atual_unitario')?.value || '';
+      const subtotal = qtd * precoEstimado;
+      const obs = fieldCellInput(row, 'observacoes')?.value || '';
+      const fornecedorTxt = selectText(fieldCellInput(row, 'fornecedor_preferencial')) || '—';
+
+      const tr = document.createElement('tr');
+      tr.dataset.summaryIdx = idx;
+      tr.innerHTML = `
+        <td>${produtoNome || '—'}</td>
+        <td>${categoriaNome || '—'}</td>
+        <td>${selectText(fieldCellInput(row, 'fase')) || '—'}</td>
+        <td>${formatDateBR(fieldCellInput(row, 'data_prevista')?.value)}</td>
+        <td>${qtd.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+        <td>${selectText(fieldCellInput(row, 'unidade_medida')) || '—'}</td>
+        <td>${formatMoney(precoEstimado)}</td>
+        <td>${precoAtual ? formatMoney(precoAtual) : '—'}</td>
+        <td>${fornecedorTxt}</td>
+        <td class="fw-semibold">${formatMoney(subtotal)}</td>
+        <td>${obs}</td>
+        <td class="text-nowrap">
+          <button type="button" class="btn btn-sm btn-outline-primary btn-editar-item" title="Editar"><i class="bi bi-pencil"></i></button>
+          <button type="button" class="btn btn-sm btn-outline-danger btn-remover-item" title="Remover"><i class="bi bi-trash"></i></button>
+        </td>
+      `;
+      summaryBody.appendChild(tr);
+    });
+
+    calcTotals();
+  }
+
+  function limparEntryFields() {
+    $('#entry-produto').val(null).trigger('change');
+    categoriaDisplay.textContent = '—';
+    entryFields.fase.selectedIndex = 0;
+    entryFields.data_prevista.value = '';
+    entryFields.quantidade_planejada.value = '';
+    entryFields.unidade_medida.value = '';
+    entryFields.preco_estimado_unitario.value = '';
+    entryFields.preco_atual_unitario.value = '';
+    entryFields.fornecedor_preferencial.value = '';
+    entryFields.observacoes.value = '';
+  }
+
+  function sairModoEdicao() {
+    editingIdx = null;
+    document.getElementById('btn-add-item-label').textContent = 'Adicionar Item';
+    document.getElementById('btn-cancel-edit-item').classList.add('d-none');
+    limparEntryFields();
+  }
+
+  function mostrarErroEntry(msg) {
+    const el = document.getElementById('entry-validation-msg');
+    el.textContent = msg;
+    el.classList.remove('d-none');
+  }
+
+  function ocultarErroEntry() {
+    document.getElementById('entry-validation-msg').classList.add('d-none');
+  }
+
+  function validarEntry() {
+    if (!entryFields.produto.value) return 'Selecione o Produto.';
+    if (!entryFields.data_prevista.value) return 'Informe a Data Prevista.';
+    if (!entryFields.quantidade_planejada.value || parseFloat(entryFields.quantidade_planejada.value) <= 0) return 'Informe uma Quantidade válida.';
+    if (!entryFields.unidade_medida.value) return 'Selecione a Unidade de Medida.';
+    if (entryFields.preco_estimado_unitario.value === '' || parseFloat(entryFields.preco_estimado_unitario.value) < 0) return 'Informe o Preço Estimado.';
+    return null;
+  }
+
+  function copiarEntryParaLinha(row) {
+    FIELD_ORDER.forEach(fieldName => {
+      const destino = fieldCellInput(row, fieldName);
+      const origem = entryFields[fieldName];
+      if (destino && origem) destino.value = origem.value;
+    });
+    const produtoCell = row.querySelector('.f-produto');
+    if (produtoCell) {
+      const selecionado = $('#entry-produto').select2('data')[0];
+      produtoCell.dataset.produtoNome = selecionado ? selecionado.text : '';
+      produtoCell.dataset.categoriaNome = categoriaDisplay.textContent.trim() === '—' ? '' : categoriaDisplay.textContent.trim();
     }
   }
 
+  function copiarLinhaParaEntry(row) {
+    FIELD_ORDER.forEach(fieldName => {
+      if (fieldName === 'produto') return; // tratado à parte abaixo (Select2 precisa do par id+rótulo)
+      const origem = fieldCellInput(row, fieldName);
+      const destino = entryFields[fieldName];
+      if (destino && origem) destino.value = origem.value;
+    });
+
+    const produtoCell = row.querySelector('.f-produto');
+    const produtoInput = fieldCellInput(row, 'produto');
+    const produtoId = produtoInput?.value || '';
+    const produtoNome = produtoCell?.dataset.produtoNome || '';
+    const categoriaNome = produtoCell?.dataset.categoriaNome || '';
+
+    if (produtoId) {
+      const opt = new Option(produtoNome || produtoId, produtoId, true, true);
+      $('#entry-produto').empty().append(opt).trigger('change');
+    } else {
+      $('#entry-produto').val(null).trigger('change');
+    }
+    categoriaDisplay.textContent = categoriaNome || '—';
+  }
+
+  document.getElementById('btn-add-item').addEventListener('click', function () {
+    ocultarErroEntry();
+    const erro = validarEntry();
+    if (erro) {
+      mostrarErroEntry(erro);
+      return;
+    }
+
+    if (editingIdx === null) {
+      // Reaproveita uma linha oculta em branco (dos slots extra/min_num do
+      // Django) antes de clonar uma linha totalmente nova.
+      let targetRow = Array.from(formsetBody.querySelectorAll('tr.formset-row'))
+        .find(r => r.dataset.hasPk === '0' && r.dataset.claimed !== '1');
+
+      if (!targetRow) {
+        const idx = getFormCount();
+        targetRow = emptyRowTpl.cloneNode(true);
+        targetRow.id = '';
+        targetRow.querySelectorAll('input, select, textarea').forEach(el => {
+          if (el.name) el.name = el.name.replace(/__prefix__/g, idx);
+          if (el.id)   el.id   = el.id.replace(/__prefix__/g, idx);
+        });
+        targetRow.dataset.formIdx = idx;
+        formsetBody.appendChild(targetRow);
+        totalFormsInput.value = idx + 1;
+      }
+
+      targetRow.dataset.claimed = '1';
+      copiarEntryParaLinha(targetRow);
+    } else {
+      const row = formsetBody.querySelector(`tr.formset-row[data-form-idx="${editingIdx}"]`);
+      if (row) copiarEntryParaLinha(row);
+      sairModoEdicao();
+      renderSummaryFromHiddenRows();
+      return;
+    }
+
+    limparEntryFields();
+    renderSummaryFromHiddenRows();
+  });
+
+  document.getElementById('btn-cancel-edit-item').addEventListener('click', sairModoEdicao);
+
+  summaryBody.addEventListener('click', function (e) {
+    const trEditar = e.target.closest('.btn-editar-item');
+    const trRemover = e.target.closest('.btn-remover-item');
+
+    if (trEditar) {
+      const row = trEditar.closest('tr');
+      const idx = row.dataset.summaryIdx;
+      const hiddenRow = formsetBody.querySelector(`tr.formset-row[data-form-idx="${idx}"]`);
+      if (!hiddenRow) return;
+      copiarLinhaParaEntry(hiddenRow);
+      editingIdx = idx;
+      document.getElementById('btn-add-item-label').textContent = 'Atualizar Item';
+      document.getElementById('btn-cancel-edit-item').classList.remove('d-none');
+      ocultarErroEntry();
+    }
+
+    if (trRemover) {
+      const row = trRemover.closest('tr');
+      const idx = row.dataset.summaryIdx;
+      const hiddenRow = formsetBody.querySelector(`tr.formset-row[data-form-idx="${idx}"]`);
+      if (!hiddenRow) return;
+
+      if (hiddenRow.dataset.hasPk === '1') {
+        const del = hiddenRow.querySelector('.f-delete input[type="checkbox"]');
+        if (del) del.checked = true;
+      } else {
+        hiddenRow.remove();
+        updateFormIndexes();
+      }
+      if (String(editingIdx) === String(idx)) sairModoEdicao();
+      renderSummaryFromHiddenRows();
+    }
+  });
+
   function calcTotals() {
     let estimado = 0, atual = 0;
-    tbody.querySelectorAll('tr.formset-row').forEach(row => {
+    formsetBody.querySelectorAll('tr.formset-row').forEach(row => {
+      if (isRowDeleted(row)) return;
       const qtd = parseFloat(row.querySelector('input[name$="-quantidade_planejada"]')?.value) || 0;
       const pe  = parseFloat(row.querySelector('input[name$="-preco_estimado_unitario"]')?.value) || 0;
       const pa  = parseFloat(row.querySelector('input[name$="-preco_atual_unitario"]')?.value) || 0;
       estimado += qtd * pe;
-      atual    += qtd * pa;
+      atual    += qtd * (pa || pe);
     });
     document.getElementById('total-estimado').textContent = 'R$ ' + estimado.toLocaleString('pt-BR', {minimumFractionDigits:2});
     document.getElementById('total-atual').textContent    = 'R$ ' + atual.toLocaleString('pt-BR', {minimumFractionDigits:2});
@@ -281,11 +564,94 @@
     }
   }
 
-  // bind eventos nas linhas existentes
-  tbody.querySelectorAll('tr.formset-row').forEach(row => bindPriceSync(row));
-  tbody.querySelectorAll('input[type=number]').forEach(i => i.addEventListener('input', calcTotals));
-  bindRemoveButtons();
-  calcTotals();
+  // Sincroniza Preço Atual com Preço Estimado no formulário de entrada, se estiver vazio
+  entryFields.preco_estimado_unitario.addEventListener('input', function () {
+    if (!entryFields.preco_atual_unitario.value) {
+      entryFields.preco_atual_unitario.value = entryFields.preco_estimado_unitario.value;
+    }
+  });
+
+  // ───────────── Produto: autopreenchimento de Categoria, Unidade, Fornecedor e Preço ─────────────
+
+  async function onProdutoSelecionado(produtoId, dadosResultado) {
+    if (!produtoId) {
+      categoriaDisplay.textContent = '—';
+      return;
+    }
+    categoriaDisplay.textContent = (dadosResultado && dadosResultado.categoria_nome) || '—';
+
+    try {
+      const resp = await fetch(`/compras/api/produto/${produtoId}/unidades/`);
+      const data = await resp.json();
+      if (data.success && data.unidade_padrao_id) {
+        entryFields.unidade_medida.value = data.unidade_padrao_id;
+      }
+    } catch (err) {
+      console.error('Erro ao buscar unidade do produto:', err);
+    }
+
+    try {
+      const resp = await fetch(`/compras/planejamento-embalagem/api/produto/${produtoId}/dados/`);
+      const data = await resp.json();
+      if (data.success) {
+        if (data.fornecedor_id) {
+          entryFields.fornecedor_preferencial.value = data.fornecedor_id;
+        }
+        if (data.preco_compra) {
+          entryFields.preco_estimado_unitario.value = parseFloat(data.preco_compra).toFixed(4);
+        }
+      }
+    } catch (err) {
+      console.error('Erro ao buscar dados de fornecedor/preço do produto:', err);
+    }
+  }
+
+  $(function () {
+    $('#entry-produto').select2({
+      theme: 'bootstrap-5',
+      width: '100%',
+      placeholder: 'Buscar produto...',
+      allowClear: true,
+      minimumInputLength: 2,
+      ajax: {
+        url: '{% url "produtos:ajax_buscar_produtos" %}',
+        dataType: 'json',
+        delay: 250,
+        data: function (params) { return { q: params.term }; },
+        processResults: function (data) { return { results: data.results || [] }; },
+        cache: true,
+      },
+      language: {
+        inputTooShort: function () { return 'Digite ao menos 2 caracteres para buscar'; },
+        noResults: function () { return 'Nenhum produto encontrado'; },
+      },
+    }).on('select2:select', function (e) {
+      onProdutoSelecionado(this.value, e.params.data);
+    }).on('select2:clear', function () {
+      onProdutoSelecionado('');
+    });
+  });
+
+  // Antes de enviar: remove do DOM qualquer linha oculta em branco nunca
+  // reaproveitada (sobra dos slots extra/min_num do Django) para que ela
+  // jamais ocupe um índice obrigatório do formset após reordenações, e
+  // bloqueia o envio se não sobrar nenhum item real.
+  document.getElementById('form-planejamento').addEventListener('submit', function (e) {
+    formsetBody.querySelectorAll('tr.formset-row').forEach(row => {
+      if (row.dataset.hasPk === '0' && row.dataset.claimed !== '1') {
+        row.remove();
+      }
+    });
+    updateFormIndexes();
+
+    const restantes = Array.from(formsetBody.querySelectorAll('tr.formset-row')).filter(row => !isRowDeleted(row));
+    if (restantes.length === 0) {
+      e.preventDefault();
+      alert('Adicione pelo menos um item ao planejamento antes de salvar.');
+    }
+  });
+
+  renderSummaryFromHiddenRows();
 })();
 </script>
 {% endblock %}

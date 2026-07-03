@@ -68,7 +68,7 @@
           <thead class="table-light">
             <tr>
               <th style="width:40px;"></th>
-              <th>Tipo de Embalagem</th>
+              <th>Produto</th>
               <th>Fase</th>
               <th>Data Prevista</th>
               <th class="text-end">Qtd</th>
@@ -85,7 +85,7 @@
                 <input class="form-check-input item-check" type="checkbox"
                        name="itens_selecionados" value="{{ item.pk }}" checked>
               </td>
-              <td>{{ item.tipo_embalagem }}</td>
+              <td>{{ item.produto|default:item.tipo_embalagem|default:"—" }}</td>
               <td><span class="badge bg-secondary-subtle text-secondary">{{ item.get_fase_display }}</span></td>
               <td>{{ item.data_prevista|date:"d/m/Y" }}</td>
               <td class="text-end">{{ item.quantidade_planejada|floatformat:2 }}</td>

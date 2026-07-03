@@ -62,10 +62,69 @@ from django.core.paginator import Paginator
 from django.urls import reverse
 import json
 from decimal import Decimal
-from .models import UnidadeMedida, Categoria, SubCategoria, Produto, ProdutoTributacao, NaturezaOperacao, ProdutoDefensivoCultura, ProdutoFornecedor, TipoProduto, DimensaoVariante, ProdutoAtributo
-from .forms import UnidadeMedidaForm, CategoriaForm, SubCategoriaForm, ProdutoForm, ProdutoTributacaoForm, NaturezaOperacaoForm, ProdutoDefensivoCulturaForm
+from .models import Marca, UnidadeMedida, Categoria, SubCategoria, Produto, ProdutoTributacao, NaturezaOperacao, ProdutoDefensivoCultura, ProdutoFornecedor, TipoProduto, DimensaoVariante, ProdutoAtributo
+from .forms import MarcaForm, UnidadeMedidaForm, CategoriaForm, SubCategoriaForm, ProdutoForm, ProdutoTributacaoForm, NaturezaOperacaoForm, ProdutoDefensivoCulturaForm
 from cadastros.models import NCM, CFOP, Fornecedor
 from emprestimos.models import EmprestimoProdutor
+
+
+# ============== MARCA ==============
+
+@login_required
+def marca_list(request):
+    query = request.GET.get('q', '')
+    marcas = Marca.objects.filter(empresa=request.user.empresa)
+    if query:
+        marcas = marcas.filter(nome__icontains=query)
+    return render(request, 'produtos/marca/marca_list.html', {
+        'marcas': marcas.order_by('nome'),
+        'query': query
+    })
+
+
+@login_required
+def marca_create(request):
+    if request.method == 'POST':
+        form = MarcaForm(request.POST)
+        if form.is_valid():
+            marca = form.save(commit=False)
+            marca.empresa = request.user.empresa
+            marca.save()
+            messages.success(request, 'Marca cadastrada com sucesso!')
+            return redirect('produtos:marca_list')
+    else:
+        form = MarcaForm()
+    return render(request, 'produtos/marca/marca_form.html', {
+        'form': form,
+        'action': 'Cadastrar'
+    })
+
+
+@login_required
+def marca_update(request, pk):
+    marca = get_object_or_404(Marca.objects.filter(empresa=request.user.empresa), pk=pk)
+    if request.method == 'POST':
+        form = MarcaForm(request.POST, instance=marca)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Marca atualizada com sucesso!')
+            return redirect('produtos:marca_list')
+    else:
+        form = MarcaForm(instance=marca)
+    return render(request, 'produtos/marca/marca_form.html', {
+        'form': form,
+        'action': 'Editar'
+    })
+
+
+@login_required
+@require_POST
+def marca_toggle_ativo(request, pk):
+    marca = get_object_or_404(Marca.objects.filter(empresa=request.user.empresa), pk=pk)
+    marca.ativo = not marca.ativo
+    marca.save(update_fields=['ativo'])
+    messages.success(request, f'Marca {"ativada" if marca.ativo else "desativada"}.')
+    return redirect('produtos:marca_list')
 
 
 # ============== DASHBOARD ==============
@@ -784,7 +843,7 @@ def ajax_buscar_produtos(request):
         categoria__empresa=empresa, ativo=True
     ).filter(
         Q(nome__icontains=q) | Q(codigo__icontains=q)
-    ).select_related('ncm')
+    ).select_related('ncm', 'categoria')
     apenas_base = request.GET.get('apenas_base') == '1' or request.GET.get('excluir_variantes') == '1'
     if apenas_base:
         qs = qs.filter(produto_base__isnull=True)
@@ -794,6 +853,7 @@ def ajax_buscar_produtos(request):
             'id': p.pk,
             'text': f'{p.codigo} — {p.nome}',
             'tem_variantes': p.variantes.exists() if not apenas_base else False,
+            'categoria_nome': p.categoria.nome,
         }
         for p in qs
     ]

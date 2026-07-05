@@ -151,7 +151,7 @@ if not PG_NAME:
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'ENGINE': 'django.db.backends.postgresql',
         'NAME': PG_NAME,
         'USER': os.getenv('PG_USER', ''),
         'PASSWORD': os.getenv('PG_PASSWORD', ''),
@@ -215,7 +215,6 @@ else:
 LANGUAGE_CODE = 'pt-br'
 TIME_ZONE = 'America/Fortaleza'  # Fuso horário do RN
 USE_I18N = True
-USE_L10N = True
 USE_TZ = True
 
 # Encoding configuration - UTF-8 para suportar caracteres especiais
@@ -608,7 +607,3 @@ if 'test' in sys.argv or any('pytest' in s for s in sys.argv):
 
 # Cria pasta de logs se não existir
 os.makedirs(os.path.join(BASE_DIR, 'logs'), exist_ok=True)
-
-# Procure por estas configurações:
-USE_L10N = True  # Se True, formata datas automaticamente
-DATE_INPUT_FORMATS = [...]  # Pode estar forçando formato brasileiro

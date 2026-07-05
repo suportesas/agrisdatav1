@@ -324,7 +324,7 @@ class Motorista(models.Model):
         ]
         constraints = [
             models.CheckConstraint(
-                check=~models.Q(tipo__in=['TERCEIRO', 'AGREGADO']) | models.Q(transportadora__isnull=False),
+                condition=~models.Q(tipo__in=['TERCEIRO', 'AGREGADO']) | models.Q(transportadora__isnull=False),
                 name='motorista_terceiro_agregado_requer_transportadora'
             )
         ]

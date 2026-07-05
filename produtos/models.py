@@ -553,7 +553,7 @@ class Produto(models.Model):
 
     def _limpar_campo(self, campo):
         field = self._meta.get_field(campo)
-        if isinstance(field, (models.BooleanField, models.NullBooleanField)):
+        if isinstance(field, models.BooleanField):
             setattr(self, campo, False)
         elif getattr(field, 'null', False):
             setattr(self, campo, None)

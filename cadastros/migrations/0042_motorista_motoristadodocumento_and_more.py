@@ -83,6 +83,6 @@ class Migration(migrations.Migration):
         ),
         migrations.AddConstraint(
             model_name='motorista',
-            constraint=models.CheckConstraint(check=~models.Q(tipo='TERCEIRO', transportadora__isnull=True), name='motorista_terceiro_requer_transportadora'),
+            constraint=models.CheckConstraint(condition=~models.Q(tipo='TERCEIRO', transportadora__isnull=True), name='motorista_terceiro_requer_transportadora'),
         ),
     ]

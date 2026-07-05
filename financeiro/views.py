@@ -140,9 +140,9 @@ def financeiro_dashboard(request):
     )['total'] or Decimal('0.00')
     cr_recebimentos_mes = RecebimentoContaReceber.objects.filter(
         conta_receber__empresa=empresa,
-        data_recebimento__gte=datetime(hoje.year, hoje.month, 1).date(),
-        data_recebimento__lte=hoje,
-    ).aggregate(total=Sum('valor_recebido'))['total'] or Decimal('0.00')
+        data_pagamento__gte=datetime(hoje.year, hoje.month, 1).date(),
+        data_pagamento__lte=hoje,
+    ).aggregate(total=Sum('valor_recebido_brl'))['total'] or Decimal('0.00')
 
     posicao_liquida = valor_a_receber - valor_vencido
 

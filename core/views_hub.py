@@ -57,9 +57,9 @@ def configuracoes_hub(request):
             counts['naturezas'] = NaturezaOperacao.objects.filter(empresa=empresa).count()
             counts['ncm'] = NCM.objects.filter(empresa=empresa).count()
             counts['cfop'] = CFOP.objects.filter(empresa=empresa).count()
-            counts['clientes'] = Cliente.objects.filter(empresa=empresa, ativo=True).count()
-            counts['fornecedores'] = Fornecedor.objects.filter(empresa=empresa, ativo=True).count()
-            counts['transportadoras'] = Transportadora.objects.filter(empresa=empresa, ativo=True).count()
+            counts['clientes'] = Cliente.objects.filter(empresa=empresa, status='ATIVO').count()
+            counts['fornecedores'] = Fornecedor.objects.filter(empresa=empresa, ativa=True).count()
+            counts['transportadoras'] = Transportadora.objects.filter(empresa=empresa, ativa=True).count()
             counts['armazens'] = Armazem.objects.filter(empresa=empresa).count()
         except Exception:
             pass

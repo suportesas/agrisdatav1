@@ -42,7 +42,7 @@ def entrada_rapida(request):
                 nota_fiscal = request.POST.get('nota_fiscal', '')
                 observacao = request.POST.get('observacao', '')
                 
-                local = get_object_or_404(LocalEstocagem, pk=local_id, empresa=request.user.empresa)
+                local = get_object_or_404(LocalEstocagem, pk=local_id, armazem__empresa=request.user.empresa)
                 fornecedor = None
                 if fornecedor_id:
                     fornecedor = get_object_or_404(Fornecedor, pk=fornecedor_id, empresa=request.user.empresa)
@@ -122,8 +122,8 @@ def entrada_rapida(request):
             categoria__empresa=request.user.empresa,
             ativo=True
         ).select_related('categoria', 'unidade_compra'),
-        'locais': LocalEstocagem.objects.filter(empresa=request.user.empresa, ativo=True),
-        'fornecedores': Fornecedor.objects.filter(empresa=request.user.empresa, ativo=True),
+        'locais': LocalEstocagem.objects.filter(armazem__empresa=request.user.empresa, ativo=True),
+        'fornecedores': Fornecedor.objects.filter(empresa=request.user.empresa, ativa=True),
     }
     
     return render(request, 'estoque/entrada_rapida.html', context)
@@ -151,7 +151,7 @@ def saida_rapida(request):
                 motivo = request.POST.get('motivo', 'Saída manual')
                 observacao = request.POST.get('observacao', '')
                 
-                local = get_object_or_404(LocalEstocagem, pk=local_id, empresa=request.user.empresa)
+                local = get_object_or_404(LocalEstocagem, pk=local_id, armazem__empresa=request.user.empresa)
                 
                 # Processar produtos
                 produtos_ids = request.POST.getlist('produto_id')
@@ -230,7 +230,7 @@ def saida_rapida(request):
             categoria__empresa=request.user.empresa,
             ativo=True
         ).select_related('categoria', 'unidade_compra'),
-        'locais': LocalEstocagem.objects.filter(empresa=request.user.empresa, ativo=True),
+        'locais': LocalEstocagem.objects.filter(armazem__empresa=request.user.empresa, ativo=True),
     }
     
     return render(request, 'estoque/saida_rapida.html', context)

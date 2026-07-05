@@ -69,7 +69,7 @@ def validar_entradas(workbook, ato_concessorio, empresa):
 
     # mapa de fornecedores: nome_lower → Fornecedor (e cnpj)
     fornecedores = {}
-    for f in Fornecedor.objects.filter(empresa=empresa, ativo=True):
+    for f in Fornecedor.objects.filter(empresa=empresa, ativa=True):
         fornecedores[f.nome_fantasia.lower()] = f
         cnpj = (f.cnpj or '').replace('.', '').replace('/', '').replace('-', '')
         if cnpj:

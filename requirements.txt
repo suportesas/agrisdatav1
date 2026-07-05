@@ -10,7 +10,6 @@ asn1crypto==1.5.1
 attrs==25.4.0
 certifi==2025.11.12
 cffi==2.0.0
-chardet==6.0.0
 charset-normalizer==3.4.5
 colorama==0.4.6
 coverage==7.12.0

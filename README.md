@@ -2,8 +2,8 @@
 
 Sistema de gestão agrícola com arquitetura **multi-tenant** (multiempresa), desenvolvido em **Python/Django** para produtores rurais, cooperativas e empresas do agronegócio.
 
-[![Python](https://img.shields.io/badge/Python-3.9+-blue.svg)](https://www.python.org/)
-[![Django](https://img.shields.io/badge/Django-4.2.29-green.svg)](https://www.djangoproject.com/)
+[![Python](https://img.shields.io/badge/Python-3.14.6-blue.svg)](https://www.python.org/)
+[![Django](https://img.shields.io/badge/Django-6.0.6-green.svg)](https://www.djangoproject.com/)
 
 ---
 
@@ -35,8 +35,8 @@ O sistema isola dados por empresa: cada `Fazenda`, `OS`, `NF-e`, `Funcionário`,
 
 | Camada | Tecnologia |
 |--------|-----------|
-| Backend | Python 3.9+, Django 4.2.29 |
-| API | Django REST Framework 3.16 + SimpleJWT |
+| Backend | Python 3.14.6, Django 6.0.6 |
+| API | Django REST Framework 3.17 + SimpleJWT |
 | Banco (produção) | PostgreSQL 14+ |
 | Banco (desenvolvimento) | SQLite (automático quando PG não configurado) |
 | Storage de arquivos | Supabase Storage (fallback: `MEDIA_ROOT` local) |
@@ -71,7 +71,7 @@ O sistema isola dados por empresa: cada `Fazenda`, `OS`, `NF-e`, `Funcionário`,
 
 ### Pré-requisitos
 
-- Python 3.9 ou superior
+- Python 3.14.6 ou superior
 - Git
 - PostgreSQL (opcional — SQLite é usado automaticamente sem ele)
 
